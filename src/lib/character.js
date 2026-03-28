@@ -95,7 +95,13 @@ function classifyStructuredProfileSection(title) {
   const normalized = String(title || '').toLowerCase();
 
   if (
-    /взаимодейств|истори|сюжет|динамик|команд|обител|meeting|relationship|plot|connection/u.test(normalized)
+    /обител|владен|логов|убежищ|резиден|sanctum|lair|domain|residence|habitat/u.test(normalized)
+  ) {
+    return 'residence';
+  }
+
+  if (
+    /взаимодейств|истори|сюжет|динамик|команд|meeting|relationship|plot|connection/u.test(normalized)
   ) {
     return 'relationships';
   }
@@ -162,6 +168,7 @@ export function parseStructuredCharacterProfile(textSection) {
   const sectionBodies = {
     appearance: [],
     abilities: [],
+    residence: [],
     motives: [],
     relationships: []
   };
@@ -190,6 +197,7 @@ export function parseStructuredCharacterProfile(textSection) {
       'Обзор': mergeStructuredBodies(overviewParts.join('\n\n')),
       'Внешность': mergeStructuredBodies(...sectionBodies.appearance),
       'Особенности': mergeStructuredBodies(...sectionBodies.abilities),
+      'Обитель и владения': mergeStructuredBodies(...sectionBodies.residence),
       'Мотивы и роль': mergeStructuredBodies(
         ...sectionBodies.motives,
         motivePreface.join('\n')
@@ -377,26 +385,43 @@ export async function writeCharacterManifests(dirs, characters) {
 export function parseLoreInstructionsFromText(text) {
   const raw = String(text || '').trim();
   const characterOrder = [];
+  const editorialLines = [];
+  let titleOverride = '';
 
   for (const line of raw.split('\n')) {
     const normalizedLine = line.trim();
-    const orderMatch = normalizedLine.match(/^порядок персонажей:\s*(.+)$/iu);
-    if (!orderMatch) {
+    if (!normalizedLine) {
       continue;
     }
 
-    for (const entry of orderMatch[1].split(',')) {
-      const name = normalizeCharacterName(entry);
-      const key = toCharacterKey(name);
-      if (key && !characterOrder.includes(key)) {
-        characterOrder.push(key);
+    const orderMatch = normalizedLine.match(/^порядок персонажей:\s*(.+)$/iu);
+    if (orderMatch) {
+      for (const entry of orderMatch[1].split(',')) {
+        const name = normalizeCharacterName(entry);
+        const key = toCharacterKey(name);
+        if (key && !characterOrder.includes(key)) {
+          characterOrder.push(key);
+        }
       }
+      continue;
     }
+
+    const titleMatch = normalizedLine.match(
+      /^(?:заголовок(?:\s+должен\s+быть)?|title(?:\s+should\s+be)?):?\s*["«]?(.+?)["»]?\s*$/iu
+    );
+    if (titleMatch) {
+      titleOverride = String(titleMatch[1] || '').trim();
+      continue;
+    }
+
+    editorialLines.push(line);
   }
 
   return {
     raw,
-    characterOrder
+    characterOrder,
+    titleOverride,
+    editorialInstructions: editorialLines.join('\n').trim()
   };
 }
 

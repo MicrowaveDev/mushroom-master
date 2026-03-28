@@ -42,6 +42,131 @@ function readCharacterVisualDetails(markdown) {
   }
 }
 
+function normalizeEntityForCompare(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/ё/gu, 'е')
+    .replace(/[«»"'`.,:;!?()[\]{}]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function inferEntityTargetSection(context) {
+  const sample = String(context || '').toLowerCase().replace(/ё/gu, 'е');
+  if (/слабост|памят/.test(sample)) {
+    return 'Мотивы и роль';
+  }
+  if (/галере|зал|реликвар|кокон|лаборат|сад|обител|владен|цеп/.test(sample)) {
+    return 'Обитель и владения';
+  }
+  if (/корсет|плащ|вуал|фонар|артефакт|оруж|портал/.test(sample)) {
+    return 'Особенности';
+  }
+  if (/экспонат|носител|мастер рун|библиотек/.test(sample)) {
+    return 'Связи и сюжетные линии';
+  }
+  return 'Связи и сюжетные линии';
+}
+
+function buildEntitySentence(entity, targetSection, context) {
+  if (targetSection === 'Мотивы и роль') {
+    return `Её слабостью остаётся «${entity}».`;
+  }
+  if (targetSection === 'Обитель и владения') {
+    const sample = String(context || '').toLowerCase().replace(/ё/gu, 'е');
+    if (/центральн.*экспонат/.test(sample)) {
+      return `Среди трофеев этого пространства выделяется центральный экспонат — «${entity}».`;
+    }
+    if (/галере|зал/.test(sample)) {
+      return `С её владениями напрямую связана «${entity}».`;
+    }
+    if (/реликвар|кокон/.test(sample)) {
+      return `Её обитель известна как «${entity}».`;
+    }
+    return `С её владениями связано и «${entity}».`;
+  }
+
+  const sample = String(context || '').toLowerCase().replace(/ё/gu, 'е');
+  if (/центральн.*экспонат/.test(sample)) {
+    return `Среди её трофеев выделяется центральный экспонат — «${entity}».`;
+  }
+  if (/галере|зал/.test(sample)) {
+    return `С её территорией напрямую связана «${entity}».`;
+  }
+  if (/реликвар|кокон/.test(sample)) {
+    return `Её обитель известна как «${entity}».`;
+  }
+  if (/корсет|плащ|вуал|фонар|артефакт/.test(sample)) {
+    return `Среди её ключевых артефактов упоминается «${entity}».`;
+  }
+  return `Среди связанных с ней именованных сущностей упоминается «${entity}».`;
+}
+
+function extractMustKeepEntityHints(character) {
+  const hints = [];
+  const seen = new Set();
+  const sources = Array.isArray(character?.sources) ? character.sources : [];
+
+  for (const source of sources) {
+    const text = String(source?.text || '').trim();
+    if (!text) {
+      continue;
+    }
+
+    const weaknessMatch = text.match(/(?:Е[её]\s+слабост[ья]\s*:?\s*)(?:«([^»]+)»|"([^"]+)"|([^\n.]+))/u);
+    const weaknessEntity = weaknessMatch && [weaknessMatch[1], weaknessMatch[2], weaknessMatch[3]]
+      .find(Boolean)?.trim();
+    if (weaknessEntity) {
+      const key = normalizeEntityForCompare(weaknessEntity);
+      if (key && !seen.has(key)) {
+        hints.push({
+          entity: weaknessEntity.replace(/^[-–—]\s*/u, '').trim(),
+          targetSection: 'Мотивы и роль',
+          context: text,
+          sentence: `Её слабостью остаётся «${weaknessEntity.replace(/^[-–—]\s*/u, '').trim()}».`
+        });
+        seen.add(key);
+      }
+    }
+
+    const quotedEntities = Array.from(text.matchAll(/«([^»]{3,80})»/gu))
+      .map((match) => ({
+        entity: String(match[1] || '').trim(),
+        context: text.slice(Math.max(0, match.index - 80), Math.min(text.length, match.index + match[0].length + 80))
+      }))
+      .filter((entry) => entry.entity);
+
+    for (const entry of quotedEntities) {
+      if (!/^[\p{Lu}]/u.test(entry.entity)) {
+        continue;
+      }
+
+      const key = normalizeEntityForCompare(entry.entity);
+      if (!key || seen.has(key)) {
+        continue;
+      }
+
+      const targetSection = inferEntityTargetSection(entry.context);
+      const explicitContext = (
+        /слабост|центральн.*экспонат|галере|зал|реликвар|фонар|корсет|плащ|вуал|мастер рун|носител/u.test(entry.context)
+      );
+      if (!explicitContext) {
+        continue;
+      }
+
+      hints.push({
+        entity: entry.entity,
+        targetSection,
+        context: entry.context,
+        sentence: buildEntitySentence(entry.entity, targetSection, entry.context)
+      });
+      seen.add(key);
+    }
+  }
+
+  return hints;
+}
+
 function buildInstructionEntries(records) {
   return records
     .filter((record) => record.isInstructionsTagged && !record.isExcludedFromLore)
@@ -55,6 +180,84 @@ function buildInstructionEntries(records) {
         parsed: parseLoreInstructionsFromText(text)
       };
     });
+}
+
+function getMessageBatchKey(fileName) {
+  return String(fileName || '').replace(/-\d+\.md$/u, '');
+}
+
+function isLikelyContextualTitleCard(record) {
+  if (!record?.isExcludedFromLore || record?.textSection || !record?.ocrSection) {
+    return false;
+  }
+
+  if (record.isGeneralLoreTagged || record.isInstructionsTagged || record.taggedCharacterKeys.length > 0) {
+    return false;
+  }
+
+  const text = String(record.ocrSection || '').trim();
+  if (!text || text.length > 140) {
+    return false;
+  }
+
+  const textWithoutListPrefix = text.replace(/^\d+\.\s*/u, '');
+  if (
+    /^[\p{Ll}]/u.test(textWithoutListPrefix) ||
+    /[?!]$/u.test(textWithoutListPrefix) ||
+    /\.\s/u.test(textWithoutListPrefix)
+  ) {
+    return false;
+  }
+
+  return (
+    /^(?:\d+\.\s*)?[«"A-ZА-ЯЁ#]/u.test(text) ||
+    text.includes(':') ||
+    text.includes('(')
+  );
+}
+
+function applyContextualRouting(records) {
+  const batchRouting = new Map();
+
+  for (const record of records) {
+    const batchKey = getMessageBatchKey(record.fileName);
+    const current = batchRouting.get(batchKey) || {
+      characterKeys: new Set(),
+      isGeneralLoreTagged: false
+    };
+
+    if (!record.isExcludedFromLore) {
+      for (const characterKey of record.taggedCharacterKeys) {
+        current.characterKeys.add(characterKey);
+      }
+      if (record.isGeneralLoreTagged) {
+        current.isGeneralLoreTagged = true;
+      }
+    }
+
+    batchRouting.set(batchKey, current);
+  }
+
+  return records.map((record) => {
+    if (!isLikelyContextualTitleCard(record)) {
+      return {
+        ...record,
+        contextualCharacterKeys: [],
+        contextualGeneralLoreTagged: false
+      };
+    }
+
+    const batchKey = getMessageBatchKey(record.fileName);
+    const contextualRoute = batchRouting.get(batchKey);
+    const contextualCharacterKeys = Array.from(contextualRoute?.characterKeys || []);
+    const contextualGeneralLoreTagged = Boolean(contextualRoute?.isGeneralLoreTagged);
+
+    return {
+      ...record,
+      contextualCharacterKeys,
+      contextualGeneralLoreTagged
+    };
+  });
 }
 
 async function readExistingCharacterManifestMap(dirs) {
@@ -127,11 +330,20 @@ export function normalizeGeneratedLoreMarkdown(markdown, sourceBundle) {
     'Обзор',
     'Внешность',
     'Особенности',
+    'Обитель и владения',
     'Мотивы и роль',
     'Связи и сюжетные линии'
   ];
   const subsectionAliases = {
-    'Особенности': ['Особенности', 'Способности и черты']
+    'Особенности': ['Особенности', 'Способности и черты'],
+    'Обитель и владения': [
+      'Обитель и владения',
+      'Обитель',
+      'Обитель: «Колючая Крона»',
+      'Обитель: «Стеклянный Мицелий»',
+      'Обитель: «Склеп Забытых Эхо»',
+      'Магический арсенал и обитель'
+    ]
   };
 
   // Separate real character sections from non-character sections (e.g. "Взаимоотношения в квартете")
@@ -228,6 +440,26 @@ export function normalizeGeneratedLoreMarkdown(markdown, sourceBundle) {
     const motivesText = normalizeTextForDupCompare(sectionMap.get('Мотивы и роль') || '');
     if (motivesText && overviewText && overviewText.includes(motivesText)) {
       sectionMap.delete('Мотивы и роль');
+    }
+
+    const mustKeepHints = extractMustKeepEntityHints(canonicalCharacter);
+    const fullSectionText = normalizeEntityForCompare(Array.from(sectionMap.values()).join('\n\n'));
+    for (const hint of mustKeepHints) {
+      if (!hint.entity) {
+        continue;
+      }
+      const normalizedEntity = normalizeEntityForCompare(hint.entity);
+      if (!normalizedEntity || fullSectionText.includes(normalizedEntity)) {
+        continue;
+      }
+
+      const targetSection = hint.targetSection || 'Связи и сюжетные линии';
+      const existing = sectionMap.get(targetSection) || '';
+      const sentence = hint.sentence || buildEntitySentence(hint.entity, targetSection, hint.context);
+      sectionMap.set(
+        targetSection,
+        [existing, sentence].filter(Boolean).join(existing ? ' ' : '')
+      );
     }
 
     const rebuilt = [headingLine];
@@ -400,24 +632,38 @@ export async function collectLoreInputsFromStoredMarkdown(dirs) {
     }
   }
 
-  const instructionEntries = buildInstructionEntries(fileRecords);
+  const normalizedFileRecords = applyContextualRouting(fileRecords);
+  const instructionEntries = buildInstructionEntries(normalizedFileRecords);
   const characters = orderCharactersByInstructions(
     Array.from(characterMap.values()),
     instructionEntries
   );
 
   const charactersByKey = new Map(characters.map((character) => [character.key, character]));
-  const routedRecords = fileRecords.map((record) => {
+  const routedRecords = normalizedFileRecords.map((record) => {
     const routedCharacterKeys = new Set();
-    if (record.isExcludedFromLore) {
+    const isContextuallyIncluded = (
+      record.contextualCharacterKeys.length > 0 ||
+      record.contextualGeneralLoreTagged
+    );
+    const isIncludedInLore = !record.isExcludedFromLore || isContextuallyIncluded;
+    const effectiveGeneralLoreTagged = record.isGeneralLoreTagged || record.contextualGeneralLoreTagged;
+
+    if (!isIncludedInLore) {
       return {
         ...record,
-        routedCharacterKeys: []
+        routedCharacterKeys: [],
+        isIncludedInLore,
+        effectiveGeneralLoreTagged
       };
     }
 
-    if (record.taggedCharacterKeys.length > 0) {
-      for (const characterKey of record.taggedCharacterKeys) {
+    const effectiveCharacterKeys = record.isExcludedFromLore
+      ? record.contextualCharacterKeys
+      : record.taggedCharacterKeys;
+
+    if (effectiveCharacterKeys.length > 0) {
+      for (const characterKey of effectiveCharacterKeys) {
         if (charactersByKey.has(characterKey)) {
           routedCharacterKeys.add(characterKey);
         }
@@ -426,7 +672,9 @@ export async function collectLoreInputsFromStoredMarkdown(dirs) {
 
     return {
       ...record,
-      routedCharacterKeys: Array.from(routedCharacterKeys)
+      routedCharacterKeys: Array.from(routedCharacterKeys),
+      isIncludedInLore,
+      effectiveGeneralLoreTagged
     };
   });
 
@@ -480,7 +728,7 @@ export async function collectLoreInputsFromStoredMarkdown(dirs) {
       parsed: entry.parsed
     })),
     generalLore: routedRecords
-      .filter((record) => !record.isExcludedFromLore && record.isGeneralLoreTagged)
+      .filter((record) => record.isIncludedInLore && record.effectiveGeneralLoreTagged)
       .map((record) => ({
         sourceMessageId: record.sourceMessageId,
         filePath: record.filePath,
@@ -489,8 +737,8 @@ export async function collectLoreInputsFromStoredMarkdown(dirs) {
       })),
     pending: routedRecords
       .filter((record) => (
-        !record.isExcludedFromLore &&
-        !record.isGeneralLoreTagged &&
+        record.isIncludedInLore &&
+        !record.effectiveGeneralLoreTagged &&
         !record.isInstructionsTagged &&
         record.routedCharacterKeys.length === 0
       ))
@@ -597,17 +845,19 @@ export async function writeLoreOutputs(ctx, options = {}) {
       instructionCount: sourceRouting.instructions.length
     },
     instructions: sourceRouting.instructions,
-    generalLore: generalEntries.map((entry) => ({
-      sourceMessageId: entry.sourceMessageId,
-      text: entry.text || '',
-      image: entry.image
-        ? {
-            caption: entry.image.caption,
-            description: entry.image.description,
-            generatedRelativePath: entry.image.generatedRelativePath
-          }
-        : null
-    })),
+    generalLore: fileRecords
+      .filter((record) => record.isIncludedInLore && record.effectiveGeneralLoreTagged)
+      .map((record) => ({
+        sourceMessageId: record.sourceMessageId,
+        text: record.narrativeText || '',
+        image: record.image
+          ? {
+              caption: record.image.caption,
+              description: record.image.description,
+              generatedRelativePath: record.image.generatedRelativePath
+            }
+          : null
+      })),
     characters: characters.map((character) => ({
       name: character.name,
       completenessTier: character.completenessTier,
@@ -644,8 +894,8 @@ export async function writeLoreOutputs(ctx, options = {}) {
   await backupPreviousLore(ctx.dirs.generatedDir);
 
   const generalFileRecords = fileRecords.filter((record) => (
-    !record.isExcludedFromLore &&
-    record.isGeneralLoreTagged
+    record.isIncludedInLore &&
+    record.effectiveGeneralLoreTagged
   ));
   const generalBundle = {
     summary: sourceBundle.summary,

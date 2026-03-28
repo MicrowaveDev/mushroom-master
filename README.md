@@ -29,6 +29,8 @@ Current lore output status:
 - structured `# Character Profile: ...` source posts are now parsed deterministically into canonical character dossier sections
 - textual lore from source markdown/OCR now has higher priority than character-image descriptions and manifest `visualDetails`
 - character dossiers are generated via separate per-character API calls rather than a single combined request, because a single request produced uneven quality where some characters received detailed descriptions while others were underwritten
+- short excluded OCR title cards can now be deterministically pulled into adjacent routed character context when they behave as header/setup cards rather than true excluded content
+- generated character sections now pass through deterministic post-processing that preserves stable subsection ordering and can restore must-keep named entities from routed source files when generation compresses them away
 - OCR-extracted text is now stored directly in the source message markdown under `## OCR` instead of in separate generated OCR files
 - character data lives in per-character `manifest.json` files only; the redundant `character-index.json` has been removed
 - lore regeneration is skipped when source content has not changed since the last run (content-hash-based check)
@@ -70,7 +72,9 @@ The repo currently implements these workflows:
   - reuses existing OCR/photo artifacts when possible
   - rebuilds `source-routing.json`, including parsed instruction entries
   - parses structured character-profile posts into deterministic dossier data before lore generation
+  - applies deterministic contextual routing for short title-card OCR fragments when they belong to an adjacent routed dossier
   - rebuilds Russian lore markdown, HTML, PDF, and page preview images
+  - runs deterministic lore normalization after generation so stable subsection order and must-keep source names can be restored even if the model output compresses them
 
 - `npm run update-text-message -- --id <messageId> --text "<new text>"`
   - edits a source text message in Telegram by message ID
@@ -252,6 +256,7 @@ Generated data is stored under `data/<channel>/`:
 - Character photo manifests still depend on model-generated vision output, and some figurine images remain visually under-described even with high-detail analysis and structured `visualDetails` support.
 - Structured `visualDetails` are implemented in the pipeline, but current sample figurine images still often come back with `null` visual detail fields.
 - Characters without strong structured text profiles can still end up under-detailed if their relevant source files have not yet been explicitly tagged.
+- Deterministic post-generation preservation is intentionally narrow and may still need rule tuning when it misses an important named entity or restores too much low-value quoted text.
 - The generated PDF is functional, but the renderer still needs additional layout tuning for long lore sections and image-heavy outputs.
 - Page preview images are generated from the print HTML layout via Puppeteer viewport clipping, so they are intended as review proxies for the PDF pages rather than a byte-perfect PDF rasterization.
 - Telegram disconnect can still end with a harmless timeout after work completes.
@@ -263,6 +268,7 @@ Generated data is stored under `data/<channel>/`:
 - Make character assembly more deterministic so aliases, image posts, and profile posts resolve to the same entity without relying mainly on prompt interpretation.
 - Finish tightening split generation so compact general context plus per-character file groups consistently produce rich character dossiers.
 - Expand `#instructions` parsing beyond character order so section-order, emphasis, and omission rules can be applied deterministically.
+- Refine deterministic post-generation preservation so must-keep names are restored with less manual allow/deny tuning and without reintroducing low-value quoted fragments.
 - Improve character-image analysis so face, makeup, eyes, and outfit details are captured more reliably for figurine photos, especially when the current structured `visualDetails` response is empty.
 - Enrich per-character manifests further with stronger deterministic fields and merge rules on top of the current structured visual metadata.
 - Make the HTML/PDF renderer reflect the dossier structure more strongly with a table of contents, better section breaks, and cleaner long-form character layouts.
@@ -278,3 +284,14 @@ Generated data is stored under `data/<channel>/`:
   - OCR repost creation
   - cleanup sync back into Telegram
   - photo preservation in PDF
+
+## Review Guidance
+
+When analyzing a generated lore result:
+
+- first compare the output against the already-tagged source markdown and `generated/source-routing.json`
+- if a named entity, weakness, artifact, hall, relic, exhibit, or short title-card fact is missing, prefer checking deterministic routing / normalization / post-generation preservation before changing prompts
+- after adjusting a deterministic rule, regenerate and verify both:
+  - the missing source-grounded detail now appears
+  - the rule did not overreach by restoring low-value fragments, duplicate names, or names into the wrong subsection
+- only prefer prompt tuning first when the source detail is already present in the routed bundle and the remaining problem is primarily prose quality, density, or section balance

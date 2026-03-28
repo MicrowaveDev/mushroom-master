@@ -11,6 +11,13 @@ When reviewing or improving lore in this repository:
   - `data/<channel>/generated/mushroom-lore.md`
   - `data/<channel>/characters/*/manifest.json`
   - `data/<channel>/generated/page-images/`
+- After reviewing the generated result, explicitly decide whether the issue is best fixed by:
+  - source hashtag routing
+  - deterministic markdown normalization / contextual routing
+  - deterministic post-generation preservation of required names/details
+  - renderer/layout logic
+  - lore generation prompt changes
+- Prefer adjusting deterministic rules when the output drops or misplaces source-grounded named entities, weaknesses, artifacts, locations, or short title-card facts that are already present in the archived markdown.
 
 ## Hashtag Routing Rules
 
@@ -77,12 +84,19 @@ When inspecting the generated lore and page images, prioritize:
 When proposing or applying fixes:
 
 1. Prefer deterministic hashtag routing and markdown normalization before prompt changes.
-2. Prefer deterministic renderer/layout fixes before prompt changes for visual issues.
-3. Prefer source markdown and OCR text over manifest/image-description fields when resolving character content.
-4. Do not add a new OpenAI API review step for page-image inspection; keep that as an agent review workflow.
-5. If you change canonical character image manifests or other generated-only lore inputs without changing source Telegram content, regenerate with `npm run regenerate -- --force` so HTML/PDF/page-images bypass the source-hash cache.
-6. After any forced regeneration, verify freshness before reviewing visuals: confirm `generated/mushroom-lore.html`, `generated/mushroom-lore.pdf`, and the relevant files under `generated/page-images/` have modification times newer than the regeneration start time, then inspect those freshly written files rather than relying on a previously opened viewer snapshot.
-7. If you only need to re-check renderer/layout/style/prompt effects against already archived local inputs, use `npm run regenerate -- --force --skip-download` to skip the Telegram download phase while rebuilding from stored markdown/manifests. That mode should still upload the resulting PDF through the bot/channel delivery path.
+2. Prefer deterministic post-generation preservation rules before prompt changes when the generated markdown drops required names or compresses away short source-grounded entities.
+3. Prefer deterministic renderer/layout fixes before prompt changes for visual issues.
+4. Prefer source markdown and OCR text over manifest/image-description fields when resolving character content.
+5. Do not add a new OpenAI API review step for page-image inspection; keep that as an agent review workflow.
+6. When a deterministic preservation rule is added or adjusted, review the regenerated result for overreach:
+   - accidental insertion of low-value quoted fragments
+   - duplicated names
+   - names restored into the wrong subsection
+   - stylistic bloat that should instead be handled by narrower matching rules
+7. If a deterministic rule restores too much, narrow the matching logic or add explicit allow/deny behavior before weakening the prompt.
+8. If you change canonical character image manifests or other generated-only lore inputs without changing source Telegram content, regenerate with `npm run regenerate -- --force` so HTML/PDF/page-images bypass the source-hash cache.
+9. After any forced regeneration, verify freshness before reviewing visuals: confirm `generated/mushroom-lore.html`, `generated/mushroom-lore.pdf`, and the relevant files under `generated/page-images/` have modification times newer than the regeneration start time, then inspect those freshly written files rather than relying on a previously opened viewer snapshot.
+10. If you only need to re-check renderer/layout/style/prompt effects against already archived local inputs, use `npm run regenerate -- --force --skip-download` to skip the Telegram download phase while rebuilding from stored markdown/manifests. That mode should still upload the resulting PDF through the bot/channel delivery path.
 
 ## Review Outputs
 
@@ -92,4 +106,5 @@ If asked to review the generated result, produce:
 - likely root cause for each issue
 - whether the issue contradicts the source markdown/tags or only the generated/normalized output
 - whether the fix belongs in hashtag routing, deterministic markdown normalization, renderer CSS, or lore generation
+- whether the fix should instead go into deterministic post-generation preservation / must-keep entity handling
 - concise next-step recommendations
