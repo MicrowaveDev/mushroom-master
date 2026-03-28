@@ -1,0 +1,21 @@
+{
+  "name": "telegram-mushroom-archiver",
+  "version": "1.0.0",
+  "description": "Fetch Telegram channel messages, OCR screenshots, repost extracted text, archive markdown, and export mushroom lore PDFs.",
+  "type": "module",
+  "scripts": {
+    "fetch": "node src/index.js",
+    "regenerate": "node src/regenerate-from-telegram.js",
+    "update-text-message": "node src/update-text-message.js",
+    "clean-text-duplicates": "node src/clean-text-duplicates.js",
+    "analyze:lore-prompt": "node src/analyze-lore-prompt.js",
+    "analyze:pdf-structure": "node src/analyze-pdf-structure.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "marked": "^15.0.6",
+    "openai": "^4.104.0",
+    "puppeteer": "^24.7.1",
+    "telegram": "^2.26.22"
+  }
+}
