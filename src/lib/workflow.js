@@ -13,9 +13,11 @@ import {
   fetchChannelMessagesByIds,
   getChannelEntity
 } from './telegram.js';
+import { extractCharacterName } from './character.js';
 import {
   extractHashtags,
   extractMessageSection,
+  extractMessageIdFromMarkdown,
   replaceSection,
   parseTaggedMessageText,
   composeTaggedMessageText,
@@ -30,6 +32,11 @@ import {
 } from './message-processor.js';
 import { writeLoreOutputs } from './lore-builder.js';
 import { loadDeterministicCleanupTargets, computeDeterministicCleanup } from './cleanup.js';
+import {
+  deriveHighestStoredSourceMessageId,
+  readFetchState,
+  writeFetchState
+} from './fetch-state.js';
 
 function parseFloodWaitSeconds(message) {
   const match = String(message || '').match(/wait of (\d+) seconds/i);
@@ -69,16 +76,25 @@ export async function disposeWorkflowContext(ctx) {
 export async function runIncrementalFetch(config = defaultConfig) {
   const ctx = await createWorkflowContext(config);
   try {
+    const fetchState = await readFetchState(ctx.dirs);
+    const highestStoredSourceMessageId = await deriveHighestStoredSourceMessageId(ctx.dirs);
+    const minSourceMessageIdExclusive = Math.max(
+      fetchState.lastSeenSourceMessageId,
+      highestStoredSourceMessageId
+    );
     const messages = await fetchChannelMessages(ctx.telegram, ctx.entity, ctx.config.messageLimit, {
-      minSourceMessageIdExclusive: 0
+      minSourceMessageIdExclusive
     });
-    const removedSourceMessageIds = await reconcileStoredMessages(ctx, messages);
     const processed = await processMessages(ctx, messages, { sendNewScreenshotPosts: true });
+    if (messages.length > 0) {
+      const latestMessageId = Math.max(...messages.map((message) => Number(message.id) || 0));
+      await writeFetchState(ctx.dirs, { lastSeenSourceMessageId: latestMessageId });
+    }
     const outputs = await writeLoreOutputs(ctx, { sendPdf: true });
     return {
       fetchedCount: messages.length,
-      newSourceMessageCount: messages.length,
-      removedSourceMessageIds,
+      newSourceMessageCount: processed.length,
+      removedSourceMessageIds: [],
       processed,
       ...outputs
     };
@@ -89,9 +105,7 @@ export async function runIncrementalFetch(config = defaultConfig) {
 
 export async function runFullRegeneration(config = defaultConfig, options = {}) {
   const skipDownload = options.skipDownload ?? options.skipTelegram ?? false;
-  const ctx = skipDownload
-    ? await createLocalWorkflowContext(config)
-    : await createWorkflowContext(config);
+  const ctx = await createWorkflowContext(config);
   try {
     const messages = skipDownload
       ? []
@@ -104,6 +118,10 @@ export async function runFullRegeneration(config = defaultConfig, options = {}) 
     const processed = skipDownload
       ? []
       : await processMessages(ctx, messages, { sendNewScreenshotPosts: true });
+    if (!skipDownload && messages.length > 0) {
+      const latestMessageId = Math.max(...messages.map((message) => Number(message.id) || 0));
+      await writeFetchState(ctx.dirs, { lastSeenSourceMessageId: latestMessageId });
+    }
     const outputs = await writeLoreOutputs(ctx, {
       sendPdf: options.sendPdf ?? true,
       force: options.force ?? false
@@ -469,6 +487,143 @@ export async function createLorePromptAnalysisReport(config = defaultConfig) {
   } finally {
     await disposeWorkflowContext(ctx);
   }
+}
+
+function summarizeAuditPreview(text, limit = 220) {
+  const normalized = String(text || '')
+    .replace(/\s+/gu, ' ')
+    .trim();
+  if (!normalized) {
+    return '';
+  }
+  if (normalized.length <= limit) {
+    return normalized;
+  }
+  return `${normalized.slice(0, limit - 1).trimEnd()}…`;
+}
+
+function classifyPendingMessageKind({ textSection, ocrSection, photoSection }) {
+  if (textSection && photoSection) {
+    return 'text+photo';
+  }
+  if (textSection) {
+    return 'text';
+  }
+  if (ocrSection && photoSection) {
+    return 'ocr+photo';
+  }
+  if (ocrSection) {
+    return 'ocr';
+  }
+  if (photoSection) {
+    return 'photo';
+  }
+  return 'empty';
+}
+
+export async function createUntaggedRoutingAuditReport(config = defaultConfig) {
+  const dirs = await ensureChannelDirs(slugify(config.channelUsername));
+  const messageFiles = (await fs.readdir(dirs.messagesDir))
+    .filter((name) => name.endsWith('.md'))
+    .sort();
+
+  const records = [];
+  for (const name of messageFiles) {
+    const filePath = path.join(dirs.messagesDir, name);
+    const markdown = await readMarkdown(filePath);
+    const hashtags = extractHashtags(markdown);
+    const textSection = extractMessageSection(markdown, 'Text');
+    const ocrSection = extractMessageSection(markdown, 'OCR');
+    const photoSection = extractMessageSection(markdown, 'Photo');
+    const sourceMessageId = Number(extractMessageIdFromMarkdown(markdown) || 0);
+    const taggedCharacterKeys = hashtags.filter((tag) => tag.startsWith('#character_'));
+    const isExcluded = hashtags.includes('#exclude_lore');
+    const isInstructions = hashtags.includes('#instructions');
+    const isGeneralLore = hashtags.includes('#general_lore');
+    const hasExplicitRouting = isExcluded || isInstructions || isGeneralLore || taggedCharacterKeys.length > 0;
+    const narrative = [textSection, ocrSection].filter(Boolean).join('\n\n').trim();
+
+    records.push({
+      sourceMessageId,
+      filePath,
+      hashtags,
+      hasExplicitRouting,
+      isExcluded,
+      isInstructions,
+      isGeneralLore,
+      taggedCharacterKeys,
+      textSection,
+      ocrSection,
+      photoSection,
+      narrative
+    });
+  }
+
+  const pending = records
+    .filter((record) => !record.hasExplicitRouting)
+    .sort((a, b) => a.sourceMessageId - b.sourceMessageId);
+  const counts = {
+    total: records.length,
+    pending: pending.length,
+    excluded: records.filter((record) => record.isExcluded).length,
+    instructions: records.filter((record) => record.isInstructions).length,
+    generalLore: records.filter((record) => record.isGeneralLore).length,
+    characterTagged: records.filter((record) => record.taggedCharacterKeys.length > 0).length
+  };
+
+  const sections = [
+    '# Untagged Routing Audit',
+    '',
+    `Channel: ${config.channelUsername}`,
+    '',
+    '## Summary',
+    '',
+    `- Total source files: ${counts.total}`,
+    `- Pending untagged files: ${counts.pending}`,
+    `- General lore tagged files: ${counts.generalLore}`,
+    `- Character-tagged files: ${counts.characterTagged}`,
+    `- Instruction files: ${counts.instructions}`,
+    `- Excluded files: ${counts.excluded}`,
+    ''
+  ];
+
+  if (pending.length === 0) {
+    sections.push('## Pending Files', '', 'No untagged source files remain.', '');
+  } else {
+    sections.push(
+      '## Pending Files',
+      '',
+      'Review these first when classifying new archive content:',
+      ''
+    );
+
+    for (const record of pending) {
+      const candidateCharacter = extractCharacterName(record.textSection || record.ocrSection || '');
+      const preview = summarizeAuditPreview(record.narrative);
+      sections.push(`### Message ${record.sourceMessageId || 'unknown'}`);
+      sections.push('');
+      sections.push(`- File: ${record.filePath}`);
+      sections.push(`- Kind: ${classifyPendingMessageKind(record)}`);
+      sections.push(`- Candidate character: ${candidateCharacter || 'none'}`);
+      sections.push(`- Narrative chars: ${record.narrative.length}`);
+      sections.push(`- Suggested review: ${record.narrative.length < 40 ? 'likely fragment or heading' : 'substantive content'}`);
+      if (preview) {
+        sections.push(`- Preview: ${preview}`);
+      }
+      sections.push('');
+    }
+  }
+
+  const reportPath = path.join(dirs.reportsDir, 'untagged-routing-audit.md');
+  await writeMarkdown(reportPath, `${sections.join('\n')}\n`);
+  return {
+    reportPath,
+    counts,
+    pending: pending.map((record) => ({
+      sourceMessageId: record.sourceMessageId,
+      filePath: record.filePath
+    }))
+  };
 }
 
 export async function createPdfStructureAnalysisReport(config = defaultConfig) {

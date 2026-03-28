@@ -488,7 +488,12 @@ export async function collectLoreInputsFromStoredMarkdown(dirs) {
         routedCharacterKeys: record.routedCharacterKeys
       })),
     pending: routedRecords
-      .filter((record) => !record.isExcludedFromLore && !record.isGeneralLoreTagged && record.routedCharacterKeys.length === 0)
+      .filter((record) => (
+        !record.isExcludedFromLore &&
+        !record.isGeneralLoreTagged &&
+        !record.isInstructionsTagged &&
+        record.routedCharacterKeys.length === 0
+      ))
       .map((record) => ({
         sourceMessageId: record.sourceMessageId,
         filePath: record.filePath,
@@ -565,6 +570,14 @@ async function backupPreviousLore(generatedDir) {
   return backupPath;
 }
 
+function resolveLoreTitle(sourceRouting) {
+  const explicitTitle = (sourceRouting.instructions || [])
+    .map((entry) => entry?.parsed?.titleOverride || '')
+    .find(Boolean);
+
+  return explicitTitle || 'Лор мира Золотого Кордицепса';
+}
+
 export async function writeLoreOutputs(ctx, options = {}) {
   const { sendPdf = true, force = false } = options;
   const {
@@ -575,6 +588,7 @@ export async function writeLoreOutputs(ctx, options = {}) {
     fileRecords,
     sourceRouting
   } = await collectLoreInputsFromStoredMarkdown(ctx.dirs);
+  const loreTitle = resolveLoreTitle(sourceRouting);
   const sourceBundle = {
     summary: {
       sourceTextBlockCount: loreSources.length,
@@ -701,7 +715,7 @@ export async function writeLoreOutputs(ctx, options = {}) {
   }
 
   const composedLoreMarkdown = [
-    '# Лор мира Золотого Кордицепса',
+    `# ${loreTitle}`,
     '',
     generalLoreMarkdown.trim(),
     '',
@@ -715,7 +729,7 @@ export async function writeLoreOutputs(ctx, options = {}) {
 
   const { htmlPath, pdfPath, pageImagesDir, manifestPath: pageImagesManifestPath } = await renderMarkdownToHtmlAndPdf(
     finalLoreMarkdown,
-    'Грибной лор',
+    loreTitle,
     ctx.dirs.generatedDir
   );
 

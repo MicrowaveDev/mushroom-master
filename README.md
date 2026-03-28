@@ -46,22 +46,22 @@ Current lore output status:
 The repo currently implements these workflows:
 
 - `npm run fetch`
-  - incremental processing
-  - reads the channel from Telegram
+  - incremental new-message processing
+  - reads only source messages newer than the last archived source message
   - skips generated PDF lore posts and other generated repost content
-  - reconciles local source markdown against current Telegram state
   - skips already-processed screenshots
   - OCRs new screenshots
   - classifies image posts as `screenshot` or `photo`
   - posts new OCR text to the channel through the Telegram Bot API
   - preserves photo assets and includes them in local markdown
-  - writes character manifests and a channel-level character index JSON when character-linked image/text posts are present
+  - writes character manifests when character-linked image/text posts are present
   - reads `#instructions` source messages and carries them into the lore-generation request bundles
   - applies deterministic character ordering from instruction text like `Порядок персонажей: ...`
   - regenerates Russian `mushroom-lore.md`, `mushroom-lore.html`, and `mushroom-lore.pdf`
   - renders per-page preview images for the generated PDF under `generated/page-images/`
   - writes a page-image manifest for downstream review workflows
   - optionally posts the generated PDF back to the channel
+  - does not reconcile deletions or edits to older Telegram source posts; use `npm run regenerate` for a full sync pass
 
 - `npm run regenerate`
   - full local regeneration from Telegram state
@@ -96,9 +96,8 @@ The repo currently implements these workflows:
   - writes a cleanup report
 
 - `npm run backfill-posted-message-ids`
-  - scans the channel for live OCR reposts
-  - repairs local `Posted message ID` metadata using exact `#<source-id>` header matching
-  - writes a backfill report
+  - legacy compatibility command
+  - separate OCR repost metadata is no longer stored, so the command currently writes a no-op report only
 
 - `npm run rebuild-ocr-reposts`
   - deletes the current live OCR repost set from the channel
@@ -116,6 +115,11 @@ The repo currently implements these workflows:
   - reviews source message markdown plus rendered page screenshots from `generated/page-images/`
   - includes a reusable `Review Instructions` checklist for future agent review passes
   - should be used to improve section hierarchy and presentation of the current Russian dossier output
+
+- `npm run audit:untagged`
+  - generates a deterministic report of source files that still lack explicit routing hashtags
+  - highlights likely fragments vs substantive files and shows a short preview for faster agent tagging passes
+  - should be used before lore review to reduce heuristic fallback and make routing authoritative
 
 ## Channel Content Rules
 
@@ -199,6 +203,7 @@ npm run rebuild-ocr-reposts
 npm run clean-text-duplicates
 npm run analyze:lore-prompt
 npm run analyze:pdf-structure
+npm run audit:untagged
 ```
 
 ## Output Layout
@@ -234,10 +239,12 @@ Generated data is stored under `data/<channel>/`:
   - OCR rebuild report
   - lore prompt analysis report
   - PDF structure analysis report
+  - untagged routing audit report
 
 ## Current Limitations
 
 - Hashtag-driven routing is now the intended source of truth, but older untagged archives can still fall back to heuristic routing until an agent classifies them.
+- `npm run fetch` is now optimized for new-message ingestion; if older Telegram posts were edited or deleted, run `npm run regenerate` to reconcile the archive.
 - `#instructions` currently supports deterministic character ordering, but broader instruction types still need explicit parsing rules before they can be relied on.
 - Deterministic duplicate cleanup is currently heuristic-based and can be aggressive when a message is only a partial duplicate of a fuller one.
 - Character grouping is improving, but remains mixed while the archive transitions from heuristic routing to explicit agent-applied hashtags.

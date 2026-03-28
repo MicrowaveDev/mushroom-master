@@ -14,7 +14,9 @@
     "rebuild-ocr-reposts": "node src/rebuild-ocr-reposts.js",
     "clean-text-duplicates": "node src/clean-text-duplicates.js",
     "analyze:lore-prompt": "node src/analyze-lore-prompt.js",
-    "analyze:pdf-structure": "node src/analyze-pdf-structure.js"
+    "analyze:pdf-structure": "node src/analyze-pdf-structure.js",
+    "audit:untagged": "node src/audit-untagged-routing.js",
+    "test": "node --test"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
