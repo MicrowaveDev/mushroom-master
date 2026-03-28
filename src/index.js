@@ -4,6 +4,8 @@ runIncrementalFetch().then((result) => {
   process.stdout.write(
     [
       `Fetched ${result.fetchedCount} messages from the channel.`,
+      `New source messages: ${result.newSourceMessageCount}`,
+      `Removed local source records: ${result.removedSourceMessageIds.length}`,
       `Lore markdown: ${result.lorePath}`,
       `Lore HTML: ${result.htmlPath}`,
       `Lore PDF: ${result.pdfPath}`,

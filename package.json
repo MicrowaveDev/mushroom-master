@@ -7,6 +7,11 @@
     "fetch": "node src/index.js",
     "regenerate": "node src/regenerate-from-telegram.js",
     "update-text-message": "node src/update-text-message.js",
+    "set-message-hashtags": "node src/set-message-hashtags.js",
+    "set-ocr-hashtags": "node src/set-ocr-hashtags.js",
+    "clear-message-hashtags": "node src/clear-message-hashtags.js",
+    "backfill-posted-message-ids": "node src/backfill-posted-message-ids.js",
+    "rebuild-ocr-reposts": "node src/rebuild-ocr-reposts.js",
     "clean-text-duplicates": "node src/clean-text-duplicates.js",
     "analyze:lore-prompt": "node src/analyze-lore-prompt.js",
     "analyze:pdf-structure": "node src/analyze-pdf-structure.js"

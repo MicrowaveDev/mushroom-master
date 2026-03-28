@@ -16,6 +16,7 @@ export async function ensureChannelDirs(channelSlug) {
     baseDir,
     messagesDir: path.join(baseDir, 'messages'),
     assetsDir: path.join(baseDir, 'assets'),
+    charactersDir: path.join(baseDir, 'characters'),
     generatedDir: path.join(baseDir, 'generated'),
     reportsDir: path.join(baseDir, 'generated', 'reports')
   };

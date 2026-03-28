@@ -37,6 +37,14 @@ async function callBotApi(botToken, method, body) {
   });
 
   const payload = await response.json();
+  const retryAfter = Number(payload?.parameters?.retry_after || parseRetryAfterSeconds(payload?.description));
+  if (retryAfter > 0) {
+    await sleep((retryAfter + 1) * 1000);
+    return callBotApi(botToken, method, body);
+  }
+  if (method === 'editMessageText' && payload?.description?.includes('message is not modified')) {
+    return { message_id: Number(body.get('message_id')) };
+  }
   if (!response.ok || !payload.ok) {
     throw new Error(`Telegram Bot API ${method} failed: ${payload.description || response.statusText}`);
   }
@@ -50,6 +58,40 @@ export async function sendTextViaBot({ botToken, chatTarget, text }) {
   formData.set('text', text);
 
   return callBotApi(botToken, 'sendMessage', formData);
+}
+
+export async function editTextViaBot({ botToken, chatTarget, messageId, text }) {
+  const formData = new FormData();
+  formData.set('chat_id', normalizeBotChatId(chatTarget));
+  formData.set('message_id', String(messageId));
+  formData.set('text', text);
+
+  return callBotApi(botToken, 'editMessageText', formData);
+}
+
+export async function deleteMessageViaBot({ botToken, chatTarget, messageId }) {
+  const formData = new FormData();
+  formData.set('chat_id', normalizeBotChatId(chatTarget));
+  formData.set('message_id', String(messageId));
+
+  try {
+    const result = await callBotApi(botToken, 'deleteMessage', formData);
+    return Boolean(result);
+  } catch (error) {
+    if (String(error.message || '').includes('message to delete not found')) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+function parseRetryAfterSeconds(message) {
+  const match = String(message || '').match(/retry after (\d+)/i);
+  return match ? Number(match[1]) : 0;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function sendPdfViaBot({

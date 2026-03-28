@@ -145,7 +145,10 @@ export async function editChannelMessageText(client, entity, messageId, text) {
 function isGeneratedRepost(message) {
   const text = String(message?.message || '').trim();
   const mimeType = String(message?.file?.mimeType || '').toLowerCase();
-  return /^#\d+\b/.test(text) || mimeType === 'application/pdf' || text.includes('Mushroom lore digest');
+  return /^#\d+\b/.test(text) ||
+    mimeType === 'application/pdf' ||
+    text.includes('Mushroom lore digest') ||
+    text.includes('Грибной лор');
 }
 
 async function findDialogByTitle(client, title) {

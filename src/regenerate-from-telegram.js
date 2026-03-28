@@ -4,6 +4,7 @@ runFullRegeneration().then((result) => {
   process.stdout.write(
     [
       `Regenerated ${result.fetchedCount} source messages from Telegram.`,
+      `Removed local source records: ${result.removedSourceMessageIds.length}`,
       `Lore markdown: ${result.lorePath}`,
       `Lore HTML: ${result.htmlPath}`,
       `Lore PDF: ${result.pdfPath}`,
