@@ -21,7 +21,7 @@ function applyCharacterIntroLayout(bodyHtml) {
     /<h3>([^<]+)<\/h3>\s*<p>(<img[^>]+>)<\/p>\s*(?:<h4>Обзор<\/h4>\s*(<p>[\s\S]*?<\/p>))?/g,
     (_match, name, imageTag, overviewParagraph = '') => {
       const overviewBlock = overviewParagraph
-        ? `<h4>Обзор</h4>${overviewParagraph}`
+        ? overviewParagraph
         : '';
 
       return [
@@ -50,7 +50,12 @@ function applyCharacterIntroLayout(bodyHtml) {
     })
     .join('<hr>');
 
-  return `${before}${wrapped}`;
+  const cleaned = wrapped.replace(
+    /(<section class="character-intro">[\s\S]*?<div class="character-intro-copy">[\s\S]*?)<h4>Обзор<\/h4>\s*/g,
+    '$1'
+  );
+
+  return `${before}${cleaned}`;
 }
 
 function buildHtml(title, bodyHtml) {
@@ -136,6 +141,7 @@ function buildHtml(title, bodyHtml) {
       }
       .character-dossier {
         padding: 0.4rem 0 0.8rem;
+        background: transparent;
       }
       .character-dossier .character-intro {
         margin-top: 0;
@@ -147,6 +153,7 @@ function buildHtml(title, bodyHtml) {
       }
       .character-intro-media {
         max-width: 100%;
+        background: transparent;
       }
       .character-intro-media img {
         width: 100%;
@@ -161,6 +168,7 @@ function buildHtml(title, bodyHtml) {
       }
       .character-intro-copy {
         min-width: 0;
+        background: transparent;
       }
       .character-intro-copy h3 {
         margin-top: 0.2rem;
@@ -199,10 +207,13 @@ function buildHtml(title, bodyHtml) {
       @media print {
         body {
           padding: 0;
+          background: var(--paper);
         }
         main {
-          border-radius: 16px;
+          border-radius: 0;
           box-shadow: none;
+          border: none;
+          padding-bottom: 0;
         }
         h2 {
           page-break-after: avoid;
@@ -231,10 +242,23 @@ function buildHtml(title, bodyHtml) {
         .character-intro {
           break-inside: avoid;
           page-break-inside: avoid;
+          background: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
         }
         .character-dossier {
           break-inside: auto;
           page-break-inside: auto;
+          background: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        .character-dossier *,
+        .character-intro-media,
+        .character-intro-copy {
+          background: transparent !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
         }
         .character-intro.is-portrait {
           display: flex;
@@ -364,15 +388,35 @@ async function renderPageImages(page, outputDir) {
   return { pageImagesDir, manifestPath, images };
 }
 
+function buildLoreArtifactTimestamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+async function pruneOldVersionedArtifacts(outputDir, extension, keep = 10) {
+  const entries = await fs.readdir(outputDir);
+  const matches = entries
+    .filter((name) => name.startsWith('mushroom-lore-') && name.endsWith(extension))
+    .sort()
+    .reverse();
+
+  for (const name of matches.slice(keep)) {
+    await fs.unlink(path.join(outputDir, name));
+  }
+}
+
 export async function renderMarkdownToHtmlAndPdf(markdown, title, outputDir) {
   const bodyHtml = applyCharacterIntroLayout(
     await inlineLocalImages(marked.parse(markdown), outputDir)
   );
   const html = buildHtml(title, bodyHtml);
-  const htmlPath = path.join(outputDir, 'mushroom-lore.html');
-  const pdfPath = path.join(outputDir, 'mushroom-lore.pdf');
+  const timestamp = buildLoreArtifactTimestamp();
+  const htmlPath = path.join(outputDir, `mushroom-lore-${timestamp}.html`);
+  const pdfPath = path.join(outputDir, `mushroom-lore-${timestamp}.pdf`);
+  const latestHtmlPath = path.join(outputDir, 'mushroom-lore.html');
+  const latestPdfPath = path.join(outputDir, 'mushroom-lore.pdf');
 
   await fs.writeFile(htmlPath, html, 'utf8');
+  await fs.writeFile(latestHtmlPath, html, 'utf8');
 
   const browser = await puppeteer.launch({ headless: true });
   try {
@@ -384,7 +428,10 @@ export async function renderMarkdownToHtmlAndPdf(markdown, title, outputDir) {
       format: 'A4',
       printBackground: true
     });
-    return { htmlPath, pdfPath, ...pageImageResult };
+    await fs.copyFile(pdfPath, latestPdfPath);
+    await pruneOldVersionedArtifacts(outputDir, '.html');
+    await pruneOldVersionedArtifacts(outputDir, '.pdf');
+    return { htmlPath, pdfPath, latestHtmlPath, latestPdfPath, ...pageImageResult };
   } finally {
     await browser.close();
   }

@@ -28,6 +28,11 @@ Current lore output status:
 - character-image posts can now be recognized from message text and written into character manifests with JSON pointers to archived assets
 - structured `# Character Profile: ...` source posts are now parsed deterministically into canonical character dossier sections
 - textual lore from source markdown/OCR now has higher priority than character-image descriptions and manifest `visualDetails`
+- character dossiers are generated via separate per-character API calls rather than a single combined request, because a single request produced uneven quality where some characters received detailed descriptions while others were underwritten
+- OCR-extracted text is now stored directly in the source message markdown under `## OCR` instead of in separate generated OCR files
+- character data lives in per-character `manifest.json` files only; the redundant `character-index.json` has been removed
+- lore regeneration is skipped when source content has not changed since the last run (content-hash-based check)
+- previous lore output is backed up automatically before regeneration (up to 5 backups kept under `generated/backups/`)
 - archived source markdown can now store routing tags under `## Hashtags`
 - Telegram source messages can now be tagged through a script, and those tags are mirrored into archived markdown
 - `#instructions` source messages are now collected into generation bundles and can deterministically control character order
@@ -202,15 +207,15 @@ Generated data is stored under `data/<channel>/`:
 
 - `messages/`
   - per-source-message markdown
-  - may include a `## Hashtags` section used as lore-routing metadata
+  - may include `## Hashtags` for lore-routing metadata
+  - may include `## OCR` with extracted screenshot text (embedded directly, no separate OCR files)
 - `assets/`
   - downloaded screenshot and photo assets
 - `characters/`
   - one folder per detected character/entity
   - `manifest.json` with image pointers, source-message references, `completenessTier`, and structured profile data when available
+  - this is the single source of truth for character data
 - `generated/`
-  - OCR repost markdown
-  - `character-index.json`
   - `source-routing.json`
     - records parsed `#instructions` entries
     - records general-lore files, character-routed files, and pending unclassified files
@@ -219,12 +224,13 @@ Generated data is stored under `data/<channel>/`:
   - `mushroom-lore.md`
   - `mushroom-lore.html`
   - `mushroom-lore.pdf`
+  - `.source-hash` — content hash of source inputs; regeneration is skipped when unchanged
+  - `backups/` — automatic backups of previous lore output before regeneration (up to 5 kept)
   - `page-images/`
     - one PNG per rendered PDF page
     - `manifest.json` with page ordering and filenames for review tooling
 - `generated/reports/`
   - duplicate cleanup report
-  - posted message ID backfill report
   - OCR rebuild report
   - lore prompt analysis report
   - PDF structure analysis report
@@ -234,8 +240,6 @@ Generated data is stored under `data/<channel>/`:
 - Hashtag-driven routing is now the intended source of truth, but older untagged archives can still fall back to heuristic routing until an agent classifies them.
 - `#instructions` currently supports deterministic character ordering, but broader instruction types still need explicit parsing rules before they can be relied on.
 - Deterministic duplicate cleanup is currently heuristic-based and can be aggressive when a message is only a partial duplicate of a fuller one.
-- The visible OCR repost sequence in Telegram is only guaranteed to match source order after running `npm run rebuild-ocr-reposts`; normal cleanup edits/deletes in place and does not reorder existing channel posts.
-- Some source screenshot IDs may intentionally have no live `#<id>` repost after cleanup if their cleaned OCR text is empty.
 - Character grouping is improving, but remains mixed while the archive transitions from heuristic routing to explicit agent-applied hashtags.
 - Structured character-profile extraction is now deterministic, but broader character assembly is still mixed: rich single-profile characters work better than characters assembled from many lore fragments.
 - Character photo manifests still depend on model-generated vision output, and some figurine images remain visually under-described even with high-detail analysis and structured `visualDetails` support.

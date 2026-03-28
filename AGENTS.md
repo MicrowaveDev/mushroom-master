@@ -80,6 +80,9 @@ When proposing or applying fixes:
 2. Prefer deterministic renderer/layout fixes before prompt changes for visual issues.
 3. Prefer source markdown and OCR text over manifest/image-description fields when resolving character content.
 4. Do not add a new OpenAI API review step for page-image inspection; keep that as an agent review workflow.
+5. If you change canonical character image manifests or other generated-only lore inputs without changing source Telegram content, regenerate with `npm run regenerate -- --force` so HTML/PDF/page-images bypass the source-hash cache.
+6. After any forced regeneration, verify freshness before reviewing visuals: confirm `generated/mushroom-lore.html`, `generated/mushroom-lore.pdf`, and the relevant files under `generated/page-images/` have modification times newer than the regeneration start time, then inspect those freshly written files rather than relying on a previously opened viewer snapshot.
+7. If you only need to re-check renderer/layout/style/prompt effects against already archived local inputs, use `npm run regenerate -- --force --skip-download` to skip the Telegram download phase while rebuilding from stored markdown/manifests. That mode should still upload the resulting PDF through the bot/channel delivery path.
 
 ## Review Outputs
 
