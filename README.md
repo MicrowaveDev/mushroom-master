@@ -42,7 +42,7 @@ Current lore output status:
 - the current generated structure is:
   - `General Lore`
   - one section per character or major entity
-  - supporting subsections such as overview, appearance, abilities/traits, motives/role, and relationships/story hooks when supported by the source material
+  - supporting subsections such as overview, appearance, abilities/traits, residence/domain (`Обитель и владения`), motives/role, and relationships/story hooks when supported by the source material
   - character images placed at the start of each character section
 
 The repo currently implements these workflows:
