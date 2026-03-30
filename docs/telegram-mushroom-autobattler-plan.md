@@ -906,10 +906,10 @@ Recommended implementation:
 
 Recommended stack:
 
-- React + TypeScript single-page app
+- Vue + JavaScript single-page app
 - Telegram Mini App SDK or direct `window.Telegram.WebApp` integration
 - lightweight animation using CSS transforms and SVG effects
-- React Query for network state
+- a lightweight fetch/state layer appropriate for Vue
 - small global store for battle playback state and session UI
 - responsive layout tuned for Telegram mobile first
 - light pastel mushroom theme by default
@@ -1531,6 +1531,7 @@ Recommended core tables:
 - `player_mushrooms`
 - `player_active_character`
 - `player_artifact_loadouts`
+- `player_artifact_loadout_items`
 - `friendships`
 - `friend_codes`
 - `battle_requests`
@@ -1546,9 +1547,71 @@ Recommended core tables:
 Table intent notes:
 
 - `sessions` is the shared authenticated app-session store used by every login provider or entry pattern.
+- `player_artifact_loadouts` stores the saved container-level build record for a player.
+- `player_artifact_loadout_items` stores the artifact placements that make up that saved build.
 - `battle_snapshots` stores the server-authored immutable combat snapshot for each side at battle creation time so old replays remain reproducible even if player loadouts later change.
 - `wiki_entry_index` stores only derived lookup metadata or cached render data if needed; canonical wiki content still lives in structured markdown files in the repo.
 - if repo-file reads are fast enough, `wiki_entry_index` can be omitted entirely in the first implementation.
+
+Artifact-loadout storage model:
+
+- store the build as artifact placements, not as 16 persisted grid cells
+- treat artifact placements as the canonical saved loadout state
+- derive occupancy, validation, and stat totals from those placements plus canonical artifact definitions
+- do not treat computed combat totals as the source of truth in the database
+
+Recommended relational shape:
+
+- `player_artifact_loadouts`
+  - `id`
+  - `player_id`
+  - `mushroom_id`
+  - `grid_width`
+  - `grid_height`
+  - `is_active`
+  - `created_at`
+  - `updated_at`
+- `player_artifact_loadout_items`
+  - `id`
+  - `loadout_id`
+  - `artifact_id`
+  - `x`
+  - `y`
+  - `width`
+  - `height`
+  - `sort_order`
+
+Validation rules for saved loadouts:
+
+- exactly `3` artifacts must be stored for a valid v1 loadout
+- duplicate artifacts are not allowed
+- all placements must remain within the `4x4` grid bounds
+- placements must not overlap
+- stored `width` and `height` must match the canonical artifact definition used by the game data
+
+Persistence example:
+
+```json
+{
+  "loadout": {
+    "playerId": "player_42",
+    "mushroomId": "thalla",
+    "gridWidth": 4,
+    "gridHeight": 4,
+    "isActive": true
+  },
+  "items": [
+    { "artifactId": "spore_needle", "x": 0, "y": 0, "width": 1, "height": 1 },
+    { "artifactId": "root_shell", "x": 1, "y": 0, "width": 2, "height": 2 },
+    { "artifactId": "shock_puff", "x": 3, "y": 1, "width": 1, "height": 1 }
+  ]
+}
+```
+
+Implementation note:
+
+- compute total damage, armor, speed, and stun modifiers from canonical artifact data at battle snapshot time
+- if cached totals are added later for convenience, they must remain derived data rather than the canonical saved build
 
 Auth-code storage notes:
 
@@ -2302,8 +2365,8 @@ Mitigation:
 
 ## Recommended Technical Defaults
 
-- Frontend: React + TypeScript SPA
-- Backend: Node.js + TypeScript HTTP service in the existing repo
+- Frontend: Vue + JavaScript SPA
+- Backend: Node.js + JavaScript HTTP service in the existing repo
 - Database: PostgreSQL
 - Auth: Telegram Mini App `initData` validation on every session bootstrap
 - Match type: async PvP first
