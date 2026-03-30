@@ -1,5 +1,142 @@
 # Repository Instructions
 
+Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for renderer and future UI styling guidance. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
+
+## Planning, Delegation, and Validation Rules
+
+### Source of Truth
+
+- The user's original request is the primary specification.
+- Treat the user's wording as potentially precise; do not silently simplify, broaden, or reinterpret it.
+- If the user specifies sequencing, authorship, ownership, inputs, outputs, or validation steps, treat those as architectural constraints, not optional implementation details.
+- For non-trivial or multi-stage work, freeze the source of truth before implementation:
+  - original request
+  - explicit acceptance criteria
+  - explicit constraints
+  - non-goals
+  - open assumptions
+- Keep these categories visibly separate:
+  - user requirements
+  - agent assumptions
+  - implementation choices
+- Agent assumptions and implementation choices must never silently override user requirements.
+
+### Planning Rules
+
+- When the user asks for a plan, begin with a short Source of truth section.
+- That section must include:
+  - the original request
+  - a changelog-style list of stated criteria and constraints
+  - success conditions
+  - any open ambiguity that still affects execution
+- Before coding from a plan, review the implementation steps and identify which are independent and safe to execute in parallel.
+- Do not parallelize steps that:
+  - depend on ordered results
+  - touch overlapping files
+  - modify shared state
+  - rely on the output of an earlier unfinished step
+- If reviewing a plan or implementation against a plan, evaluate alignment against the original user request first.
+- Explicitly call out:
+  - omissions
+  - drift
+  - unsupported additions
+  - assumption creep
+  - unresolved ambiguity
+- After implementation, update the plan step-by-step with:
+  - completed, partial, or blocked
+  - what was done
+  - which files/modules/repos were touched
+
+### Delegated Agent Rules
+
+- Use sub-agents only for clearly bounded work.
+- For each delegated agent, define:
+  - what it may read
+  - what it may write
+  - what it must not edit
+  - the exact completion condition
+- Prefer one responsible agent per stage when the workflow has distinct stages such as:
+  - authorship
+  - evidence collection
+  - review
+  - translation
+  - validation
+  - sign-off
+- Do not let one agent opportunistically edit every artifact across stages.
+- Keep write scopes disjoint whenever possible.
+- If multiple agents are active, make ownership explicit by folder, file set, or artifact type.
+- If a stage produces inputs for another stage, validate the first stage before handing it off.
+- If an agent returns partial, scaffolded, or instruction-leaking output, the same responsible stage should fix it before handoff.
+
+### Parallel Work Rules
+
+- Treat multi-agent parallel work as normal, but keep scope narrow and explicit.
+- Prefer parallelization only for independent tasks with disjoint write scopes.
+- Prefer one aggregated search or one parallel batch over repeated serial probing.
+- Before more than two exploratory commands for the same question, stop and collapse the work into:
+  - one aggregated search, or
+  - one parallel read-only batch
+- Do not run broad formatting, repo-wide rewrites, mass refreshes, or metadata churn when another agent may be active in the same area.
+- Prefer finishing one folder, one module cluster, or one document cluster at a time instead of mixing unrelated work in a single batch.
+
+### Validation Rules
+
+- Validate after each meaningful stage, not only at the end.
+- Do not translate, publish, merge, or sign off from an unvalidated intermediate artifact when a cheap validation step exists.
+- Prefer executable validation over advisory wording.
+- If validation fails, make the smallest targeted fix and rerun validation.
+- Do not rewrite unrelated content when a narrow repair is enough.
+- Do not report completion unless:
+  - required artifacts exist
+  - validation passed
+  - the claimed completion state matches the actual files on disk
+
+### Review and Reporting Rules
+
+- Before summarizing implementation, inspect the current contents of the affected files or docs.
+- Do not infer final behavior from issue titles, filenames, commit messages, or diff size alone.
+- For reviews, plans, and decision docs, lead with:
+  - capabilities
+  - workflows
+  - modules
+  - routes
+  - commands
+  - tests
+  - architecture decisions
+- Do not lead with "top changed files" unless the files themselves are the real implementation surface.
+- Before handoff, do a final alignment pass against the original request and explicitly call out:
+  - remaining drift
+  - unsupported additions
+  - open assumptions
+  - partial completion
+
+### Authored vs Generated Content
+
+- Distinguish clearly between generated evidence and authored outputs.
+- Generated evidence may be refreshed.
+- Authored outputs must be preserved unless the user asked to rewrite them.
+- If an authored file still contains stale generated scaffolding, replace the scaffolding rather than editing around it.
+- Final authored artifacts must read like finished human-grade deliverables, not like templates or agent scratchpads.
+- Do not leave TODO markers, instruction text, or template guidance in final output.
+
+### Design and Workflow Precision
+
+- If the request describes how a design or workflow should be produced, preserve that process in the implementation.
+- When a request contains words like first, after, from, using, based on, through, or instead of, treat them as possible sequencing constraints.
+- For workflow-heavy work, make key states and transitions explicit.
+- For UI or workflow changes, define the important screens, states, and user-visible transitions before calling the work complete.
+- When practical, capture proof of those states with tests, screenshots, or structured verification artifacts.
+
+### General Agent Effectiveness Rules
+
+- Prefer current workspace inspection over historical reconstruction.
+- Prefer helper scripts and existing project commands over rebuilding workflows manually.
+- Prefer one good search over many narrow probes.
+- Keep edits local, intentional, and easy to review.
+- Avoid hidden assumptions; state them briefly when they matter.
+- Separate evidence gathering, implementation, validation, and reporting mentally even if one agent performs multiple stages.
+- After planned implementation, always perform a self-review before reporting completion.
+
 ## Source Review Workflow
 
 When reviewing or improving lore in this repository:
@@ -97,6 +234,88 @@ When proposing or applying fixes:
 8. If you change canonical character image manifests or other generated-only lore inputs without changing source Telegram content, regenerate with `npm run regenerate -- --force` so HTML/PDF/page-images bypass the source-hash cache.
 9. After any forced regeneration, verify freshness before reviewing visuals: confirm `generated/mushroom-lore.html`, `generated/mushroom-lore.pdf`, and the relevant files under `generated/page-images/` have modification times newer than the regeneration start time, then inspect those freshly written files rather than relying on a previously opened viewer snapshot.
 10. If you only need to re-check renderer/layout/style/prompt effects against already archived local inputs, use `npm run regenerate -- --force --skip-download` to skip the Telegram download phase while rebuilding from stored markdown/manifests. That mode should still upload the resulting PDF through the bot/channel delivery path.
+
+## Renderer Design Rules
+
+When changing the HTML/PDF renderer or reviewing visual output, treat this repository as having one primary UI surface: a printable lore dossier that is also inspected through `generated/page-images/`.
+
+Adapt design decisions to this repo, not to app-style dashboards from other projects:
+
+- prefer document layout, reading flow, and print stability over interactive-app patterns
+- do not introduce admin-panel, cabinet-tab, settings-strip, or segmented-control UI metaphors unless the repo later adds an actual app surface that needs them
+- optimize first for A4 PDF output and page-image review, then verify the browser/mobile fallback remains readable
+
+### Core Principle: Readable Print Density
+
+- Keep content dense enough for a dossier, but never cramped.
+- Preserve generous whitespace around section starts, character intros, and images so page flow stays legible in screenshots.
+- Avoid decorative wrappers that consume space without improving structure.
+- Use visual emphasis to clarify hierarchy, not to simulate an app UI.
+
+### Layout Hierarchy
+
+Prefer this document hierarchy:
+
+1. Title and short opening context.
+2. Major section headings such as general lore and characters.
+3. Character dossier blocks with intro image plus overview text.
+4. Supporting subsections and body prose.
+
+Rules:
+
+- keep the hierarchy shallow and obvious in both markdown and rendered HTML
+- do not nest multiple framed containers inside each other
+- reserve the strongest visual treatment for the page body, major headings, and character intro blocks
+- use separators, spacing, and heading scale to show structure before adding new boxes, fills, or ornaments
+
+### Character Intro and Image Rules
+
+- Treat the character intro block as the key layout unit for character sections.
+- Keep the canonical manifest image attached to the correct character overview text.
+- Prefer stable side-by-side portrait handling and stacked fallback for wider images or narrow viewports.
+- Avoid image treatments that overpower the text or create large dead zones on the page.
+- If image sizing or placement breaks page flow, prefer renderer/layout fixes before prompt changes.
+
+### Spacing and Density
+
+- Prefer consistent vertical rhythm over local one-off tweaks.
+- Heading spacing should make section boundaries obvious without wasting half a page.
+- Images, `hr` separators, and intro blocks should have enough margin to prevent collisions with nearby headings and paragraphs.
+- Avoid oversized empty regions, especially after headings, around images, and near page bottoms.
+
+### Color, Typography, and Ornamentation
+
+- Preserve the established warm parchment/mushroom visual language in [`src/lib/render.js`](/Users/microwavedev/workspace/mushroom-master/src/lib/render.js).
+- For future mushroom UI work in this repository, prefer a light pastel palette direction: soft creams, moss-tinted off-whites, muted sage, pale amber, dusty peach, and other gentle natural tones.
+- Avoid dark-theme defaults for new UI direction unless a specific screen or review task explicitly requires them.
+- Reuse the existing renderer CSS variables when adjusting palette values instead of scattering unrelated hardcoded colors.
+- Typography should feel like a dossier or field guide: readable, calm, and print-friendly.
+- Decorative ornaments and patterns should remain secondary. If an ornament competes with text, reduce or remove it.
+- Use stronger accent treatment on headings and key dividers, not across large body-text regions.
+
+### Print and Page-Break Rules
+
+- Treat print CSS as first-class behavior, not a final polish pass.
+- Avoid orphaned headings, detached subsection labels, and image/text splits that break a character intro across pages awkwardly.
+- Prefer `break-inside`, `break-before`, `break-after`, widow, and orphan controls over brittle content hacks.
+- When a page-flow problem is visible in screenshots, confirm it in the generated HTML/PDF pair and fix the renderer deterministically where possible.
+
+### Responsive and Review Expectations
+
+- Even though PDF output is primary, keep the HTML readable at narrow widths so local browser inspection remains useful.
+- Preserve the existing mobile fallback behavior for character intro blocks unless there is a clear improvement.
+- After renderer changes, review the regenerated `page-images/` output for:
+  - section hierarchy and page flow
+  - whitespace balance
+  - image sizing and placement
+  - heading attachment to the correct content
+  - visual regressions caused by print-only CSS
+
+### What Not To Import From Other Repos
+
+- Do not copy app-specific SCSS conventions, design tokens, or component assumptions from another repository without checking that this repo actually uses them.
+- Do not reference missing files such as another repo's shared variablesheets or layout systems in new instructions.
+- If reusing outside guidance, translate it into repo-native terms: markdown structure, renderer CSS, Puppeteer print behavior, generated HTML/PDF artifacts, and page-image review.
 
 ## Review Outputs
 

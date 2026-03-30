@@ -8,6 +8,35 @@ const A4_VIEWPORT = {
   height: 1123
 };
 
+function toDataUrl(svg) {
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    svg.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim()
+  )}`;
+}
+
+function buildSporePatternSvg() {
+  return toDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+      <g fill="none" stroke="rgba(123, 75, 42, 0.11)">
+        <circle cx="32" cy="38" r="7"/>
+        <circle cx="96" cy="30" r="4"/>
+        <circle cx="142" cy="70" r="9"/>
+        <circle cx="56" cy="112" r="5"/>
+        <circle cx="118" cy="126" r="6"/>
+        <circle cx="150" cy="146" r="4"/>
+      </g>
+      <g fill="rgba(157, 119, 80, 0.12)">
+        <circle cx="26" cy="92" r="2"/>
+        <circle cx="78" cy="60" r="2"/>
+        <circle cx="90" cy="150" r="2"/>
+        <circle cx="162" cy="28" r="2"/>
+      </g>
+      <path d="M18 150c22-12 41-30 57-56" stroke="rgba(123, 75, 42, 0.08)" stroke-linecap="round"/>
+      <path d="M102 90c17 12 34 20 58 23" stroke="rgba(123, 75, 42, 0.07)" stroke-linecap="round"/>
+    </svg>
+  `);
+}
+
 function applyCharacterIntroLayout(bodyHtml) {
   const charactersHeading = '<h2>Персонажи</h2>';
   const start = bodyHtml.indexOf(charactersHeading);
@@ -58,7 +87,9 @@ function applyCharacterIntroLayout(bodyHtml) {
   return `${before}${cleaned}`;
 }
 
-function buildHtml(title, bodyHtml) {
+function buildHtml(title, bodyHtml, ornaments) {
+  const sporePattern = buildSporePatternSvg();
+
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -74,25 +105,79 @@ function buildHtml(title, bodyHtml) {
         --muted: #6d5f4b;
         --accent: #7b4b2a;
         --border: rgba(70, 45, 18, 0.18);
+        --spore-pattern: url("${sporePattern}");
+        --ornament-top-right: url("${ornaments.topRight}");
+        --ornament-bottom-left: url("${ornaments.bottomLeft}");
+        --ornament-right-spray: url("${ornaments.rightSpray}");
+        --ornament-watermark: url("${ornaments.watermark}");
       }
       * { box-sizing: border-box; }
       body {
+        position: relative;
         margin: 0;
         padding: 18px;
         background:
+          var(--spore-pattern) 0 0 / 180px 180px repeat,
           radial-gradient(circle at top, rgba(145, 105, 66, 0.18), transparent 34%),
           linear-gradient(180deg, #efe4ce 0%, var(--bg) 100%);
         color: var(--ink);
         font-family: Georgia, "Times New Roman", serif;
       }
+      .page-ornament {
+        position: fixed;
+        pointer-events: none;
+        z-index: 2;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        opacity: var(--ornament-opacity, 0.12);
+        filter: saturate(0.82) sepia(0.08);
+      }
+      .page-ornament.top-right {
+        top: 18px;
+        right: 14px;
+        width: 118px;
+        height: 118px;
+        --ornament-opacity: 0.18;
+        background-image: var(--ornament-top-right);
+      }
+      .page-ornament.bottom-left {
+        left: -10px;
+        bottom: 6px;
+        width: 210px;
+        height: 160px;
+        --ornament-opacity: 0.11;
+        background-image: var(--ornament-bottom-left);
+      }
+      .page-ornament.right-spray {
+        display: none;
+        background-image: var(--ornament-right-spray);
+        transform: rotate(-7deg);
+      }
+      .page-ornament.watermark {
+        display: none;
+        background-image: var(--ornament-watermark);
+      }
+      .page-ornament.watermark-late {
+        display: none;
+        background-image: var(--ornament-watermark);
+      }
       main {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
         max-width: 920px;
+        z-index: 1;
         margin: 0 auto;
         background: var(--paper);
         border: 1px solid var(--border);
         border-radius: 24px;
         padding: 34px 38px;
         box-shadow: 0 20px 60px rgba(63, 42, 21, 0.12);
+      }
+      main > * {
+        position: relative;
+        z-index: 1;
       }
       h1, h2, h3, h4 { color: var(--accent); line-height: 1.15; }
       h1 {
@@ -102,6 +187,7 @@ function buildHtml(title, bodyHtml) {
         padding-bottom: 0.4rem;
       }
       h2 {
+        position: relative;
         margin-top: 2.8rem;
         font-size: 1.7rem;
         padding-top: 0.6rem;
@@ -207,13 +293,38 @@ function buildHtml(title, bodyHtml) {
       @media print {
         body {
           padding: 0;
-          background: var(--paper);
+          background:
+            var(--spore-pattern) 0 0 / 180px 180px repeat,
+            var(--paper);
         }
         main {
           border-radius: 0;
           box-shadow: none;
           border: none;
           padding-bottom: 0;
+        }
+        .page-ornament.top-right {
+          top: 7mm;
+          right: 7mm;
+          width: 23mm;
+          height: 23mm;
+          --ornament-opacity: 0.15;
+        }
+        .page-ornament.bottom-left {
+          left: -1mm;
+          bottom: 4mm;
+          width: 36mm;
+          height: 27mm;
+          --ornament-opacity: 0.1;
+        }
+        .page-ornament.right-spray {
+          display: none;
+        }
+        .page-ornament.watermark {
+          display: none;
+        }
+        .page-ornament.watermark-late {
+          display: none;
         }
         h2 {
           page-break-after: avoid;
@@ -285,7 +396,14 @@ function buildHtml(title, bodyHtml) {
     </style>
   </head>
   <body>
-    <main>${bodyHtml}</main>
+    <main>
+      <div class="page-ornament top-right" aria-hidden="true"></div>
+      <div class="page-ornament bottom-left" aria-hidden="true"></div>
+      <div class="page-ornament right-spray" aria-hidden="true"></div>
+      <div class="page-ornament watermark" aria-hidden="true"></div>
+      <div class="page-ornament watermark-late" aria-hidden="true"></div>
+      ${bodyHtml}
+    </main>
     <script>
       for (const intro of document.querySelectorAll('.character-intro')) {
         const img = intro.querySelector('.character-intro-media img');
@@ -329,6 +447,22 @@ async function inlineLocalImages(html, outputDir) {
   }
 
   return result;
+}
+
+async function readSvgDataUrl(filePath) {
+  const svg = await fs.readFile(filePath, 'utf8');
+  return toDataUrl(svg);
+}
+
+async function loadOrnamentAssets(outputDir) {
+  const ornamentsDir = path.join(outputDir, '..', 'assets', 'ornaments');
+
+  return {
+    topRight: await readSvgDataUrl(path.join(ornamentsDir, 'tango-mushroom-icon.svg')),
+    bottomLeft: await readSvgDataUrl(path.join(ornamentsDir, 'food-mushroom.svg')),
+    rightSpray: await readSvgDataUrl(path.join(ornamentsDir, 'enokitake-mushroom.svg')),
+    watermark: await readSvgDataUrl(path.join(ornamentsDir, 'champignons-entiers-et-coupes.svg'))
+  };
 }
 
 async function renderPageImages(page, outputDir) {
@@ -405,10 +539,11 @@ async function pruneOldVersionedArtifacts(outputDir, extension, keep = 10) {
 }
 
 export async function renderMarkdownToHtmlAndPdf(markdown, title, outputDir) {
+  const ornaments = await loadOrnamentAssets(outputDir);
   const bodyHtml = applyCharacterIntroLayout(
     await inlineLocalImages(marked.parse(markdown), outputDir)
   );
-  const html = buildHtml(title, bodyHtml);
+  const html = buildHtml(title, bodyHtml, ornaments);
   const timestamp = buildLoreArtifactTimestamp();
   const htmlPath = path.join(outputDir, `mushroom-lore-${timestamp}.html`);
   const pdfPath = path.join(outputDir, `mushroom-lore-${timestamp}.pdf`);

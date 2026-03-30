@@ -80,6 +80,7 @@ The repo currently implements these workflows:
   - edits a source text message in Telegram by message ID
   - preserves existing routing hashtags already attached to that Telegram message
   - refreshes the corresponding local markdown file
+  - use this when a lore/source correction should survive future regeneration; do not treat `generated/mushroom-lore.md` as the long-term source of truth
   - only applies to editable source text posts, not OCR reposts or media posts
 
 - `npm run set-message-hashtags -- --id <messageId> --hashtags "#general_lore #character_thalla"`
@@ -218,6 +219,7 @@ Generated data is stored under `data/<channel>/`:
   - per-source-message markdown
   - may include `## Hashtags` for lore-routing metadata
   - may include `## OCR` with extracted screenshot text (embedded directly, no separate OCR files)
+  - if an OCR-derived lore fact needs correction, update the source message markdown / Telegram source text rather than looking for a separate OCR file
 - `assets/`
   - downloaded screenshot and photo assets
 - `characters/`
