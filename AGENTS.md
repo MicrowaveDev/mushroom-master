@@ -91,6 +91,127 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - validation passed
   - the claimed completion state matches the actual files on disk
 
+### Repo-Local Proof Loop
+
+For non-trivial, multi-stage, or resume-likely work, keep durable proof inside the repository under:
+
+- `.agent/tasks/<task-id>/`
+
+Recommended task artifact set:
+
+- `spec.md`
+- `evidence.md`
+- `evidence.json`
+- `verdict.json`
+- `problems.md` when verification is not fully passing
+- `raw/` for command outputs, screenshots, timestamp captures, and other proof artifacts
+
+Use this workflow when:
+
+- the task spans multiple stages or sessions
+- the task has meaningful acceptance criteria
+- the task includes renderer, lore, generation, screenshot, or validation-heavy work
+- another agent may need to resume or audit the work later
+
+It may be skipped for:
+
+- tiny one-file fixes
+- trivial wording changes
+- short tasks where the proof is obvious from the changed file and one direct validation step
+
+Task-id guidance:
+
+- use short, stable, descriptive IDs
+- prefer hyphenated IDs such as `renderer-page-break-fix` or `wiki-auth-flow`
+- reuse the existing task folder when continuing the same task instead of creating near-duplicates
+
+### Spec Artifact Rules
+
+For tasks using `.agent/tasks/<task-id>/spec.md`:
+
+- freeze the task before implementation
+- preserve the original task statement
+- include explicit acceptance criteria labeled `AC1`, `AC2`, `AC3`, and so on
+- include constraints
+- include non-goals
+- include open assumptions only when they remain unresolved
+- include a concise verification plan when practical
+
+Acceptance criteria rules:
+
+- each criterion should be independently verifiable
+- criteria IDs must remain stable across later updates to the same task
+- implementation reports and verification reports should map back to the criterion IDs rather than using vague summary claims
+
+### Evidence Rules
+
+For tasks using the proof loop, the implementation stage should leave a durable evidence bundle after coding and before final sign-off.
+
+Evidence expectations:
+
+- `evidence.md` should summarize what was implemented and how each acceptance criterion was checked
+- `evidence.json` should record criterion-level status using:
+  - `PASS`
+  - `FAIL`
+  - `UNKNOWN`
+- every claimed `PASS` must cite concrete proof from the current repository state
+- `FAIL` and `UNKNOWN` must explain the missing proof or contradiction
+- raw proof belongs in files under `.agent/tasks/<task-id>/raw/`, not only in prose
+
+Recommended raw artifacts:
+
+- targeted test command output
+- regeneration logs
+- lint output
+- screenshot captures
+- timestamp checks for regenerated outputs
+- command transcripts needed for a fresh verifier to reproduce the result
+
+For renderer, lore, and generation-heavy work:
+
+- prefer saved HTML, PDF, page-image, screenshot, and timestamp proof over narrative-only claims
+- if freshness matters, capture the regeneration start time and the resulting file modification times in the raw artifacts
+
+### Fresh Verification Rules
+
+For tasks using the proof loop, perform a fresh verification pass after implementation.
+
+Fresh verifier rules:
+
+- the verifier pass must evaluate the current repository state, not the builder's narrative
+- rerun the relevant checks wherever practical
+- do not edit production code during the verifier pass
+- do not patch evidence files just to make the task appear complete
+- only mark a criterion `PASS` if it is proven now from the current files and command results
+
+Role separation guidance:
+
+- the same agent may build and collect evidence when needed
+- the final verification pass should be done from a fresh review perspective
+- if verification fails, switch back into narrow repair mode before re-verifying
+
+### Problems Artifact Rules
+
+When fresh verification is not fully passing, write `.agent/tasks/<task-id>/problems.md`.
+
+For each non-`PASS` criterion, include:
+
+- criterion ID and criterion text
+- status
+- why it is not proven
+- minimal reproduction steps
+- expected vs actual behavior
+- affected files
+- the smallest safe fix
+- a short corrective hint
+
+Problems-file rules:
+
+- prefer one clearly scoped problem entry per failing criterion
+- describe the smallest repair that would unblock verification
+- do not mix unrelated fixes into the same problem entry
+- after a fix, regenerate the evidence bundle before running fresh verification again
+
 ### Review and Reporting Rules
 
 - Before summarizing implementation, inspect the current contents of the affected files or docs.
