@@ -1,5 +1,47 @@
 # Telegram Mushroom Archiver
 
+## V1 Game App
+
+This repository now also contains the v1 Telegram mushroom autobattler described in `docs/telegram-mushroom-autobattler-plan.md`.
+
+Game implementation surfaces:
+
+- backend: `app/server/`
+- frontend Mini App: `web/`
+- structured wiki source: `wiki/`
+- game verification: `tests/game/`
+
+Database runtime:
+
+- all game DB access now goes through Sequelize
+- local development defaults to SQLite
+- production-style deployments can use PostgreSQL by setting `DATABASE_URL`
+
+Game commands:
+
+```bash
+npm run game:start
+npm run game:build
+npm run game:test
+npm run game:test:screens
+```
+
+Game-specific environment additions:
+
+- `DATABASE_URL`
+  - optional PostgreSQL connection string
+  - when present, Sequelize uses PostgreSQL through `pg`
+- `SQLITE_STORAGE`
+  - optional SQLite file path for local development
+  - default local dev path: `tmp/telegram-autobattler-dev.sqlite`
+  - tests use in-memory SQLite automatically through Sequelize
+- `TELEGRAM_BOT_USERNAME`
+  - bot username used to build discovery and fallback-auth deep links
+- `PORT`
+  - local HTTP port for the game server
+
+The Local AI Test Lab is available only in local and development runtime, and is disabled in production runtime.
+
 ## Goal
 
 This project turns a Telegram lore channel into a local structured archive and a generated lore artifact.
