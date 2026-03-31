@@ -14,29 +14,6 @@ function toDataUrl(svg) {
   )}`;
 }
 
-function buildSporePatternSvg() {
-  return toDataUrl(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
-      <g fill="none" stroke="rgba(123, 75, 42, 0.11)">
-        <circle cx="32" cy="38" r="7"/>
-        <circle cx="96" cy="30" r="4"/>
-        <circle cx="142" cy="70" r="9"/>
-        <circle cx="56" cy="112" r="5"/>
-        <circle cx="118" cy="126" r="6"/>
-        <circle cx="150" cy="146" r="4"/>
-      </g>
-      <g fill="rgba(157, 119, 80, 0.12)">
-        <circle cx="26" cy="92" r="2"/>
-        <circle cx="78" cy="60" r="2"/>
-        <circle cx="90" cy="150" r="2"/>
-        <circle cx="162" cy="28" r="2"/>
-      </g>
-      <path d="M18 150c22-12 41-30 57-56" stroke="rgba(123, 75, 42, 0.08)" stroke-linecap="round"/>
-      <path d="M102 90c17 12 34 20 58 23" stroke="rgba(123, 75, 42, 0.07)" stroke-linecap="round"/>
-    </svg>
-  `);
-}
-
 function applyCharacterIntroLayout(bodyHtml) {
   const charactersHeading = '<h2>Персонажи</h2>';
   const start = bodyHtml.indexOf(charactersHeading);
@@ -47,15 +24,15 @@ function applyCharacterIntroLayout(bodyHtml) {
   const before = bodyHtml.slice(0, start + charactersHeading.length);
   const after = bodyHtml.slice(start + charactersHeading.length);
   const transformed = after.replace(
-    /<h3>([^<]+)<\/h3>\s*<p>(<img[^>]+>)<\/p>\s*(?:<h4>Обзор<\/h4>\s*(<p>[\s\S]*?<\/p>))?/g,
-    (_match, name, imageTag, overviewParagraph = '') => {
+    /<h3>([^<]+)<\/h3>\s*((?:<p><img[^>]+><\/p>)|(?:<div class="character-intro-gallery">[\s\S]*?<\/div>))\s*(?:<h4>Обзор<\/h4>\s*(<p>[\s\S]*?<\/p>))?/g,
+    (_match, name, mediaBlock, overviewParagraph = '') => {
       const overviewBlock = overviewParagraph
         ? overviewParagraph
         : '';
 
       return [
         '<section class="character-intro">',
-        `  <div class="character-intro-media">${imageTag}</div>`,
+        `  <div class="character-intro-media">${mediaBlock}</div>`,
         '  <div class="character-intro-copy">',
         `    <h3>${name}</h3>`,
         `    ${overviewBlock}`,
@@ -88,8 +65,6 @@ function applyCharacterIntroLayout(bodyHtml) {
 }
 
 function buildHtml(title, bodyHtml, ornaments) {
-  const sporePattern = buildSporePatternSvg();
-
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -105,7 +80,6 @@ function buildHtml(title, bodyHtml, ornaments) {
         --muted: #6d5f4b;
         --accent: #7b4b2a;
         --border: rgba(70, 45, 18, 0.18);
-        --spore-pattern: url("${sporePattern}");
         --ornament-top-right: url("${ornaments.topRight}");
         --ornament-bottom-left: url("${ornaments.bottomLeft}");
         --ornament-right-spray: url("${ornaments.rightSpray}");
@@ -117,7 +91,6 @@ function buildHtml(title, bodyHtml, ornaments) {
         margin: 0;
         padding: 18px;
         background:
-          var(--spore-pattern) 0 0 / 180px 180px repeat,
           radial-gradient(circle at top, rgba(145, 105, 66, 0.18), transparent 34%),
           linear-gradient(180deg, #efe4ce 0%, var(--bg) 100%);
         color: var(--ink);
@@ -135,15 +108,15 @@ function buildHtml(title, bodyHtml, ornaments) {
       }
       .page-ornament.top-right {
         top: 18px;
-        right: 14px;
+        right: -42px;
         width: 118px;
         height: 118px;
         --ornament-opacity: 0.18;
         background-image: var(--ornament-top-right);
       }
       .page-ornament.bottom-left {
-        left: -10px;
-        bottom: 6px;
+        left: -58px;
+        bottom: -8px;
         width: 210px;
         height: 160px;
         --ornament-opacity: 0.11;
@@ -245,9 +218,22 @@ function buildHtml(title, bodyHtml, ornaments) {
         width: 100%;
         margin: 0 0 1rem;
       }
+      .character-intro-gallery {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 0.8rem;
+        width: 100%;
+      }
+      .character-intro-gallery img {
+        flex: 0 1 calc(50% - 0.4rem);
+        width: calc(50% - 0.4rem);
+        max-width: calc(50% - 0.4rem);
+        margin: 0;
+      }
       .character-intro.is-portrait .character-intro-media {
-        flex: 0 0 28%;
-        max-width: 28%;
+        flex: 0 0 50%;
+        max-width: 50%;
       }
       .character-intro.is-portrait .character-intro-media img {
         margin: 0;
@@ -286,6 +272,13 @@ function buildHtml(title, bodyHtml, ornaments) {
           max-width: 360px;
           margin-bottom: 1rem;
         }
+        .character-intro-gallery {
+          gap: 0.6rem;
+        }
+        .character-intro-gallery img {
+          width: calc(50% - 0.3rem);
+          max-width: calc(50% - 0.3rem);
+        }
       }
       @page {
         margin: 10mm 10mm;
@@ -293,9 +286,7 @@ function buildHtml(title, bodyHtml, ornaments) {
       @media print {
         body {
           padding: 0;
-          background:
-            var(--spore-pattern) 0 0 / 180px 180px repeat,
-            var(--paper);
+          background: var(--paper);
         }
         main {
           border-radius: 0;
@@ -305,14 +296,14 @@ function buildHtml(title, bodyHtml, ornaments) {
         }
         .page-ornament.top-right {
           top: 7mm;
-          right: 7mm;
+          right: -2mm;
           width: 23mm;
           height: 23mm;
           --ornament-opacity: 0.15;
         }
         .page-ornament.bottom-left {
-          left: -1mm;
-          bottom: 4mm;
+          left: -11.5mm;
+          bottom: 2mm;
           width: 36mm;
           height: 27mm;
           --ornament-opacity: 0.1;
@@ -376,11 +367,15 @@ function buildHtml(title, bodyHtml, ornaments) {
           align-items: flex-start;
         }
         .character-intro.is-portrait .character-intro-media {
-          flex-basis: 28%;
-          max-width: 28%;
+          flex-basis: 50%;
+          max-width: 50%;
         }
         .character-intro.is-portrait .character-intro-media img {
-          max-height: 32vh;
+          max-height: 37vh;
+        }
+        .character-intro-gallery img {
+          max-height: 35vh;
+          object-fit: contain;
         }
         .character-intro.is-landscape .character-intro-media img,
         .character-intro:not(.is-portrait) .character-intro-media img {
@@ -454,12 +449,26 @@ async function readSvgDataUrl(filePath) {
   return toDataUrl(svg);
 }
 
+async function readAssetDataUrl(filePath) {
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension === '.svg') {
+    return readSvgDataUrl(filePath);
+  }
+
+  const bytes = await fs.readFile(filePath);
+  const mimeType =
+    extension === '.png' ? 'image/png' :
+    extension === '.webp' ? 'image/webp' :
+    'image/jpeg';
+  return `data:${mimeType};base64,${bytes.toString('base64')}`;
+}
+
 async function loadOrnamentAssets(outputDir) {
   const ornamentsDir = path.join(outputDir, '..', 'assets', 'ornaments');
 
   return {
-    topRight: await readSvgDataUrl(path.join(ornamentsDir, 'tango-mushroom-icon.svg')),
-    bottomLeft: await readSvgDataUrl(path.join(ornamentsDir, 'food-mushroom.svg')),
+    topRight: await readAssetDataUrl(path.join(ornamentsDir, 'top-right-mushroom.jpg')),
+    bottomLeft: await readSvgDataUrl(path.join(ornamentsDir, 'bottom-left-mushroom.svg')),
     rightSpray: await readSvgDataUrl(path.join(ornamentsDir, 'enokitake-mushroom.svg')),
     watermark: await readSvgDataUrl(path.join(ornamentsDir, 'champignons-entiers-et-coupes.svg'))
   };

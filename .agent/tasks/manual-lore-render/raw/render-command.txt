@@ -1,0 +1,7 @@
+Render existing markdown mode: yes
+Channel slug: channel
+Lore markdown: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/mushroom-lore.md
+Lore HTML: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/mushroom-lore-2026-03-31T00-41-36-401Z.html
+Lore PDF: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/mushroom-lore-2026-03-31T00-41-36-401Z.pdf
+Page images: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/page-images
+Page image manifest: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/page-images/manifest.json

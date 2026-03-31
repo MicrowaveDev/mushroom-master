@@ -1,0 +1,10 @@
+{
+  "taskId": "manual-lore-render",
+  "overallStatus": "PASS",
+  "verifiedAt": "2026-03-31",
+  "summary": "The authored lore markdown was replaced with the user-provided text, a render-only CLI path was added, and fresh HTML/PDF/page-image artifacts were generated from the current markdown.",
+  "freshVerification": {
+    "renderExistingMarkdown": "PASS"
+  },
+  "problemsFileRequired": false
+}

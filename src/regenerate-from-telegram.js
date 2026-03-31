@@ -1,10 +1,29 @@
-import { runFullRegeneration } from './lib/workflow.js';
-
 const args = new Set(process.argv.slice(2));
 const force = args.has('--force');
 const skipDownload = args.has('--skip-download') || args.has('--skip-telegram');
+const renderExistingMarkdown = args.has('--render-existing-markdown');
 
-runFullRegeneration(undefined, { force, skipDownload }).then((result) => {
+async function main() {
+  if (renderExistingMarkdown) {
+    const { renderExistingLoreMarkdown } = await import('./render-existing-lore.js');
+    const result = await renderExistingLoreMarkdown();
+    process.stdout.write(
+      [
+        'Render existing markdown mode: yes',
+        `Channel slug: ${result.channelSlug}`,
+        `Lore markdown: ${result.lorePath}`,
+        `Lore HTML: ${result.htmlPath}`,
+        `Lore PDF: ${result.pdfPath}`,
+        `Page images: ${result.pageImagesDir}`,
+        `Page image manifest: ${result.manifestPath}`,
+        result.botResults.length > 0 ? `Bot delivery targets: ${result.botResults.map((item) => item.chatId).join(', ')}` : 'Bot delivery skipped.'
+      ].join('\n') + '\n'
+    );
+    return;
+  }
+
+  const { runFullRegeneration } = await import('./lib/workflow.js');
+  const result = await runFullRegeneration(undefined, { force, skipDownload });
   process.stdout.write(
     [
       force ? 'Forced lore rebuild: yes' : 'Forced lore rebuild: no',
@@ -19,7 +38,9 @@ runFullRegeneration(undefined, { force, skipDownload }).then((result) => {
       result.botResults.length > 0 ? `Bot delivery targets: ${result.botResults.map((item) => item.chatId).join(', ')}` : 'Bot delivery skipped.'
     ].join('\n') + '\n'
   );
-}).catch((error) => {
+}
+
+main().catch((error) => {
   process.stderr.write(`${error.stack || error.message}\n`);
   process.exitCode = 1;
 });

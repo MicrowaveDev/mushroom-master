@@ -1,0 +1,29 @@
+{
+  "criteria": {
+    "AC1": {
+      "status": "PASS",
+      "proof": [
+        "data/channel/generated/mushroom-lore.md",
+        ".agent/tasks/manual-lore-render/spec.md"
+      ]
+    },
+    "AC2": {
+      "status": "PASS",
+      "proof": [
+        "src/regenerate-from-telegram.js",
+        "src/render-existing-lore.js",
+        ".agent/tasks/manual-lore-render/raw/render-command.txt"
+      ]
+    },
+    "AC3": {
+      "status": "PASS",
+      "proof": [
+        ".agent/tasks/manual-lore-render/raw/render-command.txt",
+        ".agent/tasks/manual-lore-render/raw/timestamps.txt",
+        "data/channel/generated/mushroom-lore.html",
+        "data/channel/generated/mushroom-lore.pdf",
+        "data/channel/generated/page-images/manifest.json"
+      ]
+    }
+  }
+}

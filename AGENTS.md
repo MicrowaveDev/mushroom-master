@@ -326,6 +326,8 @@ When reviewing the generated lore result visually:
 - Read `data/<channel>/generated/page-images/manifest.json` to get page order.
 - Use `data/<channel>/generated/mushroom-lore.md` only as a supporting normalized output when a visual issue needs root-cause analysis.
 - Treat `data/<channel>/characters/*/manifest.json` as the canonical source for which image belongs to which character.
+- For render-only or authored-lore workflows, treat `data/<channel>/generated/mushroom-lore.md` as canonical authored input rather than something to be heuristically re-parsed into sections.
+- Prefer freshly regenerated `page-images/` and timestamped HTML/PDF outputs over a previously opened local PDF viewer, which may still show an older cached file.
 
 ## Review Priorities
 
@@ -355,6 +357,13 @@ When proposing or applying fixes:
 8. If you change canonical character image manifests or other generated-only lore inputs without changing source Telegram content, regenerate with `npm run regenerate -- --force` so HTML/PDF/page-images bypass the source-hash cache.
 9. After any forced regeneration, verify freshness before reviewing visuals: confirm `generated/mushroom-lore.html`, `generated/mushroom-lore.pdf`, and the relevant files under `generated/page-images/` have modification times newer than the regeneration start time, then inspect those freshly written files rather than relying on a previously opened viewer snapshot.
 10. If you only need to re-check renderer/layout/style/prompt effects against already archived local inputs, use `npm run regenerate -- --force --skip-download` to skip the Telegram download phase while rebuilding from stored markdown/manifests. That mode should still upload the resulting PDF through the bot/channel delivery path.
+11. When debugging a visual artifact, first classify it as one of:
+   - content flow or markdown structure
+   - ornament asset placement
+   - background pattern or page texture
+   - viewer freshness/cache mismatch
+12. If the issue is ornament overlap, prefer adjusting CSS positioning, size, opacity, or print-only visibility before replacing or deleting the ornament asset itself.
+13. After a renderer-side visual fix that should be reviewed outside the workspace, send the freshly generated timestamped PDF through the Telegram delivery path so the reviewer is not comparing against an older cached export.
 
 ## Renderer Design Rules
 
@@ -412,6 +421,8 @@ Rules:
 - Reuse the existing renderer CSS variables when adjusting palette values instead of scattering unrelated hardcoded colors.
 - Typography should feel like a dossier or field guide: readable, calm, and print-friendly.
 - Decorative ornaments and patterns should remain secondary. If an ornament competes with text, reduce or remove it.
+- Distinguish between repeating background textures and discrete page ornaments before making a fix; do not remove a decorative mushroom ornament when the real problem comes from the page background pattern.
+- For PDF cleanup, prefer disabling or simplifying a background texture before weakening the main page ornaments if the ornaments are part of the intended visual language.
 - Use stronger accent treatment on headings and key dividers, not across large body-text regions.
 
 ### Print and Page-Break Rules
