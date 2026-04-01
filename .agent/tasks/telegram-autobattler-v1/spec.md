@@ -102,6 +102,19 @@ Primary source documents:
 - Existing lore/archive flows should remain intact unless a change is required to support the new wiki pipeline.
 - If the full existing markdown corpus is too large to fully remodel in one step, the v1 wiki will prioritize the launch mushrooms, locations, factions, and glossary coverage needed by the plan while keeping the folder structure extensible.
 
+## Continuation Freeze 2026-04-01
+
+### Additional user requirement
+
+- The artifact builder must show the actual artifact shapes in a Backpack Battles-style packing UI instead of raw artifact ids in cells.
+- The same artifact figure must be reused in the artifact library and in the placed result container so the player sees the same shape before and after placement.
+
+### Additional constraints
+
+- Keep the existing `4x4` tap-to-place interaction working in mobile and Telegram contexts.
+- Prefer SVG-backed or equivalent deterministic repo-authored artifact visuals over text labels inside cells.
+- Do not change artifact gameplay rules, placement storage rules, or introduce rotation.
+
 ## Acceptance Criteria
 
 ### AC1. Foundation and proof-loop bundle
@@ -160,10 +173,15 @@ The Local AI Test Lab exists in local and development environments only, support
 
 Focused automated tests and screenshot-oriented UI verification cover the core v1 flows and all required critical rules closely enough to prove the implemented scope. Fresh verification is run without editing production code.
 
+### AC15. Artifact shape visual parity
+
+The artifact builder renders artifact pieces as recognizable Backpack Battles-style shapes rather than cell text, and the same visual figure is reused in both the library and the placed loadout container or preview surfaces.
+
 ## Verification Plan
 
 - Backend unit and integration tests for auth, session middleware, player persistence, loadout validation, battle simulation, rewards, rate limits, leaderboard logic, friend challenges, and wiki reads.
 - Frontend tests for auth/bootstrap, onboarding, mushroom selection, artifact builder rules, replay rendering, results, language toggle, friends, leaderboard, wiki, and Local AI Test Lab gating.
+- E2E coverage for artifact shape rendering in both the library and the placed board container.
 - Screenshot-oriented Playwright coverage for the key v1 screens the plan requires.
 - Raw proof artifacts stored under `.agent/tasks/telegram-autobattler-v1/raw/`.
 - Criterion-level evidence tracked in `evidence.md`, `evidence.json`, and if needed `problems.md`.

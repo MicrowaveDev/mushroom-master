@@ -14,7 +14,7 @@ Core implementation areas:
 
 - shared auth and session handling in `app/server/auth.js`
 - Telegram discovery and bot-code handoff helpers in `app/server/bot-gateway.js`
-- PostgreSQL-compatible schema and DB abstraction in `app/server/schema.js` and `app/server/db.js`
+- Sequelize-backed schema and DB abstraction in `app/server/schema.js` and `app/server/db.js`
 - v1 game content and balance tables in `app/server/game-data.js`
 - player, loadout, battle, leaderboard, friendship, challenge, and local-test services in `app/server/services/game-service.js`
 - repo-authored wiki reader in `app/server/wiki.js`
@@ -43,13 +43,14 @@ PASS. The repo now includes:
 
 - Node.js backend files in `app/server/`
 - Vue + JavaScript frontend in `web/`
-- PostgreSQL-compatible persistence via `pg` and `pg-mem`
+- Sequelize-backed persistence with SQLite in local/dev and PostgreSQL when `DATABASE_URL` is configured
 - runnable local build/test flows in `package.json`
 
 Proof:
 
 - `package.json`
 - `package-lock.json`
+- `app/server/db.js`
 - `.agent/tasks/telegram-autobattler-v1/raw/game-build.txt`
 - `.agent/tasks/telegram-autobattler-v1/raw/game-test.txt`
 
@@ -104,6 +105,7 @@ Proof:
 - `web/src/styles.css`
 - `app/server/services/game-service.js`
 - `tests/game/loadout-and-battle.test.js`
+- `tests/game/start-battle.spec.js`
 - screenshot:
   - `.agent/tasks/telegram-autobattler-v1/raw/screenshots/04-artifacts.png`
 
@@ -151,6 +153,7 @@ Proof:
 
 - `app/server/services/game-service.js`
 - `tests/game/social-wiki-lab.test.js`
+- friend-challenge creation visibility fix in `app/server/services/game-service.js`
 - screenshot:
   - `.agent/tasks/telegram-autobattler-v1/raw/screenshots/09-friends.png`
 
@@ -194,8 +197,25 @@ Proof:
 - production frontend build:
   - `.agent/tasks/telegram-autobattler-v1/raw/game-build.txt`
 - screenshot verification:
+  - `.agent/tasks/telegram-autobattler-v1/raw/playwright-start-battle.txt`
   - `.agent/tasks/telegram-autobattler-v1/raw/playwright-screenshots.txt`
   - `.agent/tasks/telegram-autobattler-v1/raw/screenshots-manifest.txt`
+
+### AC15
+
+PASS. The artifact builder now renders reusable SVG-backed artifact figures with visible board footprints. The same figure is used in the library cards, the placed `4x4` board pieces, and saved preview containers on home, battle, and results surfaces.
+
+Proof:
+
+- `web/src/main.js`
+- `web/src/styles.css`
+- `tests/game/start-battle.spec.js`
+- screenshots:
+  - `.agent/tasks/telegram-autobattler-v1/raw/screenshots/04-artifacts.png`
+  - `.agent/tasks/telegram-autobattler-v1/raw/screenshots/05-battle-prep.png`
+  - `.agent/tasks/telegram-autobattler-v1/raw/screenshots/07-results.png`
+- raw verifier log:
+  - `.agent/tasks/telegram-autobattler-v1/raw/playwright-start-battle.txt`
 
 ## Fresh verification summary
 
@@ -203,9 +223,10 @@ Fresh verification commands:
 
 - `npm run game:test`
 - `npm run game:build`
+- `npx playwright test tests/game/start-battle.spec.js --config=tests/game/playwright.config.js --reporter=line`
 - `npx playwright test tests/game/screenshots.spec.js --config=tests/game/playwright.config.js --reporter=line`
 
-All three passed in the fresh verification pass recorded under `raw/`.
+All four passed in the fresh verification pass recorded under `raw/`.
 
 ## Drift / assumptions / non-v1 backlog
 
@@ -213,7 +234,7 @@ No production-scope drift was intentionally added beyond implementation choices 
 
 Notable implementation choices:
 
-- local and test environments use the same PostgreSQL-shaped schema through `pg-mem` when `DATABASE_URL` is absent
+- local and test environments use Sequelize with SQLite, while production can use Sequelize with PostgreSQL through `DATABASE_URL`
 - the frontend uses a single Vue SPA file for the initial v1 shell instead of a large component tree
 - the canonical game slug is `axilin`, while wiki source explicitly documents the legacy `axylin` spelling from older repo assets
 - Morga's wiki page is repo-authored from the v1 launch plan because the existing lore archive does not yet provide the same source depth as the older characters

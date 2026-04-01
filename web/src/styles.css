@@ -163,29 +163,72 @@ select {
 
 .artifact-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .artifact-btn {
   display: grid;
-  gap: 4px;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 10px;
   text-align: left;
+  overflow: hidden;
 }
 
 .artifact-btn.selected {
   background: #ead9b9;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(164, 118, 69, 0.14);
 }
 
-.board {
+.artifact-btn.placed {
+  background: rgba(234, 217, 185, 0.6);
+  border-color: var(--accent);
+}
+
+.artifact-card-visual {
+  display: grid;
+  align-items: start;
+  justify-items: start;
+  padding: 4px 0 0;
+}
+
+.artifact-card-copy {
+  display: grid;
+  gap: 4px;
+  align-self: end;
+}
+
+.artifact-state {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.artifact-card-copy span {
+  color: rgba(47, 36, 25, 0.72);
+}
+
+.board-shell,
+.mini-board {
+  --board-gap: 8px;
+  position: relative;
+  display: grid;
+}
+
+.board,
+.artifact-grid-background {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: var(--board-gap);
   margin-bottom: 14px;
 }
 
-.cell {
+.cell,
+.mini-board-cell,
+.artifact-grid-cell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
   min-height: 72px;
   display: grid;
   place-items: center;
@@ -194,19 +237,165 @@ select {
     rgba(255, 251, 244, 0.96);
 }
 
-.chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
+.board-pieces,
+.mini-board-grid,
+.mini-board-pieces,
+.artifact-grid-pieces {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: var(--board-gap);
 }
 
-.chip {
+.board-pieces {
+  pointer-events: none;
+}
+
+.artifact-piece {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.artifact-piece .artifact-figure-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 10px 20px rgba(91, 64, 36, 0.14));
+}
+
+.artifact-piece.mini .artifact-figure-svg {
+  filter: drop-shadow(0 6px 10px rgba(91, 64, 36, 0.12));
+}
+
+.artifact-figure-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.artifact-figure-grid {
+  width: fit-content;
+  max-width: 100%;
+  height: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.artifact-figure-cell {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(94, 70, 39, 0.14);
+  background:
+    radial-gradient(circle at top, rgba(140, 188, 135, 0.14), transparent 52%),
+    rgba(255, 251, 244, 0.96);
+  box-shadow: 0 8px 18px rgba(91, 64, 36, 0.08);
+  overflow: hidden;
+}
+
+.artifact-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.artifact-strip-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-width: 170px;
   padding: 8px 10px;
-  border-radius: 999px;
-  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+
+.artifact-strip-visual {
+  min-height: 50px;
+  display: grid;
+  align-items: center;
+}
+
+.mini-board {
+  min-height: 220px;
+  margin-bottom: 12px;
+}
+
+.mini-board-grid,
+.mini-board-pieces {
+  position: relative;
+}
+
+.mini-board-grid {
+  z-index: 1;
+}
+
+.mini-board-pieces {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mini-board-cell,
+.artifact-grid-board--catalog .artifact-grid-cell {
+  min-height: 44px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top, rgba(140, 188, 135, 0.16), transparent 52%),
+    rgba(255, 251, 244, 0.92);
+}
+
+.artifact-grid-cell--interactive {
+  cursor: pointer;
+}
+
+.artifact-grid-board--catalog {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.artifact-grid-board--catalog .artifact-grid-background {
+  display: none;
+}
+
+.artifact-grid-board--catalog .artifact-grid-pieces {
+  position: static;
+  inset: auto;
+  width: fit-content;
+}
+
+.artifact-grid-board--catalog .artifact-grid-cell {
+  width: 40px;
+  min-height: 40px;
+}
+
+.artifact-grid-board--catalog .artifact-piece {
+  filter: none;
+}
+
+.artifact-grid-board--catalog .artifact-piece .artifact-figure-svg {
+  filter: none;
+}
+
+@media (max-width: 820px) {
+  .artifact-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .battle-stage .duel {
@@ -292,5 +481,17 @@ select {
 
   .cell {
     min-height: 60px;
+  }
+
+  .artifact-btn {
+    grid-template-rows: minmax(156px, auto) auto;
+  }
+
+  .artifact-strip-item {
+    min-width: 100%;
+  }
+
+  .mini-board {
+    min-height: 188px;
   }
 }

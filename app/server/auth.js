@@ -132,6 +132,21 @@ export async function upsertTelegramPlayer(telegramUser, provider = 'telegram') 
   });
 }
 
+export async function loginWithDevSession(payload = {}) {
+  return withTransaction(async (client) => {
+    const syntheticTelegramUser = {
+      id: payload.telegramId || `dev:${payload.username || 'local_player'}`,
+      username: payload.username || 'local_player',
+      first_name: payload.name || 'Local',
+      last_name: payload.lastName || 'Player',
+      language_code: payload.lang || 'ru'
+    };
+    const player = await upsertTelegramPlayerWithClient(client, syntheticTelegramUser);
+    const session = await createSession(client, player.id, 'dev_mock');
+    return { player, session };
+  });
+}
+
 export async function loginWithTelegram(initData, botToken) {
   if (!verifyTelegramInitData(initData, botToken)) {
     throw new Error('Invalid Telegram signature');

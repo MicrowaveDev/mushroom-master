@@ -975,7 +975,17 @@ export async function createFriendChallenge(playerId, inviteePlayerId) {
         challenge.expiresAt.toISOString()
       ]
     );
-    return getFriendChallenge(challenge.id);
+    return {
+      id: challenge.id,
+      challengeToken: challenge.challengeToken,
+      challengerPlayerId: playerId,
+      inviteePlayerId,
+      status: 'pending',
+      createdAt: challenge.createdAt.toISOString(),
+      expiresAt: challenge.expiresAt.toISOString(),
+      acceptedAt: null,
+      battleId: null
+    };
   });
 }
 

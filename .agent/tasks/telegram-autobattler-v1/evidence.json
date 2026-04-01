@@ -113,7 +113,20 @@
       "proof": [
         ".agent/tasks/telegram-autobattler-v1/raw/game-test.txt",
         ".agent/tasks/telegram-autobattler-v1/raw/game-build.txt",
+        ".agent/tasks/telegram-autobattler-v1/raw/playwright-start-battle.txt",
         ".agent/tasks/telegram-autobattler-v1/raw/playwright-screenshots.txt"
+      ]
+    },
+    "AC15": {
+      "status": "PASS",
+      "proof": [
+        "web/src/main.js",
+        "web/src/styles.css",
+        "tests/game/start-battle.spec.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/04-artifacts.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/05-battle-prep.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/07-results.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/playwright-start-battle.txt"
       ]
     }
   }

@@ -1,0 +1,10 @@
+Command:
+npx playwright test tests/game/start-battle.spec.js --config=tests/game/playwright.config.js --reporter=line
+
+Output:
+Running 4 tests using 1 worker
+[1/4] tests/game/start-battle.spec.js:47:1 › local session button opens a working dev-only session without auth error
+[2/4] tests/game/start-battle.spec.js:59:1 › start battle button opens replay when a ghost opponent exists
+[3/4] tests/game/start-battle.spec.js:88:1 › artifact figures are visible in the library, on the board, and in the saved battle preview
+[4/4] tests/game/start-battle.spec.js:124:1 › start battle shows a visible error when no ghost opponent exists
+4 passed (4.9s)

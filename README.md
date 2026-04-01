@@ -24,7 +24,34 @@ npm run game:start
 npm run game:build
 npm run game:test
 npm run game:test:screens
+npm run game:dev:battle-page
 ```
+
+Dev battle-page helper:
+
+- `npm run game:dev:battle-page`
+  - requires `npm run game:start` to already be running
+  - creates a dev-only session through `/api/dev/session`
+  - opens the real frontend UI in a browser
+  - selects a mushroom, places artifacts through the actual container UI, saves the loadout, and lands on the battle-prep screen
+  - `--start` clicks the real `Start Battle` button and waits for the replay screen
+
+What is production-real vs dev-only in the helper and e2e flows:
+
+- real production app logic:
+  - frontend UI and page flow
+  - backend battle creation, matchmaking, replay loading, and persistence
+  - loadout validation and battle engine behavior
+- dev-only shortcuts:
+  - authentication uses `/api/dev/session` instead of Telegram `initData` or the bot-code handoff
+  - helper/e2e flows may seed ghost opponents through dev setup so the battle button has a valid target
+  - local development defaults to SQLite instead of PostgreSQL
+
+End-to-end battle coverage:
+
+- `tests/game/start-battle.spec.js`
+  - verifies that clicking `Start Battle` opens the replay screen when a ghost opponent exists
+  - verifies that clicking `Start Battle` shows a visible error when no ghost opponent exists
 
 Game-specific environment additions:
 

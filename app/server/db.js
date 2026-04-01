@@ -57,18 +57,22 @@ async function resolveSqliteStorage() {
 
 async function createSequelize() {
   if (process.env.DATABASE_URL) {
-    return new Sequelize(process.env.DATABASE_URL, {
+    const sequelize = new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
       logging: false
     });
+    sequelize.__storagePath = null;
+    return sequelize;
   }
 
   const storage = await resolveSqliteStorage();
-  return new Sequelize({
+  const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage,
     logging: false
   });
+  sequelize.__storagePath = storage;
+  return sequelize;
 }
 
 async function initSchema(sequelize) {
@@ -134,8 +138,13 @@ export async function getDb() {
 }
 
 export async function resetDb() {
+  const storagePath = state?.sequelize?.__storagePath || null;
   if (state?.sequelize) {
     await state.sequelize.close();
+  }
+  if (storagePath && storagePath !== ':memory:') {
+    await fs.rm(storagePath, { force: true }).catch(() => {});
+    await fs.rm(`${storagePath}-journal`, { force: true }).catch(() => {});
   }
   state = null;
   return getDb();

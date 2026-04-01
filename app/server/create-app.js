@@ -5,12 +5,13 @@ import OpenAI from 'openai';
 import {
   authenticateRequest,
   createTelegramAuthCode,
+  loginWithDevSession,
   loginWithTelegram,
   requireAuth,
   verifyTelegramAuthCode
 } from './auth.js';
 import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
-import { getDb } from './db.js';
+import { getDb, resetDb } from './db.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
@@ -65,8 +66,9 @@ export async function createApp() {
   app.get('/api/app-config', (_req, res) => {
     res.json({
       success: true,
-      data: {
-        localAiLabEnabled: isLocalAiLabEnabled()
+        data: {
+        localAiLabEnabled: isLocalAiLabEnabled(),
+        localDevAuthEnabled: process.env.NODE_ENV !== 'production'
       }
     });
   });
@@ -353,17 +355,26 @@ export async function createApp() {
 
   if (process.env.NODE_ENV !== 'production') {
     app.post(
+      '/api/dev/reset',
+      asyncRoute(async (_req, res) => {
+        await resetDb();
+        res.json({
+          success: true,
+          data: { reset: true }
+        });
+      })
+    );
+
+    app.post(
       '/api/dev/session',
       asyncRoute(async (req, res) => {
-        const authCode = await createTelegramAuthCode();
-        await handleBotStartParam(`auth-${authCode.publicCode}`, {
-          id: req.body.telegramId || 999001,
+        const verified = await loginWithDevSession({
+          telegramId: req.body.telegramId || 999001,
           username: req.body.username || 'local_player',
-          first_name: req.body.name || 'Local',
-          last_name: req.body.lastName || 'Player',
-          language_code: req.body.lang || 'ru'
+          name: req.body.name || 'Local',
+          lastName: req.body.lastName || 'Player',
+          lang: req.body.lang || 'ru'
         });
-        const verified = await verifyTelegramAuthCode(authCode.privateCode);
         res.json({
           success: true,
           data: {
