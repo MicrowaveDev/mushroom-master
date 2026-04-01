@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 
 const playerLoadout = [
-  { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
-  { artifactId: 'root_shell', x: 1, y: 0, width: 2, height: 2 },
-  { artifactId: 'shock_puff', x: 3, y: 0, width: 1, height: 1 }
+  { artifactId: 'amber_fang', x: 0, y: 0, width: 1, height: 2 },
+  { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
+  { artifactId: 'shock_puff', x: 1, y: 1, width: 1, height: 1 }
 ];
 
 const opponentLoadout = [
-  { artifactId: 'amber_fang', x: 0, y: 0, width: 1, height: 2 },
-  { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 },
-  { artifactId: 'thunder_gill', x: 2, y: 0, width: 2, height: 1 }
+  { artifactId: 'glass_cap', x: 0, y: 0, width: 2, height: 1 },
+  { artifactId: 'bark_plate', x: 0, y: 1, width: 1, height: 1 },
+  { artifactId: 'shock_puff', x: 1, y: 1, width: 1, height: 1 }
 ];
 
 async function createSession(request, payload) {
@@ -110,6 +110,15 @@ test('artifact figures are visible in the library, on the board, and in the save
   await expect(page.locator('.artifact-btn[data-artifact-id="root_shell"] .artifact-figure-cell')).toHaveCount(4);
   await expect(page.locator('.artifact-btn[data-artifact-id="amber_fang"] .artifact-grid-background')).toBeHidden();
 
+  const leftCellBox = await page.locator('.artifact-btn[data-artifact-id="spore_needle"] .artifact-figure-cell').first().boundingBox();
+  const rightCellBox = await page.locator('.artifact-grid-board--inventory .artifact-grid-cell').first().boundingBox();
+  expect(leftCellBox).not.toBeNull();
+  expect(rightCellBox).not.toBeNull();
+  expect(Math.round(leftCellBox.width)).toBe(50);
+  expect(Math.round(leftCellBox.height)).toBe(50);
+  expect(Math.round(rightCellBox.width)).toBe(50);
+  expect(Math.round(rightCellBox.height)).toBe(50);
+
   await page.locator('.artifact-btn[data-artifact-id="amber_fang"]').click({ timeout: 5000 });
   await expect(page.locator('.artifact-btn[data-artifact-id="amber_fang"]')).toHaveClass(/placed/);
   await page.locator('.artifact-btn[data-artifact-id="spore_needle"]').click({ timeout: 5000 });
@@ -117,19 +126,19 @@ test('artifact figures are visible in the library, on the board, and in the save
   await page.locator('.artifact-btn[data-artifact-id="thunder_gill"]').click({ timeout: 5000 });
   await expect(page.locator('.artifact-btn[data-artifact-id="thunder_gill"]')).toHaveClass(/placed/);
 
-  await expect(page.locator('.board-pieces .artifact-piece')).toHaveCount(3);
+  await expect(page.locator('.inventory-pieces .artifact-piece')).toHaveCount(3);
   await page.locator('.artifact-btn[data-artifact-id="bark_plate"]').click({ timeout: 5000 });
-  await expect(page.locator('.board-pieces .artifact-piece')).toHaveCount(3);
+  await expect(page.locator('.inventory-pieces .artifact-piece')).toHaveCount(3);
   await expect(page.locator('.error')).toContainText(/only 3 artifacts|только 3 артефакта|можно поставить только 3 артефакта/i);
 
-  const amberBoardPiece = page.locator('.artifact-grid-board--board .artifact-piece[data-artifact-id="amber_fang"]');
+  const amberBoardPiece = page.locator('.artifact-grid-board--inventory .artifact-piece[data-artifact-id="amber_fang"]');
   await expect(amberBoardPiece).toHaveCount(1);
 
-  const amberBoardCells = page.locator('.board-pieces .artifact-piece[data-artifact-id="amber_fang"] .artifact-figure-cell');
+  const amberBoardCells = page.locator('.inventory-pieces .artifact-piece[data-artifact-id="amber_fang"] .artifact-figure-cell');
   await expect(amberBoardCells).toHaveCount(2);
   await expect(amberBoardCells.first()).toBeVisible();
 
-  const boardBox = await page.locator('.board-pieces .artifact-piece[data-artifact-id="amber_fang"]').boundingBox();
+  const boardBox = await page.locator('.inventory-pieces .artifact-piece[data-artifact-id="amber_fang"]').boundingBox();
   expect(boardBox).not.toBeNull();
   expect(boardBox.height).toBeGreaterThan(boardBox.width * 1.5);
 

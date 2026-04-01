@@ -10,7 +10,7 @@ const messages = {
     authBrowser: 'Войти через код бота',
     authDev: 'Локальная сессия',
     onboardingTitle: 'Первый запуск',
-    onboardingBody: 'Выбери гриб, собери три артефакта на поле 4x4 и отправь его в короткий 1v1 бой.',
+    onboardingBody: 'Выбери гриб, собери три артефакта в горизонтальном инвентаре 2x3 и отправь его в короткий 1v1 бой.',
     continue: 'Продолжить',
     save: 'Сохранить',
     startBattle: 'Начать бой',
@@ -57,7 +57,7 @@ const messages = {
     authBrowser: 'Login with bot code',
     authDev: 'Local session',
     onboardingTitle: 'First launch',
-    onboardingBody: 'Pick a mushroom, place three artifacts on a 4x4 board, and send it into a short 1v1 fight.',
+    onboardingBody: 'Pick a mushroom, place three artifacts in a horizontal 2x3 inventory, and send it into a short 1v1 fight.',
     continue: 'Continue',
     save: 'Save',
     startBattle: 'Start battle',
@@ -175,7 +175,8 @@ function deriveTotals(items, artifacts) {
   );
 }
 
-const GRID_SIZE = 4;
+const INVENTORY_COLUMNS = 3;
+const INVENTORY_ROWS = 2;
 
 function artifactTheme(artifact) {
   const themes = {
@@ -292,10 +293,10 @@ function renderArtifactFigure(artifact) {
 
 const ArtifactGridBoard = {
   props: {
-    columns: { type: Number, default: GRID_SIZE },
-    rows: { type: Number, default: GRID_SIZE },
+    columns: { type: Number, default: INVENTORY_COLUMNS },
+    rows: { type: Number, default: INVENTORY_ROWS },
     items: { type: Array, default: () => [] },
-    variant: { type: String, default: 'board' },
+    variant: { type: String, default: 'inventory' },
     renderArtifactFigure: { type: Function, required: true },
     getArtifact: { type: Function, required: true },
     interactiveCells: { type: Boolean, default: false },
@@ -307,10 +308,10 @@ const ArtifactGridBoard = {
       return this.columns * this.rows;
     },
     gridStyle() {
-      if (this.variant === 'catalog') {
+      if (this.variant === 'catalog' || this.variant === 'inventory') {
         return {
-          gridTemplateColumns: `repeat(${this.columns}, var(--catalog-cell-size, 40px))`,
-          gridTemplateRows: `repeat(${this.rows}, var(--catalog-cell-size, 40px))`
+          gridTemplateColumns: `repeat(${this.columns}, var(--artifact-cell-size, 50px))`,
+          gridTemplateRows: `repeat(${this.rows}, var(--artifact-cell-size, 50px))`
         };
       }
       return {
@@ -321,9 +322,9 @@ const ArtifactGridBoard = {
     rootClass() {
       return {
         'artifact-grid-board': true,
-        'board-shell': this.variant === 'board',
+        'inventory-shell': this.variant === 'inventory',
         'mini-board': this.variant === 'preview',
-        'artifact-grid-board--board': this.variant === 'board',
+        'artifact-grid-board--inventory': this.variant === 'inventory',
         'artifact-grid-board--catalog': this.variant === 'catalog',
         'artifact-grid-board--preview': this.variant === 'preview'
       };
@@ -345,22 +346,22 @@ const ArtifactGridBoard = {
     backgroundClass() {
       return {
         'artifact-grid-background': true,
-        board: this.variant === 'board',
-        'mini-board-grid': this.variant !== 'board'
+        inventory: this.variant === 'inventory',
+        'mini-board-grid': this.variant !== 'inventory'
       };
     },
     piecesClass() {
       return {
         'artifact-grid-pieces': true,
-        'board-pieces': this.variant === 'board',
-        'mini-board-pieces': this.variant !== 'board'
+        'inventory-pieces': this.variant === 'inventory',
+        'mini-board-pieces': this.variant !== 'inventory'
       };
     },
     cellClass() {
       return {
         'artifact-grid-cell': true,
-        cell: this.variant === 'board',
-        'mini-board-cell': this.variant !== 'board',
+        cell: this.variant === 'inventory',
+        'mini-board-cell': this.variant !== 'inventory',
         'artifact-grid-cell--interactive': this.interactiveCells
       };
     },
@@ -397,7 +398,7 @@ const ArtifactGridBoard = {
           v-for="item in items"
           :key="item.artifactId + ':' + item.x + ':' + item.y"
           class="artifact-piece"
-          :class="{ mini: variant !== 'board' }"
+          :class="{ mini: variant !== 'inventory' }"
           :style="pieceStyle(item)"
           :data-artifact-id="item.artifactId"
           :title="getArtifact(item.artifactId)?.name?.ru || item.artifactId"
@@ -583,7 +584,7 @@ const App = {
       };
       const next = state.builderItems.filter((item) => item.artifactId !== artifact.id);
       const occupied = buildOccupancy(next);
-      if (x + artifact.width > GRID_SIZE || y + artifact.height > GRID_SIZE) {
+      if (x + artifact.width > INVENTORY_COLUMNS || y + artifact.height > INVENTORY_ROWS) {
         return null;
       }
       for (let dx = 0; dx < artifact.width; dx += 1) {
@@ -636,8 +637,8 @@ const App = {
         return;
       }
 
-      for (let y = 0; y < GRID_SIZE; y += 1) {
-        for (let x = 0; x < GRID_SIZE; x += 1) {
+      for (let y = 0; y < INVENTORY_ROWS; y += 1) {
+        for (let x = 0; x < INVENTORY_COLUMNS; x += 1) {
           const next = normalizePlacement(artifact, x, y);
           if (next) {
             state.builderItems = next;
@@ -999,8 +1000,8 @@ const App = {
           </article>
           <article class="panel">
             <artifact-grid-board
-              variant="board"
-              class="board-shell"
+              variant="inventory"
+              class="inventory-shell"
               :items="state.builderItems"
               :render-artifact-figure="renderArtifactFigure"
               :get-artifact="getArtifact"
@@ -1009,17 +1010,6 @@ const App = {
               @cell-click="placeArtifact($event.x, $event.y)"
               @piece-click="removeArtifact($event.artifactId)"
             />
-            <div class="artifact-strip">
-              <button
-                v-for="item in state.builderItems"
-                :key="'strip-' + item.artifactId"
-                class="artifact-strip-item"
-                @click="removeArtifact(item.artifactId)"
-              >
-                <div class="artifact-strip-visual" v-html="renderArtifactFigure(getArtifact(item.artifactId))"></div>
-                <span>{{ getArtifact(item.artifactId)?.name[state.lang] }}</span>
-              </button>
-            </div>
             <p>ATK {{ builderTotals.damage }} / ARM {{ builderTotals.armor }} / SPD {{ builderTotals.speed }} / STUN {{ builderTotals.stunChance }}%</p>
             <button class="primary" @click="saveLoadout">{{ t.save }}</button>
           </article>

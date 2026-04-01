@@ -1,4 +1,5 @@
 :root {
+  --artifact-cell-size: 50px;
   --bg: linear-gradient(180deg, #fbf5e7 0%, #f4edd9 100%);
   --surface: rgba(255, 250, 239, 0.92);
   --surface-strong: #fff8eb;
@@ -209,17 +210,16 @@ select {
   color: rgba(47, 36, 25, 0.72);
 }
 
-.board-shell,
+.inventory-shell,
 .mini-board {
   --board-gap: 8px;
   position: relative;
   display: grid;
 }
 
-.board,
+.inventory,
 .artifact-grid-background {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
   gap: var(--board-gap);
   margin-bottom: 14px;
 }
@@ -227,9 +227,10 @@ select {
 .cell,
 .mini-board-cell,
 .artifact-grid-cell {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  min-height: 72px;
+  padding: 0;
+  width: var(--artifact-cell-size);
+  height: var(--artifact-cell-size);
+  min-height: 0;
   display: grid;
   place-items: center;
   background:
@@ -237,19 +238,17 @@ select {
     rgba(255, 251, 244, 0.96);
 }
 
-.board-pieces,
+.inventory-pieces,
 .mini-board-grid,
 .mini-board-pieces,
 .artifact-grid-pieces {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
   gap: var(--board-gap);
 }
 
-.board-pieces {
+.inventory-pieces {
   pointer-events: none;
 }
 
@@ -303,35 +302,11 @@ select {
   overflow: hidden;
 }
 
-.artifact-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.artifact-strip-item {
-  display: grid;
-  grid-template-columns: 72px 1fr;
-  align-items: center;
-  gap: 10px;
-  min-width: 170px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
-  cursor: pointer;
-}
-
-.artifact-strip-visual {
-  min-height: 50px;
-  display: grid;
-  align-items: center;
-}
-
 .mini-board {
   min-height: 220px;
   margin-bottom: 12px;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .mini-board-grid,
@@ -380,8 +355,8 @@ select {
 }
 
 .artifact-grid-board--catalog .artifact-grid-cell {
-  width: 40px;
-  min-height: 40px;
+  width: var(--artifact-cell-size);
+  height: var(--artifact-cell-size);
 }
 
 .artifact-grid-board--catalog .artifact-piece {
@@ -480,15 +455,11 @@ select {
   }
 
   .cell {
-    min-height: 60px;
+    min-height: var(--artifact-cell-size);
   }
 
   .artifact-btn {
     grid-template-rows: minmax(156px, auto) auto;
-  }
-
-  .artifact-strip-item {
-    min-width: 100%;
   }
 
   .mini-board {
