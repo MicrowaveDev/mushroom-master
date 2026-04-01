@@ -157,9 +157,12 @@ select {
   background: #f1e8d2;
 }
 
-.artifact-layout,
-.replay-layout {
+.artifact-layout {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.replay-layout {
+  grid-template-columns: 1fr;
 }
 
 .battle-prep-layout {
@@ -170,14 +173,31 @@ select {
 }
 
 .battle-prep-visual,
-.battle-prep-summary {
+.battle-prep-summary,
+.battle-prep-character {
   background: rgba(255, 255, 255, 0.66);
 }
 
 .battle-prep-visual {
   width: fit-content;
+  display: grid;
+  gap: 12px;
+  align-content: start;
 }
 
+.battle-prep-character {
+  min-width: 240px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.battle-prep-character-portrait {
+  aspect-ratio: 4 / 3;
+}
+
+.home-inventory,
+.results-inventory,
 .battle-prep-inventory {
   margin: 0;
 }
@@ -187,13 +207,17 @@ select {
   align-content: start;
 }
 
+.battle-prep-inventory-stats {
+  margin: 0;
+}
+
 .battle-prep-summary .primary {
   width: 100%;
 }
 
 .artifact-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -239,8 +263,7 @@ select {
   color: rgba(47, 36, 25, 0.72);
 }
 
-.inventory-shell,
-.mini-board {
+.inventory-shell {
   --board-gap: 8px;
   position: relative;
   display: grid;
@@ -254,7 +277,6 @@ select {
 }
 
 .cell,
-.mini-board-cell,
 .artifact-grid-cell {
   padding: 0;
   width: var(--artifact-cell-size);
@@ -268,8 +290,6 @@ select {
 }
 
 .inventory-pieces,
-.mini-board-grid,
-.mini-board-pieces,
 .artifact-grid-pieces {
   position: absolute;
   inset: 0;
@@ -331,30 +351,6 @@ select {
   overflow: hidden;
 }
 
-.mini-board {
-  min-height: 220px;
-  margin-bottom: 12px;
-  width: fit-content;
-  max-width: 100%;
-}
-
-.mini-board-grid,
-.mini-board-pieces {
-  position: relative;
-}
-
-.mini-board-grid {
-  z-index: 1;
-}
-
-.mini-board-pieces {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.mini-board-cell,
 .artifact-grid-board--catalog .artifact-grid-cell {
   min-height: 44px;
   border-radius: 16px;
@@ -398,13 +394,14 @@ select {
 
 @media (max-width: 820px) {
   .artifact-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .battle-prep-layout {
     grid-template-columns: 1fr;
   }
 
+  .battle-prep-character,
   .battle-prep-visual,
   .battle-prep-summary {
     width: 100%;
@@ -413,8 +410,9 @@ select {
 
 .battle-stage .duel {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
 }
 
 .fighter {
@@ -429,11 +427,39 @@ select {
 
 .fighter-portrait {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 5 / 4;
   object-fit: cover;
   border-radius: 16px;
   border: 1px solid var(--border);
   background: #f1e8d2;
+}
+
+.battle-status {
+  min-width: 150px;
+  max-width: 180px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 18px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.battle-status-icon {
+  width: 56px;
+  height: 56px;
+  display: block;
+}
+
+.battle-status p {
+  margin: 0;
+}
+
+.results-portrait {
+  aspect-ratio: 4 / 3;
 }
 
 .fighter.acting {
@@ -448,6 +474,17 @@ select {
 .replay-log {
   max-height: 540px;
   overflow: auto;
+}
+
+@media (max-width: 820px) {
+  .battle-stage .duel {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-status {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .log-entry {
@@ -512,7 +549,7 @@ select {
     grid-template-rows: minmax(156px, auto) auto;
   }
 
-  .mini-board {
-    min-height: 188px;
+  .artifact-list {
+    grid-template-columns: 1fr;
   }
 }

@@ -54,6 +54,7 @@ async function api(request, sessionKey, url, method = 'GET', data = undefined) {
 }
 
 test('capture key v1 screens', async ({ page, request, baseURL }) => {
+  await page.setViewportSize({ width: 1440, height: 1400 });
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 701, username: 'screen_a', name: 'Screen A' });
   const opponent = await createSession(request, { telegramId: 702, username: 'screen_b', name: 'Screen B' });
@@ -94,6 +95,7 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}?screen=home`);
   await page.waitForSelector('.dashboard');
+  await expect(page.locator('.home-inventory .artifact-grid-cell')).toHaveCount(6);
   await saveShot(page, '02-home.png');
 
   await page.goto(`${baseURL}?screen=characters`);
@@ -102,11 +104,24 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
 
   await page.goto(`${baseURL}?screen=artifacts`);
   await page.waitForSelector('.artifact-grid-board--inventory');
+  const artifactCards = page.locator('.artifact-btn');
+  const firstCardBox = await artifactCards.nth(0).boundingBox();
+  const secondCardBox = await artifactCards.nth(1).boundingBox();
+  const thirdCardBox = await artifactCards.nth(2).boundingBox();
+  const fourthCardBox = await artifactCards.nth(3).boundingBox();
+  expect(firstCardBox).not.toBeNull();
+  expect(secondCardBox).not.toBeNull();
+  expect(thirdCardBox).not.toBeNull();
+  expect(fourthCardBox).not.toBeNull();
+  expect(Math.abs(firstCardBox.y - secondCardBox.y)).toBeLessThan(4);
+  expect(Math.abs(firstCardBox.y - thirdCardBox.y)).toBeLessThan(4);
+  expect(fourthCardBox.y).toBeGreaterThan(firstCardBox.y + 20);
   await saveShot(page, '04-artifacts.png');
 
   await page.goto(`${baseURL}?screen=battle`);
   await page.waitForSelector('.battle-prep-inventory');
   await expect(page.locator('.battle-prep-inventory .artifact-grid-cell')).toHaveCount(6);
+  await expect(page.locator('.battle-prep-character .battle-prep-character-portrait')).toBeVisible();
   await expect(page.locator('.battle-prep-summary')).toBeVisible();
   const inventoryBox = await page.locator('.battle-prep-inventory').boundingBox();
   const buttonBox = await page.getByRole('button', { name: /Start battle|Начать бой/ }).boundingBox();
@@ -121,10 +136,12 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
 
   await page.goto(`${baseURL}?screen=replay&replay=${ghostBattle.id}`);
   await page.waitForSelector('.replay-log');
+  await expect(page.locator('.battle-status')).toBeVisible();
   await saveShot(page, '06-replay.png');
 
   await page.getByRole('button', { name: /Result|Результат/ }).click();
   await page.waitForSelector('.panel');
+  await expect(page.locator('.results-portrait')).toHaveCount(2);
   await saveShot(page, '07-results.png');
 
   await page.goto(`${baseURL}?screen=history`);

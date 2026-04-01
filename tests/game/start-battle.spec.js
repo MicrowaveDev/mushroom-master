@@ -94,7 +94,7 @@ test('start battle button opens replay when a ghost opponent exists', async ({ p
   expect(firstReplayEntryText).not.toBe(secondReplayEntryText);
 });
 
-test('artifact figures are visible in the library, on the board, and in the saved battle preview', async ({ page, request, baseURL }) => {
+test('artifact figures are visible in the library, inventory, and battle surfaces', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 804, username: 'shape_player', name: 'Shape Player' });
   const opponent = await createSession(request, { telegramId: 805, username: 'shape_ghost', name: 'Shape Ghost' });

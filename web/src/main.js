@@ -308,25 +308,17 @@ const ArtifactGridBoard = {
       return this.columns * this.rows;
     },
     gridStyle() {
-      if (this.variant === 'catalog' || this.variant === 'inventory') {
-        return {
-          gridTemplateColumns: `repeat(${this.columns}, var(--artifact-cell-size, 50px))`,
-          gridTemplateRows: `repeat(${this.rows}, var(--artifact-cell-size, 50px))`
-        };
-      }
       return {
-        gridTemplateColumns: `repeat(${this.columns}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${this.rows}, minmax(0, 1fr))`
+        gridTemplateColumns: `repeat(${this.columns}, var(--artifact-cell-size, 50px))`,
+        gridTemplateRows: `repeat(${this.rows}, var(--artifact-cell-size, 50px))`
       };
     },
     rootClass() {
       return {
         'artifact-grid-board': true,
         'inventory-shell': this.variant === 'inventory',
-        'mini-board': this.variant === 'preview',
         'artifact-grid-board--inventory': this.variant === 'inventory',
-        'artifact-grid-board--catalog': this.variant === 'catalog',
-        'artifact-grid-board--preview': this.variant === 'preview'
+        'artifact-grid-board--catalog': this.variant === 'catalog'
       };
     }
   },
@@ -346,22 +338,19 @@ const ArtifactGridBoard = {
     backgroundClass() {
       return {
         'artifact-grid-background': true,
-        inventory: this.variant === 'inventory',
-        'mini-board-grid': this.variant !== 'inventory'
+        inventory: this.variant === 'inventory'
       };
     },
     piecesClass() {
       return {
         'artifact-grid-pieces': true,
-        'inventory-pieces': this.variant === 'inventory',
-        'mini-board-pieces': this.variant !== 'inventory'
+        'inventory-pieces': this.variant === 'inventory'
       };
     },
     cellClass() {
       return {
         'artifact-grid-cell': true,
         cell: this.variant === 'inventory',
-        'mini-board-cell': this.variant !== 'inventory',
         'artifact-grid-cell--interactive': this.interactiveCells
       };
     },
@@ -398,7 +387,7 @@ const ArtifactGridBoard = {
           v-for="item in items"
           :key="item.artifactId + ':' + item.x + ':' + item.y"
           class="artifact-piece"
-          :class="{ mini: variant !== 'inventory' }"
+          :class="{ mini: variant === 'catalog' }"
           :style="pieceStyle(item)"
           :data-artifact-id="item.artifactId"
           :title="getArtifact(item.artifactId)?.name?.ru || item.artifactId"
@@ -961,7 +950,8 @@ const App = {
             <h3>{{ t.selectedArtifacts }}</h3>
             <artifact-grid-board
               v-if="state.builderItems.length"
-              variant="preview"
+              variant="inventory"
+              class="inventory-shell home-inventory"
               :items="state.builderItems"
               :render-artifact-figure="renderArtifactFigure"
               :get-artifact="getArtifact"
@@ -1034,6 +1024,12 @@ const App = {
           <h2>{{ t.battle }}</h2>
           <p v-if="activeMushroom">{{ activeMushroom.name[state.lang] }} ready with {{ state.builderItems.length }} / 3 artifacts.</p>
           <div class="battle-prep-layout">
+            <article class="panel battle-prep-character" v-if="activeMushroom">
+              <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="portrait battle-prep-character-portrait"/>
+              <h3>{{ activeMushroom.name[state.lang] }}</h3>
+              <p>{{ activeMushroom.styleTag }}</p>
+              <p>HP {{ activeMushroom.baseStats.health }} / ATK {{ activeMushroom.baseStats.attack }} / SPD {{ activeMushroom.baseStats.speed }}</p>
+            </article>
             <div class="battle-prep-visual panel">
               <artifact-grid-board
                 v-if="state.builderItems.length"
@@ -1043,9 +1039,9 @@ const App = {
                 :render-artifact-figure="renderArtifactFigure"
                 :get-artifact="getArtifact"
               />
+              <p class="battle-prep-inventory-stats">ATK {{ builderTotals.damage }} / ARM {{ builderTotals.armor }} / SPD {{ builderTotals.speed }} / STUN {{ builderTotals.stunChance }}%</p>
             </div>
             <div class="battle-prep-summary panel stack">
-              <p>ATK {{ builderTotals.damage }} / ARM {{ builderTotals.armor }} / SPD {{ builderTotals.speed }} / STUN {{ builderTotals.stunChance }}%</p>
               <button class="primary" :disabled="state.builderItems.length !== 3" @click="startBattle">{{ t.startBattle }}</button>
             </div>
           </div>
@@ -1064,6 +1060,15 @@ const App = {
                 <h3>{{ getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId }}</h3>
                 <p>{{ activeReplayState?.left.currentHealth }} / {{ activeReplayState?.left.maxHealth }}</p>
               </div>
+              <div class="battle-status">
+                <svg class="battle-status-icon" viewBox="0 0 64 64" aria-hidden="true">
+                  <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />
+                  <path d="M34 40 L44 50 L50 44 L40 34 Z" fill="#8a6135" />
+                  <path d="M44 14 L50 20 L20 50 L14 44 Z" fill="#b07d47" />
+                  <path d="M14 14 L20 20 L50 50 L44 44 Z" fill="#7f9872" />
+                </svg>
+                <p>{{ activeEvent?.narration }}</p>
+              </div>
               <div class="fighter" :class="{ acting: activeEvent?.actorSide === 'right' }">
                 <img
                   v-if="getMushroom(state.currentBattle.snapshots.right.mushroomId)"
@@ -1075,7 +1080,6 @@ const App = {
                 <p>{{ activeReplayState?.right.currentHealth }} / {{ activeReplayState?.right.maxHealth }}</p>
               </div>
             </div>
-            <p class="replay-line">{{ activeEvent?.narration }}</p>
             <div class="row">
               <button class="secondary" @click="stopReplay">Pause</button>
               <button class="secondary" @click="autoplayReplay">Play</button>
@@ -1100,9 +1104,16 @@ const App = {
           <p>{{ state.currentBattle.outcome }}</p>
           <div class="grid cards">
             <article class="panel card" v-for="(snapshot, side) in state.currentBattle.snapshots" :key="side">
-              <h3>{{ snapshot.mushroomId }}</h3>
+              <img
+                v-if="getMushroom(snapshot.mushroomId)"
+                :src="getMushroom(snapshot.mushroomId).imagePath"
+                :alt="getMushroom(snapshot.mushroomId).name[state.lang]"
+                class="portrait results-portrait"
+              />
+              <h3>{{ getMushroom(snapshot.mushroomId)?.name[state.lang] || snapshot.mushroomId }}</h3>
               <artifact-grid-board
-                variant="preview"
+                variant="inventory"
+                class="inventory-shell results-inventory"
                 :items="snapshot.loadout.items"
                 :render-artifact-figure="renderArtifactFigure"
                 :get-artifact="getArtifact"
