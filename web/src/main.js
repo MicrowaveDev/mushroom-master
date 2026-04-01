@@ -1,5 +1,6 @@
 import { createApp, reactive, ref, computed, onMounted, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
+import { defaultReplayPortraitConfig, replayPortraitConfigByMushroom } from './replay-portrait-config.js';
 
 const messages = {
   ru: {
@@ -291,6 +292,82 @@ function renderArtifactFigure(artifact) {
   `;
 }
 
+function getReplayCombatantName(currentBattle, side, resolveName) {
+  if (!currentBattle || !side) {
+    return '';
+  }
+  const mushroomId = currentBattle.snapshots?.[side]?.mushroomId;
+  return resolveName(mushroomId) || mushroomId || '';
+}
+
+function formatReplayEvent(event, currentBattle, resolveName) {
+  if (!event) {
+    return { logText: '', speechText: '', statusText: '', speechSide: null };
+  }
+
+  const actorName = getReplayCombatantName(currentBattle, event.actorSide, resolveName);
+  const targetName = getReplayCombatantName(currentBattle, event.targetSide, resolveName);
+  const leftName = getReplayCombatantName(currentBattle, 'left', resolveName);
+  const rightName = getReplayCombatantName(currentBattle, 'right', resolveName);
+
+  switch (event.type) {
+    case 'action': {
+      const logText = `${actorName} uses ${event.actionName} for ${event.damage} damage${event.stunned ? ' and stuns the target' : ''}.`;
+      const speechText = `I use ${event.actionName} for ${event.damage} damage${event.stunned ? ' and stun the target' : ''}.`;
+      return {
+        logText,
+        speechText,
+        statusText: '',
+        speechSide: event.actorSide || null
+      };
+    }
+    case 'skip':
+      return {
+        logText: `${actorName} is stunned and loses the turn.`,
+        speechText: "I'm stunned and lose my turn.",
+        statusText: '',
+        speechSide: event.actorSide || null
+      };
+    case 'battle_start':
+      return {
+        logText: `${leftName} faces ${rightName}.`,
+        speechText: '',
+        statusText: `${leftName} faces ${rightName}.`,
+        speechSide: null
+      };
+    case 'round_start':
+      return {
+        logText: `Round ${event.round} begins.`,
+        speechText: '',
+        statusText: `Round ${event.round} begins.`,
+        speechSide: null
+      };
+    case 'battle_end':
+      if (event.winnerSide) {
+        const winnerName = getReplayCombatantName(currentBattle, event.winnerSide, lang);
+        return {
+          logText: `${winnerName} wins.`,
+          speechText: '',
+          statusText: `${winnerName} wins.`,
+          speechSide: null
+        };
+      }
+      return {
+        logText: 'The battle ends in a draw.',
+        speechText: '',
+        statusText: 'The battle ends in a draw.',
+        speechSide: null
+      };
+    default:
+      return {
+        logText: event.narration || `${actorName} ${targetName}`.trim(),
+        speechText: '',
+        statusText: event.narration || '',
+        speechSide: null
+      };
+  }
+}
+
 const ArtifactGridBoard = {
   props: {
     columns: { type: Number, default: INVENTORY_COLUMNS },
@@ -399,9 +476,83 @@ const ArtifactGridBoard = {
   `
 };
 
+const FighterCard = {
+  props: {
+    mushroom: { type: Object, default: null },
+    nameText: { type: String, default: '' },
+    healthText: { type: String, default: '' },
+    speechText: { type: String, default: '' },
+    acting: { type: Boolean, default: false },
+    bubbleStyle: { type: Object, default: () => ({}) },
+    extraClass: { type: String, default: '' }
+  },
+  computed: {
+    rootClass() {
+      return ['fighter', this.extraClass, { acting: this.acting }];
+    }
+  },
+  template: `
+    <article :class="rootClass">
+      <div class="fighter-portrait-wrap" :style="bubbleStyle">
+        <div v-if="speechText" class="fighter-speech-bubble">{{ speechText }}</div>
+        <img
+          v-if="mushroom"
+          :src="mushroom.imagePath"
+          :alt="mushroom.name?.ru || mushroom.name?.en || mushroom.id"
+          class="fighter-portrait"
+        />
+      </div>
+      <h3>{{ nameText || mushroom?.name?.ru || mushroom?.name?.en || mushroom?.id }}</h3>
+      <p v-if="healthText">{{ healthText }}</p>
+      <p v-else-if="mushroom">{{ mushroom.styleTag }}</p>
+    </article>
+  `
+};
+
+const ReplayDuel = {
+  components: { FighterCard },
+  props: {
+    leftFighter: { type: Object, default: () => ({}) },
+    rightFighter: { type: Object, default: () => ({}) },
+    actingSide: { type: String, default: '' },
+    statusText: { type: String, default: '' }
+  },
+  template: `
+    <div class="duel">
+      <fighter-card
+        :mushroom="leftFighter.mushroom"
+        :name-text="leftFighter.nameText"
+        :health-text="leftFighter.healthText"
+        :speech-text="leftFighter.speechText"
+        :acting="actingSide === 'left'"
+        :bubble-style="leftFighter.bubbleStyle"
+      />
+      <div class="battle-status">
+        <svg class="battle-status-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />
+          <path d="M34 40 L44 50 L50 44 L40 34 Z" fill="#8a6135" />
+          <path d="M44 14 L50 20 L20 50 L14 44 Z" fill="#b07d47" />
+          <path d="M14 14 L20 20 L50 50 L44 44 Z" fill="#7f9872" />
+        </svg>
+        <p v-if="statusText">{{ statusText }}</p>
+      </div>
+      <fighter-card
+        :mushroom="rightFighter.mushroom"
+        :name-text="rightFighter.nameText"
+        :health-text="rightFighter.healthText"
+        :speech-text="rightFighter.speechText"
+        :acting="actingSide === 'right'"
+        :bubble-style="rightFighter.bubbleStyle"
+      />
+    </div>
+  `
+};
+
 const App = {
   components: {
-    ArtifactGridBoard
+    ArtifactGridBoard,
+    FighterCard,
+    ReplayDuel
   },
   setup() {
     const state = reactive({
@@ -431,13 +582,30 @@ const App = {
     const isLocalLabEnabled = computed(() => state.appConfig.localAiLabEnabled);
     const isLocalDevAuthEnabled = computed(() => state.appConfig.localDevAuthEnabled);
     const activeEvent = computed(() => state.currentBattle?.events?.[state.replayIndex] || null);
+    const activeReplayDisplay = computed(() =>
+      formatReplayEvent(activeEvent.value, state.currentBattle, (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en)
+    );
+    const activeSpeech = computed(() => {
+      if (!activeReplayDisplay.value?.speechSide || !activeReplayDisplay.value?.speechText) {
+        return null;
+      }
+      return {
+        side: activeReplayDisplay.value.speechSide,
+        narration: activeReplayDisplay.value.speechText
+      };
+    });
+    const battleStatusText = computed(() => activeReplayDisplay.value?.statusText || '');
     const visibleReplayEvents = computed(() => {
       if (!state.currentBattle?.events?.length) {
         return [];
       }
       return state.currentBattle.events
         .slice(0, state.replayIndex + 1)
-        .map((event, index) => ({ ...event, replayIndex: index }))
+        .map((event, index) => ({
+          ...event,
+          replayIndex: index,
+          display: formatReplayEvent(event, state.currentBattle, (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en)
+        }))
         .reverse();
     });
 
@@ -567,6 +735,37 @@ const App = {
 
     function getMushroom(mushroomId) {
       return state.bootstrap?.mushrooms?.find((item) => item.id === mushroomId) || null;
+    }
+
+    function replayBubbleStyle(mushroomId) {
+      const layout = replayPortraitConfigByMushroom[mushroomId] || defaultReplayPortraitConfig;
+      return {
+        '--bubble-top': layout.top,
+        '--bubble-inset-left': layout.insetLeft,
+        '--bubble-inset-right': layout.insetRight,
+        '--bubble-tail-left': layout.tailLeft,
+        '--fighter-object-position': layout.imagePosition
+      };
+    }
+
+    function sampleBubbleText(mushroom) {
+      if (!mushroom) {
+        return '';
+      }
+      return state.lang === 'ru'
+        ? `Я использую ${mushroom.active.name.ru} и наношу 16 урона.`
+        : `I use ${mushroom.active.name.en} for 16 damage.`;
+    }
+
+    function buildReplayFighter(mushroomId, options = {}) {
+      const mushroom = getMushroom(mushroomId);
+      return {
+        mushroom,
+        nameText: options.nameText || mushroom?.name?.[state.lang] || mushroom?.name?.en || mushroomId || '',
+        healthText: options.healthText || '',
+        speechText: options.speechText || '',
+        bubbleStyle: mushroomId ? replayBubbleStyle(mushroomId) : {}
+      };
     }
 
     function artifactGridStyle(item) {
@@ -852,6 +1051,8 @@ const App = {
       activeMushroom,
       builderTotals,
       activeEvent,
+      activeSpeech,
+      battleStatusText,
       activeReplayState,
       visibleReplayEvents,
       goTo,
@@ -861,6 +1062,9 @@ const App = {
       saveCharacter,
       getArtifact,
       getMushroom,
+      replayBubbleStyle,
+      sampleBubbleText,
+      buildReplayFighter,
       artifactGridStyle,
       renderArtifactFigure,
       buildOccupancy,
@@ -970,6 +1174,19 @@ const App = {
           </article>
         </section>
 
+        <section v-else-if="state.screen === 'bubble-review' && isLocalDevAuthEnabled" class="stack bubble-review-screen">
+          <h2>Bubble Review</h2>
+          <div class="bubble-review-grid">
+            <article class="panel battle-stage bubble-review-stage" v-for="mushroom in state.bootstrap.mushrooms" :key="mushroom.id">
+              <replay-duel
+                :left-fighter="buildReplayFighter(mushroom.id, { nameText: mushroom.name[state.lang], speechText: sampleBubbleText(mushroom) })"
+                :right-fighter="buildReplayFighter(mushroom.id, { nameText: mushroom.name[state.lang] })"
+                status-text=" "
+              />
+            </article>
+          </div>
+        </section>
+
         <section v-else-if="state.screen === 'artifacts'" class="grid artifact-layout">
           <article class="panel">
             <h2>{{ t.artifacts }}</h2>
@@ -1049,37 +1266,20 @@ const App = {
 
         <section v-else-if="state.screen === 'replay' && state.currentBattle" class="grid replay-layout">
           <article class="panel battle-stage">
-            <div class="duel">
-              <div class="fighter" :class="{ acting: activeEvent?.actorSide === 'left' }">
-                <img
-                  v-if="getMushroom(state.currentBattle.snapshots.left.mushroomId)"
-                  :src="getMushroom(state.currentBattle.snapshots.left.mushroomId).imagePath"
-                  :alt="getMushroom(state.currentBattle.snapshots.left.mushroomId).name[state.lang]"
-                  class="fighter-portrait"
-                />
-                <h3>{{ getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId }}</h3>
-                <p>{{ activeReplayState?.left.currentHealth }} / {{ activeReplayState?.left.maxHealth }}</p>
-              </div>
-              <div class="battle-status">
-                <svg class="battle-status-icon" viewBox="0 0 64 64" aria-hidden="true">
-                  <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />
-                  <path d="M34 40 L44 50 L50 44 L40 34 Z" fill="#8a6135" />
-                  <path d="M44 14 L50 20 L20 50 L14 44 Z" fill="#b07d47" />
-                  <path d="M14 14 L20 20 L50 50 L44 44 Z" fill="#7f9872" />
-                </svg>
-                <p>{{ activeEvent?.narration }}</p>
-              </div>
-              <div class="fighter" :class="{ acting: activeEvent?.actorSide === 'right' }">
-                <img
-                  v-if="getMushroom(state.currentBattle.snapshots.right.mushroomId)"
-                  :src="getMushroom(state.currentBattle.snapshots.right.mushroomId).imagePath"
-                  :alt="getMushroom(state.currentBattle.snapshots.right.mushroomId).name[state.lang]"
-                  class="fighter-portrait"
-                />
-                <h3>{{ getMushroom(state.currentBattle.snapshots.right.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.right.mushroomId }}</h3>
-                <p>{{ activeReplayState?.right.currentHealth }} / {{ activeReplayState?.right.maxHealth }}</p>
-              </div>
-            </div>
+            <replay-duel
+              :left-fighter="buildReplayFighter(state.currentBattle.snapshots.left.mushroomId, {
+                nameText: getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId,
+                healthText: activeReplayState?.left.currentHealth + ' / ' + activeReplayState?.left.maxHealth,
+                speechText: activeSpeech?.side === 'left' ? activeSpeech.narration : ''
+              })"
+              :right-fighter="buildReplayFighter(state.currentBattle.snapshots.right.mushroomId, {
+                nameText: getMushroom(state.currentBattle.snapshots.right.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.right.mushroomId,
+                healthText: activeReplayState?.right.currentHealth + ' / ' + activeReplayState?.right.maxHealth,
+                speechText: activeSpeech?.side === 'right' ? activeSpeech.narration : ''
+              })"
+              :acting-side="activeEvent?.actorSide || ''"
+              :status-text="battleStatusText"
+            />
             <div class="row">
               <button class="secondary" @click="stopReplay">Pause</button>
               <button class="secondary" @click="autoplayReplay">Play</button>
@@ -1094,7 +1294,7 @@ const App = {
               :class="{ active: event.replayIndex === state.replayIndex }"
               @click="state.replayIndex = event.replayIndex"
             >
-              {{ event.narration }}
+              {{ event.display.logText }}
             </button>
           </article>
         </section>

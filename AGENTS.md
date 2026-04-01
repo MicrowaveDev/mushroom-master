@@ -115,6 +115,28 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - consistent cell size across related surfaces
 - For battle-prep, builder, and similar composition-heavy screens, include at least one assertion that the primary call-to-action is outside the visual surface and remains clickable.
 
+### Character Portrait And Bubble Rules
+
+- When a screen overlays speech bubbles, labels, or callouts onto character portraits, prefer per-character configuration over one global visual offset.
+- Keep portrait framing and bubble anchoring in the same config object when they are visually coupled.
+- For the autobattler frontend, keep that config in [web/src/replay-portrait-config.js](/Users/microwavedev/workspace/mushroom-master/web/src/replay-portrait-config.js) and treat that file as the source of truth for portrait framing and replay-bubble placement.
+- Treat these config fields as part of the UI contract:
+  - portrait object-position or equivalent image crop controls
+  - bubble top/side offsets
+  - bubble tail anchor
+- For `object-position: '<x>% <y>%'` portrait tuning in this repo:
+  - increasing the second percent moves the visible framing upward
+  - decreasing the second percent moves the visible framing downward
+  - do not rely on intuition here; verify each change against a freshly regenerated screenshot
+- When portrait or bubble positioning is wrong for a specific character, adjust [web/src/replay-portrait-config.js](/Users/microwavedev/workspace/mushroom-master/web/src/replay-portrait-config.js) first before changing shared CSS or component structure.
+- For cast-wide portrait or bubble changes, generate a fresh all-characters review screenshot from the current code and inspect it before sign-off.
+- If one or more characters are still framed incorrectly after the first pass, adjust the config and regenerate the review screenshot instead of patching unrelated global CSS.
+- For this kind of surface, tests should prove:
+  - all expected character cards render
+  - all expected bubbles render
+  - the cast-wide review screenshot was regenerated from the current config
+  - the screenshot for agent review was regenerated in the same pass
+
 ### Repo-Local Proof Loop
 
 For non-trivial, multi-stage, or resume-likely work, keep durable proof inside the repository under:

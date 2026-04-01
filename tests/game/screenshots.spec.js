@@ -102,6 +102,12 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
   await page.waitForSelector('.card');
   await saveShot(page, '03-characters.png');
 
+  await page.goto(`${baseURL}?screen=bubble-review`);
+  await page.waitForSelector('.bubble-review-grid');
+  await expect(page.locator('.bubble-review-stage')).toHaveCount(5);
+  await expect(page.locator('.bubble-review-stage .fighter-speech-bubble')).toHaveCount(5);
+  await saveShot(page, '03b-bubble-review.png');
+
   await page.goto(`${baseURL}?screen=artifacts`);
   await page.waitForSelector('.artifact-grid-board--inventory');
   const artifactCards = page.locator('.artifact-btn');
@@ -137,6 +143,16 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
   await page.goto(`${baseURL}?screen=replay&replay=${ghostBattle.id}`);
   await page.waitForSelector('.replay-log');
   await expect(page.locator('.battle-status')).toBeVisible();
+  await expect(page.locator('.fighter-speech-bubble')).toHaveCount(0);
+  const replayFighters = page.locator('.duel > .fighter');
+  await page.getByRole('button', { name: /Kirt uses|Clean Strike/i }).first().click();
+  await expect(replayFighters.nth(0).locator('.fighter-speech-bubble')).toHaveCount(0);
+  await expect(replayFighters.nth(1).locator('.fighter-speech-bubble')).toHaveCount(1);
+  await expect(replayFighters.nth(1).locator('.fighter-speech-bubble')).toContainText(/^I /);
+  await page.getByRole('button', { name: /Thalla uses|Spore Lash/i }).first().click();
+  await expect(replayFighters.nth(0).locator('.fighter-speech-bubble')).toHaveCount(1);
+  await expect(replayFighters.nth(1).locator('.fighter-speech-bubble')).toHaveCount(0);
+  await expect(replayFighters.nth(0).locator('.fighter-speech-bubble')).toContainText(/^I /);
   await saveShot(page, '06-replay.png');
 
   await page.getByRole('button', { name: /Result|Результат/ }).click();
