@@ -442,6 +442,15 @@ const App = {
     const isLocalLabEnabled = computed(() => state.appConfig.localAiLabEnabled);
     const isLocalDevAuthEnabled = computed(() => state.appConfig.localDevAuthEnabled);
     const activeEvent = computed(() => state.currentBattle?.events?.[state.replayIndex] || null);
+    const visibleReplayEvents = computed(() => {
+      if (!state.currentBattle?.events?.length) {
+        return [];
+      }
+      return state.currentBattle.events
+        .slice(0, state.replayIndex + 1)
+        .map((event, index) => ({ ...event, replayIndex: index }))
+        .reverse();
+    });
 
     function applyTelegramTheme() {
       const tg = window.Telegram?.WebApp;
@@ -565,6 +574,10 @@ const App = {
 
     function getArtifact(artifactId) {
       return state.bootstrap?.artifacts?.find((item) => item.id === artifactId) || null;
+    }
+
+    function getMushroom(mushroomId) {
+      return state.bootstrap?.mushrooms?.find((item) => item.id === mushroomId) || null;
     }
 
     function artifactGridStyle(item) {
@@ -851,12 +864,14 @@ const App = {
       builderTotals,
       activeEvent,
       activeReplayState,
+      visibleReplayEvents,
       goTo,
       loginViaTelegram,
       loginViaBrowserCode,
       loginViaDevSession,
       saveCharacter,
       getArtifact,
+      getMushroom,
       artifactGridStyle,
       renderArtifactFigure,
       buildOccupancy,
@@ -1015,28 +1030,48 @@ const App = {
           </article>
         </section>
 
-        <section v-else-if="state.screen === 'battle'" class="panel stack">
+        <section v-else-if="state.screen === 'battle'" class="panel stack battle-prep">
           <h2>{{ t.battle }}</h2>
           <p v-if="activeMushroom">{{ activeMushroom.name[state.lang] }} ready with {{ state.builderItems.length }} / 3 artifacts.</p>
-          <artifact-grid-board
-            v-if="state.builderItems.length"
-            variant="preview"
-            :items="state.builderItems"
-            :render-artifact-figure="renderArtifactFigure"
-            :get-artifact="getArtifact"
-          />
-          <button class="primary" :disabled="state.builderItems.length !== 3" @click="startBattle">{{ t.startBattle }}</button>
+          <div class="battle-prep-layout">
+            <div class="battle-prep-visual panel">
+              <artifact-grid-board
+                v-if="state.builderItems.length"
+                variant="inventory"
+                class="inventory-shell battle-prep-inventory"
+                :items="state.builderItems"
+                :render-artifact-figure="renderArtifactFigure"
+                :get-artifact="getArtifact"
+              />
+            </div>
+            <div class="battle-prep-summary panel stack">
+              <p>ATK {{ builderTotals.damage }} / ARM {{ builderTotals.armor }} / SPD {{ builderTotals.speed }} / STUN {{ builderTotals.stunChance }}%</p>
+              <button class="primary" :disabled="state.builderItems.length !== 3" @click="startBattle">{{ t.startBattle }}</button>
+            </div>
+          </div>
         </section>
 
         <section v-else-if="state.screen === 'replay' && state.currentBattle" class="grid replay-layout">
           <article class="panel battle-stage">
             <div class="duel">
               <div class="fighter" :class="{ acting: activeEvent?.actorSide === 'left' }">
-                <h3>{{ state.currentBattle.snapshots.left.mushroomId }}</h3>
+                <img
+                  v-if="getMushroom(state.currentBattle.snapshots.left.mushroomId)"
+                  :src="getMushroom(state.currentBattle.snapshots.left.mushroomId).imagePath"
+                  :alt="getMushroom(state.currentBattle.snapshots.left.mushroomId).name[state.lang]"
+                  class="fighter-portrait"
+                />
+                <h3>{{ getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId }}</h3>
                 <p>{{ activeReplayState?.left.currentHealth }} / {{ activeReplayState?.left.maxHealth }}</p>
               </div>
               <div class="fighter" :class="{ acting: activeEvent?.actorSide === 'right' }">
-                <h3>{{ state.currentBattle.snapshots.right.mushroomId }}</h3>
+                <img
+                  v-if="getMushroom(state.currentBattle.snapshots.right.mushroomId)"
+                  :src="getMushroom(state.currentBattle.snapshots.right.mushroomId).imagePath"
+                  :alt="getMushroom(state.currentBattle.snapshots.right.mushroomId).name[state.lang]"
+                  class="fighter-portrait"
+                />
+                <h3>{{ getMushroom(state.currentBattle.snapshots.right.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.right.mushroomId }}</h3>
                 <p>{{ activeReplayState?.right.currentHealth }} / {{ activeReplayState?.right.maxHealth }}</p>
               </div>
             </div>
@@ -1049,11 +1084,11 @@ const App = {
           </article>
           <article class="panel replay-log">
             <button
-              v-for="(event, index) in state.currentBattle.events"
-              :key="index"
+              v-for="event in visibleReplayEvents"
+              :key="event.replayIndex"
               class="log-entry"
-              :class="{ active: index === state.replayIndex }"
-              @click="state.replayIndex = index"
+              :class="{ active: event.replayIndex === state.replayIndex }"
+              @click="state.replayIndex = event.replayIndex"
             >
               {{ event.narration }}
             </button>

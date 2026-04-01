@@ -82,7 +82,16 @@ test('start battle button opens replay when a ghost opponent exists', async ({ p
 
   await page.waitForURL(/screen=replay/);
   await expect(page.locator('.replay-log')).toBeVisible();
+  const replayEntries = page.locator('.replay-log .log-entry');
+  await expect(replayEntries).toHaveCount(1);
+  await expect(replayEntries.first()).toContainText(/faces|сталкивается|встречает/i);
   await expect(page.locator('.replay-line')).not.toHaveText('');
+
+  await page.getByRole('button', { name: /play/i }).click();
+  await expect(replayEntries).toHaveCount(2);
+  const firstReplayEntryText = await replayEntries.nth(0).innerText();
+  const secondReplayEntryText = await replayEntries.nth(1).innerText();
+  expect(firstReplayEntryText).not.toBe(secondReplayEntryText);
 });
 
 test('artifact figures are visible in the library, on the board, and in the saved battle preview', async ({ page, request, baseURL }) => {
@@ -145,11 +154,26 @@ test('artifact figures are visible in the library, on the board, and in the save
   await page.getByRole('button', { name: /save|сохранить/i }).click({ timeout: 5000 });
   await expect(page.getByRole('heading', { level: 2, name: /Battle|Бой/ })).toBeVisible();
 
-  const amberBattlePreview = page.locator('.mini-board-pieces .artifact-piece[data-artifact-id="amber_fang"] .artifact-figure-cell');
-  await expect(amberBattlePreview).toHaveCount(2);
-  await expect(amberBattlePreview.first()).toBeVisible();
+  const battleInventory = page.locator('.battle-prep-inventory');
+  const battleInventoryCells = page.locator('.battle-prep-inventory .artifact-grid-cell');
+  const battleStartButton = page.getByRole('button', { name: /start battle|начать бой/i });
+  await expect(battleInventory).toBeVisible();
+  await expect(battleInventoryCells).toHaveCount(6);
+  await expect(page.locator('.battle-prep-summary')).toBeVisible();
 
-  await page.getByRole('button', { name: /start battle|начать бой/i }).click({ timeout: 5000 });
+  const battleInventoryBox = await battleInventory.boundingBox();
+  const battleStartButtonBox = await battleStartButton.boundingBox();
+  expect(battleInventoryBox).not.toBeNull();
+  expect(battleStartButtonBox).not.toBeNull();
+  const boxesOverlap = !(
+    battleInventoryBox.x + battleInventoryBox.width <= battleStartButtonBox.x ||
+    battleStartButtonBox.x + battleStartButtonBox.width <= battleInventoryBox.x ||
+    battleInventoryBox.y + battleInventoryBox.height <= battleStartButtonBox.y ||
+    battleStartButtonBox.y + battleStartButtonBox.height <= battleInventoryBox.y
+  );
+  expect(boxesOverlap).toBe(false);
+
+  await battleStartButton.click({ timeout: 5000 });
   await expect(page.locator('.replay-log')).toBeVisible();
   await page.getByRole('button', { name: /result|результат/i }).click({ timeout: 5000 });
   await expect(page.getByRole('heading', { level: 2, name: /result|результат/i })).toBeVisible();

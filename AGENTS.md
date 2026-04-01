@@ -91,6 +91,30 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - validation passed
   - the claimed completion state matches the actual files on disk
 
+### UI Verification Rules
+
+- For any user-visible UI change, functional tests alone are insufficient.
+- Every changed UI surface must have:
+  - at least one fresh screenshot generated from the current code
+  - at least one executable visual or layout assertion
+  - proof that key controls remain visible, reachable, and not overlapped
+  - proof that intended grid, board, inventory, or container dimensions match the spec
+- Saved screenshots without assertions are evidence artifacts, not verification.
+- If a layout, composition, or dimension changed, all prior screenshot proof for that screen is stale until regenerated.
+- If the user reports that a screen looks broken, inspect the current rendered screen or a freshly generated screenshot before claiming coverage.
+- Keep functional proof and visual proof separate in evidence. A passing interaction flow does not imply correct layout.
+
+### Layout Assertion Rules
+
+- When a UI includes grids, boards, inventories, previews, overlays, or floating controls, verify geometry with executable checks.
+- Prefer assertions for:
+  - cell counts
+  - bounding boxes
+  - non-overlap between controls and visual surfaces
+  - intended horizontal vs vertical orientation
+  - consistent cell size across related surfaces
+- For battle-prep, builder, and similar composition-heavy screens, include at least one assertion that the primary call-to-action is outside the visual surface and remains clickable.
+
 ### Repo-Local Proof Loop
 
 For non-trivial, multi-stage, or resume-likely work, keep durable proof inside the repository under:
@@ -157,6 +181,7 @@ Evidence expectations:
 - every claimed `PASS` must cite concrete proof from the current repository state
 - `FAIL` and `UNKNOWN` must explain the missing proof or contradiction
 - raw proof belongs in files under `.agent/tasks/<task-id>/raw/`, not only in prose
+- every claimed visual `PASS` must cite the current screenshot file path and the command that regenerated it
 
 Recommended raw artifacts:
 

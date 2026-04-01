@@ -162,6 +162,35 @@ select {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.battle-prep-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, max-content));
+  gap: 16px;
+  align-items: start;
+}
+
+.battle-prep-visual,
+.battle-prep-summary {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.battle-prep-visual {
+  width: fit-content;
+}
+
+.battle-prep-inventory {
+  margin: 0;
+}
+
+.battle-prep-summary {
+  min-width: 240px;
+  align-content: start;
+}
+
+.battle-prep-summary .primary {
+  width: 100%;
+}
+
 .artifact-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -371,6 +400,15 @@ select {
   .artifact-list {
     grid-template-columns: 1fr;
   }
+
+  .battle-prep-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-prep-visual,
+  .battle-prep-summary {
+    width: 100%;
+  }
 }
 
 .battle-stage .duel {
@@ -384,6 +422,18 @@ select {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.fighter-portrait {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #f1e8d2;
 }
 
 .fighter.acting {

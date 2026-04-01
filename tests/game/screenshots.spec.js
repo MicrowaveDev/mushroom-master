@@ -5,16 +5,24 @@ import { test, expect } from '@playwright/test';
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots';
 
 const playerLoadout = [
-  { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
-  { artifactId: 'root_shell', x: 1, y: 0, width: 2, height: 2 },
-  { artifactId: 'shock_puff', x: 3, y: 0, width: 1, height: 1 }
+  { artifactId: 'amber_fang', x: 0, y: 0, width: 1, height: 2 },
+  { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
+  { artifactId: 'shock_puff', x: 2, y: 0, width: 1, height: 1 }
 ];
 
 const opponentLoadout = [
-  { artifactId: 'amber_fang', x: 0, y: 0, width: 1, height: 2 },
-  { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 },
-  { artifactId: 'thunder_gill', x: 2, y: 0, width: 2, height: 1 }
+  { artifactId: 'glass_cap', x: 0, y: 0, width: 2, height: 1 },
+  { artifactId: 'bark_plate', x: 0, y: 1, width: 1, height: 1 },
+  { artifactId: 'shock_puff', x: 1, y: 1, width: 1, height: 1 }
 ];
+
+async function resetDevDb(request) {
+  const response = await request.post('/api/dev/reset', { data: {} });
+  const json = await response.json();
+  if (!json.success) {
+    throw new Error(`dev reset failed: ${JSON.stringify(json)}`);
+  }
+}
 
 async function saveShot(page, name) {
   await fs.mkdir(screenshotDir, { recursive: true });
@@ -46,6 +54,7 @@ async function api(request, sessionKey, url, method = 'GET', data = undefined) {
 }
 
 test('capture key v1 screens', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
   const player = await createSession(request, { telegramId: 701, username: 'screen_a', name: 'Screen A' });
   const opponent = await createSession(request, { telegramId: 702, username: 'screen_b', name: 'Screen B' });
 
@@ -92,11 +101,22 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
   await saveShot(page, '03-characters.png');
 
   await page.goto(`${baseURL}?screen=artifacts`);
-  await page.waitForSelector('.board');
+  await page.waitForSelector('.artifact-grid-board--inventory');
   await saveShot(page, '04-artifacts.png');
 
   await page.goto(`${baseURL}?screen=battle`);
-  await page.waitForSelector('.panel');
+  await page.waitForSelector('.battle-prep-inventory');
+  await expect(page.locator('.battle-prep-inventory .artifact-grid-cell')).toHaveCount(6);
+  await expect(page.locator('.battle-prep-summary')).toBeVisible();
+  const inventoryBox = await page.locator('.battle-prep-inventory').boundingBox();
+  const buttonBox = await page.getByRole('button', { name: /Start battle|Начать бой/ }).boundingBox();
+  const overlaps = !(
+    inventoryBox.x + inventoryBox.width <= buttonBox.x ||
+    buttonBox.x + buttonBox.width <= inventoryBox.x ||
+    inventoryBox.y + inventoryBox.height <= buttonBox.y ||
+    buttonBox.y + buttonBox.height <= inventoryBox.y
+  );
+  expect(overlaps).toBe(false);
   await saveShot(page, '05-battle-prep.png');
 
   await page.goto(`${baseURL}?screen=replay&replay=${ghostBattle.id}`);
