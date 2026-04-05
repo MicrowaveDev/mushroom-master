@@ -20,7 +20,8 @@
     "game:start:backend": "node app/server/start.js",
     "game:build": "vite build --config web/vite.config.js",
     "game:test": "node --test tests/**/*.test.js",
-    "game:test:screens": "npx playwright test tests/game/screenshots.spec.js --config=tests/game/playwright.config.js --reporter=line",
+    "game:test:screens": "node app/scripts/run-game-screenshot-check.js",
+    "game:test:screens:debug": "node app/scripts/run-game-screenshot-check.js --debug",
     "game:dev:battle-page": "node app/scripts/open-dev-battle-page.js",
     "test": "node --test"
   },

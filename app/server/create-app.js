@@ -21,6 +21,7 @@ import {
   getBattle,
   getBattleHistory,
   getBootstrap,
+  getInventoryReviewSamples,
   getFriendChallenge,
   getFriends,
   getLeaderboard,
@@ -381,6 +382,17 @@ export async function createApp() {
             sessionKey: verified.session.sessionKey,
             player: verified.player
           }
+        });
+      })
+    );
+
+    app.get(
+      '/api/dev/inventory-review',
+      requireAuth,
+      asyncRoute(async (_req, res) => {
+        res.json({
+          success: true,
+          data: await getInventoryReviewSamples()
         });
       })
     );

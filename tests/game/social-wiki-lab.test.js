@@ -17,9 +17,9 @@ test('friend codes, challenge accept flow, and two-sided scoring work', async ()
 
   await saveSetup(challenger.player.id, 'morga', baseLoadout);
   await saveSetup(invitee.player.id, 'lomie', [
-    { artifactId: 'root_shell', x: 0, y: 0, width: 2, height: 2 },
+    { artifactId: 'glass_cap', x: 0, y: 0, width: 2, height: 1 },
     { artifactId: 'bark_plate', x: 2, y: 0, width: 1, height: 1 },
-    { artifactId: 'shock_puff', x: 3, y: 0, width: 1, height: 1 }
+    { artifactId: 'shock_puff', x: 2, y: 1, width: 1, height: 1 }
   ]);
 
   const inviteeProfile = await getPlayerState(invitee.player.id);

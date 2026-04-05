@@ -26,7 +26,7 @@ import {
 } from './character.js';
 import { createGeneralLoreSection, createCharacterLoreSection } from './openai.js';
 import { sendPdfViaBot } from './bot.js';
-import { renderMarkdownToHtmlAndPdf } from './render.js';
+import { normalizeRenderTemplate, renderMarkdownToHtmlAndPdf } from './render.js';
 
 function readCharacterVisualDetails(markdown) {
   const section = extractMessageSection(markdown, 'Character Visual Details');
@@ -826,8 +826,25 @@ function resolveLoreTitle(sourceRouting) {
   return explicitTitle || 'Лор мира Золотого Кордицепса';
 }
 
+function buildPdfDeliveryMetadata(template, channelUsername) {
+  if (template === 'mushrooms-docs') {
+    return {
+      caption: `Грибные документы для ${channelUsername}`,
+      documentName: 'mushrooms-docs.pdf'
+    };
+  }
+
+  return {
+    caption: `Грибной лор для ${channelUsername}`,
+    documentName: 'mushroom-lore.pdf'
+  };
+}
+
 export async function writeLoreOutputs(ctx, options = {}) {
   const { sendPdf = true, force = false } = options;
+  const renderTemplate = normalizeRenderTemplate(options.template);
+  const outputPrefix = renderTemplate === 'mushrooms-docs' ? 'mushrooms-docs' : 'mushroom-lore';
+  const pageImagesDirName = renderTemplate === 'mushrooms-docs' ? 'page-images-mushrooms-docs' : 'page-images';
   const {
     loreSources,
     photoEntries,
@@ -883,11 +900,22 @@ export async function writeLoreOutputs(ctx, options = {}) {
   const previousHash = await readPreviousSourceHash(ctx.dirs.generatedDir);
   if (!force && currentHash === previousHash && await fileExists(path.join(ctx.dirs.generatedDir, 'mushroom-lore.md'))) {
     const lorePath = path.join(ctx.dirs.generatedDir, 'mushroom-lore.md');
-    const htmlPath = path.join(ctx.dirs.generatedDir, 'mushroom-lore.html');
-    const pdfPath = path.join(ctx.dirs.generatedDir, 'mushroom-lore.pdf');
-    const pageImagesDir = path.join(ctx.dirs.generatedDir, 'page-images');
+    const htmlPath = path.join(ctx.dirs.generatedDir, `${outputPrefix}.html`);
+    const pdfPath = path.join(ctx.dirs.generatedDir, `${outputPrefix}.pdf`);
+    const pageImagesDir = path.join(ctx.dirs.generatedDir, pageImagesDirName);
     const pageImagesManifestPath = path.join(pageImagesDir, 'manifest.json');
-    return { lorePath, htmlPath, pdfPath, pageImagesDir, pageImagesManifestPath, botResults: [], skipped: true };
+    if (await fileExists(htmlPath) && await fileExists(pdfPath) && await fileExists(pageImagesManifestPath)) {
+      return {
+        template: renderTemplate,
+        lorePath,
+        htmlPath,
+        pdfPath,
+        pageImagesDir,
+        pageImagesManifestPath,
+        botResults: [],
+        skipped: true
+      };
+    }
   }
 
   // Backup previous lore before overwriting
@@ -980,14 +1008,16 @@ export async function writeLoreOutputs(ctx, options = {}) {
   const { htmlPath, pdfPath, pageImagesDir, manifestPath: pageImagesManifestPath } = await renderMarkdownToHtmlAndPdf(
     finalLoreMarkdown,
     loreTitle,
-    ctx.dirs.generatedDir
+    ctx.dirs.generatedDir,
+    { template: renderTemplate }
   );
 
   const botResults = sendPdf
     ? await sendPdfViaBot({
       botToken: ctx.config.telegramBotToken,
       pdfPath,
-      caption: `Грибной лор для ${ctx.config.channelUsername}`,
+      caption: buildPdfDeliveryMetadata(renderTemplate, ctx.config.channelUsername).caption,
+      documentName: buildPdfDeliveryMetadata(renderTemplate, ctx.config.channelUsername).documentName,
       channelUsername: ctx.config.channelUsername,
       channelChatId: ctx.botChatId,
         adminChatIds: ctx.config.adminChatIds,
@@ -997,5 +1027,5 @@ export async function writeLoreOutputs(ctx, options = {}) {
 
   await writeSourceHash(ctx.dirs.generatedDir, currentHash);
 
-  return { lorePath, htmlPath, pdfPath, pageImagesDir, pageImagesManifestPath, botResults };
+  return { template: renderTemplate, lorePath, htmlPath, pdfPath, pageImagesDir, pageImagesManifestPath, botResults };
 }

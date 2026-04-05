@@ -124,7 +124,8 @@ export async function runFullRegeneration(config = defaultConfig, options = {}) 
     }
     const outputs = await writeLoreOutputs(ctx, {
       sendPdf: options.sendPdf ?? true,
-      force: options.force ?? false
+      force: options.force ?? false,
+      template: options.template
     });
     return {
       fetchedCount: messages.length,

@@ -1,0 +1,14 @@
+{
+  "task": "mushrooms-docs-renderer",
+  "status": "PASS",
+  "template": "mushrooms-docs",
+  "artifacts": {
+    "html": "data/channel/generated/mushrooms-docs.html",
+    "pdf": "data/channel/generated/mushrooms-docs.pdf",
+    "pageImagesDir": "data/channel/generated/page-images-mushrooms-docs"
+  },
+  "notes": [
+    "Default classic lore renderer remains available.",
+    "Local verification used render-existing mode with --skip-bot."
+  ]
+}

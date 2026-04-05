@@ -1,552 +1,32 @@
 import { createApp, reactive, ref, computed, onMounted, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
 import { defaultReplayPortraitConfig, replayPortraitConfigByMushroom } from './replay-portrait-config.js';
+import {
+  INVENTORY_COLUMNS,
+  INVENTORY_ROWS,
+  MAX_ARTIFACT_COINS,
+  SHOP_OFFER_SIZE,
+  MAX_INVENTORY_PIECES,
+  readReplayDelay
+} from './constants.js';
+import { messages } from './i18n.js';
+import { apiJson, parseStartParams, setScreenQuery } from './api.js';
+import {
+  buildOccupancy,
+  deriveTotals,
+  getArtifactPrice,
+  pickRandomShopOffer,
+  shopStorageKey,
+  preferredOrientation
+} from './artifacts/grid.js';
+import { renderArtifactFigure } from './artifacts/render.js';
+import { formatReplayEvent } from './replay/format.js';
+import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
+import { FighterCard } from './components/FighterCard.js';
+import { ReplayDuel } from './components/ReplayDuel.js';
 
-const messages = {
-  ru: {
-    title: 'Мицелиум: автобаттлер',
-    authTitle: 'Вход в грибной бой',
-    authBody: 'Мини-приложение поддерживает Telegram initData и браузерный вход через одноразовый код от бота.',
-    authTelegram: 'Войти через Telegram',
-    authBrowser: 'Войти через код бота',
-    authDev: 'Локальная сессия',
-    onboardingTitle: 'Первый запуск',
-    onboardingBody: 'Выбери гриб, собери три артефакта в горизонтальном инвентаре 2x3 и отправь его в короткий 1v1 бой.',
-    continue: 'Продолжить',
-    save: 'Сохранить',
-    startBattle: 'Начать бой',
-    home: 'Домой',
-    characters: 'Грибы',
-    artifacts: 'Артефакты',
-    battle: 'Бой',
-    history: 'Реплеи',
-    friends: 'Друзья',
-    leaderboard: 'Рейтинг',
-    wiki: 'Вики',
-    profile: 'Прогресс',
-    settings: 'Настройки',
-    lab: 'AI Lab',
-    active: 'Активный',
-    selectedArtifacts: 'Выбранные артефакты',
-    selectCell: 'Тапни на артефакт, чтобы сразу добавить его в контейнер справа',
-    invalidLoadout: 'Нужно поставить ровно 3 разных артефакта без пересечений',
-    artifactLimit: 'Можно поставить только 3 артефакта',
-    equipped: 'В контейнере',
-    battleLimit: 'Лимит боёв',
-    language: 'Язык',
-    reducedMotion: 'Меньше анимации',
-    battleSpeed: 'Скорость боя',
-    friendCode: 'Код друга',
-    addFriend: 'Добавить',
-    createChallenge: 'Бросить вызов',
-    acceptChallenge: 'Принять вызов',
-    declineChallenge: 'Отклонить',
-    watchReplay: 'Смотреть реплей',
-    results: 'Результат',
-    reward: 'Награды',
-    spore: 'Споры',
-    mycelium: 'Мицелий',
-    level: 'Уровень',
-    localOnly: 'Только локально / dev',
-    botCodeHint: 'Открой ссылку в боте и вернись сюда. Проверка идет автоматически.'
-  },
-  en: {
-    title: 'Mycelium Autobattler',
-    authTitle: 'Enter the mushroom arena',
-    authBody: 'The Mini App supports Telegram initData and browser login through a one-time bot handoff.',
-    authTelegram: 'Login with Telegram',
-    authBrowser: 'Login with bot code',
-    authDev: 'Local session',
-    onboardingTitle: 'First launch',
-    onboardingBody: 'Pick a mushroom, place three artifacts in a horizontal 2x3 inventory, and send it into a short 1v1 fight.',
-    continue: 'Continue',
-    save: 'Save',
-    startBattle: 'Start battle',
-    home: 'Home',
-    characters: 'Mushrooms',
-    artifacts: 'Artifacts',
-    battle: 'Battle',
-    history: 'Replays',
-    friends: 'Friends',
-    leaderboard: 'Leaderboard',
-    wiki: 'Wiki',
-    profile: 'Progress',
-    settings: 'Settings',
-    lab: 'AI Lab',
-    active: 'Active',
-    selectedArtifacts: 'Selected artifacts',
-    selectCell: 'Tap an artifact to add it directly into the container on the right',
-    invalidLoadout: 'You need exactly 3 unique artifacts with no overlap',
-    artifactLimit: 'You can equip only 3 artifacts',
-    equipped: 'Equipped',
-    battleLimit: 'Battle limit',
-    language: 'Language',
-    reducedMotion: 'Reduced motion',
-    battleSpeed: 'Battle speed',
-    friendCode: 'Friend code',
-    addFriend: 'Add',
-    createChallenge: 'Challenge',
-    acceptChallenge: 'Accept challenge',
-    declineChallenge: 'Decline',
-    watchReplay: 'Watch replay',
-    results: 'Result',
-    reward: 'Rewards',
-    spore: 'Spore',
-    mycelium: 'Mycelium',
-    level: 'Level',
-    localOnly: 'Local / dev only',
-    botCodeHint: 'Open the bot link and return here. Verification polls automatically.'
-  }
-};
-
-function parseStartParams() {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    screen: params.get('screen'),
-    challenge: params.get('challenge'),
-    replay: params.get('replay')
-  };
-}
-
-function setScreenQuery(screen, extra = {}) {
-  const params = new URLSearchParams(window.location.search);
-  params.set('screen', screen);
-  Object.entries(extra).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-  });
-  window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
-}
-
-function apiHeaders(sessionKey) {
-  return sessionKey
-    ? {
-        'Content-Type': 'application/json',
-        'X-Session-Key': sessionKey
-      }
-    : { 'Content-Type': 'application/json' };
-}
-
-async function apiJson(path, options = {}, sessionKey = '') {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {}),
-      ...(sessionKey ? { 'X-Session-Key': sessionKey } : {})
-    }
-  });
-  const json = await response.json();
-  if (!json.success) {
-    throw new Error(json.error || 'Request failed');
-  }
-  return json.data;
-}
-
-function buildOccupancy(items) {
-  const occupied = new Map();
-  for (const item of items) {
-    for (let dx = 0; dx < item.width; dx += 1) {
-      for (let dy = 0; dy < item.height; dy += 1) {
-        occupied.set(`${item.x + dx}:${item.y + dy}`, item.artifactId);
-      }
-    }
-  }
-  return occupied;
-}
-
-function deriveTotals(items, artifacts) {
-  const byId = Object.fromEntries(artifacts.map((item) => [item.id, item]));
-  return items.reduce(
-    (acc, item) => {
-      const artifact = byId[item.artifactId];
-      if (!artifact) {
-        return acc;
-      }
-      acc.damage += artifact.bonus.damage || 0;
-      acc.armor += artifact.bonus.armor || 0;
-      acc.speed += artifact.bonus.speed || 0;
-      acc.stunChance += artifact.bonus.stunChance || 0;
-      return acc;
-    },
-    { damage: 0, armor: 0, speed: 0, stunChance: 0 }
-  );
-}
-
-const INVENTORY_COLUMNS = 3;
-const INVENTORY_ROWS = 2;
-
-function artifactTheme(artifact) {
-  const themes = {
-    damage: {
-      shell: '#f5d59d',
-      border: '#9d6130',
-      accent: '#cc6b2c',
-      ink: '#4f2f12',
-      glow: 'rgba(255, 183, 112, 0.45)'
-    },
-    armor: {
-      shell: '#d8e5cc',
-      border: '#5f7c4f',
-      accent: '#86a46d',
-      ink: '#21351c',
-      glow: 'rgba(148, 188, 138, 0.35)'
-    },
-    stun: {
-      shell: '#dfe3b7',
-      border: '#7a6f26',
-      accent: '#c2a942',
-      ink: '#393214',
-      glow: 'rgba(233, 218, 129, 0.4)'
-    }
-  };
-  return themes[artifact.family] || themes.damage;
-}
-
-function renderArtifactGlyph(artifact, theme) {
-  switch (artifact.id) {
-    case 'spore_needle':
-      return `
-        <ellipse cx="40" cy="24" rx="14" ry="10" fill="${theme.accent}" opacity="0.92" />
-        <path d="M40 32 L46 74" stroke="${theme.ink}" stroke-width="8" stroke-linecap="round" />
-        <path d="M32 40 L56 30" stroke="${theme.border}" stroke-width="5" stroke-linecap="round" />
-      `;
-    case 'amber_fang':
-      return `
-        <path d="M42 10 C58 14 60 44 50 78 C46 86 38 86 34 78 C24 48 26 18 42 10 Z" fill="${theme.accent}" />
-        <path d="M40 20 C44 32 45 48 42 68" stroke="${theme.shell}" stroke-width="5" stroke-linecap="round" opacity="0.78" />
-      `;
-    case 'glass_cap':
-      return `
-        <path d="M16 44 C22 24 42 14 64 14 C86 14 106 24 112 44 C104 56 84 60 64 60 C42 60 24 56 16 44 Z" fill="${theme.accent}" />
-        <path d="M64 42 L64 62" stroke="${theme.ink}" stroke-width="8" stroke-linecap="round" />
-        <path d="M34 36 C46 30 80 30 94 36" stroke="${theme.shell}" stroke-width="5" stroke-linecap="round" opacity="0.78" />
-      `;
-    case 'bark_plate':
-      return `
-        <rect x="18" y="18" width="44" height="44" rx="14" fill="${theme.accent}" />
-        <path d="M30 22 C24 36 24 50 30 64" stroke="${theme.ink}" stroke-width="5" stroke-linecap="round" />
-        <path d="M48 22 C54 36 54 50 48 62" stroke="${theme.border}" stroke-width="4" stroke-linecap="round" />
-      `;
-    case 'mycelium_wrap':
-      return `
-        <path d="M12 38 C24 24 42 22 60 32" stroke="${theme.shell}" stroke-width="7" stroke-linecap="round" fill="none" />
-        <path d="M68 32 C78 44 92 46 108 34" stroke="${theme.shell}" stroke-width="7" stroke-linecap="round" fill="none" />
-        <circle cx="60" cy="38" r="8" fill="${theme.ink}" opacity="0.8" />
-      `;
-    case 'root_shell':
-      return `
-        <path d="M20 20 C32 12 48 12 60 20 C68 30 68 50 60 62 C48 72 32 72 20 62 C12 50 12 30 20 20 Z" fill="${theme.accent}" />
-        <path d="M38 12 L38 70" stroke="${theme.border}" stroke-width="6" stroke-linecap="round" />
-      `;
-    case 'shock_puff':
-      return `
-        <path d="M22 52 C14 38 24 18 42 20 C50 10 68 12 72 28 C88 28 96 44 88 58 C80 70 60 74 42 70 C32 68 24 62 22 52 Z" fill="${theme.accent}" />
-        <path d="M52 24 L42 44 H56 L46 64" stroke="${theme.ink}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-      `;
-    case 'static_spore_sac':
-      return `
-        <path d="M42 12 C56 16 60 34 56 56 C52 70 48 78 46 84 C42 88 34 88 30 84 C22 58 24 24 42 12 Z" fill="${theme.accent}" />
-        <path d="M40 22 L30 44 H42 L34 68" stroke="${theme.ink}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-        <circle cx="50" cy="24" r="7" fill="${theme.shell}" opacity="0.88" />
-      `;
-    case 'thunder_gill':
-      return `
-        <path d="M14 40 C24 24 42 18 60 18 C80 18 98 24 106 40 C98 52 80 56 60 56 C40 56 22 52 14 40 Z" fill="${theme.accent}" />
-        <path d="M42 28 L34 44 H48 L40 58" stroke="${theme.ink}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-        <path d="M68 28 L62 42 H74 L66 56" stroke="${theme.border}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-      `;
-    default:
-      return `<rect x="18" y="18" width="44" height="44" rx="14" fill="${theme.accent}" />`;
-  }
-}
-
-function renderArtifactFigure(artifact) {
-  if (!artifact) {
-    return '';
-  }
-  const theme = artifactTheme(artifact);
-  const cells = Array.from({ length: artifact.width * artifact.height }, (_, index) => {
-    const x = index % artifact.width;
-    const y = Math.floor(index / artifact.width);
-    return `
-      <div class="artifact-figure-cell">
-        <svg class="artifact-figure-svg" viewBox="0 0 80 80" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <rect x="4" y="4" width="72" height="72" rx="20" fill="${theme.shell}" stroke="${theme.border}" stroke-width="6" />
-          <rect x="10" y="10" width="60" height="60" rx="16" fill="${theme.glow}" opacity="0.8" />
-          ${renderArtifactGlyph(artifact, theme, x, y)}
-        </svg>
-      </div>
-    `;
-  }).join('');
-  return `
-    <div
-      class="artifact-figure-grid"
-      style="grid-template-columns: repeat(${artifact.width}, minmax(0, 1fr)); grid-template-rows: repeat(${artifact.height}, minmax(0, 1fr));"
-    >
-      ${cells}
-    </div>
-  `;
-}
-
-function getReplayCombatantName(currentBattle, side, resolveName) {
-  if (!currentBattle || !side) {
-    return '';
-  }
-  const mushroomId = currentBattle.snapshots?.[side]?.mushroomId;
-  return resolveName(mushroomId) || mushroomId || '';
-}
-
-function formatReplayEvent(event, currentBattle, resolveName) {
-  if (!event) {
-    return { logText: '', speechText: '', statusText: '', speechSide: null };
-  }
-
-  const actorName = getReplayCombatantName(currentBattle, event.actorSide, resolveName);
-  const targetName = getReplayCombatantName(currentBattle, event.targetSide, resolveName);
-  const leftName = getReplayCombatantName(currentBattle, 'left', resolveName);
-  const rightName = getReplayCombatantName(currentBattle, 'right', resolveName);
-
-  switch (event.type) {
-    case 'action': {
-      const logText = `${actorName} uses ${event.actionName} for ${event.damage} damage${event.stunned ? ' and stuns the target' : ''}.`;
-      const speechText = `I use ${event.actionName} for ${event.damage} damage${event.stunned ? ' and stun the target' : ''}.`;
-      return {
-        logText,
-        speechText,
-        statusText: '',
-        speechSide: event.actorSide || null
-      };
-    }
-    case 'skip':
-      return {
-        logText: `${actorName} is stunned and loses the turn.`,
-        speechText: "I'm stunned and lose my turn.",
-        statusText: '',
-        speechSide: event.actorSide || null
-      };
-    case 'battle_start':
-      return {
-        logText: `${leftName} faces ${rightName}.`,
-        speechText: '',
-        statusText: `${leftName} faces ${rightName}.`,
-        speechSide: null
-      };
-    case 'round_start':
-      return {
-        logText: `Round ${event.round} begins.`,
-        speechText: '',
-        statusText: `Round ${event.round} begins.`,
-        speechSide: null
-      };
-    case 'battle_end':
-      if (event.winnerSide) {
-        const winnerName = getReplayCombatantName(currentBattle, event.winnerSide, lang);
-        return {
-          logText: `${winnerName} wins.`,
-          speechText: '',
-          statusText: `${winnerName} wins.`,
-          speechSide: null
-        };
-      }
-      return {
-        logText: 'The battle ends in a draw.',
-        speechText: '',
-        statusText: 'The battle ends in a draw.',
-        speechSide: null
-      };
-    default:
-      return {
-        logText: event.narration || `${actorName} ${targetName}`.trim(),
-        speechText: '',
-        statusText: event.narration || '',
-        speechSide: null
-      };
-  }
-}
-
-const ArtifactGridBoard = {
-  props: {
-    columns: { type: Number, default: INVENTORY_COLUMNS },
-    rows: { type: Number, default: INVENTORY_ROWS },
-    items: { type: Array, default: () => [] },
-    variant: { type: String, default: 'inventory' },
-    renderArtifactFigure: { type: Function, required: true },
-    getArtifact: { type: Function, required: true },
-    interactiveCells: { type: Boolean, default: false },
-    clickablePieces: { type: Boolean, default: false }
-  },
-  emits: ['cell-click', 'piece-click'],
-  computed: {
-    totalCells() {
-      return this.columns * this.rows;
-    },
-    gridStyle() {
-      return {
-        gridTemplateColumns: `repeat(${this.columns}, var(--artifact-cell-size, 50px))`,
-        gridTemplateRows: `repeat(${this.rows}, var(--artifact-cell-size, 50px))`
-      };
-    },
-    rootClass() {
-      return {
-        'artifact-grid-board': true,
-        'inventory-shell': this.variant === 'inventory',
-        'artifact-grid-board--inventory': this.variant === 'inventory',
-        'artifact-grid-board--catalog': this.variant === 'catalog'
-      };
-    }
-  },
-  methods: {
-    cellX(index) {
-      return index % this.columns;
-    },
-    cellY(index) {
-      return Math.floor(index / this.columns);
-    },
-    pieceStyle(item) {
-      return {
-        gridColumn: `${item.x + 1} / span ${item.width}`,
-        gridRow: `${item.y + 1} / span ${item.height}`
-      };
-    },
-    backgroundClass() {
-      return {
-        'artifact-grid-background': true,
-        inventory: this.variant === 'inventory'
-      };
-    },
-    piecesClass() {
-      return {
-        'artifact-grid-pieces': true,
-        'inventory-pieces': this.variant === 'inventory'
-      };
-    },
-    cellClass() {
-      return {
-        'artifact-grid-cell': true,
-        cell: this.variant === 'inventory',
-        'artifact-grid-cell--interactive': this.interactiveCells
-      };
-    },
-    clickCell(index) {
-      if (!this.interactiveCells) {
-        return;
-      }
-      this.$emit('cell-click', { x: this.cellX(index), y: this.cellY(index) });
-    },
-    clickPiece(item, event) {
-      if (!this.clickablePieces) {
-        return;
-      }
-      event.stopPropagation();
-      this.$emit('piece-click', item);
-    }
-  },
-  template: `
-    <div :class="rootClass">
-      <div :class="backgroundClass()" :style="gridStyle">
-        <component
-          :is="interactiveCells ? 'button' : 'span'"
-          v-for="cell in totalCells"
-          :key="cell"
-          :class="cellClass()"
-          :data-cell-x="cellX(cell - 1)"
-          :data-cell-y="cellY(cell - 1)"
-          @click="clickCell(cell - 1)"
-        ></component>
-      </div>
-      <div :class="piecesClass()" :style="gridStyle">
-        <component
-          :is="clickablePieces ? 'button' : 'div'"
-          v-for="item in items"
-          :key="item.artifactId + ':' + item.x + ':' + item.y"
-          class="artifact-piece"
-          :class="{ mini: variant === 'catalog' }"
-          :style="pieceStyle(item)"
-          :data-artifact-id="item.artifactId"
-          :title="getArtifact(item.artifactId)?.name?.ru || item.artifactId"
-          @click="clickPiece(item, $event)"
-          v-html="renderArtifactFigure(getArtifact(item.artifactId))"
-        ></component>
-      </div>
-    </div>
-  `
-};
-
-const FighterCard = {
-  props: {
-    mushroom: { type: Object, default: null },
-    nameText: { type: String, default: '' },
-    healthText: { type: String, default: '' },
-    speechText: { type: String, default: '' },
-    acting: { type: Boolean, default: false },
-    bubbleStyle: { type: Object, default: () => ({}) },
-    extraClass: { type: String, default: '' }
-  },
-  computed: {
-    rootClass() {
-      return ['fighter', this.extraClass, { acting: this.acting }];
-    }
-  },
-  template: `
-    <article :class="rootClass">
-      <div class="fighter-portrait-wrap" :style="bubbleStyle">
-        <div v-if="speechText" class="fighter-speech-bubble">{{ speechText }}</div>
-        <img
-          v-if="mushroom"
-          :src="mushroom.imagePath"
-          :alt="mushroom.name?.ru || mushroom.name?.en || mushroom.id"
-          class="fighter-portrait"
-        />
-      </div>
-      <h3>{{ nameText || mushroom?.name?.ru || mushroom?.name?.en || mushroom?.id }}</h3>
-      <p v-if="healthText">{{ healthText }}</p>
-      <p v-else-if="mushroom">{{ mushroom.styleTag }}</p>
-    </article>
-  `
-};
-
-const ReplayDuel = {
-  components: { FighterCard },
-  props: {
-    leftFighter: { type: Object, default: () => ({}) },
-    rightFighter: { type: Object, default: () => ({}) },
-    actingSide: { type: String, default: '' },
-    statusText: { type: String, default: '' }
-  },
-  template: `
-    <div class="duel">
-      <fighter-card
-        :mushroom="leftFighter.mushroom"
-        :name-text="leftFighter.nameText"
-        :health-text="leftFighter.healthText"
-        :speech-text="leftFighter.speechText"
-        :acting="actingSide === 'left'"
-        :bubble-style="leftFighter.bubbleStyle"
-      />
-      <div class="battle-status">
-        <svg class="battle-status-icon" viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />
-          <path d="M34 40 L44 50 L50 44 L40 34 Z" fill="#8a6135" />
-          <path d="M44 14 L50 20 L20 50 L14 44 Z" fill="#b07d47" />
-          <path d="M14 14 L20 20 L50 50 L44 44 Z" fill="#7f9872" />
-        </svg>
-        <p v-if="statusText">{{ statusText }}</p>
-      </div>
-      <fighter-card
-        :mushroom="rightFighter.mushroom"
-        :name-text="rightFighter.nameText"
-        :health-text="rightFighter.healthText"
-        :speech-text="rightFighter.speechText"
-        :acting="actingSide === 'right'"
-        :bubble-style="rightFighter.bubbleStyle"
-      />
-    </div>
-  `
-};
+const DEFAULT_REPLAY_AUTOPLAY_MS = readReplayDelay(import.meta.env.VITE_REPLAY_AUTOPLAY_MS, 1200);
+const DEFAULT_REPLAY_AUTOPLAY_FAST_MS = readReplayDelay(import.meta.env.VITE_REPLAY_AUTOPLAY_FAST_MS, 600);
 
 const App = {
   components: {
@@ -564,8 +44,10 @@ const App = {
       error: '',
       screen: parseStartParams().screen || 'auth',
       lang: 'ru',
-      selectedArtifactId: '',
       builderItems: [],
+      shopOffer: [],
+      draggingArtifactId: '',
+      draggingSource: '',
       currentBattle: null,
       replayIndex: 0,
       replayTimer: null,
@@ -574,6 +56,7 @@ const App = {
       friends: [],
       leaderboard: [],
       challenge: null,
+      inventoryReviewSamples: [],
       localLab: [],
       localLabInput: 'Round 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.'
     });
@@ -583,8 +66,14 @@ const App = {
     const isLocalDevAuthEnabled = computed(() => state.appConfig.localDevAuthEnabled);
     const activeEvent = computed(() => state.currentBattle?.events?.[state.replayIndex] || null);
     const activeReplayDisplay = computed(() =>
-      formatReplayEvent(activeEvent.value, state.currentBattle, (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en)
+      formatReplayEvent(activeEvent.value, state.currentBattle, (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en, (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang])
     );
+    const replayFinished = computed(() => {
+      if (!state.currentBattle?.events?.length) {
+        return false;
+      }
+      return state.replayIndex >= state.currentBattle.events.length - 1;
+    });
     const activeSpeech = computed(() => {
       if (!activeReplayDisplay.value?.speechSide || !activeReplayDisplay.value?.speechText) {
         return null;
@@ -637,6 +126,7 @@ const App = {
         state.bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
         state.lang = state.bootstrap.settings.lang;
         state.builderItems = state.bootstrap.loadout?.items ? [...state.bootstrap.loadout.items] : [];
+        loadOrGenerateShopOffer();
         state.friends = await apiJson('/api/friends', {}, state.sessionKey);
         state.leaderboard = await apiJson('/api/leaderboard', {}, state.sessionKey);
         state.wikiHome = await apiJson('/api/wiki/home');
@@ -737,6 +227,107 @@ const App = {
       return state.bootstrap?.mushrooms?.find((item) => item.id === mushroomId) || null;
     }
 
+    function mushroomDisplayName(mushroomId) {
+      const mushroom = getMushroom(mushroomId);
+      return mushroom?.name?.[state.lang] || mushroom?.name?.en || mushroomId || '';
+    }
+
+    function formatReplayDate(value) {
+      if (!value) return '';
+      const date = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      try {
+        const locale = state.lang === 'ru' ? 'ru-RU' : 'en-US';
+        return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) +
+          ' · ' + date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return date.toISOString().slice(0, 16).replace('T', ' ');
+      }
+    }
+
+    function describeReplay(battle) {
+      if (!battle) return null;
+      const viewerId = battle.viewerPlayerId || state.bootstrap?.player?.id;
+      const leftSnap = battle.snapshots?.left || {};
+      const rightSnap = battle.snapshots?.right || {};
+      const viewerSide = leftSnap.playerId === viewerId
+        ? 'left'
+        : rightSnap.playerId === viewerId
+          ? 'right'
+          : 'left';
+      const oppSide = viewerSide === 'left' ? 'right' : 'left';
+      const ourMushroomId = battle.snapshots?.[viewerSide]?.mushroomId;
+      const oppMushroomId = battle.snapshots?.[oppSide]?.mushroomId;
+
+      let outcomeKey = 'draw';
+      if (battle.winnerSide) {
+        outcomeKey = battle.winnerSide === viewerSide ? 'win' : 'loss';
+      } else if (battle.outcome === 'draw') {
+        outcomeKey = 'draw';
+      } else if (battle.outcome === 'win' || battle.outcome === 'victory') {
+        outcomeKey = 'win';
+      } else if (battle.outcome === 'loss' || battle.outcome === 'defeat') {
+        outcomeKey = 'loss';
+      }
+
+      const outcomeLabel = outcomeKey === 'win'
+        ? t.value.outcomeWin
+        : outcomeKey === 'loss'
+          ? t.value.outcomeLoss
+          : t.value.outcomeDraw;
+
+      const opponentKindLabel = battle.opponentKind === 'bot'
+        ? t.value.opponentBot
+        : battle.opponentKind === 'ghost'
+          ? t.value.opponentGhost
+          : battle.opponentKind === 'friend'
+            ? t.value.opponentFriend
+            : t.value.opponentPlayer;
+
+      const viewerReward = (battle.rewards || []).find((r) => r.playerId === viewerId) || null;
+      const ratingDelta = viewerReward && viewerReward.ratingAfter != null && viewerReward.ratingBefore != null
+        ? viewerReward.ratingAfter - viewerReward.ratingBefore
+        : null;
+
+      return {
+        outcomeKey,
+        outcomeLabel,
+        ourName: mushroomDisplayName(ourMushroomId),
+        oppName: mushroomDisplayName(oppMushroomId),
+        ourImage: getMushroom(ourMushroomId)?.imagePath || '',
+        oppImage: getMushroom(oppMushroomId)?.imagePath || '',
+        opponentKindLabel,
+        mode: battle.mode || '',
+        dateLabel: formatReplayDate(battle.createdAt),
+        sporeDelta: viewerReward?.sporeDelta ?? null,
+        myceliumDelta: viewerReward?.myceliumDelta ?? null,
+        ratingDelta
+      };
+    }
+
+    function formatArtifactBonus(artifact) {
+      if (!artifact?.bonus) return [];
+      const labels = state.lang === 'ru'
+        ? { damage: 'Урон', armor: 'Броня', speed: 'Скорость', stunChance: 'Оглушение' }
+        : { damage: 'Damage', armor: 'Armor', speed: 'Speed', stunChance: 'Stun' };
+      const result = [];
+      for (const [key, raw] of Object.entries(artifact.bonus)) {
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value === 0) continue;
+        const sign = value > 0 ? '+' : '';
+        const suffix = key === 'stunChance' ? '%' : '';
+        result.push({ key, label: labels[key] || key, value: `${sign}${value}${suffix}`, positive: value > 0 });
+      }
+      return result;
+    }
+
+    function formatDelta(value) {
+      if (value == null) return '';
+      const n = Number(value);
+      if (!Number.isFinite(n) || n === 0) return n === 0 ? '0' : '';
+      return n > 0 ? '+' + n : String(n);
+    }
+
     function replayBubbleStyle(mushroomId) {
       const layout = replayPortraitConfigByMushroom[mushroomId] || defaultReplayPortraitConfig;
       return {
@@ -763,9 +354,28 @@ const App = {
         mushroom,
         nameText: options.nameText || mushroom?.name?.[state.lang] || mushroom?.name?.en || mushroomId || '',
         healthText: options.healthText || '',
+        statsText: options.statsText || '',
         speechText: options.speechText || '',
+        loadout: options.loadout || null,
         bubbleStyle: mushroomId ? replayBubbleStyle(mushroomId) : {}
       };
+    }
+
+    function loadoutStatsText(loadout) {
+      if (!loadout?.items?.length) {
+        return '';
+      }
+      const totals = deriveTotals(loadout.items, state.bootstrap?.artifacts || []);
+      const parts = [];
+      if (totals.damage) parts.push(`Урон +${totals.damage}`);
+      if (totals.armor) parts.push(`Броня +${totals.armor}`);
+      if (totals.speed) parts.push(`Скорость +${totals.speed}`);
+      if (totals.stunChance) parts.push(`Оглушение +${totals.stunChance}%`);
+      return parts.join(' / ');
+    }
+
+    function portraitPosition(mushroomId) {
+      return (replayPortraitConfigByMushroom[mushroomId] || defaultReplayPortraitConfig).imagePosition;
     }
 
     function artifactGridStyle(item) {
@@ -775,92 +385,236 @@ const App = {
       };
     }
 
-    function normalizePlacement(artifact, x, y) {
+    function normalizePlacement(artifact, x, y, width, height) {
+      const w = width || artifact.width;
+      const h = height || artifact.height;
       const candidate = {
         artifactId: artifact.id,
         x,
         y,
-        width: artifact.width,
-        height: artifact.height
+        width: w,
+        height: h
       };
       const next = state.builderItems.filter((item) => item.artifactId !== artifact.id);
       const occupied = buildOccupancy(next);
-      if (x + artifact.width > INVENTORY_COLUMNS || y + artifact.height > INVENTORY_ROWS) {
+      if (x + w > INVENTORY_COLUMNS || y + h > INVENTORY_ROWS) {
         return null;
       }
-      for (let dx = 0; dx < artifact.width; dx += 1) {
-        for (let dy = 0; dy < artifact.height; dy += 1) {
+      for (let dx = 0; dx < w; dx += 1) {
+        for (let dy = 0; dy < h; dy += 1) {
           if (occupied.has(`${x + dx}:${y + dy}`)) {
             return null;
           }
         }
       }
       next.push(candidate);
-      return next.slice(0, 3);
+      return next;
     }
 
-    function placeArtifact(x, y) {
-      if (!state.selectedArtifactId || !state.bootstrap) {
-        return false;
+    function rotatePlacedArtifact(item) {
+      const artifact = state.bootstrap?.artifacts?.find((a) => a.id === item.artifactId);
+      if (!artifact || artifact.width === artifact.height) {
+        return;
       }
-      const artifact = state.bootstrap.artifacts.find((item) => item.id === state.selectedArtifactId);
-      if (!artifact) {
-        return false;
-      }
-      const next = normalizePlacement(artifact, x, y);
-      if (!next) {
+      const newWidth = item.height;
+      const newHeight = item.width;
+      // Check if rotated shape fits at current x,y against other items.
+      const others = state.builderItems.filter((it) => it.artifactId !== item.artifactId);
+      const occupied = buildOccupancy(others);
+      if (item.x + newWidth > INVENTORY_COLUMNS || item.y + newHeight > INVENTORY_ROWS) {
         state.error = t.value.invalidLoadout;
-        return false;
-      }
-      state.builderItems = next;
-      state.error = '';
-      return true;
-    }
-
-    function autoPlaceArtifact(artifactId) {
-      if (!state.bootstrap) {
         return;
       }
-      const artifact = state.bootstrap.artifacts.find((item) => item.id === artifactId);
-      if (!artifact) {
-        return;
-      }
-
-      state.selectedArtifactId = artifactId;
-
-      if (state.builderItems.some((item) => item.artifactId === artifactId)) {
-        removeArtifact(artifactId);
-        return;
-      }
-
-      if (state.builderItems.length >= 3) {
-        state.error = t.value.artifactLimit;
-        return;
-      }
-
-      for (let y = 0; y < INVENTORY_ROWS; y += 1) {
-        for (let x = 0; x < INVENTORY_COLUMNS; x += 1) {
-          const next = normalizePlacement(artifact, x, y);
-          if (next) {
-            state.builderItems = next;
-            state.error = '';
+      for (let dx = 0; dx < newWidth; dx += 1) {
+        for (let dy = 0; dy < newHeight; dy += 1) {
+          if (occupied.has(`${item.x + dx}:${item.y + dy}`)) {
+            state.error = t.value.invalidLoadout;
             return;
           }
         }
       }
-
-      state.error = t.value.invalidLoadout;
+      state.builderItems = state.builderItems.map((it) =>
+        it.artifactId === item.artifactId
+          ? { ...it, width: newWidth, height: newHeight }
+          : it
+      );
+      state.error = '';
     }
 
     function removeArtifact(artifactId) {
       state.builderItems = state.builderItems.filter((item) => item.artifactId !== artifactId);
-      if (state.selectedArtifactId === artifactId) {
-        state.selectedArtifactId = '';
+    }
+
+    // ---- Shop / coin budget ----
+    function persistShopOffer() {
+      if (!state.bootstrap?.player?.id) return;
+      try {
+        localStorage.setItem(
+          shopStorageKey(state.bootstrap.playerId),
+          JSON.stringify({
+            offer: state.shopOffer,
+            builder: state.builderItems
+          })
+        );
+      } catch (_e) { /* ignore */ }
+    }
+
+    function loadOrGenerateShopOffer() {
+      const artifactsList = state.bootstrap?.artifacts || [];
+      const builderIds = new Set(state.builderItems.map((i) => i.artifactId));
+      let stored = null;
+      try {
+        const raw = localStorage.getItem(shopStorageKey(state.bootstrap?.player?.id));
+        stored = raw ? JSON.parse(raw) : null;
+      } catch (_e) { stored = null; }
+      if (stored?.offer?.length) {
+        const available = new Set(artifactsList.map((a) => a.id));
+        state.shopOffer = stored.offer.filter(
+          (id) => available.has(id) && !builderIds.has(id)
+        );
+      } else {
+        state.shopOffer = pickRandomShopOffer(artifactsList, builderIds);
+      }
+      if (state.shopOffer.length < SHOP_OFFER_SIZE) {
+        const exclude = new Set([...state.shopOffer, ...builderIds]);
+        const extras = pickRandomShopOffer(artifactsList, exclude).slice(
+          0,
+          SHOP_OFFER_SIZE - state.shopOffer.length
+        );
+        state.shopOffer = [...state.shopOffer, ...extras];
+      }
+      persistShopOffer();
+    }
+
+    function rerollShop() {
+      const builderIds = new Set(state.builderItems.map((i) => i.artifactId));
+      state.shopOffer = pickRandomShopOffer(state.bootstrap?.artifacts || [], builderIds);
+      persistShopOffer();
+    }
+
+    function computeUsedCoins(items) {
+      return items.reduce((sum, item) => {
+        const artifact = getArtifact(item.artifactId);
+        return sum + getArtifactPrice(artifact);
+      }, 0);
+    }
+
+    function tryPlaceShopArtifact(artifactId, x, y) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact) return false;
+      const price = getArtifactPrice(artifact);
+      const used = computeUsedCoins(state.builderItems);
+      if (used + price > MAX_ARTIFACT_COINS) {
+        state.error = state.lang === 'ru'
+          ? `Недостаточно монет (нужно ${price}, осталось ${MAX_ARTIFACT_COINS - used})`
+          : `Not enough coins (need ${price}, left ${MAX_ARTIFACT_COINS - used})`;
+        return false;
+      }
+      if (state.builderItems.length >= 6) {
+        state.error = state.lang === 'ru' ? 'Слот инвентаря заполнен' : 'Inventory slots full';
+        return false;
+      }
+      const preferred = preferredOrientation(artifact);
+      const orientations = [preferred];
+      if (artifact.width !== artifact.height) {
+        orientations.push({ width: preferred.height, height: preferred.width });
+      }
+      for (const orientation of orientations) {
+        const next = normalizePlacement(artifact, x, y, orientation.width, orientation.height);
+        if (next) {
+          state.builderItems = next;
+          state.shopOffer = state.shopOffer.filter((id) => id !== artifactId);
+          state.error = '';
+          persistShopOffer();
+          return true;
+        }
+      }
+      state.error = state.lang === 'ru' ? 'Не помещается' : 'Does not fit here';
+      return false;
+    }
+
+    function returnArtifactToShop(artifactId) {
+      if (!state.builderItems.some((i) => i.artifactId === artifactId)) return;
+      state.builderItems = state.builderItems.filter((i) => i.artifactId !== artifactId);
+      if (!state.shopOffer.includes(artifactId)) {
+        state.shopOffer = [...state.shopOffer, artifactId];
+      }
+      persistShopOffer();
+    }
+
+    function onInventoryCellDrop({ x, y }) {
+      const artifactId = state.draggingArtifactId;
+      if (!artifactId) return;
+      if (state.draggingSource === 'shop') {
+        tryPlaceShopArtifact(artifactId, x, y);
+      } else if (state.draggingSource === 'inventory') {
+        // Move existing piece to new cell
+        const item = state.builderItems.find((i) => i.artifactId === artifactId);
+        if (!item) return;
+        const others = state.builderItems.filter((i) => i.artifactId !== artifactId);
+        const occupied = buildOccupancy(others);
+        const w = item.width;
+        const h = item.height;
+        if (x + w > INVENTORY_COLUMNS || y + h > INVENTORY_ROWS) return;
+        for (let dx = 0; dx < w; dx += 1) {
+          for (let dy = 0; dy < h; dy += 1) {
+            if (occupied.has(`${x + dx}:${y + dy}`)) return;
+          }
+        }
+        state.builderItems = [...others, { ...item, x, y }];
+        persistShopOffer();
       }
     }
 
+    function onShopDrop(event) {
+      event.preventDefault();
+      if (state.draggingSource !== 'inventory' || !state.draggingArtifactId) return;
+      returnArtifactToShop(state.draggingArtifactId);
+    }
+
+    function onShopDragOver(event) {
+      if (state.draggingSource === 'inventory') {
+        event.preventDefault();
+      }
+    }
+
+    function onShopPieceDragStart(artifactId, event) {
+      const artifact = getArtifact(artifactId);
+      const price = getArtifactPrice(artifact);
+      if (price > remainingCoins.value) {
+        event.preventDefault();
+        state.error = state.lang === 'ru'
+          ? `Недостаточно монет (нужно ${price}, осталось ${remainingCoins.value})`
+          : `Not enough coins (need ${price}, left ${remainingCoins.value})`;
+        return;
+      }
+      state.draggingArtifactId = artifactId;
+      state.draggingSource = 'shop';
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', artifactId);
+      }
+    }
+
+    function onInventoryPieceDragStart({ item, event }) {
+      state.draggingArtifactId = item.artifactId;
+      state.draggingSource = 'inventory';
+      if (event?.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+      }
+    }
+
+    function onDragEndAny() {
+      state.draggingArtifactId = '';
+      state.draggingSource = '';
+    }
+
     async function saveLoadout() {
-      if (!state.bootstrap?.activeMushroomId || state.builderItems.length !== 3) {
+      if (!state.bootstrap?.activeMushroomId) {
+        state.error = t.value.invalidLoadout;
+        return;
+      }
+      if (computeUsedCoins(state.builderItems) > MAX_ARTIFACT_COINS) {
         state.error = t.value.invalidLoadout;
         return;
       }
@@ -894,6 +648,8 @@ const App = {
           state.sessionKey
         );
         state.replayIndex = 0;
+        // Refresh the shop for the next run-in.
+        rerollShop();
         goTo('replay', { replay: state.currentBattle.id });
         autoplayReplay();
       } catch (error) {
@@ -910,7 +666,9 @@ const App = {
 
     function autoplayReplay() {
       stopReplay();
-      const delay = state.bootstrap?.settings?.battleSpeed === '2x' ? 600 : 1200;
+      const delay = state.bootstrap?.settings?.battleSpeed === '2x'
+        ? DEFAULT_REPLAY_AUTOPLAY_FAST_MS
+        : DEFAULT_REPLAY_AUTOPLAY_MS;
       state.replayTimer = window.setInterval(() => {
         if (!state.currentBattle) {
           stopReplay();
@@ -1018,16 +776,36 @@ const App = {
       state.localLab = results.results;
     }
 
-      const activeMushroom = computed(() =>
-        state.bootstrap?.mushrooms?.find((item) => item.id === state.bootstrap.activeMushroomId) || null
-      );
+    async function loadInventoryReview() {
+      state.inventoryReviewSamples = await apiJson('/api/dev/inventory-review', {}, state.sessionKey);
+    }
+
+    const activeMushroom = computed(() =>
+      state.bootstrap?.mushrooms?.find((item) => item.id === state.bootstrap.activeMushroomId) || null
+    );
     const builderTotals = computed(() => deriveTotals(state.builderItems, state.bootstrap?.artifacts || []));
+    const usedCoins = computed(() => computeUsedCoins(state.builderItems));
+    const remainingCoins = computed(() => Math.max(0, MAX_ARTIFACT_COINS - usedCoins.value));
+    const shopArtifacts = computed(() =>
+      state.shopOffer
+        .map((id) => getArtifact(id))
+        .filter(Boolean)
+    );
     const activeReplayState = computed(() => activeEvent.value?.state || null);
 
     watch(
       () => state.lang,
       () => {
         document.documentElement.lang = state.lang;
+      }
+    );
+
+    watch(
+      () => state.screen,
+      async (screen) => {
+        if (screen === 'inventory-review' && isLocalDevAuthEnabled.value && state.sessionKey) {
+          await loadInventoryReview();
+        }
       }
     );
 
@@ -1041,6 +819,9 @@ const App = {
       if (startParams.replay && state.sessionKey) {
         await loadReplay(startParams.replay);
       }
+      if (state.screen === 'inventory-review' && isLocalDevAuthEnabled.value && state.sessionKey) {
+        await loadInventoryReview();
+      }
     });
 
     return {
@@ -1050,9 +831,23 @@ const App = {
       isLocalDevAuthEnabled,
       activeMushroom,
       builderTotals,
+      usedCoins,
+      remainingCoins,
+      shopArtifacts,
+      maxCoins: MAX_ARTIFACT_COINS,
+      getArtifactPrice,
+      rerollShop,
+      onInventoryCellDrop,
+      onInventoryPieceDragStart,
+      onShopDrop,
+      onShopDragOver,
+      onShopPieceDragStart,
+      onDragEndAny,
+      returnArtifactToShop,
       activeEvent,
       activeSpeech,
       battleStatusText,
+      replayFinished,
       activeReplayState,
       visibleReplayEvents,
       goTo,
@@ -1062,15 +857,20 @@ const App = {
       saveCharacter,
       getArtifact,
       getMushroom,
+      describeReplay,
+      formatDelta,
+      formatArtifactBonus,
+      portraitPosition,
+      loadoutStatsText,
       replayBubbleStyle,
       sampleBubbleText,
       buildReplayFighter,
       artifactGridStyle,
       renderArtifactFigure,
       buildOccupancy,
-      autoPlaceArtifact,
-      placeArtifact,
       removeArtifact,
+      rotatePlacedArtifact,
+      preferredOrientation,
       saveLoadout,
       startBattle,
       loadReplay,
@@ -1083,7 +883,8 @@ const App = {
       acceptChallenge,
       declineChallenge,
       openWiki,
-      runLocalLab
+      runLocalLab,
+      loadInventoryReview
     };
   },
   template: `
@@ -1093,9 +894,10 @@ const App = {
           <p class="eyebrow">{{ t.title }}</p>
           <h1>{{ t.title }}</h1>
         </div>
-        <button class="ghost lang-toggle" @click="state.lang = state.lang === 'ru' ? 'en' : 'ru'">
-          {{ state.lang.toUpperCase() }}
-        </button>
+        <div class="lang-toggle-group">
+          <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
+          <button class="lang-toggle-btn" :class="{ active: state.lang !== 'ru' }" disabled>EN</button>
+        </div>
       </header>
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
@@ -1122,14 +924,10 @@ const App = {
           <button class="nav-btn" @click="goTo('home')">{{ t.home }}</button>
           <button class="nav-btn" @click="goTo('characters')">{{ t.characters }}</button>
           <button class="nav-btn" @click="goTo('artifacts')">{{ t.artifacts }}</button>
-          <button class="nav-btn" @click="goTo('battle')">{{ t.battle }}</button>
-          <button class="nav-btn" @click="goTo('history')">{{ t.history }}</button>
           <button class="nav-btn" @click="goTo('friends')">{{ t.friends }}</button>
           <button class="nav-btn" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
           <button class="nav-btn" @click="goTo('wiki')">{{ t.wiki }}</button>
-          <button class="nav-btn" @click="goTo('profile')">{{ t.profile }}</button>
           <button class="nav-btn" @click="goTo('settings')">{{ t.settings }}</button>
-          <button v-if="isLocalLabEnabled" class="nav-btn" @click="goTo('lab')">{{ t.lab }}</button>
         </nav>
 
         <section v-if="state.screen === 'onboarding'" class="panel stack">
@@ -1139,16 +937,29 @@ const App = {
         </section>
 
         <section v-else-if="state.screen === 'home'" class="dashboard">
-          <article class="panel">
+          <article class="panel player-summary">
             <h2>{{ state.bootstrap.player.name }}</h2>
-            <p>{{ t.spore }}: {{ state.bootstrap.player.spore }}</p>
-            <p>Rating: {{ state.bootstrap.player.rating }}</p>
-            <p>{{ t.battleLimit }}: {{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</p>
+            <dl class="stat-grid">
+              <div class="stat">
+                <dt>{{ t.rating }}</dt>
+                <dd>{{ state.bootstrap.player.rating }}</dd>
+              </div>
+              <div class="stat">
+                <dt>{{ t.spore }}</dt>
+                <dd>{{ state.bootstrap.player.spore }}</dd>
+              </div>
+              <div class="stat">
+                <dt>{{ t.battleLimit }}</dt>
+                <dd>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</dd>
+              </div>
+            </dl>
           </article>
-          <article class="panel" v-if="activeMushroom">
-            <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="portrait"/>
+          <article class="panel active-mushroom" v-if="activeMushroom">
+            <div class="active-mushroom-media">
+              <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="portrait"/>
+              <span class="active-mushroom-badge">{{ t.active }}</span>
+            </div>
             <h3>{{ activeMushroom.name[state.lang] }}</h3>
-            <p>{{ t.active }}</p>
           </article>
           <article class="panel">
             <h3>{{ t.selectedArtifacts }}</h3>
@@ -1162,11 +973,68 @@ const App = {
             />
             <p v-else>{{ t.selectCell }}</p>
           </article>
+          <article class="panel" v-if="Object.keys(state.bootstrap.progression || {}).length">
+            <h3>{{ t.profile }}</h3>
+            <div class="progression-list">
+              <div v-for="entry in Object.values(state.bootstrap.progression)" :key="entry.mushroomId" class="progression-entry">
+                <strong>{{ getMushroom(entry.mushroomId)?.name?.[state.lang] || entry.mushroomId }}</strong>
+                <span>{{ t.level }} {{ entry.level }} · {{ t.mycelium }} {{ entry.mycelium }}</span>
+              </div>
+            </div>
+          </article>
+          <article class="panel panel-wide" v-if="state.bootstrap.battleHistory?.length">
+            <h3>{{ t.history }}</h3>
+            <ul class="replay-list">
+              <li
+                v-for="battle in state.bootstrap.battleHistory"
+                :key="battle.id"
+                class="replay-row"
+                :class="'replay-row--' + (describeReplay(battle)?.outcomeKey || 'draw')"
+                @click="loadReplay(battle.id)"
+                role="button"
+                tabindex="0"
+                @keydown.enter.prevent="loadReplay(battle.id)"
+                @keydown.space.prevent="loadReplay(battle.id)"
+              >
+                <span class="replay-row-outcome">{{ describeReplay(battle)?.outcomeLabel }}</span>
+                <span class="replay-row-matchup">
+                  <img
+                    v-if="describeReplay(battle)?.ourImage"
+                    :src="describeReplay(battle).ourImage"
+                    :alt="describeReplay(battle)?.ourName"
+                    class="replay-row-portrait"
+                  />
+                  <strong>{{ describeReplay(battle)?.ourName }}</strong>
+                  <span class="replay-row-vs">{{ t.replayVs }}</span>
+                  <img
+                    v-if="describeReplay(battle)?.oppImage"
+                    :src="describeReplay(battle).oppImage"
+                    :alt="describeReplay(battle)?.oppName"
+                    class="replay-row-portrait"
+                  />
+                  <strong>{{ describeReplay(battle)?.oppName }}</strong>
+                </span>
+                <span class="replay-row-kind">{{ describeReplay(battle)?.opponentKindLabel }}</span>
+                <span class="replay-row-rewards">
+                  <span v-if="describeReplay(battle)?.ratingDelta != null" class="replay-chip">
+                    {{ t.rating }} {{ formatDelta(describeReplay(battle).ratingDelta) }}
+                  </span>
+                  <span v-if="describeReplay(battle)?.sporeDelta" class="replay-chip">
+                    {{ t.spore }} {{ formatDelta(describeReplay(battle).sporeDelta) }}
+                  </span>
+                  <span v-if="describeReplay(battle)?.myceliumDelta" class="replay-chip">
+                    {{ t.mycelium }} {{ formatDelta(describeReplay(battle).myceliumDelta) }}
+                  </span>
+                </span>
+                <span class="replay-row-date">{{ describeReplay(battle)?.dateLabel }}</span>
+              </li>
+            </ul>
+          </article>
         </section>
 
         <section v-else-if="state.screen === 'characters'" class="grid cards">
           <article class="panel card" v-for="mushroom in state.bootstrap.mushrooms" :key="mushroom.id">
-            <img :src="mushroom.imagePath" :alt="mushroom.name[state.lang]" class="portrait"/>
+            <img :src="mushroom.imagePath" :alt="mushroom.name[state.lang]" class="portrait" :style="{ objectPosition: portraitPosition(mushroom.id) }"/>
             <h3>{{ mushroom.name[state.lang] }}</h3>
             <p>{{ mushroom.styleTag }}</p>
             <p>HP {{ mushroom.baseStats.health }} / ATK {{ mushroom.baseStats.attack }} / SPD {{ mushroom.baseStats.speed }}</p>
@@ -1181,43 +1049,85 @@ const App = {
               <replay-duel
                 :left-fighter="buildReplayFighter(mushroom.id, { nameText: mushroom.name[state.lang], speechText: sampleBubbleText(mushroom) })"
                 :right-fighter="buildReplayFighter(mushroom.id, { nameText: mushroom.name[state.lang] })"
+                :render-artifact-figure="renderArtifactFigure"
+                :get-artifact="getArtifact"
                 status-text=" "
               />
             </article>
           </div>
         </section>
 
+        <section v-else-if="state.screen === 'inventory-review' && isLocalDevAuthEnabled" class="stack bubble-review-screen">
+          <h2>Inventory Review</h2>
+          <div class="bubble-review-grid inventory-review-grid">
+            <article class="panel battle-stage bubble-review-stage" v-for="sample in state.inventoryReviewSamples" :key="sample.id">
+              <fighter-card
+                :mushroom="getMushroom(sample.mushroomId)"
+                :name-text="getMushroom(sample.mushroomId)?.name[state.lang] || sample.mushroomId"
+                :health-text="getMushroom(sample.mushroomId)?.baseStats.health + ' HP'"
+                :loadout="sample.loadout"
+                :render-artifact-figure="renderArtifactFigure"
+                :get-artifact="getArtifact"
+              />
+            </article>
+          </div>
+        </section>
+
         <section v-else-if="state.screen === 'artifacts'" class="grid artifact-layout">
-          <article class="panel">
-            <h2>{{ t.artifacts }}</h2>
-            <p>{{ t.selectCell }}</p>
-            <div class="artifact-list">
-              <button
-                v-for="artifact in state.bootstrap.artifacts"
-                :key="artifact.id"
-                class="artifact-btn"
-                :class="{
-                  selected: state.selectedArtifactId === artifact.id,
-                  placed: state.builderItems.some((item) => item.artifactId === artifact.id)
-                }"
-                @click="autoPlaceArtifact(artifact.id)"
-                :data-artifact-id="artifact.id"
-              >
-                <artifact-grid-board
-                  class="artifact-card-visual"
-                  variant="catalog"
-                  :columns="artifact.width"
-                  :rows="artifact.height"
-                  :items="[{ artifactId: artifact.id, x: 0, y: 0, width: artifact.width, height: artifact.height }]"
-                  :render-artifact-figure="renderArtifactFigure"
-                  :get-artifact="getArtifact"
-                />
-                <div class="artifact-card-copy">
-                  <strong>{{ artifact.name[state.lang] }}</strong>
-                  <small v-if="state.builderItems.some((item) => item.artifactId === artifact.id)" class="artifact-state">{{ t.equipped }}</small>
-                  <span>{{ artifact.width }}x{{ artifact.height }}</span>
+          <article class="panel artifact-left-panel">
+            <div class="artifact-left-top">
+              <h2>{{ t.artifacts }}</h2>
+              <p>{{ t.selectCell }}</p>
+              <div class="coin-hud">
+                <span class="coin-hud-label">💰 {{ usedCoins }} / {{ maxCoins }}</span>
+                <span class="coin-hud-remaining">({{ remainingCoins }} left)</span>
+              </div>
+            </div>
+            <div
+              class="artifact-shop"
+              @dragover="onShopDragOver($event)"
+              @drop="onShopDrop($event)"
+              @dragend="onDragEndAny()"
+            >
+              <div class="artifact-shop-header">
+                <strong>Shop</strong>
+                <button type="button" class="link" @click="rerollShop">↻ Reroll</button>
+              </div>
+              <div class="artifact-shop-items">
+                <div
+                  v-for="artifact in shopArtifacts"
+                  :key="artifact.id"
+                  class="shop-item"
+                  :class="{ 'shop-item--expensive': getArtifactPrice(artifact) > remainingCoins }"
+                  :draggable="getArtifactPrice(artifact) <= remainingCoins"
+                  @dragstart="onShopPieceDragStart(artifact.id, $event)"
+                  @dragend="onDragEndAny()"
+                  :data-artifact-id="artifact.id"
+                >
+                  <artifact-grid-board
+                    class="shop-item-visual"
+                    variant="catalog"
+                    :columns="preferredOrientation(artifact).width"
+                    :rows="preferredOrientation(artifact).height"
+                    :items="[{ artifactId: artifact.id, x: 0, y: 0, width: preferredOrientation(artifact).width, height: preferredOrientation(artifact).height }]"
+                    :render-artifact-figure="renderArtifactFigure"
+                    :get-artifact="getArtifact"
+                  />
+                  <div class="shop-item-copy">
+                    <strong>{{ artifact.name[state.lang] }}</strong>
+                    <span class="shop-item-price">💰 {{ getArtifactPrice(artifact) }}</span>
+                    <span class="artifact-stat-chips">
+                      <span
+                        v-for="stat in formatArtifactBonus(artifact)"
+                        :key="stat.key"
+                        class="artifact-stat-chip"
+                        :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
+                      >{{ stat.label }} {{ stat.value }}</span>
+                    </span>
+                  </div>
                 </div>
-              </button>
+                <div v-if="!shopArtifacts.length" class="shop-empty">Shop is empty — reroll.</div>
+              </div>
             </div>
           </article>
           <article class="panel">
@@ -1227,19 +1137,24 @@ const App = {
               :items="state.builderItems"
               :render-artifact-figure="renderArtifactFigure"
               :get-artifact="getArtifact"
-              :interactive-cells="true"
               :clickable-pieces="true"
-              @cell-click="placeArtifact($event.x, $event.y)"
-              @piece-click="removeArtifact($event.artifactId)"
+              :rotatable-pieces="true"
+              :droppable="true"
+              :draggable-pieces="true"
+              @piece-click="returnArtifactToShop($event.artifactId)"
+              @piece-rotate="rotatePlacedArtifact($event)"
+              @cell-drop="onInventoryCellDrop($event)"
+              @piece-drag-start="onInventoryPieceDragStart($event)"
+              @piece-drag-end="onDragEndAny()"
             />
-            <p>ATK {{ builderTotals.damage }} / ARM {{ builderTotals.armor }} / SPD {{ builderTotals.speed }} / STUN {{ builderTotals.stunChance }}%</p>
+            <p>Урон +{{ builderTotals.damage }} / Броня +{{ builderTotals.armor }} / Скорость +{{ builderTotals.speed }} / Оглушение +{{ builderTotals.stunChance }}%</p>
             <button class="primary" @click="saveLoadout">{{ t.save }}</button>
           </article>
         </section>
 
         <section v-else-if="state.screen === 'battle'" class="panel stack battle-prep">
           <h2>{{ t.battle }}</h2>
-          <p v-if="activeMushroom">{{ activeMushroom.name[state.lang] }} ready with {{ state.builderItems.length }} / 3 artifacts.</p>
+          <p v-if="activeMushroom">{{ activeMushroom.name[state.lang] }} · {{ usedCoins }}/{{ maxCoins }} 💰 · {{ state.builderItems.length }} artifacts.</p>
           <div class="battle-prep-layout">
             <article class="panel battle-prep-character" v-if="activeMushroom">
               <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="portrait battle-prep-character-portrait"/>
@@ -1256,10 +1171,10 @@ const App = {
                 :render-artifact-figure="renderArtifactFigure"
                 :get-artifact="getArtifact"
               />
-              <p class="battle-prep-inventory-stats">ATK {{ builderTotals.damage }} / ARM {{ builderTotals.armor }} / SPD {{ builderTotals.speed }} / STUN {{ builderTotals.stunChance }}%</p>
+              <p class="battle-prep-inventory-stats">Урон +{{ builderTotals.damage }} / Броня +{{ builderTotals.armor }} / Скорость +{{ builderTotals.speed }} / Оглушение +{{ builderTotals.stunChance }}%</p>
             </div>
             <div class="battle-prep-summary panel stack">
-              <button class="primary" :disabled="state.builderItems.length !== 3" @click="startBattle">{{ t.startBattle }}</button>
+              <button class="primary" :disabled="usedCoins > maxCoins" @click="startBattle">{{ t.startBattle }}</button>
             </div>
           </div>
         </section>
@@ -1270,21 +1185,25 @@ const App = {
               :left-fighter="buildReplayFighter(state.currentBattle.snapshots.left.mushroomId, {
                 nameText: getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId,
                 healthText: activeReplayState?.left.currentHealth + ' / ' + activeReplayState?.left.maxHealth,
-                speechText: activeSpeech?.side === 'left' ? activeSpeech.narration : ''
+                statsText: loadoutStatsText(state.currentBattle.snapshots.left.loadout),
+                speechText: activeSpeech?.side === 'left' ? activeSpeech.narration : '',
+                loadout: state.currentBattle.snapshots.left.loadout
               })"
               :right-fighter="buildReplayFighter(state.currentBattle.snapshots.right.mushroomId, {
                 nameText: getMushroom(state.currentBattle.snapshots.right.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.right.mushroomId,
                 healthText: activeReplayState?.right.currentHealth + ' / ' + activeReplayState?.right.maxHealth,
-                speechText: activeSpeech?.side === 'right' ? activeSpeech.narration : ''
+                statsText: loadoutStatsText(state.currentBattle.snapshots.right.loadout),
+                speechText: activeSpeech?.side === 'right' ? activeSpeech.narration : '',
+                loadout: state.currentBattle.snapshots.right.loadout
               })"
+              :render-artifact-figure="renderArtifactFigure"
+              :get-artifact="getArtifact"
               :acting-side="activeEvent?.actorSide || ''"
               :status-text="battleStatusText"
+              :show-result-button="replayFinished"
+              :result-label="t.results"
+              @result-click="goTo('results')"
             />
-            <div class="row">
-              <button class="secondary" @click="stopReplay">Pause</button>
-              <button class="secondary" @click="autoplayReplay">Play</button>
-              <button class="ghost" @click="goTo('results')">{{ t.results }}</button>
-            </div>
           </article>
           <article class="panel replay-log">
             <button

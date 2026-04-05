@@ -5,11 +5,14 @@ import {
   BATTLE_ROUND_CAP,
   DAILY_BATTLE_LIMIT,
   getArtifactById,
+  getArtifactPrice,
   getMushroomById,
-  GRID_SIZE,
+  INVENTORY_COLUMNS,
+  INVENTORY_ROWS,
+  MAX_ARTIFACT_COINS,
+  MAX_ARTIFACT_PIECES,
   MAX_STUN_CHANCE,
   mushrooms,
-  REQUIRED_ARTIFACT_COUNT,
   rewardTable
 } from '../game-data.js';
 import {
@@ -66,12 +69,16 @@ function buildArtifactSummary(items) {
 }
 
 export function validateLoadoutItems(items) {
-  if (!Array.isArray(items) || items.length !== REQUIRED_ARTIFACT_COUNT) {
-    throw new Error(`Loadout must contain exactly ${REQUIRED_ARTIFACT_COUNT} artifacts`);
+  if (!Array.isArray(items)) {
+    throw new Error('Loadout items must be an array');
+  }
+  if (items.length > MAX_ARTIFACT_PIECES) {
+    throw new Error(`Loadout cannot contain more than ${MAX_ARTIFACT_PIECES} artifacts`);
   }
 
   const occupied = new Set();
   const artifactIds = new Set();
+  let totalCoins = 0;
 
   for (const item of items) {
     const artifact = getArtifactById(item.artifactId);
@@ -82,10 +89,13 @@ export function validateLoadoutItems(items) {
       throw new Error('Duplicate artifacts are not allowed');
     }
     artifactIds.add(item.artifactId);
-    if (item.width !== artifact.width || item.height !== artifact.height) {
+    totalCoins += getArtifactPrice(artifact);
+    const matchesCanonical = item.width === artifact.width && item.height === artifact.height;
+    const matchesRotated = item.width === artifact.height && item.height === artifact.width;
+    if (!matchesCanonical && !matchesRotated) {
       throw new Error('Stored artifact dimensions must match canonical definitions');
     }
-    if (item.x < 0 || item.y < 0 || item.x + item.width > GRID_SIZE || item.y + item.height > GRID_SIZE) {
+    if (item.x < 0 || item.y < 0 || item.x + item.width > INVENTORY_COLUMNS || item.y + item.height > INVENTORY_ROWS) {
       throw new Error('Artifact placement is out of bounds');
     }
 
@@ -100,9 +110,14 @@ export function validateLoadoutItems(items) {
     }
   }
 
+  if (totalCoins > MAX_ARTIFACT_COINS) {
+    throw new Error(`Loadout exceeds ${MAX_ARTIFACT_COINS}-coin budget (cost ${totalCoins})`);
+  }
+
   return {
     items,
-    totals: buildArtifactSummary(items)
+    totals: buildArtifactSummary(items),
+    totalCoins
   };
 }
 
@@ -242,7 +257,7 @@ export async function saveArtifactLoadout(playerId, mushroomId, items) {
         `INSERT INTO player_artifact_loadouts
          (id, player_id, mushroom_id, grid_width, grid_height, is_active, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, 1, $6, $6)`,
-        [loadoutId, playerId, mushroomId, GRID_SIZE, GRID_SIZE, timestamp]
+        [loadoutId, playerId, mushroomId, INVENTORY_COLUMNS, INVENTORY_ROWS, timestamp]
       );
     }
 
@@ -324,6 +339,143 @@ function summarizeCombatant(combatant) {
     stunChance: combatant.stunChance,
     stunned: combatant.state.stunned,
     loadout: combatant.loadout
+  };
+}
+
+function randomInt(rng, max) {
+  return Math.floor(rng() * max);
+}
+
+function shuffleWithRng(items, rng) {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = randomInt(rng, index + 1);
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+  return next;
+}
+
+function artifactWeightForBot(mushroom, artifact) {
+  if (mushroom.affinity.strong.includes(artifact.family)) {
+    return 5;
+  }
+  if (mushroom.affinity.medium.includes(artifact.family)) {
+    return 3;
+  }
+  if (mushroom.affinity.weak.includes(artifact.family)) {
+    return 1;
+  }
+  return 2;
+}
+
+function pickUniqueArtifactsForBot(mushroom, rng) {
+  const pool = [...artifacts];
+  const selected = [];
+  let remainingCoins = MAX_ARTIFACT_COINS;
+  while (selected.length < MAX_ARTIFACT_PIECES && pool.length && remainingCoins > 0) {
+    const affordable = pool.filter((artifact) => getArtifactPrice(artifact) <= remainingCoins);
+    if (!affordable.length) {
+      break;
+    }
+    const totalWeight = affordable.reduce(
+      (sum, artifact) => sum + artifactWeightForBot(mushroom, artifact),
+      0
+    );
+    let cursor = rng() * totalWeight;
+    let chosen = affordable[0];
+    for (const artifact of affordable) {
+      cursor -= artifactWeightForBot(mushroom, artifact);
+      if (cursor <= 0) {
+        chosen = artifact;
+        break;
+      }
+    }
+    remainingCoins -= getArtifactPrice(chosen);
+    pool.splice(pool.indexOf(chosen), 1);
+    selected.push(chosen);
+  }
+  return selected;
+}
+
+function canPlaceArtifact(candidate, occupied) {
+  for (let dx = 0; dx < candidate.width; dx += 1) {
+    for (let dy = 0; dy < candidate.height; dy += 1) {
+      if (occupied.has(`${candidate.x + dx}:${candidate.y + dy}`)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function markOccupied(candidate, occupied) {
+  for (let dx = 0; dx < candidate.width; dx += 1) {
+    for (let dy = 0; dy < candidate.height; dy += 1) {
+      occupied.add(`${candidate.x + dx}:${candidate.y + dy}`);
+    }
+  }
+}
+
+function createBotLoadout(mushroom, rng) {
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const chosenArtifacts = pickUniqueArtifactsForBot(mushroom, rng);
+    const placementOrder = shuffleWithRng(
+      [...chosenArtifacts].sort((left, right) => right.width * right.height - left.width * left.height),
+      rng
+    );
+    const occupied = new Set();
+    const placements = [];
+
+    let success = true;
+    for (const artifact of placementOrder) {
+      const positions = [];
+      for (let y = 0; y <= INVENTORY_ROWS - artifact.height; y += 1) {
+        for (let x = 0; x <= INVENTORY_COLUMNS - artifact.width; x += 1) {
+          positions.push({ x, y });
+        }
+      }
+      const shuffledPositions = shuffleWithRng(positions, rng);
+      const found = shuffledPositions.find((position) =>
+        canPlaceArtifact({ ...position, width: artifact.width, height: artifact.height }, occupied)
+      );
+      if (!found) {
+        success = false;
+        break;
+      }
+
+      const placement = {
+        artifactId: artifact.id,
+        x: found.x,
+        y: found.y,
+        width: artifact.width,
+        height: artifact.height,
+        sortOrder: placements.length
+      };
+      markOccupied(placement, occupied);
+      placements.push(placement);
+    }
+
+    if (success && placements.length === chosenArtifacts.length && placements.length > 0) {
+      placements.sort((left, right) => left.sortOrder - right.sortOrder);
+      validateLoadoutItems(placements);
+      return {
+        gridWidth: INVENTORY_COLUMNS,
+        gridHeight: INVENTORY_ROWS,
+        items: placements
+      };
+    }
+  }
+
+  throw new Error('Could not generate bot loadout');
+}
+
+function createBotGhostSnapshot(seedInput, mushroomId = null) {
+  const rng = createRng(`${seedInput}:bot`);
+  const mushroom = mushroomId ? getMushroomById(mushroomId) : mushrooms[randomInt(rng, mushrooms.length)];
+  return {
+    playerId: null,
+    mushroomId: mushroom.id,
+    loadout: createBotLoadout(mushroom, rng)
   };
 }
 
@@ -568,25 +720,37 @@ async function getActiveSnapshot(client, playerId) {
     playerId,
     mushroomId,
     loadout: {
-      gridWidth: GRID_SIZE,
-      gridHeight: GRID_SIZE,
+      gridWidth: INVENTORY_COLUMNS,
+      gridHeight: INVENTORY_ROWS,
       items
     }
   };
 }
 
-async function getRandomGhostSnapshot(client, playerId) {
+async function getRandomGhostSnapshot(client, playerId, seedInput) {
+  const rng = createRng(`${seedInput}:ghost`);
+  const targetMushroom = mushrooms[randomInt(rng, mushrooms.length)];
   const result = await client.query(
-    `SELECT DISTINCT player_id
-     FROM player_artifact_loadouts
-     WHERE player_id <> $1`,
-    [playerId]
+    `SELECT DISTINCT loadouts.player_id
+     FROM player_artifact_loadouts loadouts
+     JOIN player_active_character active ON active.player_id = loadouts.player_id
+     WHERE loadouts.player_id <> $1
+       AND active.mushroom_id = $2`,
+    [playerId, targetMushroom.id]
   );
-  if (!result.rowCount) {
-    throw new Error('No ghost opponents available');
+  const candidateIds = shuffleWithRng(
+    result.rows.map((row) => row.player_id),
+    rng
+  );
+
+  for (const candidateId of candidateIds) {
+    try {
+      return getActiveSnapshot(client, candidateId);
+    } catch {
+    }
   }
-  const winner = result.rows[Math.floor(Math.random() * result.rows.length)];
-  return getActiveSnapshot(client, winner.player_id);
+
+  return createBotGhostSnapshot(seedInput, targetMushroom.id);
 }
 
 async function getDailyUsage(client, playerId) {
@@ -746,19 +910,19 @@ export async function createBattle(playerId, payload = {}) {
     }
 
     const leftSnapshot = await getActiveSnapshot(client, playerId);
+    const battleSeed = payload.seed || crypto.randomBytes(16).toString('hex');
     const isFriendAccepted = payload.mode === 'friend' && payload.friendChallengeId;
     const rightSnapshot = isFriendAccepted
       ? await getActiveSnapshot(client, payload.opponentPlayerId)
-      : await getRandomGhostSnapshot(client, playerId);
+      : await getRandomGhostSnapshot(client, playerId, battleSeed);
 
-    const battleSeed = payload.seed || crypto.randomBytes(16).toString('hex');
     const simulation = simulateBattle({ left: leftSnapshot, right: rightSnapshot }, battleSeed);
     const battle = {
       id: createId('battle'),
       mode: isFriendAccepted ? 'friend' : 'ghost',
       initiatorPlayerId: playerId,
       opponentPlayerId: rightSnapshot.playerId || null,
-      opponentKind: isFriendAccepted ? 'friend_live' : 'ghost_snapshot',
+      opponentKind: isFriendAccepted ? 'friend_live' : rightSnapshot.playerId ? 'ghost_snapshot' : 'ghost_bot',
       ratedScope: isFriendAccepted ? 'two_sided' : 'one_sided',
       battleSeed,
       outcome: simulation.winnerSide === 'left' ? 'win' : simulation.winnerSide === 'right' ? 'loss' : 'draw',
@@ -1058,4 +1222,18 @@ export async function saveLocalTestRun(payload) {
     [row.id, row.createdAt, row.payloadJson]
   );
   return row;
+}
+
+export async function getInventoryReviewSamples() {
+  return mushrooms.flatMap((mushroom) =>
+    [0, 1].map((variantIndex) => {
+      const snapshot = createBotGhostSnapshot(`inventory-review:${mushroom.id}:${variantIndex}`, mushroom.id);
+      return {
+        id: `${mushroom.id}:${variantIndex}`,
+        seed: `inventory-review:${mushroom.id}:${variantIndex}`,
+        mushroomId: snapshot.mushroomId,
+        loadout: snapshot.loadout
+      };
+    })
+  );
 }

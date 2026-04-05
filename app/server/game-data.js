@@ -1,18 +1,32 @@
-export const GRID_SIZE = 4;
-export const REQUIRED_ARTIFACT_COUNT = 3;
+export const INVENTORY_COLUMNS = 3;
+export const INVENTORY_ROWS = 2;
+export const MAX_ARTIFACT_COINS = 5;
+export const MAX_ARTIFACT_PIECES = 6;
+export const SHOP_OFFER_SIZE = 5;
 export const MAX_STUN_CHANCE = 35;
 export const DAILY_BATTLE_LIMIT = 10;
 export const BATTLE_ROUND_CAP = 12;
 export const SESSION_TTL_HOURS = 24 * 30;
 
 export const artifacts = [
+  // --- Damage family ---
   {
     id: 'spore_needle',
     name: { ru: 'Споровая Игла', en: 'Spore Needle' },
     family: 'damage',
     width: 1,
     height: 1,
+    price: 1,
     bonus: { damage: 2 }
+  },
+  {
+    id: 'sporeblade',
+    name: { ru: 'Споровый Клинок', en: 'Sporeblade' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { damage: 3 }
   },
   {
     id: 'amber_fang',
@@ -20,6 +34,7 @@ export const artifacts = [
     family: 'damage',
     width: 1,
     height: 2,
+    price: 2,
     bonus: { damage: 4, armor: -1 }
   },
   {
@@ -28,15 +43,45 @@ export const artifacts = [
     family: 'damage',
     width: 2,
     height: 1,
+    price: 2,
     bonus: { damage: 5, armor: -2 }
   },
+  {
+    id: 'fang_whip',
+    name: { ru: 'Клык-Плеть', en: 'Fang Whip' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 6, armor: -3 }
+  },
+  {
+    id: 'burning_cap',
+    name: { ru: 'Пылающая Шляпка', en: 'Burning Cap' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 2,
+    bonus: { damage: 8, armor: -2, speed: -1 }
+  },
+  // --- Armor family ---
   {
     id: 'bark_plate',
     name: { ru: 'Кора-Пластина', en: 'Bark Plate' },
     family: 'armor',
     width: 1,
     height: 1,
+    price: 1,
     bonus: { armor: 2 }
+  },
+  {
+    id: 'loam_scale',
+    name: { ru: 'Суглинковая Чешуя', en: 'Loam Scale' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { armor: 3, speed: -1 }
   },
   {
     id: 'mycelium_wrap',
@@ -44,7 +89,17 @@ export const artifacts = [
     family: 'armor',
     width: 2,
     height: 1,
+    price: 1,
     bonus: { armor: 3 }
+  },
+  {
+    id: 'stone_cap',
+    name: { ru: 'Каменная Шляпка', en: 'Stone Cap' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 4 }
   },
   {
     id: 'root_shell',
@@ -52,15 +107,45 @@ export const artifacts = [
     family: 'armor',
     width: 2,
     height: 2,
+    price: 2,
     bonus: { armor: 5, speed: -1 }
   },
+  {
+    id: 'truffle_bulwark',
+    name: { ru: 'Трюфельный Бастион', en: 'Truffle Bulwark' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 2,
+    bonus: { armor: 7, speed: -2, damage: -1 }
+  },
+  // --- Stun family ---
   {
     id: 'shock_puff',
     name: { ru: 'Шоковая Пышка', en: 'Shock Puff' },
     family: 'stun',
     width: 1,
     height: 1,
+    price: 1,
     bonus: { stunChance: 8 }
+  },
+  {
+    id: 'glimmer_cap',
+    name: { ru: 'Мерцающая Шляпка', en: 'Glimmer Cap' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { stunChance: 6 }
+  },
+  {
+    id: 'dust_veil',
+    name: { ru: 'Пылевая Вуаль', en: 'Dust Veil' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 12 }
   },
   {
     id: 'static_spore_sac',
@@ -68,6 +153,7 @@ export const artifacts = [
     family: 'stun',
     width: 1,
     height: 2,
+    price: 2,
     bonus: { stunChance: 14, damage: -1 }
   },
   {
@@ -76,7 +162,36 @@ export const artifacts = [
     family: 'stun',
     width: 2,
     height: 1,
+    price: 2,
     bonus: { stunChance: 20, armor: -1 }
+  },
+  {
+    id: 'spark_spore',
+    name: { ru: 'Искровая Спора', en: 'Spark Spore' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 25, damage: -2 }
+  },
+  // --- Hybrid / utility ---
+  {
+    id: 'moss_ring',
+    name: { ru: 'Моховое Кольцо', en: 'Moss Ring' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { damage: 1, armor: 1 }
+  },
+  {
+    id: 'haste_wisp',
+    name: { ru: 'Проворный Блик', en: 'Haste Wisp' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { speed: 1 }
   }
 ];
 
@@ -212,6 +327,13 @@ export const rewardTable = {
 
 export function getArtifactById(id) {
   return artifacts.find((item) => item.id === id) || null;
+}
+
+export function getArtifactPrice(artifact) {
+  if (!artifact) {
+    return 0;
+  }
+  return Number.isFinite(artifact.price) ? artifact.price : 1;
 }
 
 export function getMushroomById(id) {

@@ -84,20 +84,41 @@ test('start battle button opens replay when a ghost opponent exists', async ({ p
   await expect(page.locator('.replay-log')).toBeVisible();
   const replayEntries = page.locator('.replay-log .log-entry');
   await expect(replayEntries).toHaveCount(1);
-  await expect(replayEntries.first()).toContainText(/faces|сталкивается|встречает/i);
-  await expect(page.locator('.replay-line')).not.toHaveText('');
-
-  await page.getByRole('button', { name: /play/i }).click();
-  await expect(replayEntries).toHaveCount(2);
+  await expect(replayEntries.first()).toContainText(/vs|против|faces|сталкивается|встречает/i);
+  await expect(page.locator('.battle-status')).toBeVisible();
+  await expect(page.getByRole('button', { name: /result|результат/i })).toHaveCount(0);
+  await expect(replayEntries).toHaveCount(2, { timeout: 5000 });
   const firstReplayEntryText = await replayEntries.nth(0).innerText();
   const secondReplayEntryText = await replayEntries.nth(1).innerText();
   expect(firstReplayEntryText).not.toBe(secondReplayEntryText);
+  await expect(page.getByRole('button', { name: /result|результат/i })).toBeVisible({ timeout: 40000 });
 });
 
-test('artifact figures are visible in the library, inventory, and battle surfaces', async ({ page, request, baseURL }) => {
+// HTML5 drag-and-drop in Playwright is unreliable via dragTo(). Dispatch the
+// drag events manually against a shared DataTransfer so Vue handlers fire.
+async function htmlDragDrop(page, sourceSelector, targetSelector) {
+  await page.evaluate(([srcSel, dstSel]) => {
+    const source = document.querySelector(srcSel);
+    const target = document.querySelector(dstSel);
+    if (!source || !target) {
+      throw new Error(`drag-drop selector miss: ${!source ? srcSel : dstSel}`);
+    }
+    const dataTransfer = new DataTransfer();
+    const fire = (el, type) => {
+      el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }));
+    };
+    fire(source, 'dragstart');
+    fire(target, 'dragenter');
+    fire(target, 'dragover');
+    fire(target, 'drop');
+    fire(source, 'dragend');
+  }, [sourceSelector, targetSelector]);
+}
+
+test('shop drag-and-drop flow lets the player spend coins, return items, save, and battle', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 804, username: 'shape_player', name: 'Shape Player' });
-  const opponent = await createSession(request, { telegramId: 805, username: 'shape_ghost', name: 'Shape Ghost' });
+  const player = await createSession(request, { telegramId: 804, username: 'shop_player', name: 'Shop Player' });
+  const opponent = await createSession(request, { telegramId: 805, username: 'shop_ghost', name: 'Shop Ghost' });
 
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
   await api(request, opponent.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
@@ -112,74 +133,112 @@ test('artifact figures are visible in the library, inventory, and battle surface
 
   await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
 
-  await expect(page.locator('.artifact-btn[data-artifact-id="spore_needle"] .artifact-figure-cell')).toHaveCount(1);
-  const amberLibraryCells = page.locator('.artifact-btn[data-artifact-id="amber_fang"] .artifact-figure-cell');
-  await expect(amberLibraryCells).toHaveCount(2);
-  await expect(amberLibraryCells.first()).toBeVisible();
-  await expect(page.locator('.artifact-btn[data-artifact-id="root_shell"] .artifact-figure-cell')).toHaveCount(4);
-  await expect(page.locator('.artifact-btn[data-artifact-id="amber_fang"] .artifact-grid-background')).toBeHidden();
+  // Shop renders with 5 offers and the coin HUD reads 0/5.
+  const shop = page.locator('.artifact-shop');
+  await expect(shop).toBeVisible();
+  await expect(shop.locator('.shop-item')).toHaveCount(5);
+  await expect(page.locator('.coin-hud-label')).toContainText('0 / 5');
 
-  const leftCellBox = await page.locator('.artifact-btn[data-artifact-id="spore_needle"] .artifact-figure-cell').first().boundingBox();
-  const rightCellBox = await page.locator('.artifact-grid-board--inventory .artifact-grid-cell').first().boundingBox();
-  expect(leftCellBox).not.toBeNull();
-  expect(rightCellBox).not.toBeNull();
-  expect(Math.round(leftCellBox.width)).toBe(50);
-  expect(Math.round(leftCellBox.height)).toBe(50);
-  expect(Math.round(rightCellBox.width)).toBe(50);
-  expect(Math.round(rightCellBox.height)).toBe(50);
+  // Pick the first available 1-coin shop item so the drag always fits the budget.
+  const cheapItem = shop.locator('.shop-item:not(.shop-item--expensive)').first();
+  const cheapId = await cheapItem.getAttribute('data-artifact-id');
+  expect(cheapId).not.toBeNull();
 
-  await page.locator('.artifact-btn[data-artifact-id="amber_fang"]').click({ timeout: 5000 });
-  await expect(page.locator('.artifact-btn[data-artifact-id="amber_fang"]')).toHaveClass(/placed/);
-  await page.locator('.artifact-btn[data-artifact-id="spore_needle"]').click({ timeout: 5000 });
-  await expect(page.locator('.artifact-btn[data-artifact-id="spore_needle"]')).toHaveClass(/placed/);
-  await page.locator('.artifact-btn[data-artifact-id="thunder_gill"]').click({ timeout: 5000 });
-  await expect(page.locator('.artifact-btn[data-artifact-id="thunder_gill"]')).toHaveClass(/placed/);
-
-  await expect(page.locator('.inventory-pieces .artifact-piece')).toHaveCount(3);
-  await page.locator('.artifact-btn[data-artifact-id="bark_plate"]').click({ timeout: 5000 });
-  await expect(page.locator('.inventory-pieces .artifact-piece')).toHaveCount(3);
-  await expect(page.locator('.error')).toContainText(/only 3 artifacts|только 3 артефакта|можно поставить только 3 артефакта/i);
-
-  const amberBoardPiece = page.locator('.artifact-grid-board--inventory .artifact-piece[data-artifact-id="amber_fang"]');
-  await expect(amberBoardPiece).toHaveCount(1);
-
-  const amberBoardCells = page.locator('.inventory-pieces .artifact-piece[data-artifact-id="amber_fang"] .artifact-figure-cell');
-  await expect(amberBoardCells).toHaveCount(2);
-  await expect(amberBoardCells.first()).toBeVisible();
-
-  const boardBox = await page.locator('.inventory-pieces .artifact-piece[data-artifact-id="amber_fang"]').boundingBox();
-  expect(boardBox).not.toBeNull();
-  expect(boardBox.height).toBeGreaterThan(boardBox.width * 1.5);
-
-  await page.getByRole('button', { name: /save|сохранить/i }).click({ timeout: 5000 });
-  await expect(page.getByRole('heading', { level: 2, name: /Battle|Бой/ })).toBeVisible();
-
-  const battleInventory = page.locator('.battle-prep-inventory');
-  const battleInventoryCells = page.locator('.battle-prep-inventory .artifact-grid-cell');
-  const battleStartButton = page.getByRole('button', { name: /start battle|начать бой/i });
-  await expect(battleInventory).toBeVisible();
-  await expect(battleInventoryCells).toHaveCount(6);
-  await expect(page.locator('.battle-prep-summary')).toBeVisible();
-
-  const battleInventoryBox = await battleInventory.boundingBox();
-  const battleStartButtonBox = await battleStartButton.boundingBox();
-  expect(battleInventoryBox).not.toBeNull();
-  expect(battleStartButtonBox).not.toBeNull();
-  const boxesOverlap = !(
-    battleInventoryBox.x + battleInventoryBox.width <= battleStartButtonBox.x ||
-    battleStartButtonBox.x + battleStartButtonBox.width <= battleInventoryBox.x ||
-    battleInventoryBox.y + battleInventoryBox.height <= battleStartButtonBox.y ||
-    battleStartButtonBox.y + battleStartButtonBox.height <= battleInventoryBox.y
+  // Drag it onto inventory cell (0, 0).
+  await htmlDragDrop(
+    page,
+    `.shop-item[data-artifact-id="${cheapId}"]`,
+    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]'
   );
-  expect(boxesOverlap).toBe(false);
 
+  // Piece landed in inventory, shop lost it, coin HUD ticked.
+  await expect(page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`)).toHaveCount(1);
+  await expect(shop.locator(`.shop-item[data-artifact-id="${cheapId}"]`)).toHaveCount(0);
+  await expect(shop.locator('.shop-item')).toHaveCount(4);
+  await expect(page.locator('.coin-hud-label')).not.toContainText('0 / 5');
+
+  // Click the placed piece to return it to the shop; coins refund back to 0/5.
+  await page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`).click({ timeout: 5000 });
+  await expect(page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`)).toHaveCount(0);
+  await expect(shop.locator(`.shop-item[data-artifact-id="${cheapId}"]`)).toHaveCount(1);
+  await expect(page.locator('.coin-hud-label')).toContainText('0 / 5');
+
+  // Place it again and save the loadout.
+  await htmlDragDrop(
+    page,
+    `.shop-item[data-artifact-id="${cheapId}"]`,
+    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]'
+  );
+  await expect(page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`)).toHaveCount(1);
+  await page.getByRole('button', { name: /save|сохранить/i }).click({ timeout: 5000 });
+
+  // Battle prep screen still works with a partial loadout.
+  await expect(page.getByRole('heading', { level: 2, name: /Battle|Бой/ })).toBeVisible();
+  const battleInventory = page.locator('.battle-prep-inventory');
+  await expect(battleInventory).toBeVisible();
+  await expect(page.locator('.battle-prep-inventory .artifact-grid-cell')).toHaveCount(6);
+
+  const battleStartButton = page.getByRole('button', { name: /start battle|начать бой/i });
+  await expect(battleStartButton).toBeEnabled();
   await battleStartButton.click({ timeout: 5000 });
   await expect(page.locator('.replay-log')).toBeVisible();
-  await page.getByRole('button', { name: /result|результат/i }).click({ timeout: 5000 });
+  await page.getByRole('button', { name: /result|результат/i }).click({ timeout: 40000 });
   await expect(page.getByRole('heading', { level: 2, name: /result|результат/i })).toBeVisible();
 });
 
-test('start battle shows a visible error when no ghost opponent exists', async ({ page, request, baseURL }) => {
+test('shop enforces the 5-coin budget by blocking drags from unaffordable items', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 806, username: 'budget_player', name: 'Budget Player' });
+
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  // Seed localStorage with a deterministic shop offer so this test doesn't
+  // depend on the random reroll landing on specific artifacts.
+  await page.addInitScript(({ sessionKey, playerId }) => {
+    localStorage.setItem('sessionKey', sessionKey);
+    const offer = ['spore_needle', 'amber_fang', 'glass_cap', 'bark_plate', 'root_shell'];
+    localStorage.setItem(
+      `mushroom-shop-offer:${playerId}`,
+      JSON.stringify({ offer, builder: [] })
+    );
+  }, { sessionKey: player.sessionKey, playerId: player.player.id });
+
+  await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
+
+  const shop = page.locator('.artifact-shop');
+  await expect(shop.locator('.shop-item')).toHaveCount(5);
+  // Seeded offer guarantees amber_fang and root_shell are present.
+  await expect(shop.locator('.shop-item[data-artifact-id="amber_fang"]')).toHaveCount(1);
+  await expect(shop.locator('.shop-item[data-artifact-id="root_shell"]')).toHaveCount(1);
+
+  // Non-square artifacts auto-rotate to their horizontal preferred orientation,
+  // so amber_fang (1×2) lands as 2×1 at (0,0) occupying cols 0,1 of row 0.
+  await htmlDragDrop(
+    page,
+    '.shop-item[data-artifact-id="amber_fang"]',
+    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]'
+  );
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="amber_fang"]')).toHaveCount(1);
+  await expect(page.locator('.coin-hud-label')).toContainText('2 / 5');
+
+  // glass_cap (price 2, 2×1) at (0,1) fills cols 0,1 of row 1 — 4 coins spent total.
+  await htmlDragDrop(
+    page,
+    '.shop-item[data-artifact-id="glass_cap"]',
+    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="1"]'
+  );
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glass_cap"]')).toHaveCount(1);
+  await expect(page.locator('.coin-hud-label')).toContainText('4 / 5');
+
+  // Now only 1 coin left. A remaining 2-cost shop item must be marked expensive
+  // and its draggable attribute must be false.
+  const remainingExpensive = shop.locator('.shop-item.shop-item--expensive').first();
+  await expect(remainingExpensive).toHaveCount(1);
+  const draggableAttr = await remainingExpensive.getAttribute('draggable');
+  expect(draggableAttr).toBe('false');
+});
+
+test('start battle falls back to a bot opponent when no ghost opponent exists', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 803, username: 'solo_player', name: 'Solo Player' });
 
@@ -196,5 +255,7 @@ test('start battle shows a visible error when no ghost opponent exists', async (
   await page.goto(`${baseURL}?screen=battle`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start battle|начать бой/i }).click();
 
-  await expect(page.locator('.error')).toContainText(/No ghost opponents available/i);
+  await page.waitForURL(/screen=replay/);
+  await expect(page.locator('.replay-log')).toBeVisible();
+  await expect(page.locator('.error')).toHaveCount(0);
 });

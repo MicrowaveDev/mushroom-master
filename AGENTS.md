@@ -115,6 +115,16 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - consistent cell size across related surfaces
 - For battle-prep, builder, and similar composition-heavy screens, include at least one assertion that the primary call-to-action is outside the visual surface and remains clickable.
 
+### UI Test Efficiency Rules
+
+- Prefer the repo helper command over ad hoc port debugging for screenshot verification:
+  - `npm run game:test:screens`
+  - `npm run game:test:screens:debug`
+- Those commands are the preferred path because they choose isolated Playwright ports automatically and avoid repeated manual `pgrep`, `lsof`, and `curl` probing.
+- If a visual test appears stuck, rerun with `npm run game:test:screens:debug` before doing manual process inspection.
+- Keep explicit stage logs inside screenshot-heavy Playwright specs so the current screen or wait point is visible in command output.
+- When a screenshot suite stalls, first identify the last printed stage log and fix the specific wait or interaction around that screen instead of adding broad timeouts.
+
 ### Character Portrait And Bubble Rules
 
 - When a screen overlays speech bubbles, labels, or callouts onto character portraits, prefer per-character configuration over one global visual offset.
@@ -136,6 +146,18 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - all expected bubbles render
   - the cast-wide review screenshot was regenerated from the current config
   - the screenshot for agent review was regenerated in the same pass
+
+### Inventory Review Rules
+
+- When changing inventory rendering, artifact placement rules, bot loadout generation, or any fighter card that embeds an inventory, verify against a cast-wide random inventory review surface in addition to the main screen that triggered the change.
+- For the autobattler frontend, use the dev review screen at `?screen=inventory-review` as the visual audit surface for generated inventories.
+- That review surface must be powered by the real backend bot-loadout generator, not handcrafted frontend-only sample data.
+- Inventory review tests should prove:
+  - the expected number of seeded random review cards rendered
+  - each card contains the full `3x2` inventory cell count
+  - every rendered artifact piece stays fully inside its inventory bounds
+  - a fresh screenshot of the review surface was regenerated in the same pass
+- If an inventory looks wrong in a replay, results card, or home summary, first verify whether the data itself is invalid on the inventory-review screen before tuning card layout CSS.
 
 ### Repo-Local Proof Loop
 

@@ -1,0 +1,13 @@
+Command:
+node src/regenerate-from-telegram.js --render-existing-markdown --template mushrooms-docs --skip-bot
+
+Output:
+Render existing markdown mode: yes
+Channel slug: channel
+Render template: mushrooms-docs
+Lore markdown: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/mushroom-lore.md
+Lore HTML: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/mushrooms-docs-2026-04-05T18-21-14-843Z.html
+Lore PDF: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/mushrooms-docs-2026-04-05T18-21-14-843Z.pdf
+Page images: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/page-images-mushrooms-docs
+Page image manifest: /Users/microwavedev/workspace/mushroom-master/data/channel/generated/page-images-mushrooms-docs/manifest.json
+Bot delivery skipped.

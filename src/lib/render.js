@@ -2,16 +2,64 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { marked } from 'marked';
 import puppeteer from 'puppeteer';
+import {
+  extractSection,
+  normalizeStructuredSectionBody,
+  splitFourthLevelSections,
+  splitParagraphs,
+  splitThirdLevelSections,
+  stripMarkdownImages
+} from './markdown-parser.js';
 
 const A4_VIEWPORT = {
   width: 794,
   height: 1123
 };
 
+const CHARACTER_SECTION_ORDER = [
+  'Обзор',
+  'Внешность',
+  'Особенности',
+  'Обитель и владения',
+  'Мотивы и роль',
+  'Связи и сюжетные линии'
+];
+
+const RENDER_TEMPLATES = {
+  classic: {
+    id: 'classic',
+    filePrefix: 'mushroom-lore',
+    pageImagesDirName: 'page-images'
+  },
+  'mushrooms-docs': {
+    id: 'mushrooms-docs',
+    filePrefix: 'mushrooms-docs',
+    pageImagesDirName: 'page-images-mushrooms-docs'
+  }
+};
+
+export function normalizeRenderTemplate(template) {
+  const normalized = String(template || '').trim().toLowerCase();
+  return RENDER_TEMPLATES[normalized] ? normalized : 'classic';
+}
+
+function getRenderTemplate(template) {
+  return RENDER_TEMPLATES[normalizeRenderTemplate(template)];
+}
+
 function toDataUrl(svg) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
     svg.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim()
   )}`;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function applyCharacterIntroLayout(bodyHtml) {
@@ -26,9 +74,7 @@ function applyCharacterIntroLayout(bodyHtml) {
   const transformed = after.replace(
     /<h3>([^<]+)<\/h3>\s*((?:<p><img[^>]+><\/p>)|(?:<div class="character-intro-gallery">[\s\S]*?<\/div>))\s*(?:<h4>Обзор<\/h4>\s*(<p>[\s\S]*?<\/p>))?/g,
     (_match, name, mediaBlock, overviewParagraph = '') => {
-      const overviewBlock = overviewParagraph
-        ? overviewParagraph
-        : '';
+      const overviewBlock = overviewParagraph || '';
 
       return [
         '<section class="character-intro">',
@@ -64,7 +110,183 @@ function applyCharacterIntroLayout(bodyHtml) {
   return `${before}${cleaned}`;
 }
 
-function buildHtml(title, bodyHtml, ornaments) {
+function extractLeadingMediaBlocks(markdown) {
+  let remaining = String(markdown || '').trim();
+  const blocks = [];
+
+  while (remaining) {
+    const markdownImageMatch = remaining.match(/^!\[[^\]]*\]\([^)]+\)\s*/);
+    if (markdownImageMatch) {
+      blocks.push(markdownImageMatch[0].trim());
+      remaining = remaining.slice(markdownImageMatch[0].length).trimStart();
+      continue;
+    }
+
+    const galleryMatch = remaining.match(/^<div class="character-intro-gallery">[\s\S]*?<\/div>\s*/);
+    if (galleryMatch) {
+      blocks.push(galleryMatch[0].trim());
+      remaining = remaining.slice(galleryMatch[0].length).trimStart();
+      continue;
+    }
+
+    break;
+  }
+
+  return { blocks, remaining };
+}
+
+function movePrefaceIntoOverview(preface, sections) {
+  const normalizedPreface = normalizeStructuredSectionBody(preface);
+  if (!normalizedPreface) {
+    return sections;
+  }
+
+  const overviewIndex = sections.findIndex((section) => section.title === 'Обзор');
+  if (overviewIndex === -1) {
+    return [
+      {
+        title: 'Обзор',
+        body: normalizedPreface
+      },
+      ...sections
+    ];
+  }
+
+  const nextSections = [...sections];
+  nextSections[overviewIndex] = {
+    ...nextSections[overviewIndex],
+    body: [normalizedPreface, nextSections[overviewIndex].body].filter(Boolean).join('\n\n').trim()
+  };
+  return nextSections;
+}
+
+function orderCharacterSections(sections) {
+  const known = [];
+  const unknown = [];
+
+  for (const title of CHARACTER_SECTION_ORDER) {
+    const match = sections.find((section) => section.title === title);
+    if (match?.body) {
+      known.push(match);
+    }
+  }
+
+  for (const section of sections) {
+    if (!section?.body) {
+      continue;
+    }
+    if (!CHARACTER_SECTION_ORDER.includes(section.title)) {
+      unknown.push(section);
+    }
+  }
+
+  return [...known, ...unknown];
+}
+
+function markdownToInlineHtml(markdown) {
+  return marked.parseInline(String(markdown || '').trim());
+}
+
+function markdownToBlockHtml(markdown) {
+  return marked.parse(String(markdown || '').trim());
+}
+
+function normalizeSummarySentence(text, maxLength = 220) {
+  const clean = String(text || '')
+    .replace(/[*_`#>-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) {
+    return '';
+  }
+  if (clean.length <= maxLength) {
+    return clean;
+  }
+  const sentenceMatch = clean.match(/^(.{1,220}?[.!?])(?:\s|$)/);
+  if (sentenceMatch) {
+    return sentenceMatch[1].trim();
+  }
+  return `${clean.slice(0, maxLength - 1).trim()}…`;
+}
+
+function deriveCharacterSummary(overviewBody) {
+  const paragraphs = splitParagraphs(normalizeStructuredSectionBody(overviewBody));
+  const nonListParagraphs = paragraphs.filter((paragraph) => !/^\s*-\s+/m.test(paragraph));
+  const styleParagraph = paragraphs.find((paragraph) => /^(Тема|Стиль)\s*:/im.test(paragraph));
+  const conceptParagraph = nonListParagraphs[0] || paragraphs[0] || '';
+  const items = [];
+
+  if (conceptParagraph) {
+    items.push({
+      label: 'Концепция',
+      value: normalizeSummarySentence(conceptParagraph)
+    });
+  }
+
+  if (styleParagraph) {
+    items.push({
+      label: /^(Стиль)\s*:/im.test(styleParagraph) ? 'Стиль' : 'Тема',
+      value: styleParagraph.replace(/^(Тема|Стиль)\s*:/im, '').trim()
+    });
+  }
+
+  return items.filter((item) => item.value);
+}
+
+function parseLoreDocument(markdown, title) {
+  const generalLoreMarkdown = extractSection(markdown, 'Общий лор');
+  const generalLoreSections = splitThirdLevelSections(generalLoreMarkdown).map((section) => {
+    const lines = section.content.split('\n');
+    lines.shift();
+    const body = lines.join('\n').trim();
+    return {
+      title: section.title,
+      body,
+      bodyHtml: markdownToBlockHtml(body)
+    };
+  });
+
+  const charactersMarkdown = extractSection(markdown, 'Персонажи');
+  const characters = splitThirdLevelSections(charactersMarkdown).map((section) => {
+    const lines = section.content.split('\n');
+    lines.shift();
+    const rawBody = lines.join('\n').trim();
+    const { blocks: mediaBlocks, remaining } = extractLeadingMediaBlocks(rawBody);
+    const bodyWithoutImages = stripMarkdownImages(remaining);
+    const { preface, sections: fourthLevelSections } = splitFourthLevelSections(bodyWithoutImages);
+    const normalizedSections = movePrefaceIntoOverview(
+      preface,
+      fourthLevelSections
+        .map((entry) => ({
+          title: entry.title,
+          body: normalizeStructuredSectionBody(entry.body)
+        }))
+        .filter((entry) => entry.body)
+    );
+    const orderedSections = orderCharacterSections(normalizedSections).map((entry) => ({
+      ...entry,
+      bodyHtml: markdownToBlockHtml(entry.body)
+    }));
+    const overviewSection = orderedSections.find((entry) => entry.title === 'Обзор');
+
+    return {
+      title: section.title,
+      mediaHtml: mediaBlocks
+        .map((block) => (block.startsWith('<div') ? block : markdownToBlockHtml(block)))
+        .join('\n'),
+      summaryItems: deriveCharacterSummary(overviewSection?.body || ''),
+      sections: orderedSections
+    };
+  });
+
+  return {
+    title,
+    generalLoreSections,
+    characters
+  };
+}
+
+function buildClassicHtml(title, bodyHtml, ornaments) {
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -419,6 +641,377 @@ function buildHtml(title, bodyHtml, ornaments) {
 </html>`;
 }
 
+function buildMushroomsDocsHtml(document, ornaments) {
+  const generalLoreHtml = document.generalLoreSections
+    .map((section, index) => `\
+<article class="docs-topic">
+  <div class="docs-index">${String(index + 1).padStart(2, '0')}</div>
+  <div class="docs-topic-copy">
+    <h3>${escapeHtml(section.title)}</h3>
+    ${section.bodyHtml}
+  </div>
+</article>`)
+    .join('\n');
+
+  const characterProfilesHtml = document.characters
+    .map((character) => {
+      const summaryHtml = character.summaryItems.length > 0
+        ? `<div class="docs-summary-grid">
+            ${character.summaryItems.map((item) => `\
+<div class="docs-summary-card">
+  <span class="docs-summary-label">${escapeHtml(item.label)}</span>
+  <p>${markdownToInlineHtml(item.value)}</p>
+</div>`).join('\n')}
+          </div>`
+        : '';
+
+      const sectionsHtml = character.sections
+        .map((section, index) => `\
+<section class="docs-profile-section">
+  <div class="docs-index">${String(index + 1).padStart(2, '0')}</div>
+  <div class="docs-profile-section-copy">
+    <h3>${escapeHtml(section.title)}</h3>
+    ${section.bodyHtml}
+  </div>
+</section>`)
+        .join('\n');
+
+      return `\
+<article class="docs-profile">
+  <header class="docs-profile-header${character.mediaHtml ? ' has-media' : ''}">
+    ${character.mediaHtml ? `<div class="docs-profile-media">${character.mediaHtml}</div>` : ''}
+    <div class="docs-profile-copy">
+      <p class="docs-kicker">Mushrooms Documents</p>
+      <h2>Профиль персонажа: ${escapeHtml(character.title)}</h2>
+      ${summaryHtml}
+    </div>
+  </header>
+  <div class="docs-profile-sections">
+    ${sectionsHtml}
+  </div>
+</article>`;
+    })
+    .join('\n');
+
+  return `<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${document.title}</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #090705;
+        --paper: #14100d;
+        --panel: rgba(31, 23, 17, 0.96);
+        --panel-strong: rgba(24, 18, 13, 0.98);
+        --ink: #f6e7c0;
+        --muted: #cdb17a;
+        --accent: #f4c56a;
+        --accent-soft: rgba(244, 197, 106, 0.16);
+        --line: rgba(244, 197, 106, 0.22);
+        --line-strong: rgba(244, 197, 106, 0.4);
+        --shadow: rgba(0, 0, 0, 0.35);
+        --ornament-top-right: url("${ornaments.topRight}");
+        --ornament-bottom-left: url("${ornaments.bottomLeft}");
+        --ornament-watermark: url("${ornaments.watermark}");
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 18px;
+        background:
+          radial-gradient(circle at top, rgba(255, 205, 126, 0.12), transparent 28%),
+          radial-gradient(circle at bottom left, rgba(191, 133, 55, 0.14), transparent 24%),
+          linear-gradient(180deg, #0e0b08 0%, var(--bg) 100%);
+        color: var(--ink);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+      .page-ornament {
+        position: fixed;
+        inset: auto;
+        pointer-events: none;
+        z-index: 0;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        filter: sepia(0.35) saturate(0.92);
+      }
+      .page-ornament.top-right {
+        top: 8px;
+        right: -28px;
+        width: 160px;
+        height: 160px;
+        opacity: 0.12;
+        background-image: var(--ornament-top-right);
+      }
+      .page-ornament.bottom-left {
+        left: -34px;
+        bottom: 16px;
+        width: 220px;
+        height: 190px;
+        opacity: 0.08;
+        background-image: var(--ornament-bottom-left);
+      }
+      .page-ornament.watermark {
+        top: 34%;
+        right: -14%;
+        width: 420px;
+        height: 420px;
+        opacity: 0.04;
+        background-image: var(--ornament-watermark);
+      }
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 34px 36px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background:
+          linear-gradient(180deg, rgba(255, 232, 186, 0.02), transparent 24%),
+          var(--paper);
+        box-shadow: 0 24px 70px var(--shadow);
+      }
+      .docs-cover {
+        padding: 0.5rem 0 0.75rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .docs-kicker {
+        margin: 0 0 0.45rem;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        font-size: 0.78rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1, h2, h3 {
+        margin: 0;
+        line-height: 1.08;
+        color: var(--accent);
+      }
+      h1 {
+        font-size: 2.7rem;
+        max-width: 12ch;
+      }
+      .docs-section-shell {
+        margin-top: 0.9rem;
+      }
+      .docs-section-shell > h2 {
+        padding-bottom: 0.7rem;
+        font-size: 1.7rem;
+        border-bottom: 1px solid var(--line-strong);
+      }
+      .docs-topic,
+      .docs-profile-section {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr);
+        gap: 1rem;
+        align-items: start;
+      }
+      .docs-topic {
+        margin-top: 1.35rem;
+        padding: 1.1rem 0 0;
+        border-top: 1px solid rgba(244, 197, 106, 0.08);
+      }
+      .docs-index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.3rem;
+        padding: 0.2rem 0.55rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(255, 220, 147, 0.12), rgba(255, 220, 147, 0.04));
+        color: var(--accent);
+        font-family: "Courier New", monospace;
+        font-size: 0.86rem;
+        letter-spacing: 0.1em;
+      }
+      .docs-topic-copy h3,
+      .docs-profile-section-copy h3 {
+        margin-bottom: 0.7rem;
+        font-size: 1.16rem;
+      }
+      p, li {
+        font-size: 1rem;
+        line-height: 1.72;
+        color: #f3e5c2;
+      }
+      ul, ol {
+        margin: 0.7rem 0 0.2rem 1.2rem;
+        padding: 0;
+      }
+      li + li {
+        margin-top: 0.3rem;
+      }
+      strong {
+        color: var(--accent);
+      }
+      hr {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 2rem 0;
+      }
+      blockquote {
+        margin: 1rem 0 0;
+        padding: 0.9rem 1rem;
+        border-left: 3px solid var(--accent);
+        background: rgba(255, 216, 145, 0.06);
+        color: #f6e8bf;
+      }
+      code {
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+        background: rgba(255, 220, 147, 0.08);
+      }
+      .docs-profile {
+        margin-top: 1.7rem;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      .docs-profile-header {
+        display: block;
+      }
+      .docs-profile-header.has-media {
+        display: grid;
+        grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+        gap: 1.3rem;
+        align-items: start;
+      }
+      .docs-profile-copy h2 {
+        font-size: 1.78rem;
+      }
+      .docs-profile-media img {
+        display: block;
+        width: 100%;
+        margin: 0;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 218, 140, 0.18);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+      }
+      .docs-profile-media .character-intro-gallery {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+      }
+      .docs-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.8rem;
+        margin-top: 1rem;
+      }
+      .docs-summary-card {
+        padding: 0.85rem 0.95rem;
+        border: 1px solid rgba(255, 214, 134, 0.14);
+        border-radius: 16px;
+        background: rgba(255, 217, 145, 0.05);
+      }
+      .docs-summary-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        font-size: 0.76rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .docs-summary-card p {
+        margin: 0;
+      }
+      .docs-profile-sections {
+        margin-top: 1.35rem;
+      }
+      .docs-profile-section {
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid rgba(244, 197, 106, 0.1);
+      }
+      .docs-profile-section:first-child {
+        margin-top: 0;
+      }
+      @media (max-width: 760px) {
+        main {
+          padding: 26px 22px;
+        }
+        .docs-profile-header.has-media {
+          grid-template-columns: 1fr;
+        }
+        .docs-topic,
+        .docs-profile-section {
+          grid-template-columns: 1fr;
+        }
+        .docs-index {
+          width: fit-content;
+        }
+      }
+      @page {
+        margin: 10mm 10mm;
+      }
+      @media print {
+        body {
+          padding: 0;
+          background: var(--bg);
+        }
+        main {
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .docs-cover,
+        .docs-section-shell,
+        .docs-profile-header {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        .docs-profile {
+          break-inside: auto;
+          page-break-inside: auto;
+        }
+        .docs-profile-section,
+        .docs-topic {
+          break-inside: auto;
+          page-break-inside: auto;
+        }
+        h1, h2, h3 {
+          page-break-after: avoid;
+          break-after: avoid-page;
+        }
+        p, li {
+          orphans: 3;
+          widows: 3;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-ornament top-right" aria-hidden="true"></div>
+    <div class="page-ornament bottom-left" aria-hidden="true"></div>
+    <div class="page-ornament watermark" aria-hidden="true"></div>
+    <main>
+      <header class="docs-cover">
+      <p class="docs-kicker">Mushrooms Documents</p>
+        <h1>${escapeHtml(document.title)}</h1>
+      </header>
+
+      <section class="docs-section-shell">
+        <h2>Общий лор</h2>
+        ${generalLoreHtml}
+      </section>
+
+      <section class="docs-section-shell">
+        <h2>Профили персонажей</h2>
+        ${characterProfilesHtml}
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
 async function inlineLocalImages(html, outputDir) {
   const matches = Array.from(html.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/g));
   let result = html;
@@ -474,8 +1067,8 @@ async function loadOrnamentAssets(outputDir) {
   };
 }
 
-async function renderPageImages(page, outputDir) {
-  const pageImagesDir = path.join(outputDir, 'page-images');
+async function renderPageImages(page, outputDir, template) {
+  const pageImagesDir = path.join(outputDir, template.pageImagesDirName);
   await fs.rm(pageImagesDir, { recursive: true, force: true });
   await fs.mkdir(pageImagesDir, { recursive: true });
 
@@ -520,6 +1113,7 @@ async function renderPageImages(page, outputDir) {
       width: A4_VIEWPORT.width,
       height: A4_VIEWPORT.height,
       pageCount,
+      template: template.id,
       pages: images.map((image) => ({
         pageNumber: image.pageNumber,
         fileName: image.fileName
@@ -535,10 +1129,10 @@ function buildLoreArtifactTimestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
-async function pruneOldVersionedArtifacts(outputDir, extension, keep = 10) {
+async function pruneOldVersionedArtifacts(outputDir, prefix, extension, keep = 10) {
   const entries = await fs.readdir(outputDir);
   const matches = entries
-    .filter((name) => name.startsWith('mushroom-lore-') && name.endsWith(extension))
+    .filter((name) => name.startsWith(`${prefix}-`) && name.endsWith(extension))
     .sort()
     .reverse();
 
@@ -547,17 +1141,19 @@ async function pruneOldVersionedArtifacts(outputDir, extension, keep = 10) {
   }
 }
 
-export async function renderMarkdownToHtmlAndPdf(markdown, title, outputDir) {
+export async function renderMarkdownToHtmlAndPdf(markdown, title, outputDir, options = {}) {
+  const template = getRenderTemplate(options.template);
   const ornaments = await loadOrnamentAssets(outputDir);
-  const bodyHtml = applyCharacterIntroLayout(
-    await inlineLocalImages(marked.parse(markdown), outputDir)
-  );
-  const html = buildHtml(title, bodyHtml, ornaments);
+  const bodyHtml = applyCharacterIntroLayout(marked.parse(markdown));
+  const baseHtml = template.id === 'mushrooms-docs'
+    ? buildMushroomsDocsHtml(parseLoreDocument(markdown, title), ornaments)
+    : buildClassicHtml(title, bodyHtml, ornaments);
+  const html = await inlineLocalImages(baseHtml, outputDir);
   const timestamp = buildLoreArtifactTimestamp();
-  const htmlPath = path.join(outputDir, `mushroom-lore-${timestamp}.html`);
-  const pdfPath = path.join(outputDir, `mushroom-lore-${timestamp}.pdf`);
-  const latestHtmlPath = path.join(outputDir, 'mushroom-lore.html');
-  const latestPdfPath = path.join(outputDir, 'mushroom-lore.pdf');
+  const htmlPath = path.join(outputDir, `${template.filePrefix}-${timestamp}.html`);
+  const pdfPath = path.join(outputDir, `${template.filePrefix}-${timestamp}.pdf`);
+  const latestHtmlPath = path.join(outputDir, `${template.filePrefix}.html`);
+  const latestPdfPath = path.join(outputDir, `${template.filePrefix}.pdf`);
 
   await fs.writeFile(htmlPath, html, 'utf8');
   await fs.writeFile(latestHtmlPath, html, 'utf8');
@@ -565,17 +1161,24 @@ export async function renderMarkdownToHtmlAndPdf(markdown, title, outputDir) {
   const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pageImageResult = await renderPageImages(page, outputDir);
+    await page.setContent(html, { waitUntil: 'load', timeout: 120000 });
+    const pageImageResult = await renderPageImages(page, outputDir, template);
     await page.pdf({
       path: pdfPath,
       format: 'A4',
       printBackground: true
     });
     await fs.copyFile(pdfPath, latestPdfPath);
-    await pruneOldVersionedArtifacts(outputDir, '.html');
-    await pruneOldVersionedArtifacts(outputDir, '.pdf');
-    return { htmlPath, pdfPath, latestHtmlPath, latestPdfPath, ...pageImageResult };
+    await pruneOldVersionedArtifacts(outputDir, template.filePrefix, '.html');
+    await pruneOldVersionedArtifacts(outputDir, template.filePrefix, '.pdf');
+    return {
+      template: template.id,
+      htmlPath,
+      pdfPath,
+      latestHtmlPath,
+      latestPdfPath,
+      ...pageImageResult
+    };
   } finally {
     await browser.close();
   }

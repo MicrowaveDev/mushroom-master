@@ -1,0 +1,10 @@
+Error: Failed to launch the browser process:  Code: null
+
+stderr:
+
+
+TROUBLESHOOTING: https://pptr.dev/troubleshooting
+
+    at ChildProcess.onClose (file:///Users/microwavedev/workspace/mushroom-master/node_modules/@puppeteer/browsers/lib/esm/launch.js:339:24)
+    at ChildProcess.emit (node:events:531:35)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)
