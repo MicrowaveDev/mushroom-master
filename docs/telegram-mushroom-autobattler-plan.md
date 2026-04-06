@@ -24,8 +24,8 @@ Make a plan for a future game and save it as a markdown file. The idea is a Tele
 - Losses still grant `mycelium`, but 10 times less than wins.
 - Progression is per-character for each player.
 - Battles are `1v1`, not team-based.
-- Before battle, the user chooses artifacts to put into a container, inspired by Backpack Battles.
-- Artifact effects in v1 are limited to armor, damage, and stun chance.
+- Before battle, the user spends 5 coins in a randomized shop to draft artifacts into a `3×2` inventory, inspired by Backpack Battles.
+- Artifact effects are limited to armor, damage, speed, and stun chance.
 - There are no status effects in v1.
 - Everything described in the wiki is canon.
 - Only admins can change the wiki.
@@ -60,7 +60,7 @@ Make a plan for a future game and save it as a markdown file. The idea is a Tele
 ### Open assumptions
 
 - The first version uses asynchronous PvP or ghost battles, not synchronous real-time multiplayer.
-- The artifact container is intentionally simple in v1 and does not yet implement full Backpack Battles style spatial optimization.
+- The artifact shop and inventory implement a simplified Backpack Battles-style draft with a 5-coin budget and drag-and-drop spatial placement.
 - The wiki will be built by structuring and adapting the repository's existing markdown lore sources into wiki-ready folders and pages.
 - The visual direction for the Web App follows the repo's future light pastel mushroom theme.
 
@@ -85,7 +85,6 @@ Execution rules:
 - custom avatar uploads
 - monetization
 - complex item rarity systems
-- artifact rotation
 - advanced packing puzzles
 - real-time multiplayer
 - broad admin dashboards beyond what is required for wiki control or local test tooling
@@ -98,8 +97,8 @@ The first implementation slice must prove:
 2. open Mini App
 3. authenticate Telegram user
 4. choose one mushroom
-5. place exactly 3 artifacts in a `4x4` grid
-6. save loadout
+5. open shop, spend up to 5 coins on artifacts from a 5-item random offer
+6. drag artifacts from the shop into the `3x2` inventory grid; save loadout
 7. start one async battle
 8. watch replay
 9. receive `spore` and per-character `mycelium`
@@ -208,141 +207,113 @@ Players choose one mushroom champion from the canon lore roster, equip a small a
   - round end
   - winner, draw, and rewards
 
-### Artifact container
+### Artifact shop and inventory
 
-- The artifact container is the primary strategy surface in v1.
-- Players choose artifacts before battle.
-- All launch artifacts are available from the start.
-- The container is the only player-controlled source of combat-stat modification in v1.
-- Recommended v1 implementation:
-  - `4x4` grid container
-  - grouped artifact library
-  - place exactly 3 artifacts into the available slots
-  - simple artifact shapes, no rotation in v1
-  - exactly one saved loadout per player in v1
+- The artifact shop + inventory is the primary strategy surface.
+- Before each battle the player drafts artifacts from a randomized shop offer into a spatial inventory grid.
+- Each player starts the prep phase with **5 coins**. Artifacts cost **1 or 2 coins** based on their power.
+- The shop offers **5 random artifacts** from a pool of 20. A free reroll replaces the offer. The offer also refreshes automatically after each battle.
+- The inventory is a `3×2` grid (3 columns, 2 rows). Artifacts occupy `1×1`, `1×2`, `2×1`, or `2×2` footprints and cannot overlap.
+- Artifacts support rotation (non-square pieces can be toggled between orientations).
+- HTML5 drag-and-drop moves artifacts between the shop and the inventory:
+  - Drag from shop → inventory cell to place (debits coins).
+  - Click a placed piece or drag it back to the shop to return it (refunds coins).
+  - Drag within the inventory to reposition.
+- Unaffordable items are visually dimmed and not draggable.
+- A coin HUD shows `{used} / 5` and remaining balance.
+- Exactly one saved loadout per player (persisted to DB). The shop offer is stored in `localStorage` per player.
+- The server validates: unique artifacts, no overlap, within grid bounds, **total cost ≤ 5 coins**, max 6 pieces. Empty loadouts (0 artifacts) are allowed.
 
-### Backpack Battles inspiration, simplified for v1
+### Backpack Battles inspiration
 
-Research conclusion:
+The design borrows from `Backpack Battles`:
 
-- Yes, the plan is intentionally borrowing from `Backpack Battles`, but in a simpler first version.
-- The key pattern worth copying is not the full inventory puzzle immediately.
-- The key pattern is:
-  - pre-battle build decisions
-  - small item choices with visible combat payoff
-  - auto-resolved battles that are satisfying to watch
+- pre-battle build decisions via a coin-budget shop draft
+- small item choices with visible combat payoff and spatial packing
+- auto-resolved battles that are satisfying to watch
+- drag-and-drop between shop container and inventory (buy / return flow)
 
-Recommended v1 simplification:
+Current implementation scope:
 
-- keep a container metaphor
-- use a small `4x4` spatial grid
-- use only three artifact effect families:
-  - armor
-  - damage
-  - stun chance
-- keep artifact count small and fully available from the start
-- allow only 3 artifacts equipped at once
-- make battles deterministic enough to debug and balance
+- `3×2` spatial grid with drag-and-drop placement and rotation
+- 5-coin budget economy with 1- and 2-cost artifacts
+- three artifact effect families: armor, damage, stun chance — plus hybrid/utility items
+- 20-artifact pool, 5 random offers per shop session
+- deterministic battles seeded for debug and balance
 
-Do not add in v1:
+Not yet implemented (backlog):
 
-- grid rotation
-- complex packing puzzles
 - item rarity trees
 - status-effect chains
 - large proc ecosystems
 - complex item-combo grammars
+- paid rerolls or wave-based shop refresh within the same battle
 
-Put those into backlog instead after the simple artifact loop proves fun.
+#### Artifact catalog (20 items)
 
-#### Minimal launch artifact list
+Shape rules:
 
-Shape rules for v1:
-
-- each artifact has a fixed footprint on the `4x4` grid
+- each artifact has a fixed footprint on the `3×2` grid: `1×1`, `1×2`, `2×1`, or `2×2`
+- non-square artifacts can be rotated (swap width/height)
 - artifacts cannot overlap
-- artifacts cannot rotate
-- a valid loadout must contain exactly 3 placed artifacts
-- if a placement does not fit, it cannot be saved
+- total cost of placed artifacts must be ≤ 5 coins
+- if a placement does not fit or exceeds the coin budget, the drop is rejected
 
-Recommended launch shapes:
+##### Damage family
 
-- `1x1`
-- `1x2`
-- `2x1`
-- `2x2`
+| Artifact | Shape | Price | Bonus | Drawback |
+|---|---|---|---|---|
+| Spore Needle | `1×1` | 1 | `+2 damage` | — |
+| Sporeblade | `1×1` | 1 | `+3 damage` | — |
+| Amber Fang | `1×2` | 2 | `+4 damage` | `-1 armor` |
+| Glass Cap | `2×1` | 2 | `+5 damage` | `-2 armor` |
+| Fang Whip | `2×1` | 2 | `+6 damage` | `-3 armor` |
+| Burning Cap | `2×2` | 2 | `+8 damage` | `-2 armor`, `-1 speed` |
 
-##### Damage artifacts
+##### Armor family
 
-- `Spore Needle`
-  - effect: `+2 damage`
-  - shape: `1x1`
-- `Amber Fang`
-  - effect: `+4 damage`, `-1 armor`
-  - shape: `1x2`
-- `Glass Cap`
-  - effect: `+5 damage`, `-2 armor`
-  - shape: `2x1`
+| Artifact | Shape | Price | Bonus | Drawback |
+|---|---|---|---|---|
+| Bark Plate | `1×1` | 1 | `+2 armor` | — |
+| Loam Scale | `1×1` | 1 | `+3 armor` | `-1 speed` |
+| Mycelium Wrap | `2×1` | 1 | `+3 armor` | — |
+| Stone Cap | `1×2` | 2 | `+4 armor` | — |
+| Root Shell | `2×2` | 2 | `+5 armor` | `-1 speed` |
+| Truffle Bulwark | `2×2` | 2 | `+7 armor` | `-2 speed`, `-1 damage` |
 
-##### Armor artifacts
+##### Stun family
 
-- `Bark Plate`
-  - effect: `+2 armor`
-  - shape: `1x1`
-- `Mycelium Wrap`
-  - effect: `+3 armor`
-  - shape: `2x1`
-- `Root Shell`
-  - effect: `+5 armor`, `-1 speed`
-  - shape: `2x2`
+| Artifact | Shape | Price | Bonus | Drawback |
+|---|---|---|---|---|
+| Shock Puff | `1×1` | 1 | `+8% stun` | — |
+| Glimmer Cap | `1×1` | 1 | `+6% stun` | — |
+| Dust Veil | `1×2` | 2 | `+12% stun` | — |
+| Static Spore Sac | `1×2` | 2 | `+14% stun` | `-1 damage` |
+| Thunder Gill | `2×1` | 2 | `+20% stun` | `-1 armor` |
+| Spark Spore | `2×2` | 2 | `+25% stun` | `-2 damage` |
 
-##### Stun chance artifacts
+##### Hybrid / utility
 
-- `Shock Puff`
-  - effect: `+8% stun chance`
-  - shape: `1x1`
-- `Static Spore Sac`
-  - effect: `+14% stun chance`, `-1 damage`
-  - shape: `1x2`
-- `Thunder Gill`
-  - effect: `+20% stun chance`, `-1 armor`
-  - shape: `2x1`
+| Artifact | Shape | Price | Bonus | Drawback |
+|---|---|---|---|---|
+| Moss Ring | `1×1` | 1 | `+1 damage`, `+1 armor` | — |
+| Haste Wisp | `1×1` | 1 | `+1 speed` | — |
 
 Backlog expansion:
 
-- more artifact families
-- rarity
+- rarity tiers
 - combo rules
-- geometry-based container layout closer to Backpack Battles
 - elemental or status interactions
 
-#### Mini-spec: artifact value table
+#### Artifact economy and stacking rules
 
-Use these exact values as the first balance baseline for implementation.
-They are not permanent truths: agents should verify them through automated matchup tests and adjust them if the results show clear imbalance.
-
-| Artifact | Type | Shape | Bonus | Drawback |
-|---------|------|-------|--------|----------|
-| `Spore Needle` | damage | `1x1` | `+2 damage` | none |
-| `Amber Fang` | damage | `1x2` | `+4 damage` | `-1 armor` |
-| `Glass Cap` | damage | `2x1` | `+5 damage` | `-2 armor` |
-| `Bark Plate` | armor | `1x1` | `+2 armor` | none |
-| `Mycelium Wrap` | armor | `2x1` | `+3 armor` | none |
-| `Root Shell` | armor | `2x2` | `+5 armor` | `-1 speed` |
-| `Shock Puff` | stun | `1x1` | `+8% stun chance` | none |
-| `Static Spore Sac` | stun | `1x2` | `+14% stun chance` | `-1 damage` |
-| `Thunder Gill` | stun | `2x1` | `+20% stun chance` | `-1 armor` |
-
-Artifact stacking rules for v1:
-
-- all artifact bonuses stack additively
-- all artifact drawbacks stack additively
-- stun chance from multiple artifacts stacks additively
-- final stun chance is capped at `35%` in v1
-- duplicate artifacts are not allowed in v1
-- duplicate artifacts may be reconsidered only as a future backlog feature
-- players have only one saved loadout in v1
-- multiple saved loadouts belong in backlog
+- All artifact bonuses and drawbacks stack additively.
+- Stun chance is capped at `35%`.
+- Duplicate artifacts are not allowed.
+- Each artifact has a coin price of 1 or 2. Total placed cost must be ≤ 5 coins.
+- 1-coin items are weaker single-stat pieces; 2-coin items are stronger or multi-cell.
+- Players have only one saved loadout (persisted to DB). The shop offer persists in `localStorage`.
+- The authoritative artifact value table lives in `app/server/game-data.js` — the tables above mirror it but the code is the source of truth.
 
 Recommended balance read:
 
@@ -1003,7 +974,7 @@ UI:
 
 Key interactions:
 
-- drag and drop artifacts into the `4x4` grid
+- drag and drop artifacts from the shop into the `3×2` inventory grid
 - tap an artifact, then tap target cells to place it
 - tap placed artifact to remove it
 - invalid placements must be blocked immediately
@@ -1585,7 +1556,7 @@ Validation rules for saved loadouts:
 
 - exactly `3` artifacts must be stored for a valid v1 loadout
 - duplicate artifacts are not allowed
-- all placements must remain within the `4x4` grid bounds
+- all placements must remain within the `3×2` grid bounds
 - placements must not overlap
 - stored `width` and `height` must match the canonical artifact definition used by the game data
 
@@ -1990,7 +1961,7 @@ Phase 2 ownership:
 
 Phase 2 completion condition:
 
-- user can select a mushroom, place exactly 3 artifacts in the `4x4` grid, save the loadout, and start a valid battle
+- user can select a mushroom, draft artifacts from the shop within a 5-coin budget, place them in the `3×2` inventory grid, save the loadout, and start a valid battle
 - backend resolves battles deterministically from fixture inputs
 - result rewards persist correctly
 
@@ -2161,7 +2132,7 @@ UI review rule:
 ### Gate 2: setup ready
 
 - active mushroom persists
-- exactly 3 artifacts can be placed and saved
+- artifacts can be placed within a 5-coin budget and saved
 - invalid placements are blocked
 - screenshot coverage exists for character selection and artifact loadout builder
 

@@ -154,7 +154,7 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
 - That review surface must be powered by the real backend bot-loadout generator, not handcrafted frontend-only sample data.
 - Inventory review tests should prove:
   - the expected number of seeded random review cards rendered
-  - each card contains the full `3x2` inventory cell count
+  - each card contains the full `3×2` inventory cell count
   - every rendered artifact piece stays fully inside its inventory bounds
   - a fresh screenshot of the review surface was regenerated in the same pass
 - If an inventory looks wrong in a replay, results card, or home summary, first verify whether the data itself is invalid on the inventory-review screen before tuning card layout CSS.

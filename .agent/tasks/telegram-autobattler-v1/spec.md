@@ -37,10 +37,10 @@ Primary source documents:
   - player/session persistence
   - five launch mushrooms
   - character selection
-  - artifact library and `4x4` artifact-grid builder
-  - exactly 3 artifacts required
+  - coin-budget shop (5 coins, 5 random offers from 20 artifacts) with drag-and-drop into a `3×2` inventory grid
+  - artifacts cost 1 or 2 coins; total placed cost ≤ 5
   - no duplicates
-  - no rotation
+  - rotation supported for non-square pieces
   - no overlap
   - save loadout to DB using placement rows, not raw cell storage
   - deterministic `1v1` battle engine
@@ -62,15 +62,15 @@ Primary source documents:
   - wiki is canon and repo-authored, not edited in-app
   - do not add status effects, monetization, custom avatars, season systems, or deeper skill trees
 - Follow the suggested phase order from the user request unless blocked by a smaller safe sequencing adjustment.
-- Artifact builder requirements:
-  - Vue UI
-  - CSS grid board for `4x4`
+- Artifact shop and inventory requirements:
+  - Vue UI with a randomized shop (5 offers from 20 artifacts) and a `3×2` CSS grid inventory
+  - 5-coin budget; artifacts cost 1 or 2 coins; server validates total ≤ 5
+  - HTML5 drag-and-drop between shop and inventory (buy / return / reposition)
+  - rotation support for non-square pieces
   - placements saved canonically as artifact placements with coordinates
   - occupancy and stat totals derived from placements plus artifact definitions
-  - validate bounds, overlap, duplicates, and exact count of 3
+  - validate bounds, overlap, duplicates, and coin budget
   - mobile-first behavior that works in Telegram
-  - tap-to-place required
-  - drag and drop optional only if it does not compromise mobile behavior
 - Verification requirements:
   - create and maintain proof-loop artifacts
   - run focused tests throughout
@@ -92,7 +92,7 @@ Primary source documents:
 - Branching skill choices or deeper skill trees.
 - Custom avatar uploads.
 - Monetization.
-- Rotation, advanced packing puzzles, or duplicate artifacts.
+- Advanced packing puzzles or duplicate artifacts.
 - Real-time multiplayer.
 - In-app wiki editing.
 
@@ -107,13 +107,28 @@ Primary source documents:
 ### Additional user requirement
 
 - The artifact builder must show the actual artifact shapes in a Backpack Battles-style packing UI instead of raw artifact ids in cells.
-- The same artifact figure must be reused in the artifact library and in the placed result container so the player sees the same shape before and after placement.
+- The same artifact figure must be reused in the shop offer and in the placed inventory so the player sees the same shape before and after placement.
 
 ### Additional constraints
 
-- Keep the existing `4x4` tap-to-place interaction working in mobile and Telegram contexts.
 - Prefer SVG-backed or equivalent deterministic repo-authored artifact visuals over text labels inside cells.
-- Do not change artifact gameplay rules, placement storage rules, or introduce rotation.
+
+## Continuation Freeze 2026-04-06
+
+### Additional user requirement
+
+- Replace the fixed "exactly 3 artifacts from a full catalog" loadout with a coin-budget shop draft.
+- Artifacts have prices (1 or 2 coins); player starts with 5 coins per prep session.
+- Expand the artifact pool to 20. Shop offers 5 random items; free reroll available; offer refreshes after each battle.
+- Shop appears at the bottom-left of the artifacts screen. Drag artifacts from shop to inventory and back (like Backpack Battles).
+- Grid changed from `4×4` to `3×2`; rotation is now supported.
+
+### Additional constraints
+
+- Server must validate total coin cost ≤ 5 instead of exact piece count.
+- Bot loadout generator respects the same coin budget.
+- Shop offer stored client-side in localStorage; does not require server persistence.
+- Frontend refactored into modules (constants, i18n, api, artifacts/, replay/, components/).
 
 ## Acceptance Criteria
 
@@ -141,9 +156,9 @@ Player, session, settings, active mushroom selection, and progression persistenc
 
 All five launch mushrooms from the plan are implemented with the specified stats, passives, actives, and metadata. The frontend allows selecting and persisting the active mushroom.
 
-### AC7. Artifact library and grid-builder rules
+### AC7. Artifact shop, inventory, and placement rules
 
-The frontend provides a mobile-first Vue artifact builder using a `4x4` CSS grid with tap-to-place interaction. The backend and frontend enforce exactly 3 artifacts, no duplicates, no rotation, no overlap, and in-bounds placement. Saved loadouts use canonical placement rows, not raw cell storage.
+The frontend provides a mobile-first Vue artifact shop and `3×2` CSS grid inventory with drag-and-drop placement. 5 random artifacts are offered per shop session at 1 or 2 coins each; the player has a 5-coin budget. The backend and frontend enforce no duplicates, no overlap, in-bounds placement, rotation validity, and total cost ≤ 5. Saved loadouts use canonical placement rows, not raw cell storage.
 
 ### AC8. Deterministic battle engine and ghost matchmaking
 

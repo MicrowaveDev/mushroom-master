@@ -1,5 +1,7 @@
 # Shop-based Loadout Plan
 
+> **Status: Implemented** (2026-04-06, commit `d10dc8f`)
+
 ## Goal
 Replace the current "exactly 3 artifacts from a catalog" loadout flow with a
 coin-budget shop, where the player drafts artifacts from a random offer and
