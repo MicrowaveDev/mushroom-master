@@ -889,7 +889,7 @@ const App = {
   },
   template: `
     <div class="shell">
-      <header class="hero">
+      <header v-if="state.sessionKey && state.bootstrap" class="hero">
         <div>
           <p class="eyebrow">{{ t.title }}</p>
           <h1>{{ t.title }}</h1>
@@ -902,20 +902,41 @@ const App = {
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 
-      <section v-if="state.loading" class="panel">
-        <h2>{{ t.authTitle }}</h2>
-        <p>{{ t.authBody }}</p>
+      <section v-if="state.loading" class="auth-screen">
+        <div class="auth-hero-card panel">
+          <h2 class="auth-title">{{ t.authTitle }}</h2>
+          <p class="auth-tagline">{{ t.authTagline }}</p>
+        </div>
       </section>
 
-      <section v-else-if="!state.sessionKey" class="panel stack">
-        <h2>{{ t.authTitle }}</h2>
-        <p>{{ t.authBody }}</p>
-        <button class="primary" @click="loginViaTelegram">{{ t.authTelegram }}</button>
-        <button class="secondary" @click="loginViaBrowserCode">{{ t.authBrowser }}</button>
-        <button v-if="isLocalDevAuthEnabled" class="ghost" @click="loginViaDevSession">{{ t.authDev }}</button>
-        <div v-if="state.authCode" class="note">
-          <p>{{ t.botCodeHint }}</p>
-          <a :href="state.authCode.botUrl" target="_blank">{{ state.authCode.botUrl }}</a>
+      <section v-else-if="!state.sessionKey" class="auth-screen">
+        <div class="auth-hero-card panel">
+          <p class="eyebrow auth-eyebrow">{{ t.title }}</p>
+          <div class="auth-portraits">
+            <img src="/data/channel/assets/2026-03-27T23-32-46-000Z-53.bin.jpg" alt="" class="auth-portrait" />
+            <img src="/data/channel/assets/2026-03-28T02-06-35-000Z-214.bin.jpg" alt="" class="auth-portrait" />
+            <img src="/data/channel/assets/2026-03-28T02-06-16-000Z-212.bin.jpg" alt="" class="auth-portrait" />
+          </div>
+          <h2 class="auth-title">{{ t.authTitle }}</h2>
+          <p class="auth-tagline">{{ t.authTagline }}</p>
+          <ul class="auth-features">
+            <li>{{ t.authFeature1 }}</li>
+            <li>{{ t.authFeature2 }}</li>
+            <li>{{ t.authFeature3 }}</li>
+          </ul>
+          <div class="auth-actions">
+            <button class="primary auth-cta" @click="loginViaTelegram">{{ t.authTelegram }}</button>
+            <button class="secondary" @click="loginViaBrowserCode">{{ t.authBrowser }}</button>
+            <button v-if="isLocalDevAuthEnabled" class="ghost" @click="loginViaDevSession">{{ t.authDev }}</button>
+          </div>
+          <div v-if="state.authCode" class="note">
+            <p>{{ t.botCodeHint }}</p>
+            <a :href="state.authCode.botUrl" target="_blank">{{ state.authCode.botUrl }}</a>
+          </div>
+          <div class="auth-lang-row">
+            <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
+            <button class="lang-toggle-btn" :class="{ active: state.lang !== 'ru' }" disabled>EN</button>
+          </div>
         </div>
       </section>
 
@@ -1367,7 +1388,7 @@ const App = {
 
       <section v-else class="panel stack">
         <h2>{{ t.authTitle }}</h2>
-        <p>{{ t.authBody }}</p>
+        <p>{{ t.authTagline }}</p>
       </section>
     </div>
   `
