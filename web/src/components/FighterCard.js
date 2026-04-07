@@ -13,7 +13,8 @@ export const FighterCard = {
     getArtifact: { type: Function, default: null },
     acting: { type: Boolean, default: false },
     bubbleStyle: { type: Object, default: () => ({}) },
-    extraClass: { type: String, default: '' }
+    extraClass: { type: String, default: '' },
+    hideLoadout: { type: Boolean, default: false }
   },
   computed: {
     rootClass() {
@@ -22,24 +23,25 @@ export const FighterCard = {
   },
   template: `
     <article :class="rootClass">
-      <h3 class="fighter-name">{{ nameText || mushroom?.name?.ru || mushroom?.name?.en || mushroom?.id }}</h3>
       <div class="fighter-portrait-wrap" :style="bubbleStyle">
         <div v-if="speechText" class="fighter-speech-bubble">{{ speechText }}</div>
-        <img
-          v-if="mushroom"
-          :src="mushroom.imagePath"
-          :alt="mushroom.name?.ru || mushroom.name?.en || mushroom.id"
-          class="fighter-portrait"
-        />
-      </div>
-      <div class="fighter-meta-row">
-        <div class="fighter-copy">
-          <p v-if="healthText">{{ healthText }}</p>
-          <p v-else-if="mushroom">{{ mushroom.styleTag }}</p>
-          <p v-if="statsText" class="fighter-stats">{{ statsText }}</p>
+        <div class="fighter-portrait-inner">
+          <img
+            v-if="mushroom"
+            :src="mushroom.imagePath"
+            :alt="mushroom.name?.ru || mushroom.name?.en || mushroom.id"
+            class="fighter-portrait"
+          />
+          <div class="fighter-name-overlay">
+            <h3 class="fighter-name">{{ nameText || mushroom?.name?.ru || mushroom?.name?.en || mushroom?.id }}</h3>
+            <span v-if="healthText" class="fighter-hp">{{ healthText }}</span>
+          </div>
         </div>
+      </div>
+      <div v-if="statsText || (!hideLoadout && loadout)" class="fighter-meta-row">
+        <p v-if="statsText" class="fighter-stats">{{ statsText }}</p>
         <artifact-grid-board
-          v-if="loadout && renderArtifactFigure && getArtifact"
+          v-if="!hideLoadout && loadout && renderArtifactFigure && getArtifact"
           variant="inventory"
           class="fighter-inline-inventory"
           :items="loadout.items"

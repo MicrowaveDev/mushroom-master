@@ -213,15 +213,20 @@ Players choose one mushroom champion from the canon lore roster, equip a small a
 - Before each battle the player drafts artifacts from a randomized shop offer into a spatial inventory grid.
 - Each player starts the prep phase with **5 coins**. Artifacts cost **1 or 2 coins** based on their power.
 - The shop offers **5 random artifacts** from a pool of 20. A free reroll replaces the offer. The offer also refreshes automatically after each battle.
+- The system has three zones: **Shop**, **Backpack** (container), and **Inventory** (grid).
+- **Shop → Backpack**: click an artifact in the shop to buy it (debits coins). It moves to the backpack.
+- **Backpack → Inventory**: click a backpack item to auto-place it in the first available grid position. Or drag it onto a specific cell.
+- **Inventory → Backpack**: click a placed piece to unplace it back to the backpack.
+- **Backpack → Shop** (undo/sell): each backpack item has a sell button in the top-right corner.
+  - **Same round**: full refund (same price as purchase).
+  - **Next round**: half-price sell (carried-over items from a previous round).
 - The inventory is a `3×2` grid (3 columns, 2 rows). Artifacts occupy `1×1`, `1×2`, `2×1`, or `2×2` footprints and cannot overlap.
 - Artifacts support rotation (non-square pieces can be toggled between orientations).
-- HTML5 drag-and-drop moves artifacts between the shop and the inventory:
-  - Drag from shop → inventory cell to place (debits coins).
-  - Click a placed piece or drag it back to the shop to return it (refunds coins).
-  - Drag within the inventory to reposition.
-- Unaffordable items are visually dimmed and not draggable.
-- A coin HUD shows `{used} / 5` and remaining balance.
-- Exactly one saved loadout per player (persisted to DB). The shop offer is stored in `localStorage` per player.
+- Drag-and-drop is supported as a secondary interaction alongside click-based flow.
+- Unaffordable shop items are visually dimmed and not clickable/draggable.
+- A coin HUD shows `{used} / 5` and remaining balance. Rerolls cost 1 coin.
+- The backpack persists across rounds in `localStorage` — items bought in a previous round carry over.
+- Exactly one saved loadout per player (persisted to DB).
 - The server validates: unique artifacts, no overlap, within grid bounds, **total cost ≤ 5 coins**, max 6 pieces. Empty loadouts (0 artifacts) are allowed.
 
 ### Backpack Battles inspiration

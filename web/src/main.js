@@ -6,6 +6,7 @@ import {
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
   SHOP_OFFER_SIZE,
+  REROLL_COST,
   MAX_INVENTORY_PIECES,
   readReplayDelay
 } from './constants.js';
@@ -16,7 +17,6 @@ import {
   deriveTotals,
   getArtifactPrice,
   pickRandomShopOffer,
-  shopStorageKey,
   preferredOrientation
 } from './artifacts/grid.js';
 import { renderArtifactFigure } from './artifacts/render.js';
@@ -45,7 +45,11 @@ const App = {
       screen: parseStartParams().screen || 'auth',
       lang: 'ru',
       builderItems: [],
+      containerItems: [],
+      freshPurchases: [],
       shopOffer: [],
+      rerollSpent: 0,
+      menuOpen: false,
       draggingArtifactId: '',
       draggingSource: '',
       currentBattle: null,
@@ -93,7 +97,7 @@ const App = {
         .map((event, index) => ({
           ...event,
           replayIndex: index,
-          display: formatReplayEvent(event, state.currentBattle, (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en)
+          display: formatReplayEvent(event, state.currentBattle, (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en, (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang])
         }))
         .reverse();
     });
@@ -125,7 +129,11 @@ const App = {
       try {
         state.bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
         state.lang = state.bootstrap.settings.lang;
-        state.builderItems = state.bootstrap.loadout?.items ? [...state.bootstrap.loadout.items] : [];
+        const savedLoadout = state.bootstrap.loadout?.items || [];
+        const shopBuilderItems = state.bootstrap.shopState?.builderItems || [];
+        // Prefer shop state's builder items (unsaved session) over the DB loadout,
+        // unless the shop state is empty and the DB has items.
+        state.builderItems = shopBuilderItems.length ? shopBuilderItems : [...savedLoadout];
         loadOrGenerateShopOffer();
         state.friends = await apiJson('/api/friends', {}, state.sessionKey);
         state.leaderboard = await apiJson('/api/leaderboard', {}, state.sessionKey);
@@ -216,7 +224,12 @@ const App = {
 
     function goTo(screen, extra = {}) {
       state.screen = screen;
+      state.menuOpen = false;
       setScreenQuery(screen, extra);
+    }
+
+    function toggleMenu() {
+      state.menuOpen = !state.menuOpen;
     }
 
     function getArtifact(artifactId) {
@@ -374,6 +387,22 @@ const App = {
       return parts.join(' / ');
     }
 
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function resultSpeech(side, outcome) {
+      const tr = t.value;
+      if (outcome === 'draw') {
+        return pick(side === 'left' ? tr.resultPlayerDraw : tr.resultOpponentDraw);
+      }
+      const isWinner = (side === 'left') === (outcome === 'win');
+      if (side === 'left') {
+        return pick(isWinner ? tr.resultPlayerWin : tr.resultPlayerLoss);
+      }
+      return pick(isWinner ? tr.resultOpponentWin : tr.resultOpponentLoss);
+    }
+
     function portraitPosition(mushroomId) {
       return (replayPortraitConfigByMushroom[mushroomId] || defaultReplayPortraitConfig).imagePosition;
     }
@@ -447,36 +476,48 @@ const App = {
 
     // ---- Shop / coin budget ----
     function persistShopOffer() {
-      if (!state.bootstrap?.player?.id) return;
-      try {
-        localStorage.setItem(
-          shopStorageKey(state.bootstrap.playerId),
-          JSON.stringify({
-            offer: state.shopOffer,
-            builder: state.builderItems
-          })
-        );
-      } catch (_e) { /* ignore */ }
+      if (!state.sessionKey) return;
+      const payload = {
+        offer: state.shopOffer,
+        container: state.containerItems,
+        freshPurchases: state.freshPurchases,
+        builderItems: state.builderItems,
+        rerollSpent: state.rerollSpent
+      };
+      // Fire-and-forget save to backend.
+      apiJson('/api/shop-state', {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      }, state.sessionKey).catch(() => { /* ignore */ });
     }
 
     function loadOrGenerateShopOffer() {
       const artifactsList = state.bootstrap?.artifacts || [];
       const builderIds = new Set(state.builderItems.map((i) => i.artifactId));
-      let stored = null;
-      try {
-        const raw = localStorage.getItem(shopStorageKey(state.bootstrap?.player?.id));
-        stored = raw ? JSON.parse(raw) : null;
-      } catch (_e) { stored = null; }
-      if (stored?.offer?.length) {
-        const available = new Set(artifactsList.map((a) => a.id));
-        state.shopOffer = stored.offer.filter(
+      const stored = state.bootstrap?.shopState || null;
+
+      const available = new Set(artifactsList.map((a) => a.id));
+      if (stored?.container?.length) {
+        state.containerItems = stored.container.filter(
           (id) => available.has(id) && !builderIds.has(id)
         );
-      } else {
-        state.shopOffer = pickRandomShopOffer(artifactsList, builderIds);
       }
-      if (state.shopOffer.length < SHOP_OFFER_SIZE) {
-        const exclude = new Set([...state.shopOffer, ...builderIds]);
+      state.rerollSpent = stored?.rerollSpent || 0;
+      if (stored?.freshPurchases?.length) {
+        state.freshPurchases = stored.freshPurchases.filter((id) => available.has(id));
+      }
+
+      const ownedIds = new Set([...builderIds, ...state.containerItems]);
+      if (stored?.offer?.length) {
+        state.shopOffer = stored.offer.filter(
+          (id) => available.has(id) && !ownedIds.has(id)
+        );
+      } else {
+        state.shopOffer = pickRandomShopOffer(artifactsList, ownedIds);
+      }
+      // Only backfill to 5 when generating a fresh offer (no stored state).
+      if (!stored && state.shopOffer.length < SHOP_OFFER_SIZE) {
+        const exclude = new Set([...state.shopOffer, ...ownedIds]);
         const extras = pickRandomShopOffer(artifactsList, exclude).slice(
           0,
           SHOP_OFFER_SIZE - state.shopOffer.length
@@ -486,34 +527,72 @@ const App = {
       persistShopOffer();
     }
 
-    function rerollShop() {
-      const builderIds = new Set(state.builderItems.map((i) => i.artifactId));
-      state.shopOffer = pickRandomShopOffer(state.bootstrap?.artifacts || [], builderIds);
+    function rerollShop(free) {
+      if (!free) {
+        if (remainingCoins.value < REROLL_COST) {
+          state.error = state.lang === 'ru'
+            ? `Недостаточно монет для обновления (нужна ${REROLL_COST})`
+            : `Not enough coins to reroll (need ${REROLL_COST})`;
+          return;
+        }
+        state.rerollSpent += REROLL_COST;
+      }
+      const ownedIds = new Set([
+        ...state.builderItems.map((i) => i.artifactId),
+        ...state.containerItems
+      ]);
+      state.shopOffer = pickRandomShopOffer(state.bootstrap?.artifacts || [], ownedIds);
       persistShopOffer();
     }
 
-    function computeUsedCoins(items) {
-      return items.reduce((sum, item) => {
-        const artifact = getArtifact(item.artifactId);
-        return sum + getArtifactPrice(artifact);
+    function computeUsedCoins() {
+      // Only count coins spent THIS round: fresh purchases (wherever they are now) + rerolls.
+      const freshCost = state.freshPurchases.reduce((sum, id) => {
+        return sum + getArtifactPrice(getArtifact(id));
       }, 0);
+      return freshCost + state.rerollSpent;
     }
 
-    function tryPlaceShopArtifact(artifactId, x, y) {
+    // ---- Shop → Container (buy) ----
+    function buyFromShop(artifactId) {
       const artifact = getArtifact(artifactId);
       if (!artifact) return false;
       const price = getArtifactPrice(artifact);
-      const used = computeUsedCoins(state.builderItems);
-      if (used + price > MAX_ARTIFACT_COINS) {
+      if (price > remainingCoins.value) {
         state.error = state.lang === 'ru'
-          ? `Недостаточно монет (нужно ${price}, осталось ${MAX_ARTIFACT_COINS - used})`
-          : `Not enough coins (need ${price}, left ${MAX_ARTIFACT_COINS - used})`;
+          ? `Недостаточно монет (нужно ${price}, осталось ${remainingCoins.value})`
+          : `Not enough coins (need ${price}, left ${remainingCoins.value})`;
         return false;
       }
-      if (state.builderItems.length >= 6) {
-        state.error = state.lang === 'ru' ? 'Слот инвентаря заполнен' : 'Inventory slots full';
-        return false;
+      state.shopOffer = state.shopOffer.filter((id) => id !== artifactId);
+      state.containerItems = [...state.containerItems, artifactId];
+      state.freshPurchases = [...state.freshPurchases, artifactId];
+      state.error = '';
+      persistShopOffer();
+      return true;
+    }
+
+    function getSellPrice(artifactId) {
+      const artifact = getArtifact(artifactId);
+      const full = getArtifactPrice(artifact);
+      return state.freshPurchases.includes(artifactId) ? full : Math.max(1, Math.floor(full / 2));
+    }
+
+    // ---- Container → Shop (refund/sell) ----
+    function returnToShop(artifactId) {
+      if (!state.containerItems.includes(artifactId)) return;
+      state.containerItems = state.containerItems.filter((id) => id !== artifactId);
+      state.freshPurchases = state.freshPurchases.filter((id) => id !== artifactId);
+      if (!state.shopOffer.includes(artifactId)) {
+        state.shopOffer = [...state.shopOffer, artifactId];
       }
+      persistShopOffer();
+    }
+
+    // ---- Container → Inventory (place) ----
+    function placeFromContainer(artifactId, x, y) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact) return false;
       const preferred = preferredOrientation(artifact);
       const orientations = [preferred];
       if (artifact.width !== artifact.height) {
@@ -523,7 +602,7 @@ const App = {
         const next = normalizePlacement(artifact, x, y, orientation.width, orientation.height);
         if (next) {
           state.builderItems = next;
-          state.shopOffer = state.shopOffer.filter((id) => id !== artifactId);
+          state.containerItems = state.containerItems.filter((id) => id !== artifactId);
           state.error = '';
           persistShopOffer();
           return true;
@@ -533,22 +612,48 @@ const App = {
       return false;
     }
 
-    function returnArtifactToShop(artifactId) {
+    // ---- Container → Inventory (auto-place by click) ----
+    function autoPlaceFromContainer(artifactId) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact) return;
+      const orientations = [preferredOrientation(artifact)];
+      if (artifact.width !== artifact.height) {
+        orientations.push({ width: orientations[0].height, height: orientations[0].width });
+      }
+      for (const o of orientations) {
+        for (let y = 0; y < INVENTORY_ROWS; y += 1) {
+          for (let x = 0; x < INVENTORY_COLUMNS; x += 1) {
+            const next = normalizePlacement(artifact, x, y, o.width, o.height);
+            if (next) {
+              state.builderItems = next;
+              state.containerItems = state.containerItems.filter((id) => id !== artifactId);
+              state.error = '';
+              persistShopOffer();
+              return;
+            }
+          }
+        }
+      }
+      state.error = state.lang === 'ru' ? 'Не помещается в инвентарь' : 'Does not fit in inventory';
+    }
+
+    // ---- Inventory → Container (unplace) ----
+    function unplaceToContainer(artifactId) {
       if (!state.builderItems.some((i) => i.artifactId === artifactId)) return;
       state.builderItems = state.builderItems.filter((i) => i.artifactId !== artifactId);
-      if (!state.shopOffer.includes(artifactId)) {
-        state.shopOffer = [...state.shopOffer, artifactId];
+      if (!state.containerItems.includes(artifactId)) {
+        state.containerItems = [...state.containerItems, artifactId];
       }
       persistShopOffer();
     }
 
+    // ---- Drag-and-drop handlers ----
     function onInventoryCellDrop({ x, y }) {
       const artifactId = state.draggingArtifactId;
       if (!artifactId) return;
-      if (state.draggingSource === 'shop') {
-        tryPlaceShopArtifact(artifactId, x, y);
+      if (state.draggingSource === 'container') {
+        placeFromContainer(artifactId, x, y);
       } else if (state.draggingSource === 'inventory') {
-        // Move existing piece to new cell
         const item = state.builderItems.find((i) => i.artifactId === artifactId);
         if (!item) return;
         const others = state.builderItems.filter((i) => i.artifactId !== artifactId);
@@ -566,14 +671,36 @@ const App = {
       }
     }
 
+    function onContainerDrop(event) {
+      event.preventDefault();
+      if (!state.draggingArtifactId) return;
+      if (state.draggingSource === 'shop') {
+        buyFromShop(state.draggingArtifactId);
+      } else if (state.draggingSource === 'inventory') {
+        unplaceToContainer(state.draggingArtifactId);
+      }
+    }
+
+    function onContainerDragOver(event) {
+      if (state.draggingSource === 'shop' || state.draggingSource === 'inventory') {
+        event.preventDefault();
+      }
+    }
+
     function onShopDrop(event) {
       event.preventDefault();
-      if (state.draggingSource !== 'inventory' || !state.draggingArtifactId) return;
-      returnArtifactToShop(state.draggingArtifactId);
+      if (!state.draggingArtifactId) return;
+      if (state.draggingSource === 'container') {
+        returnToShop(state.draggingArtifactId);
+      } else if (state.draggingSource === 'inventory') {
+        // Inventory → container first, then container → shop
+        unplaceToContainer(state.draggingArtifactId);
+        returnToShop(state.draggingArtifactId);
+      }
     }
 
     function onShopDragOver(event) {
-      if (state.draggingSource === 'inventory') {
+      if (state.draggingSource === 'container' || state.draggingSource === 'inventory') {
         event.preventDefault();
       }
     }
@@ -590,6 +717,15 @@ const App = {
       }
       state.draggingArtifactId = artifactId;
       state.draggingSource = 'shop';
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', artifactId);
+      }
+    }
+
+    function onContainerPieceDragStart(artifactId, event) {
+      state.draggingArtifactId = artifactId;
+      state.draggingSource = 'container';
       if (event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', artifactId);
@@ -614,7 +750,7 @@ const App = {
         state.error = t.value.invalidLoadout;
         return;
       }
-      if (computeUsedCoins(state.builderItems) > MAX_ARTIFACT_COINS) {
+      if (computeUsedCoins() > MAX_ARTIFACT_COINS) {
         state.error = t.value.invalidLoadout;
         return;
       }
@@ -648,8 +784,10 @@ const App = {
           state.sessionKey
         );
         state.replayIndex = 0;
-        // Refresh the shop for the next run-in.
-        rerollShop();
+        // New round: reset budget, clear fresh-purchase tracking, free reroll.
+        state.rerollSpent = 0;
+        state.freshPurchases = [];
+        rerollShop(true);
         goTo('replay', { replay: state.currentBattle.id });
         autoplayReplay();
       } catch (error) {
@@ -784,10 +922,15 @@ const App = {
       state.bootstrap?.mushrooms?.find((item) => item.id === state.bootstrap.activeMushroomId) || null
     );
     const builderTotals = computed(() => deriveTotals(state.builderItems, state.bootstrap?.artifacts || []));
-    const usedCoins = computed(() => computeUsedCoins(state.builderItems));
+    const usedCoins = computed(() => computeUsedCoins());
     const remainingCoins = computed(() => Math.max(0, MAX_ARTIFACT_COINS - usedCoins.value));
     const shopArtifacts = computed(() =>
       state.shopOffer
+        .map((id) => getArtifact(id))
+        .filter(Boolean)
+    );
+    const containerArtifacts = computed(() =>
+      state.containerItems
         .map((id) => getArtifact(id))
         .filter(Boolean)
     );
@@ -834,16 +977,24 @@ const App = {
       usedCoins,
       remainingCoins,
       shopArtifacts,
+      containerArtifacts,
       maxCoins: MAX_ARTIFACT_COINS,
       getArtifactPrice,
       rerollShop,
+      buyFromShop,
+      returnToShop,
+      getSellPrice,
+      autoPlaceFromContainer,
+      unplaceToContainer,
       onInventoryCellDrop,
       onInventoryPieceDragStart,
+      onContainerDrop,
+      onContainerDragOver,
+      onContainerPieceDragStart,
       onShopDrop,
       onShopDragOver,
       onShopPieceDragStart,
       onDragEndAny,
-      returnArtifactToShop,
       activeEvent,
       activeSpeech,
       battleStatusText,
@@ -851,6 +1002,7 @@ const App = {
       activeReplayState,
       visibleReplayEvents,
       goTo,
+      toggleMenu,
       loginViaTelegram,
       loginViaBrowserCode,
       loginViaDevSession,
@@ -863,6 +1015,7 @@ const App = {
       portraitPosition,
       loadoutStatsText,
       replayBubbleStyle,
+      resultSpeech,
       sampleBubbleText,
       buildReplayFighter,
       artifactGridStyle,
@@ -889,11 +1042,13 @@ const App = {
   },
   template: `
     <div class="shell">
-      <header v-if="state.sessionKey && state.bootstrap" class="hero">
-        <div>
-          <p class="eyebrow">{{ t.title }}</p>
-          <h1>{{ t.title }}</h1>
-        </div>
+      <header v-if="state.sessionKey && state.bootstrap" class="app-header">
+        <button class="menu-toggle" @click="toggleMenu" :aria-expanded="state.menuOpen" aria-label="Menu">
+          <span class="menu-toggle-bar"></span>
+          <span class="menu-toggle-bar"></span>
+          <span class="menu-toggle-bar"></span>
+        </button>
+        <span class="app-header-title">{{ t.title }}</span>
         <div class="lang-toggle-group">
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
           <button class="lang-toggle-btn" :class="{ active: state.lang !== 'ru' }" disabled>EN</button>
@@ -941,7 +1096,7 @@ const App = {
       </section>
 
       <template v-else-if="state.bootstrap">
-        <nav class="nav-grid">
+        <nav v-if="state.menuOpen" class="nav-dropdown">
           <button class="nav-btn" @click="goTo('home')">{{ t.home }}</button>
           <button class="nav-btn" @click="goTo('characters')">{{ t.characters }}</button>
           <button class="nav-btn" @click="goTo('artifacts')">{{ t.artifacts }}</button>
@@ -951,10 +1106,46 @@ const App = {
           <button class="nav-btn" @click="goTo('settings')">{{ t.settings }}</button>
         </nav>
 
-        <section v-if="state.screen === 'onboarding'" class="panel stack">
-          <h2>{{ t.onboardingTitle }}</h2>
-          <p>{{ t.onboardingBody }}</p>
-          <button class="primary" @click="goTo('characters')">{{ t.continue }}</button>
+        <section v-if="state.screen === 'onboarding'" class="onboarding-screen">
+          <div class="panel onboarding-card">
+            <h2 class="onboarding-title">{{ t.onboardingTitle }}</h2>
+            <div class="onboarding-body">
+              <ol class="onboarding-steps">
+                <li class="onboarding-step">
+                  <span class="onboarding-step-num">1</span>
+                  <div>
+                    <strong>{{ t.onboardingStep1 }}</strong>
+                    <p>{{ t.onboardingStep1Sub }}</p>
+                  </div>
+                </li>
+                <li class="onboarding-step">
+                  <span class="onboarding-step-num">2</span>
+                  <div>
+                    <strong>{{ t.onboardingStep2 }}</strong>
+                    <p>{{ t.onboardingStep2Sub }}</p>
+                  </div>
+                </li>
+                <li class="onboarding-step">
+                  <span class="onboarding-step-num">3</span>
+                  <div>
+                    <strong>{{ t.onboardingStep3 }}</strong>
+                    <p>{{ t.onboardingStep3Sub }}</p>
+                  </div>
+                </li>
+              </ol>
+              <div class="onboarding-preview">
+                <div class="onboarding-preview-roster">
+                  <img v-for="m in state.bootstrap.mushrooms.slice(0, 5)" :key="m.id"
+                    :src="m.imagePath"
+                    :alt="m.name[state.lang]"
+                    class="onboarding-preview-portrait"
+                  />
+                </div>
+                <p class="onboarding-preview-caption">{{ t.onboardingStep1Sub }}</p>
+              </div>
+            </div>
+            <button class="primary" @click="goTo('characters')">{{ t.continue }}</button>
+          </div>
         </section>
 
         <section v-else-if="state.screen === 'home'" class="dashboard">
@@ -1009,34 +1200,43 @@ const App = {
               <li
                 v-for="battle in state.bootstrap.battleHistory"
                 :key="battle.id"
-                class="replay-row"
-                :class="'replay-row--' + (describeReplay(battle)?.outcomeKey || 'draw')"
+                class="replay-card"
+                :class="'replay-card--' + (describeReplay(battle)?.outcomeKey || 'draw')"
                 @click="loadReplay(battle.id)"
                 role="button"
                 tabindex="0"
                 @keydown.enter.prevent="loadReplay(battle.id)"
                 @keydown.space.prevent="loadReplay(battle.id)"
               >
-                <span class="replay-row-outcome">{{ describeReplay(battle)?.outcomeLabel }}</span>
-                <span class="replay-row-matchup">
-                  <img
-                    v-if="describeReplay(battle)?.ourImage"
-                    :src="describeReplay(battle).ourImage"
-                    :alt="describeReplay(battle)?.ourName"
-                    class="replay-row-portrait"
-                  />
-                  <strong>{{ describeReplay(battle)?.ourName }}</strong>
-                  <span class="replay-row-vs">{{ t.replayVs }}</span>
-                  <img
-                    v-if="describeReplay(battle)?.oppImage"
-                    :src="describeReplay(battle).oppImage"
-                    :alt="describeReplay(battle)?.oppName"
-                    class="replay-row-portrait"
-                  />
-                  <strong>{{ describeReplay(battle)?.oppName }}</strong>
-                </span>
-                <span class="replay-row-kind">{{ describeReplay(battle)?.opponentKindLabel }}</span>
-                <span class="replay-row-rewards">
+                <div class="replay-card-header">
+                  <span class="replay-card-outcome">{{ describeReplay(battle)?.outcomeLabel }}</span>
+                  <span class="replay-card-meta">
+                    <span class="replay-card-kind">{{ describeReplay(battle)?.opponentKindLabel }}</span>
+                    <span class="replay-card-date">{{ describeReplay(battle)?.dateLabel }}</span>
+                  </span>
+                </div>
+                <div class="replay-card-matchup">
+                  <div class="replay-card-fighter">
+                    <img
+                      v-if="describeReplay(battle)?.ourImage"
+                      :src="describeReplay(battle).ourImage"
+                      :alt="describeReplay(battle)?.ourName"
+                      class="replay-card-portrait"
+                    />
+                    <span class="replay-card-name">{{ describeReplay(battle)?.ourName }}</span>
+                  </div>
+                  <span class="replay-card-vs">vs</span>
+                  <div class="replay-card-fighter">
+                    <img
+                      v-if="describeReplay(battle)?.oppImage"
+                      :src="describeReplay(battle).oppImage"
+                      :alt="describeReplay(battle)?.oppName"
+                      class="replay-card-portrait"
+                    />
+                    <span class="replay-card-name">{{ describeReplay(battle)?.oppName }}</span>
+                  </div>
+                </div>
+                <div class="replay-card-rewards" v-if="describeReplay(battle)?.ratingDelta != null || describeReplay(battle)?.sporeDelta || describeReplay(battle)?.myceliumDelta">
                   <span v-if="describeReplay(battle)?.ratingDelta != null" class="replay-chip">
                     {{ t.rating }} {{ formatDelta(describeReplay(battle).ratingDelta) }}
                   </span>
@@ -1046,20 +1246,22 @@ const App = {
                   <span v-if="describeReplay(battle)?.myceliumDelta" class="replay-chip">
                     {{ t.mycelium }} {{ formatDelta(describeReplay(battle).myceliumDelta) }}
                   </span>
-                </span>
-                <span class="replay-row-date">{{ describeReplay(battle)?.dateLabel }}</span>
+                </div>
               </li>
             </ul>
           </article>
         </section>
 
-        <section v-else-if="state.screen === 'characters'" class="grid cards">
-          <article class="panel card" v-for="mushroom in state.bootstrap.mushrooms" :key="mushroom.id">
-            <img :src="mushroom.imagePath" :alt="mushroom.name[state.lang]" class="portrait" :style="{ objectPosition: portraitPosition(mushroom.id) }"/>
-            <h3>{{ mushroom.name[state.lang] }}</h3>
-            <p>{{ mushroom.styleTag }}</p>
-            <p>HP {{ mushroom.baseStats.health }} / ATK {{ mushroom.baseStats.attack }} / SPD {{ mushroom.baseStats.speed }}</p>
-            <button class="primary" @click="saveCharacter(mushroom.id)">{{ t.save }}</button>
+        <section v-else-if="state.screen === 'characters'" class="character-grid">
+          <article class="character-card" v-for="mushroom in state.bootstrap.mushrooms" :key="mushroom.id" @click="saveCharacter(mushroom.id)">
+            <div class="card-portrait-wrap">
+              <img :src="mushroom.imagePath" :alt="mushroom.name[state.lang]" class="portrait character-portrait" :style="{ objectPosition: portraitPosition(mushroom.id) }"/>
+              <h3 class="card-portrait-name">{{ mushroom.name[state.lang] }}</h3>
+            </div>
+            <div class="character-card-meta">
+              <span class="fighter-style-tag">{{ mushroom.styleTag }}</span>
+              <span class="card-stats">{{ mushroom.baseStats.health }} HP · {{ mushroom.baseStats.attack }} ATK · {{ mushroom.baseStats.speed }} SPD</span>
+            </div>
           </article>
         </section>
 
@@ -1094,67 +1296,73 @@ const App = {
           </div>
         </section>
 
-        <section v-else-if="state.screen === 'artifacts'" class="grid artifact-layout">
-          <article class="panel artifact-left-panel">
-            <div class="artifact-left-top">
-              <h2>{{ t.artifacts }}</h2>
-              <p>{{ t.selectCell }}</p>
-              <div class="coin-hud">
-                <span class="coin-hud-label">💰 {{ usedCoins }} / {{ maxCoins }}</span>
-                <span class="coin-hud-remaining">({{ remainingCoins }} left)</span>
-              </div>
+        <section v-else-if="state.screen === 'artifacts'" class="artifact-screen">
+          <div class="artifact-header-row">
+            <h2>{{ t.artifacts }}</h2>
+            <div class="coin-hud">
+              <span class="coin-hud-label">💰 {{ remainingCoins }}</span>
             </div>
-            <div
-              class="artifact-shop"
-              @dragover="onShopDragOver($event)"
-              @drop="onShopDrop($event)"
-              @dragend="onDragEndAny()"
-            >
-              <div class="artifact-shop-header">
-                <strong>Shop</strong>
-                <button type="button" class="link" @click="rerollShop">↻ Reroll</button>
-              </div>
-              <div class="artifact-shop-items">
-                <div
-                  v-for="artifact in shopArtifacts"
-                  :key="artifact.id"
-                  class="shop-item"
-                  :class="{ 'shop-item--expensive': getArtifactPrice(artifact) > remainingCoins }"
-                  :draggable="getArtifactPrice(artifact) <= remainingCoins"
-                  @dragstart="onShopPieceDragStart(artifact.id, $event)"
-                  @dragend="onDragEndAny()"
-                  :data-artifact-id="artifact.id"
-                >
-                  <artifact-grid-board
-                    class="shop-item-visual"
-                    variant="catalog"
-                    :columns="preferredOrientation(artifact).width"
-                    :rows="preferredOrientation(artifact).height"
-                    :items="[{ artifactId: artifact.id, x: 0, y: 0, width: preferredOrientation(artifact).width, height: preferredOrientation(artifact).height }]"
-                    :render-artifact-figure="renderArtifactFigure"
-                    :get-artifact="getArtifact"
-                  />
-                  <div class="shop-item-copy">
-                    <strong>{{ artifact.name[state.lang] }}</strong>
-                    <span class="shop-item-price">💰 {{ getArtifactPrice(artifact) }}</span>
-                    <span class="artifact-stat-chips">
-                      <span
-                        v-for="stat in formatArtifactBonus(artifact)"
-                        :key="stat.key"
-                        class="artifact-stat-chip"
-                        :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
-                      >{{ stat.label }} {{ stat.value }}</span>
-                    </span>
-                  </div>
+          </div>
+
+          <div
+            class="artifact-container-zone"
+            @dragover="onContainerDragOver($event)"
+            @drop="onContainerDrop($event)"
+          >
+            <div class="artifact-container-header">
+              <strong>{{ t.container }}</strong>
+              <span v-if="containerArtifacts.length" class="artifact-container-count">{{ containerArtifacts.length }}</span>
+            </div>
+            <div v-if="containerArtifacts.length" class="artifact-container-items">
+              <div
+                v-for="artifact in containerArtifacts"
+                :key="artifact.id"
+                class="container-item"
+                draggable="true"
+                @click="autoPlaceFromContainer(artifact.id)"
+                @dragstart="onContainerPieceDragStart(artifact.id, $event)"
+                @dragend="onDragEndAny()"
+                :data-artifact-id="artifact.id"
+              >
+                <button
+                  class="container-item-sell"
+                  type="button"
+                  :title="state.lang === 'ru' ? 'Вернуть в магазин' : 'Return to shop'"
+                  @click.stop="returnToShop(artifact.id)"
+                >💰 {{ getSellPrice(artifact.id) }}</button>
+                <artifact-grid-board
+                  class="container-item-visual"
+                  variant="catalog"
+                  :columns="preferredOrientation(artifact).width"
+                  :rows="preferredOrientation(artifact).height"
+                  :items="[{ artifactId: artifact.id, x: 0, y: 0, width: preferredOrientation(artifact).width, height: preferredOrientation(artifact).height }]"
+                  :render-artifact-figure="renderArtifactFigure"
+                  :get-artifact="getArtifact"
+                />
+                <div class="container-item-copy">
+                  <strong>{{ artifact.name[state.lang] }}</strong>
+                  <span class="artifact-stat-chips">
+                    <span
+                      v-for="stat in formatArtifactBonus(artifact)"
+                      :key="stat.key"
+                      class="artifact-stat-chip"
+                      :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
+                    >{{ stat.label }} {{ stat.value }}</span>
+                  </span>
                 </div>
-                <div v-if="!shopArtifacts.length" class="shop-empty">Shop is empty — reroll.</div>
               </div>
             </div>
-          </article>
-          <article class="panel">
+            <p v-else class="artifact-container-empty">{{ t.containerHint }}</p>
+          </div>
+
+          <div class="artifact-inventory-section panel">
+            <div class="artifact-inventory-header">
+              <strong>{{ t.inventory }}</strong>
+              <span v-if="state.builderItems.length" class="artifact-inventory-badge">{{ state.builderItems.length }}</span>
+            </div>
             <artifact-grid-board
               variant="inventory"
-              class="inventory-shell"
+              class="inventory-shell artifact-inventory-grid"
               :items="state.builderItems"
               :render-artifact-figure="renderArtifactFigure"
               :get-artifact="getArtifact"
@@ -1162,46 +1370,98 @@ const App = {
               :rotatable-pieces="true"
               :droppable="true"
               :draggable-pieces="true"
-              @piece-click="returnArtifactToShop($event.artifactId)"
+              @piece-click="unplaceToContainer($event.artifactId)"
               @piece-rotate="rotatePlacedArtifact($event)"
               @cell-drop="onInventoryCellDrop($event)"
               @piece-drag-start="onInventoryPieceDragStart($event)"
               @piece-drag-end="onDragEndAny()"
             />
-            <p>Урон +{{ builderTotals.damage }} / Броня +{{ builderTotals.armor }} / Скорость +{{ builderTotals.speed }} / Оглушение +{{ builderTotals.stunChance }}%</p>
-            <button class="primary" @click="saveLoadout">{{ t.save }}</button>
-          </article>
+            <div v-if="state.builderItems.length" class="artifact-inventory-footer">
+              <span class="artifact-inventory-stats">+{{ builderTotals.damage }} DMG / +{{ builderTotals.armor }} ARM / +{{ builderTotals.speed }} SPD / +{{ builderTotals.stunChance }}% STUN</span>
+              <button class="primary" @click="saveLoadout">{{ t.save }}</button>
+            </div>
+            <p v-else class="artifact-inventory-hint">{{ t.selectCell }}</p>
+          </div>
+
+          <div
+            class="artifact-shop"
+            @dragover="onShopDragOver($event)"
+            @drop="onShopDrop($event)"
+            @dragend="onDragEndAny()"
+          >
+            <div class="artifact-shop-header">
+              <strong>{{ t.shop }}</strong>
+              <button type="button" class="link" :disabled="remainingCoins < 1" @click="rerollShop(false)">↻ {{ t.reroll }} (💰 1)</button>
+            </div>
+            <div class="artifact-shop-items">
+              <div
+                v-for="artifact in shopArtifacts"
+                :key="artifact.id"
+                class="shop-item"
+                :class="{ 'shop-item--expensive': getArtifactPrice(artifact) > remainingCoins }"
+                :draggable="getArtifactPrice(artifact) <= remainingCoins"
+                @click="buyFromShop(artifact.id)"
+                @dragstart="onShopPieceDragStart(artifact.id, $event)"
+                @dragend="onDragEndAny()"
+                :data-artifact-id="artifact.id"
+              >
+                <artifact-grid-board
+                  class="shop-item-visual"
+                  variant="catalog"
+                  :columns="preferredOrientation(artifact).width"
+                  :rows="preferredOrientation(artifact).height"
+                  :items="[{ artifactId: artifact.id, x: 0, y: 0, width: preferredOrientation(artifact).width, height: preferredOrientation(artifact).height }]"
+                  :render-artifact-figure="renderArtifactFigure"
+                  :get-artifact="getArtifact"
+                />
+                <div class="shop-item-copy">
+                  <strong>{{ artifact.name[state.lang] }}</strong>
+                  <span class="shop-item-price">💰 {{ getArtifactPrice(artifact) }}</span>
+                  <span class="artifact-stat-chips">
+                    <span
+                      v-for="stat in formatArtifactBonus(artifact)"
+                      :key="stat.key"
+                      class="artifact-stat-chip"
+                      :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
+                    >{{ stat.label }} {{ stat.value }}</span>
+                  </span>
+                </div>
+              </div>
+              <div v-if="!shopArtifacts.length" class="shop-empty">{{ t.shop }} — ↻</div>
+            </div>
+          </div>
         </section>
 
-        <section v-else-if="state.screen === 'battle'" class="panel stack battle-prep">
-          <h2>{{ t.battle }}</h2>
-          <p v-if="activeMushroom">{{ activeMushroom.name[state.lang] }} · {{ usedCoins }}/{{ maxCoins }} 💰 · {{ state.builderItems.length }} artifacts.</p>
-          <div class="battle-prep-layout">
-            <article class="panel battle-prep-character" v-if="activeMushroom">
-              <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="portrait battle-prep-character-portrait"/>
-              <h3>{{ activeMushroom.name[state.lang] }}</h3>
-              <p>{{ activeMushroom.styleTag }}</p>
-              <p>HP {{ activeMushroom.baseStats.health }} / ATK {{ activeMushroom.baseStats.attack }} / SPD {{ activeMushroom.baseStats.speed }}</p>
-            </article>
-            <div class="battle-prep-visual panel">
+        <section v-else-if="state.screen === 'battle'" class="battle-prep-screen" v-if="activeMushroom">
+          <div class="battle-prep-card">
+            <div class="battle-prep-portrait-wrap">
+              <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="battle-prep-portrait" :style="{ objectPosition: portraitPosition(activeMushroom.id) }"/>
+              <div class="battle-prep-portrait-overlay">
+                <h3>{{ activeMushroom.name[state.lang] }}</h3>
+                <div class="battle-prep-tags">
+                  <span class="fighter-style-tag">{{ activeMushroom.styleTag }}</span>
+                  <span class="battle-prep-stat-tag">{{ activeMushroom.baseStats.health }} HP</span>
+                  <span class="battle-prep-stat-tag">{{ activeMushroom.baseStats.attack }} ATK</span>
+                  <span class="battle-prep-stat-tag">{{ activeMushroom.baseStats.speed }} SPD</span>
+                </div>
+              </div>
+            </div>
+            <div class="battle-prep-loadout" v-if="state.builderItems.length">
               <artifact-grid-board
-                v-if="state.builderItems.length"
                 variant="inventory"
                 class="inventory-shell battle-prep-inventory"
                 :items="state.builderItems"
                 :render-artifact-figure="renderArtifactFigure"
                 :get-artifact="getArtifact"
               />
-              <p class="battle-prep-inventory-stats">Урон +{{ builderTotals.damage }} / Броня +{{ builderTotals.armor }} / Скорость +{{ builderTotals.speed }} / Оглушение +{{ builderTotals.stunChance }}%</p>
-            </div>
-            <div class="battle-prep-summary panel stack">
-              <button class="primary" :disabled="usedCoins > maxCoins" @click="startBattle">{{ t.startBattle }}</button>
+              <span class="battle-prep-loadout-stats">+{{ builderTotals.damage }} DMG / +{{ builderTotals.armor }} ARM / +{{ builderTotals.speed }} SPD / +{{ builderTotals.stunChance }}% STUN</span>
             </div>
           </div>
+          <button class="primary battle-prep-cta" :disabled="usedCoins > maxCoins" @click="startBattle">{{ t.startBattle }}</button>
         </section>
 
-        <section v-else-if="state.screen === 'replay' && state.currentBattle" class="grid replay-layout">
-          <article class="panel battle-stage">
+        <section v-else-if="state.screen === 'replay' && state.currentBattle" class="replay-layout">
+          <div class="battle-stage">
             <replay-duel
               :left-fighter="buildReplayFighter(state.currentBattle.snapshots.left.mushroomId, {
                 nameText: getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId,
@@ -1221,12 +1481,16 @@ const App = {
               :get-artifact="getArtifact"
               :acting-side="activeEvent?.actorSide || ''"
               :status-text="battleStatusText"
-              :show-result-button="replayFinished"
-              :result-label="t.results"
-              @result-click="goTo('results')"
             />
-          </article>
-          <article class="panel replay-log">
+          </div>
+          <button
+            v-if="replayFinished"
+            class="primary replay-result-button-full"
+            @click="goTo('results')"
+          >
+            {{ t.results }}
+          </button>
+          <div class="replay-log">
             <button
               v-for="event in visibleReplayEvents"
               :key="event.replayIndex"
@@ -1236,37 +1500,48 @@ const App = {
             >
               {{ event.display.logText }}
             </button>
-          </article>
+          </div>
         </section>
 
-        <section v-else-if="state.screen === 'results' && state.currentBattle" class="panel stack">
-          <h2>{{ t.results }}</h2>
-          <p>{{ state.currentBattle.outcome }}</p>
-          <div class="grid cards">
-            <article class="panel card" v-for="(snapshot, side) in state.currentBattle.snapshots" :key="side">
-              <img
-                v-if="getMushroom(snapshot.mushroomId)"
-                :src="getMushroom(snapshot.mushroomId).imagePath"
-                :alt="getMushroom(snapshot.mushroomId).name[state.lang]"
-                class="portrait results-portrait"
-              />
-              <h3>{{ getMushroom(snapshot.mushroomId)?.name[state.lang] || snapshot.mushroomId }}</h3>
-              <artifact-grid-board
-                variant="inventory"
-                class="inventory-shell results-inventory"
-                :items="snapshot.loadout.items"
+        <section v-else-if="state.screen === 'results' && state.currentBattle" class="results-screen">
+          <div class="results-fighters">
+            <div
+              v-for="(snapshot, side) in state.currentBattle.snapshots"
+              :key="side"
+              :class="[
+                'results-fighter-column',
+                state.currentBattle.outcome === 'draw' ? 'results-outcome--draw'
+                  : (side === 'left') === (state.currentBattle.outcome === 'win') ? 'results-outcome--win'
+                  : 'results-outcome--loss'
+              ]"
+            >
+              <span class="results-fighter-outcome">{{
+                state.currentBattle.outcome === 'draw' ? t.outcomeDraw
+                  : (side === 'left') === (state.currentBattle.outcome === 'win') ? t.outcomeWin
+                  : t.outcomeLoss
+              }}</span>
+              <fighter-card
+                :mushroom="getMushroom(snapshot.mushroomId)"
+                :name-text="getMushroom(snapshot.mushroomId)?.name[state.lang] || snapshot.mushroomId"
+                :loadout="snapshot.loadout"
+                :stats-text="loadoutStatsText(snapshot.loadout)"
+                :speech-text="resultSpeech(side, state.currentBattle.outcome)"
                 :render-artifact-figure="renderArtifactFigure"
                 :get-artifact="getArtifact"
+                :bubble-style="replayBubbleStyle(snapshot.mushroomId)"
               />
-            </article>
+              <div v-if="state.currentBattle.rewards?.length" class="results-reward-badge">
+                <template v-for="reward in state.currentBattle.rewards.filter(r => r.mushroomId === snapshot.mushroomId)" :key="reward.playerId">
+                  <span class="results-reward-item">{{ t.spore }} <strong>+{{ reward.sporeDelta }}</strong></span>
+                  <span class="results-reward-item">{{ t.mycelium }} <strong>+{{ reward.myceliumDelta }}</strong></span>
+                </template>
+                <template v-if="!state.currentBattle.rewards.some(r => r.mushroomId === snapshot.mushroomId)">
+                  <span class="results-reward-item results-reward-item--ghost">—</span>
+                </template>
+              </div>
+            </div>
           </div>
-          <div class="grid cards">
-            <article class="panel card" v-for="reward in state.currentBattle.rewards" :key="reward.playerId + reward.mushroomId">
-              <h3>{{ reward.mushroomId }}</h3>
-              <p>{{ t.spore }} +{{ reward.sporeDelta }}</p>
-              <p>{{ t.mycelium }} +{{ reward.myceliumDelta }}</p>
-            </article>
-          </div>
+          <button class="primary" @click="goTo('home')">{{ t.home }}</button>
         </section>
 
         <section v-else-if="state.screen === 'history'" class="panel stack">

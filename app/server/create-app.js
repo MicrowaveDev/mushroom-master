@@ -28,6 +28,7 @@ import {
   getPlayerState,
   saveArtifactLoadout,
   saveLocalTestRun,
+  saveShopState,
   selectActiveMushroom,
   updateSettings
 } from './services/game-service.js';
@@ -168,6 +169,15 @@ export async function createApp() {
         success: true,
         data: await selectActiveMushroom(req.user.id, req.body.mushroomId)
       });
+    })
+  );
+
+  app.put(
+    '/api/shop-state',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      await saveShopState(req.user.id, req.body);
+      res.json({ success: true, data: null });
     })
   );
 

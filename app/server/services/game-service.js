@@ -1062,17 +1062,41 @@ export async function getBattleHistory(playerId) {
   return Promise.all(result.rows.map((row) => getBattle(row.id, playerId)));
 }
 
+export async function getShopState(playerId) {
+  const result = await query(
+    `SELECT payload_json FROM player_shop_state WHERE player_id = $1`,
+    [playerId]
+  );
+  if (!result.rowCount) return null;
+  return parseJson(result.rows[0].payload_json);
+}
+
+export async function saveShopState(playerId, payload) {
+  const json = JSON.stringify(payload);
+  await query(
+    `INSERT INTO player_shop_state (player_id, payload_json, updated_at)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (player_id) DO UPDATE
+     SET payload_json = $2, updated_at = $3`,
+    [playerId, json, nowIso()]
+  );
+}
+
 export async function getBootstrap(playerId) {
   const state = await getPlayerState(playerId);
   const history = await getBattleHistory(playerId);
-  const dailyUsage = await query(
-    `SELECT battle_starts FROM daily_rate_limits WHERE player_id = $1 AND day_key = $2`,
-    [playerId, dayKey(new Date())]
-  );
+  const [dailyUsage, shopState] = await Promise.all([
+    query(
+      `SELECT battle_starts FROM daily_rate_limits WHERE player_id = $1 AND day_key = $2`,
+      [playerId, dayKey(new Date())]
+    ),
+    getShopState(playerId)
+  ]);
   return {
     ...state,
     mushrooms,
     artifacts,
+    shopState,
     battleLimit: {
       used: dailyUsage.rowCount ? Number(dailyUsage.rows[0].battle_starts) : 0,
       limit: DAILY_BATTLE_LIMIT,

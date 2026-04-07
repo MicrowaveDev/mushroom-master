@@ -81,6 +81,12 @@ CREATE TABLE IF NOT EXISTS player_artifact_loadout_items (
   sort_order INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS player_shop_state (
+  player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
+  payload_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS friendships (
   id TEXT PRIMARY KEY,
   player_low_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,

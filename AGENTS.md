@@ -115,6 +115,17 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - consistent cell size across related surfaces
 - For battle-prep, builder, and similar composition-heavy screens, include at least one assertion that the primary call-to-action is outside the visual surface and remains clickable.
 
+### E2E / Integration Test Design Rules
+
+- Write e2e tests as **integration flows that mirror real user journeys**, not as isolated unit-like assertions.
+- A single test should cover a full flow: e.g. buy artifact → undo purchase → place in inventory → refresh page to verify persistence → save loadout → start battle → watch replay.
+- Only split into a separate test when an interaction **conflicts** with the happy path (e.g. budget exhaustion is a separate test from the main flow because it requires different preconditions).
+- **Seed deterministic state via server APIs** (e.g. `PUT /api/shop-state`), not via `localStorage` injection. Tests should prove server-side persistence works, not just client-side state.
+- **Always verify state survives a page refresh** when testing features that persist data. Navigate away and back, then re-assert.
+- For shop/container/inventory interactions, use **click-based actions** as the primary test path (matching the primary UI interaction). Keep `htmlDragDrop` helper for drag-specific assertions only.
+- Prefer `@click.stop` assertions (e.g. sell button) over drag-to-shop for undo/refund flows.
+- Name tests by the user journey they cover, not by the technical mechanism: "full shop flow: buy, undo, place, persist on refresh, save, battle" — not "drag-and-drop API fires correctly".
+
 ### UI Test Efficiency Rules
 
 - Prefer the repo helper command over ad hoc port debugging for screenshot verification:

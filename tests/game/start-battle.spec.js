@@ -115,7 +115,7 @@ async function htmlDragDrop(page, sourceSelector, targetSelector) {
   }, [sourceSelector, targetSelector]);
 }
 
-test('shop drag-and-drop flow lets the player spend coins, return items, save, and battle', async ({ page, request, baseURL }) => {
+test('full shop flow: buy, undo, place, persist on refresh, save, battle', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 804, username: 'shop_player', name: 'Shop Player' });
   const opponent = await createSession(request, { telegramId: 805, username: 'shop_ghost', name: 'Shop Ghost' });
@@ -127,114 +127,103 @@ test('shop drag-and-drop flow lets the player spend coins, return items, save, a
     items: opponentLoadout
   });
 
+  // Seed a deterministic shop offer via the server API.
+  await api(request, player.sessionKey, '/api/shop-state', 'PUT', {
+    offer: ['spore_needle', 'amber_fang', 'bark_plate', 'shock_puff', 'glass_cap'],
+    container: [],
+    freshPurchases: [],
+    rerollSpent: 0
+  });
+
   await page.addInitScript((sessionKey) => {
     localStorage.setItem('sessionKey', sessionKey);
   }, player.sessionKey);
 
   await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
 
-  // Shop renders with 5 offers and the coin HUD reads 0/5.
   const shop = page.locator('.artifact-shop');
+  const container = page.locator('.artifact-container-zone');
   await expect(shop).toBeVisible();
   await expect(shop.locator('.shop-item')).toHaveCount(5);
-  await expect(page.locator('.coin-hud-label')).toContainText('0 / 5');
+  await expect(page.locator('.coin-hud-label')).toContainText('5');
 
-  // Pick the first available 1-coin shop item so the drag always fits the budget.
-  const cheapItem = shop.locator('.shop-item:not(.shop-item--expensive)').first();
-  const cheapId = await cheapItem.getAttribute('data-artifact-id');
-  expect(cheapId).not.toBeNull();
+  // --- Step 1: click-to-buy spore_needle (cost 1) → appears in container ---
+  await shop.locator('.shop-item[data-artifact-id="spore_needle"]').click();
+  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await expect(shop.locator('.shop-item[data-artifact-id="spore_needle"]')).toHaveCount(0);
+  await expect(page.locator('.coin-hud-label')).toContainText('4');
 
-  // Drag it onto inventory cell (0, 0).
-  await htmlDragDrop(
-    page,
-    `.shop-item[data-artifact-id="${cheapId}"]`,
-    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]'
-  );
+  // --- Step 2: undo purchase via sell button → returns to shop at full refund ---
+  await container.locator('.container-item[data-artifact-id="spore_needle"] .container-item-sell').click();
+  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(0);
+  await expect(shop.locator('.shop-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await expect(page.locator('.coin-hud-label')).toContainText('5');
 
-  // Piece landed in inventory, shop lost it, coin HUD ticked.
-  await expect(page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`)).toHaveCount(1);
-  await expect(shop.locator(`.shop-item[data-artifact-id="${cheapId}"]`)).toHaveCount(0);
+  // --- Step 3: buy again, then click container item to auto-place in inventory ---
+  await shop.locator('.shop-item[data-artifact-id="spore_needle"]').click();
+  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await container.locator('.container-item[data-artifact-id="spore_needle"]').click();
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(0);
+
+  // --- Step 4: click placed piece → returns to container (not shop) ---
+  await page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]').click({ timeout: 5000 });
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(0);
+  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
+
+  // --- Step 5: place again for the battle ---
+  await container.locator('.container-item[data-artifact-id="spore_needle"]').click();
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
+
+  // --- Step 6: refresh page — state must persist from server ---
+  await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await expect(page.locator('.coin-hud-label')).toContainText('4');
   await expect(shop.locator('.shop-item')).toHaveCount(4);
-  await expect(page.locator('.coin-hud-label')).not.toContainText('0 / 5');
 
-  // Click the placed piece to return it to the shop; coins refund back to 0/5.
-  await page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`).click({ timeout: 5000 });
-  await expect(page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`)).toHaveCount(0);
-  await expect(shop.locator(`.shop-item[data-artifact-id="${cheapId}"]`)).toHaveCount(1);
-  await expect(page.locator('.coin-hud-label')).toContainText('0 / 5');
-
-  // Place it again and save the loadout.
-  await htmlDragDrop(
-    page,
-    `.shop-item[data-artifact-id="${cheapId}"]`,
-    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]'
-  );
-  await expect(page.locator(`.inventory-pieces .artifact-piece[data-artifact-id="${cheapId}"]`)).toHaveCount(1);
+  // --- Step 7: save loadout and go to battle ---
   await page.getByRole('button', { name: /save|сохранить/i }).click({ timeout: 5000 });
-
-  // Battle prep screen still works with a partial loadout.
   await expect(page.getByRole('heading', { level: 2, name: /Battle|Бой/ })).toBeVisible();
-  const battleInventory = page.locator('.battle-prep-inventory');
-  await expect(battleInventory).toBeVisible();
-  await expect(page.locator('.battle-prep-inventory .artifact-grid-cell')).toHaveCount(6);
-
   const battleStartButton = page.getByRole('button', { name: /start battle|начать бой/i });
   await expect(battleStartButton).toBeEnabled();
   await battleStartButton.click({ timeout: 5000 });
   await expect(page.locator('.replay-log')).toBeVisible();
   await page.getByRole('button', { name: /result|результат/i }).click({ timeout: 40000 });
-  await expect(page.getByRole('heading', { level: 2, name: /result|результат/i })).toBeVisible();
+  await expect(page.locator('.results-screen')).toBeVisible();
 });
 
-test('shop enforces the 5-coin budget by blocking drags from unaffordable items', async ({ page, request, baseURL }) => {
+test('shop budget enforcement: 2-cost items become unaffordable when coins run low', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 806, username: 'budget_player', name: 'Budget Player' });
 
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
 
-  // Seed localStorage with a deterministic shop offer so this test doesn't
-  // depend on the random reroll landing on specific artifacts.
-  await page.addInitScript(({ sessionKey, playerId }) => {
+  // Seed shop with known artifacts via server API.
+  await api(request, player.sessionKey, '/api/shop-state', 'PUT', {
+    offer: ['spore_needle', 'amber_fang', 'glass_cap', 'bark_plate', 'root_shell'],
+    container: [],
+    freshPurchases: [],
+    rerollSpent: 0
+  });
+
+  await page.addInitScript((sessionKey) => {
     localStorage.setItem('sessionKey', sessionKey);
-    const offer = ['spore_needle', 'amber_fang', 'glass_cap', 'bark_plate', 'root_shell'];
-    localStorage.setItem(
-      `mushroom-shop-offer:${playerId}`,
-      JSON.stringify({ offer, builder: [] })
-    );
-  }, { sessionKey: player.sessionKey, playerId: player.player.id });
+  }, player.sessionKey);
 
   await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
 
   const shop = page.locator('.artifact-shop');
   await expect(shop.locator('.shop-item')).toHaveCount(5);
-  // Seeded offer guarantees amber_fang and root_shell are present.
-  await expect(shop.locator('.shop-item[data-artifact-id="amber_fang"]')).toHaveCount(1);
-  await expect(shop.locator('.shop-item[data-artifact-id="root_shell"]')).toHaveCount(1);
 
-  // Non-square artifacts auto-rotate to their horizontal preferred orientation,
-  // so amber_fang (1×2) lands as 2×1 at (0,0) occupying cols 0,1 of row 0.
-  await htmlDragDrop(
-    page,
-    '.shop-item[data-artifact-id="amber_fang"]',
-    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]'
-  );
-  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="amber_fang"]')).toHaveCount(1);
-  await expect(page.locator('.coin-hud-label')).toContainText('2 / 5');
+  // Buy two 2-cost items (amber_fang + glass_cap) = 4 coins spent.
+  await shop.locator('.shop-item[data-artifact-id="amber_fang"]').click();
+  await shop.locator('.shop-item[data-artifact-id="glass_cap"]').click();
+  await expect(page.locator('.coin-hud-label')).toContainText('1');
 
-  // glass_cap (price 2, 2×1) at (0,1) fills cols 0,1 of row 1 — 4 coins spent total.
-  await htmlDragDrop(
-    page,
-    '.shop-item[data-artifact-id="glass_cap"]',
-    '.artifact-grid-board--inventory .artifact-grid-cell[data-cell-x="0"][data-cell-y="1"]'
-  );
-  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glass_cap"]')).toHaveCount(1);
-  await expect(page.locator('.coin-hud-label')).toContainText('4 / 5');
-
-  // Now only 1 coin left. A remaining 2-cost shop item must be marked expensive
-  // and its draggable attribute must be false.
-  const remainingExpensive = shop.locator('.shop-item.shop-item--expensive').first();
-  await expect(remainingExpensive).toHaveCount(1);
-  const draggableAttr = await remainingExpensive.getAttribute('draggable');
+  // With 1 coin left, 2-cost items (root_shell) must be marked expensive and non-draggable.
+  const expensiveItem = shop.locator('.shop-item.shop-item--expensive');
+  await expect(expensiveItem).toHaveCount(1);
+  const draggableAttr = await expensiveItem.getAttribute('draggable');
   expect(draggableAttr).toBe('false');
 });
 

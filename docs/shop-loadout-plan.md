@@ -74,6 +74,12 @@ Keep the existing 9 (price fill-in: 1 for weakest, 2 for strongest per family).
    - Adjust `.artifact-layout` grid so shop sits bottom-left.
 
 ## Out of scope (for this iteration)
-- Persisting the shop offer server-side.
-- Paid rerolls or wave-based shop refresh within the same battle.
+- Wave-based shop refresh within the same battle.
 - Selling artifacts for real currency (`spore`).
+
+## Implemented additions (post-plan)
+- **Three-zone model**: Shop → Backpack (container) → Inventory.
+- **Click-to-buy**: clicking a shop item buys it to the backpack.
+- **Click-to-place**: clicking a backpack item auto-places it in inventory.
+- **Sell button**: each backpack item has a top-right sell button. Same-round items refund at full price; carried-over items sell at half price.
+- **Reroll cost**: 1 coin per reroll (free after battle start / new round).
