@@ -37,6 +37,7 @@ import {
   resolveRound,
   refreshRunShop,
   sellRunItem,
+  buyRunShopItem,
   createRunChallenge,
   getGameRunHistory,
   updateSettings
@@ -64,6 +65,23 @@ function asyncRoute(handler) {
       next(error);
     }
   };
+}
+
+async function requireRunMembership(req, _res, next) {
+  try {
+    const gameRunId = req.params.id;
+    const playerId = req.user.id;
+    const result = await dbQuery(
+      `SELECT id FROM game_run_players WHERE game_run_id = $1 AND player_id = $2`,
+      [gameRunId, playerId]
+    );
+    if (!result.rowCount) {
+      return next(new Error('You are not part of this game run'));
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function createApp() {
@@ -333,6 +351,7 @@ export async function createApp() {
   app.post(
     '/api/game-run/:id/abandon',
     requireAuth,
+    requireRunMembership,
     asyncRoute(async (req, res) => {
       const data = await abandonGameRun(req.user.id, req.params.id);
       if (data.mode === 'challenge') {
@@ -347,6 +366,7 @@ export async function createApp() {
   app.post(
     '/api/game-run/:id/ready',
     requireAuth,
+    requireRunMembership,
     asyncRoute(async (req, res) => {
       const gameRunId = req.params.id;
       const playerId = req.user.id;
@@ -393,6 +413,7 @@ export async function createApp() {
   app.post(
     '/api/game-run/:id/unready',
     requireAuth,
+    requireRunMembership,
     asyncRoute(async (req, res) => {
       const gameRunId = req.params.id;
       const playerId = req.user.id;
@@ -401,14 +422,18 @@ export async function createApp() {
       if (!runResult.rowCount) throw new Error('Game run not found');
       if (runResult.rows[0].mode === 'solo') throw new Error('Cannot unready in solo mode');
 
-      readyManager.setUnready(gameRunId, playerId);
-      sseManager.sendToOpponent(gameRunId, playerId, 'ready', { playerId, ready: false });
+      // Use the same lock as ready to prevent TOCTOU with concurrent ready calls
+      const data = await readyManager.withRunLock(gameRunId, async () => {
+        readyManager.setUnready(gameRunId, playerId);
+        sseManager.sendToOpponent(gameRunId, playerId, 'ready', { playerId, ready: false });
+        return { ready: false };
+      });
 
-      res.json({ success: true, data: { ready: false } });
+      res.json({ success: true, data });
     })
   );
 
-  app.get('/api/game-run/:id/events', requireAuth, (req, res) => {
+  app.get('/api/game-run/:id/events', requireAuth, requireRunMembership, (req, res) => {
     const gameRunId = req.params.id;
     const playerId = req.user.id;
     sseManager.addConnection(gameRunId, playerId, res);
@@ -420,6 +445,7 @@ export async function createApp() {
   app.post(
     '/api/game-run/:id/refresh-shop',
     requireAuth,
+    requireRunMembership,
     asyncRoute(async (req, res) => {
       const data = await refreshRunShop(req.user.id, req.params.id);
       res.json({ success: true, data });
@@ -429,8 +455,19 @@ export async function createApp() {
   app.post(
     '/api/game-run/:id/sell',
     requireAuth,
+    requireRunMembership,
     asyncRoute(async (req, res) => {
       const data = await sellRunItem(req.user.id, req.params.id, req.body.artifactId);
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/game-run/:id/buy',
+    requireAuth,
+    requireRunMembership,
+    asyncRoute(async (req, res) => {
+      const data = await buyRunShopItem(req.user.id, req.params.id, req.body.artifactId);
       res.json({ success: true, data });
     })
   );
@@ -566,10 +603,38 @@ export async function createApp() {
     res.sendFile(path.join(webDist, 'index.html'));
   });
 
+  // Known application errors and their HTTP status codes
+  const errorStatusMap = {
+    'not found': 404,
+    'not part of': 403,
+    'only the invited': 403,
+    'cannot': 400,
+    'already': 409,
+    'limit reached': 429,
+    'not enough': 400,
+    'expired': 410,
+    'no longer pending': 409,
+    'invalid': 400,
+    'unknown': 400
+  };
+
   app.use((error, _req, res, _next) => {
-    res.status(400).json({
+    const msg = (error.message || '').toLowerCase();
+    let status = 500;
+    for (const [keyword, code] of Object.entries(errorStatusMap)) {
+      if (msg.includes(keyword)) {
+        status = code;
+        break;
+      }
+    }
+    // Only expose message for known application errors; hide internals for 500s
+    const isAppError = status !== 500;
+    if (!isAppError) {
+      console.error('Unhandled error:', error);
+    }
+    res.status(status).json({
       success: false,
-      error: error.message || 'Unexpected error'
+      error: isAppError ? error.message : 'Internal server error'
     });
   });
 

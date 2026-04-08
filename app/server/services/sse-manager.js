@@ -1,7 +1,44 @@
 const connections = new Map();
+const HEARTBEAT_INTERVAL_MS = 30_000;
+const MAX_CONNECTION_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+let heartbeatTimer = null;
 
 function formatSSE(event, data) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function startHeartbeat() {
+  if (heartbeatTimer) return;
+  heartbeatTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [gameRunId, run] of connections) {
+      for (const [playerId, entry] of run) {
+        // Prune stale connections
+        if (now - entry.connectedAt > MAX_CONNECTION_AGE_MS) {
+          try { entry.res.end(); } catch { /* ignore */ }
+          run.delete(playerId);
+          continue;
+        }
+        // Send heartbeat
+        try {
+          entry.res.write(':heartbeat\n\n');
+        } catch {
+          run.delete(playerId);
+        }
+      }
+      if (run.size === 0) {
+        connections.delete(gameRunId);
+      }
+    }
+    // Stop timer if no connections remain
+    if (connections.size === 0) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+  // Allow the process to exit even if the timer is running
+  if (heartbeatTimer.unref) heartbeatTimer.unref();
 }
 
 export function addConnection(gameRunId, playerId, res) {
@@ -15,7 +52,8 @@ export function addConnection(gameRunId, playerId, res) {
   if (!connections.has(gameRunId)) {
     connections.set(gameRunId, new Map());
   }
-  connections.get(gameRunId).set(playerId, res);
+  connections.get(gameRunId).set(playerId, { res, connectedAt: Date.now() });
+  startHeartbeat();
 }
 
 export function removeConnection(gameRunId, playerId) {
@@ -31,8 +69,8 @@ export function removeConnection(gameRunId, playerId) {
 export function removeRun(gameRunId) {
   const run = connections.get(gameRunId);
   if (run) {
-    for (const res of run.values()) {
-      try { res.end(); } catch { /* ignore */ }
+    for (const entry of run.values()) {
+      try { entry.res.end(); } catch { /* ignore */ }
     }
     connections.delete(gameRunId);
   }
@@ -41,18 +79,18 @@ export function removeRun(gameRunId) {
 export function sendToPlayer(gameRunId, playerId, event, data) {
   const run = connections.get(gameRunId);
   if (!run) return;
-  const res = run.get(playerId);
-  if (res) {
-    try { res.write(formatSSE(event, data)); } catch { /* ignore */ }
+  const entry = run.get(playerId);
+  if (entry) {
+    try { entry.res.write(formatSSE(event, data)); } catch { /* ignore */ }
   }
 }
 
 export function sendToOpponent(gameRunId, playerId, event, data) {
   const run = connections.get(gameRunId);
   if (!run) return;
-  for (const [pid, res] of run) {
+  for (const [pid, entry] of run) {
     if (pid !== playerId) {
-      try { res.write(formatSSE(event, data)); } catch { /* ignore */ }
+      try { entry.res.write(formatSSE(event, data)); } catch { /* ignore */ }
     }
   }
 }
@@ -61,7 +99,7 @@ export function broadcast(gameRunId, event, data) {
   const run = connections.get(gameRunId);
   if (!run) return;
   const msg = formatSSE(event, data);
-  for (const res of run.values()) {
-    try { res.write(msg); } catch { /* ignore */ }
+  for (const entry of run.values()) {
+    try { entry.res.write(msg); } catch { /* ignore */ }
   }
 }

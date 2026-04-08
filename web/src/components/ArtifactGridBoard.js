@@ -110,6 +110,12 @@ export const ArtifactGridBoard = {
       this.hoverCellIndex = -1;
       this.$emit('cell-drop', { x: this.cellX(index), y: this.cellY(index), event });
     },
+    onCellTouchDrop(index, event) {
+      // Handle touch-dispatched cell-drop from useTouch composable
+      if (!this.droppable) return;
+      const detail = event.detail || {};
+      this.$emit('cell-drop', { x: detail.x ?? this.cellX(index), y: detail.y ?? this.cellY(index) });
+    },
     onPieceDragStart(item, event) {
       if (!this.draggablePieces) return;
       if (event.dataTransfer) {
@@ -140,6 +146,7 @@ export const ArtifactGridBoard = {
           @dragover="onCellDragOver(cell - 1, $event)"
           @dragleave="onCellDragLeave(cell - 1)"
           @drop="onCellDrop(cell - 1, $event)"
+          @cell-drop-touch.native="onCellTouchDrop(cell - 1, $event)"
         ></component>
       </div>
       <div :class="piecesClass()" :style="gridStyle">

@@ -89,13 +89,18 @@ export function renderArtifactGlyph(artifact, theme) {
       `;
     case 'moss_pouch':
       return `
-        <rect x="14" y="14" width="52" height="52" rx="18" fill="${theme.accent}" opacity="0.3" stroke="${theme.border}" stroke-width="3" stroke-dasharray="6 4" />
-        <text x="40" y="48" text-anchor="middle" font-size="22" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
+        <rect x="14" y="14" width="52" height="52" rx="18" fill="${theme.accent}" opacity="0.25" stroke="${theme.border}" stroke-width="3" stroke-dasharray="6 4" />
+        <path d="M30 28 C30 20 50 20 50 28 L52 54 C52 60 28 60 28 54 Z" fill="${theme.accent}" opacity="0.5" />
+        <path d="M34 22 C34 16 46 16 46 22" stroke="${theme.border}" stroke-width="3" fill="none" stroke-linecap="round" />
+        <text x="40" y="50" text-anchor="middle" font-size="18" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
       `;
     case 'amber_satchel':
       return `
-        <rect x="14" y="14" width="52" height="52" rx="18" fill="${theme.accent}" opacity="0.3" stroke="${theme.border}" stroke-width="3" stroke-dasharray="6 4" />
-        <text x="40" y="48" text-anchor="middle" font-size="22" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
+        <rect x="10" y="10" width="60" height="60" rx="14" fill="${theme.accent}" opacity="0.25" stroke="${theme.border}" stroke-width="3" />
+        <rect x="18" y="22" width="44" height="36" rx="8" fill="${theme.accent}" opacity="0.4" />
+        <path d="M28 22 L28 16 C28 12 52 12 52 16 L52 22" stroke="${theme.border}" stroke-width="3" fill="none" stroke-linecap="round" />
+        <rect x="32" y="28" width="16" height="6" rx="3" fill="${theme.border}" opacity="0.6" />
+        <text x="40" y="52" text-anchor="middle" font-size="18" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
       `;
     default:
       return `<rect x="18" y="18" width="44" height="44" rx="14" fill="${theme.accent}" />`;

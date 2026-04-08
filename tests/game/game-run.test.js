@@ -44,7 +44,7 @@ test('only one active run per player is allowed', async () => {
 
   await assert.rejects(
     () => startGameRun(session.player.id, 'solo'),
-    /Unique|Validation error|CONSTRAINT/i
+    /already have an active game run|Unique|Validation error|CONSTRAINT/i
   );
 });
 

@@ -679,6 +679,7 @@ function simulateBattle(snapshot, seed) {
     }
   ];
   let winnerSide = null;
+  let finalStep = STEP_CAP;
 
   for (let step = 1; step <= STEP_CAP; step += 1) {
     events.push({
@@ -692,11 +693,13 @@ function simulateBattle(snapshot, seed) {
     resolveAction(first, second, step, rng, events);
     if (second.currentHealth <= 0) {
       winnerSide = first.side;
+      finalStep = step;
       break;
     }
     resolveAction(second, first, step, rng, events);
     if (first.currentHealth <= 0) {
       winnerSide = second.side;
+      finalStep = step;
       break;
     }
   }
@@ -726,7 +729,7 @@ function simulateBattle(snapshot, seed) {
 
   events.push({
     type: 'battle_end',
-    step: STEP_CAP,
+    step: finalStep,
     winnerSide,
     outcome,
     narration: winnerSide ? `${winnerSide === 'left' ? left.name.en : right.name.en} wins.` : 'The battle ends in a draw.',
@@ -870,11 +873,11 @@ async function applyBattleRewards(client, battle, leftSnapshot, rightSnapshot, s
     const opponentRating = entry.player.id === leftPlayer.id ? (rightPlayer?.rating ?? leftPlayer.rating) : leftPlayer.rating;
     const ratingBefore = entry.player.rating;
     const ratingAfter = entry.counts
-      ? Math.round(
+      ? Math.max(RATING_FLOOR, Math.round(
           ratingBefore +
             kFactor(ratingBefore, entry.player.rated_battle_count) *
               (actualScore - expectedScore(ratingBefore, opponentRating))
-        )
+        ))
       : ratingBefore;
 
     const winsDelta = entry.result.outcome === 'win' ? 1 : 0;
@@ -1112,12 +1115,13 @@ export async function getBattle(battleId, viewerPlayerId, existingClient = null)
   };
 }
 
-export async function getBattleHistory(playerId) {
+export async function getBattleHistory(playerId, limit = 20) {
   const result = await query(
     `SELECT * FROM battles
      WHERE initiator_player_id = $1 OR opponent_player_id = $1
-     ORDER BY created_at DESC`,
-    [playerId]
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [playerId, limit]
   );
   return Promise.all(result.rows.map((row) => getBattle(row.id, playerId)));
 }
@@ -1144,7 +1148,7 @@ export async function saveShopState(playerId, payload) {
 
 export async function getBootstrap(playerId) {
   const state = await getPlayerState(playerId);
-  const history = await getBattleHistory(playerId);
+  const history = await getBattleHistory(playerId, 10);
   const [dailyUsage, shopState, activeGameRun] = await Promise.all([
     query(
       `SELECT battle_starts FROM daily_rate_limits WHERE player_id = $1 AND day_key = $2`,
@@ -1164,7 +1168,7 @@ export async function getBootstrap(playerId) {
       limit: DAILY_BATTLE_LIMIT,
       nextResetAt: nextUtcReset(new Date()).toISOString()
     },
-    battleHistory: history.slice(0, 10)
+    battleHistory: history
   };
 }
 
@@ -1268,6 +1272,9 @@ export async function acceptFriendChallenge(challengeId, playerId) {
   if (challenge.status !== 'pending') {
     throw new Error('Challenge is no longer pending');
   }
+  if (challenge.expiresAt && new Date(challenge.expiresAt) < new Date()) {
+    throw new Error('Challenge has expired');
+  }
 
   if (challenge.challengeType === 'run') {
     return createChallengeRun(challenge.challengerPlayerId, challenge.inviteePlayerId, challenge.id);
@@ -1285,6 +1292,9 @@ export async function declineFriendChallenge(challengeId, playerId) {
   const challenge = await getFriendChallenge(challengeId);
   if (challenge.inviteePlayerId !== playerId) {
     throw new Error('Only the invited player can decline this challenge');
+  }
+  if (challenge.status !== 'pending') {
+    throw new Error('Challenge is no longer pending');
   }
   await query(`UPDATE friend_challenges SET status = 'declined' WHERE id = $1`, [challengeId]);
   return getFriendChallenge(challengeId);
@@ -1348,6 +1358,12 @@ export async function createRunChallenge(playerId, inviteePlayerId) {
 
 async function createChallengeRun(challengerPlayerId, inviteePlayerId, challengeId) {
   return withTransaction(async (client) => {
+    // Check daily limit for invitee (challenger was checked at invite time)
+    const inviteeUsage = await getDailyUsage(client, inviteePlayerId);
+    if (inviteeUsage >= DAILY_BATTLE_LIMIT) {
+      throw new Error('The invited player has reached their daily battle limit');
+    }
+
     const runId = createId('run');
     const now = nowIso();
     const initialCoins = ROUND_INCOME[0];
@@ -1473,7 +1489,19 @@ function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
 }
 
 export async function startGameRun(playerId, mode = 'solo') {
+  if (mode !== 'solo') {
+    throw new Error('Invalid mode — use /challenge for challenge runs');
+  }
   return withTransaction(async (client) => {
+    // Application-level active-run check (DB constraint is secondary safety net)
+    const existingRun = await client.query(
+      `SELECT id FROM game_run_players WHERE player_id = $1 AND is_active = 1`,
+      [playerId]
+    );
+    if (existingRun.rowCount) {
+      throw new Error('You already have an active game run');
+    }
+
     const usage = await getDailyUsage(client, playerId);
     if (usage >= DAILY_BATTLE_LIMIT) {
       throw new Error('Daily battle limit reached');
@@ -1799,8 +1827,9 @@ async function resolveChallengeRound(client, run, gameRunId) {
   const simulation = simulateBattle({ left: snapshotA, right: snapshotB }, battleSeed);
 
   if (!simulation.winnerSide) {
-    simulation.winnerSide = 'right';
-    simulation.outcome = 'loss';
+    // Coin-flip to avoid systematic bias toward either player
+    simulation.winnerSide = Math.random() < 0.5 ? 'left' : 'right';
+    simulation.outcome = simulation.winnerSide === 'left' ? 'win' : 'loss';
   }
 
   const battle = await recordBattle(client, {
@@ -1995,8 +2024,8 @@ export async function resolveRound(playerId, gameRunId) {
     const simulation = simulateBattle({ left: leftSnapshot, right: rightSnapshot }, battleSeed);
 
     if (!simulation.winnerSide) {
-      simulation.winnerSide = 'right';
-      simulation.outcome = 'loss';
+      simulation.winnerSide = Math.random() < 0.5 ? 'left' : 'right';
+      simulation.outcome = simulation.winnerSide === 'left' ? 'win' : 'loss';
     }
 
     const outcome = simulation.winnerSide === 'left' ? 'win' : 'loss';
@@ -2134,6 +2163,102 @@ export async function resolveRound(playerId, gameRunId) {
         ratingAfter
       }
     };
+  });
+}
+
+export async function buyRunShopItem(playerId, gameRunId, artifactId) {
+  return withTransaction(async (client) => {
+    const runResult = await client.query(
+      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
+      [gameRunId]
+    );
+    if (!runResult.rowCount) {
+      throw new Error('Game run not found or already ended');
+    }
+    const currentRound = runResult.rows[0].current_round;
+
+    const grpResult = await client.query(
+      `SELECT * FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
+      [gameRunId, playerId]
+    );
+    if (!grpResult.rowCount) {
+      throw new Error('Player is not part of this active game run');
+    }
+    const grp = grpResult.rows[0];
+
+    const shopResult = await client.query(
+      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
+      [gameRunId, playerId]
+    );
+    if (!shopResult.rowCount) {
+      throw new Error('Shop state not found');
+    }
+    const offer = parseJson(shopResult.rows[0].offer_json, []);
+
+    if (!offer.includes(artifactId)) {
+      throw new Error('Item is not in the current shop offer');
+    }
+
+    const artifact = getArtifactById(artifactId);
+    if (!artifact) {
+      throw new Error('Unknown artifact');
+    }
+    const price = getArtifactPrice(artifact);
+    if (grp.coins < price) {
+      throw new Error('Not enough coins');
+    }
+
+    const newCoins = grp.coins - price;
+    await client.query(
+      `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
+      [grp.id, newCoins]
+    );
+
+    // Remove the item from the shop offer (one copy)
+    const newOffer = [...offer];
+    const idx = newOffer.indexOf(artifactId);
+    if (idx !== -1) newOffer.splice(idx, 1);
+
+    await client.query(
+      `UPDATE game_run_shop_states SET offer_json = $2, updated_at = $3 WHERE game_run_id = $1 AND player_id = $4`,
+      [gameRunId, JSON.stringify(newOffer), nowIso(), playerId]
+    );
+
+    // Add to loadout as container item (not placed on grid yet)
+    const loadoutResult = await client.query(
+      `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
+      [playerId]
+    );
+    let loadoutId;
+    if (loadoutResult.rowCount) {
+      loadoutId = loadoutResult.rows[0].id;
+    } else {
+      loadoutId = createId('loadout');
+      const activeChar = await client.query(
+        `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+        [playerId]
+      );
+      const mushroomId = activeChar.rowCount ? activeChar.rows[0].mushroom_id : 'thalla';
+      await client.query(
+        `INSERT INTO player_artifact_loadouts (id, player_id, mushroom_id, grid_width, grid_height, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, 1, $6, $6)`,
+        [loadoutId, playerId, mushroomId, INVENTORY_COLUMNS, INVENTORY_ROWS, nowIso()]
+      );
+    }
+
+    const maxSort = await client.query(
+      `SELECT MAX(sort_order) AS max_sort FROM player_artifact_loadout_items WHERE loadout_id = $1`,
+      [loadoutId]
+    );
+    const nextSort = (maxSort.rows[0]?.max_sort ?? -1) + 1;
+
+    await client.query(
+      `INSERT INTO player_artifact_loadout_items (id, loadout_id, artifact_id, x, y, width, height, sort_order, purchased_round, bag_id)
+       VALUES ($1, $2, $3, -1, -1, $4, $5, $6, $7, NULL)`,
+      [createId('loadoutitem'), loadoutId, artifactId, artifact.width, artifact.height, nextSort, currentRound]
+    );
+
+    return { coins: newCoins, artifactId, price, shopOffer: newOffer };
   });
 }
 

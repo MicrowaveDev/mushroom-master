@@ -1,0 +1,210 @@
+/**
+ * Touch drag-and-drop composable.
+ *
+ * Bridges HTML5 drag-and-drop to touch events for mobile devices.
+ * Attaches to a root element and intercepts touchstart/touchmove/touchend
+ * on elements with [draggable="true"] or [data-artifact-id].
+ *
+ * Usage: call `attachTouch(rootEl)` in onMounted with the app's root DOM element.
+ */
+export function useTouch(state) {
+  let dragEl = null;
+  let ghostEl = null;
+  let startX = 0;
+  let startY = 0;
+  let moved = false;
+
+  function findDraggable(el) {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.getAttribute('draggable') === 'true' || node.dataset?.artifactId) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function findDropZone(x, y) {
+    // Temporarily hide the ghost so elementFromPoint can see through it
+    if (ghostEl) ghostEl.style.display = 'none';
+    const el = document.elementFromPoint(x, y);
+    if (ghostEl) ghostEl.style.display = '';
+    if (!el) return null;
+
+    // Walk up to find a drop zone
+    let node = el;
+    while (node && node !== document.body) {
+      // Grid cell
+      if (node.dataset?.cellX !== undefined && node.dataset?.cellY !== undefined) {
+        return { type: 'cell', x: Number(node.dataset.cellX), y: Number(node.dataset.cellY), el: node };
+      }
+      // Sell zone
+      if (node.classList?.contains('sell-zone')) {
+        return { type: 'sell', el: node };
+      }
+      // Container zone
+      if (node.classList?.contains('artifact-container-zone')) {
+        return { type: 'container', el: node };
+      }
+      // Shop zone
+      if (node.classList?.contains('artifact-shop')) {
+        return { type: 'shop', el: node };
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function createGhost(el, x, y) {
+    const rect = el.getBoundingClientRect();
+    ghostEl = el.cloneNode(true);
+    ghostEl.classList.add('touch-drag-ghost');
+    ghostEl.style.cssText = `
+      position: fixed;
+      left: ${rect.left}px;
+      top: ${rect.top}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 9999;
+      transition: none;
+    `;
+    document.body.appendChild(ghostEl);
+    startX = x - rect.left;
+    startY = y - rect.top;
+  }
+
+  function moveGhost(x, y) {
+    if (!ghostEl) return;
+    ghostEl.style.left = `${x - startX}px`;
+    ghostEl.style.top = `${y - startY}px`;
+  }
+
+  function removeGhost() {
+    if (ghostEl) {
+      ghostEl.remove();
+      ghostEl = null;
+    }
+  }
+
+  function inferSource(el) {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.classList?.contains('artifact-shop-items') || node.classList?.contains('artifact-shop')) return 'shop';
+      if (node.classList?.contains('artifact-container-zone') || node.classList?.contains('artifact-container-items')) return 'container';
+      if (node.classList?.contains('artifact-grid-pieces') || node.classList?.contains('inventory-shell')) return 'inventory';
+      node = node.parentElement;
+    }
+    return '';
+  }
+
+  function inferArtifactId(el) {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.dataset?.artifactId) return node.dataset.artifactId;
+      node = node.parentElement;
+    }
+    return '';
+  }
+
+  function onTouchStart(e) {
+    const target = findDraggable(e.target);
+    if (!target) return;
+
+    const touch = e.touches[0];
+    dragEl = target;
+    moved = false;
+    startX = touch.clientX;
+    startY = touch.clientY;
+
+    const artifactId = inferArtifactId(target);
+    const source = inferSource(target);
+    if (artifactId && source) {
+      state.draggingArtifactId = artifactId;
+      state.draggingSource = source;
+    }
+  }
+
+  function onTouchMove(e) {
+    if (!dragEl) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - startX);
+    const dy = Math.abs(touch.clientY - startY);
+
+    if (!moved && (dx > 8 || dy > 8)) {
+      moved = true;
+      createGhost(dragEl, touch.clientX, touch.clientY);
+    }
+
+    if (moved) {
+      e.preventDefault(); // prevent scroll while dragging
+      moveGhost(touch.clientX, touch.clientY);
+
+      // Highlight sell zone
+      const zone = findDropZone(touch.clientX, touch.clientY);
+      state.sellDragOver = zone?.type === 'sell';
+    }
+  }
+
+  function onTouchEnd(e) {
+    if (!dragEl || !moved) {
+      dragEl = null;
+      removeGhost();
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const zone = findDropZone(touch.clientX, touch.clientY);
+
+    if (zone) {
+      // Dispatch a synthetic drop based on zone type
+      if (zone.type === 'cell') {
+        zone.el.dispatchEvent(new CustomEvent('drop', {
+          bubbles: true,
+          detail: { x: zone.x, y: zone.y, touchDrop: true }
+        }));
+        // Also dispatch the grid board's cell-drop
+        const gridBoard = zone.el.closest('.artifact-grid-board');
+        if (gridBoard) {
+          // The ArtifactGridBoard component handles cell-drop via @drop on cells
+          // We need to trigger the Vue event system - emit a custom event
+          const cellDropEvent = new CustomEvent('cell-drop-touch', {
+            bubbles: true,
+            detail: { x: zone.x, y: zone.y }
+          });
+          zone.el.dispatchEvent(cellDropEvent);
+        }
+      } else if (zone.type === 'sell') {
+        zone.el.dispatchEvent(new Event('drop', { bubbles: true }));
+      } else if (zone.type === 'container') {
+        zone.el.dispatchEvent(new Event('drop', { bubbles: true }));
+      } else if (zone.type === 'shop') {
+        zone.el.dispatchEvent(new Event('drop', { bubbles: true }));
+      }
+    }
+
+    // Cleanup
+    removeGhost();
+    state.sellDragOver = false;
+    state.draggingArtifactId = '';
+    state.draggingSource = '';
+    dragEl = null;
+    moved = false;
+  }
+
+  function attachTouch(rootEl) {
+    if (!rootEl) return;
+    rootEl.addEventListener('touchstart', onTouchStart, { passive: true });
+    rootEl.addEventListener('touchmove', onTouchMove, { passive: false });
+    rootEl.addEventListener('touchend', onTouchEnd, { passive: true });
+  }
+
+  function detachTouch(rootEl) {
+    if (!rootEl) return;
+    rootEl.removeEventListener('touchstart', onTouchStart);
+    rootEl.removeEventListener('touchmove', onTouchMove);
+    rootEl.removeEventListener('touchend', onTouchEnd);
+  }
+
+  return { attachTouch, detachTouch };
+}

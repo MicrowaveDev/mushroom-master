@@ -244,7 +244,8 @@ export async function verifyTelegramAuthCode(privateCode) {
 export async function authenticateRequest(req, _res, next) {
   const sessionKey =
     req.header('x-session-key') ||
-    req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    req.header('authorization')?.replace(/^Bearer\s+/i, '') ||
+    req.query?.sessionKey;
 
   req.authenticated = false;
   if (!sessionKey) {

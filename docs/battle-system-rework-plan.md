@@ -1072,36 +1072,80 @@ prep → ready → (waiting for opponent, challenge only) → combat → result 
   - both players receive their completion bonus based on total wins at the time of abandonment
   - disconnect timeout (grace period expiry) is treated identically to an explicit abandon
 
-## Remaining work
+## Completed post-rework fixes
 
-### Cleanup
+### Stage 7: critical backend fixes ✅ DONE
 
-- [ ] Delete `app/server/schema.js` — no longer imported anywhere; replaced by Sequelize models in `app/server/models/`
+- [x] **7a** `buyRunShopItem()` server endpoint + `POST /api/game-run/:id/buy` route — purchases validated server-side, item removed from offer, coins deducted, loadout item created with `purchased_round`
+- [x] **7b** Rewrote `withRunLock` mutex with proper promise-chaining; `unready` now runs under the same lock
+- [x] **7c** Application-level active-run check in `startGameRun()` (DB constraint kept as safety net)
+- [x] **7d** `unready` gated behind `withRunLock` to prevent TOCTOU with `ready`
+- [x] **7e** `requireRunMembership` middleware on all game-run routes (`/ready`, `/unready`, `/sell`, `/buy`, `/refresh-shop`, `/abandon`, `/events`)
+- [x] **7f** `mode` whitelisted to `'solo'` in `startGameRun()` (challenge runs use `/challenge`)
+- [x] **7g** Draw bias fixed — coin-flip instead of always favoring right side
+- [x] **7h** Expiry check added to `acceptFriendChallenge()`
+- [x] **7i** `RATING_FLOOR` clamp applied in legacy `applyBattleRewards()`
+- [x] **7j** Error handler maps to proper HTTP codes (404, 403, 409, 429, 410); hides internals for 500s
 
-### Challenge mode SSE frontend
+### Stage 8: frontend robustness ✅ DONE
 
-The backend SSE endpoint (`GET /api/game-run/:id/events`) and the ready/sse managers work, but the frontend `prep` screen does not connect to the SSE stream yet. For solo mode this doesn't matter (round resolves synchronously). For challenge mode, the frontend needs:
+- [x] **8a** try/catch on all 11 unguarded async functions
+- [x] **8b** `useTouch` composable with `touchstart`/`touchmove`/`touchend`, ghost element, `elementFromPoint` drop zones, CSS `touch-action: none`
+- [x] **8c** Double `v-if`/`v-else-if` directive fixed (combined condition)
+- [x] **8d** Non-critical bootstrap fetches (friends, leaderboard, wiki) individually wrapped — no longer log user out on failure
+- [x] **8e** `loadoutStatsText()` uses localized labels
+- [x] **8f** `buyRunShopItem()` calls server endpoint
+- [x] **8g** `actionInFlight` guard on `saveLoadout`, `startBattle`, `signalReady`
 
-- [ ] Open an `EventSource` to `/api/game-run/:id/events` when entering the `prep` screen in challenge mode
-- [ ] Listen for `ready` events to show opponent's ready state in the HUD
-- [ ] Listen for `round_result` events to transition to the `roundResult` screen when the opponent triggers the round
-- [ ] Listen for `opponent_abandoned` to show a notification and end the run
-- [ ] Listen for `run_ended` to transition to `runComplete`
-- [ ] Close the `EventSource` on screen exit, run end, or abandon
+### Stage 9: challenge mode SSE frontend ✅ DONE
 
-### Playwright E2E tests
+- [x] `useSSE` composable: `EventSource` to `/api/game-run/:id/events` with `sessionKey` query param
+- [x] Listens for `ready`, `round_result`, `opponent_abandoned`, `run_ended` events
+- [x] Auto-connects on challenge prep screen entry, disconnects on exit
+- [x] Server auth extended to accept `sessionKey` as query param for EventSource
+- [x] Opponent ready indicator in PrepScreen ("Waiting for opponent..." / "Opponent ready")
 
-The validation plan describes full user journeys that require the dev server running. These supplement the 58 backend unit/integration tests:
+### Stage 10: backend hardening ✅ DONE
 
-- [ ] Solo mode journey: start game → buy artifacts → ready → round result → continue → buy bag → place bag → place artifact in bag → sell (full refund) → advance round → sell (half refund) → sell non-empty bag (blocked) → refresh shop → page refresh persistence → play to completion
-- [ ] Challenge mode journey: invite friend → accept → both shop → one readies (waiting) → unready → re-ready → both ready → round resolves → both get rewards → continue
+- [x] **10a** SSE heartbeat every 30s + stale connection pruning (2h max age)
+- [x] **10b** Heartbeat timer stops when no connections remain; `unref()` for clean process exit
+- [x] **10c** `getBattleHistory()` accepts `limit` param; `getBootstrap` passes `limit: 10`
+- [x] **10d** `battle_end` event reports actual final step, not always `STEP_CAP`
+- [x] **10e** `declineFriendChallenge()` rejects non-pending challenges
+- [x] **10f** Daily limit enforced for challenge invitees in `createChallengeRun()`
 
-### Tests not yet covered (low risk)
+### Stage 11: test coverage ✅ DONE (71 unit tests)
 
-- [ ] Challenge invite expiry after 1 hour (time-dependent, needs mocked clock or fast-forwarded timestamps)
-- [ ] Ghost snapshot pruning (`pruneOldGhostSnapshots` function exists but has no test; needs aged test data)
-- [ ] SSE event delivery integration test (needs HTTP server running with supertest or similar)
-- [ ] Disconnect/reconnection handling (runtime behavior, not unit-testable without socket mocking)
+- [x] `buyRunShopItem`: buy valid, buy not-in-offer (reject), buy insufficient coins
+- [x] Invalid mode rejection (`startGameRun('challenge')` → error)
+- [x] Expired challenge acceptance (reject)
+- [x] Decline already-declined challenge (reject)
+- [x] `RATING_FLOOR` enforcement across multiple rounds
+- [x] Mycelium reward assertion
+- [x] Spore reward assertion
+- [x] Sell half-price refund for items from previous rounds
+- [x] No-draw outcomes across multiple rounds
+
+### Stage 12: cleanup ✅ DONE
+
+- [x] Deleted `app/server/schema.js`
+- [x] EN language button enabled (was permanently `disabled`)
+- [x] `moss_pouch` and `amber_satchel` visually distinct in SVG
+- [x] Wiki locations/factions i18n fixed
+
+### Stage 13: frontend refactor ✅ DONE
+
+Split `main.js` (2161 → 393 lines) into:
+
+- 8 composables: `useGameState`, `useAuth`, `useShop`, `useGameRun`, `useReplay`, `useSocial`, `useSSE`, `useTouch`
+- 16 page components: `AuthScreen`, `OnboardingScreen`, `HomeScreen`, `CharactersScreen`, `ArtifactsScreen`, `PrepScreen`, `BattlePrepScreen`, `ReplayScreen`, `ResultsScreen`, `RoundResultScreen`, `RunCompleteScreen`, `FriendsScreen`, `LeaderboardScreen`, `WikiScreen`, `WikiDetailScreen`, `SettingsScreen`
+
+### Playwright E2E tests ✅ DONE
+
+Run via `npx playwright test --config=tests/game/playwright.config.js`:
+
+- [x] [solo-run.spec.js](tests/game/solo-run.spec.js) — 2 tests, 12 screenshots: start → buy → ready → round result → continue → refresh shop → page reload persistence → play to completion + abandon
+- [x] [challenge-run.spec.js](tests/game/challenge-run.spec.js) — 2 tests, 7 screenshots: invite → accept → readies/unready → round resolves → opponent status → play to completion + abandon ends for both
 
 ## Deferred to post-rework
 

@@ -49,17 +49,29 @@ export function clearRun(gameRunId) {
   locks.delete(gameRunId);
 }
 
+/**
+ * Proper async mutex using promise chaining.
+ * Each call chains onto the previous lock holder's promise,
+ * ensuring true mutual exclusion even under concurrent awaits.
+ */
 export async function withRunLock(gameRunId, fn) {
-  while (locks.has(gameRunId)) {
-    await locks.get(gameRunId);
-  }
-  let resolve;
-  const promise = new Promise((r) => { resolve = r; });
-  locks.set(gameRunId, promise);
+  let releaseLock;
+  const lockPromise = new Promise((resolve) => { releaseLock = resolve; });
+
+  // Chain onto whatever is currently queued (or resolve immediately if nothing)
+  const previousLock = locks.get(gameRunId) || Promise.resolve();
+  locks.set(gameRunId, lockPromise);
+
+  // Wait for the previous holder to finish
+  await previousLock;
+
   try {
     return await fn();
   } finally {
-    locks.delete(gameRunId);
-    resolve();
+    // If we're still the tail of the chain, clean up the entry
+    if (locks.get(gameRunId) === lockPromise) {
+      locks.delete(gameRunId);
+    }
+    releaseLock();
   }
 }

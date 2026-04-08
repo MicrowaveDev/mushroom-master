@@ -1979,3 +1979,35 @@ select {
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+/* --- Opponent ready status --- */
+.prep-opponent-status {
+  text-align: center;
+  padding: 6px 0;
+  font-size: 0.9rem;
+}
+.prep-opponent-ready {
+  color: var(--sage);
+  font-weight: 600;
+}
+.prep-opponent-waiting {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+/* --- Touch drag-and-drop --- */
+.touch-drag-ghost {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  transform: scale(1.05);
+}
+
+[draggable="true"],
+.container-item,
+.shop-item,
+.artifact-piece-wrap {
+  -webkit-touch-callout: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
