@@ -136,43 +136,65 @@ For this repo, end-of-game rewards work as follows:
 - in challenge mode, the player who forces the opponent to 5 losses (or has more wins when 9 rounds complete) receives an additional winner bonus of `+10 spore` and `+5 mycelium`
 - these values are tuning knobs and will be adjusted from real data
 
-## Current workspace baseline
+## Current workspace state (post-rework)
 
-### Backend today
+### Backend
 
-- [app/server/services/game-service.js](/Users/microwavedev/workspace/mushroom-master/app/server/services/game-service.js) treats one `createBattle()` call as one complete duel with rewards paid immediately.
-- `simulateBattle()` uses `round` as the internal combat turn loop and caps combat with `BATTLE_ROUND_CAP` (currently `12`).
-- [app/server/game-data.js](/Users/microwavedev/workspace/mushroom-master/app/server/game-data.js) fixes the inventory at `3x2`, the loadout budget at `5` coins, and the shop offer at `5` artifacts.
-- shop state is already persisted server-side through `player_shop_state`, but it only tracks one prep session, not a multi-round run.
+- [app/server/services/game-service.js](app/server/services/game-service.js) — core game logic including:
+  - `createBattle()` for legacy single duels; `recordBattle()` extracted helper used by both legacy and run flows
+  - `simulateBattle()` uses `step` as the internal combat turn loop, capped at `STEP_CAP` (12)
+  - Game run lifecycle: `startGameRun()`, `getActiveGameRun()`, `abandonGameRun()`, `getGameRun()`
+  - Round resolution: `resolveRound()` (solo), `resolveChallengeRound()` (challenge), with per-round Elo (solo) or batch Elo (challenge)
+  - Run economy: `refreshRunShop()`, `sellRunItem()`, `generateShopOffer()` with bag pity timer
+  - Ghost matching: `getRunGhostSnapshot()` with exclusion and budget-based bot fallback
+  - Challenge mode: `createRunChallenge()`, `createChallengeRun()`, modified `acceptFriendChallenge()`
+  - Rewards: `payCompletionBonus()`, `applyBatchElo()`, `runRewardTable`, `completionBonusTable`
+  - History: `getGameRunHistory()`, `pruneOldGhostSnapshots()`
+- [app/server/game-data.js](app/server/game-data.js) — constants and artifact/mushroom definitions including:
+  - Run constants: `MAX_ROUNDS_PER_RUN`, `STARTING_LIVES`, `ROUND_INCOME`, `RATING_FLOOR`, `GHOST_BUDGET_DISCOUNT`
+  - Bag items: `moss_pouch` (1x2, 2 slots), `amber_satchel` (2x2, 4 slots) with `family: 'bag'`
+  - Bag distribution: `BAG_BASE_CHANCE`, `BAG_ESCALATION_STEP`, `BAG_PITY_THRESHOLD`
+  - Shop refresh: `SHOP_REFRESH_CHEAP_LIMIT`, `SHOP_REFRESH_CHEAP_COST`, `SHOP_REFRESH_EXPENSIVE_COST`
+  - Helpers: `bags`, `combatArtifacts`, `getCompletionBonus()`, `getShopRefreshCost()`
+- [app/server/lib/utils.js](app/server/lib/utils.js) — `kFactor(rating, ratedBattles, mode)` supports `'solo_run'` K-factors (16/10/8)
+- [app/server/services/ready-manager.js](app/server/services/ready-manager.js) — in-memory ready state with `withRunLock` mutex
+- [app/server/services/sse-manager.js](app/server/services/sse-manager.js) — SSE connection management for challenge mode
+- [app/server/models/](app/server/models/) — 24 Sequelize models, tables created via `sequelize.sync()`
+  - New tables: `game_runs`, `game_run_players` (partial unique index), `game_rounds`, `game_run_ghost_snapshots`, `game_run_shop_states`
+  - Extended: `PlayerArtifactLoadoutItem` (+`purchased_round`, +`bag_id`), `FriendChallenge` (+`challenge_type`, +`game_run_id`)
+- [app/server/create-app.js](app/server/create-app.js) — all API routes including:
+  - `POST /api/game-run/start`, `GET /api/game-run/:id`, `POST /api/game-run/:id/abandon`
+  - `POST /api/game-run/:id/ready`, `POST /api/game-run/:id/unready`, `GET /api/game-run/:id/events` (SSE)
+  - `POST /api/game-run/:id/refresh-shop`, `POST /api/game-run/:id/sell`
+  - `POST /api/game-run/challenge`, `GET /api/game-runs/history`
 
-### Frontend today
+### Frontend
 
-- [web/src/main.js](/Users/microwavedev/workspace/mushroom-master/web/src/main.js) has separate shop/loadout and battle-prep screens that flow into a single battle; these will be merged into one prep phase per round.
-- [web/src/i18n.js](/Users/microwavedev/workspace/mushroom-master/web/src/i18n.js) still markets the loop as a one-battle `5 coin` setup.
-- current replay/history UI treats each stored duel as the main game result.
+- [web/src/main.js](web/src/main.js) — Vue 3 SPA with run flow:
+  - New state: `gameRun`, `gameRunResult`, `gameRunShopOffer`, `gameRunRefreshCount`, `sellDragOver`
+  - New screens: `prep` (merged shop+inventory+ready with run HUD and sell zone), `roundResult` (outcome+rewards), `runComplete` (end summary)
+  - Home screen: "Start Game" / "Resume Game" buttons based on active run
+  - Bootstrap restores active game run on page load
+  - 13 new functions for run lifecycle, shop, sell, ready
+- [web/src/i18n.js](web/src/i18n.js) — 24 new bilingual keys for run flow (round, wins, lives, coins, ready, sell, bags, etc.)
+- [web/src/artifacts/render.js](web/src/artifacts/render.js) — bag rendering with color palette and slot count display
+- [web/src/styles.css](web/src/styles.css) — CSS for run HUD, prep screen, sell zone, round result, run complete, bag styling
 
-### Test baseline today
+### Test coverage (54 tests)
 
-- [tests/game/loadout-and-battle.test.js](/Users/microwavedev/workspace/mushroom-master/tests/game/loadout-and-battle.test.js) covers deterministic single battles and loadout validation.
-- [tests/game/start-battle.spec.js](/Users/microwavedev/workspace/mushroom-master/tests/game/start-battle.spec.js) covers one shop-to-battle user journey.
+- [tests/game/bag-items.test.js](tests/game/bag-items.test.js) — 16 tests: bag data, validation, shop distribution, sell blocking, ghost snapshots, step naming, history, coins, completion bonus
+- [tests/game/ready-manager.test.js](tests/game/ready-manager.test.js) — 6 tests: ready state unit tests
+- [tests/game/challenge-run.test.js](tests/game/challenge-run.test.js) — 7 tests: challenge creation, resolution, Elo, abandon
+- [tests/game/game-run.test.js](tests/game/game-run.test.js) — 11 tests: run lifecycle, constraints, bootstrap
+- [tests/game/round-resolution.test.js](tests/game/round-resolution.test.js) — 11 tests: rewards, Elo, elimination, shop refresh, sell
+- [tests/game/loadout-and-battle.test.js](tests/game/loadout-and-battle.test.js) — 3 tests: legacy battle flow (no regressions)
 
-## Proposed domain language
+## Domain language (implemented)
 
-This rename is the first thing to freeze before implementation.
-
-- `Step`
-  - one internal combat beat inside a duel replay
-  - replaces the current user-facing meaning of `round`
-  - Russian label: `Ход`
-- `Round`
-  - one won/lost duel inside a longer run
-  - has a shop phase before it and a result after it
-- `Game`
-  - a run capped at `9` rounds that ends earlier on the `5th` loss
-  - starts with `5` lives
-- `Battle`
-  - implementation choice: keep this as the technical name for the duel simulation payload and stored replay artifact
-  - reason: it minimizes low-value churn in table names, route names, and replay logic while still changing the player-facing terminology
+- **Step** (`Ход`) — one internal combat beat inside a duel replay; replaces the old user-facing meaning of `round`
+- **Round** (`Раунд`) — one won/lost duel inside a longer run; has a shop phase before it and a result after it
+- **Game** (`Игра`) — a run capped at 9 rounds that ends earlier on the 5th loss; starts with 5 lives
+- **Battle** — kept as the technical name for the duel simulation payload and stored replay artifact (minimizes table/route churn)
 
 ## Recommended product rules
 
@@ -503,50 +525,54 @@ newRating = max(100, round(oldRating + K * (actualScore - expectedScore)))
 
 ### DB approach
 
-- The schema is defined as raw SQL in [app/server/schema.js](app/server/schema.js), supporting both PostgreSQL and SQLite
-- New tables are added as raw `CREATE TABLE` statements in the same file
+- The schema is defined via Sequelize model files in [app/server/models/](app/server/models/), supporting both PostgreSQL and SQLite
+- Tables are created automatically via `sequelize.sync()` from model definitions
+- Raw SQL queries in `game-service.js` are kept as-is; models are used for schema definition and sync, not ORM query building
+- The raw SQL schema file (`schema.js`) has been replaced by model-based sync
 - Since the backend has not shipped to production, existing tables and models can be freely reworked
-- No migration files are needed for initial creation
 
 ### Recommended DB shape
 
-- new `game_runs` table
-  - `id`
-  - `mode` (`solo`, `challenge`)
-  - `status` (`active`, `completed`, `abandoned`)
-  - `current_round`
-  - `started_at`
-  - `ended_at`
-  - `end_reason` (`max_rounds`, `max_losses`, `abandoned`, `opponent_abandoned`)
-- new `game_run_players` table
-  - `id`
-  - `game_run_id`
-  - `player_id`
-  - `completed_rounds`
-  - `wins`
-  - `losses`
-  - `lives_remaining`
-  - `coins`
-  - constraint: only one active game run per player (enforced via partial unique index on `player_id` where run status is `active`)
+All tables are defined as Sequelize models in [app/server/models/](app/server/models/) and created via `sequelize.sync()`. Raw SQL queries in the service layer remain unchanged.
+
+- [GameRun.js](app/server/models/GameRun.js) — `game_runs` table
+  - `id` TEXT PK
+  - `mode` TEXT (`solo`, `challenge`)
+  - `status` TEXT (`active`, `completed`, `abandoned`), default `active`
+  - `current_round` INTEGER, default `1`
+  - `started_at` TEXT
+  - `ended_at` TEXT (nullable)
+  - `end_reason` TEXT (nullable: `max_rounds`, `max_losses`, `abandoned`, `opponent_abandoned`)
+- [GameRunPlayer.js](app/server/models/GameRunPlayer.js) — `game_run_players` table
+  - `id` TEXT PK
+  - `game_run_id` TEXT FK → `game_runs.id` CASCADE
+  - `player_id` TEXT FK → `players.id` CASCADE
+  - `is_active` INTEGER, default `1` — denormalized flag for the partial unique index
+  - `completed_rounds` INTEGER, default `0`
+  - `wins` INTEGER, default `0`
+  - `losses` INTEGER, default `0`
+  - `lives_remaining` INTEGER, default `5`
+  - `coins` INTEGER, default `0`
+  - partial unique index `idx_one_active_run_per_player` on `(player_id)` WHERE `is_active = 1` — enforces one active run per player at the DB level
   - note: per-player end reason is not stored separately; it is derivable from the run-level `end_reason` combined with each player's `wins`/`losses`/`lives_remaining`
-- new `game_rounds` table
-  - `id`
-  - `game_run_id`
-  - `round_number`
-  - `battle_id` (references existing `battles` table — opponent info is already stored there)
-  - `created_at`
+- [GameRound.js](app/server/models/GameRound.js) — `game_rounds` table
+  - `id` TEXT PK
+  - `game_run_id` TEXT FK → `game_runs.id` CASCADE
+  - `round_number` INTEGER
+  - `battle_id` TEXT FK → `battles.id` SET NULL (references existing `battles` table — opponent info is already stored there)
+  - `created_at` TEXT
   - note: no `opponent_player_id` here; the `battles` table already stores `initiator_player_id` and `opponent_player_id`
   - note: per-round results (outcome, coins) are derivable from `game_run_players` deltas and the `battles` table; a separate results table is not needed in v1
+- [PlayerArtifactLoadoutItem.js](app/server/models/PlayerArtifactLoadoutItem.js) — extended with `purchased_round` INTEGER (nullable) for sell-price calculation
 - ready state is **ephemeral only** — held in server memory, not persisted to DB
   - keyed by `(game_run_id, player_id, round_number)`
   - solo mode: ready triggers round immediately, no state stored
   - challenge mode: state held until both players ready, then discarded
-- new or expanded run-scoped loadout storage
-  - must distinguish:
-    - artifacts on the main grid (grid position)
-    - placed bag items (grid position + footprint)
-    - artifacts inside a specific bag (bag id + slot index)
-    - items in the container (purchased but not yet placed)
+- run-scoped loadout storage must distinguish:
+  - artifacts on the main grid (grid position)
+  - placed bag items (grid position + footprint)
+  - artifacts inside a specific bag (bag id + slot index)
+  - items in the container (purchased but not yet placed)
   - each item tracks `purchased_round` for sell-price calculation
 - ghost loadout snapshots
   - after each round in solo mode, the player's loadout is saved as a ghost snapshot keyed by `(player_id, game_run_id, round_number)`
@@ -610,33 +636,26 @@ newRating = max(100, round(oldRating + K * (actualScore - expectedScore)))
 
 ## Backend implementation stages
 
-### Stage 1: terminology-safe refactor
+### Stage 1: terminology-safe refactor ✅ DONE
 
-- keep internal code working first
-- rename replay payload fields and user-facing labels from `round` to `step` where they mean combat turns
-- keep DB columns untouched unless they create active confusion
+- renamed `BATTLE_ROUND_CAP` → `STEP_CAP` in `game-data.js`
+- renamed `round` → `step` in simulation loop, event payloads, and `resolveAction()` in `game-service.js`
+- renamed `computeRoundOrder()` → `computeStepOrder()`
+- renamed event type `round_start` → `step_start`
+- updated `replay/format.js`: `Раунд` → `Ход`, event field `round` → `step`
+- updated lab input string in `main.js`
+- all existing tests pass
 
-Files most likely touched:
+### Stage 2: run state and persistence ✅ DONE
 
-- [app/server/services/game-service.js](app/server/services/game-service.js)
-- [app/server/game-data.js](app/server/game-data.js) (rename `BATTLE_ROUND_CAP` and related constants)
-- [web/src/main.js](web/src/main.js)
-- [web/src/i18n.js](web/src/i18n.js)
-
-Validation:
-
-- unit test that replay events expose `step` in the API contract
-- UI assertion that Russian replay copy renders `Ход`
-
-### Stage 2: run state and persistence
-
-- add `game_runs`, `game_run_players`, and `game_rounds` tables in `schema.js`
-- add run-aware bootstrap payload (empty inventory, fresh shop per run)
-- ensure only one active run per player unless a replacement policy is chosen explicitly
-- remove `MAX_ARTIFACT_PIECES` / `MAX_INVENTORY_PIECES` cap; grid space and coins are the only constraints
-- update `DAILY_BATTLE_LIMIT` to count game runs, not individual duels
-- add container concept to loadout storage (purchased but unplaced items)
-- add `purchased_round` tracking on each item for sell-price calculation
+- migrated from raw SQL `schema.js` to Sequelize model files in `app/server/models/`; tables created via `sequelize.sync()`
+- added `game_runs`, `game_run_players`, and `game_rounds` models with partial unique index enforcing one active run per player
+- added `purchased_round` column to `PlayerArtifactLoadoutItem` model
+- added run constants: `MAX_ROUNDS_PER_RUN = 9`, `STARTING_LIVES = 5`, `ROUND_INCOME` table
+- removed `MAX_ARTIFACT_PIECES` / `MAX_INVENTORY_PIECES` caps; grid space and coins are the only constraints
+- added service functions: `startGameRun()`, `getActiveGameRun()`, `abandonGameRun()`, `getGameRun()`
+- added API routes: `POST /api/game-run/start`, `GET /api/game-run/:id`, `POST /api/game-run/:id/abandon`
+- updated `getBootstrap()` to include `activeGameRun`
 
 Validation:
 
@@ -650,9 +669,27 @@ Validation:
   - ending on 9 rounds played
   - abandon mid-game (solo and challenge)
 
-### Stage 3: round economy and opponent matching
+### Stage 3: round economy and opponent matching ✅ DONE
 
-- move rewards and prep progression to the run level
+- added `runRewardTable` (win: 2 spore/15 mycelium, loss: 1 spore/5 mycelium), `completionBonusTable`, `RATING_FLOOR`, `GHOST_BUDGET_DISCOUNT`, shop refresh cost constants and helpers
+- added `kFactor` mode parameter for solo_run K-factors (16/10/8)
+- added `GameRunGhostSnapshot` and `GameRunShopState` Sequelize models
+- extended `GameRound` model with outcome, rewards, and rating tracking columns
+- extracted `recordBattle()` helper from `createBattle()` for shared use
+- parameterized bot budget in `pickUniqueArtifactsForBot`/`createBotLoadout`/`createBotGhostSnapshot`
+- added `validateLoadoutItems(items, coinBudget)` budget parameter
+- added server-side `generateShopOffer()` helper
+- `startGameRun()` now initializes coins (`ROUND_INCOME[0]`) and shop state
+- implemented `resolveRound()` — full round resolution (duel, rewards, Elo, coins, ghost snapshot, end conditions)
+- implemented `getRunGhostSnapshot()` — ghost matching with exclusion + budget + bot fallback with retry
+- implemented `applyBatchElo()` and `payCompletionBonus()` helpers
+- `abandonGameRun()` now pays completion bonus
+- implemented `refreshRunShop()` with formula-based cost (1 coin x3, then 2 coin)
+- implemented `sellRunItem()` with round-aware pricing (full same round, half later)
+- added API routes: `POST /api/game-run/:id/ready`, `POST /api/game-run/:id/refresh-shop`, `POST /api/game-run/:id/sell`
+- 25 tests passing (11 game-run + 11 round-resolution + 3 loadout-and-battle)
+
+Original plan items completed:
 - after each round:
   - keep leftover coins
   - add round income
@@ -686,8 +723,22 @@ Validation:
 - test batch Elo applied at end of run (challenge mode)
 - test batch Elo applied on challenge abandon
 
-### Stage 4: ready system, challenge mode, and SSE
+### Stage 4: ready system, challenge mode, and SSE ✅ DONE
 
+- added `ready-manager.js` — in-memory ready state with `setReady`/`setUnready`/`areBothReady`/`clearRound`/`clearRun` + mutex locking via `withRunLock`
+- added `sse-manager.js` — SSE connection management with `addConnection`/`removeConnection`/`sendToPlayer`/`sendToOpponent`/`broadcast`/`removeRun`
+- added `challenge_type` and `game_run_id` columns to `FriendChallenge` model
+- added `createRunChallenge()` — creates challenge invitation with 1-hour expiry, validates friendship and no active runs
+- added `createChallengeRun()` — creates shared game run with two players, independent shops/coins/lives
+- modified `acceptFriendChallenge()` to branch on `challenge_type` ('run' vs 'battle')
+- added `resolveChallengeRound()` — both players face each other, opposite outcomes, no per-round Elo, independent rewards, batch Elo + winner bonus at end
+- modified `resolveRound()` to branch on run mode (solo vs challenge)
+- modified `abandonGameRun()` — pays completion bonus and batch Elo for ALL players in the run
+- added API routes: `POST /api/game-run/challenge`, `POST /api/game-run/:id/unready`, `GET /api/game-run/:id/events` (SSE)
+- modified routes: `/ready` branches solo/challenge with ready manager + SSE notifications; `/abandon` sends SSE cleanup for challenge
+- 38 tests passing (6 ready-manager + 7 challenge-run + 11 game-run + 11 round-resolution + 3 loadout-and-battle)
+
+Original plan items completed:
 - add ready signaling per round
   - player marks ready after prep phase
   - solo mode: round triggers immediately on ready
@@ -717,7 +768,24 @@ Validation:
 - test abandon ends game for both players in challenge mode
 - test that both players get independent shop/coins/lives/container state
 
-### Stage 5: bag items, sell UI, and prep screen rework
+### Stage 5: bag items, sell UI, and prep screen rework — backend ✅ DONE, frontend deferred
+
+- added 2 bag items (`moss_pouch`, `amber_satchel`) with `family: 'bag'`, `slotCount`, `color` fields
+- added `bags` and `combatArtifacts` filtered exports from game-data.js
+- added bag distribution constants: `BAG_BASE_CHANCE` (15%), `BAG_ESCALATION_STEP` (8%), `BAG_PITY_THRESHOLD` (5)
+- added `rounds_since_bag` to `GameRunShopState` model (starts at 1)
+- added `bag_id` to `PlayerArtifactLoadoutItem` model (nullable, tracks which bag holds this item)
+- `buildArtifactSummary` excludes bags from combat stats
+- `generateShopOffer` now uses pseudo-random bag distribution with per-slot chance escalation and hard pity timer
+- all `generateShopOffer` callers updated (startGameRun, resolveRound, refreshRunShop, createChallengeRun, resolveChallengeRound)
+- `validateLoadoutItems` extended for bag containment: bags on grid, artifacts inside bags via `bagId`, bags-in-bags rejected, slotCount enforced, only 1x1 in bags
+- `saveArtifactLoadout` supports `bagId` and custom `coinBudget` parameter
+- `sellRunItem` blocks selling non-empty bags
+- `pruneOldGhostSnapshots()` for ghost snapshot cleanup (>14 days, >10000 threshold)
+- `getGameRunHistory(playerId)` + `GET /api/game-runs/history` route
+- 54 tests passing (16 bag-items + 6 ready-manager + 7 challenge-run + 11 game-run + 11 round-resolution + 3 loadout-and-battle)
+
+Frontend implementation completed:
 
 This stage combines backend bag logic with the full prep screen UI because bag placement is a complex grid interaction that needs visual testing alongside backend validation.
 
@@ -814,38 +882,49 @@ Validation:
   - replay screen showing `Ход` labels
   - challenge mode waiting state
 
-### Stage 6: history and reporting
+### Stage 6: history and reporting ✅ DONE
 
-- treat battle history and game history as separate surfaces
-- battle history remains replay-oriented
-- game history becomes run-oriented:
-  - rounds played
-  - wins
-  - losses
-  - end reason
+- added `getGameRunHistory(playerId)` — returns paginated list of completed/abandoned runs with rounds played, wins, losses, end reason
+- added `GET /api/game-runs/history` route
+- battle history remains replay-oriented (unchanged)
+- game history is now run-oriented
 
-## Frontend UX changes
+## Frontend UX changes ✅ IMPLEMENTED
 
-### New prep HUD
+### Prep screen (merged shop+inventory+ready)
 
-- primary labels:
-  - `Игра`
-  - `Раунд`
-  - `Победы`
-  - `Жизни`
-  - `Монеты`
-- replay labels:
-  - `Ход 1`
-  - `Ход 2`
-  - and so on
+- Run HUD bar at top: `Раунд X | Победы: X | Жизни: X | Монеты: X`
+- Container zone for purchased but unplaced items (same drag-and-drop as before)
+- Inventory grid with rotation and placement (same `ArtifactGridBoard` component)
+- Shop zone with run-scoped refresh button showing cost (1/2 coins)
+- Sell zone at bottom — drag items to sell, shows refund value on drag-enter
+- Ready button to trigger round resolution
+- Abandon button to exit the run
+- Bag items in shop have distinct colored border and slot count badge
 
-### Ready and waiting
+### Round result screen
 
-- ready button visible during prep phase
-- solo mode: ready starts the round immediately
-- challenge mode: player can continue editing loadout until both sides are ready
-- waiting state shown when the player is ready but the friend is not (challenge mode only)
-- opponent ready state visible in challenge mode HUD
+- Shows win/loss outcome with color (green/red)
+- Displays per-round rewards: spore, mycelium, rating change
+- Shows updated wins, lives, coins
+- "Continue" button to return to prep for next round
+- "View Replay" button to watch the round's battle
+
+### Run complete screen
+
+- Shows end reason (eliminated / all rounds / abandoned)
+- Final record (wins and rounds completed)
+- Home button to return to dashboard
+
+### Home screen changes
+
+- "Start Game" button when no active run exists
+- "Resume Game (Round X)" button when active run exists
+- Auto-navigates to prep screen on page load if active run detected via bootstrap
+
+### Replay labels
+
+- Combat beats labeled as `Ход 1`, `Ход 2`, etc. (step_start events)
 
 ### Shop changes
 
@@ -992,6 +1071,37 @@ prep → ready → (waiting for opponent, challenge only) → combat → result 
   - batch Elo is applied on the current W/L record at time of abandonment
   - both players receive their completion bonus based on total wins at the time of abandonment
   - disconnect timeout (grace period expiry) is treated identically to an explicit abandon
+
+## Remaining work
+
+### Cleanup
+
+- [ ] Delete `app/server/schema.js` — no longer imported anywhere; replaced by Sequelize models in `app/server/models/`
+
+### Challenge mode SSE frontend
+
+The backend SSE endpoint (`GET /api/game-run/:id/events`) and the ready/sse managers work, but the frontend `prep` screen does not connect to the SSE stream yet. For solo mode this doesn't matter (round resolves synchronously). For challenge mode, the frontend needs:
+
+- [ ] Open an `EventSource` to `/api/game-run/:id/events` when entering the `prep` screen in challenge mode
+- [ ] Listen for `ready` events to show opponent's ready state in the HUD
+- [ ] Listen for `round_result` events to transition to the `roundResult` screen when the opponent triggers the round
+- [ ] Listen for `opponent_abandoned` to show a notification and end the run
+- [ ] Listen for `run_ended` to transition to `runComplete`
+- [ ] Close the `EventSource` on screen exit, run end, or abandon
+
+### Playwright E2E tests
+
+The validation plan describes full user journeys that require the dev server running. These supplement the 58 backend unit/integration tests:
+
+- [ ] Solo mode journey: start game → buy artifacts → ready → round result → continue → buy bag → place bag → place artifact in bag → sell (full refund) → advance round → sell (half refund) → sell non-empty bag (blocked) → refresh shop → page refresh persistence → play to completion
+- [ ] Challenge mode journey: invite friend → accept → both shop → one readies (waiting) → unready → re-ready → both ready → round resolves → both get rewards → continue
+
+### Tests not yet covered (low risk)
+
+- [ ] Challenge invite expiry after 1 hour (time-dependent, needs mocked clock or fast-forwarded timestamps)
+- [ ] Ghost snapshot pruning (`pruneOldGhostSnapshots` function exists but has no test; needs aged test data)
+- [ ] SSE event delivery integration test (needs HTTP server running with supertest or similar)
+- [ ] Disconnect/reconnection handling (runtime behavior, not unit-testable without socket mocking)
 
 ## Deferred to post-rework
 

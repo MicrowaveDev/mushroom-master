@@ -1859,3 +1859,123 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Run HUD --- */
+.run-hud {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.run-hud-item {
+  white-space: nowrap;
+}
+.run-hud-coins {
+  margin-left: auto;
+  color: var(--telegram-accent, #7b5b3b);
+}
+
+/* --- Prep Screen --- */
+.prep-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.prep-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+.prep-ready-btn {
+  min-width: 160px;
+  font-size: 1.1rem;
+  padding: 12px 24px;
+}
+
+/* --- Sell Zone --- */
+.sell-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: #888;
+  font-size: 0.9rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sell-zone--active {
+  background: #fff3e0;
+  border-color: var(--telegram-accent, #cc6b2c);
+  color: var(--telegram-accent, #cc6b2c);
+}
+.sell-zone-price {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* --- Round Result Screen --- */
+.round-result-screen {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+.round-result-card {
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+.round-result-card h2 {
+  font-size: 1.6rem;
+  margin-bottom: 16px;
+}
+.result-win { color: #4caf50; }
+.result-loss { color: #e53935; }
+.round-result-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* --- Run Complete Screen --- */
+.run-complete-screen {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+.run-complete-card {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+.run-end-reason {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+/* --- Bag shop item --- */
+.shop-item--bag {
+  border: 2px solid var(--telegram-accent, #6b8f5e);
+  border-radius: 8px;
+}
+.artifact-stat-chip--bag {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}

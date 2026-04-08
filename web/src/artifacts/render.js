@@ -22,6 +22,15 @@ export function artifactTheme(artifact) {
       glow: 'rgba(233, 218, 129, 0.4)'
     }
   };
+  if (artifact.family === 'bag' && artifact.color) {
+    return {
+      shell: artifact.color + '33',
+      border: artifact.color,
+      accent: artifact.color,
+      ink: '#2a2a2a',
+      glow: artifact.color + '40'
+    };
+  }
   return themes[artifact.family] || themes.damage;
 }
 
@@ -77,6 +86,16 @@ export function renderArtifactGlyph(artifact, theme) {
         <path d="M14 40 C24 24 42 18 60 18 C80 18 98 24 106 40 C98 52 80 56 60 56 C40 56 22 52 14 40 Z" fill="${theme.accent}" />
         <path d="M42 28 L34 44 H48 L40 58" stroke="${theme.ink}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
         <path d="M68 28 L62 42 H74 L66 56" stroke="${theme.border}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      `;
+    case 'moss_pouch':
+      return `
+        <rect x="14" y="14" width="52" height="52" rx="18" fill="${theme.accent}" opacity="0.3" stroke="${theme.border}" stroke-width="3" stroke-dasharray="6 4" />
+        <text x="40" y="48" text-anchor="middle" font-size="22" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
+      `;
+    case 'amber_satchel':
+      return `
+        <rect x="14" y="14" width="52" height="52" rx="18" fill="${theme.accent}" opacity="0.3" stroke="${theme.border}" stroke-width="3" stroke-dasharray="6 4" />
+        <text x="40" y="48" text-anchor="middle" font-size="22" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
       `;
     default:
       return `<rect x="18" y="18" width="44" height="44" rx="14" fill="${theme.accent}" />`;

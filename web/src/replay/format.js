@@ -43,11 +43,11 @@ export function formatReplayEvent(event, currentBattle, resolveName, resolveActi
         statusText: `${leftName} против ${rightName}.`,
         speechSide: null
       };
-    case 'round_start':
+    case 'step_start':
       return {
-        logText: `Раунд ${event.round}.`,
+        logText: `Ход ${event.step}.`,
         speechText: '',
-        statusText: `Раунд ${event.round}.`,
+        statusText: `Ход ${event.step}.`,
         speechSide: null
       };
     case 'battle_end':

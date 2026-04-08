@@ -11,7 +11,7 @@ import {
   verifyTelegramAuthCode
 } from './auth.js';
 import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
-import { getDb, resetDb } from './db.js';
+import { getDb, resetDb, query as dbQuery } from './db.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
@@ -30,8 +30,19 @@ import {
   saveLocalTestRun,
   saveShopState,
   selectActiveMushroom,
+  startGameRun,
+  getActiveGameRun,
+  abandonGameRun,
+  getGameRun,
+  resolveRound,
+  refreshRunShop,
+  sellRunItem,
+  createRunChallenge,
+  getGameRunHistory,
   updateSettings
 } from './services/game-service.js';
+import * as readyManager from './services/ready-manager.js';
+import * as sseManager from './services/sse-manager.js';
 import { getWikiEntry, getWikiHome } from './wiki.js';
 
 const repoRoot = '/Users/microwavedev/workspace/mushroom-master';
@@ -280,6 +291,147 @@ export async function createApp() {
     requireAuth,
     asyncRoute(async (_req, res) => {
       res.json({ success: true, data: await getLeaderboard() });
+    })
+  );
+
+  app.post(
+    '/api/game-run/start',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await startGameRun(req.user.id, req.body.mode || 'solo');
+      res.json({ success: true, data });
+    })
+  );
+
+  app.get(
+    '/api/game-runs/history',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await getGameRunHistory(req.user.id);
+      res.json({ success: true, data });
+    })
+  );
+
+  app.get(
+    '/api/game-run/:id',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await getGameRun(req.params.id, req.user.id);
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/game-run/challenge',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await createRunChallenge(req.user.id, req.body.friendPlayerId);
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/game-run/:id/abandon',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await abandonGameRun(req.user.id, req.params.id);
+      if (data.mode === 'challenge') {
+        sseManager.sendToOpponent(req.params.id, req.user.id, 'opponent_abandoned', { playerId: req.user.id });
+        sseManager.removeRun(req.params.id);
+        readyManager.clearRun(req.params.id);
+      }
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/game-run/:id/ready',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const gameRunId = req.params.id;
+      const playerId = req.user.id;
+
+      const runResult = await dbQuery('SELECT mode FROM game_runs WHERE id = $1 AND status = \'active\'', [gameRunId]);
+      if (!runResult.rowCount) throw new Error('Game run not found or already ended');
+      const mode = runResult.rows[0].mode;
+
+      if (mode === 'solo') {
+        const data = await resolveRound(playerId, gameRunId);
+        return res.json({ success: true, data });
+      }
+
+      // Challenge mode
+      const data = await readyManager.withRunLock(gameRunId, async () => {
+        readyManager.setReady(gameRunId, playerId);
+        sseManager.sendToOpponent(gameRunId, playerId, 'ready', { playerId, ready: true });
+
+        const check = readyManager.areBothReady(gameRunId);
+        if (!check.ready) {
+          return { waiting: true };
+        }
+
+        readyManager.clearRound(gameRunId);
+        const result = await resolveRound(playerId, gameRunId);
+
+        for (const pid of Object.keys(result.playerResults)) {
+          sseManager.sendToPlayer(gameRunId, pid, 'round_result', result.playerResults[pid]);
+        }
+
+        if (result.runEnded) {
+          sseManager.broadcast(gameRunId, 'run_ended', { endReason: result.endReason });
+          sseManager.removeRun(gameRunId);
+          readyManager.clearRun(gameRunId);
+        }
+
+        return result.playerResults[playerId] || result;
+      });
+
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/game-run/:id/unready',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const gameRunId = req.params.id;
+      const playerId = req.user.id;
+
+      const runResult = await dbQuery('SELECT mode FROM game_runs WHERE id = $1 AND status = \'active\'', [gameRunId]);
+      if (!runResult.rowCount) throw new Error('Game run not found');
+      if (runResult.rows[0].mode === 'solo') throw new Error('Cannot unready in solo mode');
+
+      readyManager.setUnready(gameRunId, playerId);
+      sseManager.sendToOpponent(gameRunId, playerId, 'ready', { playerId, ready: false });
+
+      res.json({ success: true, data: { ready: false } });
+    })
+  );
+
+  app.get('/api/game-run/:id/events', requireAuth, (req, res) => {
+    const gameRunId = req.params.id;
+    const playerId = req.user.id;
+    sseManager.addConnection(gameRunId, playerId, res);
+    req.on('close', () => {
+      sseManager.removeConnection(gameRunId, playerId);
+    });
+  });
+
+  app.post(
+    '/api/game-run/:id/refresh-shop',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await refreshRunShop(req.user.id, req.params.id);
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/game-run/:id/sell',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const data = await sellRunItem(req.user.id, req.params.id, req.body.artifactId);
+      res.json({ success: true, data });
     })
   );
 

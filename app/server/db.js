@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { QueryTypes, Sequelize } from 'sequelize';
-import { schemaSql } from './schema.js';
+import { initModels } from './models/index.js';
 
 let state;
 
@@ -33,13 +33,6 @@ function convertPlaceholders(sql, params = []) {
     sql: text,
     replacements: ordered
   };
-}
-
-function parseSqlStatements(sql) {
-  return sql
-    .split(/;\s*\n/g)
-    .map((statement) => statement.trim())
-    .filter(Boolean);
 }
 
 async function resolveSqliteStorage() {
@@ -80,9 +73,8 @@ async function initSchema(sequelize) {
     await sequelize.query('PRAGMA foreign_keys = ON;');
   }
 
-  for (const statement of parseSqlStatements(schemaSql)) {
-    await sequelize.query(statement);
-  }
+  initModels(sequelize);
+  await sequelize.sync();
 }
 
 async function runQuery(sql, params = [], transaction = null) {

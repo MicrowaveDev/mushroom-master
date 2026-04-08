@@ -7,7 +7,6 @@ import {
   MAX_ARTIFACT_COINS,
   SHOP_OFFER_SIZE,
   REROLL_COST,
-  MAX_INVENTORY_PIECES,
   readReplayDelay
 } from './constants.js';
 import { messages } from './i18n.js';
@@ -62,7 +61,12 @@ const App = {
       challenge: null,
       inventoryReviewSamples: [],
       localLab: [],
-      localLabInput: 'Round 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.'
+      localLabInput: 'Step 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.',
+      gameRun: null,
+      gameRunResult: null,
+      gameRunShopOffer: [],
+      gameRunRefreshCount: 0,
+      sellDragOver: false
     });
 
     const t = computed(() => messages[state.lang] || messages.ru);
@@ -138,10 +142,17 @@ const App = {
         state.friends = await apiJson('/api/friends', {}, state.sessionKey);
         state.leaderboard = await apiJson('/api/leaderboard', {}, state.sessionKey);
         state.wikiHome = await apiJson('/api/wiki/home');
+        // Restore active game run if one exists
+        if (state.bootstrap.activeGameRun) {
+          state.gameRun = state.bootstrap.activeGameRun;
+        } else {
+          state.gameRun = null;
+        }
+
         if (!state.bootstrap.activeMushroomId) {
           state.screen = 'onboarding';
         } else if (state.screen === 'auth') {
-          state.screen = 'home';
+          state.screen = state.gameRun ? 'prep' : 'home';
         }
       } catch (error) {
         state.error = error.message;
@@ -795,6 +806,194 @@ const App = {
       }
     }
 
+    async function startNewGameRun(mode = 'solo') {
+      try {
+        state.error = '';
+        const data = await apiJson(
+          '/api/game-run/start',
+          { method: 'POST', body: JSON.stringify({ mode }) },
+          state.sessionKey
+        );
+        state.gameRun = data;
+        state.gameRunShopOffer = data.shopOffer || [];
+        state.gameRunRefreshCount = 0;
+        state.gameRunResult = null;
+        state.builderItems = [];
+        state.containerItems = [];
+        state.freshPurchases = [];
+        goTo('prep');
+      } catch (error) {
+        state.error = error.message || 'Could not start game run';
+      }
+    }
+
+    function resumeGameRun() {
+      if (!state.gameRun) return;
+      state.gameRunResult = null;
+      goTo('prep');
+    }
+
+    async function signalReady() {
+      if (!state.gameRun) return;
+      try {
+        state.error = '';
+        // Save loadout before resolving
+        if (state.bootstrap?.activeMushroomId && state.builderItems.length) {
+          await apiJson(
+            '/api/artifact-loadout',
+            { method: 'PUT', body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: state.builderItems }) },
+            state.sessionKey
+          );
+        }
+        const data = await apiJson(
+          `/api/game-run/${state.gameRun.id}/ready`,
+          { method: 'POST' },
+          state.sessionKey
+        );
+        if (data.waiting) {
+          return;
+        }
+        state.gameRunResult = data;
+        if (data.status === 'completed' || data.status === 'abandoned') {
+          state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason };
+          goTo('runComplete');
+        } else {
+          goTo('roundResult');
+        }
+      } catch (error) {
+        state.error = error.message || 'Could not resolve round';
+      }
+    }
+
+    function continueToNextRound() {
+      if (!state.gameRunResult || !state.gameRun) return;
+      const result = state.gameRunResult;
+      state.gameRun = {
+        ...state.gameRun,
+        currentRound: result.currentRound,
+        status: result.status,
+        player: result.player
+      };
+      state.gameRunResult = null;
+      state.gameRunRefreshCount = 0;
+      state.freshPurchases = [];
+      // Shop will be refreshed server-side; we reload on next screen
+      loadRunShopOffer();
+      goTo('prep');
+    }
+
+    async function loadRunShopOffer() {
+      if (!state.gameRun) return;
+      try {
+        const data = await apiJson(`/api/game-run/${state.gameRun.id}`, {}, state.sessionKey);
+        if (data.shopOffer) {
+          state.gameRunShopOffer = data.shopOffer;
+        }
+      } catch { /* ignore */ }
+    }
+
+    async function abandonRun() {
+      if (!state.gameRun) return;
+      try {
+        await apiJson(
+          `/api/game-run/${state.gameRun.id}/abandon`,
+          { method: 'POST' },
+          state.sessionKey
+        );
+        state.gameRun = null;
+        state.gameRunResult = null;
+        state.gameRunShopOffer = [];
+        await refreshBootstrap();
+        goTo('home');
+      } catch (error) {
+        state.error = error.message || 'Could not abandon game run';
+      }
+    }
+
+    async function refreshRunShop() {
+      if (!state.gameRun) return;
+      try {
+        state.error = '';
+        const data = await apiJson(
+          `/api/game-run/${state.gameRun.id}/refresh-shop`,
+          { method: 'POST' },
+          state.sessionKey
+        );
+        state.gameRunShopOffer = data.shopOffer;
+        state.gameRunRefreshCount = data.refreshCount;
+        state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
+      } catch (error) {
+        state.error = error.message || 'Not enough coins';
+      }
+    }
+
+    async function sellRunItemAction(artifactId) {
+      if (!state.gameRun) return;
+      try {
+        state.error = '';
+        const data = await apiJson(
+          `/api/game-run/${state.gameRun.id}/sell`,
+          { method: 'POST', body: JSON.stringify({ artifactId }) },
+          state.sessionKey
+        );
+        state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
+        // Remove from builder/container
+        state.builderItems = state.builderItems.filter((i) => i.artifactId !== artifactId);
+        state.containerItems = state.containerItems.filter((id) => id !== artifactId);
+      } catch (error) {
+        state.error = error.message || 'Could not sell item';
+      }
+    }
+
+    function buyRunShopItem(artifactId) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact || !state.gameRun) return;
+      const price = getArtifactPrice(artifact);
+      if (price > state.gameRun.player.coins) return;
+      state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: state.gameRun.player.coins - price } };
+      state.gameRunShopOffer = state.gameRunShopOffer.filter((id) => id !== artifactId);
+      state.containerItems.push(artifactId);
+      state.freshPurchases.push(artifactId);
+      persistShopOffer();
+    }
+
+    function getRunRefreshCost() {
+      return state.gameRunRefreshCount < 3 ? 1 : 2;
+    }
+
+    function getRunSellPrice(artifactId) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact) return 0;
+      const price = getArtifactPrice(artifact);
+      const isFresh = state.freshPurchases.includes(artifactId);
+      return isFresh ? price : Math.floor(price / 2);
+    }
+
+    function onSellZoneDragOver(event) {
+      event.preventDefault();
+      state.sellDragOver = true;
+    }
+
+    function onSellZoneDragLeave() {
+      state.sellDragOver = false;
+    }
+
+    function onSellZoneDrop(event) {
+      event.preventDefault();
+      state.sellDragOver = false;
+      const artifactId = state.draggingArtifactId || event.dataTransfer?.getData('text/plain');
+      if (artifactId) {
+        sellRunItemAction(artifactId);
+      }
+      state.draggingArtifactId = '';
+      state.draggingSource = '';
+    }
+
+    async function viewRoundReplay(battleId) {
+      if (!battleId) return;
+      await loadReplay(battleId);
+    }
+
     function stopReplay() {
       if (state.replayTimer) {
         clearInterval(state.replayTimer);
@@ -1026,6 +1225,20 @@ const App = {
       preferredOrientation,
       saveLoadout,
       startBattle,
+      startNewGameRun,
+      resumeGameRun,
+      signalReady,
+      continueToNextRound,
+      abandonRun,
+      refreshRunShop,
+      sellRunItemAction,
+      buyRunShopItem,
+      getRunRefreshCost,
+      getRunSellPrice,
+      onSellZoneDragOver,
+      onSellZoneDragLeave,
+      onSellZoneDrop,
+      viewRoundReplay,
       loadReplay,
       stopReplay,
       autoplayReplay,
@@ -1165,6 +1378,10 @@ const App = {
                 <dd>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</dd>
               </div>
             </dl>
+          </article>
+          <article class="panel" v-if="activeMushroom">
+            <button v-if="state.gameRun" class="primary" style="width:100%" @click="resumeGameRun">{{ t.resumeRun }} ({{ t.round }} {{ state.gameRun.currentRound }})</button>
+            <button v-else class="primary" style="width:100%" @click="startNewGameRun('solo')">{{ t.startRun }}</button>
           </article>
           <article class="panel active-mushroom" v-if="activeMushroom">
             <div class="active-mushroom-media">
@@ -1429,6 +1646,202 @@ const App = {
               </div>
               <div v-if="!shopArtifacts.length" class="shop-empty">{{ t.shop }} — ↻</div>
             </div>
+          </div>
+        </section>
+
+        <section v-else-if="state.screen === 'prep' && state.gameRun" class="prep-screen">
+          <div class="run-hud">
+            <span class="run-hud-item">{{ t.round }} {{ state.gameRun.currentRound }}</span>
+            <span class="run-hud-item">{{ t.wins }}: {{ state.gameRun.player?.wins || 0 }}</span>
+            <span class="run-hud-item">{{ t.lives }}: {{ state.gameRun.player?.livesRemaining || 0 }}</span>
+            <span class="run-hud-item run-hud-coins">{{ t.coins }}: {{ state.gameRun.player?.coins || 0 }}</span>
+          </div>
+
+          <div
+            class="artifact-container-zone"
+            @dragover="onContainerDragOver($event)"
+            @drop="onContainerDrop($event)"
+          >
+            <div class="artifact-container-header">
+              <strong>{{ t.container }}</strong>
+              <span v-if="containerArtifacts.length" class="artifact-container-count">{{ containerArtifacts.length }}</span>
+            </div>
+            <div v-if="containerArtifacts.length" class="artifact-container-items">
+              <div
+                v-for="artifact in containerArtifacts"
+                :key="artifact.id"
+                class="container-item"
+                draggable="true"
+                @click="autoPlaceFromContainer(artifact.id)"
+                @dragstart="onContainerPieceDragStart(artifact.id, $event)"
+                @dragend="onDragEndAny()"
+                :data-artifact-id="artifact.id"
+              >
+                <artifact-grid-board
+                  class="container-item-visual"
+                  variant="catalog"
+                  :columns="preferredOrientation(artifact).width"
+                  :rows="preferredOrientation(artifact).height"
+                  :items="[{ artifactId: artifact.id, x: 0, y: 0, width: preferredOrientation(artifact).width, height: preferredOrientation(artifact).height }]"
+                  :render-artifact-figure="renderArtifactFigure"
+                  :get-artifact="getArtifact"
+                />
+                <div class="container-item-copy">
+                  <strong>{{ artifact.name[state.lang] }}</strong>
+                  <span v-if="artifact.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ artifact.slotCount }} {{ t.bagSlots }}</span>
+                  <span class="artifact-stat-chips">
+                    <span
+                      v-for="stat in formatArtifactBonus(artifact)"
+                      :key="stat.key"
+                      class="artifact-stat-chip"
+                      :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
+                    >{{ stat.label }} {{ stat.value }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p v-else class="artifact-container-empty">{{ t.containerHint }}</p>
+          </div>
+
+          <div class="artifact-inventory-section panel">
+            <artifact-grid-board
+              variant="inventory"
+              class="inventory-shell artifact-inventory-grid"
+              :items="state.builderItems"
+              :render-artifact-figure="renderArtifactFigure"
+              :get-artifact="getArtifact"
+              :clickable-pieces="true"
+              :rotatable-pieces="true"
+              :droppable="true"
+              :draggable-pieces="true"
+              @piece-click="unplaceToContainer($event.artifactId)"
+              @piece-rotate="rotatePlacedArtifact($event)"
+              @cell-drop="onInventoryCellDrop($event)"
+              @piece-drag-start="onInventoryPieceDragStart($event)"
+              @piece-drag-end="onDragEndAny()"
+            />
+            <div v-if="state.builderItems.length" class="artifact-inventory-footer">
+              <span class="artifact-inventory-stats">+{{ builderTotals.damage }} DMG / +{{ builderTotals.armor }} ARM / +{{ builderTotals.speed }} SPD / +{{ builderTotals.stunChance }}% STUN</span>
+            </div>
+          </div>
+
+          <div class="artifact-shop">
+            <div class="artifact-shop-header">
+              <strong>{{ t.shop }}</strong>
+              <button type="button" class="link" :disabled="(state.gameRun.player?.coins || 0) < getRunRefreshCost()" @click="refreshRunShop()">{{ t.refreshShop }} ({{ getRunRefreshCost() }})</button>
+            </div>
+            <div class="artifact-shop-items">
+              <div
+                v-for="artifactId in state.gameRunShopOffer"
+                :key="artifactId"
+                class="shop-item"
+                :class="{
+                  'shop-item--expensive': getArtifactPrice(getArtifact(artifactId)) > (state.gameRun.player?.coins || 0),
+                  'shop-item--bag': getArtifact(artifactId)?.family === 'bag'
+                }"
+                :draggable="getArtifactPrice(getArtifact(artifactId)) <= (state.gameRun.player?.coins || 0)"
+                @click="buyRunShopItem(artifactId)"
+              >
+                <artifact-grid-board
+                  class="shop-item-visual"
+                  variant="catalog"
+                  :columns="preferredOrientation(getArtifact(artifactId)).width"
+                  :rows="preferredOrientation(getArtifact(artifactId)).height"
+                  :items="[{ artifactId, x: 0, y: 0, width: preferredOrientation(getArtifact(artifactId)).width, height: preferredOrientation(getArtifact(artifactId)).height }]"
+                  :render-artifact-figure="renderArtifactFigure"
+                  :get-artifact="getArtifact"
+                />
+                <div class="shop-item-copy">
+                  <strong>{{ getArtifact(artifactId)?.name?.[state.lang] }}</strong>
+                  <span class="shop-item-price">{{ getArtifactPrice(getArtifact(artifactId)) }}</span>
+                  <span v-if="getArtifact(artifactId)?.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ getArtifact(artifactId)?.slotCount }} {{ t.bagSlots }}</span>
+                  <span class="artifact-stat-chips">
+                    <span
+                      v-for="stat in formatArtifactBonus(getArtifact(artifactId))"
+                      :key="stat.key"
+                      class="artifact-stat-chip"
+                      :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
+                    >{{ stat.label }} {{ stat.value }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="sell-zone"
+            :class="{ 'sell-zone--active': state.sellDragOver }"
+            @dragover="onSellZoneDragOver($event)"
+            @dragleave="onSellZoneDragLeave()"
+            @drop="onSellZoneDrop($event)"
+          >
+            <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">{{ getRunSellPrice(state.draggingArtifactId) }}</span>
+            <span v-else>{{ t.sellArea }}</span>
+          </div>
+
+          <div class="prep-actions">
+            <button class="primary prep-ready-btn" @click="signalReady">{{ t.ready }}</button>
+            <button class="ghost" @click="abandonRun">{{ t.abandonRun }}</button>
+          </div>
+        </section>
+
+        <section v-else-if="state.screen === 'roundResult' && state.gameRunResult" class="round-result-screen">
+          <div class="panel round-result-card">
+            <h2 :class="state.gameRunResult.lastRound?.outcome === 'win' ? 'result-win' : 'result-loss'">
+              {{ state.gameRunResult.lastRound?.outcome === 'win' ? t.roundWin : t.roundLoss }}
+            </h2>
+            <dl class="stat-grid">
+              <div class="stat">
+                <dt>{{ t.spore }}</dt>
+                <dd>+{{ state.gameRunResult.lastRound?.rewards?.spore || 0 }}</dd>
+              </div>
+              <div class="stat">
+                <dt>{{ t.mycelium }}</dt>
+                <dd>+{{ state.gameRunResult.lastRound?.rewards?.mycelium || 0 }}</dd>
+              </div>
+              <div class="stat" v-if="state.gameRunResult.lastRound?.ratingAfter != null">
+                <dt>{{ t.rating }}</dt>
+                <dd>{{ formatDelta(state.gameRunResult.lastRound.ratingAfter - state.gameRunResult.lastRound.ratingBefore) }}</dd>
+              </div>
+            </dl>
+            <dl class="stat-grid">
+              <div class="stat">
+                <dt>{{ t.wins }}</dt>
+                <dd>{{ state.gameRunResult.player?.wins || 0 }}</dd>
+              </div>
+              <div class="stat">
+                <dt>{{ t.lives }}</dt>
+                <dd>{{ state.gameRunResult.player?.livesRemaining || 0 }}</dd>
+              </div>
+              <div class="stat">
+                <dt>{{ t.coins }}</dt>
+                <dd>{{ state.gameRunResult.player?.coins || 0 }}</dd>
+              </div>
+            </dl>
+            <div class="round-result-actions">
+              <button class="primary" @click="continueToNextRound">{{ t.continueRound }}</button>
+              <button class="ghost" @click="viewRoundReplay(state.gameRunResult.lastRound?.battleId)">{{ t.viewReplay }}</button>
+            </div>
+          </div>
+        </section>
+
+        <section v-else-if="state.screen === 'runComplete'" class="run-complete-screen">
+          <div class="panel run-complete-card">
+            <h2>{{ t.runComplete }}</h2>
+            <p v-if="state.gameRun?.endReason === 'max_losses'" class="run-end-reason">{{ t.eliminated }}</p>
+            <p v-else-if="state.gameRun?.endReason === 'max_rounds'" class="run-end-reason">{{ t.maxRounds }}</p>
+            <p v-else class="run-end-reason">{{ t.abandonRun }}</p>
+            <dl class="stat-grid">
+              <div class="stat">
+                <dt>{{ t.wins }}</dt>
+                <dd>{{ state.gameRunResult?.player?.wins || state.gameRun?.player?.wins || 0 }}</dd>
+              </div>
+              <div class="stat">
+                <dt>{{ t.round }}</dt>
+                <dd>{{ state.gameRunResult?.player?.completedRounds || state.gameRun?.player?.completedRounds || 0 }}</dd>
+              </div>
+            </dl>
+            <button class="primary" @click="state.gameRun = null; state.gameRunResult = null; refreshBootstrap(); goTo('home')">{{ t.home }}</button>
           </div>
         </section>
 

@@ -1,12 +1,14 @@
 export const INVENTORY_COLUMNS = 3;
 export const INVENTORY_ROWS = 2;
 export const MAX_ARTIFACT_COINS = 5;
-export const MAX_ARTIFACT_PIECES = 6;
 export const SHOP_OFFER_SIZE = 5;
 export const MAX_STUN_CHANCE = 35;
 export const DAILY_BATTLE_LIMIT = 10;
-export const BATTLE_ROUND_CAP = 12;
+export const STEP_CAP = 12;
 export const SESSION_TTL_HOURS = 24 * 30;
+export const MAX_ROUNDS_PER_RUN = 9;
+export const STARTING_LIVES = 5;
+export const ROUND_INCOME = [5, 5, 5, 6, 6, 7, 7, 8, 8];
 
 export const artifacts = [
   // --- Damage family ---
@@ -192,6 +194,29 @@ export const artifacts = [
     height: 1,
     price: 1,
     bonus: { speed: 1 }
+  },
+  // --- Bag family ---
+  {
+    id: 'moss_pouch',
+    name: { ru: 'Моховой Мешочек', en: 'Moss Pouch' },
+    family: 'bag',
+    width: 1,
+    height: 2,
+    price: 2,
+    slotCount: 2,
+    color: '#6b8f5e',
+    bonus: {}
+  },
+  {
+    id: 'amber_satchel',
+    name: { ru: 'Янтарная Сумка', en: 'Amber Satchel' },
+    family: 'bag',
+    width: 2,
+    height: 2,
+    price: 3,
+    slotCount: 4,
+    color: '#d4a54a',
+    bonus: {}
   }
 ];
 
@@ -325,6 +350,40 @@ export const rewardTable = {
   draw: { spore: 5, mycelium: 40 }
 };
 
+export const runRewardTable = {
+  win: { spore: 2, mycelium: 15 },
+  loss: { spore: 1, mycelium: 5 }
+};
+
+export const completionBonusTable = [
+  { minWins: 0, maxWins: 2, spore: 0, mycelium: 0 },
+  { minWins: 3, maxWins: 4, spore: 5, mycelium: 2 },
+  { minWins: 5, maxWins: 6, spore: 10, mycelium: 5 },
+  { minWins: 7, maxWins: 9, spore: 20, mycelium: 10 }
+];
+
+export const CHALLENGE_WINNER_BONUS = { spore: 10, mycelium: 5 };
+export const RATING_FLOOR = 100;
+export const GHOST_BUDGET_DISCOUNT = 0.12;
+
+export const SHOP_REFRESH_CHEAP_LIMIT = 3;
+export const SHOP_REFRESH_CHEAP_COST = 1;
+export const SHOP_REFRESH_EXPENSIVE_COST = 2;
+
+export function getCompletionBonus(wins) {
+  for (const tier of completionBonusTable) {
+    if (wins >= tier.minWins && wins <= tier.maxWins) {
+      return { spore: tier.spore, mycelium: tier.mycelium };
+    }
+  }
+  return { spore: 0, mycelium: 0 };
+}
+
+export function getShopRefreshCost(refreshCount) {
+  if (refreshCount < SHOP_REFRESH_CHEAP_LIMIT) return SHOP_REFRESH_CHEAP_COST;
+  return SHOP_REFRESH_EXPENSIVE_COST;
+}
+
 export function getArtifactById(id) {
   return artifacts.find((item) => item.id === id) || null;
 }
@@ -339,3 +398,10 @@ export function getArtifactPrice(artifact) {
 export function getMushroomById(id) {
   return mushrooms.find((item) => item.id === id) || null;
 }
+
+export const BAG_BASE_CHANCE = 0.15;
+export const BAG_ESCALATION_STEP = 0.08;
+export const BAG_PITY_THRESHOLD = 5;
+
+export const bags = artifacts.filter((a) => a.family === 'bag');
+export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag');

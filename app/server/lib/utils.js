@@ -74,13 +74,14 @@ export function expectedScore(playerRating, opponentRating) {
   return 1 / (1 + 10 ** ((opponentRating - playerRating) / 400));
 }
 
-export function kFactor(rating, ratedBattles) {
-  if (rating > 1600) {
-    return 16;
+export function kFactor(rating, ratedBattles, mode = 'standard') {
+  if (mode === 'solo_run') {
+    if (ratedBattles < 30) return 16;
+    if (rating > 1600) return 8;
+    return 10;
   }
-  if (ratedBattles < 30) {
-    return 40;
-  }
+  if (rating > 1600) return 16;
+  if (ratedBattles < 30) return 40;
   return 24;
 }
 
