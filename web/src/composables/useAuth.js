@@ -26,6 +26,10 @@ export function useAuth(state, goTo) {
     if (stored?.freshPurchases?.length) {
       state.freshPurchases = stored.freshPurchases.filter((id) => available.has(id));
     }
+    if (stored?.activeBags?.length) {
+      state.activeBags = stored.activeBags.filter((id) => available.has(id));
+    }
+    state.rotatedBags = stored?.rotatedBags?.filter((id) => available.has(id)) || [];
     const ownedIds = new Set([...builderIds, ...state.containerItems]);
     if (stored?.offer?.length) {
       state.shopOffer = stored.offer.filter((id) => available.has(id) && !ownedIds.has(id));
@@ -47,6 +51,8 @@ export function useAuth(state, goTo) {
       container: state.containerItems,
       freshPurchases: state.freshPurchases,
       builderItems: state.builderItems,
+      activeBags: state.activeBags,
+      rotatedBags: state.rotatedBags,
       rerollSpent: state.rerollSpent
     };
     apiJson('/api/shop-state', {
@@ -78,6 +84,28 @@ export function useAuth(state, goTo) {
       try { state.wikiHome = await apiJson('/api/wiki/home'); } catch { state.wikiHome = null; }
       if (state.bootstrap.activeGameRun) {
         state.gameRun = state.bootstrap.activeGameRun;
+        state.gameRunShopOffer = state.bootstrap.activeGameRun.shopOffer || [];
+        // Restore builderItems/containerItems/activeBags from game run loadout
+        const items = state.bootstrap.activeGameRun.loadoutItems || [];
+        const allArtifacts = state.bootstrap?.artifacts || [];
+        const bags = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+        const stored = state.bootstrap?.shopState || null;
+        const activeBagSet = new Set(stored?.activeBags || []);
+        state.activeBags = items
+          .filter((i) => bags.has(i.artifactId) && activeBagSet.has(i.artifactId))
+          .map((i) => i.artifactId);
+        state.rotatedBags = stored?.rotatedBags?.filter((id) => activeBagSet.has(id)) || [];
+        state.builderItems = items
+          .filter((i) => i.x >= 0 && i.y >= 0 && !bags.has(i.artifactId))
+          .map((i) => ({ artifactId: i.artifactId, x: i.x, y: i.y, width: i.width, height: i.height }));
+        const containerArtifacts = items
+          .filter((i) => i.x < 0 && !bags.has(i.artifactId))
+          .map((i) => i.artifactId);
+        const containerBags = items
+          .filter((i) => bags.has(i.artifactId) && !activeBagSet.has(i.artifactId))
+          .map((i) => i.artifactId);
+        state.containerItems = [...containerArtifacts, ...containerBags];
+        state.freshPurchases = stored?.freshPurchases?.filter((id) => new Set(items.map((i) => i.artifactId)).has(id)) || [];
       } else {
         state.gameRun = null;
       }

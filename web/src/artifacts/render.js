@@ -114,6 +114,7 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
   const theme = artifactTheme(artifact);
   const w = Number(displayWidth) > 0 ? Number(displayWidth) : artifact.width;
   const h = Number(displayHeight) > 0 ? Number(displayHeight) : artifact.height;
+  const isBag = artifact.family === 'bag';
   const cells = Array.from({ length: w * h }, (_, index) => {
     const x = index % w;
     const y = Math.floor(index / w);
@@ -122,7 +123,7 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
         <svg class="artifact-figure-svg" viewBox="0 0 80 80" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <rect x="4" y="4" width="72" height="72" rx="20" fill="${theme.shell}" stroke="${theme.border}" stroke-width="6" />
           <rect x="10" y="10" width="60" height="60" rx="16" fill="${theme.glow}" opacity="0.8" />
-          ${renderArtifactGlyph(artifact, theme, x, y)}
+          ${isBag ? '' : renderArtifactGlyph(artifact, theme, x, y)}
         </svg>
       </div>
     `;

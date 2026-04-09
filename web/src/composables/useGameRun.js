@@ -12,6 +12,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.gameRunResult = null;
       state.builderItems = [];
       state.containerItems = [];
+      state.activeBags = [];
+      state.rotatedBags = [];
       state.freshPurchases = [];
       goTo('prep');
     } catch (error) {
@@ -52,7 +54,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     }
   }
 
-  function continueToNextRound() {
+  async function continueToNextRound() {
     if (!state.gameRunResult || !state.gameRun) return;
     const result = state.gameRunResult;
     state.gameRun = {
@@ -64,7 +66,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     state.gameRunResult = null;
     state.gameRunRefreshCount = 0;
     state.freshPurchases = [];
-    loadRunShopOffer();
+    await loadRunShopOffer();
     goTo('prep');
   }
 
@@ -111,6 +113,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
       state.builderItems = state.builderItems.filter((i) => i.artifactId !== artifactId);
       state.containerItems = state.containerItems.filter((id) => id !== artifactId);
+      state.activeBags = state.activeBags.filter((id) => id !== artifactId);
     } catch (error) {
       state.error = error.message || 'Could not sell item';
     }

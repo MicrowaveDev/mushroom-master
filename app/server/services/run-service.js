@@ -176,10 +176,26 @@ export async function getActiveGameRun(playerId) {
   }
 
   const row = result.rows[0];
-  const roundsResult = await query(
-    `SELECT id, round_number, battle_id, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
-    [row.id]
-  );
+  const [roundsResult, shopResult, loadoutItemsResult] = await Promise.all([
+    query(
+      `SELECT id, round_number, battle_id, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
+      [row.id]
+    ),
+    query(
+      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
+      [row.id, playerId]
+    ),
+    query(
+      `SELECT items.artifact_id, items.x, items.y, items.width, items.height, items.purchased_round, items.bag_id
+       FROM player_artifact_loadout_items items
+       JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
+       WHERE loadouts.player_id = $1 AND items.purchased_round IS NOT NULL
+       ORDER BY items.sort_order ASC`,
+      [playerId]
+    )
+  ]);
+
+  const shopOffer = shopResult.rowCount ? parseJson(shopResult.rows[0].offer_json, []) : [];
 
   return {
     id: row.id,
@@ -189,6 +205,16 @@ export async function getActiveGameRun(playerId) {
     startedAt: row.started_at,
     endedAt: row.ended_at,
     endReason: row.end_reason,
+    shopOffer,
+    loadoutItems: loadoutItemsResult.rows.map((r) => ({
+      artifactId: r.artifact_id,
+      x: r.x,
+      y: r.y,
+      width: r.width,
+      height: r.height,
+      purchasedRound: r.purchased_round,
+      bagId: r.bag_id
+    })),
     player: {
       id: row.grp_id,
       playerId,

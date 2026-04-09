@@ -57,6 +57,8 @@ const App = {
       lang: 'ru',
       builderItems: [],
       containerItems: [],
+      activeBags: [],
+      rotatedBags: [],
       freshPurchases: [],
       shopOffer: [],
       rerollSpent: 0,
@@ -326,7 +328,7 @@ const App = {
           :state="state" :t="t" :container-artifacts="containerArtifacts" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
-          :get-artifact-price="getArtifactPrice"
+          :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()"
           @auto-place="autoPlaceFromContainer($event)" @container-drag-start="onContainerPieceDragStart($event[0] || $event, $event[1])"
           @drag-end="onDragEndAny" @container-dragover="onContainerDragOver($event)" @container-drop="onContainerDrop($event)"
           @unplace="unplaceToContainer($event)" @rotate="rotatePlacedArtifact($event)"
@@ -335,6 +337,8 @@ const App = {
           @sell-dragover="onSellZoneDragOver($event)" @sell-dragleave="onSellZoneDragLeave"
           @sell-drop="onSellZoneDrop($event)"
           @signal-ready="signalReady" @abandon="abandonRun"
+          @deactivate-bag="deactivateBag($event)"
+          @rotate-bag="rotateBag($event)"
         />
 
         <round-result-screen v-else-if="state.screen === 'roundResult' && state.gameRunResult"

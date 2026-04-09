@@ -2,16 +2,76 @@ import { INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE,
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
 
 export function useShop(state, getArtifact, persistShopOffer) {
+  function bagLayout(bagId) {
+    const bag = getArtifact(bagId);
+    if (!bag) return { cols: INVENTORY_COLUMNS, rows: 1 };
+    const rotated = state.rotatedBags.includes(bagId);
+    const cols = rotated ? Math.min(bag.width, bag.height) : Math.max(bag.width, bag.height);
+    const rows = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
+    return { cols: Math.min(cols, INVENTORY_COLUMNS), rows };
+  }
+
+  function bagRowCount(bagId) {
+    return bagLayout(bagId).rows;
+  }
+
+  function effectiveRows() {
+    return INVENTORY_ROWS + state.activeBags.reduce((sum, id) => sum + bagRowCount(id), 0);
+  }
+
+  function bagForRow(row) {
+    let r = INVENTORY_ROWS;
+    for (const bagId of state.activeBags) {
+      const count = bagRowCount(bagId);
+      if (row >= r && row < r + count) {
+        return { bagId, startRow: r, rowCount: count, cols: bagLayout(bagId).cols };
+      }
+      r += count;
+    }
+    return null;
+  }
+
+  function isCellDisabled(cx, cy) {
+    const info = bagForRow(cy);
+    if (cy >= INVENTORY_ROWS && !info) return true;
+    if (!info) return false;
+    return cx >= info.cols;
+  }
+
+  function rotateBag(bagId) {
+    if (!state.activeBags.includes(bagId)) return;
+    const bag = getArtifact(bagId);
+    if (!bag || bag.width === bag.height) return;
+    // Check no items in bag rows before rotating
+    let startRow = INVENTORY_ROWS;
+    for (const id of state.activeBags) {
+      if (id === bagId) break;
+      startRow += bagRowCount(id);
+    }
+    const rows = bagRowCount(bagId);
+    const itemsInBag = state.builderItems.filter((i) => i.y >= startRow && i.y < startRow + rows);
+    if (itemsInBag.length) {
+      state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
+      return;
+    }
+    if (state.rotatedBags.includes(bagId)) {
+      state.rotatedBags = state.rotatedBags.filter((id) => id !== bagId);
+    } else {
+      state.rotatedBags = [...state.rotatedBags, bagId];
+    }
+  }
+
   function normalizePlacement(artifact, x, y, width, height) {
     const w = width || artifact.width;
     const h = height || artifact.height;
     const candidate = { artifactId: artifact.id, x, y, width: w, height: h };
     const next = state.builderItems.filter((item) => item.artifactId !== artifact.id);
     const occupied = buildOccupancy(next);
-    if (x + w > INVENTORY_COLUMNS || y + h > INVENTORY_ROWS) return null;
+    if (x + w > INVENTORY_COLUMNS || y + h > effectiveRows()) return null;
     for (let dx = 0; dx < w; dx += 1) {
       for (let dy = 0; dy < h; dy += 1) {
         if (occupied.has(`${x + dx}:${y + dy}`)) return null;
+        if (isCellDisabled(x + dx, y + dy)) return null;
       }
     }
     next.push(candidate);
@@ -25,7 +85,7 @@ export function useShop(state, getArtifact, persistShopOffer) {
     const newHeight = item.width;
     const others = state.builderItems.filter((it) => it.artifactId !== item.artifactId);
     const occupied = buildOccupancy(others);
-    if (item.x + newWidth > INVENTORY_COLUMNS || item.y + newHeight > INVENTORY_ROWS) {
+    if (item.x + newWidth > INVENTORY_COLUMNS || item.y + newHeight > effectiveRows()) {
       state.error = state.lang === 'ru' ? 'Не помещается' : 'Does not fit here';
       return;
     }
@@ -125,15 +185,48 @@ export function useShop(state, getArtifact, persistShopOffer) {
     return false;
   }
 
+  function activateBag(artifactId) {
+    const artifact = getArtifact(artifactId);
+    if (!artifact || artifact.family !== 'bag') return;
+    if (state.activeBags.includes(artifactId)) return;
+    state.activeBags = [...state.activeBags, artifactId];
+    state.containerItems = state.containerItems.filter((id) => id !== artifactId);
+    state.error = '';
+    persistShopOffer();
+  }
+
+  function deactivateBag(artifactId) {
+    if (!state.activeBags.includes(artifactId)) return;
+    let startRow = INVENTORY_ROWS;
+    for (const id of state.activeBags) {
+      if (id === artifactId) break;
+      startRow += bagRowCount(id);
+    }
+    const rows = bagRowCount(artifactId);
+    const itemsInBagRows = state.builderItems.filter((i) => i.y >= startRow && i.y < startRow + rows);
+    if (itemsInBagRows.length) {
+      state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
+      return;
+    }
+    state.activeBags = state.activeBags.filter((id) => id !== artifactId);
+    state.containerItems = [...state.containerItems, artifactId];
+    persistShopOffer();
+  }
+
   function autoPlaceFromContainer(artifactId) {
     const artifact = getArtifact(artifactId);
     if (!artifact) return;
+    if (artifact.family === 'bag') {
+      activateBag(artifactId);
+      return;
+    }
     const orientations = [preferredOrientation(artifact)];
     if (artifact.width !== artifact.height) {
       orientations.push({ width: orientations[0].height, height: orientations[0].width });
     }
+    const rows = effectiveRows();
     for (const o of orientations) {
-      for (let y = 0; y < INVENTORY_ROWS; y += 1) {
+      for (let y = 0; y < rows; y += 1) {
         for (let x = 0; x < INVENTORY_COLUMNS; x += 1) {
           const next = normalizePlacement(artifact, x, y, o.width, o.height);
           if (next) {
@@ -171,7 +264,7 @@ export function useShop(state, getArtifact, persistShopOffer) {
       const occupied = buildOccupancy(others);
       const w = item.width;
       const h = item.height;
-      if (x + w > INVENTORY_COLUMNS || y + h > INVENTORY_ROWS) return;
+      if (x + w > INVENTORY_COLUMNS || y + h > effectiveRows()) return;
       for (let dx = 0; dx < w; dx += 1) {
         for (let dy = 0; dy < h; dy += 1) {
           if (occupied.has(`${x + dx}:${y + dy}`)) return;
@@ -251,7 +344,9 @@ export function useShop(state, getArtifact, persistShopOffer) {
   }
 
   return {
+    effectiveRows,
     rerollShop, buyFromShop, returnToShop, getSellPrice,
+    activateBag, deactivateBag, rotateBag,
     autoPlaceFromContainer, unplaceToContainer, removeArtifact,
     rotatePlacedArtifact,
     onInventoryCellDrop, onInventoryPieceDragStart,

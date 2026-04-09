@@ -1,11 +1,12 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+import { INVENTORY_ROWS, INVENTORY_COLUMNS } from '../constants.js';
 
 export const PrepScreen = {
   name: 'PrepScreen',
   props: [
     'state', 't', 'containerArtifacts', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'formatArtifactBonus',
-    'preferredOrientation', 'getArtifactPrice'
+    'preferredOrientation', 'getArtifactPrice', 'effectiveRows'
   ],
   emits: [
     'auto-place', 'container-drag-start', 'drag-end',
@@ -13,12 +14,28 @@ export const PrepScreen = {
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start',
     'buy-run-item', 'refresh-shop',
     'sell-dragover', 'sell-dragleave', 'sell-drop',
-    'signal-ready', 'abandon'
+    'signal-ready', 'abandon', 'deactivate-bag', 'rotate-bag'
   ],
   components: {
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
   },
   computed: {
+    bagRows() {
+      const rows = [];
+      let r = INVENTORY_ROWS;
+      for (const bagId of this.state.activeBags) {
+        const bag = this.getArtifact(bagId);
+        if (!bag) continue;
+        const rotated = this.state.rotatedBags.includes(bagId);
+        const cols = Math.min(INVENTORY_COLUMNS, rotated ? Math.min(bag.width, bag.height) : Math.max(bag.width, bag.height));
+        const rowCount = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
+        for (let i = 0; i < rowCount; i++) {
+          rows.push({ row: r + i, color: bag.color || '#888', artifactId: bagId, slotCount: cols });
+        }
+        r += rowCount;
+      }
+      return rows;
+    },
     runRefreshCost() {
       return this.state.gameRunRefreshCount < 3 ? 1 : 2;
     },
@@ -89,7 +106,9 @@ export const PrepScreen = {
         <artifact-grid-board
           variant="inventory"
           class="inventory-shell artifact-inventory-grid"
+          :rows="effectiveRows"
           :items="state.builderItems"
+          :bag-rows="bagRows"
           :render-artifact-figure="renderArtifactFigure"
           :get-artifact="getArtifact"
           :clickable-pieces="true"
@@ -102,6 +121,22 @@ export const PrepScreen = {
           @piece-drag-start="$emit('inventory-drag-start', $event)"
           @piece-drag-end="$emit('drag-end')"
         />
+        <div v-if="state.activeBags.length" class="active-bags-bar">
+          <span
+            v-for="bagId in state.activeBags"
+            :key="bagId"
+            class="active-bag-chip"
+            :style="{ borderColor: getArtifact(bagId)?.color || '#888' }"
+          >
+            {{ getArtifact(bagId)?.name?.[state.lang] || bagId }}
+            <button
+              v-if="getArtifact(bagId)?.width !== getArtifact(bagId)?.height"
+              class="active-bag-action"
+              @click="$emit('rotate-bag', bagId)"
+            >↻</button>
+            <button class="active-bag-action" @click="$emit('deactivate-bag', bagId)">✕</button>
+          </span>
+        </div>
         <div v-if="state.builderItems.length" class="artifact-inventory-footer">
           <span class="artifact-inventory-stats">+{{ builderTotals.damage }} DMG / +{{ builderTotals.armor }} ARM / +{{ builderTotals.speed }} SPD / +{{ builderTotals.stunChance }}% STUN</span>
         </div>

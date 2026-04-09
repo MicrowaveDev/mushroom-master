@@ -2540,6 +2540,54 @@ select {
   font-weight: 600;
 }
 
+/* --- Bag grid cells --- */
+.artifact-grid-cell--bag {
+  background:
+    radial-gradient(circle at center, var(--bag-color-glow, rgba(107, 143, 94, 0.25)), transparent 70%),
+    var(--bag-color-light, rgba(107, 143, 94, 0.2)) !important;
+  border: 2px dashed var(--bag-color, #6b8f5e) !important;
+  border-radius: 16px;
+}
+
+.artifact-grid-cell--bag-disabled {
+  visibility: hidden;
+}
+
+.active-bags-bar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0;
+  flex-wrap: wrap;
+}
+.active-bag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 3px 6px 3px 10px;
+  border: 2px solid #888;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+.active-bag-action {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.active-bag-action:hover {
+  background: rgba(0, 0, 0, 0.18);
+}
+
 /* --- Opponent ready status --- */
 .prep-opponent-status {
   text-align: center;

@@ -1,23 +1,29 @@
+// Route param mapping: which extra key becomes the path segment for each screen
+const ROUTE_PARAMS = {
+  replay: 'replay',
+  friends: 'challenge'
+};
+
 export function parseStartParams() {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    screen: params.get('screen'),
-    challenge: params.get('challenge'),
-    replay: params.get('replay')
-  };
+  const path = window.location.pathname.replace(/^\/+/, '');
+  const parts = path.split('/').filter(Boolean);
+  const screen = parts[0] || null;
+  const result = { screen, challenge: null, replay: null };
+
+  if (screen && ROUTE_PARAMS[screen] && parts[1]) {
+    result[ROUTE_PARAMS[screen]] = decodeURIComponent(parts[1]);
+  }
+
+  return result;
 }
 
 export function setScreenQuery(screen, extra = {}) {
-  const params = new URLSearchParams(window.location.search);
-  params.set('screen', screen);
-  Object.entries(extra).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-  });
-  window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+  let path = `/${screen}`;
+  const paramKey = ROUTE_PARAMS[screen];
+  if (paramKey && extra[paramKey]) {
+    path += `/${encodeURIComponent(extra[paramKey])}`;
+  }
+  window.history.replaceState({}, '', path);
 }
 
 export function apiHeaders(sessionKey) {

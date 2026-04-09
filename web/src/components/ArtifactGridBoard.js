@@ -12,7 +12,8 @@ export const ArtifactGridBoard = {
     clickablePieces: { type: Boolean, default: false },
     rotatablePieces: { type: Boolean, default: false },
     droppable: { type: Boolean, default: false },
-    draggablePieces: { type: Boolean, default: false }
+    draggablePieces: { type: Boolean, default: false },
+    bagRows: { type: Array, default: () => [] }
   },
   emits: ['cell-click', 'piece-click', 'piece-rotate', 'cell-drop', 'piece-drag-start', 'piece-drag-end'],
   data() {
@@ -62,12 +63,33 @@ export const ArtifactGridBoard = {
         'inventory-pieces': this.variant === 'inventory'
       };
     },
+    bagRowForCell(index) {
+      const y = this.cellY(index);
+      return this.bagRows.find((br) => br.row === y);
+    },
+    isBagCellDisabled(index) {
+      const bag = this.bagRowForCell(index);
+      if (!bag) return false;
+      const xInRow = this.cellX(index);
+      return xInRow >= bag.slotCount;
+    },
     cellClass(index) {
       return {
         'artifact-grid-cell': true,
         cell: this.variant === 'inventory',
         'artifact-grid-cell--interactive': this.interactiveCells,
-        'artifact-grid-cell--drop-target': this.droppable && this.hoverCellIndex === index
+        'artifact-grid-cell--drop-target': this.droppable && this.hoverCellIndex === index,
+        'artifact-grid-cell--bag': !!this.bagRowForCell(index) && !this.isBagCellDisabled(index),
+        'artifact-grid-cell--bag-disabled': this.isBagCellDisabled(index)
+      };
+    },
+    cellStyle(index) {
+      const bag = this.bagRowForCell(index);
+      if (!bag || this.isBagCellDisabled(index)) return {};
+      return {
+        '--bag-color': bag.color,
+        '--bag-color-light': bag.color + '33',
+        '--bag-color-glow': bag.color + '40'
       };
     },
     clickCell(index) {
@@ -92,7 +114,7 @@ export const ArtifactGridBoard = {
       return !!artifact && artifact.width !== artifact.height;
     },
     onCellDragOver(index, event) {
-      if (!this.droppable) return;
+      if (!this.droppable || this.isBagCellDisabled(index)) return;
       event.preventDefault();
       if (event.dataTransfer) {
         event.dataTransfer.dropEffect = 'move';
@@ -105,7 +127,7 @@ export const ArtifactGridBoard = {
       }
     },
     onCellDrop(index, event) {
-      if (!this.droppable) return;
+      if (!this.droppable || this.isBagCellDisabled(index)) return;
       event.preventDefault();
       this.hoverCellIndex = -1;
       this.$emit('cell-drop', { x: this.cellX(index), y: this.cellY(index), event });
@@ -140,6 +162,7 @@ export const ArtifactGridBoard = {
           v-for="cell in totalCells"
           :key="cell"
           :class="cellClass(cell - 1)"
+          :style="cellStyle(cell - 1)"
           :data-cell-x="cellX(cell - 1)"
           :data-cell-y="cellY(cell - 1)"
           @click="clickCell(cell - 1)"
