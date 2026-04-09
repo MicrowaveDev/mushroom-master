@@ -366,9 +366,43 @@ const App = {
 
         <section v-else-if="state.screen === 'history'" class="panel stack">
           <h2>{{ t.history }}</h2>
-          <button v-for="battle in state.bootstrap.battleHistory" :key="battle.id" class="log-entry" @click="loadReplay(battle.id)">
-            {{ battle.id }} · {{ battle.mode }} · {{ battle.outcome }}
-          </button>
+          <p v-if="!state.bootstrap.battleHistory?.length">{{ t.noReplays }}</p>
+          <ul v-else class="replay-list">
+            <li
+              v-for="battle in state.bootstrap.battleHistory"
+              :key="battle.id"
+              class="replay-card"
+              :class="'replay-card--' + (describeReplay(battle)?.outcomeKey || 'draw')"
+              @click="loadReplay(battle.id)"
+              role="button" tabindex="0"
+              @keydown.enter.prevent="loadReplay(battle.id)"
+              @keydown.space.prevent="loadReplay(battle.id)"
+            >
+              <div class="replay-card-header">
+                <span class="replay-card-outcome">{{ describeReplay(battle)?.outcomeLabel }}</span>
+                <span class="replay-card-meta">
+                  <span class="replay-card-kind">{{ describeReplay(battle)?.opponentKindLabel }}</span>
+                  <span class="replay-card-date">{{ describeReplay(battle)?.dateLabel }}</span>
+                </span>
+              </div>
+              <div class="replay-card-matchup">
+                <div class="replay-card-fighter">
+                  <img v-if="describeReplay(battle)?.ourImage" :src="describeReplay(battle).ourImage" :alt="describeReplay(battle)?.ourName" class="replay-card-portrait" />
+                  <span class="replay-card-name">{{ describeReplay(battle)?.ourName }}</span>
+                </div>
+                <span class="replay-card-vs">vs</span>
+                <div class="replay-card-fighter">
+                  <img v-if="describeReplay(battle)?.oppImage" :src="describeReplay(battle).oppImage" :alt="describeReplay(battle)?.oppName" class="replay-card-portrait" />
+                  <span class="replay-card-name">{{ describeReplay(battle)?.oppName }}</span>
+                </div>
+              </div>
+              <div class="replay-card-rewards" v-if="describeReplay(battle)?.ratingDelta != null || describeReplay(battle)?.sporeDelta || describeReplay(battle)?.myceliumDelta">
+                <span v-if="describeReplay(battle)?.ratingDelta != null" class="replay-chip">{{ t.rating }} {{ formatDelta(describeReplay(battle).ratingDelta) }}</span>
+                <span v-if="describeReplay(battle)?.sporeDelta" class="replay-chip">{{ t.spore }} {{ formatDelta(describeReplay(battle).sporeDelta) }}</span>
+                <span v-if="describeReplay(battle)?.myceliumDelta" class="replay-chip">{{ t.mycelium }} {{ formatDelta(describeReplay(battle).myceliumDelta) }}</span>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <friends-screen v-else-if="state.screen === 'friends'"

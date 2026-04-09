@@ -161,8 +161,8 @@ export const PrepScreen = {
 
       <div class="prep-actions">
         <div v-if="state.gameRun.mode === 'challenge'" class="prep-opponent-status">
-          <span v-if="state.opponentReady" class="prep-opponent-ready">{{ state.lang === 'ru' ? 'Противник готов' : 'Opponent ready' }}</span>
-          <span v-else class="prep-opponent-waiting">{{ state.lang === 'ru' ? 'Ожидание противника...' : 'Waiting for opponent...' }}</span>
+          <span v-if="state.opponentReady" class="prep-opponent-ready">{{ t.opponentReady }}</span>
+          <span v-else class="prep-opponent-waiting">{{ t.waitingForOpponent }}</span>
         </div>
         <button class="primary prep-ready-btn" :disabled="state.actionInFlight" @click="$emit('signal-ready')">{{ t.ready }}</button>
         <button class="ghost" @click="$emit('abandon')">{{ t.abandonRun }}</button>

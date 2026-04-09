@@ -1433,6 +1433,28 @@ select {
   margin: 0 auto;
 }
 
+.results-banner {
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.results-banner--win {
+  background: rgba(127, 152, 114, 0.2);
+  color: #3d5731;
+}
+.results-banner--loss {
+  background: rgba(156, 69, 53, 0.15);
+  color: var(--error);
+}
+.results-banner--draw {
+  background: rgba(235, 198, 96, 0.18);
+  color: #8a6a1e;
+}
+
 .results-fighters {
   display: grid;
   grid-template-columns: 1fr 1fr;

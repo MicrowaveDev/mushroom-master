@@ -98,7 +98,9 @@ export const messages = {
     gameRuns: 'Игры',
     runHistory: 'История игр',
     eliminated: 'Выбыл',
-    maxRounds: 'Все раунды пройдены'
+    maxRounds: 'Все раунды пройдены',
+    opponentReady: 'Противник готов',
+    waitingForOpponent: 'Ожидание противника...'
   },
   en: {
     title: 'Mycelium Autobattler',
@@ -199,6 +201,8 @@ export const messages = {
     gameRuns: 'Games',
     runHistory: 'Game History',
     eliminated: 'Eliminated',
-    maxRounds: 'All rounds completed'
+    maxRounds: 'All rounds completed',
+    opponentReady: 'Opponent ready',
+    waitingForOpponent: 'Waiting for opponent...'
   }
 };

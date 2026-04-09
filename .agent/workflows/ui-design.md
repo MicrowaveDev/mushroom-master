@@ -129,10 +129,9 @@ Three-zone single-column layout (mobile), two-column on desktop (left: backpack 
 
 ### Battle Prep
 
-- Single centered card (max-width 440px): wide portrait (5:3) edge-to-edge with name + stat chips overlaid on a dark gradient.
-- Inventory grid (40px cells) inside the card below the portrait.
-- Compact stats line, then a prominent "Start battle" CTA below the card.
-- No nested panels — the card itself provides all the visual framing.
+- Default layout: single centered card (max-width 440px) with wide portrait (5:3) edge-to-edge, name + stat chips overlaid on a dark gradient, inventory grid (40px cells) below the portrait, and a prominent CTA.
+- When multiple zones must fit in one viewport (e.g. shop + inventory + backpack + sell area + HUD on the run prep screen), prefer a compact side-by-side or stacked layout that keeps all interactive elements visible without scrolling. Fitting the primary action in the viewport takes priority over the canonical card layout.
+- No nested panels — the card or screen itself provides all the visual framing.
 
 ### Results Screen
 

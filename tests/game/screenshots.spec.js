@@ -197,11 +197,12 @@ test('capture key v1 screens', async ({ page, request, baseURL }) => {
   await page.getByRole('button', { name: /Result|Результат/ }).click();
   await page.waitForSelector('.panel');
   debugLog('capturing results');
-  await expect(page.locator('.results-portrait')).toHaveCount(2);
+  await expect(page.locator('.results-banner')).toBeVisible();
+  await expect(page.locator('.results-fighter-column .fighter-portrait')).toHaveCount(2);
   await saveShot(page, '07-results.png');
 
   await page.goto(`${baseURL}?screen=history`);
-  await page.waitForSelector('.log-entry');
+  await page.waitForSelector('.replay-card');
   debugLog('capturing history');
   await saveShot(page, '08-history.png');
 

@@ -5,8 +5,22 @@ export const ResultsScreen = {
   components: {
     FighterCard: () => import('../components/FighterCard.js').then(m => m.FighterCard)
   },
+  computed: {
+    overallOutcome() {
+      const b = this.state.currentBattle;
+      if (b.outcome === 'draw') return 'draw';
+      return b.outcome === 'win' ? 'win' : 'loss';
+    },
+    overallLabel() {
+      if (this.overallOutcome === 'draw') return this.t.outcomeDraw;
+      return this.overallOutcome === 'win' ? this.t.outcomeWin : this.t.outcomeLoss;
+    }
+  },
   template: `
     <section class="results-screen">
+      <div class="results-banner" :class="'results-banner--' + overallOutcome">
+        <span class="results-banner-text">{{ overallLabel }}</span>
+      </div>
       <div class="results-fighters">
         <div
           v-for="(snapshot, side) in state.currentBattle.snapshots" :key="side"

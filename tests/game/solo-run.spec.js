@@ -138,7 +138,7 @@ test('solo game run: full journey with screenshots', async ({ page, request, bas
   await saveShot(page, 'solo-09-run-complete.png');
 
   // --- Go home ---
-  await page.getByRole('button', { name: /home|главная/i }).click();
+  await page.getByRole('button', { name: /home|домой/i }).click();
   await expect(page.locator('.dashboard')).toBeVisible();
   await saveShot(page, 'solo-10-home-after-run.png');
 });
