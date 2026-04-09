@@ -1739,6 +1739,12 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     [gameRunId]
   );
 
+  const shopResult = await query(
+    `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
+    [gameRunId, viewerPlayerId]
+  );
+  const shopOffer = shopResult.rowCount ? parseJson(shopResult.rows[0].offer_json, []) : [];
+
   return {
     id: run.id,
     mode: run.mode,
@@ -1747,6 +1753,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     startedAt: run.started_at,
     endedAt: run.ended_at,
     endReason: run.end_reason,
+    shopOffer,
     players: playersResult.rows.map((r) => ({
       id: r.id,
       playerId: r.player_id,

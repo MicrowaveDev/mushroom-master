@@ -368,7 +368,8 @@ select {
 }
 
 .home-section {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -509,6 +510,7 @@ select {
   border-top: 1px solid var(--border);
   font-size: 0.78em;
   opacity: 0.6;
+  margin-top: auto;
 }
 
 /* Mushroom list */
@@ -586,8 +588,26 @@ select {
 }
 
 .home-mushroom-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.75em;
   opacity: 0.6;
+}
+
+.home-mushroom-level {
+  font-weight: 500;
+}
+
+.home-mushroom-record {
+  display: flex;
+  gap: 6px;
+}
+
+.home-mushroom-record small {
+  margin-left: 1px;
+  font-size: 0.85em;
+  opacity: 0.7;
 }
 
 .home-mushroom-select {
@@ -661,7 +681,7 @@ select {
 }
 
 .home-empty-hint {
-  text-align: center;
+  text-align: left;
   color: rgba(47, 36, 25, 0.6);
   font-size: 0.9em;
 }
@@ -1148,7 +1168,7 @@ select {
 
 .artifact-shop-items {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
@@ -1180,14 +1200,33 @@ select {
 }
 
 .shop-item-copy {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
   font-size: 0.85em;
 }
-
+.shop-item-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+.shop-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
 .shop-item-price {
   font-weight: 600;
   color: #8a6a1e;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.shop-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .artifact-grid-cell--drop-target {
@@ -2371,9 +2410,43 @@ select {
 
 /* --- Prep Screen --- */
 .prep-screen {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 12px;
+}
+
+@media (min-width: 680px) {
+  .prep-screen {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .prep-screen .run-hud {
+    grid-column: 1 / -1;
+  }
+
+  .prep-screen .artifact-container-zone {
+    grid-column: 1;
+  }
+
+  .prep-screen .artifact-inventory-section {
+    grid-column: 1;
+  }
+
+  .prep-screen .artifact-shop {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    align-self: start;
+    margin-top: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .prep-screen .artifact-shop-items {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .prep-screen .prep-actions {
+    grid-column: 1 / -1;
+  }
 }
 .prep-actions {
   display: flex;

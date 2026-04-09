@@ -186,6 +186,7 @@ const App = {
       appRootEl = document.getElementById('app');
       touch.attachTouch(appRootEl);
       await auth.refreshBootstrap();
+      if (state.gameRun) gameRun.loadRunShopOffer();
       const startParams = parseStartParams();
       if (startParams.challenge && state.sessionKey) await social.openChallenge(startParams.challenge);
       if (startParams.replay && state.sessionKey) await replay.loadReplay(startParams.replay);

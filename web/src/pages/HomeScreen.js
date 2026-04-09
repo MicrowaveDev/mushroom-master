@@ -65,7 +65,10 @@ export const HomeScreen = {
                   <span v-if="m.isActive" class="home-mushroom-active-tag">{{ t.active }}</span>
                 </div>
                 <span class="home-mushroom-style">{{ m.styleTag }}</span>
-                <span class="home-mushroom-stats">{{ t.level }} {{ m.level }} · {{ m.wins }}W {{ m.losses }}L {{ m.draws }}D</span>
+                <span class="home-mushroom-stats">
+                  <span class="home-mushroom-level">{{ t.level }} {{ m.level }}</span>
+                  <span v-if="m.wins || m.losses || m.draws" class="home-mushroom-record">{{ m.wins }}<small>{{ t.winsShort }}</small> {{ m.losses }}<small>{{ t.lossesShort }}</small> {{ m.draws }}<small>{{ t.drawsShort }}</small></span>
+                </span>
               </div>
               <button v-if="!m.isActive" class="ghost home-mushroom-select" @click.stop="$emit('select-mushroom', m.id)">{{ t.pick }}</button>
             </div>

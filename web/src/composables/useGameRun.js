@@ -168,7 +168,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
 
   return {
     startNewGameRun, resumeGameRun, signalReady,
-    continueToNextRound, abandonRun,
+    continueToNextRound, abandonRun, loadRunShopOffer,
     refreshRunShop, sellRunItemAction, buyRunShopItem,
     getRunRefreshCost, getRunSellPrice,
     onSellZoneDragOver, onSellZoneDragLeave, onSellZoneDrop

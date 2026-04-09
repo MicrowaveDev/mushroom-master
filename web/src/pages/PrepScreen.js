@@ -37,7 +37,7 @@ export const PrepScreen = {
         <span class="run-hud-item">{{ t.round }} {{ state.gameRun.currentRound }}</span>
         <span class="run-hud-item">{{ t.wins }}: {{ state.gameRun.player?.wins || 0 }}</span>
         <span class="run-hud-item">{{ t.lives }}: {{ state.gameRun.player?.livesRemaining || 0 }}</span>
-        <span class="run-hud-item run-hud-coins">{{ t.coins }}: {{ state.gameRun.player?.coins || 0 }}</span>
+        <span class="run-hud-item run-hud-coins">\uD83E\uDE99 {{ state.gameRun.player?.coins || 0 }}</span>
       </div>
 
       <div class="artifact-container-zone"
@@ -110,7 +110,7 @@ export const PrepScreen = {
       <div class="artifact-shop">
         <div class="artifact-shop-header">
           <strong>{{ t.shop }}</strong>
-          <button type="button" class="link" :disabled="(state.gameRun.player?.coins || 0) < runRefreshCost" @click="$emit('refresh-shop')">{{ t.refreshShop }} ({{ runRefreshCost }})</button>
+          <button type="button" class="link" :disabled="(state.gameRun.player?.coins || 0) < runRefreshCost" @click="$emit('refresh-shop')">{{ t.refreshShop }} (\uD83E\uDE99{{ runRefreshCost }})</button>
         </div>
         <div class="artifact-shop-items">
           <div
@@ -134,31 +134,32 @@ export const PrepScreen = {
               :get-artifact="getArtifact"
             />
             <div class="shop-item-copy">
-              <strong>{{ getArtifact(artifactId)?.name?.[state.lang] }}</strong>
-              <span class="shop-item-price">{{ getArtifactPrice(getArtifact(artifactId)) }}</span>
-              <span v-if="getArtifact(artifactId)?.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ getArtifact(artifactId)?.slotCount }} {{ t.bagSlots }}</span>
-              <span class="artifact-stat-chips">
+              <div class="shop-item-header">
+                <strong class="shop-item-name">{{ getArtifact(artifactId)?.name?.[state.lang] }}</strong>
+                <span class="shop-item-price">\uD83E\uDE99 {{ getArtifactPrice(getArtifact(artifactId)) }}</span>
+              </div>
+              <div class="shop-item-tags">
+                <span v-if="getArtifact(artifactId)?.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ getArtifact(artifactId)?.slotCount }} {{ t.bagSlots }}</span>
                 <span
                   v-for="stat in formatArtifactBonus(getArtifact(artifactId))"
                   :key="stat.key"
                   class="artifact-stat-chip"
                   :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
                 >{{ stat.label }} {{ stat.value }}</span>
-              </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div
-        class="sell-zone"
-        :class="{ 'sell-zone--active': state.sellDragOver }"
-        @dragover="$emit('sell-dragover', $event)"
-        @dragleave="$emit('sell-dragleave')"
-        @drop="$emit('sell-drop', $event)"
-      >
-        <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">{{ runSellPriceLabel }}</span>
-        <span v-else>{{ t.sellArea }}</span>
+        <div
+          class="sell-zone"
+          :class="{ 'sell-zone--active': state.sellDragOver }"
+          @dragover="$emit('sell-dragover', $event)"
+          @dragleave="$emit('sell-dragleave')"
+          @drop="$emit('sell-drop', $event)"
+        >
+          <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">{{ runSellPriceLabel }}</span>
+          <span v-else>{{ t.sellArea }}</span>
+        </div>
       </div>
 
       <div class="prep-actions">
