@@ -1,9 +1,11 @@
+import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+
 export const BattlePrepScreen = {
   name: 'BattlePrepScreen',
   props: ['state', 't', 'activeMushroom', 'builderTotals', 'usedCoins', 'maxCoins', 'portraitPosition', 'renderArtifactFigure', 'getArtifact'],
   emits: ['start-battle'],
   components: {
-    ArtifactGridBoard: () => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)
+    ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
   },
   template: `
     <section class="battle-prep-screen">

@@ -1147,6 +1147,22 @@ Run via `npx playwright test --config=tests/game/playwright.config.js`:
 - [x] [solo-run.spec.js](tests/game/solo-run.spec.js) — 2 tests, 12 screenshots: start → buy → ready → round result → continue → refresh shop → page reload persistence → play to completion + abandon
 - [x] [challenge-run.spec.js](tests/game/challenge-run.spec.js) — 2 tests, 7 screenshots: invite → accept → readies/unready → round resolves → opponent status → play to completion + abandon ends for both
 
+### Stage 14: production UI polish ✅ DONE
+
+- [x] History screen: replaced raw battle UUIDs with replay-card pattern (portraits, outcomes, rewards)
+- [x] Results screen: added color-coded outcome banner (green/red/amber)
+- [x] PrepScreen: moved hardcoded opponent status strings to i18n
+- [x] Fixed `[object Promise]` rendering — all async components now use `defineAsyncComponent()`
+- [x] Character grid: 4 columns on desktop, 2 on mobile; fixed portrait name gradient overlay
+- [x] Standardized artifact cell sizes (44px) across shop, backpack, and inventory
+- [x] Redesigned HomeScreen layout:
+  - Mushrooms list (left) with select-to-pick, style tags, W/L/D stats per character
+  - Battles list (right) with active run as first item, recent battles, start button in header, spore/limit footer
+  - Friends block (bottom-left) with challenge buttons, add-friend form, friend code
+  - Leaderboard block (bottom-right) with top 5, self-highlight
+- [x] Relaxed battle prep layout rule in ui-design.md for multi-zone screens
+- [x] Updated E2E selectors for new markup
+
 ## Deferred to post-rework
 
 ### Emoji reactions

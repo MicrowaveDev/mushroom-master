@@ -264,7 +264,11 @@ const App = {
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
           :describe-replay="describeReplay" :format-delta="formatDelta" :portrait-position="portraitPosition"
-          @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @load-replay="loadReplay($event)" @go="goTo($event)"
+          @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="abandonRun"
+          @load-replay="loadReplay($event)" @go="goTo($event)"
+          @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
+          @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
+          @select-mushroom="saveCharacter($event)"
         />
 
         <characters-screen v-else-if="state.screen === 'characters'"

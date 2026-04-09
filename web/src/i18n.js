@@ -100,7 +100,15 @@ export const messages = {
     eliminated: 'Выбыл',
     maxRounds: 'Все раунды пройдены',
     opponentReady: 'Противник готов',
-    waitingForOpponent: 'Ожидание противника...'
+    waitingForOpponent: 'Ожидание противника...',
+    viewAll: 'Все',
+    noFriendsYet: 'Добавь друга по коду, чтобы бросить вызов',
+    yourCode: 'Твой код',
+    pendingChallenge: 'Тебя вызвали на бой!',
+    battleWith: 'Боец:',
+    challengeFriend: 'Вызвать друга',
+    noBattlesYet: 'Начни первый бой!',
+    rank: 'Место'
   },
   en: {
     title: 'Mycelium Autobattler',
@@ -203,6 +211,14 @@ export const messages = {
     eliminated: 'Eliminated',
     maxRounds: 'All rounds completed',
     opponentReady: 'Opponent ready',
-    waitingForOpponent: 'Waiting for opponent...'
+    waitingForOpponent: 'Waiting for opponent...',
+    viewAll: 'View all',
+    noFriendsYet: 'Add a friend by code to challenge them',
+    yourCode: 'Your code',
+    pendingChallenge: 'You have been challenged!',
+    battleWith: 'Fighter:',
+    challengeFriend: 'Challenge a friend',
+    noBattlesYet: 'Start your first battle!',
+    rank: 'Rank'
   }
 };

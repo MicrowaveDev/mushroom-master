@@ -1,9 +1,11 @@
+import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+
 export const ResultsScreen = {
   name: 'ResultsScreen',
   props: ['state', 't', 'getMushroom', 'loadoutStatsText', 'resultSpeech', 'replayBubbleStyle', 'renderArtifactFigure', 'getArtifact'],
   emits: ['go-home'],
   components: {
-    FighterCard: () => import('../components/FighterCard.js').then(m => m.FighterCard)
+    FighterCard: defineAsyncComponent(() => import('../components/FighterCard.js').then(m => m.FighterCard))
   },
   computed: {
     overallOutcome() {

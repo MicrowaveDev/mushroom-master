@@ -1,3 +1,5 @@
+import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+
 export const ReplayScreen = {
   name: 'ReplayScreen',
   props: [
@@ -9,7 +11,7 @@ export const ReplayScreen = {
   ],
   emits: ['go-results'],
   components: {
-    ReplayDuel: () => import('../components/ReplayDuel.js').then(m => m.ReplayDuel)
+    ReplayDuel: defineAsyncComponent(() => import('../components/ReplayDuel.js').then(m => m.ReplayDuel))
   },
   template: `
     <section class="replay-layout">

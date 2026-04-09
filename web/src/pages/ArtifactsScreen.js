@@ -1,3 +1,5 @@
+import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+
 export const ArtifactsScreen = {
   name: 'ArtifactsScreen',
   props: [
@@ -14,7 +16,7 @@ export const ArtifactsScreen = {
     'cell-drop', 'inventory-drag-start', 'drag-end'
   ],
   components: {
-    ArtifactGridBoard: () => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)
+    ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
   },
   template: `
     <section class="artifact-screen">
@@ -43,7 +45,6 @@ export const ArtifactsScreen = {
             :data-artifact-id="artifact.id"
           >
             <button class="container-item-sell" type="button"
-              :title="state.lang === 'ru' ? 'Вернуть в магазин' : 'Return to shop'"
               @click.stop="$emit('return-to-shop', artifact.id)"
             >{{ state.lang === 'ru' ? 'Вернуть' : 'Return' }}</button>
             <artifact-grid-board

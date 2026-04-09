@@ -1,3 +1,5 @@
+import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+
 export const PrepScreen = {
   name: 'PrepScreen',
   props: [
@@ -14,7 +16,7 @@ export const PrepScreen = {
     'signal-ready', 'abandon'
   ],
   components: {
-    ArtifactGridBoard: () => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)
+    ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
   },
   computed: {
     runRefreshCost() {

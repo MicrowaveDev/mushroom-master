@@ -1,3 +1,5 @@
+import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+
 export const HomeScreen = {
   name: 'HomeScreen',
   props: [
@@ -5,91 +7,171 @@ export const HomeScreen = {
     'renderArtifactFigure', 'getArtifact', 'getMushroom',
     'describeReplay', 'formatDelta', 'portraitPosition'
   ],
-  emits: ['resume-run', 'start-run', 'load-replay', 'go'],
+  emits: [
+    'resume-run', 'start-run', 'abandon-run',
+    'load-replay', 'go',
+    'add-friend', 'challenge-friend',
+    'accept-challenge', 'decline-challenge',
+    'select-mushroom'
+  ],
   components: {
-    ArtifactGridBoard: () => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)
+    ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
+  },
+  computed: {
+    playerRank() {
+      const id = this.state.bootstrap?.player?.id;
+      if (!id || !this.state.leaderboard?.length) return null;
+      const entry = this.state.leaderboard.find(e => e.id === id);
+      return entry?.rank || null;
+    },
+    roster() {
+      const mushrooms = this.state.bootstrap?.mushrooms || [];
+      const progression = this.state.bootstrap?.progression || {};
+      return mushrooms.map(m => {
+        const prog = progression[m.id] || {};
+        return {
+          ...m,
+          level: prog.level || 1,
+          wins: prog.wins || 0,
+          losses: prog.losses || 0,
+          draws: prog.draws || 0,
+          isActive: m.id === this.state.bootstrap?.activeMushroomId
+        };
+      });
+    },
+    topLeaderboard() {
+      return (this.state.leaderboard || []).slice(0, 5);
+    }
   },
   template: `
-    <section class="dashboard">
-      <article class="panel player-summary">
-        <h2>{{ state.bootstrap.player.name }}</h2>
-        <dl class="stat-grid">
-          <div class="stat"><dt>{{ t.rating }}</dt><dd>{{ state.bootstrap.player.rating }}</dd></div>
-          <div class="stat"><dt>{{ t.spore }}</dt><dd>{{ state.bootstrap.player.spore }}</dd></div>
-          <div class="stat"><dt>{{ t.battleLimit }}</dt><dd>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</dd></div>
-        </dl>
-      </article>
-      <article class="panel" v-if="activeMushroom">
-        <button v-if="state.gameRun" class="primary" style="width:100%" @click="$emit('resume-run')">{{ t.resumeRun }} ({{ t.round }} {{ state.gameRun.currentRound }})</button>
-        <button v-else class="primary" style="width:100%" @click="$emit('start-run', 'solo')">{{ t.startRun }}</button>
-      </article>
-      <article class="panel active-mushroom" v-if="activeMushroom">
-        <div class="active-mushroom-media">
-          <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="portrait"/>
-          <span class="active-mushroom-badge">{{ t.active }}</span>
-        </div>
-        <h3>{{ activeMushroom.name[state.lang] }}</h3>
-      </article>
-      <article class="panel">
-        <h3>{{ t.selectedArtifacts }}</h3>
-        <artifact-grid-board
-          v-if="state.builderItems.length"
-          variant="inventory"
-          class="inventory-shell home-inventory"
-          :items="state.builderItems"
-          :render-artifact-figure="renderArtifactFigure"
-          :get-artifact="getArtifact"
-        />
-        <p v-else>{{ t.selectCell }}</p>
-      </article>
-      <article class="panel" v-if="Object.keys(state.bootstrap.progression || {}).length">
-        <h3>{{ t.profile }}</h3>
-        <div class="progression-list">
-          <div v-for="entry in Object.values(state.bootstrap.progression)" :key="entry.mushroomId" class="progression-entry">
-            <strong>{{ getMushroom(entry.mushroomId)?.name?.[state.lang] || entry.mushroomId }}</strong>
-            <span>{{ t.level }} {{ entry.level }} · {{ t.mycelium }} {{ entry.mycelium }}</span>
+    <section class="home">
+      <!-- Two-column layout: Mushrooms + Battles -->
+      <div class="home-columns">
+        <!-- Mushrooms list -->
+        <article class="panel home-section">
+          <h3>{{ t.characters }}</h3>
+          <div class="home-mushroom-list">
+            <div
+              v-for="m in roster" :key="m.id"
+              class="home-mushroom-row"
+              :class="{ 'home-mushroom-row--active': m.isActive }"
+              @click="$emit('select-mushroom', m.id)"
+              role="button" tabindex="0"
+            >
+              <img :src="m.imagePath" :alt="m.name[state.lang]" class="home-mushroom-portrait" :style="{ objectPosition: portraitPosition(m.id) }"/>
+              <div class="home-mushroom-info">
+                <div class="home-mushroom-name-row">
+                  <strong>{{ m.name[state.lang] }}</strong>
+                  <span v-if="m.isActive" class="home-mushroom-active-tag">{{ t.active }}</span>
+                </div>
+                <span class="home-mushroom-style">{{ m.styleTag }}</span>
+                <span class="home-mushroom-stats">{{ t.level }} {{ m.level }} · {{ m.wins }}W {{ m.losses }}L {{ m.draws }}D</span>
+              </div>
+              <button v-if="!m.isActive" class="ghost home-mushroom-select" @click.stop="$emit('select-mushroom', m.id)">{{ t.pick }}</button>
+            </div>
           </div>
-        </div>
-      </article>
-      <article class="panel panel-wide" v-if="state.bootstrap.battleHistory?.length">
-        <h3>{{ t.history }}</h3>
-        <ul class="replay-list">
-          <li
-            v-for="battle in state.bootstrap.battleHistory"
-            :key="battle.id"
-            class="replay-card"
-            :class="'replay-card--' + (describeReplay(battle)?.outcomeKey || 'draw')"
-            @click="$emit('load-replay', battle.id)"
-            role="button" tabindex="0"
-            @keydown.enter.prevent="$emit('load-replay', battle.id)"
-            @keydown.space.prevent="$emit('load-replay', battle.id)"
-          >
-            <div class="replay-card-header">
-              <span class="replay-card-outcome">{{ describeReplay(battle)?.outcomeLabel }}</span>
-              <span class="replay-card-meta">
-                <span class="replay-card-kind">{{ describeReplay(battle)?.opponentKindLabel }}</span>
-                <span class="replay-card-date">{{ describeReplay(battle)?.dateLabel }}</span>
-              </span>
+        </article>
+
+        <!-- Battles list -->
+        <article class="panel home-section">
+          <div class="home-section-header">
+            <h3>{{ t.gameRuns }}</h3>
+            <button v-if="!state.gameRun && activeMushroom" class="primary home-start-btn" @click="$emit('start-run', 'solo')">{{ t.startRun }}</button>
+            <button v-if="state.bootstrap.battleHistory?.length" class="link" @click="$emit('go', 'history')">{{ t.viewAll }}</button>
+          </div>
+
+          <!-- Active run as first item -->
+          <div v-if="state.gameRun && activeMushroom" class="home-battle-item home-battle-item--active" @click="$emit('resume-run')">
+            <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="home-battle-item-portrait" :style="{ objectPosition: portraitPosition(activeMushroom.id) }"/>
+            <div class="home-battle-item-info">
+              <strong>{{ t.round }} {{ state.gameRun.currentRound }}</strong>
+              <span class="home-battle-item-stats">{{ t.wins }} {{ state.gameRun.player?.wins || 0 }} · {{ t.lives }} {{ state.gameRun.player?.livesRemaining || 0 }}</span>
             </div>
-            <div class="replay-card-matchup">
-              <div class="replay-card-fighter">
-                <img v-if="describeReplay(battle)?.ourImage" :src="describeReplay(battle).ourImage" :alt="describeReplay(battle)?.ourName" class="replay-card-portrait" />
-                <span class="replay-card-name">{{ describeReplay(battle)?.ourName }}</span>
+            <button class="primary home-battle-item-action" @click.stop="$emit('resume-run')">{{ t.continueRound }}</button>
+          </div>
+
+          <!-- Recent battles -->
+          <div v-if="state.bootstrap.battleHistory?.length" class="home-battle-list">
+            <div
+              v-for="battle in state.bootstrap.battleHistory.slice(0, 5)"
+              :key="battle.id"
+              class="home-battle-item"
+              :class="'home-battle-item--' + (describeReplay(battle)?.outcomeKey || 'draw')"
+              @click="$emit('load-replay', battle.id)"
+            >
+              <img v-if="describeReplay(battle)?.oppImage" :src="describeReplay(battle).oppImage" :alt="describeReplay(battle)?.oppName" class="home-battle-item-portrait" />
+              <div class="home-battle-item-info">
+                <strong>{{ describeReplay(battle)?.outcomeLabel }}</strong>
+                <span class="home-battle-item-stats">vs {{ describeReplay(battle)?.oppName }} · {{ describeReplay(battle)?.opponentKindLabel }}</span>
               </div>
-              <span class="replay-card-vs">vs</span>
-              <div class="replay-card-fighter">
-                <img v-if="describeReplay(battle)?.oppImage" :src="describeReplay(battle).oppImage" :alt="describeReplay(battle)?.oppName" class="replay-card-portrait" />
-                <span class="replay-card-name">{{ describeReplay(battle)?.oppName }}</span>
+              <span class="home-battle-item-date">{{ describeReplay(battle)?.dateLabel }}</span>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <p v-if="!state.gameRun && !state.bootstrap.battleHistory?.length" class="home-empty-hint home-empty-hint--center">{{ t.noBattlesYet }}</p>
+
+          <!-- Footer stats -->
+          <div class="home-battle-footer">
+            <span>{{ t.spore }}: {{ state.bootstrap.player.spore }}</span>
+            <span>{{ t.battleLimit }}: {{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- Friends + Leaderboard -->
+      <div class="home-columns">
+        <!-- Friends -->
+        <article class="panel home-friends-compact">
+          <div class="home-section-header">
+            <h3>{{ t.friends }} <span v-if="state.friends?.length" class="home-friends-count">{{ state.friends.length }}</span></h3>
+          </div>
+          <div v-if="state.challenge" class="home-challenge-banner">
+            <span>{{ state.challenge.status === 'pending' ? t.pendingChallenge : state.challenge.status }}</span>
+            <div class="home-challenge-actions">
+              <button class="primary" @click="$emit('accept-challenge')">{{ t.acceptChallenge }}</button>
+              <button class="ghost" @click="$emit('decline-challenge')">{{ t.declineChallenge }}</button>
+            </div>
+          </div>
+          <div class="home-friends-list" v-if="state.friends?.length">
+            <div v-for="friend in state.friends.slice(0, 3)" :key="friend.id" class="home-friend-row">
+              <div class="home-friend-info">
+                <strong>{{ friend.name }}</strong>
+                <span class="home-friend-rating">{{ friend.rating }}</span>
               </div>
+              <button class="secondary home-friend-challenge" @click="$emit('challenge-friend', friend.id)">{{ t.createChallenge }}</button>
             </div>
-            <div class="replay-card-rewards" v-if="describeReplay(battle)?.ratingDelta != null || describeReplay(battle)?.sporeDelta || describeReplay(battle)?.myceliumDelta">
-              <span v-if="describeReplay(battle)?.ratingDelta != null" class="replay-chip">{{ t.rating }} {{ formatDelta(describeReplay(battle).ratingDelta) }}</span>
-              <span v-if="describeReplay(battle)?.sporeDelta" class="replay-chip">{{ t.spore }} {{ formatDelta(describeReplay(battle).sporeDelta) }}</span>
-              <span v-if="describeReplay(battle)?.myceliumDelta" class="replay-chip">{{ t.mycelium }} {{ formatDelta(describeReplay(battle).myceliumDelta) }}</span>
+            <button v-if="state.friends.length > 3" class="link" @click="$emit('go', 'friends')">{{ t.viewAll }}</button>
+          </div>
+          <div v-else class="home-empty-hint">
+            <p>{{ t.noFriendsYet }}</p>
+          </div>
+          <form class="home-add-friend-row" @submit.prevent="$emit('add-friend', $event)">
+            <input name="friendCode" :placeholder="t.friendCode" class="home-friend-input" />
+            <button class="primary" type="submit">{{ t.addFriend }}</button>
+          </form>
+          <span class="home-friend-code">{{ t.yourCode }}: <strong>{{ state.bootstrap.player.friendCode }}</strong></span>
+        </article>
+
+        <!-- Leaderboard -->
+        <article class="panel home-section" v-if="topLeaderboard.length">
+          <div class="home-section-header">
+            <h3>{{ t.leaderboard }}</h3>
+            <button class="link" @click="$emit('go', 'leaderboard')">{{ t.viewAll }}</button>
+          </div>
+          <div class="home-leaderboard">
+            <div
+              v-for="entry in topLeaderboard" :key="entry.id"
+              class="home-leaderboard-row"
+              :class="{ 'home-leaderboard-row--self': entry.id === state.bootstrap.player.id }"
+            >
+              <span class="home-leaderboard-rank">#{{ entry.rank }}</span>
+              <strong class="home-leaderboard-name">{{ entry.name }}</strong>
+              <span class="home-leaderboard-rating">{{ entry.rating }}</span>
             </div>
-          </li>
-        </ul>
-      </article>
+          </div>
+        </article>
+      </div>
     </section>
   `
 };
