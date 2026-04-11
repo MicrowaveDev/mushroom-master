@@ -26,50 +26,76 @@ import { createBotGhostSnapshot } from './bot-loadout.js';
 import { validateLoadoutItems } from './loadout-utils.js';
 
 export async function getActiveSnapshot(client, playerId) {
-  const [activeResult, loadoutResult, loadoutItemsResult, activeRunResult] = await Promise.all([
-    client.query(`SELECT * FROM player_active_character WHERE player_id = $1`, [playerId]),
-    client.query(`SELECT * FROM player_artifact_loadouts WHERE player_id = $1`, [playerId]),
-    client.query(
+  // Active mushroom is always read from player_active_character.
+  const activeResult = await client.query(
+    `SELECT * FROM player_active_character WHERE player_id = $1`,
+    [playerId]
+  );
+  if (!activeResult.rowCount) {
+    throw new Error('Active mushroom not selected');
+  }
+  const mushroomId = activeResult.rows[0].mushroom_id;
+
+  // Prefer the run-scoped new table if the player is in an active game run.
+  // Legacy single-battle path falls back to player_artifact_loadout_items.
+  const activeRunResult = await client.query(
+    `SELECT grp.game_run_id, gr.current_round
+     FROM game_run_players grp
+     JOIN game_runs gr ON gr.id = grp.game_run_id
+     WHERE grp.player_id = $1 AND grp.is_active = 1`,
+    [playerId]
+  );
+
+  let items;
+  let runBudget;
+  if (activeRunResult.rowCount) {
+    const { game_run_id: gameRunId, current_round: currentRound } = activeRunResult.rows[0];
+    const rows = await client.query(
+      `SELECT artifact_id, x, y, width, height, bag_id, sort_order
+       FROM game_run_loadout_items
+       WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
+       ORDER BY sort_order ASC`,
+      [gameRunId, playerId, currentRound]
+    );
+    items = rows.rows.map((row) => ({
+      artifactId: row.artifact_id,
+      x: row.x,
+      y: row.y,
+      width: row.width,
+      height: row.height,
+      sortOrder: row.sort_order,
+      bagId: row.bag_id || null
+    }));
+    runBudget = ROUND_INCOME.slice(0, currentRound).reduce((sum, c) => sum + c, 0);
+  } else {
+    const loadoutResult = await client.query(
+      `SELECT * FROM player_artifact_loadouts WHERE player_id = $1`,
+      [playerId]
+    );
+    if (!loadoutResult.rowCount) {
+      throw new Error('Artifact loadout not saved');
+    }
+    const loadoutItemsResult = await client.query(
       `SELECT items.*
        FROM player_artifact_loadout_items items
        JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
        WHERE loadouts.player_id = $1
        ORDER BY items.sort_order ASC`,
       [playerId]
-    ),
-    client.query(
-      `SELECT gr.current_round
-       FROM game_run_players grp
-       JOIN game_runs gr ON gr.id = grp.game_run_id
-       WHERE grp.player_id = $1 AND grp.is_active = 1`,
-      [playerId]
-    )
-  ]);
-
-  if (!activeResult.rowCount) {
-    throw new Error('Active mushroom not selected');
-  }
-  if (!loadoutResult.rowCount) {
-    throw new Error('Artifact loadout not saved');
+    );
+    items = loadoutItemsResult.rows.map((row) => ({
+      artifactId: row.artifact_id,
+      x: row.x,
+      y: row.y,
+      width: row.width,
+      height: row.height,
+      sortOrder: row.sort_order,
+      bagId: row.bag_id || null
+    }));
+    runBudget = MAX_ARTIFACT_COINS;
   }
 
-  const items = loadoutItemsResult.rows.map((row) => ({
-    artifactId: row.artifact_id,
-    x: row.x,
-    y: row.y,
-    width: row.width,
-    height: row.height,
-    sortOrder: row.sort_order,
-    bagId: row.bag_id || null
-  }));
-  // Coin budget = sum of per-round income up to and including the current round.
-  // Outside a game run, fall back to the legacy 5-coin cap.
-  const currentRound = activeRunResult.rowCount ? activeRunResult.rows[0].current_round : 0;
-  const runBudget = currentRound > 0
-    ? ROUND_INCOME.slice(0, currentRound).reduce((sum, c) => sum + c, 0)
-    : MAX_ARTIFACT_COINS;
   validateLoadoutItems(items, runBudget);
-  const mushroomId = activeResult.rows[0].mushroom_id;
 
   return {
     playerId,

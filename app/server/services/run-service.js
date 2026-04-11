@@ -13,8 +13,6 @@ import {
   getCompletionBonus,
   getShopRefreshCost,
   GHOST_BUDGET_DISCOUNT,
-  INVENTORY_COLUMNS,
-  INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
   MAX_ROUNDS_PER_RUN,
   mushrooms,
@@ -40,6 +38,15 @@ import {
   recordBattle
 } from './battle-service.js';
 import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
+import {
+  applyLegacyPlacements,
+  copyRoundForward,
+  deleteOneByArtifactId,
+  insertLoadoutItem,
+  insertRefund,
+  nextSortOrder,
+  readCurrentRoundItems
+} from './game-run-loadout.js';
 
 function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
   const combatPool = [...combatArtifacts];
@@ -105,24 +112,17 @@ export async function startGameRun(playerId, mode = 'solo') {
       throw new Error('Daily battle limit reached');
     }
 
-    // Clear purchased items from previous runs (`purchased_round IS NOT NULL`)
-    // so they don't leak into the new run. Items saved manually (via the legacy
-    // prep screen / test setup) have NULL purchased_round and are preserved.
-    // Also clear the shop state so old bags/placements don't bleed across runs.
-    await client.query(
-      `DELETE FROM player_artifact_loadout_items
-       WHERE purchased_round IS NOT NULL
-         AND loadout_id IN (SELECT id FROM player_artifact_loadouts WHERE player_id = $1)`,
-      [playerId]
-    );
+    // Clear the old client-side shop state blob; its positions are obsolete
+    // now that the new table is the single source of truth.
     await client.query(
       `DELETE FROM player_shop_state WHERE player_id = $1`,
       [playerId]
     );
 
-    // Fetch the player's active mushroom and check if they already have items in
-    // their persistent loadout (from legacy prep or a saved build). If not, we'll
-    // seed a starter loadout after creating the run.
+    // Fetch the player's active mushroom for starter seeding.
+    // Legacy severance (§2.9): startGameRun no longer reads from
+    // player_artifact_loadout_items. The starter is always generated via
+    // createBotLoadout, never copied from the legacy table.
     const activeMushroomResult = await client.query(
       `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
       [playerId]
@@ -130,14 +130,6 @@ export async function startGameRun(playerId, mode = 'solo') {
     const activeMushroomId = activeMushroomResult.rowCount
       ? activeMushroomResult.rows[0].mushroom_id
       : null;
-
-    const existingItemsResult = await client.query(
-      `SELECT COUNT(*) as count FROM player_artifact_loadout_items items
-       JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
-       WHERE loadouts.player_id = $1`,
-      [playerId]
-    );
-    const hasExistingItems = Number(existingItemsResult.rows[0].count) > 0;
 
     const runId = createId('run');
     const now = nowIso();
@@ -174,62 +166,32 @@ export async function startGameRun(playerId, mode = 'solo') {
       [playerId, currentDay]
     );
 
-    // Seed a fresh starter loadout if the player has no existing items.
+    // Seed a fresh starter loadout into the run-scoped table (§2.9 severance).
     // Uses the active mushroom's affinity via createBotLoadout.
     let starterItems = [];
-    if (activeMushroomId && !hasExistingItems) {
+    if (activeMushroomId) {
       const mushroom = mushrooms.find((m) => m.id === activeMushroomId);
       if (mushroom) {
         const loadoutRng = createRng(`${runId}:starter:${activeMushroomId}`);
         const starterLoadout = createBotLoadout(mushroom, loadoutRng, MAX_ARTIFACT_COINS);
-        const loadoutIdResult = await client.query(
-          `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
-          [playerId]
-        );
-        let loadoutId;
-        if (loadoutIdResult.rowCount) {
-          loadoutId = loadoutIdResult.rows[0].id;
-          await client.query(
-            `UPDATE player_artifact_loadouts SET mushroom_id = $2, updated_at = $3 WHERE id = $1`,
-            [loadoutId, activeMushroomId, now]
-          );
-        } else {
-          loadoutId = createId('loadout');
-          await client.query(
-            `INSERT INTO player_artifact_loadouts
-             (id, player_id, mushroom_id, grid_width, grid_height, is_active, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, 1, $6, $6)`,
-            [loadoutId, playerId, activeMushroomId, INVENTORY_COLUMNS, INVENTORY_ROWS, now]
-          );
-        }
         for (const [index, item] of starterLoadout.items.entries()) {
-          await client.query(
-            `INSERT INTO player_artifact_loadout_items
-             (id, loadout_id, artifact_id, x, y, width, height, sort_order, purchased_round, bag_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, NULL)`,
-            [createId('loadoutitem'), loadoutId, item.artifactId, item.x, item.y, item.width, item.height, index]
-          );
+          await insertLoadoutItem(client, {
+            gameRunId: runId,
+            playerId,
+            roundNumber: 1,
+            artifactId: item.artifactId,
+            x: item.x,
+            y: item.y,
+            width: item.width,
+            height: item.height,
+            bagId: item.bagId || null,
+            sortOrder: index,
+            purchasedRound: 1,
+            freshPurchase: false
+          });
         }
         starterItems = starterLoadout.items;
       }
-    } else if (hasExistingItems) {
-      // Return the existing loadout items so the client can populate builderItems
-      const existingResult = await client.query(
-        `SELECT items.artifact_id, items.x, items.y, items.width, items.height, items.bag_id
-         FROM player_artifact_loadout_items items
-         JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
-         WHERE loadouts.player_id = $1
-         ORDER BY items.sort_order ASC`,
-        [playerId]
-      );
-      starterItems = existingResult.rows.map((r) => ({
-        artifactId: r.artifact_id,
-        x: r.x,
-        y: r.y,
-        width: r.width,
-        height: r.height,
-        bagId: r.bag_id
-      }));
     }
 
     return {
@@ -270,23 +232,17 @@ export async function getActiveGameRun(playerId) {
   }
 
   const row = result.rows[0];
-  const [roundsResult, shopResult, loadoutItemsResult] = await Promise.all([
+  const currentRound = row.current_round;
+  const [roundsResult, shopResult, loadoutRows] = await Promise.all([
     query(
       `SELECT id, round_number, battle_id, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
       [row.id]
     ),
     query(
-      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
-      [row.id, playerId]
+      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+      [row.id, playerId, currentRound]
     ),
-    query(
-      `SELECT items.artifact_id, items.x, items.y, items.width, items.height, items.purchased_round, items.bag_id
-       FROM player_artifact_loadout_items items
-       JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
-       WHERE loadouts.player_id = $1 AND items.purchased_round IS NOT NULL
-       ORDER BY items.sort_order ASC`,
-      [playerId]
-    )
+    readCurrentRoundItems(null, row.id, playerId, currentRound)
   ]);
 
   const shopOffer = shopResult.rowCount ? parseJson(shopResult.rows[0].offer_json, []) : [];
@@ -295,20 +251,12 @@ export async function getActiveGameRun(playerId) {
     id: row.id,
     mode: row.mode,
     status: row.status,
-    currentRound: row.current_round,
+    currentRound,
     startedAt: row.started_at,
     endedAt: row.ended_at,
     endReason: row.end_reason,
     shopOffer,
-    loadoutItems: loadoutItemsResult.rows.map((r) => ({
-      artifactId: r.artifact_id,
-      x: r.x,
-      y: r.y,
-      width: r.width,
-      height: r.height,
-      purchasedRound: r.purchased_round,
-      bagId: r.bag_id
-    })),
+    loadoutItems: loadoutRows,
     player: {
       id: row.grp_id,
       playerId,
@@ -455,8 +403,8 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
   );
 
   const shopResult = await query(
-    `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
-    [gameRunId, viewerPlayerId]
+    `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+    [gameRunId, viewerPlayerId, run.current_round]
   );
   const shopOffer = shopResult.rowCount ? parseJson(shopResult.rows[0].offer_json, []) : [];
 
@@ -687,18 +635,22 @@ async function resolveChallengeRound(client, run, gameRunId) {
     );
     const nextRound = roundNumber + 1;
     for (const grp of [grpA, grpB]) {
-      const shopState = await client.query(
-        `SELECT rounds_since_bag FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
-        [gameRunId, grp.player_id]
+      // Copy round N loadout → round N+1 per player (§2.3 copy-forward).
+      await copyRoundForward(client, gameRunId, grp.player_id, roundNumber, nextRound);
+
+      // Insert a new shop state row for round N+1 (§2.8).
+      const prevShopState = await client.query(
+        `SELECT rounds_since_bag FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+        [gameRunId, grp.player_id, roundNumber]
       );
-      const prevRoundsSinceBag = shopState.rowCount ? shopState.rows[0].rounds_since_bag : 1;
+      const prevRoundsSinceBag = prevShopState.rowCount ? prevShopState.rows[0].rounds_since_bag : 1;
       const newRoundsSinceBag = prevRoundsSinceBag + 1;
       const shopRng = createRng(`${gameRunId}:shop:${nextRound}:${grp.player_id}`);
       const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag);
       await client.query(
-        `UPDATE game_run_shop_states SET round_number = $2, refresh_count = 0, rounds_since_bag = $3, offer_json = $4, updated_at = $5
-         WHERE game_run_id = $1 AND player_id = $6`,
-        [gameRunId, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso(), grp.player_id]
+        `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
+         VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
+        [createId('shopstate'), gameRunId, grp.player_id, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
       );
     }
   }
@@ -871,18 +823,24 @@ export async function resolveRound(playerId, gameRunId) {
         [gameRunId]
       );
       const nextRound = roundNumber + 1;
-      const shopState = await client.query(
-        `SELECT rounds_since_bag FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
-        [gameRunId, playerId]
+
+      // Copy round N loadout → round N+1 (§2.3 copy-forward).
+      await copyRoundForward(client, gameRunId, playerId, roundNumber, nextRound);
+
+      // Insert a NEW shop state row for round N+1 (§2.8 round-scoped shop state).
+      // The old row for round N stays as frozen history.
+      const prevShopState = await client.query(
+        `SELECT rounds_since_bag FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+        [gameRunId, playerId, roundNumber]
       );
-      const prevRoundsSinceBag = shopState.rowCount ? shopState.rows[0].rounds_since_bag : 1;
+      const prevRoundsSinceBag = prevShopState.rowCount ? prevShopState.rows[0].rounds_since_bag : 1;
       const newRoundsSinceBag = prevRoundsSinceBag + 1;
       const shopRng = createRng(`${gameRunId}:shop:${nextRound}`);
       const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag);
       await client.query(
-        `UPDATE game_run_shop_states SET round_number = $2, refresh_count = 0, rounds_since_bag = $3, offer_json = $4, updated_at = $5
-         WHERE game_run_id = $1 AND player_id = $6`,
-        [gameRunId, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso(), playerId]
+        `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
+         VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
+        [createId('shopstate'), gameRunId, playerId, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
       );
     }
 
@@ -909,6 +867,40 @@ export async function resolveRound(playerId, gameRunId) {
         ratingAfter
       }
     };
+  });
+}
+
+/**
+ * Bridge helper (Steps 2-7 transition): apply placement payload from the
+ * legacy client `PUT /api/artifact-loadout` endpoint onto the run-scoped
+ * current-round rows. This keeps the existing client working until Step 7
+ * replaces it with granular place/unplace endpoints.
+ *
+ * The payload may contain items that are not in the loadout (e.g. newly
+ * added from the shop in client state before a buy round-trip). Those are
+ * ignored — we only mutate rows that already exist in the new table.
+ */
+export async function applyRunLoadoutPlacements(playerId, gameRunId, items) {
+  return withTransaction(async (client) => {
+    const runResult = await client.query(
+      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
+      [gameRunId]
+    );
+    if (!runResult.rowCount) {
+      throw new Error('Game run not found or already ended');
+    }
+    const currentRound = runResult.rows[0].current_round;
+
+    const grpResult = await client.query(
+      `SELECT id FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
+      [gameRunId, playerId]
+    );
+    if (!grpResult.rowCount) {
+      throw new Error('Player is not part of this active game run');
+    }
+
+    await applyLegacyPlacements(client, gameRunId, playerId, currentRound, items);
+    return { ok: true };
   });
 }
 
@@ -965,42 +957,27 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
     if (idx !== -1) newOffer.splice(idx, 1);
 
     await client.query(
-      `UPDATE game_run_shop_states SET offer_json = $2, updated_at = $3 WHERE game_run_id = $1 AND player_id = $4`,
-      [gameRunId, JSON.stringify(newOffer), nowIso(), playerId]
+      `UPDATE game_run_shop_states SET offer_json = $2, updated_at = $3
+       WHERE game_run_id = $1 AND player_id = $4 AND round_number = $5`,
+      [gameRunId, JSON.stringify(newOffer), nowIso(), playerId, currentRound]
     );
 
-    const loadoutResult = await client.query(
-      `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
-      [playerId]
-    );
-    let loadoutId;
-    if (loadoutResult.rowCount) {
-      loadoutId = loadoutResult.rows[0].id;
-    } else {
-      loadoutId = createId('loadout');
-      const activeChar = await client.query(
-        `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
-        [playerId]
-      );
-      const mushroomId = activeChar.rowCount ? activeChar.rows[0].mushroom_id : 'thalla';
-      await client.query(
-        `INSERT INTO player_artifact_loadouts (id, player_id, mushroom_id, grid_width, grid_height, is_active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, 1, $6, $6)`,
-        [loadoutId, playerId, mushroomId, INVENTORY_COLUMNS, INVENTORY_ROWS, nowIso()]
-      );
-    }
-
-    const maxSort = await client.query(
-      `SELECT MAX(sort_order) AS max_sort FROM player_artifact_loadout_items WHERE loadout_id = $1`,
-      [loadoutId]
-    );
-    const nextSort = (maxSort.rows[0]?.max_sort ?? -1) + 1;
-
-    await client.query(
-      `INSERT INTO player_artifact_loadout_items (id, loadout_id, artifact_id, x, y, width, height, sort_order, purchased_round, bag_id)
-       VALUES ($1, $2, $3, -1, -1, $4, $5, $6, $7, NULL)`,
-      [createId('loadoutitem'), loadoutId, artifactId, artifact.width, artifact.height, nextSort, currentRound]
-    );
+    // Insert into the new run-scoped table. Container coords (-1,-1) until placed.
+    const sortOrder = await nextSortOrder(client, gameRunId, playerId, currentRound);
+    await insertLoadoutItem(client, {
+      gameRunId,
+      playerId,
+      roundNumber: currentRound,
+      artifactId,
+      x: -1,
+      y: -1,
+      width: artifact.width,
+      height: artifact.height,
+      bagId: null,
+      sortOrder,
+      purchasedRound: currentRound,
+      freshPurchase: true
+    });
 
     return { coins: newCoins, artifactId, price, shopOffer: newOffer };
   });
@@ -1008,6 +985,15 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
 
 export async function refreshRunShop(playerId, gameRunId) {
   return withTransaction(async (client) => {
+    const runResult = await client.query(
+      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
+      [gameRunId]
+    );
+    if (!runResult.rowCount) {
+      throw new Error('Game run not found or already ended');
+    }
+    const currentRound = runResult.rows[0].current_round;
+
     const grpResult = await client.query(
       `SELECT * FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
       [gameRunId, playerId]
@@ -1018,8 +1004,8 @@ export async function refreshRunShop(playerId, gameRunId) {
     const grp = grpResult.rows[0];
 
     const shopResult = await client.query(
-      `SELECT * FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
-      [gameRunId, playerId]
+      `SELECT * FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+      [gameRunId, playerId, currentRound]
     );
     if (!shopResult.rowCount) {
       throw new Error('Shop state not found');
@@ -1042,8 +1028,8 @@ export async function refreshRunShop(playerId, gameRunId) {
     );
     await client.query(
       `UPDATE game_run_shop_states SET refresh_count = refresh_count + 1, rounds_since_bag = $2, offer_json = $3, updated_at = $4
-       WHERE game_run_id = $1 AND player_id = $5`,
-      [gameRunId, hasBag ? 0 : currentRoundsSinceBag, JSON.stringify(newOffer), nowIso(), playerId]
+       WHERE game_run_id = $1 AND player_id = $5 AND round_number = $6`,
+      [gameRunId, hasBag ? 0 : currentRoundsSinceBag, JSON.stringify(newOffer), nowIso(), playerId, currentRound]
     );
 
     return {
@@ -1075,51 +1061,46 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
     }
     const grp = grpResult.rows[0];
 
-    const loadoutResult = await client.query(
-      `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
-      [playerId]
-    );
-    if (!loadoutResult.rowCount) {
-      throw new Error('No loadout found');
-    }
-    const loadoutId = loadoutResult.rows[0].id;
-
-    const itemResult = await client.query(
-      `SELECT * FROM player_artifact_loadout_items WHERE loadout_id = $1 AND artifact_id = $2 LIMIT 1`,
-      [loadoutId, artifactId]
-    );
-    if (!itemResult.rowCount) {
+    const currentRows = await readCurrentRoundItems(client, gameRunId, playerId, currentRound);
+    const candidate = currentRows.find((r) => r.artifactId === artifactId);
+    if (!candidate) {
       throw new Error('Item not found in loadout');
     }
-    const item = itemResult.rows[0];
 
-    const artifact = getArtifactById(item.artifact_id);
-
+    const artifact = getArtifactById(artifactId);
     if (artifact && artifact.family === 'bag') {
-      const contentsResult = await client.query(
-        `SELECT COUNT(*) AS count FROM player_artifact_loadout_items WHERE loadout_id = $1 AND bag_id = $2`,
-        [loadoutId, artifact.id]
-      );
-      if (Number(contentsResult.rows[0].count) > 0) {
+      const contentsCount = currentRows.filter((r) => r.bagId === artifactId).length;
+      if (contentsCount > 0) {
         throw new Error('Cannot sell a bag that contains items — empty it first');
       }
     }
 
     const price = getArtifactPrice(artifact);
-    const purchasedRound = item.purchased_round || 1;
-    const sellPrice = purchasedRound === currentRound ? price : Math.floor(price / 2);
+    // Graduated refund: fresh this round = full price, otherwise half.
+    // purchased_round is preserved across round copy-forward (§2.2).
+    const isFreshThisRound = candidate.purchasedRound === currentRound;
+    const sellPrice = isFreshThisRound ? price : Math.floor(price / 2);
 
-    await client.query(
-      `DELETE FROM player_artifact_loadout_items WHERE id = $1`,
-      [item.id]
-    );
+    const deleted = await deleteOneByArtifactId(client, gameRunId, playerId, currentRound, artifactId);
+    if (!deleted) {
+      throw new Error('Item not found in loadout');
+    }
+
+    await insertRefund(client, {
+      gameRunId,
+      playerId,
+      roundNumber: currentRound,
+      artifactId,
+      refundAmount: sellPrice
+    });
+
     const newCoins = grp.coins + sellPrice;
     await client.query(
       `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
       [grp.id, newCoins]
     );
 
-    return { coins: newCoins, sellPrice, artifactId: item.artifact_id };
+    return { coins: newCoins, sellPrice, artifactId };
   });
 }
 
@@ -1158,6 +1139,36 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
          VALUES ($1, $2, $3, 1, 0, $4, $5, $6)`,
         [createId('shopstate'), runId, pid, hasBag ? 0 : 1, JSON.stringify(shopOffer), now]
       );
+
+      // Seed starter loadout into the new run-scoped table (§2.9).
+      const activeChar = await client.query(
+        `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+        [pid]
+      );
+      if (activeChar.rowCount) {
+        const activeMushroomId = activeChar.rows[0].mushroom_id;
+        const mushroom = mushrooms.find((m) => m.id === activeMushroomId);
+        if (mushroom) {
+          const loadoutRng = createRng(`${runId}:starter:${pid}:${activeMushroomId}`);
+          const starterLoadout = createBotLoadout(mushroom, loadoutRng, MAX_ARTIFACT_COINS);
+          for (const [index, item] of starterLoadout.items.entries()) {
+            await insertLoadoutItem(client, {
+              gameRunId: runId,
+              playerId: pid,
+              roundNumber: 1,
+              artifactId: item.artifactId,
+              x: item.x,
+              y: item.y,
+              width: item.width,
+              height: item.height,
+              bagId: item.bagId || null,
+              sortOrder: index,
+              purchasedRound: 1,
+              freshPurchase: false
+            });
+          }
+        }
+      }
 
       const currentDay = dayKey(new Date());
       await client.query(

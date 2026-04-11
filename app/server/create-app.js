@@ -27,6 +27,7 @@ import {
   getFriends,
   getLeaderboard,
   getPlayerState,
+  applyRunLoadoutPlacements,
   saveArtifactLoadout,
   saveLocalTestRun,
   saveShopState,
@@ -215,15 +216,18 @@ export async function createApp() {
     '/api/artifact-loadout',
     requireAuth,
     asyncRoute(async (req, res) => {
-      // In an active game run, the coin budget is the sum of per-round income
-      // up to the current round (the max coins the player could ever have).
+      // In an active game run, placements are applied to the run-scoped
+      // current-round rows (§2.9 legacy severance). The legacy single-battle
+      // prep flow still uses saveArtifactLoadout against player_artifact_loadouts.
       const activeRun = await getActiveGameRun(req.user.id);
-      const coinBudget = activeRun
-        ? ROUND_INCOME.slice(0, activeRun.currentRound).reduce((sum, c) => sum + c, 0)
-        : undefined;
+      if (activeRun) {
+        await applyRunLoadoutPlacements(req.user.id, activeRun.id, req.body.items || []);
+        res.json({ success: true, data: await getActiveGameRun(req.user.id) });
+        return;
+      }
       res.json({
         success: true,
-        data: await saveArtifactLoadout(req.user.id, req.body.mushroomId, req.body.items, coinBudget)
+        data: await saveArtifactLoadout(req.user.id, req.body.mushroomId, req.body.items)
       });
     })
   );

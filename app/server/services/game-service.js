@@ -30,6 +30,7 @@ export {
 } from './player-service.js';
 export {
   abandonGameRun,
+  applyRunLoadoutPlacements,
   buyRunShopItem,
   createChallengeRun,
   getActiveGameRun,

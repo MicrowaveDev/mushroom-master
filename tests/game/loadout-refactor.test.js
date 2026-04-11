@@ -29,7 +29,7 @@ import {
   saveArtifactLoadout,
   getActiveGameRun
 } from '../../app/server/services/game-service.js';
-import { freshDb, createPlayer } from './helpers.js';
+import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
 
 async function tableExists(tableName) {
   try {
@@ -287,10 +287,21 @@ test('item bought in round 1 and sold in round 2 refunds at half price', async (
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
   const { playerId, run } = await bootPlayerInRun();
+  // Replace the auto-generated 5-coin starter with a minimal 1-coin loadout
+  // so we have budget headroom for the purchase.
+  await seedRunLoadout(playerId, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
   const active = await getActiveGameRun(playerId);
-  const artifactId = active.shopOffer[0];
+  const artifactId = active.shopOffer.find((id) => id !== 'spore_needle') || active.shopOffer[0];
 
   await buyRunShopItem(playerId, run.id, artifactId);
+  // Move the purchased item onto the grid so it survives round-forward.
+  await query(
+    `UPDATE game_run_loadout_items SET x = 1, y = 0
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1 AND artifact_id = $3`,
+    [run.id, playerId, artifactId]
+  );
   await resolveRound(playerId, run.id);
 
   // The copy-forward must preserve purchased_round=1 on the round-2 row.

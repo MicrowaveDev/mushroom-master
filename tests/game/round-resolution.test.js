@@ -11,7 +11,7 @@ import {
   selectActiveMushroom
 } from '../../app/server/services/game-service.js';
 import { STARTING_LIVES, ROUND_INCOME, RATING_FLOOR, runRewardTable } from '../../app/server/game-data.js';
-import { freshDb, createPlayer } from './helpers.js';
+import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -23,6 +23,8 @@ async function setupPlayerWithRun(overrides = {}) {
   await selectActiveMushroom(session.player.id, 'thalla');
   await saveArtifactLoadout(session.player.id, 'thalla', loadout);
   const run = await startGameRun(session.player.id, 'solo');
+  // Replace the auto-generated starter with the deterministic test loadout.
+  await seedRunLoadout(session.player.id, run.id, loadout);
   return { session, run, playerId: session.player.id };
 }
 

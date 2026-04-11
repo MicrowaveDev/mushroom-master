@@ -20,7 +20,7 @@ import {
   runRewardTable,
   getCompletionBonus
 } from '../../app/server/game-data.js';
-import { freshDb, createPlayer } from './helpers.js';
+import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
 import { query } from '../../app/server/db.js';
 
 const loadout = [
@@ -141,14 +141,13 @@ test('sellRunItem blocks selling non-empty bag', async () => {
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
 
-  // Place a bag with an item inside it
-  const bagLoadout = [
+  const run = await startGameRun(session.player.id, 'solo');
+
+  // Seed a bag with an item inside it directly into the run-scoped table.
+  await seedRunLoadout(session.player.id, run.id, [
     { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
-  ];
-  await saveArtifactLoadout(session.player.id, 'thalla', bagLoadout, 10);
-
-  const run = await startGameRun(session.player.id, 'solo');
+  ]);
 
   await assert.rejects(
     () => sellRunItem(session.player.id, run.id, 'moss_pouch'),

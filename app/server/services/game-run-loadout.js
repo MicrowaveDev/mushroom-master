@@ -1,0 +1,194 @@
+// Helpers for game_run_loadout_items — the run-scoped, round-scoped loadout table
+// introduced by the loadout refactor (see docs/loadout-refactor-plan.md §2.2).
+//
+// Every row is keyed by (game_run_id, player_id, round_number). Round N rows
+// are frozen history once round N+1 starts (copy-forward model, §2.3).
+//
+// Functions are pure DB helpers — they accept a `client` (transaction handle
+// or top-level) so callers can compose them inside a withTransaction block.
+
+import { query } from '../db.js';
+import { getArtifactById } from '../game-data.js';
+import { createId, nowIso } from '../lib/utils.js';
+
+async function q(client, sql, params) {
+  return client ? client.query(sql, params) : query(sql, params);
+}
+
+/**
+ * Insert a starter or freshly purchased item row.
+ * @param {object} client - transaction client or null
+ * @param {object} params - { gameRunId, playerId, roundNumber, artifact, x, y,
+ *                           sortOrder, purchasedRound, freshPurchase, bagId }
+ * @returns {string} the new row id
+ */
+export async function insertLoadoutItem(client, params) {
+  const id = createId('grlitem');
+  const artifact = getArtifactById(params.artifactId) || params.artifact;
+  const width = params.width ?? artifact.width;
+  const height = params.height ?? artifact.height;
+  await q(client,
+    `INSERT INTO game_run_loadout_items
+       (id, game_run_id, player_id, round_number, artifact_id, x, y, width, height,
+        bag_id, sort_order, purchased_round, fresh_purchase, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+    [
+      id,
+      params.gameRunId,
+      params.playerId,
+      params.roundNumber,
+      artifact?.id || params.artifactId,
+      params.x ?? -1,
+      params.y ?? -1,
+      width,
+      height,
+      params.bagId || null,
+      params.sortOrder ?? 0,
+      params.purchasedRound ?? params.roundNumber,
+      params.freshPurchase ? 1 : 0,
+      nowIso()
+    ]
+  );
+  return id;
+}
+
+/**
+ * Read all current-round rows for (gameRunId, playerId).
+ */
+export async function readCurrentRoundItems(client, gameRunId, playerId, roundNumber) {
+  const res = await q(client,
+    `SELECT id, artifact_id, x, y, width, height, bag_id, sort_order,
+            purchased_round, fresh_purchase
+     FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
+     ORDER BY sort_order ASC`,
+    [gameRunId, playerId, roundNumber]
+  );
+  return res.rows.map((r) => ({
+    id: r.id,
+    artifactId: r.artifact_id,
+    x: r.x,
+    y: r.y,
+    width: r.width,
+    height: r.height,
+    bagId: r.bag_id || null,
+    sortOrder: r.sort_order,
+    purchasedRound: r.purchased_round,
+    freshPurchase: !!r.fresh_purchase
+  }));
+}
+
+/**
+ * Copy round N rows to round N+1 (identical data; reset fresh_purchase=0).
+ * purchased_round is preserved so graduated refunds can see original buy round.
+ */
+export async function copyRoundForward(client, gameRunId, playerId, fromRound, toRound) {
+  const current = await readCurrentRoundItems(client, gameRunId, playerId, fromRound);
+  for (const item of current) {
+    await insertLoadoutItem(client, {
+      gameRunId,
+      playerId,
+      roundNumber: toRound,
+      artifactId: item.artifactId,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      bagId: item.bagId,
+      sortOrder: item.sortOrder,
+      purchasedRound: item.purchasedRound,
+      freshPurchase: false
+    });
+  }
+  return current.length;
+}
+
+/**
+ * Delete a single item row from the current round.
+ */
+export async function deleteLoadoutItem(client, itemId) {
+  await q(client, `DELETE FROM game_run_loadout_items WHERE id = $1`, [itemId]);
+}
+
+/**
+ * Delete all current-round rows matching an artifact_id (used when sell is
+ * called by artifact_id rather than item_id — picks the most recently added
+ * one for fair refund calculation).
+ */
+export async function deleteOneByArtifactId(client, gameRunId, playerId, roundNumber, artifactId) {
+  const rows = await q(client,
+    `SELECT id, purchased_round FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3 AND artifact_id = $4
+     ORDER BY sort_order DESC
+     LIMIT 1`,
+    [gameRunId, playerId, roundNumber, artifactId]
+  );
+  if (!rows.rowCount) return null;
+  const row = rows.rows[0];
+  await deleteLoadoutItem(client, row.id);
+  return { id: row.id, purchasedRound: row.purchased_round };
+}
+
+/**
+ * Compute next sort_order for inserting a new item into a round.
+ */
+export async function nextSortOrder(client, gameRunId, playerId, roundNumber) {
+  const res = await q(client,
+    `SELECT MAX(sort_order) AS max_sort FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+    [gameRunId, playerId, roundNumber]
+  );
+  return (res.rows[0]?.max_sort ?? -1) + 1;
+}
+
+/**
+ * Insert a refund ledger row (used when an item is sold).
+ */
+export async function insertRefund(client, { gameRunId, playerId, roundNumber, artifactId, refundAmount }) {
+  await q(client,
+    `INSERT INTO game_run_refunds
+       (id, game_run_id, player_id, round_number, artifact_id, refund_amount, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [createId('grr'), gameRunId, playerId, roundNumber, artifactId, refundAmount, nowIso()]
+  );
+}
+
+/**
+ * Bridge helper: apply placements from a "saveArtifactLoadout" batch payload
+ * onto the new table's current-round rows. The payload contains artifact_id
+ * + x/y + bag_id; we match rows in the new table by artifact_id in sort order
+ * (to handle duplicates correctly).
+ *
+ * Used by the legacy save path during the transition (Steps 2-7). Removed
+ * once the client moves to granular place/unplace endpoints (Step 7).
+ */
+export async function applyLegacyPlacements(client, gameRunId, playerId, roundNumber, legacyItems) {
+  // Group new-table rows by artifact_id for duplicate-aware matching.
+  const currentRows = await readCurrentRoundItems(client, gameRunId, playerId, roundNumber);
+  const byArtifact = new Map();
+  for (const row of currentRows) {
+    if (!byArtifact.has(row.artifactId)) byArtifact.set(row.artifactId, []);
+    byArtifact.get(row.artifactId).push(row);
+  }
+
+  // Consume rows in order — the first legacy item with artifactId X maps to the
+  // first unclaimed new-table row with the same artifactId, and so on.
+  for (const legacy of legacyItems) {
+    const bucket = byArtifact.get(legacy.artifactId);
+    if (!bucket || bucket.length === 0) continue;
+    const row = bucket.shift();
+    await q(client,
+      `UPDATE game_run_loadout_items
+       SET x = $1, y = $2, width = $3, height = $4, bag_id = $5
+       WHERE id = $6`,
+      [
+        Number(legacy.x ?? -1),
+        Number(legacy.y ?? -1),
+        Number(legacy.width ?? row.width),
+        Number(legacy.height ?? row.height),
+        legacy.bagId || null,
+        row.id
+      ]
+    );
+  }
+}
