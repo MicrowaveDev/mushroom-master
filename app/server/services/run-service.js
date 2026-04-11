@@ -38,6 +38,7 @@ import {
   recordBattle
 } from './battle-service.js';
 import { isBag } from './artifact-helpers.js';
+import { withRunLock } from './ready-manager.js';
 import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 import {
   applyLegacyPlacements,
@@ -933,17 +934,31 @@ export async function resolveRound(playerId, gameRunId) {
 }
 
 /**
- * Bridge helper (Steps 2-7 transition): apply placement payload from the
- * legacy client `PUT /api/artifact-loadout` endpoint onto the run-scoped
- * current-round rows. This keeps the existing client working until Step 7
- * replaces it with granular place/unplace endpoints.
+ * TEMPORARY BRIDGE — DO NOT ADD LOGIC HERE.
  *
- * The payload may contain items that are not in the loadout (e.g. newly
- * added from the shop in client state before a buy round-trip). Those are
- * ignored — we only mutate rows that already exist in the new table.
+ * This is the transition shim from the legacy client `PUT /api/artifact-loadout`
+ * endpoint onto the run-scoped current-round rows. It exists only until the
+ * granular `/place` `/unplace` `/rotate` `/activate-bag` endpoints land (see
+ * docs/post-review-followups.md Batch C1). The contract is:
+ *
+ *   1. Validate the run is active.
+ *   2. Validate the caller is an active member of the run.
+ *   3. Delegate placement writes to `applyLegacyPlacements`.
+ *
+ * That's it. No coin math. No shop mutations. No cross-table side effects.
+ * No business logic beyond membership + delegation.
+ *
+ * If you're adding logic here to fix a bug, the bug is almost certainly in
+ * `applyLegacyPlacements` or one of the granular helpers. If you need a new
+ * mutation surface, write a dedicated endpoint (see §2.6 of
+ * loadout-refactor-plan.md). Growing this function re-creates the multi-
+ * source problem the refactor solved (see §1.2 of the same plan).
+ *
+ * The contract is pinned by `tests/game/bridge-pin.test.js`. Adding logic
+ * here will break that test, which is intentional.
  */
 export async function applyRunLoadoutPlacements(playerId, gameRunId, items) {
-  return withTransaction(async (client) => {
+  return withRunLock(gameRunId, () => withTransaction(async (client) => {
     const runResult = await client.query(
       `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
       [gameRunId]
@@ -963,11 +978,11 @@ export async function applyRunLoadoutPlacements(playerId, gameRunId, items) {
 
     await applyLegacyPlacements(client, gameRunId, playerId, currentRound, items);
     return { ok: true };
-  });
+  }));
 }
 
 export async function buyRunShopItem(playerId, gameRunId, artifactId) {
-  return withTransaction(async (client) => {
+  return withRunLock(gameRunId, () => withTransaction(async (client) => {
     const runResult = await client.query(
       `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
       [gameRunId]
@@ -1042,11 +1057,11 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
     });
 
     return { coins: newCoins, artifactId, price, shopOffer: newOffer };
-  });
+  }));
 }
 
 export async function refreshRunShop(playerId, gameRunId) {
-  return withTransaction(async (client) => {
+  return withRunLock(gameRunId, () => withTransaction(async (client) => {
     const runResult = await client.query(
       `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
       [gameRunId]
@@ -1100,11 +1115,11 @@ export async function refreshRunShop(playerId, gameRunId) {
       refreshCount: shop.refresh_count + 1,
       refreshCost: cost
     };
-  });
+  }));
 }
 
 export async function sellRunItem(playerId, gameRunId, artifactId) {
-  return withTransaction(async (client) => {
+  return withRunLock(gameRunId, () => withTransaction(async (client) => {
     const runResult = await client.query(
       `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
       [gameRunId]
@@ -1163,7 +1178,7 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
     );
 
     return { coins: newCoins, sellPrice, artifactId };
-  });
+  }));
 }
 
 export async function createChallengeRun(challengerPlayerId, inviteePlayerId, challengeId) {

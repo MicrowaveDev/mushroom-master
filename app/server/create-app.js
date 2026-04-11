@@ -46,6 +46,9 @@ import {
 } from './services/game-service.js';
 import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
+import { log, requestLogger } from './lib/obs.js';
+import { idempotency } from './lib/idempotency.js';
+import { rateLimit } from './lib/rate-limit.js';
 import { getWikiEntry, getWikiHome } from './wiki.js';
 
 const repoRoot = '/Users/microwavedev/workspace/mushroom-master';
@@ -90,7 +93,10 @@ export async function createApp() {
   await getDb();
   const app = express();
   app.use(express.json({ limit: '2mb' }));
+  app.use(requestLogger());
   app.use(authenticateRequest);
+
+  const runMutationGuards = [rateLimit(), idempotency()];
 
   app.get('/api/health', (_req, res) => {
     res.json({ success: true, data: { ok: true } });
@@ -215,6 +221,7 @@ export async function createApp() {
   app.put(
     '/api/artifact-loadout',
     requireAuth,
+    ...runMutationGuards,
     asyncRoute(async (req, res) => {
       // In an active game run, placements are applied to the run-scoped
       // current-round rows (§2.9 legacy severance). The legacy single-battle
@@ -387,7 +394,9 @@ export async function createApp() {
       const mode = runResult.rows[0].mode;
 
       if (mode === 'solo') {
-        const data = await resolveRound(playerId, gameRunId);
+        const data = await readyManager.withRunLock(gameRunId, () =>
+          resolveRound(playerId, gameRunId)
+        );
         return res.json({ success: true, data });
       }
 
@@ -457,6 +466,7 @@ export async function createApp() {
     '/api/game-run/:id/refresh-shop',
     requireAuth,
     requireRunMembership,
+    ...runMutationGuards,
     asyncRoute(async (req, res) => {
       const data = await refreshRunShop(req.user.id, req.params.id);
       res.json({ success: true, data });
@@ -467,6 +477,7 @@ export async function createApp() {
     '/api/game-run/:id/sell',
     requireAuth,
     requireRunMembership,
+    ...runMutationGuards,
     asyncRoute(async (req, res) => {
       const data = await sellRunItem(req.user.id, req.params.id, req.body.artifactId);
       res.json({ success: true, data });
@@ -477,6 +488,7 @@ export async function createApp() {
     '/api/game-run/:id/buy',
     requireAuth,
     requireRunMembership,
+    ...runMutationGuards,
     asyncRoute(async (req, res) => {
       const data = await buyRunShopItem(req.user.id, req.params.id, req.body.artifactId);
       res.json({ success: true, data });
@@ -641,7 +653,14 @@ export async function createApp() {
     // Only expose message for known application errors; hide internals for 500s
     const isAppError = status !== 500;
     if (!isAppError) {
-      console.error('Unhandled error:', error);
+      log.error({
+        kind: 'unhandled',
+        requestId: _req.requestId || null,
+        playerId: _req.user?.id || null,
+        gameRunId: _req.params?.id || null,
+        message: error.message,
+        stack: error.stack
+      });
     }
     res.status(status).json({
       success: false,

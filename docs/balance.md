@@ -233,6 +233,16 @@ budget = activeRun ? sum(ROUND_INCOME[0..currentRound]) : MAX_ARTIFACT_COINS;
 
 **Fix:** Bags no longer occupy grid cells. They add *extra rows* below the base grid, which hold 1×1 artifacts tagged with `bagId`. See [artifact-board-spec.md](./artifact-board-spec.md) Section 3 for the full bag system.
 
+### Issue #6: New runs started with items from the previous run — RESOLVED
+
+**Symptom:** Starting a second game showed the previous run's purchased artifacts still sitting in the loadout. The "clean slate on new run" contract was broken.
+
+**Root cause:** `player_artifact_loadouts` was shared across pre-run prep (the legacy `ArtifactsScreen` flow) and live game-run state. `saveArtifactLoadout` wiped `purchased_round` on every save, so the `WHERE purchased_round IS NOT NULL` cleanup in `startGameRun` matched zero rows. Every patch uncovered a new edge case because the two concerns shared one table.
+
+**Fix:** Resolved structurally by the run-state refactor ([loadout-refactor-plan.md](./loadout-refactor-plan.md)). Game runs now live in their own `game_run_loadout_items` table scoped by `(game_run_id, player_id, round_number)`. `startGameRun` seeds round-1 rows directly via `createBotLoadout` and never reads `player_artifact_loadouts`. The legacy table is a self-contained world used only by the legacy single-battle flow. Cross-run leakage is no longer expressible in the schema.
+
+**Verified by:** `tests/game/loadout-refactor.test.js` — `startGameRun does not seed the legacy player_artifact_loadouts table`.
+
 ---
 
 ## 10. Tuning Guide
