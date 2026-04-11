@@ -37,6 +37,7 @@ import {
   getDailyUsage,
   recordBattle
 } from './battle-service.js';
+import { isBag } from './artifact-helpers.js';
 import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 import {
   applyLegacyPlacements,
@@ -1129,7 +1130,7 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
     }
 
     const artifact = getArtifactById(artifactId);
-    if (artifact && artifact.family === 'bag') {
+    if (isBag(artifact)) {
       const contentsCount = currentRows.filter((r) => r.bagId === artifactId).length;
       if (contentsCount > 0) {
         throw new Error('Cannot sell a bag that contains items — empty it first');

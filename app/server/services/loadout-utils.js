@@ -7,6 +7,11 @@ import {
   MAX_STUN_CHANCE
 } from '../game-data.js';
 import { clamp } from '../lib/utils.js';
+import {
+  contributesStats,
+  isBag,
+  isContainerItem
+} from './artifact-helpers.js';
 
 export function buildArtifactSummary(items) {
   const totals = {
@@ -18,12 +23,7 @@ export function buildArtifactSummary(items) {
 
   for (const item of items) {
     const artifact = getArtifactById(item.artifactId || item.artifact_id);
-    if (!artifact || artifact.family === 'bag') {
-      continue;
-    }
-    // Items still in container (not placed on grid or in a bag) don't contribute stats
-    const isPlaced = (item.bagId) || (Number(item.x) >= 0 && Number(item.y) >= 0);
-    if (!isPlaced) continue;
+    if (!contributesStats(artifact, item)) continue;
     totals.damage += artifact.bonus.damage || 0;
     totals.armor += artifact.bonus.armor || 0;
     totals.speed += artifact.bonus.speed || 0;
@@ -34,47 +34,28 @@ export function buildArtifactSummary(items) {
   return totals;
 }
 
-export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
-  if (!Array.isArray(items)) {
-    throw new Error('Loadout items must be an array');
-  }
+/**
+ * Validate grid placements (bounds + overlap) for non-bag, non-container,
+ * non-bagged items. Returns the set of occupied cells for downstream use.
+ */
+export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, gridHeight = INVENTORY_ROWS) {
   const occupied = new Set();
-  const artifactIds = new Set();
-  let totalCoins = 0;
-
-  const gridItems = items.filter((item) => !item.bagId);
-  const baggedItems = items.filter((item) => item.bagId);
-
-  const bagSlotUsage = new Map();
 
   for (const item of gridItems) {
     const artifact = getArtifactById(item.artifactId);
     if (!artifact) {
       throw new Error(`Unknown artifact: ${item.artifactId}`);
     }
-    artifactIds.add(item.artifactId);
-    totalCoins += getArtifactPrice(artifact);
+    if (isBag(artifact)) continue;
+    if (isContainerItem(item)) continue;
+
     const matchesCanonical = item.width === artifact.width && item.height === artifact.height;
     const matchesRotated = item.width === artifact.height && item.height === artifact.width;
     if (!matchesCanonical && !matchesRotated) {
       throw new Error('Stored artifact dimensions must match canonical definitions');
     }
 
-    // Bags expand the grid via extra slots rather than occupying cells.
-    // They have no grid position — just register as a slot provider.
-    if (artifact.family === 'bag') {
-      bagSlotUsage.set(item.artifactId, 0);
-      continue;
-    }
-
-    // Items with x<0 or y<0 are in the container (not placed on the grid).
-    // They're kept in the loadout for persistence but skip bounds/overlap checks
-    // and contribute no combat stats.
-    if (item.x < 0 || item.y < 0) {
-      continue;
-    }
-
-    if (item.x + item.width > INVENTORY_COLUMNS || item.y + item.height > INVENTORY_ROWS) {
+    if (item.x + item.width > gridWidth || item.y + item.height > gridHeight) {
       throw new Error('Artifact placement is out of bounds');
     }
 
@@ -89,26 +70,43 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
     }
   }
 
-  for (const item of baggedItems) {
+  return { occupied };
+}
+
+/**
+ * Validate bag contents: each bagged item references an active bag, the
+ * reference resolves, and the total footprint (width × height) fits inside
+ * the bag's slotCount.
+ */
+export function validateBagContents(items) {
+  // First pass: register bags as slot providers.
+  const bagSlotUsage = new Map();
+  for (const item of items) {
+    if (item.bagId) continue;
+    const artifact = getArtifactById(item.artifactId);
+    if (isBag(artifact)) {
+      bagSlotUsage.set(item.artifactId, 0);
+    }
+  }
+
+  // Second pass: account for bagged items.
+  for (const item of items) {
+    if (!item.bagId) continue;
     const artifact = getArtifactById(item.artifactId);
     if (!artifact) {
       throw new Error(`Unknown artifact: ${item.artifactId}`);
     }
-    if (artifact.family === 'bag') {
+    if (isBag(artifact)) {
       throw new Error('Bags cannot contain other bags');
     }
-    artifactIds.add(item.artifactId);
-    totalCoins += getArtifactPrice(artifact);
-
     const bagArtifact = getArtifactById(item.bagId);
-    if (!bagArtifact || bagArtifact.family !== 'bag') {
+    if (!bagArtifact || !isBag(bagArtifact)) {
       throw new Error(`Invalid bag reference: ${item.bagId}`);
     }
     if (!bagSlotUsage.has(item.bagId)) {
       throw new Error(`Bag ${item.bagId} is not placed on the grid`);
     }
 
-    // Items consume cells equal to their footprint (width × height)
     const cellsUsed = item.width * item.height;
     const used = bagSlotUsage.get(item.bagId) + cellsUsed;
     if (used > bagArtifact.slotCount) {
@@ -117,9 +115,40 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
     bagSlotUsage.set(item.bagId, used);
   }
 
+  return { bagSlotUsage };
+}
+
+/**
+ * Sum the prices of all items and throw if they exceed the coin budget.
+ */
+export function validateCoinBudget(items, coinBudget) {
+  let totalCoins = 0;
+  for (const item of items) {
+    const artifact = getArtifactById(item.artifactId);
+    if (!artifact) {
+      throw new Error(`Unknown artifact: ${item.artifactId}`);
+    }
+    totalCoins += getArtifactPrice(artifact);
+  }
   if (totalCoins > coinBudget) {
     throw new Error(`Loadout exceeds ${coinBudget}-coin budget (cost ${totalCoins})`);
   }
+  return { totalCoins };
+}
+
+/**
+ * Orchestrator: runs all four validators in sequence.
+ * Returns { items, totals, totalCoins } for backward compatibility.
+ */
+export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
+  if (!Array.isArray(items)) {
+    throw new Error('Loadout items must be an array');
+  }
+
+  const gridItems = items.filter((item) => !item.bagId);
+  validateGridItems(gridItems);
+  validateBagContents(items);
+  const { totalCoins } = validateCoinBudget(items, coinBudget);
 
   return {
     items,

@@ -12,6 +12,7 @@ import {
   createId,
   nowIso
 } from '../lib/utils.js';
+import { isBag as isArtifactBag } from './artifact-helpers.js';
 import { createBattle } from './battle-service.js';
 import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 import { createRng } from '../lib/utils.js';
@@ -159,9 +160,8 @@ export async function saveArtifactLoadout(playerId, mushroomId, items, coinBudge
   }
   const normalizedItems = items.map((item, index) => {
     const artifact = getArtifactById(item.artifactId);
-    const isBag = artifact?.family === 'bag';
     // Bags and bagged items have no grid position — use 0,0 as a sentinel.
-    const hasPosition = !item.bagId && !isBag && item.x !== undefined && item.y !== undefined;
+    const hasPosition = !item.bagId && !isArtifactBag(artifact) && item.x !== undefined && item.y !== undefined;
     return {
       artifactId: item.artifactId,
       x: hasPosition ? Number(item.x) : 0,
