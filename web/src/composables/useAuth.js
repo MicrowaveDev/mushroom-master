@@ -85,41 +85,57 @@ export function useAuth(state, goTo) {
       if (state.bootstrap.activeGameRun) {
         state.gameRun = state.bootstrap.activeGameRun;
         state.gameRunShopOffer = state.bootstrap.activeGameRun.shopOffer || [];
-        // Restore inventory state with shopState as the primary source of truth for
-        // the UI. The shopState is updated via persistShopOffer() on every mutation
-        // (buy, sell, place, unplace, activate bag, rotate bag) so it reflects the
-        // exact UI state the player last saw.
-        //
-        // Fallback: if shopState.builderItems is empty but the server loadoutItems
-        // has placed items (e.g. just after the starter loadout was seeded, before
-        // the client has had a chance to persist anything), derive builderItems from
-        // loadoutItems so the starter loadout is visible immediately on first load.
-        const stored = state.bootstrap?.shopState || null;
+
+        // Single-source projection (§2.5): derive all UI state buckets from
+        // the server's loadoutItems array. Previously this joined three
+        // sources (server loadoutItems + client shopState blob + starter
+        // payload) and had to reconcile duplicates and stale entries.
+        // Now loadoutItems is the canonical truth, scoped to the current round.
         const allArtifacts = state.bootstrap?.artifacts || [];
         const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
-        const available = new Set(allArtifacts.map((a) => a.id));
         const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
 
-        const storedBuilder = (stored?.builderItems || []).filter((i) => available.has(i.artifactId));
-        if (storedBuilder.length > 0) {
-          state.builderItems = storedBuilder.map((i) => ({
+        // Grid-placed combat items (x>=0, y>=0, no bagId, not a bag artifact).
+        state.builderItems = loadoutItems
+          .filter((i) => !bagsSet.has(i.artifactId) && !i.bagId && i.x >= 0 && i.y >= 0)
+          .map((i) => ({
             artifactId: i.artifactId,
-            x: i.x, y: i.y, width: i.width, height: i.height
+            x: i.x, y: i.y, width: i.width, height: i.height,
+            bagId: null
           }));
-        } else {
-          // Fallback: use placed items from server loadout (starter loadout or first-load)
-          state.builderItems = loadoutItems
-            .filter((i) => !bagsSet.has(i.artifactId) && i.x >= 0 && i.y >= 0 && !i.bagId)
-            .map((i) => ({
-              artifactId: i.artifactId,
-              x: i.x, y: i.y, width: i.width, height: i.height
-            }));
-        }
 
-        state.containerItems = (stored?.container || []).filter((id) => available.has(id));
-        state.activeBags = (stored?.activeBags || []).filter((id) => available.has(id));
+        // Container items: non-bag artifacts with sentinel position (-1,-1)
+        // that aren't inside a bag. Bags in container also go here (they're
+        // unactivated until the player clicks activate).
+        state.containerItems = loadoutItems
+          .filter((i) => !i.bagId && (i.x < 0 || i.y < 0))
+          .map((i) => i.artifactId);
+
+        // Active bags: bag artifacts with x>=0 (the server signals "placed"
+        // via non-sentinel coords on bag rows).
+        state.activeBags = loadoutItems
+          .filter((i) => bagsSet.has(i.artifactId) && i.x >= 0)
+          .map((i) => i.artifactId);
+
+        // Bagged items: items inside an active bag go into builderItems with
+        // bagId set; the existing rendering code groups them under bag rows.
+        const baggedItems = loadoutItems
+          .filter((i) => i.bagId)
+          .map((i) => ({
+            artifactId: i.artifactId,
+            x: i.x, y: i.y, width: i.width, height: i.height,
+            bagId: i.bagId
+          }));
+        state.builderItems = [...state.builderItems, ...baggedItems];
+
+        // Rotated bags and fresh purchases are UI-only decorations — read
+        // what's in the legacy shopState blob if still present, but treat as
+        // optional (no reconciliation needed).
+        const stored = state.bootstrap?.shopState || null;
         state.rotatedBags = (stored?.rotatedBags || []).filter((id) => state.activeBags.includes(id));
-        state.freshPurchases = (stored?.freshPurchases || []).filter((id) => available.has(id));
+        state.freshPurchases = loadoutItems
+          .filter((i) => i.freshPurchase)
+          .map((i) => i.artifactId);
       } else {
         state.gameRun = null;
       }

@@ -60,21 +60,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.gameRunShopOffer = data.shopOffer || [];
       state.gameRunRefreshCount = 0;
       state.gameRunResult = null;
-      // Seed builderItems from the server's fresh starter loadout for this run.
-      // The server clears any leftover items from previous runs and generates a
-      // new affinity-weighted starter loadout, returning it in `starterItems`.
-      const starterItems = data.starterItems || [];
-      state.builderItems = starterItems
-        .filter((i) => i.x >= 0 && i.y >= 0 && !i.bagId)
-        .map((i) => ({
-          artifactId: i.artifactId,
-          x: i.x, y: i.y, width: i.width, height: i.height
-        }));
-      state.containerItems = [];
-      state.activeBags = [];
-      state.rotatedBags = [];
-      state.freshPurchases = [];
-      if (persistShopOffer) persistShopOffer();
+      // Fetch the full run state from the server (the new run-scoped read
+      // path) and let refreshBootstrap project loadoutItems into the UI
+      // buckets. Guarantees starter + any future round-forward rows
+      // reach the prep screen via one source of truth (§2.5 projection).
+      if (refreshBootstrap) await refreshBootstrap();
       goTo('prep');
     } catch (error) {
       state.error = error.message || 'Could not start game run';
@@ -121,17 +111,14 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
 
   async function continueToNextRound() {
     if (!state.gameRunResult || !state.gameRun) return;
-    const result = state.gameRunResult;
-    state.gameRun = {
-      ...state.gameRun,
-      currentRound: result.currentRound,
-      status: result.status,
-      player: result.player
-    };
     state.gameRunResult = null;
     state.gameRunRefreshCount = 0;
-    state.freshPurchases = [];
-    await loadRunShopOffer();
+    // Full re-hydrate from the server — picks up the copy-forward round N+1
+    // loadout rows and the new round's shop offer in one round-trip.
+    // Replaces the old "partial merge + loadRunShopOffer" pattern which
+    // could drift when the server's copy-forward produced a different
+    // layout than the client last sent (§2.5 projection).
+    if (refreshBootstrap) await refreshBootstrap();
     goTo('prep');
   }
 
