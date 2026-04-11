@@ -157,7 +157,7 @@ test('sellRunItem blocks selling non-empty bag', async () => {
 
 // --- Ghost snapshot saved after round ---
 
-test('ghost snapshot saved after each solo round', async () => {
+test('round loadout rows remain after each solo round (unified snapshot, §2.4)', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -166,12 +166,16 @@ test('ghost snapshot saved after each solo round', async () => {
   const run = await startGameRun(session.player.id, 'solo');
   await resolveRound(session.player.id, run.id);
 
-  const snapshots = await query(
-    'SELECT * FROM game_run_ghost_snapshots WHERE game_run_id = $1',
-    [run.id]
+  // Under the unified ghost model the round-1 loadout rows in
+  // game_run_loadout_items ARE the ghost snapshot — future runs read them
+  // directly (no separate game_run_ghost_snapshots table).
+  const round1Rows = await query(
+    `SELECT player_id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
+    [run.id, session.player.id]
   );
-  assert.ok(snapshots.rowCount >= 1);
-  assert.equal(snapshots.rows[0].player_id, session.player.id);
+  assert.ok(round1Rows.rowCount >= 1);
+  assert.equal(round1Rows.rows[0].player_id, session.player.id);
 });
 
 // --- Step naming in replay events ---

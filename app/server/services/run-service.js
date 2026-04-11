@@ -451,47 +451,112 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
   const order = shuffleWithRng(opponentMushroomIds, shuffleRng);
   const targetMushroomId = order[(roundNumber - 1) % order.length];
 
-  // Try to find a real player snapshot with this mushroom
+  // Unified ghost path (§2.4): real player rows and synthetic bot rows both
+  // live in game_run_loadout_items. Query 1 tries to find a real player who
+  // completed this round number with the target mushroom. If none, fall back
+  // to the bot path which inserts deterministic rows under a synthetic run id.
+
+  // Build the exclusion set: the current player, and any opponent they've
+  // already faced in this run.
   const facedResult = await client.query(
-    `SELECT DISTINCT opponent_player_id FROM game_rounds WHERE game_run_id = $1 AND opponent_player_id IS NOT NULL`,
+    `SELECT DISTINCT opponent_player_id FROM game_rounds
+     WHERE game_run_id = $1 AND opponent_player_id IS NOT NULL`,
     [gameRunId]
   );
-  const facedIds = [...new Set(facedResult.rows.map((r) => r.opponent_player_id))];
-  facedIds.push(playerId);
+  const excludedPlayerIds = [...new Set(facedResult.rows.map((r) => r.opponent_player_id))];
+  excludedPlayerIds.push(playerId);
 
-  const excludePlaceholders = facedIds.map((_, i) => `$${i + 3}`).join(', ');
-  const snapshotResult = await client.query(
-    `SELECT * FROM game_run_ghost_snapshots
-     WHERE player_id NOT IN (${excludePlaceholders})
-       AND mushroom_id = $1
-       AND total_coins <= $2
-     ORDER BY RANDOM() LIMIT 1`,
-    [targetMushroomId, ghostBudget, ...facedIds]
+  // Query 1 — find a real player game_run with a round-N loadout for the
+  // target mushroom. We need to join through game_run_players + player_active_character
+  // to match mushroom, since game_run_loadout_items itself doesn't carry mushroom.
+  const excludePlaceholders = excludedPlayerIds.map((_, i) => `$${i + 4}`).join(', ');
+  const realResult = await client.query(
+    `SELECT DISTINCT grli.game_run_id, grli.player_id
+     FROM game_run_loadout_items grli
+     JOIN player_active_character pac ON pac.player_id = grli.player_id
+     WHERE grli.round_number = $1
+       AND grli.game_run_id != $2
+       AND pac.mushroom_id = $3
+       AND grli.player_id NOT IN (${excludePlaceholders})
+       AND grli.game_run_id NOT LIKE 'ghost:bot:%'
+     ORDER BY RANDOM()
+     LIMIT 1`,
+    [roundNumber, gameRunId, targetMushroomId, ...excludedPlayerIds]
   );
 
-  if (snapshotResult.rowCount) {
-    const row = snapshotResult.rows[0];
-    const payload = parseJson(row.payload_json);
+  if (realResult.rowCount) {
+    const { game_run_id: ghostRunId, player_id: ghostPlayerId } = realResult.rows[0];
+    const items = await readCurrentRoundItems(client, ghostRunId, ghostPlayerId, roundNumber);
+    if (items.length > 0) {
+      return {
+        playerId: ghostPlayerId,
+        mushroomId: targetMushroomId,
+        loadout: {
+          gridWidth: 3,
+          gridHeight: 2,
+          items
+        }
+      };
+    }
+  }
+
+  // Query 2 — bot fallback. Generate a deterministic loadout and write it
+  // into game_run_loadout_items under a synthetic run id. The seed is
+  // (mushroom, budget, gameRunId, roundNumber) so repeated calls in the same
+  // context produce the same rows (idempotent).
+  const botBudget = Math.max(3, ghostBudget);
+  const syntheticRunId = `ghost:bot:${targetMushroomId}:${botBudget}:${gameRunId}:${roundNumber}`;
+  const syntheticPlayerId = 'bot';
+
+  // Check for an existing synthetic row set before regenerating.
+  const existing = await readCurrentRoundItems(client, syntheticRunId, syntheticPlayerId, roundNumber);
+  if (existing.length > 0) {
     return {
-      playerId: row.player_id,
-      mushroomId: row.mushroom_id,
-      loadout: payload.loadout
+      playerId: null,
+      mushroomId: targetMushroomId,
+      loadout: { gridWidth: 3, gridHeight: 2, items: existing }
     };
   }
 
-  // Fall back to bot-generated opponent. The caller already applied floor/grace,
-  // so we pass the budget through verbatim (but clamp the generator's minimum at 3
-  // since its weighting algorithm needs at least 3 coins to pick an item reliably).
-  const botBudget = Math.max(3, ghostBudget);
+  const targetMushroom = mushrooms.find((m) => m.id === targetMushroomId);
+  let botLoadout;
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      const seed = `${gameRunId}:ghost:${roundNumber}:${attempt}`;
-      return createBotGhostSnapshot(seed, targetMushroomId, botBudget);
+      const rng = createRng(`${syntheticRunId}:attempt:${attempt}`);
+      botLoadout = createBotLoadout(targetMushroom, rng, botBudget);
+      break;
     } catch {
       continue;
     }
   }
-  return createBotGhostSnapshot(`${gameRunId}:ghost:${roundNumber}:fallback`, targetMushroomId, botBudget);
+  if (!botLoadout) {
+    // Final fallback — createBotGhostSnapshot has its own retry loop.
+    return createBotGhostSnapshot(`${syntheticRunId}:fallback`, targetMushroomId, botBudget);
+  }
+
+  for (const [index, item] of botLoadout.items.entries()) {
+    await insertLoadoutItem(client, {
+      gameRunId: syntheticRunId,
+      playerId: syntheticPlayerId,
+      roundNumber,
+      artifactId: item.artifactId,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      bagId: null,
+      sortOrder: index,
+      purchasedRound: roundNumber,
+      freshPurchase: false
+    });
+  }
+
+  const inserted = await readCurrentRoundItems(client, syntheticRunId, syntheticPlayerId, roundNumber);
+  return {
+    playerId: null,
+    mushroomId: targetMushroomId,
+    loadout: { gridWidth: 3, gridHeight: 2, items: inserted }
+  };
 }
 
 async function resolveChallengeRound(client, run, gameRunId) {
@@ -788,13 +853,9 @@ export async function resolveRound(playerId, gameRunId) {
       [playerId, mushroomId, rewards.mycelium]
     );
 
-    await client.query(
-      `INSERT INTO game_run_ghost_snapshots (id, game_run_id, player_id, round_number, mushroom_id, payload_json, total_coins, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [createId('ghost'), gameRunId, playerId, roundNumber, leftSnapshot.mushroomId,
-       JSON.stringify({ mushroomId: leftSnapshot.mushroomId, loadout: leftSnapshot.loadout }),
-       grp.coins, nowIso()]
-    );
+    // Ghost snapshots are no longer written to a separate table (§2.4).
+    // The round-N loadout rows in game_run_loadout_items ARE the snapshot —
+    // future runs query them directly via getRunGhostSnapshot.
 
     let runEnded = false;
     let endReason = null;
@@ -1198,14 +1259,17 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
   });
 }
 
-export async function pruneOldGhostSnapshots(maxAge = 14, maxCount = 10000) {
-  const countResult = await query('SELECT COUNT(*) AS total FROM game_run_ghost_snapshots');
-  const total = Number(countResult.rows[0].total);
-  if (total <= maxCount) return { pruned: 0 };
-
+/**
+ * Prune synthetic bot ghost rows (§2.4) older than maxAge days. Bot rows are
+ * deterministic and cheap to regenerate, so we prune aggressively. Real
+ * player snapshot rows are pruned via the broader game_runs retention policy
+ * (not this function).
+ */
+export async function pruneOldGhostSnapshots(maxAge = 1) {
   const cutoff = new Date(Date.now() - maxAge * 24 * 60 * 60 * 1000).toISOString();
   const result = await query(
-    `DELETE FROM game_run_ghost_snapshots WHERE created_at < $1`,
+    `DELETE FROM game_run_loadout_items
+     WHERE game_run_id LIKE 'ghost:bot:%' AND created_at < $1`,
     [cutoff]
   );
   return { pruned: result.rowCount };
