@@ -985,7 +985,22 @@ Never combine steps in a single commit — each step is a rollback unit.
 
 ## 13. Backlog (out of scope, captured for later)
 
-Items intentionally deferred from this refactor. They build on the architecture but are separate work.
+Items intentionally deferred from this refactor. They build on the architecture but are separate work. See also [loadout-refactor-review.md](./loadout-refactor-review.md) for the post-implementation analysis and [post-review-followups.md](./post-review-followups.md) for the execution plan of items that were addressed after the review.
+
+**Post-review hardening shipped (2026-04-11, after the single-day refactor):**
+
+These items were listed below as "deferred during implementation" but shipped in follow-up commits after the review:
+
+- ✅ **`withRunLock` around mutation endpoints** (§11.1). `buyRunShopItem`, `sellRunItem`, `refreshRunShop`, `applyRunLoadoutPlacements`, and solo `resolveRound` now serialize through `withRunLock`. Pinned by `tests/game/run-lock.test.js`.
+- ✅ **Idempotency-Key header** (§11.2). `app/server/lib/idempotency.js` middleware + 5-minute LRU cache, per-player scoped. 5xx responses deliberately not cached. Pinned by `tests/game/run-guards.test.js`.
+- ✅ **Rate limiting** (§11.9). `app/server/lib/rate-limit.js` token bucket (12 burst, 4/sec refill) wired into the four mutation routes. Pinned by `tests/game/run-guards.test.js`.
+- ✅ **Structured logging** (§11.5). `app/server/lib/obs.js` — JSONL logger + `requestLogger` middleware emitting `{requestId, method, route, status, durationMs, outcome, playerId, gameRunId}` per request. 500 error handler routes through `log.error`.
+- ✅ **Challenge-mode read isolation test** (§11.6). `tests/game/challenge-isolation.test.js` — one scenario test with five phase checkpoints covering `getActiveGameRun`, `getGameRun`, shop-offer scoping, cross-player buy isolation, and refresh isolation.
+- ✅ **Bridge layer pass-through pin.** `tests/game/bridge-pin.test.js` — four behavioral + structural tests pinning `applyRunLoadoutPlacements` as a thin bridge. Prevents business-logic creep during the gap before granular endpoints land.
+- ✅ **`docs/balance.md` Issue #11 → Issue #6 RESOLVED.** Rewritten to document the fix and link to the refactor.
+- ✅ **Backend test helpers consolidation.** `tests/game/helpers.js` now exports `bootRun`, `getCoins`, `getShopOffer`, `forceShopOffer`, `findCheapArtifact`, `countBotGhostRows` plus re-exports of game-data functions. Four test files refactored to use the shared helpers (~80 lines of duplication removed).
+- ✅ **`docs/loadout-refactor-review.md`** — post-implementation review published.
+- ✅ **Backend scenario vs unit test rules** added to [AGENTS.md](../AGENTS.md).
 
 **Original backlog (still valid):**
 
@@ -998,33 +1013,27 @@ Items intentionally deferred from this refactor. They build on the architecture 
 - **Balance-as-data hot reload.** §11.8 — load `ARTIFACTS`/`BAGS`/`MUSHROOMS` from JSON with an admin reload endpoint. Enables live tuning without redeploys.
 - **`ArtifactsScreen` removal.** Severed in §2.9, removable in a follow-up once telemetry confirms zero usage.
 
-**Deferred during implementation (2026-04-11):**
+**Still deferred (tracked in [post-review-followups.md](./post-review-followups.md)):**
 
-*Server-side:*
-- **Granular run mutation endpoints** (`/place`, `/unplace`, `/rotate`, `/activate-bag`, `/deactivate-bag`, `/rotate-bag`). The bridge via `PUT /api/artifact-loadout` → `applyRunLoadoutPlacements` works but sends the full layout on every change. Granular endpoints would unlock partial updates and allow deleting `buildLoadoutPayloadItems` on the client.
-- **`mutateRun` + per-run lock** (§11.1). Concurrent mutations from the same player can race. Only the transaction-level atomicity currently protects us; there's no serialization of mutations within a player's run.
-- **Idempotency-Key header** (§11.2). Mobile retries can double-buy. Client-generated request IDs + server-side LRU dedupe cache would close this.
-- **`{ gameRun, loadoutItems, shopOffer }` response envelope** (§2.6). Mutations return heterogeneous shapes today; client re-fetches via `refreshBootstrap()` after significant changes. Slightly more network chatter than the planned contract but structurally correct.
+*Server-side — Batch C in the followups plan (each needs its own dedicated plan):*
+- **Granular run mutation endpoints** (`/place`, `/unplace`, `/rotate`, `/activate-bag`, `/deactivate-bag`, `/rotate-bag`). The bridge via `PUT /api/artifact-loadout` → `applyRunLoadoutPlacements` works but sends the full layout on every change. The bridge itself is now pinned as a pass-through (`tests/game/bridge-pin.test.js`) so business logic can't quietly creep back in. Granular endpoints would unlock partial updates, allow deleting `buildLoadoutPayloadItems` on the client, and let us retire the bridge entirely.
+- **`{ gameRun, loadoutItems, shopOffer }` response envelope** (§2.6). Pairs with the granular endpoints. Mutations return heterogeneous shapes today; client re-fetches via `refreshBootstrap()` after significant changes. Slightly more network chatter than the planned contract but structurally correct.
 - **umzug versioned migrations** (§11.3). Still using `sequelize.sync()`. Fine for pre-launch but blocks zero-downtime schema changes.
-- **Structured logging + metrics** (§11.5). No observability.
-- **Rate limiting** (§11.9). No token bucket.
-- **Challenge-mode read isolation test.** §11.6 — covered by service-level checks but no dedicated integration test.
 
-*Client-side:*
+*Client-side — blocked on Batch C completion:*
 - **`buildLoadoutPayloadItems` removal.** Still used by `signalReady()` as the bridge serializer. Removal requires the granular server endpoints above + `useShop.js` rewrite.
 - **`persistShopOffer` removal.** Still writes the legacy shop-state blob. No-op for run state but still executing.
 - **Bootstrap shrink.** `bootstrap.shopState` and `bootstrap.loadout` still ship over the wire because `useShop.js` and `ArtifactsScreen` still read them. The reconciliation bug is fixed (projection reads from one source) but the payload still carries the old fields.
 - **Deleting `PUT /api/artifact-loadout`.** Still exists for the game-run bridge path. Delete when granular endpoints land.
 - **`useShop.js` rewrite.** Only touched tangentially — still has its own three-source assumptions for the legacy flow. Rewrite lands when `ArtifactsScreen` is deleted.
 
-*Symbol-level cleanup:*
+*Symbol-level cleanup (Batch B in the followups plan):*
 - **Delete `createBotGhostSnapshot`** (§10 criterion). Still referenced as the final fallback in `getRunGhostSnapshot` and by `battle-service.js::getRandomGhostSnapshot`. Moving both paths inside the unified helper would let it go.
 - **Rename `state.builderItems`** (§10 criterion). The variable name survived the projection rewrite; the name is load-bearing across `useGameRun.js`, `useShop.js`, and `PrepScreen.js`. Rename when those files get rewritten together.
 
-*Docs:*
+*Docs (being addressed in Batch A of the followups plan):*
 - **Update [docs/artifact-board-spec.md](./artifact-board-spec.md) §3, §5, §11, §12** — still describes the three-source model.
 - **Update [docs/battle-system-rework-plan.md](./battle-system-rework-plan.md) "Current workspace state"** — still references `game_run_ghost_snapshots`.
-- **Update [docs/balance.md](./balance.md) Issue #11** — marked "Still broken" in the current version; it's now fixed via this refactor.
 
 ---
 

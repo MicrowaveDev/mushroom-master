@@ -289,6 +289,8 @@ Cells beyond the bag's column count in a bag row are visually hidden and non-int
 
 ### Persistence: Client → Server Mapping
 
+> **Status (2026-04-11):** This describes the current transition-era bridge. Game-run state is authoritative in the server-side `game_run_loadout_items` table (one row per item, scoped by `(game_run_id, player_id, round_number)` — see [loadout-refactor-plan.md](./loadout-refactor-plan.md) §2.2). `buildLoadoutPayloadItems` + `PUT /api/artifact-loadout` remain as a temporary bridge until granular `/place` `/unplace` `/rotate` `/activate-bag` endpoints land (see [post-review-followups.md](./post-review-followups.md) Batch C1). The bridge is pinned as a pure pass-through by `tests/game/bridge-pin.test.js` — business logic must not accumulate there. Do not read this section as a design; it's documenting a known temporary state.
+
 When signalling ready, `buildLoadoutPayloadItems()` in `useGameRun.js` translates the frontend state into a payload the server can validate and persist. The translation is lossless and preserves bag associations:
 
 ```
@@ -345,39 +347,33 @@ Placed grid items and bagged items (items inside bags) both contribute stats. Th
 
 ### State Restoration on Reload
 
-When the page reloads during an active game run, `refreshBootstrap` in `useAuth.js` restores inventory state from **two sources**:
+> **Rewritten 2026-04-11.** The previous "two-source join" model is gone. Game-run state is now authoritative in `game_run_loadout_items`, round-scoped by `(game_run_id, player_id, round_number)`. See [loadout-refactor-plan.md](./loadout-refactor-plan.md) §2.5 for the design rationale and §2.9 for the legacy severance.
 
-1. **`activeGameRun.loadoutItems`** (server DB) — authoritative source for **which artifacts** the player owns in this run (filtered to `purchased_round IS NOT NULL` to exclude pre-run items)
-2. **`shopState`** (client persistShopOffer payload, stored server-side) — authoritative source for **placement positions** (`builderItems`), `activeBags`, and `rotatedBags`
-
-The two sources are joined by `artifactId`:
+When the page reloads during an active game run, `refreshBootstrap` in `useAuth.js` fetches the active run state and populates `state.gameRun.loadoutItems` directly from the server. The UI buckets (`builderItems`, `containerItems`, `activeBags`, `freshPurchases`) are **computed projections** over `state.gameRun.loadoutItems`, not independently persisted client state:
 
 ```
-ownedIds        = set of loadoutItems.artifactId
-bagsOwned       = ownedIds where family === 'bag'
-storedPositions = map[artifactId → { x, y, w, h }] from shopState.builderItems
-                  (filtered to owned artifacts only)
+state.gameRun.loadoutItems  ← authoritative server state (one row per item, current round only)
 
-state.activeBags = [...shopState.activeBags].filter(id => ownedIds.has(id) && bagsOwned.has(id))
-state.rotatedBags = shopState.rotatedBags.filter(id => state.activeBags.includes(id))
-
-state.builderItems = []
-state.containerItems = []
-for each owned loadoutItem (non-bag):
-  if storedPositions.has(item.artifactId):
-    state.builderItems.push({ ...item, ...storedPositions[item.artifactId] })
-  else:
-    state.containerItems.push(item.artifactId)
-
-// Unactivated owned bags also go to container
-state.containerItems += bagsOwned.filter(id => !state.activeBags.includes(id))
-
-state.freshPurchases = shopState.freshPurchases.filter(id => ownedIds.has(id))
+builderItems    = loadoutItems.filter(i => i.x >= 0 && i.y >= 0 && !i.bagId && family(i) !== 'bag')
+containerItems  = loadoutItems.filter(i => i.x < 0 && i.y < 0)
+activeBags      = loadoutItems.filter(i => family(i) === 'bag' && i.x >= 0)
+baggedItems     = loadoutItems.filter(i => i.bagId)
+freshPurchases  = loadoutItems.filter(i => i.freshPurchase)
 ```
 
-**Why two sources?** The server's `loadoutItems` knows **what** the player owns (via `buyRunShopItem` / `sellRunItem`), but the placement positions are client-side UI state (moving an artifact on the grid doesn't hit the server until `signalReady`). To preserve positions across a mid-prep reload, the client writes placements to `shopState` on every mutation via `persistShopOffer()`. On reload, both sources are joined to rebuild the full UI state.
+**Single source of truth.** There is no separate "positions" store on the client anymore. Moving an artifact on the grid persists through the bridge (`PUT /api/artifact-loadout` → `applyRunLoadoutPlacements`) on signalReady, which writes back into the same `game_run_loadout_items` rows. On reload, one fetch rebuilds the full UI.
 
-This also makes the system **resilient to desync**: if `shopState` gets ahead of `loadoutItems` (e.g. due to a buy that hit the server but the placement wasn't persisted yet), the filter `ownedIds.has(id)` drops stale entries gracefully.
+**What the row columns mean:**
+- `x, y >= 0` — grid-placed item (combat stat contributor)
+- `x = -1, y = -1` — in the container (bought but not placed)
+- `bag_id IS NOT NULL` — item is inside a bag (references another row's `artifact_id`)
+- `fresh_purchase = 1` — bought this round (controls full-refund sell behavior)
+- `purchased_round` — original buy round (survives round copy-forward; enables graduated refunds)
+
+**Why this is better.** Three classes of bug that the old two-source model produced are now structurally impossible:
+1. Duplicate artifacts collapsing into one entry (the old Map-based restore keyed on `artifactId`) — each row has its own PK.
+2. Items "vanishing" after reload when `shopState` and `loadoutItems` drifted — there's no second source to drift against.
+3. Items leaking between runs via `player_artifact_loadouts` — game runs no longer read that table at all (see §2.9 severance).
 
 ---
 
@@ -432,12 +428,13 @@ See [balance.md](./balance.md) for per-round income, refresh costs, and the full
 |---------|----------------------|--------------------------|
 | Coin source | Per-round income from server (`ROUND_INCOME`) | Fixed budget of 5 |
 | Shop generation | Server-side deterministic (seeded RNG) | Client-side random |
-| Shop persistence | Server `game_run_shop_states` table | Client `shopState` payload |
-| Sell mechanism | Sell zone (refund to coin pool) | Return to shop (full refund if fresh) |
+| Shop persistence | Server `game_run_shop_states` (round-scoped) | Client `shopState` payload |
+| Sell mechanism | Sell zone (refund to coin pool, ledgered in `game_run_refunds`) | Return to shop (full refund if fresh) |
 | Refresh cost | 1 coin (first 3), 2 coins (4+) | 1 coin (fixed) |
 | Loadout save | Auto on "Ready" signal | Manual "Save" button |
-| State on reload | Server `loadoutItems` + client `shopState` | Client `shopState` only |
+| State on reload | Server `game_run_loadout_items` (single source, round-scoped) | Client `shopState` only |
 | Coin budget validation | `sum(ROUND_INCOME[0..currentRound])` | `MAX_ARTIFACT_COINS` (5) |
+| Storage table | `game_run_loadout_items` | `player_artifact_loadout_items` |
 
 ### Game Run Shop — Actions
 
@@ -451,7 +448,9 @@ See [balance.md](./balance.md) for per-round income, refresh costs, and the full
 
 ### Starter Loadout
 
-When a new player picks their first character via `selectActiveMushroom()`, the server auto-seeds a full 5-coin starter loadout by running `createBotLoadout()` with the mushroom's affinity. This avoids the "empty grid vs synergistic ghost" problem in round 1. Subsequent character switches preserve the existing loadout. See [balance.md Issue #1](./balance.md) for the rationale.
+When `startGameRun()` creates a new run, the server calls `createBotLoadout(mushroomId, round1Budget)` and INSERTs the result directly into `game_run_loadout_items` as round 1 rows with `purchased_round=1, fresh_purchase=0`. This avoids the "empty grid vs synergistic ghost" problem in round 1. See [balance.md Issue #1](./balance.md) for the rationale.
+
+`selectActiveMushroom()` no longer seeds the legacy `player_artifact_loadouts` table on character pick — character selection is pure profile state. Game runs never read from the legacy table (§2.9 severance in [loadout-refactor-plan.md](./loadout-refactor-plan.md)). The legacy single-battle `ArtifactsScreen` flow keeps its own seeding and save path, entirely independent of game runs.
 
 ### Legacy Shop — Actions (single-battle prep)
 
@@ -610,18 +609,37 @@ Cells with `cx >= slotCount` get class `artifact-grid-cell--bag-disabled` (hidde
 
 ## 11. State Management
 
+> **Rewritten 2026-04-11** to match the current projection model. Game run state is server-authoritative in `game_run_loadout_items`; the client holds a single projection snapshot that the UI renders over. See [loadout-refactor-plan.md](./loadout-refactor-plan.md) §2.5.
+
 ### Artifact-Related State Fields
 
+**Authoritative (game run):**
 ```
-builderItems: Array<{ artifactId, x, y, width, height }>
-containerItems: Array<artifactId>
-activeBags: Array<artifactId>
-rotatedBags: Array<artifactId>
-freshPurchases: Array<artifactId>
-shopOffer: Array<artifactId>              — legacy shop
-gameRunShopOffer: Array<artifactId>       — game run shop
-gameRunRefreshCount: number
-rerollSpent: number                       — legacy shop
+state.gameRun                                — server-fetched run state
+state.gameRun.id, .currentRound, .status
+state.gameRun.coins, .wins, .livesRemaining
+state.gameRun.loadoutItems                   — array of rows from game_run_loadout_items (current round)
+state.gameRun.shopOffer                      — round-scoped shop offer
+```
+
+**Projected (computed over `state.gameRun.loadoutItems` — never written to directly):**
+```
+builderItems    = loadoutItems.filter(i => i.x >= 0 && i.y >= 0 && !i.bagId && family(i) !== 'bag')
+containerItems  = loadoutItems.filter(i => i.x < 0 && i.y < 0)
+activeBags      = loadoutItems.filter(i => family(i) === 'bag' && i.x >= 0)
+baggedItems     = loadoutItems.filter(i => i.bagId)
+freshPurchases  = loadoutItems.filter(i => i.freshPurchase)
+rotatedBags     = active bag rows where width/height differ from the artifact's canonical orientation
+```
+
+**Legacy shop (ArtifactsScreen only, unrelated to game runs):**
+```
+state.shopOffer                              — legacy shop offer
+state.rerollSpent                            — legacy shop
+```
+
+**Transient UI state (not persisted):**
+```
 draggingArtifactId: string
 draggingSource: 'shop' | 'container' | 'inventory' | ''
 sellDragOver: boolean
@@ -630,19 +648,37 @@ actionInFlight: boolean
 
 ### State Reset Points
 
-| Event | Fields Reset |
-|-------|-------------|
-| New game run | builderItems, containerItems, activeBags, rotatedBags, freshPurchases |
-| Page reload (with active run) | Restored from server loadoutItems + shopState |
-| Page reload (no run) | Restored from shopState (persistShopOffer payload) |
+| Event | Behavior |
+|-------|----------|
+| New game run (`startNewGameRun`) | Server INSERTs round 1 rows into `game_run_loadout_items`; client calls `refreshBootstrap()` to re-project |
+| Round resolve (`continueToNextRound`) | Server copies round N → N+1 rows; client re-projects from round N+1 |
+| Page reload (with active run) | Single fetch of `/api/game-run/:id` rebuilds `state.gameRun.loadoutItems`; projection re-runs |
+| Page reload (no run) | Legacy `ArtifactsScreen` path restores from its own `shopState` blob — unrelated to game runs |
 
 ---
 
 ## 12. Persistence
 
-### persistShopOffer Payload
+### Game Run
 
-Sent to `PUT /api/shop-state` after every mutation:
+All game-run state is persisted server-side in three tables, all scoped by `(game_run_id, player_id, round_number)`:
+
+| Table | Purpose | Mutated by |
+|-------|---------|-----------|
+| `game_run_loadout_items` | Current-round items + frozen history for prior rounds | `buyRunShopItem`, `sellRunItem`, `applyRunLoadoutPlacements` (bridge), `resolveRound` (copy-forward) |
+| `game_run_shop_states` | Shop offer per (run, player, round) | `startGameRun`, `refreshRunShop`, `resolveRound` (inserts next round) |
+| `game_run_refunds` | Sell refund ledger (rows survive even after the loadout row is deleted) | `sellRunItem` |
+
+See [loadout-refactor-plan.md](./loadout-refactor-plan.md) §2.2 for the full schema and §2.3 for the round lifecycle (copy-forward, frozen history).
+
+**Coins:** stored on `game_run_players.coins` and maintained atomically inside each mutation's transaction. The refactor considered a computed-on-read model (see §2.3 of the plan) but kept the denormalized column because every mutation already runs inside `withTransaction + withRunLock`. See [post-review-followups.md](./post-review-followups.md) for why the computed model remains a valid future optimization.
+
+**Mutation safety:** all four game-run mutation routes (`buy`, `sell`, `refresh-shop`, `artifact-loadout` bridge) are wrapped in `withRunLock(gameRunId, ...)` to serialize same-player concurrent writes. See `tests/game/run-lock.test.js` for the invariant.
+
+### persistShopOffer Payload (legacy only)
+
+`persistShopOffer` persists to `PUT /api/shop-state` and backs the **legacy single-battle `ArtifactsScreen` flow** only. Game runs do not read or write this payload — its fields (`offer`, `container`, `builderItems`, etc.) are not authoritative for any game-run state. Removing it entirely is tracked in [post-review-followups.md](./post-review-followups.md) Batch C3 (bootstrap shrink), blocked on the `useShop.js` rewrite.
+
 ```json
 {
   "offer": ["id1", "id2", ...],
@@ -657,7 +693,7 @@ Sent to `PUT /api/shop-state` after every mutation:
 
 ### Game Run State Restoration
 
-See "State Restoration on Reload" in §3 for the full two-source join algorithm (`loadoutItems` + `shopState`).
+See "State Restoration on Reload" in §3 — the short version: one fetch, one projection, no joins.
 
 ---
 

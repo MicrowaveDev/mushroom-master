@@ -58,7 +58,7 @@ Rework the battle system so:
   - the shop/loadout screen and the battle-prep screen should be merged into a single prep phase per round
   - `MAX_ARTIFACT_PIECES` (backend) / `MAX_INVENTORY_PIECES` (frontend) should be removed entirely; grid space and coins are the only constraints
   - selling artifacts and bags uses a drag-to-sell-area interaction (mobile-first); the sell area displays the refund value on hover/drag-enter
-  - `BATTLE_ROUND_CAP` is currently `12` and will be renamed to `STEP_CAP` or similar during the terminology refactor
+  - `BATTLE_ROUND_CAP` was renamed to `STEP_CAP` and raised from `12` to `120` during the rework (originally `12` was too low and caused `balance.md` Issue #3, battles ending at "step 12" with both sides alive)
   - sell refund: full price in the round the item was bought, half price in later rounds
   - shop manual refresh cost: `1` coin for refreshes 1–3 within a round, `2` coins for refresh 4+ (capped at `2`; resets each round; first refresh is not free; limited only by available coins)
   - combat resolution is fully server-side and does not depend on client connection
@@ -138,34 +138,46 @@ For this repo, end-of-game rewards work as follows:
 
 ## Current workspace state (post-rework)
 
+> **Updated 2026-04-11.** Reflects the run-state refactor ([loadout-refactor-plan.md](./loadout-refactor-plan.md)) and the post-review hardening pass ([loadout-refactor-review.md](./loadout-refactor-review.md), [post-review-followups.md](./post-review-followups.md)). Prior drift — `STEP_CAP = 12`, `game_run_ghost_snapshots` as a separate table, `PlayerArtifactLoadoutItem` extended for run state — is corrected below.
+
 ### Backend
 
-- [app/server/services/game-service.js](app/server/services/game-service.js) — core game logic including:
-  - `createBattle()` for legacy single duels; `recordBattle()` extracted helper used by both legacy and run flows
-  - `simulateBattle()` uses `step` as the internal combat turn loop, capped at `STEP_CAP` (12)
-  - Game run lifecycle: `startGameRun()`, `getActiveGameRun()`, `abandonGameRun()`, `getGameRun()`
-  - Round resolution: `resolveRound()` (solo), `resolveChallengeRound()` (challenge), with per-round Elo (solo) or batch Elo (challenge)
-  - Run economy: `refreshRunShop()`, `sellRunItem()`, `generateShopOffer()` with bag pity timer
-  - Ghost matching: `getRunGhostSnapshot()` with exclusion and budget-based bot fallback
+- [app/server/services/run-service.js](app/server/services/run-service.js) — game run lifecycle, mutations, and round resolution:
+  - Lifecycle: `startGameRun()`, `getActiveGameRun()`, `abandonGameRun()`, `getGameRun()`
+  - Mutations (all wrapped in `withRunLock` for per-run serialization): `buyRunShopItem()`, `sellRunItem()`, `refreshRunShop()`, `applyRunLoadoutPlacements()` (temporary bridge for legacy placement payload, pinned as pass-through)
+  - Round resolution: `resolveRound()` (solo), `resolveChallengeRound()` (challenge), with per-round Elo (solo) or batch Elo (challenge). Copy-forward of round-N rows into round N+1 via `copyRoundForward()`.
+  - Ghost matching: `getRunGhostSnapshot()` — unified path (§2.4 of the loadout refactor): real-player snapshots and synthetic bot rows both live in `game_run_loadout_items`; the two paths share one query shape. `pruneOldGhostSnapshots()` deletes `game_run_id LIKE 'ghost:bot:%'` rows older than 1 day.
   - Challenge mode: `createRunChallenge()`, `createChallengeRun()`, modified `acceptFriendChallenge()`
   - Rewards: `payCompletionBonus()`, `applyBatchElo()`, `runRewardTable`, `completionBonusTable`
-  - History: `getGameRunHistory()`, `pruneOldGhostSnapshots()`
-- [app/server/game-data.js](app/server/game-data.js) — constants and artifact/mushroom definitions including:
+  - History: `getGameRunHistory()`
+- [app/server/services/battle-service.js](app/server/services/battle-service.js) — legacy single-battle flow and battle recording: `createBattle()`, `recordBattle()`, `getActiveSnapshot()` (branches on active-run to read from `game_run_loadout_items` vs. the legacy table).
+- [app/server/services/battle-engine.js](app/server/services/battle-engine.js) — `simulateBattle()`, step-based combat loop capped at `STEP_CAP` (**120**, raised from 12 during the post-rework balance pass).
+- [app/server/services/game-run-loadout.js](app/server/services/game-run-loadout.js) — helpers over `game_run_loadout_items`: `insertLoadoutItem`, `readCurrentRoundItems`, `deleteOneByArtifactId`, `nextSortOrder`, `copyRoundForward`, `insertRefund`, `applyLegacyPlacements`.
+- [app/server/services/artifact-helpers.js](app/server/services/artifact-helpers.js) — `FAMILY_CAPS` registry + `isBag`, `isCombatArtifact`, `isContainerItem`, `contributesStats`. Replaces scattered `family === 'bag'` branches on the server.
+- [app/server/services/loadout-utils.js](app/server/services/loadout-utils.js) — split into `validateGridItems`, `validateBagContents`, `validateCoinBudget`, plus the `validateLoadoutItems` orchestrator and `buildArtifactSummary`.
+- [app/server/game-data.js](app/server/game-data.js) — constants and artifact/mushroom definitions. Shared numeric constants now live in [app/shared/game-constants.js](../app/shared/game-constants.js) (`INVENTORY_COLUMNS`/`ROWS`, `ROUND_INCOME`, `MAX_ROUNDS_PER_RUN`, `STARTING_LIVES`, `STEP_CAP`, `SHOP_OFFER_SIZE`, bag pity constants — 20 constants total) and are re-exported from both server and client:
   - Run constants: `MAX_ROUNDS_PER_RUN`, `STARTING_LIVES`, `ROUND_INCOME`, `RATING_FLOOR`, `GHOST_BUDGET_DISCOUNT`
+  - Combat: `STEP_CAP` (120)
   - Bag items: `moss_pouch` (1x2, 2 slots), `amber_satchel` (2x2, 4 slots) with `family: 'bag'`
   - Bag distribution: `BAG_BASE_CHANCE`, `BAG_ESCALATION_STEP`, `BAG_PITY_THRESHOLD`
   - Shop refresh: `SHOP_REFRESH_CHEAP_LIMIT`, `SHOP_REFRESH_CHEAP_COST`, `SHOP_REFRESH_EXPENSIVE_COST`
   - Helpers: `bags`, `combatArtifacts`, `getCompletionBonus()`, `getShopRefreshCost()`
 - [app/server/lib/utils.js](app/server/lib/utils.js) — `kFactor(rating, ratedBattles, mode)` supports `'solo_run'` K-factors (16/10/8)
-- [app/server/services/ready-manager.js](app/server/services/ready-manager.js) — in-memory ready state with `withRunLock` mutex
+- [app/server/lib/obs.js](app/server/lib/obs.js) — structured JSONL logger (`log.info/warn/error`) + `requestLogger()` middleware emitting `{requestId, method, route, status, durationMs, outcome, playerId, gameRunId}` per request.
+- [app/server/lib/idempotency.js](app/server/lib/idempotency.js) — `Idempotency-Key` header middleware with 5-minute LRU cache keyed on `(playerId, requestId)`. 5xx responses deliberately not cached.
+- [app/server/lib/rate-limit.js](app/server/lib/rate-limit.js) — per-player token bucket (12 burst, 4 req/sec sustained) wired into all four run-state mutation routes.
+- [app/server/services/ready-manager.js](app/server/services/ready-manager.js) — in-memory ready state + `withRunLock` mutex (used by both ready manager and run-service mutations).
 - [app/server/services/sse-manager.js](app/server/services/sse-manager.js) — SSE connection management for challenge mode
-- [app/server/models/](app/server/models/) — 24 Sequelize models, tables created via `sequelize.sync()`
-  - New tables: `game_runs`, `game_run_players` (partial unique index), `game_rounds`, `game_run_ghost_snapshots`, `game_run_shop_states`
-  - Extended: `PlayerArtifactLoadoutItem` (+`purchased_round`, +`bag_id`), `FriendChallenge` (+`challenge_type`, +`game_run_id`)
+- [app/server/models/](app/server/models/) — Sequelize models, tables created via `sequelize.sync()` (umzug versioned migrations tracked in post-review-followups Batch C4).
+  - **New run-state tables (from the refactor):** `game_runs`, `game_run_players` (partial unique index), `game_rounds`, `game_run_shop_states` (round-scoped), `game_run_loadout_items` (the authoritative per-round loadout table), `game_run_refunds` (sell ledger).
+  - **Deleted during the refactor:** `game_run_ghost_snapshots` — the unified ghost path writes synthetic bot rows into `game_run_loadout_items` under `game_run_id = 'ghost:bot:<hash>'` instead.
+  - **Legacy table (severed from game runs):** `player_artifact_loadouts` + `player_artifact_loadout_items` — used only by the legacy single-battle `ArtifactsScreen` prep flow. Game-run code never reads or writes these tables (§2.9 severance of [loadout-refactor-plan.md](./loadout-refactor-plan.md)).
+  - `FriendChallenge` (+`challenge_type`, +`game_run_id`)
 - [app/server/create-app.js](app/server/create-app.js) — all API routes including:
   - `POST /api/game-run/start`, `GET /api/game-run/:id`, `POST /api/game-run/:id/abandon`
   - `POST /api/game-run/:id/ready`, `POST /api/game-run/:id/unready`, `GET /api/game-run/:id/events` (SSE)
-  - `POST /api/game-run/:id/refresh-shop`, `POST /api/game-run/:id/sell`
+  - Mutation routes (all rate-limited + idempotency-keyed): `POST /api/game-run/:id/buy`, `POST /api/game-run/:id/sell`, `POST /api/game-run/:id/refresh-shop`
+  - `PUT /api/artifact-loadout` — bridge to `applyRunLoadoutPlacements` when an active run exists; writes to legacy table otherwise. Pinned as pass-through by `tests/game/bridge-pin.test.js`.
   - `POST /api/game-run/challenge`, `GET /api/game-runs/history`
 
 ### Frontend
