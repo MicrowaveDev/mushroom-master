@@ -1,14 +1,18 @@
-// Route param mapping: which extra key becomes the path segment for each screen
+// Route param mapping: which extra key becomes the path segment for each screen.
+// Screens listed here support `/screen/:param` deep links.
+// `game-run` supports `/game-run/:gameRunId` so active runs are bookmarkable and
+// shareable (docs/loadout-refactor-plan.md §2.7).
 const ROUTE_PARAMS = {
   replay: 'replay',
-  friends: 'challenge'
+  friends: 'challenge',
+  'game-run': 'gameRunId'
 };
 
 export function parseStartParams() {
   const path = window.location.pathname.replace(/^\/+/, '');
   const parts = path.split('/').filter(Boolean);
   const screen = parts[0] || null;
-  const result = { screen, challenge: null, replay: null };
+  const result = { screen, challenge: null, replay: null, gameRunId: null };
 
   if (screen && ROUTE_PARAMS[screen] && parts[1]) {
     result[ROUTE_PARAMS[screen]] = decodeURIComponent(parts[1]);

@@ -1,4 +1,4 @@
-import { apiJson } from '../api.js';
+import { apiJson, parseStartParams } from '../api.js';
 import { SHOP_OFFER_SIZE } from '../constants.js';
 import { pickRandomShopOffer } from '../artifacts/grid.js';
 
@@ -123,9 +123,19 @@ export function useAuth(state, goTo) {
       } else {
         state.gameRun = null;
       }
+      // URL-driven deep link: /game-run/:id loads the active run into prep
+      // when the ids match (§2.7 bookmarkable runs).
+      const urlParams = parseStartParams();
+      const urlWantsGameRun = urlParams.screen === 'game-run' && urlParams.gameRunId;
+
       if (!state.bootstrap.activeMushroomId) {
         state.screen = 'onboarding';
-      } else if (state.screen === 'auth') {
+      } else if (urlWantsGameRun && state.gameRun && state.gameRun.id === urlParams.gameRunId) {
+        state.screen = 'prep';
+      } else if (urlWantsGameRun && !state.gameRun) {
+        // Deep link to a game run that's no longer active — drop to home.
+        state.screen = 'home';
+      } else if (state.screen === 'auth' || state.screen === 'game-run') {
         state.screen = state.gameRun ? 'prep' : 'home';
       }
     } catch (error) {

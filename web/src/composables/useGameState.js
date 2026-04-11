@@ -46,7 +46,14 @@ export function useGameState(state) {
   function goTo(screen, extra = {}) {
     state.screen = screen;
     state.menuOpen = false;
-    setScreenQuery(screen, extra);
+    // When entering prep with an active game run, bind the URL to
+    // /game-run/:id so the tab is bookmarkable and shareable (§2.7).
+    // Other screens write their own URL via the default mapping.
+    if (screen === 'prep' && state.gameRun?.id) {
+      setScreenQuery('game-run', { gameRunId: state.gameRun.id });
+    } else {
+      setScreenQuery(screen, extra);
+    }
   }
 
   function toggleMenu() {
