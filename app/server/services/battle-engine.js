@@ -223,6 +223,7 @@ export function simulateBattle(snapshot, seed) {
   ];
   let winnerSide = null;
   let finalStep = STEP_CAP;
+  let endReason = 'step_cap';
 
   for (let step = 1; step <= STEP_CAP; step += 1) {
     events.push({
@@ -237,12 +238,14 @@ export function simulateBattle(snapshot, seed) {
     if (second.currentHealth <= 0) {
       winnerSide = first.side;
       finalStep = step;
+      endReason = 'death';
       break;
     }
     resolveAction(second, first, step, rng, events);
     if (first.currentHealth <= 0) {
       winnerSide = second.side;
       finalStep = step;
+      endReason = 'death';
       break;
     }
   }
@@ -270,12 +273,20 @@ export function simulateBattle(snapshot, seed) {
     outcome = winnerSide === 'left' ? 'win' : 'loss';
   }
 
+  const winnerName = winnerSide === 'left' ? left.name.en : right.name.en;
+  const narration = winnerSide
+    ? endReason === 'step_cap'
+      ? `Step limit reached — ${winnerName} wins on health.`
+      : `${winnerName} wins.`
+    : 'The battle ends in a draw.';
+
   events.push({
     type: 'battle_end',
     step: finalStep,
     winnerSide,
     outcome,
-    narration: winnerSide ? `${winnerSide === 'left' ? left.name.en : right.name.en} wins.` : 'The battle ends in a draw.',
+    endReason,
+    narration,
     state: combatState(left, right)
   });
 

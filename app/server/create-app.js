@@ -12,6 +12,7 @@ import {
 } from './auth.js';
 import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
 import { getDb, resetDb, query as dbQuery } from './db.js';
+import { ROUND_INCOME } from './game-data.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
@@ -214,9 +215,15 @@ export async function createApp() {
     '/api/artifact-loadout',
     requireAuth,
     asyncRoute(async (req, res) => {
+      // In an active game run, the coin budget is the sum of per-round income
+      // up to the current round (the max coins the player could ever have).
+      const activeRun = await getActiveGameRun(req.user.id);
+      const coinBudget = activeRun
+        ? ROUND_INCOME.slice(0, activeRun.currentRound).reduce((sum, c) => sum + c, 0)
+        : undefined;
       res.json({
         success: true,
-        data: await saveArtifactLoadout(req.user.id, req.body.mushroomId, req.body.items)
+        data: await saveArtifactLoadout(req.user.id, req.body.mushroomId, req.body.items, coinBudget)
       });
     })
   );

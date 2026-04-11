@@ -25,11 +25,17 @@ function artifactWeightForBot(mushroom, artifact) {
 }
 
 function pickUniqueArtifactsForBot(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
-  const pool = [...artifacts];
+  // Bags are excluded — bots don't use inventory expansion, only combat items.
+  const pool = artifacts.filter((a) => a.family !== 'bag');
+  const totalCells = INVENTORY_COLUMNS * INVENTORY_ROWS;
   const selected = [];
   let remainingCoins = budget;
-  while (selected.length < INVENTORY_COLUMNS * INVENTORY_ROWS && pool.length && remainingCoins > 0) {
-    const affordable = pool.filter((artifact) => getArtifactPrice(artifact) <= remainingCoins);
+  let occupiedCells = 0;
+  while (occupiedCells < totalCells && pool.length && remainingCoins > 0) {
+    const affordable = pool.filter((artifact) => {
+      const area = artifact.width * artifact.height;
+      return getArtifactPrice(artifact) <= remainingCoins && occupiedCells + area <= totalCells;
+    });
     if (!affordable.length) {
       break;
     }
@@ -47,6 +53,7 @@ function pickUniqueArtifactsForBot(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
       }
     }
     remainingCoins -= getArtifactPrice(chosen);
+    occupiedCells += chosen.width * chosen.height;
     pool.splice(pool.indexOf(chosen), 1);
     selected.push(chosen);
   }
@@ -72,7 +79,7 @@ function markOccupied(candidate, occupied) {
   }
 }
 
-function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
+export function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
   for (let attempt = 0; attempt < 64; attempt += 1) {
     const chosenArtifacts = pickUniqueArtifactsForBot(mushroom, rng, budget);
     const placementOrder = shuffleWithRng(

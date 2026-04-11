@@ -1664,12 +1664,15 @@ select {
 }
 
 .duel-loadout-center {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
-  justify-items: center;
-  align-self: center;
+  align-self: stretch;
   flex: 0 0 80px;
   text-align: center;
+  position: relative;
 }
 
 .duel-loadout-icon {
@@ -1684,6 +1687,37 @@ select {
   font-weight: 600;
   opacity: 0.6;
   line-height: 1.3;
+}
+
+.replay-speed-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+}
+.replay-speed-btn {
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink, #4f3a20);
+  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+}
+.replay-speed-btn svg {
+  height: 10px;
+  width: auto;
+  display: block;
+}
+.replay-speed-btn:hover {
+  opacity: 0.9;
+}
+.replay-speed-btn--active {
+  opacity: 1;
 }
 
 .replay-result-button-full {

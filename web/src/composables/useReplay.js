@@ -13,7 +13,8 @@ export function useReplay(state, goTo, getMushroom) {
       activeEvent.value,
       state.currentBattle,
       (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en,
-      (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang]
+      (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang],
+      state.lang
     )
   );
   const replayFinished = computed(() => {
@@ -35,7 +36,8 @@ export function useReplay(state, goTo, getMushroom) {
         display: formatReplayEvent(
           event, state.currentBattle,
           (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en,
-          (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang]
+          (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang],
+          state.lang
         )
       }))
       .reverse();
@@ -51,9 +53,11 @@ export function useReplay(state, goTo, getMushroom) {
 
   function autoplayReplay() {
     stopReplay();
-    const delay = state.bootstrap?.settings?.battleSpeed === '2x'
+    const speed = state.replaySpeed || 1;
+    const baseDelay = state.bootstrap?.settings?.battleSpeed === '2x'
       ? DEFAULT_REPLAY_AUTOPLAY_FAST_MS
       : DEFAULT_REPLAY_AUTOPLAY_MS;
+    const delay = Math.max(50, Math.round(baseDelay / speed));
     state.replayTimer = window.setInterval(() => {
       if (!state.currentBattle) { stopReplay(); return; }
       if (state.replayIndex >= state.currentBattle.events.length - 1) { stopReplay(); return; }
@@ -61,10 +65,18 @@ export function useReplay(state, goTo, getMushroom) {
     }, delay);
   }
 
+  function setReplaySpeed(speed) {
+    state.replaySpeed = speed;
+    if (state.replayTimer) {
+      autoplayReplay();
+    }
+  }
+
   async function loadReplay(battleId) {
     try {
       state.currentBattle = await apiJson(`/api/battles/${battleId}`, {}, state.sessionKey);
       state.replayIndex = 0;
+      state.replaySpeed = 1;
       goTo('replay', { replay: battleId });
       autoplayReplay();
     } catch (error) {
@@ -80,6 +92,7 @@ export function useReplay(state, goTo, getMushroom) {
   return {
     activeEvent, activeSpeech, battleStatusText, replayFinished,
     activeReplayState, visibleReplayEvents,
-    stopReplay, autoplayReplay, loadReplay, viewRoundReplay
+    stopReplay, autoplayReplay, loadReplay, viewRoundReplay,
+    setReplaySpeed
   };
 }

@@ -9,7 +9,7 @@ export const ReplayScreen = {
     'buildReplayFighter', 'getMushroom', 'loadoutStatsText',
     'renderArtifactFigure', 'getArtifact'
   ],
-  emits: ['go-results'],
+  emits: ['go-results', 'set-speed'],
   components: {
     ReplayDuel: defineAsyncComponent(() => import('../components/ReplayDuel.js').then(m => m.ReplayDuel))
   },
@@ -35,9 +35,11 @@ export const ReplayScreen = {
           :get-artifact="getArtifact"
           :acting-side="activeEvent?.actorSide || ''"
           :status-text="battleStatusText"
+          :replay-speed="state.replaySpeed || 1"
+          @set-speed="$emit('set-speed', $event)"
         />
       </div>
-      <button v-if="replayFinished" class="primary replay-result-button-full" @click="$emit('go-results')">{{ t.results }}</button>
+      <button v-if="replayFinished" class="primary replay-result-button-full" @click="$emit('go-results')">{{ state.gameRun ? t.continueRound : t.home }}</button>
       <div class="replay-log">
         <button
           v-for="event in visibleReplayEvents" :key="event.replayIndex"

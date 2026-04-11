@@ -85,27 +85,41 @@ export function useAuth(state, goTo) {
       if (state.bootstrap.activeGameRun) {
         state.gameRun = state.bootstrap.activeGameRun;
         state.gameRunShopOffer = state.bootstrap.activeGameRun.shopOffer || [];
-        // Restore builderItems/containerItems/activeBags from game run loadout
-        const items = state.bootstrap.activeGameRun.loadoutItems || [];
-        const allArtifacts = state.bootstrap?.artifacts || [];
-        const bags = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+        // Restore inventory state with shopState as the primary source of truth for
+        // the UI. The shopState is updated via persistShopOffer() on every mutation
+        // (buy, sell, place, unplace, activate bag, rotate bag) so it reflects the
+        // exact UI state the player last saw.
+        //
+        // Fallback: if shopState.builderItems is empty but the server loadoutItems
+        // has placed items (e.g. just after the starter loadout was seeded, before
+        // the client has had a chance to persist anything), derive builderItems from
+        // loadoutItems so the starter loadout is visible immediately on first load.
         const stored = state.bootstrap?.shopState || null;
-        const activeBagSet = new Set(stored?.activeBags || []);
-        state.activeBags = items
-          .filter((i) => bags.has(i.artifactId) && activeBagSet.has(i.artifactId))
-          .map((i) => i.artifactId);
-        state.rotatedBags = stored?.rotatedBags?.filter((id) => activeBagSet.has(id)) || [];
-        state.builderItems = items
-          .filter((i) => i.x >= 0 && i.y >= 0 && !bags.has(i.artifactId))
-          .map((i) => ({ artifactId: i.artifactId, x: i.x, y: i.y, width: i.width, height: i.height }));
-        const containerArtifacts = items
-          .filter((i) => i.x < 0 && !bags.has(i.artifactId))
-          .map((i) => i.artifactId);
-        const containerBags = items
-          .filter((i) => bags.has(i.artifactId) && !activeBagSet.has(i.artifactId))
-          .map((i) => i.artifactId);
-        state.containerItems = [...containerArtifacts, ...containerBags];
-        state.freshPurchases = stored?.freshPurchases?.filter((id) => new Set(items.map((i) => i.artifactId)).has(id)) || [];
+        const allArtifacts = state.bootstrap?.artifacts || [];
+        const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+        const available = new Set(allArtifacts.map((a) => a.id));
+        const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
+
+        const storedBuilder = (stored?.builderItems || []).filter((i) => available.has(i.artifactId));
+        if (storedBuilder.length > 0) {
+          state.builderItems = storedBuilder.map((i) => ({
+            artifactId: i.artifactId,
+            x: i.x, y: i.y, width: i.width, height: i.height
+          }));
+        } else {
+          // Fallback: use placed items from server loadout (starter loadout or first-load)
+          state.builderItems = loadoutItems
+            .filter((i) => !bagsSet.has(i.artifactId) && i.x >= 0 && i.y >= 0 && !i.bagId)
+            .map((i) => ({
+              artifactId: i.artifactId,
+              x: i.x, y: i.y, width: i.width, height: i.height
+            }));
+        }
+
+        state.containerItems = (stored?.container || []).filter((id) => available.has(id));
+        state.activeBags = (stored?.activeBags || []).filter((id) => available.has(id));
+        state.rotatedBags = (stored?.rotatedBags || []).filter((id) => state.activeBags.includes(id));
+        state.freshPurchases = (stored?.freshPurchases || []).filter((id) => available.has(id));
       } else {
         state.gameRun = null;
       }

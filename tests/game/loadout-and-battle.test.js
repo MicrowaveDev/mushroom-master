@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBattle, getPlayerState } from '../../app/server/services/game-service.js';
-import { mushrooms } from '../../app/server/game-data.js';
+import { createBattle, getPlayerState, selectActiveMushroom } from '../../app/server/services/game-service.js';
+import { getArtifactById, getArtifactPrice, MAX_ARTIFACT_COINS, mushrooms } from '../../app/server/game-data.js';
 import { freshDb, createPlayer, saveSetup } from './helpers.js';
 
 const loadout = [
@@ -9,6 +9,45 @@ const loadout = [
   { artifactId: 'amber_fang', x: 1, y: 0, width: 1, height: 2 },
   { artifactId: 'shock_puff', x: 2, y: 0, width: 1, height: 1 }
 ];
+
+test('selectActiveMushroom seeds a full-budget starter loadout for new players', async () => {
+  await freshDb();
+  const session = await createPlayer();
+
+  // Before selecting a mushroom — no loadout exists
+  let state = await getPlayerState(session.player.id);
+  assert.equal(state.loadout, null);
+
+  // Select a character — should auto-seed a starter loadout
+  await selectActiveMushroom(session.player.id, 'thalla');
+  state = await getPlayerState(session.player.id);
+  assert.ok(state.loadout, 'starter loadout should exist');
+  assert.ok(state.loadout.items.length > 0, 'starter loadout should have items');
+
+  // Starter loadout must spend close to the full 5-coin budget
+  const totalCost = state.loadout.items.reduce((sum, item) => {
+    const a = getArtifactById(item.artifactId);
+    return sum + (a ? getArtifactPrice(a) : 0);
+  }, 0);
+  assert.ok(totalCost >= MAX_ARTIFACT_COINS - 1, `starter loadout cost ${totalCost} should be close to budget ${MAX_ARTIFACT_COINS}`);
+  assert.ok(totalCost <= MAX_ARTIFACT_COINS, `starter loadout cost ${totalCost} exceeds budget`);
+});
+
+test('selectActiveMushroom does NOT overwrite an existing loadout', async () => {
+  await freshDb();
+  const session = await createPlayer();
+
+  // Seed a specific loadout
+  await saveSetup(session.player.id, 'thalla', [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+  const before = (await getPlayerState(session.player.id)).loadout.items.map((i) => i.artifactId);
+
+  // Switch character — should NOT regenerate starter
+  await selectActiveMushroom(session.player.id, 'lomie');
+  const after = (await getPlayerState(session.player.id)).loadout.items.map((i) => i.artifactId);
+  assert.deepEqual(after, before, 'existing loadout should be preserved across character switches');
+});
 
 test('loadouts are saved as placements and invalid duplicate layouts are rejected', async () => {
   await freshDb();
@@ -22,15 +61,14 @@ test('loadouts are saved as placements and invalid duplicate layouts are rejecte
     ['spore_needle', 'amber_fang', 'shock_puff']
   );
 
-  await assert.rejects(
-    () =>
-      saveSetup(session.player.id, 'thalla', [
-        { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
-        { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
-        { artifactId: 'shock_puff', x: 2, y: 0, width: 1, height: 1 }
-      ]),
-    /Duplicate artifacts/
-  );
+  // Duplicate artifacts are allowed (game run can buy the same artifact twice)
+  await saveSetup(session.player.id, 'thalla', [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
+    { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
+    { artifactId: 'shock_puff', x: 2, y: 0, width: 1, height: 1 }
+  ]);
+  const dupState = await getPlayerState(session.player.id);
+  assert.equal(dupState.loadout.items.length, 3);
 });
 
 test('ghost battles are deterministic with a fixed seed and only reward the initiator', async () => {

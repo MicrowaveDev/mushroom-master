@@ -105,7 +105,7 @@ export const HomeScreen = {
               <img v-if="describeReplay(battle)?.oppImage" :src="describeReplay(battle).oppImage" :alt="describeReplay(battle)?.oppName" class="home-battle-item-portrait" />
               <div class="home-battle-item-info">
                 <strong>{{ describeReplay(battle)?.outcomeLabel }}</strong>
-                <span class="home-battle-item-stats">vs {{ describeReplay(battle)?.oppName }} · {{ describeReplay(battle)?.opponentKindLabel }}</span>
+                <span class="home-battle-item-stats">{{ describeReplay(battle)?.oppName }} · {{ describeReplay(battle)?.opponentKindLabel }}</span>
               </div>
               <span class="home-battle-item-date">{{ describeReplay(battle)?.dateLabel }}</span>
             </div>

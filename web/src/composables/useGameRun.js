@@ -1,7 +1,57 @@
 import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
+import { INVENTORY_ROWS } from '../constants.js';
 
-export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistShopOffer) {
+export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistShopOffer, loadReplay) {
+  function buildLoadoutPayloadItems() {
+    // Map frontend state to server loadout payload.
+    // - Base grid items (y < INVENTORY_ROWS): sent with grid coordinates
+    // - Items in bag rows (y >= INVENTORY_ROWS): sent with bagId, no coords
+    // - Bags: sent with no grid coordinates (they provide slots, not cells)
+    const activeBagLayout = [];
+    let r = INVENTORY_ROWS;
+    for (const bagId of state.activeBags) {
+      const bag = getArtifact(bagId);
+      if (!bag) continue;
+      const rotated = state.rotatedBags.includes(bagId);
+      const rows = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
+      activeBagLayout.push({ bagId, startRow: r, rowCount: rows });
+      r += rows;
+    }
+
+    const payload = [];
+    // Bags (including container bags) must be declared before bagged items reference them
+    for (const bagId of state.activeBags) {
+      const bag = getArtifact(bagId);
+      if (!bag) continue;
+      payload.push({ artifactId: bagId, x: 0, y: 0, width: bag.width, height: bag.height });
+    }
+    // Unactivated bags in container
+    for (const artifactId of state.containerItems) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact || artifact.family !== 'bag') continue;
+      payload.push({ artifactId, x: -1, y: -1, width: artifact.width, height: artifact.height });
+    }
+    // Placed grid items and bagged items
+    for (const item of state.builderItems) {
+      if (item.y >= INVENTORY_ROWS) {
+        const info = activeBagLayout.find((b) => item.y >= b.startRow && item.y < b.startRow + b.rowCount);
+        if (info) {
+          payload.push({ artifactId: item.artifactId, width: item.width, height: item.height, bagId: info.bagId });
+          continue;
+        }
+      }
+      payload.push({ artifactId: item.artifactId, x: item.x, y: item.y, width: item.width, height: item.height });
+    }
+    // Non-bag container items (not placed)
+    for (const artifactId of state.containerItems) {
+      const artifact = getArtifact(artifactId);
+      if (!artifact || artifact.family === 'bag') continue;
+      payload.push({ artifactId, x: -1, y: -1, width: artifact.width, height: artifact.height });
+    }
+    return payload;
+  }
+
   async function startNewGameRun(mode = 'solo') {
     try {
       state.error = '';
@@ -10,11 +60,21 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.gameRunShopOffer = data.shopOffer || [];
       state.gameRunRefreshCount = 0;
       state.gameRunResult = null;
-      state.builderItems = [];
+      // Seed builderItems from the server's fresh starter loadout for this run.
+      // The server clears any leftover items from previous runs and generates a
+      // new affinity-weighted starter loadout, returning it in `starterItems`.
+      const starterItems = data.starterItems || [];
+      state.builderItems = starterItems
+        .filter((i) => i.x >= 0 && i.y >= 0 && !i.bagId)
+        .map((i) => ({
+          artifactId: i.artifactId,
+          x: i.x, y: i.y, width: i.width, height: i.height
+        }));
       state.containerItems = [];
       state.activeBags = [];
       state.rotatedBags = [];
       state.freshPurchases = [];
+      if (persistShopOffer) persistShopOffer();
       goTo('prep');
     } catch (error) {
       state.error = error.message || 'Could not start game run';
@@ -32,10 +92,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     state.actionInFlight = true;
     try {
       state.error = '';
-      if (state.bootstrap?.activeMushroomId && state.builderItems.length) {
+      if (state.bootstrap?.activeMushroomId) {
         await apiJson('/api/artifact-loadout', {
           method: 'PUT',
-          body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: state.builderItems })
+          body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() })
         }, state.sessionKey);
       }
       const data = await apiJson(`/api/game-run/${state.gameRun.id}/ready`, { method: 'POST' }, state.sessionKey);
@@ -43,6 +103,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.gameRunResult = data;
       if (data.status === 'completed' || data.status === 'abandoned') {
         state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason };
+      }
+      const battleId = data.lastRound?.battleId;
+      if (battleId && loadReplay) {
+        await loadReplay(battleId);
+      } else if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
         goTo('runComplete');
       } else {
         goTo('roundResult');
@@ -114,6 +179,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.builderItems = state.builderItems.filter((i) => i.artifactId !== artifactId);
       state.containerItems = state.containerItems.filter((id) => id !== artifactId);
       state.activeBags = state.activeBags.filter((id) => id !== artifactId);
+      state.freshPurchases = state.freshPurchases.filter((id) => id !== artifactId);
+      persistShopOffer();
     } catch (error) {
       state.error = error.message || 'Could not sell item';
     }
@@ -134,6 +201,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       state.gameRunShopOffer = data.shopOffer;
       state.containerItems = [...state.containerItems, artifactId];
       state.freshPurchases = [...state.freshPurchases, artifactId];
+      persistShopOffer();
     } catch (error) {
       state.error = error.message || 'Could not buy item';
     }

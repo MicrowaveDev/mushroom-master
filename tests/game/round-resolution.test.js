@@ -177,6 +177,93 @@ test('sell non-existent item rejects', async () => {
   );
 });
 
+test('player loses exactly one life per round loss (not per combat step)', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+
+  // Verify lives before any rounds
+  let state = await getPlayerState(playerId);
+  // Resolve several rounds and track lives — lives should decrement at most by 1 per round,
+  // regardless of how many combat steps occurred in the battle.
+  let previousLives = STARTING_LIVES;
+  for (let i = 0; i < 3; i++) {
+    const result = await resolveRound(playerId, run.id);
+    const newLives = result.player.livesRemaining;
+    const delta = previousLives - newLives;
+    // A round loss deducts exactly 1 life, a win deducts 0
+    if (result.lastRound.outcome === 'loss') {
+      assert.equal(delta, 1, `Round ${i + 1} (loss) should decrement lives by 1, got ${delta}`);
+    } else {
+      assert.equal(delta, 0, `Round ${i + 1} (win) should not decrement lives, got ${delta}`);
+    }
+    previousLives = newLives;
+    if (result.status !== 'active') break;
+  }
+});
+
+async function getLastGhostCost(playerId) {
+  const { query } = await import('../../app/server/db.js');
+  const { getArtifactById, getArtifactPrice } = await import('../../app/server/game-data.js');
+  const battlesResult = await query(
+    `SELECT id FROM battles WHERE initiator_player_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [playerId]
+  );
+  const battleId = battlesResult.rows[0].id;
+  const snapshotsResult = await query(
+    `SELECT side, payload_json FROM battle_snapshots WHERE battle_id = $1`,
+    [battleId]
+  );
+  const right = snapshotsResult.rows.find((r) => r.side === 'right');
+  const ghostLoadout = JSON.parse(right.payload_json).loadout;
+  return ghostLoadout.items.reduce((sum, item) => {
+    const a = getArtifactById(item.artifactId);
+    return sum + (a ? getArtifactPrice(a) : 0);
+  }, 0);
+}
+
+test('round 1 ghost budget has grace factor (≤ 70% of player spend)', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+  // Starter loadout = 2 coins spent (spore_needle + bark_plate).
+  // Round 1 budget = max(3, floor(2 * 0.88 * 0.7)) = max(3, 1) = 3 → ghost cost ≤ 3
+  await resolveRound(playerId, run.id);
+  const ghostCost = await getLastGhostCost(playerId);
+  assert.ok(ghostCost <= 3, `Round 1 ghost cost ${ghostCost} should be ≤ 3 (grace-floored)`);
+});
+
+test('round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+  await resolveRound(playerId, run.id); // advance to round 2
+  await resolveRound(playerId, run.id);
+  const ghostCost = await getLastGhostCost(playerId);
+  // Still floored at 3 with 2-coin starter, but formula is more lenient than round 1
+  assert.ok(ghostCost <= 3, `Round 2 ghost cost ${ghostCost} should be ≤ 3 (grace-floored)`);
+});
+
+test('ghost budget is capped by cumulative round income', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+  const { ROUND_INCOME, GHOST_BUDGET_DISCOUNT } = await import('../../app/server/game-data.js');
+
+  // Play through several rounds and verify ghost cost never exceeds cumulative income
+  for (let i = 0; i < 4; i++) {
+    const result = await resolveRound(playerId, run.id);
+    if (result.status !== 'active') break;
+    const ghostCost = await getLastGhostCost(playerId);
+    const round = i + 1;
+    const cumulativeIncome = ROUND_INCOME.slice(0, round).reduce((s, c) => s + c, 0);
+    // Ghost can't exceed cumulative income × (1 - discount) × grace
+    const graceFactor = round === 1 ? 0.7 : round === 2 ? 0.85 : 1.0;
+    const theoreticalMax = Math.floor(cumulativeIncome * (1 - GHOST_BUDGET_DISCOUNT) * graceFactor);
+    const hardCap = Math.max(3, theoreticalMax);
+    assert.ok(
+      ghostCost <= hardCap + 1, // +1 tolerance for rounding in bot loadout generator
+      `Round ${round}: ghost cost ${ghostCost} exceeds theoretical cap ${hardCap} (cumulative income ${cumulativeIncome})`
+    );
+  }
+});
+
 test('abandon pays completion bonus based on wins', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();

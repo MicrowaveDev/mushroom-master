@@ -21,6 +21,9 @@ export function buildArtifactSummary(items) {
     if (!artifact || artifact.family === 'bag') {
       continue;
     }
+    // Items still in container (not placed on grid or in a bag) don't contribute stats
+    const isPlaced = (item.bagId) || (Number(item.x) >= 0 && Number(item.y) >= 0);
+    if (!isPlaced) continue;
     totals.damage += artifact.bonus.damage || 0;
     totals.armor += artifact.bonus.armor || 0;
     totals.speed += artifact.bonus.speed || 0;
@@ -49,9 +52,6 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
     if (!artifact) {
       throw new Error(`Unknown artifact: ${item.artifactId}`);
     }
-    if (artifactIds.has(item.artifactId)) {
-      throw new Error('Duplicate artifacts are not allowed');
-    }
     artifactIds.add(item.artifactId);
     totalCoins += getArtifactPrice(artifact);
     const matchesCanonical = item.width === artifact.width && item.height === artifact.height;
@@ -59,7 +59,22 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
     if (!matchesCanonical && !matchesRotated) {
       throw new Error('Stored artifact dimensions must match canonical definitions');
     }
-    if (item.x < 0 || item.y < 0 || item.x + item.width > INVENTORY_COLUMNS || item.y + item.height > INVENTORY_ROWS) {
+
+    // Bags expand the grid via extra slots rather than occupying cells.
+    // They have no grid position — just register as a slot provider.
+    if (artifact.family === 'bag') {
+      bagSlotUsage.set(item.artifactId, 0);
+      continue;
+    }
+
+    // Items with x<0 or y<0 are in the container (not placed on the grid).
+    // They're kept in the loadout for persistence but skip bounds/overlap checks
+    // and contribute no combat stats.
+    if (item.x < 0 || item.y < 0) {
+      continue;
+    }
+
+    if (item.x + item.width > INVENTORY_COLUMNS || item.y + item.height > INVENTORY_ROWS) {
       throw new Error('Artifact placement is out of bounds');
     }
 
@@ -72,10 +87,6 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
         occupied.add(key);
       }
     }
-
-    if (artifact.family === 'bag') {
-      bagSlotUsage.set(item.artifactId, 0);
-    }
   }
 
   for (const item of baggedItems) {
@@ -85,9 +96,6 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
     }
     if (artifact.family === 'bag') {
       throw new Error('Bags cannot contain other bags');
-    }
-    if (artifactIds.has(item.artifactId)) {
-      throw new Error('Duplicate artifacts are not allowed');
     }
     artifactIds.add(item.artifactId);
     totalCoins += getArtifactPrice(artifact);
@@ -100,11 +108,9 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
       throw new Error(`Bag ${item.bagId} is not placed on the grid`);
     }
 
-    if (artifact.width !== 1 || artifact.height !== 1) {
-      throw new Error('Only 1x1 artifacts can be placed inside bags');
-    }
-
-    const used = bagSlotUsage.get(item.bagId) + 1;
+    // Items consume cells equal to their footprint (width × height)
+    const cellsUsed = item.width * item.height;
+    const used = bagSlotUsage.get(item.bagId) + cellsUsed;
     if (used > bagArtifact.slotCount) {
       throw new Error(`Bag ${item.bagId} is full (${bagArtifact.slotCount} slots)`);
     }

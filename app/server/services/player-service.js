@@ -1,5 +1,6 @@
 import { query, withTransaction } from '../db.js';
 import {
+  getArtifactById,
   getMushroomById,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
@@ -12,7 +13,8 @@ import {
   nowIso
 } from '../lib/utils.js';
 import { createBattle } from './battle-service.js';
-import { createBotGhostSnapshot } from './bot-loadout.js';
+import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
+import { createRng } from '../lib/utils.js';
 import { validateLoadoutItems } from './loadout-utils.js';
 
 function rowToPlayerProfile(row) {
@@ -124,7 +126,8 @@ export async function updateSettings(playerId, payload) {
 }
 
 export async function selectActiveMushroom(playerId, mushroomId) {
-  if (!getMushroomById(mushroomId)) {
+  const mushroom = getMushroomById(mushroomId);
+  if (!mushroom) {
     throw new Error('Unknown mushroom');
   }
   await query(
@@ -133,6 +136,20 @@ export async function selectActiveMushroom(playerId, mushroomId) {
      ON CONFLICT (player_id) DO UPDATE SET mushroom_id = excluded.mushroom_id`,
     [playerId, mushroomId]
   );
+
+  // First-time character pick → seed a full-budget starter loadout so the player
+  // enters round 1 at max coin efficiency, not with an empty inventory. Uses the
+  // bot loadout generator which respects the mushroom's affinity (damage/armor/stun).
+  const existingLoadout = await query(
+    `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
+    [playerId]
+  );
+  if (!existingLoadout.rowCount) {
+    const rng = createRng(`${playerId}:starter:${mushroomId}`);
+    const loadout = createBotLoadout(mushroom, rng, MAX_ARTIFACT_COINS);
+    await saveArtifactLoadout(playerId, mushroomId, loadout.items, MAX_ARTIFACT_COINS);
+  }
+
   return getPlayerState(playerId);
 }
 
@@ -140,15 +157,21 @@ export async function saveArtifactLoadout(playerId, mushroomId, items, coinBudge
   if (!getMushroomById(mushroomId)) {
     throw new Error('Unknown mushroom');
   }
-  const normalizedItems = items.map((item, index) => ({
-    artifactId: item.artifactId,
-    x: item.bagId ? 0 : Number(item.x),
-    y: item.bagId ? 0 : Number(item.y),
-    width: Number(item.width),
-    height: Number(item.height),
-    sortOrder: index,
-    bagId: item.bagId || null
-  }));
+  const normalizedItems = items.map((item, index) => {
+    const artifact = getArtifactById(item.artifactId);
+    const isBag = artifact?.family === 'bag';
+    // Bags and bagged items have no grid position — use 0,0 as a sentinel.
+    const hasPosition = !item.bagId && !isBag && item.x !== undefined && item.y !== undefined;
+    return {
+      artifactId: item.artifactId,
+      x: hasPosition ? Number(item.x) : 0,
+      y: hasPosition ? Number(item.y) : 0,
+      width: Number(item.width),
+      height: Number(item.height),
+      sortOrder: index,
+      bagId: item.bagId || null
+    };
+  });
   validateLoadoutItems(normalizedItems, coinBudget);
 
   return withTransaction(async (client) => {

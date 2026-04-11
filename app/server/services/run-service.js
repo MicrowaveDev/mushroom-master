@@ -17,6 +17,7 @@ import {
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
   MAX_ROUNDS_PER_RUN,
+  mushrooms,
   RATING_FLOOR,
   ROUND_INCOME,
   runRewardTable,
@@ -32,13 +33,13 @@ import {
   nowIso,
   parseJson
 } from '../lib/utils.js';
-import { simulateBattle } from './battle-engine.js';
+import { shuffleWithRng, simulateBattle } from './battle-engine.js';
 import {
   getActiveSnapshot,
   getDailyUsage,
   recordBattle
 } from './battle-service.js';
-import { createBotGhostSnapshot } from './bot-loadout.js';
+import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 
 function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
   const combatPool = [...combatArtifacts];
@@ -104,6 +105,40 @@ export async function startGameRun(playerId, mode = 'solo') {
       throw new Error('Daily battle limit reached');
     }
 
+    // Clear purchased items from previous runs (`purchased_round IS NOT NULL`)
+    // so they don't leak into the new run. Items saved manually (via the legacy
+    // prep screen / test setup) have NULL purchased_round and are preserved.
+    // Also clear the shop state so old bags/placements don't bleed across runs.
+    await client.query(
+      `DELETE FROM player_artifact_loadout_items
+       WHERE purchased_round IS NOT NULL
+         AND loadout_id IN (SELECT id FROM player_artifact_loadouts WHERE player_id = $1)`,
+      [playerId]
+    );
+    await client.query(
+      `DELETE FROM player_shop_state WHERE player_id = $1`,
+      [playerId]
+    );
+
+    // Fetch the player's active mushroom and check if they already have items in
+    // their persistent loadout (from legacy prep or a saved build). If not, we'll
+    // seed a starter loadout after creating the run.
+    const activeMushroomResult = await client.query(
+      `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+      [playerId]
+    );
+    const activeMushroomId = activeMushroomResult.rowCount
+      ? activeMushroomResult.rows[0].mushroom_id
+      : null;
+
+    const existingItemsResult = await client.query(
+      `SELECT COUNT(*) as count FROM player_artifact_loadout_items items
+       JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
+       WHERE loadouts.player_id = $1`,
+      [playerId]
+    );
+    const hasExistingItems = Number(existingItemsResult.rows[0].count) > 0;
+
     const runId = createId('run');
     const now = nowIso();
     const initialCoins = ROUND_INCOME[0];
@@ -139,6 +174,64 @@ export async function startGameRun(playerId, mode = 'solo') {
       [playerId, currentDay]
     );
 
+    // Seed a fresh starter loadout if the player has no existing items.
+    // Uses the active mushroom's affinity via createBotLoadout.
+    let starterItems = [];
+    if (activeMushroomId && !hasExistingItems) {
+      const mushroom = mushrooms.find((m) => m.id === activeMushroomId);
+      if (mushroom) {
+        const loadoutRng = createRng(`${runId}:starter:${activeMushroomId}`);
+        const starterLoadout = createBotLoadout(mushroom, loadoutRng, MAX_ARTIFACT_COINS);
+        const loadoutIdResult = await client.query(
+          `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
+          [playerId]
+        );
+        let loadoutId;
+        if (loadoutIdResult.rowCount) {
+          loadoutId = loadoutIdResult.rows[0].id;
+          await client.query(
+            `UPDATE player_artifact_loadouts SET mushroom_id = $2, updated_at = $3 WHERE id = $1`,
+            [loadoutId, activeMushroomId, now]
+          );
+        } else {
+          loadoutId = createId('loadout');
+          await client.query(
+            `INSERT INTO player_artifact_loadouts
+             (id, player_id, mushroom_id, grid_width, grid_height, is_active, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, 1, $6, $6)`,
+            [loadoutId, playerId, activeMushroomId, INVENTORY_COLUMNS, INVENTORY_ROWS, now]
+          );
+        }
+        for (const [index, item] of starterLoadout.items.entries()) {
+          await client.query(
+            `INSERT INTO player_artifact_loadout_items
+             (id, loadout_id, artifact_id, x, y, width, height, sort_order, purchased_round, bag_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, NULL)`,
+            [createId('loadoutitem'), loadoutId, item.artifactId, item.x, item.y, item.width, item.height, index]
+          );
+        }
+        starterItems = starterLoadout.items;
+      }
+    } else if (hasExistingItems) {
+      // Return the existing loadout items so the client can populate builderItems
+      const existingResult = await client.query(
+        `SELECT items.artifact_id, items.x, items.y, items.width, items.height, items.bag_id
+         FROM player_artifact_loadout_items items
+         JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
+         WHERE loadouts.player_id = $1
+         ORDER BY items.sort_order ASC`,
+        [playerId]
+      );
+      starterItems = existingResult.rows.map((r) => ({
+        artifactId: r.artifact_id,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        bagId: r.bag_id
+      }));
+    }
+
     return {
       id: runId,
       mode,
@@ -148,6 +241,7 @@ export async function startGameRun(playerId, mode = 'solo') {
       endedAt: null,
       endReason: null,
       shopOffer,
+      starterItems,
       player: {
         id: runPlayerId,
         playerId,
@@ -394,6 +488,22 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
 }
 
 async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, ghostBudget) {
+  // Find player's active mushroom — opponents must use a different one
+  const playerMushroomResult = await client.query(
+    `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+    [playerId]
+  );
+  const playerMushroomId = playerMushroomResult.rowCount ? playerMushroomResult.rows[0].mushroom_id : null;
+
+  // Round-robin opponent mushroom from the pool excluding the player's own mushroom.
+  // Shuffle once per run, then cycle by round number — each opponent mushroom is
+  // seen before any repeats.
+  const opponentMushroomIds = mushrooms.map((m) => m.id).filter((id) => id !== playerMushroomId);
+  const shuffleRng = createRng(`${gameRunId}:ghost-order`);
+  const order = shuffleWithRng(opponentMushroomIds, shuffleRng);
+  const targetMushroomId = order[(roundNumber - 1) % order.length];
+
+  // Try to find a real player snapshot with this mushroom
   const facedResult = await client.query(
     `SELECT DISTINCT opponent_player_id FROM game_rounds WHERE game_run_id = $1 AND opponent_player_id IS NOT NULL`,
     [gameRunId]
@@ -401,13 +511,14 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
   const facedIds = [...new Set(facedResult.rows.map((r) => r.opponent_player_id))];
   facedIds.push(playerId);
 
-  const excludePlaceholders = facedIds.map((_, i) => `$${i + 2}`).join(', ');
+  const excludePlaceholders = facedIds.map((_, i) => `$${i + 3}`).join(', ');
   const snapshotResult = await client.query(
     `SELECT * FROM game_run_ghost_snapshots
      WHERE player_id NOT IN (${excludePlaceholders})
-       AND total_coins <= $1
+       AND mushroom_id = $1
+       AND total_coins <= $2
      ORDER BY RANDOM() LIMIT 1`,
-    [ghostBudget, ...facedIds]
+    [targetMushroomId, ghostBudget, ...facedIds]
   );
 
   if (snapshotResult.rowCount) {
@@ -420,15 +531,19 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
     };
   }
 
+  // Fall back to bot-generated opponent. The caller already applied floor/grace,
+  // so we pass the budget through verbatim (but clamp the generator's minimum at 3
+  // since its weighting algorithm needs at least 3 coins to pick an item reliably).
+  const botBudget = Math.max(3, ghostBudget);
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const seed = `${gameRunId}:ghost:${roundNumber}:${attempt}`;
-      return createBotGhostSnapshot(seed, null, Math.max(MAX_ARTIFACT_COINS, ghostBudget));
+      return createBotGhostSnapshot(seed, targetMushroomId, botBudget);
     } catch {
       continue;
     }
   }
-  return createBotGhostSnapshot(`${gameRunId}:ghost:${roundNumber}:fallback`, null, MAX_ARTIFACT_COINS);
+  return createBotGhostSnapshot(`${gameRunId}:ghost:${roundNumber}:fallback`, targetMushroomId, botBudget);
 }
 
 async function resolveChallengeRound(client, run, gameRunId) {
@@ -634,7 +749,21 @@ export async function resolveRound(playerId, gameRunId) {
     const roundNumber = run.current_round;
 
     const leftSnapshot = await getActiveSnapshot(client, playerId);
-    const ghostBudget = Math.max(MAX_ARTIFACT_COINS, Math.floor(grp.coins * (1 - GHOST_BUDGET_DISCOUNT)));
+    // Ghost budget rules (see docs/balance.md for rationale):
+    //   base     = player's actual spent coins × (1 - GHOST_BUDGET_DISCOUNT)
+    //   cap      = cumulative round income up to this round (an upper bound)
+    //   grace    = multiplier for early rounds (round 1: 0.7, round 2: 0.85, 3+: 1.0)
+    //   floor    = 3 coins (always enough for one cheap item)
+    const playerSpent = leftSnapshot.loadout.items.reduce((sum, item) => {
+      const artifact = getArtifactById(item.artifactId);
+      return sum + (artifact ? getArtifactPrice(artifact) : 0);
+    }, 0);
+    const cumulativeIncome = ROUND_INCOME
+      .slice(0, Math.max(1, roundNumber))
+      .reduce((s, c) => s + c, 0);
+    const graceFactor = roundNumber === 1 ? 0.7 : roundNumber === 2 ? 0.85 : 1.0;
+    const base = Math.min(playerSpent, cumulativeIncome) * (1 - GHOST_BUDGET_DISCOUNT);
+    const ghostBudget = Math.max(3, Math.floor(base * graceFactor));
     const rightSnapshot = await getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, ghostBudget);
 
     const battleSeed = crypto.randomBytes(16).toString('hex');

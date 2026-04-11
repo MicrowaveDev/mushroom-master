@@ -6,9 +6,11 @@ import {
   getMushroomById,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
+  MAX_ARTIFACT_COINS,
   mushrooms,
   RATING_FLOOR,
-  rewardTable
+  rewardTable,
+  ROUND_INCOME
 } from '../game-data.js';
 import {
   createId,
@@ -24,7 +26,7 @@ import { createBotGhostSnapshot } from './bot-loadout.js';
 import { validateLoadoutItems } from './loadout-utils.js';
 
 export async function getActiveSnapshot(client, playerId) {
-  const [activeResult, loadoutResult, loadoutItemsResult] = await Promise.all([
+  const [activeResult, loadoutResult, loadoutItemsResult, activeRunResult] = await Promise.all([
     client.query(`SELECT * FROM player_active_character WHERE player_id = $1`, [playerId]),
     client.query(`SELECT * FROM player_artifact_loadouts WHERE player_id = $1`, [playerId]),
     client.query(
@@ -33,6 +35,13 @@ export async function getActiveSnapshot(client, playerId) {
        JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
        WHERE loadouts.player_id = $1
        ORDER BY items.sort_order ASC`,
+      [playerId]
+    ),
+    client.query(
+      `SELECT gr.current_round
+       FROM game_run_players grp
+       JOIN game_runs gr ON gr.id = grp.game_run_id
+       WHERE grp.player_id = $1 AND grp.is_active = 1`,
       [playerId]
     )
   ]);
@@ -50,9 +59,16 @@ export async function getActiveSnapshot(client, playerId) {
     y: row.y,
     width: row.width,
     height: row.height,
-    sortOrder: row.sort_order
+    sortOrder: row.sort_order,
+    bagId: row.bag_id || null
   }));
-  validateLoadoutItems(items);
+  // Coin budget = sum of per-round income up to and including the current round.
+  // Outside a game run, fall back to the legacy 5-coin cap.
+  const currentRound = activeRunResult.rowCount ? activeRunResult.rows[0].current_round : 0;
+  const runBudget = currentRound > 0
+    ? ROUND_INCOME.slice(0, currentRound).reduce((sum, c) => sum + c, 0)
+    : MAX_ARTIFACT_COINS;
+  validateLoadoutItems(items, runBudget);
   const mushroomId = activeResult.rows[0].mushroom_id;
 
   return {

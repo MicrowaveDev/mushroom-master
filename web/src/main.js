@@ -68,6 +68,7 @@ const App = {
       currentBattle: null,
       replayIndex: 0,
       replayTimer: null,
+      replaySpeed: 1,
       selectedWiki: null,
       wikiHome: null,
       friends: [],
@@ -89,8 +90,8 @@ const App = {
     const gs = useGameState(state);
     const auth = useAuth(state, gs.goTo);
     const shop = useShop(state, gs.getArtifact, auth.persistShopOffer);
-    const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, auth.persistShopOffer);
     const replay = useReplay(state, gs.goTo, gs.getMushroom);
+    const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, auth.persistShopOffer, replay.loadReplay);
     const social = useSocial(state, gs.goTo);
     const sse = useSSE(state, gs.goTo);
     const touch = useTouch(state);
@@ -164,6 +165,23 @@ const App = {
       gs.goTo('home');
     }
 
+    async function onReplayFinish() {
+      if (state.gameRun) {
+        if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
+          gs.goTo('runComplete');
+        } else if (state.gameRunResult) {
+          await gameRun.continueToNextRound();
+        } else {
+          // Replay loaded standalone (e.g. via URL param) but a game run is active —
+          // return to prep instead of the results screen.
+          gs.goTo('prep');
+        }
+      } else {
+        // Standalone replay (no active game run) — return to home
+        gs.goTo('home');
+      }
+    }
+
     // --- Watchers ---
     watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
     watch(() => state.screen, async (screen, oldScreen) => {
@@ -214,7 +232,7 @@ const App = {
       saveCharacter: auth.saveCharacter,
       saveSettings: auth.saveSettings,
       saveLoadout, startBattle,
-      runLocalLab, loadInventoryReview, handleRunComplete,
+      runLocalLab, loadInventoryReview, handleRunComplete, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
   },
@@ -363,7 +381,8 @@ const App = {
           :replay-finished="replayFinished" :active-replay-state="activeReplayState" :visible-replay-events="visibleReplayEvents"
           :build-replay-fighter="buildReplayFighter" :get-mushroom="getMushroom" :loadout-stats-text="loadoutStatsText"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
-          @go-results="goTo('results')"
+          @go-results="onReplayFinish"
+          @set-speed="setReplaySpeed($event)"
         />
 
         <results-screen v-else-if="state.screen === 'results' && state.currentBattle"

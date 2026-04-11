@@ -207,56 +207,177 @@ Battles are deterministic 1v1 duels resolved server-side in up to 12 steps:
 
 ## 3. Bag System
 
+### Core Principle: Bags Never Occupy Grid Cells
+
+**Bags are a unified, uniform concept:** they are pure slot providers that expand the inventory by adding extra rows below the base grid. A bag never consumes any of the base `INVENTORY_COLUMNS × INVENTORY_ROWS` cells.
+
+This is the same model everywhere:
+- Client state: bags live in `state.activeBags`, not `state.builderItems`
+- Server DB: bags have no meaningful `x, y` coordinates (stored as `0, 0` as a sentinel)
+- Server validation: the `family === 'bag'` check short-circuits bounds/overlap checks
+- Battle snapshots: bags are filtered out of the artifact summary (`buildArtifactSummary` skips them)
+
+There is no "virtual bag" vs "grid bag" distinction — every bag works the same way.
+
 ### Bag Activation
 
-When a bag is clicked in the container (or auto-placed), it does NOT occupy cells like a regular artifact. Instead it **expands the grid** by adding extra rows.
+When a bag is clicked in the container (or auto-placed), it is added to `state.activeBags` and removed from `state.containerItems`. No grid placement happens.
 
 **Flow:**
 1. `autoPlaceFromContainer(bagId)` detects `family === 'bag'` and calls `activateBag(bagId)`
-2. `activateBag`: adds to `state.activeBags`, removes from `state.containerItems`
+2. `activateBag(bagId)`:
+   - Adds to `state.activeBags`
+   - Removes from `state.containerItems`
+   - Calls `persistShopOffer()` to sync state
 3. Grid rows become: `effectiveRows() = INVENTORY_ROWS + sum(bagRowCount(id) for each activeBag)`
 
 ### Bag Layout Calculation
 
+Each active bag contributes 1+ rows of slots to the grid. The number of rows and usable columns per row depends on the bag's dimensions and rotation state:
+
 ```
 bagLayout(bagId):
   rotated = state.rotatedBags.includes(bagId)
-  cols = rotated ? min(width, height) : max(width, height)  // capped at INVENTORY_COLUMNS
+  cols = rotated ? min(width, height) : max(width, height)   // capped at INVENTORY_COLUMNS
   rows = rotated ? max(width, height) : min(width, height)
+  → returns { cols, rows }
 ```
 
-**moss_pouch (1x2):**
-- Default: 2 cols, 1 row — 2 usable cells side by side, 1 hidden
-- Rotated: 1 col, 2 rows — 1 usable cell per row, 2 hidden per row
+**moss_pouch (width=1, height=2, slotCount=2):**
+- Default: 2 cols × 1 row → 2 usable cells side by side, 1 hidden
+- Rotated: 1 col × 2 rows → 1 usable cell per row, 2 hidden per row
 
-**amber_satchel (2x2):**
-- Always: 2 cols, 2 rows — not rotatable (square)
+**amber_satchel (width=2, height=2, slotCount=4):**
+- Always: 2 cols × 2 rows → not rotatable (square), 4 usable cells total
+
+### Bag Row Mapping
+
+Active bags are assigned consecutive rows starting at `INVENTORY_ROWS`:
+
+```
+bagForRow(row):
+  r = INVENTORY_ROWS
+  for each bagId in state.activeBags:
+    rowCount = bagLayout(bagId).rows
+    if row >= r and row < r + rowCount:
+      return { bagId, startRow: r, rowCount, cols: bagLayout(bagId).cols }
+    r += rowCount
+  return null
+```
 
 ### Disabled Cells
 
-Cells beyond the bag's column count in a bag row are disabled:
-- `isCellDisabled(cx, cy)`: returns true if `cx >= bagCols` for that row
-- Disabled cells: `visibility: hidden`, cannot receive drops
-- Placement validation (`normalizePlacement`) also checks `isCellDisabled`
+Cells beyond the bag's column count in a bag row are visually hidden and non-interactive:
+
+- `isCellDisabled(cx, cy)`: returns `true` if `cy >= INVENTORY_ROWS` AND `cx >= bag.cols` for that row
+- Disabled cells get class `artifact-grid-cell--bag-disabled` with `visibility: hidden`
+- `normalizePlacement()` rejects any placement whose footprint covers a disabled cell
+- Drop handlers `onCellDragOver` and `onCellDrop` no-op for disabled cells
 
 ### Bag Rotation
 
-- `rotateBag(bagId)`: toggles ID in `state.rotatedBags`
+- `rotateBag(bagId)`: toggles the bag ID in `state.rotatedBags`
 - Only allowed for non-square bags (width !== height)
-- Requires all items in bag rows to be removed first
-- Visually swaps the bag row layout (cols <-> rows)
+- **Blocked** if any items exist in the bag's row range — player must first remove them
+- Visually swaps the bag row layout (cols ↔ rows), changing the shape from wide to tall or vice versa
 
 ### Bag Deactivation
 
-- `deactivateBag(bagId)`: removes from `state.activeBags`, returns to `state.containerItems`
-- Blocked if any items are placed in the bag's rows
-- Error message: "Remove items from the bag first"
+- `deactivateBag(bagId)`: removes bag from `state.activeBags`, returns it to `state.containerItems`
+- **Blocked** if any items are placed in the bag's rows
+- Error message: `"Сначала уберите предметы из сумки"` / `"Remove items from the bag first"`
+
+### Persistence: Client → Server Mapping
+
+When signalling ready, `buildLoadoutPayloadItems()` in `useGameRun.js` translates the frontend state into a payload the server can validate and persist. The translation is lossless and preserves bag associations:
+
+```
+for each bagId in state.activeBags:
+  → payload item { artifactId: bagId, x:0, y:0, w, h }          // bag (coords ignored)
+
+for each artifactId in state.containerItems (bags first):
+  → payload item { artifactId, x:-1, y:-1, w, h }                // container (unactivated)
+
+for each item in state.builderItems:
+  if item.y < INVENTORY_ROWS:
+    → payload item { artifactId, x, y, w, h }                    // base grid item
+  else:
+    → find the bag whose row range contains item.y
+    → payload item { artifactId, w, h, bagId }                   // bagged item
+
+for each non-bag artifactId in state.containerItems:
+  → payload item { artifactId, x:-1, y:-1, w, h }                // container (non-bag)
+```
+
+**Ordering matters:** bags are always emitted **before** bagged items so that `validateLoadoutItems` sees the bag registered in `bagSlotUsage` by the time a bagged item references it.
+
+**Container marker:** items in the container (bought but not placed) use `x=-1, y=-1` as a sentinel. Bags get `x=0, y=0` because bags never have grid coordinates regardless of container/active state — the `state.activeBags` set on the client is the only source of truth for which bags are expanded.
+
+### Server Validation
+
+`validateLoadoutItems(items, coinBudget)` in `app/server/services/loadout-utils.js`:
+
+1. **Partitions items** into `gridItems` (no `bagId`) and `baggedItems` (has `bagId`).
+2. **For each gridItem:**
+   - If `artifact.family === 'bag'` → register in `bagSlotUsage.set(bagId, 0)` and **skip** bounds/overlap checks (bags never occupy cells).
+   - If `x < 0 || y < 0` → item is in the container, **skip** bounds/overlap checks (container items stay in the loadout for persistence but contribute no combat stats).
+   - Otherwise → enforce `x, y, x+w, y+h` within `INVENTORY_COLUMNS × INVENTORY_ROWS`, check no overlap with `occupied` set.
+3. **For each baggedItem:**
+   - `bagId` must reference a bag already in `bagSlotUsage` (throws `"Bag X is not placed on the grid"` otherwise)
+   - Consumes `item.width × item.height` slot cells (so a 1×2 item uses 2 slots, a 2×2 uses 4)
+   - Total consumed cells must not exceed `bagArtifact.slotCount` (throws `"Bag X is full"` otherwise)
+4. **Coin budget check**: sum of all item prices must not exceed `coinBudget`. In game runs this is `sum(ROUND_INCOME[0..currentRound])` — the cumulative income ceiling. Outside a game run, it's the legacy `MAX_ARTIFACT_COINS` (5). See [balance.md](./balance.md) for the rationale.
+
+### Combat Stat Contribution
+
+`buildArtifactSummary(items)` skips two item types when computing combat totals:
+- **Bags** (`family === 'bag'`) — bags have empty `bonus: {}`, they only provide storage
+- **Container items** (`x < 0 || y < 0` AND no `bagId`) — unplaced items don't fight
+
+Placed grid items and bagged items (items inside bags) both contribute stats. This means filling a bag with 1×1 combat artifacts effectively gives the player **extra stat slots beyond the base 3×2 grid**.
 
 ### Bag Rendering
 
-- In shop and container: bags render as **empty colored cells** (no glyph SVG), using the bag's theme colors
-- The `renderArtifactFigure` function skips `renderArtifactGlyph` when `artifact.family === 'bag'`
-- Each cell still has the shell/border/glow SVG rects, just no interior glyph
+- In shop and container: bags render as **empty colored cells** (no interior glyph), using the bag's theme derived from `artifact.color`
+- `renderArtifactFigure()` skips `renderArtifactGlyph()` when `artifact.family === 'bag'`
+- Each cell still has the shell/border/glow SVG rects — just no glyph inside
+- Bag-row cells in the inventory grid get `.artifact-grid-cell--bag` class with `--bag-color` CSS variables (dashed colored border)
+
+### State Restoration on Reload
+
+When the page reloads during an active game run, `refreshBootstrap` in `useAuth.js` restores inventory state from **two sources**:
+
+1. **`activeGameRun.loadoutItems`** (server DB) — authoritative source for **which artifacts** the player owns in this run (filtered to `purchased_round IS NOT NULL` to exclude pre-run items)
+2. **`shopState`** (client persistShopOffer payload, stored server-side) — authoritative source for **placement positions** (`builderItems`), `activeBags`, and `rotatedBags`
+
+The two sources are joined by `artifactId`:
+
+```
+ownedIds        = set of loadoutItems.artifactId
+bagsOwned       = ownedIds where family === 'bag'
+storedPositions = map[artifactId → { x, y, w, h }] from shopState.builderItems
+                  (filtered to owned artifacts only)
+
+state.activeBags = [...shopState.activeBags].filter(id => ownedIds.has(id) && bagsOwned.has(id))
+state.rotatedBags = shopState.rotatedBags.filter(id => state.activeBags.includes(id))
+
+state.builderItems = []
+state.containerItems = []
+for each owned loadoutItem (non-bag):
+  if storedPositions.has(item.artifactId):
+    state.builderItems.push({ ...item, ...storedPositions[item.artifactId] })
+  else:
+    state.containerItems.push(item.artifactId)
+
+// Unactivated owned bags also go to container
+state.containerItems += bagsOwned.filter(id => !state.activeBags.includes(id))
+
+state.freshPurchases = shopState.freshPurchases.filter(id => ownedIds.has(id))
+```
+
+**Why two sources?** The server's `loadoutItems` knows **what** the player owns (via `buyRunShopItem` / `sellRunItem`), but the placement positions are client-side UI state (moving an artifact on the grid doesn't hit the server until `signalReady`). To preserve positions across a mid-prep reload, the client writes placements to `shopState` on every mutation via `persistShopOffer()`. On reload, both sources are joined to rebuild the full UI state.
+
+This also makes the system **resilient to desync**: if `shopState` gets ahead of `loadoutItems` (e.g. due to a buy that hit the server but the placement wasn't persisted yet), the filter `ownedIds.has(id)` drops stale entries gracefully.
 
 ---
 
@@ -298,20 +419,27 @@ Each artifact ID maps to a unique SVG glyph. Bag glyphs (moss_pouch, amber_satch
 
 ## 5. Shop System
 
-### Legacy Shop (ArtifactsScreen)
+There are two shop modes, chosen by context:
 
-**Coin budget:** `MAX_ARTIFACT_COINS` (5), shared between purchases and rerolls.
+- **Game Run Shop** ([PrepScreen](../web/src/pages/PrepScreen.js)) — per-round shop inside an active `game_run`. Coins scale with round. This is the main gameplay loop.
+- **Legacy Shop** ([ArtifactsScreen](../web/src/pages/ArtifactsScreen.js)) — single-battle prep, fixed 5-coin budget. Used outside a game run for testing and the legacy single-duel flow.
 
-| Action | Function | Effect |
-|--------|----------|--------|
-| Buy | `buyFromShop(id)` | Remove from shopOffer, add to containerItems + freshPurchases |
-| Return | `returnToShop(id)` | Remove from containerItems + freshPurchases, add back to shopOffer |
-| Reroll | `rerollShop(free)` | Generate new 5-item offer, deduct 1 coin from budget |
-| Sell price | `getSellPrice(id)` | Full price if in freshPurchases, else floor(price/2) |
+See [balance.md](./balance.md) for per-round income, refresh costs, and the full economy rules.
 
-### Game Run Shop (PrepScreen)
+### Mode comparison
 
-**Coins:** Per-player, earned each round (`ROUND_INCOME` array), carried between rounds.
+| Feature | Game Run (PrepScreen) | Legacy (ArtifactsScreen) |
+|---------|----------------------|--------------------------|
+| Coin source | Per-round income from server (`ROUND_INCOME`) | Fixed budget of 5 |
+| Shop generation | Server-side deterministic (seeded RNG) | Client-side random |
+| Shop persistence | Server `game_run_shop_states` table | Client `shopState` payload |
+| Sell mechanism | Sell zone (refund to coin pool) | Return to shop (full refund if fresh) |
+| Refresh cost | 1 coin (first 3), 2 coins (4+) | 1 coin (fixed) |
+| Loadout save | Auto on "Ready" signal | Manual "Save" button |
+| State on reload | Server `loadoutItems` + client `shopState` | Client `shopState` only |
+| Coin budget validation | `sum(ROUND_INCOME[0..currentRound])` | `MAX_ARTIFACT_COINS` (5) |
+
+### Game Run Shop — Actions
 
 | Action | Function | API Endpoint | Effect |
 |--------|----------|-------------|--------|
@@ -319,7 +447,20 @@ Each artifact ID maps to a unique SVG glyph. Bag glyphs (moss_pouch, amber_satch
 | Sell | `sellRunItemAction(id)` | `POST /api/game-run/:id/sell` | Refund coins, remove from builderItems/containerItems/activeBags |
 | Refresh | `refreshRunShop()` | `POST /api/game-run/:id/refresh-shop` | Deduct coins, new offer from server |
 | Refresh cost | `getRunRefreshCost()` | — | `refreshCount < 3 ? 1 : 2` |
-| Sell price | `getRunSellPrice(id)` | — | Full if in freshPurchases, else floor(price/2) |
+| Sell price | `getRunSellPrice(id)` | — | Full if in freshPurchases, else `max(1, floor(price/2))` |
+
+### Starter Loadout
+
+When a new player picks their first character via `selectActiveMushroom()`, the server auto-seeds a full 5-coin starter loadout by running `createBotLoadout()` with the mushroom's affinity. This avoids the "empty grid vs synergistic ghost" problem in round 1. Subsequent character switches preserve the existing loadout. See [balance.md Issue #1](./balance.md) for the rationale.
+
+### Legacy Shop — Actions (single-battle prep)
+
+| Action | Function | Effect |
+|--------|----------|--------|
+| Buy | `buyFromShop(id)` | Remove from shopOffer, add to containerItems + freshPurchases |
+| Return | `returnToShop(id)` | Remove from containerItems + freshPurchases, add back to shopOffer |
+| Reroll | `rerollShop(free)` | Generate new 5-item offer, deduct 1 coin from `MAX_ARTIFACT_COINS` budget |
+| Sell price | `getSellPrice(id)` | Full price if in freshPurchases, else floor(price/2) |
 
 ---
 
@@ -516,162 +657,71 @@ Sent to `PUT /api/shop-state` after every mutation:
 
 ### Game Run State Restoration
 
-On page reload with an active game run (`state.bootstrap.activeGameRun`):
-
-1. Server returns `loadoutItems` (filtered by `purchased_round IS NOT NULL`) and `shopOffer`
-2. Frontend separates items:
-   - **activeBags**: bag-family items whose ID is in `shopState.activeBags`
-   - **builderItems**: non-bag items with `x >= 0, y >= 0`
-   - **containerItems**: items with `x < 0` (unplaced) + unactivated bags
-3. `rotatedBags` restored from `shopState.rotatedBags`
-4. `freshPurchases` restored from `shopState.freshPurchases`, filtered to items in loadout
+See "State Restoration on Reload" in §3 for the full two-source join algorithm (`loadoutItems` + `shopState`).
 
 ---
 
-## 13. Game Run vs Legacy Shop
+## 13. Key Modules
 
-| Feature | Legacy (ArtifactsScreen) | Game Run (PrepScreen) |
-|---------|--------------------------|----------------------|
-| Coin source | Fixed budget of 5 | Per-round income from server |
-| Shop generation | Client-side random | Server-side deterministic (seeded RNG) |
-| Shop persistence | Client shopState | Server `game_run_shop_states` table |
-| Sell mechanism | Return to shop (full refund if fresh) | Sell zone (refund to coin pool) |
-| Refresh cost | 1 coin (fixed) | 1 coin (first 3), 2 coins (4+) |
-| Loadout save | Manual "Save" button | Auto on "Ready" signal |
-| State on reload | From `shopState` | From server `loadoutItems` + `shopState` |
+Use this as a map to find the relevant code. Most function names are self-descriptive — this section lists only the non-obvious ones.
 
----
+| Module | Purpose | Key exports |
+|--------|---------|-------------|
+| [`web/src/artifacts/grid.js`](../web/src/artifacts/grid.js) | Pure grid math (no state) | `buildOccupancy`, `preferredOrientation`, `deriveTotals`, `getArtifactPrice`, `pickRandomShopOffer` |
+| [`web/src/composables/useShop.js`](../web/src/composables/useShop.js) | Reactive shop/inventory state for legacy + game run | `effectiveRows`, `bagLayout`, `isCellDisabled`, `normalizePlacement`, `activateBag`, `rotateBag`, `autoPlaceFromContainer` |
+| [`web/src/composables/useGameRun.js`](../web/src/composables/useGameRun.js) | Game run flow + payload builder | `startNewGameRun`, `signalReady`, `continueToNextRound`, `buildLoadoutPayloadItems`, `buyRunShopItem`, `sellRunItemAction` |
+| [`web/src/composables/useAuth.js`](../web/src/composables/useAuth.js) | State restoration on reload | `refreshBootstrap`, `persistShopOffer` |
+| [`web/src/components/ArtifactGridBoard.js`](../web/src/components/ArtifactGridBoard.js) | The grid view component | props: `columns`, `rows`, `items`, `bagRows`, `variant` |
+| [`app/server/services/loadout-utils.js`](../app/server/services/loadout-utils.js) | Server-side validation + summaries | `validateLoadoutItems(items, budget)`, `buildArtifactSummary(items)` |
+| [`app/server/services/run-service.js`](../app/server/services/run-service.js) | Round resolution + ghost generation | `resolveRound`, `getRunGhostSnapshot` |
 
-## 14. Key Function Signatures
+### Non-obvious behaviors (worth documenting here)
 
-### Grid Utilities (`web/src/artifacts/grid.js`)
-
-```
-buildOccupancy(items: Item[]) -> Map<string, string>
-getArtifactPrice(artifact: Artifact) -> number
-pickRandomShopOffer(artifacts: Artifact[], excludeIds: Set) -> string[]
-preferredOrientation(artifact: Artifact) -> { width, height }
-deriveTotals(items: Item[], artifacts: Artifact[]) -> { damage, armor, speed, stunChance }
-```
-
-### Shop Composable (`web/src/composables/useShop.js`)
-
-```
-effectiveRows() -> number
-bagLayout(bagId: string) -> { cols: number, rows: number }
-bagRowCount(bagId: string) -> number
-bagForRow(row: number) -> { bagId, startRow, rowCount, cols } | null
-isCellDisabled(cx: number, cy: number) -> boolean
-normalizePlacement(artifact, x, y, width?, height?) -> Item[] | null
-activateBag(artifactId: string) -> void
-deactivateBag(artifactId: string) -> void
-rotateBag(bagId: string) -> void
-autoPlaceFromContainer(artifactId: string) -> void
-placeFromContainer(artifactId: string, x: number, y: number) -> boolean
-unplaceToContainer(artifactId: string) -> void
-rotatePlacedArtifact(item: Item) -> void
-buyFromShop(artifactId: string) -> boolean
-returnToShop(artifactId: string) -> void
-getSellPrice(artifactId: string) -> number
-rerollShop(free: boolean) -> void
-```
-
-### Game Run Composable (`web/src/composables/useGameRun.js`)
-
-```
-startNewGameRun(mode?: string) -> async void
-resumeGameRun() -> void
-signalReady() -> async void
-continueToNextRound() -> async void
-loadRunShopOffer() -> async void
-buyRunShopItem(artifactId: string) -> async void
-sellRunItemAction(artifactId: string) -> async void
-refreshRunShop() -> async void
-getRunRefreshCost() -> number
-getRunSellPrice(artifactId: string) -> number
-abandonRun() -> async void
-```
+- **`normalizePlacement(artifact, x, y, w, h)`** returns the new `builderItems` array with the placement applied, or `null` if the placement violates bounds / overlap / disabled-cell rules. Callers must replace `state.builderItems = next` on success.
+- **`bagLayout(bagId)`** returns `{ cols, rows }` where `cols` is capped at `INVENTORY_COLUMNS` even if the bag's width exceeds it. Rotation swaps the contributing bag dimensions.
+- **`effectiveRows()`** = `INVENTORY_ROWS + sum(bagLayout(bagId).rows for each activeBag)` — determines how tall the grid is right now.
+- **`buildLoadoutPayloadItems()`** — see "Persistence: Client → Server Mapping" in §3 for the full translation rules.
+- **`validateLoadoutItems(items, budget)`** — the `budget` parameter is required; in game runs it's `sum(ROUND_INCOME[0..currentRound])`, outside a run it's `MAX_ARTIFACT_COINS`.
 
 ---
 
-## 15. CSS Classes Reference
+## 14. Load-Bearing CSS Classes
 
-### Grid
+Only the classes that **E2E tests depend on** or that **have specific states** (hover, drop-target, disabled, etc.) are listed here. Styling-only classes are omitted — they can be found in [styles.css](../web/src/styles.css) and will drift over time.
 
-| Class | Purpose |
-|-------|---------|
-| `.inventory-shell` | Relative container for grid layers |
-| `.artifact-grid-board` | Root component |
-| `.artifact-grid-board--inventory` | Inventory variant |
-| `.artifact-grid-board--catalog` | Catalog variant (static) |
-| `.artifact-grid-background` | Cell background layer |
-| `.artifact-grid-pieces` | Piece layer (absolute) |
-| `.artifact-grid-cell` | Individual grid cell |
-| `.artifact-grid-cell--interactive` | Clickable cell |
-| `.artifact-grid-cell--drop-target` | Dragover highlight (gold glow) |
-| `.artifact-grid-cell--bag` | Bag row cell, enabled (dashed colored border) |
-| `.artifact-grid-cell--bag-disabled` | Bag row cell, disabled (hidden) |
+### State-bearing grid classes
 
-### Pieces
+| Class | Applied when | Used by |
+|-------|-------------|---------|
+| `.artifact-grid-cell--drop-target` | Cell is under a valid drag | CSS highlight |
+| `.artifact-grid-cell--bag` | Cell is in an active bag row and is usable | Coloring + drop validation |
+| `.artifact-grid-cell--bag-disabled` | Cell is in a bag row but overflow (hidden) | `visibility: hidden`, non-droppable |
 
-| Class | Purpose |
-|-------|---------|
-| `.artifact-piece-wrap` | Piece container (grid positioned) |
-| `.artifact-piece` | Piece element (button or div) |
-| `.artifact-piece.mini` | Catalog variant (smaller shadow) |
-| `.artifact-piece-rotate` | Rotation button (top-right circle) |
-| `.artifact-figure-grid` | Multi-cell figure container |
-| `.artifact-figure-cell` | Individual SVG cell |
-| `.artifact-figure-svg` | SVG element (viewBox 0 0 80 80) |
+### E2E-selector classes (stable API for tests)
 
-### Container
+| Class | Purpose | E2E tests rely on it |
+|-------|---------|---------------------|
+| `.prep-screen` | Root of the prep phase | Yes |
+| `.run-hud` | Round/wins/lives/coins bar | Yes |
+| `.shop-item` | Individual shop card | Yes |
+| `.shop-item--bag` | Bag shop card (border color) | Yes |
+| `.shop-item--expensive` | Unaffordable (opacity + non-draggable) | Yes |
+| `.container-item` | Item in the backpack | Yes |
+| `.artifact-container-zone` | Drop target for selling/unplacing | Yes |
+| `.artifact-inventory-grid` | Root of the inventory (used as scope in tests) | Yes |
+| `.inventory-pieces .artifact-piece` | A placed piece on the grid | Yes |
+| `.active-bags-bar` | Container for active bag chips | Yes |
+| `.active-bag-chip` | Individual bag chip (click removes/rotates bag) | Yes |
+| `.sell-zone` / `.sell-zone--active` | Sell drop target + dragover state | Yes |
+| `.replay-layout` | Replay screen root | Yes |
+| `.replay-result-button-full` | "Continue" / "Home" button after battle | Yes |
+| `.run-complete-screen` | Game-over screen | Yes |
 
-| Class | Purpose |
-|-------|---------|
-| `.artifact-container-zone` | Backpack area |
-| `.artifact-container-header` | Header with count |
-| `.artifact-container-count` | Count badge |
-| `.artifact-container-items` | Flex-wrap item list |
-| `.artifact-container-empty` | Empty state hint |
-| `.container-item` | Individual item card |
-| `.container-item-visual` | Grid board preview |
-| `.container-item-copy` | Text info |
+### Data attributes (use these in E2E tests instead of complex selectors)
 
-### Shop
+| Attribute | On | Value |
+|-----------|----|----|
+| `data-artifact-id` | `.shop-item`, `.container-item`, `.artifact-piece` | Artifact ID |
+| `data-cell-x`, `data-cell-y` | `.artifact-grid-cell` | Grid coordinates |
 
-| Class | Purpose |
-|-------|---------|
-| `.artifact-shop` | Shop container |
-| `.artifact-shop-header` | Header with refresh button |
-| `.artifact-shop-items` | 2-column item grid |
-| `.shop-item` | Individual shop card |
-| `.shop-item--expensive` | Unaffordable (disabled opacity) |
-| `.shop-item--bag` | Bag border styling |
-| `.shop-item-visual` | Grid board preview |
-| `.shop-item-name` | Artifact name |
-| `.shop-item-price` | Price display |
-| `.shop-item-tags` | Stat chips row |
-
-### Sell Zone
-
-| Class | Purpose |
-|-------|---------|
-| `.sell-zone` | Drop target area (dashed border) |
-| `.sell-zone--active` | Dragover state (orange highlight) |
-
-### Bags
-
-| Class | Purpose |
-|-------|---------|
-| `.active-bags-bar` | Flex row of active bag chips |
-| `.active-bag-chip` | Individual bag chip (bordered pill) |
-| `.active-bag-action` | Rotate/remove button in chip |
-
-### Stats
-
-| Class | Purpose |
-|-------|---------|
-| `.artifact-stat-chip` | Stat badge |
-| `.artifact-stat-chip--pos` | Positive bonus (green) |
-| `.artifact-stat-chip--neg` | Negative penalty (red) |
-| `.artifact-stat-chip--bag` | Bag slot count badge |
+If you add a new CSS class that E2E tests depend on, **add it to this table** and mark it stable. Anything not in this table is free to be renamed / refactored without breaking tests.

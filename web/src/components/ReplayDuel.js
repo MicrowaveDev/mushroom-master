@@ -9,8 +9,10 @@ export const ReplayDuel = {
     renderArtifactFigure: { type: Function, default: null },
     getArtifact: { type: Function, default: null },
     actingSide: { type: String, default: '' },
-    statusText: { type: String, default: '' }
+    statusText: { type: String, default: '' },
+    replaySpeed: { type: Number, default: 1 }
   },
+  emits: ['set-speed'],
   template: `
     <div class="duel">
       <div class="duel-fighters">
@@ -57,6 +59,20 @@ export const ReplayDuel = {
             <path d="M44 14 L50 20 L20 50 L14 44 Z" fill="#b07d47" />
             <path d="M14 14 L20 20 L50 50 L44 44 Z" fill="#7f9872" />
           </svg>
+          <div class="replay-speed-controls">
+            <button
+              v-for="item in [{ speed: 1, count: 1 }, { speed: 2, count: 2 }, { speed: 4, count: 3 }]" :key="item.speed"
+              type="button"
+              class="replay-speed-btn"
+              :class="{ 'replay-speed-btn--active': replaySpeed === item.speed }"
+              :aria-label="item.speed + 'x'"
+              @click="$emit('set-speed', item.speed)"
+            >
+              <svg :viewBox="'0 0 ' + (item.count * 8 + 2) + ' 10'" aria-hidden="true">
+                <polygon v-for="n in item.count" :key="n" :points="((n - 1) * 8) + ',1 ' + ((n - 1) * 8 + 7) + ',5 ' + ((n - 1) * 8) + ',9'" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="duel-loadout-side duel-loadout-side--right">
           <span class="duel-loadout-name">{{ rightFighter.nameText }}</span>
