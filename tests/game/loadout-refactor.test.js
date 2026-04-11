@@ -80,21 +80,29 @@ test('duplicate artifacts create distinct loadout rows', async () => {
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
   const { playerId, run } = await bootPlayerInRun();
+  // Replace the 5-coin starter with a 1-coin loadout so we have budget for
+  // two purchases of the duplicate artifact (max price 2).
+  await seedRunLoadout(playerId, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
 
-  // Force the shop to contain spore_needle twice by writing directly,
-  // since organic generation is random. We stage two buys from the current
-  // shop and accept any artifact twice.
-  const active = await getActiveGameRun(playerId);
-  assert.ok(active, 'expected active run');
-  const dupArtifact = active.shopOffer[0];
-  assert.ok(dupArtifact, 'expected at least one shop offer item');
+  // Pick a cheap (price 1) non-spore_needle artifact to duplicate. We force
+  // the shop to contain two copies by writing directly to offer_json.
+  const { getArtifactById, getArtifactPrice, artifacts } = await import('../../app/server/game-data.js');
+  const dupArtifact = artifacts.find((a) =>
+    a.id !== 'spore_needle' && a.family !== 'bag'
+      && a.width === 1 && a.height === 1 && getArtifactPrice(a) === 1
+  )?.id;
+  assert.ok(dupArtifact, 'expected a cheap 1x1 artifact to exist for duplication');
 
-  // Buy once, refresh-like via direct shop seeding to re-offer the same item,
-  // then buy again. We do this by inserting the artifact back into offer_json.
+  await query(
+    `UPDATE game_run_shop_states SET offer_json = $1 WHERE game_run_id = $2 AND player_id = $3 AND round_number = 1`,
+    [JSON.stringify([dupArtifact]), run.id, playerId]
+  );
   await buyRunShopItem(playerId, run.id, dupArtifact);
 
   await query(
-    `UPDATE game_run_shop_states SET offer_json = $1 WHERE game_run_id = $2 AND player_id = $3`,
+    `UPDATE game_run_shop_states SET offer_json = $1 WHERE game_run_id = $2 AND player_id = $3 AND round_number = 1`,
     [JSON.stringify([dupArtifact]), run.id, playerId]
   );
   await buyRunShopItem(playerId, run.id, dupArtifact);

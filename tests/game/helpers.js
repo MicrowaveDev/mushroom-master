@@ -8,9 +8,14 @@ export async function freshDb() {
   await resetDb();
 }
 
+let telegramIdCounter = 100000;
+
 export async function createPlayer(overrides = {}) {
+  // Monotonic IDs prevent cross-test collisions even when freshDb() is
+  // skipped. Randomized IDs caused intermittent "sell item from previous
+  // round" flakiness when two tests happened to draw the same ID.
   const user = {
-    id: overrides.telegramId || Math.floor(1000 + Math.random() * 9000),
+    id: overrides.telegramId || telegramIdCounter++,
     username: overrides.username || 'tester',
     first_name: overrides.firstName || 'Test',
     last_name: overrides.lastName || 'Player',

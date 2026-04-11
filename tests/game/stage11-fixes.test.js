@@ -211,7 +211,10 @@ test('sell item bought in previous round gives half price refund', async () => {
   const { getArtifactById, getArtifactPrice } = await import('../../app/server/game-data.js');
   const itemToBuy = run.shopOffer.find((id) => {
     const a = getArtifactById(id);
-    return a && a.width === 1 && a.height === 1 && a.family !== 'bag' && getArtifactPrice(a) <= 2;
+    // Exclude spore_needle to avoid duplicate-row UPDATE matching both the
+    // seeded starter row and the newly bought row at the same artifact_id.
+    return a && id !== 'spore_needle' && a.width === 1 && a.height === 1
+      && a.family !== 'bag' && getArtifactPrice(a) <= 2;
   });
   if (!itemToBuy) return;
 
