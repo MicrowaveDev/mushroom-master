@@ -1,9 +1,22 @@
 # Loadout & Run-State Architecture Refactor Plan
 
-**Status:** Planning
-**Branch:** TBD
-**Owner:** TBD
-**Estimated effort:** ~8 focused hours (expanded scope)
+**Status:** Shipped (2026-04-11, branch `codex/lore-regeneration-fixes`)
+**Branch:** codex/lore-regeneration-fixes
+**Owner:** —
+**Estimated effort:** ~8 focused hours (expanded scope) — actual ~10 hours
+
+**Implementation summary (2026-04-11):** Steps 0 through 9 landed as 9 commits
+on `codex/lore-regeneration-fixes`. Server-side refactor is complete:
+`game_run_loadout_items` is the sole run-scoped loadout source; ghost
+snapshots are unified with bot fallback writing into the same table; shop
+state is round-scoped; legacy `player_artifact_loadouts` is severed from
+game runs and only participates in the legacy single-battle `ArtifactsScreen`
+flow; `/game-run/:id` routing is live on the client; bootstrap projection
+reads directly from `loadoutItems`. Tests: 87 → 127 passing. §10 success
+criteria: all 14 checks green. Deferred to backlog: umzug migrations,
+`mutateRun` concurrency helper, idempotency keys, telemetry emission,
+`buildLoadoutPayloadItems` removal (needs granular place/unplace endpoints),
+i18n error code strings, `ArtifactsScreen` deletion (severed but not removed).
 
 This document captures the architectural pain points in the current loadout system, the target design, and a step-by-step migration plan. It is a living document — update it as the work progresses.
 

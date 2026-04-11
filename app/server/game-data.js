@@ -1,14 +1,54 @@
-export const INVENTORY_COLUMNS = 3;
-export const INVENTORY_ROWS = 2;
-export const MAX_ARTIFACT_COINS = 5;
-export const SHOP_OFFER_SIZE = 5;
-export const MAX_STUN_CHANCE = 35;
-export const DAILY_BATTLE_LIMIT = 10;
-export const STEP_CAP = 120;
+// Numeric constants live in app/shared/game-constants.js so the client can
+// import the same values without dragging the full game-data artifact/mushroom
+// definitions. We `import` them into local scope AND re-export, so existing
+// `import { X } from './game-data.js'` call sites plus in-file usages in
+// helpers like getShopRefreshCost keep working.
+import {
+  BAG_BASE_CHANCE,
+  BAG_ESCALATION_STEP,
+  BAG_PITY_THRESHOLD,
+  DAILY_BATTLE_LIMIT,
+  GHOST_BUDGET_DISCOUNT,
+  INVENTORY_COLUMNS,
+  INVENTORY_ROWS,
+  MAX_ARTIFACT_COINS,
+  MAX_ROUNDS_PER_RUN,
+  MAX_STUN_CHANCE,
+  RATING_FLOOR,
+  REROLL_COST,
+  ROUND_INCOME,
+  SHOP_OFFER_SIZE,
+  SHOP_REFRESH_CHEAP_COST,
+  SHOP_REFRESH_CHEAP_LIMIT,
+  SHOP_REFRESH_EXPENSIVE_COST,
+  STARTING_LIVES,
+  STEP_CAP
+} from '../shared/game-constants.js';
+
+export {
+  BAG_BASE_CHANCE,
+  BAG_ESCALATION_STEP,
+  BAG_PITY_THRESHOLD,
+  DAILY_BATTLE_LIMIT,
+  GHOST_BUDGET_DISCOUNT,
+  INVENTORY_COLUMNS,
+  INVENTORY_ROWS,
+  MAX_ARTIFACT_COINS,
+  MAX_ROUNDS_PER_RUN,
+  MAX_STUN_CHANCE,
+  RATING_FLOOR,
+  REROLL_COST,
+  ROUND_INCOME,
+  SHOP_OFFER_SIZE,
+  SHOP_REFRESH_CHEAP_COST,
+  SHOP_REFRESH_CHEAP_LIMIT,
+  SHOP_REFRESH_EXPENSIVE_COST,
+  STARTING_LIVES,
+  STEP_CAP
+};
+
+// Server-only constant: session TTL lives here (not needed by client).
 export const SESSION_TTL_HOURS = 24 * 30;
-export const MAX_ROUNDS_PER_RUN = 9;
-export const STARTING_LIVES = 5;
-export const ROUND_INCOME = [5, 5, 5, 6, 6, 7, 7, 8, 8];
 
 export const artifacts = [
   // --- Damage family ---
@@ -362,13 +402,10 @@ export const completionBonusTable = [
   { minWins: 7, maxWins: 9, spore: 20, mycelium: 10 }
 ];
 
+// CHALLENGE_WINNER_BONUS is not currently shared with the client — keep here.
 export const CHALLENGE_WINNER_BONUS = { spore: 10, mycelium: 5 };
-export const RATING_FLOOR = 100;
-export const GHOST_BUDGET_DISCOUNT = 0.12;
-
-export const SHOP_REFRESH_CHEAP_LIMIT = 3;
-export const SHOP_REFRESH_CHEAP_COST = 1;
-export const SHOP_REFRESH_EXPENSIVE_COST = 2;
+// RATING_FLOOR, GHOST_BUDGET_DISCOUNT, SHOP_REFRESH_* now re-exported at the
+// top of this file from app/shared/game-constants.js.
 
 export function getCompletionBonus(wins) {
   for (const tier of completionBonusTable) {
@@ -399,9 +436,7 @@ export function getMushroomById(id) {
   return mushrooms.find((item) => item.id === id) || null;
 }
 
-export const BAG_BASE_CHANCE = 0.15;
-export const BAG_ESCALATION_STEP = 0.08;
-export const BAG_PITY_THRESHOLD = 5;
+// BAG_* constants re-exported at the top of this file from shared/game-constants.js.
 
 export const bags = artifacts.filter((a) => a.family === 'bag');
 export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag');
