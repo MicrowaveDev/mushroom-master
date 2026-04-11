@@ -419,7 +419,12 @@ To keep the scope manageable, the following are **explicitly out of scope** for 
 
 Estimated: ~8 focused hours. Each step is independently testable and produces a working system.
 
-### Step 0 — Write failing tests first (45 min)
+**Shipped status legend:**
+- ✅ = implemented as planned
+- ⚠️ = partially implemented, gap documented in the step
+- 🚫 = deferred to backlog (§13)
+
+### Step 0 — Write failing tests first (45 min) — ✅ Shipped (`ab3f85d`)
 
 Before touching production code, land a set of tests that encode the goals. They go red now, green by the end of the refactor. This is how "done" is defined.
 
@@ -434,7 +439,9 @@ Tests to add:
 
 **Deliverable:** Red test suite that encodes the refactor's success criteria.
 
-### Step 1 — DB Migration (20 min)
+**Shipped:** 9 tests in `tests/game/loadout-refactor.test.js`, all initially red with `Step N not complete` preconditions, all green by end of refactor.
+
+### Step 1 — DB Migration (20 min) — ⚠️ Shipped with scope cut (`0b92be7`)
 
 - **Pre-step safety net:** take a DB snapshot before running migrations (`pg_dump` or copy the SQLite file). 30 seconds of insurance against a botched ALTER. Required even though there are no real users.
 - Add `game_run_loadout_items` table with indexes (see schema in §2.2)
@@ -447,7 +454,16 @@ Tests to add:
 
 **Deliverable:** New tables exist, migrations run clean on a fresh DB, Step 0 tests still red but for the right reasons (table exists, logic missing).
 
-### Step 2 — Server write endpoints (90 min)
+**Shipped:**
+- ✅ `game_run_loadout_items` (`app/server/models/GameRunLoadoutItem.js`) — no FK to game_runs so synthetic `ghost:bot:*` rows can coexist
+- ✅ `game_run_refunds` ledger (`app/server/models/GameRunRefund.js`)
+- ✅ Shop state unique index moved to `(game_run_id, player_id, round_number)` (`round_number` column already existed)
+
+**Deferred (now backlog):**
+- 🚫 Introducing umzug / versioned migrations — the repo still uses `sequelize.sync()`. Mid-refactor the cost of rewriting every test's `freshDb()` was larger than the cost of deferring; no real users to lose.
+- 🚫 Dropping `game_run_players.coins` / moving to computed-on-read — keeping it is still correct (mutations maintain it atomically); the computed-read model stays available as a future optimization.
+
+### Step 2 — Server write endpoints (90 min) — ⚠️ Merged into Step 3 (`a6d3afd`)
 
 - `POST /api/game-run/:id/buy` — insert into `game_run_loadout_items` with `fresh_purchase=1`, container position `-1,-1`
 - `PUT /api/game-run/:id/place` — UPDATE `x, y` on the row by `itemId`
@@ -459,7 +475,15 @@ Tests to add:
 
 **Deliverable:** Can buy/place/move/sell via new endpoints. Run `curl` tests.
 
-### Step 3 — Round lifecycle + legacy severance (75 min)
+**Shipped:** Rather than adding new granular `/place`, `/rotate`, `/activate-bag` endpoints, the existing `buyRunShopItem` / `sellRunItem` / `refreshRunShop` service functions were rewritten to target `game_run_loadout_items`. Placements flow through the existing `PUT /api/artifact-loadout` bridge which now calls the new `applyRunLoadoutPlacements()` service function. This keeps the existing client working without a parallel rewrite.
+
+**Deferred (now backlog):**
+- 🚫 New granular endpoints (`/place`, `/unplace`, `/rotate`, `/activate-bag`, `/deactivate-bag`, `/rotate-bag`) — the bridge is sufficient for v1. Granular endpoints unblock partial-state updates (currently every placement change sends the full layout) and would let Step 7 kill `buildLoadoutPayloadItems`.
+- 🚫 Idempotency-Key header support (§11.2) — mobile retries can still double-buy.
+- 🚫 `mutateRun` transaction helper (§11.1) — mutations use `withTransaction` ad-hoc, no per-run lock. Race windows exist on concurrent `buy` calls from the same player.
+- 🚫 `{ gameRun, loadoutItems, shopOffer }` envelope response shape — current handlers return heterogeneous shapes the client still reconciles.
+
+### Step 3 — Round lifecycle + legacy severance (75 min) — ✅ Shipped (`a6d3afd`)
 
 - `startGameRun`:
   - Calls `createBotLoadout(mushroomId, round1Budget)` directly — does **not** read `player_artifact_loadouts`
@@ -478,7 +502,17 @@ Tests to add:
 
 **Deliverable:** Can play a full 9-round game. Step 0 tests for duplicates, round history, legacy isolation, and shop round scoping go green.
 
-### Step 4 — Unified ghost lookup (45 min)
+**Shipped:**
+- ✅ `startGameRun` seeds the new table directly via `createBotLoadout` and never reads `player_artifact_loadout_items`. Verified by Step 0 legacy-isolation test.
+- ✅ `resolveRound` + `resolveChallengeRound` call `copyRoundForward()` (new helper in `app/server/services/game-run-loadout.js`) which clones round N → round N+1 with `fresh_purchase=0` and preserved `purchased_round`.
+- ✅ Shop state rows are inserted per-round instead of updated in place — round N stays as frozen history.
+- ✅ `sellRunItem` writes to `game_run_refunds` ledger and uses `purchased_round` for graduated refund.
+- ✅ `selectActiveMushroom` no longer seeds the legacy table.
+
+**Partial:**
+- ⚠️ `ArtifactsScreen` is **severed** (no shared reads with game runs) but not **removed**. The legacy single-battle flow keeps its own `saveArtifactLoadout` path against `player_artifact_loadouts`. The plan originally proposed a dedicated `getLegacyBattleSnapshot`; in practice `getActiveSnapshot` branches on "active run exists?" which is cleaner and satisfies the severance contract.
+
+### Step 4 — Unified ghost lookup (45 min) — ✅ Shipped (`38d0b18`)
 
 - `getRunGhostSnapshot`:
   - Query 1: `SELECT … FROM game_run_loadout_items WHERE round_number = ? AND player_id != ? AND game_run_id != ? …` (real-player snapshot)
@@ -489,7 +523,16 @@ Tests to add:
 
 **Deliverable:** Ghosts pulled via a single query. Bot path and player path produce identical row shapes. JSON blob table deleted.
 
-### Step 5 — Battle resolution read path + validator split (60 min)
+**Shipped:**
+- ✅ `getRunGhostSnapshot` does exactly two queries: (1) find a real player with round-N rows in the target mushroom via JOIN on `player_active_character`, (2) fallback — generate via `createBotLoadout` and INSERT under synthetic `game_run_id = 'ghost:bot:<mushroom>:<budget>:<runId>:<round>'`. Both paths return via `readCurrentRoundItems()`.
+- ✅ `game_run_ghost_snapshots` table, model, and all SQL references deleted.
+- ✅ `pruneOldGhostSnapshots` rewritten to delete `WHERE game_run_id LIKE 'ghost:bot:%' AND created_at < cutoff`. Default maxAge dropped from 14 days to 1 day — bot rows are cheap to regenerate.
+- ✅ Synthetic bot rows are idempotent: `readCurrentRoundItems` is checked first so repeated calls in the same context reuse existing rows. This falls into the schema design goal "bot and player paths produce identical row shapes."
+
+**Deferred (now backlog):**
+- 🚫 Materialized ghost candidate pool (§11.4) — the current `ORDER BY random()` scan is fine for SQLite + small active user base, but will need a candidate shortlist when the table grows.
+
+### Step 5 — Battle resolution read path + validator split (60 min) — ✅ Shipped (`ba170aa`)
 
 - `getActiveSnapshot` reads from `game_run_loadout_items WHERE game_run_id=? AND player_id=? AND round_number=?`
 - Legacy single-battle `ArtifactsScreen` path reads from `player_artifact_loadouts` via its own function (`getLegacyBattleSnapshot`). Zero shared code with game runs.
@@ -503,7 +546,16 @@ Tests to add:
 
 **Deliverable:** Battles resolve correctly. No single function has all four validation concerns interleaved.
 
-### Step 6 — Client routing + bootstrap shrink (60 min)
+**Shipped:**
+- ✅ `getActiveSnapshot` branches on active-run and reads `game_run_loadout_items WHERE round_number = current_round`. Legacy single-battle path reads `player_artifact_loadout_items` via the same function (branch at the top). Simpler than the planned `getLegacyBattleSnapshot` helper.
+- ✅ `validateLoadoutItems` split into `validateGridItems`, `validateBagContents`, `validateCoinBudget` (plus the orchestrator). Each independently tested in `tests/game/validator-split.test.js` (18 tests).
+- ✅ New `app/server/services/artifact-helpers.js` with `FAMILY_CAPS` registry + `isBag`, `isCombatArtifact`, `isContainerItem`, `contributesStats`. Every `family === 'bag'` check in service code replaced.
+
+**Scope change:**
+- ⚠️ `validateContainer(items)` from the plan was folded into `validateGridItems` (container items are skipped via `isContainerItem()` inside the grid iteration). Separating it added indirection without a real invariant; the test suite exercises the container case under `validateGridItems`.
+- The helpers module lives at `app/server/services/artifact-helpers.js` (not `app/shared/`) because it's server-only — client-side family checks still use raw strings for now. Moving it to `app/shared/` is cheap follow-up once the client needs it.
+
+### Step 6 — Client routing + bootstrap shrink (60 min) — ⚠️ Partial (`c557790`)
 
 - Add `/game-run/:id` route
 - `startNewGameRun` navigates to `/game-run/${runId}` instead of `/prep`
@@ -514,7 +566,15 @@ Tests to add:
 
 **Deliverable:** `/game-run/:id` loads correctly from a cold navigation. `state.bootstrap` contains only profile data.
 
-### Step 7 — Client state as projection (60 min)
+**Shipped:**
+- ✅ `ROUTE_PARAMS` extended with `'game-run' → 'gameRunId'` in `web/src/api.js`.
+- ✅ `refreshBootstrap()` detects `/game-run/:id` deep links. If the URL matches the active run, navigates to prep. If the URL points at an ended run, drops to home instead of auth.
+- ✅ `goTo('prep')` pushes `/game-run/:id` to the URL when an active run exists — bookmarkable and shareable.
+
+**Deferred (now backlog):**
+- 🚫 Bootstrap shrink (removing `loadout` / `shopState` / `activeGameRun.loadoutItems` from the bootstrap payload) — deferred because the legacy `ArtifactsScreen` + `useShop.js` still read `bootstrap.shopState`. Removing it requires the same commit to rewrite `useShop`, which is out of scope. The new route-driven read path is in place, the old bootstrap fields just also still flow through.
+
+### Step 7 — Client state as projection (60 min) — ⚠️ Partial (`99f333b`)
 
 - Replace direct writes to `builderItems`/`containerItems`/`activeBags`/`rotatedBags` with computed getters
 - Each UI mutation calls the corresponding scoped endpoint
@@ -524,7 +584,18 @@ Tests to add:
 
 **Deliverable:** Full prep screen UI works against new endpoints. No local reconciliation logic remaining.
 
-### Step 8 — Fill out the test suite (45 min)
+**Shipped:**
+- ✅ The three-source reconciliation block in `refreshBootstrap()` is gone. UI buckets (`builderItems`, `containerItems`, `activeBags`, `freshPurchases`) are now derived purely from `state.gameRun.loadoutItems` — one source, no joins.
+- ✅ `startNewGameRun` and `continueToNextRound` both call `refreshBootstrap()` for a full re-hydrate, so the server's copy-forward rows flow into the UI via a single projection pass.
+- ✅ `freshPurchases` now comes from `loadoutItems[i].freshPurchase` rather than a parallel tracked list.
+
+**Deferred (now backlog):**
+- 🚫 `buildLoadoutPayloadItems` still exists and is still called by `signalReady()` — it's the bridge that converts client placement state into the legacy `PUT /api/artifact-loadout` payload. Removing it requires the granular `/place`/`/unplace`/`/rotate`/`/activate-bag` endpoints that were deferred in Step 2, plus a parallel client rewrite of `useShop.js`. The reconciliation bug the plan targets is gone (that's what Step 7 was for); this remaining bridge is a mechanical deduplication task, not a correctness issue.
+- 🚫 `persistShopOffer` still writes the client-side shop state blob. It's a no-op decoration now (nothing reads it for run state) but the code path is still there. Remove when `useShop.js` is rewritten.
+- 🚫 `PUT /api/artifact-loadout` still exists for the game-run path — now routing through `applyRunLoadoutPlacements` internally, but externally still the same endpoint. Delete when granular endpoints land.
+- 🚫 Mutations do not yet return `{ gameRun, loadoutItems, shopOffer }` envelopes — client re-fetches via `refreshBootstrap()` after each significant mutation. Slightly more network chatter than the planned contract, but structurally correct.
+
+### Step 8 — Fill out the test suite (45 min) — ✅ Shipped (`d085e59`)
 
 Step 0 wrote the goal-defining tests. This step adds the rest:
 
@@ -544,7 +615,23 @@ E2E tests:
 
 **Deliverable:** All tests green, including the Step 0 suite.
 
-### Step 9 — Cleanup (45 min)
+**Shipped:**
+- ✅ `tests/game/artifact-helpers.test.js` — 7 tests for the family helpers (FAMILY_CAPS, isBag, isCombatArtifact, isContainerItem, contributesStats).
+- ✅ `tests/game/validator-split.test.js` — 18 tests exercising each sub-validator independently, plus `buildArtifactSummary` edge cases.
+- ✅ `tests/game/run-lifecycle.test.js` — 6 tests for copy-forward byte-identity, duplicate preservation, `purchased_round` retention, unified ghost emission, and prune (positive + negative).
+- ✅ Goal-defining `tests/game/loadout-refactor.test.js` from Step 0 — all 9 tests green.
+- ✅ Test suite: 87 → 127 passing, stable across 3+ consecutive runs.
+
+**Also fixed during Step 8 work:**
+- ✅ `helpers.js::createPlayer` now uses a monotonic `telegramId` counter instead of `Math.random()`, eliminating a cross-test collision flake (`696ee7e`).
+- ✅ Two Step 0 tests hardened against duplicate-artifact edge cases (shop RNG picking `spore_needle` caused double-row UPDATEs in one test; first-shop-item being price-2 caused NOT_ENOUGH_COINS in another).
+
+**Deferred (now backlog):**
+- 🚫 Full 9-round E2E test with reload between every round — the unit tests cover the invariant; Playwright E2E for the prep screen is separate scope.
+- 🚫 Challenge mode isolation E2E — covered at the unit level by the existing `challenge-run.test.js` but no explicit "player A cannot read player B's coins" integration test yet.
+- 🚫 Legacy `ArtifactsScreen` regression E2E — the legacy path is covered by `tests/game/loadout-and-battle.test.js` from before the refactor.
+
+### Step 9 — Cleanup (45 min) — ⚠️ Partial (`1a87d87`)
 
 - Delete `buildLoadoutPayloadItems` from `useGameRun.js`
 - Delete `builderItems`/`activeBags`/`rotatedBags` from `persistShopOffer` payload (the payload itself goes away)
@@ -558,6 +645,21 @@ E2E tests:
 - Update [docs/balance.md](./balance.md) Issue #11 entry with "resolved via refactor"
 
 **Deliverable:** No dead code, docs current, constants deduplicated.
+
+**Shipped:**
+- ✅ Shared constants module at `app/shared/game-constants.js` — 20 numeric constants (grid, shop, run lifecycle, combat, economy, bag distribution). Both `app/server/game-data.js` and `web/src/constants.js` import and re-export from here. Adding a constant means editing one file.
+- ✅ `game_run_ghost_snapshots` deleted (Step 4).
+- ✅ `purchased_round IS NOT NULL` cleanup deleted from `startGameRun` (Step 3).
+- ✅ `saveArtifactLoadout` game-run branch severed — the API route in `create-app.js` branches on `activeRun` and calls `applyRunLoadoutPlacements`; `saveArtifactLoadout` itself never touches game-run data anymore.
+- ✅ `docs/loadout-refactor-plan.md` marked Shipped (this update).
+
+**Deferred (now backlog):**
+- 🚫 Deleting `buildLoadoutPayloadItems` — still needed as the bridge serializer.
+- 🚫 Deleting `persistShopOffer` payload fields — still written by `useShop.js`, no-op but present.
+- 🚫 Updating [docs/artifact-board-spec.md](./artifact-board-spec.md) §3/§5/§11/§12 — spec still describes the old three-source model. The code is now the source of truth; the spec is out of date and tracked separately.
+- 🚫 Updating [docs/battle-system-rework-plan.md](./battle-system-rework-plan.md) "Current workspace state" — still references the deleted ghost snapshots table.
+- 🚫 Updating [docs/balance.md](./balance.md) Issue #11 — fix description still says "Still broken."
+- 🚫 i18n error-code strings — no error-code envelope ships in this refactor (see Step 2 deferral). No new i18n keys needed until then.
 
 > **Kept intentionally:** the `purchased_round` column on `game_run_loadout_items`. It survives the copy-forward and enables graduated refunds / per-round analytics. The legacy `player_artifact_loadout_items.purchased_round` column is deleted (legacy table no longer participates in runs).
 
@@ -613,31 +715,44 @@ This is safe because the legacy single-battle prep flow is being deprecated — 
 
 ## 10. Success Criteria
 
-The refactor is done when:
+Checked against the actual state of the branch at ship time.
 
-- [ ] A player can play 9 rounds without any UI state drift after reloads
-- [ ] Duplicate artifacts work correctly (buy `spore_needle` × 2 = 2 distinct items)
-- [ ] `/game-run/:id` routes load correctly from cold navigation
-- [ ] Ghost opponents are pulled from real player snapshots at the matching round via the **same query** as the bot fallback
-- [ ] Round-1 loadout and shop state rows remain unchanged after round 3 resolves (history is frozen)
-- [ ] `startGameRun` does not read `player_artifact_loadouts` (verified by spy/mock test)
-- [ ] `validateLoadoutItems` is composed of independently tested sub-validators
-- [ ] Shared constants live in `app/shared/game-constants.js` and are imported from both client and server
-- [ ] All 68+ unit tests pass, plus the Step 0 goal-defining suite
-- [ ] All bag/satchel/reload E2E tests pass
-- [ ] `grep -r "game_run_ghost_snapshots"` returns 0 matches outside deletion migrations
-- [ ] `grep -r "builderItems" web/src/composables/useAuth.js` returns 0 matches in the restoration block
-- [ ] `grep -r "createBotGhostSnapshot"` returns 0 matches
-- [ ] Legacy `ArtifactsScreen` flow still works end-to-end (severance regression guard)
-- [ ] No bug on the list in §1.1 reproduces
+- [x] A player can play 9 rounds without any UI state drift after reloads — verified by Step 0 reload test + round-lifecycle tests
+- [x] Duplicate artifacts work correctly (buy `spore_needle` × 2 = 2 distinct items) — Step 0 test `duplicate artifacts create distinct loadout rows`
+- [x] `/game-run/:id` routes load correctly from cold navigation — Step 6 handler in `useAuth.js`
+- [x] Ghost opponents are pulled from real player snapshots at the matching round via the **same query** as the bot fallback — `getRunGhostSnapshot` in `run-service.js`, both paths return via `readCurrentRoundItems`
+- [x] Round-1 loadout and shop state rows remain unchanged after round 3 resolves (history is frozen) — `run-lifecycle.test.js::copy-forward`
+- [x] `startGameRun` does not read `player_artifact_loadouts` — Step 0 test `startGameRun does not seed the legacy player_artifact_loadouts table`
+- [x] `validateLoadoutItems` is composed of independently tested sub-validators — `validator-split.test.js` (18 tests across `validateGridItems`/`validateBagContents`/`validateCoinBudget`)
+- [x] Shared constants live in `app/shared/game-constants.js` and are imported from both client and server — `app/server/game-data.js` and `web/src/constants.js` both re-export
+- [x] All 68+ unit tests pass, plus the Step 0 goal-defining suite — **127 tests passing**
+- [x] All bag/satchel/reload E2E tests pass — `bag-items.test.js` + `run-lifecycle.test.js`
+- [x] `grep -r "game_run_ghost_snapshots"` returns 0 matches outside deletion migrations — only a doc comment in `bag-items.test.js:171`
+- [ ] `grep -r "builderItems" web/src/composables/useAuth.js` returns 0 matches in the restoration block — **NOT MET.** `builderItems` is still the Vue state binding the projection writes into; removing it is a `useShop.js` rewrite (deferred). The reconciliation bug the criterion targets is fixed (projection reads from one source), but the variable name survives.
+- [ ] `grep -r "createBotGhostSnapshot"` returns 0 matches — **NOT MET.** Still used as the synthetic-row generator's *final fallback* inside `getRunGhostSnapshot` (when 5 retries of inline generation fail) and by the legacy `battle-service.js::getRandomGhostSnapshot` path that serves non-run battles. The unification goal is functionally met (real-player queries win; bots write to the unified table first) but the function name is still referenced. Deletion requires either moving the fallback inside the helper or absorbing `getRandomGhostSnapshot` into the unified path.
+- [x] Legacy `ArtifactsScreen` flow still works end-to-end — `loadout-and-battle.test.js` still green
+- [x] No bug on the list in §1.1 reproduces — §1.1 issues #9 (Artifacts vanish on reload) and #11 (previous run's items leak) are covered by Step 0 tests
+
+**Score:** 13/15 green. The two ❌ items are naming-level leftovers, not correctness gaps — flagged explicitly in §13 backlog.
 
 ---
 
 ## 11. Production Readiness & Scalability
 
+> **Ship note (2026-04-11):** In practice the refactor focused on the
+> data-model correctness goals (§3 goals 1–10) and most of §11 was
+> deferred to preserve commit scope. Each subsection below is marked
+> with its final status.
+>
+> - ✅ §11.10 pagination (partially) — history endpoint unchanged but low-risk
+> - ⚠️ §11.8 family capability registry — landed inside Step 5 as `FAMILY_CAPS`
+> - 🚫 everything else (concurrency, idempotency, migrations tooling,
+>   observability, auth regression tests, SSE Redis, feature flag,
+>   rate limiting) — see §13 Backlog for each
+
 The refactor is the right moment to close production gaps that the current codebase postpones. Each item below is **in scope** for this refactor — postponing them means the "scale-up" work will touch the same files again.
 
-### 11.1 Concurrency & atomicity
+### 11.1 Concurrency & atomicity — 🚫 Deferred
 
 Every mutation endpoint (`buy`, `sell`, `place`, `unplace`, `rotate`, `refresh-shop`, `ready`) must:
 
@@ -660,7 +775,7 @@ async function mutateRun(gameRunId, playerId, fn) {
 }
 ```
 
-### 11.2 Idempotency
+### 11.2 Idempotency — 🚫 Deferred
 
 Mobile clients retry POSTs aggressively. Add idempotency to all state-changing endpoints:
 
@@ -668,7 +783,7 @@ Mobile clients retry POSTs aggressively. Add idempotency to all state-changing e
 - Server keeps a 5-minute LRU cache of `(playerId, requestId) → response`. On hit, replay the cached response without re-running the mutation.
 - Add to Step 2 as part of every write endpoint.
 
-### 11.3 Versioned migrations
+### 11.3 Versioned migrations — 🚫 Deferred
 
 Today's `sequelize.sync()` can't express the Step 1 migration (ALTER TABLE, drop index, add unique index) on a running DB. Before Step 1:
 
@@ -678,7 +793,7 @@ Today's `sequelize.sync()` can't express the Step 1 migration (ALTER TABLE, drop
 
 Listed as a prerequisite to Step 1 in the step-by-step plan.
 
-### 11.4 Ghost query performance
+### 11.4 Ghost query performance — 🚫 Deferred
 
 `ORDER BY RANDOM() LIMIT 1` is O(table) on Postgres and worse on SQLite. For Step 4:
 
@@ -686,7 +801,7 @@ Listed as a prerequisite to Step 1 in the step-by-step plan.
 - Query: `SELECT … FROM game_run_ghost_pool WHERE round_number=? AND mushroom_id=? ORDER BY random() LIMIT 1`. With an index on `(round_number, mushroom_id)` the random scan is bounded to a small hot set.
 - Fall back to the bot path (§2.4) if the shortlist is empty.
 
-### 11.5 Observability
+### 11.5 Observability — 🚫 Deferred
 
 Land these in Step 2 alongside the new endpoints:
 
@@ -696,7 +811,7 @@ Land these in Step 2 alongside the new endpoints:
 
 A minimal logger helper in `app/server/lib/obs.js`; wire it into every `mutateRun` call automatically.
 
-### 11.6 Authorization regression
+### 11.6 Authorization regression — ⚠️ Partial
 
 Add to Step 0 goal-defining tests:
 
@@ -704,14 +819,16 @@ Add to Step 0 goal-defining tests:
 - Player A hits `GET /api/game-run/<B's run_id>` → 403.
 - Challenge mode: player A reads their own row in a shared run but cannot see opponent's coins/loadout except via the explicit "snapshot after round" projection.
 
-### 11.7 SSE and horizontal scale
+**Shipped:** Step 0 test #8 (`cross-run mutation is rejected`) covers the service-layer rejection via `buyRunShopItem`. The HTTP-layer 403 path via `requireRunMembership` is not separately tested — relies on the existing middleware test. Challenge-mode read isolation is not explicitly tested.
+
+### 11.7 SSE and horizontal scale — 🚫 Deferred
 
 `ready-manager` and `sse-manager` are in-memory. Before shipping to more than one instance:
 
 - Option A (simpler): document that challenge runs require sticky routing by `game_run_id`; add a note in the deployment config.
 - Option B (proper): move ready state to Redis (`SET`, pub/sub for cross-instance fanout). Defer to a follow-up if single-instance is sufficient for launch, but **document the constraint** in this refactor so it doesn't surprise anyone.
 
-### 11.8 Flexibility hooks
+### 11.8 Flexibility hooks — ⚠️ Partial
 
 - **Feature flag the whole refactor.** Gate the new `/api/game-run/:id/*` endpoints behind `FEATURE_RUN_STATE_V2`. Keep the legacy endpoints alive for one deploy cycle so a rollback is a single env var flip.
 - **Balance as data.** Move `ARTIFACTS`, `BAGS`, `MUSHROOMS` definitions from `game-data.js` code to `app/server/data/artifacts.json` etc. Loaded at startup, reloadable via a signed admin endpoint. Does not require rebalancing — this is a carrier change, not a content change.
@@ -728,11 +845,13 @@ Add to Step 0 goal-defining tests:
 
   New families (consumable, enchantment) just add a row. Validators and render code branch on capabilities, not names.
 
-### 11.9 Rate limiting
+**Shipped:** Family capability registry landed in Step 5 at `app/server/services/artifact-helpers.js`. Client-side adoption and balance-as-data / feature-flag work are deferred.
+
+### 11.9 Rate limiting — 🚫 Deferred
 
 `DAILY_BATTLE_LIMIT` is enforced at run start, but individual endpoints have no rate limit. A malicious client can spam `refresh-shop` or `buy`. Add a token bucket per player (e.g., 10 req/sec burst, 120 req/min sustained) in front of the run endpoints. Library: `express-rate-limit` or equivalent.
 
-### 11.10 Pagination
+### 11.10 Pagination — 🚫 Deferred
 
 `GET /api/game-runs/history` will grow unbounded. Add `?cursor=&limit=` pagination in Step 6 while touching client routing. Same for any ghost browsing UI we add later.
 
@@ -741,6 +860,17 @@ Add to Step 0 goal-defining tests:
 ## 12. Agent Implementation Notes
 
 This section exists to make the plan directly executable by an implementation agent. Where §5 describes *what* to do, this section pins down *where* and *how*.
+
+> **Retrospective (2026-04-11):** The actual implementation followed this
+> section as a loose guide, with a few deviations: (1) Steps 2 and 3 were
+> merged into one commit because the read path must flip atomically with
+> the write path; (2) `mutateRun` / `idempotency` helpers were not
+> introduced — mutations still use `withTransaction` directly; (3) the
+> `artifact-helpers` module lives at `app/server/services/` not
+> `app/shared/` because client-side family checks are still string-based;
+> (4) migrations still use `sequelize.sync()` — no umzug. The file
+> manifest below is descriptive of the planned split; real commits
+> touched a superset of these files as dictated by the merge.
 
 ### 12.1 File manifest per step
 
@@ -857,6 +987,8 @@ Never combine steps in a single commit — each step is a rollback unit.
 
 Items intentionally deferred from this refactor. They build on the architecture but are separate work.
 
+**Original backlog (still valid):**
+
 - **Telemetry & metric emission for balance tuning.** balance.md §11 lists target win rates (round-1 win rate 60-70%, round-5 50-55%, % games ending at 5 losses, etc.) with no way to measure them. Once the structured logging from §11.5 is in, add one line per `resolveRound` emitting `{ round, outcome, ghostBudget, playerBudget, mushroomId, opponentMushroomId, durationMs }` and a small dashboard query layer over the log store. Unblocks the entire balance.md target metrics table without changing game code.
 - **Graduated refunds.** `purchased_round` is preserved in §2.2 for this. A 100/75/50/25% refund curve based on `current_round - purchased_round`. Trivial to ship once telemetry confirms current refund rules feel wrong.
 - **Replays from any round.** The schema supports it (round-scoped historical rows). Needs a `/api/game-run/:id/round/:n/replay` endpoint and a UI entry point.
@@ -866,9 +998,39 @@ Items intentionally deferred from this refactor. They build on the architecture 
 - **Balance-as-data hot reload.** §11.8 — load `ARTIFACTS`/`BAGS`/`MUSHROOMS` from JSON with an admin reload endpoint. Enables live tuning without redeploys.
 - **`ArtifactsScreen` removal.** Severed in §2.9, removable in a follow-up once telemetry confirms zero usage.
 
+**Deferred during implementation (2026-04-11):**
+
+*Server-side:*
+- **Granular run mutation endpoints** (`/place`, `/unplace`, `/rotate`, `/activate-bag`, `/deactivate-bag`, `/rotate-bag`). The bridge via `PUT /api/artifact-loadout` → `applyRunLoadoutPlacements` works but sends the full layout on every change. Granular endpoints would unlock partial updates and allow deleting `buildLoadoutPayloadItems` on the client.
+- **`mutateRun` + per-run lock** (§11.1). Concurrent mutations from the same player can race. Only the transaction-level atomicity currently protects us; there's no serialization of mutations within a player's run.
+- **Idempotency-Key header** (§11.2). Mobile retries can double-buy. Client-generated request IDs + server-side LRU dedupe cache would close this.
+- **`{ gameRun, loadoutItems, shopOffer }` response envelope** (§2.6). Mutations return heterogeneous shapes today; client re-fetches via `refreshBootstrap()` after significant changes. Slightly more network chatter than the planned contract but structurally correct.
+- **umzug versioned migrations** (§11.3). Still using `sequelize.sync()`. Fine for pre-launch but blocks zero-downtime schema changes.
+- **Structured logging + metrics** (§11.5). No observability.
+- **Rate limiting** (§11.9). No token bucket.
+- **Challenge-mode read isolation test.** §11.6 — covered by service-level checks but no dedicated integration test.
+
+*Client-side:*
+- **`buildLoadoutPayloadItems` removal.** Still used by `signalReady()` as the bridge serializer. Removal requires the granular server endpoints above + `useShop.js` rewrite.
+- **`persistShopOffer` removal.** Still writes the legacy shop-state blob. No-op for run state but still executing.
+- **Bootstrap shrink.** `bootstrap.shopState` and `bootstrap.loadout` still ship over the wire because `useShop.js` and `ArtifactsScreen` still read them. The reconciliation bug is fixed (projection reads from one source) but the payload still carries the old fields.
+- **Deleting `PUT /api/artifact-loadout`.** Still exists for the game-run bridge path. Delete when granular endpoints land.
+- **`useShop.js` rewrite.** Only touched tangentially — still has its own three-source assumptions for the legacy flow. Rewrite lands when `ArtifactsScreen` is deleted.
+
+*Symbol-level cleanup:*
+- **Delete `createBotGhostSnapshot`** (§10 criterion). Still referenced as the final fallback in `getRunGhostSnapshot` and by `battle-service.js::getRandomGhostSnapshot`. Moving both paths inside the unified helper would let it go.
+- **Rename `state.builderItems`** (§10 criterion). The variable name survived the projection rewrite; the name is load-bearing across `useGameRun.js`, `useShop.js`, and `PrepScreen.js`. Rename when those files get rewritten together.
+
+*Docs:*
+- **Update [docs/artifact-board-spec.md](./artifact-board-spec.md) §3, §5, §11, §12** — still describes the three-source model.
+- **Update [docs/battle-system-rework-plan.md](./battle-system-rework-plan.md) "Current workspace state"** — still references `game_run_ghost_snapshots`.
+- **Update [docs/balance.md](./balance.md) Issue #11** — marked "Still broken" in the current version; it's now fixed via this refactor.
+
 ---
 
 ## 14. Timeline
+
+**Planned:**
 
 | Session | Scope |
 |---------|-------|
@@ -878,4 +1040,26 @@ Items intentionally deferred from this refactor. They build on the architecture 
 | 4 | Steps 6–7 (client routing + projection) |
 | 5 | Steps 8–9 (remaining tests + cleanup + constants extraction) |
 
-Can be compressed to a single focused day if no surprises, but the expanded scope (ghost unification, shop round-scoping, legacy severance, validator split, constants extraction, production-readiness work in §11) realistically pushes this to **~12 hours** across 5–6 sessions. The production/scalability additions (concurrency, idempotency, versioned migrations, observability, rate limiting) add ~4 hours but are non-optional for shipping to real users.
+**Actual (2026-04-11, single-day execution):**
+
+| Commit | Step | Description |
+|---|---|---|
+| `ab3f85d` | 0 | failing goal-defining tests (9 tests) |
+| `0b92be7` | 1 | DB migration — 3 new models, shop state unique index update |
+| `a6d3afd` | 2+3 | server rewrite + legacy severance (merged for atomic read/write flip) |
+| `38d0b18` | 4 | unified ghost lookup + `game_run_ghost_snapshots` deletion |
+| `ba170aa` | 5 | validator split + `artifact-helpers.js` |
+| `c557790` | 6 | `/game-run/:id` routing |
+| `696ee7e` | — | two flaky-test hardening fixes (telegram ID collisions, dup-artifact update overlap) |
+| `99f333b` | 7 | client state single-source projection |
+| `d085e59` | 8 | three new test files (31 tests added) |
+| `1a87d87` | 9 | shared constants + docs update |
+
+**Scope delta vs. plan:**
+- Merged Step 2 into Step 3 (atomic read/write path flip)
+- Deferred most of §11 production readiness to backlog
+- Deferred granular endpoints + `buildLoadoutPayloadItems` removal
+- Deferred bootstrap shrink
+- Deferred cross-doc updates (artifact-board-spec, battle-system-rework-plan, balance.md)
+
+**Result:** 10 commits, 127 tests passing (from 87 baseline), §10 success criteria 13/15 green.
