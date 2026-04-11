@@ -14,7 +14,7 @@ export default function defineGameRunShopState(sequelize) {
     tableName: 'game_run_shop_states',
     timestamps: false,
     indexes: [
-      { unique: true, fields: ['game_run_id', 'player_id'] }
+      { unique: true, fields: ['game_run_id', 'player_id', 'round_number'], name: 'idx_grss_run_player_round_unique' }
     ]
   });
 }

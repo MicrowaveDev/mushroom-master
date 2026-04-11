@@ -20,6 +20,8 @@ import defineGameRun from './GameRun.js';
 import defineGameRunPlayer from './GameRunPlayer.js';
 import defineGameRound from './GameRound.js';
 import defineGameRunGhostSnapshot from './GameRunGhostSnapshot.js';
+import defineGameRunLoadoutItem from './GameRunLoadoutItem.js';
+import defineGameRunRefund from './GameRunRefund.js';
 import defineGameRunShopState from './GameRunShopState.js';
 
 export function initModels(sequelize) {
@@ -45,6 +47,8 @@ export function initModels(sequelize) {
   const GameRunPlayer = defineGameRunPlayer(sequelize);
   const GameRound = defineGameRound(sequelize);
   const GameRunGhostSnapshot = defineGameRunGhostSnapshot(sequelize);
+  const GameRunLoadoutItem = defineGameRunLoadoutItem(sequelize);
+  const GameRunRefund = defineGameRunRefund(sequelize);
   const GameRunShopState = defineGameRunShopState(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
@@ -72,6 +76,9 @@ export function initModels(sequelize) {
 
   GameRun.hasMany(GameRunGhostSnapshot, { foreignKey: 'game_run_id' });
   GameRun.hasMany(GameRunShopState, { foreignKey: 'game_run_id' });
+  GameRun.hasMany(GameRunRefund, { foreignKey: 'game_run_id' });
+  // GameRunLoadoutItem intentionally has no FK to GameRun so synthetic
+  // `ghost:bot:<hash>` rows can live in the same table without a parent run.
 
   return {
     Player,
@@ -96,6 +103,8 @@ export function initModels(sequelize) {
     GameRunPlayer,
     GameRound,
     GameRunGhostSnapshot,
+    GameRunLoadoutItem,
+    GameRunRefund,
     GameRunShopState
   };
 }
