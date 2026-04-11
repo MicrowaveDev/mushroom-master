@@ -26,10 +26,17 @@ import {
   buyRunShopItem,
   sellRunItem,
   selectActiveMushroom,
-  saveArtifactLoadout,
   getActiveGameRun
 } from '../../app/server/services/game-service.js';
-import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
+import {
+  freshDb,
+  createPlayer,
+  seedRunLoadout,
+  bootRun,
+  findCheapArtifact,
+  forceShopOffer,
+  countBotGhostRows
+} from './helpers.js';
 
 async function tableExists(tableName) {
   try {
@@ -64,11 +71,7 @@ const minimalLoadout = [
 ];
 
 async function bootPlayerInRun(overrides = {}) {
-  const session = await createPlayer(overrides);
-  await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', minimalLoadout);
-  const run = await startGameRun(session.player.id, 'solo');
-  return { playerId: session.player.id, run };
+  return bootRun({ ...overrides, withLegacyLoadout: minimalLoadout });
 }
 
 // ---------------------------------------------------------------------------
@@ -88,23 +91,13 @@ test('duplicate artifacts create distinct loadout rows', async () => {
 
   // Pick a cheap (price 1) non-spore_needle artifact to duplicate. We force
   // the shop to contain two copies by writing directly to offer_json.
-  const { getArtifactById, getArtifactPrice, artifacts } = await import('../../app/server/game-data.js');
-  const dupArtifact = artifacts.find((a) =>
-    a.id !== 'spore_needle' && a.family !== 'bag'
-      && a.width === 1 && a.height === 1 && getArtifactPrice(a) === 1
-  )?.id;
+  const dupArtifact = findCheapArtifact()?.id;
   assert.ok(dupArtifact, 'expected a cheap 1x1 artifact to exist for duplication');
 
-  await query(
-    `UPDATE game_run_shop_states SET offer_json = $1 WHERE game_run_id = $2 AND player_id = $3 AND round_number = 1`,
-    [JSON.stringify([dupArtifact]), run.id, playerId]
-  );
+  await forceShopOffer(run.id, playerId, 1, [dupArtifact]);
   await buyRunShopItem(playerId, run.id, dupArtifact);
 
-  await query(
-    `UPDATE game_run_shop_states SET offer_json = $1 WHERE game_run_id = $2 AND player_id = $3 AND round_number = 1`,
-    [JSON.stringify([dupArtifact]), run.id, playerId]
-  );
+  await forceShopOffer(run.id, playerId, 1, [dupArtifact]);
   await buyRunShopItem(playerId, run.id, dupArtifact);
 
   const rows = await query(
@@ -363,11 +356,7 @@ test('bot ghost fallback writes real rows into game_run_loadout_items', async ()
   // After resolving round 1, if no other real player exists the ghost path
   // must have produced a synthetic row. Look for any game_run_id that starts
   // with the "ghost:bot:" marker (see §2.4 unification).
-  const botRows = await query(
-    `SELECT game_run_id FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%' LIMIT 1`
-  );
-
-  if (botRows.rowCount === 0) {
+  if ((await countBotGhostRows()) === 0) {
     throw new Error('Step 4 not complete: no synthetic ghost:bot rows found in game_run_loadout_items');
   }
 });

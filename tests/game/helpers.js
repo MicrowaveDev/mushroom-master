@@ -1,7 +1,16 @@
 import { query, resetDb } from '../../app/server/db.js';
 import { upsertTelegramPlayer } from '../../app/server/auth.js';
-import { saveArtifactLoadout, selectActiveMushroom } from '../../app/server/services/game-service.js';
+import {
+  saveArtifactLoadout,
+  selectActiveMushroom,
+  startGameRun
+} from '../../app/server/services/game-service.js';
 import { createId, nowIso } from '../../app/server/lib/utils.js';
+import { artifacts, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
+
+// Re-exports so test files don't need to dynamic-import game-data inside
+// test bodies. See AGENTS.md "Backend Scenario vs Unit Test Rules".
+export { artifacts, getArtifactById, getArtifactPrice };
 
 export async function freshDb() {
   process.env.NODE_ENV = 'test';
@@ -36,6 +45,100 @@ export async function saveSetup(playerId, mushroomId, items) {
  * since the legacy saveArtifactLoadout → startGameRun seeding path is gone
  * after §2.9 severance.
  */
+/**
+ * Boot a player into an active solo run. The default does not pre-seed the
+ * legacy player_artifact_loadouts table — that's the path most tests want
+ * because startGameRun no longer reads from it (§2.9 severance).
+ *
+ * Pass `withLegacyLoadout: [...]` to exercise the severance invariant
+ * (i.e. "legacy table is untouched by startGameRun"). Pass a different
+ * `mushroomId` for character-specific tests.
+ */
+export async function bootRun({
+  telegramId,
+  username,
+  mushroomId = 'thalla',
+  withLegacyLoadout = null
+} = {}) {
+  const session = await createPlayer({ telegramId, username });
+  await selectActiveMushroom(session.player.id, mushroomId);
+  if (withLegacyLoadout) {
+    await saveArtifactLoadout(session.player.id, mushroomId, withLegacyLoadout);
+  }
+  const run = await startGameRun(session.player.id, 'solo');
+  return { playerId: session.player.id, run };
+}
+
+/**
+ * Current coins for a player inside a run. Used by concurrency/ledger tests
+ * that assert on post-mutation balance.
+ */
+export async function getCoins(gameRunId, playerId) {
+  const r = await query(
+    `SELECT coins FROM game_run_players WHERE game_run_id = $1 AND player_id = $2`,
+    [gameRunId, playerId]
+  );
+  return r.rowCount ? r.rows[0].coins : null;
+}
+
+/**
+ * Read the round-scoped shop offer for a player. Returns `null` when the
+ * row doesn't exist yet (e.g. before startGameRun or after run end).
+ */
+export async function getShopOffer(gameRunId, playerId, roundNumber) {
+  const r = await query(
+    `SELECT offer_json FROM game_run_shop_states
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+    [gameRunId, playerId, roundNumber]
+  );
+  return r.rowCount ? JSON.parse(r.rows[0].offer_json) : null;
+}
+
+/**
+ * Deterministically replace the shop offer for a specific round. Useful when
+ * a test needs to force a particular artifact into the shop to exercise a
+ * buy path. The write bypasses the refresh cost and RNG.
+ */
+export async function forceShopOffer(gameRunId, playerId, roundNumber, artifactIds) {
+  await query(
+    `UPDATE game_run_shop_states SET offer_json = $1
+     WHERE game_run_id = $2 AND player_id = $3 AND round_number = $4`,
+    [JSON.stringify(artifactIds), gameRunId, playerId, roundNumber]
+  );
+}
+
+/**
+ * Find a cheap, dupable, non-bag 1×1 artifact suitable for buy/duplicate
+ * tests. Excludes `spore_needle` by default because it's the conventional
+ * seed starter — using it as the "cheap dupe" collides with seed rows.
+ *
+ * @param {string[]} excludeIds - extra artifact ids to exclude
+ * @param {number} price - target price (default 1 for maximum budget headroom)
+ */
+export function findCheapArtifact(excludeIds = ['spore_needle'], price = 1) {
+  const excluded = new Set(excludeIds);
+  return artifacts.find(
+    (a) =>
+      !excluded.has(a.id) &&
+      a.family !== 'bag' &&
+      a.width === 1 &&
+      a.height === 1 &&
+      getArtifactPrice(a) === price
+  );
+}
+
+/**
+ * Count synthetic bot ghost rows in the unified loadout table. Used to
+ * assert the §2.4 invariant: bot fallback writes into game_run_loadout_items
+ * rather than a parallel table.
+ */
+export async function countBotGhostRows() {
+  const r = await query(
+    `SELECT COUNT(*) AS count FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%'`
+  );
+  return Number(r.rows[0].count);
+}
+
 export async function seedRunLoadout(playerId, gameRunId, items) {
   await query(
     `DELETE FROM game_run_loadout_items WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,

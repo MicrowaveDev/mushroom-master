@@ -126,6 +126,23 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
 - Prefer `@click.stop` assertions (e.g. sell button) over drag-to-shop for undo/refund flows.
 - Name tests by the user journey they cover, not by the technical mechanism: "full shop flow: buy, undo, place, persist on refresh, save, battle" — not "drag-and-drop API fires correctly".
 
+### Backend Scenario vs Unit Test Rules
+
+These rules govern `tests/game/*.test.js` (Node.js `node:test` runner) — the backend/service-level test suite, distinct from the Playwright e2e rules above.
+
+- Keep both **unit tests** (one invariant per test, direct function calls, fake I/O) and **scenario tests** (one long flow, multi-phase, real DB). They complement each other; do not replace one with the other.
+- **Unit tests** are for invariants that are expressible as a single input/output contract: pure functions, validators, middleware, registries, helpers, token buckets, deterministic generators. Write them against fake `req`/`res` objects or direct function calls — do not spin up real I/O for these.
+- **Scenario tests** are for emergent bugs that only appear when multiple invariants interact: copy-forward after a sell, concurrency on top of a fresh shop offer, refund ledger consistency across round boundaries, cross-phase state drift. Write them as one long `test()` block with explicit phase comments and checkpoint assertions between phases.
+- A new scenario test is warranted when the interaction it covers is not reachable from any single unit test. If the bug you want to catch is expressible as "X invariant holds," write a unit test. If it is expressible as "X invariant holds *after Y happens on top of Z state*," write a scenario phase.
+- Scenario tests should have **checkpoint assertions between phases**, not a single assertion at the end. When a scenario test fails, the failure message must point at the specific phase — otherwise debugging cost outweighs the value.
+- **Do not delete unit tests** when adding a scenario test that covers the same invariant. The scenario test catches emergent issues; the unit test pinpoints root cause. Losing either makes the other less useful.
+- When a scenario test fails, the first response is to read the failing phase, not to rerun the whole suite. If the phase assertion is flaky, fix the flake at the phase — do not add broad retries around the entire scenario.
+- Keep **one scenario test per user journey**, not one per invariant. Typical journeys in this repo: full solo run, challenge-mode isolation, legacy single-battle flow, reload/resume. Granular invariants stay as unit tests.
+- Scenario tests use real DB via `freshDb()` and real service calls. Middleware, pure functions, and helpers should never reach the DB — keep those at the unit level.
+- Name scenario tests by the journey, not the mechanism: `'solo run scenario: start → buy → reload → resolve → sell → ghost → history'` — not `'run-lifecycle integration test'`.
+- When adding or moving assertions, ask which side of the split they belong on. If the answer is "both," prefer a unit test for the invariant *and* a scenario phase that exercises the invariant under realistic preconditions.
+- A scenario test should complete in under ~5 seconds. If it grows slower than that, split along journey boundaries (e.g. one scenario for rounds 1-3, one for rounds 4-9), not along invariant boundaries.
+
 ### UI Test Efficiency Rules
 
 - Prefer the repo helper command over ad hoc port debugging for screenshot verification:

@@ -5,20 +5,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { query } from '../../app/server/db.js';
 import {
-  startGameRun,
   resolveRound,
-  buyRunShopItem,
-  selectActiveMushroom,
   pruneOldGhostSnapshots
 } from '../../app/server/services/game-service.js';
-import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
-
-async function bootRun(overrides = {}) {
-  const session = await createPlayer(overrides);
-  await selectActiveMushroom(session.player.id, 'thalla');
-  const run = await startGameRun(session.player.id, 'solo');
-  return { playerId: session.player.id, run };
-}
+import {
+  freshDb,
+  bootRun,
+  seedRunLoadout,
+  countBotGhostRows
+} from './helpers.js';
 
 test('copy-forward: round N rows are byte-identical in round N+1 except fresh_purchase', async () => {
   await freshDb();
@@ -107,10 +102,10 @@ test('bot ghost rows appear in game_run_loadout_items after a solo round', async
   ]);
   await resolveRound(playerId, run.id);
 
-  const botRows = await query(
-    `SELECT game_run_id FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%' LIMIT 1`
+  assert.ok(
+    (await countBotGhostRows()) > 0,
+    'bot ghost fallback must write rows to the unified table'
   );
-  assert.ok(botRows.rowCount > 0, 'bot ghost fallback must write rows to the unified table');
 });
 
 test('pruneOldGhostSnapshots deletes synthetic ghost:bot rows older than maxAge', async () => {
@@ -130,17 +125,11 @@ test('pruneOldGhostSnapshots deletes synthetic ghost:bot rows older than maxAge'
 
   // The rowCount reported by sqlite may be unreliable for DELETEs; we assert
   // on the actual table state rather than the return value.
-  const before = await query(
-    `SELECT COUNT(*) AS count FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%'`
-  );
-  assert.ok(Number(before.rows[0].count) > 0, 'precondition: ghost rows exist');
+  assert.ok((await countBotGhostRows()) > 0, 'precondition: ghost rows exist');
 
   await pruneOldGhostSnapshots(1);
 
-  const after = await query(
-    `SELECT COUNT(*) AS count FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%'`
-  );
-  assert.equal(Number(after.rows[0].count), 0, 'ghost rows must be deleted');
+  assert.equal(await countBotGhostRows(), 0, 'ghost rows must be deleted');
 });
 
 test('pruneOldGhostSnapshots does not touch real-player rows', async () => {
