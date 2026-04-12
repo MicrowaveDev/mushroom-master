@@ -52,8 +52,8 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D] solo game run: full journey with scre
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
 
   // --- Home screen with "Start Game" button ---
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.dashboard')).toBeVisible();
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.home')).toBeVisible();
   await saveShot(page, 'solo-01-home-start-game.png');
 
   // --- Start game run → prep screen ---
@@ -145,7 +145,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D] solo game run: full journey with scre
 
   // --- Go home ---
   await page.getByRole('button', { name: /home|домой/i }).click();
-  await expect(page.locator('.dashboard')).toBeVisible();
+  await expect(page.locator('.home')).toBeVisible();
   await saveShot(page, 'solo-10-home-after-run.png');
 });
 
@@ -157,14 +157,14 @@ test('[Req 1-F] solo game run: abandon mid-game with screenshots', async ({ page
   await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', { mushroomId: 'thalla', items: loadout });
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await saveShot(page, 'solo-abandon-01-prep.png');
 
   await page.getByRole('button', { name: /abandon|покинуть/i }).click();
-  await expect(page.locator('.dashboard')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole('button', { name: /resume|продолжить игру/i })).toHaveCount(0);
   await saveShot(page, 'solo-abandon-02-home-no-resume.png');
 });
@@ -183,7 +183,7 @@ test('[Req 5-A, 12-D] bag activation persists across page reload', async ({ page
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
 
   // Start a game run
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
@@ -269,7 +269,7 @@ test('[Req 5-C, 2-B] amber satchel (2x2 bag) activates from container and expand
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
 
   // Start a game run
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
@@ -345,7 +345,7 @@ test('can sell bag from container after page reload', async ({ page, request, ba
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
 
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
@@ -411,7 +411,7 @@ test('can sell second bag from container when another bag is active (after reloa
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
 
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
@@ -488,7 +488,7 @@ test('round transitions: replay → continue → next prep (not home) while live
   await api(request, ghost.sessionKey, '/api/artifact-loadout', 'PUT', { mushroomId: 'kirt', items: loadout });
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
@@ -661,7 +661,7 @@ test('multiple items across rounds survive a full page reload', async ({ page, r
   await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-  await page.goto(`${baseURL}?screen=home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 

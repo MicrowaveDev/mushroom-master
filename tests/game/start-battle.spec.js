@@ -52,7 +52,7 @@ test('local session button opens a working dev-only session without auth error',
   await localSessionButton.click();
 
   await expect(page.locator('.error')).toHaveCount(0);
-  await expect(page.locator('.dashboard, .panel')).toBeVisible();
+  await expect(page.locator('.home, .panel')).toBeVisible();
   await expect(page).toHaveURL(/screen=(home|onboarding)|127\.0\.0\.1/);
 });
 
@@ -76,11 +76,11 @@ test('start battle button opens replay when a ghost opponent exists', async ({ p
     localStorage.setItem('sessionKey', sessionKey);
   }, player.sessionKey);
 
-  await page.goto(`${baseURL}?screen=battle`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/battle`, { waitUntil: 'networkidle' });
   await expect(page.getByRole('button', { name: /start battle|начать бой/i })).toBeVisible();
   await page.getByRole('button', { name: /start battle|начать бой/i }).click();
 
-  await page.waitForURL(/screen=replay/);
+  await page.waitForURL(/\/replay\//);
   await expect(page.locator('.replay-log')).toBeVisible();
   const replayEntries = page.locator('.replay-log .log-entry');
   await expect(replayEntries).toHaveCount(1);
@@ -139,7 +139,7 @@ test('full shop flow: buy, undo, place, persist on refresh, save, battle', async
     localStorage.setItem('sessionKey', sessionKey);
   }, player.sessionKey);
 
-  await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/artifacts`, { waitUntil: 'networkidle' });
 
   const shop = page.locator('.artifact-shop');
   const container = page.locator('.artifact-container-zone');
@@ -176,7 +176,7 @@ test('full shop flow: buy, undo, place, persist on refresh, save, battle', async
   await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
 
   // --- Step 6: refresh page — state must persist from server ---
-  await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/artifacts`, { waitUntil: 'networkidle' });
   await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
   await expect(page.locator('.coin-hud-label')).toContainText('4');
   await expect(shop.locator('.shop-item')).toHaveCount(4);
@@ -210,7 +210,7 @@ test('shop budget enforcement: 2-cost items become unaffordable when coins run l
     localStorage.setItem('sessionKey', sessionKey);
   }, player.sessionKey);
 
-  await page.goto(`${baseURL}?screen=artifacts`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/artifacts`, { waitUntil: 'networkidle' });
 
   const shop = page.locator('.artifact-shop');
   await expect(shop.locator('.shop-item')).toHaveCount(5);
@@ -241,10 +241,10 @@ test('start battle falls back to a bot opponent when no ghost opponent exists', 
     localStorage.setItem('sessionKey', sessionKey);
   }, player.sessionKey);
 
-  await page.goto(`${baseURL}?screen=battle`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/battle`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start battle|начать бой/i }).click();
 
-  await page.waitForURL(/screen=replay/);
+  await page.waitForURL(/\/replay\//);
   await expect(page.locator('.replay-log')).toBeVisible();
   await expect(page.locator('.error')).toHaveCount(0);
 });
