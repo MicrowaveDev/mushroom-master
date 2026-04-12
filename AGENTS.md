@@ -95,6 +95,7 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - required artifacts exist
   - validation passed
   - the claimed completion state matches the actual files on disk
+- **Before implementing or changing any game-play behavior**, read [docs/game-requirements.md](docs/game-requirements.md). It is the authoritative behavioral spec — every rule there is testable, and violating one is a bug. If a change conflicts with a requirement, update the requirement doc in the same commit (with user approval) so the spec and code stay in sync. Do not treat balance.md, plan docs, or inline code comments as the source of truth for game rules — those describe rationale and history, not the current contract.
 
 ### UI Verification Rules
 

@@ -10,6 +10,7 @@ Game implementation surfaces:
 - frontend Mini App: `web/`
 - structured wiki source: `wiki/`
 - game verification: `tests/game/`
+- **game rules**: [`docs/game-requirements.md`](docs/game-requirements.md) — authoritative behavioral spec covering game structure, combat, economy, ghost scaling, rewards, challenge mode, and all testable invariants. Read this first before changing game logic.
 
 Database runtime:
 
