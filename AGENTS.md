@@ -142,8 +142,8 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
 - For shop/container/inventory interactions, use **click-based actions** as the primary test path (matching the primary UI interaction). Keep `htmlDragDrop` helper for drag-specific assertions only.
 - Prefer `@click.stop` assertions (e.g. sell button) over drag-to-shop for undo/refund flows.
 - Name tests by the user journey they cover, not by the technical mechanism: "full shop flow: buy, undo, place, persist on refresh, save, battle" — not "drag-and-drop API fires correctly".
-- **Capture a mobile-viewport screenshot at each major screen transition.** Set `page.setViewportSize({ width: 375, height: 667 })` before navigation. The screenshot proves what the user sees without scrolling ("above the fold"). Cross-check against the "Above the fold" blocks in [docs/user-flows.md](docs/user-flows.md) — if a critical action or info element listed there is not visible in the screenshot, it's a layout bug to flag.
-- Every E2E test that navigates to a new screen must save at least one screenshot at mobile viewport. Use `await page.screenshot({ path: 'screenshots/<flow>-<step>.png' })`. These screenshots are evidence artifacts that reviewers and agents can inspect without running the suite.
+- **Capture screenshots at both mobile and desktop viewports at each major screen transition.** Mobile: `page.setViewportSize({ width: 375, height: 667 })`. Desktop: `page.setViewportSize({ width: 1280, height: 800 })`. The mobile screenshot proves what the user sees without scrolling on the primary Telegram Mini App viewport. Cross-check against the "Above the fold (mobile)" and "Desktop note" blocks in [docs/user-flows.md](docs/user-flows.md) — if a critical action or info element listed there is not visible in the screenshot, it's a layout bug to flag.
+- Use `await page.screenshot({ path: 'screenshots/<flow>-<step>-mobile.png' })` and `screenshots/<flow>-<step>-desktop.png`. These screenshots are evidence artifacts that reviewers and agents can inspect without running the suite.
 
 ### Backend Scenario vs Unit Test Rules
 
