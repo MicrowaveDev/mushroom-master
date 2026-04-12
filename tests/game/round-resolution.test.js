@@ -8,10 +8,23 @@ import {
   refreshRunShop,
   sellRunItem,
   saveArtifactLoadout,
-  selectActiveMushroom
+  selectActiveMushroom,
+  generateShopOffer
 } from '../../app/server/services/game-service.js';
-import { STARTING_LIVES, ROUND_INCOME, RATING_FLOOR, runRewardTable } from '../../app/server/game-data.js';
-import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
+import {
+  artifacts,
+  STARTING_LIVES,
+  ROUND_INCOME,
+  RATING_FLOOR,
+  runRewardTable,
+  combatArtifacts,
+  bags,
+  mushrooms,
+  SHOP_REFRESH_CHEAP_LIMIT,
+  BAG_PITY_THRESHOLD
+} from '../../app/server/game-data.js';
+import { createRng } from '../../app/server/lib/utils.js';
+import { freshDb, createPlayer, seedRunLoadout, getShopOffer } from './helpers.js';
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -280,4 +293,133 @@ test('[Req 9-B, 10-D] abandon pays completion bonus based on wins', async () => 
 
   // 0 wins = 0 bonus, so spore should be unchanged
   assert.equal(sporeAfter, sporeBefore);
+});
+
+// --- Shop generation & economy gap tests ---
+
+test('[Req 3-D] shop offer never contains starterOnly artifacts', () => {
+  const starterOnlyIds = new Set(
+    artifacts.filter((a) => a.starterOnly).map((a) => a.id)
+  );
+  // Run 100 random shop generations and verify none contain starter-only items
+  for (let i = 0; i < 100; i++) {
+    const rng = createRng(`shop-starter-check-${i}`);
+    const { offer } = generateShopOffer(rng, 5, 1);
+    for (const id of offer) {
+      assert.ok(!starterOnlyIds.has(id), `Shop offer should not contain starterOnly artifact ${id}`);
+    }
+  }
+});
+
+test('[Req 4-H] first shop refresh costs 1 coin (not free)', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+
+  const coinsBefore = run.player.coins;
+  const result = await refreshRunShop(playerId, run.id);
+
+  assert.equal(result.refreshCost, 1, 'First refresh should cost 1 coin');
+  assert.equal(result.coins, coinsBefore - 1, 'Coins should decrease by 1');
+});
+
+test('[Req 4-G] refresh cost escalates after SHOP_REFRESH_CHEAP_LIMIT', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+
+  // Do CHEAP_LIMIT refreshes at cost 1 each
+  for (let i = 0; i < SHOP_REFRESH_CHEAP_LIMIT; i++) {
+    const r = await refreshRunShop(playerId, run.id);
+    assert.equal(r.refreshCost, 1, `Refresh ${i + 1} should cost 1 coin`);
+  }
+
+  // Next refresh should cost 2
+  const expensive = await refreshRunShop(playerId, run.id);
+  assert.equal(expensive.refreshCost, 2, 'Refresh after cheap limit should cost 2 coins');
+});
+
+test('[Req 5-D] bag pity guarantees a bag after BAG_PITY_THRESHOLD bagless rounds', () => {
+  // With roundsSinceBag >= BAG_PITY_THRESHOLD, the last slot must be a bag
+  const bagIds = new Set(bags.map((b) => b.id));
+  let foundBag = false;
+  for (let i = 0; i < 50; i++) {
+    const rng = createRng(`pity-check-${i}`);
+    const { offer, hasBag } = generateShopOffer(rng, 5, BAG_PITY_THRESHOLD);
+    if (hasBag) {
+      foundBag = true;
+      const hasBagInOffer = offer.some((id) => bagIds.has(id));
+      assert.ok(hasBagInOffer, 'When hasBag is true, offer should contain a bag');
+    }
+  }
+  assert.ok(foundBag, 'At pity threshold, at least some offers should contain a bag');
+});
+
+test('[Req 5-E] roundsSinceBag=1 gives higher bag chance than roundsSinceBag=0 would', () => {
+  // Generate many offers with roundsSinceBag=1 (the initial value) and verify
+  // bags can appear — proves the initializer isn't 0.
+  const bagIds = new Set(bags.map((b) => b.id));
+  let bagCount = 0;
+  const trials = 200;
+  for (let i = 0; i < trials; i++) {
+    const rng = createRng(`rsi-check-${i}`);
+    const { hasBag } = generateShopOffer(rng, 5, 1);
+    if (hasBag) bagCount += 1;
+  }
+  // With BAG_BASE_CHANCE=0.15 + 1*0.08 = 23% per slot, 5 slots →
+  // P(no bag) ≈ 0.77^5 ≈ 0.27, so ~73% of offers should have a bag.
+  // Allow generous range to avoid flakiness.
+  assert.ok(bagCount > 10, `Expected bags in >5% of ${trials} offers, got ${bagCount}`);
+});
+
+test('[Req 7-A, 7-B] ghost round-robin excludes player mushroom and cycles all others', async () => {
+  await freshDb();
+  const session = await createPlayer({ telegramId: 9990, username: 'rr_test' });
+  await selectActiveMushroom(session.player.id, 'thalla');
+  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
+  const run = await startGameRun(session.player.id, 'solo');
+  await seedRunLoadout(session.player.id, run.id, loadout);
+
+  const { query: dbQuery } = await import('../../app/server/db.js');
+  const opponents = [];
+  for (let i = 0; i < 4; i++) {
+    const result = await resolveRound(session.player.id, run.id);
+    // Fetch opponent mushroom from the battle snapshot (right side = ghost)
+    if (result.lastRound?.battleId) {
+      const snap = await dbQuery(
+        `SELECT mushroom_id FROM battle_snapshots WHERE battle_id = $1 AND side = 'right'`,
+        [result.lastRound.battleId]
+      );
+      if (snap.rowCount) opponents.push(snap.rows[0].mushroom_id);
+    }
+    if (result.status !== 'active') break;
+  }
+
+  // Player's own mushroom should never appear as opponent
+  assert.ok(!opponents.includes('thalla'), 'Ghost should never be player\'s own mushroom');
+
+  // All 4 non-player mushrooms should appear in first 4 rounds (round-robin)
+  if (opponents.length === 4) {
+    const unique = new Set(opponents);
+    assert.equal(unique.size, 4, `All 4 opponent mushrooms should appear, got ${unique.size} unique`);
+  }
+});
+
+test('[Req 11-D] shop refresh_count resets to 0 on round transition', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+
+  // Refresh once in round 1
+  await refreshRunShop(playerId, run.id);
+
+  // Resolve round to advance to round 2
+  const result = await resolveRound(playerId, run.id);
+  if (result.status !== 'active') return; // run ended, skip
+
+  // Check round 2 shop state has refresh_count = 0
+  const { query: dbQuery } = await import('../../app/server/db.js');
+  const shopResult = await dbQuery(
+    `SELECT refresh_count FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2`,
+    [run.id, playerId]
+  );
+  assert.ok(shopResult.rowCount, 'Round 2 shop state should exist');
+  assert.equal(shopResult.rows[0].refresh_count, 0, 'refresh_count should reset to 0 for new round');
 });

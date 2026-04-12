@@ -1,4 +1,4 @@
-// Numeric constants live in app/shared/game-constants.js so the client can
+// Numeric constants live in app/shared/config.js so the client can
 // import the same values without dragging the full game-data artifact/mushroom
 // definitions. We `import` them into local scope AND re-export, so existing
 // `import { X } from './game-data.js'` call sites plus in-file usages in
@@ -7,8 +7,11 @@ import {
   BAG_BASE_CHANCE,
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
+  CHALLENGE_IDLE_TIMEOUT_MS,
   DAILY_BATTLE_LIMIT,
+  GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
+  GHOST_SNAPSHOT_MAX_COUNT,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
@@ -23,14 +26,17 @@ import {
   SHOP_REFRESH_EXPENSIVE_COST,
   STARTING_LIVES,
   STEP_CAP
-} from '../shared/game-constants.js';
+} from '../shared/config.js';
 
 export {
   BAG_BASE_CHANCE,
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
+  CHALLENGE_IDLE_TIMEOUT_MS,
   DAILY_BATTLE_LIMIT,
+  GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
+  GHOST_SNAPSHOT_MAX_COUNT,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
@@ -459,7 +465,7 @@ export const completionBonusTable = [
 // CHALLENGE_WINNER_BONUS is not currently shared with the client — keep here.
 export const CHALLENGE_WINNER_BONUS = { spore: 10, mycelium: 5 };
 // RATING_FLOOR, GHOST_BUDGET_DISCOUNT, SHOP_REFRESH_* now re-exported at the
-// top of this file from app/shared/game-constants.js.
+// top of this file from app/shared/config.js.
 
 export function getCompletionBonus(wins) {
   for (const tier of completionBonusTable) {
@@ -490,7 +496,7 @@ export function getMushroomById(id) {
   return mushrooms.find((item) => item.id === id) || null;
 }
 
-// BAG_* constants re-exported at the top of this file from shared/game-constants.js.
+// BAG_* constants re-exported at the top of this file from shared/config.js.
 
 export const bags = artifacts.filter((a) => a.family === 'bag' && !a.starterOnly);
 // `starterOnly` items are preset into a specific character's round-1 inventory

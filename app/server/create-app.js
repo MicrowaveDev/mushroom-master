@@ -12,7 +12,7 @@ import {
 } from './auth.js';
 import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
 import { getDb, resetDb, query as dbQuery } from './db.js';
-import { ROUND_INCOME } from './game-data.js';
+import { CHALLENGE_IDLE_TIMEOUT_MS, ROUND_INCOME } from './game-data.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
@@ -457,9 +457,49 @@ export async function createApp() {
     const gameRunId = req.params.id;
     const playerId = req.user.id;
     sseManager.addConnection(gameRunId, playerId, res);
+    readyManager.touchActivity(gameRunId);
     req.on('close', () => {
       sseManager.removeConnection(gameRunId, playerId);
     });
+  });
+
+  // Challenge timeout sweep — runs on every SSE heartbeat tick (~30 s).
+  // Detects challenge runs where no player has signalled ready/unready for
+  // CHALLENGE_IDLE_TIMEOUT_MS and auto-abandons them so neither player is stuck.
+  sseManager.onHeartbeat(async () => {
+    const idleRunIds = readyManager.getIdleRunIds(CHALLENGE_IDLE_TIMEOUT_MS);
+    for (const gameRunId of idleRunIds) {
+      try {
+        // Verify the run is still an active challenge before abandoning
+        const runResult = await dbQuery(
+          `SELECT mode FROM game_runs WHERE id = $1 AND status = 'active'`,
+          [gameRunId]
+        );
+        if (!runResult.rowCount || runResult.rows[0].mode !== 'challenge') {
+          readyManager.clearRun(gameRunId);
+          continue;
+        }
+
+        // Pick the first registered player to be the "abandoner"
+        const grpResult = await dbQuery(
+          `SELECT player_id FROM game_run_players WHERE game_run_id = $1 AND is_active = 1 LIMIT 1`,
+          [gameRunId]
+        );
+        if (!grpResult.rowCount) {
+          readyManager.clearRun(gameRunId);
+          continue;
+        }
+
+        const abandonerId = grpResult.rows[0].player_id;
+        await abandonGameRun(abandonerId, gameRunId);
+        sseManager.broadcast(gameRunId, 'run_ended', { endReason: 'timeout' });
+        sseManager.removeRun(gameRunId);
+        readyManager.clearRun(gameRunId);
+        log.info(`Challenge run ${gameRunId} auto-abandoned after idle timeout`);
+      } catch (err) {
+        log.error(`Failed to auto-abandon idle challenge run ${gameRunId}: ${err.message}`);
+      }
+    }
   });
 
   app.post(

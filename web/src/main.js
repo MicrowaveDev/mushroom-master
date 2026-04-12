@@ -207,6 +207,13 @@ const App = {
       touch.attachTouch(appRootEl);
       await auth.refreshBootstrap();
       if (state.gameRun) gameRun.loadRunShopOffer();
+      // [Req 12-B] If bootstrap detected a missed round result (combat
+      // completed while disconnected), load the replay now that all
+      // composables are initialized.
+      if (state.pendingReconnectBattleId && state.sessionKey) {
+        await replay.loadReplay(state.pendingReconnectBattleId);
+        state.pendingReconnectBattleId = null;
+      }
       const startParams = parseStartParams();
       if (startParams.challenge && state.sessionKey) await social.openChallenge(startParams.challenge);
       if (startParams.replay && state.sessionKey) await replay.loadReplay(startParams.replay);

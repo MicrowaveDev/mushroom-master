@@ -47,7 +47,8 @@ Step 1: Auth Screen
 
 Step 2: Onboarding
   Screen: onboarding → OnboardingScreen.js
-  Screenshot: (not yet captured — no e2e coverage)
+  Screenshot: screenshots/onboarding-mobile.png, screenshots/onboarding-desktop.png
+  E2E: coverage-gaps.spec.js — onboarding flow + dual-viewport screenshots
   Condition: No activeMushroomId in bootstrap
   Above the fold (mobile):
     - Walkthrough heading + first step description
@@ -192,7 +193,7 @@ Step 4b: Run Complete (run ended)
 
 ## Flow C: Challenge Mode
 
-Screenshots: `screenshots/challenge/` directory (not yet captured — tests exist but need a passing run)
+Screenshots: `screenshots/challenge/` directory (not yet captured — challenge-run.spec.js tests the flow but screenshots need a passing dual-player run)
 
 ```
 Step 1: Send Challenge
@@ -233,6 +234,11 @@ Step 4: Challenge Resolution
 ---
 
 ## Flow D: Legacy Single Battle
+
+**Status:** Active but superseded by game runs (Flow B). Kept for backward
+compatibility — the ArtifactsScreen/BattlePrepScreen/ResultsScreen path still
+works. No requirement IDs exist for the legacy flow except `[Req 9-D]` (rewards).
+Consider deprecating once game runs cover all use cases.
 
 ```
 Step 1: Home Screen
@@ -322,7 +328,8 @@ Step 2: Standalone Replay
 
 ## Flow F: Reconnection
 
-Screenshots: (not yet captured — no e2e coverage)
+E2E: coverage-gaps.spec.js tests Req 12-D (state survives page refresh).
+Screenshots: (not yet captured for reconnection-specific UI)
 
 ```
 Step 1: Player disconnects mid-run
@@ -336,9 +343,13 @@ Step 2: Player reopens app
     - [Req 12-B] If combat completed while away, player sees round result
     - Navigate to prep (if mid-round) or roundResult (if round resolved)
 
-Step 3: Reconnection timeout
+Step 3: Challenge idle timeout
   Expected:
-    - [Req 12-C] Run abandoned if reconnection fails within timeout
+    - [Req 12-C] Challenge runs with no ready/unready activity for
+      CHALLENGE_IDLE_TIMEOUT_MS (5 min) are auto-abandoned by the server.
+      Both players notified via SSE with endReason='timeout'.
+    - Solo runs: no server-side timeout (player can resume any time
+      via refreshBootstrap).
 ```
 
 ---

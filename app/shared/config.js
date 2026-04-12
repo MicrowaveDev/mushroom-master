@@ -1,10 +1,8 @@
-// Shared numeric constants — imported by both the server (game-data.js) and
+// Shared game configuration — imported by both the server (game-data.js) and
 // the client (web/src/constants.js). Adding a constant here automatically
 // keeps both sides in sync. Non-numeric data (artifact definitions, mushrooms,
 // reward tables) stays in game-data.js because the client doesn't need it
 // directly at import time — it arrives via bootstrap.
-//
-// Introduced by the loadout refactor (§5 Step 9 / §3 goal 10).
 
 // --- Inventory grid ---
 export const INVENTORY_COLUMNS = 3;
@@ -36,3 +34,10 @@ export const GHOST_BUDGET_DISCOUNT = 0.12;
 export const BAG_BASE_CHANCE = 0.15;
 export const BAG_ESCALATION_STEP = 0.08;
 export const BAG_PITY_THRESHOLD = 5;
+
+// --- Ghost snapshot retention ---
+export const GHOST_BOT_MAX_AGE_DAYS = 1;
+export const GHOST_SNAPSHOT_MAX_COUNT = 10000;
+
+// --- Challenge timeout ---
+export const CHALLENGE_IDLE_TIMEOUT_MS = 5 * 60 * 1000;

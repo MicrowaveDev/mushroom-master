@@ -12,7 +12,9 @@ import {
   getArtifactPrice,
   getCompletionBonus,
   getShopRefreshCost,
+  GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
+  GHOST_SNAPSHOT_MAX_COUNT,
   getStarterPreset,
   MAX_ROUNDS_PER_RUN,
   mushrooms,
@@ -50,7 +52,7 @@ import {
   readCurrentRoundItems
 } from './game-run-loadout.js';
 
-function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
+export function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
   const combatPool = [...combatArtifacts];
   const bagPool = [...bags];
   const offer = [];
@@ -1267,19 +1269,61 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
 }
 
 /**
- * Prune synthetic bot ghost rows (§2.4) older than maxAge days. Bot rows are
- * deterministic and cheap to regenerate, so we prune aggressively. Real
- * player snapshot rows are pruned via the broader game_runs retention policy
- * (not this function).
+ * Prune ghost snapshot rows to keep the table bounded.
+ *
+ * Two strategies:
+ * 1. **Synthetic bot rows** (`ghost:bot:*`): deleted after `botMaxAgeDays`.
+ *    These are deterministic and cheap to regenerate.
+ * 2. **Real-player snapshot rows**: kept at a minimum pool size. When the total
+ *    count exceeds `maxSnapshots`, the oldest rows beyond that limit are deleted.
+ *    This preserves the ghost pool while preventing unbounded growth.
  */
-export async function pruneOldGhostSnapshots(maxAge = 1) {
-  const cutoff = new Date(Date.now() - maxAge * 24 * 60 * 60 * 1000).toISOString();
-  const result = await query(
+export async function pruneOldGhostSnapshots(
+  botMaxAgeDays = GHOST_BOT_MAX_AGE_DAYS,
+  maxSnapshots = GHOST_SNAPSHOT_MAX_COUNT
+) {
+  // 1. Age-based prune for synthetic bot rows
+  const botCutoff = new Date(Date.now() - botMaxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+  const botResult = await query(
     `DELETE FROM game_run_loadout_items
      WHERE game_run_id LIKE 'ghost:bot:%' AND created_at < $1`,
-    [cutoff]
+    [botCutoff]
   );
-  return { pruned: result.rowCount };
+
+  // 2. Count-based prune for real-player snapshot rows.
+  //    Find completed runs with snapshot rows, keep the newest `maxSnapshots`
+  //    distinct (game_run_id, player_id, round_number) groups, delete the rest.
+  //    Uses GROUP BY for SQLite/PostgreSQL compatibility (no DISTINCT ON).
+  const cutoffResult = await query(
+    `SELECT MAX(created_at) AS latest FROM game_run_loadout_items
+     WHERE game_run_id NOT LIKE 'ghost:bot:%'
+     GROUP BY game_run_id, player_id, round_number
+     ORDER BY latest DESC
+     LIMIT 1 OFFSET $1`,
+    [maxSnapshots]
+  );
+
+  let prunedSnapshots = 0;
+  if (cutoffResult.rowCount) {
+    const snapshotCutoff = cutoffResult.rows[0].latest;
+    const overflowResult = await query(
+      `DELETE FROM game_run_loadout_items
+       WHERE id IN (
+         SELECT grli.id FROM game_run_loadout_items grli
+         JOIN game_runs gr ON gr.id = grli.game_run_id
+         WHERE gr.status != 'active'
+           AND grli.game_run_id NOT LIKE 'ghost:bot:%'
+           AND grli.created_at < $1
+       )`,
+      [snapshotCutoff]
+    );
+    prunedSnapshots = overflowResult.rowCount;
+  }
+
+  return {
+    prunedBots: botResult.rowCount,
+    prunedSnapshots
+  };
 }
 
 export async function getGameRunHistory(playerId, limit = 20) {

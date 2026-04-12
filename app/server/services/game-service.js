@@ -33,6 +33,7 @@ export {
   applyRunLoadoutPlacements,
   buyRunShopItem,
   createChallengeRun,
+  generateShopOffer,
   getActiveGameRun,
   getGameRun,
   getGameRunHistory,

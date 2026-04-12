@@ -4,6 +4,10 @@
 **Scope:** What the game does, not how it's built. Every rule here is
 testable: if the game violates a rule, it's a bug.
 
+**Config:** All numeric constants referenced below (e.g. `MAX_ROUNDS_PER_RUN`,
+`STEP_CAP`) are defined in [`app/shared/config.js`](../app/shared/config.js) —
+the single source of truth shared by server and client.
+
 Last verified against code: 2026-04-12.
 
 ---
@@ -17,7 +21,7 @@ Last verified against code: 2026-04-12.
 - **1-E.** The run ends when lives reach 0 (`end_reason = 'max_losses'`) or all 9 rounds complete (`end_reason = 'max_rounds'`).
 - **1-F.** The player may abandon the run at any time (`end_reason = 'abandoned'`).
 - **1-G.** Only **one active game run per player** at a time.
-- **1-H.** Max **10 game starts per player per day** (`DAILY_BATTLE_LIMIT`).
+- **1-H.** Max **10 game starts per player per day** (`DAILY_BATTLE_LIMIT`). This limit is shared across all game modes — legacy single battles, solo game runs, and challenge runs all increment the same `daily_rate_limits.battle_starts` counter.
 
 ---
 
@@ -149,7 +153,9 @@ Last verified against code: 2026-04-12.
 - **7-E.** Ghost budget floor is always **3 coins** (enough for at least one cheap item).
 - **7-F.** Ghost items are weighted by mushroom affinity: strong family = 5×, medium = 3×, weak = 1×.
 - **7-G.** Ghost snapshots from completed real-player rounds are saved and can be encountered by other players; a player's own past loadouts are excluded.
-- **7-H.** Ghost snapshots are retained for **14 days**; older ones are pruned.
+- **7-H.** Ghost snapshot retention uses two strategies:
+  - **Synthetic bot rows** (`ghost:bot:*`): pruned after `GHOST_BOT_MAX_AGE_DAYS` (1 day). These are deterministic and cheap to regenerate.
+  - **Real-player snapshots**: kept at a pool of up to `GHOST_SNAPSHOT_MAX_COUNT` (10 000) distinct snapshots. When the count exceeds this threshold, the oldest snapshots are pruned.
 
 ---
 
@@ -227,7 +233,7 @@ Last verified against code: 2026-04-12.
 
 - **12-A.** If a player disconnects, they see a reconnection popup on return.
 - **12-B.** If combat completes while disconnected, the player is advanced to the result phase on reconnect.
-- **12-C.** If reconnection fails within the timeout, the run is abandoned.
+- **12-C.** Challenge runs with no ready/unready activity for `CHALLENGE_IDLE_TIMEOUT_MS` (5 minutes) are auto-abandoned by the server. Both players are notified via SSE.
 - **12-D.** Shop offer, loadout, and all run state are server-authoritative and survive page refreshes.
 
 ---

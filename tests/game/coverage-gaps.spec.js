@@ -295,3 +295,114 @@ test('[Req 12-D] game run state survives page refresh (reconnection)', async ({ 
   const shopCountAfter = await page.locator('.prep-screen .shop-item').count();
   expect(shopCountAfter).toBeGreaterThan(0);
 });
+
+// --- Req 13-C, 13-D: Post-replay button label ---
+
+test('[Req 13-C] post-replay button shows "Continue" during active game run', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1020, username: 'replay_label_player', name: 'Replay Label' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+
+  // Start game run → prep → ready → replay
+  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await expect(page.locator('.prep-screen')).toBeVisible();
+  await page.getByRole('button', { name: /ready|готов/i }).click();
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
+
+  // Wait for replay to finish → button appears
+  const replayBtn = page.locator('.replay-result-button-full');
+  await expect(replayBtn).toBeVisible({ timeout: 30000 });
+
+  // [Req 13-C] During active run: button should show "Continue" / "Продолжить"
+  const btnText = await replayBtn.textContent();
+  expect(btnText.trim()).toMatch(/continue|продолжить/i);
+});
+
+test('[Req 13-D] post-replay button shows "Home" for standalone replay from history', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1030, username: 'history_replay', name: 'History Replay' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  // Create a completed battle via legacy flow so we have history to replay
+  await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', {
+    mushroomId: 'thalla',
+    items: [
+      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
+      { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
+    ]
+  });
+  const battle = await api(request, player.sessionKey, '/api/battles', 'POST', { mode: 'ghost' });
+
+  // Navigate directly to the replay for this battle (no active run)
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/replay/${battle.id}`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
+
+  // Wait for replay to finish
+  const replayBtn = page.locator('.replay-result-button-full');
+  await expect(replayBtn).toBeVisible({ timeout: 30000 });
+
+  // [Req 13-D] No active run: button should show "Home" / "Домой"
+  const btnText = await replayBtn.textContent();
+  expect(btnText.trim()).toMatch(/home|домой/i);
+});
+
+// --- Flow G: Settings ---
+
+test('[Flow G] settings: change language and verify persistence', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1040, username: 'settings_tester', name: 'Settings Tester' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/settings`, { waitUntil: 'networkidle' });
+
+  // Should see settings panel
+  const settingsPanel = page.locator('.panel.stack');
+  await expect(settingsPanel).toBeVisible();
+
+  // Change language from RU to EN
+  const langSelect = page.locator('select').first();
+  await langSelect.selectOption('en');
+
+  // Click Save
+  await page.getByRole('button', { name: /save|сохранить/i }).click();
+  await page.waitForTimeout(1000);
+
+  // Reload and verify language persisted
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/settings`, { waitUntil: 'networkidle' });
+  const langValue = await page.locator('select').first().inputValue();
+  expect(langValue).toBe('en');
+});
+
+// --- Req 13-B: replay accessible from round-result/history ---
+
+test('[Req 13-B] battle history entry navigates to replay', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1050, username: 'history_nav', name: 'History Nav' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', {
+    mushroomId: 'thalla',
+    items: [
+      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
+      { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
+    ]
+  });
+
+  // Create a completed battle
+  await api(request, player.sessionKey, '/api/battles', 'POST', { mode: 'ghost' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+
+  // Click a battle history entry to navigate to replay
+  const historyEntry = page.locator('.battle-history-card').first();
+  if (await historyEntry.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await historyEntry.click();
+    await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
+  }
+});

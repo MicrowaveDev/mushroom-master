@@ -79,9 +79,11 @@ export const HomeScreen = {
         <article class="panel home-section">
           <div class="home-section-header">
             <h3>{{ t.gameRuns }}</h3>
-            <button v-if="!state.gameRun && activeMushroom" class="primary home-start-btn" @click="$emit('start-run', 'solo')">{{ t.startRun }}</button>
+            <button v-if="!state.gameRun && activeMushroom" class="primary home-start-btn" :disabled="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" :title="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''" @click="$emit('start-run', 'solo')">{{ t.startRun }}</button>
             <button v-if="state.bootstrap.battleHistory?.length" class="link" @click="$emit('go', 'history')">{{ t.viewAll }}</button>
           </div>
+
+          <p v-if="!state.gameRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" class="home-limit-hint">{{ t.dailyLimitReached }}</p>
 
           <!-- Active run as first item -->
           <div v-if="state.gameRun && activeMushroom" class="home-battle-item home-battle-item--active" @click="$emit('resume-run')">

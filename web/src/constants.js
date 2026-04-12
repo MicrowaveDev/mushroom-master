@@ -1,7 +1,7 @@
-// Client constants re-exported from the shared module so the client and
+// Client constants re-exported from the shared config so the client and
 // server never drift on things like ROUND_INCOME, inventory dimensions,
 // or bag distribution constants. Adding a constant means editing
-// app/shared/game-constants.js only.
+// app/shared/config.js only.
 //
 // See docs/loadout-refactor-plan.md §5 Step 9 / §3 goal 10.
 
@@ -25,7 +25,7 @@ export {
   SHOP_REFRESH_EXPENSIVE_COST,
   STARTING_LIVES,
   STEP_CAP
-} from '../../app/shared/game-constants.js';
+} from '../../app/shared/config.js';
 
 export function readReplayDelay(envValue, fallback) {
   const parsed = Number(envValue);

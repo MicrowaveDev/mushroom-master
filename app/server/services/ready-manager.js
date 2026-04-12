@@ -1,11 +1,15 @@
 const readyStates = new Map();
 const locks = new Map();
+// Tracks the last activity timestamp per challenge run (round resolve or ready signal).
+// Used by sweepIdleRuns() to auto-abandon stuck runs.
+const lastActivity = new Map();
 
 export function setReady(gameRunId, playerId) {
   if (!readyStates.has(gameRunId)) {
     readyStates.set(gameRunId, new Map());
   }
   readyStates.get(gameRunId).set(playerId, true);
+  touchActivity(gameRunId);
 }
 
 export function setUnready(gameRunId, playerId) {
@@ -13,6 +17,11 @@ export function setUnready(gameRunId, playerId) {
   if (run) {
     run.set(playerId, false);
   }
+  touchActivity(gameRunId);
+}
+
+export function touchActivity(gameRunId) {
+  lastActivity.set(gameRunId, Date.now());
 }
 
 export function isReady(gameRunId, playerId) {
@@ -47,6 +56,23 @@ export function clearRound(gameRunId) {
 export function clearRun(gameRunId) {
   readyStates.delete(gameRunId);
   locks.delete(gameRunId);
+  lastActivity.delete(gameRunId);
+}
+
+/**
+ * Returns run IDs that have been idle (no ready/unready activity) for longer
+ * than `timeoutMs`. Called periodically from the SSE heartbeat to detect
+ * stuck challenge runs where one player disconnected.
+ */
+export function getIdleRunIds(timeoutMs) {
+  const now = Date.now();
+  const idle = [];
+  for (const [gameRunId, ts] of lastActivity) {
+    if (now - ts >= timeoutMs) {
+      idle.push(gameRunId);
+    }
+  }
+  return idle;
 }
 
 /**

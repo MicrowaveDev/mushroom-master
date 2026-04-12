@@ -129,7 +129,7 @@ test('idempotency: 4xx responses ARE cached (client error is deterministic)', ()
 
 test('rate-limit: allows burst up to capacity', () => {
   clearRateLimitBuckets();
-  const mw = rateLimit({ capacity: 3, refillPerSec: 0 });
+  const mw = rateLimit({ capacity: 3, refillPerSec: 0, force: true });
 
   let passes = 0;
   let rejects = 0;
@@ -145,7 +145,7 @@ test('rate-limit: allows burst up to capacity', () => {
 
 test('rate-limit: 429 includes retry-after header and error body', () => {
   clearRateLimitBuckets();
-  const mw = rateLimit({ capacity: 1, refillPerSec: 0 });
+  const mw = rateLimit({ capacity: 1, refillPerSec: 0, force: true });
 
   mw(makeReq({ playerId: 'exhausted' }), makeRes(), () => {});
 
@@ -160,7 +160,7 @@ test('rate-limit: 429 includes retry-after header and error body', () => {
 
 test('rate-limit: scoped per playerId — one player\'s burst does not starve another', () => {
   clearRateLimitBuckets();
-  const mw = rateLimit({ capacity: 2, refillPerSec: 0 });
+  const mw = rateLimit({ capacity: 2, refillPerSec: 0, force: true });
 
   // Drain alice's bucket
   mw(makeReq({ playerId: 'alice' }), makeRes(), () => {});
@@ -178,7 +178,7 @@ test('rate-limit: scoped per playerId — one player\'s burst does not starve an
 test('rate-limit: tokens refill over time', async () => {
   clearRateLimitBuckets();
   // 1 token capacity, 10 refill/sec → ~100ms to get a new token
-  const mw = rateLimit({ capacity: 1, refillPerSec: 10 });
+  const mw = rateLimit({ capacity: 1, refillPerSec: 10, force: true });
 
   mw(makeReq({ playerId: 'refill' }), makeRes(), () => {});
   const rejected = makeRes();
@@ -194,7 +194,7 @@ test('rate-limit: tokens refill over time', async () => {
 
 test('rate-limit: unauthenticated requests bypass the limiter', () => {
   clearRateLimitBuckets();
-  const mw = rateLimit({ capacity: 1, refillPerSec: 0 });
+  const mw = rateLimit({ capacity: 1, refillPerSec: 0, force: true });
 
   // First call: no user, passes
   let called = 0;

@@ -3,6 +3,12 @@ const HEARTBEAT_INTERVAL_MS = 30_000;
 const MAX_CONNECTION_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 let heartbeatTimer = null;
+let onHeartbeatCallback = null;
+
+/** Register a callback invoked on every heartbeat tick (for idle-run sweeps). */
+export function onHeartbeat(fn) {
+  onHeartbeatCallback = fn;
+}
 
 function formatSSE(event, data) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -31,6 +37,11 @@ function startHeartbeat() {
         connections.delete(gameRunId);
       }
     }
+    // Invoke idle-run sweep callback (e.g. challenge timeout detection)
+    if (onHeartbeatCallback) {
+      try { onHeartbeatCallback(); } catch { /* logged elsewhere */ }
+    }
+
     // Stop timer if no connections remain
     if (connections.size === 0) {
       clearInterval(heartbeatTimer);

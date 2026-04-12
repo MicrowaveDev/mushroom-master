@@ -144,6 +144,21 @@ export function useAuth(state, goTo) {
       const urlParams = parseStartParams();
       const urlWantsGameRun = urlParams.screen === 'game-run' && urlParams.gameRunId;
 
+      // [Req 12-A/12-B] Reconnection detection: if a round was completed
+      // while the player was away (e.g. page refresh during challenge mode),
+      // store the missed battleId so main.js can route to the replay after
+      // bootstrap completes. We detect this on fresh load (auth/game-run
+      // screen) when completedRounds > 0 and the last round has a battleId.
+      const isReconnecting = state.screen === 'auth' || state.screen === 'game-run' || !state.screen;
+      const run = state.gameRun;
+      const lastRound = run?.rounds?.length ? run.rounds[run.rounds.length - 1] : null;
+      const missedRoundResult = isReconnecting && run && lastRound &&
+        lastRound.roundNumber === run.currentRound - 1 && lastRound.battleId &&
+        !state.gameRunResult;
+
+      // Store missed battle for main.js to pick up after bootstrap
+      state.pendingReconnectBattleId = missedRoundResult ? lastRound.battleId : null;
+
       if (!state.bootstrap.activeMushroomId) {
         state.screen = 'onboarding';
       } else if (urlWantsGameRun && state.gameRun && state.gameRun.id === urlParams.gameRunId) {
@@ -151,7 +166,10 @@ export function useAuth(state, goTo) {
       } else if (urlWantsGameRun && !state.gameRun) {
         // Deep link to a game run that's no longer active — drop to home.
         state.screen = 'home';
-      } else if (state.screen === 'auth' || state.screen === 'game-run') {
+      } else if (missedRoundResult) {
+        // [Req 12-B] Will be routed to replay by main.js after loadReplay is available
+        state.screen = 'prep';
+      } else if (isReconnecting) {
         state.screen = state.gameRun ? 'prep' : 'home';
       }
     } catch (error) {
