@@ -120,6 +120,11 @@ export function validateBagContents(items) {
 
 /**
  * Sum the prices of all items and throw if they exceed the coin budget.
+ *
+ * The caller is responsible for including the character starter preset
+ * cost in `coinBudget` — this function honestly sums every item in the
+ * loadout without special-casing any of them. See battle-service.js
+ * getActiveSnapshot for the run-budget computation.
  */
 export function validateCoinBudget(items, coinBudget) {
   let totalCoins = 0;

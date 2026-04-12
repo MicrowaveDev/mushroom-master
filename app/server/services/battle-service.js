@@ -4,6 +4,7 @@ import {
   DAILY_BATTLE_LIMIT,
   getArtifactById,
   getMushroomById,
+  getStarterPresetCost,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
@@ -66,7 +67,13 @@ export async function getActiveSnapshot(client, playerId) {
       sortOrder: row.sort_order,
       bagId: row.bag_id || null
     }));
-    runBudget = ROUND_INCOME.slice(0, currentRound).reduce((sum, c) => sum + c, 0);
+    // Budget ceiling = all coin income the player has seen so far + the
+    // free starter preset gift. Preset items live in the loadout and are
+    // summed by validateCoinBudget, so the ceiling must include their
+    // value or round-1 buys trip the validator (2-coin preset + full
+    // 5-coin spend = 7 > 5).
+    const cumulativeIncome = ROUND_INCOME.slice(0, currentRound).reduce((sum, c) => sum + c, 0);
+    runBudget = cumulativeIncome + getStarterPresetCost(mushroomId);
   } else {
     const loadoutResult = await client.query(
       `SELECT * FROM player_artifact_loadouts WHERE player_id = $1`,

@@ -107,25 +107,47 @@ Each piece of the formula fixes a specific past issue:
 
 ## 4. Starter Loadout
 
-See [player-service.js](../app/server/services/player-service.js) — `selectActiveMushroom()`.
+Every character starts round 1 with a **2-item signature preset** — two
+free, lore-tied artifacts that are unique to that mushroom. The rest of
+the 3×3 grid (9 cells) starts empty; the player fills it by buying from
+the shop with their round-1 income (`ROUND_INCOME[0] = 5` coins).
 
-When a new player picks their first mushroom, the server auto-seeds a **full 5-coin starter loadout** respecting the mushroom's affinity. This is implemented by running the bot loadout generator (`createBotLoadout`) with the player's chosen mushroom and the 5-coin budget.
+Presets live in [game-data.js](../app/server/game-data.js) under
+`STARTER_PRESETS`:
 
-### Why auto-seed the starter?
+| Mushroom | Signature item (new) | Existing item |
+|---|---|---|
+| Thalla (Тхалла) — control/stun | Spore Lash (Споровый Хлыст) | Spore Needle |
+| Lomie (Ломиэ) — defensive | Settling Guard (Оседающий Щит) | Bark Plate |
+| Axilin (Аксилин) — aggressive | Ferment Phial (Ферментная Фляга) | Sporeblade |
+| Kirt (Кирт) — balanced | Measured Strike (Размеренный Удар) | Moss Ring |
+| Morga (Морга) — damage/stun | Flash Cap (Вспышка Шляпки) | Haste Wisp |
 
-Originally new players started with an arbitrary 2-item loadout (2 coins spent), which meant:
-- The grid was 66% empty
-- Round 1 ghosts scaled to 2 coins — but ghosts roll *synergistic* items while a hand-picked 2-item starter is mixed
-- Players frequently lost round 1 by bad luck and felt the game was unfair from the start
+Each signature item is a 1×1, price-1 artifact marked `starterOnly: true`
+in `game-data.js`. They are placed at `(0,0)` and `(1,0)` on run start
+and **never appear in shop rolls or ghost loadouts** — the
+`combatArtifacts` and bot-loadout pools both filter out `starterOnly`
+items.
 
-The starter loadout fix:
-- Spends the full 5-coin budget on affinity-weighted items
-- Fills more grid cells so the player sees what a "complete" loadout looks like
-- Makes the round 1 matchup genuinely fair (both sides have 5-coin synergistic builds, but player gets the 12% + grace-factor tilt)
+### Why a 2-item preset?
 
-### Preservation across character switches
+- **Lore anchoring.** Each character enters round 1 with a recognizable
+  signature that mirrors its active/passive theme (e.g. Lomie's Settling
+  Guard echoes her "Settling Guard" active; Morga's Flash Cap echoes her
+  "Flash Cap" active).
+- **Room to shop.** Two placed items on a 9-cell grid leave seven empty
+  cells — the shop loop is still the main round-1 decision.
+- **Balance-safe ghost scaling.** Ghost budget in `resolveRound()` scales
+  with `playerSpent` (the sum of `getArtifactPrice()` over the round-1
+  loadout, floored at 3). Two price-1 preset items contribute 2 to
+  `playerSpent` before the player buys anything; the ghost scales
+  proportionally with no tuning needed.
 
-`selectActiveMushroom()` only seeds a starter loadout if no loadout exists yet. Switching characters mid-game preserves the existing loadout (since the player may have carefully built it). If you want to restart, abandon the run and create a new character.
+### Character switches
+
+`selectActiveMushroom()` seeds the starter preset on **first** character
+pick. Switching characters afterward never overwrites an existing
+non-empty loadout — the player's carefully built grid is preserved.
 
 ---
 
@@ -185,8 +207,13 @@ This guarantees variety and prevents the player from fighting the same character
 **Fix:**
 1. Added grace factor (0.7/0.85/1.0) for rounds 1-3
 2. Added cumulative income cap to prevent outlier ghosts
-3. Auto-seed a full 5-coin starter loadout on first character pick
-4. Lowered the minimum ghost budget floor from 5 to 3 coins
+3. Lowered the minimum ghost budget floor from 5 to 3 coins
+
+> **Update (post run-state refactor):** the original fix auto-seeded a
+> full 5-coin bot-rolled starter. The current model instead seeds a
+> **2-item lore-tied preset** per character (see §4). The ghost scales
+> with `playerSpent` (floor 3) so a 2-item preset produces a
+> correspondingly weak round-1 ghost without additional tuning.
 
 **Files changed:** [run-service.js](../app/server/services/run-service.js), [player-service.js](../app/server/services/player-service.js), [bot-loadout.js](../app/server/services/bot-loadout.js)
 
@@ -267,7 +294,7 @@ When we add telemetry, track these numbers per game:
 | Metric | Target | Action if below/above |
 |--------|--------|----------------------|
 | Round 1 win rate | 60-70% | Too low → raise grace factor. Too high → reduce it. |
-| Round 5 win rate | 50-55% | Too low → buff starter. Too high → buff ghosts mid-game. |
+| Round 5 win rate | 50-55% | Too low → raise round income or widen grace. Too high → buff ghosts mid-game. |
 | Games ending round 5 (5 losses) | <20% | Too high → raise starting lives or grace factors. |
 | Games ending round 9 (max rounds) | 30-40% | Too low → STEP_CAP rebalance or ghost power curve. |
 | Average rounds per game | 7-8 | Too low → game is too punishing. Too high → too grindy. |

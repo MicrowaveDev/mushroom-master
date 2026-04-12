@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBotLoadout, createBotGhostSnapshot } from '../../app/server/services/bot-loadout.js';
-import { getMushroomById, mushrooms, INVENTORY_COLUMNS, INVENTORY_ROWS, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
+import { getMushroomById, getStarterPresetCost, mushrooms, INVENTORY_COLUMNS, INVENTORY_ROWS, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
 import { createRng } from '../../app/server/lib/utils.js';
 
 test('bot loadout generates successfully for all mushrooms at default 5-coin budget', () => {
@@ -48,22 +48,25 @@ test('bot loadout never contains bags (bots only use combat items)', () => {
   }
 });
 
-test('bot loadout respects coin budget', () => {
+test('bot loadout respects coin budget (shop spend + preset)', () => {
   for (let seed = 0; seed < 30; seed++) {
     const budget = 5 + (seed % 10) * 3;
+    const mushroom = getMushroomById('axilin');
     const rng = createRng(`budget-check-${seed}`);
-    const loadout = createBotLoadout(getMushroomById('axilin'), rng, budget);
+    const loadout = createBotLoadout(mushroom, rng, budget);
     const totalCost = loadout.items.reduce((sum, item) => {
       const art = getArtifactById(item.artifactId);
       return sum + getArtifactPrice(art);
     }, 0);
-    assert.ok(totalCost <= budget, `Seed ${seed}: cost ${totalCost} exceeds budget ${budget}`);
+    const ceiling = budget + getStarterPresetCost(mushroom.id);
+    assert.ok(totalCost <= ceiling, `Seed ${seed}: cost ${totalCost} exceeds ceiling ${ceiling}`);
   }
 });
 
 test('createBotGhostSnapshot returns valid snapshot with given mushroom', () => {
   const snapshot = createBotGhostSnapshot('ghost-seed-1', 'morga', 15);
   assert.equal(snapshot.mushroomId, 'morga');
-  assert.ok(snapshot.loadout.items.length > 0);
-  assert.equal(snapshot.playerId, null); // bot has no real player id
+  // Loadout must contain at least the 2-item preset + bought items.
+  assert.ok(snapshot.loadout.items.length >= 2, `expected at least 2 items (preset), got ${snapshot.loadout.items.length}`);
+  assert.equal(snapshot.playerId, null);
 });

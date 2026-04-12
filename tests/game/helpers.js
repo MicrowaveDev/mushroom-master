@@ -39,16 +39,10 @@ export async function saveSetup(playerId, mushroomId, items) {
 }
 
 /**
- * Seed a deterministic loadout into the run-scoped table for an active run.
- * Must be called AFTER startGameRun — replaces whatever starter was generated.
- * This is the preferred way to set up test scenarios with specific items,
- * since the legacy saveArtifactLoadout → startGameRun seeding path is gone
- * after §2.9 severance.
- */
-/**
- * Boot a player into an active solo run. The default does not pre-seed the
- * legacy player_artifact_loadouts table — that's the path most tests want
- * because startGameRun no longer reads from it (§2.9 severance).
+ * Boot a player into an active solo run. Round 1 starts with an empty
+ * run-scoped inventory — no auto-generated starter, no legacy fallback.
+ * Tests that need a deterministic loadout should call `seedRunLoadout`
+ * after `bootRun`.
  *
  * Pass `withLegacyLoadout: [...]` to exercise the severance invariant
  * (i.e. "legacy table is untouched by startGameRun"). Pass a different

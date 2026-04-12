@@ -202,8 +202,8 @@ test('sell item bought in previous round gives half price refund', async () => {
   const run = await startGameRun(session.player.id, 'solo');
   const playerId = session.player.id;
 
-  // Replace the auto-generated starter with a minimal deterministic loadout
-  // so we have budget headroom to buy one more item without tripping validation.
+  // Round 1 starts empty — seed a minimal deterministic loadout so we have
+  // something placed on the grid before the buy below.
   await seedRunLoadout(playerId, run.id, [
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
   ]);
@@ -212,7 +212,7 @@ test('sell item bought in previous round gives half price refund', async () => {
   const itemToBuy = run.shopOffer.find((id) => {
     const a = getArtifactById(id);
     // Exclude spore_needle to avoid duplicate-row UPDATE matching both the
-    // seeded starter row and the newly bought row at the same artifact_id.
+    // seeded row and the newly bought row at the same artifact_id.
     return a && id !== 'spore_needle' && a.width === 1 && a.height === 1
       && a.family !== 'bag' && getArtifactPrice(a) <= 2;
   });

@@ -48,8 +48,8 @@ test('solo run scenario: start → buy → reload → resolve → sell → ghost
   // ---------------------------------------------------------------------
   // Phase 0 — create player, choose mushroom, save legacy prep loadout.
   // The legacy save exists to prove severance: startGameRun must NOT read
-  // from it. If it ever starts reading player_artifact_loadouts again,
-  // Phase 1 will fail because the starter won't match the bot output.
+  // from it. startGameRun also does not auto-seed any round-1 items — the
+  // run-scoped inventory starts empty and every item must be bought.
   // ---------------------------------------------------------------------
   const { playerId, run } = await bootRun({
     telegramId: 7001,
@@ -58,7 +58,8 @@ test('solo run scenario: start → buy → reload → resolve → sell → ghost
   });
 
   // ---------------------------------------------------------------------
-  // Phase 1 — startGameRun seeds round 1 via createBotLoadout, not legacy.
+  // Phase 1 — startGameRun seeds the character signature starter preset
+  // into round 1 and leaves the legacy table untouched.
   // ---------------------------------------------------------------------
   assert.ok(run.id, 'startGameRun must return a run id');
 
@@ -81,12 +82,11 @@ test('solo run scenario: start → buy → reload → resolve → sell → ghost
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
     [run.id, playerId]
   );
-  assert.ok(round1Starter.rowCount > 0, 'round 1 starter rows must be seeded');
+  assert.equal(round1Starter.rowCount, 2, 'round 1 must contain the 2-item starter preset');
 
-  // Trim the starter down to a 1-coin loadout so the scenario has budget
-  // headroom for the buy + sell + refresh phases that follow. The starter
-  // contents don't matter for the phases below; we just need the single
-  // placed item to keep the grid non-empty for battle resolution.
+  // Seed a 1-coin loadout so the phases below (buy + sell + refresh + battle)
+  // have something placed on the grid. The scenario uses this as its
+  // deterministic baseline.
   await seedRunLoadout(playerId, run.id, [
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
   ]);

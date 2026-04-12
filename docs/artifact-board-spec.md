@@ -77,11 +77,11 @@ Bags appear in the shop with **escalating probability**:
 
 ### Combat Resolution
 
-Battles are deterministic 1v1 duels resolved server-side in up to 12 steps:
+Battles are deterministic 1v1 duels resolved server-side in up to `STEP_CAP` (currently **120**) steps:
 1. Speed determines action order each step
 2. Attacker deals `base_attack + artifact_damage - defender_armor` (min 1)
 3. Stun roll: if successful, defender skips next action
-4. Battle ends on death or after step 12 (no draws in game runs)
+4. Battle ends on death or after `STEP_CAP` steps (no draws in game runs)
 
 ### Visual Design Rules
 
@@ -448,9 +448,18 @@ See [balance.md](./balance.md) for per-round income, refresh costs, and the full
 
 ### Starter Loadout
 
-When `startGameRun()` creates a new run, the server calls `createBotLoadout(mushroomId, round1Budget)` and INSERTs the result directly into `game_run_loadout_items` as round 1 rows with `purchased_round=1, fresh_purchase=0`. This avoids the "empty grid vs synergistic ghost" problem in round 1. See [balance.md Issue #1](./balance.md) for the rationale.
+Each character has a **2-item signature preset** defined in
+`STARTER_PRESETS` in [game-data.js](../app/server/game-data.js). Both
+`startGameRun()` (solo + challenge) and `selectActiveMushroom()`
+(legacy, first pick only) seed the preset into their respective
+loadout tables at `(0,0)` and `(1,0)`. See [balance.md §4](./balance.md)
+for the full table and rationale.
 
-`selectActiveMushroom()` no longer seeds the legacy `player_artifact_loadouts` table on character pick — character selection is pure profile state. Game runs never read from the legacy table (§2.9 severance in [loadout-refactor-plan.md](./loadout-refactor-plan.md)). The legacy single-battle `ArtifactsScreen` flow keeps its own seeding and save path, entirely independent of game runs.
+Each signature item is `starterOnly: true`, which excludes it from
+`combatArtifacts` (shop pool) and the bot-loadout pool — so the preset
+items only ever appear via seeding, never via shop rolls or ghost
+fallback. The grid is 3×3 (9 cells), leaving 7 empty cells for the
+shop-buy loop.
 
 ### Legacy Shop — Actions (single-battle prep)
 

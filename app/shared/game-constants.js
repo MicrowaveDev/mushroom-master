@@ -8,7 +8,7 @@
 
 // --- Inventory grid ---
 export const INVENTORY_COLUMNS = 3;
-export const INVENTORY_ROWS = 2;
+export const INVENTORY_ROWS = 3;
 
 // --- Shop / prep budget ---
 export const MAX_ARTIFACT_COINS = 5;

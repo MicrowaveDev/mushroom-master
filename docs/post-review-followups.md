@@ -12,6 +12,13 @@
 
 This is the execution plan for the items that remained open after the run-state refactor's post-implementation review. The top-5 pre-launch items (concurrency lock, idempotency, rate limiting, structured logging, balance.md Issue #11) already shipped in earlier commits. This document tracks what's left.
 
+> **Hardening contracts are documented elsewhere.** The concurrency lock,
+> idempotency, rate-limit, and structured-logging items lived here while
+> they were in-flight. Now that they are shipped, the permanent contract
+> reference is [infra-hardening.md](./infra-hardening.md) — that is the
+> file to read before touching mutation endpoints or adding new run-state
+> writers. This document keeps the batched execution history only.
+
 Items are ordered **high-priority → low-priority** and grouped by execution batch. The rule is: start at the top, work down, stop only when hitting a real multi-day refactor that deserves its own plan.
 
 ---

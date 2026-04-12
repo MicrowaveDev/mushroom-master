@@ -13,7 +13,7 @@ import {
   getCompletionBonus,
   getShopRefreshCost,
   GHOST_BUDGET_DISCOUNT,
-  MAX_ARTIFACT_COINS,
+  getStarterPreset,
   MAX_ROUNDS_PER_RUN,
   mushrooms,
   RATING_FLOOR,
@@ -121,18 +121,6 @@ export async function startGameRun(playerId, mode = 'solo') {
       [playerId]
     );
 
-    // Fetch the player's active mushroom for starter seeding.
-    // Legacy severance (§2.9): startGameRun no longer reads from
-    // player_artifact_loadout_items. The starter is always generated via
-    // createBotLoadout, never copied from the legacy table.
-    const activeMushroomResult = await client.query(
-      `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
-      [playerId]
-    );
-    const activeMushroomId = activeMushroomResult.rowCount
-      ? activeMushroomResult.rows[0].mushroom_id
-      : null;
-
     const runId = createId('run');
     const now = nowIso();
     const initialCoins = ROUND_INCOME[0];
@@ -168,32 +156,33 @@ export async function startGameRun(playerId, mode = 'solo') {
       [playerId, currentDay]
     );
 
-    // Seed a fresh starter loadout into the run-scoped table (§2.9 severance).
-    // Uses the active mushroom's affinity via createBotLoadout.
-    let starterItems = [];
-    if (activeMushroomId) {
-      const mushroom = mushrooms.find((m) => m.id === activeMushroomId);
-      if (mushroom) {
-        const loadoutRng = createRng(`${runId}:starter:${activeMushroomId}`);
-        const starterLoadout = createBotLoadout(mushroom, loadoutRng, MAX_ARTIFACT_COINS);
-        for (const [index, item] of starterLoadout.items.entries()) {
-          await insertLoadoutItem(client, {
-            gameRunId: runId,
-            playerId,
-            roundNumber: 1,
-            artifactId: item.artifactId,
-            x: item.x,
-            y: item.y,
-            width: item.width,
-            height: item.height,
-            bagId: item.bagId || null,
-            sortOrder: index,
-            purchasedRound: 1,
-            freshPurchase: false
-          });
-        }
-        starterItems = starterLoadout.items;
-      }
+    // Seed the character's signature starter preset (two 1x1 lore-tied items
+    // at (0,0) and (1,0)). These are free — they're not bought from the shop
+    // and don't deduct coins — but they count toward ghost budget scaling in
+    // resolveRound() because playerSpent uses getArtifactPrice().
+    const activeMushroomResult = await client.query(
+      `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+      [playerId]
+    );
+    const activeMushroomId = activeMushroomResult.rowCount
+      ? activeMushroomResult.rows[0].mushroom_id
+      : null;
+    const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId) : [];
+    for (const item of starterItems) {
+      await insertLoadoutItem(client, {
+        gameRunId: runId,
+        playerId,
+        roundNumber: 1,
+        artifactId: item.artifactId,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        bagId: null,
+        sortOrder: item.sortOrder,
+        purchasedRound: 1,
+        freshPurchase: false
+      });
     }
 
     return {
@@ -1217,34 +1206,32 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
         [createId('shopstate'), runId, pid, hasBag ? 0 : 1, JSON.stringify(shopOffer), now]
       );
 
-      // Seed starter loadout into the new run-scoped table (§2.9).
-      const activeChar = await client.query(
+      // Seed the character signature starter preset for this player. Same
+      // contract as startGameRun above — two lore-tied 1x1 items at (0,0)
+      // and (1,0), free, excluded from shop and ghost pools.
+      const activeCharResult = await client.query(
         `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
         [pid]
       );
-      if (activeChar.rowCount) {
-        const activeMushroomId = activeChar.rows[0].mushroom_id;
-        const mushroom = mushrooms.find((m) => m.id === activeMushroomId);
-        if (mushroom) {
-          const loadoutRng = createRng(`${runId}:starter:${pid}:${activeMushroomId}`);
-          const starterLoadout = createBotLoadout(mushroom, loadoutRng, MAX_ARTIFACT_COINS);
-          for (const [index, item] of starterLoadout.items.entries()) {
-            await insertLoadoutItem(client, {
-              gameRunId: runId,
-              playerId: pid,
-              roundNumber: 1,
-              artifactId: item.artifactId,
-              x: item.x,
-              y: item.y,
-              width: item.width,
-              height: item.height,
-              bagId: item.bagId || null,
-              sortOrder: index,
-              purchasedRound: 1,
-              freshPurchase: false
-            });
-          }
-        }
+      const activeMushroomId = activeCharResult.rowCount
+        ? activeCharResult.rows[0].mushroom_id
+        : null;
+      const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId) : [];
+      for (const item of starterItems) {
+        await insertLoadoutItem(client, {
+          gameRunId: runId,
+          playerId: pid,
+          roundNumber: 1,
+          artifactId: item.artifactId,
+          x: item.x,
+          y: item.y,
+          width: item.width,
+          height: item.height,
+          bagId: null,
+          sortOrder: item.sortOrder,
+          purchasedRound: 1,
+          freshPurchase: false
+        });
       }
 
       const currentDay = dayKey(new Date());

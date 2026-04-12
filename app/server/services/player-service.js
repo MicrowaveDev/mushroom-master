@@ -2,6 +2,7 @@ import { query, withTransaction } from '../db.js';
 import {
   getArtifactById,
   getMushroomById,
+  getStarterPreset,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
@@ -14,8 +15,7 @@ import {
 } from '../lib/utils.js';
 import { isBag as isArtifactBag } from './artifact-helpers.js';
 import { createBattle } from './battle-service.js';
-import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
-import { createRng } from '../lib/utils.js';
+import { createBotGhostSnapshot } from './bot-loadout.js';
 import { validateLoadoutItems } from './loadout-utils.js';
 
 function rowToPlayerProfile(row) {
@@ -138,17 +138,19 @@ export async function selectActiveMushroom(playerId, mushroomId) {
     [playerId, mushroomId]
   );
 
-  // First-time character pick → seed a full-budget starter loadout so the player
-  // enters round 1 at max coin efficiency, not with an empty inventory. Uses the
-  // bot loadout generator which respects the mushroom's affinity (damage/armor/stun).
+  // On first character pick, seed the character's signature starter preset
+  // into the legacy player_artifact_loadouts table. Two lore-tied 1x1 items
+  // at (0,0) and (1,0), defined in game-data.js STARTER_PRESETS. Subsequent
+  // character switches never overwrite an existing loadout.
   const existingLoadout = await query(
     `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
     [playerId]
   );
   if (!existingLoadout.rowCount) {
-    const rng = createRng(`${playerId}:starter:${mushroomId}`);
-    const loadout = createBotLoadout(mushroom, rng, MAX_ARTIFACT_COINS);
-    await saveArtifactLoadout(playerId, mushroomId, loadout.items, MAX_ARTIFACT_COINS);
+    const starterItems = getStarterPreset(mushroomId);
+    if (starterItems.length) {
+      await saveArtifactLoadout(playerId, mushroomId, starterItems, MAX_ARTIFACT_COINS);
+    }
   }
 
   return getPlayerState(playerId);

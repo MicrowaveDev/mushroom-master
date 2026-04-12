@@ -235,6 +235,60 @@ export const artifacts = [
     price: 1,
     bonus: { speed: 1 }
   },
+  // --- Character signature starters ---
+  // Each of these is preset into the round-1 inventory of one specific
+  // mushroom on run start (see STARTER_PRESETS below). They do not appear
+  // in shop rolls. Stats mirror the character's active/passive theme.
+  {
+    id: 'spore_lash',
+    name: { ru: 'Споровый Хлыст', en: 'Spore Lash' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    starterOnly: true,
+    bonus: { stunChance: 4, damage: 1 }
+  },
+  {
+    id: 'settling_guard',
+    name: { ru: 'Оседающий Щит', en: 'Settling Guard' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    starterOnly: true,
+    bonus: { armor: 2 }
+  },
+  {
+    id: 'ferment_phial',
+    name: { ru: 'Ферментная Фляга', en: 'Ferment Phial' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 1,
+    starterOnly: true,
+    bonus: { damage: 2, speed: 1 }
+  },
+  {
+    id: 'measured_strike',
+    name: { ru: 'Размеренный Удар', en: 'Measured Strike' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 1,
+    starterOnly: true,
+    bonus: { damage: 1, armor: 1 }
+  },
+  {
+    id: 'flash_cap',
+    name: { ru: 'Вспышка Шляпки', en: 'Flash Cap' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    starterOnly: true,
+    bonus: { stunChance: 6, damage: 1 }
+  },
   // --- Bag family ---
   {
     id: 'moss_pouch',
@@ -438,5 +492,51 @@ export function getMushroomById(id) {
 
 // BAG_* constants re-exported at the top of this file from shared/game-constants.js.
 
-export const bags = artifacts.filter((a) => a.family === 'bag');
-export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag');
+export const bags = artifacts.filter((a) => a.family === 'bag' && !a.starterOnly);
+// `starterOnly` items are preset into a specific character's round-1 inventory
+// and must never appear in shop rolls or ghost loadouts.
+export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag' && !a.starterOnly);
+
+// Character signature starters — seeded into round 1 for each mushroom on run
+// start. Two 1x1 items per character at (0,0) and (1,0). These artifacts have
+// `starterOnly: true` and are excluded from shop/ghost pools above.
+export const STARTER_PRESETS = {
+  thalla:  ['spore_lash',      'spore_needle'],
+  lomie:   ['settling_guard',  'bark_plate'],
+  axilin:  ['ferment_phial',   'sporeblade'],
+  kirt:    ['measured_strike', 'moss_ring'],
+  morga:   ['flash_cap',       'haste_wisp']
+};
+
+export function getStarterPreset(mushroomId) {
+  const ids = STARTER_PRESETS[mushroomId];
+  if (!ids) return [];
+  return ids.map((artifactId, index) => {
+    const artifact = getArtifactById(artifactId);
+    if (!artifact) return null;
+    return {
+      artifactId,
+      x: index,
+      y: 0,
+      width: artifact.width,
+      height: artifact.height,
+      sortOrder: index
+    };
+  }).filter(Boolean);
+}
+
+// Total coin value of a character's starter preset. Used by
+// battle-service.js getActiveSnapshot to widen the run budget ceiling by
+// the free gift value — the player's loadout is allowed to exceed
+// cumulative-income by exactly this much. Mushrooms with no preset
+// (unknown id) contribute 0.
+export function getStarterPresetCost(mushroomId) {
+  const ids = STARTER_PRESETS[mushroomId];
+  if (!ids) return 0;
+  let total = 0;
+  for (const artifactId of ids) {
+    const artifact = getArtifactById(artifactId);
+    if (artifact) total += getArtifactPrice(artifact);
+  }
+  return total;
+}

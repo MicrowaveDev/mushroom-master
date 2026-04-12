@@ -23,7 +23,7 @@ async function setupPlayerWithRun(overrides = {}) {
   await selectActiveMushroom(session.player.id, 'thalla');
   await saveArtifactLoadout(session.player.id, 'thalla', loadout);
   const run = await startGameRun(session.player.id, 'solo');
-  // Replace the auto-generated starter with the deterministic test loadout.
+  // Round 1 starts empty — seed the deterministic test loadout directly.
   await seedRunLoadout(session.player.id, run.id, loadout);
   return { session, run, playerId: session.player.id };
 }
@@ -226,11 +226,15 @@ async function getLastGhostCost(playerId) {
 test('round 1 ghost budget has grace factor (≤ 70% of player spend)', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
-  // Starter loadout = 2 coins spent (spore_needle + bark_plate).
-  // Round 1 budget = max(3, floor(2 * 0.88 * 0.7)) = max(3, 1) = 3 → ghost cost ≤ 3
+  const { getStarterPresetCost } = await import('../../app/server/game-data.js');
+  // Seeded test loadout = 2 coins spent (spore_needle + bark_plate).
+  // Round 1 shop budget = max(3, floor(2 * 0.88 * 0.7)) = max(3, 1) = 3
+  // Ghost also carries its character's preset on top of shop items.
+  // We don't know which mushroom the ghost rolled, so use 2 (max preset cost).
   await resolveRound(playerId, run.id);
   const ghostCost = await getLastGhostCost(playerId);
-  assert.ok(ghostCost <= 3, `Round 1 ghost cost ${ghostCost} should be ≤ 3 (grace-floored)`);
+  const maxPresetCost = 2;
+  assert.ok(ghostCost <= 3 + maxPresetCost, `Round 1 ghost cost ${ghostCost} should be ≤ ${3 + maxPresetCost} (shop budget floored + preset)`);
 });
 
 test('round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {
@@ -239,29 +243,29 @@ test('round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {
   await resolveRound(playerId, run.id); // advance to round 2
   await resolveRound(playerId, run.id);
   const ghostCost = await getLastGhostCost(playerId);
-  // Still floored at 3 with 2-coin starter, but formula is more lenient than round 1
-  assert.ok(ghostCost <= 3, `Round 2 ghost cost ${ghostCost} should be ≤ 3 (grace-floored)`);
+  const maxPresetCost = 2;
+  assert.ok(ghostCost <= 3 + maxPresetCost, `Round 2 ghost cost ${ghostCost} should be ≤ ${3 + maxPresetCost} (shop budget floored + preset)`);
 });
 
 test('ghost budget is capped by cumulative round income', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
   const { ROUND_INCOME, GHOST_BUDGET_DISCOUNT } = await import('../../app/server/game-data.js');
+  const maxPresetCost = 2;
 
-  // Play through several rounds and verify ghost cost never exceeds cumulative income
+  // Play through several rounds and verify ghost cost never exceeds cumulative income + preset
   for (let i = 0; i < 4; i++) {
     const result = await resolveRound(playerId, run.id);
     if (result.status !== 'active') break;
     const ghostCost = await getLastGhostCost(playerId);
     const round = i + 1;
     const cumulativeIncome = ROUND_INCOME.slice(0, round).reduce((s, c) => s + c, 0);
-    // Ghost can't exceed cumulative income × (1 - discount) × grace
     const graceFactor = round === 1 ? 0.7 : round === 2 ? 0.85 : 1.0;
     const theoreticalMax = Math.floor(cumulativeIncome * (1 - GHOST_BUDGET_DISCOUNT) * graceFactor);
-    const hardCap = Math.max(3, theoreticalMax);
+    const hardCap = Math.max(3, theoreticalMax) + maxPresetCost;
     assert.ok(
       ghostCost <= hardCap + 1, // +1 tolerance for rounding in bot loadout generator
-      `Round ${round}: ghost cost ${ghostCost} exceeds theoretical cap ${hardCap} (cumulative income ${cumulativeIncome})`
+      `Round ${round}: ghost cost ${ghostCost} exceeds theoretical cap ${hardCap} (cumulative income ${cumulativeIncome} + preset)`
     );
   }
 });

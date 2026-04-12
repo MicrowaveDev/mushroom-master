@@ -1,7 +1,10 @@
 import {
   artifacts,
+  getArtifactById,
   getArtifactPrice,
   getMushroomById,
+  getStarterPreset,
+  getStarterPresetCost,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
@@ -24,10 +27,11 @@ function artifactWeightForBot(mushroom, artifact) {
   return 2;
 }
 
-function pickUniqueArtifactsForBot(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
-  // Bags are excluded — bots don't use inventory expansion, only combat items.
-  const pool = artifacts.filter((a) => a.family !== 'bag');
-  const totalCells = INVENTORY_COLUMNS * INVENTORY_ROWS;
+function pickUniqueArtifactsForBot(mushroom, rng, budget = MAX_ARTIFACT_COINS, reservedCells = 0) {
+  // Bags and character-signature starters are excluded — bots don't use
+  // inventory expansion, and starters belong to specific characters.
+  const pool = artifacts.filter((a) => a.family !== 'bag' && !a.starterOnly);
+  const totalCells = INVENTORY_COLUMNS * INVENTORY_ROWS - reservedCells;
   const selected = [];
   let remainingCoins = budget;
   let occupiedCells = 0;
@@ -80,14 +84,36 @@ function markOccupied(candidate, occupied) {
 }
 
 export function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
+  // Pre-place the character's signature starter preset at their fixed
+  // positions. These are free gifts — the budget passed in is the
+  // ghost's "shop spend" budget, so we add the preset cost on top of
+  // it for the validator ceiling.
+  const preset = getStarterPreset(mushroom.id);
+  const presetCost = getStarterPresetCost(mushroom.id);
+
   for (let attempt = 0; attempt < 64; attempt += 1) {
-    const chosenArtifacts = pickUniqueArtifactsForBot(mushroom, rng, budget);
+    const presetCells = preset.reduce((sum, p) => sum + p.width * p.height, 0);
+    const chosenArtifacts = pickUniqueArtifactsForBot(mushroom, rng, budget, presetCells);
     const placementOrder = shuffleWithRng(
       [...chosenArtifacts].sort((left, right) => right.width * right.height - left.width * left.height),
       rng
     );
     const occupied = new Set();
     const placements = [];
+
+    // Lay down preset items first at their fixed positions.
+    for (const item of preset) {
+      const placement = {
+        artifactId: item.artifactId,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        sortOrder: placements.length
+      };
+      markOccupied(placement, occupied);
+      placements.push(placement);
+    }
 
     let success = true;
     for (const artifact of placementOrder) {
@@ -118,9 +144,9 @@ export function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
       placements.push(placement);
     }
 
-    if (success && placements.length === chosenArtifacts.length && placements.length > 0) {
+    if (success && placements.length === (chosenArtifacts.length + preset.length) && placements.length > 0) {
       placements.sort((left, right) => left.sortOrder - right.sortOrder);
-      validateLoadoutItems(placements, budget);
+      validateLoadoutItems(placements, budget + presetCost);
       return {
         gridWidth: INVENTORY_COLUMNS,
         gridHeight: INVENTORY_ROWS,

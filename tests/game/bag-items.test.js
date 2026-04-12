@@ -43,10 +43,14 @@ test('bag items exist in artifacts with family=bag', () => {
   assert.equal(amberSatchel.price, 3);
 });
 
-test('combatArtifacts excludes bags', () => {
+test('combatArtifacts excludes bags and starter-only items', () => {
   assert.ok(combatArtifacts.length > 0);
-  assert.ok(combatArtifacts.every((a) => a.family !== 'bag'));
-  assert.equal(combatArtifacts.length + bags.length, artifacts.length);
+  assert.ok(combatArtifacts.every((a) => a.family !== 'bag' && !a.starterOnly));
+  const starterOnly = artifacts.filter((a) => a.starterOnly);
+  assert.equal(
+    combatArtifacts.length + bags.length + starterOnly.length,
+    artifacts.length
+  );
 });
 
 // --- Bag in loadout validation ---
@@ -164,6 +168,11 @@ test('round loadout rows remain after each solo round (unified snapshot, §2.4)'
   await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const run = await startGameRun(session.player.id, 'solo');
+  // Round 1 starts empty — seed a deterministic row so the ghost snapshot
+  // has something to preserve.
+  await seedRunLoadout(session.player.id, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
   await resolveRound(session.player.id, run.id);
 
   // Under the unified ghost model the round-1 loadout rows in

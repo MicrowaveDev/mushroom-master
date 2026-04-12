@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, getPlayerState, selectActiveMushroom } from '../../app/server/services/game-service.js';
-import { getArtifactById, getArtifactPrice, MAX_ARTIFACT_COINS, mushrooms } from '../../app/server/game-data.js';
+import { mushrooms } from '../../app/server/game-data.js';
 import { freshDb, createPlayer, saveSetup } from './helpers.js';
 
 const loadout = [
@@ -10,27 +10,22 @@ const loadout = [
   { artifactId: 'shock_puff', x: 2, y: 0, width: 1, height: 1 }
 ];
 
-test('selectActiveMushroom seeds a full-budget starter loadout for new players', async () => {
+test('selectActiveMushroom seeds the character signature starter preset', async () => {
   await freshDb();
+  const { getStarterPreset } = await import('../../app/server/game-data.js');
   const session = await createPlayer();
 
   // Before selecting a mushroom — no loadout exists
   let state = await getPlayerState(session.player.id);
   assert.equal(state.loadout, null);
 
-  // Select a character — should auto-seed a starter loadout
+  // First character pick seeds the two lore-tied 1x1 items for the mushroom.
   await selectActiveMushroom(session.player.id, 'thalla');
   state = await getPlayerState(session.player.id);
-  assert.ok(state.loadout, 'starter loadout should exist');
-  assert.ok(state.loadout.items.length > 0, 'starter loadout should have items');
-
-  // Starter loadout must spend close to the full 5-coin budget
-  const totalCost = state.loadout.items.reduce((sum, item) => {
-    const a = getArtifactById(item.artifactId);
-    return sum + (a ? getArtifactPrice(a) : 0);
-  }, 0);
-  assert.ok(totalCost >= MAX_ARTIFACT_COINS - 1, `starter loadout cost ${totalCost} should be close to budget ${MAX_ARTIFACT_COINS}`);
-  assert.ok(totalCost <= MAX_ARTIFACT_COINS, `starter loadout cost ${totalCost} exceeds budget`);
+  const expected = getStarterPreset('thalla').map((i) => i.artifactId).sort();
+  const actual = state.loadout.items.map((i) => i.artifactId).sort();
+  assert.deepEqual(actual, expected, 'loadout must match thalla starter preset');
+  assert.equal(state.loadout.items.length, 2);
 });
 
 test('selectActiveMushroom does NOT overwrite an existing loadout', async () => {
@@ -117,10 +112,10 @@ test('ghost battles fall back to a generated bot with a valid random loadout whe
   assert.equal(battle.snapshots.right.playerId, null);
   assert.ok(mushrooms.some((mushroom) => mushroom.id === battle.snapshots.right.mushroomId));
   const botItems = battle.snapshots.right.loadout.items;
-  assert.ok(botItems.length >= 1 && botItems.length <= 6);
+  assert.ok(botItems.length >= 1 && botItems.length <= 9);
   assert.equal(new Set(botItems.map((item) => item.artifactId)).size, botItems.length);
   for (const item of battle.snapshots.right.loadout.items) {
     assert.ok(item.x + item.width <= 3);
-    assert.ok(item.y + item.height <= 2);
+    assert.ok(item.y + item.height <= 3);
   }
 });

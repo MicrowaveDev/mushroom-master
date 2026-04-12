@@ -46,6 +46,10 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - completed, partial, or blocked
   - what was done
   - which files/modules/repos were touched
+- When a plan ships, its per-step "Deferred (now backlog)" bullets become **point-in-time snapshots**, not current state. Post-review hardening that lands *after* the plan ships will silently contradict those bullets, and any agent who greps a step section for `🚫` will be fed stale context and may propose fixes for problems that already shipped. Two defences:
+  - **Reading-guide banner at the top.** Add a short "this is a historical ship record; §N is the authoritative current backlog; contracts live in `docs/<reference>.md`" note. One banner is cheaper and more reliable than patching every stale bullet individually.
+  - **Contract extraction.** When a plan's production-readiness items ship, pull their contracts into a dedicated reference doc (the pattern used by `docs/infra-hardening.md`) rather than leaving them buried in the plan's step sections. Reference docs describe *what the system does now*; plan docs describe *how we got here*. Do not mix the two.
+- Individual "Deferred" bullets that resolved after ship should be marked inline with a ✅ and a one-line status update pointing to the reference doc. Leaving them unmarked is worse than wrong — it's actively misleading.
 
 ### Delegated Agent Rules
 
@@ -67,6 +71,7 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
 - If multiple agents are active, make ownership explicit by folder, file set, or artifact type.
 - If a stage produces inputs for another stage, validate the first stage before handing it off.
 - If an agent returns partial, scaffolded, or instruction-leaking output, the same responsible stage should fix it before handoff.
+- **Verify subagent findings against the current file before acting on them.** When a subagent (`Agent` / Explore) reports "file X says Y", "line N contains Z", or "this bullet is stale", a direct `Read` or `Grep` confirms whether the finding still matches reality. Subagent outputs can lag behind recent edits, miscount lines, or hallucinate matches — especially for audits that span many files. The cost of one verification read is far smaller than the cost of a misdirected edit, and several times this session an audit flagged content that had already been fixed minutes earlier. Treat subagent reports as *leads*, not as authoritative snapshots.
 
 ### Parallel Work Rules
 
@@ -142,6 +147,9 @@ These rules govern `tests/game/*.test.js` (Node.js `node:test` runner) — the b
 - Name scenario tests by the journey, not the mechanism: `'solo run scenario: start → buy → reload → resolve → sell → ghost → history'` — not `'run-lifecycle integration test'`.
 - When adding or moving assertions, ask which side of the split they belong on. If the answer is "both," prefer a unit test for the invariant *and* a scenario phase that exercises the invariant under realistic preconditions.
 - A scenario test should complete in under ~5 seconds. If it grows slower than that, split along journey boundaries (e.g. one scenario for rounds 1-3, one for rounds 4-9), not along invariant boundaries.
+- **Keep at least one scenario per journey running on production defaults.** Helper overrides like `seedRunLoadout` that delete auto-seeded state and replace it with a deterministic minimal loadout are useful for controlling budget and pinning invariants, but they **bypass the seeding → consumer pipeline entirely**. If every scenario uses the override, a bug in the pipeline between "run starts" and "first consumer reads loadout" (e.g. auto-seeded starter preset interacting with the coin-budget validator in `getActiveSnapshot`) is invisible to the suite. Production defaults must be exercised end-to-end by something. The cost is one extra scenario; the payoff is that seeding regressions no longer ship unnoticed.
+- When a new piece of state is **auto-seeded on run start** (starter preset, opening shop offer, initial bag, opening mod, any implicit write), the same PR that introduces it must add or update at least one scenario test that (a) does not override the seeding and (b) drives the run far enough to reach every downstream consumer of the seeded state — buy flow, validator, resolve, snapshot, ghost path. "Assert the row exists" after `startGameRun` is not enough; the bug will live in whichever consumer the assertion doesn't touch.
+- When you write a regression test for a specific error message, drive the setup all the way to the **actual failure state**, not a simpler variant. A test that buys 1 item reproduces a different cost total than a test that buys 5 items — and a narrower fix can pass the first while the second still trips. Read the error message carefully, compute the specific numeric state that produced it, and reproduce that exact state in the test setup.
 
 ### UI Test Efficiency Rules
 

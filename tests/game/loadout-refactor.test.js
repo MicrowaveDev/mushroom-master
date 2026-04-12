@@ -147,6 +147,11 @@ test('round 1 loadout rows remain frozen after round 2 resolves', async () => {
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
   const { playerId, run } = await bootPlayerInRun();
+  // Round 1 no longer auto-seeds a starter; seed a deterministic one so the
+  // frozen-history assertion has something to compare against.
+  await seedRunLoadout(playerId, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
 
   const round1Before = await query(
     `SELECT id, artifact_id, x, y FROM game_run_loadout_items
@@ -154,7 +159,7 @@ test('round 1 loadout rows remain frozen after round 2 resolves', async () => {
      ORDER BY sort_order ASC`,
     [run.id, playerId]
   );
-  assert.ok(round1Before.rowCount > 0, 'expected starter loadout rows in round 1');
+  assert.ok(round1Before.rowCount > 0, 'expected seeded loadout rows in round 1');
 
   await resolveRound(playerId, run.id);
 
@@ -187,8 +192,13 @@ test('ghost lookup returns rows from another real player at the matching round',
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
-  // Player A plays round 1 to produce a snapshot
+  // Player A plays round 1 to produce a snapshot. Round 1 starts empty now,
+  // so seed a deterministic row first — that's what will become the ghost
+  // candidate for B.
   const a = await bootPlayerInRun({ telegramId: 501, username: 'a' });
+  await seedRunLoadout(a.playerId, a.run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
   await resolveRound(a.playerId, a.run.id);
 
   // Player B starts a new run
@@ -244,12 +254,13 @@ test('startGameRun does not seed the legacy player_artifact_loadouts table', asy
     'startGameRun must not add rows to the legacy loadout table'
   );
 
-  // And the new table MUST have a starter row.
+  // Round 1 is seeded with the character signature starter preset — two
+  // lore-tied items from game-data.js STARTER_PRESETS. Nothing else.
   const newRows = await query(
     `SELECT COUNT(*) AS count FROM game_run_loadout_items WHERE player_id = $1 AND round_number = 1`,
     [session.player.id]
   );
-  assert.ok(Number(newRows.rows[0].count) > 0, 'new table must have starter rows after startGameRun');
+  assert.equal(Number(newRows.rows[0].count), 2, 'round 1 must contain the 2-item starter preset');
 });
 
 // ---------------------------------------------------------------------------
@@ -339,6 +350,65 @@ test('cross-run mutation is rejected', async () => {
   await assert.rejects(
     () => buyRunShopItem(b.player.id, a.run.id, 'spore_needle'),
     /not part of|Player is not/
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Regression — starter preset + shop buys + resolveRound must not trip the
+// coin-budget validator. Before the fix, round 1 exploded on ready because
+// validateCoinBudget summed preset items (2 coins) + shop buys (up to 5) = 7,
+// and the runBudget in battle-service.js was cumulative ROUND_INCOME = 5.
+// The production path was never exercised end-to-end because every scenario
+// test uses seedRunLoadout() to overwrite the auto-seeded preset.
+// ---------------------------------------------------------------------------
+test('auto-seeded preset + full shop spend resolves round 1 without budget error', async () => {
+  await freshDb();
+  await requireTable('game_run_loadout_items', 'Step 1 not complete');
+
+  // bootRun() does NOT call seedRunLoadout — the auto-seeded preset stays.
+  // This is the only scenario test in the suite that exercises the
+  // production seeding → shop → resolve pipeline end-to-end; every other
+  // scenario overrides seeding with seedRunLoadout and misses this path.
+  const { playerId, run } = await bootRun({ telegramId: 801, username: 'preset-resolve' });
+
+  // Sanity: preset is in place (2 items, both count toward loadout cost).
+  const presetRows = await query(
+    `SELECT artifact_id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
+    [run.id, playerId]
+  );
+  assert.equal(presetRows.rowCount, 2, 'preset must seed exactly 2 items');
+
+  // Exhaust the full round-1 income by buying five price-1 items. This
+  // drives total loadout value to preset_cost (2) + shop_spend (5) = 7,
+  // which is exactly the ceiling the fix widens the validator to allow.
+  // Both failing bug reports (cost 7 before the partial fix, cost 6 with
+  // the partial fix) are reachable from this setup — if the ceiling is
+  // ever narrowed again this test trips immediately.
+  const cheap = findCheapArtifact();
+  assert.ok(cheap, 'expected a price-1 artifact for the regression');
+  await forceShopOffer(run.id, playerId, 1, [cheap.id, cheap.id, cheap.id, cheap.id, cheap.id]);
+  for (let i = 0; i < 5; i++) {
+    await buyRunShopItem(playerId, run.id, cheap.id);
+  }
+
+  // Total loadout items: 2 preset + 5 bought = 7 rows.
+  const finalRows = await query(
+    `SELECT artifact_id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
+    [run.id, playerId]
+  );
+  assert.equal(finalRows.rowCount, 7, 'expected 2 preset + 5 shop-bought rows');
+
+  // Resolving round 1 must succeed. Before the fix this threw
+  // "Loadout exceeds 5-coin budget (cost 7)" from validateCoinBudget;
+  // after the partial starterOnly-skip fix it threw "cost 6" because
+  // the existing-half of each preset pair is not starterOnly. The real
+  // fix widens runBudget by the full preset gift value in
+  // battle-service.js getActiveSnapshot.
+  await assert.doesNotReject(
+    () => resolveRound(playerId, run.id),
+    'resolveRound must accept preset + full-income shop spend'
   );
 });
 

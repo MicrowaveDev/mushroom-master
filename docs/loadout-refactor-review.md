@@ -5,6 +5,12 @@
 **Shipped:** 2026-04-11 (single-day execution, 10 commits)
 **Reviewer:** —
 
+> **Reference contracts extracted:** the §5.1/§5.5/§5.6 hardening items
+> (concurrency lock, structured logging, idempotency) shipped after this
+> review and are now documented as permanent contracts in
+> [infra-hardening.md](./infra-hardening.md). Read this file for the
+> narrative; read that file for the current rules.
+
 ---
 
 ## 1. Outcome at a glance

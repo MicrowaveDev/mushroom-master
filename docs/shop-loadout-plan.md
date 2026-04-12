@@ -1,6 +1,16 @@
 # Shop-based Loadout Plan
 
 > **Status: Implemented** (2026-04-06, commit `d10dc8f`)
+>
+> **Scope note (2026-04-11):** This plan describes the v1 shop-loadout
+> economy (flat 5-coin budget, single prep session). The run-state refactor
+> replaced it for game-run mode with per-round income, round-scoped shop
+> state rows, and `game_run_loadout_items` as the storage target. Constants
+> (`ROUND_INCOME`, `SHOP_OFFER_SIZE`, etc.) now live in
+> [app/shared/game-constants.js](../app/shared/game-constants.js) and the
+> authoritative economy doc is [balance.md](./balance.md). This plan is
+> retained only as the origin story for the legacy single-battle
+> `ArtifactsScreen` flow — do not read it as current game-run behavior.
 
 ## Goal
 Replace the current "exactly 3 artifacts from a catalog" loadout flow with a

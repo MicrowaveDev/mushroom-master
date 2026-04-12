@@ -18,6 +18,19 @@ criteria: all 14 checks green. Deferred to backlog: umzug migrations,
 `buildLoadoutPayloadItems` removal (needs granular place/unplace endpoints),
 i18n error code strings, `ArtifactsScreen` deletion (severed but not removed).
 
+> **Reading guide (2026-04-11):** This is a **historical ship record**, not
+> a current state-of-the-system document. Individual step sections contain
+> "Deferred (now backlog)" bullets that describe *that step's endpoint*
+> — some of those items have since shipped in post-review hardening and
+> are not actually deferred anymore. **Treat §13 "Backlog" as the
+> authoritative current state**: it has a "Post-review hardening shipped"
+> subsection at the top listing what landed after 2026-04-11, and a
+> "Still deferred" subsection listing what remains. For the runtime
+> contracts (lock, idempotency, rate-limit, logging) the reference is
+> [infra-hardening.md](./infra-hardening.md). For the post-ship narrative
+> see [loadout-refactor-review.md](./loadout-refactor-review.md) and
+> [post-review-followups.md](./post-review-followups.md).
+
 This document captures the architectural pain points in the current loadout system, the target design, and a step-by-step migration plan. It is a living document — update it as the work progresses.
 
 > **Scope note (2026-04-11):** The original plan focused only on loadout rows. An architectural review surfaced three adjacent problems that must be fixed in the same refactor or the core goals will regress: (1) shop state is not round-scoped, (2) ghost snapshots are a parallel representation, (3) the legacy `ArtifactsScreen` flow shares seeding logic with game runs. Sections §2.8, §2.9, §3, and §5 have been extended to cover these.
@@ -477,11 +490,11 @@ Tests to add:
 
 **Shipped:** Rather than adding new granular `/place`, `/rotate`, `/activate-bag` endpoints, the existing `buyRunShopItem` / `sellRunItem` / `refreshRunShop` service functions were rewritten to target `game_run_loadout_items`. Placements flow through the existing `PUT /api/artifact-loadout` bridge which now calls the new `applyRunLoadoutPlacements()` service function. This keeps the existing client working without a parallel rewrite.
 
-**Deferred (now backlog):**
-- 🚫 New granular endpoints (`/place`, `/unplace`, `/rotate`, `/activate-bag`, `/deactivate-bag`, `/rotate-bag`) — the bridge is sufficient for v1. Granular endpoints unblock partial-state updates (currently every placement change sends the full layout) and would let Step 7 kill `buildLoadoutPayloadItems`.
-- 🚫 Idempotency-Key header support (§11.2) — mobile retries can still double-buy.
-- 🚫 `mutateRun` transaction helper (§11.1) — mutations use `withTransaction` ad-hoc, no per-run lock. Race windows exist on concurrent `buy` calls from the same player.
-- 🚫 `{ gameRun, loadoutItems, shopOffer }` envelope response shape — current handlers return heterogeneous shapes the client still reconciles.
+**Deferred at step-end — current status:**
+- 🚫 New granular endpoints (`/place`, `/unplace`, `/rotate`, `/activate-bag`, `/deactivate-bag`, `/rotate-bag`) — **still deferred** (tracked in [post-review-followups.md](./post-review-followups.md) Batch C1). The bridge is sufficient for v1 and is now pinned as a pass-through by `tests/game/bridge-pin.test.js`.
+- ✅ Idempotency-Key header support (§11.2) — **shipped** in post-review hardening. See [infra-hardening.md](./infra-hardening.md) §2.
+- ✅ `mutateRun` transaction helper (§11.1) — **shipped as `withRunLock`** instead. Per-run serialization around `buyRunShopItem`, `sellRunItem`, `refreshRunShop`, `applyRunLoadoutPlacements`. See [infra-hardening.md](./infra-hardening.md) §1.
+- 🚫 `{ gameRun, loadoutItems, shopOffer }` envelope response shape — **still deferred** (tracked in [post-review-followups.md](./post-review-followups.md) Batch C2). Current handlers return heterogeneous shapes the client reconciles via `refreshBootstrap()`.
 
 ### Step 3 — Round lifecycle + legacy severance (75 min) — ✅ Shipped (`a6d3afd`)
 
@@ -628,7 +641,7 @@ E2E tests:
 
 **Deferred (now backlog):**
 - 🚫 Full 9-round E2E test with reload between every round — the unit tests cover the invariant; Playwright E2E for the prep screen is separate scope.
-- 🚫 Challenge mode isolation E2E — covered at the unit level by the existing `challenge-run.test.js` but no explicit "player A cannot read player B's coins" integration test yet.
+- ✅ Challenge mode isolation integration test — **shipped** in post-review hardening (Batch A1) as `tests/game/challenge-isolation.test.js`, a five-phase scenario test covering `getActiveGameRun` per-player scoping, shop-offer isolation, cross-player buy non-interference, refresh isolation, and the `getGameRun` aggregation contract.
 - 🚫 Legacy `ArtifactsScreen` regression E2E — the legacy path is covered by `tests/game/loadout-and-battle.test.js` from before the refactor.
 
 ### Step 9 — Cleanup (45 min) — ⚠️ Partial (`1a87d87`)
@@ -653,13 +666,13 @@ E2E tests:
 - ✅ `saveArtifactLoadout` game-run branch severed — the API route in `create-app.js` branches on `activeRun` and calls `applyRunLoadoutPlacements`; `saveArtifactLoadout` itself never touches game-run data anymore.
 - ✅ `docs/loadout-refactor-plan.md` marked Shipped (this update).
 
-**Deferred (now backlog):**
-- 🚫 Deleting `buildLoadoutPayloadItems` — still needed as the bridge serializer.
-- 🚫 Deleting `persistShopOffer` payload fields — still written by `useShop.js`, no-op but present.
-- 🚫 Updating [docs/artifact-board-spec.md](./artifact-board-spec.md) §3/§5/§11/§12 — spec still describes the old three-source model. The code is now the source of truth; the spec is out of date and tracked separately.
-- 🚫 Updating [docs/battle-system-rework-plan.md](./battle-system-rework-plan.md) "Current workspace state" — still references the deleted ghost snapshots table.
-- 🚫 Updating [docs/balance.md](./balance.md) Issue #11 — fix description still says "Still broken."
-- 🚫 i18n error-code strings — no error-code envelope ships in this refactor (see Step 2 deferral). No new i18n keys needed until then.
+**Deferred at step-end — current status:**
+- 🚫 Deleting `buildLoadoutPayloadItems` — **still deferred**, still needed as the bridge serializer. Unblocked by Batch C1 granular endpoints.
+- 🚫 Deleting `persistShopOffer` payload fields — **still deferred**, still written by `useShop.js` as a no-op.
+- ✅ Updating [docs/artifact-board-spec.md](./artifact-board-spec.md) §3/§5/§11/§12 — **shipped** (post-review-followups A4). Spec now describes the `game_run_loadout_items` + projection model.
+- ✅ Updating [docs/battle-system-rework-plan.md](./battle-system-rework-plan.md) "Current workspace state" — **shipped** (post-review-followups A5). No longer references `game_run_ghost_snapshots` or `STEP_CAP = 12`.
+- ✅ Updating [docs/balance.md](./balance.md) Issue #11 — **shipped**. balance.md line 242 now documents the structural fix.
+- 🚫 i18n error-code strings — **still deferred**. No error-code envelope shipped in this refactor. No new i18n keys needed until then.
 
 > **Kept intentionally:** the `purchased_round` column on `game_run_loadout_items`. It survives the copy-forward and enables graduated refunds / per-round analytics. The legacy `player_artifact_loadout_items.purchased_round` column is deleted (legacy table no longer participates in runs).
 
@@ -752,7 +765,18 @@ Checked against the actual state of the branch at ship time.
 
 The refactor is the right moment to close production gaps that the current codebase postpones. Each item below is **in scope** for this refactor — postponing them means the "scale-up" work will touch the same files again.
 
-### 11.1 Concurrency & atomicity — 🚫 Deferred
+### 11.1 Concurrency & atomicity — ✅ Shipped (post-review hardening)
+
+> **Status (2026-04-11):** Shipped as `withRunLock(gameRunId, fn)` from
+> [app/server/services/ready-manager.js](../app/server/services/ready-manager.js),
+> applied around `buyRunShopItem`, `sellRunItem`, `refreshRunShop`, and
+> `applyRunLoadoutPlacements`. The `mutateRun` wrapper shown below was
+> **not** the shape chosen — handlers compose `withRunLock` + `withTransaction`
+> directly, and the snapshot is rebuilt after the transaction commits
+> rather than inside it. The contract is documented in
+> [infra-hardening.md](./infra-hardening.md) §1 and pinned by
+> `tests/game/run-lock.test.js`. Original design below is kept for history.
+
 
 Every mutation endpoint (`buy`, `sell`, `place`, `unplace`, `rotate`, `refresh-shop`, `ready`) must:
 
@@ -775,7 +799,16 @@ async function mutateRun(gameRunId, playerId, fn) {
 }
 ```
 
-### 11.2 Idempotency — 🚫 Deferred
+### 11.2 Idempotency — ✅ Shipped (post-review hardening)
+
+> **Status (2026-04-11):** Shipped in
+> [app/server/lib/idempotency.js](../app/server/lib/idempotency.js) and
+> installed as the second element of `runMutationGuards` in
+> [create-app.js](../app/server/create-app.js). Implementation matches the
+> design below (5-minute LRU, per-player scope, 5xx not cached). Contract
+> in [infra-hardening.md](./infra-hardening.md) §2; pin in
+> `tests/game/run-guards.test.js`.
+
 
 Mobile clients retry POSTs aggressively. Add idempotency to all state-changing endpoints:
 
@@ -801,7 +834,15 @@ Listed as a prerequisite to Step 1 in the step-by-step plan.
 - Query: `SELECT … FROM game_run_ghost_pool WHERE round_number=? AND mushroom_id=? ORDER BY random() LIMIT 1`. With an index on `(round_number, mushroom_id)` the random scan is bounded to a small hot set.
 - Fall back to the bot path (§2.4) if the shortlist is empty.
 
-### 11.5 Observability — 🚫 Deferred
+### 11.5 Observability — ✅ Partially shipped (post-review hardening)
+
+> **Status (2026-04-11):** Structured logging and trace propagation shipped
+> in [app/server/lib/obs.js](../app/server/lib/obs.js) as the `requestLogger`
+> middleware. Per-request JSONL with `{requestId, method, route, status,
+> durationMs, outcome, playerId, gameRunId}` is live. **Metrics** (counters,
+> histograms, gauges) are **not** shipped — still open. Contract in
+> [infra-hardening.md](./infra-hardening.md) §4.
+
 
 Land these in Step 2 alongside the new endpoints:
 
@@ -847,7 +888,15 @@ Add to Step 0 goal-defining tests:
 
 **Shipped:** Family capability registry landed in Step 5 at `app/server/services/artifact-helpers.js`. Client-side adoption and balance-as-data / feature-flag work are deferred.
 
-### 11.9 Rate limiting — 🚫 Deferred
+### 11.9 Rate limiting — ✅ Shipped (post-review hardening)
+
+> **Status (2026-04-11):** Shipped in
+> [app/server/lib/rate-limit.js](../app/server/lib/rate-limit.js) as a token
+> bucket (12 burst, 4/sec refill, per `req.user.id`), installed as the first
+> element of `runMutationGuards`. Contract in
+> [infra-hardening.md](./infra-hardening.md) §3; pin in
+> `tests/game/run-guards.test.js`.
+
 
 `DAILY_BATTLE_LIMIT` is enforced at run start, but individual endpoints have no rate limit. A malicious client can spam `refresh-shop` or `buy`. Add a token bucket per player (e.g., 10 req/sec burst, 120 req/min sustained) in front of the run endpoints. Library: `express-rate-limit` or equivalent.
 

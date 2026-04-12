@@ -102,6 +102,36 @@ export function renderArtifactGlyph(artifact, theme) {
         <rect x="32" y="28" width="16" height="6" rx="3" fill="${theme.border}" opacity="0.6" />
         <text x="40" y="52" text-anchor="middle" font-size="18" font-weight="bold" fill="${theme.ink}">${artifact.slotCount || ''}</text>
       `;
+    case 'spore_lash':
+      return `
+        <path d="M20 58 C24 48 34 42 42 34 C49 28 54 24 58 18" stroke="${theme.ink}" stroke-width="7" stroke-linecap="round" fill="none" />
+        <path d="M54 18 L60 12 L62 20 L68 22 L62 26 L60 34 L54 28 L48 30 L50 22 L44 18 Z" stroke="${theme.border}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="${theme.accent}" />
+        <circle cx="58" cy="22" r="5" fill="${theme.shell}" />
+      `;
+    case 'settling_guard':
+      return `
+        <path d="M18 30 C24 20 34 16 40 16 C46 16 56 20 62 30 C60 42 50 52 40 58 C30 52 20 42 18 30 Z" fill="${theme.accent}" />
+        <path d="M24 30 C28 24 34 22 40 22 C46 22 52 24 56 30" stroke="${theme.border}" stroke-width="5" stroke-linecap="round" fill="none" />
+        <line x1="22" y1="62" x2="58" y2="62" stroke="${theme.ink}" stroke-width="6" stroke-linecap="round" />
+      `;
+    case 'ferment_phial':
+      return `
+        <path d="M34 16 H46 M36 16 V28 L28 56 C27 61 31 66 36 66 H44 C49 66 53 61 52 56 L44 28 V16" stroke="${theme.ink}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="${theme.accent}" />
+        <path d="M31 50 C35 48 45 48 49 50" stroke="${theme.shell}" stroke-width="4" stroke-linecap="round" fill="none" />
+        <circle cx="44" cy="24" r="5" fill="${theme.shell}" />
+      `;
+    case 'measured_strike':
+      return `
+        <path d="M40 14 L48 28 L40 62 L32 28 Z" fill="${theme.accent}" stroke="${theme.ink}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+        <line x1="24" y1="32" x2="56" y2="32" stroke="${theme.border}" stroke-width="6" stroke-linecap="round" />
+        <line x1="40" y1="18" x2="40" y2="60" stroke="${theme.shell}" stroke-width="4" stroke-linecap="round" />
+      `;
+    case 'flash_cap':
+      return `
+        <path d="M18 42 C22 28 30 20 40 20 C50 20 58 28 62 42 C56 48 48 50 40 50 C32 50 24 48 18 42 Z" fill="${theme.accent}" />
+        <path d="M40 50 L40 62 M28 24 L24 18 M40 18 L40 12 M52 24 L56 18 M60 32 L66 28" stroke="${theme.border}" stroke-width="5" stroke-linecap="round" fill="none" />
+        <path d="M30 38 C34 36 46 36 50 38" stroke="${theme.ink}" stroke-width="6" stroke-linecap="round" fill="none" />
+      `;
     default:
       return `<rect x="18" y="18" width="44" height="44" rx="14" fill="${theme.accent}" />`;
   }
