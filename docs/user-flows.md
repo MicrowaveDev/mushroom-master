@@ -6,9 +6,12 @@ is a testable sequence: if a step's assertions fail, it's a bug.
 
 Each step has:
 - **Screen** — the `state.screen` value and the Vue component rendering it
-- **Sees** — visible elements an E2E test must assert exist
+- **Above the fold** — elements visible on mobile (~375×667) without scrolling. These are the highest-priority assertions: if a critical action or info is missing above the fold, the user can't proceed without discovering they need to scroll.
+- **Sees** — all visible elements an E2E test must assert exist (including below fold)
 - **Action** — what the user does (click, drag, type)
 - **Expected** — assertions after the action, before the next step
+
+E2E tests must capture a **mobile-viewport screenshot** at each step to verify above-the-fold content. Use Playwright's `page.setViewportSize({ width: 375, height: 667 })` before navigation.
 
 Requirement IDs (e.g. `[Req 1-A]`) link to [game-requirements.md](./game-requirements.md).
 
@@ -21,6 +24,11 @@ Last verified against code: 2026-04-12.
 ```
 Step 1: Auth Screen
   Screen: auth → AuthScreen.js
+  Above the fold:
+    - App title "Мицелиум: автобаттлер"
+    - 3 overlapping character portraits
+    - Tagline + feature list (3 bullets)
+    - First login button partially visible
   Sees:
     - App title "Мицелиум: автобаттлер"
     - Language toggle (RU / EN)
@@ -30,6 +38,9 @@ Step 1: Auth Screen
 Step 2: Onboarding
   Screen: onboarding → OnboardingScreen.js
   Condition: No activeMushroomId in bootstrap
+  Above the fold:
+    - Walkthrough heading + first step description
+    - Mushroom roster preview (2-3 portraits)
   Sees:
     - 3-step walkthrough (pick mushroom → build loadout → battle)
     - Mushroom roster preview
@@ -38,6 +49,8 @@ Step 2: Onboarding
 
 Step 3: Character Select
   Screen: characters → CharactersScreen.js
+  Above the fold:
+    - First 2 mushroom cards in 2-column grid (portrait, name, style tag, stats)
   Sees:
     - 5 mushroom cards (portrait, name, style tag, HP/ATK/SPD stats)
   Action: Click a mushroom card (e.g. Thalla)
@@ -53,6 +66,11 @@ Step 3: Character Select
 ```
 Step 1: Home Screen
   Screen: home → HomeScreen.js
+  Above the fold:
+    - Active mushroom portrait + level
+    - "Начать игру" / "Start Game" button (or "Продолжить" / resume if active run)
+    - Spore count
+    - First 1-2 battle history entries
   Sees:
     - Active mushroom portrait + level
     - "Начать игру" / "Start Game" button
@@ -71,6 +89,13 @@ Step 1: Home Screen
 Step 2: Prep Screen (Round N)
   Screen: prep → PrepScreen.js
   Condition: state.gameRun exists
+  Above the fold:
+    - Round HUD: "Раунд N" / "Round N"
+    - Stats HUD: Wins W, Lives L, Coins C
+    - Container zone header
+    - Top portion of inventory grid (first 1-2 rows)
+  Below fold (scroll required):
+    - Full inventory grid, shop items, sell zone, Ready/Abandon buttons
   Sees:
     - Round HUD: "Раунд N" / "Round N"
     - Stats HUD: Wins W, Lives L, Coins C
@@ -93,6 +118,12 @@ Step 2: Prep Screen (Round N)
 Step 3: Battle Replay
   Screen: replay → ReplayScreen.js
   Condition: state.currentBattle exists (loaded after ready)
+  Above the fold:
+    - Battle stage (two fighter cards with portraits, names, HP bars)
+    - Speed controls (▶ ▶▶ ▶▶▶)
+  Below fold (scroll required):
+    - Combat event log entries
+    - Continue/Home button (appears after replay finishes)
   Sees:
     - Two fighter cards (left = player, right = opponent)
     - Each card: mushroom portrait, name, HP bar (current / max)
@@ -111,6 +142,9 @@ Step 3: Battle Replay
 Step 4a: Round Result (run continues)
   Screen: roundResult → RoundResultScreen.js
   Condition: state.gameRunResult exists, run status = 'active'
+  Above the fold:
+    - Entire card visible — outcome heading, reward stats, totals, buttons
+    - No scroll needed; this is a compact screen
   Sees:
     - Outcome heading: "Победа!" / "Поражение" (Win / Loss)
     - [Req 9-A] Rewards: +N spore, +N mycelium
@@ -128,6 +162,9 @@ Step 4a: Round Result (run continues)
 Step 4b: Run Complete (run ended)
   Screen: runComplete → RunCompleteScreen.js
   Condition: run status = 'completed' or 'abandoned'
+  Above the fold:
+    - Entire card visible — heading, end reason, stats, Home button
+    - No scroll needed; compact screen
   Sees:
     - "Игра завершена" / "Game Complete" heading
     - End reason: "Все жизни потеряны" / "Максимум раундов" / "Покинута"
@@ -191,6 +228,12 @@ Step 1: Home Screen
 
 Step 2: Artifacts Screen (Legacy Shop)
   Screen: artifacts → ArtifactsScreen.js
+  Above the fold:
+    - Coin budget display (5 coins)
+    - Container header + items
+    - Top of inventory grid (1-2 rows)
+  Below fold (scroll required):
+    - Full grid, shop section, Save button
   Sees:
     - 5-coin budget display
     - Container + inventory grid
@@ -201,6 +244,10 @@ Step 2: Artifacts Screen (Legacy Shop)
 
 Step 3: Battle Prep
   Screen: battle → BattlePrepScreen.js
+  Above the fold:
+    - Mushroom portrait + name + stats
+    - Loadout grid with stat totals
+    - "Start Battle" button visible
   Sees:
     - Active mushroom portrait + stats
     - Current loadout grid with stat totals
@@ -218,6 +265,11 @@ Step 4: Legacy Replay
 
 Step 5: Legacy Results
   Screen: results → ResultsScreen.js
+  Above the fold:
+    - Two fighter outcome cards (names, outcome tags)
+    - Fighter portraits partially visible
+  Below fold (scroll required):
+    - Full stats, reward details, Home button
   Sees:
     - Two fighter cards with outcome
     - [Req 9-D] Legacy rewards: win +10 spore / +100 mycelium
