@@ -17,7 +17,7 @@ function makeSnapshot(leftMushroom, rightMushroom, leftItems = [], rightItems = 
   };
 }
 
-test('battle_end event state matches final combatant HP', () => {
+test('[Req 6-G] battle_end event state matches final combatant HP', () => {
   for (let i = 0; i < 20; i++) {
     const result = simulateBattle(
       makeSnapshot('thalla', 'lomie',
@@ -35,7 +35,7 @@ test('battle_end event state matches final combatant HP', () => {
   }
 });
 
-test('last action event state matches battle_end state when battle ends by death', () => {
+test('[Req 6-G] last action event state matches battle_end state when battle ends by death', () => {
   // Find a seed where battle ends by death
   for (let i = 0; i < 200; i++) {
     const result = simulateBattle(
@@ -60,7 +60,7 @@ test('last action event state matches battle_end state when battle ends by death
   assert.fail('No death-ending battle found in 200 seeds');
 });
 
-test('step_cap ending has both combatants alive with endReason set', () => {
+test('[Req 6-H] step_cap ending has both combatants alive with endReason set', () => {
   // Heavy armor vs low damage to force step cap with long STEP_CAP
   for (let i = 0; i < 50; i++) {
     const result = simulateBattle(
@@ -82,7 +82,7 @@ test('step_cap ending has both combatants alive with endReason set', () => {
   // With STEP_CAP=120 most battles resolve by death; skip test gracefully if no step_cap found
 });
 
-test('battle_end endReason is "death" when loser hits 0 HP', () => {
+test('[Req 6-G] battle_end endReason is "death" when loser hits 0 HP', () => {
   for (let i = 0; i < 100; i++) {
     const result = simulateBattle(
       makeSnapshot('axilin', 'axilin',

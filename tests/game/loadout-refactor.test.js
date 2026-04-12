@@ -78,7 +78,7 @@ async function bootPlayerInRun(overrides = {}) {
 // #1 — duplicate artifacts are stored as distinct rows
 // Plan: §1.3 missing-capability "Duplicate artifacts", §10 duplicate check.
 // ---------------------------------------------------------------------------
-test('duplicate artifacts create distinct loadout rows', async () => {
+test('[Req 2-A] duplicate artifacts create distinct loadout rows', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -115,7 +115,7 @@ test('duplicate artifacts create distinct loadout rows', async () => {
 // #2 — reload preserves layout (buy + place + fetch active run → identical)
 // Plan: §10 "A player can play 9 rounds without any UI state drift".
 // ---------------------------------------------------------------------------
-test('reload preserves loadout layout for current round', async () => {
+test('[Req 12-D] reload preserves loadout layout for current round', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -142,7 +142,7 @@ test('reload preserves loadout layout for current round', async () => {
 // #3 — round-forward history is immutable
 // Plan: §2.3 "round N rows stay frozen forever", §10 frozen check.
 // ---------------------------------------------------------------------------
-test('round 1 loadout rows remain frozen after round 2 resolves', async () => {
+test('[Req 11-A] round 1 loadout rows remain frozen after round 2 resolves', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -188,7 +188,7 @@ test('round 1 loadout rows remain frozen after round 2 resolves', async () => {
 // #4 — ghost lookup pulls from real player snapshots
 // Plan: §2.4 unified ghost, §10 ghost snapshot check.
 // ---------------------------------------------------------------------------
-test('ghost lookup returns rows from another real player at the matching round', async () => {
+test('[Req 7-G] ghost lookup returns rows from another real player at the matching round', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -223,7 +223,7 @@ test('ghost lookup returns rows from another real player at the matching round',
 // #5 — legacy isolation: startGameRun does not write to player_artifact_loadouts
 // Plan: §2.9 full severance.
 // ---------------------------------------------------------------------------
-test('startGameRun does not seed the legacy player_artifact_loadouts table', async () => {
+test('[Req 3-A, 3-B] startGameRun does not seed the legacy player_artifact_loadouts table', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -267,7 +267,7 @@ test('startGameRun does not seed the legacy player_artifact_loadouts table', asy
 // #6 — shop state is round-scoped
 // Plan: §2.8.
 // ---------------------------------------------------------------------------
-test('shop state row for round 1 remains after round 2 resolves', async () => {
+test('[Req 11-C] shop state row for round 1 remains after round 2 resolves', async () => {
   await freshDb();
   await requireTable('game_run_shop_states', 'Schema missing');
   if (!(await columnExists('game_run_shop_states', 'round_number'))) {
@@ -294,7 +294,7 @@ test('shop state row for round 1 remains after round 2 resolves', async () => {
 // #7 — graduated refund uses purchased_round, preserved across copy-forward
 // Plan: §2.2 "purchased_round alongside fresh_purchase".
 // ---------------------------------------------------------------------------
-test('item bought in round 1 and sold in round 2 refunds at half price', async () => {
+test('[Req 4-K, 11-A] item bought in round 1 and sold in round 2 refunds at half price', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -339,7 +339,7 @@ test('item bought in round 1 and sold in round 2 refunds at half price', async (
 // #8 — authorization: one player cannot mutate another's run
 // Plan: §11.6.
 // ---------------------------------------------------------------------------
-test('cross-run mutation is rejected', async () => {
+test('[Req 8-G] cross-run mutation is rejected', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -361,7 +361,7 @@ test('cross-run mutation is rejected', async () => {
 // The production path was never exercised end-to-end because every scenario
 // test uses seedRunLoadout() to overwrite the auto-seeded preset.
 // ---------------------------------------------------------------------------
-test('auto-seeded preset + full shop spend resolves round 1 without budget error', async () => {
+test('[Req 3-C, 4-M, 4-N] auto-seeded preset + full shop spend resolves round 1 without budget error', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -416,7 +416,7 @@ test('auto-seeded preset + full shop spend resolves round 1 without budget error
 // #9 — bot fallback rows live in the same table
 // Plan: §2.4 unified ghost, bot-fallback unification.
 // ---------------------------------------------------------------------------
-test('bot ghost fallback writes real rows into game_run_loadout_items', async () => {
+test('[Req 7-G] bot ghost fallback writes real rows into game_run_loadout_items', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 

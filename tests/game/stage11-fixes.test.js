@@ -33,7 +33,7 @@ async function setupPlayerWithRun(overrides = {}) {
 
 // --- 7a: buyRunShopItem ---
 
-test('buyRunShopItem deducts coins and removes item from offer', async () => {
+test('[Req 4-D, 4-E] buyRunShopItem deducts coins and removes item from offer', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -48,7 +48,7 @@ test('buyRunShopItem deducts coins and removes item from offer', async () => {
   assert.equal(result.artifactId, itemToBuy);
 });
 
-test('buyRunShopItem rejects item not in offer', async () => {
+test('[Req 4-D] buyRunShopItem rejects item not in offer', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -82,7 +82,7 @@ test('buyRunShopItem rejects when coins insufficient', async () => {
 
 // --- 7c: active-run check ---
 
-test('startGameRun rejects invalid mode', async () => {
+test('[Req 1-G] startGameRun rejects invalid mode', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -96,7 +96,7 @@ test('startGameRun rejects invalid mode', async () => {
 
 // --- 7h: expired challenge ---
 
-test('acceptFriendChallenge rejects expired challenge', async () => {
+test('[Req 8-F] acceptFriendChallenge rejects expired challenge', async () => {
   await freshDb();
   const playerA = await createPlayer({ telegramId: 5001, username: 'alpha' });
   const playerB = await createPlayer({ telegramId: 5002, username: 'beta' });
@@ -118,7 +118,7 @@ test('acceptFriendChallenge rejects expired challenge', async () => {
 
 // --- 10e: declineFriendChallenge guards ---
 
-test('declineFriendChallenge rejects already declined challenge', async () => {
+test('[Req 8-F] declineFriendChallenge rejects already declined challenge', async () => {
   await freshDb();
   const playerA = await createPlayer({ telegramId: 6001, username: 'gamma' });
   const playerB = await createPlayer({ telegramId: 6002, username: 'delta' });
@@ -135,7 +135,7 @@ test('declineFriendChallenge rejects already declined challenge', async () => {
 
 // --- 7i: RATING_FLOOR enforcement ---
 
-test('rating never drops below RATING_FLOOR after round', async () => {
+test('[Req 10-C] rating never drops below RATING_FLOOR after round', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -150,7 +150,7 @@ test('rating never drops below RATING_FLOOR after round', async () => {
 
 // --- 11b: mycelium reward assertion ---
 
-test('round resolution awards mycelium to player mushroom', async () => {
+test('[Req 9-A] round resolution awards mycelium to player mushroom', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -170,7 +170,7 @@ test('round resolution awards mycelium to player mushroom', async () => {
 
 // --- 11b: spore reward assertion ---
 
-test('round resolution awards spore to player', async () => {
+test('[Req 9-A] round resolution awards spore to player', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -190,7 +190,7 @@ test('round resolution awards spore to player', async () => {
 
 // --- 11b: sell half-price refund for items from previous rounds ---
 
-test('sell item bought in previous round gives half price refund', async () => {
+test('[Req 4-K] sell item bought in previous round gives half price refund', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -244,7 +244,7 @@ test('sell item bought in previous round gives half price refund', async () => {
 
 // --- 11c: no draw outcome in runs ---
 
-test('run outcomes are never draw — always win or loss', async () => {
+test('[Req 1-D] run outcomes are never draw — always win or loss', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 

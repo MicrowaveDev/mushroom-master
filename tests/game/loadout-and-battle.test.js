@@ -10,7 +10,7 @@ const loadout = [
   { artifactId: 'shock_puff', x: 2, y: 0, width: 1, height: 1 }
 ];
 
-test('selectActiveMushroom seeds the character signature starter preset', async () => {
+test('[Req 3-A, 3-B] selectActiveMushroom seeds the character signature starter preset', async () => {
   await freshDb();
   const { getStarterPreset } = await import('../../app/server/game-data.js');
   const session = await createPlayer();
@@ -28,7 +28,7 @@ test('selectActiveMushroom seeds the character signature starter preset', async 
   assert.equal(state.loadout.items.length, 2);
 });
 
-test('selectActiveMushroom does NOT overwrite an existing loadout', async () => {
+test('[Req 3-A] selectActiveMushroom does NOT overwrite an existing loadout', async () => {
   await freshDb();
   const session = await createPlayer();
 
@@ -66,7 +66,7 @@ test('loadouts are saved as placements and invalid duplicate layouts are rejecte
   assert.equal(dupState.loadout.items.length, 3);
 });
 
-test('ghost battles are deterministic with a fixed seed and only reward the initiator', async () => {
+test('[Req 7-A, 9-D] ghost battles are deterministic with a fixed seed and only reward the initiator', async () => {
   await freshDb();
   const playerOne = await createPlayer({ telegramId: 301, username: 'one' });
   const playerTwo = await createPlayer({ telegramId: 302, username: 'two' });
@@ -100,7 +100,7 @@ test('ghost battles are deterministic with a fixed seed and only reward the init
   assert.equal(profileTwo.player.spore, 0);
 });
 
-test('ghost battles fall back to a generated bot with a valid random loadout when no real opponent exists', async () => {
+test('[Req 7-A, 7-F] ghost battles fall back to a generated bot with a valid random loadout when no real opponent exists', async () => {
   await freshDb();
   const player = await createPlayer({ telegramId: 303, username: 'solo' });
 

@@ -65,7 +65,7 @@ async function api(request, sessionKey, url, method = 'GET', data = undefined) {
   return json.data;
 }
 
-test('capture key v1 screens', async ({ page, request, baseURL }) => {
+test('[Req 2-A, 4-D, 13-A] capture key v1 screens', async ({ page, request, baseURL }) => {
   debugLog('starting screenshot capture run', { baseURL });
   await page.setViewportSize({ width: 1440, height: 1400 });
   debugLog('resetting dev db');

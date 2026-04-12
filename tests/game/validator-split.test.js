@@ -13,7 +13,7 @@ import {
 } from '../../app/server/services/loadout-utils.js';
 import { INVENTORY_COLUMNS, INVENTORY_ROWS } from '../../app/server/game-data.js';
 
-test('validateGridItems: accepts an in-bounds non-overlapping placement', () => {
+test('[Req 2-A] validateGridItems: accepts an in-bounds non-overlapping placement', () => {
   const result = validateGridItems([
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
     { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
@@ -22,7 +22,7 @@ test('validateGridItems: accepts an in-bounds non-overlapping placement', () => 
   assert.equal(result.occupied.size, 2);
 });
 
-test('validateGridItems: rejects out-of-bounds placement', () => {
+test('[Req 2-A] validateGridItems: rejects out-of-bounds placement', () => {
   assert.throws(
     () => validateGridItems([
       { artifactId: 'spore_needle', x: INVENTORY_COLUMNS, y: 0, width: 1, height: 1 }
@@ -31,7 +31,7 @@ test('validateGridItems: rejects out-of-bounds placement', () => {
   );
 });
 
-test('validateGridItems: rejects overlapping placements', () => {
+test('[Req 2-A] validateGridItems: rejects overlapping placements', () => {
   assert.throws(
     () => validateGridItems([
       { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -83,7 +83,7 @@ test('validateBagContents: bagged item references active bag', () => {
   ]);
 });
 
-test('validateBagContents: rejects bag-inside-bag', () => {
+test('[Req 5-A] validateBagContents: rejects bag-inside-bag', () => {
   assert.throws(
     () => validateBagContents([
       { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
@@ -102,7 +102,7 @@ test('validateBagContents: rejects reference to non-placed bag', () => {
   );
 });
 
-test('validateBagContents: enforces slotCount footprint limit', () => {
+test('[Req 5-B, 5-C] validateBagContents: enforces slotCount footprint limit', () => {
   // moss_pouch has slotCount=2, so two 1x1s fit and a third overflows.
   validateBagContents([
     { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
@@ -121,7 +121,7 @@ test('validateBagContents: enforces slotCount footprint limit', () => {
   );
 });
 
-test('validateCoinBudget: passes under budget, rejects over', () => {
+test('[Req 4-M, 4-N] validateCoinBudget: passes under budget, rejects over', () => {
   validateCoinBudget([
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
   ], 5);
@@ -149,7 +149,7 @@ test('validateLoadoutItems: orchestrator returns items + totals + totalCoins', (
   assert.ok(result.totalCoins > 0);
 });
 
-test('buildArtifactSummary: container items contribute zero', () => {
+test('[Req 2-C] buildArtifactSummary: container items contribute zero', () => {
   const totals = buildArtifactSummary([
     // Container-only (both coordinates negative)
     { artifactId: 'spore_needle', x: -1, y: -1 },
@@ -159,7 +159,7 @@ test('buildArtifactSummary: container items contribute zero', () => {
   assert.equal(totals.armor, 0);
 });
 
-test('buildArtifactSummary: bags contribute zero even when placed', () => {
+test('[Req 5-F] buildArtifactSummary: bags contribute zero even when placed', () => {
   const totals = buildArtifactSummary([
     { artifactId: 'moss_pouch', x: 0, y: 0 }
   ]);
@@ -167,7 +167,7 @@ test('buildArtifactSummary: bags contribute zero even when placed', () => {
   assert.equal(totals.armor, 0);
 });
 
-test('buildArtifactSummary: grid-placed combat items contribute', () => {
+test('[Req 2-D] buildArtifactSummary: grid-placed combat items contribute', () => {
   const totals = buildArtifactSummary([
     { artifactId: 'spore_needle', x: 0, y: 0 },
     { artifactId: 'bark_plate', x: 1, y: 0 }
@@ -176,7 +176,7 @@ test('buildArtifactSummary: grid-placed combat items contribute', () => {
   assert.ok(totals.armor > 0);
 });
 
-test('buildArtifactSummary: bagged items contribute', () => {
+test('[Req 2-D] buildArtifactSummary: bagged items contribute', () => {
   const totals = buildArtifactSummary([
     { artifactId: 'moss_pouch', x: 0, y: 0 },
     { artifactId: 'spore_needle', bagId: 'moss_pouch' }

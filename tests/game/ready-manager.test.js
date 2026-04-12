@@ -4,7 +4,7 @@ import {
   setReady, setUnready, isReady, areBothReady, clearRound, clearRun
 } from '../../app/server/services/ready-manager.js';
 
-test('setReady marks player as ready', () => {
+test('[Req 8-B] setReady marks player as ready', () => {
   const runId = 'test-run-1';
   clearRun(runId);
   setReady(runId, 'p1');
@@ -13,7 +13,7 @@ test('setReady marks player as ready', () => {
   clearRun(runId);
 });
 
-test('areBothReady returns false with one player ready', () => {
+test('[Req 8-B] areBothReady returns false with one player ready', () => {
   const runId = 'test-run-2';
   clearRun(runId);
   setReady(runId, 'p1');
@@ -23,7 +23,7 @@ test('areBothReady returns false with one player ready', () => {
   clearRun(runId);
 });
 
-test('areBothReady returns true with both players ready', () => {
+test('[Req 8-B] areBothReady returns true with both players ready', () => {
   const runId = 'test-run-3';
   clearRun(runId);
   setReady(runId, 'p1');
@@ -36,7 +36,7 @@ test('areBothReady returns true with both players ready', () => {
   clearRun(runId);
 });
 
-test('setUnready reverts ready state', () => {
+test('[Req 8-B] setUnready reverts ready state', () => {
   const runId = 'test-run-4';
   clearRun(runId);
   setReady(runId, 'p1');
@@ -48,7 +48,7 @@ test('setUnready reverts ready state', () => {
   clearRun(runId);
 });
 
-test('clearRound resets all ready states', () => {
+test('[Req 8-B] clearRound resets all ready states', () => {
   const runId = 'test-run-5';
   clearRun(runId);
   setReady(runId, 'p1');
@@ -59,7 +59,7 @@ test('clearRound resets all ready states', () => {
   clearRun(runId);
 });
 
-test('clearRun removes all state', () => {
+test('[Req 8-B] clearRun removes all state', () => {
   const runId = 'test-run-6';
   setReady(runId, 'p1');
   clearRun(runId);

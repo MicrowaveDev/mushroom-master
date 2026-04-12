@@ -30,7 +30,7 @@ const loadout = [
 
 // --- Bag data tests ---
 
-test('bag items exist in artifacts with family=bag', () => {
+test('[Req 5-A, 5-B, 5-C] bag items exist in artifacts with family=bag', () => {
   assert.ok(bags.length >= 2);
   const mossPouch = getArtifactById('moss_pouch');
   assert.equal(mossPouch.family, 'bag');
@@ -43,7 +43,7 @@ test('bag items exist in artifacts with family=bag', () => {
   assert.equal(amberSatchel.price, 3);
 });
 
-test('combatArtifacts excludes bags and starter-only items', () => {
+test('[Req 3-D, 5-F] combatArtifacts excludes bags and starter-only items', () => {
   assert.ok(combatArtifacts.length > 0);
   assert.ok(combatArtifacts.every((a) => a.family !== 'bag' && !a.starterOnly));
   const starterOnly = artifacts.filter((a) => a.starterOnly);
@@ -55,7 +55,7 @@ test('combatArtifacts excludes bags and starter-only items', () => {
 
 // --- Bag in loadout validation ---
 
-test('validateLoadoutItems accepts bag on grid', () => {
+test('[Req 5-A] validateLoadoutItems accepts bag on grid', () => {
   const items = [
     { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
@@ -64,7 +64,7 @@ test('validateLoadoutItems accepts bag on grid', () => {
   assert.equal(result.items.length, 2);
 });
 
-test('validateLoadoutItems accepts artifact inside bag', () => {
+test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
   const items = [
     { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
     { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 }
@@ -73,7 +73,7 @@ test('validateLoadoutItems accepts artifact inside bag', () => {
   assert.equal(result.items.length, 2);
 });
 
-test('validateLoadoutItems rejects bag inside bag', () => {
+test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
   const items = [
     { artifactId: 'amber_satchel', x: 0, y: 0, width: 2, height: 2 },
     { artifactId: 'moss_pouch', bagId: 'amber_satchel', width: 1, height: 2 }
@@ -84,7 +84,7 @@ test('validateLoadoutItems rejects bag inside bag', () => {
   );
 });
 
-test('validateLoadoutItems rejects items exceeding bag slotCount', () => {
+test('[Req 5-B, 5-C] validateLoadoutItems rejects items exceeding bag slotCount', () => {
   const items = [
     { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
     { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 },
@@ -97,7 +97,7 @@ test('validateLoadoutItems rejects items exceeding bag slotCount', () => {
   );
 });
 
-test('validateLoadoutItems rejects item in bag not on grid', () => {
+test('[Req 5-A] validateLoadoutItems rejects item in bag not on grid', () => {
   const items = [
     { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 }
     // moss_pouch not in the loadout
@@ -108,7 +108,7 @@ test('validateLoadoutItems rejects item in bag not on grid', () => {
   );
 });
 
-test('buildArtifactSummary excludes bags from combat stats', () => {
+test('[Req 5-F] buildArtifactSummary excludes bags from combat stats', () => {
   const items = [
     { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
@@ -120,7 +120,7 @@ test('buildArtifactSummary excludes bags from combat stats', () => {
 
 // --- Shop offer bag distribution ---
 
-test('shop offer on game run start includes bag tracking', async () => {
+test('[Req 5-D] shop offer on game run start includes bag tracking', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -140,7 +140,7 @@ test('shop offer on game run start includes bag tracking', async () => {
 
 // --- Sell non-empty bag ---
 
-test('sellRunItem blocks selling non-empty bag', async () => {
+test('[Req 4-L] sellRunItem blocks selling non-empty bag', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -161,7 +161,7 @@ test('sellRunItem blocks selling non-empty bag', async () => {
 
 // --- Ghost snapshot saved after round ---
 
-test('round loadout rows remain after each solo round (unified snapshot, §2.4)', async () => {
+test('[Req 7-G] round loadout rows remain after each solo round (unified snapshot, §2.4)', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -189,7 +189,7 @@ test('round loadout rows remain after each solo round (unified snapshot, §2.4)'
 
 // --- Step naming in replay events ---
 
-test('replay events use step_start type and step field', async () => {
+test('[Req 13-A] replay events use step_start type and step field', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -211,7 +211,7 @@ test('replay events use step_start type and step field', async () => {
 
 // --- Game run history ---
 
-test('getGameRunHistory returns completed runs', async () => {
+test('[Req 1-E] getGameRunHistory returns completed runs', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -228,7 +228,7 @@ test('getGameRunHistory returns completed runs', async () => {
   assert.equal(history[0].status, 'abandoned');
 });
 
-test('getGameRunHistory excludes active runs', async () => {
+test('[Req 1-G] getGameRunHistory excludes active runs', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -242,7 +242,7 @@ test('getGameRunHistory excludes active runs', async () => {
 
 // --- Coin carry-over ---
 
-test('coins carry over between rounds', async () => {
+test('[Req 4-B, 4-C] coins carry over between rounds', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -258,7 +258,7 @@ test('coins carry over between rounds', async () => {
 
 // --- Full run completion with bonus ---
 
-test('full run pays completion bonus based on wins', async () => {
+test('[Req 9-B] full run pays completion bonus based on wins', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');

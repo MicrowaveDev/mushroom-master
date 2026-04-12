@@ -35,7 +35,7 @@ async function setupTwoFriends() {
   };
 }
 
-test('creating and accepting a challenge run', async () => {
+test('[Req 8-A, 8-C] creating and accepting a challenge run', async () => {
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 
@@ -55,7 +55,7 @@ test('creating and accepting a challenge run', async () => {
   assert.equal(run.players[playerB].coins, ROUND_INCOME[0]);
 });
 
-test('challenge run rejects if challenger has active run', async () => {
+test('[Req 1-G] challenge run rejects if challenger has active run', async () => {
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 
@@ -69,7 +69,7 @@ test('challenge run rejects if challenger has active run', async () => {
   );
 });
 
-test('challenge run rejects non-friends', async () => {
+test('[Req 8-A] challenge run rejects non-friends', async () => {
   await freshDb();
   const sessionA = await createPlayer({ telegramId: 601, username: 'stranger1' });
   const sessionB = await createPlayer({ telegramId: 602, username: 'stranger2' });
@@ -80,7 +80,7 @@ test('challenge run rejects non-friends', async () => {
   );
 });
 
-test('challenge round resolution gives opposite outcomes', async () => {
+test('[Req 8-A, 9-A] challenge round resolution gives opposite outcomes', async () => {
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 
@@ -110,7 +110,7 @@ test('challenge round resolution gives opposite outcomes', async () => {
   assert.ok(resultB.lastRound.rewards.spore > 0);
 });
 
-test('challenge mode has no per-round Elo changes', async () => {
+test('[Req 8-E] challenge mode has no per-round Elo changes', async () => {
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 
@@ -125,7 +125,7 @@ test('challenge mode has no per-round Elo changes', async () => {
   assert.equal(ratingBefore, ratingAfter);
 });
 
-test('challenge abandon ends run for both players', async () => {
+test('[Req 1-F] challenge abandon ends run for both players', async () => {
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 
@@ -143,7 +143,7 @@ test('challenge abandon ends run for both players', async () => {
   assert.equal(activeB, null);
 });
 
-test('challenge run applies batch Elo on abandon', async () => {
+test('[Req 10-B, 10-D] challenge run applies batch Elo on abandon', async () => {
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 

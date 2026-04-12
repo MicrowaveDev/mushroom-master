@@ -60,7 +60,7 @@ async function setupChallengePlayers(request) {
   return { playerA, playerB };
 }
 
-test('challenge mode: invite → accept → readies → round resolves → UI screenshots', async ({ page, request, baseURL }) => {
+test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies → round resolves → UI screenshots', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const { playerA, playerB } = await setupChallengePlayers(request);
 
@@ -159,7 +159,7 @@ test('challenge mode: invite → accept → readies → round resolves → UI sc
   await pageB.close();
 });
 
-test('challenge mode: abandon by one player ends for both + screenshots', async ({ page, request, baseURL }) => {
+test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + screenshots', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const { playerA, playerB } = await setupChallengePlayers(request);
 

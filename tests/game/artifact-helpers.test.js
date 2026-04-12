@@ -21,7 +21,7 @@ test('familyCaps defaults to damage for unknown families', () => {
   assert.deepEqual(familyCaps('unknown'), FAMILY_CAPS.damage);
 });
 
-test('isBag: true for bag family, false for combat families', () => {
+test('[Req 5-A] isBag: true for bag family, false for combat families', () => {
   assert.equal(isBag(getArtifactById('moss_pouch')), true);
   assert.equal(isBag(getArtifactById('amber_satchel')), true);
   assert.equal(isBag(getArtifactById('spore_needle')), false);
@@ -38,7 +38,7 @@ test('isCombatArtifact: true for damage/armor/stun, false for bag', () => {
   assert.equal(isCombatArtifact(null), false);
 });
 
-test('isContainerItem: true for x<0 or y<0 without bagId', () => {
+test('[Req 2-C] isContainerItem: true for x<0 or y<0 without bagId', () => {
   assert.equal(isContainerItem({ x: -1, y: -1 }), true);
   assert.equal(isContainerItem({ x: 0, y: -1 }), true);
   assert.equal(isContainerItem({ x: -1, y: 0 }), true);
@@ -47,7 +47,7 @@ test('isContainerItem: true for x<0 or y<0 without bagId', () => {
   assert.equal(isContainerItem({ x: -1, y: -1, bagId: 'moss_pouch' }), false);
 });
 
-test('contributesStats: placed combat items contribute, container and bags do not', () => {
+test('[Req 2-C, 2-D, 5-F] contributesStats: placed combat items contribute, container and bags do not', () => {
   const combat = getArtifactById('spore_needle');
   const bag = getArtifactById('moss_pouch');
 

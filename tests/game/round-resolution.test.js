@@ -28,7 +28,7 @@ async function setupPlayerWithRun(overrides = {}) {
   return { session, run, playerId: session.player.id };
 }
 
-test('resolving a round updates wins or losses and pays rewards', async () => {
+test('[Req 1-D, 9-A] resolving a round updates wins or losses and pays rewards', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -59,7 +59,7 @@ test('resolving a round updates wins or losses and pays rewards', async () => {
   assert.equal(result.player.coins, ROUND_INCOME[0] + ROUND_INCOME[1]);
 });
 
-test('Elo is updated per round in solo mode', async () => {
+test('[Req 10-A] Elo is updated per round in solo mode', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -69,7 +69,7 @@ test('Elo is updated per round in solo mode', async () => {
   assert.ok(result.lastRound.ratingAfter >= RATING_FLOOR);
 });
 
-test('elimination at 5 losses ends the run', async () => {
+test('[Req 1-E] elimination at 5 losses ends the run', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -90,7 +90,7 @@ test('elimination at 5 losses ends the run', async () => {
   }
 });
 
-test('no draw outcome in runs — forced to loss', async () => {
+test('[Req 1-D] no draw outcome in runs — forced to loss', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -99,7 +99,7 @@ test('no draw outcome in runs — forced to loss', async () => {
   assert.ok(result.lastRound.outcome === 'win' || result.lastRound.outcome === 'loss');
 });
 
-test('cannot resolve round on completed run', async () => {
+test('[Req 1-E] cannot resolve round on completed run', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
   await abandonGameRun(playerId, run.id);
@@ -110,7 +110,7 @@ test('cannot resolve round on completed run', async () => {
   );
 });
 
-test('shop refresh costs 1 coin for first 3 refreshes', async () => {
+test('[Req 4-G] shop refresh costs 1 coin for first 3 refreshes', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -128,7 +128,7 @@ test('shop refresh costs 1 coin for first 3 refreshes', async () => {
   assert.equal(result3.refreshCount, 3);
 });
 
-test('shop refresh costs 2 coins from refresh 4 onward', async () => {
+test('[Req 4-G] shop refresh costs 2 coins from refresh 4 onward', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -143,7 +143,7 @@ test('shop refresh costs 2 coins from refresh 4 onward', async () => {
   assert.equal(result4.refreshCount, 4);
 });
 
-test('shop refresh rejects when not enough coins', async () => {
+test('[Req 4-G, 4-I] shop refresh rejects when not enough coins', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -159,7 +159,7 @@ test('shop refresh rejects when not enough coins', async () => {
   );
 });
 
-test('sell item same round gives full refund', async () => {
+test('[Req 4-J] sell item same round gives full refund', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -179,7 +179,7 @@ test('sell non-existent item rejects', async () => {
   );
 });
 
-test('player loses exactly one life per round loss (not per combat step)', async () => {
+test('[Req 1-D] player loses exactly one life per round loss (not per combat step)', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 
@@ -223,7 +223,7 @@ async function getLastGhostCost(playerId) {
   }, 0);
 }
 
-test('round 1 ghost budget has grace factor (≤ 70% of player spend)', async () => {
+test('[Req 7-D] round 1 ghost budget has grace factor (≤ 70% of player spend)', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
   const { getStarterPresetCost } = await import('../../app/server/game-data.js');
@@ -237,7 +237,7 @@ test('round 1 ghost budget has grace factor (≤ 70% of player spend)', async ()
   assert.ok(ghostCost <= 3 + maxPresetCost, `Round 1 ghost cost ${ghostCost} should be ≤ ${3 + maxPresetCost} (shop budget floored + preset)`);
 });
 
-test('round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {
+test('[Req 7-D] round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
   await resolveRound(playerId, run.id); // advance to round 2
@@ -247,7 +247,7 @@ test('round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {
   assert.ok(ghostCost <= 3 + maxPresetCost, `Round 2 ghost cost ${ghostCost} should be ≤ ${3 + maxPresetCost} (shop budget floored + preset)`);
 });
 
-test('ghost budget is capped by cumulative round income', async () => {
+test('[Req 7-D, 7-E] ghost budget is capped by cumulative round income', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
   const { ROUND_INCOME, GHOST_BUDGET_DISCOUNT } = await import('../../app/server/game-data.js');
@@ -270,7 +270,7 @@ test('ghost budget is capped by cumulative round income', async () => {
   }
 });
 
-test('abandon pays completion bonus based on wins', async () => {
+test('[Req 9-B, 10-D] abandon pays completion bonus based on wins', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();
 

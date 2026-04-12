@@ -15,7 +15,7 @@ const loadout = [
   { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
 ];
 
-test('starting a solo run creates an active game run', async () => {
+test('[Req 1-A, 1-C, 4-A] starting a solo run creates an active game run', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);
@@ -35,7 +35,7 @@ test('starting a solo run creates an active game run', async () => {
   assert.ok(run.startedAt);
 });
 
-test('only one active run per player is allowed', async () => {
+test('[Req 1-G] only one active run per player is allowed', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);
@@ -70,7 +70,7 @@ test('getActiveGameRun returns the active run', async () => {
   assert.deepEqual(active.rounds, []);
 });
 
-test('abandoning a run sets status to abandoned and clears active flag', async () => {
+test('[Req 1-F] abandoning a run sets status to abandoned and clears active flag', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);
@@ -86,7 +86,7 @@ test('abandoning a run sets status to abandoned and clears active flag', async (
   assert.equal(active, null);
 });
 
-test('a new run can be started after abandoning', async () => {
+test('[Req 1-F, 1-G] a new run can be started after abandoning', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);
@@ -127,7 +127,7 @@ test('getGameRun rejects non-participant', async () => {
   );
 });
 
-test('bootstrap includes activeGameRun when a run is active', async () => {
+test('[Req 12-D] bootstrap includes activeGameRun when a run is active', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);
@@ -148,7 +148,7 @@ test('bootstrap has null activeGameRun when no run is active', async () => {
   assert.equal(bootstrap.activeGameRun, null);
 });
 
-test('daily limit counts game runs started', async () => {
+test('[Req 1-H] daily limit counts game runs started', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);

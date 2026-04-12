@@ -67,7 +67,7 @@ async function bootChallengeRun() {
   };
 }
 
-test('challenge run isolation: reads and mutations stay scoped per player', async () => {
+test('[Req 8-G] challenge run isolation: reads and mutations stay scoped per player', async () => {
   await freshDb();
   const { playerA, playerB, run } = await bootChallengeRun();
 

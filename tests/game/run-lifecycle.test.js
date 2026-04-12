@@ -15,7 +15,7 @@ import {
   countBotGhostRows
 } from './helpers.js';
 
-test('copy-forward: round N rows are byte-identical in round N+1 except fresh_purchase', async () => {
+test('[Req 11-A] copy-forward: round N rows are byte-identical in round N+1 except fresh_purchase', async () => {
   await freshDb();
   const { playerId, run } = await bootRun();
   await seedRunLoadout(playerId, run.id, [
@@ -55,7 +55,7 @@ test('copy-forward: round N rows are byte-identical in round N+1 except fresh_pu
   }
 });
 
-test('copy-forward: duplicate artifacts survive as two distinct rows', async () => {
+test('[Req 11-A] copy-forward: duplicate artifacts survive as two distinct rows', async () => {
   await freshDb();
   const { playerId, run } = await bootRun();
   await seedRunLoadout(playerId, run.id, [
@@ -74,7 +74,7 @@ test('copy-forward: duplicate artifacts survive as two distinct rows', async () 
   assert.equal(Number(round2.rows[0].count), 2, 'duplicate artifacts must survive copy-forward as two rows');
 });
 
-test('copy-forward: purchased_round is preserved (not reset to N+1)', async () => {
+test('[Req 11-A] copy-forward: purchased_round is preserved (not reset to N+1)', async () => {
   await freshDb();
   const { playerId, run } = await bootRun();
   await seedRunLoadout(playerId, run.id, [
@@ -94,7 +94,7 @@ test('copy-forward: purchased_round is preserved (not reset to N+1)', async () =
   assert.equal(round2.rows[0].purchased_round, 1, 'purchased_round must survive the copy-forward');
 });
 
-test('bot ghost rows appear in game_run_loadout_items after a solo round', async () => {
+test('[Req 7-G] bot ghost rows appear in game_run_loadout_items after a solo round', async () => {
   await freshDb();
   const { playerId, run } = await bootRun();
   await seedRunLoadout(playerId, run.id, [
@@ -108,7 +108,7 @@ test('bot ghost rows appear in game_run_loadout_items after a solo round', async
   );
 });
 
-test('pruneOldGhostSnapshots deletes synthetic ghost:bot rows older than maxAge', async () => {
+test('[Req 7-H] pruneOldGhostSnapshots deletes synthetic ghost:bot rows older than maxAge', async () => {
   await freshDb();
   const { playerId, run } = await bootRun();
   await seedRunLoadout(playerId, run.id, [
@@ -132,7 +132,7 @@ test('pruneOldGhostSnapshots deletes synthetic ghost:bot rows older than maxAge'
   assert.equal(await countBotGhostRows(), 0, 'ghost rows must be deleted');
 });
 
-test('pruneOldGhostSnapshots does not touch real-player rows', async () => {
+test('[Req 7-H] pruneOldGhostSnapshots does not touch real-player rows', async () => {
   await freshDb();
   const { playerId, run } = await bootRun();
   await seedRunLoadout(playerId, run.id, [

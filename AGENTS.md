@@ -97,6 +97,15 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
   - the claimed completion state matches the actual files on disk
 - **Before implementing or changing any game-play behavior**, read [docs/game-requirements.md](docs/game-requirements.md). It is the authoritative behavioral spec — every rule there is testable, and violating one is a bug. If a change conflicts with a requirement, update the requirement doc in the same commit (with user approval) so the spec and code stay in sync. Do not treat balance.md, plan docs, or inline code comments as the source of truth for game rules — those describe rationale and history, not the current contract.
 
+### Requirement Traceability Rules
+
+- Every requirement in [docs/game-requirements.md](docs/game-requirements.md) is labeled with a section-letter ID (e.g. `1-A`, `4-G`, `8-B`). Use these IDs to trace requirements through tests and UI screens.
+- **Test descriptions must reference the requirement IDs they verify** using the `[Req X-Y]` prefix format. Example: `test('[Req 4-G] shop refresh costs 1 coin for first 3 refreshes', ...)`.
+- When adding a new test for game behavior, identify which requirement(s) the test checks and include the `[Req ...]` prefix. If no requirement exists for the behavior, either it is infrastructure (no tag needed) or the requirement doc needs updating first.
+- When adding or changing a game requirement, check that at least one test covers it by grepping for the requirement ID. Uncovered requirements are gaps — flag them.
+- **Screenshot and E2E tests must verify that all UI elements implied by requirements are present on screen.** For any requirement that describes user-visible state (coins, lives, shop items, grid cells, round number, replay controls, ready button), the screenshot or E2E test covering that screen must assert the element exists, is visible, and shows the expected value.
+- When reviewing screenshot test coverage, cross-reference the requirement IDs: every requirement that implies a visible UI element should have a corresponding assertion in at least one Playwright spec. Missing coverage is a gap to flag, not silently skip.
+
 ### UI Verification Rules
 
 - For any user-visible UI change, functional tests alone are insufficient.
@@ -109,6 +118,7 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
 - If a layout, composition, or dimension changed, all prior screenshot proof for that screen is stale until regenerated.
 - If the user reports that a screen looks broken, inspect the current rendered screen or a freshly generated screenshot before claiming coverage.
 - Keep functional proof and visual proof separate in evidence. A passing interaction flow does not imply correct layout.
+- **Cross-check screenshots against game requirements.** When a screen is captured, verify that every requirement-driven element is present: e.g. the prep screen must show shop items (`4-D`), coin HUD (`4-A`), inventory grid cells (`2-A`), and the ready/start button; the replay screen must show battle status and replay log (`13-A`); the round result must show outcome, rewards (`9-A`), and rating changes (`10-A`). If an element implied by a requirement is missing from the screenshot, that is a bug to flag.
 
 ### Layout Assertion Rules
 

@@ -42,7 +42,7 @@ import {
 
 const starter = [{ artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }];
 
-test('solo run scenario: start → buy → reload → resolve → sell → ghost → history', async () => {
+test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start → buy → reload → resolve → sell → ghost → history', async () => {
   await freshDb();
 
   // ---------------------------------------------------------------------

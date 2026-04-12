@@ -4,7 +4,7 @@ import { createBotLoadout, createBotGhostSnapshot } from '../../app/server/servi
 import { getMushroomById, getStarterPresetCost, mushrooms, INVENTORY_COLUMNS, INVENTORY_ROWS, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
 import { createRng } from '../../app/server/lib/utils.js';
 
-test('bot loadout generates successfully for all mushrooms at default 5-coin budget', () => {
+test('[Req 7-E, 7-F] bot loadout generates successfully for all mushrooms at default 5-coin budget', () => {
   for (const mushroom of mushrooms) {
     const rng = createRng(`test-${mushroom.id}`);
     const loadout = createBotLoadout(mushroom, rng, 5);
@@ -14,7 +14,7 @@ test('bot loadout generates successfully for all mushrooms at default 5-coin bud
   }
 });
 
-test('bot loadout handles high budgets without failing', () => {
+test('[Req 7-D] bot loadout handles high budgets without failing', () => {
   // Game run budgets can reach 57 coins at round 9 cumulative
   const budgets = [5, 10, 15, 21, 27, 34, 41, 49, 57];
   for (const budget of budgets) {
@@ -27,7 +27,7 @@ test('bot loadout handles high budgets without failing', () => {
   }
 });
 
-test('bot loadout never exceeds grid area', () => {
+test('[Req 2-A] bot loadout never exceeds grid area', () => {
   const maxArea = INVENTORY_COLUMNS * INVENTORY_ROWS;
   for (let seed = 0; seed < 50; seed++) {
     const rng = createRng(`area-test-${seed}`);
@@ -37,7 +37,7 @@ test('bot loadout never exceeds grid area', () => {
   }
 });
 
-test('bot loadout never contains bags (bots only use combat items)', () => {
+test('[Req 5-F] bot loadout never contains bags (bots only use combat items)', () => {
   for (let seed = 0; seed < 20; seed++) {
     const rng = createRng(`no-bags-${seed}`);
     const loadout = createBotLoadout(getMushroomById('lomie'), rng, 30);
@@ -48,7 +48,7 @@ test('bot loadout never contains bags (bots only use combat items)', () => {
   }
 });
 
-test('bot loadout respects coin budget (shop spend + preset)', () => {
+test('[Req 4-O, 7-D] bot loadout respects coin budget (shop spend + preset)', () => {
   for (let seed = 0; seed < 30; seed++) {
     const budget = 5 + (seed % 10) * 3;
     const mushroom = getMushroomById('axilin');
@@ -63,7 +63,7 @@ test('bot loadout respects coin budget (shop spend + preset)', () => {
   }
 });
 
-test('createBotGhostSnapshot returns valid snapshot with given mushroom', () => {
+test('[Req 7-C] createBotGhostSnapshot returns valid snapshot with given mushroom', () => {
   const snapshot = createBotGhostSnapshot('ghost-seed-1', 'morga', 15);
   assert.equal(snapshot.mushroomId, 'morga');
   // Loadout must contain at least the 2-item preset + bought items.

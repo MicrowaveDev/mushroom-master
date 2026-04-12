@@ -38,7 +38,7 @@ async function api(request, sessionKey, url, method = 'GET', data = undefined) {
   return json.data;
 }
 
-test('solo game run: full journey with screenshots', async ({ page, request, baseURL }) => {
+test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D] solo game run: full journey with screenshots', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 901, username: 'solo_runner', name: 'Solo Runner' });
 
@@ -149,7 +149,7 @@ test('solo game run: full journey with screenshots', async ({ page, request, bas
   await saveShot(page, 'solo-10-home-after-run.png');
 });
 
-test('solo game run: abandon mid-game with screenshots', async ({ page, request, baseURL }) => {
+test('[Req 1-F] solo game run: abandon mid-game with screenshots', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 903, username: 'abandoner', name: 'Abandoner' });
 
@@ -169,7 +169,7 @@ test('solo game run: abandon mid-game with screenshots', async ({ page, request,
   await saveShot(page, 'solo-abandon-02-home-no-resume.png');
 });
 
-test('bag activation persists across page reload', async ({ page, request, baseURL }) => {
+test('[Req 5-A, 12-D] bag activation persists across page reload', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 910, username: 'bag_tester', name: 'Bag Tester' });
 
@@ -255,7 +255,7 @@ test('bag activation persists across page reload', async ({ page, request, baseU
   await saveShot(page, 'solo-bag-02-after-reload.png');
 });
 
-test('amber satchel (2x2 bag) activates from container and expands grid', async ({ page, request, baseURL }) => {
+test('[Req 5-C, 2-B] amber satchel (2x2 bag) activates from container and expands grid', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 920, username: 'satchel_tester', name: 'Satchel Tester' });
 
