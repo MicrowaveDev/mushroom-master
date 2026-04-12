@@ -11,6 +11,7 @@ Game implementation surfaces:
 - structured wiki source: `wiki/`
 - game verification: `tests/game/`
 - **game rules**: [`docs/game-requirements.md`](docs/game-requirements.md) — authoritative behavioral spec covering game structure, combat, economy, ghost scaling, rewards, challenge mode, and all testable invariants. Read this first before changing game logic.
+- **user flows**: [`docs/user-flows.md`](docs/user-flows.md) — screen-by-screen flow spec with visible elements, user actions, and expected assertions at each step. Read this before writing or reviewing E2E tests.
 
 Database runtime:
 

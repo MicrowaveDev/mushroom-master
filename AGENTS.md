@@ -118,7 +118,8 @@ Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/
 - If a layout, composition, or dimension changed, all prior screenshot proof for that screen is stale until regenerated.
 - If the user reports that a screen looks broken, inspect the current rendered screen or a freshly generated screenshot before claiming coverage.
 - Keep functional proof and visual proof separate in evidence. A passing interaction flow does not imply correct layout.
-- **Cross-check screenshots against game requirements.** When a screen is captured, verify that every requirement-driven element is present: e.g. the prep screen must show shop items (`4-D`), coin HUD (`4-A`), inventory grid cells (`2-A`), and the ready/start button; the replay screen must show battle status and replay log (`13-A`); the round result must show outcome, rewards (`9-A`), and rating changes (`10-A`). If an element implied by a requirement is missing from the screenshot, that is a bug to flag.
+- **Cross-check screenshots against game requirements and user flows.** When a screen is captured, verify that every requirement-driven element is present: e.g. the prep screen must show shop items (`4-D`), coin HUD (`4-A`), inventory grid cells (`2-A`), and the ready/start button; the replay screen must show battle status and replay log (`13-A`); the round result must show outcome, rewards (`9-A`), and rating changes (`10-A`). If an element implied by a requirement is missing from the screenshot, that is a bug to flag.
+- **Before writing or reviewing E2E tests**, read [docs/user-flows.md](docs/user-flows.md). It is the authoritative screen-flow spec — every step lists the screen, visible elements, user actions, and expected assertions. E2E tests must follow these flows and assert the elements listed at each step. If a flow is missing or wrong, update it in the same commit.
 
 ### Layout Assertion Rules
 
