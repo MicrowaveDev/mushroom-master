@@ -92,7 +92,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       if (data.waiting) return;
       state.gameRunResult = data;
       if (data.status === 'completed' || data.status === 'abandoned') {
-        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason };
+        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null };
       }
       const battleId = data.lastRound?.battleId;
       if (battleId && loadReplay) {
@@ -224,11 +224,21 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     state.draggingSource = '';
   }
 
+  async function persistRunLoadout() {
+    if (!state.gameRun || !state.bootstrap?.activeMushroomId) return;
+    try {
+      await apiJson('/api/artifact-loadout', {
+        method: 'PUT',
+        body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() })
+      }, state.sessionKey);
+    } catch { /* best-effort persist */ }
+  }
+
   return {
     startNewGameRun, resumeGameRun, signalReady,
     continueToNextRound, abandonRun, loadRunShopOffer,
     refreshRunShop, sellRunItemAction, buyRunShopItem,
-    getRunRefreshCost, getRunSellPrice,
+    getRunRefreshCost, getRunSellPrice, persistRunLoadout,
     onSellZoneDragOver, onSellZoneDragLeave, onSellZoneDrop
   };
 }

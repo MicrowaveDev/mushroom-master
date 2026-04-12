@@ -80,20 +80,21 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D] solo game run: full journey with scre
   // --- Sell zone visible ---
   await expect(page.locator('.sell-zone')).toBeVisible();
 
-  // --- Signal ready → round result ---
+  // --- Signal ready → replay → next prep (or run complete) ---
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  const resultOrComplete = page.locator('.round-result-screen, .run-complete-screen');
-  await expect(resultOrComplete).toBeVisible({ timeout: 15000 });
 
-  const isRoundResult = await page.locator('.round-result-screen').isVisible();
-  if (isRoundResult) {
-    await expect(page.locator('.round-result-card')).toBeVisible();
-    await expect(page.locator('.round-result-card .stat')).toHaveCount(6);
-    await saveShot(page, 'solo-04-round1-result.png');
+  // After ready, the flow goes: replay → continue → prep (next round)
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
+  const replayBtn = page.locator('.replay-result-button-full');
+  await expect(replayBtn).toBeVisible({ timeout: 30000 });
+  await saveShot(page, 'solo-04-round1-replay.png');
+  await replayBtn.click();
 
-    // --- Continue to round 2 ---
-    await page.getByRole('button', { name: /continue|продолжить/i }).click();
-    await expect(page.locator('.prep-screen')).toBeVisible();
+  // After replay continue, we land on prep (round 2) or run complete
+  const afterReplay = page.locator('.prep-screen, .run-complete-screen');
+  await expect(afterReplay).toBeVisible({ timeout: 10000 });
+
+  if (await page.locator('.prep-screen').isVisible()) {
     await expect(hud).toContainText('2');
 
     // --- Shop has items after round 1 ---
@@ -117,29 +118,24 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D] solo game run: full journey with scre
     await expect(hud).toContainText('2');
     await saveShot(page, 'solo-07-persisted-after-reload.png');
 
-    // --- Play remaining rounds ---
-    let lastRoundShot = false;
-    for (let round = 0; round < 8; round++) {
-      if (!(await page.locator('.prep-screen').isVisible())) break;
+    // --- Play remaining rounds until run completes ---
+    for (let round = 0; round < 10; round++) {
+      if (!(await page.locator('.prep-screen').isVisible().catch(() => false))) break;
+      if (round === 0) await saveShot(page, 'solo-08-mid-round-prep.png');
 
       await page.getByRole('button', { name: /ready|готов/i }).click();
-      await expect(page.locator('.round-result-screen, .run-complete-screen')).toBeVisible({ timeout: 15000 });
-
-      if (await page.locator('.round-result-screen').isVisible()) {
-        if (!lastRoundShot) {
-          await saveShot(page, 'solo-08-mid-round-result.png');
-          lastRoundShot = true;
-        }
-        await page.getByRole('button', { name: /continue|продолжить/i }).click();
-        await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 5000 });
-      } else {
-        break;
-      }
+      // Wait for replay to appear and finish
+      await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
+      const btn = page.locator('.replay-result-button-full');
+      await expect(btn).toBeVisible({ timeout: 40000 });
+      await btn.click();
+      // After replay: prep (next round) or run-complete (game over)
+      await expect(page.locator('.prep-screen, .run-complete-screen')).toBeVisible({ timeout: 15000 });
     }
   }
 
   // --- Run complete screen ---
-  await expect(page.locator('.run-complete-screen')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.run-complete-screen')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.run-complete-card')).toBeVisible();
   await saveShot(page, 'solo-09-run-complete.png');
 
@@ -273,10 +269,10 @@ test('[Req 5-C, 2-B] amber satchel (2x2 bag) activates from container and expand
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
-  // Count base inventory grid cells (3x2 = 6)
+  // Count base inventory grid cells (3×3 = 9, per INVENTORY_COLUMNS × INVENTORY_ROWS)
   const inventoryGrid = page.locator('.artifact-inventory-grid .artifact-grid-background');
   const baseCells = await inventoryGrid.locator('> *').count();
-  expect(baseCells).toBe(6);
+  expect(baseCells).toBe(9);
 
   // Refresh shop until amber_satchel appears
   let foundSatchel = false;

@@ -89,9 +89,9 @@ const App = {
     // --- Composables ---
     const gs = useGameState(state);
     const auth = useAuth(state, gs.goTo);
-    const shop = useShop(state, gs.getArtifact, auth.persistShopOffer);
     const replay = useReplay(state, gs.goTo, gs.getMushroom);
     const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, auth.persistShopOffer, replay.loadReplay);
+    const shop = useShop(state, gs.getArtifact, auth.persistShopOffer, gameRun.persistRunLoadout);
     const social = useSocial(state, gs.goTo);
     const sse = useSSE(state, gs.goTo);
     const touch = useTouch(state);

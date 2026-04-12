@@ -1,7 +1,7 @@
 import { INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
 
-export function useShop(state, getArtifact, persistShopOffer) {
+export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout) {
   function bagLayout(bagId) {
     const bag = getArtifact(bagId);
     if (!bag) return { cols: INVENTORY_COLUMNS, rows: 1 };
@@ -192,7 +192,8 @@ export function useShop(state, getArtifact, persistShopOffer) {
     state.activeBags = [...state.activeBags, artifactId];
     state.containerItems = state.containerItems.filter((id) => id !== artifactId);
     state.error = '';
-    persistShopOffer();
+    if (state.gameRun && persistRunLoadout) persistRunLoadout();
+    else persistShopOffer();
   }
 
   function deactivateBag(artifactId) {
@@ -210,7 +211,8 @@ export function useShop(state, getArtifact, persistShopOffer) {
     }
     state.activeBags = state.activeBags.filter((id) => id !== artifactId);
     state.containerItems = [...state.containerItems, artifactId];
-    persistShopOffer();
+    if (state.gameRun && persistRunLoadout) persistRunLoadout();
+    else persistShopOffer();
   }
 
   function autoPlaceFromContainer(artifactId) {

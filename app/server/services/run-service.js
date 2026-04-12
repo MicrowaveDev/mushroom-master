@@ -719,6 +719,9 @@ async function resolveChallengeRound(client, run, gameRunId) {
     endedAt: runEnded ? nowIso() : null,
     endReason,
     runEnded,
+    completionBonus: runEnded
+      ? Object.fromEntries(Object.entries(playerResults).map(([pid, pr]) => [pid, getCompletionBonus(pr.wins)]))
+      : null,
     playerResults
   };
 }
@@ -903,6 +906,7 @@ export async function resolveRound(playerId, gameRunId) {
       currentRound: runEnded ? roundNumber : roundNumber + 1,
       endedAt: runEnded ? nowIso() : null,
       endReason,
+      completionBonus: runEnded ? getCompletionBonus(newWins) : null,
       player: {
         completedRounds,
         wins: newWins,

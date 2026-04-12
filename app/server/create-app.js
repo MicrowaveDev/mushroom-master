@@ -48,7 +48,7 @@ import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
 import { log, requestLogger } from './lib/obs.js';
 import { idempotency } from './lib/idempotency.js';
-import { rateLimit } from './lib/rate-limit.js';
+import { rateLimit, clearRateLimitBuckets } from './lib/rate-limit.js';
 import { getWikiEntry, getWikiHome } from './wiki.js';
 
 const repoRoot = '/Users/microwavedev/workspace/mushroom-master';
@@ -581,6 +581,7 @@ export async function createApp() {
       '/api/dev/reset',
       asyncRoute(async (_req, res) => {
         await resetDb();
+        clearRateLimitBuckets();
         res.json({
           success: true,
           data: { reset: true }

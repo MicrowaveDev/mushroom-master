@@ -29,7 +29,9 @@ export function rateLimit({
   capacity = DEFAULT_CAPACITY,
   refillPerSec = DEFAULT_REFILL_PER_SEC
 } = {}) {
+  const disabled = process.env.NODE_ENV !== 'production';
   return function rateLimitMiddleware(req, res, next) {
+    if (disabled) return next();
     const playerId = req.user?.id;
     if (!playerId) return next();
 

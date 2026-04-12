@@ -16,6 +16,9 @@ E2E tests must capture screenshots at **both viewports** at each major screen:
 - Mobile: `page.setViewportSize({ width: 375, height: 667 })`
 - Desktop: `page.setViewportSize({ width: 1280, height: 800 })`
 
+Screenshot paths below are relative to `.agent/tasks/telegram-autobattler-v1/raw/`.
+Steps marked `(not yet captured)` need e2e coverage added.
+
 Requirement IDs (e.g. `[Req 1-A]`) link to [game-requirements.md](./game-requirements.md).
 
 Last verified against code: 2026-04-12.
@@ -27,20 +30,24 @@ Last verified against code: 2026-04-12.
 ```
 Step 1: Auth Screen
   Screen: auth → AuthScreen.js
+  Screenshot: screenshots/01-auth-gate.png
   Above the fold (mobile):
-    - App title "Мицелиум: автобаттлер"
+    - Navbar title "Мицелиум: автобаттлер"
+    - Hero heading "Арена грибов ждёт"
     - 3 overlapping character portraits
     - Tagline + feature list (3 bullets)
     - First login button partially visible
   Desktop note: All login buttons + language toggle visible without scroll
   Sees:
-    - App title "Мицелиум: автобаттлер"
+    - Navbar title "Мицелиум: автобаттлер"
+    - Hero heading "Арена грибов ждёт" / "The mushroom arena awaits"
     - Language toggle (RU / EN)
     - Login buttons (Telegram / browser code / dev)
   Action: Click login button
 
 Step 2: Onboarding
   Screen: onboarding → OnboardingScreen.js
+  Screenshot: (not yet captured — no e2e coverage)
   Condition: No activeMushroomId in bootstrap
   Above the fold (mobile):
     - Walkthrough heading + first step description
@@ -53,6 +60,7 @@ Step 2: Onboarding
 
 Step 3: Character Select
   Screen: characters → CharactersScreen.js
+  Screenshot: screenshots/03-characters.png
   Above the fold (mobile):
     - First 2 mushroom cards in 2-column grid (portrait, name, style tag, stats)
   Desktop note: All 5 cards visible in wider grid without scroll
@@ -71,15 +79,16 @@ Step 3: Character Select
 ```
 Step 1: Home Screen
   Screen: home → HomeScreen.js
+  Screenshot: screenshots/run/solo-01-home-start-game.png
   Above the fold (mobile):
     - Active mushroom portrait + level
-    - "Начать игру" / "Start Game" button (or "Продолжить" / resume if active run)
+    - "Начать Игру" / "Start Game" button (or "Продолжить игру" / resume if active run)
     - Spore count
     - First 1-2 battle history entries
   Desktop note: Friends list + leaderboard also visible (side columns)
   Sees:
     - Active mushroom portrait + level
-    - "Начать игру" / "Start Game" button
+    - "Начать Игру" / "Start Game" button
     - Spore count
     - Battle limit (X / 10)
     - Recent battle history (up to 5)
@@ -94,6 +103,7 @@ Step 1: Home Screen
 
 Step 2: Prep Screen (Round N)
   Screen: prep → PrepScreen.js
+  Screenshot: screenshots/run/solo-02-prep-round1.png (round 1), screenshots/run/solo-05-prep-round2.png (round 2)
   Condition: state.gameRun exists
   Above the fold (mobile):
     - Round HUD: "Раунд N" / "Round N"
@@ -121,10 +131,12 @@ Step 2: Prep Screen (Round N)
     - [Req 4-J] Selling same-round item returns full price
     - [Req 4-K] Selling older item returns half price
     - signalReady() called → POST /api/game-run/:id/ready
+    - Navigate to replay screen (automatic)
 
-Step 3: Battle Replay
+Step 3: Battle Replay (auto-loaded after ready)
   Screen: replay → ReplayScreen.js
-  Condition: state.currentBattle exists (loaded after ready)
+  Screenshot: screenshots/06-replay.png (mid-replay), screenshots/07-replay-complete.png (finished)
+  Condition: state.currentBattle loaded automatically after signalReady
   Above the fold (mobile):
     - Battle stage (two fighter cards with portraits, names, HP bars)
     - Speed controls (▶ ▶▶ ▶▶▶)
@@ -145,40 +157,30 @@ Step 3: Battle Replay
       button shows "Продолжить" / "Continue" (NOT "Домой")
     - When replay finishes AND no gameRun (standalone):
       button shows "Домой" / "Home"
-  Action: Click "Continue" (or "Home" if standalone)
-
-Step 4a: Round Result (run continues)
-  Screen: roundResult → RoundResultScreen.js
-  Condition: state.gameRunResult exists, run status = 'active'
-  Above the fold (mobile + desktop):
-    - Entire card visible — outcome heading, reward stats, totals, buttons
-    - No scroll needed on either viewport; compact screen
-  Sees:
-    - Outcome heading: "Победа!" / "Поражение" (Win / Loss)
-    - [Req 9-A] Rewards: +N spore, +N mycelium
-    - [Req 10-A] Rating delta (solo mode)
-    - Current totals: wins, lives remaining, coins
-    - "Продолжить" / "Continue" button
-    - "Посмотреть реплей" / "View Replay" button
   Action: Click "Continue"
   Expected:
-    - [Req 11-A] Round N items copied forward to N+1
-    - [Req 4-C] Coins += ROUND_INCOME[N+1]
-    - [Req 11-C] New shop offer generated, refresh count reset
-    - Navigate back to Step 2 (prep) for next round
+    - If run still active (lives > 0, rounds < max):
+      [Req 11-A] Round N items copied forward to N+1
+      [Req 4-C] Coins += ROUND_INCOME[N+1]
+      [Req 11-C] New shop offer generated, refresh count reset
+      Navigate back to Step 2 (prep) for next round
+    - If run ended: Navigate to Step 4b (run complete)
+  Note: Round result screen (Step 4a) is accessible via "View Replay" from
+  battle history but is NOT shown in the normal ready→replay→prep flow.
 
 Step 4b: Run Complete (run ended)
   Screen: runComplete → RunCompleteScreen.js
+  Screenshot: screenshots/run/solo-09-run-complete.png
   Condition: run status = 'completed' or 'abandoned'
   Above the fold (mobile + desktop):
     - Entire card visible — heading, end reason, stats, Home button
     - No scroll needed on either viewport; compact screen
   Sees:
     - "Игра завершена" / "Game Complete" heading
-    - End reason: "Все жизни потеряны" / "Максимум раундов" / "Покинута"
+    - End reason: "Все жизни потеряны" / "Максимум раундов" / "Покинуть" (t.eliminated / t.maxRounds / t.abandonRun)
     - [Req 1-E] End reason matches: max_losses (0 lives) or max_rounds (9 rounds)
     - Final stats: total wins, rounds completed
-    - [Req 9-B] Completion bonus (if any) based on total wins
+    - [Req 9-B] Completion bonus (if any) based on total wins — spore + mycelium
     - "Домой" / "Home" button
   Action: Click "Home"
   Expected:
@@ -189,6 +191,8 @@ Step 4b: Run Complete (run ended)
 ---
 
 ## Flow C: Challenge Mode
+
+Screenshots: `screenshots/challenge/` directory (not yet captured — tests exist but need a passing run)
 
 ```
 Step 1: Send Challenge
@@ -236,6 +240,7 @@ Step 1: Home Screen
 
 Step 2: Artifacts Screen (Legacy Shop)
   Screen: artifacts → ArtifactsScreen.js
+  Screenshot: screenshots/04-artifacts.png
   Above the fold (mobile):
     - Coin budget display (5 coins)
     - Container header + items
@@ -253,6 +258,7 @@ Step 2: Artifacts Screen (Legacy Shop)
 
 Step 3: Battle Prep
   Screen: battle → BattlePrepScreen.js
+  Screenshot: screenshots/05-battle-prep.png
   Above the fold (mobile + desktop):
     - Mushroom portrait + name + stats
     - Loadout grid with stat totals
@@ -275,6 +281,7 @@ Step 4: Legacy Replay
 
 Step 5: Legacy Results
   Screen: results → ResultsScreen.js
+  Screenshot: screenshots/07-results.png
   Above the fold (mobile):
     - Two fighter outcome cards (names, outcome tags)
     - Fighter portraits partially visible
@@ -296,6 +303,7 @@ Step 5: Legacy Results
 ```
 Step 1: Home or History Screen
   Screen: home or history
+  Screenshot: screenshots/08-history.png
   Sees: Battle history list (cards with outcome, opponent, date)
   Action: Click a battle card
 
@@ -313,6 +321,8 @@ Step 2: Standalone Replay
 ---
 
 ## Flow F: Reconnection
+
+Screenshots: (not yet captured — no e2e coverage)
 
 ```
 Step 1: Player disconnects mid-run
@@ -338,6 +348,7 @@ Step 3: Reconnection timeout
 ```
 Step 1: Open Settings
   Screen: settings → SettingsScreen.js
+  Screenshot: screenshots/14-settings.png
   Sees:
     - Language dropdown (RU / EN)
     - Reduced motion checkbox

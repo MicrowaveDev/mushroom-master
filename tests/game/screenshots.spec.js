@@ -114,6 +114,7 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens', async ({ page, request, base
   await page.waitForSelector('.home');
   debugLog('capturing home');
   // [Req 1-H] daily battle limit visible, [Req 4-D] start-run button present
+  await page.locator('.home-mushroom-row').first().waitFor({ timeout: 5000 });
   await expect(page.locator('.home-mushroom-row')).toHaveCount(5);
   await expect(page.locator('.home-start-btn')).toBeVisible();
   await saveShot(page, '02-home.png');

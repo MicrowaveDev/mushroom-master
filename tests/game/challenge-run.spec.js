@@ -81,7 +81,7 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
 
   // --- Player A views prep screen ---
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
-  await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
   await expect(page.locator('.run-hud')).toContainText('1'); // round 1
   await saveShot(page, 'challenge-01-playerA-prep-round1.png');
@@ -126,7 +126,7 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   // --- Player B views their prep screen for round 2 ---
   const pageB = await page.context().newPage();
   await pageB.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerB.sessionKey);
-  await pageB.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
+  await pageB.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(pageB.locator('.prep-screen')).toBeVisible();
   await expect(pageB.locator('.run-hud')).toContainText('2'); // round 2
   await saveShot(pageB, 'challenge-03-playerB-prep-round2.png');
@@ -146,11 +146,11 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   }
 
   // --- Player A sees run complete ---
-  await page.goto(`${baseURL}/runComplete`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/runComplete`, { waitUntil: 'load' });
   // If the run ended, the screen should show; otherwise force it
   const runFinal = await api(request, playerA.sessionKey, `/api/game-run/${runId}`);
   if (runFinal.status === 'completed' || runFinal.status === 'abandoned') {
-    await page.goto(`${baseURL}/runComplete`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/runComplete`, { waitUntil: 'load' });
     if (await page.locator('.run-complete-screen').isVisible()) {
       await saveShot(page, 'challenge-05-run-complete.png');
     }
@@ -169,7 +169,7 @@ test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + scree
 
   // --- Player A views prep screen ---
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
-  await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
   await saveShot(page, 'challenge-abandon-01-prep.png');
 
@@ -188,7 +188,7 @@ test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + scree
   expect(bootB.activeGameRun).toBeNull();
 
   // --- Player A's home shows no resume button ---
-  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/home`, { waitUntil: 'load' });
   await expect(page.locator('.home')).toBeVisible();
   await expect(page.getByRole('button', { name: /resume|продолжить игру/i })).toHaveCount(0);
   await saveShot(page, 'challenge-abandon-02-home-no-resume.png');

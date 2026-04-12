@@ -85,13 +85,14 @@ test('start battle button opens replay when a ghost opponent exists', async ({ p
   const replayEntries = page.locator('.replay-log .log-entry');
   await expect(replayEntries).toHaveCount(1);
   await expect(replayEntries.first()).toContainText(/vs|против|faces|сталкивается|встречает/i);
-  await expect(page.locator('.battle-status')).toBeVisible();
-  await expect(page.getByRole('button', { name: /result|результат/i })).toHaveCount(0);
+  await expect(page.locator('.duel-loadout-status')).toBeVisible();
+  await expect(page.getByRole('button', { name: /home|домой/i })).toHaveCount(0);
   await expect(replayEntries).toHaveCount(2, { timeout: 5000 });
   const firstReplayEntryText = await replayEntries.nth(0).innerText();
   const secondReplayEntryText = await replayEntries.nth(1).innerText();
   expect(firstReplayEntryText).not.toBe(secondReplayEntryText);
-  await expect(page.getByRole('button', { name: /result|результат/i })).toBeVisible({ timeout: 40000 });
+  // [Req 13-D] standalone replay shows "Home" button, not "Continue"
+  await expect(page.getByRole('button', { name: /home|домой/i })).toBeVisible({ timeout: 40000 });
 });
 
 // HTML5 drag-and-drop in Playwright is unreliable via dragTo(). Dispatch the
@@ -128,8 +129,10 @@ test('full shop flow: buy, undo, place, persist on refresh, save, battle', async
   });
 
   // Seed a deterministic shop offer via the server API.
+  // Avoid items in any character's starter preset (e.g. spore_needle for Thalla)
+  // because loadOrGenerateShopOffer filters out owned items on page load.
   await api(request, player.sessionKey, '/api/shop-state', 'PUT', {
-    offer: ['spore_needle', 'amber_fang', 'bark_plate', 'shock_puff', 'glass_cap'],
+    offer: ['glimmer_cap', 'amber_fang', 'loam_scale', 'shock_puff', 'glass_cap'],
     container: [],
     freshPurchases: [],
     rerollSpent: 0
@@ -147,49 +150,50 @@ test('full shop flow: buy, undo, place, persist on refresh, save, battle', async
   await expect(shop.locator('.shop-item')).toHaveCount(5);
   await expect(page.locator('.coin-hud-label')).toContainText('5');
 
-  // --- Step 1: click-to-buy spore_needle (cost 1) → appears in container ---
-  await shop.locator('.shop-item[data-artifact-id="spore_needle"]').click();
-  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
-  await expect(shop.locator('.shop-item[data-artifact-id="spore_needle"]')).toHaveCount(0);
+  // --- Step 1: click-to-buy glimmer_cap (cost 1) → appears in container ---
+  await shop.locator('.shop-item[data-artifact-id="glimmer_cap"]').click();
+  await expect(container.locator('.container-item[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
+  await expect(shop.locator('.shop-item[data-artifact-id="glimmer_cap"]')).toHaveCount(0);
   await expect(page.locator('.coin-hud-label')).toContainText('4');
 
   // --- Step 2: undo purchase via sell button → returns to shop at full refund ---
-  await container.locator('.container-item[data-artifact-id="spore_needle"] .container-item-sell').click();
-  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(0);
-  await expect(shop.locator('.shop-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await container.locator('.container-item[data-artifact-id="glimmer_cap"] .container-item-sell').click();
+  await expect(container.locator('.container-item[data-artifact-id="glimmer_cap"]')).toHaveCount(0);
+  await expect(shop.locator('.shop-item[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
   await expect(page.locator('.coin-hud-label')).toContainText('5');
 
   // --- Step 3: buy again, then click container item to auto-place in inventory ---
-  await shop.locator('.shop-item[data-artifact-id="spore_needle"]').click();
-  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
-  await container.locator('.container-item[data-artifact-id="spore_needle"]').click();
-  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
-  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(0);
+  await shop.locator('.shop-item[data-artifact-id="glimmer_cap"]').click();
+  await expect(container.locator('.container-item[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
+  await container.locator('.container-item[data-artifact-id="glimmer_cap"]').click();
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
+  await expect(container.locator('.container-item[data-artifact-id="glimmer_cap"]')).toHaveCount(0);
 
   // --- Step 4: click placed piece → returns to container (not shop) ---
-  await page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]').click({ timeout: 5000 });
-  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(0);
-  await expect(container.locator('.container-item[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glimmer_cap"]').click({ timeout: 5000 });
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glimmer_cap"]')).toHaveCount(0);
+  await expect(container.locator('.container-item[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
 
   // --- Step 5: place again for the battle ---
-  await container.locator('.container-item[data-artifact-id="spore_needle"]').click();
-  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await container.locator('.container-item[data-artifact-id="glimmer_cap"]').click();
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
 
   // --- Step 6: refresh page — state must persist from server ---
   await page.goto(`${baseURL}/artifacts`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="spore_needle"]')).toHaveCount(1);
+  await expect(page.locator('.inventory-pieces .artifact-piece[data-artifact-id="glimmer_cap"]')).toHaveCount(1);
   await expect(page.locator('.coin-hud-label')).toContainText('4');
   await expect(shop.locator('.shop-item')).toHaveCount(4);
 
   // --- Step 7: save loadout and go to battle ---
   await page.getByRole('button', { name: /save|сохранить/i }).click({ timeout: 5000 });
-  await expect(page.getByRole('heading', { level: 2, name: /Battle|Бой/ })).toBeVisible();
+  await expect(page.locator('.battle-prep-screen')).toBeVisible();
   const battleStartButton = page.getByRole('button', { name: /start battle|начать бой/i });
   await expect(battleStartButton).toBeEnabled();
   await battleStartButton.click({ timeout: 5000 });
   await expect(page.locator('.replay-log')).toBeVisible();
-  await page.getByRole('button', { name: /result|результат/i }).click({ timeout: 40000 });
-  await expect(page.locator('.results-screen')).toBeVisible();
+  // Legacy battle replay ends with "Home" button (no active game run)
+  await page.getByRole('button', { name: /home|домой/i }).click({ timeout: 40000 });
+  await expect(page.locator('.results-screen, .home')).toBeVisible();
 });
 
 test('shop budget enforcement: 2-cost items become unaffordable when coins run low', async ({ page, request, baseURL }) => {
@@ -199,8 +203,11 @@ test('shop budget enforcement: 2-cost items become unaffordable when coins run l
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
 
   // Seed shop with known artifacts via server API.
+  // Avoid items in any character's starter preset (they get filtered as owned).
+  // Use two price-1 items (glimmer_cap, loam_scale) and three price-2 items
+  // so after buying amber_fang + glass_cap (4 spent), only root_shell is expensive.
   await api(request, player.sessionKey, '/api/shop-state', 'PUT', {
-    offer: ['spore_needle', 'amber_fang', 'glass_cap', 'bark_plate', 'root_shell'],
+    offer: ['glimmer_cap', 'amber_fang', 'glass_cap', 'loam_scale', 'root_shell'],
     container: [],
     freshPurchases: [],
     rerollSpent: 0
