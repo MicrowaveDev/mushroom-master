@@ -4,9 +4,8 @@ import { test, expect } from '@playwright/test';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/run';
 
-// Canonical viewports per docs/user-flows.md preamble + AGENTS.md.
+// Canonical viewport per docs/user-flows.md preamble + AGENTS.md.
 const MOBILE_VIEWPORT = { width: 375, height: 667 };
-const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -16,23 +15,6 @@ const loadout = [
 async function saveShot(page, name) {
   await fs.mkdir(screenshotDir, { recursive: true });
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
-}
-
-/**
- * Capture the same screen at both mobile (375×667) and desktop (1280×800)
- * viewports. Required for any UI-touching screen per AGENTS.md and
- * user-flows.md preamble. Filenames get `-mobile` / `-desktop` suffixes.
- */
-async function saveShotDual(page, name) {
-  const dot = name.lastIndexOf('.');
-  const base = dot >= 0 ? name.slice(0, dot) : name;
-  const ext = dot >= 0 ? name.slice(dot) : '.png';
-  await page.setViewportSize(MOBILE_VIEWPORT);
-  await page.waitForTimeout(80);
-  await saveShot(page, `${base}-mobile${ext}`);
-  await page.setViewportSize(DESKTOP_VIEWPORT);
-  await page.waitForTimeout(80);
-  await saveShot(page, `${base}-desktop${ext}`);
 }
 
 /**
@@ -119,10 +101,8 @@ async function api(request, sessionKey, url, method = 'GET', data = undefined) {
   return json.data;
 }
 
-test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey with dual-viewport screenshots', async ({ page, request, baseURL }) => {
+test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey with screenshots', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
-  // Default to mobile so all wait/click logic matches the primary form factor.
-  // saveShotDual switches to desktop for each capture.
   await page.setViewportSize(MOBILE_VIEWPORT);
 
   const player = await createSession(request, { telegramId: 901, username: 'solo_runner', name: 'Solo Runner' });
@@ -137,16 +117,14 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // --- Home screen with "Start Game" button ---
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await expect(page.locator('.home')).toBeVisible();
-  await saveShotDual(page, 'solo-01-home-start-game.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'solo-01-home-start-game.png');
 
   // --- Start game run → prep screen ---
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await waitForPrepReady(page);
   const hud = page.locator('.run-hud');
   await expect(hud).toContainText('1');
-  await saveShotDual(page, 'solo-02-prep-round1.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'solo-02-prep-round1.png');
 
   // --- Shop has items ---
   const shopItems = page.locator('.prep-screen .shop-item');
@@ -170,8 +148,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // the round-result summary, NOT the replay. View Replay is opt-in.
   await page.getByRole('button', { name: /ready|готов/i }).click();
   await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 15000 });
-  await saveShotDual(page, 'solo-04-round-result.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'solo-04-round-result.png');
 
   // [Req 13-B] View Replay button is present on round-result and routes to replay
   const viewReplayBtn = page.getByRole('button', { name: /view replay|посмотреть реплей/i });
@@ -180,8 +157,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // --- Click View Replay → replay screen → finish → returns to next prep ---
   await viewReplayBtn.click();
   await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
-  await saveShotDual(page, 'solo-04b-round1-replay.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'solo-04b-round1-replay.png');
   const replayContinueBtn = page.locator('.replay-result-button-full');
   await expect(replayContinueBtn).toBeVisible({ timeout: 30000 });
   await replayContinueBtn.click();
@@ -198,8 +174,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
     await expect(round2ShopItems.first()).toBeVisible({ timeout: 5000 });
     const round2ShopCount = await round2ShopItems.count();
     expect(round2ShopCount).toBeGreaterThan(0);
-    await saveShotDual(page, 'solo-05-prep-round2.png');
-    await page.setViewportSize(MOBILE_VIEWPORT);
+    await saveShot(page, 'solo-05-prep-round2.png');
 
     // --- Refresh shop ---
     const refreshBtn = page.locator('.prep-screen .artifact-shop-header button');
@@ -238,8 +213,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // --- Run complete screen ---
   await expect(page.locator('.run-complete-screen')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.run-complete-card')).toBeVisible();
-  await saveShotDual(page, 'solo-09-run-complete.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'solo-09-run-complete.png');
 
   // --- Go home ---
   await page.getByRole('button', { name: /home|домой/i }).click();

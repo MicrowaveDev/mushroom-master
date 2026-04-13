@@ -48,13 +48,8 @@ test('[Flow A] onboarding screen shows for new player without active mushroom', 
   await expect(page.locator('.onboarding-step')).toHaveCount(3);
   await expect(page.locator('.onboarding-preview-portrait')).toHaveCount(5);
 
-  // Mobile viewport screenshot
   await page.setViewportSize({ width: 375, height: 667 });
-  await saveShot(page, 'onboarding-mobile.png');
-
-  // Desktop viewport screenshot
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await saveShot(page, 'onboarding-desktop.png');
+  await saveShot(page, 'onboarding.png');
 
   // Click continue → should navigate to characters screen
   await page.getByRole('button', { name: /start|начать/i }).click();
@@ -120,46 +115,6 @@ test('[Flow A Step 3] re-pick (existing player switching mushroom) goes to home,
   await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
   // No active prep screen should appear.
   await expect(page.locator('.prep-screen')).toHaveCount(0);
-});
-
-// --- Dual-viewport screenshots for key screens ---
-
-test('dual-viewport screenshots: auth, home, prep, replay, settings', async ({ page, request, baseURL }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 1002, username: 'viewport_player', name: 'Viewport' });
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-
-  // Auth screen (no session)
-  await page.goto(baseURL, { waitUntil: 'networkidle' });
-  await page.setViewportSize({ width: 375, height: 667 });
-  await saveShot(page, 'auth-mobile.png');
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await saveShot(page, 'auth-desktop.png');
-
-  // Home screen
-  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.home')).toBeVisible();
-  await page.setViewportSize({ width: 375, height: 667 });
-  await saveShot(page, 'home-mobile.png');
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await saveShot(page, 'home-desktop.png');
-
-  // Characters screen
-  await page.goto(`${baseURL}/characters`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.character-card').first()).toBeVisible();
-  await page.setViewportSize({ width: 375, height: 667 });
-  await saveShot(page, 'characters-mobile.png');
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await saveShot(page, 'characters-desktop.png');
-
-  // Settings screen
-  await page.goto(`${baseURL}/settings`, { waitUntil: 'networkidle' });
-  await expect(page.locator('.setting-row').first()).toBeVisible();
-  await page.setViewportSize({ width: 375, height: 667 });
-  await saveShot(page, 'settings-mobile.png');
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await saveShot(page, 'settings-desktop.png');
 });
 
 // --- Req 1-H: Daily battle limit ---

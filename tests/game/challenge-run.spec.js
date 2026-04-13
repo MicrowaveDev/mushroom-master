@@ -4,9 +4,8 @@ import { test, expect } from '@playwright/test';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/challenge';
 
-// Canonical viewports per docs/user-flows.md preamble + AGENTS.md.
+// Canonical viewport per docs/user-flows.md preamble + AGENTS.md.
 const MOBILE_VIEWPORT = { width: 375, height: 667 };
-const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 
 const loadoutA = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -21,18 +20,6 @@ const loadoutB = [
 async function saveShot(page, name) {
   await fs.mkdir(screenshotDir, { recursive: true });
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
-}
-
-async function saveShotDual(page, name) {
-  const dot = name.lastIndexOf('.');
-  const base = dot >= 0 ? name.slice(0, dot) : name;
-  const ext = dot >= 0 ? name.slice(dot) : '.png';
-  await page.setViewportSize(MOBILE_VIEWPORT);
-  await page.waitForTimeout(80);
-  await saveShot(page, `${base}-mobile${ext}`);
-  await page.setViewportSize(DESKTOP_VIEWPORT);
-  await page.waitForTimeout(80);
-  await saveShot(page, `${base}-desktop${ext}`);
 }
 
 async function resetDevDb(request) {
@@ -99,14 +86,12 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
   await expect(page.locator('.run-hud')).toContainText('1'); // round 1
-  await saveShotDual(page, 'challenge-01-playerA-prep-round1.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'challenge-01-playerA-prep-round1.png');
 
   // --- Opponent status shows "waiting for opponent" ---
   await expect(page.locator('.prep-opponent-status')).toBeVisible();
   await expect(page.locator('.prep-opponent-waiting')).toBeVisible();
-  await saveShotDual(page, 'challenge-02-playerA-waiting-for-opponent.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'challenge-02-playerA-waiting-for-opponent.png');
 
   // --- Player A readies → gets waiting state ---
   const readyA = await api(request, playerA.sessionKey, `/api/game-run/${runId}/ready`, 'POST', {});
@@ -147,13 +132,11 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   await pageB.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(pageB.locator('.prep-screen')).toBeVisible();
   await expect(pageB.locator('.run-hud')).toContainText('2'); // round 2
-  await saveShotDual(pageB, 'challenge-03-playerB-prep-round2.png');
-  await pageB.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(pageB, 'challenge-03-playerB-prep-round2.png');
 
   // --- Player B opponent status indicator ---
   await expect(pageB.locator('.prep-opponent-status')).toBeVisible();
-  await saveShotDual(pageB, 'challenge-04-playerB-opponent-status.png');
-  await pageB.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(pageB, 'challenge-04-playerB-opponent-status.png');
 
   // --- Play until completion via API ---
   for (let round = 0; round < 8; round++) {
@@ -172,8 +155,7 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   if (runFinal.status === 'completed' || runFinal.status === 'abandoned') {
     await page.goto(`${baseURL}/runComplete`, { waitUntil: 'load' });
     if (await page.locator('.run-complete-screen').isVisible()) {
-      await saveShotDual(page, 'challenge-05-run-complete.png');
-      await page.setViewportSize(MOBILE_VIEWPORT);
+      await saveShot(page, 'challenge-05-run-complete.png');
     }
   }
 
@@ -276,8 +258,7 @@ test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + scree
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
   await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
-  await saveShotDual(page, 'challenge-abandon-01-prep.png');
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'challenge-abandon-01-prep.png');
 
   // --- Player A abandons via API ---
   const abandonResult = await api(request, playerA.sessionKey, `/api/game-run/${runId}/abandon`, 'POST', {});
@@ -297,5 +278,5 @@ test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + scree
   await page.goto(`${baseURL}/home`, { waitUntil: 'load' });
   await expect(page.locator('.home')).toBeVisible();
   await expect(page.getByRole('button', { name: /resume|продолжить игру/i })).toHaveCount(0);
-  await saveShotDual(page, 'challenge-abandon-02-home-no-resume.png');
+  await saveShot(page, 'challenge-abandon-02-home-no-resume.png');
 });

@@ -12,9 +12,28 @@ Each step has:
 - **Action** — what the user does (click, drag, type)
 - **Expected** — assertions after the action, before the next step
 
-E2E tests must capture screenshots at **both viewports** at each major screen:
-- Mobile: `page.setViewportSize({ width: 375, height: 667 })`
-- Desktop: `page.setViewportSize({ width: 1280, height: 800 })`
+E2E tests must capture screenshots at the **mobile viewport** for each major screen (primary Telegram Mini App form factor):
+- `page.setViewportSize({ width: 375, height: 667 })`
+
+**Desktop checks (selected screens only):** The following screens have meaningfully different layouts on desktop (~1280×800) and must also be verified at that viewport. For each, the specific thing to assert is listed — do not just screenshot, assert it:
+
+| Screen | What to verify on desktop |
+|---|---|
+| `home` | Side columns are present: `.friends-panel` and `.leaderboard-panel` visible without scroll |
+| `prep` | Two-column layout: inventory grid and shop are side-by-side (not stacked); Ready button visible without scroll |
+| `characters` | All 5 character cards visible in the grid without scroll |
+| `auth` | All login buttons + language toggle visible without scroll (no button cut off below fold) |
+
+All other screens: mobile-only is sufficient — desktop shows the same content, just wider.
+
+**Images must load:** Before saving any screenshot, assert that all `<img>` elements on the screen have resolved successfully. A broken-image placeholder (`naturalWidth === 0`) is a failing assertion — it means an asset failed to load:
+
+```js
+const broken = await page.locator('img').evaluateAll(imgs => imgs.filter(i => i.naturalWidth === 0).length);
+expect(broken).toBe(0);
+```
+
+This applies to every screen that renders portraits, item icons, or avatars.
 
 Screenshot paths below are relative to `.agent/tasks/telegram-autobattler-v1/raw/`.
 Steps marked `(not yet captured)` need e2e coverage added.
