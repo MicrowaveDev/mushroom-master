@@ -16,6 +16,7 @@ Default bias:
 - do not assume the character should read as soft, sweet, or cute by default; derive the emotional read from canon and the reference
 - default to figurine-like or illustration-like stylization based on the reference, not to chibi, unless the user explicitly asks for chibi
 - preserve the reference's finish level: if it is rough, scratchy, layered, or visibly unfinished, do not polish it into clean line art
+- keep sketch energy concentrated on the character rather than turning the whole canvas into noise
 
 ## How To Use
 
@@ -57,6 +58,7 @@ When using this template for a character:
    - stronger head / face read
    - more iconic palette blocks
    - but do not collapse into super-deformed chibi proportions unless the reference clearly does so
+   - keep construction and roughness purposeful, not randomly scattered around the page
 7. Preserve these fixed output constraints:
    - single image
    - vertical composition
@@ -69,6 +71,7 @@ When using this template for a character:
 9. Prioritize:
    - likeness to the provided reference language when applicable
    - fidelity to the character's canon emotional read
+   - adult vs youthful read matching the intended character age
    - silhouette clarity
    - gesture
    - readable props
@@ -100,6 +103,9 @@ Visual style:
 - no photorealism
 - preserve roughness if the reference is rough
 - allow visible redraws and construction searching if the reference is sketch-like
+- keep roughness concentrated in contour, hair, folds, hands, and props
+- reduce unrelated scribbles around the character
+- reduce background sketch noise unless the reference clearly uses it
 - prioritize face readability, silhouette clarity, expressive linework, and simple iconic design over tiny details
 - avoid unnecessary costume complexity
 - if the reference is figurine-like or doll-like, preserve collectible simplicity instead of adding dense fantasy detail
@@ -107,6 +113,11 @@ Visual style:
 
 Character:
 [Write 2-4 sentences describing the character's role, emotional read, combat fantasy, and overall thematic identity.]
+
+Age and maturity:
+- [young adult / adult / ageless / etc.]
+- [desired maturity read]
+- [what to avoid: childlike / teenage / baby-faced / etc.]
 
 Appearance:
 - Skin: [skin description]
@@ -178,6 +189,7 @@ Map repo canon into the prompt like this:
 - `Character`:
   Use role, temperament, faction function, battle identity, and narrative vibe.
   Do not flatten every character into the same mood; extract the correct emotional read from canon.
+  Also determine the intended maturity read early: youthful adult, fully adult, ancient/regal, eerie ageless, etc.
 
 - `Appearance`:
   Use only explicit source descriptions first.
@@ -190,6 +202,9 @@ Map repo canon into the prompt like this:
   These are not interchangeable.
   Also distinguish carefully between:
   - youthful
+  - youthful adult
+  - teenage
+  - fully adult
   - regal
   - severe
   - eerie
@@ -202,17 +217,21 @@ Map repo canon into the prompt like this:
   spores, mycelium, rot, gold filaments, portal tears, alchemy glass, fungal antlers, flash-cap forms, etc.
   Use fewer stronger motifs rather than many weak ones.
   Do not compensate for missing detail by over-polishing the drawing.
+  Do not compensate for roughness by adding random nonfunctional sketch noise.
+  If the character benefits from a more personal or handmade read, prefer asymmetrical crafted details over generic fantasy filler.
 
 - `Outfit`:
   Prefer silhouette logic over generic costume filler.
   Ask: does this character read as regal, defensive, mobile, unstable, ritualistic, or predatory?
   If the reference is simple, keep the outfit simple.
   Do not translate a simple figurine reference into a dense RPG costume by default.
+  If the character is a maker / alchemist / craftsperson, add a few specific handmade details rather than many generic accessories.
 
 - `Weapon / prop`:
   Use confirmed items first.
   If no explicit weapon exists, choose a subtle prop that fits their magic and role.
   If the face / head / cloth silhouette is the main identity, let the prop stay secondary.
+  Props should reveal profession and personality, not just decorate the belt.
 
 - `Pose`:
   Match combat identity:
@@ -232,6 +251,8 @@ Map repo canon into the prompt like this:
   - keep imperfect contour quality
   - avoid cleaning edges
   - avoid polished rendering
+  - keep the roughness attached to the figure and its immediate construction
+  - avoid unrelated stray lines floating around the character
   If the reference is clean:
   - cleaner outlines are acceptable
 
@@ -239,6 +260,16 @@ Map repo canon into the prompt like this:
   Pull from canon first.
   If canon is incomplete, derive from theme rather than random preference.
   Prefer 2-4 strong dominant colors over many small accent colors.
+
+- `Personality signal`:
+  Add 1-3 concrete visual cues that make the character feel specifically them rather than generically attractive fantasy art.
+  Good signals:
+  - asymmetrical handmade gear
+  - messier or more character-specific hair
+  - sly or severe expression
+  - profession-linked props
+  - one odd crafted detail
+  Avoid generic filler detail that could belong to anyone.
 
 ## Reference Matching Rules
 
@@ -252,6 +283,7 @@ When the user asks for similarity to a specific reference image:
   - collectible/toy-like vs adventurer/utility-heavy
   - doll-like vs chibi proportions
   - youthful vs regal vs eerie vs aggressive emotional read
+  - youthful adult vs too-young face read
   - rough unfinished vs clean polished finish
 - then bias the final prompt toward that structure
 - if the previous generated result became too detailed, explicitly say so in the replacement prompt:
@@ -266,11 +298,26 @@ When the user asks for similarity to a specific reference image:
   - keep visible construction
   - avoid clean final line art
   - avoid a finished render feel
+- if the previous generated result gained too much unrelated sketch noise, explicitly say so in the replacement prompt:
+  - reduce random lines around the character
+  - keep only a few guide lines behind the figure
+  - keep the roughness in the character drawing itself
+  - avoid chaotic scribbles in empty background areas
 - if the previous generated result became too chibi, explicitly say so in the replacement prompt:
   - avoid chibi proportions
   - avoid super-deformed head-to-body ratio
   - keep a figurine-like body with a readable torso and limbs
   - keep the face readable without turning the character into a mascot
+- if the previous generated result reads too young, explicitly say so in the replacement prompt:
+  - make the face read as young adult rather than teen
+  - sharpen the expression slightly
+  - reduce baby-face signals
+  - give the body adult structure and confidence
+- if the previous generated result feels too generic, explicitly say so in the replacement prompt:
+  - add more profession-specific personality
+  - add asymmetry
+  - make the gear feel handmade
+  - reduce interchangeable fantasy-adventurer styling
 - do not assume "more lore accuracy" means "more visual similarity"
 - when canon and reference compete, preserve canon identity through a few strong cues, not through piling on accessories
 - when multiple characters share the same style family, vary the emotional read and silhouette so they do not collapse into one interchangeable fantasy-elf default
