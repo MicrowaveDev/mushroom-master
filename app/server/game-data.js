@@ -3,6 +3,22 @@
 // definitions. We `import` them into local scope AND re-export, so existing
 // `import { X } from './game-data.js'` call sites plus in-file usages in
 // helpers like getShopRefreshCost keep working.
+import { MYCELIUM_LEVEL_CURVE } from './lib/utils.js';
+export { MYCELIUM_LEVEL_CURVE };
+
+// Mycelium thresholds that unlock each lore tier on a character wiki page.
+// Index = tier number (0–3). Tier 0 (name + portrait) is always unlocked.
+export const WIKI_TIER_THRESHOLDS = [0, 100, 1000, 3000];
+
+// Maps a mushroom level (1–20) to its cosmetic tier name.
+export function getTier(level) {
+  if (level >= 20) return 'eternal';
+  if (level >= 15) return 'cap';
+  if (level >= 10) return 'root';
+  if (level >= 5) return 'mycel';
+  return 'spore';
+}
+
 import {
   BAG_BASE_CHANCE,
   BAG_ESCALATION_STEP,
@@ -538,6 +554,7 @@ export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag' && !a.
 // Character signature starters — seeded into round 1 for each mushroom on run
 // start. Two 1x1 items per character at (0,0) and (1,0). These artifacts have
 // `starterOnly: true` and are excluded from shop/ghost pools above.
+// Kept for getStarterPresetCost (cost is always 2 across all variants).
 export const STARTER_PRESETS = {
   thalla:  ['spore_lash',      'spore_needle'],
   lomie:   ['settling_guard',  'bark_plate'],
@@ -547,10 +564,77 @@ export const STARTER_PRESETS = {
   dalamar: ['entropy_shard',   'shock_puff']
 };
 
-export function getStarterPreset(mushroomId) {
-  const ids = STARTER_PRESETS[mushroomId];
-  if (!ids) return [];
-  return ids.map((artifactId, index) => {
+// Alternate starter presets per mushroom, unlocked by level.
+// All variants use two price-1 items so total preset cost stays at 2.
+export const STARTER_PRESET_VARIANTS = {
+  thalla: [
+    { id: 'default', requiredLevel: 0,  name: { ru: 'Стандарт', en: 'Standard' }, items: ['spore_lash', 'spore_needle'] },
+    { id: 'stun',    requiredLevel: 5,  name: { ru: 'Контроль', en: 'Control'  }, items: ['spore_lash', 'glimmer_cap'] },
+    { id: 'aggro',   requiredLevel: 10, name: { ru: 'Натиск',   en: 'Aggro'    }, items: ['spore_lash', 'sporeblade'] }
+  ],
+  lomie: [
+    { id: 'default', requiredLevel: 0,  name: { ru: 'Стандарт', en: 'Standard' }, items: ['settling_guard', 'bark_plate'] },
+    { id: 'quick',   requiredLevel: 5,  name: { ru: 'Ловкость',  en: 'Quick'   }, items: ['settling_guard', 'haste_wisp'] },
+    { id: 'hybrid',  requiredLevel: 10, name: { ru: 'Баланс',   en: 'Hybrid'   }, items: ['settling_guard', 'moss_ring'] }
+  ],
+  axilin: [
+    { id: 'default', requiredLevel: 0,  name: { ru: 'Стандарт', en: 'Standard' }, items: ['ferment_phial', 'sporeblade'] },
+    { id: 'speedy',  requiredLevel: 5,  name: { ru: 'Порыв',    en: 'Speedy'   }, items: ['ferment_phial', 'haste_wisp'] },
+    { id: 'tough',   requiredLevel: 10, name: { ru: 'Стойкость', en: 'Tough'   }, items: ['ferment_phial', 'moss_ring'] }
+  ],
+  kirt: [
+    { id: 'default',    requiredLevel: 0,  name: { ru: 'Стандарт', en: 'Standard'   }, items: ['measured_strike', 'moss_ring'] },
+    { id: 'aggressive', requiredLevel: 5,  name: { ru: 'Агрессия', en: 'Aggressive' }, items: ['measured_strike', 'spore_needle'] },
+    { id: 'control',    requiredLevel: 10, name: { ru: 'Контроль', en: 'Control'    }, items: ['measured_strike', 'shock_puff'] }
+  ],
+  morga: [
+    { id: 'default',  requiredLevel: 0,  name: { ru: 'Стандарт',  en: 'Standard' }, items: ['flash_cap', 'haste_wisp'] },
+    { id: 'burst',    requiredLevel: 5,  name: { ru: 'Вспышка',   en: 'Burst'    }, items: ['flash_cap', 'spore_needle'] },
+    { id: 'lockdown', requiredLevel: 10, name: { ru: 'Оглушение', en: 'Lockdown' }, items: ['flash_cap', 'glimmer_cap'] }
+  ],
+  dalamar: [
+    { id: 'default',   requiredLevel: 0,  name: { ru: 'Стандарт',   en: 'Standard'  }, items: ['entropy_shard', 'shock_puff'] },
+    { id: 'defensive', requiredLevel: 5,  name: { ru: 'Защита',     en: 'Defensive' }, items: ['entropy_shard', 'bark_plate'] },
+    { id: 'balanced',  requiredLevel: 10, name: { ru: 'Равновесие', en: 'Balanced'  }, items: ['entropy_shard', 'moss_ring'] }
+  ]
+};
+
+// Portrait variants per mushroom, unlocked by mycelium threshold.
+// 'default' is always free (cost: 0). Alternate ids match the filenames
+// under /portraits/<mushroomId>/.
+export const PORTRAIT_VARIANTS = {
+  thalla: [
+    { id: 'default', cost: 0,    path: '/portraits/thalla/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: '/portraits/thalla/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: '/portraits/thalla/2.jpg',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
+  ],
+  lomie: [
+    { id: 'default', cost: 0,    path: '/portraits/lomie/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: '/portraits/lomie/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: '/portraits/lomie/2.jpg',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
+  ],
+  axilin: [
+    { id: 'default', cost: 0,   path: '/portraits/axilin/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500, path: '/portraits/axilin/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } }
+  ],
+  kirt: [
+    { id: 'default', cost: 0,   path: '/portraits/kirt/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500, path: '/portraits/kirt/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } }
+  ],
+  morga: [
+    { id: 'default', cost: 0, path: '/portraits/morga/default.png', name: { ru: 'Базовый', en: 'Default' } }
+  ],
+  dalamar: [
+    { id: 'default', cost: 0,   path: '/portraits/dalamar/default.png', name: { ru: 'Базовый', en: 'Default' } },
+    { id: 'photo',   cost: 500, path: '/portraits/dalamar/photo.jpg',   name: { ru: 'Фото',    en: 'Photo'   } }
+  ]
+};
+
+export function getStarterPreset(mushroomId, presetId = 'default') {
+  const variants = STARTER_PRESET_VARIANTS[mushroomId];
+  const variant = variants?.find(v => v.id === presetId) || variants?.[0];
+  if (!variant) return [];
+  return variant.items.map((artifactId, index) => {
     const artifact = getArtifactById(artifactId);
     if (!artifact) return null;
     return {
@@ -564,11 +648,9 @@ export function getStarterPreset(mushroomId) {
   }).filter(Boolean);
 }
 
-// Total coin value of a character's starter preset. Used by
-// battle-service.js getActiveSnapshot to widen the run budget ceiling by
-// the free gift value — the player's loadout is allowed to exceed
-// cumulative-income by exactly this much. Mushrooms with no preset
-// (unknown id) contribute 0.
+// Total coin value of a character's starter preset. All variants use
+// two price-1 items, so cost is always 2. Uses the default preset for
+// the reference calculation (safe for any active preset).
 export function getStarterPresetCost(mushroomId) {
   const ids = STARTER_PRESETS[mushroomId];
   if (!ids) return 0;

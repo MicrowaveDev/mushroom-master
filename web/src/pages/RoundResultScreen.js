@@ -2,6 +2,12 @@ export const RoundResultScreen = {
   name: 'RoundResultScreen',
   props: ['state', 't', 'formatDelta'],
   emits: ['continue', 'view-replay'],
+  computed: {
+    leveledUp() {
+      const r = this.state.gameRunResult?.lastRound;
+      return r && r.levelAfter != null && r.levelBefore != null && r.levelAfter > r.levelBefore;
+    }
+  },
   template: `
     <section class="round-result-screen">
       <div class="panel round-result-card">
@@ -16,6 +22,9 @@ export const RoundResultScreen = {
             <dd>{{ formatDelta(state.gameRunResult.lastRound.ratingAfter - state.gameRunResult.lastRound.ratingBefore) }}</dd>
           </div>
         </dl>
+        <div v-if="leveledUp" class="level-up-toast">
+          {{ t.levelUp.replace('{level}', state.gameRunResult.lastRound.levelAfter) }}
+        </div>
         <dl class="stat-grid">
           <div class="stat"><dt>{{ t.wins }}</dt><dd>{{ state.gameRunResult.player?.wins || 0 }}</dd></div>
           <div class="stat"><dt>{{ t.lives }}</dt><dd>{{ state.gameRunResult.player?.livesRemaining || 0 }}</dd></div>

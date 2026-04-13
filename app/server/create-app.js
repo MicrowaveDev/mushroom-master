@@ -12,7 +12,8 @@ import {
 } from './auth.js';
 import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
 import { getDb, resetDb, query as dbQuery } from './db.js';
-import { CHALLENGE_IDLE_TIMEOUT_MS, ROUND_INCOME } from './game-data.js';
+import { CHALLENGE_IDLE_TIMEOUT_MS, ROUND_INCOME, PORTRAIT_VARIANTS, STARTER_PRESET_VARIANTS } from './game-data.js';
+import { computeLevel } from './lib/utils.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
@@ -530,7 +531,23 @@ export async function createApp() {
     })
   );
 
-  for (const section of ['characters', 'locations', 'factions', 'glossary']) {
+  // Character wiki: gate lore sections by the player's mycelium for that mushroom.
+  app.get(
+    '/api/wiki/characters/:slug',
+    asyncRoute(async (req, res) => {
+      let mycelium = 0;
+      if (req.user) {
+        const row = await dbQuery(
+          `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+          [req.user.id, req.params.slug]
+        );
+        mycelium = row.rowCount ? row.rows[0].mycelium : 0;
+      }
+      res.json({ success: true, data: await getWikiEntry('characters', req.params.slug, mycelium) });
+    })
+  );
+
+  for (const section of ['locations', 'factions', 'glossary']) {
     app.get(
       `/api/wiki/${section}/:slug`,
       asyncRoute(async (req, res) => {
@@ -538,6 +555,58 @@ export async function createApp() {
       })
     );
   }
+
+  // Switch active portrait for a mushroom (unlocked by mycelium threshold).
+  app.put(
+    '/api/mushroom/:id/portrait',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const mushroomId = req.params.id;
+      const { portraitId } = req.body;
+      const variants = PORTRAIT_VARIANTS[mushroomId];
+      if (!variants) return res.status(404).json({ success: false, error: 'Unknown mushroom' });
+      const variant = variants.find(v => v.id === portraitId);
+      if (!variant) return res.status(400).json({ success: false, error: 'Unknown portrait' });
+      const row = await dbQuery(
+        `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+        [req.user.id, mushroomId]
+      );
+      const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
+      if (mycelium < variant.cost) return res.status(403).json({ success: false, error: 'Not enough mycelium' });
+      await dbQuery(
+        `UPDATE player_mushrooms SET active_portrait = $1 WHERE player_id = $2 AND mushroom_id = $3`,
+        [portraitId, req.user.id, mushroomId]
+      );
+      res.json({ success: true, data: { portraitId, path: variant.path } });
+    })
+  );
+
+  // Switch active starter preset for a mushroom (unlocked by level).
+  app.put(
+    '/api/mushroom/:id/preset',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const mushroomId = req.params.id;
+      const { presetId } = req.body;
+      const variants = STARTER_PRESET_VARIANTS[mushroomId];
+      if (!variants) return res.status(404).json({ success: false, error: 'Unknown mushroom' });
+      const variant = variants.find(v => v.id === presetId);
+      if (!variant) return res.status(400).json({ success: false, error: 'Unknown preset' });
+      const row = await dbQuery(
+        `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+        [req.user.id, mushroomId]
+      );
+      const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
+      if (computeLevel(mycelium).level < variant.requiredLevel) {
+        return res.status(403).json({ success: false, error: 'Level too low' });
+      }
+      await dbQuery(
+        `UPDATE player_mushrooms SET active_preset = $1 WHERE player_id = $2 AND mushroom_id = $3`,
+        [presetId, req.user.id, mushroomId]
+      );
+      res.json({ success: true, data: { presetId } });
+    })
+  );
 
   app.get('/api/bot/discovery', (req, res) => {
     res.json({

@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { marked } from 'marked';
+import { WIKI_TIER_THRESHOLDS } from './game-data.js';
 
 const rootDir = path.resolve('/Users/microwavedev/workspace/mushroom-master/wiki');
 
@@ -28,6 +29,37 @@ function parseFrontmatter(content) {
     meta,
     body: content.slice(end + 5).trim()
   };
+}
+
+// Split a markdown body on <!-- tier:N --> markers.
+// Returns [{tier: number, markdown: string}].
+// If no markers exist, returns a single section at tier 0.
+function parseTierSections(body) {
+  const tierRegex = /<!-- tier:(\d+) -->/g;
+  const sections = [];
+  let lastIndex = 0;
+  let lastTier = null;
+  let match;
+
+  while ((match = tierRegex.exec(body)) !== null) {
+    if (lastTier !== null) {
+      const text = body.slice(lastIndex, match.index).trim();
+      if (text) sections.push({ tier: lastTier, markdown: text });
+    }
+    lastTier = parseInt(match[1], 10);
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastTier !== null) {
+    const text = body.slice(lastIndex).trim();
+    if (text) sections.push({ tier: lastTier, markdown: text });
+  }
+
+  if (sections.length === 0) {
+    return [{ tier: 0, markdown: body.trim() }];
+  }
+
+  return sections;
 }
 
 async function readPage(section, slug) {
@@ -78,10 +110,35 @@ function summarizeEntry(entry) {
   };
 }
 
-export async function getWikiEntry(section, slug) {
+// mycelium defaults to Infinity so non-authenticated callers (and non-character
+// sections) always see everything.
+export async function getWikiEntry(section, slug, mycelium = Infinity) {
   const entry = await readPage(section, slug);
+  const rawSections = parseTierSections(entry.markdown);
+
+  const isCharacter = section === 'characters';
+
+  const sections = rawSections.map(({ tier, markdown }) => {
+    const threshold = WIKI_TIER_THRESHOLDS[tier] ?? 0;
+    const locked = isCharacter && mycelium < threshold;
+    return {
+      tier,
+      threshold,
+      locked,
+      html: locked ? null : marked.parse(markdown)
+    };
+  });
+
+  // html = joined visible content (used by tests and legacy callers)
+  const html = sections
+    .filter((s) => !s.locked)
+    .map((s) => s.html)
+    .join('\n');
+
   return {
     ...entry,
+    html,
+    sections,
     related: entry.related ? entry.related.split(',').map((value) => value.trim()).filter(Boolean) : []
   };
 }

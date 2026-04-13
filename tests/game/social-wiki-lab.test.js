@@ -47,6 +47,8 @@ test('wiki pages and local ai lab route are available in non-production', async 
   const wikiEntry = await getWikiEntry('characters', 'thalla');
   assert.match(wikiEntry.markdown, /Тхалла/);
   assert.equal(typeof wikiEntry.html, 'string');
+  assert.ok(Array.isArray(wikiEntry.sections), 'sections array present');
+  assert.ok(wikiEntry.sections.length > 0);
 
   const run = await saveLocalTestRun({
     fixtureNarration: 'Thalla stuns Kirt on round one.',

@@ -114,7 +114,19 @@ export const messages = {
     battleWith: 'Боец:',
     challengeFriend: 'Вызвать друга',
     noBattlesYet: 'Начни первый бой!',
-    rank: 'Место'
+    rank: 'Место',
+    tier_spore: 'Спора',
+    tier_mycel: 'Мицель',
+    tier_root: 'Корень',
+    tier_cap: 'Шляпка',
+    tier_eternal: 'Вечный',
+    wikiUnlockAt: 'Открывается при {n} мицелия',
+    levelUp: 'Уровень {level}!',
+    customize: 'Настроить',
+    portraits: 'Портреты',
+    starterPreset: 'Стартовый набор',
+    portraitLocked: 'Открывается при {n} мицелия',
+    presetLocked: 'Требует уровень {n}'
   },
   en: {
     title: 'Mycelium Autobattler',
@@ -231,6 +243,18 @@ export const messages = {
     battleWith: 'Fighter:',
     challengeFriend: 'Challenge a friend',
     noBattlesYet: 'Start your first battle!',
-    rank: 'Rank'
+    rank: 'Rank',
+    tier_spore: 'Spore',
+    tier_mycel: 'Mycel',
+    tier_root: 'Root',
+    tier_cap: 'Cap',
+    tier_eternal: 'Eternal',
+    wikiUnlockAt: 'Unlocks at {n} mycelium',
+    levelUp: 'Level {level}!',
+    customize: 'Customize',
+    portraits: 'Portraits',
+    starterPreset: 'Starter Preset',
+    portraitLocked: 'Unlocks at {n} mycelium',
+    presetLocked: 'Requires level {n}'
   }
 };

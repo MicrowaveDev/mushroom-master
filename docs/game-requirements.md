@@ -242,3 +242,34 @@ Last verified against code: 2026-04-13.
 - **13-B.** Replays are accessible from the round-result screen and from the battle history list.
 - **13-C.** During an active game run, the post-replay button must show **"Продолжить"** (continue to next round), not "Домой" (home).
 - **13-D.** Outside a game run (standalone replay from history), the post-replay button shows **"Домой"**.
+
+---
+
+## 14. Mushroom Progression
+
+- **14-A.** Each mushroom has a **level (1–20)** computed on read from its cumulative `mycelium` via `MYCELIUM_LEVEL_CURVE` in `app/server/lib/utils.js`. Level has no effect on combat stats, ghost scaling, or any game mechanic.
+- **14-B.** Levels map to one of five **cosmetic tiers** via `getTier(level)` (in `app/server/game-data.js`):
+
+  | Tier | Levels | Mycelium range (approx) |
+  |---|---|---|
+  | Spore | 1–4 | 0–349 |
+  | Mycel | 5–9 | 350–1 199 |
+  | Root | 10–14 | 1 200–2 499 |
+  | Cap | 15–19 | 2 500–3 999 |
+  | Eternal | 20 | 4 000+ |
+
+  Tier is displayed as a badge on the home screen mushroom card. Level-up is a cosmetic event only.
+
+- **14-C.** Level is **per-mushroom**. Playing Thalla does not advance Axilin's level.
+- **14-D.** Character wiki entries are **gated by cumulative mycelium** (`WIKI_TIER_THRESHOLDS` in `app/server/game-data.js`):
+
+  | Mycelium | Unlocks |
+  |---|---|
+  | 0 | Name + portrait (always visible) |
+  | 100 | Overview paragraph |
+  | 1 000 | Detailed lore |
+  | 3 000 | Full backstory |
+
+  Locked sections render as a lock icon with "Unlocks at N mycelium" copy. Non-character wiki entries (locations, factions, glossary) are always fully visible. Gating is enforced server-side in `getWikiEntry(section, slug, mycelium)`.
+
+- **14-E.** The solo round-result response includes `lastRound.levelBefore` and `lastRound.levelAfter`. The round-result screen displays a level-up notification when `levelAfter > levelBefore`.

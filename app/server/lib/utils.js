@@ -85,20 +85,35 @@ export function kFactor(rating, ratedBattles, mode = 'standard') {
   return 24;
 }
 
+// Cumulative mycelium required to reach each level.
+// MYCELIUM_LEVEL_CURVE[i] = total mycelium to reach level i+2, so:
+//   index 0 → level 2 (100 mycelium)   … index 18 → level 20 (4 000 mycelium)
+// Tier bands (approx): Spore 1–4 | Mycel 5–9 | Root 10–14 | Cap 15–19 | Eternal 20
+export const MYCELIUM_LEVEL_CURVE = [
+  100, 200, 300,                          // levels 2–4  (Spore)
+  350, 520, 690, 860, 1030,               // levels 5–9  (Mycel)
+  1200, 1460, 1720, 1980, 2240,           // levels 10–14 (Root)
+  2500, 2800, 3100, 3400, 3700,           // levels 15–19 (Cap)
+  4000                                    // level 20    (Eternal)
+];
+
 export function computeLevel(mycelium) {
   let level = 1;
-  let threshold = 100;
-  let spent = 0;
-
-  while (mycelium >= spent + threshold) {
-    spent += threshold;
-    level += 1;
-    threshold += 50;
+  for (let i = 0; i < MYCELIUM_LEVEL_CURVE.length; i++) {
+    if (mycelium >= MYCELIUM_LEVEL_CURVE[i]) {
+      level = i + 2;
+    } else {
+      break;
+    }
   }
-
+  if (level >= 20) {
+    return { level: 20, current: mycelium - 4000, next: null };
+  }
+  const currentThreshold = level >= 2 ? MYCELIUM_LEVEL_CURVE[level - 2] : 0;
+  const nextThreshold = MYCELIUM_LEVEL_CURVE[level - 1];
   return {
     level,
-    current: mycelium - spent,
-    next: threshold
+    current: mycelium - currentThreshold,
+    next: nextThreshold - currentThreshold
   };
 }

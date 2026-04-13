@@ -599,6 +599,39 @@ select {
   font-weight: 500;
 }
 
+/* Tier badge */
+.home-mushroom-tier {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.6em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  flex-shrink: 0;
+}
+.tier--spore  { background: rgba(120,120,120,0.12); color: #888; }
+.tier--mycel  { background: rgba(127,152,114,0.18); color: var(--sage); }
+.tier--root   { background: rgba(138, 97, 53,0.15); color: var(--accent); }
+.tier--cap    { background: rgba(201,168,76,0.18);  color: #9a7428; }
+.tier--eternal { background: rgba(47,36,25,0.08);   color: var(--ink); border: 1px solid var(--accent-soft); }
+
+/* Progress bar toward next level */
+.home-mushroom-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 3px;
+  overflow: hidden;
+}
+.home-mushroom-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--sage);
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+
 .home-mushroom-record {
   display: flex;
   gap: 6px;
@@ -614,6 +647,122 @@ select {
   flex-shrink: 0;
   font-size: 0.78em;
   padding: 5px 10px;
+}
+
+.home-mushroom-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-mushroom-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.home-mushroom-customize {
+  font-size: 0.85em;
+  padding: 4px 8px;
+  opacity: 0.65;
+  line-height: 1;
+}
+.home-mushroom-customize--open {
+  opacity: 1;
+  background: var(--border);
+}
+
+/* Portrait + preset picker */
+.home-mushroom-picker {
+  border-top: 1px solid var(--border);
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0,0,0,0.15);
+}
+
+.home-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-picker-label {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.home-portrait-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.home-portrait-swatch {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  transition: border-color 0.15s;
+}
+.home-portrait-swatch img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.home-portrait-swatch--active {
+  border-color: var(--sage);
+}
+.home-portrait-swatch--locked {
+  opacity: 0.45;
+  cursor: default;
+}
+.home-swatch-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  background: rgba(0,0,0,0.35);
+}
+
+.home-preset-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.home-preset-pill {
+  font-size: 0.8em;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.home-preset-pill:hover:not(.home-preset-pill--locked) {
+  border-color: var(--sage);
+}
+.home-preset-pill--active {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #000;
+}
+.home-preset-pill--locked {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* Friends */
@@ -2541,6 +2690,37 @@ select {
   gap: 8px;
   justify-content: center;
   margin-top: 16px;
+}
+
+/* Level-up notification */
+.level-up-toast {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(127,152,114,0.18);
+  border: 1px solid var(--sage);
+  color: var(--sage);
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.03em;
+}
+
+/* --- Wiki locked sections --- */
+.wiki-locked-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(94,70,39,0.06);
+  border: 1px dashed var(--border);
+  color: #999;
+  font-size: 0.85em;
+  margin: 8px 0;
+}
+.wiki-lock-icon {
+  font-size: 1em;
+  flex-shrink: 0;
 }
 
 /* --- Run Complete Screen --- */

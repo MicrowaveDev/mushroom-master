@@ -7,7 +7,9 @@ export default function definePlayerMushroom(sequelize) {
     mycelium: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     wins: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     losses: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-    draws: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
+    draws: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    active_portrait: { type: DataTypes.TEXT, allowNull: false, defaultValue: 'default' },
+    active_preset: { type: DataTypes.TEXT, allowNull: false, defaultValue: 'default' }
   }, {
     tableName: 'player_mushrooms',
     timestamps: false

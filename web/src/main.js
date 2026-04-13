@@ -115,6 +115,22 @@ const App = {
       }
     }
 
+    async function switchPortrait({ mushroomId, portraitId }) {
+      const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
+        method: 'PUT',
+        body: JSON.stringify({ portraitId })
+      }, state.sessionKey);
+      if (result?.success) await gs.refreshBootstrap();
+    }
+
+    async function switchPreset({ mushroomId, presetId }) {
+      const result = await apiJson(`/api/mushroom/${mushroomId}/preset`, {
+        method: 'PUT',
+        body: JSON.stringify({ presetId })
+      }, state.sessionKey);
+      if (result?.success) await gs.refreshBootstrap();
+    }
+
     // saveLoadout / startBattle (legacy single-battle UI handlers) deleted
     // 2026-04-13. The legacy POST /api/battles endpoint and ArtifactsScreen
     // / BattlePrepScreen / ResultsScreen are gone.
@@ -217,6 +233,7 @@ const App = {
       loginViaBrowserCode: auth.loginViaBrowserCode,
       loginViaDevSession: auth.loginViaDevSession,
       saveCharacter,
+      switchPortrait, switchPreset,
       saveSettings: auth.saveSettings,
       runLocalLab, loadInventoryReview, handleRunComplete, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
@@ -275,6 +292,7 @@ const App = {
           @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
           @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
           @select-mushroom="saveCharacter($event)"
+          @switch-portrait="switchPortrait($event)" @switch-preset="switchPreset($event)"
         />
 
         <characters-screen v-else-if="state.screen === 'characters'"

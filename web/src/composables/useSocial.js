@@ -51,7 +51,7 @@ export function useSocial(state, goTo) {
 
   async function openWiki(section, slug) {
     try {
-      state.selectedWiki = await apiJson(`/api/wiki/${section}/${slug}`);
+      state.selectedWiki = await apiJson(`/api/wiki/${section}/${slug}`, {}, state.sessionKey);
       goTo('wiki-detail');
     } catch (error) {
       state.error = error.message || 'Could not load wiki entry';

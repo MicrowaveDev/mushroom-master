@@ -1,7 +1,10 @@
 import { query, withTransaction } from '../db.js';
 import {
   getMushroomById,
-  mushrooms
+  getTier,
+  mushrooms,
+  PORTRAIT_VARIANTS,
+  STARTER_PRESET_VARIANTS
 } from '../game-data.js';
 import {
   computeLevel,
@@ -57,18 +60,33 @@ export async function getPlayerState(playerId) {
 
   const progression = Object.fromEntries(
     playerMushroomsResult.rows.map((row) => {
-      const level = computeLevel(row.mycelium);
+      const levelInfo = computeLevel(row.mycelium);
+      const level = levelInfo.level;
+
+      const portraitVariants = PORTRAIT_VARIANTS[row.mushroom_id] || [];
+      const activePortraitId = row.active_portrait || 'default';
+      const activePortraitDef = portraitVariants.find(v => v.id === activePortraitId) || portraitVariants[0];
+
+      const presetVariants = STARTER_PRESET_VARIANTS[row.mushroom_id] || [];
+      const activePresetId = row.active_preset || 'default';
+
       return [
         row.mushroom_id,
         {
           mushroomId: row.mushroom_id,
           mycelium: row.mycelium,
-          level: level.level,
-          currentLevelMycelium: level.current,
-          nextLevelMycelium: level.next,
+          level,
+          tier: getTier(level),
+          currentLevelMycelium: levelInfo.current,
+          nextLevelMycelium: levelInfo.next,
           wins: row.wins,
           losses: row.losses,
-          draws: row.draws
+          draws: row.draws,
+          activePortrait: activePortraitId,
+          activePortraitUrl: activePortraitDef?.path || `/portraits/${row.mushroom_id}/default.png`,
+          portraits: portraitVariants.map(v => ({ ...v, unlocked: row.mycelium >= v.cost })),
+          activePreset: activePresetId,
+          presets: presetVariants.map(v => ({ ...v, unlocked: level >= v.requiredLevel }))
         }
       ];
     })

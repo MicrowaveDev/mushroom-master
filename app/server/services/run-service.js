@@ -25,6 +25,7 @@ import {
   STARTING_LIVES
 } from '../game-data.js';
 import {
+  computeLevel,
   createId,
   createRng,
   dayKey,
@@ -145,7 +146,15 @@ export async function startGameRun(playerId, mode = 'solo') {
     const activeMushroomId = activeMushroomResult.rowCount
       ? activeMushroomResult.rows[0].mushroom_id
       : null;
-    const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId) : [];
+    let activePresetId = 'default';
+    if (activeMushroomId) {
+      const presetResult = await client.query(
+        `SELECT active_preset FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+        [playerId, activeMushroomId]
+      );
+      if (presetResult.rowCount) activePresetId = presetResult.rows[0].active_preset || 'default';
+    }
+    const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId, activePresetId) : [];
     for (const item of starterItems) {
       await insertLoadoutItem(client, {
         gameRunId: runId,
@@ -820,10 +829,19 @@ export async function resolveRound(playerId, gameRunId) {
     );
     const mushroomId = activeChar.rowCount ? activeChar.rows[0].mushroom_id : leftSnapshot.mushroomId;
 
+    const mushroomRow = await client.query(
+      `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+      [playerId, mushroomId]
+    );
+    const myceliumBefore = mushroomRow.rowCount ? mushroomRow.rows[0].mycelium : 0;
+
     await client.query(
       `UPDATE player_mushrooms SET mycelium = mycelium + $3 WHERE player_id = $1 AND mushroom_id = $2`,
       [playerId, mushroomId, rewards.mycelium]
     );
+
+    const levelBefore = computeLevel(myceliumBefore).level;
+    const levelAfter = computeLevel(myceliumBefore + rewards.mycelium).level;
 
     // Ghost snapshots are no longer written to a separate table (§2.4).
     // The round-N loadout rows in game_run_loadout_items ARE the snapshot —
@@ -898,7 +916,9 @@ export async function resolveRound(playerId, gameRunId) {
         outcome,
         rewards,
         ratingBefore: player.rating,
-        ratingAfter
+        ratingAfter,
+        levelBefore,
+        levelAfter
       }
     };
   });
@@ -1246,7 +1266,15 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
       const activeMushroomId = activeCharResult.rowCount
         ? activeCharResult.rows[0].mushroom_id
         : null;
-      const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId) : [];
+      let activePresetId = 'default';
+      if (activeMushroomId) {
+        const presetResult = await client.query(
+          `SELECT active_preset FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+          [pid, activeMushroomId]
+        );
+        if (presetResult.rowCount) activePresetId = presetResult.rows[0].active_preset || 'default';
+      }
+      const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId, activePresetId) : [];
       for (const item of starterItems) {
         await insertLoadoutItem(client, {
           gameRunId: runId,

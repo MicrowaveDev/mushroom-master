@@ -1,6 +1,6 @@
 # Mycelium Sink — Design Plan
 
-**Status:** Draft. Awaiting product decision on which option(s) to ship.
+**Status:** Options 1, 3, 5, 6 implemented (2026-04-13). Option 2 deferred. Options 4 optional.
 **Scope:** Turn `mycelium` (currently an earning-only number) into a
 currency players actively spend. Propose 5 options ranked by fit, then
 recommend a first-cycle pair.
@@ -143,46 +143,36 @@ logic in `battle-engine.resolveAction` reads the rank from a new
 
 ---
 
-### Option 3 — Starter preset variants
+### Option 3 — Starter preset variants ✅ implemented
 
-**The pitch:** Reaching a mushroom's level 5 / 10 / 15 (via Option 1)
-unlocks alternate 2-item starter presets for that mushroom. Player
-picks the active variant on the character screen. The active variant
-is what `getStarterPreset()` returns, feeding `startGameRun` and the
-ghost generator.
+**The pitch:** Reaching a mushroom's level 5 / 10 unlocks alternate
+2-item starter presets for that mushroom. Player picks the active
+variant from the ✎ picker on the home screen mushroom card. The active
+variant is what `getStarterPreset(mushroomId, presetId)` returns,
+feeding `startGameRun` and `createChallengeRun`.
 
-Example for Thalla (level-gated):
-- **Level 0 (default):** Spore Lash + Spore Needle — control-leaning.
-- **Level 5 unlock:** Spore Lash + Haste Wisp — speed/control hybrid.
-- **Level 10 unlock:** Thunder Gill + Spore Needle — damage pivot.
+Actual presets shipped per mushroom:
+- **Thalla:** Standard (L0), Control — Spore Lash + Glimmer Cap (L5), Aggro — Spore Lash + Sporeblade (L10)
+- **Lomie:** Standard (L0), Quick — Settling Guard + Haste Wisp (L5), Hybrid — Settling Guard + Moss Ring (L10)
+- **Axilin:** Standard (L0), Speedy — Ferment Phial + Haste Wisp (L5), Tough — Ferment Phial + Moss Ring (L10)
+- **Kirt:** Standard (L0), Aggressive — Measured Strike + Spore Needle (L5), Control — Measured Strike + Shock Puff (L10)
+- **Morga:** Standard (L0), Burst — Flash Cap + Spore Needle (L5), Lockdown — Flash Cap + Glimmer Cap (L10)
+- **Dalamar:** Standard (L0), Defensive — Entropy Shard + Bark Plate (L5), Balanced — Entropy Shard + Moss Ring (L10)
 
-**Pros**
-- **Adds build variety without inflating the artifact pool.** Each
-  mushroom becomes 3 mini-classes by mid-game.
-- Natural tie-in with Option 1 (levels are the gating currency).
-- Per-mushroom naturally — encourages mushroom loyalty.
+All alternate slots use price-1 items so `getStarterPresetCost()` stays
+at 2 for every variant — `[Req 4-N]` budget ceiling unchanged.
 
-**Cons**
-- **Content work.** 5 mushrooms × 2 alternate presets = 10 new items
-  to balance. Each alternate preset must cost ≤2 coins to match
-  `[Req 4-N]` budget ceiling.
-- **`[Req 3-A]`–`[Req 3-E]` rewrite.** The "2-item signature preset"
-  rule needs to become "an active 2-item preset chosen from unlocked
-  variants".
-- **Ghost impact.** Ghost opponents also get starter presets
-  (`[Req 3-E]`, `[Req 7-C]`) — the game needs to pick which variant
-  ghosts use. Probably roll it from the `gameRunId` seed for
-  determinism.
+Ghosts continue to receive their mushroom's **default** preset regardless
+of which variant a player has active — no ghost balance change.
 
-**Effort**
-- Design: 10 alternate preset builds + playtest. ~4 hours.
-- Backend: `STARTER_PRESET_VARIANTS` table, selection logic, req
-  rewrite. ~2 hours.
-- Frontend: character-screen variant picker. ~2 hours.
-- Tests: variant unlock gates, ghost uses active variant, starter
-  fuzzer catches variant leaks. ~2 hours.
+**Implementation:**
+- `STARTER_PRESET_VARIANTS` constant in `game-data.js`; `getStarterPreset(id, presetId='default')` updated.
+- `active_preset TEXT NOT NULL DEFAULT 'default'` column on `player_mushrooms` (auto-ALTERed on start).
+- `startGameRun` and `createChallengeRun` read `active_preset` from `player_mushrooms` before seeding.
+- `PUT /api/mushroom/:id/preset` — validates level, persists choice.
+- Home screen ✎ picker shows preset pills; locked presets display level requirement.
 
-**Total: ~10 hours.** Only valuable if Option 1 ships first (depends on levels).
+**Total: implemented.**
 
 ---
 
@@ -262,51 +252,80 @@ frontend.
 
 ---
 
-### Option 6 — Portrait variants
+### Option 6 — Portrait variants ✅ implemented
 
-**The pitch:** Each mushroom has 2–3 alternate portraits purchasable
-with mycelium. The active portrait is shown everywhere the mushroom
-appears: character card, home screen, replay bubbles. The base
-portrait costs nothing; variants are bought once and persist.
+**The pitch:** Each mushroom has 2–3 alternate portraits unlocked by
+mycelium threshold (not spent — threshold-based, same model as wiki
+unlocks). The active portrait is shown on the home screen character
+card. The base portrait is always free.
 
-| Variant | Cost (mycelium) |
-|---|---|
-| Default | — (always unlocked) |
-| Variant 1 | 500 |
-| Variant 2 | 1500 |
+Actual variants shipped per mushroom:
+- **Thalla:** default (0), 1.jpg (500 mycelium), 2.jpg (1500 mycelium)
+- **Lomie:** default (0), 1.jpg (500 mycelium), 2.jpg (1500 mycelium)
+- **Axilin:** default (0), 1.jpg (500 mycelium)
+- **Kirt:** default (0), 1.jpg (500 mycelium)
+- **Morga:** default only (1 variant — more art to be added)
+- **Dalamar:** default (0), photo.jpg (500 mycelium)
 
-Assets live in `web/src/assets/portraits/{mushroom}/`:
-- `default.png` — base portrait (ships with the game)
-- `variant-1.png`, `variant-2.png` — alternate art provided by designer
+Portrait assets at `web/public/portraits/{mushroomId}/` — Vite serves
+them as static files; new art drops in without a build change.
 
-**Pros**
-- **Zero balance impact.** Purely cosmetic — no combat, no ghost math.
-- **Per-mushroom naturally.** Thalla's portraits stay on Thalla.
-- **High perceived value.** New art feels more earned than a stat tick.
-- **Late-game sink.** 1500 mycelium per mushroom × 5 mushrooms = 7500
-  mycelium to collect everything. Complements Option 1 and 5 as the
-  ultimate mastery flex.
+**Implementation:**
+- `PORTRAIT_VARIANTS` constant in `game-data.js` with path, cost, name per variant.
+- `active_portrait TEXT NOT NULL DEFAULT 'default'` column on `player_mushrooms` (auto-ALTERed on start).
+- `progression` in `getPlayerState` includes `activePortraitUrl`, `portraits[]` (each with `unlocked: mycelium >= cost`).
+- `PUT /api/mushroom/:id/portrait` — validates mycelium, persists choice.
+- Home screen ✎ picker shows portrait swatches with lock overlay for unearned variants.
 
-**Cons**
-- **Blocked on art assets.** System can ship before art; portraits drop
-  in as files and Vite picks them up without a deploy (static assets).
-- **One new schema column.** `player_mushrooms.active_portrait TEXT
-  NOT NULL DEFAULT 'default'` — small migration, same pattern as
-  existing columns.
+**User flow — changing a portrait:**
 
-**Effort**
-- Backend: `active_portrait` column migration, purchase endpoint
-  (`POST /api/mushroom/:id/portrait`), serve active portrait in
-  `getPlayerState`. ~1.5 hours.
-- Frontend: portrait picker on character screen, portrait resolved
-  dynamically in replay bubble via `replayPortraitConfigByMushroom`.
-  ~2 hours.
-- Tests: purchase gate (can't afford, already owned), portrait
-  change reflects in subsequent `refreshBootstrap`. ~1 hour.
+```
+Player opens Home screen
+  │
+  ├─ Mushroom card has only 1 portrait variant (e.g. Morga)
+  │    └─ ✎ button is not shown. No action available.
+  │
+  └─ Mushroom card has 2+ portrait variants
+       └─ ✎ button visible on the card
+            │
+            ▼
+       Player clicks ✎
+       Card expands to show portrait swatch row
+            │
+            ├─ Swatch is ACTIVE (current portrait)
+            │    └─ Green border, no action needed. Already selected.
+            │
+            ├─ Swatch is UNLOCKED (mycelium >= variant.cost)
+            │    └─ Full opacity. Player clicks swatch.
+            │         │
+            │         ▼
+            │    PUT /api/mushroom/:id/portrait { portraitId }
+            │         │
+            │         ├─ 200 OK → refreshBootstrap()
+            │         │    active_portrait updated in DB
+            │         │    home screen card shows new portrait immediately
+            │         │
+            │         └─ 403 (race: mycelium dropped between render and PUT)
+            │              └─ no state change; UI re-renders on next bootstrap
+            │
+            └─ Swatch is LOCKED (mycelium < variant.cost)
+                 └─ 45% opacity, 🔒 overlay, tooltip "Unlocks at N mycelium"
+                      └─ Click is ignored (no event emitted)
+```
 
-**Total: ~4.5 hours.** Blocked on art delivery — implement the system
-now, drop assets in when ready. The portrait folders already exist at
-`web/public/portraits/{thalla,lomie,axilin,kirt,morga,dalamar}/`.
+**Unlock conditions (server-enforced):**
+
+| Check | Rule | Error |
+|---|---|---|
+| Mushroom exists | `mushroomId` must be a key in `PORTRAIT_VARIANTS` | 404 |
+| Portrait exists | `portraitId` must be in that mushroom's variant list | 400 |
+| Mycelium threshold | `player_mushrooms.mycelium >= variant.cost` for that player+mushroom row | 403 |
+
+Mycelium is **not deducted** — the threshold is a cumulative gate, not
+a purchase. Reaching 500 mycelium on Thalla permanently unlocks Variant
+1; spending it elsewhere has no effect.
+
+**Total: implemented.**
 
 ---
 
@@ -328,119 +347,114 @@ Opens a moderation surface (goldfarming, begging). No thanks.
 
 ## Recommendation
 
-**Ship Option 1 + Option 5 as one cycle. Add Option 6 once portrait
-art arrives.**
+**Options 1, 3, 5, and 6 are all shipped.** The mycelium sink is fully
+functional: levels, tier badges, wiki gating, portrait variants, and
+preset variants are live.
 
-Rationale:
+Retrospective:
 
-1. **Total budget is ~7.75 hours** for Options 1+5 — realistic for a
-   single PR.
-2. **Option 1 (levels + tier rating)** gives the immediate payoff
-   loop with zero balance risk: every mycelium reward advances a
-   visible tier, level-ups are a cosmetic event, no ghost math is
-   touched.
-3. **Option 5 (wiki unlocks)** gives the late-game lore reward.
-   Mycelium thresholds line up with the level tiers naturally (e.g.
-   tier Root unlocks at ~1 200 mycelium; lore tier 2 unlocks at
-   1 000 mycelium).
-4. **Option 6 (portrait variants)** is the prestige layer. The
-   backend + frontend (~4.5h) can ship independently of the art;
-   portraits drop in as static files. The portrait folders are already
-   scaffolded at `web/public/portraits/{mushroom}/`.
-5. **All three options have zero balance impact.** No stat bonuses,
-   no ghost scaling, no combat formula changes. No balance re-run
-   needed.
-6. **Options 1 and 5 need no schema changes.** `player_mushrooms.
-   mycelium` and `level` already exist. Option 6 adds one column
-   (`active_portrait`).
+1. **All four options have zero balance impact.** No stat bonuses, no
+   ghost scaling, no combat formula changes — no balance re-run needed.
+2. **Option 1 (levels + tier rating)** delivered the payoff loop: every
+   mycelium reward advances a visible tier badge + progress bar, and a
+   level-up toast fires on round-result when a threshold is crossed.
+3. **Option 5 (wiki unlocks)** added the lore reward layer. Mycelium
+   thresholds (0/100/1000/3000) align naturally with tier boundaries.
+4. **Option 6 (portrait variants)** is the prestige layer. Art was
+   delivered to `web/public/portraits/` and the picker is live on the
+   home screen. More portraits can be dropped in without a deploy.
+5. **Option 3 (preset variants)** gave build variety per mushroom —
+   3 variants per mushroom at level 0/5/10, all costing 2 coins total
+   so the budget validator is unchanged.
+6. **Schema additions:** `player_mushrooms.active_portrait` and
+   `player_mushrooms.active_preset` (both TEXT, DEFAULT 'default',
+   auto-ALTERed by Sequelize sync on deploy).
 
 **Schedule Option 2 (skill ranks) for a later cycle, alone.** It's
 the biggest balance project and deserves its own plan doc, its own
-PR, and its own balance pass. Don't share a release with anything
-else.
+PR, and its own balance pass. Don't share a release with anything else.
 
-**Consider Option 3 (preset variants) only after Option 1 ships** —
-it depends on levels as the gating currency, and needs content work
-that's lower priority than the core loop.
-
-**Option 4 (affinity promotion) is a small cherry-on-top** that could
-land in a follow-up PR alongside Option 5 if wiki unlocks alone feel
-too thin as a late-game sink.
+**Option 4 (affinity promotion) remains optional** — a small follow-up
+if a secondary shop-weighting sink is wanted later.
 
 ---
 
-## Proposed first-cycle plan (Options 1 + 5)
+## Implementation summary
 
-### Requirements
+### What shipped (Options 1, 3, 5, 6)
 
-New section in [docs/game-requirements.md](./game-requirements.md):
+**Backend:**
+- `MYCELIUM_LEVEL_CURVE`, `computeLevel()`, `getTier()`, `WIKI_TIER_THRESHOLDS` in `game-data.js`.
+- `PORTRAIT_VARIANTS` and `STARTER_PRESET_VARIANTS` in `game-data.js`.
+- `getStarterPreset(mushroomId, presetId='default')` is variant-aware; `getStarterPresetCost` unchanged.
+- `getWikiEntry()` gates sections by mycelium; character wiki route passes player mycelium.
+- `getPlayerState` progression includes `level`, `tier`, `currentLevelMycelium`, `nextLevelMycelium`, `activePortrait`, `activePortraitUrl`, `portraits[]`, `activePreset`, `presets[]`.
+- `PUT /api/mushroom/:id/portrait` — mycelium gate, persists `active_portrait`.
+- `PUT /api/mushroom/:id/preset` — level gate, persists `active_preset`.
+- `startGameRun` and `createChallengeRun` read `active_preset` before seeding starter items.
+- `resolveRound` computes `levelBefore`/`levelAfter` and returns them in `lastRound`.
 
-```
-## 14. Mushroom Progression
+**Frontend:**
+- Home screen: tier badge, progress bar, level-up toast on round-result.
+- Home screen: ✎ customize button per mushroom card; expands portrait swatches + preset pills.
+- Portrait swatches show lock overlay + tooltip for locked variants.
+- Preset pills show level requirement for locked variants.
+- Wiki detail: locked sections render lock icon + "Unlocks at N mycelium".
+- `switchPortrait` / `switchPreset` handlers call API and refresh bootstrap.
 
-- **14-A.** Each mushroom has a level (1–20) computed from its
-  cumulative mycelium via `MYCELIUM_LEVEL_CURVE` in
-  `app/server/game-data.js`. Level has no effect on combat stats.
-- **14-B.** Levels map to one of five cosmetic tiers via `getTier()`:
-    Spore (1–4) → Mycel (5–9) → Root (10–14) → Cap (15–19) → Eternal (20).
-  Tier is displayed as a badge on the home screen mushroom card and
-  the character select screen.
-- **14-C.** Level is per-mushroom. Playing Thalla does not level Axilin.
-- **14-D.** Wiki entries are gated by cumulative mycelium. Tiers:
-    - 0 mycelium: portrait + name
-    - 100 mycelium: passive description
-    - 1000 mycelium: active description + stat lore
-    - 3000 mycelium: full backstory
-  Thresholds live in `WIKI_TIER_THRESHOLDS`. Locked sections render
-  as an "unlock at N mycelium" placeholder.
-```
+**Schema additions** (auto-ALTERed by Sequelize sync):
+- `player_mushrooms.active_portrait TEXT NOT NULL DEFAULT 'default'`
+- `player_mushrooms.active_preset TEXT NOT NULL DEFAULT 'default'`
 
-### Backend changes
+**Tests — covered:** `tests/game/mushroom-progression.test.js` — 22 tests covering level curve boundaries, all tier boundaries, wiki gating at all thresholds, and bootstrap `tier` field. (Options 1 + 5 only.)
 
-- `app/server/game-data.js`: add `MYCELIUM_LEVEL_CURVE` array,
-  `computeLevel(mycelium)` export, `getTier(level)` helper, and
-  `WIKI_TIER_THRESHOLDS` constant.
-- `app/server/wiki.js`: gate `getWikiEntry()` on a `mycelium` param;
-  return redacted sections below the threshold.
-- `getPlayerState` / bootstrap: include `level` and `tier` per
-  mushroom row (computed from existing `mycelium` column).
+**Tests — outstanding (Options 3 + 6):**
 
-### Frontend changes
+The following scenarios have no test coverage yet. All are backend-testable without a browser.
 
-- Home screen mushroom card: tier badge + progress bar to next level.
-- Wiki detail screen: locked sections show lock icon + "unlock at N
-  mycelium" copy.
-- Round-result screen: level-up toast when mycelium award crosses a
-  level threshold (compare level before vs. after reward).
+*Option 6 — Portrait variants*
 
-### Tests
+| # | What to assert | How |
+|---|---|---|
+| P1 | `PORTRAIT_VARIANTS` shape: every mushroom has an entry; first variant is always `default` with `cost: 0` | unit — import and assert |
+| P2 | Bootstrap `portraits[]` has correct `unlocked` flag based on player's mycelium | service — set mycelium in DB, call `getPlayerState`, check `portraits[n].unlocked` |
+| P3 | Bootstrap `activePortraitUrl` reflects `active_portrait` column | service — set `active_portrait` in DB, call `getPlayerState`, check URL |
+| P4 | `PUT /api/mushroom/:id/portrait` happy path: mycelium threshold met → 200, `active_portrait` persisted | API — seed mycelium ≥ cost, PUT, re-fetch bootstrap |
+| P5 | `PUT /api/mushroom/:id/portrait` gate: mycelium below threshold → 403, no DB change | API — seed mycelium < cost, PUT, assert 403 + column unchanged |
+| P6 | `PUT /api/mushroom/:id/portrait` unknown portrait id → 400 | API |
+| P7 | `PUT /api/mushroom/:id/portrait` unknown mushroom id → 404 | API |
 
-Backend:
-- `getTier(level)` unit test — all 20 levels, every tier boundary.
-- `getWikiEntry` gating: 99/100 boundary, 999/1000, 2999/3000.
+*Option 3 — Preset variants*
 
-E2E (solo-run.spec.js):
-- Fresh player: wiki section locked at 0 mycelium.
-- After earning ≥100 mycelium: passive section unlocked.
+| # | What to assert | How |
+|---|---|---|
+| V1 | `STARTER_PRESET_VARIANTS` shape: every mushroom has 3 variants; first is always `default` with `requiredLevel: 0` | unit |
+| V2 | `getStarterPreset(mushroomId, presetId)` returns the correct item pair for each named variant | unit — call for each mushroom × each variant |
+| V3 | `getStarterPreset(mushroomId, 'nonexistent')` falls back to `default` without throwing | unit |
+| V4 | Bootstrap `presets[]` has correct `unlocked` flag based on level | service — set mycelium to L5 threshold, call `getPlayerState`, check `presets[1].unlocked` |
+| V5 | Bootstrap `activePreset` reflects `active_preset` column | service — set `active_preset` in DB, call `getPlayerState` |
+| V6 | `startGameRun` seeds the **active** preset's items, not always default | integration — set `active_preset` to a non-default variant, start run, assert round-1 loadout contains the variant's item IDs |
+| V7 | `PUT /api/mushroom/:id/preset` happy path: level met → 200, `active_preset` persisted | API |
+| V8 | `PUT /api/mushroom/:id/preset` gate: level too low → 403, no DB change | API |
+| V9 | `PUT /api/mushroom/:id/preset` unknown preset id → 400 | API |
+| V10 | `PUT /api/mushroom/:id/preset` unknown mushroom id → 404 | API |
 
-### Data model
+*Level-up signal (Option 1 gap)*
 
-No schema changes. `player_mushrooms.mycelium` and `level` already
-exist. Level is computed-on-read; tier is derived from level.
+| # | What to assert | How |
+|---|---|---|
+| L1 | `resolveRound` response includes `lastRound.levelBefore` and `lastRound.levelAfter`; `levelAfter > levelBefore` when mycelium award crosses a level threshold | integration — set player to mycelium just below a threshold, resolve, assert |
 
-### Migration / deploy
-
-None. Tier badges appear immediately on deploy for all players based
-on their existing mycelium totals — retroactive display is the intent.
+V6 and L1 can extend the existing `solo-run-scenario.test.js`. P4/P5/V7/V8 require an HTTP server fixture (same pattern as `tests/game/auth.test.js` if it spins up the app, otherwise inline service calls with the route handler extracted).
 
 ---
 
-## Out of scope for the first cycle
+## Out of scope / deferred
 
-- Skill ranks (Option 2) — plan doc required first, separate PR.
-- Preset variants (Option 3) — revisit after Option 1 ships.
-- Affinity promotion (Option 4) — optional follow-up.
-- Prestige / level reset — wait until the curve is battle-tested.
+- Skill ranks (Option 2) — plan doc required first, separate PR. High balance risk.
+- Affinity promotion (Option 4) — optional cherry-on-top for a later cycle.
+- Prestige / level reset — wait until curve is battle-tested.
+- Morga portrait variants — only `default.png` exists; more art to be added when ready.
 
 ---
 
@@ -472,14 +486,11 @@ on their existing mycelium totals — retroactive display is the intent.
 
 ## Sizing summary
 
-| Option | Effort | Balance risk | Recommended? |
-|---|---|---|---|
-| 1. Mushroom levels + tier rating | ~3.75h | None | ✅ First cycle |
-| 2. Skill ranks | ~11h | High | Schedule alone, later |
-| 3. Preset variants | ~10h | Medium | Only after Option 1 |
-| 4. Affinity promotion | ~4h | None | Optional follow-up |
-| 5. Wiki unlocks | ~4h | None | ✅ First cycle |
-| 6. Portrait variants | ~4.5h | None | ✅ When art is ready |
-
-**First cycle: Options 1 + 5 = ~7.75 hours real work.**
-**Option 6: +4.5h, blocked on portrait art delivery.**
+| Option | Balance risk | Status |
+|---|---|---|
+| 1. Mushroom levels + tier rating | None | ✅ Shipped |
+| 2. Skill ranks | High | Deferred — separate PR |
+| 3. Preset variants | None | ✅ Shipped |
+| 4. Affinity promotion | None | Optional follow-up |
+| 5. Wiki unlocks | None | ✅ Shipped |
+| 6. Portrait variants | None | ✅ Shipped |
