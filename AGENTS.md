@@ -1,6 +1,8 @@
 # Repository Instructions
 
 Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for renderer and future UI styling guidance. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
+Use [docs/character-image-prompt-template.md](/Users/microwavedev/workspace/mushroom-master/docs/character-image-prompt-template.md) as the base whenever the task is to produce a character image-generation prompt from repo canon. Read the target character's current canon first, then return one final copy-paste-ready prompt block rather than the raw worksheet.
+
 
 ## Planning, Delegation, and Validation Rules
 
