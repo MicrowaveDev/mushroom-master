@@ -1,6 +1,4 @@
 import { apiJson, parseStartParams } from '../api.js';
-import { SHOP_OFFER_SIZE } from '../constants.js';
-import { pickRandomShopOffer } from '../artifacts/grid.js';
 
 export function useAuth(state, goTo) {
   function applyTelegramTheme() {
@@ -14,52 +12,17 @@ export function useAuth(state, goTo) {
     root.style.setProperty('--telegram-surface', theme.secondary_bg_color || '#f6f0df');
   }
 
-  function loadOrGenerateShopOffer() {
-    const artifactsList = state.bootstrap?.artifacts || [];
-    const builderIds = new Set(state.builderItems.map((i) => i.artifactId));
-    const stored = state.bootstrap?.shopState || null;
-    const available = new Set(artifactsList.map((a) => a.id));
-    if (stored?.container?.length) {
-      state.containerItems = stored.container.filter((id) => available.has(id) && !builderIds.has(id));
-    }
-    state.rerollSpent = stored?.rerollSpent || 0;
-    if (stored?.freshPurchases?.length) {
-      state.freshPurchases = stored.freshPurchases.filter((id) => available.has(id));
-    }
-    if (stored?.activeBags?.length) {
-      state.activeBags = stored.activeBags.filter((id) => available.has(id));
-    }
-    state.rotatedBags = stored?.rotatedBags?.filter((id) => available.has(id)) || [];
-    const ownedIds = new Set([...builderIds, ...state.containerItems]);
-    if (stored?.offer?.length) {
-      state.shopOffer = stored.offer.filter((id) => available.has(id) && !ownedIds.has(id));
-    } else {
-      state.shopOffer = pickRandomShopOffer(artifactsList, ownedIds);
-    }
-    if (!stored && state.shopOffer.length < SHOP_OFFER_SIZE) {
-      const exclude = new Set([...state.shopOffer, ...ownedIds]);
-      const extras = pickRandomShopOffer(artifactsList, exclude).slice(0, SHOP_OFFER_SIZE - state.shopOffer.length);
-      state.shopOffer = [...state.shopOffer, ...extras];
-    }
-    persistShopOffer();
-  }
-
-  function persistShopOffer() {
-    if (!state.sessionKey) return;
-    const payload = {
-      offer: state.shopOffer,
-      container: state.containerItems,
-      freshPurchases: state.freshPurchases,
-      builderItems: state.builderItems,
-      activeBags: state.activeBags,
-      rotatedBags: state.rotatedBags,
-      rerollSpent: state.rerollSpent
-    };
-    apiJson('/api/shop-state', {
-      method: 'PUT',
-      body: JSON.stringify(payload)
-    }, state.sessionKey).catch(() => {});
-  }
+  // loadOrGenerateShopOffer / persistShopOffer (legacy 5-coin shop blob
+  // synced to /api/shop-state) deleted 2026-04-13. Game-run prep state is
+  // hydrated from bootstrap.activeGameRun in refreshBootstrap below; the
+  // legacy single-battle prep flow is gone.
+  //
+  // The names persist as no-ops because they're injected into useShop and
+  // useGameRun via constructor params and called in many places. Routing the
+  // call to a stub keeps those call sites valid without forcing every shop
+  // helper to learn whether it's in a run or not.
+  function persistShopOffer() { /* no-op */ }
+  function loadOrGenerateShopOffer() { /* no-op */ }
 
   async function refreshBootstrap() {
     try {
@@ -75,10 +38,10 @@ export function useAuth(state, goTo) {
     try {
       state.bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
       state.lang = state.bootstrap.settings.lang;
-      const savedLoadout = state.bootstrap.loadout?.items || [];
-      const shopBuilderItems = state.bootstrap.shopState?.builderItems || [];
-      state.builderItems = shopBuilderItems.length ? shopBuilderItems : [...savedLoadout];
-      loadOrGenerateShopOffer();
+      // bootstrap.loadout / bootstrap.shopState are always null after the
+      // 2026-04-13 legacy deletion. The active run's grid is hydrated below
+      // from bootstrap.activeGameRun.loadoutItems.
+      state.builderItems = [];
       try { state.friends = await apiJson('/api/friends', {}, state.sessionKey); } catch { state.friends = []; }
       try { state.leaderboard = await apiJson('/api/leaderboard', {}, state.sessionKey); } catch { state.leaderboard = []; }
       try { state.wikiHome = await apiJson('/api/wiki/home'); } catch { state.wikiHome = null; }
@@ -145,14 +108,20 @@ export function useAuth(state, goTo) {
       const urlWantsGameRun = urlParams.screen === 'game-run' && urlParams.gameRunId;
 
       // [Req 12-A/12-B] Reconnection detection: if a round was completed
-      // while the player was away (e.g. page refresh during challenge mode),
-      // store the missed battleId so main.js can route to the replay after
-      // bootstrap completes. We detect this on fresh load (auth/game-run
-      // screen) when completedRounds > 0 and the last round has a battleId.
+      // while the player was away (e.g. challenge mode where the *opponent*
+      // triggered resolveRound), store the missed battleId so main.js can
+      // route to the replay after bootstrap completes.
+      //
+      // SOLO MODE EXCLUDED: in solo mode the player triggers resolveRound
+      // themselves, so they have already seen the result before any
+      // subsequent reload. Treating a solo reload as a "missed result"
+      // would re-show the result of an already-acknowledged round and
+      // bounce the user away from the next-round prep screen they
+      // intentionally navigated to. (Pre-2026-04-13 bug fix.)
       const isReconnecting = state.screen === 'auth' || state.screen === 'game-run' || !state.screen;
       const run = state.gameRun;
       const lastRound = run?.rounds?.length ? run.rounds[run.rounds.length - 1] : null;
-      const missedRoundResult = isReconnecting && run && lastRound &&
+      const missedRoundResult = isReconnecting && run && run.mode === 'challenge' && lastRound &&
         lastRound.roundNumber === run.currentRound - 1 && lastRound.battleId &&
         !state.gameRunResult;
 
@@ -245,13 +214,25 @@ export function useAuth(state, goTo) {
     }
   }
 
+  /**
+   * Persist the player's mushroom selection.
+   *
+   * Returns `{ wasFirstPick }` so the caller can decide whether to chain into
+   * an auto-started game run (first-pick branch) or just navigate to home
+   * (re-pick branch). The actual navigation lives in main.js so this composable
+   * doesn't need a circular reference to useGameRun.
+   *
+   * Spec: docs/user-flows.md Flow A Step 3.
+   */
   async function saveCharacter(mushroomId) {
     try {
+      const wasFirstPick = !state.bootstrap?.activeMushroomId;
       await apiJson('/api/active-character', { method: 'PUT', body: JSON.stringify({ mushroomId }) }, state.sessionKey);
       await refreshBootstrap();
-      goTo('artifacts');
+      return { wasFirstPick };
     } catch (error) {
       state.error = error.message || 'Could not save character';
+      return { wasFirstPick: false, failed: true };
     }
   }
 

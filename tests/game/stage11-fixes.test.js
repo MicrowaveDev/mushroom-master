@@ -1,32 +1,26 @@
+// Misc per-round fixes that don't fit cleanly under another topic file.
+// (Originally named "stage11-fixes" because it tracked a specific refactor
+// stage; the stage is long-since done. Kept as a misc bucket.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   startGameRun,
   resolveRound,
-  abandonGameRun,
   getPlayerState,
   buyRunShopItem,
-  sellRunItem,
   acceptFriendChallenge,
   declineFriendChallenge,
-  createFriendChallenge,
-  saveArtifactLoadout,
+  createRunChallenge,
   selectActiveMushroom,
   addFriendByCode
 } from '../../app/server/services/game-service.js';
 import { query } from '../../app/server/db.js';
-import { STARTING_LIVES, ROUND_INCOME, RATING_FLOOR, runRewardTable } from '../../app/server/game-data.js';
-import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
-
-const loadout = [
-  { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
-  { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
-];
+import { ROUND_INCOME, RATING_FLOOR, runRewardTable } from '../../app/server/game-data.js';
+import { freshDb, createPlayer } from './helpers.js';
 
 async function setupPlayerWithRun(overrides = {}) {
   const session = await createPlayer(overrides);
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
   const run = await startGameRun(session.player.id, 'solo');
   return { session, run, playerId: session.player.id };
 }
@@ -86,7 +80,6 @@ test('[Req 1-G] startGameRun rejects invalid mode', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   await assert.rejects(
     () => startGameRun(session.player.id, 'challenge'),
@@ -102,7 +95,7 @@ test('[Req 8-F] acceptFriendChallenge rejects expired challenge', async () => {
   const playerB = await createPlayer({ telegramId: 5002, username: 'beta' });
   await addFriendByCode(playerA.player.id, playerB.player.friend_code);
 
-  const challenge = await createFriendChallenge(playerA.player.id, playerB.player.id);
+  const challenge = await createRunChallenge(playerA.player.id, playerB.player.id);
 
   // Manually expire the challenge
   await query(
@@ -124,7 +117,7 @@ test('[Req 8-F] declineFriendChallenge rejects already declined challenge', asyn
   const playerB = await createPlayer({ telegramId: 6002, username: 'delta' });
   await addFriendByCode(playerA.player.id, playerB.player.friend_code);
 
-  const challenge = await createFriendChallenge(playerA.player.id, playerB.player.id);
+  const challenge = await createRunChallenge(playerA.player.id, playerB.player.id);
   await declineFriendChallenge(challenge.id, playerB.player.id);
 
   await assert.rejects(
@@ -144,6 +137,36 @@ test('[Req 10-C] rating never drops below RATING_FLOOR after round', async () =>
   for (let i = 0; i < 5; i++) {
     result = await resolveRound(playerId, run.id);
     assert.ok(result.lastRound.ratingAfter >= RATING_FLOOR, `Rating ${result.lastRound.ratingAfter} should be >= ${RATING_FLOOR}`);
+    if (result.status !== 'active') break;
+  }
+});
+
+test('[Req 10-C] player already at RATING_FLOOR stays at exactly 100 across many losses', async () => {
+  await freshDb();
+  const { query } = await import('../../app/server/db.js');
+  const { playerId, run } = await setupPlayerWithRun();
+
+  // Force the player to start at exactly RATING_FLOOR so any loss would push
+  // them below if the floor weren't enforced. The edge case is "what happens
+  // when a player at the floor takes a streak of losses?"
+  await query(`UPDATE players SET rating = $1 WHERE id = $2`, [RATING_FLOOR, playerId]);
+
+  let result;
+  for (let i = 0; i < 9; i++) {
+    result = await resolveRound(playerId, run.id);
+    assert.ok(
+      result.lastRound.ratingAfter >= RATING_FLOOR,
+      `After round ${i + 1}: rating ${result.lastRound.ratingAfter} dropped below floor ${RATING_FLOOR}`
+    );
+    if (result.lastRound.outcome === 'loss') {
+      // The most important assertion: a loss while at the floor must clamp to
+      // exactly RATING_FLOOR, not RATING_FLOOR - 1.
+      assert.equal(
+        result.lastRound.ratingAfter,
+        RATING_FLOOR,
+        `Loss at floor should clamp to ${RATING_FLOOR}, got ${result.lastRound.ratingAfter}`
+      );
+    }
     if (result.status !== 'active') break;
   }
 });
@@ -188,73 +211,11 @@ test('[Req 9-A] round resolution awards spore to player', async () => {
   assert.equal(sporeAfter - sporeBefore, expectedSpore, `Spore should increase by ${expectedSpore}`);
 });
 
-// --- 11b: sell half-price refund for items from previous rounds ---
-
-test('[Req 4-K] sell item bought in previous round gives half price refund', async () => {
-  await freshDb();
-  const session = await createPlayer();
-  await selectActiveMushroom(session.player.id, 'thalla');
-  // Legacy save is a no-op for run state under §2.9 severance, but we keep
-  // it to assert the legacy path is ignored (§10 legacy-isolation check).
-  await saveArtifactLoadout(session.player.id, 'thalla', [
-    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
-  ]);
-  const run = await startGameRun(session.player.id, 'solo');
-  const playerId = session.player.id;
-
-  // Round 1 starts empty — seed a minimal deterministic loadout so we have
-  // something placed on the grid before the buy below.
-  await seedRunLoadout(playerId, run.id, [
-    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
-  ]);
-
-  const { getArtifactById, getArtifactPrice } = await import('../../app/server/game-data.js');
-  const itemToBuy = run.shopOffer.find((id) => {
-    const a = getArtifactById(id);
-    // Exclude spore_needle to avoid duplicate-row UPDATE matching both the
-    // seeded row and the newly bought row at the same artifact_id.
-    return a && id !== 'spore_needle' && a.width === 1 && a.height === 1
-      && a.family !== 'bag' && getArtifactPrice(a) <= 2;
-  });
-  if (!itemToBuy) return;
-
-  await buyRunShopItem(playerId, run.id, itemToBuy);
-
-  // The bought row starts at x=-1,y=-1 (container). Move it onto the grid
-  // so it counts toward battle stats and survives round-forward.
-  const { query: dbQuery } = await import('../../app/server/db.js');
-  await dbQuery(
-    `UPDATE game_run_loadout_items SET x = 1, y = 0
-     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1 AND artifact_id = $3`,
-    [run.id, playerId, itemToBuy]
-  );
-
-  // Resolve round 1 to advance to round 2
-  const roundResult = await resolveRound(playerId, run.id);
-  if (roundResult.status !== 'active') return;
-
-  // Now sell the item bought in round 1 — should get half price
-  const sellResult = await sellRunItem(playerId, run.id, itemToBuy);
-
-  const fullPrice = getArtifactPrice(getArtifactById(itemToBuy));
-  const expectedHalf = Math.floor(fullPrice / 2);
-
-  assert.equal(sellResult.sellPrice, expectedHalf, `Expected half price ${expectedHalf}, got ${sellResult.sellPrice}`);
-});
-
-// --- 11c: no draw outcome in runs ---
-
-test('[Req 1-D] run outcomes are never draw — always win or loss', async () => {
-  await freshDb();
-  const { playerId, run } = await setupPlayerWithRun();
-
-  // Play up to 9 rounds
-  for (let i = 0; i < 9; i++) {
-    const result = await resolveRound(playerId, run.id);
-    assert.ok(
-      result.lastRound.outcome === 'win' || result.lastRound.outcome === 'loss',
-      `Outcome should be win or loss, got: ${result.lastRound.outcome}`
-    );
-    if (result.status !== 'active') break;
-  }
-});
+// [Req 4-K] graduated refund — moved to tests/game/loadout-refactor.test.js
+// (now has two stronger versions: an exact-coin-delta test and a paired
+// same-round vs later-round assertion). The paired test there caught an
+// off-by-one that this looser version missed.
+//
+// [Req 1-D] no-draw invariant — covered in tests/game/round-resolution.test.js
+// (the [Req 1-D] life-decrement test asserts the same invariant as a
+// precondition).

@@ -1,7 +1,6 @@
 import { query, resetDb } from '../../app/server/db.js';
 import { upsertTelegramPlayer } from '../../app/server/auth.js';
 import {
-  saveArtifactLoadout,
   selectActiveMushroom,
   startGameRun
 } from '../../app/server/services/game-service.js';
@@ -33,32 +32,27 @@ export async function createPlayer(overrides = {}) {
   return upsertTelegramPlayer(user, 'telegram_test');
 }
 
-export async function saveSetup(playerId, mushroomId, items) {
+export async function saveSetup(playerId, mushroomId, _items) {
+  // saveArtifactLoadout (legacy) was deleted 2026-04-13. Tests that need a
+  // deterministic loadout should call seedRunLoadout(playerId, runId, items)
+  // after starting the game run instead.
   await selectActiveMushroom(playerId, mushroomId);
-  await saveArtifactLoadout(playerId, mushroomId, items);
 }
 
 /**
  * Boot a player into an active solo run. Round 1 starts with an empty
- * run-scoped inventory — no auto-generated starter, no legacy fallback.
- * Tests that need a deterministic loadout should call `seedRunLoadout`
- * after `bootRun`.
+ * run-scoped inventory — tests that need a deterministic loadout should
+ * call `seedRunLoadout` after `bootRun`.
  *
- * Pass `withLegacyLoadout: [...]` to exercise the severance invariant
- * (i.e. "legacy table is untouched by startGameRun"). Pass a different
- * `mushroomId` for character-specific tests.
+ * Pass a different `mushroomId` for character-specific tests.
  */
 export async function bootRun({
   telegramId,
   username,
-  mushroomId = 'thalla',
-  withLegacyLoadout = null
+  mushroomId = 'thalla'
 } = {}) {
   const session = await createPlayer({ telegramId, username });
   await selectActiveMushroom(session.player.id, mushroomId);
-  if (withLegacyLoadout) {
-    await saveArtifactLoadout(session.player.id, mushroomId, withLegacyLoadout);
-  }
   const run = await startGameRun(session.player.id, 'solo');
   return { playerId: session.player.id, run };
 }

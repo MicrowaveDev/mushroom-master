@@ -1,11 +1,6 @@
 import { query, withTransaction } from '../db.js';
 import {
-  getArtifactById,
   getMushroomById,
-  getStarterPreset,
-  INVENTORY_COLUMNS,
-  INVENTORY_ROWS,
-  MAX_ARTIFACT_COINS,
   mushrooms
 } from '../game-data.js';
 import {
@@ -13,10 +8,7 @@ import {
   createId,
   nowIso
 } from '../lib/utils.js';
-import { isBag as isArtifactBag } from './artifact-helpers.js';
-import { createBattle } from './battle-service.js';
 import { createBotGhostSnapshot } from './bot-loadout.js';
-import { validateLoadoutItems } from './loadout-utils.js';
 
 function rowToPlayerProfile(row) {
   return {
@@ -36,20 +28,11 @@ function rowToPlayerProfile(row) {
 }
 
 export async function getPlayerState(playerId) {
-  const [playerResult, settingsResult, activeResult, loadoutResult, loadoutItemsResult, playerMushroomsResult] =
+  const [playerResult, settingsResult, activeResult, playerMushroomsResult] =
     await Promise.all([
       query('SELECT * FROM players WHERE id = $1', [playerId]),
       query('SELECT * FROM player_settings WHERE player_id = $1', [playerId]),
       query('SELECT * FROM player_active_character WHERE player_id = $1', [playerId]),
-      query('SELECT * FROM player_artifact_loadouts WHERE player_id = $1', [playerId]),
-      query(
-        `SELECT items.*, loadouts.player_id
-         FROM player_artifact_loadout_items items
-         JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
-         WHERE loadouts.player_id = $1
-         ORDER BY items.sort_order ASC`,
-        [playerId]
-      ),
       query('SELECT * FROM player_mushrooms WHERE player_id = $1 ORDER BY mushroom_id ASC', [playerId])
     ]);
 
@@ -67,22 +50,10 @@ export async function getPlayerState(playerId) {
     : { lang: player.lang, reducedMotion: false, battleSpeed: '1x' };
 
   const activeMushroomId = activeResult.rowCount ? activeResult.rows[0].mushroom_id : null;
-  const loadout = loadoutResult.rowCount
-    ? {
-        id: loadoutResult.rows[0].id,
-        mushroomId: loadoutResult.rows[0].mushroom_id,
-        gridWidth: loadoutResult.rows[0].grid_width,
-        gridHeight: loadoutResult.rows[0].grid_height,
-        items: loadoutItemsResult.rows.map((row) => ({
-          artifactId: row.artifact_id,
-          x: row.x,
-          y: row.y,
-          width: row.width,
-          height: row.height,
-          sortOrder: row.sort_order
-        }))
-      }
-    : null;
+  // Legacy `loadout` field (read from player_artifact_loadouts) deleted
+  // 2026-04-13. The active loadout now lives in game_run_loadout_items
+  // and is exposed via getActiveGameRun.
+  const loadout = null;
 
   const progression = Object.fromEntries(
     playerMushroomsResult.rows.map((row) => {
@@ -138,85 +109,17 @@ export async function selectActiveMushroom(playerId, mushroomId) {
     [playerId, mushroomId]
   );
 
-  // On first character pick, seed the character's signature starter preset
-  // into the legacy player_artifact_loadouts table. Two lore-tied 1x1 items
-  // at (0,0) and (1,0), defined in game-data.js STARTER_PRESETS. Subsequent
-  // character switches never overwrite an existing loadout.
-  const existingLoadout = await query(
-    `SELECT id FROM player_artifact_loadouts WHERE player_id = $1`,
-    [playerId]
-  );
-  if (!existingLoadout.rowCount) {
-    const starterItems = getStarterPreset(mushroomId);
-    if (starterItems.length) {
-      await saveArtifactLoadout(playerId, mushroomId, starterItems, MAX_ARTIFACT_COINS);
-    }
-  }
+  // The legacy starter-preset seeding into player_artifact_loadouts was
+  // deleted in 2026-04-13. The character's preset is now seeded by
+  // startGameRun / createChallengeRun directly into game_run_loadout_items
+  // when the player begins their first run.
 
   return getPlayerState(playerId);
 }
 
-export async function saveArtifactLoadout(playerId, mushroomId, items, coinBudget = MAX_ARTIFACT_COINS) {
-  if (!getMushroomById(mushroomId)) {
-    throw new Error('Unknown mushroom');
-  }
-  const normalizedItems = items.map((item, index) => {
-    const artifact = getArtifactById(item.artifactId);
-    // Bags and bagged items have no grid position — use 0,0 as a sentinel.
-    const hasPosition = !item.bagId && !isArtifactBag(artifact) && item.x !== undefined && item.y !== undefined;
-    return {
-      artifactId: item.artifactId,
-      x: hasPosition ? Number(item.x) : 0,
-      y: hasPosition ? Number(item.y) : 0,
-      width: Number(item.width),
-      height: Number(item.height),
-      sortOrder: index,
-      bagId: item.bagId || null
-    };
-  });
-  validateLoadoutItems(normalizedItems, coinBudget);
-
-  return withTransaction(async (client) => {
-    const existing = await client.query(`SELECT * FROM player_artifact_loadouts WHERE player_id = $1`, [playerId]);
-    const timestamp = nowIso();
-    let loadoutId = existing.rowCount ? existing.rows[0].id : createId('loadout');
-
-    if (existing.rowCount) {
-      await client.query(
-        `UPDATE player_artifact_loadouts
-         SET mushroom_id = $2, updated_at = $3
-         WHERE player_id = $1`,
-        [playerId, mushroomId, timestamp]
-      );
-      await client.query(`DELETE FROM player_artifact_loadout_items WHERE loadout_id = $1`, [loadoutId]);
-    } else {
-      await client.query(
-        `INSERT INTO player_artifact_loadouts
-         (id, player_id, mushroom_id, grid_width, grid_height, is_active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, 1, $6, $6)`,
-        [loadoutId, playerId, mushroomId, INVENTORY_COLUMNS, INVENTORY_ROWS, timestamp]
-      );
-    }
-
-    for (const item of normalizedItems) {
-      await client.query(
-        `INSERT INTO player_artifact_loadout_items
-         (id, loadout_id, artifact_id, x, y, width, height, sort_order, bag_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [createId('loadoutitem'), loadoutId, item.artifactId, item.x, item.y, item.width, item.height, item.sortOrder, item.bagId || null]
-      );
-    }
-
-    await client.query(
-      `INSERT INTO player_active_character (player_id, mushroom_id)
-       VALUES ($1, $2)
-       ON CONFLICT (player_id) DO UPDATE SET mushroom_id = excluded.mushroom_id`,
-      [playerId, mushroomId]
-    );
-
-    return getPlayerState(playerId);
-  });
-}
+// saveArtifactLoadout (legacy single-battle loadout writer) deleted
+// 2026-04-13. Run-scoped placements flow through applyRunLoadoutPlacements
+// in run-service.js.
 
 export async function addFriendByCode(playerId, friendCode) {
   return withTransaction(async (client) => {
@@ -254,40 +157,9 @@ export async function getFriends(playerId) {
   return result.rows.map(rowToPlayerProfile);
 }
 
-export async function createFriendChallenge(playerId, inviteePlayerId) {
-  return withTransaction(async (client) => {
-    const challenge = {
-      id: createId('challenge'),
-      challengeToken: createId('challink'),
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    };
-    await client.query(
-      `INSERT INTO friend_challenges
-       (id, challenge_token, challenger_player_id, invitee_player_id, status, created_at, expires_at)
-       VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
-      [
-        challenge.id,
-        challenge.challengeToken,
-        playerId,
-        inviteePlayerId,
-        challenge.createdAt.toISOString(),
-        challenge.expiresAt.toISOString()
-      ]
-    );
-    return {
-      id: challenge.id,
-      challengeToken: challenge.challengeToken,
-      challengerPlayerId: playerId,
-      inviteePlayerId,
-      status: 'pending',
-      createdAt: challenge.createdAt.toISOString(),
-      expiresAt: challenge.expiresAt.toISOString(),
-      acceptedAt: null,
-      battleId: null
-    };
-  });
-}
+// createFriendChallenge (legacy single-battle invite) deleted 2026-04-13.
+// All challenges now go through createRunChallenge below; the
+// POST /api/friends/challenges endpoint routes to it directly.
 
 export async function getFriendChallenge(challengeId) {
   const result = await query(`SELECT * FROM friend_challenges WHERE id = $1`, [challengeId]);
@@ -305,7 +177,7 @@ export async function getFriendChallenge(challengeId) {
     expiresAt: challenge.expires_at,
     acceptedAt: challenge.accepted_at,
     battleId: challenge.battle_id,
-    challengeType: challenge.challenge_type || 'battle',
+    challengeType: challenge.challenge_type || 'run',
     gameRunId: challenge.game_run_id || null
   };
 }
@@ -322,18 +194,11 @@ export async function acceptFriendChallenge(challengeId, playerId) {
     throw new Error('Challenge has expired');
   }
 
-  if (challenge.challengeType === 'run') {
-    // Lazy import to avoid circular dependency
-    const { createChallengeRun } = await import('./run-service.js');
-    return createChallengeRun(challenge.challengerPlayerId, challenge.inviteePlayerId, challenge.id);
-  }
-
-  return createBattle(challenge.challengerPlayerId, {
-    mode: 'friend',
-    friendChallengeId: challenge.id,
-    opponentPlayerId: challenge.inviteePlayerId,
-    idempotencyKey: `challenge:${challenge.id}`
-  });
+  // All challenges are run challenges now (the legacy single-battle
+  // 'battle' type was deleted 2026-04-13). Lazy import to avoid the
+  // player-service ↔ run-service circular dependency.
+  const { createChallengeRun } = await import('./run-service.js');
+  return createChallengeRun(challenge.challengerPlayerId, challenge.inviteePlayerId, challenge.id);
 }
 
 export async function declineFriendChallenge(challengeId, playerId) {

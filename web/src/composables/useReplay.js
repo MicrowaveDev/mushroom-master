@@ -72,11 +72,15 @@ export function useReplay(state, goTo, getMushroom) {
     }
   }
 
-  async function loadReplay(battleId) {
+  async function loadReplay(battleId, options = {}) {
     try {
       state.currentBattle = await apiJson(`/api/battles/${battleId}`, {}, state.sessionKey);
       state.replayIndex = 0;
       state.replaySpeed = 1;
+      // Allow signalReady() to pre-fetch the replay payload without navigating
+      // away from the round-result screen. The replay screen is opt-in
+      // (Flow B Step 4) — autoplay only starts when the user actually opens it.
+      if (options.navigate === false) return;
       goTo('replay', { replay: battleId });
       autoplayReplay();
     } catch (error) {

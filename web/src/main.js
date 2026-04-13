@@ -2,7 +2,6 @@ import { createApp, reactive, onMounted, onUnmounted, watch } from 'vue/dist/vue
 import './styles.css';
 import { parseStartParams } from './api.js';
 import { apiJson } from './api.js';
-import { MAX_ARTIFACT_COINS } from './constants.js';
 
 // Composables
 import { useGameState } from './composables/useGameState.js';
@@ -15,15 +14,14 @@ import { useSSE } from './composables/useSSE.js';
 import { useTouch } from './composables/useTouch.js';
 
 // Page components
+// Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
+// were deleted 2026-04-13 along with the rest of the legacy flow.
 import { AuthScreen } from './pages/AuthScreen.js';
 import { OnboardingScreen } from './pages/OnboardingScreen.js';
 import { HomeScreen } from './pages/HomeScreen.js';
 import { CharactersScreen } from './pages/CharactersScreen.js';
-import { ArtifactsScreen } from './pages/ArtifactsScreen.js';
 import { PrepScreen } from './pages/PrepScreen.js';
-import { BattlePrepScreen } from './pages/BattlePrepScreen.js';
 import { ReplayScreen } from './pages/ReplayScreen.js';
-import { ResultsScreen } from './pages/ResultsScreen.js';
 import { RoundResultScreen } from './pages/RoundResultScreen.js';
 import { RunCompleteScreen } from './pages/RunCompleteScreen.js';
 import { FriendsScreen } from './pages/FriendsScreen.js';
@@ -41,8 +39,8 @@ const App = {
   components: {
     ArtifactGridBoard, FighterCard, ReplayDuel,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
-    ArtifactsScreen, PrepScreen, BattlePrepScreen,
-    ReplayScreen, ResultsScreen, RoundResultScreen, RunCompleteScreen,
+    PrepScreen,
+    ReplayScreen, RoundResultScreen, RunCompleteScreen,
     FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, SettingsScreen
   },
   setup() {
@@ -83,7 +81,8 @@ const App = {
       gameRunRefreshCount: 0,
       sellDragOver: false,
       actionInFlight: false,
-      opponentReady: false
+      opponentReady: false,
+      sseConnected: true
     });
 
     // --- Composables ---
@@ -93,51 +92,31 @@ const App = {
     const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, auth.persistShopOffer, replay.loadReplay);
     const shop = useShop(state, gs.getArtifact, auth.persistShopOffer, gameRun.persistRunLoadout);
     const social = useSocial(state, gs.goTo);
-    const sse = useSSE(state, gs.goTo);
+    const sse = useSSE(state, gs.goTo, replay.loadReplay);
     const touch = useTouch(state);
 
-    // --- Battle (legacy single-duel) ---
-    async function saveLoadout() {
-      if (state.actionInFlight) return;
-      if (!state.bootstrap?.activeMushroomId) { state.error = gs.t.value.invalidLoadout; return; }
-      const freshCost = state.freshPurchases.reduce((sum, id) => sum + gs.getArtifactPrice(gs.getArtifact(id)), 0);
-      if (freshCost + state.rerollSpent > MAX_ARTIFACT_COINS) { state.error = gs.t.value.invalidLoadout; return; }
-      state.actionInFlight = true;
-      try {
-        await apiJson('/api/artifact-loadout', {
-          method: 'PUT',
-          body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: state.builderItems })
-        }, state.sessionKey);
-        await auth.refreshBootstrap();
-        gs.goTo('battle');
-      } catch (error) {
-        state.error = error.message || 'Could not save loadout';
-      } finally {
-        state.actionInFlight = false;
+    // --- Character pick: first-pick auto-starts a game run, re-pick goes home ---
+    // Spec: docs/user-flows.md Flow A Step 3. Wrapping auth.saveCharacter here
+    // (instead of inside useAuth) avoids a circular dependency on useGameRun,
+    // which is constructed after useAuth.
+    async function saveCharacter(mushroomId) {
+      const result = await auth.saveCharacter(mushroomId);
+      if (result.failed) return;
+      if (result.wasFirstPick && !state.gameRun) {
+        // First-pick branch: a brand-new player should not have to discover
+        // "Start Game" on the home screen. Auto-start a solo run; the run
+        // creates its own prep screen with the starter preset already seeded.
+        await gameRun.startNewGameRun('solo');
+      } else {
+        // Re-pick branch: existing player switching mushroom. Don't clobber
+        // an active run by auto-starting a new one.
+        gs.goTo('home');
       }
     }
 
-    async function startBattle() {
-      if (state.actionInFlight) return;
-      state.actionInFlight = true;
-      try {
-        state.error = '';
-        state.currentBattle = await apiJson('/api/battles', {
-          method: 'POST',
-          body: JSON.stringify({ mode: 'ghost', idempotencyKey: crypto.randomUUID() })
-        }, state.sessionKey);
-        state.replayIndex = 0;
-        state.rerollSpent = 0;
-        state.freshPurchases = [];
-        shop.rerollShop(true);
-        gs.goTo('replay', { replay: state.currentBattle.id });
-        replay.autoplayReplay();
-      } catch (error) {
-        state.error = error.message || 'Could not start battle';
-      } finally {
-        state.actionInFlight = false;
-      }
-    }
+    // saveLoadout / startBattle (legacy single-battle UI handlers) deleted
+    // 2026-04-13. The legacy POST /api/battles endpoint and ArtifactsScreen
+    // / BattlePrepScreen / ResultsScreen are gone.
 
     // --- Dev-only ---
     async function runLocalLab() {
@@ -236,9 +215,8 @@ const App = {
       loginViaTelegram: auth.loginViaTelegram,
       loginViaBrowserCode: auth.loginViaBrowserCode,
       loginViaDevSession: auth.loginViaDevSession,
-      saveCharacter: auth.saveCharacter,
+      saveCharacter,
       saveSettings: auth.saveSettings,
-      saveLoadout, startBattle,
       runLocalLab, loadInventoryReview, handleRunComplete, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
@@ -279,7 +257,6 @@ const App = {
         <nav v-if="state.menuOpen" class="nav-dropdown">
           <button class="nav-btn" @click="goTo('home')">{{ t.home }}</button>
           <button class="nav-btn" @click="goTo('characters')">{{ t.characters }}</button>
-          <button class="nav-btn" @click="goTo('artifacts')">{{ t.artifacts }}</button>
           <button class="nav-btn" @click="goTo('friends')">{{ t.friends }}</button>
           <button class="nav-btn" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
           <button class="nav-btn" @click="goTo('wiki')">{{ t.wiki }}</button>
@@ -333,22 +310,6 @@ const App = {
           </div>
         </section>
 
-        <artifacts-screen v-else-if="state.screen === 'artifacts'"
-          :state="state" :t="t" :remaining-coins="remainingCoins" :builder-totals="builderTotals"
-          :shop-artifacts="shopArtifacts" :container-artifacts="containerArtifacts"
-          :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-artifact-price="getArtifactPrice"
-          :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
-          @buy="buyFromShop($event)" @return-to-shop="returnToShop($event)"
-          @auto-place="autoPlaceFromContainer($event)" @unplace="unplaceToContainer($event)"
-          @rotate="rotatePlacedArtifact($event)" @save-loadout="saveLoadout" @reroll="rerollShop($event)"
-          @container-dragover="onContainerDragOver($event)" @container-drop="onContainerDrop($event)"
-          @container-drag-start="onContainerPieceDragStart($event[0] || $event, $event[1])"
-          @shop-dragover="onShopDragOver($event)" @shop-drop="onShopDrop($event)"
-          @shop-drag-start="onShopPieceDragStart($event[0] || $event, $event[1])"
-          @cell-drop="onInventoryCellDrop($event)" @inventory-drag-start="onInventoryPieceDragStart($event)"
-          @drag-end="onDragEndAny"
-        />
-
         <prep-screen v-else-if="state.screen === 'prep' && state.gameRun"
           :state="state" :t="t" :container-artifacts="containerArtifacts" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
@@ -375,13 +336,6 @@ const App = {
           :state="state" :t="t" @go-home="handleRunComplete"
         />
 
-        <battle-prep-screen v-else-if="state.screen === 'battle' && activeMushroom"
-          :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
-          :used-coins="usedCoins" :max-coins="maxCoins" :portrait-position="portraitPosition"
-          :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
-          @start-battle="startBattle"
-        />
-
         <replay-screen v-else-if="state.screen === 'replay' && state.currentBattle"
           :state="state" :t="t"
           :active-event="activeEvent" :active-speech="activeSpeech" :battle-status-text="battleStatusText"
@@ -390,13 +344,6 @@ const App = {
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           @go-results="onReplayFinish"
           @set-speed="setReplaySpeed($event)"
-        />
-
-        <results-screen v-else-if="state.screen === 'results' && state.currentBattle"
-          :state="state" :t="t" :get-mushroom="getMushroom" :loadout-stats-text="loadoutStatsText"
-          :result-speech="resultSpeech" :replay-bubble-style="replayBubbleStyle"
-          :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
-          @go-home="goTo('home')"
         />
 
         <section v-else-if="state.screen === 'history'" class="panel stack">

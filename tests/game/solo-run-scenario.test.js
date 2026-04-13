@@ -40,42 +40,26 @@ import {
   getArtifactPrice
 } from './helpers.js';
 
-const starter = [{ artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }];
-
 test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start → buy → reload → resolve → sell → ghost → history', async () => {
   await freshDb();
 
   // ---------------------------------------------------------------------
-  // Phase 0 — create player, choose mushroom, save legacy prep loadout.
-  // The legacy save exists to prove severance: startGameRun must NOT read
-  // from it. startGameRun also does not auto-seed any round-1 items — the
-  // run-scoped inventory starts empty and every item must be bought.
+  // Phase 0 — create player and choose mushroom. startGameRun seeds the
+  // 2-item starter preset into round 1; the rest of round 1 is empty
+  // until the player buys items from the shop.
   // ---------------------------------------------------------------------
   const { playerId, run } = await bootRun({
     telegramId: 7001,
-    username: 'scenario',
-    withLegacyLoadout: starter
+    username: 'scenario'
   });
 
   // ---------------------------------------------------------------------
   // Phase 1 — startGameRun seeds the character signature starter preset
-  // into round 1 and leaves the legacy table untouched.
+  // into round 1 of the run-scoped table. The old "legacy table stays
+  // untouched" assertion went away with the legacy table itself
+  // (deleted 2026-04-13).
   // ---------------------------------------------------------------------
   assert.ok(run.id, 'startGameRun must return a run id');
-
-  const legacyRowsAfterStart = await query(
-    `SELECT COUNT(*) AS count FROM player_artifact_loadout_items i
-     JOIN player_artifact_loadouts l ON l.id = i.loadout_id
-     WHERE l.player_id = $1`,
-    [playerId]
-  );
-  // The legacy save happened BEFORE startGameRun, so rows exist; the
-  // invariant is that startGameRun didn't touch them.
-  assert.equal(
-    Number(legacyRowsAfterStart.rows[0].count),
-    starter.length,
-    'startGameRun must leave legacy table untouched (severance §2.9)'
-  );
 
   const round1Starter = await query(
     `SELECT artifact_id FROM game_run_loadout_items
@@ -215,8 +199,10 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start �
   const coinsBeforeSell = await getCoins(run.id, playerId);
   const sellResult = await sellRunItem(playerId, run.id, cheap.id);
   const fullPrice = getArtifactPrice(cheap);
-  const expectedRefund = Math.floor(fullPrice / 2);
-  assert.equal(sellResult.sellPrice, expectedRefund, 'non-fresh item must sell for half price');
+  // [Req 4-K] half-price refund, rounded down, MINIMUM 1 — selling a 1-coin
+  // artifact in a later round refunds 1, not 0.
+  const expectedRefund = Math.max(1, Math.floor(fullPrice / 2));
+  assert.equal(sellResult.sellPrice, expectedRefund, 'non-fresh item must sell for half price (min 1)');
 
   const coinsAfterSell = await getCoins(run.id, playerId);
   assert.equal(coinsAfterSell, coinsBeforeSell + expectedRefund, 'coins must reflect the refund');

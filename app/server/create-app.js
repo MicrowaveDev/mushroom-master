@@ -16,8 +16,6 @@ import { CHALLENGE_IDLE_TIMEOUT_MS, ROUND_INCOME } from './game-data.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
-  createBattle,
-  createFriendChallenge,
   declineFriendChallenge,
   getBattle,
   getBattleHistory,
@@ -28,9 +26,7 @@ import {
   getLeaderboard,
   getPlayerState,
   applyRunLoadoutPlacements,
-  saveArtifactLoadout,
   saveLocalTestRun,
-  saveShopState,
   selectActiveMushroom,
   startGameRun,
   getActiveGameRun,
@@ -223,19 +219,15 @@ export async function createApp() {
     requireAuth,
     ...runMutationGuards,
     asyncRoute(async (req, res) => {
-      // In an active game run, placements are applied to the run-scoped
-      // current-round rows (§2.9 legacy severance). The legacy single-battle
-      // prep flow still uses saveArtifactLoadout against player_artifact_loadouts.
+      // Loadout placements are always run-scoped now. The legacy
+      // single-battle branch (saveArtifactLoadout against
+      // player_artifact_loadouts) was deleted in 2026-04-13.
       const activeRun = await getActiveGameRun(req.user.id);
-      if (activeRun) {
-        await applyRunLoadoutPlacements(req.user.id, activeRun.id, req.body.items || []);
-        res.json({ success: true, data: await getActiveGameRun(req.user.id) });
-        return;
+      if (!activeRun) {
+        throw new Error('No active game run');
       }
-      res.json({
-        success: true,
-        data: await saveArtifactLoadout(req.user.id, req.body.mushroomId, req.body.items)
-      });
+      await applyRunLoadoutPlacements(req.user.id, activeRun.id, req.body.items || []);
+      res.json({ success: true, data: await getActiveGameRun(req.user.id) });
     })
   );
 
@@ -244,14 +236,6 @@ export async function createApp() {
     requireAuth,
     asyncRoute(async (req, res) => {
       res.json({ success: true, data: await updateSettings(req.user.id, req.body) });
-    })
-  );
-
-  app.post(
-    '/api/battles',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await createBattle(req.user.id, req.body) });
     })
   );
 
@@ -291,9 +275,12 @@ export async function createApp() {
     '/api/friends/challenges',
     requireAuth,
     asyncRoute(async (req, res) => {
+      // Friend challenges always create a multi-round game-run challenge.
+      // The legacy single-battle "challenge_type=battle" path was deleted in
+      // 2026-04-13. The endpoint name is preserved for frontend compatibility.
       res.json({
         success: true,
-        data: await createFriendChallenge(req.user.id, req.body.friendPlayerId)
+        data: await createRunChallenge(req.user.id, req.body.friendPlayerId)
       });
     })
   );

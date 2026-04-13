@@ -10,6 +10,7 @@
 import { query } from '../db.js';
 import { getArtifactById } from '../game-data.js';
 import { createId, nowIso } from '../lib/utils.js';
+import { validateGridItems, validateBagContents } from './loadout-utils.js';
 
 async function q(client, sql, params) {
   return client ? client.query(sql, params) : query(sql, params);
@@ -171,24 +172,47 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
     byArtifact.get(row.artifactId).push(row);
   }
 
-  // Consume rows in order — the first legacy item with artifactId X maps to the
-  // first unclaimed new-table row with the same artifactId, and so on.
+  // First pass: project the desired state in-memory by walking the legacy
+  // payload and matching it to existing rows. Legacy clients can lie about
+  // width/height/bag_id; we must reject overlaps, out-of-bounds, dimension
+  // mismatches, and orphaned bag references BEFORE any DB write.
+  const projectedById = new Map();
+  for (const row of currentRows) {
+    projectedById.set(row.id, { ...row });
+  }
+  const claimed = new Map();
+  for (const [artifactId, bucket] of byArtifact.entries()) {
+    claimed.set(artifactId, [...bucket]);
+  }
+  const updates = [];
   for (const legacy of legacyItems) {
-    const bucket = byArtifact.get(legacy.artifactId);
+    const bucket = claimed.get(legacy.artifactId);
     if (!bucket || bucket.length === 0) continue;
     const row = bucket.shift();
+    const proposed = projectedById.get(row.id);
+    proposed.x = Number(legacy.x ?? -1);
+    proposed.y = Number(legacy.y ?? -1);
+    proposed.width = Number(legacy.width ?? row.width);
+    proposed.height = Number(legacy.height ?? row.height);
+    proposed.bagId = legacy.bagId || null;
+    updates.push(proposed);
+  }
+
+  // Validate the full projected layout. validateGridItems enforces canonical
+  // dimensions (allowing 90° rotation), bounds, and overlap. validateBagContents
+  // enforces bag references, no nested bags, and slot capacity.
+  const projected = Array.from(projectedById.values());
+  const gridItems = projected.filter((item) => !item.bagId);
+  validateGridItems(gridItems);
+  validateBagContents(projected);
+
+  // Second pass: persist the validated updates.
+  for (const proposed of updates) {
     await q(client,
       `UPDATE game_run_loadout_items
        SET x = $1, y = $2, width = $3, height = $4, bag_id = $5
        WHERE id = $6`,
-      [
-        Number(legacy.x ?? -1),
-        Number(legacy.y ?? -1),
-        Number(legacy.width ?? row.width),
-        Number(legacy.height ?? row.height),
-        legacy.bagId || null,
-        row.id
-      ]
+      [proposed.x, proposed.y, proposed.width, proposed.height, proposed.bagId, proposed.id]
     );
   }
 }

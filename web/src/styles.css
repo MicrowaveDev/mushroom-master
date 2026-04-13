@@ -2637,6 +2637,19 @@ select {
   opacity: 0.7;
 }
 
+/* --- SSE reconnection banner ([Req 12-A]) --- */
+.prep-reconnecting {
+  margin: 6px 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(212, 165, 74, 0.18);
+  border: 1px solid rgba(212, 165, 74, 0.5);
+  color: var(--accent);
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 /* --- Touch drag-and-drop --- */
 .touch-drag-ghost {
   border-radius: 8px;

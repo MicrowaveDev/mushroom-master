@@ -255,6 +255,47 @@ test('[Req 9-B] run complete screen shows completion bonus for 3+ wins', async (
   }
 });
 
+// --- Req 4-F: Shop offer is byte-identical across page refresh ---
+
+test('[Req 4-F] game-run shop offer is identical (artifact-by-artifact) after page reload', async ({ page, request, baseURL }) => {
+  // The existing [Req 12-D] test below only checks the shop is non-empty
+  // after reload. This test pins the stronger guarantee from Req 4-F:
+  // "Shop offer persists across page refreshes — no free re-roll." We
+  // capture the exact set of artifact IDs visible before reload and assert
+  // the same set is visible after, ruling out a regression where the
+  // server silently regenerates the offer (effectively granting a free
+  // re-roll on every reload).
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1015, username: 'shop_persist', name: 'Shop Persist' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  const ghost = await createSession(request, { telegramId: 1016, username: 'shop_persist_ghost', name: 'Shop Persist Ghost' });
+  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await expect(page.locator('.prep-screen')).toBeVisible();
+
+  // Read the exact shop offer (artifact ids in order) BEFORE reload.
+  const shopItemIdsBefore = await page.locator('.prep-screen .shop-item').evaluateAll((nodes) =>
+    nodes.map((n) => n.getAttribute('data-artifact-id') || '').filter(Boolean)
+  );
+  expect(shopItemIdsBefore.length).toBeGreaterThan(0);
+
+  // Reload the page and wait for the prep screen to come back.
+  await page.reload({ waitUntil: 'networkidle' });
+  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
+
+  // Read the shop offer AFTER reload and assert it's the same set of artifacts.
+  // Order may shift if the client re-projects, but the multi-set must match.
+  const shopItemIdsAfter = await page.locator('.prep-screen .shop-item').evaluateAll((nodes) =>
+    nodes.map((n) => n.getAttribute('data-artifact-id') || '').filter(Boolean)
+  );
+  expect(shopItemIdsAfter.length).toBe(shopItemIdsBefore.length);
+  expect(shopItemIdsAfter.sort()).toEqual(shopItemIdsBefore.sort());
+});
+
 // --- Req 12-D: Shop offer persists across page refresh ---
 
 test('[Req 12-D] game run state survives page refresh (reconnection)', async ({ page, request, baseURL }) => {
@@ -306,11 +347,15 @@ test('[Req 13-C] post-replay button shows "Continue" during active game run', as
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
-  // Start game run → prep → ready → replay
+  // Start game run → prep → ready → roundResult (new flow per Flow B Step 3)
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 15000 });
+
+  // Click "View Replay" on the round-result screen → navigate to replay
+  await page.getByRole('button', { name: /view replay|посмотреть реплей/i }).click();
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
 
   // Wait for replay to finish → button appears
   const replayBtn = page.locator('.replay-result-button-full');
@@ -322,23 +367,26 @@ test('[Req 13-C] post-replay button shows "Continue" during active game run', as
 });
 
 test('[Req 13-D] post-replay button shows "Home" for standalone replay from history', async ({ page, request, baseURL }) => {
+  // Set up a completed run so a battle exists in history. Then abandon
+  // the run so there's no active game run, and navigate directly to the
+  // replay URL — that's the standalone (no-run) replay path covered by
+  // [Req 13-D].
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1030, username: 'history_replay', name: 'History Replay' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
 
-  // Create a completed battle via legacy flow so we have history to replay
-  await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', {
-    mushroomId: 'thalla',
-    items: [
-      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
-      { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
-    ]
-  });
-  const battle = await api(request, player.sessionKey, '/api/battles', 'POST', { mode: 'ghost' });
+  // Start a run, resolve one round (creates a battle), then abandon the run
+  // so we're back to "no active game run" state. The completed battle
+  // remains in the player's history and is replayable.
+  const run = await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
+  const roundResult = await api(request, player.sessionKey, `/api/game-run/${run.id}/ready`, 'POST', {});
+  const battleId = roundResult.lastRound?.battleId;
+  expect(battleId).toBeTruthy();
+  await api(request, player.sessionKey, `/api/game-run/${run.id}/abandon`, 'POST', {});
 
   // Navigate directly to the replay for this battle (no active run)
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-  await page.goto(`${baseURL}/replay/${battle.id}`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseURL}/replay/${battleId}`, { waitUntil: 'networkidle' });
   await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
 
   // Wait for replay to finish
@@ -385,16 +433,11 @@ test('[Req 13-B] battle history entry navigates to replay', async ({ page, reque
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1050, username: 'history_nav', name: 'History Nav' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-  await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', {
-    mushroomId: 'thalla',
-    items: [
-      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
-      { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
-    ]
-  });
 
-  // Create a completed battle
-  await api(request, player.sessionKey, '/api/battles', 'POST', { mode: 'ghost' });
+  // Create a completed battle by playing one round of a game run.
+  const run = await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
+  await api(request, player.sessionKey, `/api/game-run/${run.id}/ready`, 'POST', {});
+  await api(request, player.sessionKey, `/api/game-run/${run.id}/abandon`, 'POST', {});
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });

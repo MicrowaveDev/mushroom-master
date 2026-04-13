@@ -8,7 +8,7 @@ testable: if the game violates a rule, it's a bug.
 `STEP_CAP`) are defined in [`app/shared/config.js`](../app/shared/config.js) —
 the single source of truth shared by server and client.
 
-Last verified against code: 2026-04-12.
+Last verified against code: 2026-04-13.
 
 ---
 
@@ -21,7 +21,7 @@ Last verified against code: 2026-04-12.
 - **1-E.** The run ends when lives reach 0 (`end_reason = 'max_losses'`) or all 9 rounds complete (`end_reason = 'max_rounds'`).
 - **1-F.** The player may abandon the run at any time (`end_reason = 'abandoned'`).
 - **1-G.** Only **one active game run per player** at a time.
-- **1-H.** Max **10 game starts per player per day** (`DAILY_BATTLE_LIMIT`). This limit is shared across all game modes — legacy single battles, solo game runs, and challenge runs all increment the same `daily_rate_limits.battle_starts` counter.
+- **1-H.** Max **10 game starts per player per day** (`DAILY_BATTLE_LIMIT`). Both solo game runs and challenge runs increment the same `daily_rate_limits.battle_starts` counter. (The counter is named `battle_starts` for historical reasons — it formerly tracked the now-deleted legacy single-battle flow as well.)
 
 ---
 
@@ -197,15 +197,13 @@ Last verified against code: 2026-04-12.
 
 - **9-C.** The winning player in a challenge run receives an additional **+10 spore, +5 mycelium**.
 
-### Legacy Single-Battle Rewards
+### ~~Legacy Single-Battle Rewards~~ (Deprecated)
 
-- **9-D.** Legacy single-battle rewards:
-
-| Outcome | Spore | Mycelium |
-|---|---|---|
-| Win | +10 | +100 |
-| Loss | +3 | +10 |
-| Draw | +5 | +40 |
+- **~~9-D.~~ DEPRECATED 2026-04-13.** The legacy single-battle flow
+  (`POST /api/battles`, `ArtifactsScreen`, `BattlePrepScreen`,
+  `ResultsScreen`) was removed. All combat now flows through game runs
+  which use the per-round + completion-bonus reward tables in 9-A and
+  9-B. Tests and code should not reference the legacy reward table.
 
 ---
 

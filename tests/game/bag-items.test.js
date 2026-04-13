@@ -4,7 +4,6 @@ import {
   validateLoadoutItems,
   startGameRun,
   sellRunItem,
-  saveArtifactLoadout,
   selectActiveMushroom,
   resolveRound,
   getBattle,
@@ -124,7 +123,6 @@ test('[Req 5-D] shop offer on game run start includes bag tracking', async () =>
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const run = await startGameRun(session.player.id, 'solo');
   assert.ok(run.shopOffer.length > 0);
@@ -165,7 +163,6 @@ test('[Req 7-G] round loadout rows remain after each solo round (unified snapsho
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const run = await startGameRun(session.player.id, 'solo');
   // Round 1 starts empty — seed a deterministic row so the ghost snapshot
@@ -193,7 +190,6 @@ test('[Req 13-A] replay events use step_start type and step field', async () => 
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const run = await startGameRun(session.player.id, 'solo');
   const result = await resolveRound(session.player.id, run.id);
@@ -215,7 +211,6 @@ test('[Req 1-E] getGameRunHistory returns completed runs', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const { abandonGameRun } = await import('../../app/server/services/game-service.js');
 
@@ -232,7 +227,6 @@ test('[Req 1-G] getGameRunHistory excludes active runs', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   await startGameRun(session.player.id, 'solo');
 
@@ -246,7 +240,6 @@ test('[Req 4-B, 4-C] coins carry over between rounds', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const run = await startGameRun(session.player.id, 'solo');
   assert.equal(run.player.coins, ROUND_INCOME[0]);
@@ -262,7 +255,6 @@ test('[Req 9-B] full run pays completion bonus based on wins', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
-  await saveArtifactLoadout(session.player.id, 'thalla', loadout);
 
   const run = await startGameRun(session.player.id, 'solo');
   const sporeBefore = (await getPlayerState(session.player.id)).player.spore;

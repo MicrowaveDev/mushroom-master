@@ -3,8 +3,13 @@
  *
  * Opens an EventSource to /api/game-run/:id/events when in challenge mode prep screen.
  * Handles: opponent ready/unready, round result, opponent abandon, run ended.
+ *
+ * @param {object} state - reactive app state
+ * @param {function} goTo - navigation helper
+ * @param {function} [loadReplay] - optional pre-fetch hook so the replay
+ *   payload is ready when the user clicks "View Replay" on round-result.
  */
-export function useSSE(state, goTo) {
+export function useSSE(state, goTo, loadReplay = null) {
   let eventSource = null;
 
   function connect() {
@@ -31,10 +36,15 @@ export function useSSE(state, goTo) {
       } catch { /* ignore malformed */ }
     });
 
-    eventSource.addEventListener('round_result', (e) => {
+    eventSource.addEventListener('round_result', async (e) => {
       try {
         const data = JSON.parse(e.data);
         state.gameRunResult = data;
+        // Pre-load the replay payload so "View Replay" on round-result is instant.
+        const battleId = data.lastRound?.battleId;
+        if (battleId && loadReplay) {
+          try { await loadReplay(battleId, { navigate: false }); } catch { /* ignore */ }
+        }
         if (data.status === 'completed' || data.status === 'abandoned') {
           state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason };
           goTo('runComplete');
@@ -62,8 +72,17 @@ export function useSSE(state, goTo) {
       goTo('runComplete');
     });
 
+    eventSource.onopen = () => {
+      // [Req 12-A] Surface a "reconnected" recovery state to the user — they
+      // see the disconnected banner clear automatically when the stream is back.
+      state.sseConnected = true;
+    };
+
     eventSource.onerror = () => {
-      // EventSource auto-reconnects on error; we just reset the ready indicator
+      // EventSource auto-reconnects on error; we mark the stream as disconnected
+      // so the UI can render a reconnection banner ([Req 12-A]). The opponent
+      // ready indicator is reset because we no longer trust its freshness.
+      state.sseConnected = false;
       state.opponentReady = false;
     };
   }
@@ -74,6 +93,7 @@ export function useSSE(state, goTo) {
       eventSource = null;
     }
     state.opponentReady = false;
+    state.sseConnected = false;
   }
 
   return { connect, disconnect };

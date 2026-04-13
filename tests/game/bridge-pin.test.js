@@ -100,7 +100,7 @@ test('bridge: applyRunLoadoutPlacements does not write to game_run_refunds', asy
   ]);
 
   await applyRunLoadoutPlacements(session.player.id, run.id, [
-    { artifactId: 'spore_needle', x: 3, y: 0, width: 1, height: 1 }
+    { artifactId: 'spore_needle', x: 2, y: 0, width: 1, height: 1 }
   ]);
 
   const refunds = await query(
@@ -111,6 +111,45 @@ test('bridge: applyRunLoadoutPlacements does not write to game_run_refunds', asy
     Number(refunds.rows[0].count),
     0,
     'bridge must never create refund rows — refund logic belongs in sellRunItem'
+  );
+});
+
+test('bridge: applyRunLoadoutPlacements rejects out-of-bounds placement', async () => {
+  await freshDb();
+  const session = await createPlayer({ telegramId: 4104, username: 'bridge_oob' });
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+  await seedRunLoadout(session.player.id, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+
+  // x=3 is outside the 3-wide grid; client-supplied placements must be
+  // validated server-side regardless of whether the bridge or a granular
+  // endpoint is the entry point.
+  await assert.rejects(
+    () => applyRunLoadoutPlacements(session.player.id, run.id, [
+      { artifactId: 'spore_needle', x: 3, y: 0, width: 1, height: 1 }
+    ]),
+    /out of bounds/i
+  );
+});
+
+test('bridge: applyRunLoadoutPlacements rejects dimension lies', async () => {
+  await freshDb();
+  const session = await createPlayer({ telegramId: 4105, username: 'bridge_dims' });
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+  await seedRunLoadout(session.player.id, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+
+  // spore_needle is 1×1; client claims it's 3×3. Must be rejected so the
+  // client can't fake artifact footprints to avoid overlap checks downstream.
+  await assert.rejects(
+    () => applyRunLoadoutPlacements(session.player.id, run.id, [
+      { artifactId: 'spore_needle', x: 0, y: 0, width: 3, height: 3 }
+    ]),
+    /dimensions/i
   );
 });
 

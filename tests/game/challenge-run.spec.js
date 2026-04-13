@@ -4,6 +4,10 @@ import { test, expect } from '@playwright/test';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/challenge';
 
+// Canonical viewports per docs/user-flows.md preamble + AGENTS.md.
+const MOBILE_VIEWPORT = { width: 375, height: 667 };
+const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
+
 const loadoutA = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
   { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
@@ -17,6 +21,18 @@ const loadoutB = [
 async function saveShot(page, name) {
   await fs.mkdir(screenshotDir, { recursive: true });
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
+}
+
+async function saveShotDual(page, name) {
+  const dot = name.lastIndexOf('.');
+  const base = dot >= 0 ? name.slice(0, dot) : name;
+  const ext = dot >= 0 ? name.slice(dot) : '.png';
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.waitForTimeout(80);
+  await saveShot(page, `${base}-mobile${ext}`);
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.waitForTimeout(80);
+  await saveShot(page, `${base}-desktop${ext}`);
 }
 
 async function resetDevDb(request) {
@@ -48,9 +64,7 @@ async function setupChallengePlayers(request) {
   const playerB = await createSession(request, { telegramId: 912, username: 'invitee', name: 'Invitee' });
 
   await api(request, playerA.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-  await api(request, playerA.sessionKey, '/api/artifact-loadout', 'PUT', { mushroomId: 'thalla', items: loadoutA });
   await api(request, playerB.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-  await api(request, playerB.sessionKey, '/api/artifact-loadout', 'PUT', { mushroomId: 'kirt', items: loadoutB });
 
   const bootA = await api(request, playerA.sessionKey, '/api/bootstrap');
   const bootB = await api(request, playerB.sessionKey, '/api/bootstrap');
@@ -80,16 +94,19 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   expect(acceptResult.players[playerB.player.id].coins).toBeGreaterThan(0);
 
   // --- Player A views prep screen ---
+  await page.setViewportSize(MOBILE_VIEWPORT);
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
   await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
   await expect(page.locator('.run-hud')).toContainText('1'); // round 1
-  await saveShot(page, 'challenge-01-playerA-prep-round1.png');
+  await saveShotDual(page, 'challenge-01-playerA-prep-round1.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
 
   // --- Opponent status shows "waiting for opponent" ---
   await expect(page.locator('.prep-opponent-status')).toBeVisible();
   await expect(page.locator('.prep-opponent-waiting')).toBeVisible();
-  await saveShot(page, 'challenge-02-playerA-waiting-for-opponent.png');
+  await saveShotDual(page, 'challenge-02-playerA-waiting-for-opponent.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
 
   // --- Player A readies → gets waiting state ---
   const readyA = await api(request, playerA.sessionKey, `/api/game-run/${runId}/ready`, 'POST', {});
@@ -125,15 +142,18 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
 
   // --- Player B views their prep screen for round 2 ---
   const pageB = await page.context().newPage();
+  await pageB.setViewportSize(MOBILE_VIEWPORT);
   await pageB.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerB.sessionKey);
   await pageB.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(pageB.locator('.prep-screen')).toBeVisible();
   await expect(pageB.locator('.run-hud')).toContainText('2'); // round 2
-  await saveShot(pageB, 'challenge-03-playerB-prep-round2.png');
+  await saveShotDual(pageB, 'challenge-03-playerB-prep-round2.png');
+  await pageB.setViewportSize(MOBILE_VIEWPORT);
 
   // --- Player B opponent status indicator ---
   await expect(pageB.locator('.prep-opponent-status')).toBeVisible();
-  await saveShot(pageB, 'challenge-04-playerB-opponent-status.png');
+  await saveShotDual(pageB, 'challenge-04-playerB-opponent-status.png');
+  await pageB.setViewportSize(MOBILE_VIEWPORT);
 
   // --- Play until completion via API ---
   for (let round = 0; round < 8; round++) {
@@ -152,11 +172,95 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   if (runFinal.status === 'completed' || runFinal.status === 'abandoned') {
     await page.goto(`${baseURL}/runComplete`, { waitUntil: 'load' });
     if (await page.locator('.run-complete-screen').isVisible()) {
-      await saveShot(page, 'challenge-05-run-complete.png');
+      await saveShotDual(page, 'challenge-05-run-complete.png');
+      await page.setViewportSize(MOBILE_VIEWPORT);
     }
   }
 
   await pageB.close();
+});
+
+test('[Req 12-A] challenge mode: SSE drop renders the reconnection banner', async ({ page, request, baseURL }) => {
+  // [Req 12-A] When the EventSource hits an error, the user must see a
+  // visible "reconnecting" banner — not silently lose the opponent-ready
+  // indicator with no feedback. We force the failure by routing the SSE
+  // endpoint to abort the request before the page even reaches it; the
+  // EventSource fires onerror immediately, useSSE flips state.sseConnected
+  // to false, and PrepScreen renders [data-testid=sse-reconnecting].
+  await resetDevDb(request);
+  const { playerA, playerB } = await setupChallengePlayers(request);
+
+  const challenge = await api(request, playerA.sessionKey, '/api/game-run/challenge', 'POST', { friendPlayerId: playerB.player.id });
+  await api(request, playerB.sessionKey, `/api/friends/challenges/${challenge.id}/accept`, 'POST', {});
+
+  // Block the SSE endpoint BEFORE the page loads so the very first
+  // EventSource() call hits an error and trips the reconnection state.
+  await page.route('**/api/game-run/*/events*', (route) => route.abort('failed'));
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
+  await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
+  await expect(page.locator('.prep-screen')).toBeVisible();
+
+  // The banner is rendered conditionally on `state.sseConnected === false`
+  // and only inside challenge runs. It should appear shortly after the
+  // failed EventSource handshake.
+  await expect(page.locator('[data-testid="sse-reconnecting"]')).toBeVisible({ timeout: 10000 });
+});
+
+test('[Req 12-A, 12-B] challenge mode: combat completed while disconnected → reconnect lands on missed result', async ({ page, request, baseURL }) => {
+  // Scenario: Player A is on the prep screen waiting for Player B to ready up.
+  // Mid-wait, A's connection drops (we simulate by closing the page entirely
+  // without abandoning the run). While A is gone:
+  //   - B signals ready (via API)
+  //   - The server resolves the round and emits a round_result SSE event
+  //   - A is no longer connected to receive it
+  // When A reopens the app, the bootstrap reconnect-detection ([Req 12-B]
+  // missedRoundResult) should notice that the last completed round has a
+  // battleId A hasn't acknowledged, and route them into the missed result
+  // (replay screen pre-loaded with the battle) instead of leaving them on
+  // a stale prep screen for a round that's already over.
+  await resetDevDb(request);
+  const { playerA, playerB } = await setupChallengePlayers(request);
+
+  const challenge = await api(request, playerA.sessionKey, '/api/game-run/challenge', 'POST', { friendPlayerId: playerB.player.id });
+  const acceptResult = await api(request, playerB.sessionKey, `/api/friends/challenges/${challenge.id}/accept`, 'POST', {});
+  const runId = acceptResult.id;
+
+  // --- Player A loads prep, signals ready (via API), then "disconnects" ---
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
+  await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
+  await expect(page.locator('.prep-screen')).toBeVisible();
+
+  await api(request, playerA.sessionKey, `/api/game-run/${runId}/ready`, 'POST', {});
+  // Simulate disconnect: close page (do NOT abandon the run).
+  await page.close();
+
+  // --- While A is offline: B readies → server resolves the round ---
+  const resolveResult = await api(request, playerB.sessionKey, `/api/game-run/${runId}/ready`, 'POST', {});
+  expect(resolveResult.lastRound).toBeDefined();
+  expect(resolveResult.lastRound.battleId).toBeTruthy();
+
+  // --- Player A reconnects on a fresh page ---
+  const pageA2 = await page.context().newPage();
+  await pageA2.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
+  // Use the bookmarkable game-run URL the player would have been on when
+  // they disconnected. This sets state.screen to 'game-run' (one of the
+  // values that triggers the missedRoundResult detection in useAuth.js).
+  // Going to /home would set screen='home' and skip the detection entirely.
+  await pageA2.goto(`${baseURL}/game-run/${runId}`, { waitUntil: 'load' });
+
+  // [Req 12-B] After bootstrap, the user must NOT be left staring at a
+  // prep screen for round 1 (which they already played and lost/won the
+  // outcome of). Acceptable landings: replay (current pendingReconnect
+  // path) or roundResult. NOT acceptable: prep, home with stale state.
+  const settled = await Promise.race([
+    pageA2.locator('.replay-layout').waitFor({ timeout: 15000 }).then(() => 'replay'),
+    pageA2.locator('.round-result-screen').waitFor({ timeout: 15000 }).then(() => 'roundResult')
+  ]).catch(() => 'unknown');
+
+  expect(['replay', 'roundResult']).toContain(settled);
+
+  await pageA2.close();
 });
 
 test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + screenshots', async ({ page, request, baseURL }) => {
@@ -168,10 +272,12 @@ test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + scree
   const runId = run.id;
 
   // --- Player A views prep screen ---
+  await page.setViewportSize(MOBILE_VIEWPORT);
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
   await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
-  await saveShot(page, 'challenge-abandon-01-prep.png');
+  await saveShotDual(page, 'challenge-abandon-01-prep.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
 
   // --- Player A abandons via API ---
   const abandonResult = await api(request, playerA.sessionKey, `/api/game-run/${runId}/abandon`, 'POST', {});
@@ -191,5 +297,5 @@ test('[Req 1-F, 8-A] challenge mode: abandon by one player ends for both + scree
   await page.goto(`${baseURL}/home`, { waitUntil: 'load' });
   await expect(page.locator('.home')).toBeVisible();
   await expect(page.getByRole('button', { name: /resume|продолжить игру/i })).toHaveCount(0);
-  await saveShot(page, 'challenge-abandon-02-home-no-resume.png');
+  await saveShotDual(page, 'challenge-abandon-02-home-no-resume.png');
 });

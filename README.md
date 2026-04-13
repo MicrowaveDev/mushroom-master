@@ -26,34 +26,28 @@ npm run game:start
 npm run game:build
 npm run game:test
 npm run game:test:screens
-npm run game:dev:battle-page
 ```
 
-Dev battle-page helper:
-
-- `npm run game:dev:battle-page`
-  - requires `npm run game:start` to already be running
-  - creates a dev-only session through `/api/dev/session`
-  - opens the real frontend UI in a browser
-  - selects a mushroom, places artifacts through the actual container UI, saves the loadout, and lands on the battle-prep screen
-  - `--start` clicks the real `Start Battle` button and waits for the replay screen
-
-What is production-real vs dev-only in the helper and e2e flows:
+What is production-real vs dev-only in the e2e flows:
 
 - real production app logic:
   - frontend UI and page flow
-  - backend battle creation, matchmaking, replay loading, and persistence
+  - backend game-run lifecycle, ghost matchmaking, replay loading, and persistence
   - loadout validation and battle engine behavior
 - dev-only shortcuts:
   - authentication uses `/api/dev/session` instead of Telegram `initData` or the bot-code handoff
-  - helper/e2e flows may seed ghost opponents through dev setup so the battle button has a valid target
+  - e2e flows may seed ghost opponents through dev setup so the prep screen has a valid opponent
   - local development defaults to SQLite instead of PostgreSQL
 
-End-to-end battle coverage:
+End-to-end coverage (Playwright):
 
-- `tests/game/start-battle.spec.js`
-  - verifies that clicking `Start Battle` opens the replay screen when a ghost opponent exists
-  - verifies that clicking `Start Battle` shows a visible error when no ghost opponent exists
+- `tests/game/solo-run.spec.js` — full solo run journey (start → prep → ready → roundResult → optional replay → next round → run complete)
+- `tests/game/challenge-run.spec.js` — friend challenge flow, including SSE reconnection
+- `tests/game/coverage-gaps.spec.js` — onboarding, daily limit, dual-viewport, shop persistence after reload, history navigation
+- `tests/game/screenshots.spec.js` — dual-viewport (375×667 mobile + 1280×800 desktop) capture of every major screen
+
+Note: the legacy single-battle flow (`POST /api/battles`, `ArtifactsScreen`, `BattlePrepScreen`, `ResultsScreen`, `start-battle.spec.js`) was deleted on 2026-04-13. All gameplay now flows through multi-round game runs (`POST /api/game-run/start`).
+See [`docs/flaky-tests.md`](docs/flaky-tests.md) for notes on a small cluster of HTML5-drag flakes in the solo-run spec.
 
 Game-specific environment additions:
 

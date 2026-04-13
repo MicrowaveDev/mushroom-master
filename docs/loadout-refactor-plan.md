@@ -1060,7 +1060,7 @@ These items were listed below as "deferred during implementation" but shipped in
 - **Coins denormalization (`coins_cache`).** §2.3 chose computed-on-read. If profiling after launch shows a hot path, add a maintained cache column behind a feature flag.
 - **Redis-backed ready state and SSE fanout.** §11.7 — needed only when scaling beyond a single server instance.
 - **Balance-as-data hot reload.** §11.8 — load `ARTIFACTS`/`BAGS`/`MUSHROOMS` from JSON with an admin reload endpoint. Enables live tuning without redeploys.
-- **`ArtifactsScreen` removal.** Severed in §2.9, removable in a follow-up once telemetry confirms zero usage.
+- ~~**`ArtifactsScreen` removal.**~~ ✅ Shipped 2026-04-13. The legacy single-battle flow (`ArtifactsScreen`, `BattlePrepScreen`, `ResultsScreen`, `POST /api/battles`, `saveArtifactLoadout`, `createBattle`, `createFriendChallenge`, the `player_artifact_loadouts` / `player_artifact_loadout_items` / `player_shop_state` models) was deleted in a single PR after onboarding was rerouted directly into the game-run flow. Sequelize no longer registers the legacy tables, so existing dev/prod databases keep their rows but no code path reads them. A follow-up DB migration can drop the orphaned tables when storage matters.
 
 **Still deferred (tracked in [post-review-followups.md](./post-review-followups.md)):**
 

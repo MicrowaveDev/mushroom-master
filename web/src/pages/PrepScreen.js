@@ -152,6 +152,7 @@ export const PrepScreen = {
             v-for="artifactId in state.gameRunShopOffer"
             :key="artifactId"
             class="shop-item"
+            :data-artifact-id="artifactId"
             :class="{
               'shop-item--expensive': getArtifactPrice(getArtifact(artifactId)) > (state.gameRun.player?.coins || 0),
               'shop-item--bag': getArtifact(artifactId)?.family === 'bag'
@@ -195,6 +196,10 @@ export const PrepScreen = {
           <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">{{ runSellPriceLabel }}</span>
           <span v-else>{{ t.sellArea }}</span>
         </div>
+      </div>
+
+      <div v-if="state.gameRun.mode === 'challenge' && state.sseConnected === false" class="prep-reconnecting" data-testid="sse-reconnecting">
+        {{ t.reconnecting }}
       </div>
 
       <div class="prep-actions">

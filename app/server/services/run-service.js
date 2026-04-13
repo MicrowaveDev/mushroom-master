@@ -78,25 +78,8 @@ export function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag =
   return { offer, hasBag };
 }
 
-export async function getShopState(playerId) {
-  const result = await query(
-    `SELECT payload_json FROM player_shop_state WHERE player_id = $1`,
-    [playerId]
-  );
-  if (!result.rowCount) return null;
-  return parseJson(result.rows[0].payload_json);
-}
-
-export async function saveShopState(playerId, payload) {
-  const json = JSON.stringify(payload);
-  await query(
-    `INSERT INTO player_shop_state (player_id, payload_json, updated_at)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (player_id) DO UPDATE
-     SET payload_json = $2, updated_at = $3`,
-    [playerId, json, nowIso()]
-  );
-}
+// getShopState / saveShopState (legacy player_shop_state blob) deleted
+// 2026-04-13. Game-run shop state lives in game_run_shop_states.
 
 export async function startGameRun(playerId, mode = 'solo') {
   if (mode !== 'solo') {
@@ -115,13 +98,6 @@ export async function startGameRun(playerId, mode = 'solo') {
     if (usage >= DAILY_BATTLE_LIMIT) {
       throw new Error('Daily battle limit reached');
     }
-
-    // Clear the old client-side shop state blob; its positions are obsolete
-    // now that the new table is the single source of truth.
-    await client.query(
-      `DELETE FROM player_shop_state WHERE player_id = $1`,
-      [playerId]
-    );
 
     const runId = createId('run');
     const now = nowIso();
@@ -1150,8 +1126,10 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
     const price = getArtifactPrice(artifact);
     // Graduated refund: fresh this round = full price, otherwise half.
     // purchased_round is preserved across round copy-forward (§2.2).
+    // [Req 4-K]: half-price refund is rounded down with a MINIMUM of 1 coin
+    // — selling a 1-coin artifact in a later round must still return 1, not 0.
     const isFreshThisRound = candidate.purchasedRound === currentRound;
-    const sellPrice = isFreshThisRound ? price : Math.floor(price / 2);
+    const sellPrice = isFreshThisRound ? price : Math.max(1, Math.floor(price / 2));
 
     const deleted = await deleteOneByArtifactId(client, gameRunId, playerId, currentRound, artifactId);
     if (!deleted) {

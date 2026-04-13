@@ -21,7 +21,7 @@ Steps marked `(not yet captured)` need e2e coverage added.
 
 Requirement IDs (e.g. `[Req 1-A]`) link to [game-requirements.md](./game-requirements.md).
 
-Last verified against code: 2026-04-12.
+Last verified against code: 2026-04-13.
 
 ---
 
@@ -69,8 +69,14 @@ Step 3: Character Select
     - 5 mushroom cards (portrait, name, style tag, HP/ATK/SPD stats)
   Action: Click a mushroom card (e.g. Thalla)
   Expected:
-    - [Req 3-A] selectActiveMushroom seeds 2-item starter preset (first pick)
-    - Navigate to home screen
+    - [Req 3-A] selectActiveMushroom seeds the 2-item starter preset
+    - **First-pick branch (no prior activeMushroomId):** auto-start a solo
+      game run and navigate directly to Flow B Step 2 (prep round 1).
+      Rationale: a brand-new player should not have to discover "Start Game"
+      on the home screen — picking their first mushroom IS starting the game.
+    - **Re-pick branch (existing player switching mushroom):** navigate to
+      home screen so the player can resume / start a run intentionally. Does
+      NOT auto-start a run (that would clobber an existing active run).
 ```
 
 ---
@@ -134,10 +140,35 @@ Step 2: Prep Screen (Round N)
     - signalReady() called → POST /api/game-run/:id/ready
     - Navigate to replay screen (automatic)
 
-Step 3: Battle Replay (auto-loaded after ready)
+Step 3: Round Result (auto-shown after ready)
+  Screen: roundResult → RoundResultScreen.js
+  Screenshot: screenshots/run/solo-04-round-result.png
+  Condition: state.gameRunResult set automatically after signalReady resolves;
+  navigated by useGameRun.signalReady (solo) or useSSE.round_result handler
+  (challenge). This is the PRIMARY post-battle screen — replay is opt-in.
+  Above the fold (mobile):
+    - Round outcome heading (Victory / Defeat)
+    - Reward summary: spore +N, mycelium +N, rating delta
+    - Run stats HUD: wins W, lives L, coins C
+  Desktop note: All buttons + reward breakdown visible without scroll
+  Sees:
+    - Round outcome (win / loss)
+    - [Req 9-A] Per-round reward breakdown (spore + mycelium)
+    - [Req 10-A] Solo: rating delta from this round
+    - Updated run stats (wins, lives, coins)
+    - "Продолжить" / "Continue" button (always visible)
+    - "Смотреть бой" / "View Replay" button (opt-in)
+  Action: Click "Continue" OR click "View Replay" first
+  Expected:
+    - "Continue" → if run still active: navigate to Step 2 (prep) for next round
+                 → if run ended: navigate to Step 5 (run complete)
+    - "View Replay" → navigate to Step 4 (battle replay), which routes back here
+
+Step 4: Battle Replay (opt-in, accessed via "View Replay")
   Screen: replay → ReplayScreen.js
   Screenshot: screenshots/06-replay.png (mid-replay), screenshots/07-replay-complete.png (finished)
-  Condition: state.currentBattle loaded automatically after signalReady
+  Condition: User clicked "View Replay" on the round-result screen, OR opened
+  a standalone replay from history (Flow E).
   Above the fold (mobile):
     - Battle stage (two fighter cards with portraits, names, HP bars)
     - Speed controls (▶ ▶▶ ▶▶▶)
@@ -155,21 +186,16 @@ Step 3: Battle Replay (auto-loaded after ready)
   Action: Watch replay auto-play (or adjust speed / click log)
   Expected:
     - [Req 13-A] When replay finishes AND state.gameRun exists:
-      button shows "Продолжить" / "Continue" (NOT "Домой")
-    - When replay finishes AND no gameRun (standalone):
+      button shows "Продолжить" / "Continue" (returns to next round prep,
+      bypassing the round-result screen since the user already saw it)
+    - [Req 13-A] When replay finishes AND no gameRun (standalone, Flow E):
       button shows "Домой" / "Home"
-  Action: Click "Continue"
+  Action: Click "Continue" or "Home"
   Expected:
-    - If run still active (lives > 0, rounds < max):
-      [Req 11-A] Round N items copied forward to N+1
-      [Req 4-C] Coins += ROUND_INCOME[N+1]
-      [Req 11-C] New shop offer generated, refresh count reset
-      Navigate back to Step 2 (prep) for next round
-    - If run ended: Navigate to Step 4b (run complete)
-  Note: Round result screen (Step 4a) is accessible via "View Replay" from
-  battle history but is NOT shown in the normal ready→replay→prep flow.
+    - With active run: continueToNextRound() called → next round prep, OR run-complete
+    - Standalone: navigate back to home
 
-Step 4b: Run Complete (run ended)
+Step 5: Run Complete (run ended)
   Screen: runComplete → RunCompleteScreen.js
   Screenshot: screenshots/run/solo-09-run-complete.png
   Condition: run status = 'completed' or 'abandoned'
@@ -186,7 +212,16 @@ Step 4b: Run Complete (run ended)
   Action: Click "Home"
   Expected:
     - state.gameRun cleared to null
-    - Navigate to home screen
+    - Navigate to home screen — player sees updated mushroom progression,
+      spore total, and run-history entry for the just-completed run
+```
+
+**Flow B summary** (canonical post-2026-04-12):
+```
+home → start game → prep round 1 → ready → roundResult →
+  ↳ continue → prep round 2 → ready → roundResult → ... →
+  ↳ run complete (max losses or max rounds) → home
+optional branch from any roundResult: → replay → continue/home
 ```
 
 ---
@@ -233,12 +268,25 @@ Step 4: Challenge Resolution
 
 ---
 
-## Flow D: Legacy Single Battle
+## Flow D: Legacy Single Battle (DEPRECATED)
 
-**Status:** Active but superseded by game runs (Flow B). Kept for backward
-compatibility — the ArtifactsScreen/BattlePrepScreen/ResultsScreen path still
-works. No requirement IDs exist for the legacy flow except `[Req 9-D]` (rewards).
-Consider deprecating once game runs cover all use cases.
+**Status:** **DEPRECATED — UNREACHABLE FROM UI as of 2026-04-12.** All entry
+points have been removed:
+- The character-select screen no longer routes to `artifacts` (it auto-starts
+  a game run on first pick, see Flow A Step 3).
+- The navbar `artifacts` button has been removed.
+- `ResultsScreen.js` was already orphaned (zero `goTo('results')` callers; the
+  legacy replay-finish path has long routed to `home` instead).
+
+The legacy code (`ArtifactsScreen.js`, `BattlePrepScreen.js`,
+`ResultsScreen.js`, `POST /api/battles`, `saveArtifactLoadout`, the
+`player_artifact_loadouts` table, and the `battleRewardTable` for `[Req 9-D]`)
+remains in the repo for one more cycle so the deletion can land as a single
+focused PR with the migration. Schedule it as a follow-up — see gap analysis
+item #16.
+
+If a tool or test still reaches the `artifacts` screen, that's a bug, not
+intended behavior.
 
 ```
 Step 1: Home Screen
@@ -377,14 +425,11 @@ Step 1: Open Settings
 |---|---|---|
 | `auth` | AuthScreen.js | App launch (no session) |
 | `onboarding` | OnboardingScreen.js | First login (no mushroom) |
-| `home` | HomeScreen.js | Login, run complete, results |
+| `home` | HomeScreen.js | Login, run complete, character re-pick |
 | `characters` | CharactersScreen.js | Onboarding, home |
-| `artifacts` | ArtifactsScreen.js | Character select (legacy) |
-| `battle` | BattlePrepScreen.js | Artifacts save (legacy) |
-| `prep` | PrepScreen.js | Start game, continue round, resume |
-| `replay` | ReplayScreen.js | Ready, view replay, history |
-| `results` | ResultsScreen.js | Legacy replay finish |
-| `roundResult` | RoundResultScreen.js | Round resolve (no replay) |
+| `prep` | PrepScreen.js | First-pick auto-start, continue round, resume |
+| `roundResult` | RoundResultScreen.js | After signalReady (primary post-battle screen) |
+| `replay` | ReplayScreen.js | "View Replay" from roundResult or history (opt-in) |
 | `runComplete` | RunCompleteScreen.js | Run ends (any reason) |
 | `history` | (inline main.js) | Home |
 | `friends` | FriendsScreen.js | Home |
@@ -392,3 +437,6 @@ Step 1: Open Settings
 | `settings` | SettingsScreen.js | Menu |
 | `wiki` | WikiScreen.js | Menu |
 | `wiki-detail` | WikiDetailScreen.js | Wiki entry click |
+| ~~`artifacts`~~ | ~~ArtifactsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
+| ~~`battle`~~ | ~~BattlePrepScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
+| ~~`results`~~ | ~~ResultsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |

@@ -171,6 +171,9 @@ test('[Req 9-C] challenge winner receives winner bonus spore and mycelium', asyn
   await freshDb();
   const { playerA, playerB } = await setupTwoFriends();
 
+  const sporeBeforeA = (await getPlayerState(playerA)).player.spore;
+  const sporeBeforeB = (await getPlayerState(playerB)).player.spore;
+
   const challenge = await createRunChallenge(playerA, playerB);
   const run = await acceptFriendChallenge(challenge.id, playerB);
 
@@ -210,6 +213,77 @@ test('[Req 9-C] challenge winner receives winner bonus spore and mycelium', asyn
   }
   // If lossesA === lossesB (both reached max rounds with equal losses),
   // there's no winner — test still passes as it verified the run completed.
+});
+
+test('[Req 9-C] challenge winner spore delta exactly matches expected components', async () => {
+  await freshDb();
+  const { runRewardTable, getCompletionBonus } = await import('../../app/server/game-data.js');
+  const { playerA, playerB } = await setupTwoFriends();
+
+  const sporeBeforeA = (await getPlayerState(playerA)).player.spore;
+  const sporeBeforeB = (await getPlayerState(playerB)).player.spore;
+
+  const challenge = await createRunChallenge(playerA, playerB);
+  const run = await acceptFriendChallenge(challenge.id, playerB);
+
+  let lastResult;
+  for (let i = 0; i < 12; i++) {
+    lastResult = await resolveRound(playerA, run.id);
+    if (lastResult.runEnded) break;
+  }
+
+  assert.ok(lastResult.runEnded, 'Run should have ended');
+
+  const resultA = lastResult.playerResults[playerA];
+  const resultB = lastResult.playerResults[playerB];
+  const sporeAfterA = (await getPlayerState(playerA)).player.spore;
+  const sporeAfterB = (await getPlayerState(playerB)).player.spore;
+
+  // Expected spore = (wins × win.spore) + (losses × loss.spore)
+  //                + completionBonus(wins).spore
+  //                + (winner ? CHALLENGE_WINNER_BONUS.spore : 0)
+  function expectedSpore(playerResult, isWinner) {
+    return (
+      playerResult.wins * runRewardTable.win.spore +
+      playerResult.losses * runRewardTable.loss.spore +
+      getCompletionBonus(playerResult.wins).spore +
+      (isWinner ? CHALLENGE_WINNER_BONUS.spore : 0)
+    );
+  }
+
+  if (resultA.losses !== resultB.losses) {
+    const aIsWinner = resultA.losses < resultB.losses;
+    const expectedDeltaA = expectedSpore(resultA, aIsWinner);
+    const expectedDeltaB = expectedSpore(resultB, !aIsWinner);
+    assert.equal(
+      sporeAfterA - sporeBeforeA,
+      expectedDeltaA,
+      `Player A spore delta ${sporeAfterA - sporeBeforeA} should equal expected ${expectedDeltaA}`
+    );
+    assert.equal(
+      sporeAfterB - sporeBeforeB,
+      expectedDeltaB,
+      `Player B spore delta ${sporeAfterB - sporeBeforeB} should equal expected ${expectedDeltaB}`
+    );
+    // Pin the +10 specifically: winner delta minus loser delta (after subtracting
+    // their per-round contributions) must equal exactly CHALLENGE_WINNER_BONUS.spore.
+    const winnerDelta = aIsWinner ? sporeAfterA - sporeBeforeA : sporeAfterB - sporeBeforeB;
+    const loserDelta = aIsWinner ? sporeAfterB - sporeBeforeB : sporeAfterA - sporeBeforeA;
+    const winnerResult = aIsWinner ? resultA : resultB;
+    const loserResult = aIsWinner ? resultB : resultA;
+    const winnerRoundComponent = expectedSpore(winnerResult, false);
+    const loserRoundComponent = expectedSpore(loserResult, false);
+    assert.equal(
+      winnerDelta - winnerRoundComponent,
+      CHALLENGE_WINNER_BONUS.spore,
+      `Winner-only spore bonus must be exactly ${CHALLENGE_WINNER_BONUS.spore}`
+    );
+    assert.equal(
+      loserDelta - loserRoundComponent,
+      0,
+      'Loser must not receive the winner bonus'
+    );
+  }
 });
 
 test('[Req 8-D] challenge ends when one player hits STARTING_LIVES losses', async () => {

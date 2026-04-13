@@ -94,10 +94,17 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       if (data.status === 'completed' || data.status === 'abandoned') {
         state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null };
       }
+      // Spec: docs/user-flows.md Flow B Step 3 — the post-Ready landing screen
+      // is the round result summary, NOT the replay. Replay is opt-in via the
+      // "View Replay" button on the round-result screen. The full replay is
+      // pre-loaded in the background so clicking View Replay is instant.
       const battleId = data.lastRound?.battleId;
       if (battleId && loadReplay) {
-        await loadReplay(battleId);
-      } else if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
+        // Pre-fetch the replay payload but DO NOT navigate. We pass a no-op
+        // navigator to loadReplay to suppress its built-in goTo('replay').
+        await loadReplay(battleId, { navigate: false });
+      }
+      if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
         goTo('runComplete');
       } else {
         goTo('roundResult');

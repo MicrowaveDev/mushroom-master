@@ -87,6 +87,47 @@ test('[Req 6-H] step_cap ending has both combatants alive with endReason set', (
   // With STEP_CAP=120 most battles resolve by death; skip test gracefully if no step_cap found
 });
 
+test('[Req 6-H] step_cap winner is the side with the higher HP%', () => {
+  // Pin the tiebreaker rule: when the battle reaches STEP_CAP without a death,
+  // the winner is determined by higher HP%. Force this scenario reliably by:
+  //   1. Mirror Lomie (max HP = 125) with truffle_bulwark on both sides so
+  //      damage stays at the floor of 1 per hit and neither dies before cap.
+  //   2. Give the right side an extra thunder_gill (stun artifact) so it
+  //      occasionally stuns the left, making the left lose more HP than the
+  //      right by step 120. Asymmetric stun → asymmetric HP% at cap.
+  let assertedAtLeastOnce = false;
+  for (let i = 0; i < 200; i++) {
+    const result = simulateBattle(
+      makeSnapshot('lomie', 'lomie',
+        [{ artifactId: 'truffle_bulwark', x: 0, y: 0, width: 2, height: 2 }],
+        [{ artifactId: 'truffle_bulwark', x: 0, y: 0, width: 2, height: 2 },
+         { artifactId: 'thunder_gill', x: 0, y: 2, width: 2, height: 1 }]
+      ),
+      `hp-pct-${i}`
+    );
+    const lastEvent = result.events[result.events.length - 1];
+    if (lastEvent.endReason !== 'step_cap' || !lastEvent.winnerSide) continue;
+
+    const left = lastEvent.state.left;
+    const right = lastEvent.state.right;
+    const leftPct = left.currentHealth / left.maxHealth;
+    const rightPct = right.currentHealth / right.maxHealth;
+    if (leftPct === rightPct) continue; // ignore exact ties — rule covers strict greater
+
+    const expectedWinner = leftPct > rightPct ? 'left' : 'right';
+    assert.equal(
+      lastEvent.winnerSide,
+      expectedWinner,
+      `step_cap winner should be the side with higher HP% (left=${leftPct.toFixed(3)} right=${rightPct.toFixed(3)})`
+    );
+    assertedAtLeastOnce = true;
+  }
+  assert.ok(
+    assertedAtLeastOnce,
+    'Expected at least one step_cap battle with unequal HP% to verify the tiebreaker'
+  );
+});
+
 test('[Req 6-G] battle_end endReason is "death" when loser hits 0 HP', () => {
   for (let i = 0; i < 100; i++) {
     const result = simulateBattle(

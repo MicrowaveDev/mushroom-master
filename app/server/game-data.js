@@ -444,11 +444,9 @@ export const mushrooms = [
   }
 ];
 
-export const rewardTable = {
-  win: { spore: 10, mycelium: 100 },
-  loss: { spore: 3, mycelium: 10 },
-  draw: { spore: 5, mycelium: 40 }
-};
+// rewardTable (legacy single-battle reward schedule for [Req 9-D]) deleted
+// 2026-04-13. The legacy single-battle flow is no longer reachable from the
+// UI; all combat now flows through game runs which use runRewardTable below.
 
 export const runRewardTable = {
   win: { spore: 2, mycelium: 15 },

@@ -35,7 +35,8 @@ import {
   bootRun,
   findCheapArtifact,
   forceShopOffer,
-  countBotGhostRows
+  countBotGhostRows,
+  getCoins
 } from './helpers.js';
 
 async function tableExists(tableName) {
@@ -220,39 +221,19 @@ test('[Req 7-G] ghost lookup returns rows from another real player at the matchi
 });
 
 // ---------------------------------------------------------------------------
-// #5 — legacy isolation: startGameRun does not write to player_artifact_loadouts
-// Plan: §2.9 full severance.
+// #5 — startGameRun seeds the character starter preset into the run table
+// Plan: §2.9. Originally a "legacy table stays empty" test; the legacy
+// table itself was deleted 2026-04-13 so the assertion now just confirms
+// the run-scoped table receives the 2-item preset on first pick.
 // ---------------------------------------------------------------------------
-test('[Req 3-A, 3-B] startGameRun does not seed the legacy player_artifact_loadouts table', async () => {
+test('[Req 3-A, 3-B] startGameRun seeds the 2-item starter preset into game_run_loadout_items', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
   const session = await createPlayer({ telegramId: 601, username: 'solo' });
   await selectActiveMushroom(session.player.id, 'thalla');
-  // Deliberately DO NOT call saveArtifactLoadout — legacy table should stay empty.
-
-  // Snapshot legacy row count before.
-  const legacyBefore = await query(
-    `SELECT COUNT(*) AS count FROM player_artifact_loadout_items items
-     JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
-     WHERE loadouts.player_id = $1`,
-    [session.player.id]
-  );
 
   await startGameRun(session.player.id, 'solo');
-
-  const legacyAfter = await query(
-    `SELECT COUNT(*) AS count FROM player_artifact_loadout_items items
-     JOIN player_artifact_loadouts loadouts ON loadouts.id = items.loadout_id
-     WHERE loadouts.player_id = $1`,
-    [session.player.id]
-  );
-
-  assert.equal(
-    Number(legacyAfter.rows[0].count),
-    Number(legacyBefore.rows[0].count),
-    'startGameRun must not add rows to the legacy loadout table'
-  );
 
   // Round 1 is seeded with the character signature starter preset — two
   // lore-tied items from game-data.js STARTER_PRESETS. Nothing else.
@@ -297,6 +278,7 @@ test('[Req 11-C] shop state row for round 1 remains after round 2 resolves', asy
 test('[Req 4-K, 11-A] item bought in round 1 and sold in round 2 refunds at half price', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
+  const { getArtifactById, getArtifactPrice } = await import('../../app/server/game-data.js');
 
   const { playerId, run } = await bootPlayerInRun();
   // Replace the auto-generated 5-coin starter with a minimal 1-coin loadout
@@ -306,6 +288,9 @@ test('[Req 4-K, 11-A] item bought in round 1 and sold in round 2 refunds at half
   ]);
   const active = await getActiveGameRun(playerId);
   const artifactId = active.shopOffer.find((id) => id !== 'spore_needle') || active.shopOffer[0];
+  const artifact = getArtifactById(artifactId);
+  const originalPrice = getArtifactPrice(artifact);
+  const expectedHalfPrice = Math.max(1, Math.floor(originalPrice / 2));
 
   await buyRunShopItem(playerId, run.id, artifactId);
   // Move the purchased item onto the grid so it survives round-forward.
@@ -318,7 +303,7 @@ test('[Req 4-K, 11-A] item bought in round 1 and sold in round 2 refunds at half
 
   // The copy-forward must preserve purchased_round=1 on the round-2 row.
   const rows = await query(
-    `SELECT purchased_round FROM game_run_loadout_items
+    `SELECT purchased_round, fresh_purchase FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2
        AND artifact_id = $3`,
     [run.id, playerId, artifactId]
@@ -328,11 +313,146 @@ test('[Req 4-K, 11-A] item bought in round 1 and sold in round 2 refunds at half
     throw new Error('Step 3 not complete: round 2 copy-forward did not include the purchased item');
   }
   assert.equal(rows.rows[0].purchased_round, 1, 'purchased_round must survive the copy-forward');
+  assert.equal(rows.rows[0].fresh_purchase, 0, 'fresh_purchase must reset to 0 after copy-forward');
 
-  // Sell the item — refund should be half price (not full) because purchased_round !== current_round.
+  // Capture coins BEFORE selling so we can verify the exact refund delta.
+  const coinsBefore = (await getCoins(run.id, playerId));
+
+  // Sell the item — refund must be EXACTLY half-price (rounded down, min 1)
+  // because purchased_round (1) != current_round (2). [Req 4-K]
   const sellResult = await sellRunItem(playerId, run.id, artifactId);
-  // sellResult.sellPrice is set by run-service; we just assert it's <= artifact price.
-  assert.ok(sellResult.sellPrice >= 0);
+  assert.equal(
+    sellResult.sellPrice,
+    expectedHalfPrice,
+    `Round-2 sell of round-1 purchase should refund floor(${originalPrice} / 2) = ${expectedHalfPrice}, got ${sellResult.sellPrice}`
+  );
+
+  const coinsAfter = (await getCoins(run.id, playerId));
+  assert.equal(
+    coinsAfter - coinsBefore,
+    expectedHalfPrice,
+    `Coin delta should equal the half-price refund (${expectedHalfPrice})`
+  );
+});
+
+test('[Req 4-J, 4-K] same-round sell vs later-round sell: full vs half price (paired assertion)', async () => {
+  // Pin both halves of the rule in one place so the relationship can't drift:
+  //   - same round: full refund (purchased_round === current_round)
+  //   - later round: half refund (purchased_round < current_round)
+  await freshDb();
+  await requireTable('game_run_loadout_items', 'Step 1 not complete');
+  const { getArtifactById, getArtifactPrice } = await import('../../app/server/game-data.js');
+
+  // --- Same-round half ---
+  const a = await bootPlayerInRun({ telegramId: 8501, username: 'sell_same' });
+  await seedRunLoadout(a.playerId, a.run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+  const activeA = await getActiveGameRun(a.playerId);
+  const artifactA = activeA.shopOffer.find((id) => id !== 'spore_needle') || activeA.shopOffer[0];
+  const priceA = getArtifactPrice(getArtifactById(artifactA));
+  await buyRunShopItem(a.playerId, a.run.id, artifactA);
+  const sellA = await sellRunItem(a.playerId, a.run.id, artifactA);
+  assert.equal(
+    sellA.sellPrice,
+    priceA,
+    `Same-round sell should refund full price (${priceA}), got ${sellA.sellPrice}`
+  );
+
+  // --- Later-round half ---
+  const b = await bootPlayerInRun({ telegramId: 8502, username: 'sell_later' });
+  await seedRunLoadout(b.playerId, b.run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+  const activeB = await getActiveGameRun(b.playerId);
+  const artifactB = activeB.shopOffer.find((id) => id !== 'spore_needle') || activeB.shopOffer[0];
+  const priceB = getArtifactPrice(getArtifactById(artifactB));
+  const expectedHalfB = Math.max(1, Math.floor(priceB / 2));
+  await buyRunShopItem(b.playerId, b.run.id, artifactB);
+  // Place on grid so it survives copy-forward
+  await query(
+    `UPDATE game_run_loadout_items SET x = 1, y = 0
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1 AND artifact_id = $3`,
+    [b.run.id, b.playerId, artifactB]
+  );
+  await resolveRound(b.playerId, b.run.id);
+  const sellB = await sellRunItem(b.playerId, b.run.id, artifactB);
+  assert.equal(
+    sellB.sellPrice,
+    expectedHalfB,
+    `Later-round sell should refund floor(${priceB}/2) = ${expectedHalfB}, got ${sellB.sellPrice}`
+  );
+
+  // Cross-check: the later-round refund must be strictly less than the
+  // same-round refund (or equal if the artifact only costs 1 coin, since
+  // floor(1/2) = 0 → clamped to 1 = original).
+  if (priceA > 1 && priceB > 1) {
+    assert.ok(
+      expectedHalfB < priceB,
+      'Half-price refund of a multi-coin artifact should be strictly less than full price'
+    );
+  }
+});
+
+test('[Req 4-M, 4-N] runtime budget ceiling = cumulative_round_income + preset_cost', async () => {
+  // Pin the exact ceiling formula end-to-end. The signal-ready path goes
+  // through getActiveSnapshot in battle-service which composes
+  //   ceiling = sum(ROUND_INCOME[0..currentRound]) + getStarterPresetCost(mushroomId)
+  // and feeds it to validateCoinBudget. An off-by-one in either summand
+  // would either reject a legitimate round-1 loadout (preset + a full
+  // round's worth of buys) or grant the player one extra free coin every
+  // round forever after.
+  //
+  // We exercise this by spending EXACTLY the round's income on shop items
+  // (which goes ON TOP of the free starter preset) and asserting that
+  // resolveRound succeeds — no budget error from validateLoadoutItems.
+  await freshDb();
+  await requireTable('game_run_loadout_items', 'Step 1 not complete');
+  const { ROUND_INCOME, getStarterPresetCost, getStarterPreset, getArtifactById, getArtifactPrice } =
+    await import('../../app/server/game-data.js');
+
+  const session = await createPlayer({ telegramId: 8801, username: 'budget_ceiling' });
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+  const playerId = session.player.id;
+
+  // The starter preset is auto-seeded by startGameRun for the first pick.
+  // Verify the preset cost is what we think it is (it must be > 0 — if it
+  // were 0, the ceiling would equal cumulative income alone and the test
+  // wouldn't actually exercise the preset half of the formula).
+  const presetCost = getStarterPresetCost('thalla');
+  assert.ok(presetCost > 0, 'Thalla starter preset must have a non-zero cost for this test to be meaningful');
+
+  // Spend the round-1 income (5 coins) buying as many shop items as possible.
+  // The active loadout will then contain: preset items (cost = presetCost)
+  // + bought items (cost ≤ ROUND_INCOME[0]). Total = presetCost + ROUND_INCOME[0],
+  // which must equal exactly the budget ceiling.
+  const active = await getActiveGameRun(playerId);
+  let coinsLeft = ROUND_INCOME[0];
+  let bought = 0;
+  for (const artifactId of active.shopOffer) {
+    const a = getArtifactById(artifactId);
+    if (!a) continue;
+    const price = getArtifactPrice(a);
+    if (price > coinsLeft) continue;
+    try {
+      await buyRunShopItem(playerId, run.id, artifactId);
+      coinsLeft -= price;
+      bought += 1;
+    } catch { /* shop validation, continue */ }
+    if (coinsLeft === 0) break;
+  }
+  assert.ok(bought >= 1, 'Test setup: should have bought at least one item');
+
+  // resolveRound feeds the loadout through validateCoinBudget with the
+  // run-budget ceiling. If the ceiling is off-by-one, this throws.
+  // No throw = the formula matches the spec.
+  const result = await resolveRound(playerId, run.id);
+  assert.ok(
+    result.status === 'active' || result.status === 'completed' || result.status === 'abandoned',
+    `resolveRound should succeed, got status=${result.status}`
+  );
+  assert.ok(result.lastRound, 'resolveRound should return a lastRound (validation passed)');
 });
 
 // ---------------------------------------------------------------------------
