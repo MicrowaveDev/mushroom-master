@@ -326,6 +326,40 @@ test('[Req 6-F] stunned combatant skips exactly one action then acts normally', 
   // Acceptable to not find the exact pattern in 200 seeds (RNG-dependent)
 });
 
+// --- Dalamar passive: Ashen Veil defense erosion ---
+
+test('[Req 6-J] Dalamar Ashen Veil reduces enemy defense by 1 per hit', () => {
+  // Dalamar (ATK 10, SPD 5) vs Kirt (DEF 3, SPD 6) — Kirt goes first each round.
+  // After Dalamar's first hit, Kirt defense drops from 3 to 2.
+  // After second hit: 2 → 1. After third: 1 → 0. After that: stays at 0.
+  const snapshot = makeSnapshot('dalamar', 'kirt');
+  const result = simulateBattle(snapshot, 'dalamar-erosion-seed');
+  const dalamarActions = result.events.filter(
+    (e) => e.type === 'action' && e.actorSide === 'left'
+  );
+  assert.ok(dalamarActions.length >= 2, 'Dalamar should have at least 2 actions');
+
+  // After hit N the right side's defense in state should be 3 - N (min 0)
+  for (let n = 0; n < dalamarActions.length; n++) {
+    const stateDefense = dalamarActions[n].state.right.defense;
+    const expected = Math.max(0, 3 - (n + 1));
+    assert.equal(stateDefense, expected,
+      `After Dalamar hit ${n + 1}, Kirt defense should be ${expected}, got ${stateDefense}`);
+  }
+});
+
+test('[Req 6-J] Dalamar Ashen Veil defense does not go below 0', () => {
+  // Lomie has DEF 5. After 5 hits it should floor at 0, never negative.
+  const snapshot = makeSnapshot('dalamar', 'lomie');
+  const result = simulateBattle(snapshot, 'dalamar-floor-seed');
+  const dalamarActions = result.events.filter(
+    (e) => e.type === 'action' && e.actorSide === 'left'
+  );
+  for (const event of dalamarActions) {
+    assert.ok(event.state.right.defense >= 0, `Defense should never go negative, got ${event.state.right.defense}`);
+  }
+});
+
 // --- Req 6-I: Combat is fully server-side (deterministic with same seed) ---
 
 test('[Req 6-I] same seed produces identical battle results (deterministic)', () => {
