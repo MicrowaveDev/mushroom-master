@@ -4,7 +4,7 @@ title_en: Morga
 summary_ru: Скоростная грибница авангарда, добавленная в v1 боевой пятерки.
 summary_en: Fast v1 vanguard mushroom built around initiative and opening pressure.
 order: 5
-image: /data/channel/generated/character-art-pack/final-results/dalamar-sketch.png
+image: /portraits/morga/default.png
 related: mycelium-circle,ygg-mycel
 ---
 # Морга

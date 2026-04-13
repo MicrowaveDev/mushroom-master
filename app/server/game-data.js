@@ -295,6 +295,16 @@ export const artifacts = [
     starterOnly: true,
     bonus: { stunChance: 6, damage: 1 }
   },
+  {
+    id: 'entropy_shard',
+    name: { ru: 'Осколок Энтропии', en: 'Entropy Shard' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    starterOnly: true,
+    bonus: { stunChance: 5, armor: 1 }
+  },
   // --- Bag family ---
   {
     id: 'moss_pouch',
@@ -441,6 +451,30 @@ export const mushrooms = [
         en: 'Breaks speed ties in her favor and gains +10% stun chance on that attack.'
       }
     }
+  },
+  {
+    id: 'dalamar',
+    slug: 'dalamar',
+    name: { ru: 'Даламар', en: 'Dalamar' },
+    styleTag: 'control',
+    affinity: { strong: ['stun'], medium: ['damage', 'armor'], weak: [] },
+    imagePath: '/portraits/dalamar/sketch.png',
+    loreSlug: 'dalamar',
+    baseStats: { health: 100, attack: 10, speed: 5, defense: 3 },
+    passive: {
+      name: { ru: 'Пепельный Покров', en: 'Ashen Veil' },
+      description: {
+        ru: 'Каждый удар Даламар снижает защиту противника на 1 (минимум 0) на весь бой.',
+        en: 'Each of Dalamar\'s hits permanently reduces the enemy\'s defense by 1 (minimum 0).'
+      }
+    },
+    active: {
+      name: { ru: 'Кость Энтропии', en: 'Bone of Entropy' },
+      description: {
+        ru: 'Обычный удар с дополнительными +15% шанса оглушения.',
+        en: 'Normal attack with +15% additive stun chance for that hit.'
+      }
+    }
   }
 ];
 
@@ -509,7 +543,8 @@ export const STARTER_PRESETS = {
   lomie:   ['settling_guard',  'bark_plate'],
   axilin:  ['ferment_phial',   'sporeblade'],
   kirt:    ['measured_strike', 'moss_ring'],
-  morga:   ['flash_cap',       'haste_wisp']
+  morga:   ['flash_cap',       'haste_wisp'],
+  dalamar: ['entropy_shard',   'shock_puff']
 };
 
 export function getStarterPreset(mushroomId) {

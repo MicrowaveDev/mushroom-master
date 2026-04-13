@@ -4,7 +4,7 @@ title_en: Axilin
 summary_ru: Биохимик круга, превращающий распад в энергию и эликсиры.
 summary_en: The circle's biochemist, turning rot into fuel and elixirs.
 order: 3
-image: /data/channel/generated/character-art-pack/final-results/axylin-sketch.png
+image: /portraits/axilin/default.png
 related: bubbling-grot,mycelium-circle,fermentation-seas
 ---
 # Аксилин

@@ -147,6 +147,10 @@ function resolveAction(attacker, defender, step, rng, events) {
       attackStunChance += 10;
       narration = 'Flash Cap';
       break;
+    case 'dalamar':
+      attackStunChance += 15;
+      narration = 'Bone of Entropy';
+      break;
     default:
       narration = 'Attack';
       break;
@@ -184,6 +188,11 @@ function resolveAction(attacker, defender, step, rng, events) {
     }
   } else {
     defender.state.wasStunnedByPreviousEnemyTurn = false;
+  }
+
+  // Dalamar passive — Ashen Veil: each hit erodes 1 enemy defense
+  if (attacker.mushroomId === 'dalamar') {
+    defender.defense = Math.max(0, defender.defense - 1);
   }
 
   if (attacker.mushroomId === 'kirt') {

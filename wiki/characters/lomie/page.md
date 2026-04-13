@@ -4,7 +4,7 @@ title_en: Lomie
 summary_ru: Архитектор переходов и владычица стеклянного мицелия.
 summary_en: Architect of passages and mistress of the glass mycelium.
 order: 2
-image: /data/channel/assets/2026-03-28T02-06-16-000Z-212.bin.jpg
+image: /portraits/lomie/default.jpg
 related: ygg-mycel,crystal-rifts,mycelium-circle
 ---
 # Ломиэ
