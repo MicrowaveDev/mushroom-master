@@ -614,8 +614,9 @@ export const PORTRAIT_VARIANTS = {
     { id: '2',       cost: 1500, path: '/portraits/lomie/2.jpg',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ],
   axilin: [
-    { id: 'default', cost: 0,   path: '/portraits/axilin/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500, path: '/portraits/axilin/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } }
+    { id: 'default', cost: 0,    path: '/portraits/axilin/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: '/portraits/axilin/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: '/portraits/axilin/2.png',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ],
   kirt: [
     { id: 'default', cost: 0,   path: '/portraits/kirt/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
@@ -625,8 +626,9 @@ export const PORTRAIT_VARIANTS = {
     { id: 'default', cost: 0, path: '/portraits/morga/default.png', name: { ru: 'Базовый', en: 'Default' } }
   ],
   dalamar: [
-    { id: 'default', cost: 0,   path: '/portraits/dalamar/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500, path: '/portraits/dalamar/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } }
+    { id: 'default', cost: 0,    path: '/portraits/dalamar/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: '/portraits/dalamar/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: '/portraits/dalamar/2.png',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ]
 };
 
