@@ -327,7 +327,7 @@ export const mushrooms = [
     name: { ru: 'Тхалла', en: 'Thalla' },
     styleTag: 'control',
     affinity: { strong: ['stun'], medium: ['damage'], weak: ['armor'] },
-    imagePath: '/data/channel/assets/2026-03-27T23-32-46-000Z-53.bin.jpg',
+    imagePath: '/portraits/thalla/default.jpg',
     loreSlug: 'thalla',
     baseStats: { health: 100, attack: 11, speed: 7, defense: 2 },
     passive: {
@@ -351,7 +351,7 @@ export const mushrooms = [
     name: { ru: 'Ломиэ', en: 'Lomie' },
     styleTag: 'defensive',
     affinity: { strong: ['armor'], medium: ['stun'], weak: ['damage'] },
-    imagePath: '/data/channel/assets/2026-03-28T02-06-16-000Z-212.bin.jpg',
+    imagePath: '/portraits/lomie/default.jpg',
     loreSlug: 'lomie',
     baseStats: { health: 125, attack: 9, speed: 4, defense: 5 },
     passive: {
@@ -376,7 +376,7 @@ export const mushrooms = [
     name: { ru: 'Аксилин', en: 'Axilin' },
     styleTag: 'aggressive',
     affinity: { strong: ['damage'], medium: ['stun'], weak: ['armor'] },
-    imagePath: '/data/channel/generated/character-art-pack/final-results/axylin-sketch.png',
+    imagePath: '/portraits/axilin/default.png',
     loreSlug: 'axilin',
     baseStats: { health: 90, attack: 15, speed: 8, defense: 1 },
     passive: {
@@ -400,7 +400,7 @@ export const mushrooms = [
     name: { ru: 'Кирт', en: 'Kirt' },
     styleTag: 'balanced',
     affinity: { strong: ['damage', 'armor'], medium: ['stun'], weak: [] },
-    imagePath: '/data/channel/assets/2026-03-28T02-06-35-000Z-214.bin.jpg',
+    imagePath: '/portraits/kirt/default.jpg',
     loreSlug: 'kirt',
     baseStats: { health: 105, attack: 12, speed: 6, defense: 3 },
     passive: {
@@ -424,7 +424,7 @@ export const mushrooms = [
     name: { ru: 'Морга', en: 'Morga' },
     styleTag: 'aggressive',
     affinity: { strong: ['damage', 'stun'], medium: [], weak: ['armor'] },
-    imagePath: '/data/channel/generated/character-art-pack/final-results/dalamar-sketch.png',
+    imagePath: '/portraits/morga/default.png',
     loreSlug: 'morga',
     baseStats: { health: 85, attack: 13, speed: 10, defense: 0 },
     passive: {
