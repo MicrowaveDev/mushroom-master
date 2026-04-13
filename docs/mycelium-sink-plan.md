@@ -438,29 +438,21 @@ This pattern is now a project rule in `AGENTS.md` (Backend Scenario vs Unit Test
 
 ---
 
-## Open questions for product
+## Open questions — resolved (2026-04-13)
 
-1. **Level cap.** 20 is arbitrary. Should the curve go higher (e.g.
-   50) with diminishing per-level bonuses, or should level 20 be the
-   true ceiling and the 2000-mycelium wiki unlock be the "over-cap"
-   goal?
+1. **Level cap.** ✅ Stays at 20. No higher curve.
 
-2. **Ghost level scaling.** The recommendation is "ghosts use base
-   stats only". An alternative is "ghosts match the player's level"
-   which would keep the difficulty constant but eliminate the
-   power-progression feeling. The recommended approach (ghosts don't
-   scale) is simpler and gives the player a clearer sense of growth.
+2. **Ghost level scaling.** ✅ Ghosts do not scale with player level.
+   Ghost budget formula (Req 7-D) is unchanged — spend-based only.
+   Level scaling was considered and rejected because [Req 14-H]
+   establishes that mycelium progression is cosmetic-only; making
+   ghosts harder based on level would violate that principle.
 
-3. **Level-down on abandon?** Currently `[Req 10-D]` says solo
-   abandon keeps per-round rating changes applied. Should mycelium
-   earned during an abandoned run stick? Default: yes (same as
-   rating), since the mushroom still "played" those rounds.
+3. **Level-down on abandon?** ✅ Per-round mycelium sticks on abandon
+   (already committed to DB per resolveRound). No completion bonus
+   on abandon. Current behavior confirmed correct.
 
-4. **Per-mushroom or roster-wide leaderboard.** Not an open question
-   for this cycle, but worth noting: the leaderboard is currently
-   player-global. Levels are per-mushroom, which may make a
-   per-mushroom leaderboard interesting ("top 10 Thallas") as a
-   follow-up.
+4. **Leaderboard.** ✅ All-players only. No per-mushroom leaderboard.
 
 ---
 

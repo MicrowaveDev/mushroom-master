@@ -474,7 +474,7 @@ export const mushrooms = [
     name: { ru: 'Даламар', en: 'Dalamar' },
     styleTag: 'control',
     affinity: { strong: ['stun'], medium: ['damage', 'armor'], weak: [] },
-    imagePath: '/portraits/dalamar/sketch.png',
+    imagePath: '/portraits/dalamar/default.png',
     loreSlug: 'dalamar',
     baseStats: { health: 100, attack: 10, speed: 5, defense: 3 },
     passive: {
@@ -625,8 +625,8 @@ export const PORTRAIT_VARIANTS = {
     { id: 'default', cost: 0, path: '/portraits/morga/default.png', name: { ru: 'Базовый', en: 'Default' } }
   ],
   dalamar: [
-    { id: 'default', cost: 0,   path: '/portraits/dalamar/default.png', name: { ru: 'Базовый', en: 'Default' } },
-    { id: 'photo',   cost: 500, path: '/portraits/dalamar/photo.jpg',   name: { ru: 'Фото',    en: 'Photo'   } }
+    { id: 'default', cost: 0,   path: '/portraits/dalamar/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500, path: '/portraits/dalamar/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } }
   ]
 };
 

@@ -4,7 +4,7 @@ title_en: Dalamar
 summary_ru: Вестница Энтропии. Превращает препятствия в пепел и броню — в прах.
 summary_en: Herald of Entropy. Turns obstacles to ash and armor to dust.
 order: 6
-image: /portraits/dalamar/sketch.png
+image: /portraits/dalamar/default.png
 related: mycelium-circle,ygg-mycel
 ---
 <!-- tier:1 -->
