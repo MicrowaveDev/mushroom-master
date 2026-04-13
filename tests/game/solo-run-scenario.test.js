@@ -241,3 +241,29 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start �
     'round 1 shop state must remain frozen when round 2 shop is mutated'
   );
 });
+
+test('[Req 14-B] L1 resolveRound returns levelBefore and levelAfter; levelAfter > levelBefore on threshold crossing', async () => {
+  await freshDb();
+  // Start at 0 mycelium (level 1). REWARD_MULTIPLIER=20 guarantees a level-up:
+  // loss gives 5×20=100 and win gives 15×20=300 — both reach the level-2 threshold (100).
+  const { playerId, run } = await bootRun({ telegramId: 8001, username: 'levelup_test' });
+
+  process.env.REWARD_MULTIPLIER = '20';
+  let result;
+  try {
+    result = await resolveRound(playerId, run.id);
+  } finally {
+    delete process.env.REWARD_MULTIPLIER;
+  }
+
+  assert.ok(result.lastRound, 'resolveRound must return a lastRound object');
+  assert.ok('levelBefore' in result.lastRound, 'lastRound must include levelBefore');
+  assert.ok('levelAfter' in result.lastRound, 'lastRound must include levelAfter');
+  assert.equal(result.lastRound.levelBefore, 1, 'levelBefore must be 1 at 0 mycelium');
+  // REWARD_MULTIPLIER=20: worst case (loss) = 5×20=100, which exactly hits the level-2 threshold.
+  assert.ok(result.lastRound.levelAfter >= 2, `levelAfter (${result.lastRound.levelAfter}) must be at least 2`);
+  assert.ok(
+    result.lastRound.levelAfter > result.lastRound.levelBefore,
+    'levelAfter must exceed levelBefore when mycelium award crosses a threshold'
+  );
+});

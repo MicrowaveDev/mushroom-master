@@ -389,10 +389,12 @@ if a secondary shop-weighting sink is wanted later.
 - `getStarterPreset(mushroomId, presetId='default')` is variant-aware; `getStarterPresetCost` unchanged.
 - `getWikiEntry()` gates sections by mycelium; character wiki route passes player mycelium.
 - `getPlayerState` progression includes `level`, `tier`, `currentLevelMycelium`, `nextLevelMycelium`, `activePortrait`, `activePortraitUrl`, `portraits[]`, `activePreset`, `presets[]`.
-- `PUT /api/mushroom/:id/portrait` — mycelium gate, persists `active_portrait`.
-- `PUT /api/mushroom/:id/preset` — level gate, persists `active_preset`.
+- `switchPortrait(playerId, mushroomId, portraitId)` and `switchPreset(playerId, mushroomId, presetId)` service functions in `player-service.js`, exported via `game-service.js`. Route handlers delegate to these; errors carry `statusCode` for HTTP mapping.
+- `PUT /api/mushroom/:id/portrait` — mycelium gate via `switchPortrait`, persists `active_portrait`.
+- `PUT /api/mushroom/:id/preset` — level gate via `switchPreset`, persists `active_preset`.
 - `startGameRun` and `createChallengeRun` read `active_preset` before seeding starter items.
 - `resolveRound` computes `levelBefore`/`levelAfter` and returns them in `lastRound`.
+- `REWARD_MULTIPLIER` env var in `run-service.js` scales spore and mycelium rewards for both solo and challenge paths. Blocked to `1` in `NODE_ENV=production`. Used by tests to reach unlock thresholds in one round instead of hundreds.
 
 **Frontend:**
 - Home screen: tier badge, progress bar, level-up toast on round-result.
@@ -406,46 +408,24 @@ if a secondary shop-weighting sink is wanted later.
 - `player_mushrooms.active_portrait TEXT NOT NULL DEFAULT 'default'`
 - `player_mushrooms.active_preset TEXT NOT NULL DEFAULT 'default'`
 
-**Tests — covered:** `tests/game/mushroom-progression.test.js` — 22 tests covering level curve boundaries, all tier boundaries, wiki gating at all thresholds, and bootstrap `tier` field. (Options 1 + 5 only.)
+**Tests — all covered (41 passing):**
 
-**Tests — outstanding (Options 3 + 6):**
-
-The following scenarios have no test coverage yet. All are backend-testable without a browser.
-
-*Option 6 — Portrait variants*
-
-| # | What to assert | How |
+| File | Count | Coverage |
 |---|---|---|
-| P1 | `PORTRAIT_VARIANTS` shape: every mushroom has an entry; first variant is always `default` with `cost: 0` | unit — import and assert |
-| P2 | Bootstrap `portraits[]` has correct `unlocked` flag based on player's mycelium | service — set mycelium in DB, call `getPlayerState`, check `portraits[n].unlocked` |
-| P3 | Bootstrap `activePortraitUrl` reflects `active_portrait` column | service — set `active_portrait` in DB, call `getPlayerState`, check URL |
-| P4 | `PUT /api/mushroom/:id/portrait` happy path: mycelium threshold met → 200, `active_portrait` persisted | API — seed mycelium ≥ cost, PUT, re-fetch bootstrap |
-| P5 | `PUT /api/mushroom/:id/portrait` gate: mycelium below threshold → 403, no DB change | API — seed mycelium < cost, PUT, assert 403 + column unchanged |
-| P6 | `PUT /api/mushroom/:id/portrait` unknown portrait id → 400 | API |
-| P7 | `PUT /api/mushroom/:id/portrait` unknown mushroom id → 404 | API |
+| `tests/game/mushroom-progression.test.js` | 39 | Level curve boundaries, all tier boundaries, wiki gating, bootstrap `tier` field, P1–P7 portrait variants, V1–V10 preset variants |
+| `tests/game/solo-run-scenario.test.js` | 2 | Full solo run scenario; L1 level-up signal |
 
-*Option 3 — Preset variants*
+Tests no longer use direct SQL to set mycelium. Instead they use `earnMycelium(playerId, runId, multiplier)` from `tests/game/helpers.js`, which wraps `resolveRound` with a temporary `REWARD_MULTIPLIER` and restores the env var in a `finally` block. Multiplier guide:
 
-| # | What to assert | How |
+| Target | Multiplier | Guaranteed minimum (on a loss: 5 × mult) |
 |---|---|---|
-| V1 | `STARTER_PRESET_VARIANTS` shape: every mushroom has 3 variants; first is always `default` with `requiredLevel: 0` | unit |
-| V2 | `getStarterPreset(mushroomId, presetId)` returns the correct item pair for each named variant | unit — call for each mushroom × each variant |
-| V3 | `getStarterPreset(mushroomId, 'nonexistent')` falls back to `default` without throwing | unit |
-| V4 | Bootstrap `presets[]` has correct `unlocked` flag based on level | service — set mycelium to L5 threshold, call `getPlayerState`, check `presets[1].unlocked` |
-| V5 | Bootstrap `activePreset` reflects `active_preset` column | service — set `active_preset` in DB, call `getPlayerState` |
-| V6 | `startGameRun` seeds the **active** preset's items, not always default | integration — set `active_preset` to a non-default variant, start run, assert round-1 loadout contains the variant's item IDs |
-| V7 | `PUT /api/mushroom/:id/preset` happy path: level met → 200, `active_preset` persisted | API |
-| V8 | `PUT /api/mushroom/:id/preset` gate: level too low → 403, no DB change | API |
-| V9 | `PUT /api/mushroom/:id/preset` unknown preset id → 400 | API |
-| V10 | `PUT /api/mushroom/:id/preset` unknown mushroom id → 404 | API |
+| ≥ 350 mycelium (level 5, preset unlocks) | 70 | 350 |
+| ≥ 500 mycelium (portrait variant 1) | 100 | 500 |
+| ≥ 100 mycelium (level-up threshold) | 20 | 100 |
 
-*Level-up signal (Option 1 gap)*
+Tests that need mycelium *below* a threshold (P5, V8) use a fresh player — 0 mycelium at creation is already below every unlock threshold; no setup needed.
 
-| # | What to assert | How |
-|---|---|---|
-| L1 | `resolveRound` response includes `lastRound.levelBefore` and `lastRound.levelAfter`; `levelAfter > levelBefore` when mycelium award crosses a level threshold | integration — set player to mycelium just below a threshold, resolve, assert |
-
-V6 and L1 can extend the existing `solo-run-scenario.test.js`. P4/P5/V7/V8 require an HTTP server fixture (same pattern as `tests/game/auth.test.js` if it spins up the app, otherwise inline service calls with the route handler extracted).
+This pattern is now a project rule in `AGENTS.md` (Backend Scenario vs Unit Test Rules): prefer backend env-var overrides over direct SQL when a test needs elevated game state.
 
 ---
 

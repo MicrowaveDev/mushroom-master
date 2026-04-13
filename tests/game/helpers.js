@@ -1,6 +1,7 @@
 import { query, resetDb } from '../../app/server/db.js';
 import { upsertTelegramPlayer } from '../../app/server/auth.js';
 import {
+  resolveRound,
   selectActiveMushroom,
   startGameRun
 } from '../../app/server/services/game-service.js';
@@ -125,6 +126,27 @@ export async function countBotGhostRows() {
     `SELECT COUNT(*) AS count FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%'`
   );
   return Number(r.rows[0].count);
+}
+
+/**
+ * Resolve one round with a temporary reward multiplier so tests can reach
+ * mycelium/spore thresholds after a single round instead of setting DB rows
+ * directly. The multiplier is applied for the duration of the call only.
+ *
+ * Multiplier guidance (starting from 0 mycelium):
+ *   ≥350 (level 5 / preset unlocks): use 70  — loss gives 5×70=350
+ *   ≥500 (portrait variant 1):        use 100 — loss gives 5×100=500
+ *   ≥100 (level 2 / level-up test):   use 20  — loss gives 5×20=100
+ */
+export async function earnMycelium(playerId, runId, multiplier) {
+  const prev = process.env.REWARD_MULTIPLIER;
+  process.env.REWARD_MULTIPLIER = String(multiplier);
+  try {
+    return await resolveRound(playerId, runId);
+  } finally {
+    if (prev === undefined) delete process.env.REWARD_MULTIPLIER;
+    else process.env.REWARD_MULTIPLIER = prev;
+  }
 }
 
 export async function seedRunLoadout(playerId, gameRunId, items) {

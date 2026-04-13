@@ -40,7 +40,9 @@ import {
   buyRunShopItem,
   createRunChallenge,
   getGameRunHistory,
-  updateSettings
+  updateSettings,
+  switchPortrait,
+  switchPreset
 } from './services/game-service.js';
 import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
@@ -561,23 +563,12 @@ export async function createApp() {
     '/api/mushroom/:id/portrait',
     requireAuth,
     asyncRoute(async (req, res) => {
-      const mushroomId = req.params.id;
-      const { portraitId } = req.body;
-      const variants = PORTRAIT_VARIANTS[mushroomId];
-      if (!variants) return res.status(404).json({ success: false, error: 'Unknown mushroom' });
-      const variant = variants.find(v => v.id === portraitId);
-      if (!variant) return res.status(400).json({ success: false, error: 'Unknown portrait' });
-      const row = await dbQuery(
-        `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
-        [req.user.id, mushroomId]
-      );
-      const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
-      if (mycelium < variant.cost) return res.status(403).json({ success: false, error: 'Not enough mycelium' });
-      await dbQuery(
-        `UPDATE player_mushrooms SET active_portrait = $1 WHERE player_id = $2 AND mushroom_id = $3`,
-        [portraitId, req.user.id, mushroomId]
-      );
-      res.json({ success: true, data: { portraitId, path: variant.path } });
+      try {
+        const data = await switchPortrait(req.user.id, req.params.id, req.body.portraitId);
+        res.json({ success: true, data });
+      } catch (err) {
+        res.status(err.statusCode || 500).json({ success: false, error: err.message });
+      }
     })
   );
 
@@ -586,25 +577,12 @@ export async function createApp() {
     '/api/mushroom/:id/preset',
     requireAuth,
     asyncRoute(async (req, res) => {
-      const mushroomId = req.params.id;
-      const { presetId } = req.body;
-      const variants = STARTER_PRESET_VARIANTS[mushroomId];
-      if (!variants) return res.status(404).json({ success: false, error: 'Unknown mushroom' });
-      const variant = variants.find(v => v.id === presetId);
-      if (!variant) return res.status(400).json({ success: false, error: 'Unknown preset' });
-      const row = await dbQuery(
-        `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
-        [req.user.id, mushroomId]
-      );
-      const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
-      if (computeLevel(mycelium).level < variant.requiredLevel) {
-        return res.status(403).json({ success: false, error: 'Level too low' });
+      try {
+        const data = await switchPreset(req.user.id, req.params.id, req.body.presetId);
+        res.json({ success: true, data });
+      } catch (err) {
+        res.status(err.statusCode || 500).json({ success: false, error: err.message });
       }
-      await dbQuery(
-        `UPDATE player_mushrooms SET active_preset = $1 WHERE player_id = $2 AND mushroom_id = $3`,
-        [presetId, req.user.id, mushroomId]
-      );
-      res.json({ success: true, data: { presetId } });
     })
   );
 

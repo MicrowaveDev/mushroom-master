@@ -325,3 +325,45 @@ export async function getInventoryReviewSamples() {
     })
   );
 }
+
+function httpError(message, statusCode) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
+
+export async function switchPortrait(playerId, mushroomId, portraitId) {
+  const variants = PORTRAIT_VARIANTS[mushroomId];
+  if (!variants) throw httpError('Unknown mushroom', 404);
+  const variant = variants.find(v => v.id === portraitId);
+  if (!variant) throw httpError('Unknown portrait', 400);
+  const row = await query(
+    `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+    [playerId, mushroomId]
+  );
+  const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
+  if (mycelium < variant.cost) throw httpError('Not enough mycelium', 403);
+  await query(
+    `UPDATE player_mushrooms SET active_portrait = $1 WHERE player_id = $2 AND mushroom_id = $3`,
+    [portraitId, playerId, mushroomId]
+  );
+  return { portraitId, path: variant.path };
+}
+
+export async function switchPreset(playerId, mushroomId, presetId) {
+  const variants = STARTER_PRESET_VARIANTS[mushroomId];
+  if (!variants) throw httpError('Unknown mushroom', 404);
+  const variant = variants.find(v => v.id === presetId);
+  if (!variant) throw httpError('Unknown preset', 400);
+  const row = await query(
+    `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+    [playerId, mushroomId]
+  );
+  const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
+  if (computeLevel(mycelium).level < variant.requiredLevel) throw httpError('Level too low', 403);
+  await query(
+    `UPDATE player_mushrooms SET active_preset = $1 WHERE player_id = $2 AND mushroom_id = $3`,
+    [presetId, playerId, mushroomId]
+  );
+  return { presetId };
+}

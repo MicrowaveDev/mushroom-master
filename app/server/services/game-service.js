@@ -23,6 +23,8 @@ export {
   getPlayerState,
   saveLocalTestRun,
   selectActiveMushroom,
+  switchPortrait,
+  switchPreset,
   updateSettings
 } from './player-service.js';
 export {

@@ -53,6 +53,15 @@ import {
   readCurrentRoundItems
 } from './game-run-loadout.js';
 
+// In test environments, set REWARD_MULTIPLIER=N to scale spore+mycelium rewards
+// so unlocks can be reached after a handful of rounds instead of hundreds.
+// Defaults to 1 (no scaling) and is ignored in production.
+function rewardMultiplier() {
+  if (process.env.NODE_ENV === 'production') return 1;
+  const n = parseInt(process.env.REWARD_MULTIPLIER ?? '1', 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
 export function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
   const combatPool = [...combatArtifacts];
   const bagPool = [...bags];
@@ -579,6 +588,9 @@ async function resolveChallengeRound(client, run, gameRunId) {
     [grpB, snapshotB, outcomeB, grpA.player_id]
   ]) {
     const rewards = runRewardTable[outcome];
+    const mult = rewardMultiplier();
+    const sporeAwarded = rewards.spore * mult;
+    const myceliumAwarded = rewards.mycelium * mult;
     const roundIncome = roundNumber < MAX_ROUNDS_PER_RUN ? ROUND_INCOME[roundNumber] : 0;
 
     await client.query(
@@ -586,7 +598,7 @@ async function resolveChallengeRound(client, run, gameRunId) {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, $10, $11)`,
       [
         createId('ground'), gameRunId, roundNumber, battle.id, grp.player_id,
-        outcome, opponentId, rewards.spore, rewards.mycelium, roundIncome, nowIso()
+        outcome, opponentId, sporeAwarded, myceliumAwarded, roundIncome, nowIso()
       ]
     );
 
@@ -603,7 +615,7 @@ async function resolveChallengeRound(client, run, gameRunId) {
 
     await client.query(
       `UPDATE players SET spore = spore + $2, updated_at = $3 WHERE id = $1`,
-      [grp.player_id, rewards.spore, nowIso()]
+      [grp.player_id, sporeAwarded, nowIso()]
     );
 
     const activeChar = await client.query(
@@ -613,7 +625,7 @@ async function resolveChallengeRound(client, run, gameRunId) {
 
     await client.query(
       `UPDATE player_mushrooms SET mycelium = mycelium + $3 WHERE player_id = $1 AND mushroom_id = $2`,
-      [grp.player_id, mushroomId, rewards.mycelium]
+      [grp.player_id, mushroomId, myceliumAwarded]
     );
 
     playerResults[grp.player_id] = {
@@ -784,6 +796,9 @@ export async function resolveRound(playerId, gameRunId) {
     });
 
     const rewards = runRewardTable[outcome];
+    const mult = rewardMultiplier();
+    const sporeAwarded = rewards.spore * mult;
+    const myceliumAwarded = rewards.mycelium * mult;
     const playerResult = await client.query('SELECT rating, rated_battle_count FROM players WHERE id = $1', [playerId]);
     const player = playerResult.rows[0];
     const opponentRating = rightSnapshot.playerId
@@ -803,7 +818,7 @@ export async function resolveRound(playerId, gameRunId) {
       [
         createId('ground'), gameRunId, roundNumber, battle.id, playerId,
         outcome, rightSnapshot.playerId || null,
-        rewards.spore, rewards.mycelium,
+        sporeAwarded, myceliumAwarded,
         player.rating, ratingAfter, roundIncome, nowIso()
       ]
     );
@@ -821,7 +836,7 @@ export async function resolveRound(playerId, gameRunId) {
 
     await client.query(
       `UPDATE players SET spore = spore + $2, rating = $3, rated_battle_count = rated_battle_count + 1, updated_at = $4 WHERE id = $1`,
-      [playerId, rewards.spore, ratingAfter, nowIso()]
+      [playerId, sporeAwarded, ratingAfter, nowIso()]
     );
 
     const activeChar = await client.query(
@@ -837,11 +852,11 @@ export async function resolveRound(playerId, gameRunId) {
 
     await client.query(
       `UPDATE player_mushrooms SET mycelium = mycelium + $3 WHERE player_id = $1 AND mushroom_id = $2`,
-      [playerId, mushroomId, rewards.mycelium]
+      [playerId, mushroomId, myceliumAwarded]
     );
 
     const levelBefore = computeLevel(myceliumBefore).level;
-    const levelAfter = computeLevel(myceliumBefore + rewards.mycelium).level;
+    const levelAfter = computeLevel(myceliumBefore + myceliumAwarded).level;
 
     // Ghost snapshots are no longer written to a separate table (§2.4).
     // The round-N loadout rows in game_run_loadout_items ARE the snapshot —
