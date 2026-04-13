@@ -1,8 +1,10 @@
 # Repository Instructions
 
 Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for renderer and future UI styling guidance. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
+
 Use [docs/character-image-prompt-template.md](/Users/microwavedev/workspace/mushroom-master/docs/character-image-prompt-template.md) as the base whenever the task is to produce a character image-generation prompt from repo canon. Read the target character's current canon first, then return one final copy-paste-ready prompt block rather than the raw worksheet.
 
+Use [docs/design-requirements.md](/Users/microwavedev/workspace/mushroom-master/docs/design-requirements.md) as the authoritative canon-facing spec whenever the task touches character design, lore design descriptions, image prompts, portraits, dossier art, or other visual depictions of the Mycelium world and cast. If a visible-character depiction conflicts with that doc, treat it as a canon bug unless the requirement doc is updated in the same change.
 
 ## Planning, Delegation, and Validation Rules
 
@@ -98,6 +100,8 @@ Use [docs/character-image-prompt-template.md](/Users/microwavedev/workspace/mush
   - validation passed
   - the claimed completion state matches the actual files on disk
 - **Before implementing or changing any game-play behavior**, read [docs/game-requirements.md](docs/game-requirements.md). It is the authoritative behavioral spec — every rule there is testable, and violating one is a bug. If a change conflicts with a requirement, update the requirement doc in the same commit (with user approval) so the spec and code stay in sync. Do not treat balance.md, plan docs, or inline code comments as the source of truth for game rules — those describe rationale and history, not the current contract.
+- **Before implementing or changing any character/lore/image-facing design behavior**, read [docs/design-requirements.md](docs/design-requirements.md). It is the authoritative visual-and-lore design spec for canon-facing depictions of the world and heroines. If a change conflicts with a requirement, update the requirement doc in the same commit (with user approval) so the spec and output stay in sync.
+- **Visible ears rule:** when a mushroom heroine's ears are visible in an image, portrait, prompt target, dossier render, or other depiction, they must be **elf ears**.
 
 ### Requirement Traceability Rules
 
