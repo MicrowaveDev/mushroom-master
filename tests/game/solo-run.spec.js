@@ -58,6 +58,41 @@ async function sellContainerItemViaApi(page, request, sessionKey, gameRunId, art
   // Force the UI to re-hydrate so the locator check after this call sees
   // the updated state (the container item removed).
   await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+}
+
+/**
+ * Wait for the prep screen's deterministic "ready" signal. PrepScreen sets
+ * `data-testid="prep-ready"` on the root only after `refreshBootstrap`
+ * finishes projecting `loadoutItems` into `containerItems`. Tests should
+ * always wait on this before interacting, to avoid racing Vue's reactive
+ * update against the server response. See docs/flaky-tests.md.
+ */
+async function waitForPrepReady(page, timeout = 15000) {
+  await page.locator('[data-testid="prep-ready"]').waitFor({ timeout });
+}
+
+/**
+ * Deterministically put `artifactIds` into the current round's shop, then
+ * reload so the UI picks up the new offer, then click the first entry to
+ * buy it. Replaces the old `findAndBuyBag` polling loop that flaked on
+ * cold Vite: instead of refreshing the shop up to 30 times hoping the
+ * pity system eventually rolls the target, we overwrite the shop state
+ * directly via a dev-only endpoint. See docs/flaky-tests.md.
+ */
+async function forceShopAndBuy(page, request, sessionKey, gameRunId, artifactId) {
+  const response = await request.fetch(`/api/dev/game-run/${gameRunId}/force-shop`, {
+    method: 'POST',
+    headers: { 'X-Session-Key': sessionKey, 'Content-Type': 'application/json' },
+    data: { artifactIds: [artifactId] }
+  });
+  const json = await response.json();
+  if (!json.success) throw new Error(`force-shop failed for ${artifactId}: ${JSON.stringify(json)}`);
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await page.locator(`.shop-item[data-artifact-id="${artifactId}"]`).click();
+  await expect(page.locator(`.artifact-container-zone .container-item[data-artifact-id="${artifactId}"]`))
+    .toBeVisible({ timeout: 5000 });
 }
 
 async function resetDevDb(request) {
@@ -107,7 +142,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
 
   // --- Start game run → prep screen ---
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
   const hud = page.locator('.run-hud');
   await expect(hud).toContainText('1');
   await saveShotDual(page, 'solo-02-prep-round1.png');
@@ -176,7 +211,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
 
     // --- Page refresh persistence ---
     await page.reload({ waitUntil: 'networkidle' });
-    await expect(page.locator('.prep-screen')).toBeVisible();
+    await waitForPrepReady(page);
     await expect(hud).toContainText('2');
     await saveShot(page, 'solo-07-persisted-after-reload.png');
 
@@ -222,7 +257,7 @@ test('[Req 1-F] solo game run: abandon mid-game with screenshots', async ({ page
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
   await saveShot(page, 'solo-abandon-01-prep.png');
 
   await page.getByRole('button', { name: /abandon|покинуть/i }).click();
@@ -245,7 +280,7 @@ test('[Req 5-A, 12-D] bag activation persists across page reload', async ({ page
   // Start a game run
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
   // Try to find a bag in the shop, refresh if needed
   const hasBag = await page.locator('.shop-item--bag').first().isVisible().catch(() => false);
@@ -294,7 +329,7 @@ test('[Req 5-A, 12-D] bag activation persists across page reload', async ({ page
 
   // --- Reload the page ---
   await page.reload({ waitUntil: 'networkidle' });
-  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
+  await waitForPrepReady(page);
 
   // Verify bag state survived reload
   await expect(page.locator('.active-bags-bar')).toBeVisible();
@@ -329,34 +364,17 @@ test('[Req 5-C, 2-B] amber satchel (2x2 bag) activates from container and expand
   // Start a game run
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
   // Count base inventory grid cells (3×3 = 9, per INVENTORY_COLUMNS × INVENTORY_ROWS)
   const inventoryGrid = page.locator('.artifact-inventory-grid .artifact-grid-background');
   const baseCells = await inventoryGrid.locator('> *').count();
   expect(baseCells).toBe(9);
 
-  // Refresh shop until amber_satchel appears
-  let foundSatchel = false;
-  for (let i = 0; i < 10; i++) {
-    const satchel = page.locator('.shop-item[data-artifact-id="amber_satchel"]');
-    if (await satchel.isVisible().catch(() => false)) {
-      foundSatchel = true;
-      break;
-    }
-    const refreshBtn = page.locator('.artifact-shop-header button');
-    if (await refreshBtn.isEnabled()) {
-      await refreshBtn.click();
-      await page.waitForTimeout(300);
-    }
-  }
-  if (!foundSatchel) {
-    // Skip if satchel never appeared (unlikely with pity system)
-    return;
-  }
-
-  // Buy amber_satchel (price 3)
-  await page.locator('.shop-item[data-artifact-id="amber_satchel"]').click();
+  // Deterministically place amber_satchel in the shop, then buy it.
+  // Replaces the old "refresh up to 10 times hoping pity rolls it" loop.
+  const satchelBootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  await forceShopAndBuy(page, request, player.sessionKey, satchelBootstrap.activeGameRun.id, 'amber_satchel');
 
   // Verify it appeared in the container
   const containerItem = page.locator('.artifact-container-zone .container-item').last();
@@ -403,31 +421,16 @@ test('can sell bag from container after page reload', async ({ page, request, ba
 
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
-  // Refresh shop until any bag appears
-  let bagId = '';
-  for (let i = 0; i < 10; i++) {
-    const bag = page.locator('.shop-item--bag').first();
-    if (await bag.isVisible().catch(() => false)) {
-      bagId = await bag.getAttribute('data-artifact-id') || '';
-      if (bagId) break;
-    }
-    const refreshBtn = page.locator('.artifact-shop-header button');
-    if (await refreshBtn.isEnabled()) {
-      await refreshBtn.click();
-      await page.waitForTimeout(300);
-    }
-  }
-  if (!bagId) return; // Skip if no bag appeared
-
-  // Buy the bag (do NOT activate it - leave it in container)
-  await page.locator(`.shop-item[data-artifact-id="${bagId}"]`).click();
-  await expect(page.locator(`.artifact-container-zone .container-item[data-artifact-id="${bagId}"]`)).toBeVisible();
+  // Deterministically place moss_pouch in the shop and buy it (leave in container).
+  const bagId = 'moss_pouch';
+  const sellBootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  await forceShopAndBuy(page, request, player.sessionKey, sellBootstrap.activeGameRun.id, bagId);
 
   // --- Reload the page (simulates server+page restart) ---
   await page.reload({ waitUntil: 'networkidle' });
-  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
+  await waitForPrepReady(page);
 
   // Bag should still be in the container after reload
   const bagInContainer = page.locator(`.artifact-container-zone .container-item[data-artifact-id="${bagId}"]`);
@@ -462,41 +465,23 @@ test('can sell second bag from container when another bag is active (after reloa
 
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
-  // Helper to refresh shop until a specific bag is offered. The bag pity
-  // + RNG can take several refreshes; allow plenty of iterations.
-  async function findAndBuyBag(bagId) {
-    for (let i = 0; i < 30; i++) {
-      const item = page.locator(`.shop-item[data-artifact-id="${bagId}"]`);
-      if (await item.isVisible().catch(() => false)) {
-        await item.click();
-        await expect(page.locator(`.artifact-container-zone .container-item[data-artifact-id="${bagId}"]`)).toBeVisible({ timeout: 5000 });
-        return true;
-      }
-      const refreshBtn = page.locator('.artifact-shop-header button');
-      if (await refreshBtn.isEnabled()) {
-        await refreshBtn.click();
-        await page.waitForTimeout(400);
-      } else {
-        return false;
-      }
-    }
-    return false;
-  }
+  const twoBagBootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  const twoBagRunId = twoBagBootstrap.activeGameRun.id;
 
-  // Buy moss_pouch and activate it
-  if (!(await findAndBuyBag('moss_pouch'))) return;
+  // Buy moss_pouch (shop forced) and activate it
+  await forceShopAndBuy(page, request, player.sessionKey, twoBagRunId, 'moss_pouch');
   await page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]').click();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
-  // Buy amber_satchel (leave in container)
-  if (!(await findAndBuyBag('amber_satchel'))) return;
+  // Buy amber_satchel (shop forced; leave in container)
+  await forceShopAndBuy(page, request, player.sessionKey, twoBagRunId, 'amber_satchel');
   await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]')).toBeVisible();
 
   // --- Reload the page ---
   await page.reload({ waitUntil: 'networkidle' });
-  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
+  await waitForPrepReady(page);
 
   // Verify state restored: 1 active bag (moss_pouch), 1 container bag (amber_satchel)
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
@@ -539,7 +524,7 @@ test('round transitions: replay → continue → next prep (not home) while live
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
   const hud = page.locator('.run-hud');
   await expect(hud).toContainText('1'); // round 1
@@ -564,7 +549,7 @@ test('round transitions: replay → continue → next prep (not home) while live
   await replayActionBtn.click();
 
   // Should be on prep screen for round 2 — NOT runComplete or results
-  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
+  await waitForPrepReady(page);
   await expect(hud).toContainText('2');
   await expect(page.locator('.run-complete-screen')).toHaveCount(0);
   await expect(page.locator('.results-screen')).toHaveCount(0);
@@ -718,7 +703,7 @@ test('multiple items across rounds survive a full page reload', async ({ page, r
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
   // Round 1 starts with an empty inventory — every artifact must be bought.
   // This reload test now asserts that an empty grid stays empty across reload.
@@ -733,7 +718,7 @@ test('multiple items across rounds survive a full page reload', async ({ page, r
 
   // Reload the page (simulates server+browser restart)
   await page.reload({ waitUntil: 'networkidle' });
-  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
+  await waitForPrepReady(page);
 
   // Placed pieces should still be visible and match the snapshot
   const placedAfter = await page.locator('.inventory-pieces .artifact-piece').count();

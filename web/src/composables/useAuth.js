@@ -35,6 +35,12 @@ export function useAuth(state, goTo) {
       return;
     }
     state.loading = true;
+    // bootstrapReady is a deterministic "prep screen has finished projecting
+    // server state into UI buckets" signal. Tests wait on
+    // `[data-testid="prep-ready"]` (set in PrepScreen) which mirrors this
+    // flag — replaces polling against `.prep-screen` visibility which can
+    // race the loadoutItems → containerItems projection during cold Vite.
+    state.bootstrapReady = false;
     try {
       state.bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
       state.lang = state.bootstrap.settings.lang;
@@ -153,6 +159,7 @@ export function useAuth(state, goTo) {
       state.sessionKey = '';
     } finally {
       state.loading = false;
+      state.bootstrapReady = true;
     }
   }
 

@@ -49,7 +49,7 @@ export const PrepScreen = {
     }
   },
   template: `
-    <section class="prep-screen">
+    <section class="prep-screen" :data-testid="state.bootstrapReady ? 'prep-ready' : null">
       <div class="run-hud">
         <span class="run-hud-item">{{ t.round }} {{ state.gameRun.currentRound }}</span>
         <span class="run-hud-item">{{ t.wins }}: {{ state.gameRun.player?.wins || 0 }}</span>

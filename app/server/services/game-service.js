@@ -36,6 +36,7 @@ export {
   getGameRunHistory,
   pruneOldGhostSnapshots,
   refreshRunShop,
+  forceRunShopForTest,
   resolveRound,
   sellRunItem,
   startGameRun

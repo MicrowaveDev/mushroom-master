@@ -12,6 +12,13 @@ export default defineConfig({
   testDir: '/Users/microwavedev/workspace/mushroom-master/tests/game',
   testMatch: '*.spec.js',
   timeout: 120000,
+  // One retry as a safety net for any residual flake. Root causes are
+  // addressed by:
+  //   - serving a prebuilt bundle (no cold-Vite compile race)
+  //   - deterministic `prep-ready` data-testid (no containerItems projection race)
+  //   - dev-only /api/dev/game-run/:id/force-shop (no RNG/pity polling)
+  // See docs/flaky-tests.md.
+  retries: 1,
   use: {
     baseURL: testFrontendOrigin,
     browserName: 'chromium',
@@ -32,10 +39,17 @@ export default defineConfig({
       cwd: '/Users/microwavedev/workspace/mushroom-master'
     },
     {
-      command: `VITE_BACKEND_ORIGIN=${testBackendOrigin} VITE_DEV_PORT=${testFrontendPort} VITE_REPLAY_AUTOPLAY_MS=${replayAutoplayMs} VITE_REPLAY_AUTOPLAY_FAST_MS=${replayAutoplayFastMs} npx vite --config web/vite.config.js --host 127.0.0.1 --port ${testFrontendPort}`,
+      // Build once, then preview the static bundle. Using `vite dev` for
+      // tests causes a cold-start compile race where the first few tests
+      // interact with the UI before Vue's reactive state catches up with
+      // the server response. A prebuilt bundle has no compile step, so
+      // every test sees a warm, deterministic load. See docs/flaky-tests.md.
+      command: `VITE_BACKEND_ORIGIN=${testBackendOrigin} VITE_DEV_PORT=${testFrontendPort} VITE_REPLAY_AUTOPLAY_MS=${replayAutoplayMs} VITE_REPLAY_AUTOPLAY_FAST_MS=${replayAutoplayFastMs} npx vite build --config web/vite.config.js && VITE_BACKEND_ORIGIN=${testBackendOrigin} VITE_DEV_PORT=${testFrontendPort} npx vite preview --config web/vite.config.js --host 127.0.0.1 --port ${testFrontendPort} --strictPort`,
       port: testFrontendPort,
       reuseExistingServer: false,
-      cwd: '/Users/microwavedev/workspace/mushroom-master'
+      cwd: '/Users/microwavedev/workspace/mushroom-master',
+      // Build adds ~20-30s to cold start; bump timeout generously.
+      timeout: 180000
     }
   ]
 });

@@ -1089,6 +1089,52 @@ export async function refreshRunShop(playerId, gameRunId) {
   }));
 }
 
+/**
+ * Test-only: overwrite the current round's shop offer with a deterministic
+ * artifact list. Used by Playwright tests to eliminate RNG/pity/refresh
+ * polling loops that race cold Vite compilation. Does NOT charge coins and
+ * does NOT increment refresh_count — the shop appears "as if" it was rolled
+ * this way from the start.
+ *
+ * Gated by `NODE_ENV !== 'production'` at the route layer.
+ */
+export async function forceRunShopForTest(playerId, gameRunId, artifactIds) {
+  if (!Array.isArray(artifactIds) || artifactIds.length === 0) {
+    throw new Error('forceRunShopForTest requires a non-empty artifactIds array');
+  }
+  for (const id of artifactIds) {
+    if (!getArtifactById(id)) {
+      throw new Error(`Unknown artifactId in force-shop: ${id}`);
+    }
+  }
+  return withRunLock(gameRunId, () => withTransaction(async (client) => {
+    const runResult = await client.query(
+      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
+      [gameRunId]
+    );
+    if (!runResult.rowCount) {
+      throw new Error('Game run not found or already ended');
+    }
+    const currentRound = runResult.rows[0].current_round;
+
+    const grpResult = await client.query(
+      `SELECT id FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
+      [gameRunId, playerId]
+    );
+    if (!grpResult.rowCount) {
+      throw new Error('Player is not part of this active game run');
+    }
+
+    await client.query(
+      `UPDATE game_run_shop_states SET offer_json = $1, updated_at = $2
+       WHERE game_run_id = $3 AND player_id = $4 AND round_number = $5`,
+      [JSON.stringify(artifactIds), nowIso(), gameRunId, playerId, currentRound]
+    );
+
+    return { shopOffer: artifactIds };
+  }));
+}
+
 export async function sellRunItem(playerId, gameRunId, artifactId) {
   return withRunLock(gameRunId, () => withTransaction(async (client) => {
     const runResult = await client.query(

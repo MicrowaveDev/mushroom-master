@@ -50,6 +50,7 @@ const App = {
       appConfig: { localAiLabEnabled: false, localDevAuthEnabled: false },
       authCode: null,
       loading: true,
+      bootstrapReady: false,
       error: '',
       screen: parseStartParams().screen || 'auth',
       lang: 'ru',

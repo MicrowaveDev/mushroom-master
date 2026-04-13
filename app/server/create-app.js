@@ -34,6 +34,7 @@ import {
   getGameRun,
   resolveRound,
   refreshRunShop,
+  forceRunShopForTest,
   sellRunItem,
   buyRunShopItem,
   createRunChallenge,
@@ -604,6 +605,19 @@ export async function createApp() {
   );
 
   if (process.env.NODE_ENV !== 'production') {
+    // Test-only: deterministically overwrite the current round's shop offer.
+    // Playwright tests use this to bypass RNG/pity/refresh polling loops that
+    // otherwise race cold Vite compilation. See docs/flaky-tests.md.
+    app.post(
+      '/api/dev/game-run/:id/force-shop',
+      requireAuth,
+      requireRunMembership,
+      asyncRoute(async (req, res) => {
+        const data = await forceRunShopForTest(req.user.id, req.params.id, req.body.artifactIds);
+        res.json({ success: true, data });
+      })
+    );
+
     app.post(
       '/api/dev/reset',
       asyncRoute(async (_req, res) => {
