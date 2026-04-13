@@ -61,6 +61,67 @@ test('[Flow A] onboarding screen shows for new player without active mushroom', 
   await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
 });
 
+// --- Flow A Step 3: first-pick auto-start ---
+
+test('[Flow A Step 3] first mushroom pick auto-starts solo run and lands on prep', async ({ page, request, baseURL }) => {
+  // A brand-new player (no activeMushroomId) who clicks a character card
+  // should NOT have to discover "Start Game" on the home screen.
+  // saveCharacter detects wasFirstPick=true and calls startNewGameRun('solo')
+  // automatically, dropping the player directly into the prep screen.
+  // Spec: docs/user-flows.md Flow A Step 3.
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1060, username: 'first_pick', name: 'First Pick' });
+  // Do NOT set active-character — this is a fresh player with no mushroom.
+
+  // A ghost is needed so the run's first round can resolve.
+  const ghost = await createSession(request, { telegramId: 1061, username: 'first_pick_ghost', name: 'First Pick Ghost' });
+  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(baseURL, { waitUntil: 'networkidle' });
+
+  // Fresh player without a mushroom lands on onboarding.
+  await expect(page.locator('.onboarding-screen')).toBeVisible({ timeout: 5000 });
+
+  // Click "Continue" on onboarding → characters screen.
+  await page.getByRole('button', { name: /start|начать/i }).click();
+  await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
+
+  // Click the first character card (first-pick branch).
+  await page.locator('.character-card').first().click();
+
+  // Should land on prep screen directly — NOT home — because wasFirstPick=true
+  // auto-starts a solo game run (docs/user-flows.md Flow A Step 3).
+  await page.locator('[data-testid="prep-ready"]').waitFor({ timeout: 15000 });
+  await expect(page.locator('.prep-screen')).toBeVisible();
+  // Sanity: round 1 is shown in the HUD.
+  await expect(page.locator('.run-hud')).toContainText('1');
+});
+
+test('[Flow A Step 3] re-pick (existing player switching mushroom) goes to home, not prep', async ({ page, request, baseURL }) => {
+  // An existing player switching their mushroom from the characters screen
+  // should land on the home screen (not auto-start a new run). This avoids
+  // clobbering an active run or confusingly auto-starting one on re-pick.
+  // Spec: docs/user-flows.md Flow A Step 3, re-pick branch.
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1062, username: 're_pick', name: 'Re Pick' });
+  // Pre-select a mushroom so this is NOT a first pick.
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/characters`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
+
+  // Click a different mushroom card (re-pick branch — activeMushroomId already set).
+  // Pick the second card to switch away from Thalla.
+  await page.locator('.character-card').nth(1).click();
+
+  // Should land on home screen, NOT prep — no auto-start for re-pick.
+  await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
+  // No active prep screen should appear.
+  await expect(page.locator('.prep-screen')).toHaveCount(0);
+});
+
 // --- Dual-viewport screenshots for key screens ---
 
 test('dual-viewport screenshots: auth, home, prep, replay, settings', async ({ page, request, baseURL }) => {
@@ -442,10 +503,10 @@ test('[Req 13-B] battle history entry navigates to replay', async ({ page, reque
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
-  // Click a battle history entry to navigate to replay
-  const historyEntry = page.locator('.battle-history-card').first();
-  if (await historyEntry.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await historyEntry.click();
-    await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
-  }
+  // Click a battle history entry to navigate to replay.
+  // HomeScreen renders history items as .home-battle-item (not .battle-history-card).
+  const historyEntry = page.locator('.home-battle-item').first();
+  await expect(historyEntry).toBeVisible({ timeout: 5000 });
+  await historyEntry.click();
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
 });
