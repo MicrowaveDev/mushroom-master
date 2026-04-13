@@ -49,58 +49,51 @@ Any sink must respect:
 
 ## Options
 
-### Option 1 — Mushroom levels (stat bonuses)
+### Option 1 — Mushroom levels + tier rating (cosmetic only)
 
-**The pitch:** The progression curve uses existing data. Reaching
-level `N` grants a permanent small stat bonus to that mushroom's base
-stats. Curve example:
+**The pitch:** The progression curve uses existing data. Level is
+computed from cumulative mycelium and displayed as a named tier badge
+on the character card. No stat bonuses — levels are purely a mastery
+signal and a gate for Options 5 and 6.
 
-| Level | Mycelium (cumulative) | Bonus |
-|---|---|---|
-| 1 | 0 | — |
-| 2 | 50 | +1 HP |
-| 3 | 120 | +1 ATK |
-| 4 | 220 | +1 SPD |
-| 5 | 360 | +1 DEF |
-| 6 | 540 | +1 HP |
-| ... | ... | rotate HP → ATK → SPD → DEF |
-| 20 | ~4000 | +5 to each base stat (cap) |
+Levels group into five tiers:
 
-At ~15 mycelium per round win (`runRewardTable.win.mycelium = 15`),
-level 20 takes roughly 267 round wins. That's ~30–40 full runs
-focused on one mushroom — a reasonable "mastery" arc.
+| Tier | Levels | Mycelium range (approx) | Badge |
+|---|---|---|---|
+| Spore | 1–4 | 0–350 | grey |
+| Mycel | 5–9 | 350–1 200 | green |
+| Root | 10–14 | 1 200–2 500 | brown |
+| Cap | 15–19 | 2 500–4 000 | gold |
+| Eternal | 20 | 4 000+ | white |
+
+At ~15 mycelium per round win, level 20 takes roughly 267 round wins
+(~30–40 focused runs) — a genuine mastery arc without combat power.
 
 **Pros**
-- 100% reuses existing schema. `player_mushrooms.mycelium` is already
-  written; `computeLevel()` already exists. **No new tables, no new
-  endpoints** — just a level-to-bonus lookup applied in
-  `battle-engine.deriveCombatant`.
-- Visible payoff: home screen shows level + progress bar. Every
-  mycelium reward notification feels meaningful.
-- Ties into existing reward math: the completion bonus tiers
-  (`[Req 9-B]`) already reward full runs, so levels reward repetition.
+- **Zero balance risk.** Levels affect nothing in combat or ghost math.
+  No balance re-run needed.
+- **Zero schema changes.** `player_mushrooms.mycelium` and `level`
+  already exist; `computeLevel()` already computes from mycelium.
+- **Clean gate currency.** Option 5 (wiki unlocks) and Option 6
+  (portrait variants) reference the same mycelium number — no new
+  gating field needed.
+- Visible payoff: tier badge + progress bar on the home screen.
+  Level-up is a cosmetic event, not a power spike.
 
 **Cons**
-- **Balance risk.** Stat bonuses affect ghost budget math indirectly —
-  a level-20 Lomie is ~20 HP tankier than a level-1 Lomie, which
-  changes the natural step-cap vs. death ratio. Mitigation: cap at
-  +5 per stat and re-run the scenario tests; the bonuses are small
-  relative to artifact contributions (e.g. truffle_bulwark = +7
-  armor by itself).
-- **Rich-get-richer.** A player with a maxed mushroom has an edge
-  over one who just unlocked it. Mitigated by it being per-mushroom —
-  a maxed Thalla doesn't help when playing Axilin.
+- No mechanical reward for reaching a new level — players motivated
+  purely by power may not feel the progression. Offset by Options 5
+  and 6 filling that reward space with lore and portraits.
 
 **Effort**
-- Backend: curve table in `game-data.js`, lookup call in
-  `deriveCombatant`, new `[Req 14-A]` section. ~1 hour.
-- Frontend: home screen level bar + popup on level-up. ~2 hours.
-- Tests: unit test for curve table, scenario test for level-up
-  applies to next battle. ~1 hour.
-- Balance re-run: run `battle-engine.test.js` with +5 stats and
-  verify no new step_cap regressions. ~30 min.
+- Backend: `MYCELIUM_LEVEL_CURVE` and `getTier(level)` helper in
+  `game-data.js`; expose `level` and `tier` in `getPlayerState`. ~1h.
+- Frontend: tier badge + progress bar on home screen mushroom card;
+  level-up toast on round-result screen. ~2h.
+- Tests: `getTier()` unit test — every boundary; level reflected in
+  bootstrap after mycelium is awarded. ~45min.
 
-**Total: ~5 hours.**
+**Total: ~3.75 hours.**
 
 ---
 
@@ -313,7 +306,7 @@ Assets live in `web/src/assets/portraits/{mushroom}/`:
 
 **Total: ~4.5 hours.** Blocked on art delivery — implement the system
 now, drop assets in when ready. The portrait folders already exist at
-`web/src/assets/portraits/{thalla,lomie,axilin,kirt,morga}/`.
+`web/public/portraits/{thalla,lomie,axilin,kirt,morga,dalamar}/`.
 
 ---
 
@@ -340,27 +333,26 @@ art arrives.**
 
 Rationale:
 
-1. **Total budget is ~9 hours** for Options 1+5 — realistic for a
+1. **Total budget is ~7.75 hours** for Options 1+5 — realistic for a
    single PR.
-2. **Option 1 (levels)** gives the immediate payoff loop: every
-   round's mycelium reward means something, the home screen shows
-   visible progress, level-ups are a tangible event.
-3. **Option 5 (wiki unlocks)** gives the late-game reward for players
-   who maxed level 20: their mycelium keeps accumulating toward the
-   2000-point lore tier. Zero balance risk so it can ship *next to*
-   Option 1 without complicating the balance re-run.
-4. **Option 6 (portrait variants)** is the prestige cosmetic layer on
-   top of the progression system. The backend + frontend (~4.5h) can
-   ship independently of the art; portraits drop in as static files
-   whenever they're ready. The portrait folders are already scaffolded
-   at `web/src/assets/portraits/{mushroom}/`.
-5. **None of these options touch ghost budget math directly.** Option
-   1's stat bonuses are capped at +5 per stat (less than one
-   artifact's bonus) and balance can be verified by running the
-   existing `battle-engine.test.js` suite with level-20 stat presets.
-6. **Options 1 and 5 reuse existing schema.** No migrations, no new
-   tables. `player_mushrooms.mycelium` and `level` already exist.
-   Option 6 adds one column (`active_portrait`).
+2. **Option 1 (levels + tier rating)** gives the immediate payoff
+   loop with zero balance risk: every mycelium reward advances a
+   visible tier, level-ups are a cosmetic event, no ghost math is
+   touched.
+3. **Option 5 (wiki unlocks)** gives the late-game lore reward.
+   Mycelium thresholds line up with the level tiers naturally (e.g.
+   tier Root unlocks at ~1 200 mycelium; lore tier 2 unlocks at
+   1 000 mycelium).
+4. **Option 6 (portrait variants)** is the prestige layer. The
+   backend + frontend (~4.5h) can ship independently of the art;
+   portraits drop in as static files. The portrait folders are already
+   scaffolded at `web/public/portraits/{mushroom}/`.
+5. **All three options have zero balance impact.** No stat bonuses,
+   no ghost scaling, no combat formula changes. No balance re-run
+   needed.
+6. **Options 1 and 5 need no schema changes.** `player_mushrooms.
+   mycelium` and `level` already exist. Option 6 adds one column
+   (`active_portrait`).
 
 **Schedule Option 2 (skill ranks) for a later cycle, alone.** It's
 the biggest balance project and deserves its own plan doc, its own
@@ -387,82 +379,67 @@ New section in [docs/game-requirements.md](./game-requirements.md):
 ## 14. Mushroom Progression
 
 - **14-A.** Each mushroom has a level (1–20) computed from its
-  cumulative mycelium. The curve is defined in
-  `MYCELIUM_LEVEL_CURVE` in `app/server/game-data.js`.
-- **14-B.** Reaching a level grants a permanent stat bonus to that
-  mushroom's base stats. Bonuses cycle HP → ATK → SPD → DEF; level
-  20 is capped at +5 per stat.
-- **14-C.** Stat bonuses are additive to the base stats before
-  artifacts contribute. Ghost opponents do NOT receive the player's
-  level bonus — ghosts use base stats only (balance: avoids compound
-  scaling in `[Req 7-D]`).
-- **14-D.** Level is per-mushroom. Playing Thalla does not level
-  Axilin.
-- **14-E.** Wiki entries are tiered by cumulative mycelium. Tiers:
-  - 0 mycelium: portrait + name
-  - 100 mycelium: passive description
-  - 500 mycelium: active description + stat lore
-  - 2000 mycelium: full backstory
-  Tier thresholds live in `WIKI_TIER_THRESHOLDS`. Locked sections
-  render as a "unlock at N mycelium" placeholder.
+  cumulative mycelium via `MYCELIUM_LEVEL_CURVE` in
+  `app/server/game-data.js`. Level has no effect on combat stats.
+- **14-B.** Levels map to one of five cosmetic tiers via `getTier()`:
+    Spore (1–4) → Mycel (5–9) → Root (10–14) → Cap (15–19) → Eternal (20).
+  Tier is displayed as a badge on the home screen mushroom card and
+  the character select screen.
+- **14-C.** Level is per-mushroom. Playing Thalla does not level Axilin.
+- **14-D.** Wiki entries are gated by cumulative mycelium. Tiers:
+    - 0 mycelium: portrait + name
+    - 100 mycelium: passive description
+    - 1000 mycelium: active description + stat lore
+    - 3000 mycelium: full backstory
+  Thresholds live in `WIKI_TIER_THRESHOLDS`. Locked sections render
+  as an "unlock at N mycelium" placeholder.
 ```
 
 ### Backend changes
 
-- `app/server/game-data.js`: add `MYCELIUM_LEVEL_CURVE` array and
-  `getLevelBonus(level)` helper.
-- `app/server/services/battle-engine.js`: in `deriveCombatant`, add
-  level bonus to base stats before artifact summary, **only for the
-  player side, not the ghost side**.
-- `app/server/wiki.js`: add `tier` gating to `getWikiEntry()`; accept
-  a `mushroomMycelium` param and return a redacted entry below the
-  threshold.
+- `app/server/game-data.js`: add `MYCELIUM_LEVEL_CURVE` array,
+  `computeLevel(mycelium)` export, `getTier(level)` helper, and
+  `WIKI_TIER_THRESHOLDS` constant.
+- `app/server/wiki.js`: gate `getWikiEntry()` on a `mycelium` param;
+  return redacted sections below the threshold.
+- `getPlayerState` / bootstrap: include `level` and `tier` per
+  mushroom row (computed from existing `mycelium` column).
 
 ### Frontend changes
 
-- Home screen mushroom card: add a level badge + progress bar to
-  next level.
-- Wiki detail screen: render redacted sections with a lock icon + "at
-  N mycelium" copy.
-- Level-up toast on the round-result screen when a round push crosses
-  a level threshold.
+- Home screen mushroom card: tier badge + progress bar to next level.
+- Wiki detail screen: locked sections show lock icon + "unlock at N
+  mycelium" copy.
+- Round-result screen: level-up toast when mycelium award crosses a
+  level threshold (compare level before vs. after reward).
 
 ### Tests
 
 Backend:
-- `getLevelBonus(level)` unit test — every tier.
-- `deriveCombatant` scenario test: level-10 Thalla has +3 HP/+3 ATK/... etc (exact per curve).
-- `getWikiEntry` tier gating: 99/100 boundary, 499/500, 1999/2000.
-- Ghost does NOT benefit from player level: at player level 20, ghost
-  snapshot still uses base stats (covers `[Req 14-C]`).
+- `getTier(level)` unit test — all 20 levels, every tier boundary.
+- `getWikiEntry` gating: 99/100 boundary, 999/1000, 2999/3000.
 
 E2E (solo-run.spec.js):
-- Earn enough mycelium to cross level 2, verify home screen level
-  badge updates after next `refreshBootstrap`.
-- Verify locked wiki section is visible on a fresh player.
+- Fresh player: wiki section locked at 0 mycelium.
+- After earning ≥100 mycelium: passive section unlocked.
 
 ### Data model
 
 No schema changes. `player_mushrooms.mycelium` and `level` already
-exist. `level` remains computed-on-read via `computeLevel()`; the
-new curve table adds persistent meaning to it.
+exist. Level is computed-on-read; tier is derived from level.
 
 ### Migration / deploy
 
-None. Level bonuses apply immediately on deploy since `level` is
-computed from existing `mycelium` values. Players with long
-histories will "unlock" bonuses retroactively — this is a feature,
-not a bug (rewards existing investment).
+None. Tier badges appear immediately on deploy for all players based
+on their existing mycelium totals — retroactive display is the intent.
 
 ---
 
 ## Out of scope for the first cycle
 
 - Skill ranks (Option 2) — plan doc required first, separate PR.
-- Preset variants (Option 3) — revisit after Option 1 ships and we
-  can see how level caps feel in practice.
+- Preset variants (Option 3) — revisit after Option 1 ships.
 - Affinity promotion (Option 4) — optional follow-up.
-- Cosmetic skins — needs art pipeline.
 - Prestige / level reset — wait until the curve is battle-tested.
 
 ---
@@ -497,12 +474,12 @@ not a bug (rewards existing investment).
 
 | Option | Effort | Balance risk | Recommended? |
 |---|---|---|---|
-| 1. Mushroom levels | ~5h | Low (cap at +5) | ✅ First cycle |
+| 1. Mushroom levels + tier rating | ~3.75h | None | ✅ First cycle |
 | 2. Skill ranks | ~11h | High | Schedule alone, later |
 | 3. Preset variants | ~10h | Medium | Only after Option 1 |
 | 4. Affinity promotion | ~4h | None | Optional follow-up |
 | 5. Wiki unlocks | ~4h | None | ✅ First cycle |
 | 6. Portrait variants | ~4.5h | None | ✅ When art is ready |
 
-**First cycle: Options 1 + 5 = ~9 hours real work.**
+**First cycle: Options 1 + 5 = ~7.75 hours real work.**
 **Option 6: +4.5h, blocked on portrait art delivery.**
