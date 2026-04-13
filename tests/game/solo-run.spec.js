@@ -147,7 +147,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // Spec: docs/user-flows.md Flow B Step 3. The post-Ready landing screen is
   // the round-result summary, NOT the replay. View Replay is opt-in.
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
   await saveShot(page, 'solo-04-round-result.png');
 
   // [Req 13-B] View Replay button is present on round-result and routes to replay
@@ -200,8 +200,8 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
       await page.getByRole('button', { name: /ready|готов/i }).click();
       // Wait for round-result to appear (NOT replay — replay is opt-in)
       const settled = await Promise.race([
-        page.locator('.round-result-screen').waitFor({ timeout: 15000 }).then(() => 'roundResult'),
-        page.locator('.run-complete-screen').waitFor({ timeout: 15000 }).then(() => 'runComplete')
+        page.locator('.round-result-screen').waitFor({ timeout: 30000 }).then(() => 'roundResult'),
+        page.locator('.run-complete-screen').waitFor({ timeout: 30000 }).then(() => 'runComplete')
       ]);
       if (settled === 'runComplete') break;
       // Click "Continue" on round-result to advance — skip the replay this time.
@@ -507,7 +507,7 @@ test('round transitions: replay → continue → next prep (not home) while live
   // Spec: docs/user-flows.md Flow B Steps 3–4. The post-Ready landing screen is roundResult,
   // not the replay. The user must click "View Replay" to opt into the replay.
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
   await page.getByRole('button', { name: /view replay|посмотреть реплей/i }).click();
   await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
 

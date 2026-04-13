@@ -129,7 +129,15 @@ export async function getDb() {
   return state;
 }
 
+let resetPromise = null;
+
 export async function resetDb() {
+  if (resetPromise) return resetPromise;
+  resetPromise = _doReset().finally(() => { resetPromise = null; });
+  return resetPromise;
+}
+
+async function _doReset() {
   const storagePath = state?.sequelize?.__storagePath || null;
   if (state?.sequelize) {
     await state.sequelize.close();

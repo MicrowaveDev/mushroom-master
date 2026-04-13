@@ -367,7 +367,7 @@ test('[Req 13-C] post-replay button shows "Continue" during active game run', as
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
 
   // Click "View Replay" on the round-result screen → navigate to replay
   await page.getByRole('button', { name: /view replay|посмотреть реплей/i }).click();

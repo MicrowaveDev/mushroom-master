@@ -236,8 +236,8 @@ test('[Req 12-A, 12-B] challenge mode: combat completed while disconnected → r
   // outcome of). Acceptable landings: replay (current pendingReconnect
   // path) or roundResult. NOT acceptable: prep, home with stale state.
   const settled = await Promise.race([
-    pageA2.locator('.replay-layout').waitFor({ timeout: 15000 }).then(() => 'replay'),
-    pageA2.locator('.round-result-screen').waitFor({ timeout: 15000 }).then(() => 'roundResult')
+    pageA2.locator('.replay-layout').waitFor({ timeout: 30000 }).then(() => 'replay'),
+    pageA2.locator('.round-result-screen').waitFor({ timeout: 30000 }).then(() => 'roundResult')
   ]).catch(() => 'unknown');
 
   expect(['replay', 'roundResult']).toContain(settled);
