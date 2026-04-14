@@ -55,6 +55,17 @@ async function waitForPrepReady(page, timeout = 15000) {
 }
 
 /**
+ * Assert no <img> elements have failed to load (naturalWidth === 0).
+ * Spec: docs/user-flows.md "Images must load" section.
+ */
+async function assertImagesLoaded(page) {
+  const broken = await page.locator('img').evaluateAll(imgs =>
+    imgs.filter(i => i.naturalWidth === 0).map(i => i.src)
+  );
+  expect(broken, `Broken images found: ${broken.join(', ')}`).toHaveLength(0);
+}
+
+/**
  * Deterministically put `artifactIds` into the current round's shop, then
  * reload so the UI picks up the new offer, then click the first entry to
  * buy it. Replaces the old `findAndBuyBag` polling loop that flaked on
@@ -117,6 +128,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // --- Home screen with "Start Game" button ---
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await expect(page.locator('.home')).toBeVisible();
+  await assertImagesLoaded(page);
   await saveShot(page, 'solo-01-home-start-game.png');
 
   // --- Start game run → prep screen ---
@@ -124,6 +136,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   await waitForPrepReady(page);
   const hud = page.locator('.run-hud');
   await expect(hud).toContainText('1');
+  await assertImagesLoaded(page);
   await saveShot(page, 'solo-02-prep-round1.png');
 
   // --- Shop has items ---
@@ -157,6 +170,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // --- Click View Replay → replay screen → finish → returns to next prep ---
   await viewReplayBtn.click();
   await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
+  await assertImagesLoaded(page);
   await saveShot(page, 'solo-04b-round1-replay.png');
   const replayContinueBtn = page.locator('.replay-result-button-full');
   await expect(replayContinueBtn).toBeVisible({ timeout: 30000 });

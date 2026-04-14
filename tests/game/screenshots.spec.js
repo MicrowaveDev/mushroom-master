@@ -25,6 +25,18 @@ async function saveShot(page, name) {
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
 }
 
+/**
+ * Assert no <img> elements have failed to load (naturalWidth === 0).
+ * A zero-width image means the src is broken or the asset is missing.
+ * Spec: docs/user-flows.md "Images must load" section.
+ */
+async function assertImagesLoaded(page) {
+  const broken = await page.locator('img').evaluateAll(imgs =>
+    imgs.filter(i => i.naturalWidth === 0).map(i => i.src)
+  );
+  expect(broken, `Broken images found: ${broken.join(', ')}`).toHaveLength(0);
+}
+
 function debugLog(message, details = undefined) {
   if (!debugScreens) {
     return;
@@ -108,11 +120,13 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.locator('.home-mushroom-row').first().waitFor({ timeout: 5000 });
   await expect(page.locator('.home-mushroom-row')).toHaveCount(6);
   await expect(page.locator('.home-start-btn')).toBeVisible();
+  await assertImagesLoaded(page);
   await saveShot(page, '02-home.png');
 
   await page.goto(`${baseURL}/characters`);
   await page.waitForSelector('.character-card');
   debugLog('capturing characters');
+  await assertImagesLoaded(page);
   await saveShot(page, '03-characters.png');
 
   // 04-artifacts and 05-battle-prep screenshots removed: ArtifactsScreen
@@ -131,6 +145,7 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(1, { timeout: 5000 });
   await expect(page.locator('.fighter-speech-bubble').first()).toContainText(/^(I |Я |Использую |I'm )/i);
   debugLog('capturing replay');
+  await assertImagesLoaded(page);
   await saveShot(page, '06-replay.png');
 
   // [Req 13-D] standalone replay (outside run) shows "Домой" button, not "Продолжить"

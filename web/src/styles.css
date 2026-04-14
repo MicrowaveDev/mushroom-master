@@ -2275,7 +2275,7 @@ select {
   padding: 6px 12px;
 }
 
-.player-summary .stat-grid {
+.stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 10px;
@@ -2283,7 +2283,7 @@ select {
   padding: 0;
 }
 
-.player-summary .stat {
+.stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -2292,14 +2292,14 @@ select {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.player-summary .stat dt {
+.stat dt {
   font-size: 0.72em;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.6;
 }
 
-.player-summary .stat dd {
+.stat dd {
   margin: 0;
   font-size: 1.15em;
   font-weight: 700;

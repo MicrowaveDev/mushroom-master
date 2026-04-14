@@ -9,6 +9,17 @@ async function saveShot(page, name) {
   await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
 }
 
+/**
+ * Assert no <img> elements have failed to load (naturalWidth === 0).
+ * Spec: docs/user-flows.md "Images must load" section.
+ */
+async function assertImagesLoaded(page) {
+  const broken = await page.locator('img').evaluateAll(imgs =>
+    imgs.filter(i => i.naturalWidth === 0).map(i => i.src)
+  );
+  expect(broken, `Broken images found: ${broken.join(', ')}`).toHaveLength(0);
+}
+
 async function resetDevDb(request) {
   const response = await request.post('/api/dev/reset', { data: {} });
   const json = await response.json();
@@ -49,8 +60,14 @@ test('[Flow A] onboarding screen shows for new player without active mushroom', 
   await expect(page.locator('.onboarding-preview-portrait')).toHaveCount(5);
 
   await page.setViewportSize({ width: 375, height: 667 });
-  await saveShot(page, 'onboarding.png');
+  await assertImagesLoaded(page);
+  await saveShot(page, 'onboarding-mobile.png');
 
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await assertImagesLoaded(page);
+  await saveShot(page, 'onboarding-desktop.png');
+
+  await page.setViewportSize({ width: 375, height: 667 });
   // Click continue → should navigate to characters screen
   await page.getByRole('button', { name: /start|начать/i }).click();
   await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
