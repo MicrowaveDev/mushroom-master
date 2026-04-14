@@ -26,8 +26,18 @@ export function useGameState(state) {
   const shopArtifacts = computed(() =>
     state.shopOffer.map((id) => getArtifact(id)).filter(Boolean)
   );
+  // containerItems is a string[] of artifactIds and may contain duplicates
+  // (the player can own two moss_pouches, two burning_caps, etc.). Emit a
+  // stable composite key per slot so Vue's v-for doesn't collide on
+  // duplicate artifactIds. The key is read by PrepScreen via `instanceKey`.
   const containerArtifacts = computed(() =>
-    state.containerItems.map((id) => getArtifact(id)).filter(Boolean)
+    state.containerItems
+      .map((id, idx) => {
+        const artifact = getArtifact(id);
+        if (!artifact) return null;
+        return { ...artifact, instanceKey: `${id}#${idx}` };
+      })
+      .filter(Boolean)
   );
 
   function getArtifact(artifactId) {

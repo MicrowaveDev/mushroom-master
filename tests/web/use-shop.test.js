@@ -28,6 +28,9 @@ const ARTIFACTS = [
   { id: 'spore_lash', family: 'stun', width: 1, height: 1, price: 1, bonus: { damage: 1 } },
   { id: 'spore_needle', family: 'damage', width: 1, height: 1, price: 1, bonus: { damage: 2 } },
   { id: 'bark_plate', family: 'armor', width: 1, height: 1, price: 1, bonus: { armor: 1 } },
+  // spark_shard (1×2) — used by the rotate-duplicate test. A rotatable
+  // non-bag artifact that fits the 3×3 grid in both orientations.
+  { id: 'spark_shard', family: 'damage', width: 1, height: 2, price: 1, bonus: { damage: 1 } },
   // moss_pouch: 1×2 → default orientation cols=2, rows=1 (adds 1 bag row)
   { id: 'moss_pouch', family: 'bag', width: 1, height: 2, price: 2, slotCount: 2, bonus: {} },
   // amber_satchel: 2×2 → cols=2, rows=2 (adds 2 bag rows)
@@ -52,6 +55,7 @@ function makeFreshState() {
       { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
     ],
     draggingArtifactId: '',
+    draggingItem: null,
     draggingSource: '',
     rerollSpent: 0
   };
@@ -180,12 +184,11 @@ test('onInventoryCellDrop (source=inventory) rejects drops into disabled bag cel
   assert.equal(landed.x, 0);
   assert.equal(landed.y, 3);
 
-  // Now simulate an inventory-to-inventory drag into the disabled cell.
-  state.draggingArtifactId = 'bark_plate';
-  state.draggingSource = 'inventory';
+  // Now simulate an inventory-to-inventory drag into the disabled cell
+  // via the real drag-start handler so draggingItem is populated.
+  shop.onInventoryPieceDragStart({ item: landed });
   shop.onInventoryCellDrop({ x: 2, y: 3 });
-  state.draggingArtifactId = '';
-  state.draggingSource = '';
+  shop.onDragEndAny();
 
   // The piece must stay at (0,3) — the drop into the disabled cell is a
   // no-op. Under the old code isCellDisabled wasn't checked for the
@@ -194,4 +197,151 @@ test('onInventoryCellDrop (source=inventory) rejects drops into disabled bag cel
   const afterDrop = state.builderItems.find((i) => i.artifactId === 'bark_plate');
   assert.equal(afterDrop.x, 0);
   assert.equal(afterDrop.y, 3);
+});
+
+// ---------------------------------------------------------------------------
+// Duplicate-artifact identity regression: the player can legitimately own two
+// copies of the same artifact (see solo-run-scenario.test.js Phase 2, which
+// buys the same id twice and asserts two distinct db rows). Every client-side
+// op that used to match by artifactId would wipe all duplicates — a user
+// placed a second burning_cap from the container, and the first (already
+// placed) one vanished from the grid because normalizePlacement filtered it
+// out before appending the candidate.
+// ---------------------------------------------------------------------------
+
+test('[regression] placeFromContainer with a duplicate preserves the already-placed copy', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+
+  // Place bark_plate #1 at (2,0) via the container→grid path.
+  dropFromContainer(shop, state, 'bark_plate', 2, 0);
+  assert.equal(state.builderItems.filter((i) => i.artifactId === 'bark_plate').length, 1);
+
+  // Player owns a second bark_plate in the container and drops it at (0,2).
+  dropFromContainer(shop, state, 'bark_plate', 0, 2);
+
+  // Both duplicates must be present on the grid now. Under the old code,
+  // normalizePlacement filtered existing bark_plates out before checking
+  // fit, so the first copy at (2,0) silently disappeared.
+  const placed = state.builderItems.filter((i) => i.artifactId === 'bark_plate');
+  assert.equal(placed.length, 2, 'both bark_plate duplicates must remain on the grid');
+  const coords = new Set(placed.map((i) => `${i.x},${i.y}`));
+  assert.ok(coords.has('2,0'), 'first bark_plate must stay at (2,0)');
+  assert.ok(coords.has('0,2'), 'second bark_plate must land at (0,2)');
+
+  // Container must have had exactly one bark_plate removed, not all of them.
+  assert.equal(
+    state.containerItems.filter((id) => id === 'bark_plate').length,
+    0
+  );
+});
+
+test('[regression] placeFromContainer pops only one duplicate when multiple are in container', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+
+  // Two bark_plates sitting in the container.
+  state.containerItems = ['bark_plate', 'bark_plate'];
+
+  // Drop one onto the grid.
+  state.draggingArtifactId = 'bark_plate';
+  state.draggingSource = 'container';
+  shop.onInventoryCellDrop({ x: 2, y: 0 });
+  state.draggingArtifactId = '';
+  state.draggingSource = '';
+
+  // Exactly ONE bark_plate must remain in the container. The old code
+  // used `.filter(id => id !== 'bark_plate')` which would empty it.
+  assert.equal(
+    state.containerItems.filter((id) => id === 'bark_plate').length,
+    1,
+    'one duplicate must still sit in the container'
+  );
+  assert.equal(state.builderItems.filter((i) => i.artifactId === 'bark_plate').length, 1);
+});
+
+test('[regression] unplaceToContainer(item) returns only the clicked duplicate', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+
+  // Two bark_plates placed on the grid.
+  dropFromContainer(shop, state, 'bark_plate', 2, 0);
+  dropFromContainer(shop, state, 'bark_plate', 0, 2);
+  assert.equal(state.builderItems.filter((i) => i.artifactId === 'bark_plate').length, 2);
+
+  // Click the one at (2,0) to unplace it. PrepScreen forwards the full
+  // item to the unplace handler so the per-instance anchor is preserved.
+  const clicked = state.builderItems.find((i) => i.artifactId === 'bark_plate' && i.x === 2 && i.y === 0);
+  shop.unplaceToContainer(clicked);
+
+  // Only the clicked one comes back to the container. The duplicate at
+  // (0,2) must stay on the grid.
+  const remaining = state.builderItems.filter((i) => i.artifactId === 'bark_plate');
+  assert.equal(remaining.length, 1, 'one bark_plate must remain on the grid');
+  assert.equal(remaining[0].x, 0);
+  assert.equal(remaining[0].y, 2);
+  assert.equal(
+    state.containerItems.filter((id) => id === 'bark_plate').length,
+    1,
+    'exactly one bark_plate must land in the container'
+  );
+});
+
+test('[regression] dragging one duplicate in the grid moves only that copy', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+
+  // Two bark_plates placed on the grid at (2,0) and (0,2).
+  dropFromContainer(shop, state, 'bark_plate', 2, 0);
+  dropFromContainer(shop, state, 'bark_plate', 0, 2);
+
+  // Drag the (0,2) copy to (1,2) via the real drag-start + drop handlers.
+  const toDrag = state.builderItems.find((i) => i.artifactId === 'bark_plate' && i.x === 0 && i.y === 2);
+  shop.onInventoryPieceDragStart({ item: toDrag });
+  shop.onInventoryCellDrop({ x: 1, y: 2 });
+  shop.onDragEndAny();
+
+  // The moved copy must be at (1,2); the other copy must stay at (2,0).
+  const placed = state.builderItems.filter((i) => i.artifactId === 'bark_plate');
+  assert.equal(placed.length, 2);
+  const coords = new Set(placed.map((i) => `${i.x},${i.y}`));
+  assert.ok(coords.has('2,0'), 'untouched bark_plate must stay at (2,0)');
+  assert.ok(coords.has('1,2'), 'dragged bark_plate must land at (1,2)');
+  assert.ok(!coords.has('0,2'), 'dragged bark_plate must leave its old cell');
+});
+
+test('[regression] rotatePlacedArtifact rotates only the targeted duplicate', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+
+  // Two spark_shards placed on the grid. Note that preferredOrientation
+  // for a 1×2 artifact emits width=2/height=1 (horizontal first): at
+  // (2,0) the horizontal form is OOB so it falls back to 1×2; at (0,1)
+  // it lands as 2×1.
+  //   Layout after both drops:
+  //     (0,0) spore_lash 1×1
+  //     (1,0) spore_needle 1×1
+  //     (2,0) spark_shard #A 1×2 — occupies (2,0),(2,1)
+  //     (0,1) spark_shard #B 2×1 — occupies (0,1),(1,1)
+  dropFromContainer(shop, state, 'spark_shard', 2, 0);
+  dropFromContainer(shop, state, 'spark_shard', 0, 1);
+  const placedBefore = state.builderItems.filter((i) => i.artifactId === 'spark_shard');
+  assert.equal(placedBefore.length, 2);
+
+  // Rotate the (0,1) copy from 2×1 to 1×2. New footprint needs (0,1)
+  // and (0,2); (0,2) is free. Must rotate exactly that instance.
+  const target = state.builderItems.find((i) => i.artifactId === 'spark_shard' && i.x === 0 && i.y === 1);
+  shop.rotatePlacedArtifact(target);
+
+  const after = state.builderItems.filter((i) => i.artifactId === 'spark_shard');
+  assert.equal(after.length, 2, 'both duplicates must remain after rotating one');
+
+  // Targeted copy must now be 1×2 at (0,1).
+  const rotated = after.find((i) => i.x === 0 && i.y === 1);
+  assert.equal(rotated.width, 1);
+  assert.equal(rotated.height, 2);
+  // Untouched copy at (2,0) must still be 1×2.
+  const untouched = after.find((i) => i.x === 2 && i.y === 0);
+  assert.equal(untouched.width, 1);
+  assert.equal(untouched.height, 2);
 });

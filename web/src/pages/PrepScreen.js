@@ -68,7 +68,7 @@ export const PrepScreen = {
         <div v-if="containerArtifacts.length" class="artifact-container-items">
           <div
             v-for="artifact in containerArtifacts"
-            :key="artifact.id"
+            :key="artifact.instanceKey"
             class="container-item"
             draggable="true"
             @click="$emit('auto-place', artifact.id)"
@@ -115,7 +115,7 @@ export const PrepScreen = {
           :rotatable-pieces="true"
           :droppable="true"
           :draggable-pieces="true"
-          @piece-click="$emit('unplace', $event.artifactId)"
+          @piece-click="$emit('unplace', $event)"
           @piece-rotate="$emit('rotate', $event)"
           @cell-drop="$emit('cell-drop', $event)"
           @piece-drag-start="$emit('inventory-drag-start', $event)"

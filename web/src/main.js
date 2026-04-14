@@ -62,6 +62,7 @@ const App = {
       rerollSpent: 0,
       menuOpen: false,
       draggingArtifactId: '',
+      draggingItem: null,
       draggingSource: '',
       currentBattle: null,
       replayIndex: 0,
