@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 import express from 'express';
 import OpenAI from 'openai';
 import {
@@ -55,6 +56,53 @@ import { getWikiEntry, getWikiHome } from './wiki.js';
 const repoRoot = '/Users/microwavedev/workspace/mushroom-master';
 const webDist = path.join(repoRoot, 'web/dist');
 const webPublic = path.join(repoRoot, 'web/public');
+
+// Walk a directory tree returning the most-recent mtime any file under it
+// carries. Used by the dist staleness check below.
+function newestMtimeUnder(dir) {
+  if (!fs.existsSync(dir)) return 0;
+  let max = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const sub = newestMtimeUnder(full);
+      if (sub > max) max = sub;
+    } else if (entry.isFile()) {
+      const m = fs.statSync(full).mtimeMs;
+      if (m > max) max = m;
+    }
+  }
+  return max;
+}
+
+// Detect the case where someone edited a source file under web/src but the
+// dist bundle hasn't been regenerated. Express serves dist/, so without
+// this guard the browser silently keeps loading the old CSS/JS — exactly
+// the staleness that hid the .stat-grid CSS fix from review for a full
+// session. In non-prod we auto-rebuild via `vite build`; in prod we throw
+// loudly so a deploy script can fail fast instead of shipping the wrong
+// bundle.
+function ensureDistFreshOrRebuild() {
+  const distIndex = path.join(webDist, 'index.html');
+  const srcRoot = path.join(repoRoot, 'web', 'src');
+  if (!fs.existsSync(distIndex) || !fs.existsSync(srcRoot)) return;
+  const distMtime = fs.statSync(distIndex).mtimeMs;
+  const srcMtime = newestMtimeUnder(srcRoot);
+  if (srcMtime <= distMtime) return;
+  const msg =
+    `[create-app] web/src is newer than web/dist (src=${new Date(srcMtime).toISOString()}, ` +
+    `dist=${new Date(distMtime).toISOString()}). Express serves dist, so the running app would ` +
+    'load the OLD CSS/JS bundle.';
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`${msg} Run \`npm run game:build\` and redeploy.`);
+  }
+  // eslint-disable-next-line no-console
+  console.warn(`${msg} Auto-rebuilding now...`);
+  const result = spawnSync('npm', ['run', 'game:build'], { cwd: repoRoot, stdio: 'inherit' });
+  if (result.status !== 0) {
+    throw new Error('[create-app] auto-rebuild failed; refusing to serve stale dist');
+  }
+}
 
 // Sync authored assets (web/public) into the built tree (web/dist) at boot.
 // Express serves /dist as the root, and vite only copies /public → /dist on
@@ -127,6 +175,7 @@ async function requireRunMembership(req, _res, next) {
 
 export async function createApp() {
   await getDb();
+  ensureDistFreshOrRebuild();
   syncPublicPortraitsToDist();
   const app = express();
   app.use(express.json({ limit: '2mb' }));

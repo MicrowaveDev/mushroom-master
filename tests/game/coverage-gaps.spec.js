@@ -416,6 +416,60 @@ test('[Req 13-D] post-replay button shows "Home" for standalone replay from hist
   expect(btnText.trim()).toMatch(/home|домой/i);
 });
 
+// --- Round Result visual regression: .stat-grid must actually render as a grid ---
+
+test('round-result stat-grid resolves to display:grid (not stacked vertical list)', async ({ page, request, baseURL }) => {
+  // Regression guard for a subtle staleness bug: the CSS rules for
+  // `.stat-grid` / `.stat` were scoped under a dead `.player-summary`
+  // parent in web/src/styles.css. Both RoundResultScreen and
+  // RunCompleteScreen render `<dl class="stat-grid">` at the top level,
+  // so the rules never applied and the stats collapsed into an unstyled
+  // vertical <dl>.
+  //
+  // An agent reviewing screenshots eventually caught it, but even after
+  // the source was patched the bug persisted for a full session because
+  // web/dist/assets/index-*.css wasn't regenerated — express serves dist,
+  // so the browser kept loading the old CSS. This test is the hard-
+  // failure guard: assert the browser-computed style actually resolves
+  // to display:grid. A missing rule, a scoped rule, a stale dist, or a
+  // renamed class will all fail here.
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1070, username: 'stat_grid_guard', name: 'Stat Grid Guard' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  // Ghost so the round can resolve.
+  const ghost = await createSession(request, { telegramId: 1071, username: 'stat_grid_ghost', name: 'Stat Grid Ghost' });
+  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await expect(page.locator('.prep-screen')).toBeVisible();
+  await page.getByRole('button', { name: /ready|готов/i }).click();
+  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
+
+  // The round-result screen renders two <dl class="stat-grid"> blocks:
+  // one for round rewards, one for run totals. Both must resolve to grid.
+  const statGrids = page.locator('.round-result-screen .stat-grid');
+  const count = await statGrids.count();
+  expect(count).toBeGreaterThanOrEqual(1);
+
+  for (let i = 0; i < count; i++) {
+    const display = await statGrids.nth(i).evaluate((el) => getComputedStyle(el).display);
+    expect(
+      display,
+      `.stat-grid #${i} resolved to "${display}" instead of "grid" — CSS rule missing, scoped wrong, or dist bundle stale (run npm run game:build)`
+    ).toBe('grid');
+  }
+
+  // Sanity: at least one .stat child inside renders as a flex column with
+  // a background, confirming the full stat-card rule cascade landed, not
+  // just the grid container.
+  const firstStat = page.locator('.round-result-screen .stat-grid .stat').first();
+  const statDisplay = await firstStat.evaluate((el) => getComputedStyle(el).display);
+  expect(statDisplay).toBe('flex');
+});
+
 // --- Flow G: Settings ---
 
 test('[Flow G] settings: change language and verify persistence', async ({ page, request, baseURL }) => {
