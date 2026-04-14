@@ -35,6 +35,12 @@ expect(broken).toBe(0);
 
 This applies to every screen that renders portraits, item icons, or avatars.
 
+**Capture helper + sidecar manifest (agent-reviewable):** Tests must save screenshots via `captureScreenshot(page, dir, name)` from [tests/game/screenshot-capture.js](../tests/game/screenshot-capture.js). Do not call `page.screenshot()` directly. The helper does three things that matter when an agent reviews the output later:
+
+1. **Broken images are outlined in red** before the snapshot is taken (`3px solid #ff0040` + translucent red fill). Missing portraits become visually obvious even in thumbnail previews — review should never depend on an agent squinting at a placeholder icon.
+2. **A JSON sidecar** (`<name>.json`) is written next to every `.png`, listing `viewport`, visible `headings`, and the full `brokenImages` array. Agents reviewing the output should open the `.json` first — it's the authoritative answer for "did this screen render correctly", not the pixels.
+3. The helper never throws. Tests that want a hard failure still call `assertImagesLoaded(page)` (also exported from `screenshot-capture.js`) alongside the capture, so the image and sidecar are always on disk even when a downstream assertion trips.
+
 Screenshot paths below are relative to `.agent/tasks/telegram-autobattler-v1/raw/`.
 Steps marked `(not yet captured)` need e2e coverage added.
 

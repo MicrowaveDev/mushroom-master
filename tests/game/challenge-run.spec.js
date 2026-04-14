@@ -1,6 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { test, expect } from '@playwright/test';
+import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/challenge';
 
@@ -17,10 +16,7 @@ const loadoutB = [
   { artifactId: 'moss_ring', x: 1, y: 0, width: 1, height: 1 }
 ];
 
-async function saveShot(page, name) {
-  await fs.mkdir(screenshotDir, { recursive: true });
-  await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
-}
+const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
 
 async function resetDevDb(request) {
   const response = await request.post('/api/dev/reset', { data: {} });
@@ -86,6 +82,7 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
   await expect(page.locator('.run-hud')).toContainText('1'); // round 1
+  await assertImagesLoaded(page);
   await saveShot(page, 'challenge-01-playerA-prep-round1.png');
 
   // --- Opponent status shows "waiting for opponent" ---

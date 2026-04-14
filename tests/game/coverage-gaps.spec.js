@@ -1,24 +1,9 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { test, expect } from '@playwright/test';
+import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots';
 
-async function saveShot(page, name) {
-  await fs.mkdir(screenshotDir, { recursive: true });
-  await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
-}
-
-/**
- * Assert no <img> elements have failed to load (naturalWidth === 0).
- * Spec: docs/user-flows.md "Images must load" section.
- */
-async function assertImagesLoaded(page) {
-  const broken = await page.locator('img').evaluateAll(imgs =>
-    imgs.filter(i => i.naturalWidth === 0).map(i => i.src)
-  );
-  expect(broken, `Broken images found: ${broken.join(', ')}`).toHaveLength(0);
-}
+const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
 
 async function resetDevDb(request) {
   const response = await request.post('/api/dev/reset', { data: {} });

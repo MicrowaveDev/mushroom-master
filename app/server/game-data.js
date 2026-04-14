@@ -353,7 +353,7 @@ export const mushrooms = [
     name: { ru: 'Тхалла', en: 'Thalla' },
     styleTag: 'control',
     affinity: { strong: ['stun'], medium: ['damage'], weak: ['armor'] },
-    imagePath: '/portraits/thalla/default.jpg',
+    imagePath: '/portraits/thalla/default.png',
     loreSlug: 'thalla',
     baseStats: { health: 100, attack: 11, speed: 7, defense: 2 },
     passive: {
@@ -377,7 +377,7 @@ export const mushrooms = [
     name: { ru: 'Ломиэ', en: 'Lomie' },
     styleTag: 'defensive',
     affinity: { strong: ['armor'], medium: ['stun'], weak: ['damage'] },
-    imagePath: '/portraits/lomie/default.jpg',
+    imagePath: '/portraits/lomie/default.png',
     loreSlug: 'lomie',
     baseStats: { health: 125, attack: 9, speed: 4, defense: 5 },
     passive: {
@@ -426,7 +426,7 @@ export const mushrooms = [
     name: { ru: 'Кирт', en: 'Kirt' },
     styleTag: 'balanced',
     affinity: { strong: ['damage', 'armor'], medium: ['stun'], weak: [] },
-    imagePath: '/portraits/kirt/default.jpg',
+    imagePath: '/portraits/kirt/default.png',
     loreSlug: 'kirt',
     baseStats: { health: 105, attack: 12, speed: 6, defense: 3 },
     passive: {

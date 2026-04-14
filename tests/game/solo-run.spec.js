@@ -1,6 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { test, expect } from '@playwright/test';
+import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/run';
 
@@ -12,10 +11,7 @@ const loadout = [
   { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
 ];
 
-async function saveShot(page, name) {
-  await fs.mkdir(screenshotDir, { recursive: true });
-  await page.screenshot({ path: path.join(screenshotDir, name), fullPage: true });
-}
+const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
 
 /**
  * Sell the container item identified by `artifactId` via the direct API.
@@ -52,17 +48,6 @@ async function sellContainerItemViaApi(page, request, sessionKey, gameRunId, art
  */
 async function waitForPrepReady(page, timeout = 15000) {
   await page.locator('[data-testid="prep-ready"]').waitFor({ timeout });
-}
-
-/**
- * Assert no <img> elements have failed to load (naturalWidth === 0).
- * Spec: docs/user-flows.md "Images must load" section.
- */
-async function assertImagesLoaded(page) {
-  const broken = await page.locator('img').evaluateAll(imgs =>
-    imgs.filter(i => i.naturalWidth === 0).map(i => i.src)
-  );
-  expect(broken, `Broken images found: ${broken.join(', ')}`).toHaveLength(0);
 }
 
 /**
