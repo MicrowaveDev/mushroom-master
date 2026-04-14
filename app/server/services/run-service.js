@@ -1008,8 +1008,8 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
     const grp = grpResult.rows[0];
 
     const shopResult = await client.query(
-      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2`,
-      [gameRunId, playerId]
+      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
+      [gameRunId, playerId, currentRound]
     );
     if (!shopResult.rowCount) {
       throw new Error('Shop state not found');

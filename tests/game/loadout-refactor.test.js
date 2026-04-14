@@ -271,6 +271,54 @@ test('[Req 11-C] shop state row for round 1 remains after round 2 resolves', asy
   assert.ok(roundNumbers.includes(2), 'expected round 2 shop state row to be inserted');
 });
 
+// Regression: buyRunShopItem must scope its SELECT by round_number, not just
+// (game_run_id, player_id). Before the fix, a round-2 purchase read round 1's
+// frozen shop state and either threw "Item is not in the current shop offer"
+// (when round 2's offer was disjoint from round 1's leftovers) or overwrote
+// round 2's offer with `round1_offer - bought_item`, making most slots vanish.
+test('[Req 11-C] buyRunShopItem in round 2 reads round 2 shop state, not round 1', async () => {
+  await freshDb();
+  const { playerId, run } = await bootPlayerInRun();
+  await seedRunLoadout(playerId, run.id, [
+    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+
+  // Round 1 shop is intentionally disjoint from the round 2 offer below.
+  await forceShopOffer(run.id, playerId, 1, ['sporeblade']);
+  await resolveRound(playerId, run.id);
+
+  // Force a known round 2 offer with three cheap items so we can verify the
+  // remaining two stay after one purchase.
+  const round2Offer = ['bark_plate', 'loam_scale', 'shock_puff'];
+  await forceShopOffer(run.id, playerId, 2, round2Offer);
+
+  await buyRunShopItem(playerId, run.id, 'bark_plate');
+
+  const round2After = await query(
+    `SELECT offer_json FROM game_run_shop_states
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2`,
+    [run.id, playerId]
+  );
+  const remaining = JSON.parse(round2After.rows[0].offer_json);
+  assert.deepEqual(
+    remaining,
+    ['loam_scale', 'shock_puff'],
+    'round 2 shop must keep its remaining slots after a single purchase'
+  );
+
+  // Round 1 shop must remain frozen — the buy must not touch it either.
+  const round1After = await query(
+    `SELECT offer_json FROM game_run_shop_states
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
+    [run.id, playerId]
+  );
+  assert.deepEqual(
+    JSON.parse(round1After.rows[0].offer_json),
+    ['sporeblade'],
+    'round 1 shop state must stay frozen across a round 2 purchase'
+  );
+});
+
 // ---------------------------------------------------------------------------
 // #7 — graduated refund uses purchased_round, preserved across copy-forward
 // Plan: §2.2 "purchased_round alongside fresh_purchase".
