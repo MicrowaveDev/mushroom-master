@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import OpenAI from 'openai';
@@ -53,6 +54,41 @@ import { getWikiEntry, getWikiHome } from './wiki.js';
 
 const repoRoot = '/Users/microwavedev/workspace/mushroom-master';
 const webDist = path.join(repoRoot, 'web/dist');
+const webPublic = path.join(repoRoot, 'web/public');
+
+// Sync authored assets (web/public) into the built tree (web/dist) at boot.
+// Express serves /dist as the root, and vite only copies /public → /dist on
+// `vite build`. Without this step, dropping a new portrait into /public has
+// no effect in dev until the next full build — which is exactly the "new
+// default.png isn't the new default" trap. Walk /public/portraits and copy
+// every file whose bytes or mtime differ from its /dist counterpart so the
+// authored tree is always authoritative in dev.
+function syncPublicPortraitsToDist() {
+  const srcRoot = path.join(webPublic, 'portraits');
+  const dstRoot = path.join(webDist, 'portraits');
+  if (!fs.existsSync(srcRoot)) return;
+  fs.mkdirSync(dstRoot, { recursive: true });
+  for (const entry of fs.readdirSync(srcRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const srcDir = path.join(srcRoot, entry.name);
+    const dstDir = path.join(dstRoot, entry.name);
+    fs.mkdirSync(dstDir, { recursive: true });
+    for (const file of fs.readdirSync(srcDir)) {
+      const srcFile = path.join(srcDir, file);
+      const dstFile = path.join(dstDir, file);
+      const srcStat = fs.statSync(srcFile);
+      let shouldCopy = true;
+      if (fs.existsSync(dstFile)) {
+        const dstStat = fs.statSync(dstFile);
+        shouldCopy = srcStat.size !== dstStat.size || srcStat.mtimeMs > dstStat.mtimeMs;
+      }
+      if (shouldCopy) {
+        fs.copyFileSync(srcFile, dstFile);
+        fs.utimesSync(dstFile, srcStat.atime, srcStat.mtime);
+      }
+    }
+  }
+}
 
 function isLocalAiLabEnabled() {
   return process.env.NODE_ENV !== 'production';
@@ -91,6 +127,7 @@ async function requireRunMembership(req, _res, next) {
 
 export async function createApp() {
   await getDb();
+  syncPublicPortraitsToDist();
   const app = express();
   app.use(express.json({ limit: '2mb' }));
   app.use(requestLogger());
@@ -710,6 +747,20 @@ export async function createApp() {
   }
 
   app.use('/data', express.static(path.join(repoRoot, 'data')));
+  // Portrait files are authored in web/public/portraits and bundled into
+  // web/dist/portraits by vite build. Serve the authored tree directly so
+  // dropping a new default.png into /public/ is live immediately — no
+  // vite build, no restart. The no-cache headers mean the browser will
+  // refetch on every page load, so even if portraitUrl's ?v=<mtime>
+  // cache-buster ever went stale, the user still sees fresh bytes.
+  app.use(
+    '/portraits',
+    (_req, res, next) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      next();
+    },
+    express.static(path.join(webPublic, 'portraits'))
+  );
   app.use(express.static(webDist));
   app.get(/.*/, (_req, res) => {
     res.sendFile(path.join(webDist, 'index.html'));
