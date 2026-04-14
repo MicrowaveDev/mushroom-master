@@ -185,8 +185,8 @@ export async function createApp() {
   app.get(
     '/api/characters',
     asyncRoute(async (_req, res) => {
-      const { mushrooms } = await import('./game-data.js');
-      res.json({ success: true, data: { mushrooms } });
+      const { mushroomsForResponse } = await import('./game-data.js');
+      res.json({ success: true, data: { mushrooms: mushroomsForResponse() } });
     })
   );
 

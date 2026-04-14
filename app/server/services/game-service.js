@@ -1,5 +1,5 @@
 import { query } from '../db.js';
-import { artifacts, DAILY_BATTLE_LIMIT, mushrooms } from '../game-data.js';
+import { artifacts, DAILY_BATTLE_LIMIT, mushroomsForResponse } from '../game-data.js';
 import { dayKey, nextUtcReset } from '../lib/utils.js';
 import { getBattleHistory } from './battle-service.js';
 import { getPlayerState } from './player-service.js';
@@ -56,7 +56,10 @@ export async function getBootstrap(playerId) {
   ]);
   return {
     ...state,
-    mushrooms,
+    // Re-stamp portrait URLs with current mtime at response time so a file
+    // replaced mid-session shows up on the next /api/bootstrap without a
+    // server restart. See app/server/game-data.js portraitUrl().
+    mushrooms: mushroomsForResponse(),
     artifacts,
     shopState: null,
     activeGameRun,

@@ -3,8 +3,8 @@ import {
   getMushroomById,
   getTier,
   mushrooms,
-  portraitUrl,
   PORTRAIT_VARIANTS,
+  portraitVariantsForResponse,
   STARTER_PRESET_VARIANTS
 } from '../game-data.js';
 import {
@@ -59,12 +59,17 @@ export async function getPlayerState(playerId) {
   // and is exposed via getActiveGameRun.
   const loadout = null;
 
+  // Pull portrait variants with mtime-stamped URLs once per request — any
+  // portrait file replaced on disk between requests shows up on the next
+  // /api/bootstrap without a server restart.
+  const freshPortraitVariants = portraitVariantsForResponse();
+
   const progression = Object.fromEntries(
     playerMushroomsResult.rows.map((row) => {
       const levelInfo = computeLevel(row.mycelium);
       const level = levelInfo.level;
 
-      const portraitVariants = PORTRAIT_VARIANTS[row.mushroom_id] || [];
+      const portraitVariants = freshPortraitVariants[row.mushroom_id] || [];
       const activePortraitId = row.active_portrait || 'default';
       const activePortraitDef = portraitVariants.find(v => v.id === activePortraitId) || portraitVariants[0];
 
@@ -84,7 +89,7 @@ export async function getPlayerState(playerId) {
           losses: row.losses,
           draws: row.draws,
           activePortrait: activePortraitId,
-          activePortraitUrl: activePortraitDef?.path || portraitUrl(row.mushroom_id),
+          activePortraitUrl: activePortraitDef?.path || '',
           portraits: portraitVariants.map(v => ({ ...v, unlocked: row.mycelium >= v.cost })),
           activePreset: activePresetId,
           presets: presetVariants.map(v => ({ ...v, unlocked: level >= v.requiredLevel }))
