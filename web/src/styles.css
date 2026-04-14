@@ -1887,9 +1887,6 @@ select {
 .replay-rewards-card .stat-grid {
   margin-top: 8px;
 }
-.replay-rewards-card .stat-grid + .stat-grid {
-  margin-top: 10px;
-}
 
 @keyframes result-pulse {
   0%, 100% { opacity: 1; }

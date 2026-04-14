@@ -78,11 +78,6 @@ export const ReplayScreen = {
             <dd>{{ formatDelta(ratingDelta) }}</dd>
           </div>
         </dl>
-        <dl class="stat-grid">
-          <div class="stat"><dt>{{ t.wins }}</dt><dd>{{ state.gameRunResult.player?.wins || 0 }}</dd></div>
-          <div class="stat"><dt>{{ t.lives }}</dt><dd>{{ state.gameRunResult.player?.livesRemaining || 0 }}</dd></div>
-          <div class="stat"><dt>{{ t.coins }}</dt><dd>{{ state.gameRunResult.player?.coins || 0 }}</dd></div>
-        </dl>
       </div>
       <button v-if="replayFinished" class="primary replay-result-button-full" @click="$emit('go-results')">{{ continueLabel }}</button>
       <div class="replay-log">
