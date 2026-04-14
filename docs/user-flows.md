@@ -192,7 +192,9 @@ Step 3: Battle Replay (auto-shown after ready)
     - Round outcome heading (Victory / Defeat)
     - [Req 9-A] Per-round reward breakdown (spore + mycelium)
     - [Req 10-A] Solo: rating delta from this round
-    - Updated run stats (wins, lives, coins)
+    - Running totals (wins, lives, coins) are intentionally NOT shown on
+      this card — they appear on the next prep HUD right after Continue.
+      Keeping the card to three deltas avoids duplicating HUD data.
   Action: Watch replay auto-play (or adjust speed / click log)
   Expected:
     - [Req 13-A] When replay finishes AND state.gameRun exists AND run active:
