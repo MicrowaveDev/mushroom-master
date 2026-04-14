@@ -11,6 +11,7 @@ import { query } from '../db.js';
 import { getArtifactById } from '../game-data.js';
 import { createId, nowIso } from '../lib/utils.js';
 import { validateGridItems, validateBagContents } from './loadout-utils.js';
+import { isBag } from './artifact-helpers.js';
 
 async function q(client, sql, params) {
   return client ? client.query(sql, params) : query(sql, params);
@@ -28,6 +29,13 @@ export async function insertLoadoutItem(client, params) {
   const artifact = getArtifactById(params.artifactId) || params.artifact;
   const width = params.width ?? artifact.width;
   const height = params.height ?? artifact.height;
+  // Bags live off the main grid (active-bags bar), so their storage coords
+  // are always the container sentinel. Enforced at this single write point
+  // so every caller — starter preset, buy, copy-forward — is correct by
+  // construction. See bag-items.test.js "normalizes bag coords" regression.
+  const bagRow = isBag(artifact);
+  const x = bagRow ? -1 : (params.x ?? -1);
+  const y = bagRow ? -1 : (params.y ?? -1);
   await q(client,
     `INSERT INTO game_run_loadout_items
        (id, game_run_id, player_id, round_number, artifact_id, x, y, width, height,
@@ -39,8 +47,8 @@ export async function insertLoadoutItem(client, params) {
       params.playerId,
       params.roundNumber,
       artifact?.id || params.artifactId,
-      params.x ?? -1,
-      params.y ?? -1,
+      x,
+      y,
       width,
       height,
       params.bagId || null,

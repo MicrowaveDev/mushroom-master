@@ -41,13 +41,25 @@ test('[Req 2-A] validateGridItems: rejects overlapping placements', () => {
   );
 });
 
-test('validateGridItems: bags skip bounds/overlap checks', () => {
+test('validateGridItems: bags at container sentinel skip occupancy', () => {
   const result = validateGridItems([
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
-    { artifactId: 'amber_satchel', x: 0, y: 0, width: 2, height: 2 }
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 }
   ]);
-  // Bags don't occupy grid cells, so no overlap is reported.
+  // Bags live off the main grid, so none of their cells land in `occupied`.
   assert.equal(result.occupied.size, 0);
+});
+
+test('validateGridItems: rejects bag with grid coordinates', () => {
+  // Bags are rendered in the active-bags bar, not on the main grid. A bag
+  // with x>=0 or y>=0 is an invariant violation — it would silently collide
+  // with real grid items since bags don't participate in the occupied set.
+  assert.throws(
+    () => validateGridItems([
+      { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 }
+    ]),
+    /cannot have grid coordinates/
+  );
 });
 
 test('validateGridItems: container items skip bounds/overlap checks', () => {
@@ -78,7 +90,7 @@ test('validateGridItems: rejects wrong dimensions', () => {
 
 test('validateBagContents: bagged item references active bag', () => {
   validateBagContents([
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', width: 1, height: 1, bagId: 'moss_pouch' }
   ]);
 });
@@ -86,7 +98,7 @@ test('validateBagContents: bagged item references active bag', () => {
 test('[Req 5-A] validateBagContents: rejects bag-inside-bag', () => {
   assert.throws(
     () => validateBagContents([
-      { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+      { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
       { artifactId: 'amber_satchel', width: 2, height: 2, bagId: 'moss_pouch' }
     ]),
     /cannot contain other bags/
@@ -105,14 +117,14 @@ test('validateBagContents: rejects reference to non-placed bag', () => {
 test('[Req 5-B, 5-C] validateBagContents: enforces slotCount footprint limit', () => {
   // moss_pouch has slotCount=2, so two 1x1s fit and a third overflows.
   validateBagContents([
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', width: 1, height: 1, bagId: 'moss_pouch' },
     { artifactId: 'bark_plate', width: 1, height: 1, bagId: 'moss_pouch' }
   ]);
 
   assert.throws(
     () => validateBagContents([
-      { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+      { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
       { artifactId: 'spore_needle', width: 1, height: 1, bagId: 'moss_pouch' },
       { artifactId: 'bark_plate', width: 1, height: 1, bagId: 'moss_pouch' },
       { artifactId: 'shock_puff', width: 1, height: 1, bagId: 'moss_pouch' }
@@ -159,9 +171,9 @@ test('[Req 2-C] buildArtifactSummary: container items contribute zero', () => {
   assert.equal(totals.armor, 0);
 });
 
-test('[Req 5-F] buildArtifactSummary: bags contribute zero even when placed', () => {
+test('[Req 5-F] buildArtifactSummary: bags contribute zero', () => {
   const totals = buildArtifactSummary([
-    { artifactId: 'moss_pouch', x: 0, y: 0 }
+    { artifactId: 'moss_pouch', x: -1, y: -1 }
   ]);
   assert.equal(totals.damage, 0);
   assert.equal(totals.armor, 0);

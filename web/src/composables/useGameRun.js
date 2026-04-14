@@ -20,11 +20,13 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     }
 
     const payload = [];
-    // Bags (including container bags) must be declared before bagged items reference them
+    // Bags (including container bags) must be declared before bagged items reference them.
+    // Bags live off the main grid — rendered in the active-bags bar — so they carry the
+    // container sentinel (-1,-1), not grid coordinates.
     for (const bagId of state.activeBags) {
       const bag = getArtifact(bagId);
       if (!bag) continue;
-      payload.push({ artifactId: bagId, x: 0, y: 0, width: bag.width, height: bag.height });
+      payload.push({ artifactId: bagId, x: -1, y: -1, width: bag.width, height: bag.height });
     }
     // Unactivated bags in container
     for (const artifactId of state.containerItems) {

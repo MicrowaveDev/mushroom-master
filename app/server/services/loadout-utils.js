@@ -37,6 +37,11 @@ export function buildArtifactSummary(items) {
 /**
  * Validate grid placements (bounds + overlap) for non-bag, non-container,
  * non-bagged items. Returns the set of occupied cells for downstream use.
+ *
+ * Bags must carry container coords (-1,-1): they render in the active-bags
+ * bar, not on the main grid. A bag with x>=0 or y>=0 is an invariant
+ * violation — throw loudly so bad writes fail fast instead of silently
+ * colliding with real grid items (see the bag-coords regression).
  */
 export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, gridHeight = INVENTORY_ROWS) {
   const occupied = new Set();
@@ -46,7 +51,12 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
     if (!artifact) {
       throw new Error(`Unknown artifact: ${item.artifactId}`);
     }
-    if (isBag(artifact)) continue;
+    if (isBag(artifact)) {
+      if (Number(item.x) >= 0 || Number(item.y) >= 0) {
+        throw new Error(`Bag ${item.artifactId} cannot have grid coordinates`);
+      }
+      continue;
+    }
     if (isContainerItem(item)) continue;
 
     const matchesCanonical = item.width === artifact.width && item.height === artifact.height;

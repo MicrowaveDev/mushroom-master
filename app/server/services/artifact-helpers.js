@@ -8,10 +8,10 @@
 // pass artifact objects in directly.
 
 export const FAMILY_CAPS = {
-  damage:  { grid: true,  statsInBattle: true,  container: true,  holdsItems: false },
-  armor:   { grid: true,  statsInBattle: true,  container: true,  holdsItems: false },
-  stun:    { grid: true,  statsInBattle: true,  container: true,  holdsItems: false },
-  bag:     { grid: false, statsInBattle: false, container: true,  holdsItems: true  }
+  damage:  { statsInBattle: true,  container: true,  holdsItems: false },
+  armor:   { statsInBattle: true,  container: true,  holdsItems: false },
+  stun:    { statsInBattle: true,  container: true,  holdsItems: false },
+  bag:     { statsInBattle: false, container: true,  holdsItems: true  }
 };
 
 export function familyCaps(family) {

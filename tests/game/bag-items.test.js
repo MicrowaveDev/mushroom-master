@@ -8,7 +8,9 @@ import {
   resolveRound,
   getBattle,
   getGameRunHistory,
-  getPlayerState
+  getPlayerState,
+  buyRunShopItem,
+  applyRunLoadoutPlacements
 } from '../../app/server/services/game-service.js';
 import {
   artifacts,
@@ -19,7 +21,7 @@ import {
   runRewardTable,
   getCompletionBonus
 } from '../../app/server/game-data.js';
-import { freshDb, createPlayer, seedRunLoadout } from './helpers.js';
+import { freshDb, createPlayer, seedRunLoadout, forceShopOffer } from './helpers.js';
 import { query } from '../../app/server/db.js';
 
 const loadout = [
@@ -54,18 +56,28 @@ test('[Req 3-D, 5-F] combatArtifacts excludes bags and starter-only items', () =
 
 // --- Bag in loadout validation ---
 
-test('[Req 5-A] validateLoadoutItems accepts bag on grid', () => {
+test('[Req 5-A] validateLoadoutItems accepts bag off grid alongside placed item', () => {
   const items = [
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
   assert.equal(result.items.length, 2);
 });
 
+test('[Req 5-A] validateLoadoutItems rejects bag with grid coordinates', () => {
+  const items = [
+    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 }
+  ];
+  assert.throws(
+    () => validateLoadoutItems(items, 10),
+    /cannot have grid coordinates/
+  );
+});
+
 test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
   const items = [
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
@@ -74,7 +86,7 @@ test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
 
 test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
   const items = [
-    { artifactId: 'amber_satchel', x: 0, y: 0, width: 2, height: 2 },
+    { artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 },
     { artifactId: 'moss_pouch', bagId: 'amber_satchel', width: 1, height: 2 }
   ];
   assert.throws(
@@ -85,7 +97,7 @@ test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
 
 test('[Req 5-B, 5-C] validateLoadoutItems rejects items exceeding bag slotCount', () => {
   const items = [
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 },
     { artifactId: 'bark_plate', bagId: 'moss_pouch', width: 1, height: 1 },
     { artifactId: 'shock_puff', bagId: 'moss_pouch', width: 1, height: 1 } // 3rd item, but slotCount=2
@@ -109,7 +121,7 @@ test('[Req 5-A] validateLoadoutItems rejects item in bag not on grid', () => {
 
 test('[Req 5-F] buildArtifactSummary excludes bags from combat stats', () => {
   const items = [
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
@@ -136,6 +148,73 @@ test('[Req 5-D] shop offer on game run start includes bag tracking', async () =>
   assert.ok(typeof shopState.rows[0].rounds_since_bag === 'number');
 });
 
+// --- Bag placement must not overlap grid items ---
+
+// Regression: observed round-3 loadout in a dev run had moss_pouch stored at
+// (0,0) 1×2 on top of a starter spore_lash (0,0) and a thunder_gill (0,1),
+// causing two icons to render in the same cell. Root cause: the client was
+// sending bags with x=0, y=0 in the /api/artifact-loadout payload, and
+// validateGridItems silently skipped bags from its collision set. Bags live
+// in the active-bags bar, not on the main grid, so the server must reject
+// any write that puts a bag at grid coordinates.
+test('[Req 5-A] applyRunLoadoutPlacements rejects a bag sent with grid coordinates', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+
+  await forceShopOffer(run.id, session.player.id, 1, ['moss_pouch']);
+  await buyRunShopItem(session.player.id, run.id, 'moss_pouch');
+
+  // Simulate the (old, buggy) client that sent the bag with grid coords on
+  // top of the starter item at (0,0). The server must throw loudly instead
+  // of silently persisting a colliding row.
+  await assert.rejects(
+    () => applyRunLoadoutPlacements(session.player.id, run.id, [
+      { artifactId: 'spore_lash', x: 0, y: 0, width: 1, height: 1 },
+      { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
+      { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 }
+    ]),
+    /cannot have grid coordinates/
+  );
+
+  // The bag row must remain at the container sentinel (-1,-1) that
+  // buyRunShopItem wrote via insertLoadoutItem — proving the rejected
+  // write didn't partially mutate state.
+  const row = await query(
+    `SELECT x, y FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
+       AND artifact_id = 'moss_pouch'`,
+    [run.id, session.player.id]
+  );
+  assert.equal(row.rowCount, 1);
+  assert.equal(row.rows[0].x, -1);
+  assert.equal(row.rows[0].y, -1);
+});
+
+// Defense-in-depth: even if a caller bypasses applyRunLoadoutPlacements and
+// writes via insertLoadoutItem directly (buy, starter preset, copy-forward),
+// bag coords must still be normalized to (-1,-1) at the DB write layer.
+test('[Req 5-A] insertLoadoutItem normalizes bag coords to (-1,-1) on buy', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+
+  await forceShopOffer(run.id, session.player.id, 1, ['moss_pouch']);
+  await buyRunShopItem(session.player.id, run.id, 'moss_pouch');
+
+  const row = await query(
+    `SELECT x, y FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
+       AND artifact_id = 'moss_pouch'`,
+    [run.id, session.player.id]
+  );
+  assert.equal(row.rowCount, 1);
+  assert.equal(row.rows[0].x, -1);
+  assert.equal(row.rows[0].y, -1);
+});
+
 // --- Sell non-empty bag ---
 
 test('[Req 4-L] sellRunItem blocks selling non-empty bag', async () => {
@@ -147,7 +226,7 @@ test('[Req 4-L] sellRunItem blocks selling non-empty bag', async () => {
 
   // Seed a bag with an item inside it directly into the run-scoped table.
   await seedRunLoadout(session.player.id, run.id, [
-    { artifactId: 'moss_pouch', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
   ]);
 
