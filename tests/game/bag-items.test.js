@@ -192,6 +192,39 @@ test('[Req 5-A] applyRunLoadoutPlacements rejects a bag sent with grid coordinat
   assert.equal(row.rows[0].y, -1);
 });
 
+// Regression: a round-2 save hit the server with a thunder_gill at y=3
+// (outside the 3-row grid) and validateGridItems threw "Artifact placement
+// is out of bounds". The crash came from useGameRun.buildLoadoutPayloadItems
+// falling through to send stale grid coords when a builderItem had y >=
+// INVENTORY_ROWS but no active bag covered that row — which happens when
+// a middle bag gets deactivated or rotated and later bags shift up.
+// This test pins the server behavior: any grid item with y >= gridHeight
+// (no bagId) must be rejected, so the client-side defensive fallback in
+// buildLoadoutPayloadItems can be verified end-to-end.
+test('[regression] applyRunLoadoutPlacements rejects a grid item with y outside the grid', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+
+  // Buy a non-bag artifact so we have something to place in a bogus row.
+  await forceShopOffer(run.id, session.player.id, 1, ['bark_plate']);
+  await buyRunShopItem(session.player.id, run.id, 'bark_plate');
+
+  // Send bark_plate at y=3 (first row *below* the 3-row grid) with no
+  // bagId. The frontend used to emit this when a bag got deactivated and
+  // a later bag's items kept their stale y. The server must throw with a
+  // message that maps to 400, not surface as a 500 "Internal server error".
+  await assert.rejects(
+    () => applyRunLoadoutPlacements(session.player.id, run.id, [
+      { artifactId: 'spore_lash', x: 0, y: 0, width: 1, height: 1 },
+      { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
+      { artifactId: 'bark_plate', x: 0, y: 3, width: 1, height: 1 }
+    ]),
+    /out of bounds/
+  );
+});
+
 // Defense-in-depth: even if a caller bypasses applyRunLoadoutPlacements and
 // writes via insertLoadoutItem directly (buy, starter preset, copy-forward),
 // bag coords must still be normalized to (-1,-1) at the DB write layer.

@@ -42,15 +42,17 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     if (!state.activeBags.includes(bagId)) return;
     const bag = getArtifact(bagId);
     if (!bag || bag.width === bag.height) return;
-    // Check no items in bag rows before rotating
+    // Rotation changes this bag's rowCount, shifting later bags up or down.
+    // Block if *anything* lives in this bag's rows OR any later bag — same
+    // rationale as deactivateBag. Forces the player to empty downstream
+    // bags first so their item y coords stay in sync with activeBags.
     let startRow = INVENTORY_ROWS;
     for (const id of state.activeBags) {
       if (id === bagId) break;
       startRow += bagRowCount(id);
     }
-    const rows = bagRowCount(bagId);
-    const itemsInBag = state.builderItems.filter((i) => i.y >= startRow && i.y < startRow + rows);
-    if (itemsInBag.length) {
+    const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
+    if (itemsBelowThisBag.length) {
       state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
       return;
     }
@@ -203,9 +205,12 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       if (id === artifactId) break;
       startRow += bagRowCount(id);
     }
-    const rows = bagRowCount(artifactId);
-    const itemsInBagRows = state.builderItems.filter((i) => i.y >= startRow && i.y < startRow + rows);
-    if (itemsInBagRows.length) {
+    // Block if *anything* lives in this bag's rows OR in later bags' rows:
+    // deactivating a middle bag shifts later bags up and strands their items
+    // at stale y coords. Forcing the player to empty downstream bags first
+    // keeps the builderItems layout in sync with activeBags.
+    const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
+    if (itemsBelowThisBag.length) {
       state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
       return;
     }
@@ -270,6 +275,10 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       for (let dx = 0; dx < w; dx += 1) {
         for (let dy = 0; dy < h; dy += 1) {
           if (occupied.has(`${x + dx}:${y + dy}`)) return;
+          // Bag rows may expose fewer cols than INVENTORY_COLUMNS — don't
+          // drop into a disabled (greyed-out) cell, which would otherwise
+          // persist and trip the server's occupancy check on the next save.
+          if (isCellDisabled(x + dx, y + dy)) return;
         }
       }
       state.builderItems = [...others, { ...item, x, y }];

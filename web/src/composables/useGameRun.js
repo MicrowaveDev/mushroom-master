@@ -42,6 +42,14 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
           payload.push({ artifactId: item.artifactId, width: item.width, height: item.height, bagId: info.bagId });
           continue;
         }
+        // Fall-through guard: item claims to be in a bag row (y >= grid),
+        // but no active bag covers that row. This happens when a bag gets
+        // deactivated/rotated and a later bag's items keep their stale y.
+        // Don't send stale grid coords — the server would reject with OOB
+        // and surface as a 500. Push to container (-1,-1) instead and let
+        // the next hydrate reconcile.
+        payload.push({ artifactId: item.artifactId, x: -1, y: -1, width: item.width, height: item.height });
+        continue;
       }
       payload.push({ artifactId: item.artifactId, x: item.x, y: item.y, width: item.width, height: item.height });
     }

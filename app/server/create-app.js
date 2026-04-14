@@ -173,6 +173,43 @@ async function requireRunMembership(req, _res, next) {
   }
 }
 
+// Map an application-layer Error message to an HTTP status code. Exported so
+// the test suite can pin the contract for each class of thrown error without
+// spinning up a full HTTP server. Keep this list in sync with the thrown
+// messages in app/server/services — if a validation error ends up as 500 in
+// production, it's almost always a missing entry here and should be added
+// alongside a case in tests/game/error-status.test.js.
+const ERROR_STATUS_MAP = [
+  ['not found', 404],
+  ['not part of', 403],
+  ['only the invited', 403],
+  ['cannot', 400],
+  ['already', 409],
+  ['limit reached', 429],
+  ['not enough', 400],
+  ['expired', 410],
+  ['no longer pending', 409],
+  ['invalid', 400],
+  ['unknown', 400],
+  // Loadout validator errors (validateGridItems / validateBagContents / etc.)
+  // These are user-caused payload errors — the UI should show the message,
+  // not "Internal server error".
+  ['out of bounds', 400],
+  ['must match', 400],
+  ['cannot overlap', 400],
+  ['coordinates', 400],
+  ['is full', 400],
+  ['exceeds', 400]
+];
+
+export function mapErrorToStatus(message) {
+  const msg = (message || '').toLowerCase();
+  for (const [keyword, code] of ERROR_STATUS_MAP) {
+    if (msg.includes(keyword)) return code;
+  }
+  return 500;
+}
+
 export async function createApp() {
   await getDb();
   ensureDistFreshOrRebuild();
@@ -815,30 +852,8 @@ export async function createApp() {
     res.sendFile(path.join(webDist, 'index.html'));
   });
 
-  // Known application errors and their HTTP status codes
-  const errorStatusMap = {
-    'not found': 404,
-    'not part of': 403,
-    'only the invited': 403,
-    'cannot': 400,
-    'already': 409,
-    'limit reached': 429,
-    'not enough': 400,
-    'expired': 410,
-    'no longer pending': 409,
-    'invalid': 400,
-    'unknown': 400
-  };
-
   app.use((error, _req, res, _next) => {
-    const msg = (error.message || '').toLowerCase();
-    let status = 500;
-    for (const [keyword, code] of Object.entries(errorStatusMap)) {
-      if (msg.includes(keyword)) {
-        status = code;
-        break;
-      }
-    }
+    const status = mapErrorToStatus(error.message);
     // Only expose message for known application errors; hide internals for 500s
     const isAppError = status !== 500;
     if (!isAppError) {
