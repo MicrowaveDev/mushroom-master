@@ -3,6 +3,7 @@ import {
   getMushroomById,
   getTier,
   mushrooms,
+  portraitUrl,
   PORTRAIT_VARIANTS,
   STARTER_PRESET_VARIANTS
 } from '../game-data.js';
@@ -83,7 +84,7 @@ export async function getPlayerState(playerId) {
           losses: row.losses,
           draws: row.draws,
           activePortrait: activePortraitId,
-          activePortraitUrl: activePortraitDef?.path || `/portraits/${row.mushroom_id}/default.png`,
+          activePortraitUrl: activePortraitDef?.path || portraitUrl(row.mushroom_id),
           portraits: portraitVariants.map(v => ({ ...v, unlocked: row.mycelium >= v.cost })),
           activePreset: activePresetId,
           presets: presetVariants.map(v => ({ ...v, unlocked: level >= v.requiredLevel }))

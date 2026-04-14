@@ -15,10 +15,21 @@ const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
 const publicDir = path.join(repoRoot, 'web', 'public');
 
 function resolvePortraitFile(urlPath) {
-  // urlPath is a server-relative URL like "/portraits/thalla/default.png".
-  // web/public is served at "/", so strip the leading slash and join.
-  const rel = urlPath.replace(/^\/+/, '');
+  // urlPath is a server-relative URL like
+  // "/portraits/thalla/default.png?v=abc12345". Strip any content-hash
+  // cache-buster query string (added by portraitUrl() in game-data.js)
+  // before resolving against the filesystem, then strip the leading slash.
+  const [pathname] = urlPath.split('?');
+  const rel = pathname.replace(/^\/+/, '');
   return path.join(publicDir, rel);
+}
+
+function expectHashSuffix(urlPath) {
+  assert.match(
+    urlPath,
+    /\?v=[0-9a-f]{8}$/,
+    `expected portrait URL "${urlPath}" to carry a ?v=<8-hex-hash> cache-buster`
+  );
 }
 
 test('mushroom imagePath resolves to a file on disk for every mushroom', () => {
@@ -31,6 +42,12 @@ test('mushroom imagePath resolves to a file on disk for every mushroom', () => {
   }
 });
 
+test('mushroom imagePath carries a ?v= content-hash cache-buster', () => {
+  for (const mushroom of mushrooms) {
+    expectHashSuffix(mushroom.imagePath);
+  }
+});
+
 test('PORTRAIT_VARIANTS paths resolve to files on disk for every variant', () => {
   for (const [mushroomId, variants] of Object.entries(PORTRAIT_VARIANTS)) {
     for (const variant of variants) {
@@ -39,6 +56,14 @@ test('PORTRAIT_VARIANTS paths resolve to files on disk for every variant', () =>
         fs.existsSync(file),
         `${mushroomId} portrait "${variant.id}": path "${variant.path}" does not exist (expected ${file})`
       );
+    }
+  }
+});
+
+test('PORTRAIT_VARIANTS paths carry a ?v= content-hash cache-buster', () => {
+  for (const [, variants] of Object.entries(PORTRAIT_VARIANTS)) {
+    for (const variant of variants) {
+      expectHashSuffix(variant.path);
     }
   }
 });

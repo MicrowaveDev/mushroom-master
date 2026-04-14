@@ -3,8 +3,60 @@
 // definitions. We `import` them into local scope AND re-export, so existing
 // `import { X } from './game-data.js'` call sites plus in-file usages in
 // helpers like getShopRefreshCost keep working.
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { MYCELIUM_LEVEL_CURVE } from './lib/utils.js';
 export { MYCELIUM_LEVEL_CURVE };
+
+const __gameDataFile = fileURLToPath(import.meta.url);
+const __publicDir = path.resolve(path.dirname(__gameDataFile), '..', '..', 'web', 'public');
+
+// Build a portrait URL for a given mushroom + variant. Handles two things
+// so nothing in game-data.js has to repeat them:
+//
+// 1. Extension discovery — scans web/public/portraits/<id>/ once at module
+//    load and picks <variant>.<png|jpg|jpeg|webp> by whatever actually
+//    exists on disk. Lets you drop in a new file with any of those
+//    extensions without hand-editing the data definition.
+//
+// 2. Content-hash cache-buster — appends "?v=<sha1-8>" so replacing a
+//    portrait file (same filename, new bytes) invalidates the browser
+//    cache. Without this, swapping out default.png silently keeps
+//    serving the cached old image — which is exactly the staleness you
+//    hit after placing a new default.
+//
+// variant defaults to 'default'. Pass 'default', '1', '2', etc.
+// Reads happen once per module-load (~15 sha1 hashes over small PNGs).
+const PORTRAIT_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
+export function portraitUrl(mushroomId, variant = 'default') {
+  const dir = path.join(__publicDir, 'portraits', mushroomId);
+  let filename = null;
+  for (const ext of PORTRAIT_EXTENSIONS) {
+    const candidate = `${variant}.${ext}`;
+    if (fs.existsSync(path.join(dir, candidate))) {
+      filename = candidate;
+      break;
+    }
+  }
+  if (!filename) {
+    // Missing files are guarded by tests/game/portrait-assets.test.js; in
+    // the unlikely path we reach here (asset deleted mid-run) return a
+    // bare URL so the broken-image outline still flags it in review.
+    return `/portraits/${mushroomId}/${variant}.png`;
+  }
+  const urlPath = `/portraits/${mushroomId}/${filename}`;
+  try {
+    const hash = crypto.createHash('sha1')
+      .update(fs.readFileSync(path.join(dir, filename)))
+      .digest('hex')
+      .slice(0, 8);
+    return `${urlPath}?v=${hash}`;
+  } catch {
+    return urlPath;
+  }
+}
 
 // Mycelium thresholds that unlock each lore tier on a character wiki page.
 // Index = tier number (0–3). Tier 0 (name + portrait) is always unlocked.
@@ -353,7 +405,7 @@ export const mushrooms = [
     name: { ru: 'Тхалла', en: 'Thalla' },
     styleTag: 'control',
     affinity: { strong: ['stun'], medium: ['damage'], weak: ['armor'] },
-    imagePath: '/portraits/thalla/default.png',
+    imagePath: portraitUrl('thalla'),
     loreSlug: 'thalla',
     baseStats: { health: 100, attack: 11, speed: 7, defense: 2 },
     passive: {
@@ -377,7 +429,7 @@ export const mushrooms = [
     name: { ru: 'Ломиэ', en: 'Lomie' },
     styleTag: 'defensive',
     affinity: { strong: ['armor'], medium: ['stun'], weak: ['damage'] },
-    imagePath: '/portraits/lomie/default.png',
+    imagePath: portraitUrl('lomie'),
     loreSlug: 'lomie',
     baseStats: { health: 125, attack: 9, speed: 4, defense: 5 },
     passive: {
@@ -402,7 +454,7 @@ export const mushrooms = [
     name: { ru: 'Аксилин', en: 'Axilin' },
     styleTag: 'aggressive',
     affinity: { strong: ['damage'], medium: ['stun'], weak: ['armor'] },
-    imagePath: '/portraits/axilin/default.png',
+    imagePath: portraitUrl('axilin'),
     loreSlug: 'axilin',
     baseStats: { health: 90, attack: 15, speed: 8, defense: 1 },
     passive: {
@@ -426,7 +478,7 @@ export const mushrooms = [
     name: { ru: 'Кирт', en: 'Kirt' },
     styleTag: 'balanced',
     affinity: { strong: ['damage', 'armor'], medium: ['stun'], weak: [] },
-    imagePath: '/portraits/kirt/default.png',
+    imagePath: portraitUrl('kirt'),
     loreSlug: 'kirt',
     baseStats: { health: 105, attack: 12, speed: 6, defense: 3 },
     passive: {
@@ -450,7 +502,7 @@ export const mushrooms = [
     name: { ru: 'Морга', en: 'Morga' },
     styleTag: 'aggressive',
     affinity: { strong: ['damage', 'stun'], medium: [], weak: ['armor'] },
-    imagePath: '/portraits/morga/default.png',
+    imagePath: portraitUrl('morga'),
     loreSlug: 'morga',
     baseStats: { health: 85, attack: 13, speed: 10, defense: 0 },
     passive: {
@@ -474,7 +526,7 @@ export const mushrooms = [
     name: { ru: 'Даламар', en: 'Dalamar' },
     styleTag: 'control',
     affinity: { strong: ['stun'], medium: ['damage', 'armor'], weak: [] },
-    imagePath: '/portraits/dalamar/default.png',
+    imagePath: portraitUrl('dalamar'),
     loreSlug: 'dalamar',
     baseStats: { health: 100, attack: 10, speed: 5, defense: 3 },
     passive: {
@@ -604,31 +656,31 @@ export const STARTER_PRESET_VARIANTS = {
 // under /portraits/<mushroomId>/.
 export const PORTRAIT_VARIANTS = {
   thalla: [
-    { id: 'default', cost: 0,    path: '/portraits/thalla/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500,  path: '/portraits/thalla/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
-    { id: '2',       cost: 1500, path: '/portraits/thalla/2.jpg',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
+    { id: 'default', cost: 0,    path: portraitUrl('thalla', 'default'), name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: portraitUrl('thalla', '1'),       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: portraitUrl('thalla', '2'),       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ],
   lomie: [
-    { id: 'default', cost: 0,    path: '/portraits/lomie/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500,  path: '/portraits/lomie/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
-    { id: '2',       cost: 1500, path: '/portraits/lomie/2.jpg',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
+    { id: 'default', cost: 0,    path: portraitUrl('lomie', 'default'), name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: portraitUrl('lomie', '1'),       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: portraitUrl('lomie', '2'),       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ],
   axilin: [
-    { id: 'default', cost: 0,    path: '/portraits/axilin/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500,  path: '/portraits/axilin/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
-    { id: '2',       cost: 1500, path: '/portraits/axilin/2.png',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
+    { id: 'default', cost: 0,    path: portraitUrl('axilin', 'default'), name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: portraitUrl('axilin', '1'),       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: portraitUrl('axilin', '2'),       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ],
   kirt: [
-    { id: 'default', cost: 0,   path: '/portraits/kirt/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500, path: '/portraits/kirt/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } }
+    { id: 'default', cost: 0,   path: portraitUrl('kirt', 'default'), name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500, path: portraitUrl('kirt', '1'),       name: { ru: 'Вариант 1', en: 'Variant 1' } }
   ],
   morga: [
-    { id: 'default', cost: 0, path: '/portraits/morga/default.png', name: { ru: 'Базовый', en: 'Default' } }
+    { id: 'default', cost: 0, path: portraitUrl('morga', 'default'), name: { ru: 'Базовый', en: 'Default' } }
   ],
   dalamar: [
-    { id: 'default', cost: 0,    path: '/portraits/dalamar/default.png', name: { ru: 'Базовый',   en: 'Default'   } },
-    { id: '1',       cost: 500,  path: '/portraits/dalamar/1.jpg',       name: { ru: 'Вариант 1', en: 'Variant 1' } },
-    { id: '2',       cost: 1500, path: '/portraits/dalamar/2.png',       name: { ru: 'Вариант 2', en: 'Variant 2' } }
+    { id: 'default', cost: 0,    path: portraitUrl('dalamar', 'default'), name: { ru: 'Базовый',   en: 'Default'   } },
+    { id: '1',       cost: 500,  path: portraitUrl('dalamar', '1'),       name: { ru: 'Вариант 1', en: 'Variant 1' } },
+    { id: '2',       cost: 1500, path: portraitUrl('dalamar', '2'),       name: { ru: 'Вариант 2', en: 'Variant 2' } }
   ]
 };
 
