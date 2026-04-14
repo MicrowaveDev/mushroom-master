@@ -141,24 +141,26 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
   // --- Sell zone visible ---
   await expect(page.locator('.sell-zone')).toBeVisible();
 
-  // --- Signal ready → roundResult (replay is opt-in) ---
-  // Spec: docs/user-flows.md Flow B Step 3. The post-Ready landing screen is
-  // the round-result summary, NOT the replay. View Replay is opt-in.
+  // --- Signal ready → replay autoplays → inline rewards card ---
+  // Spec: docs/user-flows.md Flow B Step 3. Post-Ready lands directly on
+  // the replay screen (no intermediate round-result). The rewards card
+  // renders inline once the replay finishes, via the [data-testid="replay-rewards"]
+  // element inside .replay-layout.
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
-  await saveShot(page, 'solo-04-round-result.png');
-
-  // [Req 13-B] View Replay button is present on round-result and routes to replay
-  const viewReplayBtn = page.getByRole('button', { name: /view replay|посмотреть реплей/i });
-  await expect(viewReplayBtn).toBeVisible();
-
-  // --- Click View Replay → replay screen → finish → returns to next prep ---
-  await viewReplayBtn.click();
-  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 30000 });
   await assertImagesLoaded(page);
-  await saveShot(page, 'solo-04b-round1-replay.png');
+  await saveShot(page, 'solo-04-round-replay.png');
+
+  // Wait for the replay to finish and the inline rewards card to appear.
   const replayContinueBtn = page.locator('.replay-result-button-full');
   await expect(replayContinueBtn).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('[data-testid="replay-rewards"]')).toBeVisible();
+  await saveShot(page, 'solo-04b-round-rewards.png');
+
+  // Continue button label must be "Продолжить" / "Continue" during an active run.
+  const continueBtnLabel = (await replayContinueBtn.textContent())?.trim() || '';
+  expect(continueBtnLabel).toMatch(/continue|продолжить/i);
+
   await replayContinueBtn.click();
 
   // After replay continue, we land on prep (round 2) or run complete
@@ -190,21 +192,23 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
     await saveShot(page, 'solo-07-persisted-after-reload.png');
 
     // --- Play remaining rounds until run completes ---
-    // Subsequent rounds: ready → roundResult → continue (skip replay) → next prep.
-    // We don't re-screenshot every round; the canonical capture is round 1.
+    // Subsequent rounds: ready → replay (autoplay + inline rewards) →
+    // Continue → next prep. We don't re-screenshot every round; the
+    // canonical capture is round 1.
     for (let round = 0; round < 10; round++) {
       if (!(await page.locator('.prep-screen').isVisible().catch(() => false))) break;
       if (round === 0) await saveShot(page, 'solo-08-mid-round-prep.png');
 
       await page.getByRole('button', { name: /ready|готов/i }).click();
-      // Wait for round-result to appear (NOT replay — replay is opt-in)
+      // Post-Ready lands on replay (or run-complete directly if run ended).
       const settled = await Promise.race([
-        page.locator('.round-result-screen').waitFor({ timeout: 30000 }).then(() => 'roundResult'),
+        page.locator('.replay-layout').waitFor({ timeout: 30000 }).then(() => 'replay'),
         page.locator('.run-complete-screen').waitFor({ timeout: 30000 }).then(() => 'runComplete')
       ]);
       if (settled === 'runComplete') break;
-      // Click "Continue" on round-result to advance — skip the replay this time.
-      await page.getByRole('button', { name: /continue|продолжить/i }).first().click();
+      // Wait for replay to finish, then click Continue to advance.
+      await expect(page.locator('.replay-result-button-full')).toBeVisible({ timeout: 30000 });
+      await page.locator('.replay-result-button-full').click();
       await expect(page.locator('.prep-screen, .run-complete-screen')).toBeVisible({ timeout: 15000 });
     }
   }
@@ -502,22 +506,23 @@ test('round transitions: replay → continue → next prep (not home) while live
   const hud = page.locator('.run-hud');
   await expect(hud).toContainText('1'); // round 1
 
-  // --- Round 1: signal ready → roundResult → click View Replay → replay → continue → round 2 prep ---
-  // Spec: docs/user-flows.md Flow B Steps 3–4. The post-Ready landing screen is roundResult,
-  // not the replay. The user must click "View Replay" to opt into the replay.
+  // --- Round 1: signal ready → replay autoplays → inline rewards → Continue → round 2 prep ---
+  // Spec: docs/user-flows.md Flow B Step 3. Post-Ready lands directly on
+  // the replay screen, which autoplays then renders the rewards card.
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
-  await page.getByRole('button', { name: /view replay|посмотреть реплей/i }).click();
-  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 30000 });
 
-  // Wait for the replay to finish (final button appears at the bottom of replay)
+  // Wait for the replay to finish — the inline rewards card appears alongside
+  // the Continue button.
   const replayActionBtn = page.locator('.replay-result-button-full');
   await expect(replayActionBtn).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('[data-testid="replay-rewards"]')).toBeVisible();
 
-  // The button should say Continue ("Продолжить") because lives remain — NOT "Результат"
+  // The button label must be Continue/Продолжить while the run is still live
+  // (lives > 0, rounds < max). onReplayFinish routes to runComplete automatically
+  // for the final battle — that case is covered by the outer loop below.
   const btnLabel = (await replayActionBtn.textContent())?.trim();
   expect(btnLabel).toMatch(/continue|продолжить/i);
-  expect(btnLabel).not.toMatch(/result|результат/i);
 
   await replayActionBtn.click();
 
@@ -528,8 +533,10 @@ test('round transitions: replay → continue → next prep (not home) while live
   await expect(page.locator('.results-screen')).toHaveCount(0);
 
   // --- Play out remaining rounds until run completes ---
-  // Subsequent rounds use the simpler ready → roundResult → click Continue path
-  // (skip the optional replay). Outcomes are non-deterministic; loop until RunComplete.
+  // Every subsequent round: ready → replay → Continue → next prep, OR
+  // if this was the final battle, Ready resolves directly to runComplete
+  // via onReplayFinish. Outcomes are non-deterministic; loop until
+  // RunComplete or safety counter expires.
   let safetyCounter = 0;
   while (safetyCounter++ < 15) {
     const currentRoundText = await hud.textContent().catch(() => '?');
@@ -539,9 +546,9 @@ test('round transitions: replay → continue → next prep (not home) while live
     }
     await readyBtn.click();
 
-    // Wait for either round-result (round still mid-run) or run-complete (game over)
+    // Post-Ready lands on replay (or run-complete directly if the run ended).
     const settled = await Promise.race([
-      page.locator('.round-result-screen').waitFor({ timeout: 30000 }).then(() => 'roundResult'),
+      page.locator('.replay-layout').waitFor({ timeout: 30000 }).then(() => 'replay'),
       page.locator('.run-complete-screen').waitFor({ timeout: 30000 }).then(() => 'runComplete')
     ]);
 
@@ -551,8 +558,9 @@ test('round transitions: replay → continue → next prep (not home) while live
       return;
     }
 
-    // round-result: click Continue to advance to next prep
-    await page.getByRole('button', { name: /continue|продолжить/i }).first().click();
+    // Replay screen: wait for Continue, click it.
+    await expect(page.locator('.replay-result-button-full')).toBeVisible({ timeout: 30000 });
+    await page.locator('.replay-result-button-full').click();
     await page.waitForTimeout(500);
 
     if (await page.locator('.prep-screen').isVisible().catch(() => false)) continue;
@@ -564,7 +572,7 @@ test('round transitions: replay → continue → next prep (not home) while live
 
     // Unexpected screen — log what we see
     const visibleSections = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('section, .results-screen, .run-complete-screen, .prep-screen, .replay-layout, .round-result-screen'))
+      return Array.from(document.querySelectorAll('section, .results-screen, .run-complete-screen, .prep-screen, .replay-layout'))
         .filter(el => el.offsetParent !== null)
         .map(el => el.className);
     });

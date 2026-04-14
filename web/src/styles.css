@@ -1875,6 +1875,22 @@ select {
   animation: result-pulse 1.6s ease-in-out infinite;
 }
 
+.replay-rewards-card {
+  margin: 12px 0;
+  padding: 14px 16px;
+  text-align: center;
+}
+.replay-rewards-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+}
+.replay-rewards-card .stat-grid {
+  margin-top: 8px;
+}
+.replay-rewards-card .stat-grid + .stat-grid {
+  margin-top: 10px;
+}
+
 @keyframes result-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.75; }
@@ -2668,29 +2684,9 @@ select {
   font-size: 1.1rem;
 }
 
-/* --- Round Result Screen --- */
-.round-result-screen {
-  display: flex;
-  justify-content: center;
-  padding-top: 24px;
-}
-.round-result-card {
-  max-width: 400px;
-  width: 100%;
-  text-align: center;
-}
-.round-result-card h2 {
-  font-size: 1.6rem;
-  margin-bottom: 16px;
-}
+/* --- Round outcome colors (shared with replay-rewards-card heading) --- */
 .result-win { color: #4caf50; }
 .result-loss { color: #e53935; }
-.round-result-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 16px;
-}
 
 /* Level-up notification */
 .level-up-toast {

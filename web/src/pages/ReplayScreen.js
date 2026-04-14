@@ -3,7 +3,7 @@ import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
 export const ReplayScreen = {
   name: 'ReplayScreen',
   props: [
-    'state', 't',
+    'state', 't', 'formatDelta',
     'activeEvent', 'activeSpeech', 'battleStatusText', 'replayFinished',
     'activeReplayState', 'visibleReplayEvents',
     'buildReplayFighter', 'getMushroom', 'loadoutStatsText',
@@ -12,6 +12,33 @@ export const ReplayScreen = {
   emits: ['go-results', 'set-speed'],
   components: {
     ReplayDuel: defineAsyncComponent(() => import('../components/ReplayDuel.js').then(m => m.ReplayDuel))
+  },
+  computed: {
+    // Inline rewards summary — shown under the battle stage once the
+    // replay finishes, but only when we're inside an active run (Flow B
+    // and Flow C). A standalone replay from history (Flow E) has no
+    // gameRunResult set and should not render a rewards card.
+    showInlineRewards() {
+      return this.replayFinished && this.state.gameRun && this.state.gameRunResult?.lastRound;
+    },
+    roundRewards() {
+      return this.state.gameRunResult?.lastRound?.rewards || { spore: 0, mycelium: 0 };
+    },
+    ratingDelta() {
+      const r = this.state.gameRunResult?.lastRound;
+      if (!r || r.ratingAfter == null || r.ratingBefore == null) return null;
+      return r.ratingAfter - r.ratingBefore;
+    },
+    roundOutcome() {
+      return this.state.gameRunResult?.lastRound?.outcome;
+    },
+    continueLabel() {
+      // No active run → standalone replay from history → "Home".
+      // Active run, any state → "Continue". onReplayFinish in main.js
+      // routes to runComplete automatically when the run has ended, so
+      // one label covers mid-run-next-prep and final-battle-to-summary.
+      return this.state.gameRun ? this.t.continueRound : this.t.home;
+    }
   },
   template: `
     <section class="replay-layout">
@@ -39,7 +66,25 @@ export const ReplayScreen = {
           @set-speed="$emit('set-speed', $event)"
         />
       </div>
-      <button v-if="replayFinished" class="primary replay-result-button-full" @click="$emit('go-results')">{{ state.gameRun ? t.continueRound : t.home }}</button>
+      <div v-if="showInlineRewards" class="panel replay-rewards-card" data-testid="replay-rewards">
+        <h3 :class="roundOutcome === 'win' ? 'result-win' : 'result-loss'">
+          {{ roundOutcome === 'win' ? t.roundWin : t.roundLoss }}
+        </h3>
+        <dl class="stat-grid">
+          <div class="stat"><dt>{{ t.spore }}</dt><dd>+{{ roundRewards.spore || 0 }}</dd></div>
+          <div class="stat"><dt>{{ t.mycelium }}</dt><dd>+{{ roundRewards.mycelium || 0 }}</dd></div>
+          <div v-if="ratingDelta != null" class="stat">
+            <dt>{{ t.rating }}</dt>
+            <dd>{{ formatDelta(ratingDelta) }}</dd>
+          </div>
+        </dl>
+        <dl class="stat-grid">
+          <div class="stat"><dt>{{ t.wins }}</dt><dd>{{ state.gameRunResult.player?.wins || 0 }}</dd></div>
+          <div class="stat"><dt>{{ t.lives }}</dt><dd>{{ state.gameRunResult.player?.livesRemaining || 0 }}</dd></div>
+          <div class="stat"><dt>{{ t.coins }}</dt><dd>{{ state.gameRunResult.player?.coins || 0 }}</dd></div>
+        </dl>
+      </div>
+      <button v-if="replayFinished" class="primary replay-result-button-full" @click="$emit('go-results')">{{ continueLabel }}</button>
       <div class="replay-log">
         <button
           v-for="event in visibleReplayEvents" :key="event.replayIndex"

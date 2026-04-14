@@ -230,14 +230,10 @@ test('[Req 12-A, 12-B] challenge mode: combat completed while disconnected → r
 
   // [Req 12-B] After bootstrap, the user must NOT be left staring at a
   // prep screen for round 1 (which they already played and lost/won the
-  // outcome of). Acceptable landings: replay (current pendingReconnect
-  // path) or roundResult. NOT acceptable: prep, home with stale state.
-  const settled = await Promise.race([
-    pageA2.locator('.replay-layout').waitFor({ timeout: 30000 }).then(() => 'replay'),
-    pageA2.locator('.round-result-screen').waitFor({ timeout: 30000 }).then(() => 'roundResult')
-  ]).catch(() => 'unknown');
-
-  expect(['replay', 'roundResult']).toContain(settled);
+  // outcome of). Post-2026-04-14 there is only one acceptable landing:
+  // the replay screen (which shows the inline rewards card once the
+  // replay finishes). The old round-result screen was deleted.
+  await expect(pageA2.locator('.replay-layout')).toBeVisible({ timeout: 30000 });
 
   await pageA2.close();
 });

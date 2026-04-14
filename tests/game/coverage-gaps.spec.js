@@ -357,7 +357,10 @@ test('[Req 12-D] game run state survives page refresh (reconnection)', async ({ 
 
 // --- Req 13-C, 13-D: Post-replay button label ---
 
-test('[Req 13-C] post-replay button shows "Continue" during active game run', async ({ page, request, baseURL }) => {
+test('[Req 13-C] post-Ready lands on replay and shows inline rewards + Continue', async ({ page, request, baseURL }) => {
+  // Flow B Step 3: Ready should navigate directly to the replay screen
+  // (no intermediate round-result), autoplay the battle, and render the
+  // inline rewards card + Continue button once the replay finishes.
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1020, username: 'replay_label_player', name: 'Replay Label' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
@@ -365,21 +368,20 @@ test('[Req 13-C] post-replay button shows "Continue" during active game run', as
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
-  // Start game run → prep → ready → roundResult (new flow per Flow B Step 3)
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
 
-  // Click "View Replay" on the round-result screen → navigate to replay
-  await page.getByRole('button', { name: /view replay|посмотреть реплей/i }).click();
-  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 10000 });
+  // Ready lands DIRECTLY on the replay screen — no round-result screen.
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.round-result-screen')).toHaveCount(0);
 
-  // Wait for replay to finish → button appears
+  // Replay finishes → inline rewards card + Continue button appear.
   const replayBtn = page.locator('.replay-result-button-full');
   await expect(replayBtn).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('[data-testid="replay-rewards"]')).toBeVisible();
 
-  // [Req 13-C] During active run: button should show "Continue" / "Продолжить"
+  // [Req 13-C] During active run: button label is "Continue" / "Продолжить"
   const btnText = await replayBtn.textContent();
   expect(btnText.trim()).toMatch(/continue|продолжить/i);
 });
@@ -416,23 +418,22 @@ test('[Req 13-D] post-replay button shows "Home" for standalone replay from hist
   expect(btnText.trim()).toMatch(/home|домой/i);
 });
 
-// --- Round Result visual regression: .stat-grid must actually render as a grid ---
+// --- Replay-rewards visual regression: .stat-grid must actually render as a grid ---
 
-test('round-result stat-grid resolves to display:grid (not stacked vertical list)', async ({ page, request, baseURL }) => {
+test('replay rewards stat-grid resolves to display:grid (not stacked vertical list)', async ({ page, request, baseURL }) => {
   // Regression guard for a subtle staleness bug: the CSS rules for
-  // `.stat-grid` / `.stat` were scoped under a dead `.player-summary`
-  // parent in web/src/styles.css. Both RoundResultScreen and
-  // RunCompleteScreen render `<dl class="stat-grid">` at the top level,
-  // so the rules never applied and the stats collapsed into an unstyled
-  // vertical <dl>.
+  // `.stat-grid` / `.stat` were originally scoped under a dead
+  // `.player-summary` parent in web/src/styles.css. ReplayScreen and
+  // RunCompleteScreen both render `<dl class="stat-grid">` at the top
+  // level, so the rules never applied and the stats collapsed into an
+  // unstyled vertical <dl>.
   //
-  // An agent reviewing screenshots eventually caught it, but even after
-  // the source was patched the bug persisted for a full session because
-  // web/dist/assets/index-*.css wasn't regenerated — express serves dist,
-  // so the browser kept loading the old CSS. This test is the hard-
-  // failure guard: assert the browser-computed style actually resolves
-  // to display:grid. A missing rule, a scoped rule, a stale dist, or a
-  // renamed class will all fail here.
+  // Even after the source was patched, the bug persisted for a full
+  // session because web/dist/assets/index-*.css wasn't regenerated —
+  // express serves dist, so the browser kept loading the old CSS. This
+  // test is the hard-failure guard: assert the browser-computed style
+  // actually resolves to display:grid at the live page. A missing rule,
+  // a scoped rule, a stale dist, or a renamed class will all fail here.
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1070, username: 'stat_grid_guard', name: 'Stat Grid Guard' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
@@ -446,11 +447,15 @@ test('round-result stat-grid resolves to display:grid (not stacked vertical list
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await page.getByRole('button', { name: /ready|готов/i }).click();
-  await expect(page.locator('.round-result-screen')).toBeVisible({ timeout: 30000 });
 
-  // The round-result screen renders two <dl class="stat-grid"> blocks:
-  // one for round rewards, one for run totals. Both must resolve to grid.
-  const statGrids = page.locator('.round-result-screen .stat-grid');
+  // Ready → replay. Wait for the inline rewards card to appear.
+  await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 30000 });
+  const rewards = page.locator('[data-testid="replay-rewards"]');
+  await expect(rewards).toBeVisible({ timeout: 30000 });
+
+  // The rewards card renders two <dl class="stat-grid"> blocks: one for
+  // round rewards, one for run totals. Both must resolve to grid.
+  const statGrids = rewards.locator('.stat-grid');
   const count = await statGrids.count();
   expect(count).toBeGreaterThanOrEqual(1);
 
@@ -465,7 +470,7 @@ test('round-result stat-grid resolves to display:grid (not stacked vertical list
   // Sanity: at least one .stat child inside renders as a flex column with
   // a background, confirming the full stat-card rule cascade landed, not
   // just the grid container.
-  const firstStat = page.locator('.round-result-screen .stat-grid .stat').first();
+  const firstStat = rewards.locator('.stat-grid .stat').first();
   const statDisplay = await firstStat.evaluate((el) => getComputedStyle(el).display);
   expect(statDisplay).toBe('flex');
 });

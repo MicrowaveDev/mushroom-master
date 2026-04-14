@@ -94,20 +94,19 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       if (data.status === 'completed' || data.status === 'abandoned') {
         state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null };
       }
-      // Spec: docs/user-flows.md Flow B Step 3 — the post-Ready landing screen
-      // is the round result summary, NOT the replay. Replay is opt-in via the
-      // "View Replay" button on the round-result screen. The full replay is
-      // pre-loaded in the background so clicking View Replay is instant.
+      // Spec: docs/user-flows.md Flow B Step 3 — post-Ready lands directly
+      // on the replay screen, which autoplays the battle and then renders
+      // an inline rewards card (Spore/Mycelium/Rating) next to the Continue
+      // button. There is no separate round-result screen — the player sees
+      // the battle happen and gets the rewards in context.
       const battleId = data.lastRound?.battleId;
       if (battleId && loadReplay) {
-        // Pre-fetch the replay payload but DO NOT navigate. We pass a no-op
-        // navigator to loadReplay to suppress its built-in goTo('replay').
-        await loadReplay(battleId, { navigate: false });
-      }
-      if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
+        await loadReplay(battleId);
+      } else if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
+        // No battleId (shouldn't happen) — fall through to the summary.
         goTo('runComplete');
       } else {
-        goTo('roundResult');
+        goTo('prep');
       }
     } catch (error) {
       state.error = error.message || 'Could not resolve round';

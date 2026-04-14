@@ -22,7 +22,6 @@ import { HomeScreen } from './pages/HomeScreen.js';
 import { CharactersScreen } from './pages/CharactersScreen.js';
 import { PrepScreen } from './pages/PrepScreen.js';
 import { ReplayScreen } from './pages/ReplayScreen.js';
-import { RoundResultScreen } from './pages/RoundResultScreen.js';
 import { RunCompleteScreen } from './pages/RunCompleteScreen.js';
 import { FriendsScreen } from './pages/FriendsScreen.js';
 import { LeaderboardScreen } from './pages/LeaderboardScreen.js';
@@ -40,7 +39,7 @@ const App = {
     ArtifactGridBoard, FighterCard, ReplayDuel,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
-    ReplayScreen, RoundResultScreen, RunCompleteScreen,
+    ReplayScreen, RunCompleteScreen,
     FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, SettingsScreen
   },
   setup() {
@@ -346,17 +345,12 @@ const App = {
           @rotate-bag="rotateBag($event)"
         />
 
-        <round-result-screen v-else-if="state.screen === 'roundResult' && state.gameRunResult"
-          :state="state" :t="t" :format-delta="formatDelta"
-          @continue="continueToNextRound" @view-replay="viewRoundReplay($event)"
-        />
-
         <run-complete-screen v-else-if="state.screen === 'runComplete'"
           :state="state" :t="t" @go-home="handleRunComplete"
         />
 
         <replay-screen v-else-if="state.screen === 'replay' && state.currentBattle"
-          :state="state" :t="t"
+          :state="state" :t="t" :format-delta="formatDelta"
           :active-event="activeEvent" :active-speech="activeSpeech" :battle-status-text="battleStatusText"
           :replay-finished="replayFinished" :active-replay-state="activeReplayState" :visible-replay-events="visibleReplayEvents"
           :build-replay-fighter="buildReplayFighter" :get-mushroom="getMushroom" :loadout-stats-text="loadoutStatsText"

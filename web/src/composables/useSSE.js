@@ -40,16 +40,17 @@ export function useSSE(state, goTo, loadReplay = null) {
       try {
         const data = JSON.parse(e.data);
         state.gameRunResult = data;
-        // Pre-load the replay payload so "View Replay" on round-result is instant.
-        const battleId = data.lastRound?.battleId;
-        if (battleId && loadReplay) {
-          try { await loadReplay(battleId, { navigate: false }); } catch { /* ignore */ }
-        }
         if (data.status === 'completed' || data.status === 'abandoned') {
           state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason };
+        }
+        // Spec: docs/user-flows.md Flow B Step 3 / Flow C Step 4 — both
+        // players land on the replay screen directly and see the inline
+        // rewards card when it finishes. No intermediate round-result.
+        const battleId = data.lastRound?.battleId;
+        if (battleId && loadReplay) {
+          try { await loadReplay(battleId); } catch { /* ignore */ }
+        } else if (data.status === 'completed' || data.status === 'abandoned') {
           goTo('runComplete');
-        } else {
-          goTo('roundResult');
         }
       } catch { /* ignore malformed */ }
     });

@@ -165,62 +165,50 @@ Step 2: Prep Screen (Round N)
     - signalReady() called → POST /api/game-run/:id/ready
     - Navigate to replay screen (automatic)
 
-Step 3: Round Result (auto-shown after ready)
-  Screen: roundResult → RoundResultScreen.js
-  Screenshot: screenshots/run/solo-04-round-result.png
-  Condition: state.gameRunResult set automatically after signalReady resolves;
-  navigated by useGameRun.signalReady (solo) or useSSE.round_result handler
-  (challenge). This is the PRIMARY post-battle screen — replay is opt-in.
-  Above the fold (mobile):
-    - Round outcome heading (Victory / Defeat)
-    - Reward summary: spore +N, mycelium +N, rating delta
-    - Run stats HUD: wins W, lives L, coins C
-  Desktop note: All buttons + reward breakdown visible without scroll
-  Sees:
-    - Round outcome (win / loss)
-    - [Req 9-A] Per-round reward breakdown (spore + mycelium)
-    - [Req 10-A] Solo: rating delta from this round
-    - Updated run stats (wins, lives, coins)
-    - "Продолжить" / "Continue" button (always visible)
-    - "Смотреть бой" / "View Replay" button (opt-in)
-  Action: Click "Continue" OR click "View Replay" first
-  Expected:
-    - "Continue" → if run still active: navigate to Step 2 (prep) for next round
-                 → if run ended: navigate to Step 5 (run complete)
-    - "View Replay" → navigate to Step 4 (battle replay), which routes back here
-
-Step 4: Battle Replay (opt-in, accessed via "View Replay")
+Step 3: Battle Replay (auto-shown after ready)
   Screen: replay → ReplayScreen.js
-  Screenshot: screenshots/06-replay.png (mid-replay), screenshots/07-replay-complete.png (finished)
-  Condition: User clicked "View Replay" on the round-result screen, OR opened
-  a standalone replay from history (Flow E).
+  Screenshot: screenshots/run/solo-04-round-replay.png
+  Condition: Post-Ready lands directly on the replay screen. Navigated by
+  useGameRun.signalReady (solo) or useSSE.round_result handler (challenge).
+  This is the PRIMARY post-battle screen — the player sees the battle
+  play out, then a rewards card appears inline when the replay finishes.
+  There is NO intermediate round-result screen.
   Above the fold (mobile):
     - Battle stage (two fighter cards with portraits, names, HP bars)
     - Speed controls (▶ ▶▶ ▶▶▶)
   Below fold on mobile (scroll required):
     - Combat event log entries
+    - Inline rewards card (appears when replay finishes, in-run only)
     - Continue/Home button (appears after replay finishes)
-  Desktop note: Battle stage + event log + button all visible without scroll
-  Sees:
+  Desktop note: Battle stage + rewards card + button visible without scroll
+  Sees (while replay plays):
     - Two fighter cards (left = player, right = opponent)
     - Each card: mushroom portrait, name, HP bar (current / max)
     - [Req 7-C] Ghost opponent has its own character preset + bought items
     - Replay speed controls (▶ ▶▶ ▶▶▶)
     - Step-by-step combat log (scrollable, clickable entries)
     - [Req 6-I] Combat fully server-resolved, replay is read-only
+  Sees (when replay finishes, in-run only — data-testid="replay-rewards"):
+    - Round outcome heading (Victory / Defeat)
+    - [Req 9-A] Per-round reward breakdown (spore + mycelium)
+    - [Req 10-A] Solo: rating delta from this round
+    - Updated run stats (wins, lives, coins)
   Action: Watch replay auto-play (or adjust speed / click log)
   Expected:
-    - [Req 13-A] When replay finishes AND state.gameRun exists:
-      button shows "Продолжить" / "Continue" (returns to next round prep,
-      bypassing the round-result screen since the user already saw it)
+    - [Req 13-A] When replay finishes AND state.gameRun exists AND run active:
+      button shows "Продолжить" / "Continue" → continueToNextRound()
+    - [Req 13-A] When replay finishes AND run ended (status completed/abandoned):
+      button still shows "Продолжить" / "Continue" → routes to runComplete via
+      onReplayFinish (single label covers both mid-run and final-battle cases)
     - [Req 13-A] When replay finishes AND no gameRun (standalone, Flow E):
-      button shows "Домой" / "Home"
+      button shows "Домой" / "Home", NO rewards card renders
   Action: Click "Continue" or "Home"
   Expected:
-    - With active run: continueToNextRound() called → next round prep, OR run-complete
+    - Mid-run: continueToNextRound() called → next round prep
+    - Run ended: navigate to runComplete
     - Standalone: navigate back to home
 
-Step 5: Run Complete (run ended)
+Step 4: Run Complete (run ended)
   Screen: runComplete → RunCompleteScreen.js
   Screenshot: screenshots/run/solo-09-run-complete.png
   Condition: run status = 'completed' or 'abandoned'
@@ -241,12 +229,18 @@ Step 5: Run Complete (run ended)
       spore total, and run-history entry for the just-completed run
 ```
 
-**Flow B summary** (canonical post-2026-04-12):
+**Flow B summary** (canonical post-2026-04-14):
 ```
-home → start game → prep round 1 → ready → roundResult →
-  ↳ continue → prep round 2 → ready → roundResult → ... →
+home → start game → prep round 1 → ready → replay (autoplay) →
+  ↳ replay finishes: inline rewards card + Continue button →
+  ↳ continue → prep round 2 → ready → replay → ... →
   ↳ run complete (max losses or max rounds) → home
-optional branch from any roundResult: → replay → continue/home
+
+The replay screen IS the post-Ready landing screen. There is no separate
+round-result screen — the rewards card is rendered inline on the replay
+once the battle finishes, and a single Continue button either advances
+to the next prep round or routes to runComplete (via onReplayFinish)
+when the run ended.
 ```
 
 ---
@@ -285,10 +279,13 @@ Step 3: Challenge Prep
     - Round resolves when both ready → replay
 
 Step 4: Challenge Resolution
-  Same as Flow B Steps 3–4, except:
+  Same as Flow B Step 3 (replay autoplay + inline rewards card), except:
     - [Req 8-D] If one player hits 5 losses, the other wins
     - [Req 8-E] Rating updated once at run end (batch Elo), not per round
     - [Req 9-C] Winner receives +10 spore, +5 mycelium bonus
+    - Both players are navigated to the replay screen simultaneously by
+      the useSSE.round_result handler (the server pushes the event to
+      both connected clients once both players have signaled ready).
 ```
 
 ---
@@ -413,8 +410,10 @@ Step 1: Player disconnects mid-run
 Step 2: Player reopens app
   Expected:
     - refreshBootstrap detects activeGameRun
-    - [Req 12-B] If combat completed while away, player sees round result
-    - Navigate to prep (if mid-round) or roundResult (if round resolved)
+    - [Req 12-B] If combat completed while away (challenge mode), the
+      missed battleId is loaded and the player lands on the replay
+      screen with the rewards card already visible.
+    - Navigate to prep (if mid-round) or replay (if round resolved)
 
 Step 3: Challenge idle timeout
   Expected:
@@ -453,8 +452,7 @@ Step 1: Open Settings
 | `home` | HomeScreen.js | Login, run complete, character re-pick |
 | `characters` | CharactersScreen.js | Onboarding, home |
 | `prep` | PrepScreen.js | First-pick auto-start, continue round, resume |
-| `roundResult` | RoundResultScreen.js | After signalReady (primary post-battle screen) |
-| `replay` | ReplayScreen.js | "View Replay" from roundResult or history (opt-in) |
+| `replay` | ReplayScreen.js | Post-Ready (primary post-battle screen; autoplays then shows inline rewards card), history entry click, reconnection |
 | `runComplete` | RunCompleteScreen.js | Run ends (any reason) |
 | `history` | (inline main.js) | Home |
 | `friends` | FriendsScreen.js | Home |
@@ -465,3 +463,4 @@ Step 1: Open Settings
 | ~~`artifacts`~~ | ~~ArtifactsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
 | ~~`battle`~~ | ~~BattlePrepScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
 | ~~`results`~~ | ~~ResultsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
+| ~~`roundResult`~~ | ~~RoundResultScreen.js~~ | **DELETED 2026-04-14 — rewards card now rendered inline on the replay screen** |

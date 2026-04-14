@@ -88,15 +88,10 @@ export function useReplay(state, goTo, getMushroom) {
     }
   }
 
-  async function viewRoundReplay(battleId) {
-    if (!battleId) return;
-    await loadReplay(battleId);
-  }
-
   return {
     activeEvent, activeSpeech, battleStatusText, replayFinished,
     activeReplayState, visibleReplayEvents,
-    stopReplay, autoplayReplay, loadReplay, viewRoundReplay,
+    stopReplay, autoplayReplay, loadReplay,
     setReplaySpeed
   };
 }
