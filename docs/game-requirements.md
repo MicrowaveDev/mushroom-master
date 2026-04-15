@@ -74,6 +74,17 @@ Last verified against code: 2026-04-13.
 - **4-G.** Manual refresh cost: **1 coin** for refreshes 1–3 in the round, **2 coins** for refresh 4+ (resets each round).
 - **4-H.** First refresh is **not free**.
 - **4-I.** Refresh count limited only by available coins.
+- **4-P.** Some artifacts are **character shop items**: lore-based artifacts associated with a specific mushroom and gated by `requiredLevel` in `game-data.js`.
+- **4-Q.** A character shop item is eligible for a player's shop only when the player's **active mushroom** for the run has `level >= requiredLevel`.
+- **4-R.** In **solo mode**, if the active mushroom has at least one eligible character shop item, each generated 5-item shop offer must include **at least one** eligible character shop item.
+- **4-S.** In **challenge mode**, character shop-item eligibility is capped by the **lower** of the two active-mushroom levels in the run. Equivalently:
+  - `effectiveChallengeLevelCap = min(viewerLevel, opponentLevel)`
+  - a character shop item is eligible only when `requiredLevel <= effectiveChallengeLevelCap`
+- **4-T.** The character-item eligibility rules in [Req 4-Q]–[Req 4-S] apply consistently to:
+  - the initial round-1 shop offer
+  - each between-round shop offer
+  - each manual refresh result
+- **4-U.** Challenge-mode shop offers remain **viewer-scoped** even when opponent level is used as an eligibility cap. The client may not receive the opponent's private shop offer or hidden future eligible item pool.
 
 ### Selling
 
@@ -278,4 +289,4 @@ Last verified against code: 2026-04-13.
 
 - **14-G.** Each mushroom has exactly **3 starter preset variants** defined in `STARTER_PRESET_VARIANTS` (in `app/server/game-data.js`). The first is always `id: 'default'` with `requiredLevel: 0`. Variants are unlocked when `computeLevel(mycelium).level >= variant.requiredLevel`. All variants use two price-1 items so the total preset cost stays at 2, satisfying the `[Req 4-N]` budget ceiling. The active preset is stored in `player_mushrooms.active_preset` (default `'default'`). `startGameRun` reads the active preset and seeds its two items at `(0,0)` and `(1,0)` in round 1 instead of the character's signature default. If the stored preset id is unknown it falls back to `default` without error. `getPlayerState` returns `presets[]` per mushroom, each with an `unlocked` boolean and `activePreset`. `PUT /api/mushroom/:id/preset { presetId }` validates the level gate and persists the choice; it returns 403 if level is too low, 400 for an unknown preset id, and 404 for an unknown mushroom. Ghosts always receive the character's default preset regardless of player selection.
 
-- **14-H.** Mycelium accumulation and mushroom level are **cosmetic-only**. Earning mycelium and advancing levels must not change: combat stats (health, attack, speed, defense), passive or active ability behavior, shop affinity weights, ghost opponent budget or difficulty, or any other gameplay mechanic. The exhaustive list of player-facing effects of mycelium accumulation is: level number, tier badge, portrait variant unlocks ([Req 14-F]), starter preset variant unlocks ([Req 14-G]), and wiki section unlocks ([Req 14-D]). Any future feature that grants a stat bonus, ability change, or mechanical advantage from mycelium or level must update this requirement first.
+- **14-H.** Mycelium accumulation and mushroom level are **progression-only, not stat-scaling**. Earning mycelium and advancing levels must not change: combat stats (health, attack, speed, defense), passive or active ability behavior, shop affinity weights, ghost opponent budget or difficulty, or any direct numerical combat modifier. The exhaustive list of player-facing effects of mycelium accumulation is: level number, tier badge, portrait variant unlocks ([Req 14-F]), starter preset variant unlocks ([Req 14-G]), wiki section unlocks ([Req 14-D]), and character shop-item eligibility ([Req 4-P]–[Req 4-T]). Any future feature that grants a stat bonus, ability change, or other progression effect outside this list must update this requirement first.
