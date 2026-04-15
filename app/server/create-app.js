@@ -633,7 +633,13 @@ export async function createApp() {
     requireRunMembership,
     ...runMutationGuards,
     asyncRoute(async (req, res) => {
-      const data = await sellRunItem(req.user.id, req.params.id, req.body.artifactId);
+      // Accept either {id} (row-id target, preferred for duplicate safety)
+      // or {artifactId} (legacy path — picks the last-added matching row).
+      // See docs/client-row-id-refactor.md.
+      const target = req.body.id
+        ? { id: req.body.id, artifactId: req.body.artifactId || null }
+        : req.body.artifactId;
+      const data = await sellRunItem(req.user.id, req.params.id, target);
       res.json({ success: true, data });
     })
   );

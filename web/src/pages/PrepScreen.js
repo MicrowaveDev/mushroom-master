@@ -72,7 +72,7 @@ export const PrepScreen = {
             class="container-item"
             draggable="true"
             @click="$emit('auto-place', artifact.id)"
-            @dragstart="$emit('container-drag-start', artifact.id, $event)"
+            @dragstart="$emit('container-drag-start', { artifactId: artifact.id, rowId: artifact.rowId }, $event)"
             @dragend="$emit('drag-end')"
             :data-artifact-id="artifact.id"
           >
@@ -123,18 +123,18 @@ export const PrepScreen = {
         />
         <div v-if="state.activeBags.length" class="active-bags-bar">
           <span
-            v-for="bagId in state.activeBags"
-            :key="bagId"
+            v-for="bag in state.activeBags"
+            :key="bag.id || bag.artifactId"
             class="active-bag-chip"
-            :style="{ borderColor: getArtifact(bagId)?.color || '#888' }"
+            :style="{ borderColor: getArtifact(bag.artifactId)?.color || '#888' }"
           >
-            {{ getArtifact(bagId)?.name?.[state.lang] || bagId }}
+            {{ getArtifact(bag.artifactId)?.name?.[state.lang] || bag.artifactId }}
             <button
-              v-if="getArtifact(bagId)?.width !== getArtifact(bagId)?.height"
+              v-if="getArtifact(bag.artifactId)?.width !== getArtifact(bag.artifactId)?.height"
               class="active-bag-action"
-              @click="$emit('rotate-bag', bagId)"
+              @click="$emit('rotate-bag', bag.artifactId)"
             >↻</button>
-            <button class="active-bag-action" @click="$emit('deactivate-bag', bagId)">✕</button>
+            <button class="active-bag-action" @click="$emit('deactivate-bag', bag.artifactId)">✕</button>
           </span>
         </div>
         <div v-if="state.builderItems.length" class="artifact-inventory-footer">

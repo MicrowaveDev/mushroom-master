@@ -335,7 +335,13 @@ test('[Req 4-K, 11-A] item bought in round 1 and sold in round 2 refunds at half
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
   ]);
   const active = await getActiveGameRun(playerId);
-  const artifactId = active.shopOffer.find((id) => id !== 'spore_needle') || active.shopOffer[0];
+  // Filter to non-bag artifacts only: the test UPDATEs the purchased row
+  // to (1,0) on the main grid below, and validateGridItems rejects bags
+  // with grid coordinates (they live in the active-bags bar). Picking a
+  // random shop artifact used to flake when the shop rolled a bag.
+  const artifactId = active.shopOffer.find(
+    (id) => id !== 'spore_needle' && getArtifactById(id)?.family !== 'bag'
+  ) || active.shopOffer.find((id) => getArtifactById(id)?.family !== 'bag');
   const artifact = getArtifactById(artifactId);
   const originalPrice = getArtifactPrice(artifact);
   const expectedHalfPrice = Math.max(1, Math.floor(originalPrice / 2));
@@ -397,7 +403,12 @@ test('[Req 4-J, 4-K] same-round sell vs later-round sell: full vs half price (pa
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
   ]);
   const activeA = await getActiveGameRun(a.playerId);
-  const artifactA = activeA.shopOffer.find((id) => id !== 'spore_needle') || activeA.shopOffer[0];
+  // Non-bag only — see the comment on the sibling test. Same-round sell
+  // path doesn't mutate the grid, but the later-round half below relies on
+  // a UPDATE that would trip the bag validator.
+  const artifactA = activeA.shopOffer.find(
+    (id) => id !== 'spore_needle' && getArtifactById(id)?.family !== 'bag'
+  ) || activeA.shopOffer.find((id) => getArtifactById(id)?.family !== 'bag');
   const priceA = getArtifactPrice(getArtifactById(artifactA));
   await buyRunShopItem(a.playerId, a.run.id, artifactA);
   const sellA = await sellRunItem(a.playerId, a.run.id, artifactA);
@@ -413,7 +424,9 @@ test('[Req 4-J, 4-K] same-round sell vs later-round sell: full vs half price (pa
     { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
   ]);
   const activeB = await getActiveGameRun(b.playerId);
-  const artifactB = activeB.shopOffer.find((id) => id !== 'spore_needle') || activeB.shopOffer[0];
+  const artifactB = activeB.shopOffer.find(
+    (id) => id !== 'spore_needle' && getArtifactById(id)?.family !== 'bag'
+  ) || activeB.shopOffer.find((id) => getArtifactById(id)?.family !== 'bag');
   const priceB = getArtifactPrice(getArtifactById(artifactB));
   const expectedHalfB = Math.max(1, Math.floor(priceB / 2));
   await buyRunShopItem(b.playerId, b.run.id, artifactB);

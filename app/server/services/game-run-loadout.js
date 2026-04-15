@@ -120,6 +120,31 @@ export async function deleteLoadoutItem(client, itemId) {
 }
 
 /**
+ * Fetch + delete a single row by its primary key, scoped to the
+ * (gameRunId, playerId, roundNumber) the caller is allowed to mutate.
+ * Returns the row's artifactId and purchased_round for the sell-refund
+ * logic, or null if the id doesn't match an owned row in the current
+ * round. See docs/client-row-id-refactor.md Phase 1.
+ */
+export async function deleteLoadoutItemByIdScoped(client, { rowId, gameRunId, playerId, roundNumber }) {
+  const rows = await q(client,
+    `SELECT id, artifact_id, purchased_round, bag_id
+     FROM game_run_loadout_items
+     WHERE id = $1 AND game_run_id = $2 AND player_id = $3 AND round_number = $4`,
+    [rowId, gameRunId, playerId, roundNumber]
+  );
+  if (!rows.rowCount) return null;
+  const row = rows.rows[0];
+  await deleteLoadoutItem(client, row.id);
+  return {
+    id: row.id,
+    artifactId: row.artifact_id,
+    purchasedRound: row.purchased_round,
+    bagId: row.bag_id || null
+  };
+}
+
+/**
  * Delete all current-round rows matching an artifact_id (used when sell is
  * called by artifact_id rather than item_id — picks the most recently added
  * one for fair refund calculation).
@@ -164,9 +189,13 @@ export async function insertRefund(client, { gameRunId, playerId, roundNumber, a
 
 /**
  * Bridge helper: apply placements from a "saveArtifactLoadout" batch payload
- * onto the new table's current-round rows. The payload contains artifact_id
- * + x/y + bag_id; we match rows in the new table by artifact_id in sort order
- * (to handle duplicates correctly).
+ * onto the new table's current-round rows.
+ *
+ * Payload entries may carry an `id` (loadout row id) — when present, that
+ * row is targeted directly, which disambiguates duplicates cleanly. Legacy
+ * entries without `id` fall back to the original sort-order bucket-shift
+ * match by artifactId, which is still correct when the client state hasn't
+ * drifted. See docs/client-row-id-refactor.md.
  *
  * Used by the legacy save path during the transition (Steps 2-7). Removed
  * once the client moves to granular place/unplace endpoints (Step 7).
@@ -192,12 +221,40 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
   for (const [artifactId, bucket] of byArtifact.entries()) {
     claimed.set(artifactId, [...bucket]);
   }
+  // Track which row ids were already consumed by an id-based match so the
+  // sort-order fallback doesn't double-claim them for a later entry that
+  // only carries an artifactId.
+  const consumedRowIds = new Set();
   const updates = [];
   for (const legacy of legacyItems) {
-    const bucket = claimed.get(legacy.artifactId);
-    if (!bucket || bucket.length === 0) continue;
-    const row = bucket.shift();
-    const proposed = projectedById.get(row.id);
+    let row = null;
+    if (legacy.id && projectedById.has(legacy.id) && !consumedRowIds.has(legacy.id)) {
+      row = projectedById.get(legacy.id);
+      consumedRowIds.add(legacy.id);
+      // Remove this exact row from the artifact bucket so the fallback
+      // path can't re-match it for a sibling entry that lacks an id.
+      const bucket = claimed.get(row.artifactId);
+      if (bucket) {
+        const idx = bucket.findIndex((r) => r.id === legacy.id);
+        if (idx >= 0) bucket.splice(idx, 1);
+      }
+    } else {
+      const bucket = claimed.get(legacy.artifactId);
+      if (!bucket || bucket.length === 0) continue;
+      // Skip rows that were already consumed by an earlier id-based entry.
+      let picked = null;
+      while (bucket.length > 0) {
+        const candidate = bucket.shift();
+        if (!consumedRowIds.has(candidate.id)) {
+          picked = candidate;
+          consumedRowIds.add(candidate.id);
+          break;
+        }
+      }
+      if (!picked) continue;
+      row = projectedById.get(picked.id);
+    }
+    const proposed = row;
     proposed.x = Number(legacy.x ?? -1);
     proposed.y = Number(legacy.y ?? -1);
     proposed.width = Number(legacy.width ?? row.width);

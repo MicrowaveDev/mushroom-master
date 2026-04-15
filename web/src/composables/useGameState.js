@@ -26,16 +26,23 @@ export function useGameState(state) {
   const shopArtifacts = computed(() =>
     state.shopOffer.map((id) => getArtifact(id)).filter(Boolean)
   );
-  // containerItems is a string[] of artifactIds and may contain duplicates
-  // (the player can own two moss_pouches, two burning_caps, etc.). Emit a
-  // stable composite key per slot so Vue's v-for doesn't collide on
-  // duplicate artifactIds. The key is read by PrepScreen via `instanceKey`.
+  // containerItems is Array<{ id, artifactId }> and may contain duplicates
+  // (the player can own two moss_pouches, two burning_caps, etc.). Emit
+  // each visible slot with the artifact definition spread in, plus the
+  // slot's server row id under `rowId` (NOT `id`, to avoid clobbering the
+  // artifact catalogue id), plus a stable `instanceKey` for Vue's v-for.
+  // PrepScreen passes `{ rowId, artifactId }` back as the sell/unplace
+  // target so downstream composables can disambiguate duplicates.
   const containerArtifacts = computed(() =>
     state.containerItems
-      .map((id, idx) => {
-        const artifact = getArtifact(id);
+      .map((slot, idx) => {
+        const artifact = getArtifact(slot.artifactId);
         if (!artifact) return null;
-        return { ...artifact, instanceKey: `${id}#${idx}` };
+        return {
+          ...artifact,
+          rowId: slot.id || null,
+          instanceKey: slot.id || `${slot.artifactId}#${idx}`
+        };
       })
       .filter(Boolean)
   );

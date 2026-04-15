@@ -68,30 +68,59 @@ function makeShop(state) {
   return useShop(state, getArtifact, () => {}, () => {});
 }
 
+// Monotonic row-id generator for test fixtures. Mimics the server's
+// unique-per-row id so the composable can thread it through state the
+// same way real code does. Reset at the start of each test via
+// makeFreshState so duplicates don't collide across tests.
+let nextRowIdSeed = 0;
+function makeRowId() {
+  nextRowIdSeed += 1;
+  return `grlitem_test_${nextRowIdSeed}`;
+}
+
+// Seed a container slot so activateBag / placeFromContainer have
+// something to consume. Returns the row id on the slot.
+function seedContainer(state, artifactId) {
+  const rowId = makeRowId();
+  state.containerItems = [...state.containerItems, { id: rowId, artifactId }];
+  return rowId;
+}
+
 // Drop an item from the container into a specific grid cell via the real
 // onInventoryCellDrop handler (same code path as a UI drag). The handler
 // reads draggingArtifactId / draggingSource, so we set them like the real
-// drag-start would.
+// drag-start would. Appends a slot with a synthetic row id so the
+// threading assertions can see it land on the placed builderItem.
 function dropFromContainer(shop, state, artifactId, x, y) {
-  state.containerItems = [...state.containerItems, artifactId];
+  const rowId = makeRowId();
+  state.containerItems = [...state.containerItems, { id: rowId, artifactId }];
   state.draggingArtifactId = artifactId;
   state.draggingSource = 'container';
   shop.onInventoryCellDrop({ x, y });
   state.draggingArtifactId = '';
   state.draggingSource = '';
+  return rowId;
 }
 
 test('[regression] deactivateBag blocks when a later bag contains items', () => {
   const state = makeFreshState();
   const shop = makeShop(state);
 
+  // Seed both bags into the container so activateBag can consume them.
+  seedContainer(state, 'moss_pouch');
+  seedContainer(state, 'amber_satchel');
+
   // Activate moss_pouch first → occupies row 3 (startRow=INVENTORY_ROWS=3, rowCount=1).
   shop.activateBag('moss_pouch');
-  assert.deepEqual(state.activeBags, ['moss_pouch']);
+  assert.equal(state.activeBags.length, 1);
+  assert.equal(state.activeBags[0].artifactId, 'moss_pouch');
 
   // Activate amber_satchel second → occupies rows 4 and 5 (startRow=4, rowCount=2).
   shop.activateBag('amber_satchel');
-  assert.deepEqual(state.activeBags, ['moss_pouch', 'amber_satchel']);
+  assert.deepEqual(
+    state.activeBags.map((b) => b.artifactId),
+    ['moss_pouch', 'amber_satchel']
+  );
   assert.equal(shop.effectiveRows(), 6); // 3 grid + 1 moss_pouch + 2 amber_satchel
 
   // Drop bark_plate into amber_satchel's LAST row (y=5). This is the
@@ -113,7 +142,7 @@ test('[regression] deactivateBag blocks when a later bag contains items', () => 
   // With the fix: the deactivation is blocked because there's an item at
   // y>=3 (i.e. in this bag's row OR any later bag's rows).
   assert.deepEqual(
-    state.activeBags,
+    state.activeBags.map((b) => b.artifactId),
     ['moss_pouch', 'amber_satchel'],
     'deactivation must be blocked while a later bag holds items'
   );
@@ -130,7 +159,8 @@ test('[regression] rotateBag blocks when a later bag contains items', () => {
   const state = makeFreshState();
   const shop = makeShop(state);
 
-  // Same setup: moss_pouch (1 row) then amber_satchel (2 rows).
+  seedContainer(state, 'moss_pouch');
+  seedContainer(state, 'amber_satchel');
   shop.activateBag('moss_pouch');
   shop.activateBag('amber_satchel');
   dropFromContainer(shop, state, 'bark_plate', 0, 5);
@@ -158,6 +188,8 @@ test('deactivateBag still works when no downstream items exist', () => {
   const state = makeFreshState();
   const shop = makeShop(state);
 
+  seedContainer(state, 'moss_pouch');
+  seedContainer(state, 'amber_satchel');
   shop.activateBag('moss_pouch');
   shop.activateBag('amber_satchel');
   // Intentionally no dropFromContainer — both bags are empty.
@@ -166,8 +198,11 @@ test('deactivateBag still works when no downstream items exist', () => {
   shop.deactivateBag('moss_pouch');
 
   // Happy path: still allowed, moss_pouch moves back to the container.
-  assert.deepEqual(state.activeBags, ['amber_satchel']);
-  assert.ok(state.containerItems.includes('moss_pouch'));
+  assert.deepEqual(
+    state.activeBags.map((b) => b.artifactId),
+    ['amber_satchel']
+  );
+  assert.ok(state.containerItems.some((s) => s.artifactId === 'moss_pouch'));
   assert.equal(state.error, '');
 });
 
@@ -178,6 +213,7 @@ test('onInventoryCellDrop (source=inventory) rejects drops into disabled bag cel
   // moss_pouch exposes cols=2 (not the full 3). Place bark_plate into its
   // valid col=0 first, then try to move it to col=2 — which is a disabled
   // cell inside the bag row.
+  seedContainer(state, 'moss_pouch');
   shop.activateBag('moss_pouch');
   dropFromContainer(shop, state, 'bark_plate', 0, 3);
   const landed = state.builderItems.find((i) => i.artifactId === 'bark_plate');
@@ -231,7 +267,7 @@ test('[regression] placeFromContainer with a duplicate preserves the already-pla
 
   // Container must have had exactly one bark_plate removed, not all of them.
   assert.equal(
-    state.containerItems.filter((id) => id === 'bark_plate').length,
+    state.containerItems.filter((s) => s.artifactId === 'bark_plate').length,
     0
   );
 });
@@ -241,7 +277,8 @@ test('[regression] placeFromContainer pops only one duplicate when multiple are 
   const shop = makeShop(state);
 
   // Two bark_plates sitting in the container.
-  state.containerItems = ['bark_plate', 'bark_plate'];
+  seedContainer(state, 'bark_plate');
+  seedContainer(state, 'bark_plate');
 
   // Drop one onto the grid.
   state.draggingArtifactId = 'bark_plate';
@@ -253,7 +290,7 @@ test('[regression] placeFromContainer pops only one duplicate when multiple are 
   // Exactly ONE bark_plate must remain in the container. The old code
   // used `.filter(id => id !== 'bark_plate')` which would empty it.
   assert.equal(
-    state.containerItems.filter((id) => id === 'bark_plate').length,
+    state.containerItems.filter((s) => s.artifactId === 'bark_plate').length,
     1,
     'one duplicate must still sit in the container'
   );
@@ -281,7 +318,7 @@ test('[regression] unplaceToContainer(item) returns only the clicked duplicate',
   assert.equal(remaining[0].x, 0);
   assert.equal(remaining[0].y, 2);
   assert.equal(
-    state.containerItems.filter((id) => id === 'bark_plate').length,
+    state.containerItems.filter((s) => s.artifactId === 'bark_plate').length,
     1,
     'exactly one bark_plate must land in the container'
   );
@@ -308,6 +345,110 @@ test('[regression] dragging one duplicate in the grid moves only that copy', () 
   assert.ok(coords.has('2,0'), 'untouched bark_plate must stay at (2,0)');
   assert.ok(coords.has('1,2'), 'dragged bark_plate must land at (1,2)');
   assert.ok(!coords.has('0,2'), 'dragged bark_plate must leave its old cell');
+});
+
+// ---------------------------------------------------------------------------
+// Row-id threading (docs/client-row-id-refactor.md Phase 2 acceptance tests).
+// These pin the invariant that the server's loadout row id stays attached to
+// each state slot across every client-side mutation. Before the refactor,
+// the client dropped the id on the floor during hydration and re-derived
+// item identity from artifactId — which silently collapsed duplicates.
+// ---------------------------------------------------------------------------
+
+test('[row-id] placeFromContainer threads the row id onto the placed builderItem', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  const rowId = seedContainer(state, 'bark_plate');
+
+  state.draggingArtifactId = 'bark_plate';
+  state.draggingSource = 'container';
+  shop.onInventoryCellDrop({ x: 2, y: 0 });
+  state.draggingArtifactId = '';
+  state.draggingSource = '';
+
+  const placed = state.builderItems.find((i) => i.x === 2 && i.y === 0);
+  assert.ok(placed);
+  assert.equal(placed.id, rowId, 'placed builderItem must carry the row id from the container slot');
+});
+
+test('[row-id] unplaceToContainer preserves the row id on the returned container slot', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  const rowId = seedContainer(state, 'bark_plate');
+
+  // Place then immediately unplace via click.
+  state.draggingArtifactId = 'bark_plate';
+  state.draggingSource = 'container';
+  shop.onInventoryCellDrop({ x: 2, y: 0 });
+  state.draggingArtifactId = '';
+  state.draggingSource = '';
+  const placed = state.builderItems.find((i) => i.x === 2 && i.y === 0);
+  shop.unplaceToContainer(placed);
+
+  const slot = state.containerItems.find((s) => s.artifactId === 'bark_plate');
+  assert.ok(slot);
+  assert.equal(slot.id, rowId, 'row id must ride along from grid back to container');
+});
+
+test('[row-id] activateBag / deactivateBag keep the bag row id attached', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  const rowId = seedContainer(state, 'moss_pouch');
+
+  shop.activateBag('moss_pouch');
+  assert.equal(state.activeBags.length, 1);
+  assert.equal(state.activeBags[0].id, rowId, 'active bag must carry the server row id');
+
+  shop.deactivateBag('moss_pouch');
+  const slot = state.containerItems.find((s) => s.artifactId === 'moss_pouch');
+  assert.ok(slot);
+  assert.equal(slot.id, rowId, 'row id must survive the round-trip through activeBags');
+});
+
+test('[row-id] dragging a placed item to a new cell preserves its row id', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  const rowId = seedContainer(state, 'bark_plate');
+  dropFromContainer(shop, state, 'bark_plate', 2, 0);
+  const placed = state.builderItems.find((i) => i.x === 2 && i.y === 0 && i.artifactId === 'bark_plate');
+  // dropFromContainer seeds its own row id for the dropped copy, so the
+  // one we placed earlier matches against the seedContainer row id first
+  // if the row ids are routed correctly.
+  void rowId; // anchor the intent of this test — row id is the placed.id
+
+  shop.onInventoryPieceDragStart({ item: placed });
+  shop.onInventoryCellDrop({ x: 2, y: 1 });
+  shop.onDragEndAny();
+
+  const moved = state.builderItems.find((i) => i.artifactId === 'bark_plate' && i.x === 2 && i.y === 1);
+  assert.ok(moved, 'bark_plate must land at (2,1)');
+  assert.equal(moved.id, placed.id, 'drag must preserve the row id across the move');
+});
+
+test('[row-id] rotatePlacedArtifact preserves the row id on the rotated instance', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'spark_shard');
+  dropFromContainer(shop, state, 'spark_shard', 2, 0);
+  const placedBefore = state.builderItems.find((i) => i.artifactId === 'spark_shard');
+  const rowId = placedBefore.id;
+  assert.ok(rowId, 'sanity: placed item must carry a row id');
+
+  // spark_shard lands at (2,0) as 1×2 (horizontal 2×1 would be OOB),
+  // occupying (2,0) and (2,1). Rotating to 2×1 needs (2,0) and (3,0),
+  // which is OOB — it'll set state.error and skip. So we use a different
+  // position where rotation succeeds.
+  // Re-do with (0,1) placement: landed as 2×1 there.
+  state.builderItems = [];
+  seedContainer(state, 'spark_shard');
+  dropFromContainer(shop, state, 'spark_shard', 0, 1);
+  const placed = state.builderItems.find((i) => i.artifactId === 'spark_shard' && i.x === 0 && i.y === 1);
+  const placedRowId = placed.id;
+
+  shop.rotatePlacedArtifact(placed);
+
+  const rotated = state.builderItems.find((i) => i.artifactId === 'spark_shard' && i.x === 0 && i.y === 1);
+  assert.equal(rotated.id, placedRowId, 'rotation must preserve the row id');
 });
 
 test('[regression] rotatePlacedArtifact rotates only the targeted duplicate', () => {

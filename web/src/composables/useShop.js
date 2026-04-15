@@ -16,15 +16,20 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
   }
 
   function effectiveRows() {
-    return INVENTORY_ROWS + state.activeBags.reduce((sum, id) => sum + bagRowCount(id), 0);
+    return INVENTORY_ROWS + state.activeBags.reduce((sum, bag) => sum + bagRowCount(bag.artifactId), 0);
   }
 
   function bagForRow(row) {
     let r = INVENTORY_ROWS;
-    for (const bagId of state.activeBags) {
-      const count = bagRowCount(bagId);
+    for (const bag of state.activeBags) {
+      const count = bagRowCount(bag.artifactId);
       if (row >= r && row < r + count) {
-        return { bagId, startRow: r, rowCount: count, cols: bagLayout(bagId).cols };
+        return {
+          bagId: bag.artifactId,
+          startRow: r,
+          rowCount: count,
+          cols: bagLayout(bag.artifactId).cols
+        };
       }
       r += count;
     }
@@ -39,7 +44,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
   }
 
   function rotateBag(bagId) {
-    if (!state.activeBags.includes(bagId)) return;
+    if (!state.activeBags.some((b) => b.artifactId === bagId)) return;
     const bag = getArtifact(bagId);
     if (!bag || bag.width === bag.height) return;
     // Rotation changes this bag's rowCount, shifting later bags up or down.
@@ -47,9 +52,9 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     // rationale as deactivateBag. Forces the player to empty downstream
     // bags first so their item y coords stay in sync with activeBags.
     let startRow = INVENTORY_ROWS;
-    for (const id of state.activeBags) {
-      if (id === bagId) break;
-      startRow += bagRowCount(id);
+    for (const b of state.activeBags) {
+      if (b.artifactId === bagId) break;
+      startRow += bagRowCount(b.artifactId);
     }
     const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
     if (itemsBelowThisBag.length) {
@@ -63,14 +68,15 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     }
   }
 
-  // Build the next builderItems array for placing a NEW (candidate) item
-  // onto the grid. Used by container→grid flows only — never by inventory
-  // moves. Must NOT filter existing items by artifactId: the player can
-  // legitimately own multiple copies of the same artifact (Phase 2 in
-  // solo-run-scenario.test.js), and filtering would silently delete any
-  // already-placed duplicate from the grid. Check collisions against all
-  // existing items; return null if the candidate doesn't fit.
-  function normalizePlacement(artifact, x, y, width, height) {
+  // Build the next builderItems array for placing a candidate item onto the
+  // grid. Used by container→grid flows only — never by inventory moves.
+  // Does not filter by artifactId: the player can legitimately own multiple
+  // copies and filtering would silently delete duplicates. Collision checks
+  // run against every existing item; returns null if the candidate doesn't
+  // fit. The `rowId` argument is the loadout row id from the container
+  // slot; it lives on the placed builderItem so downstream ops (sell,
+  // drag, rotate) can target the exact server row.
+  function normalizePlacement(artifact, x, y, width, height, rowId = null) {
     const w = width || artifact.width;
     const h = height || artifact.height;
     if (x + w > INVENTORY_COLUMNS || y + h > effectiveRows()) return null;
@@ -81,27 +87,39 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
         if (isCellDisabled(x + dx, y + dy)) return null;
       }
     }
-    const candidate = { artifactId: artifact.id, x, y, width: w, height: h };
+    const candidate = { id: rowId, artifactId: artifact.id, x, y, width: w, height: h };
     return [...state.builderItems, candidate];
   }
 
-  // Remove the first occurrence of `artifactId` from containerItems.
-  // Using `.filter(id => id !== artifactId)` would delete every duplicate,
-  // which is the same identity bug normalizePlacement used to have.
+  // Remove the first slot matching `artifactId` from containerItems and
+  // return both the next array and the popped slot. The slot object
+  // carries the loadout row id so the caller can thread it into whatever
+  // state bucket receives the item (builderItems, activeBags, etc.).
+  // Pre-refactor this was a string[] and the pop used indexOf on the id;
+  // now it's Array<{ id, artifactId }> — see docs/client-row-id-refactor.md.
   function popOneFromContainer(artifactId) {
-    const idx = state.containerItems.indexOf(artifactId);
-    if (idx < 0) return state.containerItems;
-    return [
+    const idx = state.containerItems.findIndex((slot) => slot.artifactId === artifactId);
+    if (idx < 0) return { next: state.containerItems, removed: null };
+    const removed = state.containerItems[idx];
+    const next = [
       ...state.containerItems.slice(0, idx),
       ...state.containerItems.slice(idx + 1)
     ];
+    return { next, removed };
   }
 
-  // Match a builderItem by its (x,y) anchor. Two items can't occupy the
-  // same anchor (normalizePlacement enforces this), so (x,y) is a stable
-  // per-instance identity for grid-placed items.
+  // Match a builderItem by its loadout row id when available, falling back
+  // to the (x,y) anchor otherwise. Row ids are stable across the entire
+  // run once a row exists server-side; (x,y) is a stable per-instance key
+  // for newly-placed items that haven't been reconciled yet.
   function isSameInstance(a, b) {
+    if (a.id && b.id) return a.id === b.id;
     return a.x === b.x && a.y === b.y;
+  }
+
+  // True iff the container holds at least one slot with this artifactId.
+  function containerHasArtifact(artifactId) {
+    return state.containerItems.some((slot) => slot.artifactId === artifactId);
   }
 
   function rotatePlacedArtifact(item) {
@@ -148,7 +166,10 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       }
       state.rerollSpent += REROLL_COST;
     }
-    const ownedIds = new Set([...state.builderItems.map((i) => i.artifactId), ...state.containerItems]);
+    const ownedIds = new Set([
+      ...state.builderItems.map((i) => i.artifactId),
+      ...state.containerItems.map((slot) => slot.artifactId)
+    ]);
     state.shopOffer = pickRandomShopOffer(state.bootstrap?.artifacts || [], ownedIds);
     persistShopOffer();
   }
@@ -165,7 +186,10 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       return false;
     }
     state.shopOffer = state.shopOffer.filter((id) => id !== artifactId);
-    state.containerItems = [...state.containerItems, artifactId];
+    // Legacy shop-buffer path: no server row id yet. Push a slot without
+    // an id — the real buy flow in useGameRun stamps the row id onto the
+    // container slot from the /buy response. See buyRunShopItem there.
+    state.containerItems = [...state.containerItems, { id: null, artifactId }];
     state.freshPurchases = [...state.freshPurchases, artifactId];
     state.error = '';
     persistShopOffer();
@@ -179,9 +203,19 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
   }
 
   function returnToShop(artifactId) {
-    if (!state.containerItems.includes(artifactId)) return;
-    state.containerItems = state.containerItems.filter((id) => id !== artifactId);
-    state.freshPurchases = state.freshPurchases.filter((id) => id !== artifactId);
+    if (!containerHasArtifact(artifactId)) return;
+    const { next } = popOneFromContainer(artifactId);
+    state.containerItems = next;
+    // freshPurchases is decorative and artifactId-keyed by design. Any
+    // remaining duplicates in the container re-earn a "fresh" badge from
+    // the next buy.
+    const freshIdx = state.freshPurchases.indexOf(artifactId);
+    if (freshIdx >= 0) {
+      state.freshPurchases = [
+        ...state.freshPurchases.slice(0, freshIdx),
+        ...state.freshPurchases.slice(freshIdx + 1)
+      ];
+    }
     if (!state.shopOffer.includes(artifactId)) {
       state.shopOffer = [...state.shopOffer, artifactId];
     }
@@ -196,13 +230,16 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     if (artifact.width !== artifact.height) {
       orientations.push({ width: preferred.height, height: preferred.width });
     }
+    // Peek the first matching container slot so we can thread its row id
+    // into the placed builderItem. The actual pop happens only after we
+    // confirm the placement fits.
+    const slot = state.containerItems.find((s) => s.artifactId === artifactId);
+    const rowId = slot?.id ?? null;
     for (const orientation of orientations) {
-      const next = normalizePlacement(artifact, x, y, orientation.width, orientation.height);
+      const next = normalizePlacement(artifact, x, y, orientation.width, orientation.height, rowId);
       if (next) {
         state.builderItems = next;
-        // Remove ONE instance of this artifactId from container — the
-        // player may own multiple copies and we're only placing one.
-        state.containerItems = popOneFromContainer(artifactId);
+        state.containerItems = popOneFromContainer(artifactId).next;
         state.error = '';
         persistShopOffer();
         return true;
@@ -215,20 +252,22 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
   function activateBag(artifactId) {
     const artifact = getArtifact(artifactId);
     if (!artifact || artifact.family !== 'bag') return;
-    if (state.activeBags.includes(artifactId)) return;
-    state.activeBags = [...state.activeBags, artifactId];
-    state.containerItems = state.containerItems.filter((id) => id !== artifactId);
+    if (state.activeBags.some((b) => b.artifactId === artifactId)) return;
+    const { next, removed } = popOneFromContainer(artifactId);
+    if (!removed) return;
+    state.activeBags = [...state.activeBags, removed];
+    state.containerItems = next;
     state.error = '';
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
     else persistShopOffer();
   }
 
   function deactivateBag(artifactId) {
-    if (!state.activeBags.includes(artifactId)) return;
+    const idx = state.activeBags.findIndex((b) => b.artifactId === artifactId);
+    if (idx < 0) return;
     let startRow = INVENTORY_ROWS;
-    for (const id of state.activeBags) {
-      if (id === artifactId) break;
-      startRow += bagRowCount(id);
+    for (let i = 0; i < idx; i += 1) {
+      startRow += bagRowCount(state.activeBags[i].artifactId);
     }
     // Block if *anything* lives in this bag's rows OR in later bags' rows:
     // deactivating a middle bag shifts later bags up and strands their items
@@ -239,8 +278,12 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
       return;
     }
-    state.activeBags = state.activeBags.filter((id) => id !== artifactId);
-    state.containerItems = [...state.containerItems, artifactId];
+    const removed = state.activeBags[idx];
+    state.activeBags = [
+      ...state.activeBags.slice(0, idx),
+      ...state.activeBags.slice(idx + 1)
+    ];
+    state.containerItems = [...state.containerItems, removed];
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
     else persistShopOffer();
   }
@@ -252,6 +295,8 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       activateBag(artifactId);
       return;
     }
+    const slot = state.containerItems.find((s) => s.artifactId === artifactId);
+    const rowId = slot?.id ?? null;
     const orientations = [preferredOrientation(artifact)];
     if (artifact.width !== artifact.height) {
       orientations.push({ width: orientations[0].height, height: orientations[0].width });
@@ -260,12 +305,10 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     for (const o of orientations) {
       for (let y = 0; y < rows; y += 1) {
         for (let x = 0; x < INVENTORY_COLUMNS; x += 1) {
-          const next = normalizePlacement(artifact, x, y, o.width, o.height);
+          const next = normalizePlacement(artifact, x, y, o.width, o.height, rowId);
           if (next) {
             state.builderItems = next;
-            // Pop ONE from container; owning a duplicate of an already-
-            // placed artifact is legal and must not collapse on place.
-            state.containerItems = popOneFromContainer(artifactId);
+            state.containerItems = popOneFromContainer(artifactId).next;
             state.error = '';
             persistShopOffer();
             return;
@@ -277,15 +320,11 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
   }
 
   // Unplace exactly ONE instance back to the container. Accepts either a
-  // full item object {artifactId, x, y} (preferred — preserves identity
-  // when multiple duplicates live on the grid) or a bare artifactId string
-  // (falls back to removing the first grid copy by artifact id). The old
-  // implementation used `.filter(i !== id)` which wiped every duplicate
-  // off the grid and pushed only one copy to the container, silently
-  // losing the rest.
+  // full item object (preferred — matches by row id when available,
+  // otherwise by (x,y) anchor) or a bare artifactId string (fallback for
+  // shop-drop-from-inventory which only knows the id).
   function unplaceToContainer(target) {
     const byInstance = typeof target === 'object' && target !== null;
-    const artifactId = byInstance ? target.artifactId : target;
     let removed = null;
     if (byInstance) {
       const idx = state.builderItems.findIndex((it) => isSameInstance(it, target));
@@ -296,7 +335,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
         ...state.builderItems.slice(idx + 1)
       ];
     } else {
-      const idx = state.builderItems.findIndex((it) => it.artifactId === artifactId);
+      const idx = state.builderItems.findIndex((it) => it.artifactId === target);
       if (idx < 0) return;
       removed = state.builderItems[idx];
       state.builderItems = [
@@ -305,7 +344,11 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       ];
     }
     // Duplicates ARE legal in the container — always push, never dedupe.
-    state.containerItems = [...state.containerItems, removed.artifactId];
+    // The row id (if present) follows the item back to its container slot.
+    state.containerItems = [
+      ...state.containerItems,
+      { id: removed.id ?? null, artifactId: removed.artifactId }
+    ];
     persistShopOffer();
   }
 
@@ -391,10 +434,21 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     }
   }
 
-  function onContainerPieceDragStart(artifactId, event) {
+  function onContainerPieceDragStart(slotOrArtifactId, event) {
+    // Accept either a slot object `{ artifactId, rowId }` (preferred) or
+    // a bare artifactId (legacy). Stashing the full slot lets the sell
+    // zone target the exact server row when the container item gets
+    // dropped onto it.
+    const artifactId = typeof slotOrArtifactId === 'string'
+      ? slotOrArtifactId
+      : (slotOrArtifactId?.artifactId || slotOrArtifactId?.id);
+    const rowId = typeof slotOrArtifactId === 'object' && slotOrArtifactId !== null
+      ? (slotOrArtifactId.rowId || slotOrArtifactId.id || null)
+      : null;
     state.draggingArtifactId = artifactId;
+    state.draggingItem = rowId ? { id: rowId, artifactId } : null;
     state.draggingSource = 'container';
-    if (event.dataTransfer) {
+    if (event?.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', artifactId);
     }

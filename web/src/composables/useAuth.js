@@ -65,9 +65,21 @@ export function useAuth(state, goTo) {
         const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
 
         // Grid-placed combat items (x>=0, y>=0, no bagId, not a bag artifact).
+        //
+        // Each state entry carries the loadout row `id` so downstream ops
+        // (sell, place, drag, rotate) can target the exact server row even
+        // when duplicates exist. See docs/client-row-id-refactor.md.
+        //
+        // NOTE bags are hydrated differently below: they hold a row id
+        // (for id-keyed ops) but currently live at (-1,-1) on the server.
+        // The "activeBags" distinction here is a pure client concept — bag
+        // row presence in loadoutItems means the bag exists; the client
+        // decides whether to render it in the active-bags bar based on
+        // whether it was activated this session.
         state.builderItems = loadoutItems
           .filter((i) => !bagsSet.has(i.artifactId) && !i.bagId && i.x >= 0 && i.y >= 0)
           .map((i) => ({
+            id: i.id,
             artifactId: i.artifactId,
             x: i.x, y: i.y, width: i.width, height: i.height,
             bagId: null
@@ -76,21 +88,33 @@ export function useAuth(state, goTo) {
         // Container items: non-bag artifacts with sentinel position (-1,-1)
         // that aren't inside a bag. Bags in container also go here (they're
         // unactivated until the player clicks activate).
+        // Shape: Array<{ id, artifactId }> — id is the loadout row id.
         state.containerItems = loadoutItems
-          .filter((i) => !i.bagId && (i.x < 0 || i.y < 0))
-          .map((i) => i.artifactId);
+          .filter((i) => !i.bagId && (i.x < 0 || i.y < 0) && !bagsSet.has(i.artifactId))
+          .map((i) => ({ id: i.id, artifactId: i.artifactId }));
 
-        // Active bags: bag artifacts with x>=0 (the server signals "placed"
-        // via non-sentinel coords on bag rows).
-        state.activeBags = loadoutItems
-          .filter((i) => bagsSet.has(i.artifactId) && i.x >= 0)
-          .map((i) => i.artifactId);
+        // Bags currently in the container (unactivated). Server stores bags
+        // at (-1,-1) per docs/client-row-id-refactor.md non-goals, so the
+        // x/y position doesn't differentiate "in container" from "active".
+        // The client tracks activation state via rotatedBags persistence and
+        // the activeBags bucket below — on fresh hydration, every bag row
+        // lands in the container and the player re-activates as needed.
+        const bagRows = loadoutItems.filter((i) => bagsSet.has(i.artifactId) && !i.bagId);
+        // TODO: the server doesn't persist active-vs-container bag state.
+        // For now, treat every bag as container on hydrate. The UI can
+        // re-activate via a future event if needed.
+        state.containerItems = [
+          ...state.containerItems,
+          ...bagRows.map((i) => ({ id: i.id, artifactId: i.artifactId }))
+        ];
+        state.activeBags = [];
 
         // Bagged items: items inside an active bag go into builderItems with
         // bagId set; the existing rendering code groups them under bag rows.
         const baggedItems = loadoutItems
           .filter((i) => i.bagId)
           .map((i) => ({
+            id: i.id,
             artifactId: i.artifactId,
             x: i.x, y: i.y, width: i.width, height: i.height,
             bagId: i.bagId

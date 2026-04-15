@@ -46,6 +46,7 @@ import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 import {
   applyLegacyPlacements,
   copyRoundForward,
+  deleteLoadoutItemByIdScoped,
   deleteOneByArtifactId,
   insertLoadoutItem,
   insertRefund,
@@ -1047,7 +1048,7 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
 
     // Insert into the new run-scoped table. Container coords (-1,-1) until placed.
     const sortOrder = await nextSortOrder(client, gameRunId, playerId, currentRound);
-    await insertLoadoutItem(client, {
+    const newRowId = await insertLoadoutItem(client, {
       gameRunId,
       playerId,
       roundNumber: currentRound,
@@ -1062,7 +1063,10 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
       freshPurchase: true
     });
 
-    return { coins: newCoins, artifactId, price, shopOffer: newOffer };
+    // id: the newly-inserted loadout row id. The client stores this on its
+    // container slot so follow-up actions (place, sell, drag) can target
+    // the specific row even when duplicates exist. See docs/client-row-id-refactor.md.
+    return { id: newRowId, coins: newCoins, artifactId, price, shopOffer: newOffer };
   }));
 }
 
@@ -1170,7 +1174,27 @@ export async function forceRunShopForTest(playerId, gameRunId, artifactIds) {
   }));
 }
 
-export async function sellRunItem(playerId, gameRunId, artifactId) {
+/**
+ * Sell a loadout item from the current round.
+ *
+ * Accepts either a direct row id or a bare artifactId. When both are
+ * supplied, the row id wins (it disambiguates duplicates). Callers should
+ * prefer passing `id` whenever they know it — hitting this by artifactId
+ * only works because the server picks "the most recently added matching
+ * row" via sort_order, which is correct for the UI's last-click pattern
+ * but brittle if the client state drifts. See docs/client-row-id-refactor.md.
+ *
+ * The `target` argument accepts the legacy string form (artifactId) so
+ * existing tests and the few callers that still pass a bare string keep
+ * working. New code should pass an object `{ id, artifactId }`.
+ */
+export async function sellRunItem(playerId, gameRunId, target) {
+  const { id: targetRowId, artifactId: targetArtifactId } = typeof target === 'string'
+    ? { id: null, artifactId: target }
+    : { id: target?.id || null, artifactId: target?.artifactId || null };
+  if (!targetRowId && !targetArtifactId) {
+    throw new Error('sellRunItem requires a row id or artifactId');
+  }
   return withRunLock(gameRunId, () => withTransaction(async (client) => {
     const runResult = await client.query(
       `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
@@ -1191,14 +1215,23 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
     const grp = grpResult.rows[0];
 
     const currentRows = await readCurrentRoundItems(client, gameRunId, playerId, currentRound);
-    const candidate = currentRows.find((r) => r.artifactId === artifactId);
+
+    // Resolve the candidate row: prefer id (disambiguates duplicates),
+    // fall back to artifactId for legacy callers.
+    let candidate;
+    if (targetRowId) {
+      candidate = currentRows.find((r) => r.id === targetRowId);
+    } else {
+      candidate = currentRows.find((r) => r.artifactId === targetArtifactId);
+    }
     if (!candidate) {
       throw new Error('Item not found in loadout');
     }
 
-    const artifact = getArtifactById(artifactId);
+    const resolvedArtifactId = candidate.artifactId;
+    const artifact = getArtifactById(resolvedArtifactId);
     if (isBag(artifact)) {
-      const contentsCount = currentRows.filter((r) => r.bagId === artifactId).length;
+      const contentsCount = currentRows.filter((r) => r.bagId === resolvedArtifactId).length;
       if (contentsCount > 0) {
         throw new Error('Cannot sell a bag that contains items — empty it first');
       }
@@ -1212,7 +1245,17 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
     const isFreshThisRound = candidate.purchasedRound === currentRound;
     const sellPrice = isFreshThisRound ? price : Math.max(1, Math.floor(price / 2));
 
-    const deleted = await deleteOneByArtifactId(client, gameRunId, playerId, currentRound, artifactId);
+    let deleted;
+    if (targetRowId) {
+      deleted = await deleteLoadoutItemByIdScoped(client, {
+        rowId: targetRowId,
+        gameRunId,
+        playerId,
+        roundNumber: currentRound
+      });
+    } else {
+      deleted = await deleteOneByArtifactId(client, gameRunId, playerId, currentRound, resolvedArtifactId);
+    }
     if (!deleted) {
       throw new Error('Item not found in loadout');
     }
@@ -1221,7 +1264,7 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
       gameRunId,
       playerId,
       roundNumber: currentRound,
-      artifactId,
+      artifactId: resolvedArtifactId,
       refundAmount: sellPrice
     });
 
@@ -1231,7 +1274,7 @@ export async function sellRunItem(playerId, gameRunId, artifactId) {
       [grp.id, newCoins]
     );
 
-    return { coins: newCoins, sellPrice, artifactId };
+    return { id: deleted.id, coins: newCoins, sellPrice, artifactId: resolvedArtifactId };
   }));
 }
 

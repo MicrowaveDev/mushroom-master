@@ -5,59 +5,88 @@ import { INVENTORY_ROWS } from '../constants.js';
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistShopOffer, loadReplay) {
   function buildLoadoutPayloadItems() {
     // Map frontend state to server loadout payload.
-    // - Base grid items (y < INVENTORY_ROWS): sent with grid coordinates
-    // - Items in bag rows (y >= INVENTORY_ROWS): sent with bagId, no coords
-    // - Bags: sent with no grid coordinates (they provide slots, not cells)
+    //
+    // Every payload entry carries an `id` when the client knows the server
+    // row id — the server uses it to target that exact row even when
+    // duplicates exist. Entries without an id fall back to the server's
+    // artifactId + sort-order matching (for freshly-bought items whose
+    // /buy response id wasn't captured yet, etc.). See
+    // docs/client-row-id-refactor.md.
+    //
+    // - Base grid items (y < INVENTORY_ROWS): grid coordinates + id
+    // - Items in bag rows (y >= INVENTORY_ROWS): bagId + id, no coords
+    // - Bags (active and container): (-1,-1) + id
     const activeBagLayout = [];
     let r = INVENTORY_ROWS;
-    for (const bagId of state.activeBags) {
-      const bag = getArtifact(bagId);
-      if (!bag) continue;
-      const rotated = state.rotatedBags.includes(bagId);
-      const rows = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
-      activeBagLayout.push({ bagId, startRow: r, rowCount: rows });
+    for (const bag of state.activeBags) {
+      const artifact = getArtifact(bag.artifactId);
+      if (!artifact) continue;
+      const rotated = state.rotatedBags.includes(bag.artifactId);
+      const rows = rotated ? Math.max(artifact.width, artifact.height) : Math.min(artifact.width, artifact.height);
+      activeBagLayout.push({ bagId: bag.artifactId, startRow: r, rowCount: rows });
       r += rows;
     }
 
+    const withId = (entry, id) => (id ? { id, ...entry } : entry);
     const payload = [];
-    // Bags (including container bags) must be declared before bagged items reference them.
-    // Bags live off the main grid — rendered in the active-bags bar — so they carry the
-    // container sentinel (-1,-1), not grid coordinates.
-    for (const bagId of state.activeBags) {
-      const bag = getArtifact(bagId);
-      if (!bag) continue;
-      payload.push({ artifactId: bagId, x: -1, y: -1, width: bag.width, height: bag.height });
+
+    // Bags (including container bags) must be declared before bagged items
+    // reference them. Bags carry the container sentinel (-1,-1).
+    for (const bag of state.activeBags) {
+      const artifact = getArtifact(bag.artifactId);
+      if (!artifact) continue;
+      payload.push(withId({
+        artifactId: bag.artifactId, x: -1, y: -1,
+        width: artifact.width, height: artifact.height
+      }, bag.id));
     }
-    // Unactivated bags in container
-    for (const artifactId of state.containerItems) {
-      const artifact = getArtifact(artifactId);
+    for (const slot of state.containerItems) {
+      const artifact = getArtifact(slot.artifactId);
       if (!artifact || artifact.family !== 'bag') continue;
-      payload.push({ artifactId, x: -1, y: -1, width: artifact.width, height: artifact.height });
+      payload.push(withId({
+        artifactId: slot.artifactId, x: -1, y: -1,
+        width: artifact.width, height: artifact.height
+      }, slot.id));
     }
+
     // Placed grid items and bagged items
     for (const item of state.builderItems) {
       if (item.y >= INVENTORY_ROWS) {
         const info = activeBagLayout.find((b) => item.y >= b.startRow && item.y < b.startRow + b.rowCount);
         if (info) {
-          payload.push({ artifactId: item.artifactId, width: item.width, height: item.height, bagId: info.bagId });
+          payload.push(withId({
+            artifactId: item.artifactId,
+            width: item.width, height: item.height,
+            bagId: info.bagId
+          }, item.id));
           continue;
         }
         // Fall-through guard: item claims to be in a bag row (y >= grid),
         // but no active bag covers that row. This happens when a bag gets
         // deactivated/rotated and a later bag's items keep their stale y.
-        // Don't send stale grid coords — the server would reject with OOB
-        // and surface as a 500. Push to container (-1,-1) instead and let
-        // the next hydrate reconcile.
-        payload.push({ artifactId: item.artifactId, x: -1, y: -1, width: item.width, height: item.height });
+        // Don't send stale grid coords — the server would reject with OOB.
+        // Push to container (-1,-1) instead and let the next hydrate reconcile.
+        payload.push(withId({
+          artifactId: item.artifactId, x: -1, y: -1,
+          width: item.width, height: item.height
+        }, item.id));
         continue;
       }
-      payload.push({ artifactId: item.artifactId, x: item.x, y: item.y, width: item.width, height: item.height });
+      payload.push(withId({
+        artifactId: item.artifactId,
+        x: item.x, y: item.y,
+        width: item.width, height: item.height
+      }, item.id));
     }
+
     // Non-bag container items (not placed)
-    for (const artifactId of state.containerItems) {
-      const artifact = getArtifact(artifactId);
+    for (const slot of state.containerItems) {
+      const artifact = getArtifact(slot.artifactId);
       if (!artifact || artifact.family === 'bag') continue;
-      payload.push({ artifactId, x: -1, y: -1, width: artifact.width, height: artifact.height });
+      payload.push(withId({
+        artifactId: slot.artifactId, x: -1, y: -1,
+        width: artifact.width, height: artifact.height
+      }, slot.id));
     }
     return payload;
   }
@@ -173,16 +202,102 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     }
   }
 
-  async function sellRunItemAction(artifactId) {
+  /**
+   * Sell a loadout item. Accepts either a full item/slot object (preferred
+   * — carries the row id so the server can delete the exact duplicate
+   * the user clicked) or a bare artifactId string (legacy fallback —
+   * server picks the last-inserted matching row). The identity-by-
+   * artifactId filters on the other state buckets are gone: we prune by
+   * row id where we have one and fall back to first-match-by-artifactId
+   * only when the target was supplied as a bare string. See
+   * docs/client-row-id-refactor.md.
+   */
+  async function sellRunItemAction(target) {
     if (!state.gameRun) return;
+    const byInstance = typeof target === 'object' && target !== null;
+    const rowId = byInstance ? target.id : null;
+    const artifactIdFallback = byInstance ? target.artifactId : target;
     try {
       state.error = '';
-      const data = await apiJson(`/api/game-run/${state.gameRun.id}/sell`, { method: 'POST', body: JSON.stringify({ artifactId }) }, state.sessionKey);
+      const payload = rowId
+        ? { id: rowId, artifactId: artifactIdFallback }
+        : { artifactId: artifactIdFallback };
+      const data = await apiJson(
+        `/api/game-run/${state.gameRun.id}/sell`,
+        { method: 'POST', body: JSON.stringify(payload) },
+        state.sessionKey
+      );
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
-      state.builderItems = state.builderItems.filter((i) => i.artifactId !== artifactId);
-      state.containerItems = state.containerItems.filter((id) => id !== artifactId);
-      state.activeBags = state.activeBags.filter((id) => id !== artifactId);
-      state.freshPurchases = state.freshPurchases.filter((id) => id !== artifactId);
+
+      // The server's response always includes the row id that was deleted.
+      const deletedRowId = data.id || rowId || null;
+      const deletedArtifactId = data.artifactId || artifactIdFallback;
+
+      // Prune builderItems: prefer row id, fall back to first-match artifactId.
+      if (deletedRowId) {
+        const idx = state.builderItems.findIndex((i) => i.id === deletedRowId);
+        if (idx >= 0) {
+          state.builderItems = [
+            ...state.builderItems.slice(0, idx),
+            ...state.builderItems.slice(idx + 1)
+          ];
+        }
+      } else {
+        const idx = state.builderItems.findIndex((i) => i.artifactId === deletedArtifactId);
+        if (idx >= 0) {
+          state.builderItems = [
+            ...state.builderItems.slice(0, idx),
+            ...state.builderItems.slice(idx + 1)
+          ];
+        }
+      }
+
+      // Prune containerItems similarly.
+      if (deletedRowId) {
+        const idx = state.containerItems.findIndex((s) => s.id === deletedRowId);
+        if (idx >= 0) {
+          state.containerItems = [
+            ...state.containerItems.slice(0, idx),
+            ...state.containerItems.slice(idx + 1)
+          ];
+        }
+      } else {
+        const idx = state.containerItems.findIndex((s) => s.artifactId === deletedArtifactId);
+        if (idx >= 0) {
+          state.containerItems = [
+            ...state.containerItems.slice(0, idx),
+            ...state.containerItems.slice(idx + 1)
+          ];
+        }
+      }
+
+      // activeBags: same treatment.
+      if (deletedRowId) {
+        const idx = state.activeBags.findIndex((b) => b.id === deletedRowId);
+        if (idx >= 0) {
+          state.activeBags = [
+            ...state.activeBags.slice(0, idx),
+            ...state.activeBags.slice(idx + 1)
+          ];
+        }
+      } else {
+        const idx = state.activeBags.findIndex((b) => b.artifactId === deletedArtifactId);
+        if (idx >= 0) {
+          state.activeBags = [
+            ...state.activeBags.slice(0, idx),
+            ...state.activeBags.slice(idx + 1)
+          ];
+        }
+      }
+
+      // freshPurchases is an artifactId string list (decorative UI).
+      const freshIdx = state.freshPurchases.indexOf(deletedArtifactId);
+      if (freshIdx >= 0) {
+        state.freshPurchases = [
+          ...state.freshPurchases.slice(0, freshIdx),
+          ...state.freshPurchases.slice(freshIdx + 1)
+        ];
+      }
       persistShopOffer();
     } catch (error) {
       state.error = error.message || 'Could not sell item';
@@ -202,7 +317,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       const data = await apiJson(`/api/game-run/${state.gameRun.id}/buy`, { method: 'POST', body: JSON.stringify({ artifactId }) }, state.sessionKey);
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
       state.gameRunShopOffer = data.shopOffer;
-      state.containerItems = [...state.containerItems, artifactId];
+      // The server returns the newly-inserted row id so the container slot
+      // carries it immediately. Any action taken against this item before
+      // the next bootstrap — place, sell, drag — can target the exact row.
+      state.containerItems = [...state.containerItems, { id: data.id || null, artifactId }];
       state.freshPurchases = [...state.freshPurchases, artifactId];
       persistShopOffer();
     } catch (error) {
@@ -234,9 +352,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
   function onSellZoneDrop(event) {
     event.preventDefault();
     state.sellDragOver = false;
-    const artifactId = state.draggingArtifactId || event.dataTransfer?.getData('text/plain');
-    if (artifactId) sellRunItemAction(artifactId);
+    // Prefer the full dragged-instance handle (carries a row id) so the
+    // server can disambiguate duplicates. Fall back to the bare
+    // draggingArtifactId / dataTransfer text for the shop-drag path,
+    // which never has a row id anyway.
+    const target = state.draggingItem
+      || state.draggingArtifactId
+      || event.dataTransfer?.getData('text/plain');
+    if (target) sellRunItemAction(target);
     state.draggingArtifactId = '';
+    state.draggingItem = null;
     state.draggingSource = '';
   }
 
