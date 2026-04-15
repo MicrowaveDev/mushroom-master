@@ -197,19 +197,29 @@ export async function insertRefund(client, { gameRunId, playerId, roundNumber, a
 }
 
 /**
- * Bridge helper: apply placements from a "saveArtifactLoadout" batch payload
- * onto the new table's current-round rows.
+ * Apply a full-state placement batch to the current round's loadout rows.
+ * This is the write half of `PUT /api/artifact-loadout` — the client
+ * serializes its entire builder/container/active-bags state via
+ * `buildLoadoutPayloadItems` and the server reconciles it against the
+ * rows already in `game_run_loadout_items` for this round.
  *
- * Payload entries may carry an `id` (loadout row id) — when present, that
- * row is targeted directly, which disambiguates duplicates cleanly. Legacy
- * entries without `id` fall back to the original sort-order bucket-shift
- * match by artifactId, which is still correct when the client state hasn't
- * drifted. See docs/client-row-id-refactor.md.
+ * Each payload entry carries a row `id` when the client knows it (every
+ * hydrated item does; freshly-bought items might not yet). The id path
+ * targets that exact row, which disambiguates duplicates cleanly — see
+ * docs/client-row-id-refactor.md. Entries without an id fall back to
+ * matching by artifactId in sort order, which is still correct when the
+ * client state hasn't drifted.
  *
- * Used by the legacy save path during the transition (Steps 2-7). Removed
- * once the client moves to granular place/unplace endpoints (Step 7).
+ * This is a full-state sync, not a delta: any bag entry that doesn't
+ * explicitly carry `active: 1` lands as `active: 0`. Client-side
+ * `activateBag` / `deactivateBag` call `persistRunLoadout` right after
+ * mutating state, so the round-trip closes immediately.
+ *
+ * Callers should go through `applyRunLoadoutPlacements` in run-service.js,
+ * which adds the run-membership guard. This helper is export-only for
+ * testing and for the bridge in run-service.js that wraps it.
  */
-export async function applyLegacyPlacements(client, gameRunId, playerId, roundNumber, legacyItems) {
+export async function applyRunPlacements(client, gameRunId, playerId, roundNumber, items) {
   // Group new-table rows by artifact_id for duplicate-aware matching.
   const currentRows = await readCurrentRoundItems(client, gameRunId, playerId, roundNumber);
   const byArtifact = new Map();
@@ -218,8 +228,8 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
     byArtifact.get(row.artifactId).push(row);
   }
 
-  // First pass: project the desired state in-memory by walking the legacy
-  // payload and matching it to existing rows. Legacy clients can lie about
+  // First pass: project the desired state in-memory by walking the client's
+  // payload and matching it to existing rows. The client can lie about
   // width/height/bag_id; we must reject overlaps, out-of-bounds, dimension
   // mismatches, and orphaned bag references BEFORE any DB write.
   const projectedById = new Map();
@@ -235,20 +245,20 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
   // only carries an artifactId.
   const consumedRowIds = new Set();
   const updates = [];
-  for (const legacy of legacyItems) {
+  for (const entry of items) {
     let row = null;
-    if (legacy.id && projectedById.has(legacy.id) && !consumedRowIds.has(legacy.id)) {
-      row = projectedById.get(legacy.id);
-      consumedRowIds.add(legacy.id);
+    if (entry.id && projectedById.has(entry.id) && !consumedRowIds.has(entry.id)) {
+      row = projectedById.get(entry.id);
+      consumedRowIds.add(entry.id);
       // Remove this exact row from the artifact bucket so the fallback
       // path can't re-match it for a sibling entry that lacks an id.
       const bucket = claimed.get(row.artifactId);
       if (bucket) {
-        const idx = bucket.findIndex((r) => r.id === legacy.id);
+        const idx = bucket.findIndex((r) => r.id === entry.id);
         if (idx >= 0) bucket.splice(idx, 1);
       }
     } else {
-      const bucket = claimed.get(legacy.artifactId);
+      const bucket = claimed.get(entry.artifactId);
       if (!bucket || bucket.length === 0) continue;
       // Skip rows that were already consumed by an earlier id-based entry.
       let picked = null;
@@ -264,17 +274,17 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
       row = projectedById.get(picked.id);
     }
     const proposed = row;
-    proposed.x = Number(legacy.x ?? -1);
-    proposed.y = Number(legacy.y ?? -1);
-    proposed.width = Number(legacy.width ?? row.width);
-    proposed.height = Number(legacy.height ?? row.height);
-    proposed.bagId = legacy.bagId || null;
+    proposed.x = Number(entry.x ?? -1);
+    proposed.y = Number(entry.y ?? -1);
+    proposed.width = Number(entry.width ?? row.width);
+    proposed.height = Number(entry.height ?? row.height);
+    proposed.bagId = entry.bagId || null;
     // Bag activation: a PUT /artifact-loadout payload is a full-state sync,
     // not a delta. Missing `active` on a bag entry means "deactivated" —
     // the client must opt in explicitly to keep a bag in the active bar.
     // Non-bag rows ignore the field entirely (it stays 0 at the DB level).
     const rowArtifact = getArtifactById(proposed.artifactId);
-    proposed.active = isBag(rowArtifact) && legacy.active ? 1 : 0;
+    proposed.active = isBag(rowArtifact) && entry.active ? 1 : 0;
     updates.push(proposed);
   }
 

@@ -50,8 +50,10 @@ client never has to guess.
   (commit 3a3ec16 pins them at `(-1,-1)`, and two bags with the same
   artifactId can't coexist as active grid decorations in practice). Changing
   this would require a server schema change that's out of scope here.
-- Legacy `applyLegacyPlacements` name stays as-is. Renaming it is orthogonal
-  churn.
+- ~~Legacy `applyLegacyPlacements` name stays as-is~~. Renamed to
+  `applyRunPlacements` in a later cleanup pass — the original "legacy"
+  language dated back to a transition that never finished, and the
+  function is now the permanent save path, not a bridge.
 
 ## Phases
 
@@ -75,9 +77,11 @@ fields keep working exactly as before.
    and current round) and returns `{ id, artifactId, purchasedRound }` or
    throws. Route handler in [create-app.js](../app/server/create-app.js)
    forwards `req.body.id` alongside `req.body.artifactId`.
-3. `applyLegacyPlacements` in
+3. `applyRunPlacements` in
    [game-run-loadout.js](../app/server/services/game-run-loadout.js) gains
-   id-based matching. When a payload entry carries `id`, match that exact
+   id-based matching. (Named `applyLegacyPlacements` at the time this
+   plan was written; renamed later when the "legacy" transition language
+   turned out to be permanent.) When a payload entry carries `id`, match that exact
    row and update its coords; fall back to the existing sort-order
    bucket-shift only for entries without `id`. Skip silently (don't throw)
    when an id references an unknown row — the client may be stale and a

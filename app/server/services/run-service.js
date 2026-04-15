@@ -44,7 +44,7 @@ import { isBag } from './artifact-helpers.js';
 import { withRunLock } from './ready-manager.js';
 import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 import {
-  applyLegacyPlacements,
+  applyRunPlacements,
   copyRoundForward,
   deleteLoadoutItemByIdScoped,
   deleteOneByArtifactId,
@@ -941,28 +941,24 @@ export async function resolveRound(playerId, gameRunId) {
 }
 
 /**
- * TEMPORARY BRIDGE — DO NOT ADD LOGIC HERE.
+ * Service entrypoint for `PUT /api/artifact-loadout`. Deliberately thin:
+ * its only job is to enforce the run-membership guard and hand off to the
+ * pure reconciler (`applyRunPlacements`). Every save this endpoint handles
+ * is a full-state sync of the current round's builder/container/active-bags
+ * state — see the contract on `applyRunPlacements` and the invariants
+ * pinned by `tests/game/bridge-pin.test.js`.
  *
- * This is the transition shim from the legacy client `PUT /api/artifact-loadout`
- * endpoint onto the run-scoped current-round rows. It exists only until the
- * granular `/place` `/unplace` `/rotate` `/activate-bag` endpoints land (see
- * docs/post-review-followups.md Batch C1). The contract is:
+ * DO NOT ADD LOGIC HERE. No coin math, no shop mutations, no cross-table
+ * side effects. If you need a new mutation surface, write a dedicated
+ * endpoint (see `buyRunShopItem` / `sellRunItem` / `refreshRunShop` for
+ * the shape). Growing this function re-creates the multi-source
+ * reconciliation problem the loadout refactor solved (loadout-refactor-plan.md §1.2).
  *
- *   1. Validate the run is active.
- *   2. Validate the caller is an active member of the run.
- *   3. Delegate placement writes to `applyLegacyPlacements`.
- *
- * That's it. No coin math. No shop mutations. No cross-table side effects.
- * No business logic beyond membership + delegation.
- *
- * If you're adding logic here to fix a bug, the bug is almost certainly in
- * `applyLegacyPlacements` or one of the granular helpers. If you need a new
- * mutation surface, write a dedicated endpoint (see §2.6 of
- * loadout-refactor-plan.md). Growing this function re-creates the multi-
- * source problem the refactor solved (see §1.2 of the same plan).
- *
- * The contract is pinned by `tests/game/bridge-pin.test.js`. Adding logic
- * here will break that test, which is intentional.
+ * The legacy `/place`/`/unplace`/`/activate-bag` granular-endpoint plan in
+ * docs/post-review-followups.md Batch C1 is indefinitely deferred. Full-
+ * state sync is fine at this app size, and the row-id threading in
+ * docs/client-row-id-refactor.md made it duplicate-safe. Treat this
+ * endpoint shape as the permanent contract, not a transitional one.
  */
 export async function applyRunLoadoutPlacements(playerId, gameRunId, items) {
   return withRunLock(gameRunId, () => withTransaction(async (client) => {
@@ -983,7 +979,7 @@ export async function applyRunLoadoutPlacements(playerId, gameRunId, items) {
       throw new Error('Player is not part of this active game run');
     }
 
-    await applyLegacyPlacements(client, gameRunId, playerId, currentRound, items);
+    await applyRunPlacements(client, gameRunId, playerId, currentRound, items);
     return { ok: true };
   }));
 }

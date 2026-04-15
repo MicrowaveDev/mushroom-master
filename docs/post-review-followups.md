@@ -55,7 +55,7 @@ These close the "post-refactor debt" loop without touching production flows. Eac
 **Why:** The `PUT /api/artifact-loadout` → `applyRunLoadoutPlacements` shim is load-bearing (see review §5.2). It was introduced as a temporary bridge while granular endpoints were deferred, but it has no test asserting it stays a thin pass-through. A future author can quietly add business logic to it and re-create the multi-source problem the refactor solved.
 
 **Scope:**
-- Add a test asserting `applyRunLoadoutPlacements` does nothing beyond (a) validate the active run + player membership and (b) delegate to `applyLegacyPlacements` to write rows. No coin math, no shop mutation, no cross-table side effects.
+- Add a test asserting `applyRunLoadoutPlacements` does nothing beyond (a) validate the active run + player membership and (b) delegate to `applyRunPlacements` to write rows. No coin math, no shop mutation, no cross-table side effects. (Named `applyLegacyPlacements` when this followup was drafted; renamed later.)
 - Add a code comment at the top of `applyRunLoadoutPlacements` explicitly marking it as "temporary bridge — if you're adding logic here, write granular endpoints instead."
 - Add a note in `AGENTS.md` under a new **Bridge Layer Rules** subsection (optional — only if the comment isn't enough).
 

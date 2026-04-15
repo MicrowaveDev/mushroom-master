@@ -72,11 +72,12 @@ Three writers set `active`:
    Bag rows fresh-inserted from a shop buy also land as 0 (they start in
    the container). Accepts an optional `active` param for completeness
    but the default covers every call site.
-2. **`applyLegacyPlacements`** — the `PUT /api/artifact-loadout`
+2. **`applyRunPlacements`** — the `PUT /api/artifact-loadout`
    endpoint is how the client syncs layout state. Its UPDATE grows to
    include `active = $N`. Payload entries without an `active` field
    default to `0` server-side so a client that forgets to emit it never
-   leaves a stale `1` stuck on a row.
+   leaves a stale `1` stuck on a row. (Named `applyLegacyPlacements`
+   when this plan was written; renamed later.)
 3. **`copyRoundForward`** — already does a verbatim copy of every
    column via `readCurrentRoundItems` → `insertLoadoutItem`. Carries
    `active` forward automatically once the read mapping includes it.
