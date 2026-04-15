@@ -1,4 +1,5 @@
 import { apiJson, parseStartParams } from '../api.js';
+import { projectLoadoutItems } from './loadout-projection.js';
 
 export function useAuth(state, goTo) {
   function applyTelegramTheme() {
@@ -56,79 +57,25 @@ export function useAuth(state, goTo) {
         state.gameRunShopOffer = state.bootstrap.activeGameRun.shopOffer || [];
 
         // Single-source projection (§2.5): derive all UI state buckets from
-        // the server's loadoutItems array. Previously this joined three
-        // sources (server loadoutItems + client shopState blob + starter
-        // payload) and had to reconcile duplicates and stale entries.
-        // Now loadoutItems is the canonical truth, scoped to the current round.
+        // the server's loadoutItems array via the pure projectLoadoutItems
+        // helper. See loadout-projection.js for the routing rules and
+        // docs/bag-active-persistence.md / docs/client-row-id-refactor.md
+        // for the design context.
         const allArtifacts = state.bootstrap?.artifacts || [];
         const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
         const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
+        const projected = projectLoadoutItems(loadoutItems, bagsSet);
+        state.builderItems = projected.builderItems;
+        state.containerItems = projected.containerItems;
+        state.activeBags = projected.activeBags;
+        state.freshPurchases = projected.freshPurchases;
 
-        // Grid-placed combat items (x>=0, y>=0, no bagId, not a bag artifact).
-        //
-        // Each state entry carries the loadout row `id` so downstream ops
-        // (sell, place, drag, rotate) can target the exact server row even
-        // when duplicates exist. See docs/client-row-id-refactor.md.
-        //
-        // NOTE bags are hydrated differently below: they hold a row id
-        // (for id-keyed ops) but currently live at (-1,-1) on the server.
-        // The "activeBags" distinction here is a pure client concept — bag
-        // row presence in loadoutItems means the bag exists; the client
-        // decides whether to render it in the active-bags bar based on
-        // whether it was activated this session.
-        state.builderItems = loadoutItems
-          .filter((i) => !bagsSet.has(i.artifactId) && !i.bagId && i.x >= 0 && i.y >= 0)
-          .map((i) => ({
-            id: i.id,
-            artifactId: i.artifactId,
-            x: i.x, y: i.y, width: i.width, height: i.height,
-            bagId: null
-          }));
-
-        // Container items: non-bag artifacts with sentinel position (-1,-1)
-        // that aren't inside a bag. Bags in container also go here (they're
-        // unactivated until the player clicks activate).
-        // Shape: Array<{ id, artifactId }> — id is the loadout row id.
-        state.containerItems = loadoutItems
-          .filter((i) => !i.bagId && (i.x < 0 || i.y < 0) && !bagsSet.has(i.artifactId))
-          .map((i) => ({ id: i.id, artifactId: i.artifactId }));
-
-        // Bags currently in the container (unactivated). Server stores bags
-        // at (-1,-1) per docs/client-row-id-refactor.md non-goals, so the
-        // x/y position doesn't differentiate "in container" from "active".
-        // The client tracks activation state via rotatedBags persistence and
-        // the activeBags bucket below — on fresh hydration, every bag row
-        // lands in the container and the player re-activates as needed.
-        const bagRows = loadoutItems.filter((i) => bagsSet.has(i.artifactId) && !i.bagId);
-        // TODO: the server doesn't persist active-vs-container bag state.
-        // For now, treat every bag as container on hydrate. The UI can
-        // re-activate via a future event if needed.
-        state.containerItems = [
-          ...state.containerItems,
-          ...bagRows.map((i) => ({ id: i.id, artifactId: i.artifactId }))
-        ];
-        state.activeBags = [];
-
-        // Bagged items: items inside an active bag go into builderItems with
-        // bagId set; the existing rendering code groups them under bag rows.
-        const baggedItems = loadoutItems
-          .filter((i) => i.bagId)
-          .map((i) => ({
-            id: i.id,
-            artifactId: i.artifactId,
-            x: i.x, y: i.y, width: i.width, height: i.height,
-            bagId: i.bagId
-          }));
-        state.builderItems = [...state.builderItems, ...baggedItems];
-
-        // Rotated bags and fresh purchases are UI-only decorations — read
-        // what's in the legacy shopState blob if still present, but treat as
-        // optional (no reconciliation needed).
+        // Rotated bags are client-only decoration — read what's in the
+        // legacy shopState blob if present, but drop any id that's no
+        // longer active after the projection.
         const stored = state.bootstrap?.shopState || null;
-        state.rotatedBags = (stored?.rotatedBags || []).filter((id) => state.activeBags.includes(id));
-        state.freshPurchases = loadoutItems
-          .filter((i) => i.freshPurchase)
-          .map((i) => i.artifactId);
+        const activeBagIds = new Set(state.activeBags.map((b) => b.artifactId));
+        state.rotatedBags = (stored?.rotatedBags || []).filter((id) => activeBagIds.has(id));
       } else {
         state.gameRun = null;
       }

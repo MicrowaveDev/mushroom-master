@@ -36,11 +36,15 @@ export async function insertLoadoutItem(client, params) {
   const bagRow = isBag(artifact);
   const x = bagRow ? -1 : (params.x ?? -1);
   const y = bagRow ? -1 : (params.y ?? -1);
+  // Non-bag rows can never be active; the field is meaningless for them.
+  // Bag rows default to inactive (container) unless the caller says otherwise.
+  // See docs/bag-active-persistence.md.
+  const active = bagRow && params.active ? 1 : 0;
   await q(client,
     `INSERT INTO game_run_loadout_items
        (id, game_run_id, player_id, round_number, artifact_id, x, y, width, height,
-        bag_id, sort_order, purchased_round, fresh_purchase, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        bag_id, sort_order, purchased_round, fresh_purchase, active, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
     [
       id,
       params.gameRunId,
@@ -55,6 +59,7 @@ export async function insertLoadoutItem(client, params) {
       params.sortOrder ?? 0,
       params.purchasedRound ?? params.roundNumber,
       params.freshPurchase ? 1 : 0,
+      active,
       nowIso()
     ]
   );
@@ -67,7 +72,7 @@ export async function insertLoadoutItem(client, params) {
 export async function readCurrentRoundItems(client, gameRunId, playerId, roundNumber) {
   const res = await q(client,
     `SELECT id, artifact_id, x, y, width, height, bag_id, sort_order,
-            purchased_round, fresh_purchase
+            purchased_round, fresh_purchase, active
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
      ORDER BY sort_order ASC`,
@@ -83,7 +88,8 @@ export async function readCurrentRoundItems(client, gameRunId, playerId, roundNu
     bagId: r.bag_id || null,
     sortOrder: r.sort_order,
     purchasedRound: r.purchased_round,
-    freshPurchase: !!r.fresh_purchase
+    freshPurchase: !!r.fresh_purchase,
+    active: !!r.active
   }));
 }
 
@@ -106,7 +112,10 @@ export async function copyRoundForward(client, gameRunId, playerId, fromRound, t
       bagId: item.bagId,
       sortOrder: item.sortOrder,
       purchasedRound: item.purchasedRound,
-      freshPurchase: false
+      freshPurchase: false,
+      // Bag activation persists across rounds — players shouldn't have to
+      // re-activate every bag after every battle.
+      active: item.active
     });
   }
   return current.length;
@@ -260,6 +269,12 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
     proposed.width = Number(legacy.width ?? row.width);
     proposed.height = Number(legacy.height ?? row.height);
     proposed.bagId = legacy.bagId || null;
+    // Bag activation: a PUT /artifact-loadout payload is a full-state sync,
+    // not a delta. Missing `active` on a bag entry means "deactivated" —
+    // the client must opt in explicitly to keep a bag in the active bar.
+    // Non-bag rows ignore the field entirely (it stays 0 at the DB level).
+    const rowArtifact = getArtifactById(proposed.artifactId);
+    proposed.active = isBag(rowArtifact) && legacy.active ? 1 : 0;
     updates.push(proposed);
   }
 
@@ -275,9 +290,9 @@ export async function applyLegacyPlacements(client, gameRunId, playerId, roundNu
   for (const proposed of updates) {
     await q(client,
       `UPDATE game_run_loadout_items
-       SET x = $1, y = $2, width = $3, height = $4, bag_id = $5
-       WHERE id = $6`,
-      [proposed.x, proposed.y, proposed.width, proposed.height, proposed.bagId, proposed.id]
+       SET x = $1, y = $2, width = $3, height = $4, bag_id = $5, active = $6
+       WHERE id = $7`,
+      [proposed.x, proposed.y, proposed.width, proposed.height, proposed.bagId, proposed.active, proposed.id]
     );
   }
 }

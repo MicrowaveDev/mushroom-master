@@ -31,13 +31,18 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     const payload = [];
 
     // Bags (including container bags) must be declared before bagged items
-    // reference them. Bags carry the container sentinel (-1,-1).
+    // reference them. Bags carry the container sentinel (-1,-1). The
+    // `active` field is the only thing that distinguishes an active bag
+    // from a container bag on the wire — the server persists it into
+    // game_run_loadout_items.active so the next hydrate routes the bag
+    // back to the correct bucket. See docs/bag-active-persistence.md.
     for (const bag of state.activeBags) {
       const artifact = getArtifact(bag.artifactId);
       if (!artifact) continue;
       payload.push(withId({
         artifactId: bag.artifactId, x: -1, y: -1,
-        width: artifact.width, height: artifact.height
+        width: artifact.width, height: artifact.height,
+        active: 1
       }, bag.id));
     }
     for (const slot of state.containerItems) {
@@ -45,7 +50,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       if (!artifact || artifact.family !== 'bag') continue;
       payload.push(withId({
         artifactId: slot.artifactId, x: -1, y: -1,
-        width: artifact.width, height: artifact.height
+        width: artifact.width, height: artifact.height,
+        active: 0
       }, slot.id));
     }
 
