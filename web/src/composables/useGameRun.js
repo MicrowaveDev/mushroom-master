@@ -15,13 +15,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
     //
     // - Base grid items (y < INVENTORY_ROWS): grid coordinates + id
     // - Items in bag rows (y >= INVENTORY_ROWS): bagId + id, no coords
-    // - Bags (active and container): (-1,-1) + id
+    // - Bags (active and container): (-1,-1) + id + active + rotated
+    const isRotatedRowId = (rowId) =>
+      rowId != null && state.rotatedBags.some((b) => b.id === rowId);
+
     const activeBagLayout = [];
     let r = INVENTORY_ROWS;
     for (const bag of state.activeBags) {
       const artifact = getArtifact(bag.artifactId);
       if (!artifact) continue;
-      const rotated = state.rotatedBags.includes(bag.artifactId);
+      const rotated = isRotatedRowId(bag.id);
       const rows = rotated ? Math.max(artifact.width, artifact.height) : Math.min(artifact.width, artifact.height);
       activeBagLayout.push({ bagId: bag.artifactId, startRow: r, rowCount: rows });
       r += rows;
@@ -32,17 +35,19 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
 
     // Bags (including container bags) must be declared before bagged items
     // reference them. Bags carry the container sentinel (-1,-1). The
-    // `active` field is the only thing that distinguishes an active bag
-    // from a container bag on the wire — the server persists it into
-    // game_run_loadout_items.active so the next hydrate routes the bag
-    // back to the correct bucket. See docs/bag-active-persistence.md.
+    // `active` and `rotated` fields are the only things that distinguish
+    // bag states on the wire — the server persists them into
+    // game_run_loadout_items.{active,rotated} so the next hydrate routes
+    // the bag back to the correct bucket and orientation. See
+    // docs/bag-active-persistence.md and docs/bag-rotated-persistence.md.
     for (const bag of state.activeBags) {
       const artifact = getArtifact(bag.artifactId);
       if (!artifact) continue;
       payload.push(withId({
         artifactId: bag.artifactId, x: -1, y: -1,
         width: artifact.width, height: artifact.height,
-        active: 1
+        active: 1,
+        rotated: isRotatedRowId(bag.id) ? 1 : 0
       }, bag.id));
     }
     for (const slot of state.containerItems) {
@@ -51,7 +56,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       payload.push(withId({
         artifactId: slot.artifactId, x: -1, y: -1,
         width: artifact.width, height: artifact.height,
-        active: 0
+        active: 0,
+        rotated: isRotatedRowId(slot.id) ? 1 : 0
       }, slot.id));
     }
 

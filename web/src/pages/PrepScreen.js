@@ -23,14 +23,19 @@ export const PrepScreen = {
     bagRows() {
       const rows = [];
       let r = INVENTORY_ROWS;
-      for (const bagId of this.state.activeBags) {
-        const bag = this.getArtifact(bagId);
+      for (const activeBag of this.state.activeBags) {
+        const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;
-        const rotated = this.state.rotatedBags.includes(bagId);
+        const rotated = this.state.rotatedBags.some((b) => b.id === activeBag.id);
         const cols = Math.min(INVENTORY_COLUMNS, rotated ? Math.min(bag.width, bag.height) : Math.max(bag.width, bag.height));
         const rowCount = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
         for (let i = 0; i < rowCount; i++) {
-          rows.push({ row: r + i, color: bag.color || '#888', artifactId: bagId, slotCount: cols });
+          rows.push({
+            row: r + i,
+            color: bag.color || '#888',
+            artifactId: activeBag.artifactId,
+            slotCount: cols
+          });
         }
         r += rowCount;
       }

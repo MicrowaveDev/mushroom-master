@@ -2,10 +2,14 @@ import { INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE,
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
 
 export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout) {
+  function isBagRotated(bagId) {
+    return state.rotatedBags.some((b) => b.artifactId === bagId);
+  }
+
   function bagLayout(bagId) {
     const bag = getArtifact(bagId);
     if (!bag) return { cols: INVENTORY_COLUMNS, rows: 1 };
-    const rotated = state.rotatedBags.includes(bagId);
+    const rotated = isBagRotated(bagId);
     const cols = rotated ? Math.min(bag.width, bag.height) : Math.max(bag.width, bag.height);
     const rows = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
     return { cols: Math.min(cols, INVENTORY_COLUMNS), rows };
@@ -44,7 +48,8 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
   }
 
   function rotateBag(bagId) {
-    if (!state.activeBags.some((b) => b.artifactId === bagId)) return;
+    const activeBag = state.activeBags.find((b) => b.artifactId === bagId);
+    if (!activeBag) return;
     const bag = getArtifact(bagId);
     if (!bag || bag.width === bag.height) return;
     // Rotation changes this bag's rowCount, shifting later bags up or down.
@@ -61,11 +66,25 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
       return;
     }
-    if (state.rotatedBags.includes(bagId)) {
-      state.rotatedBags = state.rotatedBags.filter((id) => id !== bagId);
+    // Toggle the rotated slot. rotatedBags is Array<{id, artifactId}> so
+    // duplicates are disambiguated — see docs/bag-rotated-persistence.md.
+    const idx = state.rotatedBags.findIndex((b) => b.id === activeBag.id);
+    if (idx >= 0) {
+      state.rotatedBags = [
+        ...state.rotatedBags.slice(0, idx),
+        ...state.rotatedBags.slice(idx + 1)
+      ];
     } else {
-      state.rotatedBags = [...state.rotatedBags, bagId];
+      state.rotatedBags = [
+        ...state.rotatedBags,
+        { id: activeBag.id, artifactId: activeBag.artifactId }
+      ];
     }
+    // Persist immediately — same contract as activateBag / deactivateBag.
+    // Pre-refactor, rotateBag only mutated client state and the rotation
+    // vanished on every reload because no write was ever sent.
+    if (state.gameRun && persistRunLoadout) persistRunLoadout();
+    else persistShopOffer();
   }
 
   // Build the next builderItems array for placing a candidate item onto the

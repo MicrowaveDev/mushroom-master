@@ -23,6 +23,7 @@ function row(overrides) {
     height: 1,
     bagId: null,
     active: false,
+    rotated: false,
     freshPurchase: false,
     ...overrides
   };
@@ -127,4 +128,55 @@ test('[projection] accepts either a Set or an array for bagArtifactIds', () => {
     ['moss_pouch']
   );
   assert.deepEqual(fromSet, fromArray);
+});
+
+// Rotation routing — see docs/bag-rotated-persistence.md.
+
+test('[projection] bag with rotated=true lands in rotatedBags', () => {
+  const result = projectLoadoutItems([
+    row({ id: 'r1', artifactId: 'moss_pouch', active: true, rotated: true })
+  ], BAG_IDS);
+  assert.equal(result.rotatedBags.length, 1);
+  assert.equal(result.rotatedBags[0].id, 'r1');
+  assert.equal(result.rotatedBags[0].artifactId, 'moss_pouch');
+});
+
+test('[projection] bag with rotated=false stays out of rotatedBags', () => {
+  const result = projectLoadoutItems([
+    row({ id: 'r2', artifactId: 'moss_pouch', active: true, rotated: false })
+  ], BAG_IDS);
+  assert.equal(result.rotatedBags.length, 0);
+  assert.equal(result.activeBags.length, 1);
+});
+
+test('[projection] rotation state survives across active+container bags', () => {
+  // A rotated bag can be either active or in the container — the
+  // rotation bit is orthogonal to activation. Pin that the projection
+  // routes each independently.
+  const result = projectLoadoutItems([
+    row({ id: 'a1', artifactId: 'moss_pouch', active: true, rotated: true }),
+    row({ id: 'c1', artifactId: 'amber_satchel', active: false, rotated: true })
+  ], BAG_IDS);
+  assert.equal(result.activeBags.length, 1);
+  assert.equal(result.activeBags[0].id, 'a1');
+  assert.equal(result.containerItems.length, 1);
+  assert.equal(result.containerItems[0].id, 'c1');
+  assert.equal(result.rotatedBags.length, 2);
+  assert.deepEqual(
+    result.rotatedBags.map((b) => b.id).sort(),
+    ['a1', 'c1']
+  );
+});
+
+test('[projection] duplicate bags with different rotation states hydrate separately', () => {
+  // Regression: rotatedBags used to be a string[] of artifactIds, which
+  // couldn't represent "moss_pouch #A rotated, moss_pouch #B not". Now
+  // it's Array<{id, artifactId}>, so the row id disambiguates.
+  const result = projectLoadoutItems([
+    row({ id: 'rot_one', artifactId: 'moss_pouch', active: true, rotated: true }),
+    row({ id: 'plain_one', artifactId: 'moss_pouch', active: true, rotated: false })
+  ], BAG_IDS);
+  assert.equal(result.activeBags.length, 2);
+  assert.equal(result.rotatedBags.length, 1);
+  assert.equal(result.rotatedBags[0].id, 'rot_one');
 });

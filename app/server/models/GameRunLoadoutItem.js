@@ -24,6 +24,11 @@ export default function defineGameRunLoadoutItem(sequelize) {
     // the container (unactivated). Non-bag rows are always 0 — they
     // don't have an activation concept. See docs/bag-active-persistence.md.
     active: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    // Rotation state for bag rows. 1 if the bag is displayed in its
+    // alternate (width↔height swapped) orientation; 0 for the canonical
+    // orientation. Non-bag rows are always 0. See
+    // docs/bag-rotated-persistence.md.
+    rotated: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     created_at: { type: DataTypes.TEXT, allowNull: false }
   }, {
     tableName: 'game_run_loadout_items',

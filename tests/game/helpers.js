@@ -158,8 +158,8 @@ export async function seedRunLoadout(playerId, gameRunId, items) {
     await query(
       `INSERT INTO game_run_loadout_items
          (id, game_run_id, player_id, round_number, artifact_id, x, y, width, height,
-          bag_id, sort_order, purchased_round, fresh_purchase, active, created_at)
-       VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9, $10, 1, 0, $11, $12)`,
+          bag_id, sort_order, purchased_round, fresh_purchase, active, rotated, created_at)
+       VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9, $10, 1, 0, $11, $12, $13)`,
       [
         createId('grlitem'),
         gameRunId,
@@ -172,6 +172,7 @@ export async function seedRunLoadout(playerId, gameRunId, items) {
         item.bagId || null,
         index,
         item.active ? 1 : 0,
+        item.rotated ? 1 : 0,
         nowIso()
       ]
     );

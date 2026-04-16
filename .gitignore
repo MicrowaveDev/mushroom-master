@@ -7,4 +7,5 @@ data/
 test-results/
 tmp/*.sqlite
 tmp/*.sqlite-journal
+tmp/battle.log
 .agent/tasks/*/raw/screenshots/

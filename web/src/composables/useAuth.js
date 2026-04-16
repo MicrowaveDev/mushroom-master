@@ -59,8 +59,8 @@ export function useAuth(state, goTo) {
         // Single-source projection (§2.5): derive all UI state buckets from
         // the server's loadoutItems array via the pure projectLoadoutItems
         // helper. See loadout-projection.js for the routing rules and
-        // docs/bag-active-persistence.md / docs/client-row-id-refactor.md
-        // for the design context.
+        // docs/bag-active-persistence.md / docs/bag-rotated-persistence.md /
+        // docs/client-row-id-refactor.md for the design context.
         const allArtifacts = state.bootstrap?.artifacts || [];
         const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
         const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
@@ -68,14 +68,8 @@ export function useAuth(state, goTo) {
         state.builderItems = projected.builderItems;
         state.containerItems = projected.containerItems;
         state.activeBags = projected.activeBags;
+        state.rotatedBags = projected.rotatedBags;
         state.freshPurchases = projected.freshPurchases;
-
-        // Rotated bags are client-only decoration — read what's in the
-        // legacy shopState blob if present, but drop any id that's no
-        // longer active after the projection.
-        const stored = state.bootstrap?.shopState || null;
-        const activeBagIds = new Set(state.activeBags.map((b) => b.artifactId));
-        state.rotatedBags = (stored?.rotatedBags || []).filter((id) => activeBagIds.has(id));
       } else {
         state.gameRun = null;
       }
