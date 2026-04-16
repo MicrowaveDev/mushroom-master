@@ -1,23 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
+import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots';
 const debugScreens = process.env.PLAYWRIGHT_SCREEN_DEBUG === '1';
-
-// Canonical viewport pair from docs/user-flows.md preamble + AGENTS.md.
-// Tests must capture both so layout regressions on either form-factor are
-// caught at the same severity.
-const MOBILE_VIEWPORT = { width: 375, height: 667 };
-// Loadout constants deleted with the legacy single-battle flow on
-// 2026-04-13. Game-run prep is responsible for seeding loadouts now.
-
-async function resetDevDb(request) {
-  const response = await request.post('/api/dev/reset', { data: {} });
-  const json = await response.json();
-  if (!json.success) {
-    throw new Error(`dev reset failed: ${JSON.stringify(json)}`);
-  }
-}
 
 const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
 
@@ -30,30 +16,6 @@ function debugLog(message, details = undefined) {
     return;
   }
   console.log(`[screenshots] ${message}`, details);
-}
-
-async function createSession(request, payload) {
-  const response = await request.post('/api/dev/session', { data: payload });
-  const json = await response.json();
-  if (!json.success) {
-    throw new Error(`dev session failed: ${JSON.stringify(json)}`);
-  }
-  return json.data;
-}
-
-async function api(request, sessionKey, url, method = 'GET', data = undefined) {
-  const response = await request.fetch(url, {
-    method,
-    headers: {
-      'X-Session-Key': sessionKey
-    },
-    data
-  });
-  const json = await response.json();
-  if (!json.success) {
-    throw new Error(`api call failed for ${url}: ${JSON.stringify(json)}`);
-  }
-  return json.data;
 }
 
 test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ page, request, baseURL }) => {

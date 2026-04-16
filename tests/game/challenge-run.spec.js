@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
+import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/challenge';
-
-// Canonical viewport per docs/user-flows.md preamble + AGENTS.md.
-const MOBILE_VIEWPORT = { width: 375, height: 667 };
 
 const loadoutA = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -17,30 +15,6 @@ const loadoutB = [
 ];
 
 const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
-
-async function resetDevDb(request) {
-  const response = await request.post('/api/dev/reset', { data: {} });
-  const json = await response.json();
-  if (!json.success) throw new Error(`dev reset failed: ${JSON.stringify(json)}`);
-}
-
-async function createSession(request, payload) {
-  const response = await request.post('/api/dev/session', { data: payload });
-  const json = await response.json();
-  if (!json.success) throw new Error(`dev session failed: ${JSON.stringify(json)}`);
-  return json.data;
-}
-
-async function api(request, sessionKey, url, method = 'GET', data = undefined) {
-  const response = await request.fetch(url, {
-    method,
-    headers: { 'X-Session-Key': sessionKey },
-    data
-  });
-  const json = await response.json();
-  if (!json.success) throw new Error(`api call failed for ${url}: ${JSON.stringify(json)}`);
-  return json.data;
-}
 
 async function setupChallengePlayers(request) {
   const playerA = await createSession(request, { telegramId: 911, username: 'challenger', name: 'Challenger' });

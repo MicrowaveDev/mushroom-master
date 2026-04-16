@@ -1887,6 +1887,15 @@ select {
 .replay-rewards-card .stat-grid {
   margin-top: 8px;
 }
+.replay-run-status {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  opacity: 0.7;
+}
 
 @keyframes result-pulse {
   0%, 100% { opacity: 1; }
@@ -2655,6 +2664,10 @@ select {
   min-width: 160px;
   font-size: 1.1rem;
   padding: 12px 24px;
+}
+.prep-ready-btn:disabled {
+  opacity: 0.7;
+  animation: result-pulse 1.2s ease-in-out infinite;
 }
 
 /* --- Sell Zone --- */

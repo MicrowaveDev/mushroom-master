@@ -19,6 +19,12 @@ export default defineConfig({
   //   - dev-only /api/dev/game-run/:id/force-shop (no RNG/pity polling)
   // See docs/flaky-tests.md.
   retries: 1,
+  // All workers share a single Express server and SQLite database. Parallel
+  // workers cause `resetDb()` races — one worker's DB reset closes the
+  // connection while others are mid-test, producing SQLITE_MISUSE errors
+  // that cascade into "Internal server error" / stale-session failures.
+  // Serialize until per-worker DB isolation is implemented.
+  workers: 1,
   use: {
     baseURL: testFrontendOrigin,
     browserName: 'chromium',

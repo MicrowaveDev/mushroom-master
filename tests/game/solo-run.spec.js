@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
+import { resetDevDb, createSession, api, waitForPrepReady, MOBILE_VIEWPORT } from './e2e-helpers.js';
 
 const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/run';
-
-// Canonical viewport per docs/user-flows.md preamble + AGENTS.md.
-const MOBILE_VIEWPORT = { width: 375, height: 667 };
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -33,21 +31,8 @@ async function sellContainerItemViaApi(page, request, sessionKey, gameRunId, art
   });
   const json = await response.json();
   if (!json.success) throw new Error(`sell failed for ${artifactId}: ${JSON.stringify(json)}`);
-  // Force the UI to re-hydrate so the locator check after this call sees
-  // the updated state (the container item removed).
   await page.reload({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
-}
-
-/**
- * Wait for the prep screen's deterministic "ready" signal. PrepScreen sets
- * `data-testid="prep-ready"` on the root only after `refreshBootstrap`
- * finishes projecting `loadoutItems` into `containerItems`. Tests should
- * always wait on this before interacting, to avoid racing Vue's reactive
- * update against the server response. See docs/flaky-tests.md.
- */
-async function waitForPrepReady(page, timeout = 15000) {
-  await page.locator('[data-testid="prep-ready"]').waitFor({ timeout });
 }
 
 /**
@@ -71,30 +56,6 @@ async function forceShopAndBuy(page, request, sessionKey, gameRunId, artifactId)
   await page.locator(`.shop-item[data-artifact-id="${artifactId}"]`).click();
   await expect(page.locator(`.artifact-container-zone .container-item[data-artifact-id="${artifactId}"]`))
     .toBeVisible({ timeout: 5000 });
-}
-
-async function resetDevDb(request) {
-  const response = await request.post('/api/dev/reset', { data: {} });
-  const json = await response.json();
-  if (!json.success) throw new Error(`dev reset failed: ${JSON.stringify(json)}`);
-}
-
-async function createSession(request, payload) {
-  const response = await request.post('/api/dev/session', { data: payload });
-  const json = await response.json();
-  if (!json.success) throw new Error(`dev session failed: ${JSON.stringify(json)}`);
-  return json.data;
-}
-
-async function api(request, sessionKey, url, method = 'GET', data = undefined) {
-  const response = await request.fetch(url, {
-    method,
-    headers: { 'X-Session-Key': sessionKey },
-    data
-  });
-  const json = await response.json();
-  if (!json.success) throw new Error(`api call failed for ${url}: ${JSON.stringify(json)}`);
-  return json.data;
 }
 
 test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey with screenshots', async ({ page, request, baseURL }) => {

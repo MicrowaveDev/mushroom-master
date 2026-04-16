@@ -113,7 +113,11 @@ export function useAuth(state, goTo) {
         state.screen = state.gameRun ? 'prep' : 'home';
       }
     } catch (error) {
-      state.error = error.message;
+      // 401 "Authentication required" is an expected state (expired/invalid
+      // session) — silently redirect to auth instead of flashing an error.
+      if (!/authentication required/i.test(error.message)) {
+        state.error = error.message;
+      }
       state.bootstrap = null;
       state.friends = [];
       state.leaderboard = [];

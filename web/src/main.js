@@ -179,6 +179,12 @@ const App = {
     }
 
     // --- Watchers ---
+    // Auto-dismiss errors after 5 seconds so stale messages don't linger.
+    let errorDismissTimer = null;
+    watch(() => state.error, (msg) => {
+      if (errorDismissTimer) { clearTimeout(errorDismissTimer); errorDismissTimer = null; }
+      if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
+    });
     watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
     watch(() => state.screen, async (screen, oldScreen) => {
       if (screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {

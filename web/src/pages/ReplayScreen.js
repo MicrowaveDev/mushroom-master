@@ -32,6 +32,12 @@ export const ReplayScreen = {
     roundOutcome() {
       return this.state.gameRunResult?.lastRound?.outcome;
     },
+    runLivesRemaining() {
+      return this.state.gameRun?.player?.livesRemaining;
+    },
+    runWins() {
+      return this.state.gameRun?.player?.wins || 0;
+    },
     continueLabel() {
       // No active run → standalone replay from history → "Home".
       // Active run, any state → "Continue". onReplayFinish in main.js
@@ -78,6 +84,10 @@ export const ReplayScreen = {
             <dd>{{ formatDelta(ratingDelta) }}</dd>
           </div>
         </dl>
+        <div v-if="runLivesRemaining != null" class="replay-run-status">
+          <span>{{ t.wins }}: {{ runWins }}</span>
+          <span>{{ t.lives }}: {{ runLivesRemaining }}</span>
+        </div>
       </div>
       <button v-if="replayFinished" class="primary replay-result-button-full" @click="$emit('go-results')">{{ continueLabel }}</button>
       <div class="replay-log">
