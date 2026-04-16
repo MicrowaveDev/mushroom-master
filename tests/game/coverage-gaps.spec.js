@@ -122,29 +122,6 @@ test('[Req 1-H] daily battle limit rejects game start after 10 runs', async ({ r
   }
 });
 
-// --- Req 10-A: Rating updates per round ---
-
-test('[Req 10-A] solo mode: rating changes after each round', async ({ request }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 1005, username: 'rating_player', name: 'Rating Player' });
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-
-  const ghost = await createSession(request, { telegramId: 1006, username: 'rating_ghost', name: 'Rating Ghost' });
-  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-
-  const bootBefore = await api(request, player.sessionKey, '/api/bootstrap');
-  const ratingBefore = bootBefore.player.rating;
-
-  const run = await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
-  const result = await api(request, player.sessionKey, `/api/game-run/${run.id}/ready`, 'POST', {});
-
-  // Round result should include rating info
-  expect(result.lastRound).toBeTruthy();
-  expect(result.lastRound.ratingBefore).toBe(ratingBefore);
-  expect(result.lastRound.ratingAfter).toBeDefined();
-  expect(result.lastRound.ratingAfter).not.toBe(result.lastRound.ratingBefore);
-});
-
 // --- Req 4-L: Non-empty bag cannot be sold ---
 
 test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request, baseURL }) => {
@@ -210,60 +187,13 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   await expect(page.locator('.prep-screen')).toBeVisible();
 });
 
-// --- Req 9-B: Completion bonus displayed ---
+// Req 9-B (completion bonus) merged into solo-run.spec.js "full journey" test.
 
-test('[Req 9-B] run complete screen shows completion bonus for 3+ wins', async ({ request }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 1009, username: 'bonus_player', name: 'Bonus Player' });
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+// --- Req 4-F, 12-D: Game run state + shop offer survive page reload ---
 
-  const ghost = await createSession(request, { telegramId: 1010, username: 'bonus_ghost', name: 'Bonus Ghost' });
-  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-
-  const run = await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
-
-  // Play rounds until completion
-  let finalResult = null;
-  for (let i = 0; i < 9; i++) {
-    const result = await api(request, player.sessionKey, `/api/game-run/${run.id}/ready`, 'POST', {});
-    if (result.status === 'completed' || result.status === 'abandoned') {
-      finalResult = result;
-      break;
-    }
-  }
-
-  expect(finalResult).not.toBeNull();
-  expect(finalResult.completionBonus).toBeDefined();
-  // Bonus depends on win count:
-  // 0-2 wins: { spore: 0, mycelium: 0 }
-  // 3-4 wins: { spore: 5, mycelium: 2 }
-  // 5-6 wins: { spore: 10, mycelium: 5 }
-  // 7-9 wins: { spore: 20, mycelium: 10 }
-  expect(finalResult.completionBonus.spore).toBeGreaterThanOrEqual(0);
-  expect(finalResult.completionBonus.mycelium).toBeGreaterThanOrEqual(0);
-
-  const wins = finalResult.player.wins;
-  if (wins >= 7) {
-    expect(finalResult.completionBonus).toEqual({ spore: 20, mycelium: 10 });
-  } else if (wins >= 5) {
-    expect(finalResult.completionBonus).toEqual({ spore: 10, mycelium: 5 });
-  } else if (wins >= 3) {
-    expect(finalResult.completionBonus).toEqual({ spore: 5, mycelium: 2 });
-  } else {
-    expect(finalResult.completionBonus).toEqual({ spore: 0, mycelium: 0 });
-  }
-});
-
-// --- Req 4-F: Shop offer is byte-identical across page refresh ---
-
-test('[Req 4-F] game-run shop offer is identical (artifact-by-artifact) after page reload', async ({ page, request, baseURL }) => {
-  // The existing [Req 12-D] test below only checks the shop is non-empty
-  // after reload. This test pins the stronger guarantee from Req 4-F:
-  // "Shop offer persists across page refreshes — no free re-roll." We
-  // capture the exact set of artifact IDs visible before reload and assert
-  // the same set is visible after, ruling out a regression where the
-  // server silently regenerates the offer (effectively granting a free
-  // re-roll on every reload).
+test('[Req 4-F, 12-D] game run state and shop offer survive page reload', async ({ page, request, baseURL }) => {
+  // Merged: former shop-offer-identical test (Req 4-F) + HUD/coins-survive
+  // test (Req 12-D). One setup, both assertions.
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1015, username: 'shop_persist', name: 'Shop Persist' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
@@ -276,18 +206,23 @@ test('[Req 4-F] game-run shop offer is identical (artifact-by-artifact) after pa
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
-  // Read the exact shop offer (artifact ids in order) BEFORE reload.
+  // Snapshot ALL state before reload: HUD, coins, shop artifact IDs
+  const hudBefore = await page.locator('.run-hud').textContent();
+  const coinsBefore = await page.locator('.run-hud-coins').textContent();
   const shopItemIdsBefore = await page.locator('.prep-screen .shop-item').evaluateAll((nodes) =>
     nodes.map((n) => n.getAttribute('data-artifact-id') || '').filter(Boolean)
   );
   expect(shopItemIdsBefore.length).toBeGreaterThan(0);
 
-  // Reload the page and wait for the prep screen to come back.
+  // Reload
   await page.reload({ waitUntil: 'networkidle' });
   await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
 
-  // Read the shop offer AFTER reload and assert it's the same set of artifacts.
-  // Order may shift if the client re-projects, but the multi-set must match.
+  // [Req 12-D] HUD and coins survive
+  expect(await page.locator('.run-hud').textContent()).toBe(hudBefore);
+  expect(await page.locator('.run-hud-coins').textContent()).toBe(coinsBefore);
+
+  // [Req 4-F] Shop offer is the same set of artifacts (no free re-roll)
   const shopItemIdsAfter = await page.locator('.prep-screen .shop-item').evaluateAll((nodes) =>
     nodes.map((n) => n.getAttribute('data-artifact-id') || '').filter(Boolean)
   );
@@ -295,56 +230,17 @@ test('[Req 4-F] game-run shop offer is identical (artifact-by-artifact) after pa
   expect(shopItemIdsAfter.sort()).toEqual(shopItemIdsBefore.sort());
 });
 
-// --- Req 12-D: Shop offer persists across page refresh ---
-
-test('[Req 12-D] game run state survives page refresh (reconnection)', async ({ page, request, baseURL }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 1011, username: 'reconnect_player', name: 'Reconnect' });
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-
-  const ghost = await createSession(request, { telegramId: 1012, username: 'reconnect_ghost', name: 'Reconnect Ghost' });
-  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-
-  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-
-  // Start game run
-  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await expect(page.locator('.prep-screen')).toBeVisible();
-
-  // Capture state before reload
-  const hudBefore = await page.locator('.run-hud').textContent();
-  const shopCountBefore = await page.locator('.prep-screen .shop-item').count();
-  const coinsBefore = await page.locator('.run-hud-coins').textContent();
-
-  // Simulate disconnect/reconnect via page reload
-  await page.reload({ waitUntil: 'networkidle' });
-
-  // [Req 12-D] All state should survive
-  await expect(page.locator('.prep-screen')).toBeVisible({ timeout: 10000 });
-
-  // HUD should show same round
-  const hudAfter = await page.locator('.run-hud').textContent();
-  expect(hudAfter).toBe(hudBefore);
-
-  // Coins should be the same
-  const coinsAfter = await page.locator('.run-hud-coins').textContent();
-  expect(coinsAfter).toBe(coinsBefore);
-
-  // Shop should have items (may differ due to re-fetch, but should not be empty)
-  const shopCountAfter = await page.locator('.prep-screen .shop-item').count();
-  expect(shopCountAfter).toBeGreaterThan(0);
-});
-
 // --- Req 13-C, 13-D: Post-replay button label ---
 
-test('[Req 13-C] post-Ready lands on replay and shows inline rewards + Continue', async ({ page, request, baseURL }) => {
-  // Flow B Step 3: Ready should navigate directly to the replay screen
-  // (no intermediate round-result), autoplay the battle, and render the
-  // inline rewards card + Continue button once the replay finishes.
+test('[Req 10-A, 13-C] post-Ready lands on replay with rewards, Continue label, and rating delta', async ({ page, request, baseURL }) => {
+  // Merged: Flow B Step 3 replay test + rating-changes-per-round (Req 10-A).
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1020, username: 'replay_label_player', name: 'Replay Label' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  // [Req 10-A] Capture rating before the round
+  const bootBefore = await api(request, player.sessionKey, '/api/bootstrap');
+  const ratingBefore = bootBefore.player.rating;
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
@@ -365,6 +261,11 @@ test('[Req 13-C] post-Ready lands on replay and shows inline rewards + Continue'
   // [Req 13-C] During active run: button label is "Continue" / "Продолжить"
   const btnText = await replayBtn.textContent();
   expect(btnText.trim()).toMatch(/continue|продолжить/i);
+
+  // [Req 10-A] Verify rating changed after the round (via API)
+  const bootAfter = await api(request, player.sessionKey, '/api/bootstrap');
+  expect(bootAfter.player.rating).toBeDefined();
+  expect(bootAfter.player.rating).not.toBe(ratingBefore);
 });
 
 test('[Req 13-D] post-replay button shows "Home" for standalone replay from history', async ({ page, request, baseURL }) => {

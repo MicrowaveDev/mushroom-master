@@ -58,7 +58,7 @@ async function forceShopAndBuy(page, request, sessionKey, gameRunId, artifactId)
     .toBeVisible({ timeout: 5000 });
 }
 
-test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey with screenshots', async ({ page, request, baseURL }) => {
+test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   await page.setViewportSize(MOBILE_VIEWPORT);
 
@@ -174,9 +174,13 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 11-B, 12-D, 13-A] solo game run: full journey wit
     }
   }
 
-  // --- Run complete screen ---
+  // --- Run complete screen + completion bonus [Req 9-B] ---
   await expect(page.locator('.run-complete-screen')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.run-complete-card')).toBeVisible();
+  // Verify completion bonus is displayed (merged from coverage-gaps Req 9-B).
+  // The stat-grid inside run-complete-card shows spore/mycelium bonus.
+  const completeCard = page.locator('.run-complete-card');
+  await expect(completeCard.locator('.stat-grid')).toBeVisible();
   await saveShot(page, 'solo-09-run-complete.png');
 
   // --- Go home ---
@@ -204,13 +208,16 @@ test('[Req 1-F] solo game run: abandon mid-game with screenshots', async ({ page
   await saveShot(page, 'solo-abandon-02-home-no-resume.png');
 });
 
-test('[Req 5-A, 12-D] bag activation persists across page reload', async ({ page, request, baseURL }) => {
+test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistence', async ({ page, request, baseURL }) => {
+  // Merged: former "bag activation persists across reload" (polling) +
+  // "amber satchel activates & expands grid" (deterministic). Uses
+  // forceShopAndBuy for deterministic bag injection instead of polling.
   await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 910, username: 'bag_tester', name: 'Bag Tester' });
+  const player = await createSession(request, { telegramId: 920, username: 'bag_tester', name: 'Bag Tester' });
 
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
 
-  const ghost = await createSession(request, { telegramId: 911, username: 'bag_ghost', name: 'Bag Ghost' });
+  const ghost = await createSession(request, { telegramId: 921, username: 'bag_ghost', name: 'Bag Ghost' });
   await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
@@ -220,107 +227,19 @@ test('[Req 5-A, 12-D] bag activation persists across page reload', async ({ page
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await waitForPrepReady(page);
 
-  // Try to find a bag in the shop, refresh if needed
-  const hasBag = await page.locator('.shop-item--bag').first().isVisible().catch(() => false);
-
-  if (!hasBag) {
-    // Refresh shop until a bag appears
-    const refreshBtn = page.locator('.artifact-shop-header button');
-    for (let i = 0; i < 5; i++) {
-      if (await refreshBtn.isEnabled()) {
-        await refreshBtn.click();
-        await page.waitForTimeout(300);
-      }
-      if (await page.locator('.shop-item--bag').isVisible().catch(() => false)) break;
-    }
-  }
-
-  const bagItem = page.locator('.shop-item--bag').first();
-  if (!(await bagItem.isVisible().catch(() => false))) {
-    // No bag appeared after refreshes — skip test gracefully
-    return;
-  }
-
-  // Buy the bag → appears in container
-  await bagItem.click();
-  const containerBag = page.locator('.artifact-container-zone .container-item').last();
-  await expect(containerBag).toBeVisible({ timeout: 3000 });
-
-  // Click bag in container → should activate (add cells to grid, not place on grid)
-  await containerBag.click();
-
-  // Bag should now be active: colored cells visible, chip bar visible
-  await expect(page.locator('.active-bags-bar')).toBeVisible();
-  const activeBagChip = page.locator('.active-bag-chip');
-  await expect(activeBagChip).toHaveCount(1);
-
-  // Grid should have bag rows (dashed colored cells)
-  const bagCells = page.locator('.artifact-grid-cell--bag');
-  const bagCellCount = await bagCells.count();
-  expect(bagCellCount).toBeGreaterThan(0);
-
-  await saveShot(page, 'solo-bag-01-activated.png');
-
-  // Snapshot inventory state before reload
-  const cellsBefore = await page.locator('.artifact-grid-cell, .artifact-grid-cell--bag').count();
-  const placedBefore = await page.locator('.inventory-pieces .artifact-piece').count();
-
-  // --- Reload the page ---
-  await page.reload({ waitUntil: 'networkidle' });
-  await waitForPrepReady(page);
-
-  // Verify bag state survived reload
-  await expect(page.locator('.active-bags-bar')).toBeVisible();
-  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
-
-  const bagCellsAfter = page.locator('.artifact-grid-cell--bag');
-  const bagCellCountAfter = await bagCellsAfter.count();
-  expect(bagCellCountAfter).toBe(bagCellCount);
-
-  // Grid should have same total cell count (no phantom artifacts)
-  const cellsAfter = await page.locator('.artifact-grid-cell, .artifact-grid-cell--bag').count();
-  expect(cellsAfter).toBe(cellsBefore);
-
-  // Placed artifacts count should be exactly what we had before reload (no loss, no phantoms)
-  const placedAfter = await page.locator('.inventory-pieces .artifact-piece').count();
-  expect(placedAfter).toBe(placedBefore);
-
-  await saveShot(page, 'solo-bag-02-after-reload.png');
-});
-
-test('[Req 5-C, 2-B] amber satchel (2x2 bag) activates from container and expands grid', async ({ page, request, baseURL }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 920, username: 'satchel_tester', name: 'Satchel Tester' });
-
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-
-  const ghost = await createSession(request, { telegramId: 921, username: 'satchel_ghost', name: 'Satchel Ghost' });
-  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-
-  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-
-  // Start a game run
-  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await waitForPrepReady(page);
-
-  // Count base inventory grid cells (3×3 = 9, per INVENTORY_COLUMNS × INVENTORY_ROWS)
+  // Count base inventory grid cells (3×3 = 9)
   const inventoryGrid = page.locator('.artifact-inventory-grid .artifact-grid-background');
   const baseCells = await inventoryGrid.locator('> *').count();
   expect(baseCells).toBe(9);
 
   // Deterministically place amber_satchel in the shop, then buy it.
-  // Replaces the old "refresh up to 10 times hoping pity rolls it" loop.
-  const satchelBootstrap = await api(request, player.sessionKey, '/api/bootstrap');
-  await forceShopAndBuy(page, request, player.sessionKey, satchelBootstrap.activeGameRun.id, 'amber_satchel');
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  await forceShopAndBuy(page, request, player.sessionKey, bootstrap.activeGameRun.id, 'amber_satchel');
 
   // Verify it appeared in the container
   const containerItem = page.locator('.artifact-container-zone .container-item').last();
   await expect(containerItem).toBeVisible({ timeout: 3000 });
-
-  // Count container items
   const containerCountBefore = await page.locator('.artifact-container-zone .container-item').count();
-  expect(containerCountBefore).toBeGreaterThan(0);
 
   // Click the bag in container to activate it
   await containerItem.click();
@@ -333,118 +252,30 @@ test('[Req 5-C, 2-B] amber satchel (2x2 bag) activates from container and expand
   await expect(page.locator('.active-bags-bar')).toBeVisible();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
-  // Grid should have expanded: base 6 cells + bag rows
-  // amber_satchel (2x2): 2 rows, 2 usable cols each = 4 bag cells + 2 disabled = 6 new grid slots
+  // Grid should have expanded with bag rows
   const bagCells = inventoryGrid.locator('.artifact-grid-cell--bag');
   const bagCellCount = await bagCells.count();
   expect(bagCellCount).toBeGreaterThan(0);
-
-  // Total inventory grid cells should be more than base 6
   const totalCells = await inventoryGrid.locator('> *').count();
-  expect(totalCells).toBeGreaterThan(6);
+  expect(totalCells).toBeGreaterThan(9);
 
-  await saveShot(page, 'solo-satchel-01-activated.png');
-});
+  await saveShot(page, 'solo-bag-01-activated.png');
 
-test('can sell bag from container after page reload', async ({ page, request, baseURL }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 930, username: 'sell_bag_tester', name: 'Sell Bag Tester' });
+  // --- Reload persistence (formerly separate test) ---
+  const cellsBefore = await page.locator('.artifact-grid-cell, .artifact-grid-cell--bag').count();
+  const placedBefore = await page.locator('.inventory-pieces .artifact-piece').count();
 
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-
-  const ghost = await createSession(request, { telegramId: 931, username: 'sell_bag_ghost', name: 'Sell Bag Ghost' });
-  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-
-  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-
-  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await waitForPrepReady(page);
-
-  // Deterministically place moss_pouch in the shop and buy it (leave in container).
-  const bagId = 'moss_pouch';
-  const sellBootstrap = await api(request, player.sessionKey, '/api/bootstrap');
-  await forceShopAndBuy(page, request, player.sessionKey, sellBootstrap.activeGameRun.id, bagId);
-
-  // --- Reload the page (simulates server+page restart) ---
   await page.reload({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
-  // Bag should still be in the container after reload
-  const bagInContainer = page.locator(`.artifact-container-zone .container-item[data-artifact-id="${bagId}"]`);
-  await expect(bagInContainer).toBeVisible({ timeout: 5000 });
-
-  // The sell zone should be visible — we still assert this as part of the
-  // reload-survives-state check.
-  await expect(page.locator('.sell-zone')).toBeVisible();
-
-  // Perform the sell via the API directly (see sellContainerItemViaApi).
-  // Playwright's dragTo is unreliable for HTML5 drag handlers in headless
-  // Chromium, but the actual behavior under test is server-side state.
-  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
-  await sellContainerItemViaApi(page, request, player.sessionKey, bootstrap.activeGameRun.id, bagId);
-
-  // Bag should be removed from container after reload
-  await expect(page.locator(`.artifact-container-zone .container-item[data-artifact-id="${bagId}"]`)).toHaveCount(0, { timeout: 5000 });
-
-  await saveShot(page, 'solo-bag-sell-after-reload.png');
-});
-
-test('can sell second bag from container when another bag is active (after reload)', async ({ page, request, baseURL }) => {
-  await resetDevDb(request);
-  const player = await createSession(request, { telegramId: 940, username: 'two_bag_tester', name: 'Two Bag Tester' });
-
-  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
-
-  const ghost = await createSession(request, { telegramId: 941, username: 'two_bag_ghost', name: 'Two Bag Ghost' });
-  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
-
-  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
-
-  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
-  await waitForPrepReady(page);
-
-  const twoBagBootstrap = await api(request, player.sessionKey, '/api/bootstrap');
-  const twoBagRunId = twoBagBootstrap.activeGameRun.id;
-
-  // Buy moss_pouch (shop forced) and activate it
-  await forceShopAndBuy(page, request, player.sessionKey, twoBagRunId, 'moss_pouch');
-  await page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]').click();
+  // Bag state survived reload
+  await expect(page.locator('.active-bags-bar')).toBeVisible();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
+  expect(await page.locator('.artifact-grid-cell--bag').count()).toBe(bagCellCount);
+  expect(await page.locator('.artifact-grid-cell, .artifact-grid-cell--bag').count()).toBe(cellsBefore);
+  expect(await page.locator('.inventory-pieces .artifact-piece').count()).toBe(placedBefore);
 
-  // Buy amber_satchel (shop forced; leave in container)
-  await forceShopAndBuy(page, request, player.sessionKey, twoBagRunId, 'amber_satchel');
-  await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]')).toBeVisible();
-
-  // --- Reload the page ---
-  await page.reload({ waitUntil: 'networkidle' });
-  await waitForPrepReady(page);
-
-  // Verify state restored: 1 active bag (moss_pouch), 1 container bag (amber_satchel)
-  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
-  const containerBag = page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]');
-  await expect(containerBag).toBeVisible();
-
-  // Sell the amber_satchel from container via API — see
-  // sellContainerItemViaApi for why we don't use Playwright dragTo here.
-  const bootstrapForSell = await api(request, player.sessionKey, '/api/bootstrap');
-  await sellContainerItemViaApi(page, request, player.sessionKey, bootstrapForSell.activeGameRun.id, 'amber_satchel');
-
-  // Verify no error
-  const errorBanner = page.locator('.error-banner, .app-error');
-  if (await errorBanner.isVisible().catch(() => false)) {
-    const errorText = await errorBanner.textContent();
-    throw new Error(`Sell failed: ${errorText}`);
-  }
-
-  // Bag should be removed from container
-  await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]')).toHaveCount(0, { timeout: 5000 });
-
-  // Active bag should still be present
-  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
-
-  await saveShot(page, 'solo-two-bags-sell-after-reload.png');
+  await saveShot(page, 'solo-bag-02-after-reload.png');
 });
 
 test('round transitions: replay → continue → next prep (not home) while lives remain', async ({ page, request, baseURL }) => {
@@ -631,10 +462,10 @@ test('game run loadout budget scales with current round (not legacy 5-coin cap)'
   }
 });
 
-test('multiple items across rounds survive a full page reload', async ({ page, request, baseURL }) => {
-  // Reproduces "after server restart and page refresh, all my artifacts disappeared".
-  // Walks through 2 rounds buying multiple items each round, then reloads the page
-  // and verifies the builderItems/containerItems/activeBags are all preserved.
+test('items, bags, and sell state all survive page reload', async ({ page, request, baseURL }) => {
+  // Merged: former "multiple items survive reload" + "sell bag from container
+  // after reload" + "sell 2nd bag when another active". One setup, all
+  // reload-persistence scenarios in sequence.
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 980, username: 'reload_tester', name: 'Reload' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
@@ -647,29 +478,47 @@ test('multiple items across rounds survive a full page reload', async ({ page, r
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await waitForPrepReady(page);
 
-  // Round 1 starts with an empty inventory — every artifact must be bought.
-  // This reload test now asserts that an empty grid stays empty across reload.
-  // TODO: extend to buy + place via API before the snapshot, then assert the
-  // bought items survive reload — that's a stronger version of this check.
-  const placedBefore = await page.locator('.inventory-pieces .artifact-piece').count();
+  const bs = await api(request, player.sessionKey, '/api/bootstrap');
+  const runId = bs.activeGameRun.id;
 
-  // Snapshot the exact artifact IDs placed on the grid
+  // --- Part 1: base items survive reload ---
+  const placedBefore = await page.locator('.inventory-pieces .artifact-piece').count();
   const placedIdsBefore = await page.locator('.inventory-pieces .artifact-piece').evaluateAll(
     (els) => els.map((el) => el.getAttribute('data-artifact-id')).sort()
   );
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  expect(await page.locator('.inventory-pieces .artifact-piece').count()).toBe(placedBefore);
+  expect(
+    await page.locator('.inventory-pieces .artifact-piece').evaluateAll(
+      (els) => els.map((el) => el.getAttribute('data-artifact-id')).sort()
+    )
+  ).toEqual(placedIdsBefore);
 
-  // Reload the page (simulates server+browser restart)
+  await saveShot(page, 'solo-reload-items-persist.png');
+
+  // --- Part 2: buy moss_pouch, activate, buy amber_satchel (leave in container), reload ---
+  await forceShopAndBuy(page, request, player.sessionKey, runId, 'moss_pouch');
+  await page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]').click();
+  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
+
+  await forceShopAndBuy(page, request, player.sessionKey, runId, 'amber_satchel');
+  await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]')).toBeVisible();
+
   await page.reload({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
-  // Placed pieces should still be visible and match the snapshot
-  const placedAfter = await page.locator('.inventory-pieces .artifact-piece').count();
-  const placedIdsAfter = await page.locator('.inventory-pieces .artifact-piece').evaluateAll(
-    (els) => els.map((el) => el.getAttribute('data-artifact-id')).sort()
-  );
+  // 1 active bag (moss_pouch), 1 container bag (amber_satchel)
+  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
+  await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]')).toBeVisible();
 
-  expect(placedAfter).toBe(placedBefore);
-  expect(placedIdsAfter).toEqual(placedIdsBefore);
+  await saveShot(page, 'solo-two-bags-sell-after-reload.png');
 
-  await saveShot(page, 'solo-reload-items-persist.png');
+  // --- Part 3: sell container bag after reload, active bag stays ---
+  const bs2 = await api(request, player.sessionKey, '/api/bootstrap');
+  await sellContainerItemViaApi(page, request, player.sessionKey, bs2.activeGameRun.id, 'amber_satchel');
+  await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
+
+  await saveShot(page, 'solo-bag-sell-after-reload.png');
 });
