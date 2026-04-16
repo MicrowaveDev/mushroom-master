@@ -63,9 +63,8 @@ function makeFreshState() {
 
 function makeShop(state) {
   const getArtifact = (id) => ARTIFACTS.find((a) => a.id === id);
-  // persistShopOffer / persistRunLoadout are no-ops: the test asserts on
-  // `state` directly, not on what the real persist functions would send.
-  return useShop(state, getArtifact, () => {}, () => {});
+  // persistRunLoadout is a no-op: the test asserts on `state` directly.
+  return useShop(state, getArtifact, () => {});
 }
 
 // Variant that records calls to persistRunLoadout. Used by tests that
@@ -74,7 +73,7 @@ function makeShopWithSpy(state) {
   const getArtifact = (id) => ARTIFACTS.find((a) => a.id === id);
   const calls = { persistRunLoadout: 0 };
   const persistRunLoadout = () => { calls.persistRunLoadout += 1; };
-  const shop = useShop(state, getArtifact, () => {}, persistRunLoadout);
+  const shop = useShop(state, getArtifact, persistRunLoadout);
   return { shop, calls };
 }
 

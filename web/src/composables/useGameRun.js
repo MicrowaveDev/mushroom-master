@@ -2,7 +2,7 @@ import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { INVENTORY_ROWS } from '../constants.js';
 
-export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistShopOffer, loadReplay) {
+export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay) {
   function buildLoadoutPayloadItems() {
     // Map frontend state to server loadout payload.
     //
@@ -310,7 +310,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
           ...state.freshPurchases.slice(freshIdx + 1)
         ];
       }
-      persistShopOffer();
+
     } catch (error) {
       state.error = error.message || 'Could not sell item';
     }
@@ -334,7 +334,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, persistSh
       // the next bootstrap — place, sell, drag — can target the exact row.
       state.containerItems = [...state.containerItems, { id: data.id || null, artifactId }];
       state.freshPurchases = [...state.freshPurchases, artifactId];
-      persistShopOffer();
+
     } catch (error) {
       state.error = error.message || 'Could not buy item';
     }

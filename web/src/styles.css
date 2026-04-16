@@ -1,3 +1,29 @@
+/*
+ * Table of Contents
+ * -----------------
+ * 1. Variables & Reset .............. :root, *, body, button
+ * 2. Auth / Welcome screen ......... .auth-screen, .auth-hero-card
+ * 3. Onboarding .................... .onboarding-screen, .onboarding-steps
+ * 4. App header & Navigation ....... .app-header, .nav-dropdown, .menu-toggle
+ * 5. Home screen ................... .home-layout, .home-mushroom-row
+ * 6. Characters screen ............. .character-card, .character-grid
+ * 7. Shared UI ..................... .panel, .primary, .ghost, .error, .link
+ * 8. Artifact grid & Inventory ..... .artifact-grid, .artifact-container, .artifact-inventory
+ * 9. Shop .......................... .artifact-shop, .shop-item, .shop-item--tier*
+ * 10. Replay & Battle stage ........ .replay-layout, .battle-stage, .fighter
+ * 11. Replay rewards card .......... .replay-rewards-card, .stat-grid
+ * 12. Results screen ............... .results-banner, .results-outcome
+ * 13. Run HUD & Prep screen ........ .run-hud, .prep-screen, .prep-actions
+ * 14. Sell zone .................... .sell-zone, .sell-zone--active
+ * 15. Outcome colors ............... .result-win, .result-loss
+ * 16. Wiki ......................... .wiki-locked-section
+ * 17. Run complete screen .......... .run-end-heading, .run-end-reason
+ * 18. Bags ......................... .shop-item--bag, .artifact-grid-cell--bag
+ * 19. Challenge mode ............... .prep-opponent-status, .prep-reconnecting
+ * 20. Touch drag-and-drop .......... .drag-ghost, .drag-over-highlight
+ * 21. Desktop / wide layout ........ @media (min-width: 768px)
+ */
+
 :root {
   --artifact-cell-size: 50px;
   --bg: linear-gradient(180deg, #fbf5e7 0%, #f4edd9 100%);
@@ -1233,6 +1259,12 @@ select {
   cursor: pointer;
   user-select: none;
   max-width: 120px;
+  animation: container-item-appear 0.35s ease-out;
+}
+@keyframes container-item-appear {
+  0% { opacity: 0; transform: scale(0.85); }
+  60% { opacity: 1; transform: scale(1.04); }
+  100% { transform: scale(1); }
 }
 
 .container-item-sell {
@@ -1341,6 +1373,22 @@ select {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.shop-item--tier2 {
+  border-color: var(--accent-soft);
+  border-width: 2px;
+}
+.shop-item--tier3 {
+  border-color: #d4a54a;
+  border-width: 2px;
+  background: linear-gradient(135deg, rgba(212, 165, 74, 0.06) 0%, transparent 60%);
+}
+.shop-item-price {
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.shop-item--tier2 .shop-item-price { color: var(--accent); }
+.shop-item--tier3 .shop-item-price { color: #b8860b; }
 
 .shop-item-visual {
   --artifact-cell-size: 44px;
@@ -1880,9 +1928,26 @@ select {
   padding: 14px 16px;
   text-align: center;
 }
+.replay-rewards-header {
+  margin-bottom: 10px;
+}
 .replay-rewards-card h3 {
-  margin: 0 0 10px;
+  margin: 0 0 4px;
   font-size: 1.3rem;
+}
+.replay-rewards-opponent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+.replay-rewards-vs {
+  font-weight: 600;
+}
+.replay-rewards-opponent-stats {
+  font-size: 0.78rem;
+  opacity: 0.6;
 }
 .replay-rewards-card .stat-grid {
   margin-top: 8px;
@@ -2675,23 +2740,29 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 48px;
   padding: 8px 16px;
   border: 2px dashed var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
-  color: #888;
+  color: #999;
   font-size: 0.9rem;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
 }
 .sell-zone--active {
-  background: #fff3e0;
-  border-color: var(--telegram-accent, #cc6b2c);
-  color: var(--telegram-accent, #cc6b2c);
+  background: rgba(230, 126, 34, 0.12);
+  border-color: #e67e22;
+  border-style: solid;
+  color: #e67e22;
+  transform: scale(1.03);
 }
 .sell-zone-price {
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* --- Round outcome colors (shared with replay-rewards-card heading) --- */
@@ -2767,6 +2838,11 @@ select {
     var(--bag-color-light, rgba(107, 143, 94, 0.2)) !important;
   border: 2px dashed var(--bag-color, #6b8f5e) !important;
   border-radius: 16px;
+  animation: bag-cell-expand 0.3s ease-out;
+}
+@keyframes bag-cell-expand {
+  0% { opacity: 0; transform: scaleY(0.3); }
+  100% { opacity: 1; transform: scaleY(1); }
 }
 
 .artifact-grid-cell--bag-disabled {
@@ -2851,4 +2927,19 @@ select {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+/* In-app toggle: honor the reducedMotion setting */
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

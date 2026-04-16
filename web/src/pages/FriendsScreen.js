@@ -13,13 +13,13 @@ export const FriendsScreen = {
         </form>
       </article>
       <article class="panel">
-        <h3>{{ state.lang === 'ru' ? 'Состав' : 'Roster' }}</h3>
+        <h3>{{ t.roster }}</h3>
         <button v-for="friend in state.friends" :key="friend.id" class="log-entry" @click="$emit('challenge-friend', friend.id)">
           {{ friend.name }} · {{ t.createChallenge }}
         </button>
       </article>
       <article class="panel" v-if="state.challenge">
-        <h3>{{ state.lang === 'ru' ? 'Вызов' : 'Challenge' }}</h3>
+        <h3>{{ t.challengeSection }}</h3>
         <p>{{ state.challenge.status }}</p>
         <button class="primary" @click="$emit('accept-challenge')">{{ t.acceptChallenge }}</button>
         <button class="secondary" @click="$emit('decline-challenge')">{{ t.declineChallenge }}</button>

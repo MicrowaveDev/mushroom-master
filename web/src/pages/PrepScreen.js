@@ -160,7 +160,9 @@ export const PrepScreen = {
             :data-artifact-id="artifactId"
             :class="{
               'shop-item--expensive': getArtifactPrice(getArtifact(artifactId)) > (state.gameRun.player?.coins || 0),
-              'shop-item--bag': getArtifact(artifactId)?.family === 'bag'
+              'shop-item--bag': getArtifact(artifactId)?.family === 'bag',
+              'shop-item--tier2': getArtifactPrice(getArtifact(artifactId)) === 2 && getArtifact(artifactId)?.family !== 'bag',
+              'shop-item--tier3': getArtifactPrice(getArtifact(artifactId)) >= 3
             }"
             :draggable="getArtifactPrice(getArtifact(artifactId)) <= (state.gameRun.player?.coins || 0)"
             @click="$emit('buy-run-item', artifactId)"
@@ -198,8 +200,8 @@ export const PrepScreen = {
           @dragleave="$emit('sell-dragleave')"
           @drop="$emit('sell-drop', $event)"
         >
-          <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">{{ runSellPriceLabel }}</span>
-          <span v-else>{{ t.sellArea }}</span>
+          <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">\uD83E\uDE99 +{{ runSellPriceLabel }}</span>
+          <span v-else>\uD83D\uDCB0 {{ t.sellArea }}</span>
         </div>
       </div>
 

@@ -38,6 +38,19 @@ export const ReplayScreen = {
     runWins() {
       return this.state.gameRun?.player?.wins || 0;
     },
+    opponentMushroomId() {
+      return this.state.currentBattle?.snapshots?.right?.mushroomId;
+    },
+    opponentMushroom() {
+      return this.opponentMushroomId ? this.getMushroom(this.opponentMushroomId) : null;
+    },
+    opponentName() {
+      return this.opponentMushroom?.name?.[this.state.lang] || this.opponentMushroomId || '';
+    },
+    opponentStatsText() {
+      const loadout = this.state.currentBattle?.snapshots?.right?.loadout;
+      return loadout ? this.loadoutStatsText(loadout) : '';
+    },
     continueLabel() {
       // No active run → standalone replay from history → "Home".
       // Active run, any state → "Continue". onReplayFinish in main.js
@@ -73,9 +86,15 @@ export const ReplayScreen = {
         />
       </div>
       <div v-if="showInlineRewards" class="panel replay-rewards-card" data-testid="replay-rewards">
-        <h3 :class="roundOutcome === 'win' ? 'result-win' : 'result-loss'">
-          {{ roundOutcome === 'win' ? t.roundWin : t.roundLoss }}
-        </h3>
+        <div class="replay-rewards-header" :class="'results-banner--' + roundOutcome">
+          <h3 :class="roundOutcome === 'win' ? 'result-win' : 'result-loss'">
+            {{ roundOutcome === 'win' ? t.roundWin : t.roundLoss }}
+          </h3>
+          <div v-if="opponentMushroom" class="replay-rewards-opponent">
+            <span class="replay-rewards-vs">vs {{ opponentName }}</span>
+            <span v-if="opponentStatsText" class="replay-rewards-opponent-stats">{{ opponentStatsText }}</span>
+          </div>
+        </div>
         <dl class="stat-grid">
           <div class="stat"><dt>{{ t.spore }}</dt><dd>+{{ roundRewards.spore || 0 }}</dd></div>
           <div class="stat"><dt>{{ t.mycelium }}</dt><dd>+{{ roundRewards.mycelium || 0 }}</dd></div>

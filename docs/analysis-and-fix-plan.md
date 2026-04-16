@@ -2,34 +2,38 @@
 
 **Date:** 2026-04-16
 **Branch:** `codex/lore-regeneration-fixes`
-**Last test run:** 4 failed, 2 flaky, 21 passed (27 total)
+**Last test run:** 28/28 pass (after Phase 0 fixes)
 
 ---
 
-## 1. Current Bugs (from E2E test failures)
+## 1. Bugs Found (from E2E failures + screenshot review)
 
-### Bug A: `.round-result-screen` not found after clicking Ready
+### Bug A–D (Phase 0 — resolved)
 
-- **Failing tests:** `solo-run.spec.js:150`, `coverage-gaps.spec.js:368`
-- **Symptom:** After clicking "Ready", the test expects `.round-result-screen` but the page snapshot shows the prep screen still visible (or the home screen in coverage-gaps). The page snapshot shows "Authentication required" text alongside the prep content.
-- **Root cause:** The tests reference `.round-result-screen` but the current architecture routes post-Ready directly to the replay screen (per recent refactoring that "dropped round-result screen"). The tests are stale — they still expect a dedicated round-result screen that was removed.
-- **Evidence:** The screenshot `solo-04-round-result.png` shows a simple "Defeat" card with Continue/View Replay buttons, confirming the screen did exist at one point. But the page snapshot in the error context shows the user stuck on prep, suggesting the flow now goes prep -> replay directly.
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| A: `.round-result-screen` not found | Tests stale after round-result removal | Tests updated |
+| B: `resetDb()` Internal Server Error | Concurrent Playwright workers race on SQLite | `workers: 1` |
+| C: `prep-ready` timeout | Cascading from Bug B (DB contamination) | Fixed by Bug B fix |
+| D: Mushroom count mismatch | Dalamaru added, assertions stale | Updated to 6 |
 
-### Bug B: `resetDb()` returns Internal Server Error
+### Bug E: Wiki detail page JSON parse error (NEW)
 
-- **Failing tests:** `challenge-run.spec.js:28`, `screenshots.spec.js:19`, `coverage-gaps.spec.js:15`
-- **Symptom:** `/api/dev/reset` returns `{"success":false,"error":"Internal server error"}`
-- **Root cause:** Concurrent Playwright workers (4 workers) all call `resetDb()` at the same time. The SQLite database handle gets closed by one worker's reset while another is still using it (`SQLITE_MISUSE`). The docs say a mutex was added to fix this, but the errors persist — the mutex may not be working correctly under the current parallel worker count, or a race remains in the coalescing logic.
+- **Evidence:** Screenshot `12-wiki-detail.png` shows red error banner: `Unexpected token '<', "<!doctype '..." is not valid JSON`
+- **Root cause:** WikiScreen emits two separate arguments `$emit('open-wiki', 'characters', entry.slug)`, but main.js destructures via `$event[0]`, `$event[1]` — which indexes into the first string argument (`'c'`, `'h'`), calling `/api/wiki/c/h` → 404 → HTML fallback → JSON parse failure.
+- **Fix:** Change WikiScreen to emit a single array argument `$emit('open-wiki', ['characters', entry.slug])` matching the `$event[0]/$event[1]` pattern used elsewhere in the codebase.
 
-### Bug C: `prep-ready` testid timeout after navigation
+### Bug F: Legacy no-op `persistShopOffer` / `loadOrGenerateShopOffer` stubs (NEW)
 
-- **Failing test:** `solo-run.spec.js:327` (amber satchel test)
-- **Symptom:** `[data-testid="prep-ready"]` never appears. Page snapshot shows the home screen (not prep screen) — 6 mushroom cards, "Start Game" button.
-- **Root cause:** The test navigates to home, clicks "Start Game", but the page never transitions to prep. The page snapshot shows "Authentication required" text alongside the home content — this suggests the session bootstrap isn't completing properly, likely cascading from the DB reset race condition (Bug B). The test's DB state is contaminated by a concurrent worker's reset.
+- **Symptom:** Dead code scattered across 13+ call sites in useShop.js and useGameRun.js
+- **Root cause:** Legacy 5-coin shop was deleted 2026-04-13, but the persistence hooks were left as no-ops to keep call sites valid. The legacy single-battle flow is gone — there is no longer a non-run shop to persist.
+- **Fix:** Remove the stubs from useAuth.js, the constructor parameter from useShop/useGameRun, and all call sites. Dead code removal.
 
-### Bug D: Dalamaru character count mismatch
+### Bug G: Bag deactivation test asserts "no crash" but not behavior (NEW)
 
-- **Status:** Reportedly fixed (assertion updated to 6), but the screenshots confirm 6 mushrooms are now shown (Dalamaru was added). All tests referencing mushroom counts should use 6.
+- **Symptom:** `coverage-gaps.spec.js` tests that deactivating a non-empty bag doesn't crash, but doesn't assert the correct outcome (error message shown, bag remains active).
+- **Root cause:** Test written conservatively before behavior was finalized.
+- **Fix:** Align test assertion with actual behavior: verify the error message appears and the bag stays active.
 
 ---
 
@@ -37,92 +41,85 @@
 
 ### Issue 1: Test isolation — shared DB across parallel workers
 
-The biggest systemic problem. All 4 Playwright workers share one SQLite database and one Express server. `resetDb()` drops and recreates all tables, which is inherently destructive to any concurrent worker.
+**Status:** Mitigated (`workers: 1`) but not solved. Tests run ~3× slower than they could.
 
-**Recommendation:** Use per-worker database isolation. Options:
-- a) Serial test execution (`workers: 1`) — simple but slow
-- b) Per-worker DB files (each worker gets its own SQLite path + Express port)
-- c) Transaction-based isolation (wrap each test in a transaction, rollback at end)
+**Plan (Phase 3):** Per-worker SQLite databases. Each worker gets `SQLITE_STORAGE=tmp/test-worker-${workerIndex}.sqlite` and its own Express port (`3321 + workerIndex`). The `globalSetup` pre-builds the Vite bundle once; each worker's `beforeAll` starts its own backend.
 
-### Issue 2: Round-result screen vs inline replay
+### Issue 2: Monolithic `main.js` (~450 lines in setup)
 
-The test suite and `user-flows.md` spec describe a round-result screen as a distinct step (Flow B Step 3), but the codebase appears to have been refactored to show replay directly. The spec, tests, and code are out of sync:
-- `user-flows.md` says: "Post-Ready landing screen is the round-result summary"
-- Tests look for `.round-result-screen`
-- Recent commits mention "dropped round-result screen"
+All screen routing, composable wiring, watchers, and handlers live in one `setup()` function. Hard to navigate and debug.
 
-**Recommendation:** Decide the canonical flow and align all three (spec, tests, code).
+**Plan (Phase 3):** Extract screen-specific handlers and dev-only screens into separate modules. Keep `main.js` as the orchestrator: state declaration, composable init, template.
 
-### Issue 3: Single reactive state object
+### Issue 3: Monolithic `styles.css` (2,855 lines)
 
-All 50+ state fields live in one `reactive({})` object. This works but creates tight coupling — every component re-renders on any state change. As the game grows, this becomes a performance and maintainability concern.
+**Plan (Phase 3):** Split into per-screen CSS files: `prep.css`, `replay.css`, `home.css`, `auth.css`, `shared.css`. Import from `main.js` or individual page components.
 
-**Recommendation:** Not urgent, but consider splitting into domain-specific reactive stores (auth, gameRun, shop, social) when the next major UI work happens.
+### Issue 4: Single reactive state object (50+ fields)
 
-### Issue 4: Monolithic CSS (2,841 lines in one file)
-
-All styles in a single `web/src/styles.css`. Finding and modifying styles for specific components requires searching through the entire file.
-
-**Recommendation:** Co-locate styles with components or split by screen. Low priority.
+Low priority. Works fine at current scale. Revisit when adding new game modes.
 
 ---
 
 ## 3. UX Improvements
 
-### High Priority
+### Phase 2: High-Impact UX
 
-| # | Issue | Screen | Impact |
-|---|-------|--------|--------|
-| U1 | No loading indicators on async actions | Prep, Shop | Users click "Ready" or buy items with no feedback — app appears frozen during network calls |
-| U2 | Round result screen is sparse | Round Result | The defeat/victory card shows raw numbers with no visual context — no character portrait, no opponent info, no battle summary |
-| U3 | Home screen shows only losses | Home | Post-run screenshot shows 5 consecutive "Defeat" entries — there's no differentiation between win/loss visually (all look the same except text) |
-| U4 | "Authentication required" visible on authenticated pages | All | Page snapshots consistently show "Authentication required" paragraph alongside authenticated content — this appears to be a flash of unauthenticated state during bootstrap |
-| U5 | Error messages don't auto-dismiss | Global | `state.error` persists until the next action overwrites it |
+| # | Issue | Screen | Fix |
+|---|-------|--------|-----|
+| U1 | No feedback on invalid loadout at Ready | Prep | Show server validation error as actionable toast (budget exceeded, overlap, etc.) |
+| U2 | Round result is sparse | Replay | Add opponent portrait, mushroom names, and loadout stat summary to the inline rewards card |
+| U3 | Sell zone is plain text | Prep | Add sell icon, drag-over highlight with price preview, visual feedback |
+| U4 | Shop items lack visual hierarchy | Prep | Price-tier border styling (1-coin: default, 2-coin: accent, 3-coin: gold), bag highlight |
 
-### Medium Priority
+### Phase 4: Polish
 
-| # | Issue | Screen | Impact |
-|---|-------|--------|--------|
-| U6 | No visual confirmation on purchase | Prep/Shop | Item moves to container silently — no animation, sound, or highlight |
-| U7 | Bag expansion has no visual cue | Prep | Dashed border for expanded cells is subtle — new players may not realize the grid grew |
-| U8 | Sell zone is plain text | Prep | "Sell" as plain text in a box — no icon, no drag-over highlight feedback visible |
-| U9 | Shop items lack visual hierarchy | Prep | All items look the same regardless of price or rarity — a 1-coin and 3-coin item are equally prominent |
-| U10 | Challenge prep: waiting text is too subtle | Challenge Prep | Small text at bottom-left — could be a more prominent banner |
-
-### Low Priority (Polish)
-
-| # | Issue | Notes |
-|---|-------|-------|
-| U11 | No keyboard accessibility for drag-drop | Required for a11y compliance but Telegram Mini App is touch-primary |
-| U12 | No `prefers-reduced-motion` media query | Despite having a `reducedMotion` setting in state |
-| U13 | Hard-coded i18n strings in templates | Some components use inline ternaries instead of the i18n system |
-| U14 | No undo for bag rotation/deactivation | Permanent action with no confirmation |
+| # | Issue | Fix |
+|---|-------|-----|
+| U5 | No purchase animation | CSS flash animation on container item when bought |
+| U6 | No bag expansion animation | Slide-down animation when bag rows appear |
+| U10 | `prefers-reduced-motion` not wired | Add `@media (prefers-reduced-motion)` rules and honor `reducedMotion` setting |
+| U11 | Hard-coded i18n strings | Replace inline ternaries with `t.key` pattern |
+| U12 | No pluralization | Add basic plural helper for Russian (1/2-4/5+) |
 
 ---
 
 ## 4. Fix Plan — Status
 
-### Completed
+### Phase 0: Critical Fixes (COMPLETED)
 
-1. **Fix DB reset race condition** — Set `workers: 1` in playwright.config.js. Root cause: all 4 Playwright workers shared one SQLite DB and Express server; concurrent `resetDb()` calls caused SQLITE_MISUSE. Serializing workers eliminates the race. **Result: 28/28 tests pass (was 4 failed, 2 flaky).**
-2. **Align round-result flow** — Already aligned. The test code was updated before this analysis; stale error-context files in test-results/ were misleading. The `.round-result-screen` class no longer exists in code or tests (only as a negative `toHaveCount(0)` assertion in coverage-gaps.spec.js).
-3. **Fix "Authentication required" flash** — Suppress 401 errors during bootstrap in useAuth.js. A 401 is an expected state (expired/invalid session) that redirects to auth — not an error to display.
-4. **Update mushroom count assertions** — Already correct. `home-mushroom-row` asserts 6 (including Dalamaru). Onboarding portrait count asserts 5 (`.slice(0, 5)` is intentional in OnboardingScreen.js).
-5. **Add loading state to Ready button** — Button now shows "Loading..."/"Загрузка..." text with a pulsing animation while `actionInFlight` is true.
-6. **Enrich replay rewards card** — Added wins and lives remaining to the inline rewards card on the replay screen, so players see their run status alongside round rewards.
-7. **Differentiate win/loss in history** — Already implemented. `home-battle-item--win` (green), `home-battle-item--loss` (red), `home-battle-item--draw` (gold) CSS classes with border-left styling.
-8. **Auto-dismiss errors** — Added a 5-second watcher on `state.error` in main.js that auto-clears the error message.
-9. **Extract shared E2E test helpers** — Created `tests/game/e2e-helpers.js` with shared `resetDevDb`, `createSession`, `api`, `waitForPrepReady`, `MOBILE_VIEWPORT`. Removed ~200 lines of duplicated boilerplate across 4 spec files.
+1. **Fix DB reset race condition** — `workers: 1` in playwright.config.js. **28/28 pass.**
+2. **Align round-result flow** — Tests and code aligned (inline replay rewards).
+3. **Fix "Authentication required" flash** — Suppress 401 errors during bootstrap.
+4. **Update mushroom count assertions** — 6 mushrooms including Dalamaru.
+5. **Add loading state to Ready button** — Pulsing "Loading..." during `actionInFlight`.
+6. **Enrich replay rewards card** — Wins + lives on the inline rewards card.
+7. **Differentiate win/loss in history** — Green/red/gold border-left styling.
+8. **Auto-dismiss errors** — 5-second watcher clears `state.error`.
+9. **Extract shared E2E helpers** — `e2e-helpers.js` with ~200 lines deduplicated.
 
-### Remaining (future work)
+### Phase 1: Bug Fixes (IN PROGRESS)
 
-9. **Improve test isolation** — Per-worker SQLite databases with unique ports
-10. **Add `data-testid` attributes** — More deterministic selectors for key interactive elements
-11. **Extract shared test helpers** — DRY up `resetDevDb`, `createSession`, `api`, `saveShot` across 4 spec files (they are copy-pasted)
+10. **Fix wiki detail JSON parse error** — WikiScreen emits array instead of separate args.
+11. **Remove legacy `persistShopOffer` stubs** — Dead code removal across useAuth, useShop, useGameRun, main.js.
+12. **Align bag deactivation test** — Assert error message + bag remains active in coverage-gaps.spec.js.
 
-### Phase 4: Polish (when time allows)
+### Phase 2: High-Impact UX
 
-12. **Shop item visual hierarchy** — Price badge styling, rarity indicators
-13. **Bag activation animation** — Visual expansion effect when bag is placed
-14. **Sell zone redesign** — Icon + drag-over highlight + confirmation
-15. **a11y audit** — Focus management, ARIA labels, keyboard navigation
+13. **Actionable loadout validation feedback** — Surface server error details on Ready failure.
+14. **Enrich round result display** — Opponent portrait + mushroom names + stat summary.
+15. **Redesign sell zone** — Icon + drag-over highlight + price preview.
+16. **Shop item visual hierarchy** — Price-tier styling (border + badge).
+
+### Phase 3: Architecture
+
+17. **Per-worker test isolation** — Separate SQLite files + Express ports per Playwright worker.
+18. **Split main.js** — Extract handlers into focused modules.
+19. **Split styles.css** — Per-screen CSS files.
+
+### Phase 4: Polish
+
+20. **Purchase animation** — CSS flash on container item.
+21. **Bag expansion animation** — Slide-down for new bag rows.
+22. **Wire `prefers-reduced-motion`** — Respect OS setting + in-app toggle.
+23. **i18n cleanup** — Replace inline ternaries, add basic pluralization.

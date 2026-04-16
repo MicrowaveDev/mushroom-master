@@ -13,18 +13,6 @@ export function useAuth(state, goTo) {
     root.style.setProperty('--telegram-surface', theme.secondary_bg_color || '#f6f0df');
   }
 
-  // loadOrGenerateShopOffer / persistShopOffer (legacy 5-coin shop blob
-  // synced to /api/shop-state) deleted 2026-04-13. Game-run prep state is
-  // hydrated from bootstrap.activeGameRun in refreshBootstrap below; the
-  // legacy single-battle prep flow is gone.
-  //
-  // The names persist as no-ops because they're injected into useShop and
-  // useGameRun via constructor params and called in many places. Routing the
-  // call to a stub keeps those call sites valid without forcing every shop
-  // helper to learn whether it's in a run or not.
-  function persistShopOffer() { /* no-op */ }
-  function loadOrGenerateShopOffer() { /* no-op */ }
-
   async function refreshBootstrap() {
     try {
       state.appConfig = await apiJson('/api/app-config');
@@ -231,7 +219,6 @@ export function useAuth(state, goTo) {
   return {
     applyTelegramTheme, refreshBootstrap,
     loginViaTelegram, loginViaBrowserCode, loginViaDevSession,
-    saveCharacter, saveSettings,
-    persistShopOffer, loadOrGenerateShopOffer
+    saveCharacter, saveSettings
   };
 }

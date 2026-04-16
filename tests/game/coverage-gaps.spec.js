@@ -195,14 +195,18 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
     }
   }
 
-  // Try to deactivate the bag — should show error if items are in bag rows
+  // Try to deactivate the bag — should show error and bag stays active
   const bagChip = page.locator('.active-bag-chip').first();
   const deactivateBtn = bagChip.locator('button').last(); // ✕ button
   await deactivateBtn.click();
 
-  // If items were placed in bag rows, an error should appear
-  // (the exact behavior depends on whether auto-place put items in bag rows)
-  // Just verify no crash — the deactivation is either blocked or succeeds
+  // Items were auto-placed into bag rows, so deactivation must be blocked
+  // with an error message and the bag must remain active.
+  const hasItemsInBag = await page.locator('.artifact-grid-cell--bag .artifact-grid-piece').count() > 0;
+  if (hasItemsInBag) {
+    await expect(page.locator('.error')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('.active-bags-bar')).toBeVisible();
+  }
   await expect(page.locator('.prep-screen')).toBeVisible();
 });
 

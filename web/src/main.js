@@ -1,7 +1,6 @@
 import { createApp, reactive, onMounted, onUnmounted, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
 import { parseStartParams } from './api.js';
-import { apiJson } from './api.js';
 
 // Composables
 import { useGameState } from './composables/useGameState.js';
@@ -12,6 +11,8 @@ import { useReplay } from './composables/useReplay.js';
 import { useSocial } from './composables/useSocial.js';
 import { useSSE } from './composables/useSSE.js';
 import { useTouch } from './composables/useTouch.js';
+import { useDevTools } from './composables/useDevTools.js';
+import { useCustomization } from './composables/useCustomization.js';
 
 // Page components
 // Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
@@ -90,8 +91,8 @@ const App = {
     const gs = useGameState(state);
     const auth = useAuth(state, gs.goTo);
     const replay = useReplay(state, gs.goTo, gs.getMushroom);
-    const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, auth.persistShopOffer, replay.loadReplay);
-    const shop = useShop(state, gs.getArtifact, auth.persistShopOffer, gameRun.persistRunLoadout);
+    const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, replay.loadReplay);
+    const shop = useShop(state, gs.getArtifact, gameRun.persistRunLoadout);
     const social = useSocial(state, gs.goTo);
     const sse = useSSE(state, gs.goTo, replay.loadReplay);
     const touch = useTouch(state);
@@ -115,44 +116,8 @@ const App = {
       }
     }
 
-    async function switchPortrait({ mushroomId, portraitId }) {
-      const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
-        method: 'PUT',
-        body: JSON.stringify({ portraitId })
-      }, state.sessionKey);
-      if (result?.success) await gs.refreshBootstrap();
-    }
-
-    async function switchPreset({ mushroomId, presetId }) {
-      const result = await apiJson(`/api/mushroom/${mushroomId}/preset`, {
-        method: 'PUT',
-        body: JSON.stringify({ presetId })
-      }, state.sessionKey);
-      if (result?.success) await gs.refreshBootstrap();
-    }
-
-    // saveLoadout / startBattle (legacy single-battle UI handlers) deleted
-    // 2026-04-13. The legacy POST /api/battles endpoint and ArtifactsScreen
-    // / BattlePrepScreen / ResultsScreen are gone.
-
-    // --- Dev-only ---
-    async function runLocalLab() {
-      const results = await apiJson('/api/local-tests/battle-narration', {
-        method: 'POST',
-        body: JSON.stringify({
-          fixtureNarration: state.localLabInput,
-          variants: [
-            { name: 'compact-ru', model: 'gpt-4.1-mini', prompt: 'Сделай короткое боевое описание на русском.' },
-            { name: 'dramatic-en', model: 'gpt-4.1-mini', prompt: 'Write a dramatic but compact English battle recap.' }
-          ]
-        })
-      }, state.sessionKey);
-      state.localLab = results.results;
-    }
-
-    async function loadInventoryReview() {
-      state.inventoryReviewSamples = await apiJson('/api/dev/inventory-review', {}, state.sessionKey);
-    }
+    const customization = useCustomization(state, gs.refreshBootstrap);
+    const devTools = useDevTools(state);
 
     function handleRunComplete() {
       state.gameRun = null;
@@ -186,9 +151,12 @@ const App = {
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
     watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
+    watch(() => state.bootstrap?.settings?.reducedMotion, (reduced) => {
+      document.documentElement.classList.toggle('reduced-motion', !!reduced);
+    });
     watch(() => state.screen, async (screen, oldScreen) => {
       if (screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
-        await loadInventoryReview();
+        await devTools.loadInventoryReview();
       }
       // SSE: connect when entering prep in challenge mode, disconnect when leaving
       const isChallengePrep = screen === 'prep' && state.gameRun?.mode === 'challenge';
@@ -220,7 +188,7 @@ const App = {
       if (startParams.challenge && state.sessionKey) await social.openChallenge(startParams.challenge);
       if (startParams.replay && state.sessionKey) await replay.loadReplay(startParams.replay);
       if (state.screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
-        await loadInventoryReview();
+        await devTools.loadInventoryReview();
       }
       // Connect SSE if resuming a challenge run
       if (state.screen === 'prep' && state.gameRun?.mode === 'challenge') {
@@ -239,9 +207,9 @@ const App = {
       loginViaBrowserCode: auth.loginViaBrowserCode,
       loginViaDevSession: auth.loginViaDevSession,
       saveCharacter,
-      switchPortrait, switchPreset,
+      ...customization,
       saveSettings: auth.saveSettings,
-      runLocalLab, loadInventoryReview, handleRunComplete, onReplayFinish,
+      ...devTools, handleRunComplete, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
   },

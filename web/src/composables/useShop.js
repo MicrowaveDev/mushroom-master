@@ -1,7 +1,7 @@
 import { INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
 
-export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout) {
+export function useShop(state, getArtifact, persistRunLoadout) {
   function isBagRotated(bagId) {
     return state.rotatedBags.some((b) => b.artifactId === bagId);
   }
@@ -84,7 +84,6 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     // Pre-refactor, rotateBag only mutated client state and the rotation
     // vanished on every reload because no write was ever sent.
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
-    else persistShopOffer();
   }
 
   // Build the next builderItems array for placing a candidate item onto the
@@ -190,7 +189,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       ...state.containerItems.map((slot) => slot.artifactId)
     ]);
     state.shopOffer = pickRandomShopOffer(state.bootstrap?.artifacts || [], ownedIds);
-    persistShopOffer();
+
   }
 
   function buyFromShop(artifactId) {
@@ -211,7 +210,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     state.containerItems = [...state.containerItems, { id: null, artifactId }];
     state.freshPurchases = [...state.freshPurchases, artifactId];
     state.error = '';
-    persistShopOffer();
+
     return true;
   }
 
@@ -238,7 +237,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     if (!state.shopOffer.includes(artifactId)) {
       state.shopOffer = [...state.shopOffer, artifactId];
     }
-    persistShopOffer();
+
   }
 
   function placeFromContainer(artifactId, x, y) {
@@ -260,7 +259,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
         state.builderItems = next;
         state.containerItems = popOneFromContainer(artifactId).next;
         state.error = '';
-        persistShopOffer();
+    
         return true;
       }
     }
@@ -278,7 +277,6 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     state.containerItems = next;
     state.error = '';
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
-    else persistShopOffer();
   }
 
   function deactivateBag(artifactId) {
@@ -304,7 +302,6 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
     ];
     state.containerItems = [...state.containerItems, removed];
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
-    else persistShopOffer();
   }
 
   function autoPlaceFromContainer(artifactId) {
@@ -329,7 +326,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
             state.builderItems = next;
             state.containerItems = popOneFromContainer(artifactId).next;
             state.error = '';
-            persistShopOffer();
+        
             return;
           }
         }
@@ -368,7 +365,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
       ...state.containerItems,
       { id: removed.id ?? null, artifactId: removed.artifactId }
     ];
-    persistShopOffer();
+
   }
 
   // Drag-and-drop handlers
@@ -399,7 +396,7 @@ export function useShop(state, getArtifact, persistShopOffer, persistRunLoadout)
         }
       }
       state.builderItems = [...others, { ...dragged, x, y }];
-      persistShopOffer();
+  
     }
   }
 
