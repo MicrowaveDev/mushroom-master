@@ -120,7 +120,16 @@ export function useAuth(state, goTo) {
     }
   }
 
+  let authPollTimer = null;
+  function clearAuthPoll() {
+    if (authPollTimer != null) {
+      clearTimeout(authPollTimer);
+      authPollTimer = null;
+    }
+  }
+
   async function loginViaTelegram() {
+    clearAuthPoll();
     const initData = window.Telegram?.WebApp?.initData;
     if (!initData) {
       state.error = 'Missing Telegram initData';
@@ -137,11 +146,13 @@ export function useAuth(state, goTo) {
   }
 
   async function loginViaBrowserCode() {
+    clearAuthPoll();
     state.authCode = await apiJson('/api/auth/telegram/code', { method: 'POST' });
     const startedAt = Date.now();
     const poll = async () => {
       if (!state.authCode || Date.now() - startedAt > 10 * 60 * 1000) {
         state.error = 'Telegram auth timed out';
+        authPollTimer = null;
         return;
       }
       try {
@@ -155,17 +166,19 @@ export function useAuth(state, goTo) {
           state.sessionKey = json.data.sessionKey;
           localStorage.setItem('sessionKey', json.data.sessionKey);
           state.authCode = null;
+          authPollTimer = null;
           await refreshBootstrap();
           return;
         }
       } catch (_error) {}
-      window.setTimeout(poll, 3000);
+      authPollTimer = window.setTimeout(poll, 3000);
     };
     window.open(state.authCode.botUrl, '_blank');
     poll();
   }
 
   async function loginViaDevSession() {
+    clearAuthPoll();
     try {
       state.error = '';
       const data = await apiJson('/api/dev/session', { method: 'POST', body: JSON.stringify({}) });

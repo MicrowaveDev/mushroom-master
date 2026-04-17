@@ -36,6 +36,7 @@ export {
   getActiveGameRun,
   getGameRun,
   getGameRunHistory,
+  pruneCompletedRuns,
   pruneOldGhostSnapshots,
   refreshRunShop,
   forceRunShopForTest,

@@ -6,19 +6,27 @@ import { apiJson } from '../api.js';
  */
 export function useCustomization(state, refreshBootstrap) {
   async function switchPortrait({ mushroomId, portraitId }) {
-    const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
-      method: 'PUT',
-      body: JSON.stringify({ portraitId })
-    }, state.sessionKey);
-    if (result?.success) await refreshBootstrap();
+    try {
+      const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
+        method: 'PUT',
+        body: JSON.stringify({ portraitId })
+      }, state.sessionKey);
+      if (result?.success) await refreshBootstrap();
+    } catch (error) {
+      state.error = error.message || 'Failed to switch portrait';
+    }
   }
 
   async function switchPreset({ mushroomId, presetId }) {
-    const result = await apiJson(`/api/mushroom/${mushroomId}/preset`, {
-      method: 'PUT',
-      body: JSON.stringify({ presetId })
-    }, state.sessionKey);
-    if (result?.success) await refreshBootstrap();
+    try {
+      const result = await apiJson(`/api/mushroom/${mushroomId}/preset`, {
+        method: 'PUT',
+        body: JSON.stringify({ presetId })
+      }, state.sessionKey);
+      if (result?.success) await refreshBootstrap();
+    } catch (error) {
+      state.error = error.message || 'Failed to switch preset';
+    }
   }
 
   return { switchPortrait, switchPreset };

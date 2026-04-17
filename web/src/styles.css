@@ -2830,6 +2830,14 @@ select {
   font-size: 0.8rem;
   font-weight: 600;
 }
+.artifact-stat-chip--character {
+  background: #fff3e0;
+  color: #e65100;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 
 /* --- Bag grid cells --- */
 .artifact-grid-cell--bag {

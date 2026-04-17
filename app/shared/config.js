@@ -41,3 +41,6 @@ export const GHOST_SNAPSHOT_MAX_COUNT = 10000;
 
 // --- Challenge timeout ---
 export const CHALLENGE_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
+// --- Completed run retention ---
+export const COMPLETED_RUN_MAX_AGE_DAYS = 90;

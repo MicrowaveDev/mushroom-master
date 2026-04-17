@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { simulateBattle } from '../../app/server/services/battle-engine.js';
-import { MAX_STUN_CHANCE } from '../../app/server/game-data.js';
+import { MAX_STUN_CHANCE, STEP_CAP } from '../../app/server/game-data.js';
 
 function makeSnapshot(leftMushroom, rightMushroom, leftItems = [], rightItems = []) {
   return {
@@ -375,4 +375,22 @@ test('[Req 6-I] same seed produces identical battle results (deterministic)', ()
   assert.equal(result1.events.length, result2.events.length);
   assert.equal(result1.leftState.currentHealth, result2.leftState.currentHealth);
   assert.equal(result1.rightState.currentHealth, result2.rightState.currentHealth);
+});
+
+test('[Req 1-B] battle ends at STEP_CAP (120) with endReason step_cap', () => {
+  // Two very tanky mushrooms with high armor — battle should hit step cap
+  const snapshot = makeSnapshot('lomie', 'lomie',
+    [item('bark_plate', 0, 0), item('root_shell', 1, 0, 2, 2), item('truffle_bulwark', 0, 2, 2, 2)],
+    [item('bark_plate', 0, 0), item('root_shell', 1, 0, 2, 2), item('truffle_bulwark', 0, 2, 2, 2)]
+  );
+  const result = simulateBattle(snapshot, 'step-cap-test');
+  // Each step has 2 actions (one per combatant), so step_start events count steps
+  const stepEvents = result.events.filter(e => e.type === 'step_start');
+  assert.ok(stepEvents.length <= STEP_CAP,
+    `Steps (${stepEvents.length}) should not exceed STEP_CAP (${STEP_CAP})`);
+  if (result.endReason === 'step_cap') {
+    assert.equal(stepEvents.length, STEP_CAP, `Should have exactly ${STEP_CAP} steps`);
+    assert.ok(result.leftState.currentHealth > 0, 'left should still be alive at step cap');
+    assert.ok(result.rightState.currentHealth > 0, 'right should still be alive at step cap');
+  }
 });

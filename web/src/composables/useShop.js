@@ -1,5 +1,6 @@
 import { INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
+import { messages } from '../i18n.js';
 
 export function useShop(state, getArtifact, persistRunLoadout) {
   function isBagRotated(bagId) {
@@ -63,7 +64,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     }
     const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
     if (itemsBelowThisBag.length) {
-      state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
+      state.error = messages[state.lang].errorBagNotEmpty;
       return;
     }
     // Toggle the rotated slot. rotatedBags is Array<{id, artifactId}> so
@@ -151,13 +152,13 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     const others = state.builderItems.filter((it) => !isSameInstance(it, item));
     const occupied = buildOccupancy(others);
     if (item.x + newWidth > INVENTORY_COLUMNS || item.y + newHeight > effectiveRows()) {
-      state.error = state.lang === 'ru' ? 'Не помещается' : 'Does not fit here';
+      state.error = messages[state.lang].errorDoesNotFit;
       return;
     }
     for (let dx = 0; dx < newWidth; dx += 1) {
       for (let dy = 0; dy < newHeight; dy += 1) {
         if (occupied.has(`${item.x + dx}:${item.y + dy}`)) {
-          state.error = state.lang === 'ru' ? 'Не помещается' : 'Does not fit here';
+          state.error = messages[state.lang].errorDoesNotFit;
           return;
         }
       }
@@ -263,7 +264,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
         return true;
       }
     }
-    state.error = state.lang === 'ru' ? 'Не помещается' : 'Does not fit here';
+    state.error = messages[state.lang].errorDoesNotFit;
     return false;
   }
 
@@ -292,7 +293,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     // keeps the builderItems layout in sync with activeBags.
     const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
     if (itemsBelowThisBag.length) {
-      state.error = state.lang === 'ru' ? 'Сначала уберите предметы из сумки' : 'Remove items from the bag first';
+      state.error = messages[state.lang].errorBagNotEmpty;
       return;
     }
     const removed = state.activeBags[idx];
@@ -332,7 +333,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
         }
       }
     }
-    state.error = state.lang === 'ru' ? 'Не помещается в инвентарь' : 'Does not fit in inventory';
+    state.error = messages[state.lang].errorDoesNotFitInventory;
   }
 
   // Unplace exactly ONE instance back to the container. Accepts either a

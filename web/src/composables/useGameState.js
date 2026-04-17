@@ -178,8 +178,11 @@ export function useGameState(state) {
     return pick(isWinner ? tr.resultOpponentWin : tr.resultOpponentLoss);
   }
 
+  const _replayDescCache = new Map();
   function describeReplay(battle) {
     if (!battle) return null;
+    const cacheKey = `${battle.id}:${state.lang}`;
+    if (_replayDescCache.has(cacheKey)) return _replayDescCache.get(cacheKey);
     const viewerId = battle.viewerPlayerId || state.bootstrap?.player?.id;
     const leftSnap = battle.snapshots?.left || {};
     const rightSnap = battle.snapshots?.right || {};
@@ -201,7 +204,7 @@ export function useGameState(state) {
     const opponentKindLabel = battle.opponentKind === 'bot' ? t.value.opponentBot : battle.opponentKind === 'ghost' ? t.value.opponentGhost : battle.opponentKind === 'friend' ? t.value.opponentFriend : t.value.opponentPlayer;
     const viewerReward = (battle.rewards || []).find((r) => r.playerId === viewerId) || null;
     const ratingDelta = viewerReward && viewerReward.ratingAfter != null && viewerReward.ratingBefore != null ? viewerReward.ratingAfter - viewerReward.ratingBefore : null;
-    return {
+    const desc = {
       outcomeKey, outcomeLabel,
       ourName: mushroomDisplayName(ourMushroomId),
       oppName: mushroomDisplayName(oppMushroomId),
@@ -214,6 +217,8 @@ export function useGameState(state) {
       myceliumDelta: viewerReward?.myceliumDelta ?? null,
       ratingDelta
     };
+    _replayDescCache.set(cacheKey, desc);
+    return desc;
   }
 
   function artifactGridStyle(item) {

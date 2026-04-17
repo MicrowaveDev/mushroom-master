@@ -103,6 +103,7 @@ import {
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
   CHALLENGE_IDLE_TIMEOUT_MS,
+  COMPLETED_RUN_MAX_AGE_DAYS,
   DAILY_BATTLE_LIMIT,
   GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
@@ -128,6 +129,7 @@ export {
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
   CHALLENGE_IDLE_TIMEOUT_MS,
+  COMPLETED_RUN_MAX_AGE_DAYS,
   DAILY_BATTLE_LIMIT,
   GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
@@ -335,6 +337,69 @@ export const artifacts = [
     height: 1,
     price: 1,
     bonus: { speed: 1 }
+  },
+  // --- Character shop items ---
+  // Lore-based items gated by requiredLevel. One per mushroom.
+  // [Req 4-P] through [Req 4-T].
+  {
+    id: 'thalla_sacred_thread',
+    name: { ru: 'Священная Нить Тхаллы', en: 'Thalla\'s Sacred Thread' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 10, damage: 2 },
+    characterItem: { mushroomId: 'thalla', requiredLevel: 5 }
+  },
+  {
+    id: 'lomie_crystal_lattice',
+    name: { ru: 'Кристаллическая Решётка Ломиэ', en: 'Lomie\'s Crystal Lattice' },
+    family: 'armor',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { armor: 5, speed: 1 },
+    characterItem: { mushroomId: 'lomie', requiredLevel: 5 }
+  },
+  {
+    id: 'axilin_ferment_core',
+    name: { ru: 'Ферментное Ядро Аксилина', en: 'Axilin\'s Ferment Core' },
+    family: 'damage',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { damage: 5, speed: 1 },
+    characterItem: { mushroomId: 'axilin', requiredLevel: 5 }
+  },
+  {
+    id: 'kirt_venom_fang',
+    name: { ru: 'Ядовитый Клык Кирт', en: 'Kirt\'s Venom Fang' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { damage: 3, armor: 2 },
+    characterItem: { mushroomId: 'kirt', requiredLevel: 5 }
+  },
+  {
+    id: 'morga_flash_seed',
+    name: { ru: 'Вспышка-Семя Морги', en: 'Morga\'s Flash Seed' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 12, speed: 2 },
+    characterItem: { mushroomId: 'morga', requiredLevel: 5 }
+  },
+  {
+    id: 'dalamar_ashen_shard',
+    name: { ru: 'Пепельный Осколок Даламара', en: 'Dalamar\'s Ashen Shard' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 8, armor: 2 },
+    characterItem: { mushroomId: 'dalamar', requiredLevel: 5 }
   },
   // --- Character signature starters ---
   // Each of these is preset into the round-1 inventory of one specific
@@ -628,7 +693,20 @@ export function getMushroomById(id) {
 export const bags = artifacts.filter((a) => a.family === 'bag' && !a.starterOnly);
 // `starterOnly` items are preset into a specific character's round-1 inventory
 // and must never appear in shop rolls or ghost loadouts.
-export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag' && !a.starterOnly);
+// `characterItem` items are level-gated per-mushroom items — they appear only
+// through the guaranteed character-item slot, not the general combat pool.
+export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag' && !a.starterOnly && !a.characterItem);
+export const characterShopItems = artifacts.filter((a) => a.characterItem);
+
+/**
+ * Return eligible character shop items for a mushroom at a given level.
+ * [Req 4-Q] eligibility: active mushroom level >= requiredLevel.
+ */
+export function getEligibleCharacterItems(mushroomId, level) {
+  return characterShopItems.filter(
+    (a) => a.characterItem.mushroomId === mushroomId && level >= a.characterItem.requiredLevel
+  );
+}
 
 // Character signature starters — seeded into round 1 for each mushroom on run
 // start. Two 1x1 items per character at (0,0) and (1,0). These artifacts have

@@ -4,7 +4,7 @@ title_en: Thalla
 summary_ru: Правительница Золотого Реликвария и нервный узел Игг-Мицеля.
 summary_en: Ruler of the Golden Reliquary and the living nerve-center of Ygg-Mycel.
 order: 1
-image: /portraits/thalla/default.jpg
+image: /portraits/thalla/default.png
 related: ygg-mycel,golden-reliquary,mycelium-circle
 ---
 <!-- tier:1 -->

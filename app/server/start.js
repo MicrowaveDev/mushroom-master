@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { createApp } from './create-app.js';
-import { pruneOldGhostSnapshots } from './services/game-service.js';
+import { pruneOldGhostSnapshots, pruneCompletedRuns } from './services/game-service.js';
 
 const port = Number(process.env.PORT || 3021);
 const app = await createApp();
@@ -17,6 +17,16 @@ async function runPrune() {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('Ghost prune failed:', err.message);
+  }
+  try {
+    const result = await pruneCompletedRuns();
+    if (result.prunedRuns > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`Run prune: ${result.prunedRuns} completed runs older than 90 days removed`);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Run prune failed:', err.message);
   }
 }
 

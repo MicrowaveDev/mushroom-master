@@ -182,6 +182,7 @@ export const PrepScreen = {
                 <span class="shop-item-price">\uD83E\uDE99 {{ getArtifactPrice(getArtifact(artifactId)) }}</span>
               </div>
               <div class="shop-item-tags">
+                <span v-if="getArtifact(artifactId)?.characterItem" class="artifact-stat-chip artifact-stat-chip--character">{{ t.characterItem }}</span>
                 <span v-if="getArtifact(artifactId)?.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ getArtifact(artifactId)?.slotCount }} {{ t.bagSlots }}</span>
                 <span
                   v-for="stat in formatArtifactBonus(getArtifact(artifactId))"

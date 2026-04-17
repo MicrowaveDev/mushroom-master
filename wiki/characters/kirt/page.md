@@ -4,7 +4,7 @@ title_en: Kirt
 summary_ru: Ядовитая охотница кроны, воплощающая напор и давление.
 summary_en: Venom hunter of the upper canopy, built for pressure and tempo.
 order: 4
-image: /portraits/kirt/default.jpg
+image: /portraits/kirt/default.png
 related: thorn-crown,mycelium-circle
 ---
 <!-- tier:1 -->

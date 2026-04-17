@@ -4,6 +4,7 @@ import {
   startGameRun,
   resolveRound,
   abandonGameRun,
+  getActiveGameRun,
   getPlayerState,
   refreshRunShop,
   sellRunItem,
@@ -19,11 +20,13 @@ import {
   combatArtifacts,
   bags,
   mushrooms,
+  characterShopItems,
+  getEligibleCharacterItems,
   SHOP_REFRESH_CHEAP_LIMIT,
   BAG_PITY_THRESHOLD
 } from '../../app/server/game-data.js';
 import { createRng } from '../../app/server/lib/utils.js';
-import { freshDb, createPlayer, seedRunLoadout, getShopOffer } from './helpers.js';
+import { freshDb, createPlayer, seedRunLoadout, getShopOffer, earnMycelium, bootRun } from './helpers.js';
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -573,4 +576,87 @@ test('[Req 11-D] shop refresh_count resets to 0 on round transition', async () =
   );
   assert.ok(shopResult.rowCount, 'Round 2 shop state should exist');
   assert.equal(shopResult.rows[0].refresh_count, 0, 'refresh_count should reset to 0 for new round');
+});
+
+test('[Req 4-A] round income matches ROUND_INCOME table for each round', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+
+  // Round 1 starts with ROUND_INCOME[0]
+  const r1 = await getActiveGameRun(playerId);
+  assert.equal(r1.player.coins, ROUND_INCOME[0], 'Round 1 coins should equal ROUND_INCOME[0]');
+
+  // Resolve round 1 and check round 2 coins include carry-forward + ROUND_INCOME[1]
+  const result = await resolveRound(playerId, run.id);
+  if (result.status === 'active') {
+    const r2 = await getActiveGameRun(playerId);
+    const expectedR2 = ROUND_INCOME[0] + ROUND_INCOME[1]; // unspent R1 + R2 income
+    assert.equal(r2.player.coins, expectedR2,
+      `Round 2 coins should be ${expectedR2} (carried ${ROUND_INCOME[0]} + income ${ROUND_INCOME[1]})`);
+  }
+});
+
+// --- Character shop items ---
+
+test('[Req 4-P] characterShopItems contains one item per mushroom', () => {
+  const mushroomIds = new Set(characterShopItems.map(a => a.characterItem.mushroomId));
+  assert.ok(characterShopItems.length >= 6, 'at least one item per mushroom');
+  assert.ok(mushroomIds.size >= 6, 'items span all 6 mushrooms');
+  for (const item of characterShopItems) {
+    assert.ok(item.characterItem, 'has characterItem metadata');
+    assert.ok(item.characterItem.mushroomId, 'has mushroomId');
+    assert.ok(item.characterItem.requiredLevel > 0, 'has a positive requiredLevel');
+    assert.ok(item.price > 0, 'has a price');
+  }
+});
+
+test('[Req 4-Q] getEligibleCharacterItems returns items when level meets threshold', () => {
+  const eligible = getEligibleCharacterItems('thalla', 5);
+  assert.ok(eligible.length > 0, 'thalla should have eligible items at level 5');
+  assert.ok(eligible.every(a => a.characterItem.mushroomId === 'thalla'), 'all items are for thalla');
+});
+
+test('[Req 4-Q] getEligibleCharacterItems returns nothing when level is too low', () => {
+  const eligible = getEligibleCharacterItems('thalla', 1);
+  assert.equal(eligible.length, 0, 'no items at level 1');
+});
+
+test('[Req 4-R] generateShopOffer includes character item when eligible pool is non-empty', () => {
+  const eligible = getEligibleCharacterItems('thalla', 5);
+  assert.ok(eligible.length > 0, 'precondition: thalla has eligible items');
+  const charItemIds = new Set(eligible.map(a => a.id));
+
+  // Run multiple seeds to confirm the guarantee
+  let foundCount = 0;
+  for (let i = 0; i < 20; i++) {
+    const rng = createRng(`char-shop-test-${i}`);
+    const { offer } = generateShopOffer(rng, 5, 1, eligible);
+    if (offer.some(id => charItemIds.has(id))) foundCount++;
+  }
+  assert.equal(foundCount, 20, 'every offer should contain at least one character item');
+});
+
+test('[Req 4-R] generateShopOffer works normally when no eligible items', () => {
+  const rng = createRng('no-char-items');
+  const { offer } = generateShopOffer(rng, 5, 1, []);
+  assert.equal(offer.length, 5, 'still produces 5 items');
+  const charItemIds = new Set(characterShopItems.map(a => a.id));
+  assert.ok(offer.every(id => !charItemIds.has(id)), 'no character items in offer');
+});
+
+test('[Req 4-P, 4-R] solo run shop includes character item at level 5', async () => {
+  await freshDb();
+  const { playerId, run } = await bootRun({ telegramId: 8001, mushroomId: 'thalla' });
+  // Earn enough mycelium to reach level 5 (need ≥350 mycelium)
+  await earnMycelium(playerId, run.id, 70);
+  await abandonGameRun(playerId, run.id);
+
+  // Start a new run at level 5 — the initial shop should include a character item
+  const run2 = await startGameRun(playerId, 'solo');
+  const shopOffer = await getShopOffer(run2.id, playerId, 1);
+
+  const charItemIds = new Set(getEligibleCharacterItems('thalla', 5).map(a => a.id));
+  assert.ok(charItemIds.size > 0, 'precondition: eligible items exist');
+  const hasCharItem = shopOffer.some(id => charItemIds.has(id));
+  assert.ok(hasCharItem, 'initial shop offer should include a character item for thalla at level 5');
 });

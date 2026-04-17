@@ -1,6 +1,7 @@
 import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { INVENTORY_ROWS } from '../constants.js';
+import { messages } from '../i18n.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay) {
   function buildLoadoutPayloadItems() {
@@ -321,7 +322,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     if (!artifact || !state.gameRun) return;
     const price = getArtifactPrice(artifact);
     if (price > state.gameRun.player.coins) {
-      state.error = state.lang === 'ru' ? 'Недостаточно монет' : 'Not enough coins';
+      state.error = messages[state.lang].errorNotEnoughCoins;
       return;
     }
     try {

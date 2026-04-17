@@ -16,6 +16,7 @@ import {
   artifacts,
   bags,
   combatArtifacts,
+  characterShopItems,
   getArtifactById,
   ROUND_INCOME,
   runRewardTable,
@@ -44,12 +45,12 @@ test('[Req 5-A, 5-B, 5-C] bag items exist in artifacts with family=bag', () => {
   assert.equal(amberSatchel.price, 3);
 });
 
-test('[Req 3-D, 5-F] combatArtifacts excludes bags and starter-only items', () => {
+test('[Req 3-D, 5-F] combatArtifacts excludes bags, starter-only, and character shop items', () => {
   assert.ok(combatArtifacts.length > 0);
-  assert.ok(combatArtifacts.every((a) => a.family !== 'bag' && !a.starterOnly));
+  assert.ok(combatArtifacts.every((a) => a.family !== 'bag' && !a.starterOnly && !a.characterItem));
   const starterOnly = artifacts.filter((a) => a.starterOnly);
   assert.equal(
-    combatArtifacts.length + bags.length + starterOnly.length,
+    combatArtifacts.length + bags.length + starterOnly.length + characterShopItems.length,
     artifacts.length
   );
 });

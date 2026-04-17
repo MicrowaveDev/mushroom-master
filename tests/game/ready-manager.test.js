@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  setReady, setUnready, isReady, areBothReady, clearRound, clearRun
+  setReady, setUnready, isReady, areBothReady, clearRound, clearRun,
+  touchActivity, getIdleRunIds
 } from '../../app/server/services/ready-manager.js';
 
 test('[Req 8-B] setReady marks player as ready', () => {
@@ -65,4 +66,29 @@ test('[Req 8-B] clearRun removes all state', () => {
   clearRun(runId);
   assert.equal(isReady(runId, 'p1'), false);
   assert.equal(areBothReady(runId).ready, false);
+});
+
+test('[Req 12-C] getIdleRunIds returns runs idle longer than timeout', () => {
+  const runId = 'test-idle-1';
+  const activeRunId = 'test-idle-2';
+  clearRun(runId);
+  clearRun(activeRunId);
+
+  // Touch both runs
+  touchActivity(runId);
+  touchActivity(activeRunId);
+
+  // Simulate time passing by touching activeRunId again after a "timeout"
+  // We can't easily mock Date.now, so test with timeout=0 (everything is idle)
+  const idle = getIdleRunIds(0);
+  assert.ok(idle.includes(runId), 'run should be idle with timeout=0');
+  assert.ok(idle.includes(activeRunId), 'active run should also be idle with timeout=0');
+
+  // With a very large timeout, nothing should be idle
+  const noneIdle = getIdleRunIds(999999999);
+  assert.ok(!noneIdle.includes(runId), 'run should not be idle with large timeout');
+  assert.ok(!noneIdle.includes(activeRunId), 'active run should not be idle with large timeout');
+
+  clearRun(runId);
+  clearRun(activeRunId);
 });

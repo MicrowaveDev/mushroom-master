@@ -8,7 +8,7 @@ testable: if the game violates a rule, it's a bug.
 `STEP_CAP`) are defined in [`app/shared/config.js`](../app/shared/config.js) —
 the single source of truth shared by server and client.
 
-Last verified against code: 2026-04-13.
+Last verified against code: 2026-04-16.
 
 ---
 
@@ -50,6 +50,7 @@ Last verified against code: 2026-04-13.
 | Axilin | Ferment Phial (damage: +2 dmg, +1 spd) | Sporeblade (+3 dmg) |
 | Kirt | Measured Strike (damage: +1 dmg, +1 armor) | Moss Ring (+1 dmg, +1 armor) |
 | Morga | Flash Cap (stun: +6% stun, +1 dmg) | Haste Wisp (+1 spd) |
+| Dalamar | Entropy Shard (stun: +5% stun, +1 armor) | Shock Puff (+8% stun) |
 
 ---
 
@@ -137,6 +138,7 @@ Last verified against code: 2026-04-13.
 | **Axilin** | Every 3rd successful hit → +3 damage | Ferment Burst: +2 damage, then −1 defense rest of battle |
 | **Kirt** | If not stunned on previous enemy turn → +1 speed | Clean Strike: attack ignores 2 points of enemy armor |
 | **Morga** | First action in battle → +4 damage | Flash Cap: breaks speed ties in her favor, +10% stun chance |
+| **Dalamar** | Each hit permanently reduces enemy defense by 1 (min 0) | Bone of Entropy: normal attack + 15% additive stun chance |
 
 ### Base Stats
 
@@ -147,12 +149,13 @@ Last verified against code: 2026-04-13.
 | Axilin | 90 | 15 | 8 | 1 | Aggressive |
 | Kirt | 105 | 12 | 6 | 3 | Balanced |
 | Morga | 85 | 13 | 10 | 0 | Aggressive |
+| Dalamar | 100 | 10 | 5 | 3 | Control |
 
 ---
 
 ## 7. Ghost Opponents (Solo Mode)
 
-- **7-A.** Ghost opponents are selected via **round-robin**: the 4 non-player mushrooms are shuffled once per run (seeded by `gameRunId`) and cycled by round number.
+- **7-A.** Ghost opponents are selected via **round-robin**: the 5 non-player mushrooms are shuffled once per run (seeded by `gameRunId`) and cycled by round number.
 - **7-B.** Each mushroom is seen before any repeats; the player's own mushroom is **excluded**.
 - **7-C.** Ghost receives **its character's starter preset** (same as the player).
 - **7-D.** Ghost shop-spend budget formula:

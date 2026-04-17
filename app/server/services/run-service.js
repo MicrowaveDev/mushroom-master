@@ -1,17 +1,13 @@
 import crypto from 'crypto';
 import { query, withTransaction } from '../db.js';
 import {
-  BAG_BASE_CHANCE,
-  BAG_ESCALATION_STEP,
-  BAG_PITY_THRESHOLD,
-  bags,
   CHALLENGE_WINNER_BONUS,
-  combatArtifacts,
+  getEligibleCharacterItems,
   DAILY_BATTLE_LIMIT,
   getArtifactById,
   getArtifactPrice,
   getCompletionBonus,
-  getShopRefreshCost,
+  COMPLETED_RUN_MAX_AGE_DAYS,
   GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
   GHOST_SNAPSHOT_MAX_COUNT,
@@ -40,17 +36,17 @@ import {
   getDailyUsage,
   recordBattle
 } from './battle-service.js';
-import { isBag } from './artifact-helpers.js';
+// isBag moved to shop-service.js with sellRunItem
 import { withRunLock } from './ready-manager.js';
 import { createBotGhostSnapshot, createBotLoadout } from './bot-loadout.js';
 import {
+  generateShopOffer,
+  lookupEligibleCharacterItems
+} from './shop-service.js';
+import {
   applyRunPlacements,
   copyRoundForward,
-  deleteLoadoutItemByIdScoped,
-  deleteOneByArtifactId,
   insertLoadoutItem,
-  insertRefund,
-  nextSortOrder,
   readCurrentRoundItems
 } from './game-run-loadout.js';
 
@@ -61,32 +57,6 @@ function rewardMultiplier() {
   if (process.env.NODE_ENV === 'production') return 1;
   const n = parseInt(process.env.REWARD_MULTIPLIER ?? '1', 10);
   return Number.isFinite(n) && n >= 1 ? n : 1;
-}
-
-export function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1) {
-  const combatPool = [...combatArtifacts];
-  const bagPool = [...bags];
-  const offer = [];
-  let hasBag = false;
-  const perSlotChance = BAG_BASE_CHANCE + roundsSinceBag * BAG_ESCALATION_STEP;
-
-  for (let i = 0; i < count; i++) {
-    const forceBag = !hasBag && roundsSinceBag >= BAG_PITY_THRESHOLD && i === count - 1;
-    const isBagSlot = forceBag || (bagPool.length > 0 && rng() < perSlotChance);
-
-    if (isBagSlot && bagPool.length > 0) {
-      const idx = Math.floor(rng() * bagPool.length);
-      offer.push(bagPool[idx].id);
-      bagPool.splice(idx, 1);
-      hasBag = true;
-    } else if (combatPool.length > 0) {
-      const idx = Math.floor(rng() * combatPool.length);
-      offer.push(combatPool[idx].id);
-      combatPool.splice(idx, 1);
-    }
-  }
-
-  return { offer, hasBag };
 }
 
 // getShopState / saveShopState (legacy player_shop_state blob) deleted
@@ -127,15 +97,6 @@ export async function startGameRun(playerId, mode = 'solo') {
       [runPlayerId, runId, playerId, STARTING_LIVES, initialCoins]
     );
 
-    const rng = createRng(`${runId}:shop:1`);
-    const initialRoundsSinceBag = 1;
-    const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, initialRoundsSinceBag);
-    await client.query(
-      `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
-       VALUES ($1, $2, $3, 1, 0, $4, $5, $6)`,
-      [createId('shopstate'), runId, playerId, hasBag ? 0 : initialRoundsSinceBag, JSON.stringify(shopOffer), now]
-    );
-
     const currentDay = dayKey(new Date());
     await client.query(
       `INSERT INTO daily_rate_limits (player_id, day_key, battle_starts)
@@ -156,6 +117,22 @@ export async function startGameRun(playerId, mode = 'solo') {
     const activeMushroomId = activeMushroomResult.rowCount
       ? activeMushroomResult.rows[0].mushroom_id
       : null;
+
+    // [Req 4-P–4-R] Compute eligible character shop items for the initial offer
+    const myceliumResult = activeMushroomId
+      ? await client.query(`SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`, [playerId, activeMushroomId])
+      : { rowCount: 0 };
+    const playerLevel = myceliumResult.rowCount ? computeLevel(myceliumResult.rows[0].mycelium).level : 1;
+    const eligibleCharItems = activeMushroomId ? getEligibleCharacterItems(activeMushroomId, playerLevel) : [];
+
+    const rng = createRng(`${runId}:shop:1`);
+    const initialRoundsSinceBag = 1;
+    const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, initialRoundsSinceBag, eligibleCharItems);
+    await client.query(
+      `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
+       VALUES ($1, $2, $3, 1, 0, $4, $5, $6)`,
+      [createId('shopstate'), runId, playerId, hasBag ? 0 : initialRoundsSinceBag, JSON.stringify(shopOffer), now]
+    );
     let activePresetId = 'default';
     if (activeMushroomId) {
       const presetResult = await client.query(
@@ -702,7 +679,8 @@ async function resolveChallengeRound(client, run, gameRunId) {
       const prevRoundsSinceBag = prevShopState.rowCount ? prevShopState.rows[0].rounds_since_bag : 1;
       const newRoundsSinceBag = prevRoundsSinceBag + 1;
       const shopRng = createRng(`${gameRunId}:shop:${nextRound}:${grp.player_id}`);
-      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag);
+      const charItems = await lookupEligibleCharacterItems(client, grp.player_id, 'challenge', gameRunId);
+      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag, charItems);
       await client.query(
         `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
@@ -903,7 +881,8 @@ export async function resolveRound(playerId, gameRunId) {
       const prevRoundsSinceBag = prevShopState.rowCount ? prevShopState.rows[0].rounds_since_bag : 1;
       const newRoundsSinceBag = prevRoundsSinceBag + 1;
       const shopRng = createRng(`${gameRunId}:shop:${nextRound}`);
-      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag);
+      const charItems = await lookupEligibleCharacterItems(client, playerId, run.mode, gameRunId);
+      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag, charItems);
       await client.query(
         `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
@@ -984,296 +963,11 @@ export async function applyRunLoadoutPlacements(playerId, gameRunId, items) {
   }));
 }
 
-export async function buyRunShopItem(playerId, gameRunId, artifactId) {
-  return withRunLock(gameRunId, () => withTransaction(async (client) => {
-    const runResult = await client.query(
-      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
-      [gameRunId]
-    );
-    if (!runResult.rowCount) {
-      throw new Error('Game run not found or already ended');
-    }
-    const currentRound = runResult.rows[0].current_round;
+// buyRunShopItem, refreshRunShop, forceRunShopForTest, sellRunItem extracted
+// to shop-service.js. Re-exported from this module for backwards compatibility.
+export { generateShopOffer, buyRunShopItem, refreshRunShop, forceRunShopForTest, sellRunItem } from './shop-service.js';
 
-    const grpResult = await client.query(
-      `SELECT * FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
-      [gameRunId, playerId]
-    );
-    if (!grpResult.rowCount) {
-      throw new Error('Player is not part of this active game run');
-    }
-    const grp = grpResult.rows[0];
-
-    const shopResult = await client.query(
-      `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
-      [gameRunId, playerId, currentRound]
-    );
-    if (!shopResult.rowCount) {
-      throw new Error('Shop state not found');
-    }
-    const offer = parseJson(shopResult.rows[0].offer_json, []);
-
-    if (!offer.includes(artifactId)) {
-      throw new Error('Item is not in the current shop offer');
-    }
-
-    const artifact = getArtifactById(artifactId);
-    if (!artifact) {
-      throw new Error('Unknown artifact');
-    }
-    const price = getArtifactPrice(artifact);
-    if (grp.coins < price) {
-      throw new Error('Not enough coins');
-    }
-
-    const newCoins = grp.coins - price;
-    await client.query(
-      `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
-      [grp.id, newCoins]
-    );
-
-    const newOffer = [...offer];
-    const idx = newOffer.indexOf(artifactId);
-    if (idx !== -1) newOffer.splice(idx, 1);
-
-    await client.query(
-      `UPDATE game_run_shop_states SET offer_json = $2, updated_at = $3
-       WHERE game_run_id = $1 AND player_id = $4 AND round_number = $5`,
-      [gameRunId, JSON.stringify(newOffer), nowIso(), playerId, currentRound]
-    );
-
-    // Insert into the new run-scoped table. Container coords (-1,-1) until placed.
-    const sortOrder = await nextSortOrder(client, gameRunId, playerId, currentRound);
-    const newRowId = await insertLoadoutItem(client, {
-      gameRunId,
-      playerId,
-      roundNumber: currentRound,
-      artifactId,
-      x: -1,
-      y: -1,
-      width: artifact.width,
-      height: artifact.height,
-      bagId: null,
-      sortOrder,
-      purchasedRound: currentRound,
-      freshPurchase: true
-    });
-
-    // id: the newly-inserted loadout row id. The client stores this on its
-    // container slot so follow-up actions (place, sell, drag) can target
-    // the specific row even when duplicates exist. See docs/client-row-id-refactor.md.
-    return { id: newRowId, coins: newCoins, artifactId, price, shopOffer: newOffer };
-  }));
-}
-
-export async function refreshRunShop(playerId, gameRunId) {
-  return withRunLock(gameRunId, () => withTransaction(async (client) => {
-    const runResult = await client.query(
-      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
-      [gameRunId]
-    );
-    if (!runResult.rowCount) {
-      throw new Error('Game run not found or already ended');
-    }
-    const currentRound = runResult.rows[0].current_round;
-
-    const grpResult = await client.query(
-      `SELECT * FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
-      [gameRunId, playerId]
-    );
-    if (!grpResult.rowCount) {
-      throw new Error('Player is not part of this active game run');
-    }
-    const grp = grpResult.rows[0];
-
-    const shopResult = await client.query(
-      `SELECT * FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
-      [gameRunId, playerId, currentRound]
-    );
-    if (!shopResult.rowCount) {
-      throw new Error('Shop state not found');
-    }
-    const shop = shopResult.rows[0];
-
-    const cost = getShopRefreshCost(shop.refresh_count);
-    if (grp.coins < cost) {
-      throw new Error('Not enough coins to refresh shop');
-    }
-
-    const newCoins = grp.coins - cost;
-    const currentRoundsSinceBag = shop.rounds_since_bag || 1;
-    const rng = createRng(`${gameRunId}:refresh:${shop.round_number}:${shop.refresh_count + 1}`);
-    const { offer: newOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, currentRoundsSinceBag);
-
-    await client.query(
-      `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
-      [grp.id, newCoins]
-    );
-    await client.query(
-      `UPDATE game_run_shop_states SET refresh_count = refresh_count + 1, rounds_since_bag = $2, offer_json = $3, updated_at = $4
-       WHERE game_run_id = $1 AND player_id = $5 AND round_number = $6`,
-      [gameRunId, hasBag ? 0 : currentRoundsSinceBag, JSON.stringify(newOffer), nowIso(), playerId, currentRound]
-    );
-
-    return {
-      coins: newCoins,
-      shopOffer: newOffer,
-      refreshCount: shop.refresh_count + 1,
-      refreshCost: cost
-    };
-  }));
-}
-
-/**
- * Test-only: overwrite the current round's shop offer with a deterministic
- * artifact list. Used by Playwright tests to eliminate RNG/pity/refresh
- * polling loops that race cold Vite compilation. Does NOT charge coins and
- * does NOT increment refresh_count — the shop appears "as if" it was rolled
- * this way from the start.
- *
- * Gated by `NODE_ENV !== 'production'` at the route layer.
- */
-export async function forceRunShopForTest(playerId, gameRunId, artifactIds) {
-  if (!Array.isArray(artifactIds) || artifactIds.length === 0) {
-    throw new Error('forceRunShopForTest requires a non-empty artifactIds array');
-  }
-  for (const id of artifactIds) {
-    if (!getArtifactById(id)) {
-      throw new Error(`Unknown artifactId in force-shop: ${id}`);
-    }
-  }
-  return withRunLock(gameRunId, () => withTransaction(async (client) => {
-    const runResult = await client.query(
-      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
-      [gameRunId]
-    );
-    if (!runResult.rowCount) {
-      throw new Error('Game run not found or already ended');
-    }
-    const currentRound = runResult.rows[0].current_round;
-
-    const grpResult = await client.query(
-      `SELECT id FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
-      [gameRunId, playerId]
-    );
-    if (!grpResult.rowCount) {
-      throw new Error('Player is not part of this active game run');
-    }
-
-    await client.query(
-      `UPDATE game_run_shop_states SET offer_json = $1, updated_at = $2
-       WHERE game_run_id = $3 AND player_id = $4 AND round_number = $5`,
-      [JSON.stringify(artifactIds), nowIso(), gameRunId, playerId, currentRound]
-    );
-
-    return { shopOffer: artifactIds };
-  }));
-}
-
-/**
- * Sell a loadout item from the current round.
- *
- * Accepts either a direct row id or a bare artifactId. When both are
- * supplied, the row id wins (it disambiguates duplicates). Callers should
- * prefer passing `id` whenever they know it — hitting this by artifactId
- * only works because the server picks "the most recently added matching
- * row" via sort_order, which is correct for the UI's last-click pattern
- * but brittle if the client state drifts. See docs/client-row-id-refactor.md.
- *
- * The `target` argument accepts the legacy string form (artifactId) so
- * existing tests and the few callers that still pass a bare string keep
- * working. New code should pass an object `{ id, artifactId }`.
- */
-export async function sellRunItem(playerId, gameRunId, target) {
-  const { id: targetRowId, artifactId: targetArtifactId } = typeof target === 'string'
-    ? { id: null, artifactId: target }
-    : { id: target?.id || null, artifactId: target?.artifactId || null };
-  if (!targetRowId && !targetArtifactId) {
-    throw new Error('sellRunItem requires a row id or artifactId');
-  }
-  return withRunLock(gameRunId, () => withTransaction(async (client) => {
-    const runResult = await client.query(
-      `SELECT current_round FROM game_runs WHERE id = $1 AND status = 'active'`,
-      [gameRunId]
-    );
-    if (!runResult.rowCount) {
-      throw new Error('Game run not found or already ended');
-    }
-    const currentRound = runResult.rows[0].current_round;
-
-    const grpResult = await client.query(
-      `SELECT * FROM game_run_players WHERE game_run_id = $1 AND player_id = $2 AND is_active = 1`,
-      [gameRunId, playerId]
-    );
-    if (!grpResult.rowCount) {
-      throw new Error('Player is not part of this active game run');
-    }
-    const grp = grpResult.rows[0];
-
-    const currentRows = await readCurrentRoundItems(client, gameRunId, playerId, currentRound);
-
-    // Resolve the candidate row: prefer id (disambiguates duplicates),
-    // fall back to artifactId for legacy callers.
-    let candidate;
-    if (targetRowId) {
-      candidate = currentRows.find((r) => r.id === targetRowId);
-    } else {
-      candidate = currentRows.find((r) => r.artifactId === targetArtifactId);
-    }
-    if (!candidate) {
-      throw new Error('Item not found in loadout');
-    }
-
-    const resolvedArtifactId = candidate.artifactId;
-    const artifact = getArtifactById(resolvedArtifactId);
-    if (isBag(artifact)) {
-      const contentsCount = currentRows.filter((r) => r.bagId === resolvedArtifactId).length;
-      if (contentsCount > 0) {
-        throw new Error('Cannot sell a bag that contains items — empty it first');
-      }
-    }
-
-    const price = getArtifactPrice(artifact);
-    // Graduated refund: fresh this round = full price, otherwise half.
-    // purchased_round is preserved across round copy-forward (§2.2).
-    // [Req 4-K]: half-price refund is rounded down with a MINIMUM of 1 coin
-    // — selling a 1-coin artifact in a later round must still return 1, not 0.
-    const isFreshThisRound = candidate.purchasedRound === currentRound;
-    const sellPrice = isFreshThisRound ? price : Math.max(1, Math.floor(price / 2));
-
-    let deleted;
-    if (targetRowId) {
-      deleted = await deleteLoadoutItemByIdScoped(client, {
-        rowId: targetRowId,
-        gameRunId,
-        playerId,
-        roundNumber: currentRound
-      });
-    } else {
-      deleted = await deleteOneByArtifactId(client, gameRunId, playerId, currentRound, resolvedArtifactId);
-    }
-    if (!deleted) {
-      throw new Error('Item not found in loadout');
-    }
-
-    await insertRefund(client, {
-      gameRunId,
-      playerId,
-      roundNumber: currentRound,
-      artifactId: resolvedArtifactId,
-      refundAmount: sellPrice
-    });
-
-    const newCoins = grp.coins + sellPrice;
-    await client.query(
-      `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
-      [grp.id, newCoins]
-    );
-
-    return { id: deleted.id, coins: newCoins, sellPrice, artifactId: resolvedArtifactId };
-  }));
-}
-
+// (refreshRunShop, forceRunShopForTest, sellRunItem bodies moved to shop-service.js)
 export async function createChallengeRun(challengerPlayerId, inviteePlayerId, challengeId) {
   return withTransaction(async (client) => {
     const inviteeUsage = await getDailyUsage(client, inviteePlayerId);
@@ -1303,7 +997,8 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
       );
 
       const rng = createRng(`${runId}:shop:1:${pid}`);
-      const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, 1);
+      const charItems = await lookupEligibleCharacterItems(client, pid, 'challenge', runId);
+      const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, 1, charItems);
       await client.query(
         `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
          VALUES ($1, $2, $3, 1, 0, $4, $5, $6)`,
@@ -1430,6 +1125,40 @@ export async function pruneOldGhostSnapshots(
     prunedBots: botResult.rowCount,
     prunedSnapshots
   };
+}
+
+/**
+ * Delete completed/abandoned game runs older than `maxAgeDays`.
+ * Removes associated loadout items, shop states, refunds, rounds, and
+ * game_run_players rows. Battles and snapshots are retained separately
+ * (they feed ghost opponent selection and replay history).
+ *
+ * Intended to be called periodically (e.g. daily cron) to prevent
+ * unbounded table growth from soft-deleted runs.
+ */
+export async function pruneCompletedRuns(maxAgeDays = COMPLETED_RUN_MAX_AGE_DAYS) {
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+
+  // Find run IDs to prune
+  const runsResult = await query(
+    `SELECT id FROM game_runs WHERE status != 'active' AND ended_at < $1`,
+    [cutoff]
+  );
+  if (!runsResult.rowCount) return { prunedRuns: 0 };
+
+  const runIds = runsResult.rows.map(r => r.id);
+
+  // Delete child rows first (loadout items, shop states, refunds)
+  for (const runId of runIds) {
+    await query(`DELETE FROM game_run_loadout_items WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM game_run_shop_states WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM game_run_refunds WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM game_rounds WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM game_run_players WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM game_runs WHERE id = $1`, [runId]);
+  }
+
+  return { prunedRuns: runIds.length };
 }
 
 export async function getGameRunHistory(playerId, limit = 20) {

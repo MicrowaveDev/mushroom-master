@@ -131,7 +131,12 @@ export const messages = {
     portraits: 'Портреты',
     starterPreset: 'Стартовый набор',
     portraitLocked: 'Открывается при {n} мицелия',
-    presetLocked: 'Требует уровень {n}'
+    presetLocked: 'Требует уровень {n}',
+    errorBagNotEmpty: 'Сначала уберите предметы из сумки',
+    errorDoesNotFit: 'Не помещается',
+    errorDoesNotFitInventory: 'Не помещается в инвентарь',
+    errorNotEnoughCoins: 'Недостаточно монет',
+    characterItem: 'Особый'
   },
   en: {
     title: 'Mycelium Autobattler',
@@ -265,6 +270,11 @@ export const messages = {
     portraits: 'Portraits',
     starterPreset: 'Starter Preset',
     portraitLocked: 'Unlocks at {n} mycelium',
-    presetLocked: 'Requires level {n}'
+    presetLocked: 'Requires level {n}',
+    errorBagNotEmpty: 'Remove items from the bag first',
+    errorDoesNotFit: 'Does not fit here',
+    errorDoesNotFitInventory: 'Does not fit in inventory',
+    errorNotEnoughCoins: 'Not enough coins',
+    characterItem: 'Signature'
   }
 };

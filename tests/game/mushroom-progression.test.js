@@ -390,3 +390,18 @@ test('[Req 14-G] V10 switchPreset unknown mushroom id → 404', async () => {
     (err) => err.statusCode === 404
   );
 });
+
+test('[Req 14-C] mycelium is per-mushroom: playing thalla does not advance axilin', async () => {
+  await freshDb();
+  const { playerId, run } = await bootRun({ telegramId: 950, mushroomId: 'thalla' });
+
+  // Earn mycelium on thalla by completing a round
+  await earnMycelium(playerId, run.id, 1);
+
+  const state = await getPlayerState(playerId);
+  const thalla = state.progression['thalla'];
+  const axilin = state.progression['axilin'];
+
+  assert.ok(thalla.mycelium > 0, 'thalla should have earned mycelium');
+  assert.equal(axilin.mycelium, 0, 'axilin should still be at 0 mycelium');
+});
