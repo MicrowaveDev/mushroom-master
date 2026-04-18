@@ -72,11 +72,41 @@ test('[projection] bag with active=false lands in containerItems', () => {
   assert.equal(result.activeBags.length, 0);
 });
 
-test('[projection] bagged items (bagId set) land in builderItems with bagId', () => {
+test('[projection] bagged items with valid virtual coords land in builderItems with bagId', () => {
+  // Post-fix: a correctly-persisted bagged item carries its virtual
+  // grid y (>= INVENTORY_ROWS) so the renderer can place it inside the
+  // bag's rows. See the bag-items regression test covering the full
+  // round-1 PUT + round-2 copy-forward trip.
   const result = projectLoadoutItems([
     row({ id: 'g', artifactId: 'moss_pouch', active: true }),
     row({
       id: 'h',
+      artifactId: 'spore_needle',
+      bagId: 'moss_pouch',
+      x: 0,
+      y: 3
+    })
+  ], BAG_IDS);
+  assert.equal(result.activeBags.length, 1);
+  assert.equal(result.builderItems.length, 1);
+  assert.equal(result.builderItems[0].id, 'h');
+  assert.equal(result.builderItems[0].bagId, 'moss_pouch');
+  assert.equal(result.builderItems[0].x, 0);
+  assert.equal(result.builderItems[0].y, 3);
+});
+
+test('[regression] legacy bagged items at (-1,-1) fall back to containerItems instead of breaking the grid', () => {
+  // Pre-fix: buildLoadoutPayloadItems stripped x/y from bagged-item
+  // payloads, so the server persisted them at (-1,-1). Projection
+  // forwarded those invalid coords into builderItems, where CSS grid
+  // auto-placement scattered them across the base grid on the next
+  // prep screen. The fallback routes them to containerItems so the
+  // player can re-place them cleanly instead of seeing a corrupted
+  // inventory.
+  const result = projectLoadoutItems([
+    row({ id: 'g', artifactId: 'moss_pouch', active: true }),
+    row({
+      id: 'legacy',
       artifactId: 'spore_needle',
       bagId: 'moss_pouch',
       x: -1,
@@ -84,11 +114,10 @@ test('[projection] bagged items (bagId set) land in builderItems with bagId', ()
     })
   ], BAG_IDS);
   assert.equal(result.activeBags.length, 1);
-  // Bagged item lives in builderItems so the grid renderer groups it
-  // under the bag's virtual rows.
-  assert.equal(result.builderItems.length, 1);
-  assert.equal(result.builderItems[0].id, 'h');
-  assert.equal(result.builderItems[0].bagId, 'moss_pouch');
+  assert.equal(result.builderItems.length, 0, 'legacy bagged item must not pollute the grid');
+  assert.equal(result.containerItems.length, 1);
+  assert.equal(result.containerItems[0].id, 'legacy');
+  assert.equal(result.containerItems[0].artifactId, 'spore_needle');
 });
 
 test('[projection] freshPurchase items get their artifactId in freshPurchases', () => {

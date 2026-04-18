@@ -11,6 +11,11 @@ export default function defineGameRunLoadoutItem(sequelize) {
     player_id: { type: DataTypes.TEXT, allowNull: false },
     round_number: { type: DataTypes.INTEGER, allowNull: false },
     artifact_id: { type: DataTypes.TEXT, allowNull: false },
+    // x, y double as base-grid coords (non-bag items, 0 ≤ y < INVENTORY_ROWS),
+    // virtual bag-row coords (bagged items, y ≥ INVENTORY_ROWS, discriminated
+    // by bag_id IS NOT NULL), or the container sentinel (-1, -1) for unplaced
+    // items and bag rows. See docs/bag-item-placement-persistence.md for the
+    // full contract and the round-trip history.
     x: { type: DataTypes.INTEGER, allowNull: false },
     y: { type: DataTypes.INTEGER, allowNull: false },
     width: { type: DataTypes.INTEGER, allowNull: false },

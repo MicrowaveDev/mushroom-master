@@ -249,6 +249,71 @@ test('[Req 5-A] insertLoadoutItem normalizes bag coords to (-1,-1) on buy', asyn
   assert.equal(row.rows[0].y, -1);
 });
 
+// Regression: user reported round-2 prep showing a scrambled inventory
+// after a round-1 battle. Root cause: buildLoadoutPayloadItems stripped
+// x/y from bagged-item payloads, so the server persisted them at (-1,-1).
+// copy-forward preserved the invalid coords, and the next projection fed
+// them into builderItems where CSS grid auto-placement scattered them
+// across the base grid.
+//
+// This test pins the fix at the SQLite layer: after a full round cycle
+// (PUT /artifact-loadout → resolveRound copy-forward), a bagged item's
+// stored y must still be >= INVENTORY_ROWS so the client can re-render it
+// inside the bag's virtual rows. See docs/game-requirements.md §12-D
+// (server-authoritative state survives refresh).
+test('[Req 12-D, 5-A] bagged item coords survive PUT /artifact-loadout + copy-forward to round 2', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await selectActiveMushroom(session.player.id, 'thalla');
+  const run = await startGameRun(session.player.id, 'solo');
+
+  await forceShopOffer(run.id, session.player.id, 1, ['moss_pouch', 'spore_needle']);
+  await buyRunShopItem(session.player.id, run.id, 'moss_pouch');
+  await buyRunShopItem(session.player.id, run.id, 'spore_needle');
+
+  // Starter preset already occupies (0,0) and (1,0). Place the bought
+  // spore_needle at (2,0) so the base grid stays unambiguous, activate
+  // the pouch, and tuck the duplicate starter item into the bag. Uses
+  // bark_plate too to avoid the "same artifactId twice in the starter +
+  // bag" confusion.
+  const INVENTORY_ROWS = 3;
+  await applyRunLoadoutPlacements(session.player.id, run.id, [
+    { artifactId: 'spore_lash', x: 0, y: 0, width: 1, height: 1 },
+    { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
+    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2, active: 1 },
+    // The bagged item carries its virtual bag-row coord (y = 3 = first
+    // row past the base grid). Before the fix this was stored as -1,-1.
+    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: INVENTORY_ROWS, width: 1, height: 1 }
+  ]);
+
+  // Invariant 1: round 1 stored the bagged item's virtual y, not (-1,-1).
+  const round1Bagged = await query(
+    `SELECT x, y FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
+       AND bag_id = 'moss_pouch'`,
+    [run.id, session.player.id]
+  );
+  assert.equal(round1Bagged.rowCount, 1, 'one bagged item must be persisted');
+  assert.equal(round1Bagged.rows[0].y, INVENTORY_ROWS, 'bagged item y must be the bag virtual row');
+
+  const resolveResult = await resolveRound(session.player.id, run.id);
+  if (resolveResult.status !== 'active') return; // Unlikely with 5 starting lives, but guard anyway.
+
+  // Invariant 2: copy-forward preserved the bagged item's coords so the
+  // round-2 prep screen can re-render it inside the bag instead of
+  // auto-placing it on the base grid.
+  const round2Bagged = await query(
+    `SELECT x, y, width, height, bag_id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2
+       AND bag_id = 'moss_pouch'`,
+    [run.id, session.player.id]
+  );
+  assert.equal(round2Bagged.rowCount, 1, 'round 2 must contain the copy-forward bagged item');
+  assert.equal(round2Bagged.rows[0].y, INVENTORY_ROWS, 'round 2 bagged item y must survive copy-forward');
+  assert.equal(round2Bagged.rows[0].x, 0);
+  assert.equal(round2Bagged.rows[0].bag_id, 'moss_pouch');
+});
+
 // --- Sell non-empty bag ---
 
 test('[Req 4-L] sellRunItem blocks selling non-empty bag', async () => {

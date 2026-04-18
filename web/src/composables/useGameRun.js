@@ -67,8 +67,13 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       if (item.y >= INVENTORY_ROWS) {
         const info = activeBagLayout.find((b) => item.y >= b.startRow && item.y < b.startRow + b.rowCount);
         if (info) {
+          // Persist the bagged item's virtual grid coords so copy-forward
+          // round N → N+1 can re-render the same layout. Before this,
+          // bagged items were written with x=-1,y=-1 and came back
+          // auto-placed via CSS grid on the next prep screen.
           payload.push(withId({
             artifactId: item.artifactId,
+            x: item.x, y: item.y,
             width: item.width, height: item.height,
             bagId: info.bagId
           }, item.id));
