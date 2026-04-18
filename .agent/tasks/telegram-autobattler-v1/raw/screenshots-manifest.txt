@@ -1,0 +1,15 @@
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/01-auth-gate.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/02-home.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/03-characters.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/04-artifacts.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/05-battle-prep.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/06-replay.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/07-results.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/08-history.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/09-friends.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/10-leaderboard.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/11-wiki-home.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/12-wiki-detail.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/13-profile.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/14-settings.png
+.agent/tasks/telegram-autobattler-v1/raw/screenshots/15-local-lab.png

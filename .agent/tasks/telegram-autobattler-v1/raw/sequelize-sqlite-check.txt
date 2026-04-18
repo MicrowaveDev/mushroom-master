@@ -1,0 +1,4 @@
+{
+  "dialect": "sqlite",
+  "storage": "tmp/telegram-autobattler-dev.sqlite"
+}

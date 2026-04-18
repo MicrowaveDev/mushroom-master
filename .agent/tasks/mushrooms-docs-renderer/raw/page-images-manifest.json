@@ -1,0 +1,60 @@
+{
+  "width": 794,
+  "height": 1123,
+  "pageCount": 13,
+  "template": "mushrooms-docs",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "fileName": "page-01.png"
+    },
+    {
+      "pageNumber": 2,
+      "fileName": "page-02.png"
+    },
+    {
+      "pageNumber": 3,
+      "fileName": "page-03.png"
+    },
+    {
+      "pageNumber": 4,
+      "fileName": "page-04.png"
+    },
+    {
+      "pageNumber": 5,
+      "fileName": "page-05.png"
+    },
+    {
+      "pageNumber": 6,
+      "fileName": "page-06.png"
+    },
+    {
+      "pageNumber": 7,
+      "fileName": "page-07.png"
+    },
+    {
+      "pageNumber": 8,
+      "fileName": "page-08.png"
+    },
+    {
+      "pageNumber": 9,
+      "fileName": "page-09.png"
+    },
+    {
+      "pageNumber": 10,
+      "fileName": "page-10.png"
+    },
+    {
+      "pageNumber": 11,
+      "fileName": "page-11.png"
+    },
+    {
+      "pageNumber": 12,
+      "fileName": "page-12.png"
+    },
+    {
+      "pageNumber": 13,
+      "fileName": "page-13.png"
+    }
+  ]
+}

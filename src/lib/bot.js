@@ -98,6 +98,7 @@ export async function sendPdfViaBot({
   botToken,
   pdfPath,
   caption,
+  documentName = 'mushroom-lore.pdf',
   channelUsername,
   channelChatId,
   adminChatIds,
@@ -124,7 +125,7 @@ export async function sendPdfViaBot({
     const formData = new FormData();
     formData.set('chat_id', normalizeBotChatId(chatId));
     formData.set('caption', caption);
-    formData.set('document', new Blob([pdfBuffer], { type: 'application/pdf' }), 'mushroom-lore.pdf');
+    formData.set('document', new Blob([pdfBuffer], { type: 'application/pdf' }), documentName);
 
     const result = await callBotApi(botToken, 'sendDocument', formData);
     results.push({ chatId: normalizeBotChatId(chatId), messageId: result?.message_id });

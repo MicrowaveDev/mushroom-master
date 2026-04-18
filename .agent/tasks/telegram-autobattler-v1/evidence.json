@@ -1,0 +1,133 @@
+{
+  "criteria": {
+    "AC1": {
+      "status": "PASS",
+      "proof": [
+        ".agent/tasks/telegram-autobattler-v1/spec.md",
+        ".agent/tasks/telegram-autobattler-v1/raw/task-tree.txt"
+      ]
+    },
+    "AC2": {
+      "status": "PASS",
+      "proof": [
+        "package.json",
+        "app/server/start.js",
+        "web/index.html",
+        ".agent/tasks/telegram-autobattler-v1/raw/game-build.txt"
+      ]
+    },
+    "AC3": {
+      "status": "PASS",
+      "proof": [
+        "app/server/auth.js",
+        "tests/game/auth.test.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/game-test.txt"
+      ]
+    },
+    "AC4": {
+      "status": "PASS",
+      "proof": [
+        "app/server/bot-gateway.js",
+        "app/server/create-app.js",
+        "tests/game/auth.test.js"
+      ]
+    },
+    "AC5": {
+      "status": "PASS",
+      "proof": [
+        "app/server/schema.js",
+        "app/server/services/game-service.js",
+        "tests/game/loadout-and-battle.test.js"
+      ]
+    },
+    "AC6": {
+      "status": "PASS",
+      "proof": [
+        "app/server/game-data.js",
+        "web/src/main.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/03-characters.png"
+      ]
+    },
+    "AC7": {
+      "status": "PASS",
+      "proof": [
+        "app/server/services/game-service.js",
+        "web/src/main.js",
+        "web/src/styles.css",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/04-artifacts.png"
+      ]
+    },
+    "AC8": {
+      "status": "PASS",
+      "proof": [
+        "app/server/services/game-service.js",
+        "tests/game/loadout-and-battle.test.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/06-replay.png"
+      ]
+    },
+    "AC9": {
+      "status": "PASS",
+      "proof": [
+        "web/src/main.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/07-results.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/13-profile.png"
+      ]
+    },
+    "AC10": {
+      "status": "PASS",
+      "proof": [
+        "app/server/services/game-service.js",
+        "tests/game/social-wiki-lab.test.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/10-leaderboard.png"
+      ]
+    },
+    "AC11": {
+      "status": "PASS",
+      "proof": [
+        "app/server/services/game-service.js",
+        "tests/game/social-wiki-lab.test.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/09-friends.png"
+      ]
+    },
+    "AC12": {
+      "status": "PASS",
+      "proof": [
+        "app/server/wiki.js",
+        "wiki/characters/thalla/page.md",
+        "wiki/locations/ygg-mycel/page.md",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/11-wiki-home.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/12-wiki-detail.png"
+      ]
+    },
+    "AC13": {
+      "status": "PASS",
+      "proof": [
+        "app/server/create-app.js",
+        "web/src/main.js",
+        "tests/game/social-wiki-lab.test.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/15-local-lab.png"
+      ]
+    },
+    "AC14": {
+      "status": "PASS",
+      "proof": [
+        ".agent/tasks/telegram-autobattler-v1/raw/game-test.txt",
+        ".agent/tasks/telegram-autobattler-v1/raw/game-build.txt",
+        ".agent/tasks/telegram-autobattler-v1/raw/playwright-start-battle.txt",
+        ".agent/tasks/telegram-autobattler-v1/raw/playwright-screenshots.txt"
+      ]
+    },
+    "AC15": {
+      "status": "PASS",
+      "proof": [
+        "web/src/main.js",
+        "web/src/styles.css",
+        "tests/game/start-battle.spec.js",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/04-artifacts.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/05-battle-prep.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/screenshots/07-results.png",
+        ".agent/tasks/telegram-autobattler-v1/raw/playwright-start-battle.txt"
+      ]
+    }
+  }
+}

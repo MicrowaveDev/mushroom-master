@@ -1,0 +1,13 @@
+
+> telegram-mushroom-archiver@1.0.0 game:build
+> vite build --config web/vite.config.js
+
+vite v8.0.3 building client environment for production...
+[2Ktransforming...✓ 12 modules transformed.
+rendering chunks...
+computing gzip size...
+web/dist/index.html                   0.40 kB │ gzip:  0.27 kB
+web/dist/assets/index-O9tqYOOY.css    5.08 kB │ gzip:  1.68 kB
+web/dist/assets/index-qGf_hR-l.js   215.07 kB │ gzip: 75.74 kB
+
+✓ built in 91ms

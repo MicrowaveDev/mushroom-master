@@ -1,0 +1,40 @@
+{
+  "AC1": {
+    "status": "PASS",
+    "proof": [
+      "src/lib/render.js supports template-aware rendering",
+      "src/render-existing-lore.js forwards --template",
+      "src/lib/lore-builder.js forwards template selection"
+    ]
+  },
+  "AC2": {
+    "status": "PASS",
+    "proof": [
+      "Shared render pipeline remains in src/lib/render.js",
+      "Only template-specific HTML builders differ"
+    ]
+  },
+  "AC3": {
+    "status": "PASS",
+    "proof": [
+      "raw/structure-counts.txt reports profiles=5",
+      "raw/structure-counts.txt reports docs_profile_sections=30",
+      "Fresh screenshots reviewed: data/channel/generated/page-images-mushrooms-docs/page-03.png and page-04.png"
+    ]
+  },
+  "AC4": {
+    "status": "PASS",
+    "proof": [
+      "raw/structure-counts.txt reports docs_topics=3",
+      "Fresh screenshot reviewed: data/channel/generated/page-images-mushrooms-docs/page-01.png"
+    ]
+  },
+  "AC5": {
+    "status": "PASS",
+    "proof": [
+      "raw/render-command.txt records the successful render command",
+      "raw/timestamps.txt shows mushrooms-docs artifacts newer than render_start_utc",
+      "raw/page-images-manifest.json records template=mushrooms-docs and pageCount=13"
+    ]
+  }
+}

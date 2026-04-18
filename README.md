@@ -1,5 +1,70 @@
 # Telegram Mushroom Archiver
 
+## V1 Game App
+
+This repository now also contains the v1 Telegram mushroom autobattler described in `docs/telegram-mushroom-autobattler-plan.md`.
+
+Game implementation surfaces:
+
+- backend: `app/server/`
+- frontend Mini App: `web/`
+- structured wiki source: `wiki/`
+- game verification: `tests/game/`
+- **game rules**: [`docs/game-requirements.md`](docs/game-requirements.md) — authoritative behavioral spec covering game structure, combat, economy, ghost scaling, rewards, challenge mode, and all testable invariants. Read this first before changing game logic.
+- **user flows**: [`docs/user-flows.md`](docs/user-flows.md) — screen-by-screen flow spec with visible elements, user actions, and expected assertions at each step. Read this before writing or reviewing E2E tests.
+
+Database runtime:
+
+- all game DB access now goes through Sequelize
+- local development defaults to SQLite
+- production-style deployments can use PostgreSQL by setting `DATABASE_URL`
+
+Game commands:
+
+```bash
+npm run game:start
+npm run game:build
+npm run game:test
+npm run game:test:screens
+```
+
+What is production-real vs dev-only in the e2e flows:
+
+- real production app logic:
+  - frontend UI and page flow
+  - backend game-run lifecycle, ghost matchmaking, replay loading, and persistence
+  - loadout validation and battle engine behavior
+- dev-only shortcuts:
+  - authentication uses `/api/dev/session` instead of Telegram `initData` or the bot-code handoff
+  - e2e flows may seed ghost opponents through dev setup so the prep screen has a valid opponent
+  - local development defaults to SQLite instead of PostgreSQL
+
+End-to-end coverage (Playwright):
+
+- `tests/game/solo-run.spec.js` — full solo run journey (start → prep → ready → roundResult → optional replay → next round → run complete)
+- `tests/game/challenge-run.spec.js` — friend challenge flow, including SSE reconnection
+- `tests/game/coverage-gaps.spec.js` — onboarding, daily limit, dual-viewport, shop persistence after reload, history navigation
+- `tests/game/screenshots.spec.js` — dual-viewport (375×667 mobile + 1280×800 desktop) capture of every major screen
+
+Note: the legacy single-battle flow (`POST /api/battles`, `ArtifactsScreen`, `BattlePrepScreen`, `ResultsScreen`, `start-battle.spec.js`) was deleted on 2026-04-13. All gameplay now flows through multi-round game runs (`POST /api/game-run/start`).
+See [`docs/flaky-tests.md`](docs/flaky-tests.md) for notes on a small cluster of HTML5-drag flakes in the solo-run spec.
+
+Game-specific environment additions:
+
+- `DATABASE_URL`
+  - optional PostgreSQL connection string
+  - when present, Sequelize uses PostgreSQL through `pg`
+- `SQLITE_STORAGE`
+  - optional SQLite file path for local development
+  - default local dev path: `tmp/telegram-autobattler-dev.sqlite`
+  - tests use in-memory SQLite automatically through Sequelize
+- `TELEGRAM_BOT_USERNAME`
+  - bot username used to build discovery and fallback-auth deep links
+- `PORT`
+  - local HTTP port for the game server
+
+The Local AI Test Lab is available only in local and development runtime, and is disabled in production runtime.
+
 ## Goal
 
 This project turns a Telegram lore channel into a local structured archive and a generated lore artifact.
@@ -28,6 +93,13 @@ Current lore output status:
 - character-image posts can now be recognized from message text and written into character manifests with JSON pointers to archived assets
 - structured `# Character Profile: ...` source posts are now parsed deterministically into canonical character dossier sections
 - textual lore from source markdown/OCR now has higher priority than character-image descriptions and manifest `visualDetails`
+- character dossiers are generated via separate per-character API calls rather than a single combined request, because a single request produced uneven quality where some characters received detailed descriptions while others were underwritten
+- short excluded OCR title cards can now be deterministically pulled into adjacent routed character context when they behave as header/setup cards rather than true excluded content
+- generated character sections now pass through deterministic post-processing that preserves stable subsection ordering and can restore must-keep named entities from routed source files when generation compresses them away
+- OCR-extracted text is now stored directly in the source message markdown under `## OCR` instead of in separate generated OCR files
+- character data lives in per-character `manifest.json` files only; the redundant `character-index.json` has been removed
+- lore regeneration is skipped when source content has not changed since the last run (content-hash-based check)
+- previous lore output is backed up automatically before regeneration (up to 5 backups kept under `generated/backups/`)
 - archived source markdown can now store routing tags under `## Hashtags`
 - Telegram source messages can now be tagged through a script, and those tags are mirrored into archived markdown
 - `#instructions` source messages are now collected into generation bundles and can deterministically control character order
@@ -35,28 +107,28 @@ Current lore output status:
 - the current generated structure is:
   - `General Lore`
   - one section per character or major entity
-  - supporting subsections such as overview, appearance, abilities/traits, motives/role, and relationships/story hooks when supported by the source material
+  - supporting subsections such as overview, appearance, abilities/traits, residence/domain (`Обитель и владения`), motives/role, and relationships/story hooks when supported by the source material
   - character images placed at the start of each character section
 
 The repo currently implements these workflows:
 
 - `npm run fetch`
-  - incremental processing
-  - reads the channel from Telegram
+  - incremental new-message processing
+  - reads only source messages newer than the last archived source message
   - skips generated PDF lore posts and other generated repost content
-  - reconciles local source markdown against current Telegram state
   - skips already-processed screenshots
   - OCRs new screenshots
   - classifies image posts as `screenshot` or `photo`
   - posts new OCR text to the channel through the Telegram Bot API
   - preserves photo assets and includes them in local markdown
-  - writes character manifests and a channel-level character index JSON when character-linked image/text posts are present
+  - writes character manifests when character-linked image/text posts are present
   - reads `#instructions` source messages and carries them into the lore-generation request bundles
   - applies deterministic character ordering from instruction text like `Порядок персонажей: ...`
   - regenerates Russian `mushroom-lore.md`, `mushroom-lore.html`, and `mushroom-lore.pdf`
   - renders per-page preview images for the generated PDF under `generated/page-images/`
   - writes a page-image manifest for downstream review workflows
   - optionally posts the generated PDF back to the channel
+  - does not reconcile deletions or edits to older Telegram source posts; use `npm run regenerate` for a full sync pass
 
 - `npm run regenerate`
   - full local regeneration from Telegram state
@@ -65,12 +137,15 @@ The repo currently implements these workflows:
   - reuses existing OCR/photo artifacts when possible
   - rebuilds `source-routing.json`, including parsed instruction entries
   - parses structured character-profile posts into deterministic dossier data before lore generation
+  - applies deterministic contextual routing for short title-card OCR fragments when they belong to an adjacent routed dossier
   - rebuilds Russian lore markdown, HTML, PDF, and page preview images
+  - runs deterministic lore normalization after generation so stable subsection order and must-keep source names can be restored even if the model output compresses them
 
 - `npm run update-text-message -- --id <messageId> --text "<new text>"`
   - edits a source text message in Telegram by message ID
   - preserves existing routing hashtags already attached to that Telegram message
   - refreshes the corresponding local markdown file
+  - use this when a lore/source correction should survive future regeneration; do not treat `generated/mushroom-lore.md` as the long-term source of truth
   - only applies to editable source text posts, not OCR reposts or media posts
 
 - `npm run set-message-hashtags -- --id <messageId> --hashtags "#general_lore #character_thalla"`
@@ -91,9 +166,8 @@ The repo currently implements these workflows:
   - writes a cleanup report
 
 - `npm run backfill-posted-message-ids`
-  - scans the channel for live OCR reposts
-  - repairs local `Posted message ID` metadata using exact `#<source-id>` header matching
-  - writes a backfill report
+  - legacy compatibility command
+  - separate OCR repost metadata is no longer stored, so the command currently writes a no-op report only
 
 - `npm run rebuild-ocr-reposts`
   - deletes the current live OCR repost set from the channel
@@ -111,6 +185,11 @@ The repo currently implements these workflows:
   - reviews source message markdown plus rendered page screenshots from `generated/page-images/`
   - includes a reusable `Review Instructions` checklist for future agent review passes
   - should be used to improve section hierarchy and presentation of the current Russian dossier output
+
+- `npm run audit:untagged`
+  - generates a deterministic report of source files that still lack explicit routing hashtags
+  - highlights likely fragments vs substantive files and shows a short preview for faster agent tagging passes
+  - should be used before lore review to reduce heuristic fallback and make routing authoritative
 
 ## Channel Content Rules
 
@@ -194,6 +273,7 @@ npm run rebuild-ocr-reposts
 npm run clean-text-duplicates
 npm run analyze:lore-prompt
 npm run analyze:pdf-structure
+npm run audit:untagged
 ```
 
 ## Output Layout
@@ -202,15 +282,16 @@ Generated data is stored under `data/<channel>/`:
 
 - `messages/`
   - per-source-message markdown
-  - may include a `## Hashtags` section used as lore-routing metadata
+  - may include `## Hashtags` for lore-routing metadata
+  - may include `## OCR` with extracted screenshot text (embedded directly, no separate OCR files)
+  - if an OCR-derived lore fact needs correction, update the source message markdown / Telegram source text rather than looking for a separate OCR file
 - `assets/`
   - downloaded screenshot and photo assets
 - `characters/`
   - one folder per detected character/entity
   - `manifest.json` with image pointers, source-message references, `completenessTier`, and structured profile data when available
+  - this is the single source of truth for character data
 - `generated/`
-  - OCR repost markdown
-  - `character-index.json`
   - `source-routing.json`
     - records parsed `#instructions` entries
     - records general-lore files, character-routed files, and pending unclassified files
@@ -219,28 +300,30 @@ Generated data is stored under `data/<channel>/`:
   - `mushroom-lore.md`
   - `mushroom-lore.html`
   - `mushroom-lore.pdf`
+  - `.source-hash` — content hash of source inputs; regeneration is skipped when unchanged
+  - `backups/` — automatic backups of previous lore output before regeneration (up to 5 kept)
   - `page-images/`
     - one PNG per rendered PDF page
     - `manifest.json` with page ordering and filenames for review tooling
 - `generated/reports/`
   - duplicate cleanup report
-  - posted message ID backfill report
   - OCR rebuild report
   - lore prompt analysis report
   - PDF structure analysis report
+  - untagged routing audit report
 
 ## Current Limitations
 
 - Hashtag-driven routing is now the intended source of truth, but older untagged archives can still fall back to heuristic routing until an agent classifies them.
+- `npm run fetch` is now optimized for new-message ingestion; if older Telegram posts were edited or deleted, run `npm run regenerate` to reconcile the archive.
 - `#instructions` currently supports deterministic character ordering, but broader instruction types still need explicit parsing rules before they can be relied on.
 - Deterministic duplicate cleanup is currently heuristic-based and can be aggressive when a message is only a partial duplicate of a fuller one.
-- The visible OCR repost sequence in Telegram is only guaranteed to match source order after running `npm run rebuild-ocr-reposts`; normal cleanup edits/deletes in place and does not reorder existing channel posts.
-- Some source screenshot IDs may intentionally have no live `#<id>` repost after cleanup if their cleaned OCR text is empty.
 - Character grouping is improving, but remains mixed while the archive transitions from heuristic routing to explicit agent-applied hashtags.
 - Structured character-profile extraction is now deterministic, but broader character assembly is still mixed: rich single-profile characters work better than characters assembled from many lore fragments.
 - Character photo manifests still depend on model-generated vision output, and some figurine images remain visually under-described even with high-detail analysis and structured `visualDetails` support.
 - Structured `visualDetails` are implemented in the pipeline, but current sample figurine images still often come back with `null` visual detail fields.
 - Characters without strong structured text profiles can still end up under-detailed if their relevant source files have not yet been explicitly tagged.
+- Deterministic post-generation preservation is intentionally narrow and may still need rule tuning when it misses an important named entity or restores too much low-value quoted text.
 - The generated PDF is functional, but the renderer still needs additional layout tuning for long lore sections and image-heavy outputs.
 - Page preview images are generated from the print HTML layout via Puppeteer viewport clipping, so they are intended as review proxies for the PDF pages rather than a byte-perfect PDF rasterization.
 - Telegram disconnect can still end with a harmless timeout after work completes.
@@ -252,6 +335,7 @@ Generated data is stored under `data/<channel>/`:
 - Make character assembly more deterministic so aliases, image posts, and profile posts resolve to the same entity without relying mainly on prompt interpretation.
 - Finish tightening split generation so compact general context plus per-character file groups consistently produce rich character dossiers.
 - Expand `#instructions` parsing beyond character order so section-order, emphasis, and omission rules can be applied deterministically.
+- Refine deterministic post-generation preservation so must-keep names are restored with less manual allow/deny tuning and without reintroducing low-value quoted fragments.
 - Improve character-image analysis so face, makeup, eyes, and outfit details are captured more reliably for figurine photos, especially when the current structured `visualDetails` response is empty.
 - Enrich per-character manifests further with stronger deterministic fields and merge rules on top of the current structured visual metadata.
 - Make the HTML/PDF renderer reflect the dossier structure more strongly with a table of contents, better section breaks, and cleaner long-form character layouts.
@@ -267,3 +351,14 @@ Generated data is stored under `data/<channel>/`:
   - OCR repost creation
   - cleanup sync back into Telegram
   - photo preservation in PDF
+
+## Review Guidance
+
+When analyzing a generated lore result:
+
+- first compare the output against the already-tagged source markdown and `generated/source-routing.json`
+- if a named entity, weakness, artifact, hall, relic, exhibit, or short title-card fact is missing, prefer checking deterministic routing / normalization / post-generation preservation before changing prompts
+- after adjusting a deterministic rule, regenerate and verify both:
+  - the missing source-grounded detail now appears
+  - the rule did not overreach by restoring low-value fragments, duplicate names, or names into the wrong subsection
+- only prefer prompt tuning first when the source detail is already present in the routed bundle and the remaining problem is primarily prose quality, density, or section balance

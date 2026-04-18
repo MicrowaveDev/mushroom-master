@@ -1,0 +1,7 @@
+Command:
+npx playwright test tests/game/screenshots.spec.js --config=tests/game/playwright.config.js --reporter=line
+
+Output:
+Running 1 test using 1 worker
+[1/1] tests/game/screenshots.spec.js:48:1 › capture key v1 screens
+1 passed (3.5s)
