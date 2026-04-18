@@ -42,20 +42,25 @@ export async function getActiveSnapshot(client, playerId) {
 
   const { game_run_id: gameRunId, current_round: currentRound } = activeRunResult.rows[0];
   const rows = await client.query(
-    `SELECT artifact_id, x, y, width, height, bag_id, sort_order
+    `SELECT id, artifact_id, x, y, width, height, bag_id, sort_order, active, rotated
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
      ORDER BY sort_order ASC`,
     [gameRunId, playerId, currentRound]
   );
   const items = rows.rows.map((row) => ({
+    id: row.id,
     artifactId: row.artifact_id,
     x: row.x,
     y: row.y,
     width: row.width,
     height: row.height,
     sortOrder: row.sort_order,
-    bagId: row.bag_id || null
+    bagId: row.bag_id || null,
+    // active + rotated ride along so validateBagContents can compute the
+    // bag's effective (cols, rows) for slot-bounds enforcement.
+    active: !!row.active,
+    rotated: !!row.rotated
   }));
   // Budget ceiling = all coin income the player has seen so far + the free
   // starter preset gift. Preset items live in the loadout and are summed by

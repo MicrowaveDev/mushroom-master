@@ -1,315 +1,257 @@
 # Bag item placement persistence
 
-## Problem
+## Current contract (slot-coord architecture)
 
-A player enters prep for round 1, buys and activates a bag, places a few
-combat artifacts into it alongside base-grid items, clicks Ready, and
-watches the battle replay. When the next prep screen opens for round 2,
-the inventory is scrambled: items pile into the top-left of the base
-grid, the bag's virtual rows render empty, some figures render at
-half-cell width, and rotation buttons appear on pieces that should not
-have them.
+`game_run_loadout_items.x, y, bag_id` are shared across three different
+kinds of rows, discriminated by `bag_id`:
 
-Observed state (user screenshot, 2026-04-18):
+```
+bag_id IS NULL      &&  x >= 0                            → base-grid item
+bag_id IS NULL      &&  x = -1, y = -1                    → container item OR bag row
+bag_id IS NOT NULL  &&  0 <= x,y < bag.cols, bag.rows     → bagged item; (x, y) are SLOT coords inside the bag
+```
 
-- 9 base-grid cells contain 7–10 rendered pieces instead of the expected
-  1–3 starter + placed items.
-- The active bag chip ("Янтарная сумка") shows at the bottom, but the
-  bag's two dashed rows are empty.
-- Some pieces overflow into an implicit 4th column that CSS Grid
-  materializes at render time.
+`bag_id` on a bagged row references the **loadout row id** of the bag in
+the same `(game_run_id, player_id, round_number)` tuple. It is not an
+artifact id. Two `moss_pouch` rows in the same round are two distinct
+bags, each identified by its own `id`, and their bagged items are
+disambiguated by which `id` they reference.
 
-Round 1 prep looks fine. The corruption only appears from round 2
-onwards — i.e. only after one full `Ready → resolveRound → continueToNextRound`
-cycle.
+Bag cols and rows are computed from the bag artifact's canonical
+`(width, height)` plus the bag row's `rotated` flag (same logic as the
+client-side `useShop.bagLayout`): `cols = rotated ? min(w,h) :
+max(w,h)`, `rows = rotated ? max(w,h) : min(w,h)`. Slot coords are
+always expressed in the bag's *effective* orientation.
 
-## Why it's a *class* of bug, not a one-off
+## Why slot coords, not virtual grid coords
 
-Every bag persistence bug this repo has seen comes from the same
-structural tension:
+The storage used to overload `(x, y)` with **virtual grid coords** for
+bagged items — `y = INVENTORY_ROWS + bag-offset + slot-row-within-bag`.
+Virtual y was an encoding of "which active bag this item lives in" plus
+"which slot inside that bag." That encoding broke whenever the active-bag
+layout changed: deactivating or rotating an earlier bag, reordering
+bags, or restoring from a round where active bags were listed in a
+different order all re-pointed existing `y` values at the wrong bag.
 
-> The client keeps rich per-bag state (activation, rotation, per-slot
-> placement) that drives the UI, and the server owns durable truth for
-> the loadout grid. If any slice of that state is *only* on the client,
-> the next page reload or round transition drops it on the floor.
-
-The canonical fix is: move the slice into a column on
-`game_run_loadout_items`, route it through the `PUT /api/artifact-loadout`
-full-state sync and the `copyRoundForward` helper, and project it back
-onto the client on hydrate.
-
-Prior bugs that fit this shape:
+Every bag persistence bug this repo has seen came from that same
+structural tension, in three flavors:
 
 1. **Bag activation** — closed by
-   [bag-active-persistence.md](./bag-active-persistence.md). Added the
-   `active INTEGER NOT NULL DEFAULT 0` column. Before the fix, every bag
-   landed in the container on hydrate because there was no server-side
-   signal for "this bag is activated".
+   [bag-active-persistence.md](./bag-active-persistence.md).
 2. **Bag rotation** — closed by
-   [bag-rotated-persistence.md](./bag-rotated-persistence.md). Added the
-   `rotated INTEGER NOT NULL DEFAULT 0` column and plumbed
-   `persistRunLoadout` into `rotateBag` (previously a pure client
-   mutation). Before the fix, rotating an active bag reset on every
-   reload.
-3. **Bagged item placement** — this doc. The *item* inside the bag was
-   being persisted, but not the item's coordinates *within* the bag's
-   virtual rows. See below.
+   [bag-rotated-persistence.md](./bag-rotated-persistence.md).
+3. **Bagged item placement** — this doc. Both a round-2 "scrambled
+   inventory" crash and the later deactivate-stranded-items OOB 500
+   traced back to virtual y being a layout-dependent encoding.
 
-The bag-active and bag-rotated refactors both called out that
-`rotatedBags` / activation lives on the loadout row. This fix extends
-the same treatment to the `x, y` of bagged items — the last piece of
-per-bag layout that was still client-only between writes.
+Slot coords remove the layout dependency: a bagged item's storage is
+`(slot_x, slot_y, bag_row_id)`, which is orthogonal to how any other bag
+is arranged. The client reconstructs a virtual render y on hydrate by
+adding the bag's current `startRow` — that's purely a presentational
+concern now, not a storage concern.
 
-## Root cause
+## Round trip
 
-Bagged items (items inside a bag, not the bag itself) live in
-`state.builderItems` with virtual `y` coordinates past the base grid:
-`y = INVENTORY_ROWS` is the first row of the first active bag,
-`y = INVENTORY_ROWS + 1` is the second, and so on. The grid renderer
-([`ArtifactGridBoard`](../web/src/components/ArtifactGridBoard.js))
-places every piece from `state.builderItems` via
-`grid-column: x+1 / span width; grid-row: y+1 / span height`, so valid
-coords render inside the bag's row band.
+### Write path — `PUT /api/artifact-loadout`
 
-The `PUT /api/artifact-loadout` payload for a bagged item used to omit
-the coords entirely:
+Client-side
+[`buildLoadoutPayloadItems`](../web/src/composables/useGameRun.js) walks
+`state.builderItems` and, for items inside a bag, converts the client's
+virtual y back into a slot coord:
 
 ```js
-// web/src/composables/useGameRun.js — before the fix
-if (item.y >= INVENTORY_ROWS) {
-  const info = activeBagLayout.find(/* ...this item's bag... */);
-  if (info) {
-    payload.push(withId({
-      artifactId: item.artifactId,
-      width: item.width, height: item.height,
-      bagId: info.bagId
-      // no x, no y
-    }, item.id));
-    continue;
-  }
-}
+const slotY = item.y - info.startRow;
+payload.push(withId({
+  artifactId: item.artifactId,
+  x: item.x,
+  y: slotY,
+  width: item.width, height: item.height,
+  bagId: info.bagRowId   // loadout row id of the bag, not artifactId
+}, item.id));
 ```
 
-The server's `applyRunPlacements` reconciler defaults missing coords to
-`-1`:
+Server-side `applyRunPlacements` (in
+[game-run-loadout.js](../app/server/services/game-run-loadout.js))
+matches payload entries to existing rows by `id` (or artifactId
+fallback) and UPDATEs `x, y, bag_id, width, height, active, rotated`.
+Validation runs against the full projected layout:
 
-```js
-// app/server/services/game-run-loadout.js
-proposed.x = Number(entry.x ?? -1);
-proposed.y = Number(entry.y ?? -1);
-```
+- `validateGridItems` enforces base-grid bounds and overlap on non-bagged
+  rows (`!item.bagId`).
+- `validateBagContents` catalogs bag rows by row id, then for each
+  bagged item resolves `bagId` to a bag row, enforces slot bounds
+  (`0 <= x, y; x+w <= bag.cols; y+h <= bag.rows`), checks per-bag
+  overlap, and caps total footprint at the bag's `slotCount`.
 
-So clicking Ready persisted every bagged item as
-`(x = -1, y = -1, bag_id = '…')`. Round resolution ran
-`copyRoundForward`, which duplicated every column verbatim into the
-round N+1 row set. `getActiveGameRun` returned those rows on the next
-`refreshBootstrap`, and the projection routed them through the
-"`item.bagId` → push into `builderItems` with `item.x`/`item.y`" branch.
+An invalid bagged-item write — slot coords outside the bag's footprint,
+duplicate slot occupation, orphan `bag_id`, or bag-inside-bag — is
+rejected before any DB write.
 
-`builderItems` then contained bagged entries with `x=-1, y=-1`. Inside
-the grid renderer, `grid-column: 0 / span 1` is an invalid line
-reference — CSS Grid silently falls through to its auto-placement
-algorithm, which fills the next empty cell starting at the top-left of
-the explicit grid. Multiple invalid entries stacked into whatever cells
-were free around the base-grid starter preset, producing the observed
-scramble. Some items also caused an implicit column to materialize
-when `span` exceeded the remaining explicit columns, giving the
-half-width pieces at the right edge of row 2.
+### Copy-forward — round N → N+1
 
-Validation never caught this at write time because
-`validateGridItems` filters out bagged items (`!item.bagId`) and
-`validateBagContents` doesn't look at `x`/`y` at all — only at
-`bagId`, `width`, `height`, and the bag's slot capacity. An `x=-1`
-bagged item is "valid" by the server's contract.
+[`copyRoundForward`](../app/server/services/game-run-loadout.js) mints
+fresh row ids per round, so bag row ids change even when the payload
+stays identical. The helper runs in two passes:
 
-## Fix
+1. Insert every non-bagged row (grid items, containers, **bag rows
+   themselves**) and record `oldId → newId` in a map.
+2. Insert every bagged row, remapping its `bag_id` through that map so
+   the round N+1 bagged item points at the round N+1 bag row, not the
+   now-defunct round N one.
 
-Two coordinated changes, one per side of the round-trip:
+Legacy rows whose `bag_id` happened to be an artifact id (pre-refactor
+format) pass through the map untranslated; the client-side projection
+fallback routes them to the container on the next hydrate.
 
-### Client: persist the virtual coords
-
-[`buildLoadoutPayloadItems`](../web/src/composables/useGameRun.js) now
-emits `x` and `y` alongside `bagId` when a bagged item is in the
-payload:
-
-```js
-if (info) {
-  payload.push(withId({
-    artifactId: item.artifactId,
-    x: item.x, y: item.y,
-    width: item.width, height: item.height,
-    bagId: info.bagId
-  }, item.id));
-  continue;
-}
-```
-
-The server already accepts these fields (no validation change needed):
-
-- `validateGridItems` skips bagged items on the filter at the call
-  site, so virtual `y >= INVENTORY_ROWS` never trips the "out of
-  bounds" check.
-- `validateBagContents` is coord-agnostic.
-- `applyRunPlacements` writes `proposed.x = entry.x, proposed.y =
-  entry.y` with no family-specific branching.
-
-From here forward, a bagged item's placement survives `PUT
-/artifact-loadout`, survives `copyRoundForward`, and rehydrates cleanly
-on the next prep.
-
-### Client: defuse legacy rows on hydrate
+### Projection — client hydrate
 
 [`projectLoadoutItems`](../web/src/composables/loadout-projection.js)
-now detects the legacy shape (`bagId` set and `x < 0` or `y < 0`) and
-routes those items into `containerItems` instead of `builderItems`:
+runs in two passes:
 
-```js
-if (item.bagId) {
-  if (item.x < 0 || item.y < 0) {
-    containerItems.push({ id: item.id, artifactId: item.artifactId });
-  } else {
-    builderItems.push({ /* ... */ });
-  }
-  // ...
-}
-```
+1. Register every bag row: active bags get an entry in a
+   `rowId → { startRow, cols, rows }` map, with `startRow`
+   accumulating in iteration order. Inactive bags route to the
+   container.
+2. For every bagged item, resolve `bagId` via the map. If it resolves to
+   an active bag AND slot coords fall inside that bag's effective
+   footprint, push a builderItem at virtual `(x, startRow + y)` and keep
+   `bagId = row id` so downstream ops can disambiguate duplicates.
+   Otherwise, drop to the container:
+   - `bagId` is an artifact id (pre-refactor) → map miss → container.
+   - `bagId` points at an inactive bag → container.
+   - slot coords out of bounds → container (covers both stale rotation
+     and fully malformed rows).
 
-This handles the in-flight runs that had already persisted broken rows
-before the fix shipped. The player sees a clean base grid on the next
-reload, the bagged items come back as unplaced container items, and the
-*next* Ready writes them with valid coords under the new contract. The
-degradation is graceful — no items are dropped — and self-heals on the
-next save cycle.
+The fallback is deliberately graceful — no items are dropped, and the
+next save re-persists with a valid slot-coord row under the new
+contract.
 
 ## Architecture
 
-### State ownership after all three bag fixes
+### State ownership
 
-Per-bag state now has a single source of truth on each row of
-`game_run_loadout_items`:
-
-| Slice                     | Column                | Who writes                                                          |
-|---------------------------|-----------------------|---------------------------------------------------------------------|
-| Bag is activated          | `active INTEGER`      | `applyRunPlacements`, default 0; copy-forward preserves             |
-| Bag is rotated            | `rotated INTEGER`     | `applyRunPlacements`, default 0; `rotateBag` → `persistRunLoadout`  |
-| Bag grid coords (sentinel)| `x=-1, y=-1`          | `insertLoadoutItem` normalizes bag rows at the write layer          |
-| Bagged item placement     | `x`, `y`, `bag_id`    | `applyRunPlacements` — x, y carry virtual row coords (this fix)     |
-| Bagged item footprint     | `width`, `height`     | `applyRunPlacements` — already persisted for rotation support       |
-| Bagged item membership    | `bag_id`              | `applyRunPlacements` — references the bag row's `artifact_id`       |
-
-Non-bag grid items use `x, y` directly as base-grid coords
-(`0 ≤ y < INVENTORY_ROWS`). Bagged items use `x, y` as virtual coords
-past the base grid (`y ≥ INVENTORY_ROWS`). The column does double duty,
-and the discriminator is `bag_id IS NOT NULL`.
-
-### Contract: what the `x, y` on a row means
-
-```
-bag_id IS NULL     &&  x >= 0             → grid-placed combat artifact
-bag_id IS NULL     &&  x = -1 && y = -1   → container (unplaced)
-bag_id IS NULL     && family = 'bag'      → bag row; always (-1, -1)
-bag_id IS NOT NULL && x >= 0               → bagged item; x, y are virtual bag-row coords
-bag_id IS NOT NULL && x < 0 || y < 0       → LEGACY / corrupt; treat as container
-```
-
-The last row is the fallback branch the projection handles today. A
-future cleanup (see *Non-goals*) could drop it if we run a one-shot
-backfill.
+| Slice                       | Column                | Who writes                                                         |
+|-----------------------------|-----------------------|--------------------------------------------------------------------|
+| Bag is activated            | `active INTEGER`      | `applyRunPlacements` (full-state sync, default 0)                  |
+| Bag is rotated              | `rotated INTEGER`     | `applyRunPlacements` / client `rotateBag → persistRunLoadout`      |
+| Bag row itself              | `x=-1, y=-1`          | `insertLoadoutItem` normalizes bag rows at the write layer         |
+| Bagged item membership      | `bag_id`              | client → server as the bag's loadout row id (same round)           |
+| Bagged item position        | `x`, `y`              | slot coords in the bag's effective orientation                     |
+| Bagged item footprint       | `width`, `height`     | `applyRunPlacements` — already persisted for rotation support      |
+| Bagged row id stability     | `id` (row PK)         | `insertLoadoutItem` creates fresh per-round; `copyRoundForward` remaps `bag_id` |
 
 ### Validation split
 
-The server enforces placement rules in two passes so the two coord
-conventions don't collide:
+The server runs placement validation in two coord-aware passes:
 
-1. `validateGridItems(projected.filter(i => !i.bagId))` — bounds and
-   overlap for base-grid items only. Bagged items are excluded by the
-   filter, so their `y >= INVENTORY_ROWS` never trips the base-grid
-   bounds check.
-2. `validateBagContents(projected)` — bagged items are checked for
-   bag membership (`bag_id` resolves to a bag row in this same
-   loadout), no nested bags, and `sum(width * height) ≤ bag.slotCount`.
+1. `validateGridItems(projected.filter(i => !i.bagId))` — base-grid
+   bounds, canonical footprint, overlap. Bagged items are excluded, so
+   their slot-y never trips the base-grid height check.
+2. `validateBagContents(projected)` — bagId resolution, no nested bags,
+   per-bag slot bounds, per-bag overlap, slotCount ceiling.
 
-Bagged item coords are intentionally *not* validated for being
-"inside the bag's visual footprint". The client is trusted to pick a
-valid virtual cell, and the projection falls back to container on any
-malformed read. This keeps the server's validation surface small and
-stable across UI iterations — for example, changing how bag layouts
-wrap their slots doesn't require a server change.
+Slot bounds ARE validated on the server now, unlike the previous
+architecture which trusted the client to pick a valid cell. The check
+is cheap (rotation-aware cols/rows from the bag artifact) and it makes
+the write contract honest: `bag_id IS NOT NULL` implies
+`0 <= x < bag.cols && 0 <= y < bag.rows` or the write is rejected.
 
-### Round transition
+### Client bagId identity
 
-`copyRoundForward` is deliberately dumb: it reads every column of every
-row in round N and re-inserts with `round_number = N+1`. The bag
-persistence columns (`active`, `rotated`, `x`, `y`, `bag_id`,
-`width`, `height`) all ride along for free. Adding a new per-bag
-column in the future requires no changes here as long as
-`readCurrentRoundItems` and `insertLoadoutItem` round-trip it.
+`state.builderItems[i].bagId` is the bag's loadout row id for bagged
+items (`null` for base-grid items). That matches `state.activeBags[j].id`
+for the bag it lives in, so bag rotate / deactivate can precisely
+identify "items in this bag" without y-range arithmetic:
+
+```js
+const itemsInThisBag = state.builderItems.filter((i) => i.bagId === activeBag.id);
+```
+
+The client sets `bagId` at placement time via `bagForRow(y).bagRowId`
+inside `normalizePlacement` and inside the inventory-to-bag-cell drag
+handler. The projection sets it on hydrate. Either source produces the
+same field on the same items.
+
+### Bag rotate / deactivate guardrail
+
+Both ops block only when the *current* bag holds items. Later bags are
+independent — their slot coords don't change when an earlier bag's
+rowCount changes, so the client's `relayoutBaggedItems` just recomputes
+their virtual y against the new layout. Before the refactor these ops
+blocked on any downstream item, because virtual y had to stay in sync
+with the activeBags ordering.
+
+### Round transition stays dumb
+
+`copyRoundForward` still copies every row verbatim, with one wrinkle:
+the `bag_id` remap. Adding any new per-row column requires no changes
+here as long as `readCurrentRoundItems` and `insertLoadoutItem`
+round-trip it.
 
 ## Related docs
 
 - [bag-active-persistence.md](./bag-active-persistence.md) — the
-  `active` column refactor; first in this series.
+  `active` column refactor.
 - [bag-rotated-persistence.md](./bag-rotated-persistence.md) — the
-  `rotated` column refactor; same pattern.
+  `rotated` column refactor.
 - [client-row-id-refactor.md](./client-row-id-refactor.md) — row id
-  threading that lets duplicate bags / duplicate bagged items resolve
-  to distinct rows in the full-state sync.
+  threading that makes duplicate-bag and duplicate-item identity
+  unambiguous.
 - [loadout-refactor-plan.md](./loadout-refactor-plan.md) §2.3 — the
-  copy-forward model that carries every column across round
-  boundaries.
+  copy-forward model.
 
 ## Non-goals
 
-- **Validating that bagged items' virtual coords fall inside their
-  bag's footprint.** The projection fallback absorbs malformed reads,
-  and the server's slot-count check already prevents over-packing.
-  Stricter coord validation would tie the server to the client's
-  layout choice.
-- **Backfilling existing broken rows via migration.** Pre-production
-  data only; the projection fallback auto-heals the visible state on
-  the next page reload, and the next Ready re-persists with valid
-  coords. If this ever ships to production players, one-shot SQL would
-  be `UPDATE game_run_loadout_items SET x = 0, y = 3 WHERE bag_id IS
-  NOT NULL AND x < 0` — but keep in mind `y = 3` assumes the first
-  active bag starts there, which isn't universally true, so a
-  migration would need to join through `active` bag rows ordered by
-  `sort_order` to compute each row's correct virtual y.
-- **Persisting bag-item slot ordering beyond coords.** The bag's
-  renderer already derives visual slot from `x, y`; there's no
-  additional ordering state to persist.
+- **Schema migration.** `x, y, bag_id` column types stay as-is; only
+  their semantic interpretation for bagged rows changes. No `ALTER
+  TABLE` required.
+- **Backfilling legacy rows.** The projection fallback self-heals on
+  the next save cycle, so any pre-refactor bagged rows render as
+  container items on first hydrate and re-persist with slot coords
+  after the player interacts with them. This is acceptable because
+  the data is pre-production.
+- **Validating non-rectangular bag footprints.** All current bags are
+  rectangular; the slot-bounds check is sufficient. If a future bag
+  has an L-shape or offset rows, extend `validateBagContents` with a
+  shape-aware check; storage doesn't change.
+- **Adding a `placement_kind` discriminator column.** Possible future
+  cleanup if the `x, y, bag_id` overloading becomes painful. Not
+  needed now — the discriminator is `bag_id IS NOT NULL` and the three
+  cases are covered by the validator split.
 
 ## Test plan
 
-All three layers of the round-trip have pinned tests.
+- **Server unit (validator)** —
+  [validator-split.test.js](../tests/game/validator-split.test.js)
+  pins: slot-bounds rejection, per-bag overlap rejection, duplicate-bag
+  disambiguation by row id, slotCount ceiling, and the legacy
+  artifactId fallback.
+- **Server scenario (copy-forward)** —
+  [bag-items.test.js](../tests/game/bag-items.test.js)
+  `[Req 12-D, 5-A]` drives the full round-trip: `PUT /artifact-loadout`
+  with slot coords and a bag row id, `resolveRound`, then asserts the
+  round-2 row has a new bag row id, the bagged item's `bag_id` remapped
+  to that new id, and slot coords `(0, 0)` survived unchanged.
+- **Client projection** —
+  [loadout-projection.test.js](../tests/web/loadout-projection.test.js)
+  pins: slot-to-virtual y reconstruction (single bag, multi-bag,
+  duplicate bags), legacy `bagId = artifactId` fallback, legacy
+  `(-1, -1)` fallback, inactive-bag fallback, out-of-bounds fallback.
+- **Client composable (relayout)** —
+  [use-shop.test.js](../tests/web/use-shop.test.js) pins: deactivating
+  an empty earlier bag succeeds and shifts a later bag's items up by
+  the removed bag's rowCount; rotating an empty earlier bag succeeds
+  and shifts a later bag's items by the rowCount delta; deactivating
+  a non-empty bag is still blocked.
 
-1. **SQLite write + copy-forward (server)** —
-   [`bag-items.test.js`](../tests/game/bag-items.test.js)
-   `[Req 12-D, 5-A] bagged item coords survive PUT /artifact-loadout + copy-forward to round 2`
-   drives the exact flow from the bug report: PUT with bagged-item
-   coords, `resolveRound`, then `SELECT` round 2's row and assert
-   `y = INVENTORY_ROWS`, `x = 0`, `bag_id = 'moss_pouch'` all survive.
-2. **Projection valid path (client)** —
-   [`loadout-projection.test.js`](../tests/web/loadout-projection.test.js)
-   `[projection] bagged items with valid virtual coords land in builderItems with bagId`
-   asserts the happy path: `y = 3` bagged items go into `builderItems`
-   and preserve their coords.
-3. **Projection fallback (client)** — same file,
-   `[regression] legacy bagged items at (-1,-1) fall back to containerItems instead of breaking the grid`
-   pins the defensive branch: bagId + invalid coords → container.
-4. **Existing coverage still holds.** The bag-active and bag-rotated
-   test suites exercise activation/rotation round-trips with bagged
-   items present; they continue to pass under the new payload shape
-   because the `active` / `rotated` columns are orthogonal to coords.
+## Open follow-ups
 
-## Open TODOs / follow-ups
-
-- Consider moving the `x >= 0` check out of the projection and into
-  `validateBagContents` once we're confident all writers emit coords.
-  This would turn the silent fallback into a loud rejection, which is
-  closer to the spirit of the other validation passes. Leave as-is
-  until the legacy-row branch is demonstrably unused.
-- If bag layouts ever grow a non-rectangular shape (L-shape, offset
-  rows), the projection will need a virtual-coord → bag-slot mapping
-  check to catch stale rows left behind after a bag rotation. Today
-  that's handled preemptively by the `rotateBag` guardrail blocking
-  rotation when the bag or any later bag holds items.
+- Move the slot-bounds check into `validateBagContents` as a hard
+  contract (done) — the client-side projection fallback can eventually
+  become a loud rejection rather than a silent container drop once
+  we're confident all writers emit slot coords. Currently the fallback
+  is load-bearing for the legacy `bag_id = artifactId` shape; keep it
+  until that shape is demonstrably absent from all live runs.
+- If bag layouts ever grow non-rectangular shapes (L-shape, offset
+  rows), extend the bounds check in `validateBagContents` with a
+  shape-aware occupancy map. Storage doesn't change.

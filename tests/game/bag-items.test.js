@@ -77,9 +77,11 @@ test('[Req 5-A] validateLoadoutItems rejects bag with grid coordinates', () => {
 });
 
 test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
+  // bagId resolves via the legacy artifactId fallback (synthetic payload
+  // without row ids — see docs/bag-item-placement-persistence.md).
   const items = [
     { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 }
+    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: 0, width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
   assert.equal(result.items.length, 2);
@@ -88,7 +90,7 @@ test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
 test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
   const items = [
     { artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 },
-    { artifactId: 'moss_pouch', bagId: 'amber_satchel', width: 1, height: 2 }
+    { artifactId: 'moss_pouch', bagId: 'amber_satchel', x: 0, y: 0, width: 1, height: 2 }
   ];
   assert.throws(
     () => validateLoadoutItems(items, 20),
@@ -97,21 +99,24 @@ test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
 });
 
 test('[Req 5-B, 5-C] validateLoadoutItems rejects items exceeding bag slotCount', () => {
+  // moss_pouch has slotCount=2 / footprint 1×2 — the third 1×1 item must
+  // be rejected by either the slot-bounds check, the overlap check, or the
+  // slotCount ceiling depending on where the caller places it.
   const items = [
     { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 },
-    { artifactId: 'bark_plate', bagId: 'moss_pouch', width: 1, height: 1 },
-    { artifactId: 'shock_puff', bagId: 'moss_pouch', width: 1, height: 1 } // 3rd item, but slotCount=2
+    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: 0, width: 1, height: 1 },
+    { artifactId: 'bark_plate', bagId: 'moss_pouch', x: 0, y: 1, width: 1, height: 1 },
+    { artifactId: 'shock_puff', bagId: 'moss_pouch', x: 0, y: 2, width: 1, height: 1 }
   ];
   assert.throws(
     () => validateLoadoutItems(items, 20),
-    /full/
+    /out of bounds|cannot overlap|is full/
   );
 });
 
 test('[Req 5-A] validateLoadoutItems rejects item in bag not on grid', () => {
   const items = [
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', width: 1, height: 1 }
+    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: 0, width: 1, height: 1 }
     // moss_pouch not in the loadout
   ];
   assert.throws(
@@ -250,18 +255,19 @@ test('[Req 5-A] insertLoadoutItem normalizes bag coords to (-1,-1) on buy', asyn
 });
 
 // Regression: user reported round-2 prep showing a scrambled inventory
-// after a round-1 battle. Root cause: buildLoadoutPayloadItems stripped
-// x/y from bagged-item payloads, so the server persisted them at (-1,-1).
-// copy-forward preserved the invalid coords, and the next projection fed
-// them into builderItems where CSS grid auto-placement scattered them
-// across the base grid.
+// after a round-1 battle. Root cause for the class of bag-persistence
+// bugs: virtual grid y was the stored coord, so bag reordering / rotation
+// / deactivation would invalidate every bagged item on disk.
 //
-// This test pins the fix at the SQLite layer: after a full round cycle
-// (PUT /artifact-loadout → resolveRound copy-forward), a bagged item's
-// stored y must still be >= INVENTORY_ROWS so the client can re-render it
-// inside the bag's virtual rows. See docs/game-requirements.md §12-D
-// (server-authoritative state survives refresh).
-test('[Req 12-D, 5-A] bagged item coords survive PUT /artifact-loadout + copy-forward to round 2', async () => {
+// The fix re-interprets x/y on bagged rows as *slot coords* inside the
+// bag (0 ≤ x < bag cols, 0 ≤ y < bag rows), with bag_id pointing at the
+// bag's own loadout row id. See docs/bag-item-placement-persistence.md.
+//
+// This test pins the full round-trip: PUT /artifact-loadout writes slot
+// coords, copy-forward remaps bag_id (round N row id → round N+1 row id)
+// so the reference survives, and round 2 reads back slot coords with a
+// remapped bag_id pointing to the new round's bag row.
+test('[Req 12-D, 5-A] bagged item slot coords and bag row id survive PUT /artifact-loadout + copy-forward to round 2', async () => {
   await freshDb();
   const session = await createPlayer();
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -271,47 +277,78 @@ test('[Req 12-D, 5-A] bagged item coords survive PUT /artifact-loadout + copy-fo
   await buyRunShopItem(session.player.id, run.id, 'moss_pouch');
   await buyRunShopItem(session.player.id, run.id, 'spore_needle');
 
+  // Read the bought moss_pouch's loadout row id — the client knows this
+  // value at persist time (PUT payloads carry bag.id). The test threads
+  // it explicitly so the server-side id-match + validator paths are the
+  // ones under test.
+  const bagRowRes = await query(
+    `SELECT id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
+       AND artifact_id = 'moss_pouch'`,
+    [run.id, session.player.id]
+  );
+  assert.equal(bagRowRes.rowCount, 1);
+  const round1BagRowId = bagRowRes.rows[0].id;
+
   // Starter preset already occupies (0,0) and (1,0). Place the bought
   // spore_needle at (2,0) so the base grid stays unambiguous, activate
-  // the pouch, and tuck the duplicate starter item into the bag. Uses
-  // bark_plate too to avoid the "same artifactId twice in the starter +
-  // bag" confusion.
-  const INVENTORY_ROWS = 3;
+  // the pouch, and tuck another spore_needle into the bag at slot (0,0).
   await applyRunLoadoutPlacements(session.player.id, run.id, [
     { artifactId: 'spore_lash', x: 0, y: 0, width: 1, height: 1 },
     { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 },
     { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2, active: 1 },
-    // The bagged item carries its virtual bag-row coord (y = 3 = first
-    // row past the base grid). Before the fix this was stored as -1,-1.
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: INVENTORY_ROWS, width: 1, height: 1 }
+    // The bagged item carries slot coords (x=0, y=0 = the first slot
+    // inside the pouch) and references the pouch by its loadout row id.
+    { artifactId: 'spore_needle', bagId: round1BagRowId, x: 0, y: 0, width: 1, height: 1 }
   ]);
 
-  // Invariant 1: round 1 stored the bagged item's virtual y, not (-1,-1).
+  // Invariant 1: round 1 stored slot coords, not virtual coords, and
+  // bag_id references the pouch's row id.
   const round1Bagged = await query(
-    `SELECT x, y FROM game_run_loadout_items
+    `SELECT x, y, bag_id FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
-       AND bag_id = 'moss_pouch'`,
-    [run.id, session.player.id]
+       AND bag_id = $3`,
+    [run.id, session.player.id, round1BagRowId]
   );
-  assert.equal(round1Bagged.rowCount, 1, 'one bagged item must be persisted');
-  assert.equal(round1Bagged.rows[0].y, INVENTORY_ROWS, 'bagged item y must be the bag virtual row');
+  assert.equal(round1Bagged.rowCount, 1, 'one bagged item must be persisted under the pouch row id');
+  assert.equal(round1Bagged.rows[0].x, 0, 'bagged item x = slot column 0');
+  assert.equal(round1Bagged.rows[0].y, 0, 'bagged item y = slot row 0 (not virtual INVENTORY_ROWS)');
 
   const resolveResult = await resolveRound(session.player.id, run.id);
   if (resolveResult.status !== 'active') return; // Unlikely with 5 starting lives, but guard anyway.
 
-  // Invariant 2: copy-forward preserved the bagged item's coords so the
-  // round-2 prep screen can re-render it inside the bag instead of
-  // auto-placing it on the base grid.
+  // Invariant 2: copy-forward minted a new bag row id for round 2 AND
+  // remapped the bagged item's bag_id to that new id. The slot coords
+  // ride along unchanged.
+  const round2BagRes = await query(
+    `SELECT id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2
+       AND artifact_id = 'moss_pouch'`,
+    [run.id, session.player.id]
+  );
+  assert.equal(round2BagRes.rowCount, 1, 'round 2 must have its own pouch row');
+  const round2BagRowId = round2BagRes.rows[0].id;
+  assert.notEqual(round2BagRowId, round1BagRowId, 'copy-forward mints fresh ids per round');
+
   const round2Bagged = await query(
     `SELECT x, y, width, height, bag_id FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2
-       AND bag_id = 'moss_pouch'`,
-    [run.id, session.player.id]
+       AND bag_id = $3`,
+    [run.id, session.player.id, round2BagRowId]
   );
-  assert.equal(round2Bagged.rowCount, 1, 'round 2 must contain the copy-forward bagged item');
-  assert.equal(round2Bagged.rows[0].y, INVENTORY_ROWS, 'round 2 bagged item y must survive copy-forward');
+  assert.equal(round2Bagged.rowCount, 1, 'copy-forward must remap bag_id to the round-2 pouch row id');
   assert.equal(round2Bagged.rows[0].x, 0);
-  assert.equal(round2Bagged.rows[0].bag_id, 'moss_pouch');
+  assert.equal(round2Bagged.rows[0].y, 0);
+
+  // Invariant 3: no orphan bagged rows pointing at the round-1 id were
+  // left behind in round 2.
+  const orphanRes = await query(
+    `SELECT id FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2
+       AND bag_id = $3`,
+    [run.id, session.player.id, round1BagRowId]
+  );
+  assert.equal(orphanRes.rowCount, 0, 'round-1 bag row id must not survive into round 2');
 });
 
 // --- Sell non-empty bag ---

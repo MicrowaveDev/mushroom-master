@@ -100,10 +100,47 @@ export async function readCurrentRoundItems(client, gameRunId, playerId, roundNu
 /**
  * Copy round N rows to round N+1 (identical data; reset fresh_purchase=0).
  * purchased_round is preserved so graduated refunds can see original buy round.
+ *
+ * `bag_id` on bagged items points at a loadout row id (see
+ * docs/bag-item-placement-persistence.md). Row ids are regenerated per
+ * round, so copy-forward builds an old-id → new-id map in a first pass
+ * over non-bagged rows (which include the bag rows themselves), then
+ * uses that map to rewrite `bag_id` on bagged rows in a second pass.
+ *
+ * Legacy rows where `bag_id` is an artifactId fall through the map
+ * untranslated — the client-side projection fallback routes those to the
+ * container so they can be re-placed on the next Ready. This keeps
+ * copy-forward free of any legacy-format awareness.
  */
 export async function copyRoundForward(client, gameRunId, playerId, fromRound, toRound) {
   const current = await readCurrentRoundItems(client, gameRunId, playerId, fromRound);
-  for (const item of current) {
+  const oldToNewId = new Map();
+  const nonBagged = current.filter((item) => !item.bagId);
+  const bagged = current.filter((item) => !!item.bagId);
+
+  for (const item of nonBagged) {
+    const newId = await insertLoadoutItem(client, {
+      gameRunId,
+      playerId,
+      roundNumber: toRound,
+      artifactId: item.artifactId,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      bagId: null,
+      sortOrder: item.sortOrder,
+      purchasedRound: item.purchasedRound,
+      freshPurchase: false,
+      // Bag activation and rotation persist across rounds — players
+      // shouldn't have to re-activate or re-rotate every bag after every
+      // battle. See bag-active-persistence.md / bag-rotated-persistence.md.
+      active: item.active,
+      rotated: item.rotated
+    });
+    oldToNewId.set(item.id, newId);
+  }
+  for (const item of bagged) {
     await insertLoadoutItem(client, {
       gameRunId,
       playerId,
@@ -113,13 +150,10 @@ export async function copyRoundForward(client, gameRunId, playerId, fromRound, t
       y: item.y,
       width: item.width,
       height: item.height,
-      bagId: item.bagId,
+      bagId: oldToNewId.get(item.bagId) || item.bagId,
       sortOrder: item.sortOrder,
       purchasedRound: item.purchasedRound,
       freshPurchase: false,
-      // Bag activation and rotation persist across rounds — players
-      // shouldn't have to re-activate or re-rotate every bag after every
-      // battle. See bag-active-persistence.md / bag-rotated-persistence.md.
       active: item.active,
       rotated: item.rotated
     });

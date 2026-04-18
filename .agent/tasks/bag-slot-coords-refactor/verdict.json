@@ -1,0 +1,26 @@
+{
+  "task": "bag-slot-coords-refactor",
+  "status": "PASS",
+  "summary": "Bagged-item storage migrated from virtual grid coords to slot coords; bag_id tightened from artifactId to loadout row id. Full 297-test suite green.",
+  "acceptance_criteria": {
+    "AC1": { "status": "PASS", "proof": "tests/game/bag-items.test.js [Req 12-D, 5-A] asserts round1Bagged.y === 0 (slot coord, not INVENTORY_ROWS virtual coord) after PUT." },
+    "AC2": { "status": "PASS", "proof": "Same scenario asserts round1Bagged.bag_id === round1BagRowId (SELECTed from the bag's own row), not the 'moss_pouch' artifact id." },
+    "AC3": { "status": "PASS", "proof": "Same scenario asserts round2BagRowId !== round1BagRowId and zero orphan rows; copyRoundForward two-pass map implementation in app/server/services/game-run-loadout.js." },
+    "AC4": { "status": "PASS", "proof": "tests/game/validator-split.test.js — slot-bounds rejection, per-bag overlap rejection, duplicate-bag row-id disambiguation." },
+    "AC5": { "status": "PASS", "proof": "web/src/composables/useGameRun.js:buildLoadoutPayloadItems emits y: item.y - info.startRow and bagId: info.bagRowId. End-to-end exercised by the AC1/AC2 scenario." },
+    "AC6": { "status": "PASS", "proof": "tests/web/loadout-projection.test.js — slot-to-virtual reconstruction (single, second-slot, multi-bag, duplicate-bag) + legacy/inactive/OOB fallbacks." },
+    "AC7": { "status": "PASS", "proof": "tests/web/use-shop.test.js [bag-relayout] — deactivate earlier empty bag shifts later bag's items up; rotate earlier empty bag shifts later bag's items by rowCount delta; deactivate non-empty bag stays blocked." },
+    "AC8": { "status": "PASS", "proof": "tests/web/loadout-projection.test.js three regression tests pin container fallback for bagId=artifactId, (-1,-1), and inactive-bag cases." }
+  },
+  "test_sweep": {
+    "command": "node --test tests/game/*.test.js tests/web/*.test.js",
+    "tests": 297,
+    "pass": 297,
+    "fail": 0,
+    "raw_output": ".agent/tasks/bag-slot-coords-refactor/raw/full-sweep.txt"
+  },
+  "out_of_scope": [
+    "Playwright round-2 prep screenshot — DB + projection unit tests cover the invariants; dev stack not spun up for this task.",
+    "SQL backfill of legacy rows — explicit non-goal, pre-production data only, projection fallback absorbs legacy shapes."
+  ]
+}

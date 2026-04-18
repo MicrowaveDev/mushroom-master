@@ -344,7 +344,14 @@ export async function sellRunItem(playerId, gameRunId, target) {
     const resolvedArtifactId = candidate.artifactId;
     const artifact = getArtifactById(resolvedArtifactId);
     if (isBag(artifact)) {
-      const contentsCount = currentRows.filter((r) => r.bagId === resolvedArtifactId).length;
+      // bag_id on bagged rows references the bag's own loadout row id
+      // (see docs/bag-item-placement-persistence.md). Match by candidate.id
+      // so duplicate bags of the same artifact don't block each other's sell.
+      // Legacy rows stored bag_id as an artifactId; the OR keeps the guard
+      // honest while those still exist.
+      const contentsCount = currentRows.filter(
+        (r) => r.bagId === candidate.id || r.bagId === resolvedArtifactId
+      ).length;
       if (contentsCount > 0) {
         throw new Error('Cannot sell a bag that contains items — empty it first');
       }

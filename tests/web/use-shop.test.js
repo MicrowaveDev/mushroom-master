@@ -6,16 +6,13 @@
 // is purely in the JS state machine — no rendering involved. See the
 // same rationale in tests/game/solo-run.spec.js `sellContainerItemViaApi`.
 //
-// Regression context: a round-2 save hit the server with an item at y=3
-// (below the 3-row grid) and got "Artifact placement is out of bounds"
-// back as a 500. Root cause was that deactivateBag only checked its own
-// bag's row range, so deactivating an *earlier* bag in the activeBags
-// list silently shifted every later bag up by its rowCount and stranded
-// items at their old y. Same story for rotateBag.
-//
-// The fix makes both ops block if anything lives in this bag's rows OR
-// any later bag's rows. This test pins that invariant by exercising the
-// real composable against a minimal reactive-state shim.
+// Post-slot-coord-refactor (docs/bag-item-placement-persistence.md):
+// bagged-item storage uses slot coords relative to their bag, so later
+// bags are independent of earlier bags' rotation or activation. The
+// client-side relayoutBaggedItems helper recomputes virtual y when the
+// active-bag layout changes. Deactivate / rotate therefore block only on
+// contents of the *current* bag, and later-bag items get their virtual y
+// shifted automatically when earlier bags come or go.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -111,7 +108,7 @@ function dropFromContainer(shop, state, artifactId, x, y) {
   return rowId;
 }
 
-test('[regression] deactivateBag blocks when a later bag contains items', () => {
+test('[bag-relayout] deactivating an earlier empty bag succeeds and shifts later bag\u2019s items up', () => {
   const state = makeFreshState();
   const shop = makeShop(state);
 
@@ -119,52 +116,42 @@ test('[regression] deactivateBag blocks when a later bag contains items', () => 
   seedContainer(state, 'moss_pouch');
   seedContainer(state, 'amber_satchel');
 
-  // Activate moss_pouch first → occupies row 3 (startRow=INVENTORY_ROWS=3, rowCount=1).
+  // Activate moss_pouch first (1×2 → cols=2, rows=1) at row 3.
+  // Activate amber_satchel second (2×2) at rows 4..5.
   shop.activateBag('moss_pouch');
-  assert.equal(state.activeBags.length, 1);
-  assert.equal(state.activeBags[0].artifactId, 'moss_pouch');
-
-  // Activate amber_satchel second → occupies rows 4 and 5 (startRow=4, rowCount=2).
   shop.activateBag('amber_satchel');
-  assert.deepEqual(
-    state.activeBags.map((b) => b.artifactId),
-    ['moss_pouch', 'amber_satchel']
-  );
-  assert.equal(shop.effectiveRows(), 6); // 3 grid + 1 moss_pouch + 2 amber_satchel
+  assert.equal(shop.effectiveRows(), 6);
 
-  // Drop bark_plate into amber_satchel's LAST row (y=5). This is the
-  // stranded-item scenario: if moss_pouch gets deactivated, amber_satchel
-  // shifts to rows 3,4 — and the item at y=5 is outside its new range,
-  // which is exactly how a builderItem ends up with no matching bag in
-  // buildLoadoutPayloadItems.
+  // Drop bark_plate into amber_satchel's last row (virtual y=5). Under the
+  // slot-coord refactor this lives at slot (0,1) inside amber_satchel.
   dropFromContainer(shop, state, 'bark_plate', 0, 5);
-  const placed = state.builderItems.find((i) => i.artifactId === 'bark_plate');
-  assert.ok(placed, 'bark_plate must be placed');
-  assert.equal(placed.y, 5, 'bark_plate must land at y=5 (amber_satchel last row)');
+  const placedBefore = state.builderItems.find((i) => i.artifactId === 'bark_plate');
+  assert.ok(placedBefore, 'bark_plate must be placed');
+  assert.equal(placedBefore.y, 5);
+  const amberRowId = state.activeBags.find((b) => b.artifactId === 'amber_satchel').id;
+  assert.equal(placedBefore.bagId, amberRowId, 'placed item must carry amber_satchel\u2019s row id');
 
-  // Attempt to deactivate moss_pouch (the FIRST bag). Under the old code
-  // this checked only rows [3,4) — the item at y=5 wasn't in that range,
-  // so deactivation succeeded silently and stranded the item.
+  // Deactivate moss_pouch (empty). Should succeed: amber_satchel is an
+  // independent bag with its own slot coords, so it just shifts up by
+  // moss_pouch\u2019s rowCount (1). The bark_plate\u2019s slot coords stay at
+  // (0,1); its virtual y recomputes to 4.
   state.error = '';
   shop.deactivateBag('moss_pouch');
 
-  // With the fix: the deactivation is blocked because there's an item at
-  // y>=3 (i.e. in this bag's row OR any later bag's rows).
   assert.deepEqual(
     state.activeBags.map((b) => b.artifactId),
-    ['moss_pouch', 'amber_satchel'],
-    'deactivation must be blocked while a later bag holds items'
+    ['amber_satchel'],
+    'deactivation of an empty earlier bag must succeed'
   );
-  assert.match(state.error, /Remove items from the bag first/);
+  assert.equal(state.error, '');
 
-  // The stranded item must still be at y=5 (not silently moved).
-  assert.equal(
-    state.builderItems.find((i) => i.artifactId === 'bark_plate').y,
-    5
-  );
+  const placedAfter = state.builderItems.find((i) => i.artifactId === 'bark_plate');
+  assert.ok(placedAfter, 'later bag\u2019s item must survive the relayout');
+  assert.equal(placedAfter.y, 4, 'virtual y recomputes against the shifted-up layout');
+  assert.equal(placedAfter.bagId, amberRowId, 'bag row id (= slot identity) is unchanged');
 });
 
-test('[regression] rotateBag blocks when a later bag contains items', () => {
+test('[bag-relayout] rotating an earlier empty bag succeeds and shifts a later bag\u2019s items', () => {
   const state = makeFreshState();
   const shop = makeShop(state);
 
@@ -178,18 +165,35 @@ test('[regression] rotateBag blocks when a later bag contains items', () => {
     5
   );
 
-  // Rotating moss_pouch (1×2) flips its layout from cols=2,rows=1 to
-  // cols=1,rows=2 — that changes its rowCount and would shift
-  // amber_satchel down by 1, stranding the item at y=5 again. Under the
-  // old code rotateBag only checked moss_pouch's own row range.
+  // Rotate moss_pouch (1×2): flips cols=2/rows=1 → cols=1/rows=2. Its
+  // rowCount grows by 1, pushing amber_satchel down by 1. The bark_plate
+  // at amber\u2019s slot (0,1) now renders at virtual y=6.
   state.error = '';
   shop.rotateBag('moss_pouch');
 
-  assert.deepEqual(
-    state.rotatedBags,
-    [],
-    'rotation must be blocked while a later bag holds items'
+  assert.equal(state.rotatedBags.length, 1, 'moss_pouch rotated');
+  assert.equal(state.rotatedBags[0].artifactId, 'moss_pouch');
+  assert.equal(state.error, '');
+  assert.equal(
+    state.builderItems.find((i) => i.artifactId === 'bark_plate').y,
+    6,
+    'later-bag item\u2019s virtual y recomputes when earlier bag\u2019s rowCount grows'
   );
+});
+
+test('[bag-relayout] deactivating a non-empty bag is still blocked', () => {
+  // The narrow guardrail that must remain: the current bag\u2019s own items
+  // would lose their anchor if the bag got removed, so UX blocks it.
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+  dropFromContainer(shop, state, 'bark_plate', 0, 3);
+
+  state.error = '';
+  shop.deactivateBag('moss_pouch');
+
+  assert.equal(state.activeBags.length, 1, 'deactivation of a non-empty bag stays blocked');
   assert.match(state.error, /Remove items from the bag first/);
 });
 

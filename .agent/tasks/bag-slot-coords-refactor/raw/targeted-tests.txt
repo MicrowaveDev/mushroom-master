@@ -1,0 +1,81 @@
+ok 1 - [Req 5-A, 5-B, 5-C] bag items exist in artifacts with family=bag
+ok 2 - [Req 3-D, 5-F] combatArtifacts excludes bags, starter-only, and character shop items
+ok 3 - [Req 5-A] validateLoadoutItems accepts bag off grid alongside placed item
+ok 4 - [Req 5-A] validateLoadoutItems rejects bag with grid coordinates
+ok 5 - [Req 2-B] validateLoadoutItems accepts artifact inside bag
+ok 6 - [Req 5-A] validateLoadoutItems rejects bag inside bag
+ok 7 - [Req 5-B, 5-C] validateLoadoutItems rejects items exceeding bag slotCount
+ok 8 - [Req 5-A] validateLoadoutItems rejects item in bag not on grid
+ok 9 - [Req 5-F] buildArtifactSummary excludes bags from combat stats
+ok 10 - [Req 5-D] shop offer on game run start includes bag tracking
+ok 11 - [Req 5-A] applyRunLoadoutPlacements rejects a bag sent with grid coordinates
+ok 12 - [regression] applyRunLoadoutPlacements rejects a grid item with y outside the grid
+ok 13 - [Req 5-A] insertLoadoutItem normalizes bag coords to (-1,-1) on buy
+ok 14 - [Req 12-D, 5-A] bagged item slot coords and bag row id survive PUT /artifact-loadout + copy-forward to round 2
+ok 15 - [Req 4-L] sellRunItem blocks selling non-empty bag
+ok 16 - [Req 7-G] round loadout rows remain after each solo round (unified snapshot, §2.4)
+ok 17 - [Req 13-A] replay events use step_start type and step field
+ok 18 - [Req 1-E] getGameRunHistory returns completed runs
+ok 19 - [Req 1-G] getGameRunHistory excludes active runs
+ok 20 - [Req 4-B, 4-C] coins carry over between rounds
+ok 21 - [Req 9-B] full run pays completion bonus based on wins
+ok 22 - [Req 2-A] validateGridItems: accepts an in-bounds non-overlapping placement
+ok 23 - [Req 2-A] validateGridItems: rejects out-of-bounds placement
+ok 24 - [Req 2-A] validateGridItems: rejects overlapping placements
+ok 25 - validateGridItems: bags at container sentinel skip occupancy
+ok 26 - validateGridItems: rejects bag with grid coordinates
+ok 27 - validateGridItems: container items skip bounds/overlap checks
+ok 28 - validateGridItems: rejects unknown artifact
+ok 29 - validateGridItems: rejects wrong dimensions
+ok 30 - validateBagContents: bagged item references active bag (by artifactId, legacy fallback)
+ok 31 - validateBagContents: bagged item references active bag (by row id, canonical)
+ok 32 - [Req 5-A] validateBagContents: rejects bag-inside-bag
+ok 33 - validateBagContents: rejects reference to non-placed bag
+ok 34 - [Req 5-B, 5-C] validateBagContents: enforces slotCount footprint limit
+ok 35 - [Req 5-A] validateBagContents: rejects bagged-item slot coords outside bag footprint
+ok 36 - validateBagContents: rejects bagged items that overlap inside the same bag
+ok 37 - validateBagContents: duplicate bags disambiguate by row id
+ok 38 - [Req 4-M, 4-N] validateCoinBudget: passes under budget, rejects over
+ok 39 - validateLoadoutItems: orchestrator returns items + totals + totalCoins
+ok 40 - [Req 2-C] buildArtifactSummary: container items contribute zero
+ok 41 - [Req 5-F] buildArtifactSummary: bags contribute zero
+ok 42 - [Req 2-D] buildArtifactSummary: grid-placed combat items contribute
+ok 43 - [Req 2-D] buildArtifactSummary: bagged items contribute
+ok 44 - validateLoadoutItems: legacy API still accepts arrays
+ok 45 - validateLoadoutItems: grid dimensions honored by config
+ok 46 - [projection] grid-placed non-bag items land in builderItems
+ok 47 - [projection] container non-bag items (-1,-1) land in containerItems
+ok 48 - [projection] bag with active=true lands in activeBags
+ok 49 - [projection] bag with active=false lands in containerItems
+ok 50 - [projection] bagged items with slot coords land in builderItems at reconstructed virtual y
+ok 51 - [projection] second-slot bagged item reconstructs to virtual y = startRow + slotY
+ok 52 - [projection] items in the second active bag land past the first bag’s rows
+ok 53 - [regression] legacy bagId = artifactId falls back to containerItems
+ok 54 - [regression] legacy bagged items at (-1,-1) fall back to containerItems
+ok 55 - [regression] bagged item referencing an inactive bag falls back to containerItems
+ok 56 - [regression] bagged item with slot coords outside bag footprint falls back to containerItems
+ok 57 - [projection] freshPurchase items get their artifactId in freshPurchases
+ok 58 - [projection] duplicates hydrate as separate slots keyed by row id
+ok 59 - [projection] duplicate active bags route their bagged items to the right instance
+ok 60 - [projection] accepts either a Set or an array for bagArtifactIds
+ok 61 - [projection] bag with rotated=true lands in rotatedBags
+ok 62 - [projection] bag with rotated=false stays out of rotatedBags
+ok 63 - [projection] rotation state survives across active+container bags
+ok 64 - [projection] duplicate bags with different rotation states hydrate separately
+ok 65 - [bag-relayout] deactivating an earlier empty bag succeeds and shifts later bag’s items up
+ok 66 - [bag-relayout] rotating an earlier empty bag succeeds and shifts a later bag’s items
+ok 67 - [bag-relayout] deactivating a non-empty bag is still blocked
+ok 68 - deactivateBag still works when no downstream items exist
+ok 69 - onInventoryCellDrop (source=inventory) rejects drops into disabled bag cells
+ok 70 - [regression] placeFromContainer with a duplicate preserves the already-placed copy
+ok 71 - [regression] placeFromContainer pops only one duplicate when multiple are in container
+ok 72 - [regression] unplaceToContainer(item) returns only the clicked duplicate
+ok 73 - [regression] dragging one duplicate in the grid moves only that copy
+ok 74 - [row-id] placeFromContainer threads the row id onto the placed builderItem
+ok 75 - [row-id] unplaceToContainer preserves the row id on the returned container slot
+ok 76 - [row-id] activateBag / deactivateBag keep the bag row id attached
+ok 77 - [row-id] dragging a placed item to a new cell preserves its row id
+ok 78 - [row-id] rotatePlacedArtifact preserves the row id on the rotated instance
+ok 79 - [regression] rotatePlacedArtifact rotates only the targeted duplicate
+ok 80 - [bag-rotated] rotateBag toggles the rotated slot and persists via persistRunLoadout
+ok 81 - [bag-rotated] rotateBag preserves rotation state across a deactivate+activate round-trip

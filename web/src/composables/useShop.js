@@ -30,7 +30,12 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       const count = bagRowCount(bag.artifactId);
       if (row >= r && row < r + count) {
         return {
-          bagId: bag.artifactId,
+          // Loadout row id of the bag. This is the stable identity used for
+          // bagged-item persistence (docs/bag-item-placement-persistence.md)
+          // and for matching items to bags during rotate / deactivate
+          // relayout. Duplicate bags of the same artifact get distinct ids.
+          bagRowId: bag.id,
+          bagArtifactId: bag.artifactId,
           startRow: r,
           rowCount: count,
           cols: bagLayout(bag.artifactId).cols
@@ -48,27 +53,79 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     return cx >= info.cols;
   }
 
+  // Build the current virtual-row layout for every active bag, keyed by the
+  // bag's loadout row id (stable across duplicate-bag instances). Used to
+  // translate builderItems' virtual y ↔ slot y when the layout changes.
+  function buildActiveLayout(activeBags, rotatedIds) {
+    const layout = new Map();
+    let r = INVENTORY_ROWS;
+    for (const bag of activeBags) {
+      const artifact = getArtifact(bag.artifactId);
+      if (!artifact) continue;
+      const rotated = rotatedIds.has(bag.id);
+      const cols = Math.min(
+        INVENTORY_COLUMNS,
+        rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height)
+      );
+      const rows = rotated ? Math.max(artifact.width, artifact.height) : Math.min(artifact.width, artifact.height);
+      layout.set(bag.id, { startRow: r, rowCount: rows, cols });
+      r += rows;
+    }
+    return layout;
+  }
+
+  // Rebuild state.builderItems after the active-bag layout changed. Bagged
+  // items keep their slot coords (derived from the OLD layout's startRow);
+  // their on-screen virtual y is recomputed against the NEW layout. Items
+  // whose bag no longer exists in the new layout get dropped back to the
+  // container so the caller can decide what to do with them.
+  function relayoutBaggedItems(oldLayout, newLayout) {
+    const nextBuilder = [];
+    const displaced = [];
+    for (const item of state.builderItems) {
+      if (!item.bagId) {
+        nextBuilder.push(item);
+        continue;
+      }
+      const oldBag = oldLayout.get(item.bagId);
+      const newBag = newLayout.get(item.bagId);
+      if (!oldBag || !newBag) {
+        displaced.push(item);
+        continue;
+      }
+      const slotY = item.y - oldBag.startRow;
+      // If the new bag's footprint can't hold this item, displace it too
+      // — the validator would reject the stale layout on the next persist.
+      if (item.x + item.width > newBag.cols || slotY + item.height > newBag.rowCount) {
+        displaced.push(item);
+        continue;
+      }
+      nextBuilder.push({ ...item, y: newBag.startRow + slotY });
+    }
+    return { nextBuilder, displaced };
+  }
+
   function rotateBag(bagId) {
     const activeBag = state.activeBags.find((b) => b.artifactId === bagId);
     if (!activeBag) return;
     const bag = getArtifact(bagId);
     if (!bag || bag.width === bag.height) return;
-    // Rotation changes this bag's rowCount, shifting later bags up or down.
-    // Block if *anything* lives in this bag's rows OR any later bag — same
-    // rationale as deactivateBag. Forces the player to empty downstream
-    // bags first so their item y coords stay in sync with activeBags.
-    let startRow = INVENTORY_ROWS;
-    for (const b of state.activeBags) {
-      if (b.artifactId === bagId) break;
-      startRow += bagRowCount(b.artifactId);
-    }
-    const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
-    if (itemsBelowThisBag.length) {
+    // Block only if THIS bag still holds items. Later bags are independent
+    // — their slot coords are relative to their own bag, and relayoutBagged
+    // Items recomputes their virtual y against the new layout.
+    const itemsInThisBag = state.builderItems.filter((i) => i.bagId === activeBag.id);
+    if (itemsInThisBag.length) {
       state.error = messages[state.lang].errorBagNotEmpty;
       return;
     }
-    // Toggle the rotated slot. rotatedBags is Array<{id, artifactId}> so
-    // duplicates are disambiguated — see docs/bag-rotated-persistence.md.
+    const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
+    const oldLayout = buildActiveLayout(state.activeBags, rotatedIds);
+    // Toggle rotation.
+    if (rotatedIds.has(activeBag.id)) rotatedIds.delete(activeBag.id);
+    else rotatedIds.add(activeBag.id);
+    const newLayout = buildActiveLayout(state.activeBags, rotatedIds);
+    const { nextBuilder } = relayoutBaggedItems(oldLayout, newLayout);
+    state.builderItems = nextBuilder;
     const idx = state.rotatedBags.findIndex((b) => b.id === activeBag.id);
     if (idx >= 0) {
       state.rotatedBags = [
@@ -106,7 +163,14 @@ export function useShop(state, getArtifact, persistRunLoadout) {
         if (isCellDisabled(x + dx, y + dy)) return null;
       }
     }
-    const candidate = { id: rowId, artifactId: artifact.id, x, y, width: w, height: h };
+    // Tag the placed item with the bag's row id if it lands in a bag row.
+    // Pre-refactor this field only existed on hydrated items; the client
+    // inferred "inside a bag" from virtual y each time. Now bagId is a
+    // first-class property of bagged builderItems so bag rotate / deactivate
+    // can relayout them without iterating over y ranges.
+    const info = bagForRow(y);
+    const bagId = info ? info.bagRowId : null;
+    const candidate = { id: rowId, artifactId: artifact.id, x, y, width: w, height: h, bagId };
     return [...state.builderItems, candidate];
   }
 
@@ -283,24 +347,25 @@ export function useShop(state, getArtifact, persistRunLoadout) {
   function deactivateBag(artifactId) {
     const idx = state.activeBags.findIndex((b) => b.artifactId === artifactId);
     if (idx < 0) return;
-    let startRow = INVENTORY_ROWS;
-    for (let i = 0; i < idx; i += 1) {
-      startRow += bagRowCount(state.activeBags[i].artifactId);
-    }
-    // Block if *anything* lives in this bag's rows OR in later bags' rows:
-    // deactivating a middle bag shifts later bags up and strands their items
-    // at stale y coords. Forcing the player to empty downstream bags first
-    // keeps the builderItems layout in sync with activeBags.
-    const itemsBelowThisBag = state.builderItems.filter((i) => i.y >= startRow);
-    if (itemsBelowThisBag.length) {
+    const removed = state.activeBags[idx];
+    // Block only if THIS bag still holds items. Later bags' slot coords are
+    // independent of bag ordering, so we can reshuffle virtual y for them
+    // without touching storage — see relayoutBaggedItems.
+    const itemsInThisBag = state.builderItems.filter((i) => i.bagId === removed.id);
+    if (itemsInThisBag.length) {
       state.error = messages[state.lang].errorBagNotEmpty;
       return;
     }
-    const removed = state.activeBags[idx];
-    state.activeBags = [
+    const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
+    const oldLayout = buildActiveLayout(state.activeBags, rotatedIds);
+    const nextActive = [
       ...state.activeBags.slice(0, idx),
       ...state.activeBags.slice(idx + 1)
     ];
+    const newLayout = buildActiveLayout(nextActive, rotatedIds);
+    const { nextBuilder } = relayoutBaggedItems(oldLayout, newLayout);
+    state.activeBags = nextActive;
+    state.builderItems = nextBuilder;
     state.containerItems = [...state.containerItems, removed];
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
   }
@@ -396,8 +461,13 @@ export function useShop(state, getArtifact, persistRunLoadout) {
           if (isCellDisabled(x + dx, y + dy)) return;
         }
       }
-      state.builderItems = [...others, { ...dragged, x, y }];
-  
+      // Recompute bagId for the new position — moving across the bag/grid
+      // boundary changes the item's membership. Items moved to a base-grid
+      // cell get bagId=null; into a bag row, bagId = that bag's row id.
+      const info = bagForRow(y);
+      const nextBagId = info ? info.bagRowId : null;
+      state.builderItems = [...others, { ...dragged, x, y, bagId: nextBagId }];
+
     }
   }
 

@@ -15,7 +15,12 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     // docs/client-row-id-refactor.md.
     //
     // - Base grid items (y < INVENTORY_ROWS): grid coordinates + id
-    // - Items in bag rows (y >= INVENTORY_ROWS): bagId + id, no coords
+    // - Items inside a bag (virtual y >= INVENTORY_ROWS on the client):
+    //     bagId = the bag's loadout row id, x/y = slot coords within the
+    //     bag (0 ≤ x < bag.cols, 0 ≤ y < bag.rows). The virtual y is an
+    //     on-screen encoding, never a storage shape; the server stores
+    //     slot coords so bag reorder/rotate/deactivate never invalidates
+    //     persisted rows. See docs/bag-item-placement-persistence.md.
     // - Bags (active and container): (-1,-1) + id + active + rotated
     const isRotatedRowId = (rowId) =>
       rowId != null && state.rotatedBags.some((b) => b.id === rowId);
@@ -27,7 +32,12 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       if (!artifact) continue;
       const rotated = isRotatedRowId(bag.id);
       const rows = rotated ? Math.max(artifact.width, artifact.height) : Math.min(artifact.width, artifact.height);
-      activeBagLayout.push({ bagId: bag.artifactId, startRow: r, rowCount: rows });
+      activeBagLayout.push({
+        bagRowId: bag.id,
+        bagArtifactId: bag.artifactId,
+        startRow: r,
+        rowCount: rows
+      });
       r += rows;
     }
 
@@ -67,15 +77,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       if (item.y >= INVENTORY_ROWS) {
         const info = activeBagLayout.find((b) => item.y >= b.startRow && item.y < b.startRow + b.rowCount);
         if (info) {
-          // Persist the bagged item's virtual grid coords so copy-forward
-          // round N → N+1 can re-render the same layout. Before this,
-          // bagged items were written with x=-1,y=-1 and came back
-          // auto-placed via CSS grid on the next prep screen.
+          // Convert the client's virtual grid y back into slot coords inside
+          // the bag. The server stores slot coords, not virtual coords, so
+          // reordering/rotating/deactivating bags in later rounds can't shift
+          // these rows out of place.
           payload.push(withId({
             artifactId: item.artifactId,
-            x: item.x, y: item.y,
+            x: item.x,
+            y: item.y - info.startRow,
             width: item.width, height: item.height,
-            bagId: info.bagId
+            bagId: info.bagRowId
           }, item.id));
           continue;
         }

@@ -1,6 +1,6 @@
 // Pin the routing rules of the client-side loadout projection.
 // See web/src/composables/loadout-projection.js and
-// docs/bag-active-persistence.md.
+// docs/bag-item-placement-persistence.md.
 //
 // This is the single bottleneck where the server's loadoutItems array
 // turns into the four client state buckets. Getting it wrong silently
@@ -12,6 +12,18 @@ import assert from 'node:assert/strict';
 import { projectLoadoutItems } from '../../web/src/composables/loadout-projection.js';
 
 const BAG_IDS = new Set(['moss_pouch', 'amber_satchel']);
+
+// Minimal artifact stubs so the projection can reconstruct bag layouts.
+// moss_pouch: 1×2, 2 slots. amber_satchel: 2×2, 4 slots. Non-bag items
+// never hit the layout lookup; a blank stub is fine.
+const ARTIFACTS = {
+  moss_pouch: { id: 'moss_pouch', family: 'bag', width: 1, height: 2, slotCount: 2 },
+  amber_satchel: { id: 'amber_satchel', family: 'bag', width: 2, height: 2, slotCount: 4 },
+  spore_needle: { id: 'spore_needle', family: 'damage', width: 1, height: 1 },
+  bark_plate: { id: 'bark_plate', family: 'armor', width: 1, height: 1 },
+  spore_lash: { id: 'spore_lash', family: 'damage', width: 1, height: 1 }
+};
+const getArtifact = (id) => ARTIFACTS[id] || null;
 
 function row(overrides) {
   return {
@@ -33,7 +45,7 @@ test('[projection] grid-placed non-bag items land in builderItems', () => {
   const result = projectLoadoutItems([
     row({ id: 'a', artifactId: 'spore_lash', x: 0, y: 0 }),
     row({ id: 'b', artifactId: 'spore_needle', x: 1, y: 0 })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.builderItems.length, 2);
   assert.equal(result.builderItems[0].id, 'a');
   assert.equal(result.builderItems[0].x, 0);
@@ -45,7 +57,7 @@ test('[projection] container non-bag items (-1,-1) land in containerItems', () =
   const result = projectLoadoutItems([
     row({ id: 'c', artifactId: 'bark_plate' }),
     row({ id: 'd', artifactId: 'bark_plate' })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.containerItems.length, 2);
   assert.equal(result.containerItems[0].id, 'c');
   assert.equal(result.containerItems[0].artifactId, 'bark_plate');
@@ -55,7 +67,7 @@ test('[projection] container non-bag items (-1,-1) land in containerItems', () =
 test('[projection] bag with active=true lands in activeBags', () => {
   const result = projectLoadoutItems([
     row({ id: 'e', artifactId: 'moss_pouch', active: true })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 1);
   assert.equal(result.activeBags[0].id, 'e');
   assert.equal(result.activeBags[0].artifactId, 'moss_pouch');
@@ -65,59 +77,120 @@ test('[projection] bag with active=true lands in activeBags', () => {
 test('[projection] bag with active=false lands in containerItems', () => {
   const result = projectLoadoutItems([
     row({ id: 'f', artifactId: 'moss_pouch', active: false })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.containerItems.length, 1);
   assert.equal(result.containerItems[0].id, 'f');
   assert.equal(result.containerItems[0].artifactId, 'moss_pouch');
   assert.equal(result.activeBags.length, 0);
 });
 
-test('[projection] bagged items with valid virtual coords land in builderItems with bagId', () => {
-  // Post-fix: a correctly-persisted bagged item carries its virtual
-  // grid y (>= INVENTORY_ROWS) so the renderer can place it inside the
-  // bag's rows. See the bag-items regression test covering the full
-  // round-1 PUT + round-2 copy-forward trip.
+test('[projection] bagged items with slot coords land in builderItems at reconstructed virtual y', () => {
+  // Storage: bagged item lives at slot (0, 0) inside the moss_pouch row
+  // "g". The projection must add the bag's startRow (= INVENTORY_ROWS = 3
+  // for the first active bag) to reconstruct a virtual render y = 3.
   const result = projectLoadoutItems([
     row({ id: 'g', artifactId: 'moss_pouch', active: true }),
     row({
       id: 'h',
       artifactId: 'spore_needle',
-      bagId: 'moss_pouch',
+      bagId: 'g',
       x: 0,
-      y: 3
+      y: 0
     })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 1);
   assert.equal(result.builderItems.length, 1);
   assert.equal(result.builderItems[0].id, 'h');
-  assert.equal(result.builderItems[0].bagId, 'moss_pouch');
+  assert.equal(result.builderItems[0].bagId, 'g', 'builderItem.bagId carries the bag row id, not artifactId');
   assert.equal(result.builderItems[0].x, 0);
-  assert.equal(result.builderItems[0].y, 3);
+  assert.equal(result.builderItems[0].y, 3, 'virtual y = startRow (INVENTORY_ROWS=3) + slotY (0)');
 });
 
-test('[regression] legacy bagged items at (-1,-1) fall back to containerItems instead of breaking the grid', () => {
-  // Pre-fix: buildLoadoutPayloadItems stripped x/y from bagged-item
-  // payloads, so the server persisted them at (-1,-1). Projection
-  // forwarded those invalid coords into builderItems, where CSS grid
-  // auto-placement scattered them across the base grid on the next
-  // prep screen. The fallback routes them to containerItems so the
-  // player can re-place them cleanly instead of seeing a corrupted
-  // inventory.
+test('[projection] second-slot bagged item reconstructs to virtual y = startRow + slotY', () => {
+  // amber_satchel is 2×2 (effective cols=2, rows=2) → second slot row is
+  // slotY=1 inside the bag, reconstructed at virtual y=4.
+  const result = projectLoadoutItems([
+    row({ id: 'bag1', artifactId: 'amber_satchel', active: true }),
+    row({ id: 'slot2', artifactId: 'bark_plate', bagId: 'bag1', x: 0, y: 1 })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.builderItems.length, 1);
+  assert.equal(result.builderItems[0].y, 4, 'virtual y = 3 (INVENTORY_ROWS) + 1 (slotY)');
+});
+
+test('[projection] items in the second active bag land past the first bag\u2019s rows', () => {
+  // Bag 1 (moss_pouch, 1×2 → effective 2×1) occupies virtual row 3; bag 2
+  // (amber_satchel, 2×2) starts at row 4. An item at slot (1, 0) inside
+  // bag 2 renders at virtual (1, 4).
+  const result = projectLoadoutItems([
+    row({ id: 'b1', artifactId: 'moss_pouch', active: true }),
+    row({ id: 'b2', artifactId: 'amber_satchel', active: true }),
+    row({ id: 'inside_b2', artifactId: 'spore_needle', bagId: 'b2', x: 1, y: 0 })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.activeBags.length, 2);
+  assert.equal(result.builderItems.length, 1);
+  assert.equal(result.builderItems[0].x, 1);
+  assert.equal(result.builderItems[0].y, 4);
+});
+
+test('[regression] legacy bagId = artifactId falls back to containerItems', () => {
+  // Pre-refactor rows carry bagId = "moss_pouch" (artifact id) instead of
+  // the bag's loadout row id. The projection's row-id lookup misses, so
+  // the item goes to the container. Next save re-persists with a proper
+  // bag row id.
   const result = projectLoadoutItems([
     row({ id: 'g', artifactId: 'moss_pouch', active: true }),
     row({
       id: 'legacy',
       artifactId: 'spore_needle',
       bagId: 'moss_pouch',
+      x: 0,
+      y: 0
+    })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.builderItems.length, 0, 'legacy row must not pollute the grid');
+  assert.equal(result.containerItems.length, 1);
+  assert.equal(result.containerItems[0].id, 'legacy');
+});
+
+test('[regression] legacy bagged items at (-1,-1) fall back to containerItems', () => {
+  const result = projectLoadoutItems([
+    row({ id: 'g', artifactId: 'moss_pouch', active: true }),
+    row({
+      id: 'legacy',
+      artifactId: 'spore_needle',
+      bagId: 'g',
       x: -1,
       y: -1
     })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 1);
-  assert.equal(result.builderItems.length, 0, 'legacy bagged item must not pollute the grid');
+  assert.equal(result.builderItems.length, 0);
   assert.equal(result.containerItems.length, 1);
   assert.equal(result.containerItems[0].id, 'legacy');
-  assert.equal(result.containerItems[0].artifactId, 'spore_needle');
+});
+
+test('[regression] bagged item referencing an inactive bag falls back to containerItems', () => {
+  // Bag was deactivated but its bagged item still references it. The
+  // projection should not render the item on the grid.
+  const result = projectLoadoutItems([
+    row({ id: 'g', artifactId: 'moss_pouch', active: false }),
+    row({ id: 'inside', artifactId: 'spore_needle', bagId: 'g', x: 0, y: 0 })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.activeBags.length, 0);
+  assert.equal(result.containerItems.length, 2, 'both the bag row and the orphaned item land in container');
+  assert.equal(result.builderItems.length, 0);
+});
+
+test('[regression] bagged item with slot coords outside bag footprint falls back to containerItems', () => {
+  // moss_pouch is 1×2, so slot (0, 2) is out of bounds. The projection's
+  // bounds check catches this before auto-placement can scatter it.
+  const result = projectLoadoutItems([
+    row({ id: 'g', artifactId: 'moss_pouch', active: true }),
+    row({ id: 'oob', artifactId: 'spore_needle', bagId: 'g', x: 0, y: 2 })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.builderItems.length, 0);
+  assert.equal(result.containerItems.length, 1);
+  assert.equal(result.containerItems[0].id, 'oob');
 });
 
 test('[projection] freshPurchase items get their artifactId in freshPurchases', () => {
@@ -125,7 +198,7 @@ test('[projection] freshPurchase items get their artifactId in freshPurchases', 
     row({ id: 'i', artifactId: 'bark_plate', freshPurchase: true }),
     row({ id: 'j', artifactId: 'spore_lash', x: 0, y: 0, freshPurchase: true }),
     row({ id: 'k', artifactId: 'moss_pouch', active: true, freshPurchase: true })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.deepEqual(result.freshPurchases.sort(), [
     'bark_plate',
     'moss_pouch',
@@ -140,21 +213,46 @@ test('[projection] duplicates hydrate as separate slots keyed by row id', () => 
   const result = projectLoadoutItems([
     row({ id: 'active_one', artifactId: 'moss_pouch', active: true }),
     row({ id: 'container_one', artifactId: 'moss_pouch', active: false })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 1);
   assert.equal(result.activeBags[0].id, 'active_one');
   assert.equal(result.containerItems.length, 1);
   assert.equal(result.containerItems[0].id, 'container_one');
 });
 
+test('[projection] duplicate active bags route their bagged items to the right instance', () => {
+  // Both bags have the same artifact id. bag_id on the bagged items
+  // disambiguates which physical bag they belong to. moss_pouch effective
+  // orientation is 2×1 (cols=2, rows=1), so each instance occupies one
+  // virtual row: bag_A at row 3, bag_B at row 4.
+  const result = projectLoadoutItems([
+    row({ id: 'bag_A', artifactId: 'moss_pouch', active: true }),
+    row({ id: 'bag_B', artifactId: 'moss_pouch', active: true }),
+    row({ id: 'item_in_A', artifactId: 'spore_needle', bagId: 'bag_A', x: 0, y: 0 }),
+    row({ id: 'item_in_B', artifactId: 'bark_plate', bagId: 'bag_B', x: 1, y: 0 })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.activeBags.length, 2);
+  assert.equal(result.builderItems.length, 2);
+  const inA = result.builderItems.find((i) => i.id === 'item_in_A');
+  const inB = result.builderItems.find((i) => i.id === 'item_in_B');
+  assert.equal(inA.y, 3, 'item in bag A lives at bag A\u2019s startRow (3) + slotY (0)');
+  assert.equal(inB.y, 4, 'item in bag B lives at bag B\u2019s startRow (4) + slotY (0)');
+  assert.equal(inA.x, 0);
+  assert.equal(inB.x, 1);
+  assert.equal(inA.bagId, 'bag_A');
+  assert.equal(inB.bagId, 'bag_B');
+});
+
 test('[projection] accepts either a Set or an array for bagArtifactIds', () => {
   const fromSet = projectLoadoutItems(
     [row({ id: 'l', artifactId: 'moss_pouch', active: true })],
-    new Set(['moss_pouch'])
+    new Set(['moss_pouch']),
+    getArtifact
   );
   const fromArray = projectLoadoutItems(
     [row({ id: 'l', artifactId: 'moss_pouch', active: true })],
-    ['moss_pouch']
+    ['moss_pouch'],
+    getArtifact
   );
   assert.deepEqual(fromSet, fromArray);
 });
@@ -164,7 +262,7 @@ test('[projection] accepts either a Set or an array for bagArtifactIds', () => {
 test('[projection] bag with rotated=true lands in rotatedBags', () => {
   const result = projectLoadoutItems([
     row({ id: 'r1', artifactId: 'moss_pouch', active: true, rotated: true })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.rotatedBags.length, 1);
   assert.equal(result.rotatedBags[0].id, 'r1');
   assert.equal(result.rotatedBags[0].artifactId, 'moss_pouch');
@@ -173,7 +271,7 @@ test('[projection] bag with rotated=true lands in rotatedBags', () => {
 test('[projection] bag with rotated=false stays out of rotatedBags', () => {
   const result = projectLoadoutItems([
     row({ id: 'r2', artifactId: 'moss_pouch', active: true, rotated: false })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.rotatedBags.length, 0);
   assert.equal(result.activeBags.length, 1);
 });
@@ -185,7 +283,7 @@ test('[projection] rotation state survives across active+container bags', () => 
   const result = projectLoadoutItems([
     row({ id: 'a1', artifactId: 'moss_pouch', active: true, rotated: true }),
     row({ id: 'c1', artifactId: 'amber_satchel', active: false, rotated: true })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 1);
   assert.equal(result.activeBags[0].id, 'a1');
   assert.equal(result.containerItems.length, 1);
@@ -204,7 +302,7 @@ test('[projection] duplicate bags with different rotation states hydrate separat
   const result = projectLoadoutItems([
     row({ id: 'rot_one', artifactId: 'moss_pouch', active: true, rotated: true }),
     row({ id: 'plain_one', artifactId: 'moss_pouch', active: true, rotated: false })
-  ], BAG_IDS);
+  ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 2);
   assert.equal(result.rotatedBags.length, 1);
   assert.equal(result.rotatedBags[0].id, 'rot_one');

@@ -51,8 +51,9 @@ export function useAuth(state, goTo) {
         // docs/client-row-id-refactor.md for the design context.
         const allArtifacts = state.bootstrap?.artifacts || [];
         const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+        const artifactById = new Map(allArtifacts.map((a) => [a.id, a]));
         const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
-        const projected = projectLoadoutItems(loadoutItems, bagsSet);
+        const projected = projectLoadoutItems(loadoutItems, bagsSet, (id) => artifactById.get(id));
         state.builderItems = projected.builderItems;
         state.containerItems = projected.containerItems;
         state.activeBags = projected.activeBags;

@@ -9,20 +9,53 @@
 // Shape of output:
 //   { builderItems, containerItems, activeBags, rotatedBags, freshPurchases }
 //
-// The rules, mirrored in the JSDoc on each branch below:
-//   - bagged items (bagId set)       → builderItems with bagId
-//   - grid-placed non-bag items      → builderItems with x,y coords
-//   - container non-bag items (-1,-1)→ containerItems
-//   - bag rows with active=1         → activeBags
-//   - bag rows with active=0         → containerItems
-//   - bag rows with rotated=1        → rotatedBags (regardless of active)
+// Coord conventions (see docs/bag-item-placement-persistence.md):
+//   - Non-bag grid item    : x,y are base-grid coords (0 ≤ y < INVENTORY_ROWS)
+//   - Container / bag row  : x=-1, y=-1
+//   - Bagged item          : x,y are slot coords within the bag pointed at by
+//                            bagId. bagId is the bag's loadout row id in the
+//                            same round. The projection reconstructs a virtual
+//                            render y (startRow + slotY) so ArtifactGridBoard
+//                            can place the piece without knowing about bags.
 //
-// See docs/bag-active-persistence.md and docs/bag-rotated-persistence.md.
+// Routing:
+//   - bag rows with active=1  → activeBags  (and used to build bag layout)
+//   - bag rows with active=0  → containerItems
+//   - bag rows with rotated=1 → rotatedBags (regardless of active)
+//   - bagged items with bagId pointing at an active bag + valid slot coords
+//                            → builderItems at virtual (x, startRow + y)
+//   - bagged items with stale/legacy bagId or out-of-bounds slot coords
+//                            → containerItems (self-heals on next save)
+//   - grid-placed non-bag items (x>=0,y>=0)
+//                            → builderItems with direct x,y
+//   - container non-bag items (-1,-1)
+//                            → containerItems
 
-export function projectLoadoutItems(loadoutItems, bagArtifactIds) {
+import { INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+
+function bagLayoutFor(artifact, rotated) {
+  if (!artifact) return { cols: 0, rows: 0 };
+  const cols = Math.min(
+    INVENTORY_COLUMNS,
+    rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height)
+  );
+  const rows = rotated
+    ? Math.max(artifact.width, artifact.height)
+    : Math.min(artifact.width, artifact.height);
+  return { cols, rows };
+}
+
+export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
   const bagsSet = bagArtifactIds instanceof Set
     ? bagArtifactIds
     : new Set(bagArtifactIds);
+
+  // getArtifact is required to reconstruct bag layouts. Accept a Map or
+  // function; fall back to a no-op so legacy callers that don't care about
+  // bagged-item reconstruction can still route bags/grid items correctly.
+  const lookupArtifact = typeof getArtifact === 'function'
+    ? getArtifact
+    : (getArtifact instanceof Map ? (id) => getArtifact.get(id) : () => null);
 
   const builderItems = [];
   const containerItems = [];
@@ -30,43 +63,69 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds) {
   const rotatedBags = [];
   const freshPurchases = [];
 
+  // Pass 1 — register bags. Active bags are also laid out so bagged items
+  // in pass 2 can be resolved to virtual render coords. Iteration order
+  // mirrors the server's sort order (the input array is already ordered).
+  const bagByRowId = new Map();
+  let nextStartRow = INVENTORY_ROWS;
   for (const item of loadoutItems) {
-    const isBag = bagsSet.has(item.artifactId);
+    if (!bagsSet.has(item.artifactId)) continue;
+    if (item.bagId) continue; // defensive — bag rows shouldn't also be bagged
+    if (item.active) {
+      activeBags.push({ id: item.id, artifactId: item.artifactId });
+      const artifact = lookupArtifact(item.artifactId);
+      const { cols, rows } = bagLayoutFor(artifact, !!item.rotated);
+      bagByRowId.set(item.id, {
+        artifactId: item.artifactId,
+        startRow: nextStartRow,
+        cols,
+        rows
+      });
+      nextStartRow += rows;
+    } else {
+      containerItems.push({ id: item.id, artifactId: item.artifactId });
+    }
+    if (item.rotated) {
+      rotatedBags.push({ id: item.id, artifactId: item.artifactId });
+    }
+    if (item.freshPurchase) freshPurchases.push(item.artifactId);
+  }
 
-    // Bagged items — live on the grid at the bag's virtual rows.
-    // Legacy rows (pre-fix) were written with x=-1,y=-1 because
-    // buildLoadoutPayloadItems stripped coords from bagged-item payloads.
-    // Routing them into builderItems with invalid coords let CSS grid
-    // auto-place them across the base grid, visually corrupting the next
-    // prep screen. Drop back to containerItems so the player can re-place
-    // them into the bag; the persistence fix keeps new saves correct.
+  // Pass 2 — everything else. Bagged items resolve through bagByRowId.
+  for (const item of loadoutItems) {
+    const isBagRow = bagsSet.has(item.artifactId) && !item.bagId;
+    if (isBagRow) continue; // already handled
+
     if (item.bagId) {
-      if (item.x < 0 || item.y < 0) {
-        containerItems.push({ id: item.id, artifactId: item.artifactId });
-      } else {
+      const bag = bagByRowId.get(item.bagId);
+      const sx = Number(item.x);
+      const sy = Number(item.y);
+      const w = Number(item.width);
+      const h = Number(item.height);
+      // Legacy + stale rows land in the container:
+      //   - bag not active (or bagId points at an artifact id, not a row id)
+      //   - slot coords out of the bag's effective footprint
+      //   - pre-refactor (-1,-1) sentinel
+      const inBounds =
+        bag &&
+        sx >= 0 && sy >= 0 &&
+        sx + w <= bag.cols && sy + h <= bag.rows;
+      if (inBounds) {
+        // bagId on builderItems carries the bag's loadout row id — same id
+        // that lives in state.activeBags[i].id. That's unambiguous even when
+        // the player owns two bags of the same artifact, so bag rotate /
+        // deactivate can identify "items in THIS bag" precisely.
         builderItems.push({
           id: item.id,
           artifactId: item.artifactId,
-          x: item.x,
-          y: item.y,
-          width: item.width,
-          height: item.height,
+          x: sx,
+          y: bag.startRow + sy,
+          width: w,
+          height: h,
           bagId: item.bagId
         });
-      }
-      if (item.freshPurchase) freshPurchases.push(item.artifactId);
-      continue;
-    }
-
-    // Bag rows — route by the server-persisted `active` and `rotated` flags.
-    if (isBag) {
-      if (item.active) {
-        activeBags.push({ id: item.id, artifactId: item.artifactId });
       } else {
         containerItems.push({ id: item.id, artifactId: item.artifactId });
-      }
-      if (item.rotated) {
-        rotatedBags.push({ id: item.id, artifactId: item.artifactId });
       }
       if (item.freshPurchase) freshPurchases.push(item.artifactId);
       continue;

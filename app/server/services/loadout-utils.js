@@ -84,22 +84,53 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
 }
 
 /**
- * Validate bag contents: each bagged item references an active bag, the
- * reference resolves, and the total footprint (width × height) fits inside
- * the bag's slotCount.
+ * Validate bag contents:
+ *   1. Every bagged item's `bagId` resolves to a bag row present in the
+ *      same items array (preferred: by row id; fallback: by artifact id).
+ *   2. The bagged item's slot coords `(x, y)` fit inside the bag's effective
+ *      footprint (rotation-aware cols/rows).
+ *   3. Bagged items within the same bag don't overlap.
+ *   4. The total footprint area doesn't exceed the bag's `slotCount`
+ *      (redundant with bounds+overlap for rectangular bags; kept as a
+ *      defence-in-depth invariant for future non-rectangular layouts).
+ *
+ * `bagId` is a loadout-row id in the current schema. Pre-refactor writers
+ * sent `bagId = artifactId`; those resolve through the legacy fallback so
+ * the projection's self-heal path stays honest during rollout.
  */
 export function validateBagContents(items) {
-  // First pass: register bags as slot providers.
-  const bagSlotUsage = new Map();
+  // First pass: catalog bags under both row id (canonical) and artifact id
+  // (legacy fallback). Duplicate artifact ids bind to the first bag seen.
+  const bagsByRowId = new Map();
+  const bagsByArtifactId = new Map();
   for (const item of items) {
     if (item.bagId) continue;
     const artifact = getArtifactById(item.artifactId);
-    if (isBag(artifact)) {
-      bagSlotUsage.set(item.artifactId, 0);
+    if (!isBag(artifact)) continue;
+    const rotated = !!item.rotated;
+    const cols = Math.min(
+      INVENTORY_COLUMNS,
+      rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height)
+    );
+    const rows = rotated
+      ? Math.max(artifact.width, artifact.height)
+      : Math.min(artifact.width, artifact.height);
+    const entry = {
+      rowId: item.id || null,
+      artifactId: item.artifactId,
+      slotCount: artifact.slotCount,
+      cols,
+      rows,
+      slotUsage: 0,
+      occupied: new Set()
+    };
+    if (item.id) bagsByRowId.set(item.id, entry);
+    if (!bagsByArtifactId.has(item.artifactId)) {
+      bagsByArtifactId.set(item.artifactId, entry);
     }
   }
 
-  // Second pass: account for bagged items.
+  // Second pass: enforce bagged-item contracts.
   for (const item of items) {
     if (!item.bagId) continue;
     const artifact = getArtifactById(item.artifactId);
@@ -109,22 +140,39 @@ export function validateBagContents(items) {
     if (isBag(artifact)) {
       throw new Error('Bags cannot contain other bags');
     }
-    const bagArtifact = getArtifactById(item.bagId);
-    if (!bagArtifact || !isBag(bagArtifact)) {
-      throw new Error(`Invalid bag reference: ${item.bagId}`);
-    }
-    if (!bagSlotUsage.has(item.bagId)) {
+    const bag = bagsByRowId.get(item.bagId) || bagsByArtifactId.get(item.bagId);
+    if (!bag) {
       throw new Error(`Bag ${item.bagId} is not placed on the grid`);
     }
 
-    const cellsUsed = item.width * item.height;
-    const used = bagSlotUsage.get(item.bagId) + cellsUsed;
-    if (used > bagArtifact.slotCount) {
-      throw new Error(`Bag ${item.bagId} is full (${bagArtifact.slotCount} slots)`);
+    const w = Number(item.width);
+    const h = Number(item.height);
+    const x = Number(item.x ?? 0);
+    const y = Number(item.y ?? 0);
+    if (x < 0 || y < 0 || x + w > bag.cols || y + h > bag.rows) {
+      throw new Error(`Bagged item ${item.artifactId} is out of bounds for bag ${bag.artifactId}`);
     }
-    bagSlotUsage.set(item.bagId, used);
+    for (let dx = 0; dx < w; dx += 1) {
+      for (let dy = 0; dy < h; dy += 1) {
+        const key = `${x + dx}:${y + dy}`;
+        if (bag.occupied.has(key)) {
+          throw new Error(`Bagged items cannot overlap inside bag ${bag.artifactId}`);
+        }
+        bag.occupied.add(key);
+      }
+    }
+
+    bag.slotUsage += w * h;
+    if (bag.slotUsage > bag.slotCount) {
+      throw new Error(`Bag ${bag.artifactId} is full (${bag.slotCount} slots)`);
+    }
   }
 
+  // Return shape preserved for legacy callers: artifact-id keyed slot usage.
+  const bagSlotUsage = new Map();
+  for (const bag of bagsByArtifactId.values()) {
+    bagSlotUsage.set(bag.artifactId, bag.slotUsage);
+  }
   return { bagSlotUsage };
 }
 
