@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 import net from 'net';
 import path from 'path';
+import { repoRoot } from '../shared/repo-root.js';
 
-const repoRoot = '/Users/microwavedev/workspace/mushroom-master';
 const viteBin = path.join(repoRoot, 'node_modules', 'vite', 'bin', 'vite.js');
 const backendPort = Number(process.env.PORT || 3021);
 const frontendPort = 4174;

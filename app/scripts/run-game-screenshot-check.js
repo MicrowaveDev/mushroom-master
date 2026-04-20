@@ -1,5 +1,6 @@
 import net from 'net';
 import { spawn } from 'child_process';
+import { repoRoot } from '../shared/repo-root.js';
 
 function parseArgs(argv) {
   return {
@@ -62,7 +63,7 @@ async function main() {
     'npx',
     ['playwright', 'test', 'tests/game/screenshots.spec.js', '--config=tests/game/playwright.config.js', '--reporter=line'],
     {
-      cwd: '/Users/microwavedev/workspace/mushroom-master',
+      cwd: repoRoot,
       stdio: 'inherit',
       env: {
         ...process.env,

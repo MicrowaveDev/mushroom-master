@@ -1,8 +1,10 @@
+import path from 'path';
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
 import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
+import { repoRoot } from '../../app/shared/repo-root.js';
 
-const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots';
+const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
 const debugScreens = process.env.PLAYWRIGHT_SCREEN_DEBUG === '1';
 
 const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
 import { QueryTypes, Sequelize } from 'sequelize';
+import { repoRoot } from '../shared/repo-root.js';
 import { initModels } from './models/index.js';
 
 let state;
@@ -43,7 +44,7 @@ async function resolveSqliteStorage() {
   const relativePath = process.env.SQLITE_STORAGE || 'tmp/telegram-autobattler-dev.sqlite';
   const absolutePath = path.isAbsolute(relativePath)
     ? relativePath
-    : path.resolve('/Users/microwavedev/workspace/mushroom-master', relativePath);
+    : path.resolve(repoRoot, relativePath);
   await fs.mkdir(path.dirname(absolutePath), { recursive: true });
   return absolutePath;
 }

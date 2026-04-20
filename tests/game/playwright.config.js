@@ -1,5 +1,7 @@
+import path from 'path';
 import { defineConfig } from '@playwright/test';
 import puppeteer from 'puppeteer';
+import { repoRoot } from '../../app/shared/repo-root.js';
 
 const testBackendPort = Number(process.env.PLAYWRIGHT_TEST_BACKEND_PORT || 3321);
 const testFrontendPort = Number(process.env.PLAYWRIGHT_TEST_FRONTEND_PORT || 4374);
@@ -9,7 +11,7 @@ const replayAutoplayMs = process.env.VITE_REPLAY_AUTOPLAY_MS || '320';
 const replayAutoplayFastMs = process.env.VITE_REPLAY_AUTOPLAY_FAST_MS || '180';
 
 export default defineConfig({
-  testDir: '/Users/microwavedev/workspace/mushroom-master/tests/game',
+  testDir: path.join(repoRoot, 'tests/game'),
   testMatch: '*.spec.js',
   timeout: 120000,
   // One retry as a safety net for any residual flake. Root causes are
@@ -45,7 +47,7 @@ export default defineConfig({
       command: `PORT=${testBackendPort} node app/server/start.js`,
       port: testBackendPort,
       reuseExistingServer: false,
-      cwd: '/Users/microwavedev/workspace/mushroom-master'
+      cwd: repoRoot
     },
     {
       // Build once, then preview the static bundle. Using `vite dev` for
@@ -56,7 +58,7 @@ export default defineConfig({
       command: `VITE_BACKEND_ORIGIN=${testBackendOrigin} VITE_DEV_PORT=${testFrontendPort} VITE_REPLAY_AUTOPLAY_MS=${replayAutoplayMs} VITE_REPLAY_AUTOPLAY_FAST_MS=${replayAutoplayFastMs} npx vite build --config web/vite.config.js && VITE_BACKEND_ORIGIN=${testBackendOrigin} VITE_DEV_PORT=${testFrontendPort} npx vite preview --config web/vite.config.js --host 127.0.0.1 --port ${testFrontendPort} --strictPort`,
       port: testFrontendPort,
       reuseExistingServer: false,
-      cwd: '/Users/microwavedev/workspace/mushroom-master',
+      cwd: repoRoot,
       // Build adds ~20-30s to cold start; bump timeout generously.
       timeout: 180000
     }

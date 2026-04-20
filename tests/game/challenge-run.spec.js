@@ -1,8 +1,10 @@
+import path from 'path';
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
 import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
+import { repoRoot } from '../../app/shared/repo-root.js';
 
-const screenshotDir = '/Users/microwavedev/workspace/mushroom-master/.agent/tasks/telegram-autobattler-v1/raw/screenshots/challenge';
+const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots/challenge');
 
 const loadoutA = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },

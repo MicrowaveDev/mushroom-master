@@ -1,9 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { marked } from 'marked';
+import { repoRoot } from '../shared/repo-root.js';
 import { WIKI_TIER_THRESHOLDS } from './game-data.js';
 
-const rootDir = path.resolve('/Users/microwavedev/workspace/mushroom-master/wiki');
+const rootDir = path.resolve(repoRoot, 'wiki');
 
 function parseFrontmatter(content) {
   if (!content.startsWith('---\n')) {

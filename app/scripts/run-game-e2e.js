@@ -1,5 +1,6 @@
 import net from 'net';
 import { spawn } from 'child_process';
+import { repoRoot } from '../shared/repo-root.js';
 
 /**
  * Run the full Playwright E2E suite (all *.spec.js files).
@@ -57,7 +58,7 @@ async function main() {
     'npx',
     ['playwright', 'test', '--config=tests/game/playwright.config.js', '--reporter=line'],
     {
-      cwd: '/Users/microwavedev/workspace/mushroom-master',
+      cwd: repoRoot,
       stdio: 'inherit',
       env: {
         ...process.env,
