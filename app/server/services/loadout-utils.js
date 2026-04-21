@@ -85,8 +85,8 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
 
 /**
  * Validate bag contents:
- *   1. Every bagged item's `bagId` resolves to a bag row present in the
- *      same items array (preferred: by row id; fallback: by artifact id).
+ *   1. Every bagged item's `bagId` resolves to a bag row in the same
+ *      items array by the bag's loadout row id.
  *   2. The bagged item's slot coords `(x, y)` fit inside the bag's effective
  *      footprint (rotation-aware cols/rows).
  *   3. Bagged items within the same bag don't overlap.
@@ -94,19 +94,19 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
  *      (redundant with bounds+overlap for rectangular bags; kept as a
  *      defence-in-depth invariant for future non-rectangular layouts).
  *
- * `bagId` is a loadout-row id in the current schema. Pre-refactor writers
- * sent `bagId = artifactId`; those resolve through the legacy fallback so
- * the projection's self-heal path stays honest during rollout.
+ * `bagId` MUST be a loadout-row id. Bag rows in the items array MUST
+ * carry their `id`. See docs/bag-item-placement-persistence.md.
  */
 export function validateBagContents(items) {
-  // First pass: catalog bags under both row id (canonical) and artifact id
-  // (legacy fallback). Duplicate artifact ids bind to the first bag seen.
+  // First pass: catalog bag rows by their loadout row id.
   const bagsByRowId = new Map();
-  const bagsByArtifactId = new Map();
   for (const item of items) {
     if (item.bagId) continue;
     const artifact = getArtifactById(item.artifactId);
     if (!isBag(artifact)) continue;
+    if (!item.id) {
+      throw new Error(`Bag row for ${item.artifactId} must carry a loadout row id`);
+    }
     const rotated = !!item.rotated;
     const cols = Math.min(
       INVENTORY_COLUMNS,
@@ -115,19 +115,14 @@ export function validateBagContents(items) {
     const rows = rotated
       ? Math.max(artifact.width, artifact.height)
       : Math.min(artifact.width, artifact.height);
-    const entry = {
-      rowId: item.id || null,
+    bagsByRowId.set(item.id, {
       artifactId: item.artifactId,
       slotCount: artifact.slotCount,
       cols,
       rows,
       slotUsage: 0,
       occupied: new Set()
-    };
-    if (item.id) bagsByRowId.set(item.id, entry);
-    if (!bagsByArtifactId.has(item.artifactId)) {
-      bagsByArtifactId.set(item.artifactId, entry);
-    }
+    });
   }
 
   // Second pass: enforce bagged-item contracts.
@@ -140,7 +135,7 @@ export function validateBagContents(items) {
     if (isBag(artifact)) {
       throw new Error('Bags cannot contain other bags');
     }
-    const bag = bagsByRowId.get(item.bagId) || bagsByArtifactId.get(item.bagId);
+    const bag = bagsByRowId.get(item.bagId);
     if (!bag) {
       throw new Error(`Bag ${item.bagId} is not placed on the grid`);
     }
@@ -167,13 +162,6 @@ export function validateBagContents(items) {
       throw new Error(`Bag ${bag.artifactId} is full (${bag.slotCount} slots)`);
     }
   }
-
-  // Return shape preserved for legacy callers: artifact-id keyed slot usage.
-  const bagSlotUsage = new Map();
-  for (const bag of bagsByArtifactId.values()) {
-    bagSlotUsage.set(bag.artifactId, bag.slotUsage);
-  }
-  return { bagSlotUsage };
 }
 
 /**

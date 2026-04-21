@@ -24,8 +24,11 @@
 //   - bag rows with rotated=1 → rotatedBags (regardless of active)
 //   - bagged items with bagId pointing at an active bag + valid slot coords
 //                            → builderItems at virtual (x, startRow + y)
-//   - bagged items with stale/legacy bagId or out-of-bounds slot coords
-//                            → containerItems (self-heals on next save)
+//   - bagged items with bagId pointing at an inactive bag, or with slot
+//     coords outside the bag's footprint
+//                            → containerItems (defensive fallback for
+//                              transient inconsistencies the user can
+//                              recover from by re-placing)
 //   - grid-placed non-bag items (x>=0,y>=0)
 //                            → builderItems with direct x,y
 //   - container non-bag items (-1,-1)
@@ -102,10 +105,9 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
       const sy = Number(item.y);
       const w = Number(item.width);
       const h = Number(item.height);
-      // Legacy + stale rows land in the container:
-      //   - bag not active (or bagId points at an artifact id, not a row id)
-      //   - slot coords out of the bag's effective footprint
-      //   - pre-refactor (-1,-1) sentinel
+      // Stale rows land in the container:
+      //   - bag not currently active (so it isn't in the layout map)
+      //   - slot coords outside the bag's effective footprint
       const inBounds =
         bag &&
         sx >= 0 && sy >= 0 &&

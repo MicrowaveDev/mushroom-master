@@ -106,11 +106,8 @@ export async function readCurrentRoundItems(client, gameRunId, playerId, roundNu
  * round, so copy-forward builds an old-id → new-id map in a first pass
  * over non-bagged rows (which include the bag rows themselves), then
  * uses that map to rewrite `bag_id` on bagged rows in a second pass.
- *
- * Legacy rows where `bag_id` is an artifactId fall through the map
- * untranslated — the client-side projection fallback routes those to the
- * container so they can be re-placed on the next Ready. This keeps
- * copy-forward free of any legacy-format awareness.
+ * A bagged row whose bag_id doesn't resolve in the map is corrupt; throw
+ * loudly rather than carry the dangling reference forward.
  */
 export async function copyRoundForward(client, gameRunId, playerId, fromRound, toRound) {
   const current = await readCurrentRoundItems(client, gameRunId, playerId, fromRound);
@@ -141,6 +138,10 @@ export async function copyRoundForward(client, gameRunId, playerId, fromRound, t
     oldToNewId.set(item.id, newId);
   }
   for (const item of bagged) {
+    const remappedBagId = oldToNewId.get(item.bagId);
+    if (!remappedBagId) {
+      throw new Error(`copy-forward: bagged row ${item.id} references unknown bag ${item.bagId}`);
+    }
     await insertLoadoutItem(client, {
       gameRunId,
       playerId,
@@ -150,7 +151,7 @@ export async function copyRoundForward(client, gameRunId, playerId, fromRound, t
       y: item.y,
       width: item.width,
       height: item.height,
-      bagId: oldToNewId.get(item.bagId) || item.bagId,
+      bagId: remappedBagId,
       sortOrder: item.sortOrder,
       purchasedRound: item.purchasedRound,
       freshPurchase: false,

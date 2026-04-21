@@ -78,14 +78,15 @@ Validation runs against the full projected layout:
 
 - `validateGridItems` enforces base-grid bounds and overlap on non-bagged
   rows (`!item.bagId`).
-- `validateBagContents` catalogs bag rows by row id, then for each
-  bagged item resolves `bagId` to a bag row, enforces slot bounds
+- `validateBagContents` catalogs bag rows by row id (every bag row MUST
+  carry its loadout row id), then for each bagged item resolves `bagId`
+  to a bag row, enforces slot bounds
   (`0 <= x, y; x+w <= bag.cols; y+h <= bag.rows`), checks per-bag
   overlap, and caps total footprint at the bag's `slotCount`.
 
 An invalid bagged-item write — slot coords outside the bag's footprint,
-duplicate slot occupation, orphan `bag_id`, or bag-inside-bag — is
-rejected before any DB write.
+duplicate slot occupation, orphan `bag_id`, bag-inside-bag, or a bag row
+missing its id — is rejected before any DB write.
 
 ### Copy-forward — round N → N+1
 
@@ -97,11 +98,9 @@ stays identical. The helper runs in two passes:
    themselves**) and record `oldId → newId` in a map.
 2. Insert every bagged row, remapping its `bag_id` through that map so
    the round N+1 bagged item points at the round N+1 bag row, not the
-   now-defunct round N one.
-
-Legacy rows whose `bag_id` happened to be an artifact id (pre-refactor
-format) pass through the map untranslated; the client-side projection
-fallback routes them to the container on the next hydrate.
+   now-defunct round N one. A bagged row whose `bag_id` doesn't resolve
+   in the map is corrupt; copy-forward throws rather than carrying the
+   dangling reference forward.
 
 ### Projection — client hydrate
 
@@ -117,14 +116,14 @@ runs in two passes:
    footprint, push a builderItem at virtual `(x, startRow + y)` and keep
    `bagId = row id` so downstream ops can disambiguate duplicates.
    Otherwise, drop to the container:
-   - `bagId` is an artifact id (pre-refactor) → map miss → container.
-   - `bagId` points at an inactive bag → container.
-   - slot coords out of bounds → container (covers both stale rotation
-     and fully malformed rows).
+   - `bagId` points at an inactive bag (not in the active-bag layout
+     map) → container.
+   - slot coords out of bounds → container (covers stale rotation +
+     malformed rows).
 
-The fallback is deliberately graceful — no items are dropped, and the
-next save re-persists with a valid slot-coord row under the new
-contract.
+The fallback is defensive, not a legacy-format compatibility shim — no
+items are dropped, and the user can re-place anything that wound up in
+the container.
 
 ## Architecture
 
@@ -204,12 +203,7 @@ round-trip it.
 
 - **Schema migration.** `x, y, bag_id` column types stay as-is; only
   their semantic interpretation for bagged rows changes. No `ALTER
-  TABLE` required.
-- **Backfilling legacy rows.** The projection fallback self-heals on
-  the next save cycle, so any pre-refactor bagged rows render as
-  container items on first hydrate and re-persist with slot coords
-  after the player interacts with them. This is acceptable because
-  the data is pre-production.
+  TABLE` required. No production data exists yet.
 - **Validating non-rectangular bag footprints.** All current bags are
   rectangular; the slot-bounds check is sufficient. If a future bag
   has an L-shape or offset rows, extend `validateBagContents` with a
@@ -224,8 +218,8 @@ round-trip it.
 - **Server unit (validator)** —
   [validator-split.test.js](../tests/game/validator-split.test.js)
   pins: slot-bounds rejection, per-bag overlap rejection, duplicate-bag
-  disambiguation by row id, slotCount ceiling, and the legacy
-  artifactId fallback.
+  disambiguation by row id, slotCount ceiling, rejection of bagId that
+  isn't a row id, rejection of a bag row missing its loadout id.
 - **Server scenario (copy-forward)** —
   [bag-items.test.js](../tests/game/bag-items.test.js)
   `[Req 12-D, 5-A]` drives the full round-trip: `PUT /artifact-loadout`
@@ -235,8 +229,7 @@ round-trip it.
 - **Client projection** —
   [loadout-projection.test.js](../tests/web/loadout-projection.test.js)
   pins: slot-to-virtual y reconstruction (single bag, multi-bag,
-  duplicate bags), legacy `bagId = artifactId` fallback, legacy
-  `(-1, -1)` fallback, inactive-bag fallback, out-of-bounds fallback.
+  duplicate bags), inactive-bag fallback, out-of-bounds fallback.
 - **Client composable (relayout)** —
   [use-shop.test.js](../tests/web/use-shop.test.js) pins: deactivating
   an empty earlier bag succeeds and shifts a later bag's items up by
@@ -246,12 +239,6 @@ round-trip it.
 
 ## Open follow-ups
 
-- Move the slot-bounds check into `validateBagContents` as a hard
-  contract (done) — the client-side projection fallback can eventually
-  become a loud rejection rather than a silent container drop once
-  we're confident all writers emit slot coords. Currently the fallback
-  is load-bearing for the legacy `bag_id = artifactId` shape; keep it
-  until that shape is demonstrably absent from all live runs.
 - If bag layouts ever grow non-rectangular shapes (L-shape, offset
   rows), extend the bounds check in `validateBagContents` with a
   shape-aware occupancy map. Storage doesn't change.

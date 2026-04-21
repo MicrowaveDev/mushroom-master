@@ -88,17 +88,7 @@ test('validateGridItems: rejects wrong dimensions', () => {
   );
 });
 
-test('validateBagContents: bagged item references active bag (by artifactId, legacy fallback)', () => {
-  // Before the bag-slot-coords refactor, bagId was an artifactId. The
-  // validator still resolves bagId=artifactId for in-test synthetic
-  // payloads so unit callers don't need to mint row ids.
-  validateBagContents([
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
-  ]);
-});
-
-test('validateBagContents: bagged item references active bag (by row id, canonical)', () => {
+test('validateBagContents: bagged item references active bag by row id', () => {
   // Canonical path: the bag row has an id, and the bagged item's bagId
   // points at that id. This is what applyRunPlacements produces at runtime.
   validateBagContents([
@@ -107,11 +97,34 @@ test('validateBagContents: bagged item references active bag (by row id, canonic
   ]);
 });
 
+test('validateBagContents: rejects bagId that is an artifactId rather than a row id', () => {
+  // bagId MUST be a loadout row id. Sending the artifactId is the legacy
+  // shape; the validator rejects it because no row id matches.
+  assert.throws(
+    () => validateBagContents([
+      { id: 'bag_row_1', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
+    ]),
+    /not placed on the grid/
+  );
+});
+
+test('validateBagContents: rejects a bag row missing its loadout row id', () => {
+  // Bag rows must carry their `id` so bagged items can reference them.
+  // A bag row without an id is malformed and is rejected loudly.
+  assert.throws(
+    () => validateBagContents([
+      { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 }
+    ]),
+    /must carry a loadout row id/
+  );
+});
+
 test('[Req 5-A] validateBagContents: rejects bag-inside-bag', () => {
   assert.throws(
     () => validateBagContents([
-      { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-      { artifactId: 'amber_satchel', x: 0, y: 0, width: 2, height: 2, bagId: 'moss_pouch' }
+      { id: 'bag_row', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+      { id: 'inner', artifactId: 'amber_satchel', x: 0, y: 0, width: 2, height: 2, bagId: 'bag_row' }
     ]),
     /cannot contain other bags/
   );
@@ -132,17 +145,17 @@ test('[Req 5-B, 5-C] validateBagContents: enforces slotCount footprint limit', (
   // slot — must be rejected: bounds, overlap, or slotCount are the three
   // lines of defence and any of them firing is an equivalent pass.
   validateBagContents([
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'moss_pouch' },
-    { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
+    { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { id: 'a', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'bag' },
+    { id: 'b', artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1, bagId: 'bag' }
   ]);
 
   assert.throws(
     () => validateBagContents([
-      { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'moss_pouch' },
-      { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1, bagId: 'moss_pouch' },
-      { artifactId: 'shock_puff', x: 0, y: 1, width: 1, height: 1, bagId: 'moss_pouch' }
+      { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+      { id: 'a', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'bag' },
+      { id: 'b', artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1, bagId: 'bag' },
+      { id: 'c', artifactId: 'shock_puff', x: 0, y: 1, width: 1, height: 1, bagId: 'bag' }
     ]),
     /out of bounds|cannot overlap|is full/
   );
@@ -153,8 +166,8 @@ test('[Req 5-A] validateBagContents: rejects bagged-item slot coords outside bag
   // is past the right edge.
   assert.throws(
     () => validateBagContents([
-      { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-      { artifactId: 'spore_needle', x: 2, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
+      { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+      { id: 'oob', artifactId: 'spore_needle', x: 2, y: 0, width: 1, height: 1, bagId: 'bag' }
     ]),
     /out of bounds/
   );
@@ -164,9 +177,9 @@ test('validateBagContents: rejects bagged items that overlap inside the same bag
   // Two 1×1 items claiming slot (0, 0) — second one must be rejected.
   assert.throws(
     () => validateBagContents([
-      { artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 },
-      { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'amber_satchel' },
-      { artifactId: 'bark_plate', x: 0, y: 0, width: 1, height: 1, bagId: 'amber_satchel' }
+      { id: 'bag', artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 },
+      { id: 'a', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'bag' },
+      { id: 'b', artifactId: 'bark_plate', x: 0, y: 0, width: 1, height: 1, bagId: 'bag' }
     ]),
     /cannot overlap/
   );

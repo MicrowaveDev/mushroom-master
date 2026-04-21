@@ -59,8 +59,8 @@ test('[Req 3-D, 5-F] combatArtifacts excludes bags, starter-only, and character 
 
 test('[Req 5-A] validateLoadoutItems accepts bag off grid alongside placed item', () => {
   const items = [
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
+    { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { id: 'item', artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
   assert.equal(result.items.length, 2);
@@ -77,11 +77,11 @@ test('[Req 5-A] validateLoadoutItems rejects bag with grid coordinates', () => {
 });
 
 test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
-  // bagId resolves via the legacy artifactId fallback (synthetic payload
-  // without row ids — see docs/bag-item-placement-persistence.md).
+  // bagId references the bag row's loadout id; the synthetic payload
+  // mints stable test ids (see docs/bag-item-placement-persistence.md).
   const items = [
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: 0, width: 1, height: 1 }
+    { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { id: 'inside', artifactId: 'spore_needle', bagId: 'bag', x: 0, y: 0, width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
   assert.equal(result.items.length, 2);
@@ -89,8 +89,8 @@ test('[Req 2-B] validateLoadoutItems accepts artifact inside bag', () => {
 
 test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
   const items = [
-    { artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 },
-    { artifactId: 'moss_pouch', bagId: 'amber_satchel', x: 0, y: 0, width: 1, height: 2 }
+    { id: 'outer', artifactId: 'amber_satchel', x: -1, y: -1, width: 2, height: 2 },
+    { id: 'inner', artifactId: 'moss_pouch', bagId: 'outer', x: 0, y: 0, width: 1, height: 2 }
   ];
   assert.throws(
     () => validateLoadoutItems(items, 20),
@@ -99,14 +99,14 @@ test('[Req 5-A] validateLoadoutItems rejects bag inside bag', () => {
 });
 
 test('[Req 5-B, 5-C] validateLoadoutItems rejects items exceeding bag slotCount', () => {
-  // moss_pouch has slotCount=2 / footprint 1×2 — the third 1×1 item must
+  // moss_pouch has slotCount=2 / footprint 2×1 — the third 1×1 item must
   // be rejected by either the slot-bounds check, the overlap check, or the
   // slotCount ceiling depending on where the caller places it.
   const items = [
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: 0, width: 1, height: 1 },
-    { artifactId: 'bark_plate', bagId: 'moss_pouch', x: 0, y: 1, width: 1, height: 1 },
-    { artifactId: 'shock_puff', bagId: 'moss_pouch', x: 0, y: 2, width: 1, height: 1 }
+    { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { id: 'a', artifactId: 'spore_needle', bagId: 'bag', x: 0, y: 0, width: 1, height: 1 },
+    { id: 'b', artifactId: 'bark_plate', bagId: 'bag', x: 1, y: 0, width: 1, height: 1 },
+    { id: 'c', artifactId: 'shock_puff', bagId: 'bag', x: 0, y: 1, width: 1, height: 1 }
   ];
   assert.throws(
     () => validateLoadoutItems(items, 20),
@@ -116,8 +116,8 @@ test('[Req 5-B, 5-C] validateLoadoutItems rejects items exceeding bag slotCount'
 
 test('[Req 5-A] validateLoadoutItems rejects item in bag not on grid', () => {
   const items = [
-    { artifactId: 'spore_needle', bagId: 'moss_pouch', x: 0, y: 0, width: 1, height: 1 }
-    // moss_pouch not in the loadout
+    { id: 'orphan', artifactId: 'spore_needle', bagId: 'phantom_bag_id', x: 0, y: 0, width: 1, height: 1 }
+    // No bag row carrying id="phantom_bag_id" exists in the loadout.
   ];
   assert.throws(
     () => validateLoadoutItems(items, 10),
@@ -127,8 +127,8 @@ test('[Req 5-A] validateLoadoutItems rejects item in bag not on grid', () => {
 
 test('[Req 5-F] buildArtifactSummary excludes bags from combat stats', () => {
   const items = [
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
+    { id: 'bag', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { id: 'item', artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1 }
   ];
   const result = validateLoadoutItems(items, 10);
   // Bags have empty bonus, so totals should only reflect spore_needle (damage: 2)
@@ -361,9 +361,11 @@ test('[Req 4-L] sellRunItem blocks selling non-empty bag', async () => {
   const run = await startGameRun(session.player.id, 'solo');
 
   // Seed a bag with an item inside it directly into the run-scoped table.
+  // bag_id on the bagged row references the bag's own loadout row id, so
+  // the seed pins both with explicit ids.
   await seedRunLoadout(session.player.id, run.id, [
-    { artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
-    { artifactId: 'spore_needle', x: 1, y: 0, width: 1, height: 1, bagId: 'moss_pouch' }
+    { id: 'pouch_row', artifactId: 'moss_pouch', x: -1, y: -1, width: 1, height: 2 },
+    { id: 'inside_pouch', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1, bagId: 'pouch_row' }
   ]);
 
   await assert.rejects(

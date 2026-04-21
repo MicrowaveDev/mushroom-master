@@ -132,43 +132,6 @@ test('[projection] items in the second active bag land past the first bag\u2019s
   assert.equal(result.builderItems[0].y, 4);
 });
 
-test('[regression] legacy bagId = artifactId falls back to containerItems', () => {
-  // Pre-refactor rows carry bagId = "moss_pouch" (artifact id) instead of
-  // the bag's loadout row id. The projection's row-id lookup misses, so
-  // the item goes to the container. Next save re-persists with a proper
-  // bag row id.
-  const result = projectLoadoutItems([
-    row({ id: 'g', artifactId: 'moss_pouch', active: true }),
-    row({
-      id: 'legacy',
-      artifactId: 'spore_needle',
-      bagId: 'moss_pouch',
-      x: 0,
-      y: 0
-    })
-  ], BAG_IDS, getArtifact);
-  assert.equal(result.builderItems.length, 0, 'legacy row must not pollute the grid');
-  assert.equal(result.containerItems.length, 1);
-  assert.equal(result.containerItems[0].id, 'legacy');
-});
-
-test('[regression] legacy bagged items at (-1,-1) fall back to containerItems', () => {
-  const result = projectLoadoutItems([
-    row({ id: 'g', artifactId: 'moss_pouch', active: true }),
-    row({
-      id: 'legacy',
-      artifactId: 'spore_needle',
-      bagId: 'g',
-      x: -1,
-      y: -1
-    })
-  ], BAG_IDS, getArtifact);
-  assert.equal(result.activeBags.length, 1);
-  assert.equal(result.builderItems.length, 0);
-  assert.equal(result.containerItems.length, 1);
-  assert.equal(result.containerItems[0].id, 'legacy');
-});
-
 test('[regression] bagged item referencing an inactive bag falls back to containerItems', () => {
   // Bag was deactivated but its bagged item still references it. The
   // projection should not render the item on the grid.
