@@ -1,26 +1,30 @@
 {
   "task": "bag-slot-coords-refactor",
   "status": "PASS",
-  "summary": "Bagged-item storage migrated from virtual grid coords to slot coords; bag_id tightened from artifactId to loadout row id. Full 297-test suite green.",
+  "note": "HISTORICAL. This verdict captures the initial slot-coords refactor only. The same session shipped three follow-on waves on top — legacy-strip, path-fix, and tetromino bag shapes. AC8's legacy-fallback PASS was reverted by the legacy-strip wave. Current contract lives in docs/bag-item-placement-persistence.md. Current test total is 311/311 unit+scenario (+13 bag-shape, +2 use-shop) with 17/17 bag-relevant Playwright e2e.",
+  "summary": "Bagged-item storage migrated from virtual grid coords to slot coords; bag_id tightened from artifactId to loadout row id. Full 297-test suite green at ship time.",
   "acceptance_criteria": {
     "AC1": { "status": "PASS", "proof": "tests/game/bag-items.test.js [Req 12-D, 5-A] asserts round1Bagged.y === 0 (slot coord, not INVENTORY_ROWS virtual coord) after PUT." },
     "AC2": { "status": "PASS", "proof": "Same scenario asserts round1Bagged.bag_id === round1BagRowId (SELECTed from the bag's own row), not the 'moss_pouch' artifact id." },
-    "AC3": { "status": "PASS", "proof": "Same scenario asserts round2BagRowId !== round1BagRowId and zero orphan rows; copyRoundForward two-pass map implementation in app/server/services/game-run-loadout.js." },
-    "AC4": { "status": "PASS", "proof": "tests/game/validator-split.test.js — slot-bounds rejection, per-bag overlap rejection, duplicate-bag row-id disambiguation." },
+    "AC3": { "status": "PASS", "proof": "Same scenario asserts round2BagRowId !== round1BagRowId and zero orphan rows; copyRoundForward two-pass map implementation in app/server/services/game-run-loadout.js. Later strengthened by the legacy-strip wave to throw on dangling bag_id references instead of propagating them." },
+    "AC4": { "status": "PASS", "proof": "tests/game/validator-split.test.js — slot-bounds rejection, per-bag overlap rejection, duplicate-bag row-id disambiguation. Extended by the tetromino-shapes wave with shape-mask slot-cell enforcement." },
     "AC5": { "status": "PASS", "proof": "web/src/composables/useGameRun.js:buildLoadoutPayloadItems emits y: item.y - info.startRow and bagId: info.bagRowId. End-to-end exercised by the AC1/AC2 scenario." },
-    "AC6": { "status": "PASS", "proof": "tests/web/loadout-projection.test.js — slot-to-virtual reconstruction (single, second-slot, multi-bag, duplicate-bag) + legacy/inactive/OOB fallbacks." },
+    "AC6": { "status": "PASS", "proof": "tests/web/loadout-projection.test.js — slot-to-virtual reconstruction (single, second-slot, multi-bag, duplicate-bag). The legacy-fallback cases cited at ship time (bagId=artifactId, (-1,-1)) were removed in the legacy-strip wave; the inactive-bag and OOB fallbacks remain as defensive runtime guards." },
     "AC7": { "status": "PASS", "proof": "tests/web/use-shop.test.js [bag-relayout] — deactivate earlier empty bag shifts later bag's items up; rotate earlier empty bag shifts later bag's items by rowCount delta; deactivate non-empty bag stays blocked." },
-    "AC8": { "status": "PASS", "proof": "tests/web/loadout-projection.test.js three regression tests pin container fallback for bagId=artifactId, (-1,-1), and inactive-bag cases." }
+    "AC8": { "status": "SUPERSEDED", "proof": "Shipped with the projection fallback absorbing legacy-format rows. Subsequently reverted by the legacy-strip wave (the app never reached production so no legacy data exists). Current contract: the validator throws on missing bag row ids, and the projection routes only inactive-bag / OOB cases to the container. See tests/game/validator-split.test.js 'rejects bagId that is an artifactId rather than a row id' and 'rejects a bag row missing its loadout row id'." }
   },
   "test_sweep": {
     "command": "node --test tests/game/*.test.js tests/web/*.test.js",
-    "tests": 297,
-    "pass": 297,
-    "fail": 0,
+    "tests_at_ship": 297,
+    "pass_at_ship": 297,
+    "fail_at_ship": 0,
+    "tests_current": 311,
+    "pass_current": 311,
+    "fail_current": 0,
     "raw_output": ".agent/tasks/bag-slot-coords-refactor/raw/full-sweep.txt"
   },
   "out_of_scope": [
-    "Playwright round-2 prep screenshot — DB + projection unit tests cover the invariants; dev stack not spun up for this task.",
-    "SQL backfill of legacy rows — explicit non-goal, pre-production data only, projection fallback absorbs legacy shapes."
+    "Playwright round-2 prep screenshot — DB + projection unit tests cover the invariants; dev stack not spun up for this task. (Subsequently covered by the full Playwright bag-relevant suite once the path-fix wave landed.)",
+    "SQL backfill of legacy rows — explicit non-goal, pre-production data only, projection fallback absorbs legacy shapes. (Subsequently strengthened to loud rejection by the legacy-strip wave.)"
   ]
 }

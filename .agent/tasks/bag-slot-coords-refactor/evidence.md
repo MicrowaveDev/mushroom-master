@@ -1,5 +1,20 @@
 # Evidence — bag-slot-coords-refactor
 
+> **Historical ship record — read the current contract in
+> [docs/bag-item-placement-persistence.md](../../../docs/bag-item-placement-persistence.md).**
+>
+> This evidence bundle covers the *initial* slot-coords refactor only.
+> Three follow-on waves landed in the same session and aren't reflected
+> here: legacy `bag_id=artifactId` handling was stripped, hardcoded
+> absolute paths were replaced with `app/shared/repo-root.js`, and
+> tetromino bag shapes shipped (see the "Non-rectangular bag shapes"
+> section in the current contract doc). The AC8 PASS below ("Legacy
+> rows self-heal via projection fallback") was specifically *reverted*
+> by the legacy-strip wave — the projection now rejects those shapes
+> via the inactive-bag / out-of-bounds path instead of absorbing them.
+> Total verification state after all four waves: 311/311 unit+scenario,
+> 17/17 bag-relevant Playwright e2e.
+
 ## Summary
 
 Reworked `game_run_loadout_items` bagged-row semantics from virtual grid

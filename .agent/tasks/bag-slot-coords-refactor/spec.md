@@ -1,5 +1,37 @@
 # Task: Bag Slot Coords Refactor
 
+> **Historical ship record — read the current contract in
+> [docs/bag-item-placement-persistence.md](../../../docs/bag-item-placement-persistence.md).**
+>
+> This spec froze the *initial* slot-coords refactor. Three more waves
+> landed on top in the same session and this file does **not** reflect
+> them:
+>
+> 1. **Legacy strip** — the `bag_id = artifactId` / `(-1, -1)` sentinel
+>    fallbacks in the validator, projection, and copy-forward were
+>    removed. Any bagged row must now carry an `id`, and bagged items
+>    must reference their bag's loadout row id. The AC8 bullet below
+>    ("Legacy rows route to `containerItems` via the projection fallback")
+>    is therefore **superseded** — projection now rejects those shapes
+>    via the stale/inactive-bag path, and copy-forward throws on
+>    dangling `bag_id` references.
+> 2. **Path-fix** — hardcoded `/Users/microwavedev/workspace/mushroom-master`
+>    paths across server, scripts, tests, and the Vite config were
+>    replaced with an `app/shared/repo-root.js` helper. Orthogonal to
+>    the bag contract; mentioned only because the same session shipped
+>    it and it's what first made Playwright e2e runnable from the
+>    submodule checkout.
+> 3. **Tetromino bag shapes** — bag artifacts may now carry an explicit
+>    2D `shape` mask, and the Non-goals bullet on "non-rectangular bag
+>    footprints" is no longer a non-goal. The validator enforces the
+>    mask, and six tetromino bags ship today (I, T, L, J, S, Z). See
+>    the "Non-rectangular bag shapes" section in the current contract
+>    doc.
+>
+> The criteria below are preserved verbatim so the reader can see what
+> this initial refactor was scoped to. Do not propose fixes against
+> them without checking the current contract doc first.
+
 ## Source of truth
 
 ### Original user request
