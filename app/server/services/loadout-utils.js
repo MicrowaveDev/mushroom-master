@@ -7,6 +7,7 @@ import {
   MAX_STUN_CHANCE
 } from '../game-data.js';
 import { clamp } from '../lib/utils.js';
+import { getEffectiveShape, isCellInShape } from '../../shared/bag-shape.js';
 import {
   contributesStats,
   isBag,
@@ -98,7 +99,9 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
  * carry their `id`. See docs/bag-item-placement-persistence.md.
  */
 export function validateBagContents(items) {
-  // First pass: catalog bag rows by their loadout row id.
+  // First pass: catalog bag rows by their loadout row id, capturing the
+  // effective shape mask (rotation-aware) so pass 2 can enforce per-cell
+  // bounds for tetromino-shaped bags as well as rectangles.
   const bagsByRowId = new Map();
   for (const item of items) {
     if (item.bagId) continue;
@@ -108,18 +111,15 @@ export function validateBagContents(items) {
       throw new Error(`Bag row for ${item.artifactId} must carry a loadout row id`);
     }
     const rotated = !!item.rotated;
-    const cols = Math.min(
-      INVENTORY_COLUMNS,
-      rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height)
-    );
-    const rows = rotated
-      ? Math.max(artifact.width, artifact.height)
-      : Math.min(artifact.width, artifact.height);
+    const shape = getEffectiveShape(artifact, rotated);
+    const cols = shape.length > 0 ? shape[0].length : 0;
+    const rows = shape.length;
     bagsByRowId.set(item.id, {
       artifactId: item.artifactId,
       slotCount: artifact.slotCount,
-      cols,
+      cols: Math.min(cols, INVENTORY_COLUMNS),
       rows,
+      shape,
       slotUsage: 0,
       occupied: new Set()
     });
@@ -149,7 +149,12 @@ export function validateBagContents(items) {
     }
     for (let dx = 0; dx < w; dx += 1) {
       for (let dy = 0; dy < h; dy += 1) {
-        const key = `${x + dx}:${y + dy}`;
+        const cellX = x + dx;
+        const cellY = y + dy;
+        if (!isCellInShape(bag.shape, cellX, cellY)) {
+          throw new Error(`Bagged item ${item.artifactId} occupies a non-slot cell of bag ${bag.artifactId}`);
+        }
+        const key = `${cellX}:${cellY}`;
         if (bag.occupied.has(key)) {
           throw new Error(`Bagged items cannot overlap inside bag ${bag.artifactId}`);
         }

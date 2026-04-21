@@ -487,6 +487,123 @@ export const artifacts = [
     slotCount: 4,
     color: '#d4a54a',
     bonus: {}
+  },
+  // --- Tetromino-shaped bags (slotCount=4, irregular footprint) ---
+  // shape[y][x] = 1 means the cell is part of the bag, 0 means it's empty
+  // space inside the bounding box. See app/shared/bag-shape.js. The seven
+  // tetrominoes are I, O, T, L, J, S, Z; O is amber_satchel above.
+  {
+    // T-tetromino, pointing down. 3×2.
+    //   ###
+    //   .#.
+    id: 'trefoil_sack',
+    name: { ru: 'Трилистник', en: 'Trefoil Sack' },
+    family: 'bag',
+    width: 3,
+    height: 2,
+    price: 3,
+    slotCount: 4,
+    color: '#a070c0',
+    shape: [
+      [1, 1, 1],
+      [0, 1, 0]
+    ],
+    bonus: {}
+  },
+  {
+    // L-tetromino, foot to the left. 3×2.
+    //   ###
+    //   #..
+    id: 'birchbark_hook',
+    name: { ru: 'Берестяной Крюк', en: 'Birchbark Hook' },
+    family: 'bag',
+    width: 3,
+    height: 2,
+    price: 3,
+    slotCount: 4,
+    color: '#c47a3d',
+    shape: [
+      [1, 1, 1],
+      [1, 0, 0]
+    ],
+    bonus: {}
+  },
+  {
+    // J-tetromino, foot to the right. 3×2.
+    //   ###
+    //   ..#
+    id: 'hollow_log',
+    name: { ru: 'Дуплистое Бревно', en: 'Hollow Log' },
+    family: 'bag',
+    width: 3,
+    height: 2,
+    price: 3,
+    slotCount: 4,
+    color: '#7a5235',
+    shape: [
+      [1, 1, 1],
+      [0, 0, 1]
+    ],
+    bonus: {}
+  },
+  {
+    // S-tetromino. 3×2.
+    //   .##
+    //   ##.
+    id: 'twisted_stalk',
+    name: { ru: 'Витой Стебель', en: 'Twisted Stalk' },
+    family: 'bag',
+    width: 3,
+    height: 2,
+    price: 3,
+    slotCount: 4,
+    color: '#5fa86c',
+    shape: [
+      [0, 1, 1],
+      [1, 1, 0]
+    ],
+    bonus: {}
+  },
+  {
+    // Z-tetromino. 3×2.
+    //   ##.
+    //   .##
+    id: 'spiral_cap',
+    name: { ru: 'Спиральная Шляпка', en: 'Spiral Cap' },
+    family: 'bag',
+    width: 3,
+    height: 2,
+    price: 3,
+    slotCount: 4,
+    color: '#b85a6e',
+    shape: [
+      [1, 1, 0],
+      [0, 1, 1]
+    ],
+    bonus: {}
+  },
+  {
+    // I-tetromino, vertical. 1×4. Fixed orientation — a horizontal I-bag
+    // would need 4 columns, exceeding INVENTORY_COLUMNS=3.
+    //   #
+    //   #
+    //   #
+    //   #
+    id: 'mycelium_vine',
+    name: { ru: 'Грибная Лоза', en: 'Mycelium Vine' },
+    family: 'bag',
+    width: 1,
+    height: 4,
+    price: 3,
+    slotCount: 4,
+    color: '#6e9bbf',
+    shape: [
+      [1],
+      [1],
+      [1],
+      [1]
+    ],
+    bonus: {}
   }
 ];
 

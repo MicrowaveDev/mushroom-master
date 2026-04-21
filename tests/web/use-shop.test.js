@@ -31,7 +31,16 @@ const ARTIFACTS = [
   // moss_pouch: 1×2 → default orientation cols=2, rows=1 (adds 1 bag row)
   { id: 'moss_pouch', family: 'bag', width: 1, height: 2, price: 2, slotCount: 2, bonus: {} },
   // amber_satchel: 2×2 → cols=2, rows=2 (adds 2 bag rows)
-  { id: 'amber_satchel', family: 'bag', width: 2, height: 2, price: 3, slotCount: 4, bonus: {} }
+  { id: 'amber_satchel', family: 'bag', width: 2, height: 2, price: 3, slotCount: 4, bonus: {} },
+  // T-tetromino bag: 3×2 with shape mask. Slots at (0,0), (1,0), (2,0), (1,1).
+  // Used to pin shape-aware drop targeting and bagged-item rendering.
+  {
+    id: 'trefoil_sack', family: 'bag', width: 3, height: 2, price: 3, slotCount: 4, bonus: {},
+    shape: [
+      [1, 1, 1],
+      [0, 1, 0]
+    ]
+  }
 ];
 
 function makeFreshState() {
@@ -217,6 +226,49 @@ test('deactivateBag still works when no downstream items exist', () => {
   );
   assert.ok(state.containerItems.some((s) => s.artifactId === 'moss_pouch'));
   assert.equal(state.error, '');
+});
+
+test('[bag-shape] container drop into a non-shape cell of a tetromino bag is rejected', () => {
+  // T-bag (trefoil_sack) at virtual rows 3..4. Slot (0, 4) — inventory (0, 4)
+  // — is the bottom-left empty corner of the T, NOT a slot. Drag must not
+  // place there and the item must remain in the container.
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'trefoil_sack');
+  shop.activateBag('trefoil_sack');
+
+  const containerSlot = state.containerItems.find((s) => s.artifactId === 'bark_plate');
+  assert.equal(containerSlot, undefined, 'precondition: no bark_plate yet');
+  const rowId = seedContainer(state, 'bark_plate');
+  state.draggingArtifactId = 'bark_plate';
+  state.draggingSource = 'container';
+  shop.onInventoryCellDrop({ x: 0, y: 4 });
+  state.draggingArtifactId = '';
+  state.draggingSource = '';
+
+  assert.equal(state.builderItems.find((i) => i.artifactId === 'bark_plate'), undefined,
+    'item must NOT land on a non-shape cell of the T-bag');
+  assert.ok(
+    state.containerItems.some((s) => s.id === rowId),
+    'container slot must still hold the un-placed bark_plate'
+  );
+});
+
+test('[bag-shape] container drop into a shape cell of a tetromino bag succeeds', () => {
+  // The T-bag's bottom row only has slot (1, 1) filled. Inventory virtual y=4
+  // → slotY=1. Drop bark_plate at (1, 4) and it should land.
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'trefoil_sack');
+  shop.activateBag('trefoil_sack');
+  const tBagId = state.activeBags.find((b) => b.artifactId === 'trefoil_sack').id;
+
+  dropFromContainer(shop, state, 'bark_plate', 1, 4);
+  const placed = state.builderItems.find((i) => i.artifactId === 'bark_plate');
+  assert.ok(placed, 'item lands inside the T-bag');
+  assert.equal(placed.x, 1);
+  assert.equal(placed.y, 4);
+  assert.equal(placed.bagId, tBagId, 'bagId reflects the T-bag row id');
 });
 
 test('onInventoryCellDrop (source=inventory) rejects drops into disabled bag cells', () => {

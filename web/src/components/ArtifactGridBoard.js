@@ -71,6 +71,10 @@ export const ArtifactGridBoard = {
       const bag = this.bagRowForCell(index);
       if (!bag) return false;
       const xInRow = this.cellX(index);
+      // Tetromino-shaped bags expose `enabledCells` (the x positions in
+      // this row that are actual slots). Pre-shape rectangular bags can
+      // keep the legacy `slotCount` shape (= [0..slotCount-1]).
+      if (bag.enabledCells) return !bag.enabledCells.includes(xInRow);
       return xInRow >= bag.slotCount;
     },
     cellClass(index) {

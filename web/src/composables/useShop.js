@@ -1,5 +1,6 @@
 import { INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
+import { getEffectiveShape, isCellInShape } from '../../../app/shared/bag-shape.js';
 import { messages } from '../i18n.js';
 
 export function useShop(state, getArtifact, persistRunLoadout) {
@@ -9,11 +10,12 @@ export function useShop(state, getArtifact, persistRunLoadout) {
 
   function bagLayout(bagId) {
     const bag = getArtifact(bagId);
-    if (!bag) return { cols: INVENTORY_COLUMNS, rows: 1 };
+    if (!bag) return { cols: INVENTORY_COLUMNS, rows: 1, shape: [] };
     const rotated = isBagRotated(bagId);
-    const cols = rotated ? Math.min(bag.width, bag.height) : Math.max(bag.width, bag.height);
-    const rows = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
-    return { cols: Math.min(cols, INVENTORY_COLUMNS), rows };
+    const shape = getEffectiveShape(bag, rotated);
+    const cols = shape.length > 0 ? shape[0].length : 0;
+    const rows = shape.length;
+    return { cols: Math.min(cols, INVENTORY_COLUMNS), rows, shape };
   }
 
   function bagRowCount(bagId) {
@@ -27,7 +29,8 @@ export function useShop(state, getArtifact, persistRunLoadout) {
   function bagForRow(row) {
     let r = INVENTORY_ROWS;
     for (const bag of state.activeBags) {
-      const count = bagRowCount(bag.artifactId);
+      const layout = bagLayout(bag.artifactId);
+      const count = layout.rows;
       if (row >= r && row < r + count) {
         return {
           // Loadout row id of the bag. This is the stable identity used for
@@ -38,7 +41,8 @@ export function useShop(state, getArtifact, persistRunLoadout) {
           bagArtifactId: bag.artifactId,
           startRow: r,
           rowCount: count,
-          cols: bagLayout(bag.artifactId).cols
+          cols: layout.cols,
+          shape: layout.shape
         };
       }
       r += count;
@@ -50,7 +54,11 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     const info = bagForRow(cy);
     if (cy >= INVENTORY_ROWS && !info) return true;
     if (!info) return false;
-    return cx >= info.cols;
+    if (cx >= info.cols) return true;
+    // Tetromino-shaped bags expose a per-cell mask; cells outside the
+    // mask are visual gaps within the bag's bounding box.
+    const localY = cy - info.startRow;
+    return !isCellInShape(info.shape, cx, localY);
   }
 
   // Build the current virtual-row layout for every active bag, keyed by the
@@ -63,12 +71,10 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       const artifact = getArtifact(bag.artifactId);
       if (!artifact) continue;
       const rotated = rotatedIds.has(bag.id);
-      const cols = Math.min(
-        INVENTORY_COLUMNS,
-        rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height)
-      );
-      const rows = rotated ? Math.max(artifact.width, artifact.height) : Math.min(artifact.width, artifact.height);
-      layout.set(bag.id, { startRow: r, rowCount: rows, cols });
+      const shape = getEffectiveShape(artifact, rotated);
+      const cols = Math.min(INVENTORY_COLUMNS, shape.length > 0 ? shape[0].length : 0);
+      const rows = shape.length;
+      layout.set(bag.id, { startRow: r, rowCount: rows, cols, shape });
       r += rows;
     }
     return layout;
@@ -94,9 +100,21 @@ export function useShop(state, getArtifact, persistRunLoadout) {
         continue;
       }
       const slotY = item.y - oldBag.startRow;
-      // If the new bag's footprint can't hold this item, displace it too
-      // — the validator would reject the stale layout on the next persist.
-      if (item.x + item.width > newBag.cols || slotY + item.height > newBag.rowCount) {
+      // If the new bag's footprint can't hold this item — bounding box
+      // exceeded OR a cell in the item's footprint sits outside the
+      // shape mask — displace it. The validator would reject the stale
+      // layout on the next persist anyway.
+      let fits = item.x + item.width <= newBag.cols && slotY + item.height <= newBag.rowCount;
+      if (fits && newBag.shape) {
+        for (let dx = 0; fits && dx < item.width; dx += 1) {
+          for (let dy = 0; fits && dy < item.height; dy += 1) {
+            if (!isCellInShape(newBag.shape, item.x + dx, slotY + dy)) {
+              fits = false;
+            }
+          }
+        }
+      }
+      if (!fits) {
         displaced.push(item);
         continue;
       }
@@ -110,6 +128,12 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     if (!activeBag) return;
     const bag = getArtifact(bagId);
     if (!bag || bag.width === bag.height) return;
+    // Block rotation if the rotated footprint would overflow the grid's
+    // column budget (e.g. a 1×4 I-tetromino bag rotated to 4×1).
+    const currentlyRotated = state.rotatedBags.some((b) => b.id === activeBag.id);
+    const nextShape = getEffectiveShape(bag, !currentlyRotated);
+    const nextCols = nextShape.length > 0 ? nextShape[0].length : 0;
+    if (nextCols > INVENTORY_COLUMNS) return;
     // Block only if THIS bag still holds items. Later bags are independent
     // — their slot coords are relative to their own bag, and relayoutBagged
     // Items recomputes their virtual y against the new layout.

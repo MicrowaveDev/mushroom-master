@@ -237,8 +237,48 @@ round-trip it.
   and shifts a later bag's items by the rowCount delta; deactivating
   a non-empty bag is still blocked.
 
+## Non-rectangular bag shapes
+
+Bag artifacts may carry an explicit `shape` field — a 2D `0`/`1` mask
+indexed `shape[y][x]` — defining which cells inside their `width × height`
+bounding box are real slots. Six tetromino bags ship today (I, T, L, J,
+S, Z) alongside `amber_satchel` (which is the O tetromino) and the
+legacy `moss_pouch` (a domino).
+
+The shape contract is centralised in
+[app/shared/bag-shape.js](../app/shared/bag-shape.js):
+
+- `getBagShape(bagArtifact)` — returns the artifact's mask, defaulting
+  to a landscape rectangle (`max(w,h)` cols × `min(w,h)` rows) when no
+  explicit shape is present. The landscape default preserves the legacy
+  rectangular bag rendering convention.
+- `getEffectiveShape(bagArtifact, rotated)` — applies the bag row's
+  `rotated` flag (90° CW rotation of the mask).
+- `isCellInShape(shape, x, y)` — bounds-and-mask cell lookup.
+
+Validation: `validateBagContents` resolves the bag's effective shape and
+rejects any bagged item whose footprint touches a non-mask cell with
+`Bagged item ${id} occupies a non-slot cell of bag ${bagArtifactId}`.
+The slot-bounds and per-bag-overlap checks still apply on top of the
+mask check.
+
+Client: `useShop.bagLayout` and `useShop.isCellDisabled` consult the
+shape mask so drag-and-drop, hover, and the disabled-cell styling all
+respect tetromino footprints. `PrepScreen.bagRows` exposes
+`enabledCells: number[]` per bag row, and `ArtifactGridBoard` greys out
+cells absent from that list.
+
+Rotation: `rotateBag` blocks if the rotated bounding box would exceed
+`INVENTORY_COLUMNS` (e.g. the 1×4 I-bag, whose rotated form would need
+4 columns). Square bags (the O) remain non-rotatable for the same
+reason as before.
+
+Shop / container preview: `preferredOrientation` returns the shape's
+canonical dimensions for shape-bearing bags so the catalog slot is
+sized to the silhouette and the rendered figure can't overflow into
+neighbouring controls. `renderArtifactFigure` skips cells outside the
+mask so the silhouette reads visually as the actual tetromino.
+
 ## Open follow-ups
 
-- If bag layouts ever grow non-rectangular shapes (L-shape, offset
-  rows), extend the bounds check in `validateBagContents` with a
-  shape-aware occupancy map. Storage doesn't change.
+- None at the moment — non-rectangular shapes shipped above.

@@ -142,12 +142,30 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
     return '';
   }
   const theme = artifactTheme(artifact);
-  const w = Number(displayWidth) > 0 ? Number(displayWidth) : artifact.width;
-  const h = Number(displayHeight) > 0 ? Number(displayHeight) : artifact.height;
   const isBag = artifact.family === 'bag';
+  // Tetromino-shaped bags carry a 2D shape mask. Cells with mask=0 are
+  // empty space inside the bounding box and render as transparent gaps
+  // so the shop preview shows the actual tetromino silhouette. Falls
+  // through to "all filled" for combat artifacts and rectangular bags.
+  // Shape-bearing bags pin their preview dimensions to the shape so
+  // preferredOrientation's landscape rotation can't clip non-rectangular
+  // pieces (e.g. the 1×4 I-bag).
+  const shape = isBag && artifact.shape ? artifact.shape : null;
+  const w = shape
+    ? (shape[0]?.length || 0)
+    : (Number(displayWidth) > 0 ? Number(displayWidth) : artifact.width);
+  const h = shape
+    ? shape.length
+    : (Number(displayHeight) > 0 ? Number(displayHeight) : artifact.height);
   const cells = Array.from({ length: w * h }, (_, index) => {
     const x = index % w;
     const y = Math.floor(index / w);
+    if (shape) {
+      const filled = shape[y] && shape[y][x];
+      if (!filled) {
+        return `<div class="artifact-figure-cell artifact-figure-cell--empty"></div>`;
+      }
+    }
     return `
       <div class="artifact-figure-cell">
         <svg class="artifact-figure-svg" viewBox="0 0 80 80" preserveAspectRatio="xMidYMid meet" aria-hidden="true">

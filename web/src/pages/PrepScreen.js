@@ -1,5 +1,6 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
 import { INVENTORY_ROWS, INVENTORY_COLUMNS } from '../constants.js';
+import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
 
 export const PrepScreen = {
   name: 'PrepScreen',
@@ -27,14 +28,23 @@ export const PrepScreen = {
         const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;
         const rotated = this.state.rotatedBags.some((b) => b.id === activeBag.id);
-        const cols = Math.min(INVENTORY_COLUMNS, rotated ? Math.min(bag.width, bag.height) : Math.max(bag.width, bag.height));
-        const rowCount = rotated ? Math.max(bag.width, bag.height) : Math.min(bag.width, bag.height);
+        const shape = getEffectiveShape(bag, rotated);
+        const rowCount = shape.length;
         for (let i = 0; i < rowCount; i++) {
+          const maskRow = shape[i] || [];
+          // enabledCells = the x positions inside this bag row that are
+          // part of the bag's shape mask. For rectangular bags this is
+          // [0, 1, ..., cols-1]; for tetrominoes it skips the empty
+          // cells of the bounding box.
+          const enabledCells = [];
+          for (let x = 0; x < maskRow.length && x < INVENTORY_COLUMNS; x++) {
+            if (maskRow[x]) enabledCells.push(x);
+          }
           rows.push({
             row: r + i,
             color: bag.color || '#888',
             artifactId: activeBag.artifactId,
-            slotCount: cols
+            enabledCells
           });
         }
         r += rowCount;

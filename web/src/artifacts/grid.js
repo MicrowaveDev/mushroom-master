@@ -50,6 +50,18 @@ export function shopStorageKey(playerId) {
 }
 
 export function preferredOrientation(artifact) {
+  // Shape-bearing bags (tetrominoes) are stored in their canonical
+  // orientation — the shape mask defines the silhouette, and the
+  // bounding box dimensions follow from it. Returning the shape's
+  // dimensions keeps the shop / container preview slots sized
+  // correctly so the rendered figure can't overflow into adjacent
+  // controls (e.g. the I-bag at 1×4 would otherwise be sized as 4×1).
+  if (artifact?.shape) {
+    const shape = artifact.shape;
+    const cols = shape[0]?.length || artifact.width;
+    const rows = shape.length || artifact.height;
+    return { width: cols, height: rows };
+  }
   // Place 2-cell artifacts (1x2 / 2x1) horizontally by default.
   if (artifact.width !== artifact.height) {
     const longSide = Math.max(artifact.width, artifact.height);
