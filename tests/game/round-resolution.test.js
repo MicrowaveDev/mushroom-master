@@ -660,3 +660,48 @@ test('[Req 4-P, 4-R] solo run shop includes character item at level 5', async ()
   const hasCharItem = shopOffer.some(id => charItemIds.has(id));
   assert.ok(hasCharItem, 'initial shop offer should include a character item for thalla at level 5');
 });
+
+test('[Req 4-T] character item appears in all three solo offer phases: initial, refresh, between-round', async () => {
+  // [Req 4-T] says eligibility must apply consistently to: the initial round-1
+  // offer, each manual refresh, and each between-round offer. A separate test
+  // at the unit level could mock each slice, but this scenario exercises the
+  // real pipeline across phases — catching regressions in any one of them.
+  await freshDb();
+  const { playerId, run } = await bootRun({ telegramId: 8201, mushroomId: 'thalla' });
+  // Raise to level 5 so character items become eligible, then start a new run.
+  await earnMycelium(playerId, run.id, 70);
+  await abandonGameRun(playerId, run.id);
+
+  const run2 = await startGameRun(playerId, 'solo');
+  const charItemIds = new Set(getEligibleCharacterItems('thalla', 5).map(a => a.id));
+  assert.ok(charItemIds.size > 0, 'precondition: eligible items exist for thalla at level 5');
+
+  // Phase 1 — initial round-1 offer.
+  const initial = await getShopOffer(run2.id, playerId, 1);
+  assert.ok(
+    initial.some((id) => charItemIds.has(id)),
+    'phase 1 (initial round-1 offer) must include a character item'
+  );
+
+  // Phase 2 — manual refresh. refreshRunShop deducts coins and rewrites the
+  // current-round offer; it must honor the same eligibility rule.
+  await refreshRunShop(playerId, run2.id);
+  const refreshed = await getShopOffer(run2.id, playerId, 1);
+  assert.notDeepStrictEqual(refreshed, initial, 'refresh must produce a new offer');
+  assert.ok(
+    refreshed.some((id) => charItemIds.has(id)),
+    'phase 2 (manual refresh) must include a character item'
+  );
+
+  // Phase 3 — between-round offer. Seed a minimal legal loadout then resolve
+  // the round. resolveRound advances to round 2 and generates a fresh offer
+  // via the same pipeline.
+  await seedRunLoadout(playerId, run2.id, loadout);
+  await resolveRound(playerId, run2.id);
+  const round2 = await getShopOffer(run2.id, playerId, 2);
+  assert.ok(round2, 'round 2 offer must be generated');
+  assert.ok(
+    round2.some((id) => charItemIds.has(id)),
+    'phase 3 (between-round offer) must include a character item'
+  );
+});

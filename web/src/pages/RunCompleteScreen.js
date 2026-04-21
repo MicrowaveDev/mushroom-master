@@ -22,11 +22,13 @@ export const RunCompleteScreen = {
           <div class="stat"><dt>{{ t.wins }}</dt><dd>{{ state.gameRunResult?.player?.wins || state.gameRun?.player?.wins || 0 }}</dd></div>
           <div class="stat"><dt>{{ t.round }}</dt><dd>{{ state.gameRunResult?.player?.completedRounds || state.gameRun?.player?.completedRounds || 0 }}</dd></div>
         </dl>
-        <dl v-if="hasBonus" class="stat-grid run-complete-bonus">
-          <div class="stat"><dt>{{ t.completionBonus }}</dt><dd></dd></div>
-          <div class="stat"><dt>{{ t.spore }}</dt><dd>+{{ bonus.spore }}</dd></div>
-          <div class="stat"><dt>{{ t.mycelium }}</dt><dd>+{{ bonus.mycelium }}</dd></div>
-        </dl>
+        <div v-if="hasBonus" class="run-complete-bonus">
+          <h3 class="run-complete-bonus-heading">{{ t.completionBonus }}</h3>
+          <dl class="stat-grid">
+            <div class="stat"><dt>{{ t.spore }}</dt><dd>+{{ bonus.spore }}</dd></div>
+            <div class="stat"><dt>{{ t.mycelium }}</dt><dd>+{{ bonus.mycelium }}</dd></div>
+          </dl>
+        </div>
         <button class="primary" @click="$emit('go-home')">{{ t.home }}</button>
       </div>
     </section>

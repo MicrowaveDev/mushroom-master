@@ -65,8 +65,8 @@ export const PrepScreen = {
   },
   template: `
     <section class="prep-screen" :data-testid="state.bootstrapReady ? 'prep-ready' : null">
+      <h2 class="run-round-heading">{{ t.round }} {{ state.gameRun.currentRound }}</h2>
       <div class="run-hud">
-        <span class="run-hud-item">{{ t.round }} {{ state.gameRun.currentRound }}</span>
         <span class="run-hud-item">{{ t.wins }}: {{ state.gameRun.player?.wins || 0 }}</span>
         <span class="run-hud-item">{{ t.lives }}: {{ state.gameRun.player?.livesRemaining || 0 }}</span>
         <span class="run-hud-item run-hud-coins">\uD83E\uDE99 {{ state.gameRun.player?.coins || 0 }}</span>

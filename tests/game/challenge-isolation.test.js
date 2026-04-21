@@ -23,8 +23,12 @@ import {
   getActiveGameRun,
   getGameRun,
   buyRunShopItem,
-  refreshRunShop
+  refreshRunShop,
+  startGameRun,
+  abandonGameRun,
+  selectActiveMushroom
 } from '../../app/server/services/game-service.js';
+import { getEligibleCharacterItems } from '../../app/server/game-data.js';
 import {
   freshDb,
   createPlayer,
@@ -32,7 +36,8 @@ import {
   getCoins,
   getShopOffer,
   forceShopOffer,
-  findCheapArtifact
+  findCheapArtifact,
+  earnMycelium
 } from './helpers.js';
 
 const starterA = [
@@ -211,4 +216,76 @@ test('[Req 8-G] challenge run isolation: reads and mutations stay scoped per pla
   const directShopB = await getShopOffer(run.id, playerB, 1);
   assert.deepEqual(viewedByA.shopOffer, directShopA, 'A\'s getGameRun view must match A\'s direct shop read');
   assert.deepEqual(viewedByB.shopOffer, directShopB, 'B\'s getGameRun view must match B\'s direct shop read');
+});
+
+test('[Req 4-S, 4-U] challenge character-item eligibility is capped by min(viewerLevel, opponentLevel) and viewer-scoped', async () => {
+  // A is at level 5 (character items unlock at level 5). B is fresh at
+  // level 1. In solo, A would see its thalla character items. In a
+  // challenge against B the effective cap is min(5, 1) = 1, so A must
+  // see ZERO character items in the challenge shop — the presence of a
+  // level-5 item in A's challenge offer would be a cap-skipped bug.
+  await freshDb();
+
+  // Player A — raise to level 5, then abandon so we can start a challenge run.
+  const sessionA = await createPlayer({ telegramId: 8301, username: 'a_hi_level' });
+  await selectActiveMushroom(sessionA.player.id, 'thalla');
+  const soloA = await startGameRun(sessionA.player.id, 'solo');
+  await earnMycelium(sessionA.player.id, soloA.id, 70); // +350 mycelium → level 5
+  await abandonGameRun(sessionA.player.id, soloA.id);
+
+  // Player B — default level 1, also picks thalla so the eligibility pool
+  // on both sides is identical (isolates the min-cap effect from mushroom
+  // choice).
+  const sessionB = await createPlayer({ telegramId: 8302, username: 'b_lo_level' });
+  await selectActiveMushroom(sessionB.player.id, 'thalla');
+
+  await addFriendByCode(sessionA.player.id, sessionB.player.friend_code);
+  const challenge = await createRunChallenge(sessionA.player.id, sessionB.player.id);
+  const run = await acceptFriendChallenge(challenge.id, sessionB.player.id);
+
+  const thallaLevel5Items = new Set(getEligibleCharacterItems('thalla', 5).map((a) => a.id));
+  assert.ok(thallaLevel5Items.size > 0, 'precondition: thalla has level-5 character items');
+
+  // [Req 4-S] — A is level 5 but opponent caps eligibility at 1.
+  const offerA = await getShopOffer(run.id, sessionA.player.id, 1);
+  const leaksA = offerA.filter((id) => thallaLevel5Items.has(id));
+  assert.equal(
+    leaksA.length, 0,
+    `A (level 5) vs B (level 1): min cap is 1, but offer leaked level-5 items: ${JSON.stringify(leaksA)}`
+  );
+
+  // [Req 4-S] — B is level 1, opponent is level 5. Cap is still 1.
+  const offerB = await getShopOffer(run.id, sessionB.player.id, 1);
+  const leaksB = offerB.filter((id) => thallaLevel5Items.has(id));
+  assert.equal(
+    leaksB.length, 0,
+    `B (level 1) vs A (level 5): min cap is 1, but offer leaked level-5 items: ${JSON.stringify(leaksB)}`
+  );
+
+  // [Req 4-U] — offers are viewer-scoped. Even with identical active
+  // mushrooms, each player has an independent offer row. The cap
+  // collapses both offers to the same combat pool, but the RNG seeds
+  // are per-player so the two offers should almost never be identical.
+  // (We assert the rows are separate, not that the contents differ —
+  // a collision would be statistically rare but legal.)
+  const rowA = await query(
+    `SELECT offer_json FROM game_run_shop_states
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
+    [run.id, sessionA.player.id]
+  );
+  const rowB = await query(
+    `SELECT offer_json FROM game_run_shop_states
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
+    [run.id, sessionB.player.id]
+  );
+  assert.equal(rowA.rowCount, 1, 'A has exactly one shop row per round');
+  assert.equal(rowB.rowCount, 1, 'B has exactly one shop row per round');
+
+  // Each player's getGameRun view exposes only their own shopOffer, not
+  // the opponent's — re-asserted here so the 4-U invariant survives
+  // even under the 4-S cap branch.
+  const viewedByA = await getGameRun(run.id, sessionA.player.id);
+  const viewedByB = await getGameRun(run.id, sessionB.player.id);
+  assert.deepEqual(viewedByA.shopOffer, offerA, 'A\'s getGameRun shopOffer must match A\'s direct read');
+  assert.deepEqual(viewedByB.shopOffer, offerB, 'B\'s getGameRun shopOffer must match B\'s direct read');
 });

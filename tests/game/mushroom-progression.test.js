@@ -19,6 +19,9 @@ import {
   switchPreset
 } from '../../app/server/services/game-service.js';
 import { query } from '../../app/server/db.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 
 // --- computeLevel ---
 
@@ -404,4 +407,72 @@ test('[Req 14-C] mycelium is per-mushroom: playing thalla does not advance axili
 
   assert.ok(thalla.mycelium > 0, 'thalla should have earned mycelium');
   assert.equal(axilin.mycelium, 0, 'axilin should still be at 0 mycelium');
+});
+
+// --- [Req 14-H] mycelium is progression-only, not stat-scaling ---
+//
+// Negative invariant: earning mycelium and advancing mushroom level must not
+// change combat stats, ability behavior, shop affinity weights, or ghost
+// opponent budget/difficulty. The authoritative whitelist of what mycelium
+// may affect is in [Req 14-H] itself: level number, tier badge, portrait
+// unlocks, preset unlocks, wiki unlocks, and character shop-item eligibility.
+//
+// This test enforces the invariant as a source-level guard — the combat
+// engine must not import or reference any level/mycelium tokens. Adding a
+// runtime regression test (e.g. simulating the same battle at different
+// levels) is less informative because the engine's function signature does
+// not even accept mycelium/level as input today; a future refactor that
+// plumbs level into combat would be caught here before it can silently
+// change balance.
+
+const THIS_FILE_DIR = dirname(fileURLToPath(import.meta.url));
+const BATTLE_ENGINE_PATH = resolve(THIS_FILE_DIR, '../../app/server/services/battle-engine.js');
+
+test('[Req 14-H] battle-engine source has no mycelium/level dependency', () => {
+  const source = readFileSync(BATTLE_ENGINE_PATH, 'utf8');
+
+  // Tokens that would indicate a progression-to-combat leak. Each is a
+  // verbatim substring — the engine must not reference any of these.
+  const forbidden = [
+    'mycelium',
+    'computeLevel',
+    'player_mushrooms',
+    'MYCELIUM_LEVEL_CURVE',
+    'requiredLevel',
+    'PORTRAIT_VARIANTS',
+    'STARTER_PRESET_VARIANTS',
+    'WIKI_TIER_THRESHOLDS'
+  ];
+
+  for (const token of forbidden) {
+    assert.equal(
+      source.includes(token),
+      false,
+      `battle-engine.js must not reference "${token}" — Req 14-H forbids mycelium/level-derived combat effects`
+    );
+  }
+});
+
+test('[Req 14-H] ghost budget formula uses only spent coins and round index, not mycelium/level', () => {
+  // The ghost budget computation lives inside run-service.js resolveRound.
+  // We assert it here at the source level rather than refactoring the
+  // formula into an exported pure function, because the isolation already
+  // exists — the formula consumes (playerSpent, cumulativeIncome,
+  // roundNumber) and nothing else.
+  const runServicePath = resolve(THIS_FILE_DIR, '../../app/server/services/run-service.js');
+  const source = readFileSync(runServicePath, 'utf8');
+
+  // Extract the ghost-budget block by its anchoring comment + formula.
+  const startIdx = source.indexOf('// Ghost budget rules');
+  const endIdx = source.indexOf('const rightSnapshot');
+  assert.ok(startIdx > 0 && endIdx > startIdx, 'ghost-budget block markers must be present');
+  const block = source.slice(startIdx, endIdx);
+
+  for (const token of ['mycelium', 'computeLevel', 'requiredLevel', '.level']) {
+    assert.equal(
+      block.includes(token),
+      false,
+      `ghost-budget block must not reference "${token}" — Req 14-H forbids level-derived difficulty`
+    );
+  }
 });

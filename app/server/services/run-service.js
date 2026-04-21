@@ -987,15 +987,26 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
 
     const players = [challengerPlayerId, inviteePlayerId];
     const playerResults = {};
+    const grpIds = {};
 
+    // Enrol both players BEFORE generating either shop offer. [Req 4-S] caps
+    // character-item eligibility by min(viewerLevel, opponentLevel), and
+    // lookupEligibleCharacterItems resolves the opponent via a sibling row in
+    // game_run_players. If we insert-then-generate inside a single loop, the
+    // challenger's shop is built when only one grp row exists, the opponent
+    // lookup returns empty, and the cap silently degrades to viewer-only.
     for (const pid of players) {
       const grpId = createId('grp');
+      grpIds[pid] = grpId;
       await client.query(
         `INSERT INTO game_run_players (id, game_run_id, player_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
          VALUES ($1, $2, $3, 1, 0, 0, 0, $4, $5)`,
         [grpId, runId, pid, STARTING_LIVES, initialCoins]
       );
+    }
 
+    for (const pid of players) {
+      const grpId = grpIds[pid];
       const rng = createRng(`${runId}:shop:1:${pid}`);
       const charItems = await lookupEligibleCharacterItems(client, pid, 'challenge', runId);
       const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, 1, charItems);

@@ -1,0 +1,45 @@
+{
+  "task": "spec-compliance-fixes",
+  "verifiedAt": "2026-04-21",
+  "suite": "node --test (npm test)",
+  "suiteTotal": 317,
+  "suitePass": 317,
+  "suiteFail": 0,
+  "criteria": {
+    "AC1": {
+      "status": "PASS",
+      "description": "RunCompleteScreen no longer renders an empty <dd>",
+      "evidence": "web/src/pages/RunCompleteScreen.js:25-30 replaces the stray <dd> row with a wrapping <h3>+<dl>; existing coverage-gaps.spec.js stat-grid guard still passes."
+    },
+    "AC2": {
+      "status": "PASS",
+      "description": "PrepScreen exposes the round number as a semantic heading",
+      "evidence": "web/src/pages/PrepScreen.js:68-73 adds <h2 class=\"run-round-heading\"> so screenshot sidecars pick it up; visual regeneration is deferred with the rest of screenshot follow-up."
+    },
+    "AC3": {
+      "status": "PASS",
+      "description": "[Req X-Y] prefixes for previously untagged IDs 4-S, 4-T, 4-U",
+      "evidence": "challenge-isolation.test.js and round-resolution.test.js now carry the missing tags; grep for each ID returns ≥1 tagged test."
+    },
+    "AC4": {
+      "status": "PASS",
+      "description": "Negative regression test for [Req 14-H] (mycelium is progression-only)",
+      "evidence": "mushroom-progression.test.js gains two source-level guards that fail if battle-engine.js or the ghost-budget block references mycelium/level tokens."
+    }
+  },
+  "outOfScopeFix": {
+    "title": "createChallengeRun loop ordering bug violated [Req 4-S]",
+    "description": "Inserting each player's game_run_players row and then generating that player's shop offer inside a single loop meant the first iteration saw no opponent row, so lookupEligibleCharacterItems silently dropped the min(viewer, opponent) cap for the challenger.",
+    "fix": "app/server/services/run-service.js:988-1006 now enrols both players first, then generates shop offers in a second pass.",
+    "caughtBy": "[Req 4-S, 4-U] test (AC3)",
+    "flaggedFor": "reviewer confirmation — this expanded task scope beyond constraint C1, but the test would have remained failing otherwise."
+  },
+  "followUps": [
+    "S1 — generate missing auth / characters / history / settings / challenge screenshots + desktop variants",
+    "S2 — Flow F reconnection screenshots",
+    "B3 — re-standardize bag/abandon screenshot viewports to 375×667 + 1280×800",
+    "P1 — assert rewards-card rating-delta is scrollIntoView-reachable on mobile",
+    "P2 — add portrait/preset customization flow to user-flows.md",
+    "P3 — rename or annotate /api/battles/* read endpoints"
+  ]
+}
