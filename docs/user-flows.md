@@ -20,7 +20,7 @@ E2E tests must capture screenshots at the **mobile viewport** for each major scr
 | Screen | What to verify on desktop |
 |---|---|
 | `home` | Side columns are present: `.friends-panel` and `.leaderboard-panel` visible without scroll |
-| `prep` | Two-column layout: inventory grid and shop are side-by-side (not stacked); Ready button visible without scroll |
+| `prep` | Cohesive two-column workspace: backpack+inventory column and shop column are side-by-side with aligned top edges; HUD is above both columns; Ready button visible without scroll |
 | `characters` | All 5 character cards visible in the grid without scroll |
 | `auth` | All login buttons + language toggle visible without scroll (no button cut off below fold) |
 
@@ -147,7 +147,7 @@ Step 2: Prep Screen (Round N)
     - Top portion of inventory grid (first 1-2 rows)
   Below fold on mobile (scroll required):
     - Full inventory grid, shop items, sell zone, Ready/Abandon buttons
-  Desktop note: Inventory + shop visible side-by-side; Ready button visible without scroll
+  Desktop note: HUD above a cohesive two-column workspace; backpack + inventory on the left and shop + sell zone on the right with aligned top edges; Ready button visible without scroll
   Sees:
     - Round HUD: "Раунд N" / "Round N"
     - Stats HUD: Wins W, Lives L, Coins C

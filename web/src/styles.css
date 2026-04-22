@@ -2743,42 +2743,46 @@ select {
   gap: 12px;
 }
 
+.prep-workspace,
+.prep-loadout-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.prep-screen .run-hud {
+  margin-bottom: 0;
+}
+
 @media (min-width: 680px) {
-  .prep-screen {
-    grid-template-columns: 1fr 1fr;
+  .prep-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
+    align-items: start;
   }
 
-  .prep-screen .run-round-heading {
-    grid-column: 1 / -1;
-  }
-
-  .prep-screen .run-hud {
-    grid-column: 1 / -1;
-  }
-
-  .prep-screen .artifact-container-zone {
-    grid-column: 1;
-  }
-
-  .prep-screen .artifact-inventory-section {
-    grid-column: 1;
-  }
-
-  .prep-screen .artifact-shop {
-    grid-column: 2;
-    grid-row: 3 / 5;
+  .prep-workspace .artifact-shop {
+    grid-area: auto;
     align-self: start;
     margin-top: 0;
     min-width: 0;
     overflow: hidden;
   }
 
-  .prep-screen .artifact-shop-items {
+  .prep-workspace .artifact-shop-items {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .prep-workspace .shop-item {
+    gap: 3px;
+    padding: 5px;
+  }
+
+  .prep-workspace .shop-item-visual {
+    --artifact-cell-size: 38px;
+  }
+
   .prep-screen .prep-actions {
-    grid-column: 1 / -1;
+    margin-top: 0;
   }
 }
 .prep-actions {

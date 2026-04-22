@@ -92,10 +92,17 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   await assertImagesLoaded(page);
   await saveShot(page, 'solo-02-prep-round1.png');
   await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const hudBox = await page.locator('.run-hud').boundingBox();
+  const containerBox = await page.locator('.artifact-container-zone').boundingBox();
   const inventoryBox = await page.locator('.artifact-inventory-section').boundingBox();
   const shopBox = await page.locator('.artifact-shop').boundingBox();
-  expect(inventoryBox && shopBox, 'inventory and shop must have desktop bounding boxes').toBeTruthy();
+  const readyBox = await page.getByRole('button', { name: /ready|готов/i }).boundingBox();
+  expect(hudBox && containerBox && inventoryBox && shopBox && readyBox, 'desktop prep landmarks must have bounding boxes').toBeTruthy();
+  expect(hudBox.y + hudBox.height, 'desktop prep HUD should sit above both workspace columns').toBeLessThanOrEqual(Math.min(containerBox.y, shopBox.y));
+  expect(Math.abs(shopBox.y - containerBox.y), 'desktop prep shop and left column should share a top edge').toBeLessThanOrEqual(8);
   expect(shopBox.x, 'desktop prep shop should sit to the right of inventory').toBeGreaterThan(inventoryBox.x + inventoryBox.width);
+  expect(readyBox.y + readyBox.height, 'desktop prep Ready button should be visible without scroll').toBeLessThanOrEqual(DESKTOP_VIEWPORT.height);
   await expect(page.getByRole('button', { name: /ready|готов/i })).toBeVisible();
   await saveShot(page, 'solo-02-prep-round1-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);

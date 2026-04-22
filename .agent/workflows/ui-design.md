@@ -130,7 +130,7 @@ Three-zone single-column layout (mobile), two-column on desktop (left: backpack 
 ### Battle Prep
 
 - Default layout: single centered card (max-width 440px) with wide portrait (5:3) edge-to-edge, name + stat chips overlaid on a dark gradient, inventory grid (40px cells) below the portrait, and a prominent CTA.
-- When multiple zones must fit in one viewport (e.g. shop + inventory + backpack + sell area + HUD on the run prep screen), prefer a compact side-by-side or stacked layout that keeps all interactive elements visible without scrolling. Fitting the primary action in the viewport takes priority over the canonical card layout.
+- When multiple zones must fit in one viewport (e.g. shop + inventory + backpack + sell area + HUD on the run prep screen), prefer a compact side-by-side or stacked layout that keeps all interactive elements visible without scrolling. On desktop, the run prep workspace must read as two coherent columns: backpack + inventory stacked on the left, shop + sell zone stacked on the right, with both column tops aligned under the HUD. Fitting the primary action in the viewport takes priority over the canonical card layout.
 - No nested panels — the card or screen itself provides all the visual framing.
 
 ### Results Screen
