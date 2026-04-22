@@ -26,6 +26,7 @@
 
 :root {
   --artifact-cell-size: 50px;
+  --bg-color: #f4edd9;
   --bg: linear-gradient(180deg, #fbf5e7 0%, #f4edd9 100%);
   --surface: rgba(255, 250, 239, 0.92);
   --surface-strong: #fff8eb;
@@ -40,6 +41,12 @@
   font-family: "Georgia", "Times New Roman", serif;
 }
 
+html {
+  min-height: 100%;
+  background: var(--bg);
+  background-color: var(--bg-color);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -48,6 +55,13 @@ body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
+  background-color: var(--bg-color);
+}
+
+#app {
+  min-height: 100vh;
+  background: var(--bg);
+  background-color: var(--bg-color);
 }
 
 button,
@@ -360,6 +374,10 @@ select {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+}
+
+.profile-screen h2 {
+  margin: 0;
 }
 
 /* ---- Home screen ---- */

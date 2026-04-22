@@ -154,7 +154,8 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await saveShot(page, '12-wiki-detail.png');
 
   await page.goto(`${baseURL}/profile`);
-  await page.waitForSelector('.panel');
+  await page.waitForSelector('.profile-screen');
+  await expect(page.locator('.profile-screen h2')).toBeVisible();
   debugLog('capturing profile');
   await saveShot(page, '13-profile.png');
 

@@ -393,12 +393,15 @@ const App = {
           :state="state" :t="t" @go="goTo($event)"
         />
 
-        <section v-else-if="state.screen === 'profile'" class="grid cards">
-          <article class="panel" v-for="entry in Object.values(state.bootstrap.progression)" :key="entry.mushroomId">
-            <h3>{{ getMushroom(entry.mushroomId)?.name?.[state.lang] || entry.mushroomId }}</h3>
-            <p>{{ t.level }} {{ entry.level }}</p>
-            <p>{{ t.mycelium }} {{ entry.mycelium }}</p>
-          </article>
+        <section v-else-if="state.screen === 'profile'" class="profile-screen stack">
+          <h2>{{ t.profile }}</h2>
+          <div class="grid cards profile-card-grid">
+            <article class="panel" v-for="entry in Object.values(state.bootstrap.progression)" :key="entry.mushroomId">
+              <h3>{{ getMushroom(entry.mushroomId)?.name?.[state.lang] || entry.mushroomId }}</h3>
+              <p>{{ t.level }} {{ entry.level }}</p>
+              <p>{{ t.mycelium }} {{ entry.mycelium }}</p>
+            </article>
+          </div>
         </section>
 
         <settings-screen v-else-if="state.screen === 'settings'" :state="state" :t="t" @save-settings="saveSettings" />

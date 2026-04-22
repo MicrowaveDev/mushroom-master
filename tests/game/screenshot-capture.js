@@ -21,8 +21,13 @@ import { expect } from '@playwright/test';
 // failure. Capture itself never throws so the annotated image and manifest
 // always exist on disk, even when a downstream assertion fails.
 
-export async function captureScreenshot(page, dir, name) {
+export async function captureScreenshot(page, dir, name, options = {}) {
   await fs.mkdir(dir, { recursive: true });
+
+  if (!options.preserveScroll) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForFunction(() => window.scrollY === 0);
+  }
 
   const diagnostics = await page.evaluate(() => {
     const broken = [];
