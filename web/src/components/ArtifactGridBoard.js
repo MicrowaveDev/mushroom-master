@@ -1,12 +1,14 @@
 import { INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { ArtifactFigure } from './ArtifactFigure.js';
 
 export const ArtifactGridBoard = {
+  components: { ArtifactFigure },
   props: {
     columns: { type: Number, default: INVENTORY_COLUMNS },
     rows: { type: Number, default: INVENTORY_ROWS },
     items: { type: Array, default: () => [] },
     variant: { type: String, default: 'inventory' },
-    renderArtifactFigure: { type: Function, required: true },
+    renderArtifactFigure: { type: Function, default: null },
     getArtifact: { type: Function, required: true },
     interactiveCells: { type: Boolean, default: false },
     clickablePieces: { type: Boolean, default: false },
@@ -137,25 +139,21 @@ export const ArtifactGridBoard = {
       this.$emit('cell-drop', { x: this.cellX(index), y: this.cellY(index), event });
     },
     onCellTouchDrop(index, event) {
-      // Handle touch-dispatched cell-drop from useTouch composable
+      // Handle pointer-dispatched cell-drop from useTouch composable.
       if (!this.droppable) return;
       const detail = event.detail || {};
       this.$emit('cell-drop', { x: detail.x ?? this.cellX(index), y: detail.y ?? this.cellY(index) });
     },
-    onPieceDragStart(item, event) {
-      if (!this.draggablePieces) return;
-      if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', item.artifactId);
-      }
-      this.$emit('piece-drag-start', { item, event });
-    },
-    onPieceDragEnd(item, event) {
-      if (!this.draggablePieces) return;
-      this.$emit('piece-drag-end', { item, event });
-    },
-    renderPieceFigure(item) {
-      return this.renderArtifactFigure(this.getArtifact(item.artifactId), item.width, item.height);
+    pieceDataset(item) {
+      return {
+        'data-artifact-id': item.artifactId,
+        'data-artifact-row-id': item.id || item.rowId || '',
+        'data-artifact-x': item.x,
+        'data-artifact-y': item.y,
+        'data-artifact-width': item.width,
+        'data-artifact-height': item.height,
+        'data-artifact-bag-id': item.bagId || ''
+      };
     }
   },
   template: `
@@ -182,9 +180,7 @@ export const ArtifactGridBoard = {
           :key="item.artifactId + ':' + item.x + ':' + item.y"
           class="artifact-piece-wrap"
           :style="pieceStyle(item)"
-          :draggable="draggablePieces"
-          @dragstart="onPieceDragStart(item, $event)"
-          @dragend="onPieceDragEnd(item, $event)"
+          v-bind="pieceDataset(item)"
         >
           <component
             :is="clickablePieces ? 'button' : 'div'"
@@ -193,8 +189,13 @@ export const ArtifactGridBoard = {
             :data-artifact-id="item.artifactId"
             :title="getArtifact(item.artifactId)?.name?.ru || item.artifactId"
             @click="clickPiece(item, $event)"
-            v-html="renderPieceFigure(item)"
-          ></component>
+          >
+            <artifact-figure
+              :artifact="getArtifact(item.artifactId)"
+              :display-width="item.width"
+              :display-height="item.height"
+            />
+          </component>
           <button
             v-if="rotatablePieces && canRotate(item)"
             class="artifact-piece-rotate"

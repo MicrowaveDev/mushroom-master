@@ -1,9 +1,8 @@
 /**
- * Touch / Pointer drag-and-drop composable.
+ * Pointer-first artifact drag-and-drop composable.
  *
- * Bridges HTML5 drag-and-drop to mobile pointer/touch events. Pointer Events
- * are preferred when available; touch events remain as the fallback for older
- * WebViews. Mouse keeps the native HTML5 drag path.
+ * Uses Pointer Events for mouse, pen, and touch in modern WebViews. Touch
+ * events remain as the fallback for older WebViews.
  *
  * Usage: call `attachTouch(rootEl)` in onMounted with the app's root DOM element.
  */
@@ -17,9 +16,14 @@ export function useTouch(state) {
   let usingPointerEvents = false;
 
   function findDraggable(el) {
+    if (el?.closest?.('.artifact-piece-rotate')) return null;
     let node = el;
     while (node && node !== document.body) {
-      if (node.getAttribute('draggable') === 'true' || node.dataset?.artifactId) return node;
+      if (node.dataset?.artifactId) {
+        if (node.getAttribute('aria-disabled') === 'true') return null;
+        if (node.dataset.artifactDraggable === 'false') return null;
+        return node;
+      }
       node = node.parentElement;
     }
     return null;
@@ -70,6 +74,7 @@ export function useTouch(state) {
       pointer-events: none;
       z-index: 9999;
       transition: none;
+      will-change: transform;
     `;
     document.body.appendChild(ghostEl);
     startX = x - rect.left;
@@ -78,8 +83,9 @@ export function useTouch(state) {
 
   function moveGhost(x, y) {
     if (!ghostEl) return;
-    ghostEl.style.left = `${x - startX}px`;
-    ghostEl.style.top = `${y - startY}px`;
+    const left = Number.parseFloat(ghostEl.style.left) || 0;
+    const top = Number.parseFloat(ghostEl.style.top) || 0;
+    ghostEl.style.transform = `translate3d(${x - startX - left}px, ${y - startY - top}px, 0) scale(1.05)`;
   }
 
   function removeGhost() {
@@ -109,6 +115,40 @@ export function useTouch(state) {
     return '';
   }
 
+  function inferArtifactItem(el, artifactId) {
+    let node = el;
+    while (node && node !== document.body) {
+      const data = node.dataset || {};
+      if (data.artifactId) {
+        if (data.artifactX !== undefined && data.artifactY !== undefined) {
+          return {
+            id: data.artifactRowId || undefined,
+            artifactId: data.artifactId,
+            x: Number(data.artifactX),
+            y: Number(data.artifactY),
+            width: Number(data.artifactWidth),
+            height: Number(data.artifactHeight),
+            bagId: data.artifactBagId || null
+          };
+        }
+        if (data.artifactRowId) {
+          return { id: data.artifactRowId, artifactId: data.artifactId };
+        }
+      }
+      node = node.parentElement;
+    }
+    return artifactId ? { artifactId } : null;
+  }
+
+  function setDraggingState(target) {
+    const artifactId = inferArtifactId(target);
+    const source = inferSource(target);
+    if (!artifactId || !source) return;
+    state.draggingArtifactId = artifactId;
+    state.draggingSource = source;
+    state.draggingItem = source === 'shop' ? null : inferArtifactItem(target, artifactId);
+  }
+
   function onTouchStart(e) {
     const target = findDraggable(e.target);
     if (!target) return;
@@ -119,12 +159,7 @@ export function useTouch(state) {
     startX = touch.clientX;
     startY = touch.clientY;
 
-    const artifactId = inferArtifactId(target);
-    const source = inferSource(target);
-    if (artifactId && source) {
-      state.draggingArtifactId = artifactId;
-      state.draggingSource = source;
-    }
+    setDraggingState(target);
   }
 
   function onTouchMove(e) {
@@ -152,6 +187,9 @@ export function useTouch(state) {
     if (!dragEl || !moved) {
       dragEl = null;
       removeGhost();
+      state.draggingArtifactId = '';
+      state.draggingItem = null;
+      state.draggingSource = '';
       return;
     }
 
@@ -168,8 +206,8 @@ export function useTouch(state) {
         // Also dispatch the grid board's cell-drop
         const gridBoard = zone.el.closest('.artifact-grid-board');
         if (gridBoard) {
-          // The ArtifactGridBoard component handles cell-drop via @drop on cells
-          // We need to trigger the Vue event system - emit a custom event
+          // The ArtifactGridBoard component handles cell-drop via @drop on cells;
+          // also trigger the Vue event system with a custom event.
           const cellDropEvent = new CustomEvent('cell-drop-touch', {
             bubbles: true,
             detail: { x: zone.x, y: zone.y }
@@ -196,7 +234,6 @@ export function useTouch(state) {
   }
 
   function onPointerDown(e) {
-    if (e.pointerType === 'mouse') return;
     const target = findDraggable(e.target);
     if (!target) return;
 
@@ -206,12 +243,7 @@ export function useTouch(state) {
     startX = e.clientX;
     startY = e.clientY;
 
-    const artifactId = inferArtifactId(target);
-    const source = inferSource(target);
-    if (artifactId && source) {
-      state.draggingArtifactId = artifactId;
-      state.draggingSource = source;
-    }
+    setDraggingState(target);
 
     if (typeof target.setPointerCapture === 'function') {
       try { target.setPointerCapture(e.pointerId); } catch (_error) {}
@@ -271,12 +303,12 @@ export function useTouch(state) {
       const zone = findDropZone(e.clientX, e.clientY);
       dispatchDropForZone(zone);
     }
-    clearPointerDrag(e.target);
+    clearPointerDrag(dragEl);
   }
 
   function onPointerCancel(e) {
     if (e.pointerId !== activePointerId) return;
-    clearPointerDrag(e.target);
+    clearPointerDrag(dragEl);
   }
 
   function attachTouch(rootEl) {

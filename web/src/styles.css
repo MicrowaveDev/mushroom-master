@@ -1195,6 +1195,7 @@ select {
 .artifact-inventory-section {
   display: grid;
   gap: 8px;
+  container-type: inline-size;
 }
 
 .artifact-inventory-header {
@@ -1333,11 +1334,12 @@ select {
   width: min(150px, 100%);
   max-width: 100%;
   touch-action: manipulation;
+  container-type: inline-size;
   animation: container-item-appear 0.35s ease-out;
 }
 
-.container-item[draggable="true"],
-.shop-item[draggable="true"] {
+.container-item[data-artifact-id],
+.shop-item[data-artifact-draggable="true"] {
   touch-action: none;
 }
 @keyframes container-item-appear {
@@ -1452,6 +1454,7 @@ select {
   user-select: none;
   min-width: 0;
   touch-action: manipulation;
+  container-type: inline-size;
 }
 
 .shop-item:active {
@@ -1739,13 +1742,13 @@ select {
   pointer-events: none;
 }
 
-.artifact-piece-wrap[draggable="true"] {
+.artifact-piece-wrap[data-artifact-id] {
   pointer-events: auto;
   cursor: grab;
   touch-action: none;
 }
 
-.artifact-piece-wrap[draggable="true"]:active {
+.artifact-piece-wrap[data-artifact-id]:active {
   cursor: grabbing;
 }
 
@@ -2838,6 +2841,19 @@ select {
     margin-top: 0;
   }
 }
+
+@container (max-width: 420px) {
+  .artifact-inventory-grid {
+    --artifact-cell-size: clamp(34px, calc((100cqw - 16px) / 3), 44px);
+  }
+}
+
+@container (max-width: 160px) {
+  .container-item-visual,
+  .shop-item-visual {
+    --artifact-cell-size: clamp(30px, calc((100cqw - 16px) / 3), 44px);
+  }
+}
 .prep-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3049,10 +3065,8 @@ select {
 .touch-drag-ghost {
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  transform: scale(1.05);
 }
 
-[draggable="true"],
 .container-item,
 .shop-item,
 .artifact-piece-wrap {
