@@ -1,6 +1,6 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
-import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
+import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
 import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 
@@ -16,7 +16,11 @@ const loadoutB = [
   { artifactId: 'moss_ring', x: 1, y: 0, width: 1, height: 1 }
 ];
 
-const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
+const saveShot = async (page, name) => {
+  await captureScreenshot(page, screenshotDir, name);
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+};
 
 async function setupChallengePlayers(request) {
   const playerA = await createSession(request, { telegramId: 911, username: 'challenger', name: 'Challenger' });
@@ -57,7 +61,7 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerA.sessionKey);
   await page.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(page.locator('.prep-screen')).toBeVisible();
-  await expect(page.locator('.run-hud')).toContainText('1'); // round 1
+  await expect(page.locator('.run-round-heading')).toContainText('1'); // round 1
   await assertImagesLoaded(page);
   await saveShot(page, 'challenge-01-playerA-prep-round1.png');
 
@@ -104,7 +108,7 @@ test('[Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies →
   await pageB.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), playerB.sessionKey);
   await pageB.goto(`${baseURL}/prep`, { waitUntil: 'load' });
   await expect(pageB.locator('.prep-screen')).toBeVisible();
-  await expect(pageB.locator('.run-hud')).toContainText('2'); // round 2
+  await expect(pageB.locator('.run-round-heading')).toContainText('2'); // round 2
   await saveShot(pageB, 'challenge-03-playerB-prep-round2.png');
 
   // --- Player B opponent status indicator ---

@@ -38,8 +38,10 @@ This applies to every screen that renders portraits, item icons, or avatars.
 **Capture helper + sidecar manifest (agent-reviewable):** Tests must save screenshots via `captureScreenshot(page, dir, name)` from [tests/game/screenshot-capture.js](../tests/game/screenshot-capture.js). Do not call `page.screenshot()` directly. The helper does three things that matter when an agent reviews the output later:
 
 1. **Broken images are outlined in red** before the snapshot is taken (`3px solid #ff0040` + translucent red fill). Missing portraits become visually obvious even in thumbnail previews — review should never depend on an agent squinting at a placeholder icon.
-2. **A JSON sidecar** (`<name>.json`) is written next to every `.png`, listing `viewport`, visible `headings`, and the full `brokenImages` array. Agents reviewing the output should open the `.json` first — it's the authoritative answer for "did this screen render correctly", not the pixels.
+2. **A JSON sidecar** (`<name>.json`) is written next to every `.png`, listing `viewport`, document metrics (`scrollWidth`, `clientWidth`, `scrollY`), visible `headings`, `overflowX`, raw backend-like status tokens, and the full `brokenImages` array. Agents reviewing the output should open the `.json` first — it's the authoritative answer for "did this screen render correctly", not the pixels.
 3. The helper never throws. Tests that want a hard failure still call `assertImagesLoaded(page)` (also exported from `screenshot-capture.js`) alongside the capture, so the image and sidecar are always on disk even when a downstream assertion trips.
+
+When asked to review screenshots from E2E tests, inspect every matching sidecar JSON before judging the PNGs. Any non-empty `brokenImages` array, `overflowX: true`, unexpected non-zero `document.scrollY` on a newly entered screen, or raw backend status token visible in a localized UI is a bug to report and fix, even if the screenshot test command exited successfully.
 
 Screenshot paths below are relative to `.agent/tasks/telegram-autobattler-v1/raw/`.
 Steps marked `(not yet captured)` need e2e coverage added.
@@ -55,7 +57,8 @@ Last verified against code: 2026-04-13.
 ```
 Step 1: Auth Screen
   Screen: auth → AuthScreen.js
-  Screenshot: screenshots/01-auth-gate.png
+  Screenshot: screenshots/01-auth-gate.png, screenshots/01-auth-gate-desktop.png
+  E2E: screenshots.spec.js — auth gate screenshot + `assertImagesLoaded`
   Above the fold (mobile):
     - Navbar title "Мицелиум: автобаттлер"
     - Hero heading "Арена грибов ждёт"
@@ -86,7 +89,7 @@ Step 2: Onboarding
 
 Step 3: Character Select
   Screen: characters → CharactersScreen.js
-  Screenshot: screenshots/03-characters.png
+  Screenshot: screenshots/03-characters.png, screenshots/03-characters-desktop.png
   Above the fold (mobile):
     - First 2 mushroom cards in 2-column grid (portrait, name, style tag, stats)
   Desktop note: All 5 cards visible in wider grid without scroll
@@ -111,7 +114,7 @@ Step 3: Character Select
 ```
 Step 1: Home Screen
   Screen: home → HomeScreen.js
-  Screenshot: screenshots/run/solo-01-home-start-game.png
+  Screenshot: screenshots/run/solo-01-home-start-game.png, screenshots/02-home-desktop.png
   Above the fold (mobile):
     - Active mushroom portrait + level
     - "Начать Игру" / "Start Game" button (or "Продолжить игру" / resume if active run)
@@ -135,7 +138,7 @@ Step 1: Home Screen
 
 Step 2: Prep Screen (Round N)
   Screen: prep → PrepScreen.js
-  Screenshot: screenshots/run/solo-02-prep-round1.png (round 1), screenshots/run/solo-05-prep-round2.png (round 2)
+  Screenshot: screenshots/run/solo-02-prep-round1.png and screenshots/run/solo-02-prep-round1-desktop.png (round 1), screenshots/run/solo-05-prep-round2.png (round 2)
   Condition: state.gameRun exists
   Above the fold (mobile):
     - Round HUD: "Раунд N" / "Round N"

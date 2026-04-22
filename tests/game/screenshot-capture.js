@@ -38,10 +38,25 @@ export async function captureScreenshot(page, dir, name) {
       .map((h) => h.textContent.trim())
       .filter(Boolean)
       .slice(0, 10);
+    const doc = document.documentElement;
+    const bodyText = document.body?.innerText || '';
+    const rawStatusTokens = Array.from(new Set(
+      (bodyText.match(/\b(pending|accepted|declined|completed|abandoned|active)\b/gi) || [])
+        .map((token) => token.toLowerCase())
+    ));
     return {
       broken,
       headings,
-      viewport: { width: window.innerWidth, height: window.innerHeight }
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      document: {
+        scrollWidth: doc.scrollWidth,
+        clientWidth: doc.clientWidth,
+        scrollHeight: doc.scrollHeight,
+        clientHeight: doc.clientHeight,
+        scrollY: window.scrollY
+      },
+      overflowX: doc.scrollWidth > doc.clientWidth,
+      rawStatusTokens
     };
   });
 
@@ -51,7 +66,10 @@ export async function captureScreenshot(page, dir, name) {
     screenshot: name,
     viewport: diagnostics.viewport,
     headings: diagnostics.headings,
-    brokenImages: diagnostics.broken
+    brokenImages: diagnostics.broken,
+    document: diagnostics.document,
+    overflowX: diagnostics.overflowX,
+    rawStatusTokens: diagnostics.rawStatusTokens
   };
   const jsonName = name.replace(/\.png$/, '.json');
   await fs.writeFile(path.join(dir, jsonName), JSON.stringify(manifest, null, 2) + '\n');
@@ -62,4 +80,20 @@ export async function assertImagesLoaded(page) {
     imgs.filter((i) => i.naturalWidth === 0).map((i) => i.src)
   );
   expect(broken, `Broken images found: ${broken.join(', ')}`).toHaveLength(0);
+}
+
+export async function assertNoHorizontalOverflow(page) {
+  const metrics = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth
+  }));
+  expect(
+    metrics.scrollWidth,
+    `Horizontal overflow: scrollWidth ${metrics.scrollWidth} > clientWidth ${metrics.clientWidth}`
+  ).toBeLessThanOrEqual(metrics.clientWidth);
+}
+
+export async function assertAtTop(page) {
+  const scrollY = await page.evaluate(() => window.scrollY);
+  expect(scrollY, `Expected screen to be scrolled to top, got scrollY=${scrollY}`).toBe(0);
 }

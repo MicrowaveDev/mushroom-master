@@ -407,6 +407,8 @@ select {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .home-section-header h3 {
@@ -427,7 +429,7 @@ select {
 
 .home-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -587,10 +589,14 @@ select {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .home-mushroom-name-row strong {
   font-size: 0.92em;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .home-mushroom-active-tag {
@@ -869,6 +875,7 @@ select {
   display: flex;
   gap: 6px;
   margin-top: 8px;
+  min-width: 0;
 }
 
 .home-friend-input {
@@ -887,6 +894,34 @@ select {
   font-size: 0.78em;
   opacity: 0.6;
   text-align: center;
+}
+
+.friend-roster-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.friend-roster-entry strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-roster-entry span {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 0.85em;
+  font-weight: 700;
 }
 
 /* Leaderboard */
@@ -1250,15 +1285,16 @@ select {
 .container-item {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto;
-  gap: 3px;
+  grid-template-rows: minmax(96px, auto) auto;
+  gap: 6px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(127, 152, 114, 0.25);
   border-radius: 10px;
   cursor: pointer;
   user-select: none;
-  max-width: 120px;
+  width: min(150px, 100%);
+  max-width: 100%;
   animation: container-item-appear 0.35s ease-out;
 }
 @keyframes container-item-appear {
@@ -1304,6 +1340,12 @@ select {
   display: grid;
   gap: 3px;
   font-size: 0.82em;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.container-item-copy strong {
+  overflow-wrap: anywhere;
 }
 
 .artifact-container-empty {
@@ -1325,6 +1367,8 @@ select {
   background: rgba(255, 251, 244, 0.92);
   border: 1px dashed rgba(123, 91, 59, 0.35);
   border-radius: 12px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .artifact-shop-header {
@@ -1349,7 +1393,7 @@ select {
 
 .artifact-shop-items {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1363,6 +1407,7 @@ select {
   border-radius: 10px;
   cursor: pointer;
   user-select: none;
+  min-width: 0;
 }
 
 .shop-item:active {
@@ -2654,6 +2699,20 @@ select {
   .artifact-list {
     grid-template-columns: 1fr;
   }
+
+  .artifact-shop-items {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-item {
+    grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: center;
+  }
+
+  .shop-item-visual {
+    justify-self: start;
+  }
 }
 
 /* --- Run HUD --- */
@@ -2689,6 +2748,10 @@ select {
     grid-template-columns: 1fr 1fr;
   }
 
+  .prep-screen .run-round-heading {
+    grid-column: 1 / -1;
+  }
+
   .prep-screen .run-hud {
     grid-column: 1 / -1;
   }
@@ -2703,7 +2766,7 @@ select {
 
   .prep-screen .artifact-shop {
     grid-column: 2;
-    grid-row: 2 / 4;
+    grid-row: 3 / 5;
     align-self: start;
     margin-top: 0;
     min-width: 0;
@@ -2720,13 +2783,15 @@ select {
 }
 .prep-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   justify-content: center;
   margin-top: 8px;
+  min-width: 0;
 }
 .prep-ready-btn {
-  min-width: 160px;
+  min-width: min(160px, 100%);
   font-size: 1.1rem;
   padding: 12px 24px;
 }

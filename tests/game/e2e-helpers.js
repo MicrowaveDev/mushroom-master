@@ -53,3 +53,4 @@ export async function waitForPrepReady(page, timeout = 15000) {
 
 // Canonical viewport per docs/user-flows.md preamble + AGENTS.md.
 export const MOBILE_VIEWPORT = { width: 375, height: 667 };
+export const DESKTOP_VIEWPORT = { width: 1280, height: 800 };

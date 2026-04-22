@@ -1,4 +1,4 @@
-import { createApp, reactive, onMounted, onUnmounted, watch } from 'vue/dist/vue.esm-bundler.js';
+import { createApp, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
 import { parseStartParams } from './api.js';
 
@@ -155,6 +155,10 @@ const App = {
       document.documentElement.classList.toggle('reduced-motion', !!reduced);
     });
     watch(() => state.screen, async (screen, oldScreen) => {
+      if (screen !== oldScreen) {
+        await nextTick();
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }
       if (screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
         await devTools.loadInventoryReview();
       }
@@ -391,7 +395,7 @@ const App = {
 
         <section v-else-if="state.screen === 'profile'" class="grid cards">
           <article class="panel" v-for="entry in Object.values(state.bootstrap.progression)" :key="entry.mushroomId">
-            <h3>{{ entry.mushroomId }}</h3>
+            <h3>{{ getMushroom(entry.mushroomId)?.name?.[state.lang] || entry.mushroomId }}</h3>
             <p>{{ t.level }} {{ entry.level }}</p>
             <p>{{ t.mycelium }} {{ entry.mycelium }}</p>
           </article>

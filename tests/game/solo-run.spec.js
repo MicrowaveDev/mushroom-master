@@ -1,7 +1,7 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
-import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
-import { resetDevDb, createSession, api, waitForPrepReady, MOBILE_VIEWPORT } from './e2e-helpers.js';
+import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow, assertAtTop } from './screenshot-capture.js';
+import { resetDevDb, createSession, api, waitForPrepReady, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots/run');
@@ -11,7 +11,11 @@ const loadout = [
   { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
 ];
 
-const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
+const saveShot = async (page, name) => {
+  await captureScreenshot(page, screenshotDir, name);
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+};
 
 /**
  * Sell the container item identified by `artifactId` via the direct API.
@@ -83,9 +87,18 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await waitForPrepReady(page);
   const hud = page.locator('.run-hud');
-  await expect(hud).toContainText('1');
+  const roundHeading = page.locator('.run-round-heading');
+  await expect(roundHeading).toContainText('1');
   await assertImagesLoaded(page);
   await saveShot(page, 'solo-02-prep-round1.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  const inventoryBox = await page.locator('.artifact-inventory-section').boundingBox();
+  const shopBox = await page.locator('.artifact-shop').boundingBox();
+  expect(inventoryBox && shopBox, 'inventory and shop must have desktop bounding boxes').toBeTruthy();
+  expect(shopBox.x, 'desktop prep shop should sit to the right of inventory').toBeGreaterThan(inventoryBox.x + inventoryBox.width);
+  await expect(page.getByRole('button', { name: /ready|готов/i })).toBeVisible();
+  await saveShot(page, 'solo-02-prep-round1-desktop.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
 
   // --- Shop has items ---
   const shopItems = page.locator('.prep-screen .shop-item');
@@ -111,6 +124,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   // element inside .replay-layout.
   await page.getByRole('button', { name: /ready|готов/i }).click();
   await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 30000 });
+  await assertAtTop(page);
   await assertImagesLoaded(page);
   await saveShot(page, 'solo-04-round-replay.png');
 
@@ -131,7 +145,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   await expect(afterReplay).toBeVisible({ timeout: 10000 });
 
   if (await page.locator('.prep-screen').isVisible()) {
-    await expect(hud).toContainText('2');
+    await expect(roundHeading).toContainText('2');
 
     // --- Shop has items after round 1 ---
     const round2ShopItems = page.locator('.prep-screen .shop-item');
@@ -151,7 +165,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
     // --- Page refresh persistence ---
     await page.reload({ waitUntil: 'networkidle' });
     await waitForPrepReady(page);
-    await expect(hud).toContainText('2');
+    await expect(roundHeading).toContainText('2');
     await saveShot(page, 'solo-07-persisted-after-reload.png');
 
     // --- Play remaining rounds until run completes ---
@@ -298,7 +312,8 @@ test('round transitions: replay → continue → next prep (not home) while live
   await waitForPrepReady(page);
 
   const hud = page.locator('.run-hud');
-  await expect(hud).toContainText('1'); // round 1
+  const roundHeading = page.locator('.run-round-heading');
+  await expect(roundHeading).toContainText('1'); // round 1
 
   // --- Round 1: signal ready → replay autoplays → inline rewards → Continue → round 2 prep ---
   // Spec: docs/user-flows.md Flow B Step 3. Post-Ready lands directly on
@@ -322,7 +337,7 @@ test('round transitions: replay → continue → next prep (not home) while live
 
   // Should be on prep screen for round 2 — NOT runComplete or results
   await waitForPrepReady(page);
-  await expect(hud).toContainText('2');
+  await expect(roundHeading).toContainText('2');
   await expect(page.locator('.run-complete-screen')).toHaveCount(0);
   await expect(page.locator('.results-screen')).toHaveCount(0);
 

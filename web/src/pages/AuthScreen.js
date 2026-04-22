@@ -7,9 +7,9 @@ export const AuthScreen = {
       <div class="auth-hero-card panel">
         <p class="eyebrow auth-eyebrow">{{ t.title }}</p>
         <div class="auth-portraits">
-          <img src="/data/channel/assets/2026-03-27T23-32-46-000Z-53.bin.jpg" alt="" class="auth-portrait" />
-          <img src="/data/channel/assets/2026-03-28T02-06-35-000Z-214.bin.jpg" alt="" class="auth-portrait" />
-          <img src="/data/channel/assets/2026-03-28T02-06-16-000Z-212.bin.jpg" alt="" class="auth-portrait" />
+          <img src="/portraits/thalla/default.png" alt="" class="auth-portrait" />
+          <img src="/portraits/lomie/default.png" alt="" class="auth-portrait" />
+          <img src="/portraits/kirt/default.png" alt="" class="auth-portrait" />
         </div>
         <h2 class="auth-title">{{ t.authTitle }}</h2>
         <p class="auth-tagline">{{ t.authTagline }}</p>

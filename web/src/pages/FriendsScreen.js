@@ -2,6 +2,11 @@ export const FriendsScreen = {
   name: 'FriendsScreen',
   props: ['state', 't'],
   emits: ['add-friend', 'challenge-friend', 'accept-challenge', 'decline-challenge'],
+  methods: {
+    challengeStatusLabel(status) {
+      return this.t[`challengeStatus_${status}`] || status;
+    }
+  },
   template: `
     <section class="grid cards">
       <article class="panel">
@@ -14,13 +19,14 @@ export const FriendsScreen = {
       </article>
       <article class="panel">
         <h3>{{ t.roster }}</h3>
-        <button v-for="friend in state.friends" :key="friend.id" class="log-entry" @click="$emit('challenge-friend', friend.id)">
-          {{ friend.name }} · {{ t.createChallenge }}
+        <button v-for="friend in state.friends" :key="friend.id" class="friend-roster-entry" @click="$emit('challenge-friend', friend.id)">
+          <strong>{{ friend.name }}</strong>
+          <span>{{ t.createChallenge }}</span>
         </button>
       </article>
       <article class="panel" v-if="state.challenge">
         <h3>{{ t.challengeSection }}</h3>
-        <p>{{ state.challenge.status }}</p>
+        <p>{{ challengeStatusLabel(state.challenge.status) }}</p>
         <button class="primary" @click="$emit('accept-challenge')">{{ t.acceptChallenge }}</button>
         <button class="secondary" @click="$emit('decline-challenge')">{{ t.declineChallenge }}</button>
       </article>

@@ -1,13 +1,17 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
-import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
-import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
+import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
+import { resetDevDb, createSession, api, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
 const debugScreens = process.env.PLAYWRIGHT_SCREEN_DEBUG === '1';
 
-const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
+const saveShot = async (page, name) => {
+  await captureScreenshot(page, screenshotDir, name);
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+};
 
 function debugLog(message, details = undefined) {
   if (!debugScreens) {
@@ -59,8 +63,18 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.goto(baseURL);
   debugLog('capturing auth gate');
   await saveShot(page, '01-auth-gate.png');
+  await assertImagesLoaded(page);
+  await expect(page.locator('.auth-portrait')).toHaveCount(3);
+  await expect(page.locator('.auth-title')).toBeVisible();
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await expect(page.getByRole('button', { name: /Telegram/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /код бота|bot code/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /локальная сессия|local session/i })).toBeVisible();
+  await expect(page.locator('.auth-lang-row')).toBeVisible();
+  await saveShot(page, '01-auth-gate-desktop.png');
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.setViewportSize(MOBILE_VIEWPORT);
   await page.goto(`${baseURL}/home`);
   await page.waitForSelector('.home');
   debugLog('capturing home');
@@ -70,12 +84,25 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.home-start-btn')).toBeVisible();
   await assertImagesLoaded(page);
   await saveShot(page, '02-home.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.goto(`${baseURL}/home`);
+  await page.waitForSelector('.home');
+  await expect(page.locator('.friends-panel')).toBeVisible();
+  await expect(page.locator('.leaderboard-panel')).toBeVisible();
+  await saveShot(page, '02-home-desktop.png');
 
+  await page.setViewportSize(MOBILE_VIEWPORT);
   await page.goto(`${baseURL}/characters`);
   await page.waitForSelector('.character-card');
   debugLog('capturing characters');
   await assertImagesLoaded(page);
   await saveShot(page, '03-characters.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.goto(`${baseURL}/characters`);
+  await page.waitForSelector('.character-card');
+  await expect(page.locator('.character-card')).toHaveCount(6);
+  await saveShot(page, '03-characters-desktop.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
 
   // 04-artifacts and 05-battle-prep screenshots removed: ArtifactsScreen
   // and BattlePrepScreen were deleted with the rest of the legacy

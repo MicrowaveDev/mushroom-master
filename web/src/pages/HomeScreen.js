@@ -187,7 +187,7 @@ export const HomeScreen = {
       <!-- Friends + Leaderboard -->
       <div class="home-columns">
         <!-- Friends -->
-        <article class="panel home-friends-compact">
+        <article class="panel home-friends-compact friends-panel">
           <div class="home-section-header">
             <h3>{{ t.friends }} <span v-if="state.friends?.length" class="home-friends-count">{{ state.friends.length }}</span></h3>
           </div>
@@ -219,7 +219,7 @@ export const HomeScreen = {
         </article>
 
         <!-- Leaderboard -->
-        <article class="panel home-section" v-if="topLeaderboard.length">
+        <article class="panel home-section leaderboard-panel" v-if="topLeaderboard.length">
           <div class="home-section-header">
             <h3>{{ t.leaderboard }}</h3>
             <button class="link" @click="$emit('go', 'leaderboard')">{{ t.viewAll }}</button>

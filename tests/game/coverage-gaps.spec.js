@@ -1,12 +1,16 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
-import { captureScreenshot, assertImagesLoaded } from './screenshot-capture.js';
+import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
 import { resetDevDb, createSession, api } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
 
-const saveShot = (page, name) => captureScreenshot(page, screenshotDir, name);
+const saveShot = async (page, name) => {
+  await captureScreenshot(page, screenshotDir, name);
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+};
 
 // --- Flow A: Onboarding ---
 
@@ -71,7 +75,7 @@ test('[Flow A Step 3] first mushroom pick auto-starts solo run and lands on prep
   await page.locator('[data-testid="prep-ready"]').waitFor({ timeout: 15000 });
   await expect(page.locator('.prep-screen')).toBeVisible();
   // Sanity: round 1 is shown in the HUD.
-  await expect(page.locator('.run-hud')).toContainText('1');
+  await expect(page.locator('.run-round-heading')).toContainText('1');
 });
 
 test('[Flow A Step 3] re-pick (existing player switching mushroom) goes to home, not prep', async ({ page, request, baseURL }) => {
