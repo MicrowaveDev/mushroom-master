@@ -16,7 +16,7 @@
  * 13. Run HUD & Prep screen ........ .run-hud, .prep-screen, .prep-actions
  * 14. Sell zone .................... .sell-zone, .sell-zone--active
  * 15. Outcome colors ............... .result-win, .result-loss
- * 16. Wiki ......................... .wiki-locked-section
+ * 16. Wiki ......................... .wiki-home, .wiki-detail
  * 17. Run complete screen .......... .run-end-heading, .run-end-reason
  * 18. Bags ......................... .shop-item--bag, .artifact-grid-cell--bag
  * 19. Challenge mode ............... .prep-opponent-status, .prep-reconnecting
@@ -2923,22 +2923,324 @@ select {
   letter-spacing: 0.03em;
 }
 
-/* --- Wiki locked sections --- */
+/* --- Wiki --- */
+.wiki-home,
+.wiki-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.wiki-cover,
+.wiki-detail-cover {
+  display: grid;
+  gap: 12px;
+}
+
+.wiki-cover h2,
+.wiki-detail-cover h2 {
+  margin: 0;
+  font-size: 2.6rem;
+  line-height: 0.98;
+  max-width: 11ch;
+  overflow-wrap: anywhere;
+}
+
+.wiki-cover-copy,
+.wiki-detail-summary {
+  margin: 0;
+  max-width: 62ch;
+  color: rgba(47, 36, 25, 0.78);
+  line-height: 1.55;
+}
+
+.wiki-search {
+  display: grid;
+  gap: 6px;
+  max-width: 520px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.wiki-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+}
+
+.wiki-category-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.wiki-category-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wiki-category-tab.active {
+  background: var(--surface-strong);
+  border-color: rgba(138, 97, 53, 0.42);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.wiki-category-tab small {
+  min-width: 1.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(127, 152, 114, 0.16);
+  color: var(--sage);
+  text-align: center;
+}
+
+.wiki-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.wiki-entry-card,
+.wiki-related-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 88px;
+  margin-bottom: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(94, 70, 39, 0.05);
+}
+
+.wiki-entry-card:hover,
+.wiki-related-card:hover {
+  transform: translateY(-1px);
+}
+
+.wiki-entry-card-media,
+.wiki-related-card img {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  background: #f1e8d2;
+}
+
+.wiki-entry-card-index,
+.wiki-section-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  border: 1px solid rgba(138, 97, 53, 0.24);
+  border-radius: 999px;
+  background: rgba(220, 196, 157, 0.18);
+  color: var(--accent);
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.wiki-entry-card-copy,
+.wiki-related-card span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wiki-entry-card-copy strong,
+.wiki-related-card strong {
+  overflow-wrap: anywhere;
+}
+
+.wiki-entry-card-copy > span:last-child,
+.wiki-related-card small {
+  color: rgba(47, 36, 25, 0.7);
+  line-height: 1.35;
+}
+
+.wiki-entry-card-kicker {
+  color: var(--sage);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wiki-empty {
+  margin: 0;
+  color: rgba(47, 36, 25, 0.64);
+}
+
+.wiki-back-button {
+  justify-self: start;
+}
+
+.wiki-detail-cover.has-media {
+  grid-template-columns: minmax(112px, 0.44fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.wiki-detail-portrait {
+  width: 100%;
+  max-height: 280px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  background: #f1e8d2;
+}
+
+.wiki-section-list {
+  display: grid;
+  gap: 12px;
+}
+
+.wiki-section-card {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(94, 70, 39, 0.12);
+}
+
+.wiki-section-copy {
+  min-width: 0;
+}
+
+.wiki-article-heading,
+.wiki-article-subheading {
+  margin: 0 0 8px;
+  color: var(--accent);
+  line-height: 1.15;
+}
+
+.wiki-article-heading {
+  font-size: 1.55rem;
+}
+
+.wiki-article-subheading {
+  font-size: 1.18rem;
+}
+
+.wiki-article-paragraph,
+.wiki-article-list {
+  margin: 0 0 10px;
+  color: rgba(47, 36, 25, 0.84);
+  line-height: 1.7;
+}
+
+.wiki-article-list {
+  padding-left: 1.2rem;
+}
+
+.wiki-article-list li + li {
+  margin-top: 4px;
+}
+
+.wiki-article-quote {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: rgba(220, 196, 157, 0.16);
+}
+
+.wiki-article-rule {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+
+.wiki-article-code {
+  overflow-x: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(47, 36, 25, 0.08);
+}
+
+.wiki-inline-image {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
 .wiki-locked-section {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 8px;
   background: rgba(94,70,39,0.06);
   border: 1px dashed var(--border);
-  color: #999;
-  font-size: 0.85em;
+  color: rgba(47, 36, 25, 0.64);
+  font-size: 0.9em;
   margin: 8px 0;
 }
 .wiki-lock-icon {
-  font-size: 1em;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
   flex-shrink: 0;
+}
+
+.wiki-related {
+  display: grid;
+  gap: 10px;
+}
+
+.wiki-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .wiki-detail-cover.has-media,
+  .wiki-section-card {
+    grid-template-columns: 1fr;
+  }
+
+  .wiki-detail-portrait {
+    max-height: 220px;
+  }
+
+  .wiki-cover h2,
+  .wiki-detail-cover h2 {
+    font-size: 2rem;
+  }
+
+  .wiki-section-index {
+    width: fit-content;
+  }
 }
 
 /* --- Run Complete Screen --- */

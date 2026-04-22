@@ -395,7 +395,7 @@ const App = {
         <wiki-screen v-else-if="state.screen === 'wiki'" :state="state" :t="t" @open-wiki="openWiki($event[0], $event[1])" />
 
         <wiki-detail-screen v-else-if="state.screen === 'wiki-detail' && state.selectedWiki"
-          :state="state" :t="t" @go="goTo($event)"
+          :state="state" :t="t" @go="goTo($event)" @open-wiki="openWiki($event[0], $event[1])"
         />
 
         <section v-else-if="state.screen === 'profile'" class="profile-screen stack">

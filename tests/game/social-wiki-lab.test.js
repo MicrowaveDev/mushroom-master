@@ -43,12 +43,26 @@ test('wiki pages and local ai lab route are available in non-production', async 
   await freshDb();
   const wikiHome = await getWikiHome();
   assert.ok(wikiHome.characters.length >= 5);
+  assert.ok(wikiHome.glossary.length >= 1);
+  assert.ok(wikiHome.glossary.find((entry) => entry.slug === 'spore'));
 
   const wikiEntry = await getWikiEntry('characters', 'thalla');
   assert.match(wikiEntry.markdown, /Тхалла/);
   assert.equal(typeof wikiEntry.html, 'string');
   assert.ok(Array.isArray(wikiEntry.sections), 'sections array present');
   assert.ok(wikiEntry.sections.length > 0);
+  assert.ok(Array.isArray(wikiEntry.sections[0].blocks), 'structured blocks present');
+  assert.equal(wikiEntry.sections[0].blocks[0].type, 'heading');
+  assert.ok(Array.isArray(wikiEntry.relatedEntries), 'related entries present');
+  assert.ok(wikiEntry.relatedEntries.find((entry) => entry.slug === 'ygg-mycel'));
+
+  const lockedEntry = await getWikiEntry('characters', 'thalla', 0);
+  assert.equal(lockedEntry.sections[0].locked, true);
+  assert.deepEqual(lockedEntry.sections[0].blocks, []);
+
+  const locationEntry = await getWikiEntry('locations', 'ygg-mycel');
+  assert.equal(locationEntry.sections[0].locked, false);
+  assert.equal(locationEntry.sections[0].blocks[0].type, 'heading');
 
   const run = await saveLocalTestRun({
     fixtureNarration: 'Thalla stuns Kirt on round one.',

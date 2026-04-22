@@ -1,6 +1,8 @@
 # Telegram Mini App Responsive Rendering Plan
 
-**Status:** V1 foundation implemented; V2 full UI refactor implemented.
+**Status:** V1 foundation implemented; V2 prep/shop/inventory refactor implemented; V3 wiki/docs refactor in progress.
+
+This document is now a shipped-history record plus the active V3 wiki/docs backlog. Current contracts that outlive this plan should be extracted into a dedicated reference doc after V3 ships, rather than left only in this plan.
 
 ## Direction
 
@@ -46,7 +48,6 @@ Implemented scope:
 - Replace string-based artifact rendering and `v-html` with declarative Vue/SVG artifact components.
 - Replace native HTML5 drag/drop plus the compatibility bridge with one Pointer Events controller using `setPointerCapture`, `touch-action`, transform-based drag ghosts, and board coordinate hit testing.
 - Make board sizing container-aware with CSS variables/container queries so cell size adapts to Telegram viewport height and available width.
-- Move docs/wiki rendering toward structured Vue-rendered sections with search/filter, locked-section previews, related links, and mobile-friendly section navigation. This remains the next docs-specific follow-up because V2 focused on prep/shop/inventory rendering and input architecture.
 
 V2 acceptance criteria:
 
@@ -55,9 +56,31 @@ V2 acceptance criteria:
 - Pointer Events support mouse/touch/pen through one path, with drag as secondary to tap/click.
 - Screenshot tests cover mobile and desktop prep after the component split.
 
+## V3 Wiki / Docs Refactor
+
+Active scope:
+
+- Reuse the Mushroom docs template as an interaction and hierarchy reference for the in-app wiki: cover/header rhythm, indexed sections, profile media, summary cards, and related-entry discovery.
+- Adapt the template for Telegram Mini App constraints instead of copying the PDF renderer directly: app CSS variables, safe-area spacing, compact touch targets, responsive cards, and no print-only layout assumptions.
+- Keep wiki content as local markdown source, but expose structured article sections to the client so Vue renders headings, paragraphs, lists, quotes, locked tiers, and related links without depending on raw `v-html` for the primary UI.
+- Add search/filter on the wiki home across characters, locations, factions, and glossary entries.
+- Render character locked tiers as preview cards with mycelium thresholds, while unlocked tiers share the same structured article components as non-character pages.
+- Render related links from page frontmatter as navigable entry cards.
+- Include the glossary in the visible wiki home; it already exists in the wiki source and API home payload.
+
+V3 acceptance criteria:
+
+- Wiki home works on mobile and desktop with category filters, text search, summaries, portraits where present, and no horizontal overflow.
+- Wiki detail has a docs-style article header, visible section index/tier markers, structured article body rendering, locked-section previews, and related-entry navigation.
+- The API remains backward compatible for legacy tests/callers that read `html`, while the Mini App uses structured blocks for the primary render path.
+- Browser/dev mode and Telegram mode both work; wiki layout respects app safe-area padding inherited from the shell.
+- Tests cover wiki home categories/glossary, structured article blocks, gated character tiers, and related-entry metadata.
+
 ## Verification Strategy
 
 - Unit tests for Telegram adapter no-op behavior, version checks, theme/viewport syncing, and haptic routing.
 - Existing web composable tests for shop/loadout state behavior.
 - Existing game tests for server-backed shop, loadout, and run flows.
 - Screenshot tests for mobile and desktop prep layout, with explicit safe-area and no-overlap checks when the layout is touched.
+- Wiki service tests for home summaries, structured block generation, locked tiers, and related-entry resolution.
+- Screenshot/user-flow tests for wiki home and detail should be added when V3 touches visual layout in a PR that runs the browser suite.
