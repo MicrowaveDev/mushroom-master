@@ -13,6 +13,7 @@ import { useSSE } from './composables/useSSE.js';
 import { useTouch } from './composables/useTouch.js';
 import { useDevTools } from './composables/useDevTools.js';
 import { useCustomization } from './composables/useCustomization.js';
+import { useTelegramWebApp } from './composables/useTelegramWebApp.js';
 
 // Page components
 // Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
@@ -88,11 +89,12 @@ const App = {
     });
 
     // --- Composables ---
+    const telegram = useTelegramWebApp();
     const gs = useGameState(state);
-    const auth = useAuth(state, gs.goTo);
+    const auth = useAuth(state, gs.goTo, telegram);
     const replay = useReplay(state, gs.goTo, gs.getMushroom);
-    const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, replay.loadReplay);
-    const shop = useShop(state, gs.getArtifact, gameRun.persistRunLoadout);
+    const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, replay.loadReplay, telegram);
+    const shop = useShop(state, gs.getArtifact, gameRun.persistRunLoadout, telegram);
     const social = useSocial(state, gs.goTo);
     const sse = useSSE(state, gs.goTo, replay.loadReplay);
     const touch = useTouch(state);
@@ -174,7 +176,9 @@ const App = {
 
     // --- Mount ---
     let appRootEl = null;
+    let cleanupTelegram = () => {};
     onMounted(async () => {
+      cleanupTelegram = telegram.init();
       auth.applyTelegramTheme();
       // Attach touch handlers to the app root element
       appRootEl = document.getElementById('app');
@@ -201,6 +205,7 @@ const App = {
     });
     onUnmounted(() => {
       sse.disconnect();
+      cleanupTelegram();
       touch.detachTouch(appRootEl);
     });
 

@@ -20,7 +20,7 @@ The player has three zones during prep:
 2. **Container (Backpack)** — holding area for purchased items not yet placed on the grid.
 3. **Inventory Grid** — the active loadout. Only grid-placed artifacts contribute combat stats.
 
-The player's goal: fill the 3x2 inventory grid with artifacts that maximize their mushroom's combat effectiveness, while managing a limited coin budget.
+The player's goal: fill the 3x3 inventory grid with artifacts that maximize their mushroom's combat effectiveness, while managing a limited coin budget.
 
 ### Artifacts: Combat Modifiers
 
@@ -110,7 +110,7 @@ Battles are deterministic 1v1 duels resolved server-side in up to `STEP_CAP` (cu
 | Constant | Value | File |
 |----------|-------|------|
 | `INVENTORY_COLUMNS` | 3 | `web/src/constants.js` |
-| `INVENTORY_ROWS` | 2 | `web/src/constants.js` |
+| `INVENTORY_ROWS` | 3 | `web/src/constants.js` |
 | `MAX_ARTIFACT_COINS` | 5 | `web/src/constants.js` |
 | `SHOP_OFFER_SIZE` | 5 | `web/src/constants.js` |
 | `REROLL_COST` | 1 | `web/src/constants.js` |
@@ -336,7 +336,7 @@ for each non-bag artifactId in state.containerItems:
 - **Bags** (`family === 'bag'`) — bags have empty `bonus: {}`, they only provide storage
 - **Container items** (`x < 0 || y < 0` AND no `bagId`) — unplaced items don't fight
 
-Placed grid items and bagged items (items inside bags) both contribute stats. This means filling a bag with 1×1 combat artifacts effectively gives the player **extra stat slots beyond the base 3×2 grid**.
+Placed grid items and bagged items (items inside bags) both contribute stats. This means filling a bag with 1×1 combat artifacts effectively gives the player **extra stat slots beyond the base 3×3 grid**.
 
 ### Bag Rendering
 

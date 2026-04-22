@@ -26,6 +26,20 @@
 
 :root {
   --artifact-cell-size: 50px;
+  --tg-viewport-height-local: 100vh;
+  --tg-viewport-stable-height-local: 100vh;
+  --telegram-safe-area-top: 0px;
+  --telegram-safe-area-right: 0px;
+  --telegram-safe-area-bottom: 0px;
+  --telegram-safe-area-left: 0px;
+  --telegram-content-safe-area-top: 0px;
+  --telegram-content-safe-area-right: 0px;
+  --telegram-content-safe-area-bottom: 0px;
+  --telegram-content-safe-area-left: 0px;
+  --app-safe-area-top: max(env(safe-area-inset-top, 0px), var(--telegram-content-safe-area-top), var(--telegram-safe-area-top));
+  --app-safe-area-right: max(env(safe-area-inset-right, 0px), var(--telegram-content-safe-area-right), var(--telegram-safe-area-right));
+  --app-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), var(--telegram-content-safe-area-bottom), var(--telegram-safe-area-bottom));
+  --app-safe-area-left: max(env(safe-area-inset-left, 0px), var(--telegram-content-safe-area-left), var(--telegram-safe-area-left));
   --bg-color: #f4edd9;
   --bg: linear-gradient(180deg, #fbf5e7 0%, #f4edd9 100%);
   --surface: rgba(255, 250, 239, 0.92);
@@ -42,7 +56,7 @@
 }
 
 html {
-  min-height: 100%;
+  min-height: var(--tg-viewport-stable-height-local, 100%);
   background: var(--bg);
   background-color: var(--bg-color);
 }
@@ -53,13 +67,13 @@ html {
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: var(--tg-viewport-stable-height-local, 100vh);
   background: var(--bg);
   background-color: var(--bg-color);
 }
 
 #app {
-  min-height: 100vh;
+  min-height: var(--tg-viewport-stable-height-local, 100vh);
   background: var(--bg);
   background-color: var(--bg-color);
 }
@@ -74,7 +88,12 @@ select {
 .shell {
   max-width: 980px;
   margin: 0 auto;
-  padding: 16px;
+  min-height: var(--tg-viewport-stable-height-local, 100vh);
+  padding:
+    calc(16px + var(--app-safe-area-top))
+    calc(16px + var(--app-safe-area-right))
+    calc(16px + var(--app-safe-area-bottom))
+    calc(16px + var(--app-safe-area-left));
 }
 
 /* ---- Auth / Welcome screen ---- */
@@ -1313,7 +1332,13 @@ select {
   user-select: none;
   width: min(150px, 100%);
   max-width: 100%;
+  touch-action: manipulation;
   animation: container-item-appear 0.35s ease-out;
+}
+
+.container-item[draggable="true"],
+.shop-item[draggable="true"] {
+  touch-action: none;
 }
 @keyframes container-item-appear {
   0% { opacity: 0; transform: scale(0.85); }
@@ -1426,6 +1451,7 @@ select {
   cursor: pointer;
   user-select: none;
   min-width: 0;
+  touch-action: manipulation;
 }
 
 .shop-item:active {
@@ -1716,6 +1742,7 @@ select {
 .artifact-piece-wrap[draggable="true"] {
   pointer-events: auto;
   cursor: grab;
+  touch-action: none;
 }
 
 .artifact-piece-wrap[draggable="true"]:active {
@@ -1746,6 +1773,7 @@ select {
   background: transparent;
   pointer-events: auto;
   overflow: visible;
+  touch-action: manipulation;
 }
 
 .artifact-piece-rotate {
@@ -2685,7 +2713,11 @@ select {
 
 @media (max-width: 640px) {
   .shell {
-    padding: 12px;
+    padding:
+      calc(12px + var(--app-safe-area-top))
+      calc(12px + var(--app-safe-area-right))
+      calc(12px + var(--app-safe-area-bottom))
+      calc(12px + var(--app-safe-area-left));
   }
 
   .hero {
@@ -2759,6 +2791,9 @@ select {
 .prep-screen {
   display: grid;
   gap: 12px;
+  min-height: calc(var(--tg-viewport-stable-height-local, 100vh) - var(--app-safe-area-top) - var(--app-safe-area-bottom) - 32px);
+  align-content: start;
+  padding-bottom: var(--app-safe-area-bottom);
 }
 
 .prep-workspace,
@@ -2811,6 +2846,8 @@ select {
   justify-content: center;
   margin-top: 8px;
   min-width: 0;
+  padding-bottom: max(0px, var(--app-safe-area-bottom));
+  scroll-margin-bottom: calc(24px + var(--app-safe-area-bottom));
 }
 .prep-ready-btn {
   min-width: min(160px, 100%);
@@ -2836,6 +2873,7 @@ select {
   color: #999;
   font-size: 0.9rem;
   transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+  touch-action: none;
 }
 .sell-zone--active {
   background: rgba(230, 126, 34, 0.12);

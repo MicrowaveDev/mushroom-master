@@ -3,7 +3,13 @@ import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrienta
 import { getEffectiveShape, isCellInShape } from '../../../app/shared/bag-shape.js';
 import { messages } from '../i18n.js';
 
-export function useShop(state, getArtifact, persistRunLoadout) {
+export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
+  const haptics = {
+    impact: typeof feedback.impact === 'function' ? feedback.impact : () => {},
+    notify: typeof feedback.notify === 'function' ? feedback.notify : () => {},
+    selectionChanged: typeof feedback.selectionChanged === 'function' ? feedback.selectionChanged : () => {}
+  };
+
   function isBagRotated(bagId) {
     return state.rotatedBags.some((b) => b.artifactId === bagId);
   }
@@ -133,13 +139,17 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     const currentlyRotated = state.rotatedBags.some((b) => b.id === activeBag.id);
     const nextShape = getEffectiveShape(bag, !currentlyRotated);
     const nextCols = nextShape.length > 0 ? nextShape[0].length : 0;
-    if (nextCols > INVENTORY_COLUMNS) return;
+    if (nextCols > INVENTORY_COLUMNS) {
+      haptics.notify('error');
+      return;
+    }
     // Block only if THIS bag still holds items. Later bags are independent
     // — their slot coords are relative to their own bag, and relayoutBagged
     // Items recomputes their virtual y against the new layout.
     const itemsInThisBag = state.builderItems.filter((i) => i.bagId === activeBag.id);
     if (itemsInThisBag.length) {
       state.error = messages[state.lang].errorBagNotEmpty;
+      haptics.notify('error');
       return;
     }
     const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
@@ -166,6 +176,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     // Pre-refactor, rotateBag only mutated client state and the rotation
     // vanished on every reload because no write was ever sent.
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
+    haptics.selectionChanged();
   }
 
   // Build the next builderItems array for placing a candidate item onto the
@@ -241,12 +252,14 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     const occupied = buildOccupancy(others);
     if (item.x + newWidth > INVENTORY_COLUMNS || item.y + newHeight > effectiveRows()) {
       state.error = messages[state.lang].errorDoesNotFit;
+      haptics.notify('error');
       return;
     }
     for (let dx = 0; dx < newWidth; dx += 1) {
       for (let dy = 0; dy < newHeight; dy += 1) {
         if (occupied.has(`${item.x + dx}:${item.y + dy}`)) {
           state.error = messages[state.lang].errorDoesNotFit;
+          haptics.notify('error');
           return;
         }
       }
@@ -255,6 +268,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       isSameInstance(it, item) ? { ...it, width: newWidth, height: newHeight } : it
     );
     state.error = '';
+    haptics.selectionChanged();
   }
 
   function computeUsedCoins() {
@@ -269,6 +283,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
         state.error = state.lang === 'ru'
           ? `Недостаточно монет для обновления (нужна ${REROLL_COST})`
           : `Not enough coins to reroll (need ${REROLL_COST})`;
+        haptics.notify('error');
         return;
       }
       state.rerollSpent += REROLL_COST;
@@ -290,6 +305,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       state.error = state.lang === 'ru'
         ? `Недостаточно монет (нужно ${price}, осталось ${remaining})`
         : `Not enough coins (need ${price}, left ${remaining})`;
+      haptics.notify('error');
       return false;
     }
     state.shopOffer = state.shopOffer.filter((id) => id !== artifactId);
@@ -299,6 +315,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     state.containerItems = [...state.containerItems, { id: null, artifactId }];
     state.freshPurchases = [...state.freshPurchases, artifactId];
     state.error = '';
+    haptics.impact('light');
 
     return true;
   }
@@ -326,6 +343,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     if (!state.shopOffer.includes(artifactId)) {
       state.shopOffer = [...state.shopOffer, artifactId];
     }
+    haptics.selectionChanged();
 
   }
 
@@ -348,11 +366,13 @@ export function useShop(state, getArtifact, persistRunLoadout) {
         state.builderItems = next;
         state.containerItems = popOneFromContainer(artifactId).next;
         state.error = '';
+        haptics.impact('light');
     
         return true;
       }
     }
     state.error = messages[state.lang].errorDoesNotFit;
+    haptics.notify('error');
     return false;
   }
 
@@ -366,6 +386,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     state.containerItems = next;
     state.error = '';
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
+    haptics.impact('medium');
   }
 
   function deactivateBag(artifactId) {
@@ -378,6 +399,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     const itemsInThisBag = state.builderItems.filter((i) => i.bagId === removed.id);
     if (itemsInThisBag.length) {
       state.error = messages[state.lang].errorBagNotEmpty;
+      haptics.notify('error');
       return;
     }
     const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
@@ -392,6 +414,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
     state.builderItems = nextBuilder;
     state.containerItems = [...state.containerItems, removed];
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
+    haptics.selectionChanged();
   }
 
   function autoPlaceFromContainer(artifactId) {
@@ -416,6 +439,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
             state.builderItems = next;
             state.containerItems = popOneFromContainer(artifactId).next;
             state.error = '';
+            haptics.impact('light');
         
             return;
           }
@@ -423,6 +447,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       }
     }
     state.error = messages[state.lang].errorDoesNotFitInventory;
+    haptics.notify('error');
   }
 
   // Unplace exactly ONE instance back to the container. Accepts either a
@@ -455,6 +480,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       ...state.containerItems,
       { id: removed.id ?? null, artifactId: removed.artifactId }
     ];
+    haptics.selectionChanged();
 
   }
 
@@ -475,14 +501,23 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       const occupied = buildOccupancy(others);
       const w = dragged.width;
       const h = dragged.height;
-      if (x + w > INVENTORY_COLUMNS || y + h > effectiveRows()) return;
+      if (x + w > INVENTORY_COLUMNS || y + h > effectiveRows()) {
+        haptics.notify('error');
+        return;
+      }
       for (let dx = 0; dx < w; dx += 1) {
         for (let dy = 0; dy < h; dy += 1) {
-          if (occupied.has(`${x + dx}:${y + dy}`)) return;
+          if (occupied.has(`${x + dx}:${y + dy}`)) {
+            haptics.notify('error');
+            return;
+          }
           // Bag rows may expose fewer cols than INVENTORY_COLUMNS — don't
           // drop into a disabled (greyed-out) cell, which would otherwise
           // persist and trip the server's occupancy check on the next save.
-          if (isCellDisabled(x + dx, y + dy)) return;
+          if (isCellDisabled(x + dx, y + dy)) {
+            haptics.notify('error');
+            return;
+          }
         }
       }
       // Recompute bagId for the new position — moving across the bag/grid
@@ -491,6 +526,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       const info = bagForRow(y);
       const nextBagId = info ? info.bagRowId : null;
       state.builderItems = [...others, { ...dragged, x, y, bagId: nextBagId }];
+      haptics.selectionChanged();
 
     }
   }
@@ -535,6 +571,7 @@ export function useShop(state, getArtifact, persistRunLoadout) {
       state.error = state.lang === 'ru'
         ? `Недостаточно монет (нужно ${price}, осталось ${remaining})`
         : `Not enough coins (need ${price}, left ${remaining})`;
+      haptics.notify('error');
       return;
     }
     state.draggingArtifactId = artifactId;

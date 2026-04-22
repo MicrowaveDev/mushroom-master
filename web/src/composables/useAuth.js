@@ -1,16 +1,11 @@
 import { apiJson, parseStartParams } from '../api.js';
 import { projectLoadoutItems } from './loadout-projection.js';
+import { useTelegramWebApp } from './useTelegramWebApp.js';
 
-export function useAuth(state, goTo) {
+export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   function applyTelegramTheme() {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) return;
-    tg.ready();
-    tg.expand();
-    const theme = tg.themeParams || {};
-    const root = document.documentElement;
-    root.style.setProperty('--telegram-accent', theme.button_color || '#7b5b3b');
-    root.style.setProperty('--telegram-surface', theme.secondary_bg_color || '#f6f0df');
+    telegram.applyTelegramTheme();
+    telegram.syncViewportVars();
   }
 
   async function refreshBootstrap() {
@@ -131,7 +126,7 @@ export function useAuth(state, goTo) {
 
   async function loginViaTelegram() {
     clearAuthPoll();
-    const initData = window.Telegram?.WebApp?.initData;
+    const initData = telegram.getWebApp()?.initData;
     if (!initData) {
       state.error = 'Missing Telegram initData';
       return;

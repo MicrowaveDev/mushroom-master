@@ -1,9 +1,9 @@
 /**
- * Touch drag-and-drop composable.
+ * Touch / Pointer drag-and-drop composable.
  *
- * Bridges HTML5 drag-and-drop to touch events for mobile devices.
- * Attaches to a root element and intercepts touchstart/touchmove/touchend
- * on elements with [draggable="true"] or [data-artifact-id].
+ * Bridges HTML5 drag-and-drop to mobile pointer/touch events. Pointer Events
+ * are preferred when available; touch events remain as the fallback for older
+ * WebViews. Mouse keeps the native HTML5 drag path.
  *
  * Usage: call `attachTouch(rootEl)` in onMounted with the app's root DOM element.
  */
@@ -13,6 +13,8 @@ export function useTouch(state) {
   let startX = 0;
   let startY = 0;
   let moved = false;
+  let activePointerId = null;
+  let usingPointerEvents = false;
 
   function findDraggable(el) {
     let node = el;
@@ -187,13 +189,106 @@ export function useTouch(state) {
     removeGhost();
     state.sellDragOver = false;
     state.draggingArtifactId = '';
+    state.draggingItem = null;
     state.draggingSource = '';
     dragEl = null;
     moved = false;
   }
 
+  function onPointerDown(e) {
+    if (e.pointerType === 'mouse') return;
+    const target = findDraggable(e.target);
+    if (!target) return;
+
+    dragEl = target;
+    moved = false;
+    activePointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const artifactId = inferArtifactId(target);
+    const source = inferSource(target);
+    if (artifactId && source) {
+      state.draggingArtifactId = artifactId;
+      state.draggingSource = source;
+    }
+
+    if (typeof target.setPointerCapture === 'function') {
+      try { target.setPointerCapture(e.pointerId); } catch (_error) {}
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!dragEl || e.pointerId !== activePointerId) return;
+    const dx = Math.abs(e.clientX - startX);
+    const dy = Math.abs(e.clientY - startY);
+
+    if (!moved && (dx > 8 || dy > 8)) {
+      moved = true;
+      createGhost(dragEl, e.clientX, e.clientY);
+    }
+
+    if (moved) {
+      e.preventDefault();
+      moveGhost(e.clientX, e.clientY);
+      const zone = findDropZone(e.clientX, e.clientY);
+      state.sellDragOver = zone?.type === 'sell';
+    }
+  }
+
+  function dispatchDropForZone(zone) {
+    if (!zone) return;
+    if (zone.type === 'cell') {
+      zone.el.dispatchEvent(new CustomEvent('drop', {
+        bubbles: true,
+        detail: { x: zone.x, y: zone.y, touchDrop: true }
+      }));
+      zone.el.dispatchEvent(new CustomEvent('cell-drop-touch', {
+        bubbles: true,
+        detail: { x: zone.x, y: zone.y }
+      }));
+    } else {
+      zone.el.dispatchEvent(new Event('drop', { bubbles: true }));
+    }
+  }
+
+  function clearPointerDrag(target) {
+    if (target && activePointerId != null && typeof target.releasePointerCapture === 'function') {
+      try { target.releasePointerCapture(activePointerId); } catch (_error) {}
+    }
+    removeGhost();
+    state.sellDragOver = false;
+    state.draggingArtifactId = '';
+    state.draggingSource = '';
+    dragEl = null;
+    activePointerId = null;
+    moved = false;
+  }
+
+  function onPointerUp(e) {
+    if (!dragEl || e.pointerId !== activePointerId) return;
+    if (moved) {
+      const zone = findDropZone(e.clientX, e.clientY);
+      dispatchDropForZone(zone);
+    }
+    clearPointerDrag(e.target);
+  }
+
+  function onPointerCancel(e) {
+    if (e.pointerId !== activePointerId) return;
+    clearPointerDrag(e.target);
+  }
+
   function attachTouch(rootEl) {
     if (!rootEl) return;
+    usingPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
+    if (usingPointerEvents) {
+      rootEl.addEventListener('pointerdown', onPointerDown, { passive: true });
+      rootEl.addEventListener('pointermove', onPointerMove, { passive: false });
+      rootEl.addEventListener('pointerup', onPointerUp, { passive: true });
+      rootEl.addEventListener('pointercancel', onPointerCancel, { passive: true });
+      return;
+    }
     rootEl.addEventListener('touchstart', onTouchStart, { passive: true });
     rootEl.addEventListener('touchmove', onTouchMove, { passive: false });
     rootEl.addEventListener('touchend', onTouchEnd, { passive: true });
@@ -201,6 +296,14 @@ export function useTouch(state) {
 
   function detachTouch(rootEl) {
     if (!rootEl) return;
+    if (usingPointerEvents) {
+      rootEl.removeEventListener('pointerdown', onPointerDown);
+      rootEl.removeEventListener('pointermove', onPointerMove);
+      rootEl.removeEventListener('pointerup', onPointerUp);
+      rootEl.removeEventListener('pointercancel', onPointerCancel);
+      usingPointerEvents = false;
+      return;
+    }
     rootEl.removeEventListener('touchstart', onTouchStart);
     rootEl.removeEventListener('touchmove', onTouchMove);
     rootEl.removeEventListener('touchend', onTouchEnd);

@@ -3,7 +3,13 @@ import { getArtifactPrice } from '../artifacts/grid.js';
 import { INVENTORY_ROWS } from '../constants.js';
 import { messages } from '../i18n.js';
 
-export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay) {
+export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
+  const haptics = {
+    impact: typeof feedback.impact === 'function' ? feedback.impact : () => {},
+    notify: typeof feedback.notify === 'function' ? feedback.notify : () => {},
+    selectionChanged: typeof feedback.selectionChanged === 'function' ? feedback.selectionChanged : () => {}
+  };
+
   function buildLoadoutPayloadItems() {
     // Map frontend state to server loadout payload.
     //
@@ -157,6 +163,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         }, state.sessionKey);
       }
       const data = await apiJson(`/api/game-run/${state.gameRun.id}/ready`, { method: 'POST' }, state.sessionKey);
+      haptics.impact('medium');
       if (data.waiting) return;
       state.gameRunResult = data;
       if (data.status === 'completed' || data.status === 'abandoned') {
@@ -178,6 +185,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       }
     } catch (error) {
       state.error = error.message || 'Could not resolve round';
+      haptics.notify('error');
     } finally {
       state.actionInFlight = false;
     }
@@ -226,8 +234,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.gameRunShopOffer = data.shopOffer;
       state.gameRunRefreshCount = data.refreshCount;
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
+      haptics.selectionChanged();
     } catch (error) {
       state.error = error.message || 'Not enough coins';
+      haptics.notify('error');
     }
   }
 
@@ -327,9 +337,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
           ...state.freshPurchases.slice(freshIdx + 1)
         ];
       }
+      haptics.impact('light');
 
     } catch (error) {
       state.error = error.message || 'Could not sell item';
+      haptics.notify('error');
     }
   }
 
@@ -339,6 +351,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     const price = getArtifactPrice(artifact);
     if (price > state.gameRun.player.coins) {
       state.error = messages[state.lang].errorNotEnoughCoins;
+      haptics.notify('error');
       return;
     }
     try {
@@ -351,9 +364,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       // the next bootstrap — place, sell, drag — can target the exact row.
       state.containerItems = [...state.containerItems, { id: data.id || null, artifactId }];
       state.freshPurchases = [...state.freshPurchases, artifactId];
+      haptics.impact('light');
 
     } catch (error) {
       state.error = error.message || 'Could not buy item';
+      haptics.notify('error');
     }
   }
 
