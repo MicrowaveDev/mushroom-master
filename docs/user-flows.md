@@ -21,7 +21,7 @@ E2E tests must capture screenshots at the **mobile viewport** for each major scr
 |---|---|
 | `home` | Side columns are present: `.friends-panel` and `.leaderboard-panel` visible without scroll |
 | `prep` | Cohesive two-column workspace: backpack+inventory column and shop column are side-by-side with aligned top edges; HUD is above both columns; Ready button visible without scroll |
-| `characters` | All 5 character cards visible in the grid without scroll |
+| `characters` | All roster cards visible in the grid without scroll |
 | `auth` | All login buttons + language toggle visible without scroll (no button cut off below fold) |
 
 All other screens: mobile-only is sufficient — desktop shows the same content, just wider.
@@ -92,9 +92,9 @@ Step 3: Character Select
   Screenshot: screenshots/03-characters.png, screenshots/03-characters-desktop.png
   Above the fold (mobile):
     - First 2 mushroom cards in 2-column grid (portrait, name, style tag, stats)
-  Desktop note: All 5 cards visible in wider grid without scroll
+  Desktop note: All roster cards visible in wider grid without scroll
   Sees:
-    - 5 mushroom cards (portrait, name, style tag, HP/ATK/SPD stats)
+    - One card per mushroom in the roster (portrait, name, style tag, HP/ATK/SPD stats)
   Action: Click a mushroom card (e.g. Thalla)
   Expected:
     - [Req 3-A] selectActiveMushroom seeds the 2-item starter preset

@@ -1,0 +1,54 @@
+{
+  "task": "html5-ux-optimization",
+  "scope": "V1",
+  "criteria": {
+    "AC1": {
+      "status": "PASS",
+      "proof": "tests/web/use-reduced-motion.test.js — [reduced-motion][AC1] system preference alone yields true"
+    },
+    "AC2": {
+      "status": "PASS",
+      "proof": "tests/web/use-reduced-motion.test.js — [reduced-motion][AC2] app preference alone yields true"
+    },
+    "AC3": {
+      "status": "PASS",
+      "proof": "tests/web/use-reduced-motion.test.js — [reduced-motion][AC3] system change + app change subscriber tests"
+    },
+    "AC4": {
+      "status": "PASS",
+      "proof": "tests/web/use-reduced-motion.test.js — [reduced-motion][AC4] SSR-safe: no window does not throw"
+    },
+    "AC5": {
+      "status": "PASS",
+      "proof": "AC1 + AC2 + two explicit truth-table tests (neither, both) in the same file"
+    },
+    "AC6": {
+      "status": "PASS",
+      "proof": "web/src/styles.css:1220 — clamp(34px, calc((100cqi - 16px) / 3), 44px); 120cqi → 34.67px, 400cqi → 44px"
+    },
+    "AC7": {
+      "status": "PASS",
+      "proof": "web/src/styles.css — same fluid formula on .shop-item-visual and .container-item-visual"
+    },
+    "AC8": {
+      "status": "PASS",
+      "proof": "npm run game:test:screens — [Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport) — 1 passed (12.1s). See raw/screenshot-check.log"
+    },
+    "AC9": {
+      "status": "PASS",
+      "proof": "web/src/composables/useGameState.js:79-92 — feature detect + fallback. web/src/styles.css — 180ms ::view-transition-* keyframes"
+    },
+    "AC10": {
+      "status": "PASS",
+      "proof": "web/src/main.js:99-103 — motionTracker wired into shouldAnimate callback; goTo skips startViewTransition when tracker.getValue() is true"
+    },
+    "AC11": {
+      "status": "PASS",
+      "proof": "web/src/main.js:164-177 — screen watcher fires on state.screen mutation regardless of transition wrapper; scrollTo still runs"
+    },
+    "AC12": {
+      "status": "PASS",
+      "proof": "npm run game:test — 327 tests pass (318 existing + 9 new reduced-motion). See raw/game-test.log"
+    }
+  }
+}

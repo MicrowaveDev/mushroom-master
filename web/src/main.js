@@ -14,6 +14,7 @@ import { useTouch } from './composables/useTouch.js';
 import { useDevTools } from './composables/useDevTools.js';
 import { useCustomization } from './composables/useCustomization.js';
 import { useTelegramWebApp } from './composables/useTelegramWebApp.js';
+import { createReducedMotionTracker } from './composables/useReducedMotion.js';
 
 // Page components
 // Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
@@ -90,7 +91,14 @@ const App = {
 
     // --- Composables ---
     const telegram = useTelegramWebApp();
-    const gs = useGameState(state);
+    // Single source of truth for "should the UI animate?" — combines
+    // matchMedia(prefers-reduced-motion: reduce) with the in-app
+    // reducedMotion setting. Used by useGameState to gate View Transitions.
+    // See docs/html5-ux-optimization-plan.md §V1 item 1.
+    const motionTracker = createReducedMotionTracker();
+    const gs = useGameState(state, {
+      shouldAnimate: () => !motionTracker.getValue()
+    });
     const auth = useAuth(state, gs.goTo, telegram);
     const replay = useReplay(state, gs.goTo, gs.getMushroom);
     const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, replay.loadReplay, telegram);
@@ -155,7 +163,8 @@ const App = {
     watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
     watch(() => state.bootstrap?.settings?.reducedMotion, (reduced) => {
       document.documentElement.classList.toggle('reduced-motion', !!reduced);
-    });
+      motionTracker.setAppPreference(!!reduced);
+    }, { immediate: true });
     watch(() => state.screen, async (screen, oldScreen) => {
       if (screen !== oldScreen) {
         await nextTick();
@@ -207,6 +216,7 @@ const App = {
       sse.disconnect();
       cleanupTelegram();
       touch.detachTouch(appRootEl);
+      motionTracker.destroy();
     });
 
     return {

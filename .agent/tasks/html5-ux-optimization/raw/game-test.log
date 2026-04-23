@@ -1,0 +1,15 @@
+# Subtest: [telegram-webapp] adapter syncs theme, viewport, safe areas, and haptics
+ok 327 - [telegram-webapp] adapter syncs theme, viewport, safe areas, and haptics
+  ---
+  duration_ms: 0.54275
+  type: 'test'
+  ...
+1..327
+# tests 327
+# suites 0
+# pass 327
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1311.655542

@@ -1,0 +1,14 @@
+
+> telegram-mushroom-archiver@1.0.0 game:test:screens
+> node app/scripts/run-game-screenshot-check.js
+
+[game:test:screens] backend port 3321
+[game:test:screens] frontend port 4374
+[1A[2K[WebServer] [33m[33m[INEFFECTIVE_DYNAMIC_IMPORT] Warning:[0m web/src/components/ReplayDuel.js is dynamically imported by web/src/pages/ReplayScreen.js but also statically imported by web/src/main.js, dynamic import will not move module into another chunk.
+[WebServer] [39m
+
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] tests/game/screenshots.spec.js:27:1 › [Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)
+[1A[2K  1 passed (12.1s)

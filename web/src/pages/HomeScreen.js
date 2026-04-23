@@ -112,7 +112,10 @@ export const HomeScreen = {
                       @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: m.id, portraitId: p.id })"
                     >
                       <img :src="p.path" :alt="p.name[state.lang]" />
-                      <span v-if="!p.unlocked" class="home-swatch-lock">🔒</span>
+                      <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
+                        <span class="home-swatch-price-icon">🍄</span>
+                        <span class="home-swatch-price-value">{{ p.cost }}</span>
+                      </span>
                     </button>
                   </div>
                 </div>

@@ -766,43 +766,83 @@ select {
 }
 
 .home-portrait-swatches {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .home-portrait-swatch {
   position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
   overflow: hidden;
   border: 2px solid transparent;
   padding: 0;
   cursor: pointer;
   background: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.home-portrait-swatch:hover:not(.home-portrait-swatch--locked) {
+  transform: translateY(-1px);
 }
 .home-portrait-swatch img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: filter 0.2s, opacity 0.2s;
 }
 .home-portrait-swatch--active {
   border-color: var(--sage);
+  box-shadow: 0 0 0 2px rgba(140, 188, 135, 0.35);
 }
+
+/* Locked state: desaturate + dim the portrait, dark wash on top so the
+   centered price pill stays legible. Cursor is default because clicks
+   are no-ops until the portrait unlocks (see @click.stop guard). */
 .home-portrait-swatch--locked {
-  opacity: 0.45;
   cursor: default;
+  border-color: rgba(138, 97, 53, 0.2);
 }
-.home-swatch-lock {
+.home-portrait-swatch--locked img {
+  filter: grayscale(0.55) brightness(0.85);
+  opacity: 0.55;
+}
+.home-portrait-swatch--locked::after {
+  content: '';
   position: absolute;
   inset: 0;
-  display: flex;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 100%);
+  pointer-events: none;
+}
+
+/* Centered price pill — the "unlock goal" read — sits on top of the
+   faded portrait. Mushroom glyph + cost, warm parchment background so
+   it reads clearly against any portrait. */
+.home-swatch-price {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.1em;
-  background: rgba(0,0,0,0.35);
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 235, 0.94);
+  color: #5a3f1f;
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+.home-swatch-price-icon {
+  font-size: 0.95em;
+  line-height: 1;
+}
+.home-swatch-price-value {
+  font-variant-numeric: tabular-nums;
 }
 
 .home-preset-pills {
@@ -1218,7 +1258,13 @@ select {
 }
 
 .artifact-inventory-grid {
-  --artifact-cell-size: 44px;
+  /* Fluid cell sizing driven by the inventory-section container inline-size.
+     100cqi resolves against .artifact-inventory-section (container-type:
+     inline-size at ~line 1198). The clamp() caps at the legacy 44px desktop
+     value so wide containers do not grow unbounded, and floors at 34px so
+     narrow Telegram viewports stay legible. Replaces both the old fixed
+     44px and the narrow @container (max-width: 420px) override. */
+  --artifact-cell-size: clamp(34px, calc((100cqi - 16px) / 3), 44px);
 }
 
 .artifact-inventory-footer {
@@ -1376,7 +1422,10 @@ select {
 }
 
 .container-item-visual {
-  --artifact-cell-size: 44px;
+  /* Fluid against .container-item's inline-size container. Drops the old
+     @container (max-width: 160px) override in favor of always-fluid
+     clamped between 30px (tight shop card) and 44px (legacy desktop). */
+  --artifact-cell-size: clamp(30px, calc((100cqi - 16px) / 3), 44px);
   pointer-events: none;
   justify-self: center;
 }
@@ -1483,7 +1532,10 @@ select {
 .shop-item--tier3 .shop-item-price { color: #b8860b; }
 
 .shop-item-visual {
-  --artifact-cell-size: 44px;
+  /* Fluid against .shop-item's inline-size container. Same clamp as
+     .container-item-visual — narrow shop tiles stay compact, full-width
+     tiles match the legacy 44px. */
+  --artifact-cell-size: clamp(30px, calc((100cqi - 16px) / 3), 44px);
   pointer-events: none;
   justify-self: center;
 }
@@ -1496,15 +1548,27 @@ select {
 }
 .shop-item-header {
   display: flex;
-  align-items: baseline;
+  /* flex-start (not baseline) so the name can expand to a second line
+     via -webkit-line-clamp without the flex baseline pinning it to a
+     single-line box. Price stays at the top-right corner. */
+  align-items: flex-start;
   justify-content: space-between;
   gap: 4px;
 }
 .shop-item-name {
+  /* Allow long artifact names (e.g. "Статический Споровый Мешочек") to wrap
+     onto two lines instead of truncating with ellipsis — the ellipsis form
+     hid the tail of the name on both mobile and desktop shop tiles and
+     forced players to hover/tap to read the full item. Clamped to two
+     lines so very-long names still can't push the tile too tall. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
   min-width: 0;
+  line-height: 1.2;
 }
 .shop-item-price {
   font-weight: 600;
@@ -2813,12 +2877,28 @@ select {
 @media (min-width: 680px) {
   .prep-workspace {
     grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
-    align-items: start;
+    /* Stretch (not start) so both columns share the tallest column's
+       height. At round 1 the left column would otherwise end well above
+       the shop, leaving a visible lopsided gap that violated the
+       AGENTS.md "columns must be visually coherent" rule. */
+    align-items: stretch;
+  }
+
+  .prep-loadout-column {
+    /* Switch to flex on desktop so the inventory panel can grow to fill
+       the remaining column height — keeps the column bottom edges aligned
+       with the shop column regardless of how full the inventory is. */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .prep-loadout-column > .artifact-inventory-section {
+    flex: 1;
   }
 
   .prep-workspace .artifact-shop {
     grid-area: auto;
-    align-self: start;
+    align-self: stretch;
     margin-top: 0;
     min-width: 0;
     overflow: hidden;
@@ -2842,18 +2922,12 @@ select {
   }
 }
 
-@container (max-width: 420px) {
-  .artifact-inventory-grid {
-    --artifact-cell-size: clamp(34px, calc((100cqw - 16px) / 3), 44px);
-  }
-}
-
-@container (max-width: 160px) {
-  .container-item-visual,
-  .shop-item-visual {
-    --artifact-cell-size: clamp(30px, calc((100cqw - 16px) / 3), 44px);
-  }
-}
+/* Fluid --artifact-cell-size now lives on the base declarations for
+   .artifact-inventory-grid, .container-item-visual, and .shop-item-visual
+   (search for their clamp() formulas above). The previous
+   @container (max-width: ...) gates were narrow overrides of fixed 44px
+   values; they are obsolete now that the base declarations compute from
+   100cqi at all container widths. */
 .prep-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3391,4 +3465,38 @@ select {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+}
+
+/* --- View Transitions (progressive enhancement) ---
+   These rules only take effect on browsers that support the View
+   Transitions API. useGameState.goTo() wraps screen changes in
+   document.startViewTransition when available AND when the motion
+   tracker says animations are allowed (system + app reducedMotion
+   both off). When either reduced-motion signal is on, the API is not
+   called at all — so the rules below are dead code in that case. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease;
+}
+::view-transition-old(root) {
+  animation-name: mushroom-screen-fade-out;
+}
+::view-transition-new(root) {
+  animation-name: mushroom-screen-fade-in;
+}
+@keyframes mushroom-screen-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes mushroom-screen-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* Belt-and-suspenders: if a UA ever fires view transitions while the
+   in-app reducedMotion class is set, collapse the animation to a single
+   frame so the screen change stays instant. */
+.reduced-motion ::view-transition-old(root),
+.reduced-motion ::view-transition-new(root) {
+  animation-duration: 0.01ms !important;
 }

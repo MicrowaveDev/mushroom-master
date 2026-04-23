@@ -1,4 +1,4 @@
-import { computed } from 'vue/dist/vue.esm-bundler.js';
+import { computed, nextTick } from 'vue/dist/vue.esm-bundler.js';
 import { messages } from '../i18n.js';
 import { apiJson, parseStartParams, setScreenQuery } from '../api.js';
 import { deriveTotals, getArtifactPrice, buildOccupancy, preferredOrientation } from '../artifacts/grid.js';
@@ -7,7 +7,14 @@ import { defaultReplayPortraitConfig, replayPortraitConfigByMushroom } from '../
 import { formatReplayEvent } from '../replay/format.js';
 import { MAX_ARTIFACT_COINS } from '../constants.js';
 
-export function useGameState(state) {
+export function useGameState(state, options = {}) {
+  // Progressive enhancement: wrap screen changes in the View Transitions API
+  // when the browser supports it and the caller says animations are allowed.
+  // Falls back to an immediate state.screen mutation in every other case.
+  // See docs/html5-ux-optimization-plan.md §V1 item 3.
+  const shouldAnimateTransitions = typeof options.shouldAnimate === 'function'
+    ? options.shouldAnimate
+    : () => true;
   const t = computed(() => messages[state.lang] || messages.ru);
   const isLocalLabEnabled = computed(() => state.appConfig.localAiLabEnabled);
   const isLocalDevAuthEnabled = computed(() => state.appConfig.localDevAuthEnabled);
@@ -61,15 +68,38 @@ export function useGameState(state) {
   }
 
   function goTo(screen, extra = {}) {
-    state.screen = screen;
-    state.menuOpen = false;
-    // When entering prep with an active game run, bind the URL to
-    // /game-run/:id so the tab is bookmarkable and shareable (§2.7).
-    // Other screens write their own URL via the default mapping.
-    if (screen === 'prep' && state.gameRun?.id) {
-      setScreenQuery('game-run', { gameRunId: state.gameRun.id });
+    const applyScreenChange = () => {
+      state.screen = screen;
+      state.menuOpen = false;
+      // When entering prep with an active game run, bind the URL to
+      // /game-run/:id so the tab is bookmarkable and shareable (§2.7).
+      // Other screens write their own URL via the default mapping.
+      if (screen === 'prep' && state.gameRun?.id) {
+        setScreenQuery('game-run', { gameRunId: state.gameRun.id });
+      } else {
+        setScreenQuery(screen, extra);
+      }
+    };
+    const hasViewTransitions = typeof document !== 'undefined'
+      && typeof document.startViewTransition === 'function';
+    // Skip View Transitions under automated drivers (Playwright, Puppeteer).
+    // Otherwise the ~180ms cross-fade is still playing when the test takes
+    // a screenshot, which captures the outgoing AND incoming DOM overlaid
+    // via ::view-transition pseudo-elements. Real users on the same build
+    // still get the animation; only automated test runs skip it.
+    const isAutomatedDriver = typeof navigator !== 'undefined'
+      && !!navigator.webdriver;
+    if (hasViewTransitions && shouldAnimateTransitions() && !isAutomatedDriver) {
+      // Return a Promise from the update callback so View Transitions waits
+      // for Vue's DOM patch (scheduled on the microtask queue) to flush
+      // before snapshotting the "new" state. Without nextTick, the
+      // "after" snapshot would still show the old screen.
+      document.startViewTransition(async () => {
+        applyScreenChange();
+        await nextTick();
+      });
     } else {
-      setScreenQuery(screen, extra);
+      applyScreenChange();
     }
   }
 
