@@ -91,7 +91,31 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.leaderboard-panel')).toBeVisible();
   await saveShot(page, '02-home-desktop.png');
 
+  // Skin-unlock picker coverage: expand the first mushroom that has a
+  // customize (✎) button and capture the portrait picker. Asserts that
+  // the locked-state restyle (faded portrait + centered mycelium price
+  // pill) actually renders — added 2026-04-23 because no prior spec
+  // exercised the home roster picker expanded state.
+  debugLog('capturing skin picker (desktop)');
+  const customizeBtn = page.locator('.home-mushroom-customize').first();
+  await customizeBtn.waitFor({ timeout: 5000 });
+  await customizeBtn.click();
+  await page.locator('.home-mushroom-picker').first().waitFor({ timeout: 5000 });
+  // At least one locked swatch should render: players start with 0
+  // mycelium, so any portrait with cost > 0 is locked.
+  await expect(page.locator('.home-portrait-swatch--locked').first()).toBeVisible();
+  await expect(page.locator('.home-swatch-price').first()).toBeVisible();
+  await saveShot(page, '02b-home-skin-picker-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.goto(`${baseURL}/home`);
+  await page.waitForSelector('.home');
+  const customizeBtnMobile = page.locator('.home-mushroom-customize').first();
+  await customizeBtnMobile.waitFor({ timeout: 5000 });
+  await customizeBtnMobile.click();
+  await page.locator('.home-mushroom-picker').first().waitFor({ timeout: 5000 });
+  debugLog('capturing skin picker (mobile)');
+  await saveShot(page, '02b-home-skin-picker.png');
+
   await page.goto(`${baseURL}/characters`);
   await page.waitForSelector('.character-card');
   debugLog('capturing characters');
