@@ -100,6 +100,7 @@ export function getTier(level) {
 
 import {
   BAG_BASE_CHANCE,
+  BAG_COLUMNS,
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
   CHALLENGE_IDLE_TIMEOUT_MS,
@@ -126,6 +127,7 @@ import {
 
 export {
   BAG_BASE_CHANCE,
+  BAG_COLUMNS,
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
   CHALLENGE_IDLE_TIMEOUT_MS,
@@ -466,6 +468,23 @@ export const artifacts = [
     bonus: { stunChance: 5, armor: 1 }
   },
   // --- Bag family ---
+  {
+    // Starter bag — the 3x3 "base inventory" every character gets on run
+    // start. Seeded server-side at anchor (0, 0) with active=1 so the
+    // client sees it as a regular draggable bag. starterOnly keeps it out
+    // of shop pools and bot loadouts. Price 0 (it's a freebie). See
+    // .agent/tasks/bag-grid-unification/phase-3-4-spec.md §B.
+    id: 'starter_bag',
+    name: { ru: 'Стартовая Сумка', en: 'Starter Bag' },
+    family: 'bag',
+    width: 3,
+    height: 3,
+    price: 0,
+    slotCount: 9,
+    color: '#d4c9a8',
+    starterOnly: true,
+    bonus: {}
+  },
   {
     id: 'moss_pouch',
     name: { ru: 'Моховой Мешочек', en: 'Moss Pouch' },

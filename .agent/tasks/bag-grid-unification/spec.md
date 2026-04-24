@@ -201,9 +201,9 @@ If user wants Phase 2 sooner, copy this section into `.agent/tasks/bag-multi-bag
 | Phase | State | Acceptance covered | BB alignment |
 |---|---|---|---|
 | Phase 1 — Unified grid (base inv as obstacle) | **shipped** (2026-04-24) | AC1 ✓, AC2 ✓, AC3 ✓, AC5 ✓, AC6 ✓, AC7 ✓ | Visual match. Underlying coords still slot-based. |
-| Phase 2 — Items spanning adjacent bags (primary `bagId` attribution) | **deferred** | AC4 (partial) | Stepping stone toward many-to-many membership. No schema change. |
-| Phase 3 — Replace base inventory with a starter-bag artifact | **deferred** | n/a (new ACs in dedicated spec) | Removes "base inv" special-case. No schema change (starter bag is a regular bag row). |
-| Phase 4 — Absolute-coord items + derived many-to-many bag membership | **deferred** | n/a (new ACs in dedicated spec) | Full BB model. **Schema migration**: drop `bag_id`, items use absolute `(x, y)`. |
+| Phase 2 — Items spanning adjacent bags (primary `bagId` attribution) | **skipped** (user decision) | n/a | Phase 4 subsumes this; no separate commit planned. |
+| Phase 3 — Replace base inventory with a starter-bag artifact | **partially started** — see [phase-3-4-spec.md](phase-3-4-spec.md) | n/a | `starter_bag` artifact added to catalog (2026-04-24). Seeding + validator updates require a dedicated test-update pass. |
+| Phase 4 — Absolute-coord items + derived many-to-many bag membership | **scoped** — see [phase-3-4-spec.md](phase-3-4-spec.md) | n/a | First implementation pass surfaced ~120 test updates. Deferred to a focused task per the Status Notes in that spec. |
 | Phase 5 — Per-bag effects + adjacency synergies at battle resolution | **deferred** | n/a (new ACs in dedicated spec) | Hooks into Phase 4's derived membership. |
 
 The end state matches Backpack Battles: a single shared grid where every placed entity (bags + items) lives in unified coords, bag membership is derived from tile overlap and is many-to-many, and "base inventory" is just a starter bag. See [research-backpack-battles.md](research-backpack-battles.md) for the BB findings and how each phase lines up.
