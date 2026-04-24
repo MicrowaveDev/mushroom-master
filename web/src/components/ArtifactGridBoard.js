@@ -1,4 +1,5 @@
 import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { bagRowEntryFor as bagRowEntryForLookup } from '../helpers/grid-cell-classification.js';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
 export const ArtifactGridBoard = {
@@ -86,18 +87,10 @@ export const ArtifactGridBoard = {
         && cy >= 0 && cy < INVENTORY_ROWS;
     },
     bagRowEntryFor(cx, cy) {
-      // Multiple bags can share a row when packed alongside (Req 2-G). The
-      // cell belongs to the bag whose bounding-box x-range `[bboxStart,
-      // bboxEnd)` covers `cx`. Mask gaps inside a tetromino bag's bbox are
-      // part of the bag (enabledCells excludes them — the caller checks
-      // isBagSlotCell vs isBagBoxCell separately). Cells outside every
-      // bag's bbox are empty bag-area cells and return null.
-      const coveringBag = this.bagRows.find((br) =>
-        br.row === cy
-        && cx >= (br.bboxStart ?? br.enabledCells?.[0] ?? -1)
-        && cx < (br.bboxEnd ?? ((br.enabledCells?.[br.enabledCells.length - 1] ?? -1) + 1))
-      );
-      return coveringBag || null;
+      // Delegates to helpers/grid-cell-classification.bagRowEntryFor so the
+      // lookup rules (slot-first, bbox-second, null for empty bag area) are
+      // covered by unit tests without mounting the component.
+      return bagRowEntryForLookup(this.bagRows, cx, cy);
     },
     isBagSlotCell(cx, cy) {
       const bag = this.bagRowEntryFor(cx, cy);
