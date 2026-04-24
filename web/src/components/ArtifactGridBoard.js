@@ -84,14 +84,18 @@ export const ArtifactGridBoard = {
         && cy >= 0 && cy < INVENTORY_ROWS;
     },
     bagRowEntryFor(cx, cy) {
-      // Multiple bags can share the same row when packed alongside (Req 2-G),
-      // so prefer the entry whose enabledCells covers this cell's x — that
-      // is the bag whose colour the cell should render with. Falls back to
-      // any row entry at this y so the lookup remains deterministic for
-      // bag-zone gaps that we still want to colour faintly.
-      const owning = this.bagRows.find((br) => br.row === cy && br.enabledCells?.includes(cx));
-      if (owning) return owning;
-      return this.bagRows.find((br) => br.row === cy) || null;
+      // Multiple bags can share a row when packed alongside (Req 2-G). The
+      // cell belongs to the bag whose bounding-box x-range `[bboxStart,
+      // bboxEnd)` covers `cx`. Mask gaps inside a tetromino bag's bbox are
+      // part of the bag (enabledCells excludes them — the caller checks
+      // isBagSlotCell vs isBagBoxCell separately). Cells outside every
+      // bag's bbox are empty bag-area cells and return null.
+      const coveringBag = this.bagRows.find((br) =>
+        br.row === cy
+        && cx >= (br.bboxStart ?? br.enabledCells?.[0] ?? -1)
+        && cx < (br.bboxEnd ?? ((br.enabledCells?.[br.enabledCells.length - 1] ?? -1) + 1))
+      );
+      return coveringBag || null;
     },
     isBagSlotCell(cx, cy) {
       const bag = this.bagRowEntryFor(cx, cy);

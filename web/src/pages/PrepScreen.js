@@ -54,11 +54,21 @@ export const PrepScreen = {
             if (maskRow[x]) enabledCells.push(cellX);
           }
           if (enabledCells.length === 0) continue;
+          // Bounding-box x-range for this row. Used by ArtifactGridBoard to
+          // distinguish "empty bag-area cell outside any bag" (rendered as a
+          // faint drop target) from "mask gap inside a tetromino bag's bbox"
+          // (rendered hidden). Without this, cells past a rectangular bag's
+          // right edge in the same row would be mis-classified as gaps and
+          // disappear — see bag-grid-unification bag-row-width bug.
+          const bboxStart = anchorX;
+          const bboxEnd = Math.min(anchorX + maskRow.length, BAG_COLUMNS);
           rows.push({
             row: anchorY + i,
             color: bag.color || '#888',
             artifactId: activeBag.artifactId,
-            enabledCells
+            enabledCells,
+            bboxStart,
+            bboxEnd
           });
         }
       }
