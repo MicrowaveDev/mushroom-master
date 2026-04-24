@@ -150,10 +150,10 @@ export function useGameState(state, options = {}) {
       ? { damage: 'Урон', armor: 'Броня', speed: 'Скорость', stunChance: 'Оглушение' }
       : { damage: 'Damage', armor: 'Armor', speed: 'Speed', stunChance: 'Stun' };
     const parts = [];
-    if (totals.damage) parts.push(`${labels.damage} +${totals.damage}`);
-    if (totals.armor) parts.push(`${labels.armor} +${totals.armor}`);
-    if (totals.speed) parts.push(`${labels.speed} +${totals.speed}`);
-    if (totals.stunChance) parts.push(`${labels.stunChance} +${totals.stunChance}%`);
+    if (totals.damage) parts.push(`${labels.damage} ${formatDelta(totals.damage)}`);
+    if (totals.armor) parts.push(`${labels.armor} ${formatDelta(totals.armor)}`);
+    if (totals.speed) parts.push(`${labels.speed} ${formatDelta(totals.speed)}`);
+    if (totals.stunChance) parts.push(`${labels.stunChance} ${formatDelta(totals.stunChance)}%`);
     return parts.join(' / ');
   }
 

@@ -75,6 +75,35 @@ Rules:
 - **Vertical space is scarce on mobile**: everything important should fit in one viewport (430×932px). Shrink cells, remove dead whitespace, collapse sections rather than scroll.
 - **Click-first, drag-second**: primary interactions are clicks/taps. Drag-and-drop is a secondary power-user path.
 - **Never expose implementation**: no "initData", "session key", "4×4 grid", "browser fallback" in player-facing copy. Describe what the player does, not how the system works.
+- **Flat-first visual treatment**: app surfaces use solid pastel fills, clean typography, and geometric shapes. The parchment/dossier visual language belongs to the PDF, not to the Mini App. In the app, gradients, decorative accent bars, layered shadows, and gloss effects are dated by default; ask whether the effect carries information before adding it.
+
+### Flat Design Rules
+
+These rules scope the "flat-first" principle to concrete practices. They apply to app screens (Vue frontend), not to the PDF dossier.
+
+- **Backgrounds are solid.** Use solid tinted fills for panels, headers, and stat tiles — not gradients. Reserve gradients for the handful of surfaces that genuinely need them (portrait name-overlay fade, dark-on-light readability ramps). If a panel uses a gradient purely for prettiness, flatten it.
+- **No decorative accent bars.** Thin colored stripes at the top or side of a card, corner flourishes, or hairline separators that do not mark real sections are noise. Convey outcome or state through the panel fill itself.
+- **Borders, fills, shadows — pick one.** Avoid stacking a border *and* a gradient *and* a drop shadow on the same element. Choose the lightest treatment that still reads as a distinct surface.
+- **Sign-code deltas on the tile, not only the text.** A positive/negative value should shift the tile's background color (moss-tint for positive, rose-tint for negative) so the sign is visible at a glance. Color-only text changes are weaker and miss the peripheral-vision read.
+- **Respect the pastel palette in flat fills.** Solid does not mean saturated. Use the same soft creams, moss, peach, and amber values as the rest of the app; just render them without gradient fades.
+
+### Stat and Metric Card Pattern
+
+For any surface that shows numeric outcomes (round rewards, run summary, leaderboard deltas, profile stats):
+
+- **Big number on top, tiny label below.** The value is the hero (≈1.8–2.2rem, bold, `font-variant-numeric: tabular-nums`). The label is small (≈0.7rem), uppercase, muted, and sits underneath. If the markup uses `<dl><dt><dd>`, flip the visual order with `order: -1` on the `<dd>`.
+- **Use `formatDelta` (or equivalent) for signed values.** Negative values must render with a single `-`. Templates that hard-prefix `+{{ value }}` produce `+-2` when the value is already negative — that is a bug, not a style choice.
+- **Force explicit column count when the item count is fixed.** Three stats → `grid-template-columns: repeat(3, 1fr)`. Do not rely on `auto-fit` with `minmax(90px, 1fr)` in a narrow card; it silently bails to a single-column stack when the computed track width falls below the floor.
+- **Cap focused-result panels.** Cards that summarize a single event (round result, battle outcome, earned-reward panel) should set `max-width` ≈520–560px and `margin: auto`. Without the cap, they stretch across a desktop viewport and look sparse.
+
+### Chips vs Inline Text
+
+Chips and pills are a specific affordance. Use them correctly or skip them.
+
+- **Chips signal selectability / filtering.** If the element is tappable and represents a selection, filter, or toggle, chip styling (rounded pill, border, background) is right.
+- **Read-only auxiliary info on a panel background is not chips.** For tagline-style supporting details (`vs Ломиэ · Урон +2 · Броня +4`) rendered against a solid panel, use inline text with middot separators. Rendering non-interactive facts as chip clusters reads as dated "tag cloud" UI and adds borders, padding, and visual weight where none is needed.
+- **Contrast affordance over an image is a documented exception.** When read-only facts overlay a portrait, textured background, or other non-uniform surface (e.g. the battle-prep hero's stat tags, the style-tag pill on a character card), a pill or frosted chip backing is legitimate — it exists for legibility, not as a filter affordance. The "no chips for read-only info" rule applies to panel-on-panel surfaces, not image-on-portrait surfaces.
+- **Do not use chips to compensate for a weak hierarchy.** If a section feels bland and you are tempted to add chip styling to make it pop, fix the hierarchy instead (typography, spacing, contrast).
 
 ### Portrait and Name Overlay Pattern
 
@@ -206,6 +235,23 @@ When reviewing visual output, check:
 10. **No borders inside borders**: if a card has a border, its children (fighter cards, portraits, grids) should not.
 11. **Name overlays**: character names should be overlaid at the bottom of their portrait, not in a separate row above.
 12. **Mobile viewport fit**: every key screen (auth, characters, artifacts, battle prep, results) should fit its primary content in one 430×932px viewport.
+
+### Dated Design Signals (App Surfaces)
+
+Before reporting a design change as done, scan the changed surface for these signals. Each one is *presumed dated* in the Mini App unless a specific reason is documented. Fix or justify.
+
+- **Gradients on panels, stat tiles, headers, or chips.** Soft fades from tinted-to-transparent for "depth" are the single most common dated pattern in this repo's recent UI work. Replace with a solid tint from the pastel palette.
+- **Decorative top accent bars** (`::before` stripes, 3px colored lines) that do not carry state or section info. Delete — use the panel fill to communicate outcome.
+- **Chip clusters used for read-only info.** Tagline-style facts (`vs X · Урон +2 · Броня +4`) rendered as four or five chip pills in a row look like filter UI. Convert to inline middot text unless the chips are actually tappable.
+- **Wide stat cards with tiny values.** A stat tile stretching to 400+px wide with a 1.15em number in the middle looks empty and dated. Either cap the container width or scale the value up (≈1.9–2.2rem).
+- **Classic `dt` above `dd` stat layout.** Label-on-top / value-on-bottom with both at similar sizes reads as a 2010s definition-list component. Reverse the visual order (`order: -1` on `dd`) and make the value dominant.
+- **`auto-fit` grids silently stacking to one column.** If the screenshot shows stat tiles vertically stacked when they should be side-by-side, the `minmax` floor is too high for the container. Force the known column count explicitly.
+- **Sign conveyed only in text color.** A `-8` that is red-on-cream without a rose-tinted background is easy to miss. Shift the tile fill as well.
+- **Box-shadow + border + gradient on the same element.** Triple-layered depth is a 2014–2017 signature. Pick one treatment.
+- **Hardcoded `+` prefix in templates.** `+{{ value }}` renders `+-2` for negative values. Always go through `formatDelta` (or equivalent) so the sign is correct.
+- **Full-bleed focused panels on desktop.** A single result/outcome card stretching across 1200px+ screen width should have a `max-width` cap (≈520–560px) with `margin: auto`.
+
+If any signal is present and the agent cannot justify keeping it, the design change is not done — fix it before reporting completion. When in doubt about whether a treatment is "modern," flat-first is the safer default in this repo.
 
 ### Adapting Guidance From Other Repos
 
