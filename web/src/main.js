@@ -66,6 +66,7 @@ const App = {
       menuOpen: false,
       draggingArtifactId: '',
       draggingItem: null,
+      draggingBagId: '',
       draggingSource: '',
       currentBattle: null,
       replayIndex: 0,
@@ -337,6 +338,7 @@ const App = {
           @signal-ready="signalReady" @abandon="abandonRun"
           @deactivate-bag="deactivateBag($event)"
           @rotate-bag="rotateBag($event)"
+          @bag-chip-drag-start="onBagChipDragStart($event.bagId, $event.event)"
         />
 
         <run-complete-screen v-else-if="state.screen === 'runComplete'"

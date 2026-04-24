@@ -84,10 +84,11 @@ test('[projection] bag with active=false lands in containerItems', () => {
   assert.equal(result.activeBags.length, 0);
 });
 
-test('[projection] bagged items with slot coords land in builderItems at reconstructed virtual y', () => {
-  // Storage: bagged item lives at slot (0, 0) inside the moss_pouch row
-  // "g". The projection must add the bag's startRow (= INVENTORY_ROWS = 3
-  // for the first active bag) to reconstruct a virtual render y = 3.
+test('[projection] bagged items with slot coords land in builderItems at reconstructed unified virtual coords', () => {
+  // Unified-grid packer: moss_pouch (effective 2x1) anchors at (3, 0) —
+  // alongside the base inventory in row 0. Slot (0, 0) inside moss → virtual
+  // (anchorX=3, anchorY=0). The packer treats the base inventory at
+  // (0..2, 0..2) as a virtual obstacle so bags land alongside it.
   const result = projectLoadoutItems([
     row({ id: 'g', artifactId: 'moss_pouch', active: true }),
     row({
@@ -99,37 +100,49 @@ test('[projection] bagged items with slot coords land in builderItems at reconst
     })
   ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 1);
+  assert.equal(result.activeBags[0].anchorX, 3, 'moss anchors alongside the base inv (col 3)');
+  assert.equal(result.activeBags[0].anchorY, 0);
   assert.equal(result.builderItems.length, 1);
   assert.equal(result.builderItems[0].id, 'h');
   assert.equal(result.builderItems[0].bagId, 'g', 'builderItem.bagId carries the bag row id, not artifactId');
-  assert.equal(result.builderItems[0].x, 0);
-  assert.equal(result.builderItems[0].y, 3, 'virtual y = startRow (INVENTORY_ROWS=3) + slotY (0)');
+  assert.equal(result.builderItems[0].x, 3, 'virtual x = anchorX (3) + slotX (0)');
+  assert.equal(result.builderItems[0].y, 0, 'virtual y = anchorY (0) + slotY (0)');
 });
 
-test('[projection] second-slot bagged item reconstructs to virtual y = startRow + slotY', () => {
-  // amber_satchel is 2×2 (effective cols=2, rows=2) → second slot row is
-  // slotY=1 inside the bag, reconstructed at virtual y=4.
+test('[projection] second-slot bagged item reconstructs to virtual y = anchorY + slotY', () => {
+  // amber_satchel (2x2) packs at unified (3, 0) — fits alongside the base
+  // inventory in cols 3..4, rows 0..1. Slot (0, 1) → virtual (3, 1).
   const result = projectLoadoutItems([
     row({ id: 'bag1', artifactId: 'amber_satchel', active: true }),
     row({ id: 'slot2', artifactId: 'bark_plate', bagId: 'bag1', x: 0, y: 1 })
   ], BAG_IDS, getArtifact);
+  assert.equal(result.activeBags[0].anchorX, 3);
+  assert.equal(result.activeBags[0].anchorY, 0);
   assert.equal(result.builderItems.length, 1);
-  assert.equal(result.builderItems[0].y, 4, 'virtual y = 3 (INVENTORY_ROWS) + 1 (slotY)');
+  assert.equal(result.builderItems[0].x, 3, 'virtual x = anchorX (3) + slotX (0)');
+  assert.equal(result.builderItems[0].y, 1, 'virtual y = anchorY (0) + slotY (1)');
 });
 
-test('[projection] items in the second active bag land past the first bag\u2019s rows', () => {
-  // Bag 1 (moss_pouch, 1×2 → effective 2×1) occupies virtual row 3; bag 2
-  // (amber_satchel, 2×2) starts at row 4. An item at slot (1, 0) inside
-  // bag 2 renders at virtual (1, 4).
+test('[projection] [Req 2-F] active bags pack alongside the base inventory in unified-grid coords', () => {
+  // Unified-grid packer treats base inventory at (0..2, 0..2) as virtual
+  // obstacle. moss_pouch (effective 2x1) anchors at (3, 0); amber_satchel
+  // (2x2) cannot share row 0 with moss (cols 3..4 occupied), so the packer
+  // moves to row 1 and anchors at (3, 1) — covering rows 1..2, cols 3..4
+  // (still alongside the base inventory). Item at slot (1, 0) in amber
+  // renders at virtual (anchorX+slotX, anchorY+slotY) = (4, 1).
   const result = projectLoadoutItems([
     row({ id: 'b1', artifactId: 'moss_pouch', active: true }),
     row({ id: 'b2', artifactId: 'amber_satchel', active: true }),
     row({ id: 'inside_b2', artifactId: 'spore_needle', bagId: 'b2', x: 1, y: 0 })
   ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 2);
+  assert.equal(result.activeBags[0].anchorX, 3, 'moss anchors alongside the base inv (col 3)');
+  assert.equal(result.activeBags[0].anchorY, 0);
+  assert.equal(result.activeBags[1].anchorX, 3, 'amber anchors at col 3 (no room in row 0)');
+  assert.equal(result.activeBags[1].anchorY, 1, 'amber drops to row 1 below moss');
   assert.equal(result.builderItems.length, 1);
-  assert.equal(result.builderItems[0].x, 1);
-  assert.equal(result.builderItems[0].y, 4);
+  assert.equal(result.builderItems[0].x, 4, 'virtual x = anchorX (3) + slotX (1)');
+  assert.equal(result.builderItems[0].y, 1, 'virtual y = anchorY (1) + slotY (0)');
 });
 
 test('[regression] bagged item referencing an inactive bag falls back to containerItems', () => {
@@ -184,10 +197,11 @@ test('[projection] duplicates hydrate as separate slots keyed by row id', () => 
 });
 
 test('[projection] duplicate active bags route their bagged items to the right instance', () => {
-  // Both bags have the same artifact id. bag_id on the bagged items
+  // Both bags have the same artifact id. bagId on the bagged items
   // disambiguates which physical bag they belong to. moss_pouch effective
-  // orientation is 2×1 (cols=2, rows=1), so each instance occupies one
-  // virtual row: bag_A at row 3, bag_B at row 4.
+  // orientation is 2x1; the unified packer puts bag_A at (3, 0) (alongside
+  // base inv) and bag_B at (3, 1) (next free row that fits, since row 0
+  // cols 3..4 are taken).
   const result = projectLoadoutItems([
     row({ id: 'bag_A', artifactId: 'moss_pouch', active: true }),
     row({ id: 'bag_B', artifactId: 'moss_pouch', active: true }),
@@ -198,10 +212,10 @@ test('[projection] duplicate active bags route their bagged items to the right i
   assert.equal(result.builderItems.length, 2);
   const inA = result.builderItems.find((i) => i.id === 'item_in_A');
   const inB = result.builderItems.find((i) => i.id === 'item_in_B');
-  assert.equal(inA.y, 3, 'item in bag A lives at bag A\u2019s startRow (3) + slotY (0)');
-  assert.equal(inB.y, 4, 'item in bag B lives at bag B\u2019s startRow (4) + slotY (0)');
-  assert.equal(inA.x, 0);
-  assert.equal(inB.x, 1);
+  assert.equal(inA.x, 3, 'bag_A virtual x = anchorX (3) + slotX (0)');
+  assert.equal(inA.y, 0, 'bag_A virtual y = anchorY (0) + slotY (0)');
+  assert.equal(inB.x, 4, 'bag_B virtual x = anchorX (3) + slotX (1)');
+  assert.equal(inB.y, 1, 'bag_B virtual y = anchorY (1) + slotY (0)');
   assert.equal(inA.bagId, 'bag_A');
   assert.equal(inB.bagId, 'bag_B');
 });

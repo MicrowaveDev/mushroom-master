@@ -3,14 +3,44 @@ import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 export const InventoryZone = {
   name: 'InventoryZone',
   components: { ArtifactGridBoard },
-  props: ['state', 't', 'builderTotals', 'effectiveRows', 'bagRows', 'getArtifact'],
-  emits: ['unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end', 'deactivate-bag', 'rotate-bag'],
+  props: ['state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact'],
+  emits: [
+    'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
+    'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
+  ],
+  methods: {
+    bagChipHasItems(bagId) {
+      return this.state.builderItems.some((it) => it.bagId === bagId);
+    },
+    bagChipDraggable(bagId) {
+      return !this.bagChipHasItems(bagId);
+    },
+    bagChipTitle(bag) {
+      const isLocked = this.bagChipHasItems(bag.id);
+      const lockedHint = this.t?.bagDragBlocked || 'Empty the bag to move it';
+      const dragHint = this.t?.bagDragHint || 'Drag to move';
+      return isLocked ? lockedHint : dragHint;
+    },
+    onChipDragStart(bag, event) {
+      // Empty-bag invariant — non-draggable chips don't fire dragstart at the
+      // browser level (draggable=false), but a paranoid early-return here
+      // protects against future re-enabling without rechecking the gate.
+      if (this.bagChipHasItems(bag.id)) {
+        event?.preventDefault?.();
+        return;
+      }
+      this.$emit('bag-chip-drag-start', { bagId: bag.id, event });
+    },
+    onChipDragEnd() {
+      this.$emit('drag-end');
+    }
+  },
   template: `
     <div class="artifact-inventory-section panel">
       <artifact-grid-board
         variant="inventory"
         class="inventory-shell artifact-inventory-grid"
-        :rows="effectiveRows"
+        :total-rows="totalRows"
         :items="state.builderItems"
         :bag-rows="bagRows"
         :get-artifact="getArtifact"
@@ -29,7 +59,14 @@ export const InventoryZone = {
           v-for="bag in state.activeBags"
           :key="bag.id || bag.artifactId"
           class="active-bag-chip"
+          :class="{ 'active-bag-chip--locked': bagChipHasItems(bag.id), 'active-bag-chip--draggable': bagChipDraggable(bag.id) }"
           :style="{ borderColor: getArtifact(bag.artifactId)?.color || '#888' }"
+          :draggable="bagChipDraggable(bag.id)"
+          :title="bagChipTitle(bag)"
+          :data-bag-row-id="bag.id"
+          :data-bag-locked="bagChipHasItems(bag.id) ? 'true' : 'false'"
+          @dragstart="onChipDragStart(bag, $event)"
+          @dragend="onChipDragEnd"
         >
           {{ getArtifact(bag.artifactId)?.name?.[state.lang] || bag.artifactId }}
           <button

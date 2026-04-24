@@ -141,7 +141,9 @@ export const messages = {
     errorDoesNotFit: 'Не помещается',
     errorDoesNotFitInventory: 'Не помещается в инвентарь',
     errorNotEnoughCoins: 'Недостаточно монет',
-    characterItem: 'Особый'
+    characterItem: 'Особый',
+    bagDragHint: 'Перетащите, чтобы переместить сумку',
+    bagDragBlocked: 'Сначала освободите сумку, чтобы её переместить'
   },
   en: {
     title: 'Mycelium Autobattler',
@@ -285,6 +287,8 @@ export const messages = {
     errorDoesNotFit: 'Does not fit here',
     errorDoesNotFitInventory: 'Does not fit in inventory',
     errorNotEnoughCoins: 'Not enough coins',
-    characterItem: 'Signature'
+    characterItem: 'Signature',
+    bagDragHint: 'Drag to move the bag',
+    bagDragBlocked: 'Empty the bag to move it'
   }
 };

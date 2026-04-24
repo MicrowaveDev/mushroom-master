@@ -2082,42 +2082,119 @@ select {
 }
 
 .replay-rewards-card {
-  margin: 12px 0;
-  padding: 14px 16px;
+  margin: 12px auto;
+  padding: 0;
+  max-width: 560px;
+  overflow: hidden;
   text-align: center;
+  box-shadow: none;
 }
+
 .replay-rewards-header {
-  margin-bottom: 10px;
+  padding: 22px 20px 18px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
 }
-.replay-rewards-card h3 {
-  margin: 0 0 4px;
-  font-size: 1.3rem;
+.replay-rewards-header--win { background: #e4ecd8; }
+.replay-rewards-header--loss { background: #eed7d0; }
+.replay-rewards-header--draw { background: #eee2bc; }
+
+.replay-rewards-title {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.05;
 }
+
 .replay-rewards-opponent {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.85rem;
-  opacity: 0.7;
+  display: block;
+  font-size: 0.92rem;
 }
 .replay-rewards-vs {
-  font-weight: 600;
+  color: var(--ink);
+  opacity: 0.85;
+}
+.replay-rewards-vs b {
+  font-weight: 700;
+  color: var(--accent);
 }
 .replay-rewards-opponent-stats {
-  font-size: 0.78rem;
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: var(--ink);
   opacity: 0.6;
+  letter-spacing: 0.01em;
 }
+.replay-rewards-stat-chip {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.replay-rewards-stat-chip + .replay-rewards-stat-chip::before {
+  content: ' · ';
+  margin: 0 2px;
+  opacity: 0.55;
+}
+
 .replay-rewards-card .stat-grid {
-  margin-top: 8px;
+  margin: 0;
+  padding: 18px 16px;
+  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
 }
+.replay-rewards-card .stat {
+  padding: 16px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: #f4ecd6;
+  align-items: center;
+  gap: 4px;
+}
+.replay-rewards-card .stat dd {
+  order: -1;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.replay-rewards-card .stat dt {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+}
+.replay-rewards-card .stat.stat--pos { background: #d8e4c7; }
+.replay-rewards-card .stat.stat--pos dd { color: #3d5731; }
+.replay-rewards-card .stat.stat--neg { background: #eed2ca; }
+.replay-rewards-card .stat.stat--neg dd { color: var(--error); }
+
 .replay-run-status {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 10px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border);
   font-size: 0.85rem;
   color: var(--ink);
-  opacity: 0.7;
+  opacity: 0.75;
+}
+.replay-run-chip {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.replay-run-chip + .replay-run-chip::before {
+  content: ' · ';
+  margin: 0 6px;
+  opacity: 0.55;
+}
+.replay-run-chip-label {
+  opacity: 0.75;
+  margin-right: 6px;
+}
+.replay-run-chip-value {
+  font-weight: 700;
+  color: var(--accent);
 }
 
 @keyframes result-pulse {
@@ -3373,6 +3450,21 @@ select {
 .artifact-grid-cell--bag-disabled {
   visibility: hidden;
 }
+/* Cells outside the base inventory and outside every bag's footprint stay
+ * visible but de-emphasised so the player can see the wider drop target
+ * area when dragging a bag chip. Without this, the unified grid would
+ * collapse to whatever bags currently occupy and chip drops would have no
+ * visible target. */
+.artifact-grid-cell--bag-empty {
+  background: rgba(0, 0, 0, 0.025);
+  border: 1px dashed rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+}
+/* Drop-target highlight on empty bag-area cells when a chip is dragging. */
+.artifact-grid-cell--bag-empty.artifact-grid-cell--drop-target {
+  background: rgba(107, 143, 94, 0.18);
+  border-color: rgba(107, 143, 94, 0.7);
+}
 
 .active-bags-bar {
   display: flex;
@@ -3390,6 +3482,27 @@ select {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.7);
   font-weight: 600;
+}
+/* Empty bags are draggable to a new bag-zone anchor — give the chip the
+ * grab cursor so the affordance is discoverable. */
+.active-bag-chip--draggable {
+  cursor: grab;
+}
+.active-bag-chip--draggable:active {
+  cursor: grabbing;
+}
+/* Non-empty bags can't be moved (the bagged-item slot coords would be
+ * invalidated). Render the locked state visually + the chip's `title`
+ * attribute carries the explanation for screen readers. */
+.active-bag-chip--locked {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.active-bag-chip--locked::after {
+  content: '🔒';
+  margin-left: 2px;
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 .active-bag-action {
   width: 22px;

@@ -34,18 +34,59 @@
 //   - container non-bag items (-1,-1)
 //                            → containerItems
 
-import { INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { BAG_COLUMNS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
 
 function bagLayoutFor(artifact, rotated) {
   if (!artifact) return { cols: 0, rows: 0 };
   const cols = Math.min(
-    INVENTORY_COLUMNS,
+    BAG_COLUMNS,
     rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height)
   );
   const rows = rotated
     ? Math.max(artifact.width, artifact.height)
     : Math.min(artifact.width, artifact.height);
   return { cols, rows };
+}
+
+// 2D first-fit anchor assignment matching the client's useShop packer. The
+// projection re-derives anchors on every hydrate because v1 doesn't persist
+// anchor coords — bags that were dragged to a custom layout return to the
+// auto-pack arrangement after a reload. Future revisions can pull persisted
+// anchors from the server payload and skip this fallback.
+function packAnchors(bags) {
+  // bags: Array<{ id, cols, rows }> in declaration order. Returns the same
+  // shape with anchorX / anchorY added per bag, scanning top-to-bottom and
+  // left-to-right for the first non-overlapping anchor in unified-grid
+  // coords (Req 2-F). The base inventory at (0..INVENTORY_COLUMNS-1,
+  // 0..INVENTORY_ROWS-1) is treated as a permanent obstacle so bags can
+  // anchor alongside it.
+  function overlapsBaseInventory(ax, ay, cols, rows) {
+    return ax < INVENTORY_COLUMNS && 0 < ax + cols
+      && ay < INVENTORY_ROWS && 0 < ay + rows;
+  }
+  const placed = [];
+  for (const bag of bags) {
+    let chosen = null;
+    const maxY = Math.max(
+      INVENTORY_ROWS,
+      placed.reduce((m, p) => Math.max(m, p.anchorY + p.rows), 0)
+    ) + bag.rows;
+    outer: for (let ay = 0; ay <= maxY; ay += 1) {
+      for (let ax = 0; ax + bag.cols <= BAG_COLUMNS; ax += 1) {
+        if (overlapsBaseInventory(ax, ay, bag.cols, bag.rows)) continue;
+        let overlaps = false;
+        for (const p of placed) {
+          const overlapX = ax < p.anchorX + p.cols && p.anchorX < ax + bag.cols;
+          const overlapY = ay < p.anchorY + p.rows && p.anchorY < ay + bag.rows;
+          if (overlapX && overlapY) { overlaps = true; break; }
+        }
+        if (!overlaps) { chosen = { anchorX: ax, anchorY: ay }; break outer; }
+      }
+    }
+    if (!chosen) chosen = { anchorX: 0, anchorY: maxY };
+    placed.push({ ...bag, ...chosen });
+  }
+  return placed;
 }
 
 export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
@@ -66,25 +107,24 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
   const rotatedBags = [];
   const freshPurchases = [];
 
-  // Pass 1 — register bags. Active bags are also laid out so bagged items
-  // in pass 2 can be resolved to virtual render coords. Iteration order
-  // mirrors the server's sort order (the input array is already ordered).
+  // Pass 1 — register bags. Active bags are first collected, then handed to
+  // the 2D first-fit packer so bagged items in pass 2 can resolve to virtual
+  // render coords using the assigned anchor. Iteration order mirrors the
+  // server's sort order (the input array is already ordered).
   const bagByRowId = new Map();
-  let nextStartRow = INVENTORY_ROWS;
+  const activeBagDescriptors = [];
   for (const item of loadoutItems) {
     if (!bagsSet.has(item.artifactId)) continue;
     if (item.bagId) continue; // defensive — bag rows shouldn't also be bagged
     if (item.active) {
-      activeBags.push({ id: item.id, artifactId: item.artifactId });
       const artifact = lookupArtifact(item.artifactId);
       const { cols, rows } = bagLayoutFor(artifact, !!item.rotated);
-      bagByRowId.set(item.id, {
+      activeBagDescriptors.push({
+        id: item.id,
         artifactId: item.artifactId,
-        startRow: nextStartRow,
         cols,
         rows
       });
-      nextStartRow += rows;
     } else {
       containerItems.push({ id: item.id, artifactId: item.artifactId });
     }
@@ -92,6 +132,23 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
       rotatedBags.push({ id: item.id, artifactId: item.artifactId });
     }
     if (item.freshPurchase) freshPurchases.push(item.artifactId);
+  }
+
+  const packed = packAnchors(activeBagDescriptors);
+  for (const bag of packed) {
+    activeBags.push({
+      id: bag.id,
+      artifactId: bag.artifactId,
+      anchorX: bag.anchorX,
+      anchorY: bag.anchorY
+    });
+    bagByRowId.set(bag.id, {
+      artifactId: bag.artifactId,
+      anchorX: bag.anchorX,
+      anchorY: bag.anchorY,
+      cols: bag.cols,
+      rows: bag.rows
+    });
   }
 
   // Pass 2 — everything else. Bagged items resolve through bagByRowId.
@@ -116,12 +173,13 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
         // bagId on builderItems carries the bag's loadout row id — same id
         // that lives in state.activeBags[i].id. That's unambiguous even when
         // the player owns two bags of the same artifact, so bag rotate /
-        // deactivate can identify "items in THIS bag" precisely.
+        // deactivate can identify "items in THIS bag" precisely. Unified
+        // virtual coords = bag's unified anchor + slot offset.
         builderItems.push({
           id: item.id,
           artifactId: item.artifactId,
-          x: sx,
-          y: bag.startRow + sy,
+          x: bag.anchorX + sx,
+          y: bag.anchorY + sy,
           width: w,
           height: h,
           bagId: item.bagId

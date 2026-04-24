@@ -1,11 +1,18 @@
-import { INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { BAG_COLUMNS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
 export const ArtifactGridBoard = {
   components: { ArtifactFigure },
   props: {
+    // For non-inventory variants (catalog, fighter card) the legacy
+    // `columns` / `rows` props still describe a uniform grid.
     columns: { type: Number, default: INVENTORY_COLUMNS },
     rows: { type: Number, default: INVENTORY_ROWS },
+    // For inventory variant: the full unified grid is rendered as ONE grid
+    // BAG_COLUMNS wide, totalRows tall. Cells inside (0..INVENTORY_COLUMNS-1,
+    // 0..INVENTORY_ROWS-1) are base-inventory cells; everything else is
+    // either a bag's slot (when bagRows covers it) or empty bag area.
+    totalRows: { type: Number, default: 0 },
     items: { type: Array, default: () => [] },
     variant: { type: String, default: 'inventory' },
     renderArtifactFigure: { type: Function, default: null },
@@ -22,30 +29,44 @@ export const ArtifactGridBoard = {
     return { hoverCellIndex: -1 };
   },
   computed: {
+    isInventoryVariant() {
+      return this.variant === 'inventory';
+    },
+    gridColumns() {
+      // Inventory variant uses the unified BAG_COLUMNS-wide grid; other
+      // variants (catalog, fighter card) keep their per-instance `columns`.
+      return this.isInventoryVariant ? BAG_COLUMNS : this.columns;
+    },
+    gridRows() {
+      if (!this.isInventoryVariant) return this.rows;
+      // Default to INVENTORY_ROWS when no bag has been activated yet so the
+      // inventory still renders its 3 rows.
+      return Math.max(INVENTORY_ROWS, this.totalRows);
+    },
     totalCells() {
-      return this.columns * this.rows;
+      return this.gridColumns * this.gridRows;
     },
     gridStyle() {
       return {
-        gridTemplateColumns: `repeat(${this.columns}, var(--artifact-cell-size, 50px))`,
-        gridTemplateRows: `repeat(${this.rows}, var(--artifact-cell-size, 50px))`
+        gridTemplateColumns: `repeat(${this.gridColumns}, var(--artifact-cell-size, 50px))`,
+        gridTemplateRows: `repeat(${this.gridRows}, var(--artifact-cell-size, 50px))`
       };
     },
     rootClass() {
       return {
         'artifact-grid-board': true,
-        'inventory-shell': this.variant === 'inventory',
-        'artifact-grid-board--inventory': this.variant === 'inventory',
+        'inventory-shell': this.isInventoryVariant,
+        'artifact-grid-board--inventory': this.isInventoryVariant,
         'artifact-grid-board--catalog': this.variant === 'catalog'
       };
     }
   },
   methods: {
     cellX(index) {
-      return index % this.columns;
+      return index % this.gridColumns;
     },
     cellY(index) {
-      return Math.floor(index / this.columns);
+      return Math.floor(index / this.gridColumns);
     },
     pieceStyle(item) {
       return {
@@ -53,45 +74,74 @@ export const ArtifactGridBoard = {
         gridRow: `${item.y + 1} / span ${item.height}`
       };
     },
+    isBaseInventoryCell(cx, cy) {
+      // The base inventory occupies a fixed (0..INVENTORY_COLUMNS-1,
+      // 0..INVENTORY_ROWS-1) sub-rectangle within the unified grid. In
+      // Phase 3 of the bag-grid-unification this becomes a starter-bag
+      // artifact and this helper goes away — see game-requirements.md §2-K.
+      return this.isInventoryVariant
+        && cx >= 0 && cx < INVENTORY_COLUMNS
+        && cy >= 0 && cy < INVENTORY_ROWS;
+    },
+    bagRowEntryFor(cx, cy) {
+      // Multiple bags can share the same row when packed alongside (Req 2-G),
+      // so prefer the entry whose enabledCells covers this cell's x — that
+      // is the bag whose colour the cell should render with. Falls back to
+      // any row entry at this y so the lookup remains deterministic for
+      // bag-zone gaps that we still want to colour faintly.
+      const owning = this.bagRows.find((br) => br.row === cy && br.enabledCells?.includes(cx));
+      if (owning) return owning;
+      return this.bagRows.find((br) => br.row === cy) || null;
+    },
+    isBagSlotCell(cx, cy) {
+      const bag = this.bagRowEntryFor(cx, cy);
+      return !!bag && bag.enabledCells?.includes(cx);
+    },
+    isBagBoxCell(cx, cy) {
+      // Inside a bag's bounding box but NOT a real slot (= a tetromino mask
+      // gap). Renders as visually hidden so the bag's footprint reads as a
+      // shape, not a rectangle.
+      const bag = this.bagRowEntryFor(cx, cy);
+      return !!bag && !bag.enabledCells?.includes(cx);
+    },
     backgroundClass() {
       return {
         'artifact-grid-background': true,
-        inventory: this.variant === 'inventory'
+        inventory: this.isInventoryVariant
       };
     },
     piecesClass() {
       return {
         'artifact-grid-pieces': true,
-        'inventory-pieces': this.variant === 'inventory'
+        'inventory-pieces': this.isInventoryVariant
       };
     },
-    bagRowForCell(index) {
-      const y = this.cellY(index);
-      return this.bagRows.find((br) => br.row === y);
-    },
-    isBagCellDisabled(index) {
-      const bag = this.bagRowForCell(index);
-      if (!bag) return false;
-      const xInRow = this.cellX(index);
-      // Tetromino-shaped bags expose `enabledCells` (the x positions in
-      // this row that are actual slots). Pre-shape rectangular bags can
-      // keep the legacy `slotCount` shape (= [0..slotCount-1]).
-      if (bag.enabledCells) return !bag.enabledCells.includes(xInRow);
-      return xInRow >= bag.slotCount;
-    },
     cellClass(index) {
+      const cx = this.cellX(index);
+      const cy = this.cellY(index);
+      const baseInv = this.isBaseInventoryCell(cx, cy);
+      const bagSlot = this.isBagSlotCell(cx, cy);
+      const bagBox = !bagSlot && this.isBagBoxCell(cx, cy);
+      // "Empty" only applies in the inventory variant — a cell outside the
+      // base inventory and outside every bag's footprint is a bag-area drop
+      // target (visually de-emphasised; only chip drag can re-anchor onto it).
+      const empty = this.isInventoryVariant && !baseInv && !bagSlot && !bagBox;
       return {
         'artifact-grid-cell': true,
-        cell: this.variant === 'inventory',
+        cell: this.isInventoryVariant,
         'artifact-grid-cell--interactive': this.interactiveCells,
         'artifact-grid-cell--drop-target': this.droppable && this.hoverCellIndex === index,
-        'artifact-grid-cell--bag': !!this.bagRowForCell(index) && !this.isBagCellDisabled(index),
-        'artifact-grid-cell--bag-disabled': this.isBagCellDisabled(index)
+        'artifact-grid-cell--base-inv': baseInv,
+        'artifact-grid-cell--bag': bagSlot,
+        'artifact-grid-cell--bag-disabled': bagBox,
+        'artifact-grid-cell--bag-empty': empty
       };
     },
     cellStyle(index) {
-      const bag = this.bagRowForCell(index);
-      if (!bag || this.isBagCellDisabled(index)) return {};
+      const cx = this.cellX(index);
+      const cy = this.cellY(index);
+      if (!this.isBagSlotCell(cx, cy)) return {};
+      const bag = this.bagRowEntryFor(cx, cy);
       return {
         '--bag-color': bag.color,
         '--bag-color-light': bag.color + '33',
@@ -99,15 +149,11 @@ export const ArtifactGridBoard = {
       };
     },
     clickCell(index) {
-      if (!this.interactiveCells) {
-        return;
-      }
+      if (!this.interactiveCells) return;
       this.$emit('cell-click', { x: this.cellX(index), y: this.cellY(index) });
     },
     clickPiece(item, event) {
-      if (!this.clickablePieces) {
-        return;
-      }
+      if (!this.clickablePieces) return;
       event.stopPropagation();
       this.$emit('piece-click', item);
     },
@@ -120,26 +166,27 @@ export const ArtifactGridBoard = {
       return !!artifact && artifact.width !== artifact.height;
     },
     onCellDragOver(index, event) {
-      if (!this.droppable || this.isBagCellDisabled(index)) return;
+      if (!this.droppable) return;
+      const cx = this.cellX(index);
+      const cy = this.cellY(index);
+      if (this.isBagBoxCell(cx, cy)) return; // tetromino mask gap — not droppable
       event.preventDefault();
-      if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = 'move';
-      }
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
       this.hoverCellIndex = index;
     },
     onCellDragLeave(index) {
-      if (this.hoverCellIndex === index) {
-        this.hoverCellIndex = -1;
-      }
+      if (this.hoverCellIndex === index) this.hoverCellIndex = -1;
     },
     onCellDrop(index, event) {
-      if (!this.droppable || this.isBagCellDisabled(index)) return;
+      if (!this.droppable) return;
+      const cx = this.cellX(index);
+      const cy = this.cellY(index);
+      if (this.isBagBoxCell(cx, cy)) return;
       event.preventDefault();
       this.hoverCellIndex = -1;
-      this.$emit('cell-drop', { x: this.cellX(index), y: this.cellY(index), event });
+      this.$emit('cell-drop', { x: cx, y: cy, event });
     },
     onCellTouchDrop(index, event) {
-      // Handle pointer-dispatched cell-drop from useTouch composable.
       if (!this.droppable) return;
       const detail = event.detail || {};
       this.$emit('cell-drop', { x: detail.x ?? this.cellX(index), y: detail.y ?? this.cellY(index) });
@@ -157,7 +204,7 @@ export const ArtifactGridBoard = {
     }
   },
   template: `
-    <div :class="rootClass">
+    <div :class="rootClass" :data-testid="isInventoryVariant ? 'unified-grid' : null">
       <div :class="backgroundClass()" :style="gridStyle">
         <component
           :is="interactiveCells ? 'button' : 'span'"

@@ -1,4 +1,4 @@
-import { INVENTORY_ROWS, INVENTORY_COLUMNS } from '../constants.js';
+import { BAG_COLUMNS, INVENTORY_ROWS } from '../constants.js';
 import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
 import { RunHud } from '../components/prep/RunHud.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
@@ -19,7 +19,7 @@ export const PrepScreen = {
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start',
     'buy-run-item', 'refresh-shop',
     'sell-dragover', 'sell-dragleave', 'sell-drop',
-    'signal-ready', 'abandon', 'deactivate-bag', 'rotate-bag'
+    'signal-ready', 'abandon', 'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
   ],
   components: {
     RunHud,
@@ -29,35 +29,54 @@ export const PrepScreen = {
     PrepActions
   },
   computed: {
+    // Bag background metadata in unified-grid coords: ONE entry per (bag ×
+    // unified row) — each bag emits its own row entries with its own colour
+    // and enabledCells. Two bags whose footprints share the same row produce
+    // TWO entries so ArtifactGridBoard can colour each bag's cells correctly
+    // (its per-cell lookup picks the entry whose enabledCells contain the
+    // cell's x).
     bagRows() {
       const rows = [];
-      let r = INVENTORY_ROWS;
       for (const activeBag of this.state.activeBags) {
         const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;
         const rotated = this.state.rotatedBags.some((b) => b.id === activeBag.id);
         const shape = getEffectiveShape(bag, rotated);
         const rowCount = shape.length;
+        const anchorX = activeBag.anchorX ?? 0;
+        const anchorY = activeBag.anchorY ?? 0;
         for (let i = 0; i < rowCount; i++) {
           const maskRow = shape[i] || [];
-          // enabledCells = the x positions inside this bag row that are
-          // part of the bag's shape mask. For rectangular bags this is
-          // [0, 1, ..., cols-1]; for tetrominoes it skips the empty
-          // cells of the bounding box.
           const enabledCells = [];
-          for (let x = 0; x < maskRow.length && x < INVENTORY_COLUMNS; x++) {
-            if (maskRow[x]) enabledCells.push(x);
+          for (let x = 0; x < maskRow.length; x++) {
+            const cellX = anchorX + x;
+            if (cellX >= BAG_COLUMNS) break;
+            if (maskRow[x]) enabledCells.push(cellX);
           }
+          if (enabledCells.length === 0) continue;
           rows.push({
-            row: r + i,
+            row: anchorY + i,
             color: bag.color || '#888',
             artifactId: activeBag.artifactId,
             enabledCells
           });
         }
-        r += rowCount;
       }
-      return rows;
+      return rows.sort((a, b) => a.row - b.row);
+    },
+    // Total rows in the unified grid: max(INVENTORY_ROWS, bottom edge of
+    // every active bag). InventoryZone forwards this to ArtifactGridBoard.
+    totalRows() {
+      let max = INVENTORY_ROWS;
+      for (const activeBag of this.state.activeBags) {
+        const bag = this.getArtifact(activeBag.artifactId);
+        if (!bag) continue;
+        const rotated = this.state.rotatedBags.some((b) => b.id === activeBag.id);
+        const shape = getEffectiveShape(bag, rotated);
+        const bottom = (activeBag.anchorY ?? 0) + shape.length;
+        if (bottom > max) max = bottom;
+      }
+      return max;
     },
     runRefreshCost() {
       return this.state.gameRunRefreshCount < 3 ? 1 : 2;
@@ -94,7 +113,7 @@ export const PrepScreen = {
             :state="state"
             :t="t"
             :builder-totals="builderTotals"
-            :effective-rows="effectiveRows"
+            :total-rows="totalRows"
             :bag-rows="bagRows"
             :get-artifact="getArtifact"
             @unplace="$emit('unplace', $event)"
@@ -104,6 +123,7 @@ export const PrepScreen = {
             @drag-end="$emit('drag-end')"
             @deactivate-bag="$emit('deactivate-bag', $event)"
             @rotate-bag="$emit('rotate-bag', $event)"
+            @bag-chip-drag-start="$emit('bag-chip-drag-start', $event)"
           />
         </div>
 

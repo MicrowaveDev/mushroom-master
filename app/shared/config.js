@@ -7,6 +7,10 @@
 // --- Inventory grid ---
 export const INVENTORY_COLUMNS = 3;
 export const INVENTORY_ROWS = 3;
+// Bag zone (rendered below the base inventory) is wider than the base grid
+// so multiple bags can pack side-by-side instead of stacking vertically.
+// See docs/game-requirements.md §2-F.
+export const BAG_COLUMNS = 6;
 
 // --- Shop / prep budget ---
 export const MAX_ARTIFACT_COINS = 5;

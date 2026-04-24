@@ -117,50 +117,75 @@ function dropFromContainer(shop, state, artifactId, x, y) {
   return rowId;
 }
 
-test('[bag-relayout] deactivating an earlier empty bag succeeds and shifts later bag\u2019s items up', () => {
+test('[Req 2-F] activating two bags packs them alongside the base inventory in unified coords', () => {
+  // Unified-grid 2D first-fit: the base inventory at (0..2, 0..2) is a
+  // virtual obstacle. moss_pouch (effective 2x1) packs at (3, 0) — alongside
+  // the inventory in row 0, NOT below it. amber_satchel (2x2) cannot share
+  // row 0 with moss (cols 3..4), so the packer steps to row 1 and anchors
+  // at (3, 1) — covering rows 1..2, cols 3..4 (still alongside the base).
+  // No bag extends past INVENTORY_ROWS, so effectiveRows stays at 3.
   const state = makeFreshState();
   const shop = makeShop(state);
 
-  // Seed both bags into the container so activateBag can consume them.
   seedContainer(state, 'moss_pouch');
   seedContainer(state, 'amber_satchel');
-
-  // Activate moss_pouch first (1×2 → cols=2, rows=1) at row 3.
-  // Activate amber_satchel second (2×2) at rows 4..5.
   shop.activateBag('moss_pouch');
   shop.activateBag('amber_satchel');
-  assert.equal(shop.effectiveRows(), 6);
 
-  // Drop bark_plate into amber_satchel's last row (virtual y=5). Under the
-  // slot-coord refactor this lives at slot (0,1) inside amber_satchel.
-  dropFromContainer(shop, state, 'bark_plate', 0, 5);
+  const moss = state.activeBags.find((b) => b.artifactId === 'moss_pouch');
+  const amber = state.activeBags.find((b) => b.artifactId === 'amber_satchel');
+  assert.equal(moss.anchorX, 3, 'moss anchors alongside the base inventory (col 3)');
+  assert.equal(moss.anchorY, 0, 'moss anchors at the top row (row 0)');
+  assert.equal(amber.anchorX, 3, 'amber also anchors at col 3 (no room in row 0)');
+  assert.equal(amber.anchorY, 1, 'amber anchors at row 1 — below moss, alongside the base inv');
+  assert.equal(shop.effectiveRows(), 3, 'no bag extends past INVENTORY_ROWS so the grid stays 3 tall');
+});
+
+test('[bag-relayout] deactivating an empty bag preserves a side-by-side bag\u2019s slot identity', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+
+  seedContainer(state, 'moss_pouch');
+  seedContainer(state, 'amber_satchel');
+  shop.activateBag('moss_pouch');
+  shop.activateBag('amber_satchel');
+  // Unified packer: moss at (3, 0), amber at (3, 1). amber\u2019s slot
+  // (0, 0) maps to virtual (anchorX=3, anchorY=1).
+  dropFromContainer(shop, state, 'bark_plate', 3, 1);
   const placedBefore = state.builderItems.find((i) => i.artifactId === 'bark_plate');
   assert.ok(placedBefore, 'bark_plate must be placed');
-  assert.equal(placedBefore.y, 5);
+  assert.equal(placedBefore.x, 3);
+  assert.equal(placedBefore.y, 1);
   const amberRowId = state.activeBags.find((b) => b.artifactId === 'amber_satchel').id;
   assert.equal(placedBefore.bagId, amberRowId, 'placed item must carry amber_satchel\u2019s row id');
 
-  // Deactivate moss_pouch (empty). Should succeed: amber_satchel is an
-  // independent bag with its own slot coords, so it just shifts up by
-  // moss_pouch\u2019s rowCount (1). The bark_plate\u2019s slot coords stay at
-  // (0,1); its virtual y recomputes to 4.
+  // Deactivate moss_pouch (empty). amber_satchel keeps its anchor — v1 does
+  // not re-pack on deactivate; the user re-anchors via drag if they want
+  // amber to fill the freed space. The bark_plate\u2019s slot coords stay
+  // intact and its virtual coords are unchanged.
   state.error = '';
   shop.deactivateBag('moss_pouch');
 
   assert.deepEqual(
     state.activeBags.map((b) => b.artifactId),
     ['amber_satchel'],
-    'deactivation of an empty earlier bag must succeed'
+    'deactivation of an empty bag must succeed'
   );
   assert.equal(state.error, '');
 
   const placedAfter = state.builderItems.find((i) => i.artifactId === 'bark_plate');
-  assert.ok(placedAfter, 'later bag\u2019s item must survive the relayout');
-  assert.equal(placedAfter.y, 4, 'virtual y recomputes against the shifted-up layout');
+  assert.ok(placedAfter, 'amber\u2019s item must survive the deactivate');
+  assert.equal(placedAfter.x, 3, 'virtual x is preserved when amber\u2019s anchor doesn\u2019t move');
+  assert.equal(placedAfter.y, 1, 'virtual y is preserved when amber\u2019s anchor doesn\u2019t move');
   assert.equal(placedAfter.bagId, amberRowId, 'bag row id (= slot identity) is unchanged');
 });
 
-test('[bag-relayout] rotating an earlier empty bag succeeds and shifts a later bag\u2019s items', () => {
+test('[bag-relayout] rotating an empty bag is blocked when it would overlap another bag', () => {
+  // Unified-grid layout: moss at (3, 0) (1 row tall), amber at (3, 1) (2 rows
+  // tall). Rotating moss (1x2 -> cols=1, rows=2) would extend its footprint
+  // into row 1 col 3, which is amber\u2019s anchor. The bagAreaOverlaps guard
+  // in rotateBag must reject — without it the rotation would silently
+  // displace amber\u2019s items on the next persist.
   const state = makeFreshState();
   const shop = makeShop(state);
 
@@ -168,26 +193,28 @@ test('[bag-relayout] rotating an earlier empty bag succeeds and shifts a later b
   seedContainer(state, 'amber_satchel');
   shop.activateBag('moss_pouch');
   shop.activateBag('amber_satchel');
-  dropFromContainer(shop, state, 'bark_plate', 0, 5);
-  assert.equal(
-    state.builderItems.find((i) => i.artifactId === 'bark_plate').y,
-    5
-  );
 
-  // Rotate moss_pouch (1×2): flips cols=2/rows=1 → cols=1/rows=2. Its
-  // rowCount grows by 1, pushing amber_satchel down by 1. The bark_plate
-  // at amber\u2019s slot (0,1) now renders at virtual y=6.
   state.error = '';
   shop.rotateBag('moss_pouch');
 
-  assert.equal(state.rotatedBags.length, 1, 'moss_pouch rotated');
+  assert.equal(state.rotatedBags.length, 0, 'rotation must be blocked — would overlap amber');
+});
+
+test('[bag-relayout] rotating an empty bag succeeds when the rotated footprint stays clear', () => {
+  // Single bag in the unified grid: moss_pouch at (3, 0) cols=2 rows=1.
+  // Rotating to cols=1, rows=2 keeps it inside BAG_COLUMNS and outside the
+  // base inventory — allowed. moss\u2019s anchor stays the same.
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+
+  state.error = '';
+  shop.rotateBag('moss_pouch');
+
+  assert.equal(state.rotatedBags.length, 1, 'rotation succeeds with no other bag in the way');
   assert.equal(state.rotatedBags[0].artifactId, 'moss_pouch');
   assert.equal(state.error, '');
-  assert.equal(
-    state.builderItems.find((i) => i.artifactId === 'bark_plate').y,
-    6,
-    'later-bag item\u2019s virtual y recomputes when earlier bag\u2019s rowCount grows'
-  );
 });
 
 test('[bag-relayout] deactivating a non-empty bag is still blocked', () => {
@@ -197,7 +224,8 @@ test('[bag-relayout] deactivating a non-empty bag is still blocked', () => {
   const shop = makeShop(state);
   seedContainer(state, 'moss_pouch');
   shop.activateBag('moss_pouch');
-  dropFromContainer(shop, state, 'bark_plate', 0, 3);
+  // Unified-grid: moss anchors at (3, 0); slot (0, 0) → virtual (3, 0).
+  dropFromContainer(shop, state, 'bark_plate', 3, 0);
 
   state.error = '';
   shop.deactivateBag('moss_pouch');
@@ -229,9 +257,10 @@ test('deactivateBag still works when no downstream items exist', () => {
 });
 
 test('[bag-shape] container drop into a non-shape cell of a tetromino bag is rejected', () => {
-  // T-bag (trefoil_sack) at virtual rows 3..4. Slot (0, 4) — inventory (0, 4)
-  // — is the bottom-left empty corner of the T, NOT a slot. Drag must not
-  // place there and the item must remain in the container.
+  // T-bag (trefoil_sack 3x2, shape [[1,1,1],[0,1,0]]) anchors at (3, 0) in
+  // unified coords — alongside the base inventory. Slot (0, 1) is the empty
+  // bottom-left corner of the T → virtual (anchorX=3, anchorY+1=1) = (3, 1).
+  // Drag must not place there and the item must remain in the container.
   const state = makeFreshState();
   const shop = makeShop(state);
   seedContainer(state, 'trefoil_sack');
@@ -242,7 +271,7 @@ test('[bag-shape] container drop into a non-shape cell of a tetromino bag is rej
   const rowId = seedContainer(state, 'bark_plate');
   state.draggingArtifactId = 'bark_plate';
   state.draggingSource = 'container';
-  shop.onInventoryCellDrop({ x: 0, y: 4 });
+  shop.onInventoryCellDrop({ x: 3, y: 1 });
   state.draggingArtifactId = '';
   state.draggingSource = '';
 
@@ -255,49 +284,47 @@ test('[bag-shape] container drop into a non-shape cell of a tetromino bag is rej
 });
 
 test('[bag-shape] container drop into a shape cell of a tetromino bag succeeds', () => {
-  // The T-bag's bottom row only has slot (1, 1) filled. Inventory virtual y=4
-  // → slotY=1. Drop bark_plate at (1, 4) and it should land.
+  // T-bag anchored at unified (3, 0). The T\u2019s bottom row only has slot
+  // (1, 1) filled — virtual (anchorX+1, anchorY+1) = (4, 1).
   const state = makeFreshState();
   const shop = makeShop(state);
   seedContainer(state, 'trefoil_sack');
   shop.activateBag('trefoil_sack');
   const tBagId = state.activeBags.find((b) => b.artifactId === 'trefoil_sack').id;
 
-  dropFromContainer(shop, state, 'bark_plate', 1, 4);
+  dropFromContainer(shop, state, 'bark_plate', 4, 1);
   const placed = state.builderItems.find((i) => i.artifactId === 'bark_plate');
   assert.ok(placed, 'item lands inside the T-bag');
-  assert.equal(placed.x, 1);
-  assert.equal(placed.y, 4);
+  assert.equal(placed.x, 4);
+  assert.equal(placed.y, 1);
   assert.equal(placed.bagId, tBagId, 'bagId reflects the T-bag row id');
 });
 
-test('onInventoryCellDrop (source=inventory) rejects drops into disabled bag cells', () => {
+test('onInventoryCellDrop (source=inventory) rejects drops into disabled cells', () => {
+  // Unified-grid: moss_pouch anchors at (3, 0) cols=2 (cols 3..4). Place
+  // bark_plate into moss\u2019 first slot (3, 0), then try to drag it to
+  // (5, 0) which is outside any bag and outside the base inventory — an
+  // empty-area cell that is disabled for piece placement.
   const state = makeFreshState();
   const shop = makeShop(state);
-
-  // moss_pouch exposes cols=2 (not the full 3). Place bark_plate into its
-  // valid col=0 first, then try to move it to col=2 — which is a disabled
-  // cell inside the bag row.
   seedContainer(state, 'moss_pouch');
   shop.activateBag('moss_pouch');
-  dropFromContainer(shop, state, 'bark_plate', 0, 3);
+  dropFromContainer(shop, state, 'bark_plate', 3, 0);
   const landed = state.builderItems.find((i) => i.artifactId === 'bark_plate');
-  assert.equal(landed.x, 0);
-  assert.equal(landed.y, 3);
+  assert.equal(landed.x, 3);
+  assert.equal(landed.y, 0);
 
-  // Now simulate an inventory-to-inventory drag into the disabled cell
-  // via the real drag-start handler so draggingItem is populated.
+  // Drag into the empty bag-area cell at (5, 0).
   shop.onInventoryPieceDragStart({ item: landed });
-  shop.onInventoryCellDrop({ x: 2, y: 3 });
+  shop.onInventoryCellDrop({ x: 5, y: 0 });
   shop.onDragEndAny();
 
-  // The piece must stay at (0,3) — the drop into the disabled cell is a
-  // no-op. Under the old code isCellDisabled wasn't checked for the
-  // inventory source, so this would have moved to (2,3) and silently
-  // tripped the server's occupancy check on the next save.
+  // The piece must stay at (3, 0) — the drop into the disabled cell is a
+  // no-op. Without per-cell coverage check the item would move to (5, 0)
+  // and silently trip the server\u2019s occupancy check on the next save.
   const afterDrop = state.builderItems.find((i) => i.artifactId === 'bark_plate');
-  assert.equal(afterDrop.x, 0);
-  assert.equal(afterDrop.y, 3);
+  assert.equal(afterDrop.x, 3);
+  assert.equal(afterDrop.y, 0);
 });
 
 // ---------------------------------------------------------------------------
@@ -609,4 +636,129 @@ test('[bag-rotated] rotateBag preserves rotation state across a deactivate+activ
   assert.equal(state.activeBags.length, 0);
   assert.equal(state.rotatedBags.length, 1, 'rotation survives deactivation (server row still has rotated=1)');
   assert.equal(state.rotatedBags[0].id, rowId);
+});
+
+// ---------------------------------------------------------------------------
+// Bag chip drag — re-anchor an empty active bag in the bag zone.
+// docs/game-requirements.md §2-G. The bag chip is the drag handle; only
+// empty bags can move (bagged items would lose their anchor otherwise);
+// the drop target is a bag-zone cell whose (x, y) becomes the new anchor.
+// ---------------------------------------------------------------------------
+
+test('[Req 2-H] canMoveBag is true for empty bags and false once items land in them', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+  const bagId = state.activeBags[0].id;
+
+  assert.equal(shop.canMoveBag(bagId), true, 'newly activated empty bag is movable');
+  // Unified-grid: moss anchors at (3, 0); its slot (0, 0) maps to virtual (3, 0).
+  dropFromContainer(shop, state, 'bark_plate', 3, 0);
+  assert.equal(shop.canMoveBag(bagId), false, 'bag with items inside is not movable');
+});
+
+test('[Req 2-H] onBagChipDragStart blocks dragstart when the bag has items, with i18n error', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+  const bagId = state.activeBags[0].id;
+  // Unified-grid: moss anchors at (3, 0); slot (0, 0) is virtual (3, 0).
+  dropFromContainer(shop, state, 'bark_plate', 3, 0);
+
+  let prevented = false;
+  const fakeEvent = {
+    preventDefault: () => { prevented = true; },
+    dataTransfer: { effectAllowed: '', setData: () => {} }
+  };
+  state.error = '';
+  shop.onBagChipDragStart(bagId, fakeEvent);
+
+  assert.equal(prevented, true, 'browser dragstart must be prevented');
+  assert.equal(state.draggingBagId, undefined, 'no bag id is staged when blocked');
+  assert.match(state.error, /Remove items from the bag first/);
+});
+
+test('[Req 2-H] onBagChipDragStart stages drag context for an empty bag', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+  const bagId = state.activeBags[0].id;
+
+  let setKey = '';
+  let setValue = '';
+  const fakeEvent = {
+    preventDefault: () => {},
+    dataTransfer: { effectAllowed: '', setData: (k, v) => { setKey = k; setValue = v; } }
+  };
+  shop.onBagChipDragStart(bagId, fakeEvent);
+
+  assert.equal(state.draggingBagId, bagId, 'bag id is staged for the drop handler');
+  assert.equal(state.draggingSource, 'bag-chip');
+  assert.equal(setKey, 'text/plain');
+  assert.equal(setValue, `bag:${bagId}`);
+});
+
+test('[Req 2-H] dropping an empty bag chip onto a unified-grid cell sets the anchor', () => {
+  // Single empty moss_pouch — auto-pack anchors at (3, 0) (alongside base
+  // inventory). Drag to (3, 3) which is below the inventory: inside
+  // BAG_COLUMNS, no overlap with base inv or other bags, allowed.
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+  const bagId = state.activeBags[0].id;
+  assert.equal(state.activeBags[0].anchorX, 3, 'precondition: moss auto-packs at col 3 (alongside base inv)');
+  assert.equal(state.activeBags[0].anchorY, 0);
+
+  state.draggingBagId = bagId;
+  state.draggingSource = 'bag-chip';
+  // Cell-drop emits unified virtual (x, y); onBagZoneDrop receives them
+  // unchanged (no bag-zone-local offset anymore).
+  shop.onInventoryCellDrop({ x: 3, y: 3 });
+
+  assert.equal(state.activeBags[0].anchorX, 3, 'anchor x unchanged');
+  assert.equal(state.activeBags[0].anchorY, 3, 'anchor moved below the inventory');
+  assert.equal(state.error, '');
+});
+
+test('[Req 2-H] bag chip drop is rejected when the new anchor would overlap another bag', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  seedContainer(state, 'amber_satchel');
+  shop.activateBag('moss_pouch');
+  shop.activateBag('amber_satchel');
+  const moss = state.activeBags.find((b) => b.artifactId === 'moss_pouch');
+  const amber = state.activeBags.find((b) => b.artifactId === 'amber_satchel');
+  // Unified-grid pre-state: moss at (3, 0), amber at (3, 1). Try to drag
+  // moss to (3, 1) — would overlap amber\u2019s footprint exactly.
+  state.error = '';
+  state.draggingBagId = moss.id;
+  state.draggingSource = 'bag-chip';
+  shop.onInventoryCellDrop({ x: 3, y: 1 });
+
+  assert.equal(moss.anchorX, 3, 'moss anchor unchanged after rejected drop');
+  assert.equal(moss.anchorY, 0);
+  assert.equal(amber.anchorX, 3, 'amber anchor unchanged');
+  assert.equal(amber.anchorY, 1);
+  assert.match(state.error, /Does not fit/);
+});
+
+test('[Req 2-H] bag chip drop is rejected when the new anchor overflows BAG_COLUMNS', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'amber_satchel');
+  shop.activateBag('amber_satchel');
+  const bagId = state.activeBags[0].id;
+  const initialAnchorX = state.activeBags[0].anchorX;
+  // amber_satchel is 2x2; BAG_COLUMNS=6 so anchorX=5 would put cols 5..6
+  // out of bounds (column 6 is past the right edge).
+  state.draggingBagId = bagId;
+  state.draggingSource = 'bag-chip';
+  shop.onInventoryCellDrop({ x: 5, y: 3 });
+
+  assert.equal(state.activeBags[0].anchorX, initialAnchorX, 'overflow drop must not change the anchor');
 });

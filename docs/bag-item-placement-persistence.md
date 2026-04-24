@@ -1,5 +1,7 @@
 # Bag item placement persistence
 
+> **Forward pointer (2026-04-24):** the slot-coord storage contract below stays in force as of Phase 1 of the bag-grid-unification plan. Phase 4 of that plan (see [`.agent/tasks/bag-grid-unification/spec.md`](../.agent/tasks/bag-grid-unification/spec.md)) migrates bagged items to **absolute unified-grid coords**, drops `bag_id`, and derives bag membership from tile overlap (many-to-many) to match Backpack Battles' architecture. Until that phase ships, the contract in this file is authoritative.
+
 ## Current contract (slot-coord architecture)
 
 `game_run_loadout_items.x, y, bag_id` are shared across three different

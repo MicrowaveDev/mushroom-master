@@ -151,8 +151,8 @@ Step 2: Prep Screen (Round N)
   Sees:
     - Round HUD: "Раунд N" / "Round N"
     - Stats HUD: Wins W, Lives L, Coins C
-    - [Req 2-A] Inventory grid (3×3 = 9 cells)
-    - [Req 3-A, 3-B] Round 1: 2 preset items at (0,0) and (1,0)
+    - [Req 2-A, 2-F] Unified grid, `BAG_COLUMNS = 6` wide — the base inventory occupies the top-left 3×3 (9 cells) and is always visible; the remaining cells are empty bag area (faint dashed borders, drop targets for bag chips). With no bags activated, 18 cells total render.
+    - [Req 3-A, 3-B] Round 1: 2 preset items at base-inventory (0,0) and (1,0)
     - Container zone (purchased but unplaced items)
     - [Req 4-D] Shop with 5 items + prices
     - [Req 4-G] Refresh button with cost label (1 or 2 coins)
@@ -165,6 +165,8 @@ Step 2: Prep Screen (Round N)
     - [Req 4-F] Shop offer persists across page refresh
     - [Req 4-J] Selling same-round item returns full price
     - [Req 4-K] Selling older item returns half price
+    - [Req 2-G] Buying and activating a bag runs the 2D first-fit packer: bags land alongside the base inventory in the first free cell (e.g. `(3, 0)` for a 2×1 bag), not below it, and the grid only extends downward when no alongside slot fits.
+    - [Req 2-H] Bag chips in the active-bags bar are draggable to re-anchor the bag in any non-overlapping grid cell; chips lock (greyed + tooltip) when the bag holds items.
     - signalReady() called → POST /api/game-run/:id/ready
     - Navigate to replay screen (automatic)
 

@@ -27,11 +27,35 @@ Last verified against code: 2026-04-16.
 
 ## 2. Inventory & Grid
 
-- **2-A.** The base inventory grid is **3 columns × 3 rows = 9 cells** (`INVENTORY_COLUMNS × INVENTORY_ROWS`).
+- **2-A.** The base inventory grid is **3 columns × 3 rows = 9 cells** (`INVENTORY_COLUMNS × INVENTORY_ROWS`). *(Transitional: replaced by a starter-bag artifact in Phase 3 — see 2-K.)*
 - **2-B.** Bags expand available slots beyond the base grid.
 - **2-C.** Items in the **container** (purchased but unplaced, position `(-1,-1)`) do not contribute combat stats.
 - **2-D.** Only **grid-placed** and **bag-placed** items contribute to battle stats.
 - **2-E.** Container capacity is unlimited (limited only by coins).
+- **2-F.** The prep loadout panel is a **single unified grid** `BAG_COLUMNS = 6` wide and tall enough to fit the base inventory plus all active bags' footprints (`max(INVENTORY_ROWS, max(anchorY + bag.rows))`). The base inventory occupies the fixed `(0..INVENTORY_COLUMNS-1, 0..INVENTORY_ROWS-1)` rectangle and is always present. There is no separate "bag zone" section, no divider, and no spacing between inventory rows and bag rows — they flow as one grid.
+- **2-G.** Activating a bag runs a 2D first-fit packer in unified-grid coords that scans top-to-bottom, left-to-right and treats the base inventory as a permanent virtual obstacle. The packer assigns the first non-overlapping anchor `(anchorX, anchorY)` where the bag's bounding box fits inside `BAG_COLUMNS` and doesn't collide with another active bag or the base inventory. With base inventory at cols 0..2, a 2×1 bag therefore anchors at `(3, 0)` (alongside the inventory in row 0) before the packer extends the grid downward.
+- **2-H.** Bag chips in the active-bags bar are **draggable** to a new anchor in the unified grid. Only **empty bags** can be moved in v1 (a bag with items inside has its chip greyed out with a tooltip *"Empty the bag to move it"* — moving a non-empty bag would invalidate its bagged-items' slot identity in the current storage model). The drop target is any cell outside the base inventory; its `(x, y)` becomes the bag's new anchor. The new footprint must stay inside `BAG_COLUMNS`, not overlap another active bag, and not overlap the base inventory, otherwise the drop is rejected with the *"Does not fit"* error. *(2-H's empty-bag restriction lifts in Phase 4 — see 2-L.)*
+
+### Planned (Backpack-Battles-aligned end state)
+
+The current model is the first step toward a Backpack-Battles-style architecture: one shared grid where bags and items are first-class placed entities, bag membership is derived from tile overlap, and the "base inventory" is replaced by a regular pre-placed starter bag. Tracked by [`.agent/tasks/bag-grid-unification/`](../.agent/tasks/bag-grid-unification/spec.md); each requirement below ships in a numbered phase.
+
+- **2-I.** *(Phase 2)* Items may be placed at the boundary between adjacent bags or between the base inventory and an adjacent bag. Per-cell coverage validation accepts the placement as long as every cell the item occupies lies in either the base inventory or an active bag's slot mask. The item is attributed to one **primary bag** (the bag covering the item's top-left cell, or `null` if the top-left lies in the base inventory) for storage. Bag rotation/deactivation is blocked when ANY item — primary or spillover — would lose coverage. *(Stepping stone toward 2-J; both go away when 2-K + 2-L land.)*
+- **2-J.** *(Phase 4 — final)* Items have **absolute `(x, y)` coordinates** on the shared grid. Bag membership is **many-to-many and derived at runtime from tile overlap**: an item is "in" every bag whose footprint overlaps any of the item's cells. Per-bag effects apply once per overlapping bag (an item touching two bags receives both bags' effects exactly once each, regardless of how many tiles overlap each bag).
+- **2-K.** *(Phase 3 — final)* The "base inventory" is a **regular pre-placed starter bag** (one per character; analogous to a Backpack Battles class bag). Activated automatically at run start with the character's starter preset already inside it. The starter bag is a normal bag row in `game_run_loadout_items` with `active = 1` and a fixed anchor at `(0, 0)`.
+- **2-L.** *(Phase 4 — final)* Bag chips become draggable **regardless of whether the bag is empty**. Moving a bag translates its anchor and **all currently-overlapping items** by the same delta — items travel with the bag instead of being orphaned. The starter bag (2-K) may be configurable as locked-in-place per character but is otherwise drag-equivalent.
+- **2-M.** *(Phase 5)* Per-bag effects (e.g. "items inside this bag trigger 10% faster", "items in this bag get +1 damage") are computed at battle-start by aggregating each bag's rules over the derived many-to-many membership from 2-J. Adjacency synergies (e.g. "this item gains damage when adjacent to a Food-category item") are computed independently from cell-touching, not bag membership.
+
+### Database schema implications
+
+| col on `game_run_loadout_items` | v1 (today) | v2 (Phase 4 end state) |
+|---|---|---|
+| `x, y` | base-grid OR slot-inside-bag (discriminated by `bag_id`); `(-1, -1)` for container | absolute coords on the shared grid; `(-1, -1)` for container |
+| `bag_id` | non-null = bagged item, references parent bag row | **dropped** — membership derived from overlap |
+| `width, height, rotated` | unchanged | unchanged |
+| `active` | bag rows only | bag rows only (same) |
+
+Phase 1 + Phase 2 ship without any schema change. Phases 3 + 4 add a starter-bag artifact and migrate items to absolute coords (additive new columns, populate from existing slot-coords, drop `bag_id` once nothing reads it).
 
 ---
 

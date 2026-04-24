@@ -250,10 +250,13 @@ test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistenc
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await waitForPrepReady(page);
 
-  // Count base inventory grid cells (3×3 = 9)
+  // Unified grid: BAG_COLUMNS=6 wide × INVENTORY_ROWS=3 tall = 18 cells when
+  // no bag has been activated yet. The base inventory occupies the top-left
+  // 3x3; the remaining 9 cells are empty bag area (visible drop targets).
   const inventoryGrid = page.locator('.artifact-inventory-grid .artifact-grid-background');
   const baseCells = await inventoryGrid.locator('> *').count();
-  expect(baseCells).toBe(9);
+  expect(baseCells).toBe(18);
+  expect(await inventoryGrid.locator('.artifact-grid-cell--base-inv').count()).toBe(9);
 
   // Deterministically place amber_satchel in the shop, then buy it.
   const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
@@ -275,12 +278,12 @@ test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistenc
   await expect(page.locator('.active-bags-bar')).toBeVisible();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
-  // Grid should have expanded with bag rows
+  // Bag cells (= 4 slot cells for amber_satchel 2x2) appear in the grid.
+  // amber anchors at (3, 0) under the unified packer — alongside the base
+  // inventory — so the total cell count stays at 18 (no row added).
   const bagCells = inventoryGrid.locator('.artifact-grid-cell--bag');
   const bagCellCount = await bagCells.count();
-  expect(bagCellCount).toBeGreaterThan(0);
-  const totalCells = await inventoryGrid.locator('> *').count();
-  expect(totalCells).toBeGreaterThan(9);
+  expect(bagCellCount).toBe(4);
 
   await saveShot(page, 'solo-bag-01-activated.png');
 
@@ -545,4 +548,90 @@ test('items, bags, and sell state all survive page reload', async ({ page, reque
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
   await saveShot(page, 'solo-bag-sell-after-reload.png');
+});
+
+test('[Req 2-F, 2-G, 2-H] unified grid packs bags alongside the base inventory', async ({ page, request, baseURL }) => {
+  // Phase 1 of bag-grid-unification: the prep panel is one unified grid
+  // (BAG_COLUMNS=6 wide). The base inventory occupies (0..2, 0..2) as a
+  // virtual obstacle; activated bags pack into the first free cell the
+  // 2D first-fit packer can find — including alongside the base inventory
+  // in cols 3..5 of rows 0..2. Two bags totalling 5 coins (moss 2c +
+  // amber 3c) fit the round-1 budget. Under the legacy stacked layout
+  // amber would have anchored below moss; under the unified packer it
+  // anchors at (3, 1) — alongside the base inv, below moss in row 1.
+  // The chip-lock contract (data-bag-locked + tooltip) is covered by
+  // tests/web/use-shop.test.js [Req 2-H] tests.
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 940, username: 'bag_packer', name: 'Bag Packer' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  const ghost = await createSession(request, { telegramId: 941, username: 'bag_packer_ghost', name: 'Bag Packer Ghost' });
+  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await waitForPrepReady(page);
+
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  // Force both bags into the shop and buy them. Total cost = 2 + 3 = 5
+  // (matches MAX_ARTIFACT_COINS for round 1).
+  await forceShopAndBuy(page, request, player.sessionKey, bootstrap.activeGameRun.id, 'moss_pouch');
+  await forceShopAndBuy(page, request, player.sessionKey, bootstrap.activeGameRun.id, 'amber_satchel');
+
+  // Activate both bags by clicking their container slots.
+  await page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]').first().click();
+  await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(1);
+  await page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]').first().click();
+  await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(2);
+
+  // The unified grid renders one block (no separate inventory + bag-zone
+  // sections). Selector targets it via the data-testid the renderer adds.
+  const grid = page.locator('[data-testid="unified-grid"]');
+  await expect(grid).toBeVisible();
+  // BAG_COLUMNS=6 × at least INVENTORY_ROWS=3 = 18 cells minimum (more if a
+  // bag pushes the grid downward, which doesn't happen here).
+  const cellCount = await grid.locator('.artifact-grid-cell').count();
+  expect(cellCount, 'unified grid must render BAG_COLUMNS-wide rows').toBeGreaterThanOrEqual(18);
+
+  // Alongside packing: moss anchors at (3, 0), amber at (3, 1). amber's
+  // first slot is virtual (3, 1). Under the legacy bag-zone-local stack
+  // amber would have lived at (0, 4). Asserting the unified-coord cell
+  // exists as a real slot (not --bag-disabled / --bag-empty / --base-inv)
+  // discriminates the two layouts.
+  const mossFirstSlot = grid.locator(`.artifact-grid-cell[data-cell-x="3"][data-cell-y="0"]`);
+  await expect(mossFirstSlot).toHaveCount(1);
+  await expect(mossFirstSlot).toHaveClass(/artifact-grid-cell--bag(?!-)/);
+  const amberFirstSlot = grid.locator(`.artifact-grid-cell[data-cell-x="3"][data-cell-y="1"]`);
+  await expect(amberFirstSlot).toHaveCount(1);
+  await expect(amberFirstSlot).toHaveClass(/artifact-grid-cell--bag(?!-)/);
+
+  // Base-inventory cell at (0, 0) must NOT be a bag cell — it's the starter
+  // preset slot, marked with the base-inv class only.
+  const baseInvCell = grid.locator(`.artifact-grid-cell[data-cell-x="0"][data-cell-y="0"]`);
+  await expect(baseInvCell).toHaveClass(/artifact-grid-cell--base-inv/);
+
+  // Both bags are empty → both chips are draggable and unlocked.
+  const mossChip = page.locator('.active-bag-chip[data-bag-row-id]', { hasText: /moss|пакет|мох/i }).first();
+  const amberChip = page.locator('.active-bag-chip[data-bag-row-id]', { hasText: /amber|сумка|янтар/i }).first();
+  await expect(mossChip).toHaveAttribute('draggable', 'true');
+  await expect(mossChip).toHaveAttribute('data-bag-locked', 'false');
+  await expect(amberChip).toHaveAttribute('draggable', 'true');
+  await expect(amberChip).toHaveAttribute('data-bag-locked', 'false');
+
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await saveShot(page, 'bag-zone-01-alongside-mobile.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await saveShot(page, 'bag-zone-02-alongside-desktop.png');
+
+  // --- Reload persistence: bags re-pack to the same alongside layout ---
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(2);
+  await expect(grid).toBeVisible();
+  // Server preserves bag declaration order (sort_order); the projection's
+  // 2D first-fit packer re-derives the same anchors deterministically.
+  const amberSlotAfterReload = grid.locator(`.artifact-grid-cell[data-cell-x="3"][data-cell-y="1"]`);
+  await expect(amberSlotAfterReload).toHaveClass(/artifact-grid-cell--bag(?!-)/);
+  await saveShot(page, 'bag-zone-03-after-reload-desktop.png');
 });
