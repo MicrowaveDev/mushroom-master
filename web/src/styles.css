@@ -3447,20 +3447,21 @@ select {
   100% { opacity: 1; transform: scaleY(1); }
 }
 
-.artifact-grid-cell--bag-disabled {
-  visibility: hidden;
-}
-/* Cells outside the base inventory and outside every bag's footprint stay
- * visible but de-emphasised so the player can see the wider drop target
- * area when dragging a bag chip. Without this, the unified grid would
- * collapse to whatever bags currently occupy and chip drops would have no
- * visible target. */
+/* Mask-gap cells inside a tetromino bag's bounding box (e.g. the corners
+ * skipped by a T / L / Z tetromino) AND cells outside every bag's bbox
+ * share the same visual: a faint dashed drop-target square. The
+ * functional distinction — mask gaps reject item placement, are "part of"
+ * the bag for overlap checks — stays in the classification layer; the
+ * renderer just treats both as "not a filled slot, render as empty".
+ * Prior to this rule the --bag-disabled class used `visibility: hidden`,
+ * which left visible holes in the grid wherever a tetromino had a gap. */
+.artifact-grid-cell--bag-disabled,
 .artifact-grid-cell--bag-empty {
   background: rgba(0, 0, 0, 0.025);
   border: 1px dashed rgba(0, 0, 0, 0.08);
   border-radius: 6px;
 }
-/* Drop-target highlight on empty bag-area cells when a chip is dragging. */
+/* Drop-target highlight when a chip is dragging over a free cell. */
 .artifact-grid-cell--bag-empty.artifact-grid-cell--drop-target {
   background: rgba(107, 143, 94, 0.18);
   border-color: rgba(107, 143, 94, 0.7);

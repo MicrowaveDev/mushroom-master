@@ -636,3 +636,55 @@ test('[Req 2-F, 2-G, 2-H] unified grid packs bags alongside the base inventory',
   await expect(amberSlotAfterReload).toHaveClass(/artifact-grid-cell--bag(?!-)/);
   await saveShot(page, 'bag-zone-03-after-reload-desktop.png');
 });
+
+test('[Req 2-F] tetromino-bag mask gaps render visibly (no hidden grid holes)', async ({ page, request, baseURL }) => {
+  // Regression: activating a T-tetromino (trefoil_sack) left the bottom-left
+  // and bottom-right corners of its bounding box as `visibility: hidden`
+  // cells, creating visual holes in the unified grid. The user's screenshot
+  // showed trefoil at anchor (3, 0) with row 1 cols 3 and 5 completely
+  // blank. Contract after the fix: the two mask-gap cells still classify
+  // as --bag-disabled at the JS layer (per grid-cell-classification.test.js
+  // "tetromino mask gap inside bbox"), but the CSS renders them with the
+  // same faint dashed style as --bag-empty cells so the grid stays visually
+  // intact.
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 950, username: 'tetro', name: 'Tetro' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  const ghost = await createSession(request, { telegramId: 951, username: 'tetro_ghost', name: 'Tetro Ghost' });
+  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await waitForPrepReady(page);
+
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  // trefoil_sack costs 3 and fits the round-1 budget alongside the 2-coin
+  // starter preset (5 total). Activates at (3, 0) via the first-fit packer.
+  await forceShopAndBuy(page, request, player.sessionKey, bootstrap.activeGameRun.id, 'trefoil_sack');
+  await page.locator('.artifact-container-zone .container-item[data-artifact-id="trefoil_sack"]').first().click();
+  await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(1);
+
+  const grid = page.locator('[data-testid="unified-grid"]');
+  // trefoil shape [[1,1,1],[0,1,0]] at anchor (3, 0): slots at
+  //   row 0: cols 3, 4, 5
+  //   row 1: col 4 only
+  // Mask gaps at (3, 1) and (5, 1) — both must be --bag-disabled in the
+  // DOM (functional classification) AND render visibly (computed
+  // visibility !== 'hidden').
+  for (const [cx, cy] of [[3, 0], [4, 0], [5, 0], [4, 1]]) {
+    const slot = grid.locator(`.artifact-grid-cell[data-cell-x="${cx}"][data-cell-y="${cy}"]`);
+    await expect(slot).toHaveClass(/artifact-grid-cell--bag(?!-)/, { timeout: 2000 });
+  }
+  for (const [cx, cy] of [[3, 1], [5, 1]]) {
+    const gapCell = grid.locator(`.artifact-grid-cell[data-cell-x="${cx}"][data-cell-y="${cy}"]`);
+    await expect(gapCell).toHaveClass(/artifact-grid-cell--bag-disabled/);
+    // The cell MUST be visible — regression was `visibility: hidden`
+    // creating holes in the grid. Computed style check catches CSS-only
+    // regressions that a class-based assertion would miss.
+    const visibility = await gapCell.evaluate((el) => getComputedStyle(el).visibility);
+    expect(visibility, `mask-gap cell (${cx}, ${cy}) must render visibly`).not.toBe('hidden');
+  }
+
+  await saveShot(page, 'bag-zone-04-tetromino-mask-gaps-desktop.png');
+});
