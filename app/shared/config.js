@@ -11,6 +11,10 @@ export const INVENTORY_ROWS = 3;
 // so multiple bags can pack side-by-side instead of stacking vertically.
 // See docs/game-requirements.md §2-F.
 export const BAG_COLUMNS = 6;
+// Minimum number of rows in the unified prep grid. The rendered grid is
+// always at least `BAG_COLUMNS x BAG_ROWS`; active bags can extend the
+// height further when their footprints fall below row BAG_ROWS - 1.
+export const BAG_ROWS = 6;
 
 // --- Shop / prep budget ---
 export const MAX_ARTIFACT_COINS = 5;

@@ -1,4 +1,4 @@
-import { BAG_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { BAG_COLUMNS, BAG_ROWS, INVENTORY_ROWS } from '../constants.js';
 import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
 import { RunHud } from '../components/prep/RunHud.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
@@ -74,10 +74,12 @@ export const PrepScreen = {
       }
       return rows.sort((a, b) => a.row - b.row);
     },
-    // Total rows in the unified grid: max(INVENTORY_ROWS, bottom edge of
-    // every active bag). InventoryZone forwards this to ArtifactGridBoard.
+    // Total rows in the unified grid: at least BAG_ROWS (= 6) so the rendered
+    // grid is always 6×6, expanding further if an active bag's footprint
+    // extends below row BAG_ROWS - 1. InventoryZone forwards this to
+    // ArtifactGridBoard.
     totalRows() {
-      let max = INVENTORY_ROWS;
+      let max = BAG_ROWS;
       for (const activeBag of this.state.activeBags) {
         const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;

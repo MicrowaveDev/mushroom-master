@@ -1,4 +1,4 @@
-import { BAG_COLUMNS, INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
+import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
 import { getEffectiveShape, isCellInShape } from '../../../app/shared/bag-shape.js';
 import { messages } from '../i18n.js';
@@ -29,11 +29,11 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return cx >= 0 && cx < INVENTORY_COLUMNS && cy >= 0 && cy < INVENTORY_ROWS;
   }
 
-  // Total rows in the unified grid: max of the base inventory's height and
-  // the bottom edge of the lowest active bag. Used by ArtifactGridBoard for
-  // sizing and by bounds checks.
+  // Total rows in the unified grid: at least `BAG_ROWS` so the rendered
+  // grid is always 6×6, expanding further if an active bag's footprint
+  // extends below row BAG_ROWS - 1.
   function effectiveRows() {
-    return Math.max(INVENTORY_ROWS, bagsBottomRow());
+    return Math.max(BAG_ROWS, bagsBottomRow());
   }
 
   // Translate a unified-grid (cx, cy) cell coordinate to the active bag (if

@@ -138,7 +138,7 @@ test('[Req 2-F] activating two bags packs them alongside the base inventory in u
   assert.equal(moss.anchorY, 0, 'moss anchors at the top row (row 0)');
   assert.equal(amber.anchorX, 3, 'amber also anchors at col 3 (no room in row 0)');
   assert.equal(amber.anchorY, 1, 'amber anchors at row 1 — below moss, alongside the base inv');
-  assert.equal(shop.effectiveRows(), 3, 'no bag extends past INVENTORY_ROWS so the grid stays 3 tall');
+  assert.equal(shop.effectiveRows(), 6, 'unified grid is always at least BAG_ROWS (6) tall');
 });
 
 test('[bag-relayout] deactivating an empty bag preserves a side-by-side bag\u2019s slot identity', () => {

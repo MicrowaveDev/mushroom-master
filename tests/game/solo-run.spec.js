@@ -250,12 +250,13 @@ test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistenc
   await page.getByRole('button', { name: /start game|начать игру/i }).click();
   await waitForPrepReady(page);
 
-  // Unified grid: BAG_COLUMNS=6 wide × INVENTORY_ROWS=3 tall = 18 cells when
-  // no bag has been activated yet. The base inventory occupies the top-left
-  // 3x3; the remaining 9 cells are empty bag area (visible drop targets).
+  // Unified grid: BAG_COLUMNS × BAG_ROWS = 6×6 = 36 cells when no bag has
+  // been activated yet. The base inventory occupies the top-left 3×3 (9
+  // cells); the remaining 27 cells are empty bag area (visible drop
+  // targets for bag-chip drag).
   const inventoryGrid = page.locator('.artifact-inventory-grid .artifact-grid-background');
   const baseCells = await inventoryGrid.locator('> *').count();
-  expect(baseCells).toBe(18);
+  expect(baseCells).toBe(36);
   expect(await inventoryGrid.locator('.artifact-grid-cell--base-inv').count()).toBe(9);
 
   // Deterministically place amber_satchel in the shop, then buy it.
@@ -589,10 +590,10 @@ test('[Req 2-F, 2-G, 2-H] unified grid packs bags alongside the base inventory',
   // sections). Selector targets it via the data-testid the renderer adds.
   const grid = page.locator('[data-testid="unified-grid"]');
   await expect(grid).toBeVisible();
-  // BAG_COLUMNS=6 × at least INVENTORY_ROWS=3 = 18 cells minimum (more if a
-  // bag pushes the grid downward, which doesn't happen here).
+  // BAG_COLUMNS × BAG_ROWS = 6×6 = 36 cells minimum (more if a bag pushes
+  // the grid downward, which doesn't happen for moss + amber here).
   const cellCount = await grid.locator('.artifact-grid-cell').count();
-  expect(cellCount, 'unified grid must render BAG_COLUMNS-wide rows').toBeGreaterThanOrEqual(18);
+  expect(cellCount, 'unified grid must render a 6×6 minimum').toBeGreaterThanOrEqual(36);
 
   // Alongside packing: moss anchors at (3, 0), amber at (3, 1). amber's
   // first slot is virtual (3, 1). Under the legacy bag-zone-local stack

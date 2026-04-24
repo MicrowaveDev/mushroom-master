@@ -1,4 +1,4 @@
-import { BAG_COLUMNS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
 export const ArtifactGridBoard = {
@@ -39,9 +39,11 @@ export const ArtifactGridBoard = {
     },
     gridRows() {
       if (!this.isInventoryVariant) return this.rows;
-      // Default to INVENTORY_ROWS when no bag has been activated yet so the
-      // inventory still renders its 3 rows.
-      return Math.max(INVENTORY_ROWS, this.totalRows);
+      // Unified prep grid is always at least BAG_ROWS tall (6×6) so bag
+      // drops have visible landing cells even before any bag is active.
+      // Expands further when totalRows reports a bag extending below row
+      // BAG_ROWS - 1.
+      return Math.max(BAG_ROWS, this.totalRows);
     },
     totalCells() {
       return this.gridColumns * this.gridRows;
