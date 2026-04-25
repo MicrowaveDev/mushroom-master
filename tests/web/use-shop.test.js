@@ -28,6 +28,10 @@ const ARTIFACTS = [
   // spark_shard (1×2) — used by the rotate-duplicate test. A rotatable
   // non-bag artifact that fits the 3×3 grid in both orientations.
   { id: 'spark_shard', family: 'damage', width: 1, height: 2, price: 1, bonus: { damage: 1 } },
+  // thunder_gill (2×1) — used by the straddle-rejection test. A horizontal
+  // 2-wide artifact that, anchored at (2, 0) or (2, 2), would span base inv
+  // → bag boundary if the placement check ignored container uniformity.
+  { id: 'thunder_gill', family: 'damage', width: 2, height: 1, price: 1, bonus: { damage: 1 } },
   // moss_pouch: 1×2 → default orientation cols=2, rows=1 (adds 1 bag row)
   { id: 'moss_pouch', family: 'bag', width: 1, height: 2, price: 2, slotCount: 2, bonus: {} },
   // amber_satchel: 2×2 → cols=2, rows=2 (adds 2 bag rows)
@@ -761,4 +765,58 @@ test('[Req 2-H] bag chip drop is rejected when the new anchor overflows BAG_COLU
   shop.onInventoryCellDrop({ x: 5, y: 3 });
 
   assert.equal(state.activeBags[0].anchorX, initialAnchorX, 'overflow drop must not change the anchor');
+});
+
+// Regression: a 2x1 artifact anchored across base inv → bag boundary
+// (e.g. (2,2) with a bag covering (3,2)) used to be accepted by the per-cell
+// isCellDisabled check, with bagId taken from the top-left only. The next
+// loadout save then failed server-side validation as out-of-bounds because
+// the item carried bagId=null but width 2 overflowed the 3-wide base inv.
+// Placement must be rejected at the source — items must fully fit in either
+// the base inventory or one bag.
+test('[regression] container drop is rejected when the footprint straddles base inv ↔ bag', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  // amber_satchel anchors at (3, 0) covering (3..4, 0..1); moss_pouch then
+  // anchors at (3, 2) covering (3..4, 2). At drop position (2, 2):
+  //   horizontal 2x1 → (2,2) base inv, (3,2) in moss → straddle, must reject
+  //   vertical 1x2  → (2,2) base inv, (2,3) empty cell → must also reject
+  // so we exercise the straddle path without giving the rotated fallback
+  // a clean landing.
+  seedContainer(state, 'amber_satchel');
+  shop.activateBag('amber_satchel');
+  seedContainer(state, 'moss_pouch');
+  shop.activateBag('moss_pouch');
+  const moss = state.activeBags.find((b) => b.artifactId === 'moss_pouch');
+  assert.equal(moss.anchorX, 3, 'precondition: moss anchored at col 3');
+  assert.equal(moss.anchorY, 2, 'precondition: moss anchored at row 2');
+
+  const builderBefore = state.builderItems.length;
+  dropFromContainer(shop, state, 'thunder_gill', 2, 2);
+
+  assert.equal(state.builderItems.length, builderBefore,
+    'straddle drop must not add a builder item');
+});
+
+test('[regression] inventory move is rejected when the footprint straddles base inv ↔ bag', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'amber_satchel');
+  shop.activateBag('amber_satchel');
+  // Place thunder_gill cleanly inside the bag at (3, 0) → covers (3,0)+(4,0).
+  dropFromContainer(shop, state, 'thunder_gill', 3, 0);
+  const placed = state.builderItems.find((i) => i.artifactId === 'thunder_gill');
+  assert.ok(placed, 'precondition: thunder_gill placed inside amber');
+  const bagId = placed.bagId;
+  assert.ok(bagId, 'precondition: placement received the bag row id');
+
+  // Try to drag it left to (2, 0) — would straddle base inv (2,0) and bag (3,0).
+  state.draggingArtifactId = 'thunder_gill';
+  state.draggingItem = placed;
+  state.draggingSource = 'inventory';
+  shop.onInventoryCellDrop({ x: 2, y: 0 });
+
+  const after = state.builderItems.find((i) => i.artifactId === 'thunder_gill');
+  assert.equal(after.x, 3, 'straddle move must not relocate the item');
+  assert.equal(after.bagId, bagId, 'straddle move must not change bagId');
 });

@@ -111,12 +111,17 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         continue;
       }
       // No bag covers the item's anchor — must be a base inventory item.
-      // Defensive fallback: if the item's coords are outside the base
-      // inventory rectangle (stale state from a deactivated bag etc.), push
-      // it back to the container sentinel so the next hydrate reconciles.
-      const inBaseInv = item.x >= 0 && item.x < INVENTORY_COLUMNS
-        && item.y >= 0 && item.y < INVENTORY_ROWS;
-      if (!inBaseInv && item.y >= INVENTORY_ROWS) {
+      // Defensive fallback: if the item's full footprint doesn't fit inside
+      // the base inventory rectangle (stale state from a deactivated/moved/
+      // rotated bag etc.), push it to the container sentinel so the next
+      // hydrate reconciles. The check must include width/height — a 2x1
+      // anchored at (2,2) has its anchor inside the 3x3 base but its right
+      // cell (3,2) outside, and falling through would emit invalid coords
+      // the server rightly rejects as out-of-bounds.
+      const fullyInBaseInv = item.x >= 0 && item.y >= 0
+        && item.x + item.width <= INVENTORY_COLUMNS
+        && item.y + item.height <= INVENTORY_ROWS;
+      if (!fullyInBaseInv) {
         payload.push(withId({
           artifactId: item.artifactId, x: -1, y: -1,
           width: item.width, height: item.height

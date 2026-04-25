@@ -167,7 +167,14 @@ The projection's packer is a **byte-for-byte equivalent** of the client's `findF
 2. **`validateBagContents`** — for each bagged item: `bagId` resolves to a placed bag; slot `(x, y)` fits inside the bag's effective shape mask (rotation-aware); no two bagged items overlap inside the same bag; total slot usage ≤ `slotCount`.
 3. **`validateCoinBudget`** — sum of artifact prices ≤ `MAX_ARTIFACT_COINS` (factoring in starter preset cost).
 
-Failures throw and are mapped to a `400 Bad Request` by the loadout endpoint. The client catches and renders `state.error`.
+Failures throw and are mapped to a `400 Bad Request` by the loadout endpoint. The client catches and renders `state.error`. The Express error handler also emits a `kind: 'app_error'` warn log with the route, status, and message — so dev.log is enough to diagnose a failed save without devtools.
+
+## Known issues / common pitfalls
+
+- **Items must fully fit in either the base inventory or one bag — no straddling.** The base inv (3×3 at top-left) and active bags share the unified grid coord space, so a footprint can visually span both. Server validation rejects straddling items because `validateGridItems` enforces `x + width ≤ INVENTORY_COLUMNS` for non-bagged rows and `validateBagContents` enforces a single `bagId` per row. Client placement (`normalizePlacement`, `onInventoryCellDrop`) gates on the same rule via `footprintInOneContainer` ([useShop.js](../web/src/composables/useShop.js)). If a placement succeeds locally but the next save 400s as out-of-bounds, the client gate has drifted from the server contract — fix it at the client gate, not by relaxing the server.
+- **Payload-builder defensive bounce uses the full footprint.** `buildLoadoutPayloadItems` ([useGameRun.js](../web/src/composables/useGameRun.js)) bounces any builder item whose footprint isn't fully inside the base inv *and* isn't covered by an active bag back to the container sentinel `(-1, -1)`. Anchor-only checks (e.g. `x < INVENTORY_COLUMNS && y < INVENTORY_ROWS`) miss horizontal/vertical overflow at the trailing edge — always check `x + w ≤ INVENTORY_COLUMNS` and `y + h ≤ INVENTORY_ROWS`.
+- **Drag-customised bag anchors don't survive a reload.** Anchors are not persisted; the projection re-packs via `findFirstFitAnchor`. If a feature relies on a specific anchor across rounds, it needs new columns or repurposing the `(x, y)` of `active=1` bag rows.
+- **`bagId` is the bag's loadout row id, not its artifactId.** Duplicate bags of the same artifact get distinct ids. Code that derives membership from artifactId will silently misroute when a player owns two of the same bag.
 
 ## Cross-references
 

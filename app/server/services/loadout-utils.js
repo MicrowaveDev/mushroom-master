@@ -67,7 +67,11 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
     }
 
     if (item.x + item.width > gridWidth || item.y + item.height > gridHeight) {
-      throw new Error('Artifact placement is out of bounds');
+      throw new Error(
+        `Artifact placement is out of bounds: ${item.artifactId} `
+        + `at (${item.x},${item.y}) ${item.width}x${item.height} `
+        + `exceeds grid ${gridWidth}x${gridHeight}`
+      );
     }
 
     for (let dx = 0; dx < item.width; dx += 1) {

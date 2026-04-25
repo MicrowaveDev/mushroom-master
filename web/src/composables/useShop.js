@@ -80,6 +80,35 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return !isCellInShape(info.shape, localX, localY);
   }
 
+  // Container identity at (cx, cy): 'base' for the base inventory, the bag's
+  // loadout row id for cells inside an active bag's shape mask, or null for
+  // disabled cells. Used by placement validators to enforce the "an item
+  // must fully fit in either the base inventory or one bag" rule — i.e. all
+  // cells of an item's footprint must return the same non-null key.
+  function containerKeyForCell(cx, cy) {
+    if (isBaseInventoryCell(cx, cy)) return 'base';
+    const info = bagForCell(cx, cy);
+    if (!info) return null;
+    const localX = cx - info.anchorX;
+    const localY = cy - info.anchorY;
+    if (!isCellInShape(info.shape, localX, localY)) return null;
+    return info.bagRowId;
+  }
+
+  // True iff a w×h footprint anchored at (x, y) fits entirely within a single
+  // container (base inventory OR one bag), with no straddling. Per-cell
+  // disabled/occupied checks are the caller's responsibility.
+  function footprintInOneContainer(x, y, w, h) {
+    const first = containerKeyForCell(x, y);
+    if (first == null) return false;
+    for (let dx = 0; dx < w; dx += 1) {
+      for (let dy = 0; dy < h; dy += 1) {
+        if (containerKeyForCell(x + dx, y + dy) !== first) return false;
+      }
+    }
+    return true;
+  }
+
   // True iff the rectangle (anchorX, anchorY, cols, rows) in the unified grid
   // overlaps the base inventory (always at (0..INVENTORY_COLUMNS-1,
   // 0..INVENTORY_ROWS-1)) or any other already-anchored bag's bounding box.
@@ -288,10 +317,13 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
         if (isCellDisabled(x + dx, y + dy)) return null;
       }
     }
-    // Tag the placed item with the bag's row id if its top-left cell lands
-    // inside a bag (else null = base inventory). Phase 2 of the bag-grid
-    // unification will extend this for items that span multiple bags; for
-    // now items must fully fit in either the base inventory or one bag.
+    // Items must fully fit in either the base inventory or one bag (no
+    // straddling). The per-cell disabled check above lets a footprint span
+    // base→bag freely, but the server's validateGridItems / validateBagContents
+    // would then reject it because base inv is 3-wide and a bagged item's
+    // bagId is single-valued. Phase 2 of bag-grid-unification will extend
+    // this to multi-bag items.
+    if (!footprintInOneContainer(x, y, w, h)) return null;
     const info = bagForCell(x, y);
     const bagId = info ? info.bagRowId : null;
     const candidate = { id: rowId, artifactId: artifact.id, x, y, width: w, height: h, bagId };
@@ -635,6 +667,13 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
             return;
           }
         }
+      }
+      // No straddling: the footprint must fit entirely in the base inventory
+      // or one bag. See normalizePlacement for the same constraint on the
+      // container→grid path.
+      if (!footprintInOneContainer(x, y, w, h)) {
+        haptics.notify('error');
+        return;
       }
       // Recompute bagId for the new position — moving across the bag/grid
       // boundary changes the item's membership. Items moved to a base-grid

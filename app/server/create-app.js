@@ -871,6 +871,25 @@ export async function createApp() {
         message: error.message,
         stack: error.stack
       });
+    } else if (status >= 400 && status !== 401 && status !== 403) {
+      // 4xx app errors are surfaced to the user but otherwise invisible: the
+      // request logger only records status, not the message body. Log a
+      // warn-level breadcrumb so production-style diagnosis ("which validator
+      // tripped on which artifact?") doesn't require devtools. 401/403 are
+      // expected auth churn and would be noise. Validator messages are
+      // structured (e.g. "Artifact placement is out of bounds: thunder_gill
+      // at (2,2) 2x1 exceeds grid 3x3") — keep them precise so this log
+      // line is enough to act on.
+      log.warn({
+        kind: 'app_error',
+        requestId: _req.requestId || null,
+        method: _req.method,
+        route: _req.route?.path || _req.path,
+        status,
+        playerId: _req.user?.id || null,
+        gameRunId: _req.params?.id || null,
+        message: error.message
+      });
     }
     res.status(status).json({
       success: false,
