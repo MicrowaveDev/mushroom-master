@@ -138,8 +138,11 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   debugLog('entered replay screen', { battleId: ghostBattle.id });
   await expect(page.locator('.duel-loadout-status')).toBeVisible();
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(0);
-  // [Req 2-A] 2 fighters × 3×3 grid = 18 cells
-  await expect(page.locator('.fighter-inline-inventory .artifact-grid-cell')).toHaveCount(18);
+  // [Req 2-F] 2 fighters × unified BAG_COLUMNS×BAG_ROWS (6×6) grid = 72 cells.
+  // The replay screen runs both loadouts through prepareGridProps so the
+  // grid matches the prep screen exactly; with no bags activated maxBottom
+  // floors at BAG_ROWS=6, giving 36 cells per fighter.
+  await expect(page.locator('.fighter-inline-inventory .artifact-grid-cell')).toHaveCount(72);
   debugLog('waiting for active fighter bubble');
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(1, { timeout: 5000 });
   await expect(page.locator('.fighter-speech-bubble').first()).toContainText(/^(I |Я |Использую |I'm )/i);

@@ -1493,7 +1493,12 @@ select {
 
 .shop-item {
   display: grid;
-  grid-template-rows: auto auto;
+  /* Three rows so the name pins to the top, the visual centers in the
+     flexible middle row, and the stat tags stick to the bottom. The grid
+     parent stretches all tiles in a row to the same height, so this
+     yields a consistent baseline for tags across cards regardless of
+     visual size. */
+  grid-template-rows: auto 1fr auto;
   gap: 4px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.7);
@@ -1538,14 +1543,9 @@ select {
   --artifact-cell-size: clamp(30px, calc((100cqi - 16px) / 3), 44px);
   pointer-events: none;
   justify-self: center;
+  align-self: center;
 }
 
-.shop-item-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85em;
-}
 .shop-item-header {
   display: flex;
   /* flex-start (not baseline) so the name can expand to a second line
@@ -1554,6 +1554,7 @@ select {
   align-items: flex-start;
   justify-content: space-between;
   gap: 4px;
+  font-size: 0.85em;
 }
 .shop-item-name {
   /* Allow long artifact names (e.g. "Статический Споровый Мешочек") to wrap
@@ -1580,6 +1581,8 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  align-self: end;
+  font-size: 0.85em;
 }
 
 .artifact-grid-cell--drop-target {
@@ -2899,13 +2902,47 @@ select {
   }
 
   .shop-item {
+    /* On mobile, place the visual in a left column spanning both rows so
+       the name still sits at the top of the right column and the stat
+       tags pin to the bottom — keeps the "name on top, stats on bottom"
+       contract while saving vertical space with a side-by-side layout. */
     grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
-    grid-template-rows: auto;
-    align-items: center;
+    grid-template-rows: auto 1fr;
+  }
+
+  .shop-item-header {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .shop-item-visual {
+    grid-column: 1;
+    grid-row: 1 / -1;
     justify-self: start;
+    align-self: center;
+  }
+
+  .shop-item-tags {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Replay duel: at 375px the unified BAG_COLUMNS×BAG_ROWS grid (6×6) for
+     two fighters at 22px cells (147px each) plus the 80px center column
+     overflows the viewport (~410px). Shrink cell + gap on mobile so both
+     loadouts plus the center column fit without horizontal scroll. */
+  .duel-loadouts .fighter-inline-inventory {
+    --artifact-cell-size: 18px;
+    --board-gap: 2px;
+  }
+
+  .duel-loadout-center {
+    flex: 0 0 60px;
+  }
+
+  .duel-loadouts {
+    padding: 8px;
+    gap: 6px;
   }
 }
 
