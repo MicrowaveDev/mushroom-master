@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { projectLoadoutItems } from '../../web/src/composables/loadout-projection.js';
+import { projectLoadoutItems, prepareGridProps } from '../../web/src/composables/loadout-projection.js';
 
 const BAG_IDS = new Set(['moss_pouch', 'amber_satchel']);
 
@@ -283,4 +283,88 @@ test('[projection] duplicate bags with different rotation states hydrate separat
   assert.equal(result.activeBags.length, 2);
   assert.equal(result.rotatedBags.length, 1);
   assert.equal(result.rotatedBags[0].id, 'rot_one');
+});
+
+// ----------------------------------------------------------------------
+// prepareGridProps — single-call adapter for FighterCard / ReplayDuel.
+// Battle replay used to pass raw DB rows straight to ArtifactGridBoard:
+// bag rows at (-1, -1) rendered off-grid, bagged items at slot coords
+// collided with base-grid items at (0, 0). prepareGridProps runs the
+// same projection the prep screen uses so the visual contract is unified
+// across surfaces.
+// ----------------------------------------------------------------------
+
+test('[grid-props] returns items + bagRows + totalRows shaped for ArtifactGridBoard', () => {
+  // Snapshot loadout: starter preset at (0, 0) and (1, 0), an active
+  // moss_pouch sitting in the container (no anchor), and a bagged item
+  // inside it at slot (0, 0). prepareGridProps must:
+  //   - drop the bag row from items (it's not a placeable piece)
+  //   - reconstruct the bagged item's virtual coords using the bag's
+  //     packed anchor (3, 0 by the fallback packer)
+  //   - emit bagRows with the bag's row entry + bbox metadata
+  const result = prepareGridProps([
+    row({ id: 'a', artifactId: 'spore_lash', x: 0, y: 0 }),
+    row({ id: 'b', artifactId: 'spore_needle', x: 1, y: 0 }),
+    row({ id: 'm', artifactId: 'moss_pouch', active: true }),
+    row({ id: 'inside', artifactId: 'bark_plate', bagId: 'm', x: 0, y: 0 })
+  ], BAG_IDS, getArtifact);
+
+  // items: starter preset + bagged item at virtual (anchorX + slotX, anchorY + slotY)
+  assert.equal(result.items.length, 3);
+  const inside = result.items.find((i) => i.id === 'inside');
+  assert.equal(inside.x, 3, 'bagged item virtual x = anchorX (3) + slotX (0)');
+  assert.equal(inside.y, 0, 'bagged item virtual y = anchorY (0) + slotY (0)');
+
+  // bagRows: one entry for moss_pouch's row 0
+  assert.equal(result.bagRows.length, 1);
+  const mossRow = result.bagRows[0];
+  assert.equal(mossRow.row, 0);
+  assert.equal(mossRow.artifactId, 'moss_pouch');
+  assert.equal(mossRow.bboxStart, 3);
+  assert.equal(mossRow.bboxEnd, 5);
+  assert.deepEqual(mossRow.enabledCells, [3, 4]);
+
+  // totalRows: at least BAG_ROWS (= 6) so the grid renders a 6×6 floor
+  assert.ok(result.totalRows >= 6, 'totalRows respects BAG_ROWS minimum');
+});
+
+test('[grid-props] empty loadout returns no items, no bagRows, BAG_ROWS floor', () => {
+  const result = prepareGridProps([], BAG_IDS, getArtifact);
+  assert.equal(result.items.length, 0);
+  assert.equal(result.bagRows.length, 0);
+  assert.equal(result.totalRows, 6, 'unified grid floor is BAG_ROWS even when empty');
+});
+
+test('[grid-props][regression] battle replay no longer collides bagged items with base-grid items', () => {
+  // The screenshot bug: snapshot.loadout had a base-grid item at (0, 0)
+  // (spore_lash) AND a bagged item at slot (0, 0) inside an active
+  // moss_pouch. ReplayDuel used to forward both straight to ArtifactGrid
+  // Board, which rendered both at virtual (0, 0) and they overlapped.
+  // After the fix, the bagged item resolves to virtual (3, 0).
+  const result = prepareGridProps([
+    row({ id: 'base', artifactId: 'spore_lash', x: 0, y: 0 }),
+    row({ id: 'bag', artifactId: 'moss_pouch', active: true }),
+    row({ id: 'inside', artifactId: 'bark_plate', bagId: 'bag', x: 0, y: 0 })
+  ], BAG_IDS, getArtifact);
+
+  const base = result.items.find((i) => i.id === 'base');
+  const inside = result.items.find((i) => i.id === 'inside');
+  assert.notEqual(`${base.x}:${base.y}`, `${inside.x}:${inside.y}`,
+    'base-grid and bagged items must occupy distinct virtual cells');
+  assert.equal(base.x, 0);
+  assert.equal(base.y, 0);
+  assert.equal(inside.x, 3, 'bagged item lands alongside the base inventory in the unified grid');
+  assert.equal(inside.y, 0);
+});
+
+test('[grid-props] bag rows themselves are filtered out of items (they are layout, not pieces)', () => {
+  // ArtifactGridBoard's `items` prop renders pieces. Bag rows describe
+  // the grid's bag-zone background and live in `bagRows` instead. A naive
+  // forward of all loadoutItems would render the bag itself as a phantom
+  // piece (sometimes off-grid at -1, -1, sometimes at the bag's anchor).
+  const result = prepareGridProps([
+    row({ id: 'm', artifactId: 'moss_pouch', active: true })
+  ], BAG_IDS, getArtifact);
+  assert.equal(result.items.length, 0, 'no piece for the bag itself');
+  assert.equal(result.bagRows.length, 1, 'bag is described via bagRows');
 });

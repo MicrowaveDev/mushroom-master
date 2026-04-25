@@ -1,4 +1,5 @@
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
+import { prepareGridProps } from '../composables/loadout-projection.js';
 
 export const FighterCard = {
   components: { ArtifactGridBoard },
@@ -9,6 +10,7 @@ export const FighterCard = {
     statsText: { type: String, default: '' },
     speechText: { type: String, default: '' },
     loadout: { type: Object, default: null },
+    bagArtifactIds: { type: [Array, Set], default: null },
     renderArtifactFigure: { type: Function, default: null },
     getArtifact: { type: Function, default: null },
     acting: { type: Boolean, default: false },
@@ -19,6 +21,18 @@ export const FighterCard = {
   computed: {
     rootClass() {
       return ['fighter', this.extraClass, { acting: this.acting }];
+    },
+    // Run snapshot loadout items through the same projection the prep
+    // screen uses so the battle/replay grid renders bag rows, bagged-item
+    // virtual coords, and bag colour masks identically. Without this, raw
+    // DB rows render with bag rows at (-1, -1) and bagged items at slot
+    // coords overlapping base-grid items.
+    gridProps() {
+      if (!this.loadout || !this.getArtifact) return null;
+      const items = this.loadout.items || [];
+      const bagIds = this.bagArtifactIds
+        || new Set(items.filter((i) => this.getArtifact(i.artifactId)?.family === 'bag').map((i) => i.artifactId));
+      return prepareGridProps(items, bagIds, this.getArtifact);
     }
   },
   template: `
@@ -41,10 +55,12 @@ export const FighterCard = {
       <div v-if="statsText || (!hideLoadout && loadout)" class="fighter-meta-row">
         <p v-if="statsText" class="fighter-stats">{{ statsText }}</p>
         <artifact-grid-board
-          v-if="!hideLoadout && loadout && renderArtifactFigure && getArtifact"
+          v-if="!hideLoadout && gridProps && renderArtifactFigure"
           variant="inventory"
           class="fighter-inline-inventory"
-          :items="loadout.items"
+          :items="gridProps.items"
+          :bag-rows="gridProps.bagRows"
+          :total-rows="gridProps.totalRows"
           :render-artifact-figure="renderArtifactFigure"
           :get-artifact="getArtifact"
         />

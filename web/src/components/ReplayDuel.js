@@ -1,5 +1,6 @@
 import { FighterCard } from './FighterCard.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
+import { prepareGridProps } from '../composables/loadout-projection.js';
 
 export const ReplayDuel = {
   components: { FighterCard, ArtifactGridBoard },
@@ -13,6 +14,29 @@ export const ReplayDuel = {
     replaySpeed: { type: Number, default: 1 }
   },
   emits: ['set-speed'],
+  computed: {
+    // Project both sides' loadouts through the unified renderer so the
+    // battle grid matches the prep grid exactly — same bag colours, same
+    // mask gaps, same alongside packing. Skipping this step renders raw
+    // DB rows where bagged items collide with base-grid items at (0, 0)
+    // and bag rows render off-grid at (-1, -1).
+    leftGridProps() {
+      return this.gridPropsFor(this.leftFighter);
+    },
+    rightGridProps() {
+      return this.gridPropsFor(this.rightFighter);
+    }
+  },
+  methods: {
+    gridPropsFor(fighter) {
+      if (!fighter?.loadout || !this.getArtifact) return null;
+      const items = fighter.loadout.items || [];
+      const bagIds = new Set(
+        items.filter((i) => this.getArtifact(i.artifactId)?.family === 'bag').map((i) => i.artifactId)
+      );
+      return prepareGridProps(items, bagIds, this.getArtifact);
+    }
+  },
   template: `
     <div class="duel">
       <div class="duel-fighters">
@@ -43,10 +67,12 @@ export const ReplayDuel = {
         <div class="duel-loadout-side">
           <span class="duel-loadout-name">{{ leftFighter.nameText }}</span>
           <artifact-grid-board
-            v-if="leftFighter.loadout && renderArtifactFigure && getArtifact"
+            v-if="leftGridProps && renderArtifactFigure"
             variant="inventory"
             class="fighter-inline-inventory"
-            :items="leftFighter.loadout.items"
+            :items="leftGridProps.items"
+            :bag-rows="leftGridProps.bagRows"
+            :total-rows="leftGridProps.totalRows"
             :render-artifact-figure="renderArtifactFigure"
             :get-artifact="getArtifact"
           />
@@ -77,10 +103,12 @@ export const ReplayDuel = {
         <div class="duel-loadout-side duel-loadout-side--right">
           <span class="duel-loadout-name">{{ rightFighter.nameText }}</span>
           <artifact-grid-board
-            v-if="rightFighter.loadout && renderArtifactFigure && getArtifact"
+            v-if="rightGridProps && renderArtifactFigure"
             variant="inventory"
             class="fighter-inline-inventory"
-            :items="rightFighter.loadout.items"
+            :items="rightGridProps.items"
+            :bag-rows="rightGridProps.bagRows"
+            :total-rows="rightGridProps.totalRows"
             :render-artifact-figure="renderArtifactFigure"
             :get-artifact="getArtifact"
           />

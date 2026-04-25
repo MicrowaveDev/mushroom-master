@@ -34,7 +34,8 @@
 //   - container non-bag items (-1,-1)
 //                            → containerItems
 
-import { BAG_COLUMNS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
+import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
 
 function bagLayoutFor(artifact, rotated) {
   if (!artifact) return { cols: 0, rows: 0 };
@@ -214,5 +215,66 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
     activeBags,
     rotatedBags,
     freshPurchases
+  };
+}
+
+/**
+ * Build the props ArtifactGridBoard needs to render a snapshot loadout
+ * (battle replay, fighter card, inventory review, etc.). Runs the SAME
+ * projection the prep screen uses so the visual contract stays unified
+ * across surfaces — no separate "battle rendering" path that can drift
+ * from the prep grid.
+ *
+ * Input: a flat list of loadoutItems as the server stores them (bag rows
+ * at (-1, -1) or anchor coords; bagged items with bagId + slot coords).
+ * Output: `{ items, bagRows, totalRows }` ready to spread into the
+ * ArtifactGridBoard component.
+ */
+export function prepareGridProps(loadoutItems, bagArtifactIds, getArtifact) {
+  const projected = projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact);
+  const lookupArtifact = typeof getArtifact === 'function'
+    ? getArtifact
+    : (getArtifact instanceof Map ? (id) => getArtifact.get(id) : () => null);
+  const rotatedSet = new Set(projected.rotatedBags.map((b) => b.id));
+
+  // bagRows + totalRows computed exactly like PrepScreen so the battle
+  // display lands on the same grid layout as prep — bag colours, slot
+  // mask, mask-gap rendering, alongside packing all match.
+  const rows = [];
+  let maxBottom = BAG_ROWS;
+  for (const activeBag of projected.activeBags) {
+    const bag = lookupArtifact(activeBag.artifactId);
+    if (!bag) continue;
+    const rotated = rotatedSet.has(activeBag.id);
+    const shape = getEffectiveShape(bag, rotated);
+    const rowCount = shape.length;
+    const anchorX = activeBag.anchorX ?? 0;
+    const anchorY = activeBag.anchorY ?? 0;
+    const bottom = anchorY + rowCount;
+    if (bottom > maxBottom) maxBottom = bottom;
+    for (let i = 0; i < rowCount; i++) {
+      const maskRow = shape[i] || [];
+      const enabledCells = [];
+      for (let x = 0; x < maskRow.length; x++) {
+        const cellX = anchorX + x;
+        if (cellX >= BAG_COLUMNS) break;
+        if (maskRow[x]) enabledCells.push(cellX);
+      }
+      if (enabledCells.length === 0) continue;
+      rows.push({
+        row: anchorY + i,
+        color: bag.color || '#888',
+        artifactId: activeBag.artifactId,
+        enabledCells,
+        bboxStart: anchorX,
+        bboxEnd: Math.min(anchorX + maskRow.length, BAG_COLUMNS)
+      });
+    }
+  }
+
+  return {
+    items: projected.builderItems,
+    bagRows: rows.sort((a, b) => a.row - b.row),
+    totalRows: maxBottom
   };
 }
