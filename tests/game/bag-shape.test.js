@@ -19,7 +19,7 @@ import {
   rotateShape,
   shapeArea
 } from '../../app/shared/bag-shape.js';
-import { validateBagContents } from '../../app/server/services/loadout-utils.js';
+import { validateItemCoverage } from '../../app/server/services/loadout-utils.js';
 import { getArtifactById } from '../../app/server/game-data.js';
 
 // --- shape helper tests ---
@@ -99,53 +99,53 @@ test('[bag-shape] every tetromino bag has slotCount = shapeArea', () => {
 
 // --- validator tests ---
 
-test('[bag-shape] validateBagContents accepts items placed on shape cells of a T-bag', () => {
+test('[bag-shape] validateItemCoverage accepts items placed on shape cells of a T-bag', () => {
   // T-bag canonical:
   //   ###
   //   .#.
   // Cells (0,0), (1,0), (2,0), (1,1) are filled.
-  validateBagContents([
-    { id: 'tbag', artifactId: 'trefoil_sack', x: -1, y: -1, width: 3, height: 2 },
-    { id: 'a', artifactId: 'spore_needle', bagId: 'tbag', x: 0, y: 0, width: 1, height: 1 },
-    { id: 'b', artifactId: 'bark_plate', bagId: 'tbag', x: 1, y: 1, width: 1, height: 1 }
+  validateItemCoverage([
+    { id: 'tbag', artifactId: 'trefoil_sack', x: 0, y: 0, width: 3, height: 2, active: true },
+    { id: 'a', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
+    { id: 'b', artifactId: 'bark_plate', x: 1, y: 1, width: 1, height: 1 }
   ]);
 });
 
-test('[bag-shape] validateBagContents rejects an item on a non-shape cell of a T-bag', () => {
+test('[bag-shape] validateItemCoverage rejects an item on a non-shape cell of a T-bag', () => {
   // Slot (0, 1) is the bottom-left empty cell of the T — not a slot.
   assert.throws(
-    () => validateBagContents([
-      { id: 'tbag', artifactId: 'trefoil_sack', x: -1, y: -1, width: 3, height: 2 },
-      { id: 'oops', artifactId: 'spore_needle', bagId: 'tbag', x: 0, y: 1, width: 1, height: 1 }
+    () => validateItemCoverage([
+      { id: 'tbag', artifactId: 'trefoil_sack', x: 0, y: 0, width: 3, height: 2, active: true },
+      { id: 'oops', artifactId: 'spore_needle', x: 0, y: 1, width: 1, height: 1 }
     ]),
-    /occupies a non-slot cell/
+    /uncovered cell/
   );
 });
 
-test('[bag-shape] validateBagContents rejects a 1×2 item that straddles a shape edge', () => {
+test('[bag-shape] validateItemCoverage rejects a 1×2 item that straddles a shape edge', () => {
   // L-bag canonical:
   //   ###
   //   #..
   // A 1×2 item at (1, 0) would cover (1, 0) — slot — and (1, 1) — not a slot.
   assert.throws(
-    () => validateBagContents([
-      { id: 'lbag', artifactId: 'birchbark_hook', x: -1, y: -1, width: 3, height: 2 },
-      { id: 'straddle', artifactId: 'amber_fang', bagId: 'lbag', x: 1, y: 0, width: 1, height: 2 }
+    () => validateItemCoverage([
+      { id: 'lbag', artifactId: 'birchbark_hook', x: 0, y: 0, width: 3, height: 2, active: true },
+      { id: 'straddle', artifactId: 'amber_fang', x: 1, y: 0, width: 1, height: 2 }
     ]),
-    /occupies a non-slot cell/
+    /uncovered cell/
   );
 });
 
-test('[bag-shape] validateBagContents accepts a 1×2 item that lies fully inside an I-bag', () => {
+test('[bag-shape] validateItemCoverage accepts a 1×2 item that lies fully inside an I-bag', () => {
   // I-bag (vertical 1×4): every cell is a slot.
-  validateBagContents([
-    { id: 'ibag', artifactId: 'mycelium_vine', x: -1, y: -1, width: 1, height: 4 },
-    { id: 'long', artifactId: 'amber_fang', bagId: 'ibag', x: 0, y: 0, width: 1, height: 2 },
-    { id: 'short', artifactId: 'spore_needle', bagId: 'ibag', x: 0, y: 2, width: 1, height: 1 }
+  validateItemCoverage([
+    { id: 'ibag', artifactId: 'mycelium_vine', x: 0, y: 0, width: 1, height: 4, active: true },
+    { id: 'long', artifactId: 'amber_fang', x: 0, y: 0, width: 1, height: 2 },
+    { id: 'short', artifactId: 'spore_needle', x: 0, y: 2, width: 1, height: 1 }
   ]);
 });
 
-test('[bag-shape] validateBagContents respects the shape after a bag is rotated', () => {
+test('[bag-shape] validateItemCoverage respects the shape after a bag is rotated', () => {
   // T-bag rotated CW becomes:
   //   .#
   //   ##
@@ -153,16 +153,16 @@ test('[bag-shape] validateBagContents respects the shape after a bag is rotated'
   // Slot (0, 1) IS a slot in the rotated form even though it isn't in the
   // un-rotated form. Pin both to make sure the validator picks the right
   // mask based on the bag row's rotated flag.
-  validateBagContents([
-    { id: 'tbag', artifactId: 'trefoil_sack', x: -1, y: -1, width: 3, height: 2, rotated: 1 },
-    { id: 'a', artifactId: 'spore_needle', bagId: 'tbag', x: 0, y: 1, width: 1, height: 1 }
+  validateItemCoverage([
+    { id: 'tbag', artifactId: 'trefoil_sack', x: 0, y: 0, width: 3, height: 2, rotated: 1, active: true },
+    { id: 'a', artifactId: 'spore_needle', x: 0, y: 1, width: 1, height: 1 }
   ]);
   assert.throws(
-    () => validateBagContents([
-      { id: 'tbag', artifactId: 'trefoil_sack', x: -1, y: -1, width: 3, height: 2, rotated: 1 },
+    () => validateItemCoverage([
+      { id: 'tbag', artifactId: 'trefoil_sack', x: 0, y: 0, width: 3, height: 2, rotated: 1, active: true },
       // (0, 0) is now a non-slot cell in the rotated mask.
-      { id: 'oops', artifactId: 'spore_needle', bagId: 'tbag', x: 0, y: 0, width: 1, height: 1 }
+      { id: 'oops', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
     ]),
-    /occupies a non-slot cell/
+    /uncovered cell/
   );
 });

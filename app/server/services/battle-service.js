@@ -2,8 +2,8 @@ import { query } from '../db.js';
 import {
   getMushroomById,
   getStarterPresetCost,
-  INVENTORY_COLUMNS,
-  INVENTORY_ROWS,
+  BAG_COLUMNS,
+  BAG_ROWS,
   ROUND_INCOME
 } from '../game-data.js';
 import {
@@ -42,7 +42,7 @@ export async function getActiveSnapshot(client, playerId) {
 
   const { game_run_id: gameRunId, current_round: currentRound } = activeRunResult.rows[0];
   const rows = await client.query(
-    `SELECT id, artifact_id, x, y, width, height, bag_id, sort_order, active, rotated
+    `SELECT id, artifact_id, x, y, width, height, sort_order, active, rotated
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
      ORDER BY sort_order ASC`,
@@ -56,9 +56,6 @@ export async function getActiveSnapshot(client, playerId) {
     width: row.width,
     height: row.height,
     sortOrder: row.sort_order,
-    bagId: row.bag_id || null,
-    // active + rotated ride along so validateBagContents can compute the
-    // bag's effective (cols, rows) for slot-bounds enforcement.
     active: !!row.active,
     rotated: !!row.rotated
   }));
@@ -75,8 +72,8 @@ export async function getActiveSnapshot(client, playerId) {
     playerId,
     mushroomId,
     loadout: {
-      gridWidth: INVENTORY_COLUMNS,
-      gridHeight: INVENTORY_ROWS,
+      gridWidth: BAG_COLUMNS,
+      gridHeight: BAG_ROWS,
       items
     }
   };

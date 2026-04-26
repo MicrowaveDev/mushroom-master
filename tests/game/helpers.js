@@ -154,15 +154,20 @@ export async function seedRunLoadout(playerId, gameRunId, items) {
     `DELETE FROM game_run_loadout_items WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
     [gameRunId, playerId]
   );
-  // Honor an explicit `id` on input items so callers can wire a bagged
-  // item's `bagId` to its bag's id deterministically. Auto-generates an
-  // id when the caller doesn't care.
-  for (const [index, item] of items.entries()) {
+  const rows = items.some((item) => item.artifactId === 'starter_bag')
+    ? items
+    : [
+      { artifactId: 'starter_bag', x: 0, y: 0, width: 3, height: 3, active: true },
+      ...items
+    ];
+  // Honor an explicit `id` on input items. Auto-generates an id when the
+  // caller doesn't care.
+  for (const [index, item] of rows.entries()) {
     await query(
       `INSERT INTO game_run_loadout_items
          (id, game_run_id, player_id, round_number, artifact_id, x, y, width, height,
-          bag_id, sort_order, purchased_round, fresh_purchase, active, rotated, created_at)
-       VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9, $10, 1, 0, $11, $12, $13)`,
+          sort_order, purchased_round, fresh_purchase, active, rotated, created_at)
+       VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9, 1, 0, $10, $11, $12)`,
       [
         item.id || createId('grlitem'),
         gameRunId,
@@ -172,7 +177,6 @@ export async function seedRunLoadout(playerId, gameRunId, items) {
         item.y ?? 0,
         item.width ?? 1,
         item.height ?? 1,
-        item.bagId || null,
         index,
         item.active ? 1 : 0,
         item.rotated ? 1 : 0,

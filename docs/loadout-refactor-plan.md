@@ -1,6 +1,7 @@
 # Loadout & Run-State Architecture Refactor Plan
 
 **Status:** Shipped (2026-04-11, branch `codex/lore-regeneration-fixes`)
+**Historical note:** This plan predates the flat bag-grid refactor. Sections that mention `bag_id`, `bagId`, slot coords, or `validateBagContents` describe the old implementation. Current inventory architecture is documented in [shop-bag-inventory-architecture.md](shop-bag-inventory-architecture.md).
 **Branch:** codex/lore-regeneration-fixes
 **Owner:** —
 **Estimated effort:** ~8 focused hours (expanded scope) — actual ~10 hours

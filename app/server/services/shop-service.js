@@ -19,6 +19,7 @@ import {
   parseJson
 } from '../lib/utils.js';
 import { isBag } from './artifact-helpers.js';
+import { bagsContainingItem } from './loadout-utils.js';
 import { withRunLock } from './ready-manager.js';
 import {
   deleteLoadoutItemByIdScoped,
@@ -189,7 +190,6 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
       y: -1,
       width: artifact.width,
       height: artifact.height,
-      bagId: null,
       sortOrder,
       purchasedRound: currentRound,
       freshPurchase: true
@@ -344,11 +344,14 @@ export async function sellRunItem(playerId, gameRunId, target) {
     const resolvedArtifactId = candidate.artifactId;
     const artifact = getArtifactById(resolvedArtifactId);
     if (isBag(artifact)) {
-      // bag_id on bagged rows references the bag's own loadout row id
-      // (see docs/bag-item-placement-persistence.md), so duplicate bags
-      // of the same artifact don't block each other's sell.
-      const contentsCount = currentRows.filter((r) => r.bagId === candidate.id).length;
-      if (contentsCount > 0) {
+      const contents = currentRows.filter((row) => {
+        const rowArtifact = getArtifactById(row.artifactId);
+        return !isBag(rowArtifact)
+          && Number(row.x) >= 0
+          && Number(row.y) >= 0
+          && bagsContainingItem(row, [candidate]).length > 0;
+      });
+      if (contents.length > 0) {
         throw new Error('Cannot sell a bag that contains items — empty it first');
       }
     }

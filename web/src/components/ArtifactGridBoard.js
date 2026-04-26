@@ -10,9 +10,7 @@ export const ArtifactGridBoard = {
     columns: { type: Number, default: INVENTORY_COLUMNS },
     rows: { type: Number, default: INVENTORY_ROWS },
     // For inventory variant: the full unified grid is rendered as ONE grid
-    // BAG_COLUMNS wide, totalRows tall. Cells inside (0..INVENTORY_COLUMNS-1,
-    // 0..INVENTORY_ROWS-1) are base-inventory cells; everything else is
-    // either a bag's slot (when bagRows covers it) or empty bag area.
+    // BAG_COLUMNS wide, totalRows tall. Bags provide all usable cells.
     totalRows: { type: Number, default: 0 },
     items: { type: Array, default: () => [] },
     variant: { type: String, default: 'inventory' },
@@ -78,13 +76,7 @@ export const ArtifactGridBoard = {
       };
     },
     isBaseInventoryCell(cx, cy) {
-      // The base inventory occupies a fixed (0..INVENTORY_COLUMNS-1,
-      // 0..INVENTORY_ROWS-1) sub-rectangle within the unified grid. In
-      // Phase 3 of the bag-grid-unification this becomes a starter-bag
-      // artifact and this helper goes away — see game-requirements.md §2-K.
-      return this.isInventoryVariant
-        && cx >= 0 && cx < INVENTORY_COLUMNS
-        && cy >= 0 && cy < INVENTORY_ROWS;
+      return false;
     },
     bagRowEntryFor(cx, cy) {
       // Delegates to helpers/grid-cell-classification.bagRowEntryFor so the
@@ -197,8 +189,7 @@ export const ArtifactGridBoard = {
         'data-artifact-x': item.x,
         'data-artifact-y': item.y,
         'data-artifact-width': item.width,
-        'data-artifact-height': item.height,
-        'data-artifact-bag-id': item.bagId || ''
+        'data-artifact-height': item.height
       };
     }
   },

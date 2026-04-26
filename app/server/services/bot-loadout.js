@@ -5,6 +5,8 @@ import {
   getMushroomById,
   getStarterPreset,
   getStarterPresetCost,
+  BAG_COLUMNS,
+  BAG_ROWS,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   MAX_ARTIFACT_COINS,
@@ -99,7 +101,15 @@ export function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
       rng
     );
     const occupied = new Set();
-    const placements = [];
+    const placements = [{
+      artifactId: 'starter_bag',
+      x: 0,
+      y: 0,
+      width: 3,
+      height: 3,
+      active: true,
+      sortOrder: 0
+    }];
 
     // Lay down preset items first at their fixed positions.
     for (const item of preset) {
@@ -144,12 +154,12 @@ export function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {
       placements.push(placement);
     }
 
-    if (success && placements.length === (chosenArtifacts.length + preset.length) && placements.length > 0) {
+    if (success && placements.length === (chosenArtifacts.length + preset.length + 1) && placements.length > 0) {
       placements.sort((left, right) => left.sortOrder - right.sortOrder);
       validateLoadoutItems(placements, budget + presetCost);
       return {
-        gridWidth: INVENTORY_COLUMNS,
-        gridHeight: INVENTORY_ROWS,
+        gridWidth: BAG_COLUMNS,
+        gridHeight: BAG_ROWS,
         items: placements
       };
     }

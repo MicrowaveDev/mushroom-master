@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBotLoadout, createBotGhostSnapshot } from '../../app/server/services/bot-loadout.js';
-import { getMushroomById, getStarterPresetCost, mushrooms, INVENTORY_COLUMNS, INVENTORY_ROWS, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
+import { getMushroomById, getStarterPresetCost, mushrooms, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
+import { BAG_COLUMNS, BAG_ROWS } from '../../app/shared/config.js';
 import { createRng } from '../../app/server/lib/utils.js';
 
 test('[Req 7-E, 7-F] bot loadout generates successfully for all mushrooms at default 5-coin budget', () => {
@@ -9,8 +10,8 @@ test('[Req 7-E, 7-F] bot loadout generates successfully for all mushrooms at def
     const rng = createRng(`test-${mushroom.id}`);
     const loadout = createBotLoadout(mushroom, rng, 5);
     assert.ok(loadout.items.length > 0, `${mushroom.id}: no items generated`);
-    assert.equal(loadout.gridWidth, INVENTORY_COLUMNS);
-    assert.equal(loadout.gridHeight, INVENTORY_ROWS);
+    assert.equal(loadout.gridWidth, BAG_COLUMNS);
+    assert.equal(loadout.gridHeight, BAG_ROWS);
   }
 });
 
@@ -28,22 +29,27 @@ test('[Req 7-D] bot loadout handles high budgets without failing', () => {
 });
 
 test('[Req 2-A] bot loadout never exceeds grid area', () => {
-  const maxArea = INVENTORY_COLUMNS * INVENTORY_ROWS;
+  const maxArea = BAG_COLUMNS * BAG_ROWS;
   for (let seed = 0; seed < 50; seed++) {
     const rng = createRng(`area-test-${seed}`);
     const loadout = createBotLoadout(getMushroomById('kirt'), rng, 57);
-    const totalArea = loadout.items.reduce((sum, item) => sum + item.width * item.height, 0);
+    const totalArea = loadout.items.reduce((sum, item) => {
+      const artifact = getArtifactById(item.artifactId);
+      return artifact.family === 'bag' ? sum : sum + item.width * item.height;
+    }, 0);
     assert.ok(totalArea <= maxArea, `Seed ${seed}: total area ${totalArea} exceeds grid max ${maxArea}`);
   }
 });
 
-test('[Req 5-F] bot loadout never contains bags (bots only use combat items)', () => {
+test('[Req 5-F] bot loadout only contains the starter bag plus combat items', () => {
   for (let seed = 0; seed < 20; seed++) {
     const rng = createRng(`no-bags-${seed}`);
     const loadout = createBotLoadout(getMushroomById('lomie'), rng, 30);
     for (const item of loadout.items) {
       const artifact = getArtifactById(item.artifactId);
-      assert.notEqual(artifact.family, 'bag', `Seed ${seed}: bot loadout contains a bag (${item.artifactId})`);
+      if (artifact.family === 'bag') {
+        assert.equal(item.artifactId, 'starter_bag', `Seed ${seed}: unexpected bag (${item.artifactId})`);
+      }
     }
   }
 });

@@ -36,7 +36,7 @@
 3. **Unified ghost lookup.** Real-player snapshots and bot fallback both live in `game_run_loadout_items` and are read by the same query. The `game_run_ghost_snapshots` table is deleted. The bot/player code fork that historically caused snapshot drift no longer exists.
 4. **Legacy severance.** `startGameRun` no longer reads `player_artifact_loadouts`. `selectActiveMushroom` no longer seeds it. The legacy `ArtifactsScreen` flow is its own self-contained world. **Issue #11 (items leak between runs) is structurally impossible now**, not just patched.
 5. **Bookmarkable runs.** `/game-run/:id` is live; deep links resolve to the active run or bounce home cleanly if the run ended.
-6. **Validator split.** `validateLoadoutItems` is an orchestrator over `validateGridItems` / `validateBagContents` / `validateCoinBudget`. Each is independently tested. `FAMILY_CAPS` registry replaces scattered `family === 'bag'` branches on the server.
+6. **Validator split.** `validateLoadoutItems` is an orchestrator over `validateBagPlacement` / `validateGridItems` / `validateItemCoverage` / `validateCoinBudget`. Each is independently tested. `FAMILY_CAPS` registry replaces scattered `family === 'bag'` branches on the server.
 7. **Shared constants module.** `app/shared/game-constants.js` is the single home for 20 numeric constants both client and server import.
 
 ### Test coverage delta

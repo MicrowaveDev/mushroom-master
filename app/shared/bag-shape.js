@@ -1,4 +1,4 @@
-// Bag shape mask helpers — shared between the server (validateBagContents)
+// Bag shape mask helpers — shared between the server (validateItemCoverage)
 // and the client (useShop placement, PrepScreen renderer, projection).
 //
 // A bag's `shape` is a 2D array of 0/1 ints, indexed `shape[y][x]`, defining

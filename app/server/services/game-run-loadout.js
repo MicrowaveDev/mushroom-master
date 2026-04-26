@@ -8,20 +8,77 @@
 // or top-level) so callers can compose them inside a withTransaction block.
 
 import { query } from '../db.js';
+import { BAG_COLUMNS } from '../game-data.js';
 import { getArtifactById } from '../game-data.js';
 import { createId, nowIso } from '../lib/utils.js';
-import { validateGridItems, validateBagContents } from './loadout-utils.js';
+import { getEffectiveShape } from '../../shared/bag-shape.js';
+import { pieceCells, validateBagPlacement, validateGridItems, validateItemCoverage } from './loadout-utils.js';
 import { isBag } from './artifact-helpers.js';
 
 async function q(client, sql, params) {
   return client ? client.query(sql, params) : query(sql, params);
 }
 
+function shapeSize(artifact, rotated) {
+  const shape = getEffectiveShape(artifact, rotated);
+  return {
+    shape,
+    cols: shape.length ? shape[0].length : 0,
+    rows: shape.length
+  };
+}
+
+function setsOverlap(a, b) {
+  for (const key of a) {
+    if (b.has(key)) return true;
+  }
+  return false;
+}
+
+function assignMissingBagAnchors(items) {
+  const placed = [];
+  const bagRows = items.filter((item) => isBag(getArtifactById(item.artifactId)) && item.active);
+  for (const bag of bagRows) {
+    const artifact = getArtifactById(bag.artifactId);
+    const { shape, cols, rows } = shapeSize(artifact, !!bag.rotated);
+    if (Number(bag.x) >= 0 && Number(bag.y) >= 0) {
+      placed.push(new Set(pieceCells({ ...bag, width: cols, height: rows }, shape)));
+      continue;
+    }
+    let chosen = null;
+    const maxY = Math.max(0, ...items
+      .filter((item) => isBag(getArtifactById(item.artifactId)) && item.active && Number(item.y) >= 0)
+      .map((item) => {
+        const itemArtifact = getArtifactById(item.artifactId);
+        const size = shapeSize(itemArtifact, !!item.rotated);
+        return Number(item.y) + size.rows;
+      })) + rows;
+    outer: for (let y = 0; y <= maxY; y += 1) {
+      for (let x = 0; x + cols <= BAG_COLUMNS; x += 1) {
+        const candidate = new Set(pieceCells({ ...bag, x, y, width: cols, height: rows }, shape));
+        if (placed.some((cells) => setsOverlap(candidate, cells))) continue;
+        chosen = { x, y, cells: candidate };
+        break outer;
+      }
+    }
+    if (!chosen) {
+      chosen = {
+        x: 0,
+        y: maxY,
+        cells: new Set(pieceCells({ ...bag, x: 0, y: maxY, width: cols, height: rows }, shape))
+      };
+    }
+    bag.x = chosen.x;
+    bag.y = chosen.y;
+    placed.push(chosen.cells);
+  }
+}
+
 /**
  * Insert a starter or freshly purchased item row.
  * @param {object} client - transaction client or null
  * @param {object} params - { gameRunId, playerId, roundNumber, artifact, x, y,
- *                           sortOrder, purchasedRound, freshPurchase, bagId }
+ *                           sortOrder, purchasedRound, freshPurchase, active }
  * @returns {string} the new row id
  */
 export async function insertLoadoutItem(client, params) {
@@ -29,24 +86,16 @@ export async function insertLoadoutItem(client, params) {
   const artifact = getArtifactById(params.artifactId) || params.artifact;
   const width = params.width ?? artifact.width;
   const height = params.height ?? artifact.height;
-  // Bags live off the main grid (active-bags bar), so their storage coords
-  // are always the container sentinel. Enforced at this single write point
-  // so every caller — starter preset, buy, copy-forward — is correct by
-  // construction. See bag-items.test.js "normalizes bag coords" regression.
   const bagRow = isBag(artifact);
-  const x = bagRow ? -1 : (params.x ?? -1);
-  const y = bagRow ? -1 : (params.y ?? -1);
-  // Non-bag rows can never be active or rotated; the fields are
-  // meaningless for them. Bag rows default to inactive (container) and
-  // unrotated unless the caller says otherwise. See
-  // docs/bag-active-persistence.md and docs/bag-rotated-persistence.md.
   const active = bagRow && params.active ? 1 : 0;
   const rotated = bagRow && params.rotated ? 1 : 0;
+  const x = bagRow && !active ? -1 : (params.x ?? -1);
+  const y = bagRow && !active ? -1 : (params.y ?? -1);
   await q(client,
     `INSERT INTO game_run_loadout_items
        (id, game_run_id, player_id, round_number, artifact_id, x, y, width, height,
-        bag_id, sort_order, purchased_round, fresh_purchase, active, rotated, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+        sort_order, purchased_round, fresh_purchase, active, rotated, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
     [
       id,
       params.gameRunId,
@@ -57,7 +106,6 @@ export async function insertLoadoutItem(client, params) {
       y,
       width,
       height,
-      params.bagId || null,
       params.sortOrder ?? 0,
       params.purchasedRound ?? params.roundNumber,
       params.freshPurchase ? 1 : 0,
@@ -74,7 +122,7 @@ export async function insertLoadoutItem(client, params) {
  */
 export async function readCurrentRoundItems(client, gameRunId, playerId, roundNumber) {
   const res = await q(client,
-    `SELECT id, artifact_id, x, y, width, height, bag_id, sort_order,
+    `SELECT id, artifact_id, x, y, width, height, sort_order,
             purchased_round, fresh_purchase, active, rotated
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
@@ -88,7 +136,6 @@ export async function readCurrentRoundItems(client, gameRunId, playerId, roundNu
     y: r.y,
     width: r.width,
     height: r.height,
-    bagId: r.bag_id || null,
     sortOrder: r.sort_order,
     purchasedRound: r.purchased_round,
     freshPurchase: !!r.fresh_purchase,
@@ -101,47 +148,10 @@ export async function readCurrentRoundItems(client, gameRunId, playerId, roundNu
  * Copy round N rows to round N+1 (identical data; reset fresh_purchase=0).
  * purchased_round is preserved so graduated refunds can see original buy round.
  *
- * `bag_id` on bagged items points at a loadout row id (see
- * docs/bag-item-placement-persistence.md). Row ids are regenerated per
- * round, so copy-forward builds an old-id → new-id map in a first pass
- * over non-bagged rows (which include the bag rows themselves), then
- * uses that map to rewrite `bag_id` on bagged rows in a second pass.
- * A bagged row whose bag_id doesn't resolve in the map is corrupt; throw
- * loudly rather than carry the dangling reference forward.
  */
 export async function copyRoundForward(client, gameRunId, playerId, fromRound, toRound) {
   const current = await readCurrentRoundItems(client, gameRunId, playerId, fromRound);
-  const oldToNewId = new Map();
-  const nonBagged = current.filter((item) => !item.bagId);
-  const bagged = current.filter((item) => !!item.bagId);
-
-  for (const item of nonBagged) {
-    const newId = await insertLoadoutItem(client, {
-      gameRunId,
-      playerId,
-      roundNumber: toRound,
-      artifactId: item.artifactId,
-      x: item.x,
-      y: item.y,
-      width: item.width,
-      height: item.height,
-      bagId: null,
-      sortOrder: item.sortOrder,
-      purchasedRound: item.purchasedRound,
-      freshPurchase: false,
-      // Bag activation and rotation persist across rounds — players
-      // shouldn't have to re-activate or re-rotate every bag after every
-      // battle. See bag-active-persistence.md / bag-rotated-persistence.md.
-      active: item.active,
-      rotated: item.rotated
-    });
-    oldToNewId.set(item.id, newId);
-  }
-  for (const item of bagged) {
-    const remappedBagId = oldToNewId.get(item.bagId);
-    if (!remappedBagId) {
-      throw new Error(`copy-forward: bagged row ${item.id} references unknown bag ${item.bagId}`);
-    }
+  for (const item of current) {
     await insertLoadoutItem(client, {
       gameRunId,
       playerId,
@@ -151,7 +161,6 @@ export async function copyRoundForward(client, gameRunId, playerId, fromRound, t
       y: item.y,
       width: item.width,
       height: item.height,
-      bagId: remappedBagId,
       sortOrder: item.sortOrder,
       purchasedRound: item.purchasedRound,
       freshPurchase: false,
@@ -178,7 +187,7 @@ export async function deleteLoadoutItem(client, itemId) {
  */
 export async function deleteLoadoutItemByIdScoped(client, { rowId, gameRunId, playerId, roundNumber }) {
   const rows = await q(client,
-    `SELECT id, artifact_id, purchased_round, bag_id
+    `SELECT id, artifact_id, purchased_round
      FROM game_run_loadout_items
      WHERE id = $1 AND game_run_id = $2 AND player_id = $3 AND round_number = $4`,
     [rowId, gameRunId, playerId, roundNumber]
@@ -189,8 +198,7 @@ export async function deleteLoadoutItemByIdScoped(client, { rowId, gameRunId, pl
   return {
     id: row.id,
     artifactId: row.artifact_id,
-    purchasedRound: row.purchased_round,
-    bagId: row.bag_id || null
+    purchasedRound: row.purchased_round
   };
 }
 
@@ -251,10 +259,10 @@ export async function insertRefund(client, { gameRunId, playerId, roundNumber, a
  * matching by artifactId in sort order, which is still correct when the
  * client state hasn't drifted.
  *
- * This is a full-state sync, not a delta: any bag entry that doesn't
- * explicitly carry `active: 1` lands as `active: 0`. Client-side
- * `activateBag` / `deactivateBag` call `persistRunLoadout` right after
- * mutating state, so the round-trip closes immediately.
+ * Bag `active` / `rotated` flags are preserved when omitted and updated
+ * when present. Client-side `activateBag` / `deactivateBag` call
+ * `persistRunLoadout` right after mutating state, so the round-trip closes
+ * immediately.
  *
  * Callers should go through `applyRunLoadoutPlacements` in run-service.js,
  * which adds the run-membership guard. This helper is export-only for
@@ -271,8 +279,8 @@ export async function applyRunPlacements(client, gameRunId, playerId, roundNumbe
 
   // First pass: project the desired state in-memory by walking the client's
   // payload and matching it to existing rows. The client can lie about
-  // width/height/bag_id; we must reject overlaps, out-of-bounds, dimension
-  // mismatches, and orphaned bag references BEFORE any DB write.
+  // width/height/coordinates; reject overlaps, out-of-bounds, dimension
+  // mismatches, and uncovered cells BEFORE any DB write.
   const projectedById = new Map();
   for (const row of currentRows) {
     projectedById.set(row.id, { ...row });
@@ -319,36 +327,36 @@ export async function applyRunPlacements(client, gameRunId, playerId, roundNumbe
     proposed.y = Number(entry.y ?? -1);
     proposed.width = Number(entry.width ?? row.width);
     proposed.height = Number(entry.height ?? row.height);
-    proposed.bagId = entry.bagId || null;
-    // Bag activation and rotation: a PUT /artifact-loadout payload is a
-    // full-state sync, not a delta. Missing `active` / `rotated` on a bag
-    // entry means "off" — the client must opt in explicitly to keep a
-    // bag's activation or rotation state set. Non-bag rows ignore both
-    // fields (they stay 0 at the DB level).
+    // Bag activation and rotation: missing fields preserve existing bag
+    // state, explicit fields update it. Non-bag rows ignore both fields.
     const rowArtifact = getArtifactById(proposed.artifactId);
     const bagRow = isBag(rowArtifact);
-    proposed.active = bagRow && entry.active ? 1 : 0;
-    proposed.rotated = bagRow && entry.rotated ? 1 : 0;
+    proposed.active = bagRow ? (entry.active == null ? row.active : (entry.active ? 1 : 0)) : 0;
+    proposed.rotated = bagRow ? (entry.rotated == null ? row.rotated : (entry.rotated ? 1 : 0)) : 0;
+    if (bagRow && !proposed.active) {
+      proposed.x = -1;
+      proposed.y = -1;
+    }
     updates.push(proposed);
   }
 
-  // Validate the full projected layout. validateGridItems enforces canonical
-  // dimensions (allowing 90° rotation), bounds, and overlap. validateBagContents
-  // enforces bag references, no nested bags, and slot capacity.
+  // Validate the full projected layout: bags provide cells, items occupy
+  // absolute cells, and every placed item cell must be covered by a bag.
   const projected = Array.from(projectedById.values());
-  const gridItems = projected.filter((item) => !item.bagId);
-  validateGridItems(gridItems);
-  validateBagContents(projected);
+  assignMissingBagAnchors(projected);
+  validateBagPlacement(projected);
+  validateGridItems(projected);
+  validateItemCoverage(projected);
 
   // Second pass: persist the validated updates.
   for (const proposed of updates) {
     await q(client,
       `UPDATE game_run_loadout_items
-       SET x = $1, y = $2, width = $3, height = $4, bag_id = $5, active = $6, rotated = $7
-       WHERE id = $8`,
+       SET x = $1, y = $2, width = $3, height = $4, active = $5, rotated = $6
+       WHERE id = $7`,
       [
         proposed.x, proposed.y, proposed.width, proposed.height,
-        proposed.bagId, proposed.active, proposed.rotated, proposed.id
+        proposed.active, proposed.rotated, proposed.id
       ]
     );
   }

@@ -126,7 +126,7 @@ test('[Req 12-D] reload preserves loadout layout for current round', async () =>
   await buyRunShopItem(playerId, run.id, artifactId);
 
   const before = await query(
-    `SELECT artifact_id, x, y, width, height, bag_id, sort_order
+    `SELECT artifact_id, x, y, width, height, sort_order
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
      ORDER BY sort_order ASC`,
@@ -221,12 +221,12 @@ test('[Req 7-G] ghost lookup returns rows from another real player at the matchi
 });
 
 // ---------------------------------------------------------------------------
-// #5 — startGameRun seeds the character starter preset into the run table
+// #5 — startGameRun seeds the starter bag and character preset into the run table
 // Plan: §2.9. Originally a "legacy table stays empty" test; the legacy
 // table itself was deleted 2026-04-13 so the assertion now just confirms
-// the run-scoped table receives the 2-item preset on first pick.
+// the run-scoped table receives the starter bag and 2-item preset on first pick.
 // ---------------------------------------------------------------------------
-test('[Req 3-A, 3-B] startGameRun seeds the 2-item starter preset into game_run_loadout_items', async () => {
+test('[Req 3-A, 3-B] startGameRun seeds starter bag + 2-item preset into game_run_loadout_items', async () => {
   await freshDb();
   await requireTable('game_run_loadout_items', 'Step 1 not complete');
 
@@ -235,13 +235,13 @@ test('[Req 3-A, 3-B] startGameRun seeds the 2-item starter preset into game_run_
 
   await startGameRun(session.player.id, 'solo');
 
-  // Round 1 is seeded with the character signature starter preset — two
-  // lore-tied items from game-data.js STARTER_PRESETS. Nothing else.
+  // Round 1 is seeded with the starter bag and character signature starter
+  // preset — two lore-tied items from game-data.js STARTER_PRESETS.
   const newRows = await query(
     `SELECT COUNT(*) AS count FROM game_run_loadout_items WHERE player_id = $1 AND round_number = 1`,
     [session.player.id]
   );
-  assert.equal(Number(newRows.rows[0].count), 2, 'round 1 must contain the 2-item starter preset');
+  assert.equal(Number(newRows.rows[0].count), 3, 'round 1 must contain starter bag + 2-item preset');
 });
 
 // ---------------------------------------------------------------------------
@@ -552,13 +552,13 @@ test('[Req 3-C, 4-M, 4-N] auto-seeded preset + full shop spend resolves round 1 
   // scenario overrides seeding with seedRunLoadout and misses this path.
   const { playerId, run } = await bootRun({ telegramId: 801, username: 'preset-resolve' });
 
-  // Sanity: preset is in place (2 items, both count toward loadout cost).
+  // Sanity: starter bag + preset are in place (2 combat items count toward loadout cost).
   const presetRows = await query(
     `SELECT artifact_id FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
     [run.id, playerId]
   );
-  assert.equal(presetRows.rowCount, 2, 'preset must seed exactly 2 items');
+  assert.equal(presetRows.rowCount, 3, 'preset must seed starter bag + 2 items');
 
   // Exhaust the full round-1 income by buying five price-1 items. This
   // drives total loadout value to preset_cost (2) + shop_spend (5) = 7,
@@ -573,13 +573,13 @@ test('[Req 3-C, 4-M, 4-N] auto-seeded preset + full shop spend resolves round 1 
     await buyRunShopItem(playerId, run.id, cheap.id);
   }
 
-  // Total loadout items: 2 preset + 5 bought = 7 rows.
+  // Total loadout items: starter bag + 2 preset + 5 bought = 8 rows.
   const finalRows = await query(
     `SELECT artifact_id FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
     [run.id, playerId]
   );
-  assert.equal(finalRows.rowCount, 7, 'expected 2 preset + 5 shop-bought rows');
+  assert.equal(finalRows.rowCount, 8, 'expected starter bag + 2 preset + 5 shop-bought rows');
 
   // Resolving round 1 must succeed. Before the fix this threw
   // "Loadout exceeds 5-coin budget (cost 7)" from validateCoinBudget;

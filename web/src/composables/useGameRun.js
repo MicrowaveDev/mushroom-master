@@ -1,6 +1,5 @@
 import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
-import { INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
 import { messages } from '../i18n.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
@@ -11,67 +10,18 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   };
 
   function buildLoadoutPayloadItems() {
-    // Map frontend state to server loadout payload.
-    //
-    // Every payload entry carries an `id` when the client knows the server
-    // row id — the server uses it to target that exact row even when
-    // duplicates exist. Entries without an id fall back to the server's
-    // artifactId + sort-order matching (for freshly-bought items whose
-    // /buy response id wasn't captured yet, etc.). See
-    // docs/client-row-id-refactor.md.
-    //
-    // - Base grid items (y < INVENTORY_ROWS): grid coordinates + id
-    // - Items inside a bag (virtual y >= INVENTORY_ROWS on the client):
-    //     bagId = the bag's loadout row id, x/y = slot coords within the
-    //     bag (0 ≤ x < bag.cols, 0 ≤ y < bag.rows). The virtual y is an
-    //     on-screen encoding, never a storage shape; the server stores
-    //     slot coords so bag reorder/rotate/deactivate never invalidates
-    //     persisted rows. See docs/bag-item-placement-persistence.md.
-    // - Bags (active and container): (-1,-1) + id + active + rotated
     const isRotatedRowId = (rowId) =>
       rowId != null && state.rotatedBags.some((b) => b.id === rowId);
-
-    // Active bag layout in unified-grid coords. The server stores bagged-item
-    // slot coords (x in [0, bag.cols), y in [0, bag.rows)) — independent of
-    // anchor — so anchor changes don't invalidate persisted rows. Anchors
-    // are NOT persisted; on reload they're re-derived by the client's
-    // 2D first-fit packer (see useShop.activateBag and loadout-projection's
-    // packAnchors). Both packers treat the base inventory as a virtual
-    // obstacle so anchors can land alongside it (Req 2-G).
-    const activeBagLayout = [];
-    for (const bag of state.activeBags) {
-      const artifact = getArtifact(bag.artifactId);
-      if (!artifact) continue;
-      const rotated = isRotatedRowId(bag.id);
-      const cols = rotated ? Math.max(artifact.width, artifact.height) : Math.min(artifact.width, artifact.height);
-      const rows = rotated ? Math.min(artifact.width, artifact.height) : Math.max(artifact.width, artifact.height);
-      const anchorX = bag.anchorX ?? 0;
-      const anchorY = bag.anchorY ?? 0;
-      activeBagLayout.push({
-        bagRowId: bag.id,
-        bagArtifactId: bag.artifactId,
-        anchorX,
-        anchorY,
-        rowCount: rows,
-        colCount: cols
-      });
-    }
-
     const withId = (entry, id) => (id ? { id, ...entry } : entry);
     const payload = [];
 
-    // Bags (including container bags) must be declared before bagged items
-    // reference them. Bags carry the container sentinel (-1,-1). The
-    // `active` and `rotated` fields are the only things that distinguish
-    // bag states on the wire — the server persists them into
-    // game_run_loadout_items.{active,rotated} so the next hydrate routes
-    // the bag back to the correct bucket and orientation. See
-    // docs/bag-active-persistence.md and docs/bag-rotated-persistence.md.
     for (const bag of state.activeBags) {
       const artifact = getArtifact(bag.artifactId);
       if (!artifact) continue;
       payload.push(withId({
-        artifactId: bag.artifactId, x: -1, y: -1,
+        artifactId: bag.artifactId,
+        x: bag.anchorX ?? 0,
+        y: bag.anchorY ?? 0,
         width: artifact.width, height: artifact.height,
         active: 1,
         rotated: isRotatedRowId(bag.id) ? 1 : 0
@@ -88,46 +38,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       }, slot.id));
     }
 
-    // Placed grid items and bagged items
     for (const item of state.builderItems) {
-      // In the unified grid, an item is bagged whenever its top-left cell
-      // lands in an active bag's footprint — base inventory cells are at
-      // (0..INVENTORY_COLUMNS-1, 0..INVENTORY_ROWS-1) and have bagId=null.
-      const info = activeBagLayout.find((b) =>
-        item.y >= b.anchorY && item.y < b.anchorY + b.rowCount &&
-        item.x >= b.anchorX && item.x < b.anchorX + b.colCount
-      );
-      if (info) {
-        // Convert unified virtual (x, y) → bag-local slot (x, y). The server
-        // stores slot coords so anchor changes / rotate / deactivate in
-        // later rounds can't shift these rows out of place.
-        payload.push(withId({
-          artifactId: item.artifactId,
-          x: item.x - info.anchorX,
-          y: item.y - info.anchorY,
-          width: item.width, height: item.height,
-          bagId: info.bagRowId
-        }, item.id));
-        continue;
-      }
-      // No bag covers the item's anchor — must be a base inventory item.
-      // Defensive fallback: if the item's full footprint doesn't fit inside
-      // the base inventory rectangle (stale state from a deactivated/moved/
-      // rotated bag etc.), push it to the container sentinel so the next
-      // hydrate reconciles. The check must include width/height — a 2x1
-      // anchored at (2,2) has its anchor inside the 3x3 base but its right
-      // cell (3,2) outside, and falling through would emit invalid coords
-      // the server rightly rejects as out-of-bounds.
-      const fullyInBaseInv = item.x >= 0 && item.y >= 0
-        && item.x + item.width <= INVENTORY_COLUMNS
-        && item.y + item.height <= INVENTORY_ROWS;
-      if (!fullyInBaseInv) {
-        payload.push(withId({
-          artifactId: item.artifactId, x: -1, y: -1,
-          width: item.width, height: item.height
-        }, item.id));
-        continue;
-      }
       payload.push(withId({
         artifactId: item.artifactId,
         x: item.x, y: item.y,

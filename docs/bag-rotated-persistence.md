@@ -54,9 +54,10 @@ Three writers set `rotated`:
 2. **`copyRoundForward`** — passes `item.rotated` into the next
    round's row, same as it now does with `active`.
 3. **`applyRunPlacements`** — the `PUT /api/artifact-loadout` UPDATE
-   grows to include `rotated = $N`. Full-state sync semantics: an
-   entry without `rotated: 1` is treated as not rotated. Non-bag rows
-   ignore the field.
+   includes `rotated = $N`. Explicit `rotated: 1` / `rotated: 0`
+   updates the row; omitted `rotated` preserves the current value for
+   compatibility with partial or older payloads. Non-bag rows ignore
+   the field.
 
 ### Read path
 
@@ -78,17 +79,14 @@ shape into `loadoutItems[]`, so the client sees `i.rotated` for free.
    part is calling `persistRunLoadout` at the end, mirroring
    `activateBag` / `deactivateBag`. That's the one-line fix that
    closes the write side of the round-trip.
-4. **`buildLoadoutPayloadItems`** — when emitting a bag entry (active
-   or container), add `rotated: 1` if `state.rotatedBags` contains
-   the matching bag; omit otherwise (server defaults to 0).
+4. **`buildLoadoutPayloadItems`** — when emitting a bag entry, send
+   the row's explicit rotation state so the server can persist it.
 
 ### `rotateBag` guardrails
 
-The existing guardrail from the bag-active refactor applies here too:
-rotating a bag with items in it (or any items in any *later* bag row)
-is blocked because rotation changes the bag's row count and would
-strand downstream items at stale y coordinates. The code for that
-already exists and doesn't need changes.
+Current behavior: rotating a bag unplaces any artifacts overlapping the
+bag's old footprint back to the container, then toggles the rotation if
+the new footprint fits and does not overlap another active bag.
 
 ## Non-goals
 
@@ -105,8 +103,8 @@ already exists and doesn't need changes.
 
 ## Test plan
 
-1. **Server: `applyRunPlacements` persists `rotated=1` on a bag entry
-   and resets to 0 when the field is omitted.** Extend
+1. **Server: `applyRunPlacements` persists explicit `rotated=1` and
+   explicit `rotated=0` on a bag entry.** Extend
    [bag-active-persistence.test.js](../tests/game/bag-active-persistence.test.js)
    or add a sibling file.
 2. **Server: `copyRoundForward` preserves `rotated` across round

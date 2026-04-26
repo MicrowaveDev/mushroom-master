@@ -127,8 +127,7 @@ export function useTouch(state) {
             x: Number(data.artifactX),
             y: Number(data.artifactY),
             width: Number(data.artifactWidth),
-            height: Number(data.artifactHeight),
-            bagId: data.artifactBagId || null
+            height: Number(data.artifactHeight)
           };
         }
         if (data.artifactRowId) {

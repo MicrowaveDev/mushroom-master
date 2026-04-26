@@ -38,13 +38,11 @@ test('isCombatArtifact: true for damage/armor/stun, false for bag', () => {
   assert.equal(isCombatArtifact(null), false);
 });
 
-test('[Req 2-C] isContainerItem: true for x<0 or y<0 without bagId', () => {
+test('[Req 2-C] isContainerItem: true for x<0 or y<0', () => {
   assert.equal(isContainerItem({ x: -1, y: -1 }), true);
   assert.equal(isContainerItem({ x: 0, y: -1 }), true);
   assert.equal(isContainerItem({ x: -1, y: 0 }), true);
   assert.equal(isContainerItem({ x: 0, y: 0 }), false);
-  // bagged items are not container items even if x<0
-  assert.equal(isContainerItem({ x: -1, y: -1, bagId: 'moss_pouch' }), false);
 });
 
 test('[Req 2-C, 2-D, 5-F] contributesStats: placed combat items contribute, container and bags do not', () => {
@@ -55,8 +53,8 @@ test('[Req 2-C, 2-D, 5-F] contributesStats: placed combat items contribute, cont
   assert.equal(contributesStats(combat, { x: 0, y: 0 }), true);
   // Container combat item → does not contribute
   assert.equal(contributesStats(combat, { x: -1, y: -1 }), false);
-  // Bagged combat item → contributes (bagId set, no grid position needed)
-  assert.equal(contributesStats(combat, { x: 0, y: 0, bagId: 'moss_pouch' }), true);
+  // Flat-grid item covered by a bag elsewhere → contributes by placement.
+  assert.equal(contributesStats(combat, { x: 0, y: 0 }), true);
   // Bag itself → never contributes
   assert.equal(contributesStats(bag, { x: 0, y: 0 }), false);
 });

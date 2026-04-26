@@ -1,4 +1,4 @@
-import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
+import { BAG_COLUMNS, BAG_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
 import { getEffectiveShape, isCellInShape } from '../../../app/shared/bag-shape.js';
 import { messages } from '../i18n.js';
@@ -10,23 +10,18 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     selectionChanged: typeof feedback.selectionChanged === 'function' ? feedback.selectionChanged : () => {}
   };
 
-  function isBagRotated(bagId) {
-    return state.rotatedBags.some((b) => b.artifactId === bagId);
+  function isBagRotated(bagId, rowId = null) {
+    return state.rotatedBags.some((b) => (rowId ? b.id === rowId : b.artifactId === bagId));
   }
 
-  function bagLayout(bagId) {
+  function bagLayout(bagId, rowId = null) {
     const bag = getArtifact(bagId);
     if (!bag) return { cols: BAG_COLUMNS, rows: 1, shape: [] };
-    const rotated = isBagRotated(bagId);
+    const rotated = isBagRotated(bagId, rowId);
     const shape = getEffectiveShape(bag, rotated);
     const cols = shape.length > 0 ? shape[0].length : 0;
     const rows = shape.length;
     return { cols: Math.min(cols, BAG_COLUMNS), rows, shape };
-  }
-
-  // True iff (cx, cy) is inside the base inventory's fixed 3x3 rectangle.
-  function isBaseInventoryCell(cx, cy) {
-    return cx >= 0 && cx < INVENTORY_COLUMNS && cy >= 0 && cy < INVENTORY_ROWS;
   }
 
   // Total rows in the unified grid: at least `BAG_ROWS` so the rendered
@@ -36,23 +31,19 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return Math.max(BAG_ROWS, bagsBottomRow());
   }
 
-  // Translate a unified-grid (cx, cy) cell coordinate to the active bag (if
-  // any) whose footprint covers that cell. Returns null for cells in the
-  // base inventory, for empty cells outside any bag, and for cells outside
-  // every bag's bounding box. The base inventory is intentionally NOT a bag
-  // (no bagId, items there have bagId=null).
+  // Translate a unified-grid cell to the first active bag whose shape mask
+  // covers it. Membership can be many-to-many; this helper picks one bag for
+  // display while validators check coverage per cell.
   function bagForCell(cx, cy) {
-    if (isBaseInventoryCell(cx, cy)) return null;
     for (const bag of state.activeBags) {
-      const layout = bagLayout(bag.artifactId);
+      const layout = bagLayout(bag.artifactId, bag.id);
       const ax = bag.anchorX ?? 0;
       const ay = bag.anchorY ?? 0;
       if (cx >= ax && cx < ax + layout.cols && cy >= ay && cy < ay + layout.rows) {
+        const localX = cx - ax;
+        const localY = cy - ay;
+        if (!isCellInShape(layout.shape, localX, localY)) continue;
         return {
-          // Loadout row id of the bag. Stable identity used for bagged-item
-          // persistence (docs/bag-item-placement-persistence.md) and for
-          // matching items to bags during rotate / deactivate / re-anchor
-          // relayout. Duplicate bags of the same artifact get distinct ids.
           bagRowId: bag.id,
           bagArtifactId: bag.artifactId,
           anchorX: ax,
@@ -70,60 +61,27 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   // cell outside both the base inventory and any bag, or it's a gap cell
   // inside a tetromino-shaped bag's bounding box.
   function isCellDisabled(cx, cy) {
-    if (isBaseInventoryCell(cx, cy)) return false; // base inv cell, droppable
-    const info = bagForCell(cx, cy);
-    if (!info) return true; // empty cell outside both base inv and bags
-    // Tetromino-shaped bags expose a per-cell mask; cells outside the mask
-    // are visual gaps within the bag's bounding box.
-    const localX = cx - info.anchorX;
-    const localY = cy - info.anchorY;
-    return !isCellInShape(info.shape, localX, localY);
+    return !bagForCell(cx, cy);
   }
 
-  // Container identity at (cx, cy): 'base' for the base inventory, the bag's
-  // loadout row id for cells inside an active bag's shape mask, or null for
-  // disabled cells. Used by placement validators to enforce the "an item
-  // must fully fit in either the base inventory or one bag" rule — i.e. all
-  // cells of an item's footprint must return the same non-null key.
   function containerKeyForCell(cx, cy) {
-    if (isBaseInventoryCell(cx, cy)) return 'base';
     const info = bagForCell(cx, cy);
-    if (!info) return null;
-    const localX = cx - info.anchorX;
-    const localY = cy - info.anchorY;
-    if (!isCellInShape(info.shape, localX, localY)) return null;
-    return info.bagRowId;
+    return info ? info.bagRowId : null;
   }
 
-  // True iff a w×h footprint anchored at (x, y) fits entirely within a single
-  // container (base inventory OR one bag), with no straddling. Per-cell
-  // disabled/occupied checks are the caller's responsibility.
   function footprintInOneContainer(x, y, w, h) {
-    const first = containerKeyForCell(x, y);
-    if (first == null) return false;
     for (let dx = 0; dx < w; dx += 1) {
       for (let dy = 0; dy < h; dy += 1) {
-        if (containerKeyForCell(x + dx, y + dy) !== first) return false;
+        if (containerKeyForCell(x + dx, y + dy) == null) return false;
       }
     }
     return true;
   }
 
-  // True iff the rectangle (anchorX, anchorY, cols, rows) in the unified grid
-  // overlaps the base inventory (always at (0..INVENTORY_COLUMNS-1,
-  // 0..INVENTORY_ROWS-1)) or any other already-anchored bag's bounding box.
-  // Used by 2D first-fit packing and by the chip-drop validator.
   function bagAreaOverlaps(anchorX, anchorY, cols, rows, ignoreBagId = null) {
-    // Base inventory obstacle — always present at top-left, never moves.
-    // Per Req 2-F, bags share the same coord space as the base inventory and
-    // must avoid its 3x3 footprint just like any other bag.
-    const baseOverlapX = anchorX < INVENTORY_COLUMNS && 0 < anchorX + cols;
-    const baseOverlapY = anchorY < INVENTORY_ROWS && 0 < anchorY + rows;
-    if (baseOverlapX && baseOverlapY) return true;
-
     for (const other of state.activeBags) {
       if (other.id === ignoreBagId) continue;
-      const oLayout = bagLayout(other.artifactId);
+      const oLayout = bagLayout(other.artifactId, other.id);
       const ox = other.anchorX ?? 0;
       const oy = other.anchorY ?? 0;
       const overlapX = anchorX < ox + oLayout.cols && ox < anchorX + cols;
@@ -140,9 +98,8 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   // A 2x1 bag with empty layout therefore anchors at (3, 0) — alongside the
   // base inventory — not at (0, 3) below it (Req 2-G).
   function findFirstFitAnchor(cols, rows, ignoreBagId = null) {
-    // Worst-case: stack below everything currently placed (which includes
-    // the base inventory's INVENTORY_ROWS).
-    const maxY = Math.max(INVENTORY_ROWS, bagsBottomRow()) + rows;
+    // Worst-case: stack below everything currently placed.
+    const maxY = Math.max(0, bagsBottomRow()) + rows;
     for (let ay = 0; ay <= maxY; ay += 1) {
       for (let ax = 0; ax + cols <= BAG_COLUMNS; ax += 1) {
         if (!bagAreaOverlaps(ax, ay, cols, rows, ignoreBagId)) {
@@ -158,88 +115,63 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   function bagsBottomRow() {
     let max = 0;
     for (const bag of state.activeBags) {
-      const layout = bagLayout(bag.artifactId);
+      const layout = bagLayout(bag.artifactId, bag.id);
       const bottom = (bag.anchorY ?? 0) + layout.rows;
       if (bottom > max) max = bottom;
     }
     return max;
   }
 
-  // Build the current unified-grid layout for every active bag, keyed by
-  // the bag's loadout row id (stable across duplicate-bag instances). Used
-  // to translate builderItems' virtual (x, y) ↔ slot (x, y) when the layout
-  // changes (rotate, re-anchor, deactivate).
-  function buildActiveLayout(activeBags, rotatedIds) {
-    const layout = new Map();
-    for (const bag of activeBags) {
-      const artifact = getArtifact(bag.artifactId);
-      if (!artifact) continue;
-      const rotated = rotatedIds.has(bag.id);
-      const shape = getEffectiveShape(artifact, rotated);
-      const cols = Math.min(BAG_COLUMNS, shape.length > 0 ? shape[0].length : 0);
-      const rows = shape.length;
-      const anchorX = bag.anchorX ?? 0;
-      const anchorY = bag.anchorY ?? 0;
-      layout.set(bag.id, {
-        anchorX,
-        anchorY,
-        rowCount: rows,
-        cols,
-        shape
-      });
+  function bagCellSet(bag, rotatedOverride = null) {
+    const artifact = getArtifact(bag.artifactId);
+    if (!artifact) return new Set();
+    const rotated = rotatedOverride == null
+      ? state.rotatedBags.some((b) => b.id === bag.id)
+      : rotatedOverride;
+    const shape = getEffectiveShape(artifact, rotated);
+    const ax = bag.anchorX ?? 0;
+    const ay = bag.anchorY ?? 0;
+    const cells = new Set();
+    for (let dy = 0; dy < shape.length; dy += 1) {
+      const row = shape[dy] || [];
+      for (let dx = 0; dx < row.length; dx += 1) {
+        if (row[dx]) cells.add(`${ax + dx}:${ay + dy}`);
+      }
     }
-    return layout;
+    return cells;
   }
 
-  // Rebuild state.builderItems after the active-bag layout changed. Bagged
-  // items keep their slot coords (derived from the OLD layout's anchor); their
-  // on-screen virtual (x, y) is recomputed against the NEW layout. Items whose
-  // bag no longer exists in the new layout get dropped back to the container
-  // so the caller can decide what to do with them.
-  function relayoutBaggedItems(oldLayout, newLayout) {
+  function itemCellSet(item) {
+    const cells = new Set();
+    for (let dx = 0; dx < item.width; dx += 1) {
+      for (let dy = 0; dy < item.height; dy += 1) {
+        cells.add(`${item.x + dx}:${item.y + dy}`);
+      }
+    }
+    return cells;
+  }
+
+  function setsOverlap(a, b) {
+    for (const key of a) {
+      if (b.has(key)) return true;
+    }
+    return false;
+  }
+
+  function unplaceItemsOverlappingBag(bag, rotatedOverride = null) {
+    const bagCells = bagCellSet(bag, rotatedOverride);
     const nextBuilder = [];
     const displaced = [];
     for (const item of state.builderItems) {
-      if (!item.bagId) {
-        nextBuilder.push(item);
-        continue;
-      }
-      const oldBag = oldLayout.get(item.bagId);
-      const newBag = newLayout.get(item.bagId);
-      if (!oldBag || !newBag) {
-        displaced.push(item);
-        continue;
-      }
-      const slotX = item.x - oldBag.anchorX;
-      const slotY = item.y - oldBag.anchorY;
-      // If the new bag's footprint can't hold this item — bounding box
-      // exceeded OR a cell in the item's footprint sits outside the
-      // shape mask — displace it. The validator would reject the stale
-      // layout on the next persist anyway.
-      let fits = slotX >= 0
-        && slotY >= 0
-        && slotX + item.width <= newBag.cols
-        && slotY + item.height <= newBag.rowCount;
-      if (fits && newBag.shape) {
-        for (let dx = 0; fits && dx < item.width; dx += 1) {
-          for (let dy = 0; fits && dy < item.height; dy += 1) {
-            if (!isCellInShape(newBag.shape, slotX + dx, slotY + dy)) {
-              fits = false;
-            }
-          }
-        }
-      }
-      if (!fits) {
-        displaced.push(item);
-        continue;
-      }
-      nextBuilder.push({
-        ...item,
-        x: newBag.anchorX + slotX,
-        y: newBag.anchorY + slotY
-      });
+      if (setsOverlap(itemCellSet(item), bagCells)) displaced.push(item);
+      else nextBuilder.push(item);
     }
-    return { nextBuilder, displaced };
+    if (!displaced.length) return;
+    state.builderItems = nextBuilder;
+    state.containerItems = [
+      ...state.containerItems,
+      ...displaced.map((item) => ({ id: item.id ?? null, artifactId: item.artifactId }))
+    ];
   }
 
   function rotateBag(bagId) {
@@ -259,23 +191,11 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
       haptics.notify('error');
       return;
     }
-    // Block only if THIS bag still holds items. Later bags are independent
-    // — their slot coords are relative to their own bag, and relayoutBagged
-    // Items recomputes their virtual y against the new layout.
-    const itemsInThisBag = state.builderItems.filter((i) => i.bagId === activeBag.id);
-    if (itemsInThisBag.length) {
-      state.error = messages[state.lang].errorBagNotEmpty;
-      haptics.notify('error');
-      return;
-    }
     const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
-    const oldLayout = buildActiveLayout(state.activeBags, rotatedIds);
+    unplaceItemsOverlappingBag(activeBag);
     // Toggle rotation.
     if (rotatedIds.has(activeBag.id)) rotatedIds.delete(activeBag.id);
     else rotatedIds.add(activeBag.id);
-    const newLayout = buildActiveLayout(state.activeBags, rotatedIds);
-    const { nextBuilder } = relayoutBaggedItems(oldLayout, newLayout);
-    state.builderItems = nextBuilder;
     const idx = state.rotatedBags.findIndex((b) => b.id === activeBag.id);
     if (idx >= 0) {
       state.rotatedBags = [
@@ -317,16 +237,8 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
         if (isCellDisabled(x + dx, y + dy)) return null;
       }
     }
-    // Items must fully fit in either the base inventory or one bag (no
-    // straddling). The per-cell disabled check above lets a footprint span
-    // base→bag freely, but the server's validateGridItems / validateBagContents
-    // would then reject it because base inv is 3-wide and a bagged item's
-    // bagId is single-valued. Phase 2 of bag-grid-unification will extend
-    // this to multi-bag items.
     if (!footprintInOneContainer(x, y, w, h)) return null;
-    const info = bagForCell(x, y);
-    const bagId = info ? info.bagRowId : null;
-    const candidate = { id: rowId, artifactId: artifact.id, x, y, width: w, height: h, bagId };
+    const candidate = { id: rowId, artifactId: artifact.id, x, y, width: w, height: h };
     return [...state.builderItems, candidate];
   }
 
@@ -529,25 +441,12 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     const idx = state.activeBags.findIndex((b) => b.artifactId === artifactId);
     if (idx < 0) return;
     const removed = state.activeBags[idx];
-    // Block only if THIS bag still holds items. Later bags' slot coords are
-    // independent of bag ordering, so we can reshuffle virtual y for them
-    // without touching storage — see relayoutBaggedItems.
-    const itemsInThisBag = state.builderItems.filter((i) => i.bagId === removed.id);
-    if (itemsInThisBag.length) {
-      state.error = messages[state.lang].errorBagNotEmpty;
-      haptics.notify('error');
-      return;
-    }
-    const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
-    const oldLayout = buildActiveLayout(state.activeBags, rotatedIds);
+    unplaceItemsOverlappingBag(removed);
     const nextActive = [
       ...state.activeBags.slice(0, idx),
       ...state.activeBags.slice(idx + 1)
     ];
-    const newLayout = buildActiveLayout(nextActive, rotatedIds);
-    const { nextBuilder } = relayoutBaggedItems(oldLayout, newLayout);
     state.activeBags = nextActive;
-    state.builderItems = nextBuilder;
     state.containerItems = [...state.containerItems, removed];
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
     haptics.selectionChanged();
@@ -659,49 +558,29 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
             haptics.notify('error');
             return;
           }
-          // Bag rows may expose fewer cols than INVENTORY_COLUMNS — don't
-          // drop into a disabled (greyed-out) cell, which would otherwise
-          // persist and trip the server's occupancy check on the next save.
+          // Don't drop into a disabled grid cell; that would persist and
+          // trip the server's coverage check on the next save.
           if (isCellDisabled(x + dx, y + dy)) {
             haptics.notify('error');
             return;
           }
         }
       }
-      // No straddling: the footprint must fit entirely in the base inventory
-      // or one bag. See normalizePlacement for the same constraint on the
-      // container→grid path.
       if (!footprintInOneContainer(x, y, w, h)) {
         haptics.notify('error');
         return;
       }
-      // Recompute bagId for the new position — moving across the bag/grid
-      // boundary changes the item's membership. Items moved to a base-grid
-      // cell get bagId=null; into a bag cell, bagId = that bag's row id.
-      const info = bagForCell(x, y);
-      const nextBagId = info ? info.bagRowId : null;
-      state.builderItems = [...others, { ...dragged, x, y, bagId: nextBagId }];
+      state.builderItems = [...others, { ...dragged, x, y }];
       haptics.selectionChanged();
 
     }
   }
 
-  // True iff the bag chip can be dragged: only empty bags (no items inside)
-  // can be re-anchored. UI uses this to gate dragstart and to render the
-  // disabled tooltip "Empty the bag to move it".
   function canMoveBag(bagId) {
-    return !state.builderItems.some((it) => it.bagId === bagId);
+    return !!bagId;
   }
 
-  // Drag start from an active-bag chip. Suppressed when the bag still holds
-  // items so the user doesn't accidentally lose layout state mid-arrangement.
   function onBagChipDragStart(bagId, event) {
-    if (!canMoveBag(bagId)) {
-      event?.preventDefault?.();
-      state.error = messages[state.lang].errorBagNotEmpty;
-      haptics.notify('error');
-      return;
-    }
     state.draggingArtifactId = '';
     state.draggingItem = null;
     state.draggingBagId = bagId;
@@ -712,18 +591,13 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     }
   }
 
-  // Drop a dragged bag chip onto a bag-zone cell. Sets the bag's anchor to
-  // (x, y) (in bag-zone-local coords: x in [0, BAG_COLUMNS), y in [0, +∞)).
-  // Rejected if the new footprint overlaps another active bag or overflows
-  // BAG_COLUMNS. Empty-bag invariant is already enforced at dragstart, so
-  // this drop only needs to validate geometry.
   function onBagZoneDrop({ x, y }) {
     const bagId = state.draggingBagId;
     if (!bagId) return;
     const idx = state.activeBags.findIndex((b) => b.id === bagId);
     if (idx < 0) return;
     const bag = state.activeBags[idx];
-    const layout = bagLayout(bag.artifactId);
+    const layout = bagLayout(bag.artifactId, bag.id);
     if (x < 0 || y < 0 || x + layout.cols > BAG_COLUMNS) {
       haptics.notify('error');
       return;
@@ -733,18 +607,11 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
       haptics.notify('error');
       return;
     }
-    const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
-    const oldLayout = buildActiveLayout(state.activeBags, rotatedIds);
+    unplaceItemsOverlappingBag(bag);
     const nextActive = state.activeBags.map((b, i) =>
       i === idx ? { ...b, anchorX: x, anchorY: y } : b
     );
-    const newLayout = buildActiveLayout(nextActive, rotatedIds);
-    // Empty-bag invariant means relayoutBaggedItems has no work for THIS bag,
-    // but other bags' items are unchanged — pass them through anyway so the
-    // contract stays consistent with rotateBag/deactivateBag.
     state.activeBags = nextActive;
-    const { nextBuilder } = relayoutBaggedItems(oldLayout, newLayout);
-    state.builderItems = nextBuilder;
     state.error = '';
     if (state.gameRun && persistRunLoadout) persistRunLoadout();
     haptics.selectionChanged();

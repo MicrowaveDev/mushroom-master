@@ -10,25 +10,16 @@ export const InventoryZone = {
   ],
   methods: {
     bagChipHasItems(bagId) {
-      return this.state.builderItems.some((it) => it.bagId === bagId);
+      return false;
     },
     bagChipDraggable(bagId) {
-      return !this.bagChipHasItems(bagId);
+      return true;
     },
     bagChipTitle(bag) {
-      const isLocked = this.bagChipHasItems(bag.id);
-      const lockedHint = this.t?.bagDragBlocked || 'Empty the bag to move it';
       const dragHint = this.t?.bagDragHint || 'Drag to move';
-      return isLocked ? lockedHint : dragHint;
+      return dragHint;
     },
     onChipDragStart(bag, event) {
-      // Empty-bag invariant — non-draggable chips don't fire dragstart at the
-      // browser level (draggable=false), but a paranoid early-return here
-      // protects against future re-enabling without rechecking the gate.
-      if (this.bagChipHasItems(bag.id)) {
-        event?.preventDefault?.();
-        return;
-      }
       this.$emit('bag-chip-drag-start', { bagId: bag.id, event });
     },
     onChipDragEnd() {

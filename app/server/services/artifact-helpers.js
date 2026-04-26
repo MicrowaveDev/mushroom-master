@@ -34,7 +34,6 @@ export function isCombatArtifact(artifact) {
  */
 export function isContainerItem(item) {
   if (!item) return false;
-  if (item.bagId) return false;
   return Number(item.x) < 0 || Number(item.y) < 0;
 }
 
@@ -47,6 +46,5 @@ export function isContainerItem(item) {
  */
 export function contributesStats(artifact, item) {
   if (!isCombatArtifact(artifact)) return false;
-  if (item.bagId) return true;
   return Number(item.x) >= 0 && Number(item.y) >= 0;
 }

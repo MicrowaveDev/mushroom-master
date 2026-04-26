@@ -341,9 +341,9 @@ test('[Req 14-G] V6 startGameRun seeds the active preset items, not always defau
      ORDER BY sort_order ASC`,
     [run2.id, playerId]
   );
-  assert.equal(items.rowCount, 2, 'starter preset must seed exactly 2 items');
+  assert.equal(items.rowCount, 3, 'starter preset must seed starter bag + 2 items');
   const stunVariant = STARTER_PRESET_VARIANTS['thalla'].find(v => v.id === 'stun');
-  const seededIds = items.rows.map(r => r.artifact_id);
+  const seededIds = items.rows.map(r => r.artifact_id).filter(id => id !== 'starter_bag');
   assert.deepEqual(seededIds, stunVariant.items, 'seeded items must match the active stun preset');
 });
 

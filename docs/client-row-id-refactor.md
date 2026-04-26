@@ -45,11 +45,9 @@ client never has to guess.
 
 - `freshPurchases` stays a `string[]` of artifactIds. It's decorative UI
   state (badge styling) and doesn't affect correctness.
-- `bagId` inside loadout items continues to reference the bag's artifactId,
-  not its row id. Bags are one-per-artifactId-per-round by construction
-  (commit 3a3ec16 pins them at `(-1,-1)`, and two bags with the same
-  artifactId can't coexist as active grid decorations in practice). Changing
-  this would require a server schema change that's out of scope here.
+- Bag ownership is not stored on loadout items anymore. Items keep their
+  own row id and absolute coordinates; bag membership is derived from
+  overlap with active bag shapes.
 - ~~Legacy `applyLegacyPlacements` name stays as-is~~. Renamed to
   `applyRunPlacements` in a later cleanup pass — the original "legacy"
   language dated back to a transition that never finished, and the

@@ -73,7 +73,7 @@ test('[bag-rotated] applyRunLoadoutPlacements toggles rotated through a bag entr
   ]);
   assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 1);
 
-  // Flip rotated OFF — omitting the field must reset the row.
+  // Flip rotated OFF — the client must explicitly send rotated:0.
   await applyRunLoadoutPlacements(playerId, run.id, [
     ...starters,
     {
@@ -83,8 +83,8 @@ test('[bag-rotated] applyRunLoadoutPlacements toggles rotated through a bag entr
       y: -1,
       width: 1,
       height: 2,
-      active: 1
-      // no rotated — server must default to 0
+      active: 1,
+      rotated: 0
     }
   ]);
   assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 0);

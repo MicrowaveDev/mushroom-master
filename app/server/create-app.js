@@ -191,7 +191,7 @@ const ERROR_STATUS_MAP = [
   ['no longer pending', 409],
   ['invalid', 400],
   ['unknown', 400],
-  // Loadout validator errors (validateGridItems / validateBagContents / etc.)
+  // Loadout validator errors (validateGridItems / validateItemCoverage / etc.)
   // These are user-caused payload errors — the UI should show the message,
   // not "Internal server error".
   ['out of bounds', 400],

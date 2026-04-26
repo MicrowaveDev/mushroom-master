@@ -11,17 +11,12 @@ export default function defineGameRunLoadoutItem(sequelize) {
     player_id: { type: DataTypes.TEXT, allowNull: false },
     round_number: { type: DataTypes.INTEGER, allowNull: false },
     artifact_id: { type: DataTypes.TEXT, allowNull: false },
-    // x, y are coord-kind-dependent, discriminated by bag_id:
-    //   bag_id IS NULL     + x >= 0                → base-grid coords
-    //   bag_id IS NULL     + x = -1, y = -1        → container/bag-row sentinel
-    //   bag_id IS NOT NULL + 0 <= x,y < bag.cols/rows → slot coords inside bag
-    // bag_id itself references the bag's own loadout row id (same round).
-    // See docs/bag-item-placement-persistence.md for the full contract.
+    // x, y are absolute shared-grid coords for every placed row. Container
+    // rows use (-1, -1). Bag membership is derived from cell overlap.
     x: { type: DataTypes.INTEGER, allowNull: false },
     y: { type: DataTypes.INTEGER, allowNull: false },
     width: { type: DataTypes.INTEGER, allowNull: false },
     height: { type: DataTypes.INTEGER, allowNull: false },
-    bag_id: { type: DataTypes.TEXT },
     sort_order: { type: DataTypes.INTEGER, allowNull: false },
     purchased_round: { type: DataTypes.INTEGER, allowNull: false },
     fresh_purchase: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },

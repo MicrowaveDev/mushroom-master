@@ -1,8 +1,8 @@
 import {
   getArtifactById,
   getArtifactPrice,
-  INVENTORY_COLUMNS,
-  INVENTORY_ROWS,
+  BAG_COLUMNS,
+  BAG_ROWS,
   MAX_ARTIFACT_COINS,
   MAX_STUN_CHANCE
 } from '../game-data.js';
@@ -35,16 +35,43 @@ export function buildArtifactSummary(items) {
   return totals;
 }
 
+export function pieceCells(item, shape = null) {
+  const cells = [];
+  const x0 = Number(item.x);
+  const y0 = Number(item.y);
+  const width = Number(item.width);
+  const height = Number(item.height);
+  for (let dx = 0; dx < width; dx += 1) {
+    for (let dy = 0; dy < height; dy += 1) {
+      if (shape && !isCellInShape(shape, dx, dy)) continue;
+      cells.push(`${x0 + dx}:${y0 + dy}`);
+    }
+  }
+  return cells;
+}
+
+function cellSet(cells) {
+  return new Set(cells);
+}
+
+function intersects(a, b) {
+  for (const key of a) {
+    if (b.has(key)) return true;
+  }
+  return false;
+}
+
+function activeBagRows(items) {
+  return items.filter((item) => {
+    const artifact = getArtifactById(item.artifactId);
+    return isBag(artifact) && item.active && !isContainerItem(item);
+  });
+}
+
 /**
- * Validate grid placements (bounds + overlap) for non-bag, non-container,
- * non-bagged items. Returns the set of occupied cells for downstream use.
- *
- * Bags must carry container coords (-1,-1): they render in the active-bags
- * bar, not on the main grid. A bag with x>=0 or y>=0 is an invariant
- * violation — throw loudly so bad writes fail fast instead of silently
- * colliding with real grid items (see the bag-coords regression).
+ * Validate absolute grid placements for placed non-bag artifacts.
  */
-export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, gridHeight = INVENTORY_ROWS) {
+export function validateGridItems(gridItems, gridWidth = BAG_COLUMNS, gridHeight = BAG_ROWS) {
   const occupied = new Set();
 
   for (const item of gridItems) {
@@ -52,12 +79,7 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
     if (!artifact) {
       throw new Error(`Unknown artifact: ${item.artifactId}`);
     }
-    if (isBag(artifact)) {
-      if (Number(item.x) >= 0 || Number(item.y) >= 0) {
-        throw new Error(`Bag ${item.artifactId} cannot have grid coordinates`);
-      }
-      continue;
-    }
+    if (isBag(artifact)) continue;
     if (isContainerItem(item)) continue;
 
     const matchesCanonical = item.width === artifact.width && item.height === artifact.height;
@@ -66,7 +88,7 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
       throw new Error('Stored artifact dimensions must match canonical definitions');
     }
 
-    if (item.x + item.width > gridWidth || item.y + item.height > gridHeight) {
+    if (item.x < 0 || item.y < 0 || item.x + item.width > gridWidth || item.y + item.height > gridHeight) {
       throw new Error(
         `Artifact placement is out of bounds: ${item.artifactId} `
         + `at (${item.x},${item.y}) ${item.width}x${item.height} `
@@ -89,86 +111,78 @@ export function validateGridItems(gridItems, gridWidth = INVENTORY_COLUMNS, grid
 }
 
 /**
- * Validate bag contents:
- *   1. Every bagged item's `bagId` resolves to a bag row in the same
- *      items array by the bag's loadout row id.
- *   2. The bagged item's slot coords `(x, y)` fit inside the bag's effective
- *      footprint (rotation-aware cols/rows).
- *   3. Bagged items within the same bag don't overlap.
- *   4. The total footprint area doesn't exceed the bag's `slotCount`
- *      (redundant with bounds+overlap for rectangular bags; kept as a
- *      defence-in-depth invariant for future non-rectangular layouts).
- *
- * `bagId` MUST be a loadout-row id. Bag rows in the items array MUST
- * carry their `id`. See docs/bag-item-placement-persistence.md.
+ * Validate active bags as placed grid pieces. Inactive bags must stay in the
+ * container sentinel. Bag membership is derived elsewhere, not stored.
  */
-export function validateBagContents(items) {
-  // First pass: catalog bag rows by their loadout row id, capturing the
-  // effective shape mask (rotation-aware) so pass 2 can enforce per-cell
-  // bounds for tetromino-shaped bags as well as rectangles.
-  const bagsByRowId = new Map();
+export function validateBagPlacement(items, gridWidth = BAG_COLUMNS) {
+  const occupied = new Set();
   for (const item of items) {
-    if (item.bagId) continue;
     const artifact = getArtifactById(item.artifactId);
     if (!isBag(artifact)) continue;
-    if (!item.id) {
-      throw new Error(`Bag row for ${item.artifactId} must carry a loadout row id`);
+    if (!item.active) {
+      if (!isContainerItem(item)) {
+        throw new Error(`Inactive bag ${item.artifactId} must use container coordinates`);
+      }
+      continue;
     }
     const rotated = !!item.rotated;
     const shape = getEffectiveShape(artifact, rotated);
-    const cols = shape.length > 0 ? shape[0].length : 0;
+    const cols = shape.length ? shape[0].length : 0;
     const rows = shape.length;
-    bagsByRowId.set(item.id, {
-      artifactId: item.artifactId,
-      slotCount: artifact.slotCount,
-      cols: Math.min(cols, INVENTORY_COLUMNS),
-      rows,
-      shape,
-      slotUsage: 0,
-      occupied: new Set()
-    });
+    const x = Number(item.x);
+    const y = Number(item.y);
+    if (x < 0 || y < 0 || x + cols > gridWidth) {
+      throw new Error(`Bag placement is out of bounds: ${item.artifactId}`);
+    }
+    for (const key of pieceCells({ ...item, width: cols, height: rows }, shape)) {
+      if (occupied.has(key)) {
+        throw new Error('Bag placements cannot overlap');
+      }
+      occupied.add(key);
+    }
   }
+  return { occupied };
+}
 
-  // Second pass: enforce bagged-item contracts.
+export function bagCellSets(items) {
+  return activeBagRows(items).map((bag) => {
+    const artifact = getArtifactById(bag.artifactId);
+    const shape = getEffectiveShape(artifact, !!bag.rotated);
+    const width = shape.length ? shape[0].length : 0;
+    const height = shape.length;
+    return {
+      id: bag.id,
+      artifactId: bag.artifactId,
+      cells: cellSet(pieceCells({ ...bag, width, height }, shape))
+    };
+  });
+}
+
+export function bagsContainingItem(item, items) {
+  const itemCells = cellSet(pieceCells(item));
+  return bagCellSets(items).filter((bag) => intersects(itemCells, bag.cells));
+}
+
+/**
+ * Every placed non-bag artifact cell must be covered by at least one active
+ * bag cell. This replaces bag-local `bag_id` slot validation.
+ */
+export function validateItemCoverage(items) {
+  const bags = bagCellSets(items);
+  const covered = new Set();
+  for (const bag of bags) {
+    for (const key of bag.cells) covered.add(key);
+  }
   for (const item of items) {
-    if (!item.bagId) continue;
     const artifact = getArtifactById(item.artifactId);
     if (!artifact) {
       throw new Error(`Unknown artifact: ${item.artifactId}`);
     }
-    if (isBag(artifact)) {
-      throw new Error('Bags cannot contain other bags');
-    }
-    const bag = bagsByRowId.get(item.bagId);
-    if (!bag) {
-      throw new Error(`Bag ${item.bagId} is not placed on the grid`);
-    }
-
-    const w = Number(item.width);
-    const h = Number(item.height);
-    const x = Number(item.x ?? 0);
-    const y = Number(item.y ?? 0);
-    if (x < 0 || y < 0 || x + w > bag.cols || y + h > bag.rows) {
-      throw new Error(`Bagged item ${item.artifactId} is out of bounds for bag ${bag.artifactId}`);
-    }
-    for (let dx = 0; dx < w; dx += 1) {
-      for (let dy = 0; dy < h; dy += 1) {
-        const cellX = x + dx;
-        const cellY = y + dy;
-        if (!isCellInShape(bag.shape, cellX, cellY)) {
-          throw new Error(`Bagged item ${item.artifactId} occupies a non-slot cell of bag ${bag.artifactId}`);
-        }
-        const key = `${cellX}:${cellY}`;
-        if (bag.occupied.has(key)) {
-          throw new Error(`Bagged items cannot overlap inside bag ${bag.artifactId}`);
-        }
-        bag.occupied.add(key);
+    if (isBag(artifact) || isContainerItem(item)) continue;
+    for (const key of pieceCells(item)) {
+      if (!covered.has(key)) {
+        throw new Error(`Artifact ${item.artifactId} has an uncovered cell at ${key} (out of bounds of active bags)`);
       }
-    }
-
-    bag.slotUsage += w * h;
-    if (bag.slotUsage > bag.slotCount) {
-      throw new Error(`Bag ${bag.artifactId} is full (${bag.slotCount} slots)`);
     }
   }
 }
@@ -205,9 +219,9 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
     throw new Error('Loadout items must be an array');
   }
 
-  const gridItems = items.filter((item) => !item.bagId);
-  validateGridItems(gridItems);
-  validateBagContents(items);
+  validateBagPlacement(items);
+  validateGridItems(items);
+  validateItemCoverage(items);
   const { totalCoins } = validateCoinBudget(items, coinBudget);
 
   return {

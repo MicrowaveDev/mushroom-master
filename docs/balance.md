@@ -258,7 +258,7 @@ budget = activeRun ? sum(ROUND_INCOME[0..currentRound]) : MAX_ARTIFACT_COINS;
 
 **Symptom:** Bags were placed on the base grid as normal artifacts, taking up cells that should hold combat items.
 
-**Fix:** Bags no longer occupy grid cells. They add *extra rows* below the base grid, which hold 1×1 artifacts tagged with `bagId`. See [artifact-board-spec.md](./artifact-board-spec.md) Section 3 for the full bag system.
+**Fix:** Bags are placed on the flat bag grid and provide covered cells for artifacts. Artifacts store absolute coordinates; bag membership is derived from overlap, not `bagId`. See [shop-bag-inventory-architecture.md](./shop-bag-inventory-architecture.md) for the current bag system.
 
 ### Issue #6: New runs started with items from the previous run — RESOLVED
 

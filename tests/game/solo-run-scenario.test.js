@@ -45,7 +45,8 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
 
   // ---------------------------------------------------------------------
   // Phase 0 â€” create player and choose mushroom. startGameRun seeds the
-  // 2-item starter preset into round 1; the rest of round 1 is empty
+  // starter bag plus the 2-item starter preset into round 1; the rest of
+  // round 1 is empty
   // until the player buys items from the shop.
   // ---------------------------------------------------------------------
   const { playerId, run } = await bootRun({
@@ -66,7 +67,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1`,
     [run.id, playerId]
   );
-  assert.equal(round1Starter.rowCount, 2, 'round 1 must contain the 2-item starter preset');
+  assert.equal(round1Starter.rowCount, 3, 'round 1 must contain starter bag + 2-item preset');
 
   // Seed a 1-coin loadout so the phases below (buy + sell + refresh + battle)
   // have something placed on the grid. The scenario uses this as its
@@ -139,7 +140,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
   //   - round 1 shop state row still exists (round-scoped, not UPDATE in place)
   // ---------------------------------------------------------------------
   const round1Before = await query(
-    `SELECT id, artifact_id, x, y, width, height, bag_id, purchased_round
+    `SELECT id, artifact_id, x, y, width, height, purchased_round
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
      ORDER BY id ASC`,
@@ -153,7 +154,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
   const stillActive = resolveResult.status === 'active';
 
   const round1After = await query(
-    `SELECT id, artifact_id, x, y, width, height, bag_id, purchased_round
+    `SELECT id, artifact_id, x, y, width, height, purchased_round
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
      ORDER BY id ASC`,

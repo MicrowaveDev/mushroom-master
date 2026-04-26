@@ -396,7 +396,7 @@ test('[Req 3-D, 7-F] bot loadout never injects starterOnly artifacts beyond the 
   );
 
   for (const mushroomId of ['thalla', 'lomie', 'axilin', 'kirt', 'morga']) {
-    const presetIds = new Set(getStarterPreset(mushroomId).map((p) => p.artifactId));
+    const presetIds = new Set(['starter_bag', ...getStarterPreset(mushroomId).map((p) => p.artifactId)]);
     for (let seed = 0; seed < 25; seed++) {
       const rng = createRng(`bot-starter-${mushroomId}-${seed}`);
       const budget = 5 + (seed % 12) * 4;

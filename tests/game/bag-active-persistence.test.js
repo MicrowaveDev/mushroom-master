@@ -70,7 +70,7 @@ test('[bag-active] applyRunLoadoutPlacements persists active=1 on a bag entry', 
 
   assert.equal(await readBagActive(run.id, playerId, 'moss_pouch', 1), 1);
 
-  // Toggle back off: the next PUT without active:1 must reset the row.
+  // Toggle back off: the client must explicitly send active:0.
   await applyRunLoadoutPlacements(playerId, run.id, [
     ...starterRows.map((r) => ({
       id: r.id,
@@ -81,8 +81,8 @@ test('[bag-active] applyRunLoadoutPlacements persists active=1 on a bag entry', 
       id: bought.id,
       artifactId: 'moss_pouch',
       x: -1, y: -1,
-      width: 1, height: 2
-      // no active field — server must default to 0 on bag rows
+      width: 1, height: 2,
+      active: 0
     }
   ]);
 

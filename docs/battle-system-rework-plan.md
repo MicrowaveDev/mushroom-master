@@ -1,5 +1,7 @@
 # Battle System Rework Plan
 
+> Historical planning document. Inventory/bag sections here predate the flat-grid refactor; current bag placement rules live in [shop-bag-inventory-architecture.md](shop-bag-inventory-architecture.md).
+
 ## Source of truth
 
 ### Original request
@@ -1186,4 +1188,3 @@ Run via `npx playwright test --config=tests/game/playwright.config.js`:
 - Reactions show as floating overlays near the opponent portrait
 - Requires: `POST /api/game-run/:id/react` endpoint
 - Deferred because: the core battle rework is functional without it; sticker set is TBD
-

@@ -1,4 +1,4 @@
-import { BAG_COLUMNS, BAG_ROWS, INVENTORY_ROWS } from '../constants.js';
+import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
 import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
 import { RunHud } from '../components/prep/RunHud.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';

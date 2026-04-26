@@ -142,6 +142,20 @@ export async function startGameRun(playerId, mode = 'solo') {
       if (presetResult.rowCount) activePresetId = presetResult.rows[0].active_preset || 'default';
     }
     const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId, activePresetId) : [];
+    await insertLoadoutItem(client, {
+      gameRunId: runId,
+      playerId,
+      roundNumber: 1,
+      artifactId: 'starter_bag',
+      x: 0,
+      y: 0,
+      width: 3,
+      height: 3,
+      active: true,
+      sortOrder: 0,
+      purchasedRound: 1,
+      freshPurchase: false
+    });
     for (const item of starterItems) {
       await insertLoadoutItem(client, {
         gameRunId: runId,
@@ -152,8 +166,7 @@ export async function startGameRun(playerId, mode = 'solo') {
         y: item.y,
         width: item.width,
         height: item.height,
-        bagId: null,
-        sortOrder: item.sortOrder,
+        sortOrder: item.sortOrder + 1,
         purchasedRound: 1,
         freshPurchase: false
       });
@@ -509,7 +522,6 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
       y: item.y,
       width: item.width,
       height: item.height,
-      bagId: null,
       sortOrder: index,
       purchasedRound: roundNumber,
       freshPurchase: false
@@ -1035,6 +1047,20 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
         if (presetResult.rowCount) activePresetId = presetResult.rows[0].active_preset || 'default';
       }
       const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId, activePresetId) : [];
+      await insertLoadoutItem(client, {
+        gameRunId: runId,
+        playerId: pid,
+        roundNumber: 1,
+        artifactId: 'starter_bag',
+        x: 0,
+        y: 0,
+        width: 3,
+        height: 3,
+        active: true,
+        sortOrder: 0,
+        purchasedRound: 1,
+        freshPurchase: false
+      });
       for (const item of starterItems) {
         await insertLoadoutItem(client, {
           gameRunId: runId,
@@ -1045,8 +1071,7 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
           y: item.y,
           width: item.width,
           height: item.height,
-          bagId: null,
-          sortOrder: item.sortOrder,
+          sortOrder: item.sortOrder + 1,
           purchasedRound: 1,
           freshPurchase: false
         });

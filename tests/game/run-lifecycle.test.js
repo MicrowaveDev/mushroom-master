@@ -24,27 +24,27 @@ test('[Req 11-A] copy-forward: round N rows are byte-identical in round N+1 exce
   ]);
 
   const round1 = await query(
-    `SELECT artifact_id, x, y, width, height, bag_id, purchased_round
+    `SELECT artifact_id, x, y, width, height, purchased_round
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 1
      ORDER BY sort_order ASC`,
     [run.id, playerId]
   );
-  assert.equal(round1.rowCount, 2);
+  assert.equal(round1.rowCount, 3);
 
   const result = await resolveRound(playerId, run.id);
   if (result.status !== 'active') return;
 
   const round2 = await query(
-    `SELECT artifact_id, x, y, width, height, bag_id, purchased_round, fresh_purchase
+    `SELECT artifact_id, x, y, width, height, purchased_round, fresh_purchase
      FROM game_run_loadout_items
      WHERE game_run_id = $1 AND player_id = $2 AND round_number = 2
      ORDER BY sort_order ASC`,
     [run.id, playerId]
   );
-  assert.equal(round2.rowCount, 2);
+  assert.equal(round2.rowCount, 3);
 
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < round1.rowCount; i++) {
     assert.equal(round2.rows[i].artifact_id, round1.rows[i].artifact_id);
     assert.equal(round2.rows[i].x, round1.rows[i].x);
     assert.equal(round2.rows[i].y, round1.rows[i].y);
