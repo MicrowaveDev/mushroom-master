@@ -27,6 +27,8 @@ Last verified against code: 2026-04-16.
 
 ## 2. Inventory & Grid
 
+> **Architecture note:** Independent external research corroborating the bag-grid-unification plan (BB-style flat grid, derived bag membership, drop `bag_id`) lives in [`inventory-architecture-research.md`](inventory-architecture-research.md). It includes a survey of open-source grid-inventory implementations and an explicit account of the "bagged item out of bounds for bag" bug class that the planned phases (2-I through 2-M below) eliminate.
+
 - **2-A.** The base inventory grid is **3 columns × 3 rows = 9 cells** (`INVENTORY_COLUMNS × INVENTORY_ROWS`). *(Transitional: replaced by a starter-bag artifact in Phase 3 — see 2-K.)*
 - **2-B.** Bags expand available slots beyond the base grid.
 - **2-C.** Items in the **container** (purchased but unplaced, position `(-1,-1)`) do not contribute combat stats.
@@ -126,6 +128,8 @@ Phase 1 + Phase 2 ship without any schema change. Phases 3 + 4 add a starter-bag
 ---
 
 ## 5. Bags
+
+> **Architecture note:** Bag-internal layout, collision rules, and bag swap/rotate semantics are formalized as part of the bag-grid-unification effort (see §2 phases 2-I through 2-M and [`.agent/tasks/bag-grid-unification/spec.md`](../.agent/tasks/bag-grid-unification/spec.md)). External research corroborating that direction — including the diagnosis of the "bagged item out of bounds for bag" bug class — is in [`inventory-architecture-research.md`](inventory-architecture-research.md).
 
 - **5-A.** Bags are special artifacts that add inventory expansion beyond the base grid.
 - **5-B.** **Moss Pouch**: 1×2, price 2, 2 slots.
