@@ -7,7 +7,7 @@ import {
   MAX_STUN_CHANCE
 } from '../game-data.js';
 import { clamp } from '../lib/utils.js';
-import { getEffectiveShape, isCellInShape } from '../../shared/bag-shape.js';
+import { getEffectiveShape, isCellInShape, normalizeRotation } from '../../shared/bag-shape.js';
 import {
   contributesStats,
   isBag,
@@ -125,8 +125,7 @@ export function validateBagPlacement(items, gridWidth = BAG_COLUMNS) {
       }
       continue;
     }
-    const rotated = !!item.rotated;
-    const shape = getEffectiveShape(artifact, rotated);
+    const shape = getEffectiveShape(artifact, normalizeRotation(item.rotated));
     const cols = shape.length ? shape[0].length : 0;
     const rows = shape.length;
     const x = Number(item.x);
@@ -147,7 +146,7 @@ export function validateBagPlacement(items, gridWidth = BAG_COLUMNS) {
 export function bagCellSets(items) {
   return activeBagRows(items).map((bag) => {
     const artifact = getArtifactById(bag.artifactId);
-    const shape = getEffectiveShape(artifact, !!bag.rotated);
+    const shape = getEffectiveShape(artifact, normalizeRotation(bag.rotated));
     const width = shape.length ? shape[0].length : 0;
     const height = shape.length;
     return {

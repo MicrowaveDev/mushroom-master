@@ -6,6 +6,7 @@ import {
   startGameRun
 } from '../../app/server/services/game-service.js';
 import { createId, nowIso } from '../../app/server/lib/utils.js';
+import { normalizeRotation } from '../../app/shared/bag-shape.js';
 import { artifacts, getArtifactById, getArtifactPrice } from '../../app/server/game-data.js';
 
 // Re-exports so test files don't need to dynamic-import game-data inside
@@ -179,7 +180,7 @@ export async function seedRunLoadout(playerId, gameRunId, items) {
         item.height ?? 1,
         index,
         item.active ? 1 : 0,
-        item.rotated ? 1 : 0,
+        normalizeRotation(item.rotated),
         nowIso()
       ]
     );

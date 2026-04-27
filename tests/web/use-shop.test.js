@@ -15,6 +15,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { useShop } from '../../web/src/composables/useShop.js';
+import { BAG_COLUMNS } from '../../web/src/constants.js';
+import { getEffectiveShape } from '../../app/shared/bag-shape.js';
 
 // Minimal artifacts needed for the test. Mirrors the subset the real
 // bootstrap ships to the client — wider catalogs aren't needed because
@@ -33,6 +35,7 @@ const ARTIFACTS = [
   { id: 'moss_pouch', family: 'bag', width: 1, height: 2, price: 2, slotCount: 2, bonus: {} },
   // amber_satchel: 2×2 → cols=2, rows=2 (adds 2 bag rows)
   { id: 'amber_satchel', family: 'bag', width: 2, height: 2, price: 3, slotCount: 4, bonus: {} },
+  { id: 'cell_blocker', family: 'bag', width: 1, height: 1, price: 0, slotCount: 1, bonus: {}, shape: [[1]] },
   // T-tetromino bag: 3×2 with shape mask. Slots at (0,0), (1,0), (2,0), (1,1).
   // Used to pin shape-aware drop targeting and bagged-item rendering.
   {
@@ -40,6 +43,43 @@ const ARTIFACTS = [
     shape: [
       [1, 1, 1],
       [0, 1, 0]
+    ]
+  },
+  {
+    id: 'birchbark_hook', family: 'bag', width: 3, height: 2, price: 3, slotCount: 4, bonus: {},
+    shape: [
+      [1, 1, 1],
+      [1, 0, 0]
+    ]
+  },
+  {
+    id: 'hollow_log', family: 'bag', width: 3, height: 2, price: 3, slotCount: 4, bonus: {},
+    shape: [
+      [1, 1, 1],
+      [0, 0, 1]
+    ]
+  },
+  {
+    id: 'twisted_stalk', family: 'bag', width: 3, height: 2, price: 3, slotCount: 4, bonus: {},
+    shape: [
+      [0, 1, 1],
+      [1, 1, 0]
+    ]
+  },
+  {
+    id: 'spiral_cap', family: 'bag', width: 3, height: 2, price: 3, slotCount: 4, bonus: {},
+    shape: [
+      [1, 1, 0],
+      [0, 1, 1]
+    ]
+  },
+  {
+    id: 'mycelium_vine', family: 'bag', width: 1, height: 4, price: 3, slotCount: 4, bonus: {},
+    shape: [
+      [1],
+      [1],
+      [1],
+      [1]
     ]
   }
 ];
@@ -88,6 +128,63 @@ function makeShopWithSpy(state) {
   const persistRunLoadout = () => { calls.persistRunLoadout += 1; };
   const shop = useShop(state, getArtifact, persistRunLoadout);
   return { shop, calls };
+}
+
+function cellsAt(anchorX, anchorY, shape) {
+  const cells = new Set();
+  for (let dy = 0; dy < shape.length; dy += 1) {
+    const row = shape[dy] || [];
+    for (let dx = 0; dx < row.length; dx += 1) {
+      if (row[dx]) cells.add(`${anchorX + dx}:${anchorY + dy}`);
+    }
+  }
+  return cells;
+}
+
+function overlaps(a, b) {
+  for (const cell of a) {
+    if (b.has(cell)) return true;
+  }
+  return false;
+}
+
+function stateBagRotation(state, bagId) {
+  const entry = state.rotatedBags.find((bag) => bag.id === bagId);
+  return entry?.rotation ?? (entry ? 1 : 0);
+}
+
+function expectedFirstFitForRotation(state, getArtifact, bagId, rowId, rotation) {
+  const bag = getArtifact(bagId);
+  const shape = getEffectiveShape(bag, rotation);
+  const cols = shape[0]?.length || 0;
+  const rows = shape.length;
+  const occupied = state.activeBags
+    .filter((activeBag) => activeBag.id !== rowId)
+    .map((activeBag) => {
+      const artifact = getArtifact(activeBag.artifactId);
+      return cellsAt(
+        activeBag.anchorX ?? 0,
+        activeBag.anchorY ?? 0,
+        getEffectiveShape(artifact, stateBagRotation(state, activeBag.id))
+      );
+    });
+  const bottomRow = Math.max(
+    0,
+    ...state.activeBags.map((activeBag) => {
+      const artifact = getArtifact(activeBag.artifactId);
+      return (activeBag.anchorY ?? 0) + getEffectiveShape(artifact, stateBagRotation(state, activeBag.id)).length;
+    })
+  );
+
+  for (let y = 0; y <= bottomRow + rows; y += 1) {
+    for (let x = 0; x + cols <= BAG_COLUMNS; x += 1) {
+      const candidate = cellsAt(x, y, shape);
+      if (!occupied.some((activeCells) => overlaps(candidate, activeCells))) {
+        return { anchorX: x, anchorY: y };
+      }
+    }
+  }
+  return { anchorX: 0, anchorY: bottomRow + rows };
 }
 
 // Monotonic row-id generator for test fixtures. Mimics the server's
@@ -186,12 +283,10 @@ test('[bag-relayout] deactivating an empty bag preserves a side-by-side bag\u201
   assert.equal(placedAfter.bagId, undefined, 'absolute item identity stays bag-independent');
 });
 
-test('[bag-relayout] rotating an empty bag is blocked when it would overlap another bag', () => {
+test('[bag-relayout] rotating an empty bag refits when its current anchor would overlap another bag', () => {
   // Unified-grid layout: moss at (3, 0) (1 row tall), amber at (3, 1) (2 rows
-  // tall). Rotating moss (1x2 -> cols=1, rows=2) would extend its footprint
-  // into row 1 col 3, which is amber\u2019s anchor. The bagAreaOverlaps guard
-  // in rotateBag must reject — without it the rotation would silently
-  // displace amber\u2019s items on the next persist.
+  // tall). Rotating moss in place would extend into amber, so rotateBag should
+  // search for the first clear anchor for the rotated footprint.
   const state = makeFreshState();
   const shop = makeShop(state);
 
@@ -203,7 +298,13 @@ test('[bag-relayout] rotating an empty bag is blocked when it would overlap anot
   state.error = '';
   shop.rotateBag('moss_pouch');
 
-  assert.equal(state.rotatedBags.length, 0, 'rotation must be blocked — would overlap amber');
+  const moss = activeBag(state, 'moss_pouch');
+  assert.equal(state.rotatedBags.length, 1, 'rotation succeeds by moving to a clear anchor');
+  assert.deepEqual(
+    { anchorX: moss.anchorX, anchorY: moss.anchorY },
+    { anchorX: 5, anchorY: 0 },
+    'rotated moss moves to the first clear vertical slot'
+  );
 });
 
 test('[bag-relayout] rotating an empty bag succeeds when the rotated footprint stays clear', () => {
@@ -221,6 +322,90 @@ test('[bag-relayout] rotating an empty bag succeeds when the rotated footprint s
   assert.equal(state.rotatedBags.length, 1, 'rotation succeeds with no other bag in the way');
   assert.equal(state.rotatedBags[0].artifactId, 'moss_pouch');
   assert.equal(state.error, '');
+});
+
+test('[bag-relayout][regression] rotating birchbark hook repacks the L shape into the compact gap', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  state.activeBags = [
+    { id: 'starter_bag_row', artifactId: 'starter_bag', anchorX: 0, anchorY: 0 },
+    { id: 'blocker_5_0', artifactId: 'cell_blocker', anchorX: 5, anchorY: 0 },
+    { id: 'blocker_3_1', artifactId: 'cell_blocker', anchorX: 3, anchorY: 1 },
+    { id: 'birch_row', artifactId: 'birchbark_hook', anchorX: 0, anchorY: 3 }
+  ];
+
+  shop.rotateBag({ id: 'birch_row', artifactId: 'birchbark_hook' });
+
+  const birch = state.activeBags.find((bag) => bag.id === 'birch_row');
+  assert.deepEqual(
+    { anchorX: birch.anchorX, anchorY: birch.anchorY },
+    { anchorX: 3, anchorY: 0 },
+    'rotated Birchbark Hook should move into the upper L-shaped gap'
+  );
+  assert.deepEqual(
+    state.rotatedBags.map((bag) => bag.id),
+    ['birch_row'],
+    'the selected row is persisted as rotated'
+  );
+  assert.equal(state.rotatedBags[0].rotation, 1, 'first click stores the 90-degree rotation state');
+});
+
+test('[bag-relayout] every rotatable bag shape rotates by row id and repacks to first fit', () => {
+  const getArtifact = (id) => ARTIFACTS.find((artifact) => artifact.id === id);
+  const rotatableBagIds = [
+    'moss_pouch',
+    'trefoil_sack',
+    'birchbark_hook',
+    'hollow_log',
+    'twisted_stalk',
+    'spiral_cap',
+    'mycelium_vine'
+  ];
+
+  for (const bagId of rotatableBagIds) {
+    const state = makeFreshState();
+    const shop = makeShop(state);
+    const rowId = `${bagId}_row`;
+    state.activeBags = [
+      { id: 'starter_bag_row', artifactId: 'starter_bag', anchorX: 0, anchorY: 0 },
+      { id: rowId, artifactId: bagId, anchorX: 0, anchorY: 4 }
+    ];
+    state.rotatedBags = [];
+
+    const expected = expectedFirstFitForRotation(state, getArtifact, bagId, rowId, true);
+    shop.rotateBag({ id: rowId, artifactId: bagId });
+    const rotatedBag = state.activeBags.find((bag) => bag.id === rowId);
+
+    assert.deepEqual(
+      { anchorX: rotatedBag.anchorX, anchorY: rotatedBag.anchorY },
+      expected,
+      `${bagId} should move to the first shape-aware fit after rotation`
+    );
+    assert.deepEqual(
+      state.rotatedBags,
+      [{ id: rowId, artifactId: bagId, rotation: 1 }],
+      `${bagId} should persist rotation on the exact row id`
+    );
+  }
+});
+
+test('[bag-relayout][regression] birchbark hook cycles through all four rotation states', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  state.activeBags = [
+    { id: 'starter_bag_row', artifactId: 'starter_bag', anchorX: 0, anchorY: 0 },
+    { id: 'birch_row', artifactId: 'birchbark_hook', anchorX: 0, anchorY: 4 }
+  ];
+
+  shop.rotateBag({ id: 'birch_row', artifactId: 'birchbark_hook' });
+  assert.equal(stateBagRotation(state, 'birch_row'), 1, 'first click = 90 degrees');
+  shop.rotateBag({ id: 'birch_row', artifactId: 'birchbark_hook' });
+  assert.equal(stateBagRotation(state, 'birch_row'), 2, 'second click = 180 degrees');
+  shop.rotateBag({ id: 'birch_row', artifactId: 'birchbark_hook' });
+  assert.equal(stateBagRotation(state, 'birch_row'), 3, 'third click = 270 degrees');
+  shop.rotateBag({ id: 'birch_row', artifactId: 'birchbark_hook' });
+  assert.equal(stateBagRotation(state, 'birch_row'), 0, 'fourth click returns to canonical shape');
+  assert.equal(state.rotatedBags.some((bag) => bag.id === 'birch_row'), false, 'canonical state is not persisted as rotated');
 });
 
 test('[bag-relayout] deactivating a non-empty bag unplaces overlapping items', () => {
@@ -304,6 +489,29 @@ test('[bag-shape] container drop into a shape cell of a tetromino bag succeeds',
   assert.equal(placed.x, 4);
   assert.equal(placed.y, 1);
   assert.equal(placed.bagId, undefined, 'items are placed with absolute coords only');
+});
+
+test('[regression] autoPlaceFromContainer activates a duplicate bag by row id', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  const firstRowId = seedContainer(state, 'trefoil_sack');
+  const secondRowId = seedContainer(state, 'trefoil_sack');
+
+  shop.autoPlaceFromContainer({ artifactId: 'trefoil_sack', id: firstRowId });
+  shop.autoPlaceFromContainer({ artifactId: 'trefoil_sack', id: secondRowId });
+
+  const trefoils = state.activeBags.filter((bag) => bag.artifactId === 'trefoil_sack');
+  assert.equal(trefoils.length, 2, 'both trefoil copies should become active bags');
+  assert.deepEqual(
+    trefoils.map((bag) => bag.id).sort(),
+    [firstRowId, secondRowId].sort(),
+    'active duplicate bags must preserve their distinct row ids'
+  );
+  assert.equal(
+    state.containerItems.filter((slot) => slot.artifactId === 'trefoil_sack').length,
+    0,
+    'both duplicate bag rows should leave the container'
+  );
 });
 
 test('onInventoryCellDrop (source=inventory) rejects drops into disabled cells', () => {
@@ -607,15 +815,17 @@ test('[bag-rotated] rotateBag toggles the rotated slot and persists via persistR
 
   assert.equal(state.rotatedBags.length, 1, 'first rotate adds the bag to rotatedBags');
   assert.equal(state.rotatedBags[0].id, activatedId);
+  assert.equal(state.rotatedBags[0].rotation, 1);
   assert.equal(
     calls.persistRunLoadout,
     1,
     'rotateBag must call persistRunLoadout — pre-refactor it did not, which is why rotation vanished on reload'
   );
 
-  // Toggle off.
+  // Advance to 180 degrees.
   shop.rotateBag('moss_pouch');
-  assert.equal(state.rotatedBags.length, 0, 'second rotate removes the bag from rotatedBags');
+  assert.equal(state.rotatedBags.length, 1, 'second rotate keeps the bag in rotatedBags');
+  assert.equal(state.rotatedBags[0].rotation, 2);
   assert.equal(calls.persistRunLoadout, 2, 'each toggle triggers a persist');
 });
 
@@ -641,6 +851,7 @@ test('[bag-rotated] rotateBag preserves rotation state across a deactivate+activ
   assert.equal(activeBag(state, 'moss_pouch'), undefined);
   assert.equal(state.rotatedBags.length, 1, 'rotation survives deactivation (server row still has rotated=1)');
   assert.equal(state.rotatedBags[0].id, rowId);
+  assert.equal(state.rotatedBags[0].rotation, 1);
 });
 
 // ---------------------------------------------------------------------------

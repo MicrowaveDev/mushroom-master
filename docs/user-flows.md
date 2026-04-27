@@ -220,20 +220,47 @@ Step 4: Run Complete (run ended)
   Screenshot: screenshots/run/solo-09-run-complete.png
   Condition: run status = 'completed' or 'abandoned'
   Above the fold (mobile + desktop):
-    - Entire card visible — heading, end reason, stats, Home button
-    - No scroll needed on either viewport; compact screen
+    - Verdict, season level, final stats, and primary reward context are visible
+    - Extra achievements may extend the card; vertical page scroll is allowed
   Sees:
-    - "Игра завершена" / "Game Complete" heading
-    - End reason: "Все жизни потеряны" / "Максимум раундов" / "Покинуть" (t.eliminated / t.maxRounds / t.abandonRun)
+    - Lore-styled verdict heading and end reason for max_losses, max_rounds, or abandon
     - [Req 1-E] End reason matches: max_losses (0 lives) or max_rounds (9 rounds)
-    - Final stats: total wins, rounds completed
+    - Final stats: total wins, rounds completed, losses, win rate
+    - [Req 9-E/F] Season level card: Bronze / Silver / Gold / Diamond, season points, progress toward next level
+    - Season progress fill animates; when the run crosses a season tier, the season card performs a short level-up emphasis animation
     - [Req 9-B] Completion bonus (if any) based on total wins — spore + mycelium
+    - Last battle summary with outcome and reward text when lastRound data exists
+    - [Req 9-G] Lore achievements earned this run, including general and character-specific entries when criteria match
+    - Newly earned achievements reveal one by one and show a "New" marker; matched achievements already owned from older runs show an earned marker
+    - If no achievements match, a quiet empty achievement state appears instead of a blank gap
+    - The recap reveals in order: verdict first, season meter, rewards/survival, achievements, then the "Домой" / "Home" button settles in
     - "Домой" / "Home" button
   Action: Click "Home"
   Expected:
     - state.gameRun cleared to null
     - Navigate to home screen — player sees updated mushroom progression,
-      spore total, and run-history entry for the just-completed run
+      spore total, season level/progress, recent achievements, and run-history entry for the just-completed run
+```
+
+```
+Step 5: Achievement Journal
+  Screen: profile → ProfileScreen.js
+  Above the fold (mobile):
+    - Season identity card with current level, total points, progress bar, and next-level text
+    - Achievement Journal heading
+    - First grouped achievement cards
+  Sees:
+    - Season of the Deep Ring / Сезон Глубокого Кольца identity
+    - Season, General, and per-character achievement groups
+    - Earned badges with lore text
+    - Locked badges with locked state and hidden lore details
+    - Group counters showing earned / total
+  Action: Open from nav profile item or home season card journal link
+  Expected:
+    - Uses server-persisted `bootstrap.season.achievements`
+    - Does not fabricate earned state from client-only recap data
+    - Home season card can open this screen through the achievement journal link
+    - Mobile layout remains a single readable column with no horizontal scroll
 ```
 
 **Flow B summary** (canonical post-2026-04-14):

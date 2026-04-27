@@ -1,0 +1,38 @@
+[
+  {
+    "id": "bronze",
+    "minPoints": 0,
+    "name": { "ru": "Бронза", "en": "Bronze" },
+    "lore": {
+      "ru": "Первый знак сезона уже проступил на мицелии.",
+      "en": "The first season mark has appeared on the mycelium."
+    }
+  },
+  {
+    "id": "silver",
+    "minPoints": 8,
+    "name": { "ru": "Серебро", "en": "Silver" },
+    "lore": {
+      "ru": "Серебряные нити начали держать твой путь.",
+      "en": "Silver threads have begun to hold your path."
+    }
+  },
+  {
+    "id": "gold",
+    "minPoints": 18,
+    "name": { "ru": "Золото", "en": "Gold" },
+    "lore": {
+      "ru": "Золотой след виден даже в глубине корней.",
+      "en": "A golden trace is visible even beneath the roots."
+    }
+  },
+  {
+    "id": "diamond",
+    "minPoints": 30,
+    "name": { "ru": "Алмаз", "en": "Diamond" },
+    "lore": {
+      "ru": "Алмазный узел сезона выдержал давление круга.",
+      "en": "The season's diamond knot endured the ring's pressure."
+    }
+  }
+]

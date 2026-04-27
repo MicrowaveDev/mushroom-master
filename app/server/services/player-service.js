@@ -98,12 +98,58 @@ export async function getPlayerState(playerId) {
     })
   );
 
+  const seasonResult = await query(
+    `SELECT * FROM player_season_progress WHERE player_id = $1 AND season_id = 'season_1'`,
+    [playerId]
+  );
+  const recentAchievementsResult = await query(
+    `SELECT achievement_id, earned_at
+     FROM player_achievements
+     WHERE player_id = $1
+     ORDER BY earned_at DESC
+     LIMIT 6`,
+    [playerId]
+  );
+  const achievementsResult = await query(
+    `SELECT achievement_id, season_id, earned_at
+     FROM player_achievements
+     WHERE player_id = $1
+     ORDER BY earned_at DESC`,
+    [playerId]
+  );
+  const achievements = achievementsResult.rows.map((row) => ({
+    id: row.achievement_id,
+    seasonId: row.season_id,
+    earnedAt: row.earned_at
+  }));
+  const season = seasonResult.rowCount
+    ? {
+        seasonId: seasonResult.rows[0].season_id,
+        totalPoints: seasonResult.rows[0].total_points,
+        levelId: seasonResult.rows[0].level_id,
+        updatedAt: seasonResult.rows[0].updated_at,
+        achievements,
+        recentAchievements: recentAchievementsResult.rows.map((row) => ({
+          id: row.achievement_id,
+          earnedAt: row.earned_at
+        }))
+      }
+    : {
+        seasonId: 'season_1',
+        totalPoints: 0,
+        levelId: 'bronze',
+        updatedAt: null,
+        achievements,
+        recentAchievements: []
+      };
+
   return {
     player,
     settings,
     activeMushroomId,
     loadout,
-    progression
+    progression,
+    season
   };
 }
 

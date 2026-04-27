@@ -1,4 +1,6 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+import { getNextRunAchievementHint, getRunAchievementsByIds } from '../../../app/shared/run-achievements.js';
+import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
 
 export const HomeScreen = {
   name: 'HomeScreen',
@@ -20,6 +22,12 @@ export const HomeScreen = {
   },
   components: {
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
+  },
+  methods: {
+    selectMushroom(mushroom) {
+      if (mushroom.isActive) return;
+      this.$emit('select-mushroom', mushroom.id);
+    }
   },
   computed: {
     playerRank() {
@@ -53,6 +61,16 @@ export const HomeScreen = {
     },
     topLeaderboard() {
       return (this.state.leaderboard || []).slice(0, 5);
+    },
+    seasonSummary() {
+      const season = this.state.bootstrap?.season || {};
+      return getSeasonProgressSummary(season.totalPoints || 0, this.state.lang || 'en', 0);
+    },
+    seasonAchievements() {
+      return getRunAchievementsByIds(this.state.bootstrap?.season?.recentAchievements || [], this.state.lang || 'en').slice(0, 3);
+    },
+    nextAchievement() {
+      return getNextRunAchievementHint(this.state.bootstrap?.season?.achievements || [], this.state.lang || 'en');
     }
   },
   template: `
@@ -67,8 +85,11 @@ export const HomeScreen = {
               <div
                 class="home-mushroom-row"
                 :class="{ 'home-mushroom-row--active': m.isActive }"
-                @click="$emit('select-mushroom', m.id)"
-                role="button" tabindex="0"
+                @click="selectMushroom(m)"
+                @keydown.enter.prevent="selectMushroom(m)"
+                @keydown.space.prevent="selectMushroom(m)"
+                :role="m.isActive ? 'group' : 'button'"
+                :tabindex="m.isActive ? -1 : 0"
               >
                 <img :src="m.portraitUrl" :alt="m.name[state.lang]" class="home-mushroom-portrait" :style="{ objectPosition: portraitPosition(m.id) }"/>
                 <div class="home-mushroom-info">
@@ -186,6 +207,52 @@ export const HomeScreen = {
           </div>
         </article>
       </div>
+
+      <article class="panel home-season-panel" :class="'home-season-panel--' + seasonSummary.id">
+        <div class="home-season-main">
+          <div>
+            <p class="home-season-kicker">{{ seasonSummary.seasonName }}</p>
+            <h3>{{ seasonSummary.name }}</h3>
+            <p>{{ seasonSummary.seasonTheme }}</p>
+          </div>
+          <div class="home-season-points">
+            <strong>{{ seasonSummary.totalPoints }} {{ t.seasonPoints }}</strong>
+            <span>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</span>
+            <button class="link home-season-journal-link" @click="$emit('go', 'profile')">{{ t.achievementJournal }}</button>
+          </div>
+        </div>
+        <div class="home-season-progress" aria-hidden="true">
+          <span :style="{ width: seasonSummary.progress + '%' }"></span>
+        </div>
+        <div v-if="seasonAchievements.length" class="home-season-achievements">
+          <article
+            v-for="(achievement, index) in seasonAchievements"
+            :key="achievement.id"
+            class="home-season-achievement"
+            :class="['home-season-achievement--' + achievement.type, 'home-season-achievement--accent-' + achievement.accent]"
+            :style="{ animationDelay: (index * 70) + 'ms' }"
+          >
+            <span class="achievement-badge achievement-badge--small" aria-hidden="true">
+              <span class="achievement-badge-core"></span>
+              <span class="achievement-badge-glyph">{{ achievement.badgeSymbol }}</span>
+            </span>
+            <div>
+              <strong>{{ achievement.name }}</strong>
+              <p>{{ achievement.lore }}</p>
+            </div>
+          </article>
+        </div>
+        <div v-else-if="nextAchievement" class="home-season-next-badge">
+          <span class="achievement-badge achievement-badge--small" aria-hidden="true">
+            <span class="achievement-badge-core"></span>
+            <span class="achievement-badge-glyph">{{ nextAchievement.badgeSymbol }}</span>
+          </span>
+          <div>
+            <strong>{{ t.nextAchievement }}</strong>
+            <p>{{ nextAchievement.name }}</p>
+          </div>
+        </div>
+      </article>
 
       <!-- Friends + Leaderboard -->
       <div class="home-columns">

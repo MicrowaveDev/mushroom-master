@@ -1,0 +1,270 @@
+{
+  "general": [
+    {
+      "id": "first_ring_crossed",
+      "name": {
+        "ru": "Первый След",
+        "en": "First Ring Crossed"
+      },
+      "lore": {
+        "ru": "Мицелий впервые узнал твой шаг на боевой тропе.",
+        "en": "The mycelium learned your step for the first time in the arena."
+      },
+      "criteria": { "minRounds": 1 }
+    },
+    {
+      "id": "deep_run",
+      "name": {
+        "ru": "Глубокий ход",
+        "en": "Deep Run"
+      },
+      "lore": {
+        "ru": "Ты дошла до слоя, где корни хранят имена сильных бойцов.",
+        "en": "You reached the layer where roots keep the names of strong fighters."
+      },
+      "criteria": { "minRounds": 5 }
+    },
+    {
+      "id": "three_caps_taken",
+      "name": {
+        "ru": "Три Шляпки",
+        "en": "Three Caps Taken"
+      },
+      "lore": {
+        "ru": "Три победы сложились в первый уверенный узор силы.",
+        "en": "Three victories formed your first steady pattern of strength."
+      },
+      "criteria": { "minWins": 3 }
+    },
+    {
+      "id": "season_bronze_spore",
+      "name": {
+        "ru": "Бронзовая спора",
+        "en": "Bronze Spore"
+      },
+      "lore": {
+        "ru": "Глубокое Кольцо приняло первую спору твоего сезона.",
+        "en": "The Deep Ring accepted the first spore of your season."
+      },
+      "criteria": { "seasonLevel": "bronze" }
+    },
+    {
+      "id": "season_silver_thread",
+      "name": {
+        "ru": "Серебряная нить",
+        "en": "Silver Thread"
+      },
+      "lore": {
+        "ru": "Серебряные нити уже держат твой путь между раундами.",
+        "en": "Silver threads now hold your path between rounds."
+      },
+      "criteria": { "seasonLevel": "silver" }
+    },
+    {
+      "id": "season_gold_cap",
+      "name": {
+        "ru": "Золотая шляпка",
+        "en": "Golden Cap"
+      },
+      "lore": {
+        "ru": "Золото легло на край шляпки после сильного круга.",
+        "en": "Gold settled on the cap after a strong circle."
+      },
+      "criteria": { "seasonLevel": "gold" }
+    },
+    {
+      "id": "season_diamond_node",
+      "name": {
+        "ru": "Алмазный узел",
+        "en": "Diamond Node"
+      },
+      "lore": {
+        "ru": "Мицелий сжал твой путь в прочный алмазный узел.",
+        "en": "The mycelium compressed your path into a hard diamond node."
+      },
+      "criteria": { "seasonLevel": "diamond" }
+    },
+    {
+      "id": "perfect_circle",
+      "name": {
+        "ru": "Полный круг",
+        "en": "Perfect Circle"
+      },
+      "lore": {
+        "ru": "Все раунды выдержаны, и кольцо сомкнулось без трещин.",
+        "en": "Every round held, and the ring closed without a crack."
+      },
+      "criteria": { "endReason": "max_rounds" }
+    },
+    {
+      "id": "last_spore",
+      "name": {
+        "ru": "Последняя спора",
+        "en": "Last Spore"
+      },
+      "lore": {
+        "ru": "Даже на последнем дыхании споры оставили тёплый след.",
+        "en": "Even at the final breath, the spores left a warm trail."
+      },
+      "criteria": { "endReason": "max_losses", "minWins": 1 }
+    }
+  ],
+  "characters": {
+    "thalla": [
+      {
+        "id": "thalla_spore_echo",
+        "name": {
+          "ru": "Эхо Споры",
+          "en": "Spore Echo"
+        },
+      "lore": {
+          "ru": "Хлыст Тхаллы оставил в арене тихий звон спор.",
+          "en": "Thalla's lash left a quiet spore-chime in the arena."
+        },
+        "criteria": { "minWins": 1 }
+      },
+      {
+        "id": "thalla_sacred_thread",
+        "name": {
+          "ru": "Священная нить",
+          "en": "Sacred Thread"
+        },
+      "lore": {
+          "ru": "Победы легли ровно, как священная нить между светом и тенью.",
+          "en": "The victories settled like a sacred thread between light and shadow."
+        },
+        "criteria": { "minWins": 4 }
+      }
+    ],
+    "lomie": [
+      {
+        "id": "lomie_soft_wall",
+        "name": {
+          "ru": "Мягкая стена",
+          "en": "Soft Wall"
+        },
+      "lore": {
+          "ru": "Ломиэ выдержала натиск и не дала кольцу рассыпаться.",
+          "en": "Lomie held the pressure and kept the ring from scattering."
+        },
+        "criteria": { "minRounds": 3 }
+      },
+      {
+        "id": "lomie_stone_breath",
+        "name": {
+          "ru": "Каменное дыхание",
+          "en": "Stone Breath"
+        },
+      "lore": {
+          "ru": "Её защита стала спокойной, как кора древнего ствола.",
+          "en": "Her guard became as calm as bark around an ancient trunk."
+        },
+        "criteria": { "maxLosses": 1, "minRounds": 5 }
+      }
+    ],
+    "axilin": [
+      {
+        "id": "axilin_volatile_brew",
+        "name": {
+          "ru": "Летучий отвар",
+          "en": "Volatile Brew"
+        },
+      "lore": {
+          "ru": "Аксилин вскипела быстро и оставила в бою едкий след.",
+          "en": "Axilin boiled fast and left a biting mark on the fight."
+        },
+        "criteria": { "minWins": 1 }
+      },
+      {
+        "id": "axilin_ferment_storm",
+        "name": {
+          "ru": "Ферментная буря",
+          "en": "Ferment Storm"
+        },
+      "lore": {
+          "ru": "Там, где она прошла, мицелий ещё долго шипел.",
+          "en": "Where she passed, the mycelium kept hissing long afterward."
+        },
+        "criteria": { "minWins": 5 }
+      }
+    ],
+    "kirt": [
+      {
+        "id": "kirt_measured_rhythm",
+        "name": {
+          "ru": "Размеренный ритм",
+          "en": "Measured Rhythm"
+        },
+      "lore": {
+          "ru": "Кирт поймал ритм боя и удержал его до конца.",
+          "en": "Kirt caught the battle rhythm and held it to the end."
+        },
+        "criteria": { "minRounds": 3 }
+      },
+      {
+        "id": "kirt_clean_path",
+        "name": {
+          "ru": "Чистая тропа",
+          "en": "Clean Path"
+        },
+      "lore": {
+          "ru": "Каждый точный удар расчистил путь глубже в кольцо.",
+          "en": "Each clean strike cleared the path deeper into the ring."
+        },
+        "criteria": { "minWinRate": 70, "minRounds": 5 }
+      }
+    ],
+    "morga": [
+      {
+        "id": "morga_first_bloom",
+        "name": {
+          "ru": "Первый цвет",
+          "en": "First Bloom"
+        },
+      "lore": {
+          "ru": "Морга вспыхнула первой, и арена это запомнила.",
+          "en": "Morga bloomed first, and the arena remembered."
+        },
+        "criteria": { "minWins": 1 }
+      },
+      {
+        "id": "morga_flash_trail",
+        "name": {
+          "ru": "След вспышки",
+          "en": "Flash Trail"
+        },
+      "lore": {
+          "ru": "Быстрый след Морги остался на самой границе зрения.",
+          "en": "Morga's flash trail stayed at the very edge of sight."
+        },
+        "criteria": { "minWins": 3, "lastOutcome": "win" }
+      }
+    ],
+    "dalamar": [
+      {
+        "id": "dalamar_ashen_veil",
+        "name": {
+          "ru": "Пепельный покров",
+          "en": "Ashen Veil"
+        },
+      "lore": {
+          "ru": "Даламар оставил на броне врагов серый знак распада.",
+          "en": "Dalamar left a gray mark of decay on enemy armor."
+        },
+        "criteria": { "minRounds": 3 }
+      },
+      {
+        "id": "dalamar_entropy_bone",
+        "name": {
+          "ru": "Кость энтропии",
+          "en": "Bone of Entropy"
+        },
+      "lore": {
+          "ru": "Кольцо дрогнуло, когда энтропия встала на его сторону.",
+          "en": "The ring trembled when entropy took his side."
+        },
+        "criteria": { "minWins": 4 }
+      }
+    ]
+  }
+}

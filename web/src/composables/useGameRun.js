@@ -1,6 +1,7 @@
 import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
+import { normalizeRotation } from '../../../app/shared/bag-shape.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
   const haptics = {
@@ -10,8 +11,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   };
 
   function buildLoadoutPayloadItems() {
-    const isRotatedRowId = (rowId) =>
-      rowId != null && state.rotatedBags.some((b) => b.id === rowId);
+    const rotationForRowId = (rowId) => {
+      const entry = rowId != null ? state.rotatedBags.find((b) => b.id === rowId) : null;
+      return normalizeRotation(entry?.rotation ?? (entry ? 1 : 0));
+    };
     const withId = (entry, id) => (id ? { id, ...entry } : entry);
     const payload = [];
 
@@ -24,7 +27,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         y: bag.anchorY ?? 0,
         width: artifact.width, height: artifact.height,
         active: 1,
-        rotated: isRotatedRowId(bag.id) ? 1 : 0
+        rotated: rotationForRowId(bag.id)
       }, bag.id));
     }
     for (const slot of state.containerItems) {
@@ -34,7 +37,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         artifactId: slot.artifactId, x: -1, y: -1,
         width: artifact.width, height: artifact.height,
         active: 0,
-        rotated: isRotatedRowId(slot.id) ? 1 : 0
+        rotated: rotationForRowId(slot.id)
       }, slot.id));
     }
 
@@ -58,7 +61,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     return payload;
   }
 
-  async function startNewGameRun(mode = 'solo') {
+  async function startNewGameRun(mode = 'solo', options = {}) {
     try {
       state.error = '';
       const data = await apiJson('/api/game-run/start', { method: 'POST', body: JSON.stringify({ mode }) }, state.sessionKey);
@@ -71,7 +74,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       // buckets. Guarantees starter + any future round-forward rows
       // reach the prep screen via one source of truth (§2.5 projection).
       if (refreshBootstrap) await refreshBootstrap();
-      goTo('prep');
+      goTo('prep', {}, { skipTransition: !!options.skipTransition });
     } catch (error) {
       state.error = error.message || 'Could not start game run';
     }

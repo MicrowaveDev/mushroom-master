@@ -7,6 +7,7 @@ const testBackendPort = Number(process.env.PLAYWRIGHT_TEST_BACKEND_PORT || 3321)
 const testFrontendPort = Number(process.env.PLAYWRIGHT_TEST_FRONTEND_PORT || 4374);
 const testBackendOrigin = `http://127.0.0.1:${testBackendPort}`;
 const testFrontendOrigin = `http://127.0.0.1:${testFrontendPort}`;
+const testSqliteStorage = `tmp/playwright-e2e-${testBackendPort}.sqlite`;
 const replayAutoplayMs = process.env.VITE_REPLAY_AUTOPLAY_MS || '320';
 const replayAutoplayFastMs = process.env.VITE_REPLAY_AUTOPLAY_FAST_MS || '180';
 
@@ -44,7 +45,11 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `PORT=${testBackendPort} node app/server/start.js`,
+      // Keep Playwright isolated from the live dev database. The e2e specs
+      // call /api/dev/reset, which deletes/recreates SQLITE_STORAGE; sharing
+      // the default dev sqlite file leaves an already-running dev backend
+      // holding a stale handle and turns later shop buys into SQLITE_READONLY.
+      command: `SQLITE_STORAGE=${testSqliteStorage} PORT=${testBackendPort} node app/server/start.js`,
       port: testBackendPort,
       reuseExistingServer: false,
       cwd: repoRoot

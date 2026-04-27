@@ -41,6 +41,15 @@ test('[Flow A] onboarding screen shows for new player without active mushroom', 
   await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
 });
 
+test('unauthenticated redirect rewrites stale deep-link URL to auth', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+
+  await page.goto(`${baseURL}/characters`, { waitUntil: 'networkidle' });
+
+  await expect(page.locator('.auth-screen')).toBeVisible({ timeout: 5000 });
+  await expect(page).toHaveURL(/\/auth$/);
+});
+
 // --- Flow A Step 3: first-pick auto-start ---
 
 test('[Flow A Step 3] first mushroom pick auto-starts solo run and lands on prep', async ({ page, request, baseURL }) => {
@@ -67,13 +76,24 @@ test('[Flow A Step 3] first mushroom pick auto-starts solo run and lands on prep
   await page.getByRole('button', { name: /start|начать/i }).click();
   await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
 
+  await page.route('**/api/game-run/start', async (route) => {
+    await page.waitForTimeout(250);
+    await route.continue();
+  }, { times: 1 });
+
   // Click the first character card (first-pick branch).
   await page.locator('.character-card').first().click();
+  await expect(page.locator('[data-testid="first-run-starting"]')).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('.character-card')).toHaveCount(0);
+  await page.waitForTimeout(80);
+  await expect(page.locator('[data-testid="first-run-starting"]')).toBeVisible();
+  await expect(page.locator('.character-card')).toHaveCount(0);
 
   // Should land on prep screen directly — NOT home — because wasFirstPick=true
   // auto-starts a solo game run (docs/user-flows.md Flow A Step 3).
   await page.locator('[data-testid="prep-ready"]').waitFor({ timeout: 15000 });
   await expect(page.locator('.prep-screen')).toBeVisible();
+  await expect(page).toHaveURL(/\/game-run\/[^/]+$/);
   // Sanity: round 1 is shown in the HUD.
   await expect(page.locator('.run-round-heading')).toContainText('1');
 });
@@ -100,6 +120,30 @@ test('[Flow A Step 3] re-pick (existing player switching mushroom) goes to home,
   await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
   // No active prep screen should appear.
   await expect(page.locator('.prep-screen')).toHaveCount(0);
+});
+
+test('clicking the active mushroom on home does not re-save or flash routes', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1063, username: 'active_home_click', name: 'Active Home Click' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  let activeCharacterWrites = 0;
+  await page.route('**/api/active-character', async (route) => {
+    if (route.request().method() === 'PUT') activeCharacterWrites += 1;
+    await route.continue();
+  });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.home')).toBeVisible({ timeout: 5000 });
+
+  await page.locator('.home-mushroom-row--active').click();
+
+  await expect(page.locator('.home')).toBeVisible();
+  await expect(page.locator('[data-testid="first-run-starting"]')).toHaveCount(0);
+  await expect(page.locator('.prep-screen')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/home$/);
+  expect(activeCharacterWrites).toBe(0);
 });
 
 // --- Req 1-H: Daily battle limit ---
@@ -267,6 +311,16 @@ test('[Req 10-A, 13-C] post-Ready lands on replay with rewards, Continue label, 
   // [Req 13-C] During active run: button label is "Continue" / "Продолжить"
   const btnText = await replayBtn.textContent();
   expect(btnText.trim()).toMatch(/continue|продолжить/i);
+
+  const sheetToggle = page.locator('.replay-sheet-toggle');
+  const sheetBefore = await page.locator('.replay-result-sheet').boundingBox();
+  await expect(sheetToggle).toHaveAttribute('aria-expanded', 'true');
+  await sheetToggle.click();
+  await expect(sheetToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.replay-result-overlay')).toHaveClass(/replay-result-overlay--collapsed/);
+  await page.waitForTimeout(350);
+  const sheetAfter = await page.locator('.replay-result-sheet').boundingBox();
+  expect(sheetAfter.y).toBeGreaterThan(sheetBefore.y + 100);
 
   // [Req 10-A] Verify rating changed after the round (via API)
   const bootAfter = await api(request, player.sessionKey, '/api/bootstrap');

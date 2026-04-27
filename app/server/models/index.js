@@ -25,6 +25,9 @@ import defineGameRound from './GameRound.js';
 import defineGameRunLoadoutItem from './GameRunLoadoutItem.js';
 import defineGameRunRefund from './GameRunRefund.js';
 import defineGameRunShopState from './GameRunShopState.js';
+import definePlayerSeasonProgress from './PlayerSeasonProgress.js';
+import definePlayerSeasonRun from './PlayerSeasonRun.js';
+import definePlayerAchievement from './PlayerAchievement.js';
 
 export function initModels(sequelize) {
   const Player = definePlayer(sequelize);
@@ -48,6 +51,9 @@ export function initModels(sequelize) {
   const GameRunLoadoutItem = defineGameRunLoadoutItem(sequelize);
   const GameRunRefund = defineGameRunRefund(sequelize);
   const GameRunShopState = defineGameRunShopState(sequelize);
+  const PlayerSeasonProgress = definePlayerSeasonProgress(sequelize);
+  const PlayerSeasonRun = definePlayerSeasonRun(sequelize);
+  const PlayerAchievement = definePlayerAchievement(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
   Player.hasMany(Session, { foreignKey: 'player_id' });
@@ -56,6 +62,9 @@ export function initModels(sequelize) {
   Player.hasMany(BattleRequest, { foreignKey: 'player_id' });
   Player.hasMany(BattleReward, { foreignKey: 'player_id' });
   Player.hasMany(GameRunPlayer, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerSeasonProgress, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerSeasonRun, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerAchievement, { foreignKey: 'player_id' });
 
   Battle.hasMany(BattleSnapshot, { foreignKey: 'battle_id' });
   Battle.hasMany(BattleEvent, { foreignKey: 'battle_id' });
@@ -69,6 +78,7 @@ export function initModels(sequelize) {
 
   GameRun.hasMany(GameRunShopState, { foreignKey: 'game_run_id' });
   GameRun.hasMany(GameRunRefund, { foreignKey: 'game_run_id' });
+  GameRun.hasMany(PlayerSeasonRun, { foreignKey: 'game_run_id' });
   // GameRunLoadoutItem intentionally has no FK to GameRun so synthetic
   // `ghost:bot:<hash>` rows can live in the same table without a parent run.
 
@@ -93,6 +103,9 @@ export function initModels(sequelize) {
     GameRound,
     GameRunLoadoutItem,
     GameRunRefund,
-    GameRunShopState
+    GameRunShopState,
+    PlayerSeasonProgress,
+    PlayerSeasonRun,
+    PlayerAchievement
   };
 }

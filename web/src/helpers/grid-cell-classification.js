@@ -63,3 +63,25 @@ export function classifyCell(bagRows, cx, cy, baseInv) {
   if (entry.enabledCells?.includes(cx)) return 'bag-slot';
   return 'bag-box';
 }
+
+/**
+ * Return every unified-grid cell covered by the rendered artifacts. The
+ * board uses this to avoid painting coloured bag slots through transparent
+ * corners/gaps of a placed artifact.
+ */
+export function occupiedCellKeys(items = []) {
+  const occupied = new Set();
+  for (const item of items) {
+    const width = Number(item.width) || 1;
+    const height = Number(item.height) || 1;
+    const x = Number(item.x);
+    const y = Number(item.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    for (let dx = 0; dx < width; dx += 1) {
+      for (let dy = 0; dy < height; dy += 1) {
+        occupied.add(`${x + dx}:${y + dy}`);
+      }
+    }
+  }
+  return occupied;
+}

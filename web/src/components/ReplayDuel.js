@@ -10,6 +10,7 @@ export const ReplayDuel = {
     renderArtifactFigure: { type: Function, default: null },
     getArtifact: { type: Function, default: null },
     actingSide: { type: String, default: '' },
+    activeEvent: { type: Object, default: null },
     statusText: { type: String, default: '' },
     replaySpeed: { type: Number, default: 1 }
   },
@@ -25,6 +26,15 @@ export const ReplayDuel = {
     },
     rightGridProps() {
       return this.gridPropsFor(this.rightFighter);
+    },
+    effectText() {
+      const event = this.activeEvent;
+      if (!event || event.type !== 'action') return '';
+      const damage = Number(event.damage);
+      const parts = [];
+      if (Number.isFinite(damage) && damage > 0) parts.push(`-${damage}`);
+      if (event.stunned) parts.push('STUN');
+      return parts.join(' ');
     }
   },
   methods: {
@@ -35,6 +45,15 @@ export const ReplayDuel = {
         items.filter((i) => this.getArtifact(i.artifactId)?.family === 'bag').map((i) => i.artifactId)
       );
       return prepareGridProps(items, bagIds, this.getArtifact);
+    },
+    fighterEffectClass(side) {
+      const event = this.activeEvent;
+      const classes = [];
+      if (this.actingSide === side) classes.push('fighter--acting-now');
+      if (event?.type === 'action' && event.targetSide === side) classes.push('fighter--hit');
+      if (event?.type === 'action' && event.targetSide === side && event.stunned) classes.push('fighter--stunned');
+      if (event?.type === 'skip' && event.actorSide === side) classes.push('fighter--skip');
+      return classes.join(' ');
     }
   },
   template: `
@@ -49,6 +68,7 @@ export const ReplayDuel = {
           :get-artifact="getArtifact"
           :acting="actingSide === 'left'"
           :bubble-style="leftFighter.bubbleStyle"
+          :extra-class="fighterEffectClass('left')"
           :hide-loadout="true"
         />
         <fighter-card
@@ -60,6 +80,7 @@ export const ReplayDuel = {
           :get-artifact="getArtifact"
           :acting="actingSide === 'right'"
           :bubble-style="rightFighter.bubbleStyle"
+          :extra-class="fighterEffectClass('right')"
           :hide-loadout="true"
         />
       </div>
@@ -78,6 +99,7 @@ export const ReplayDuel = {
           />
         </div>
         <div class="duel-loadout-center">
+          <span v-if="effectText" class="duel-effect-pop" :class="{ 'duel-effect-pop--stun': activeEvent?.stunned }">{{ effectText }}</span>
           <p v-if="statusText" class="duel-loadout-status">{{ statusText }}</p>
           <svg v-else class="duel-loadout-icon" viewBox="0 0 64 64" aria-hidden="true">
             <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />

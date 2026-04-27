@@ -7,7 +7,7 @@
 //   - bag membership is derived from cell overlap, never stored
 
 import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
-import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
+import { getEffectiveShape, normalizeRotation } from '../../../app/shared/bag-shape.js';
 
 export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
   const bagsSet = bagArtifactIds instanceof Set
@@ -36,7 +36,8 @@ export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
       } else {
         containerItems.push({ id: item.id, artifactId: item.artifactId });
       }
-      if (item.rotated) rotatedBags.push({ id: item.id, artifactId: item.artifactId });
+      const rotation = normalizeRotation(item.rotated);
+      if (rotation) rotatedBags.push({ id: item.id, artifactId: item.artifactId, rotation });
       if (item.freshPurchase) freshPurchases.push(item.artifactId);
       continue;
     }
@@ -74,15 +75,14 @@ export function prepareGridProps(loadoutItems, bagArtifactIds, getArtifact) {
   const lookupArtifact = typeof getArtifact === 'function'
     ? getArtifact
     : (getArtifact instanceof Map ? (id) => getArtifact.get(id) : () => null);
-  const rotatedSet = new Set(projected.rotatedBags.map((b) => b.id));
+  const rotationById = new Map(projected.rotatedBags.map((b) => [b.id, normalizeRotation(b.rotation ?? 1)]));
 
   const rows = [];
   let maxBottom = BAG_ROWS;
   for (const activeBag of projected.activeBags) {
     const bag = lookupArtifact(activeBag.artifactId);
     if (!bag) continue;
-    const rotated = rotatedSet.has(activeBag.id);
-    const shape = getEffectiveShape(bag, rotated);
+    const shape = getEffectiveShape(bag, rotationById.get(activeBag.id) ?? 0);
     const anchorX = activeBag.anchorX ?? 0;
     const anchorY = activeBag.anchorY ?? 0;
     const bottom = anchorY + shape.length;

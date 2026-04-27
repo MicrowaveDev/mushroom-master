@@ -3,6 +3,14 @@ import { projectLoadoutItems } from './loadout-projection.js';
 import { useTelegramWebApp } from './useTelegramWebApp.js';
 
 export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
+  function navigate(screen, extra = {}) {
+    if (typeof goTo === 'function') {
+      goTo(screen, extra);
+    } else {
+      state.screen = screen;
+    }
+  }
+
   function applyTelegramTheme() {
     telegram.applyTelegramTheme();
     telegram.syncViewportVars();
@@ -15,6 +23,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.appConfig = { localAiLabEnabled: false, localDevAuthEnabled: false };
     }
     if (!state.sessionKey) {
+      navigate('auth');
       state.loading = false;
       return;
     }
@@ -84,17 +93,17 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.pendingReconnectBattleId = missedRoundResult ? lastRound.battleId : null;
 
       if (!state.bootstrap.activeMushroomId) {
-        state.screen = 'onboarding';
+        navigate('onboarding');
       } else if (urlWantsGameRun && state.gameRun && state.gameRun.id === urlParams.gameRunId) {
-        state.screen = 'prep';
+        navigate('prep');
       } else if (urlWantsGameRun && !state.gameRun) {
         // Deep link to a game run that's no longer active — drop to home.
-        state.screen = 'home';
+        navigate('home');
       } else if (missedRoundResult) {
         // [Req 12-B] Will be routed to replay by main.js after loadReplay is available
-        state.screen = 'prep';
+        navigate('prep');
       } else if (isReconnecting) {
-        state.screen = state.gameRun ? 'prep' : 'home';
+        navigate(state.gameRun ? 'prep' : 'home');
       }
     } catch (error) {
       // 401 "Authentication required" is an expected state (expired/invalid
@@ -107,9 +116,9 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.leaderboard = [];
       state.wikiHome = null;
       state.builderItems = [];
-      state.screen = 'auth';
       localStorage.removeItem('sessionKey');
       state.sessionKey = '';
+      navigate('auth');
     } finally {
       state.loading = false;
       state.bootstrapReady = true;
@@ -180,7 +189,6 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       const data = await apiJson('/api/dev/session', { method: 'POST', body: JSON.stringify({}) });
       state.sessionKey = data.sessionKey;
       localStorage.setItem('sessionKey', data.sessionKey);
-      state.screen = 'home';
       await refreshBootstrap();
     } catch (error) {
       state.error = error.message || 'Dev login failed';
@@ -201,6 +209,10 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     try {
       const wasFirstPick = !state.bootstrap?.activeMushroomId;
       await apiJson('/api/active-character', { method: 'PUT', body: JSON.stringify({ mushroomId }) }, state.sessionKey);
+      // First pick chains immediately into startNewGameRun(). A full bootstrap
+      // here briefly re-renders the character list between the click and the
+      // round-1 prep redirect, which reads as a route flicker.
+      if (wasFirstPick) return { wasFirstPick };
       await refreshBootstrap();
       return { wasFirstPick };
     } catch (error) {

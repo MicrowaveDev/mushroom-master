@@ -95,11 +95,11 @@ test('[projection] freshPurchase items get their artifactId in freshPurchases', 
 
 test('[projection] duplicate bags preserve row identity and rotation state', () => {
   const result = projectLoadoutItems([
-    row({ id: 'rot_one', artifactId: 'moss_pouch', x: 3, y: 0, active: true, rotated: true }),
+    row({ id: 'rot_one', artifactId: 'moss_pouch', x: 3, y: 0, active: true, rotated: 2 }),
     row({ id: 'plain_one', artifactId: 'moss_pouch', x: 3, y: 1, active: true, rotated: false })
   ], BAG_IDS, getArtifact);
   assert.equal(result.activeBags.length, 2);
-  assert.deepEqual(result.rotatedBags, [{ id: 'rot_one', artifactId: 'moss_pouch' }]);
+  assert.deepEqual(result.rotatedBags, [{ id: 'rot_one', artifactId: 'moss_pouch', rotation: 2 }]);
 });
 
 test('[grid-props] returns items + bagRows + totalRows for flat loadout', () => {

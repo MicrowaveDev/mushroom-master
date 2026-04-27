@@ -1,5 +1,8 @@
 import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
-import { bagRowEntryFor as bagRowEntryForLookup } from '../helpers/grid-cell-classification.js';
+import {
+  bagRowEntryFor as bagRowEntryForLookup,
+  occupiedCellKeys
+} from '../helpers/grid-cell-classification.js';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
 export const ArtifactGridBoard = {
@@ -47,6 +50,9 @@ export const ArtifactGridBoard = {
     totalCells() {
       return this.gridColumns * this.gridRows;
     },
+    occupiedCells() {
+      return occupiedCellKeys(this.items);
+    },
     gridStyle() {
       return {
         gridTemplateColumns: `repeat(${this.gridColumns}, var(--artifact-cell-size, 50px))`,
@@ -76,7 +82,7 @@ export const ArtifactGridBoard = {
       };
     },
     isBaseInventoryCell(cx, cy) {
-      return false;
+      return this.isInventoryVariant && cx >= 0 && cx < 3 && cy >= 0 && cy < 3;
     },
     bagRowEntryFor(cx, cy) {
       // Delegates to helpers/grid-cell-classification.bagRowEntryFor so the
@@ -95,6 +101,9 @@ export const ArtifactGridBoard = {
       const bag = this.bagRowEntryFor(cx, cy);
       return !!bag && !bag.enabledCells?.includes(cx);
     },
+    isOccupiedCell(cx, cy) {
+      return this.occupiedCells.has(`${cx}:${cy}`);
+    },
     backgroundClass() {
       return {
         'artifact-grid-background': true,
@@ -111,8 +120,9 @@ export const ArtifactGridBoard = {
       const cx = this.cellX(index);
       const cy = this.cellY(index);
       const baseInv = this.isBaseInventoryCell(cx, cy);
-      const bagSlot = this.isBagSlotCell(cx, cy);
+      const bagSlot = !baseInv && this.isBagSlotCell(cx, cy);
       const bagBox = !bagSlot && this.isBagBoxCell(cx, cy);
+      const occupied = this.isOccupiedCell(cx, cy);
       // "Empty" only applies in the inventory variant — a cell outside the
       // base inventory and outside every bag's footprint is a bag-area drop
       // target (visually de-emphasised; only chip drag can re-anchor onto it).
@@ -124,6 +134,7 @@ export const ArtifactGridBoard = {
         'artifact-grid-cell--drop-target': this.droppable && this.hoverCellIndex === index,
         'artifact-grid-cell--base-inv': baseInv,
         'artifact-grid-cell--bag': bagSlot,
+        'artifact-grid-cell--occupied': occupied,
         'artifact-grid-cell--bag-disabled': bagBox,
         'artifact-grid-cell--bag-empty': empty
       };
@@ -131,7 +142,7 @@ export const ArtifactGridBoard = {
     cellStyle(index) {
       const cx = this.cellX(index);
       const cy = this.cellY(index);
-      if (!this.isBagSlotCell(cx, cy)) return {};
+      if (this.isBaseInventoryCell(cx, cy) || !this.isBagSlotCell(cx, cy)) return {};
       const bag = this.bagRowEntryFor(cx, cy);
       return {
         '--bag-color': bag.color,

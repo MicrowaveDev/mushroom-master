@@ -4,6 +4,8 @@ import {
   startGameRun,
   resolveRound,
   abandonGameRun,
+  applyRunLoadoutPlacements,
+  buyRunShopItem,
   getActiveGameRun,
   getPlayerState,
   refreshRunShop,
@@ -22,11 +24,23 @@ import {
   mushrooms,
   characterShopItems,
   getEligibleCharacterItems,
+  getArtifactById,
+  getStarterPreset,
   SHOP_REFRESH_CHEAP_LIMIT,
   BAG_PITY_THRESHOLD
 } from '../../app/server/game-data.js';
 import { createRng } from '../../app/server/lib/utils.js';
-import { freshDb, createPlayer, seedRunLoadout, getShopOffer, earnMycelium, bootRun } from './helpers.js';
+import {
+  freshDb,
+  createPlayer,
+  seedRunLoadout,
+  getShopOffer,
+  forceShopOffer,
+  findCheapArtifact,
+  earnMycelium,
+  bootRun
+} from './helpers.js';
+import { query } from '../../app/server/db.js';
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -40,6 +54,44 @@ async function setupPlayerWithRun(overrides = {}) {
   // Round 1 starts empty — seed the deterministic test loadout directly.
   await seedRunLoadout(session.player.id, run.id, loadout);
   return { session, run, playerId: session.player.id };
+}
+
+async function readRoundLoadoutRows(gameRunId, playerId, roundNumber) {
+  const rows = await query(
+    `SELECT artifact_id, x, y, width, height, active, rotated, purchased_round, fresh_purchase
+     FROM game_run_loadout_items
+     WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3
+     ORDER BY sort_order ASC, id ASC`,
+    [gameRunId, playerId, roundNumber]
+  );
+  return rows.rows;
+}
+
+function rowSignature(row) {
+  return [
+    row.artifact_id,
+    row.x,
+    row.y,
+    row.width,
+    row.height,
+    row.active,
+    row.rotated,
+    row.purchased_round
+  ].join(':');
+}
+
+function placementPayload(row, override = {}) {
+  return {
+    id: row.id,
+    artifactId: row.artifactId,
+    x: row.x,
+    y: row.y,
+    width: row.width,
+    height: row.height,
+    active: row.active,
+    rotated: row.rotated,
+    ...override
+  };
 }
 
 test('[Req 1-D, 9-A] resolving a round updates wins or losses and pays rewards', async () => {
@@ -102,6 +154,86 @@ test('[Req 1-E] elimination at 5 losses ends the run', async () => {
   if (result.status === 'completed') {
     assert.ok(result.endReason === 'max_losses' || result.endReason === 'max_rounds');
   }
+});
+
+test('[Req 1-A, 1-E, 11-A] solo run reaches max rounds while artifact rows update and copy forward', async () => {
+  await freshDb();
+  const { playerId, run } = await bootRun({
+    telegramId: 7109,
+    username: 'full_round_artifacts'
+  });
+  const cheap = findCheapArtifact(['spore_lash', 'spore_needle']);
+  assert.ok(cheap, 'precondition: need a cheap 1x1 artifact to buy every round');
+
+  // This scenario is about all 9 round transitions, not elimination balance.
+  await query(
+    `UPDATE game_run_players SET lives_remaining = 99 WHERE game_run_id = $1 AND player_id = $2`,
+    [run.id, playerId]
+  );
+
+  const placementSlots = [
+    [2, 0],
+    [0, 1],
+    [1, 1],
+    [2, 1],
+    [0, 2],
+    [1, 2],
+    [2, 2]
+  ];
+
+  let lastResult = null;
+  for (let round = 1; round <= 9; round += 1) {
+    await forceShopOffer(run.id, playerId, round, [cheap.id]);
+    const bought = await buyRunShopItem(playerId, run.id, cheap.id);
+
+    const slot = placementSlots[round - 1];
+    if (slot) {
+      const active = await getActiveGameRun(playerId);
+      const payload = active.loadoutItems.map((row) =>
+        placementPayload(
+          row,
+          row.id === bought.id ? { x: slot[0], y: slot[1] } : {}
+        )
+      );
+      await applyRunLoadoutPlacements(playerId, run.id, payload);
+    }
+
+    const beforeResolve = await readRoundLoadoutRows(run.id, playerId, round);
+    assert.equal(
+      beforeResolve.filter((row) => row.artifact_id === cheap.id).length,
+      round,
+      `round ${round}: bought artifact count should increment before resolve`
+    );
+    assert.ok(
+      beforeResolve.some((row) => row.artifact_id === cheap.id && row.purchased_round === round && row.fresh_purchase),
+      `round ${round}: newly bought artifact should be marked fresh in the purchase round`
+    );
+
+    lastResult = await resolveRound(playerId, run.id);
+
+    if (round < 9) {
+      assert.equal(lastResult.status, 'active', `round ${round}: run should continue`);
+      assert.equal(lastResult.currentRound, round + 1, `round ${round}: currentRound should advance`);
+      const nextRound = await readRoundLoadoutRows(run.id, playerId, round + 1);
+      assert.deepEqual(
+        nextRound.map(rowSignature),
+        beforeResolve.map(rowSignature),
+        `round ${round}: artifact rows should copy forward into round ${round + 1}`
+      );
+      assert.ok(
+        nextRound.every((row) => !row.fresh_purchase),
+        `round ${round}: copied artifacts should not remain fresh in round ${round + 1}`
+      );
+      assert.ok(await getShopOffer(run.id, playerId, round + 1), `round ${round + 1}: shop offer should be created`);
+    }
+  }
+
+  assert.equal(lastResult.status, 'completed');
+  assert.equal(lastResult.endReason, 'max_rounds');
+  assert.equal(lastResult.player.completedRounds, 9);
+
+  const round10 = await readRoundLoadoutRows(run.id, playerId, 10);
+  assert.equal(round10.length, 0, 'no loadout should be copied past the final round');
 });
 
 test('[Req 1-D] no draw outcome in runs — forced to loss', async () => {
@@ -231,8 +363,16 @@ test('[Req 1-D] player loses exactly one life per round loss (not per combat ste
 });
 
 async function getLastGhostCost(playerId) {
+  const { getArtifactPrice } = await import('../../app/server/game-data.js');
+  const ghostSnapshot = await getLastGhostSnapshot(playerId);
+  return ghostSnapshot.loadout.items.reduce((sum, item) => {
+    const a = getArtifactById(item.artifactId);
+    return sum + (a ? getArtifactPrice(a) : 0);
+  }, 0);
+}
+
+async function getLastGhostSnapshot(playerId) {
   const { query } = await import('../../app/server/db.js');
-  const { getArtifactById, getArtifactPrice } = await import('../../app/server/game-data.js');
   const battlesResult = await query(
     `SELECT id FROM battles WHERE initiator_player_id = $1 ORDER BY created_at DESC LIMIT 1`,
     [playerId]
@@ -243,11 +383,7 @@ async function getLastGhostCost(playerId) {
     [battleId]
   );
   const right = snapshotsResult.rows.find((r) => r.side === 'right');
-  const ghostLoadout = JSON.parse(right.payload_json).loadout;
-  return ghostLoadout.items.reduce((sum, item) => {
-    const a = getArtifactById(item.artifactId);
-    return sum + (a ? getArtifactPrice(a) : 0);
-  }, 0);
+  return JSON.parse(right.payload_json);
 }
 
 test('[Req 7-D] round 1 ghost budget has grace factor (≤ 70% of player spend)', async () => {
@@ -262,6 +398,24 @@ test('[Req 7-D] round 1 ghost budget has grace factor (≤ 70% of player spend)'
   const ghostCost = await getLastGhostCost(playerId);
   const maxPresetCost = 2;
   assert.ok(ghostCost <= 3 + maxPresetCost, `Round 1 ghost cost ${ghostCost} should be ≤ ${3 + maxPresetCost} (shop budget floored + preset)`);
+});
+
+test('[Req 7-C, 7-E] round 1 ghost snapshot includes a bought combat artifact beyond preset', async () => {
+  await freshDb();
+  const { playerId, run } = await setupPlayerWithRun();
+  await resolveRound(playerId, run.id);
+
+  const ghostSnapshot = await getLastGhostSnapshot(playerId);
+  const presetCombatCount = getStarterPreset(ghostSnapshot.mushroomId).length;
+  const combatItems = ghostSnapshot.loadout.items.filter((item) => {
+    const artifact = getArtifactById(item.artifactId);
+    return artifact.family !== 'bag';
+  });
+
+  assert.ok(
+    combatItems.length > presetCombatCount,
+    `round 1 ghost ${ghostSnapshot.mushroomId} should have at least one bought combat artifact beyond preset`
+  );
 });
 
 test('[Req 7-D] round 2 ghost budget has lighter grace factor (≤ 85%)', async () => {

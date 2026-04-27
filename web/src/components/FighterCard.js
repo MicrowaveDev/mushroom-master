@@ -22,6 +22,13 @@ export const FighterCard = {
     rootClass() {
       return ['fighter', this.extraClass, { acting: this.acting }];
     },
+    hpPercent() {
+      const match = String(this.healthText || '').match(/(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
+      if (!match) return null;
+      const current = Math.max(0, Number(match[1]));
+      const max = Math.max(1, Number(match[2]));
+      return Math.max(0, Math.min(100, Math.round((current / max) * 100)));
+    },
     // Run snapshot loadout items through the same projection the prep
     // screen uses so the battle/replay grid renders bag rows, bagged-item
     // virtual coords, and bag colour masks identically. Without this, raw
@@ -48,7 +55,10 @@ export const FighterCard = {
           />
           <div class="fighter-name-overlay">
             <h3 class="fighter-name">{{ nameText || mushroom?.name?.ru || mushroom?.name?.en || mushroom?.id }}</h3>
-            <span v-if="healthText" class="fighter-hp">{{ healthText }}</span>
+            <div v-if="healthText" class="fighter-hp-wrap">
+              <span class="fighter-hp">{{ healthText }}</span>
+              <span v-if="hpPercent !== null" class="fighter-hp-meter" aria-hidden="true"><span :style="{ width: hpPercent + '%' }"></span></span>
+            </div>
           </div>
         </div>
       </div>

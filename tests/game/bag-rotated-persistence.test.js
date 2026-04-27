@@ -50,14 +50,14 @@ test('[bag-rotated] freshly bought bag lands with rotated=0', async () => {
   assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 0);
 });
 
-test('[bag-rotated] applyRunLoadoutPlacements toggles rotated through a bag entry', async () => {
+test('[bag-rotated] applyRunLoadoutPlacements stores quarter-turn rotation through a bag entry', async () => {
   await freshDb();
   const { playerId, run } = await bootRun({ telegramId: 7002 });
   await forceShopOffer(run.id, playerId, 1, ['moss_pouch']);
   const bought = await buyRunShopItem(playerId, run.id, 'moss_pouch');
   const starters = starterEntries(await getStarterRows(playerId));
 
-  // Flip rotated ON.
+  // Store 180-degree rotation.
   await applyRunLoadoutPlacements(playerId, run.id, [
     ...starters,
     {
@@ -68,10 +68,10 @@ test('[bag-rotated] applyRunLoadoutPlacements toggles rotated through a bag entr
       width: 1,
       height: 2,
       active: 1,
-      rotated: 1
+      rotated: 2
     }
   ]);
-  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 1);
+  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 2);
 
   // Flip rotated OFF — the client must explicitly send rotated:0.
   await applyRunLoadoutPlacements(playerId, run.id, [
@@ -90,7 +90,7 @@ test('[bag-rotated] applyRunLoadoutPlacements toggles rotated through a bag entr
   assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 0);
 });
 
-test('[bag-rotated] round copy-forward preserves the rotated flag', async () => {
+test('[bag-rotated] round copy-forward preserves the rotation state', async () => {
   await freshDb();
   const { playerId, run } = await bootRun({ telegramId: 7003 });
   await forceShopOffer(run.id, playerId, 1, ['moss_pouch']);
@@ -106,17 +106,17 @@ test('[bag-rotated] round copy-forward preserves the rotated flag', async () => 
       width: 1,
       height: 2,
       active: 1,
-      rotated: 1
+      rotated: 3
     }
   ]);
-  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 1);
+  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 3);
 
   await resolveRound(playerId, run.id);
 
-  // Round 1 stays frozen as history — rotated=1 on that row.
-  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 1);
-  // Round 2 must inherit rotated=1 from the copy-forward.
-  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 2), 1);
+  // Round 1 stays frozen as history — rotated=3 on that row.
+  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 1), 3);
+  // Round 2 must inherit rotated=3 from the copy-forward.
+  assert.equal(await readBagRotated(run.id, playerId, 'moss_pouch', 2), 3);
 });
 
 test('[bag-rotated] getActiveGameRun exposes rotated in loadoutItems', async () => {
@@ -126,7 +126,7 @@ test('[bag-rotated] getActiveGameRun exposes rotated in loadoutItems', async () 
   const bought = await buyRunShopItem(playerId, run.id, 'moss_pouch');
 
   const before = await getActiveGameRun(playerId);
-  assert.equal(before.loadoutItems.find((i) => i.id === bought.id).rotated, false);
+  assert.equal(before.loadoutItems.find((i) => i.id === bought.id).rotated, 0);
 
   const starters = starterEntries(before.loadoutItems.filter((i) => i.x >= 0 && i.y >= 0 && !i.bagId));
   await applyRunLoadoutPlacements(playerId, run.id, [
@@ -139,12 +139,12 @@ test('[bag-rotated] getActiveGameRun exposes rotated in loadoutItems', async () 
       width: 1,
       height: 2,
       active: 1,
-      rotated: 1
+      rotated: 2
     }
   ]);
 
   const after = await getActiveGameRun(playerId);
-  assert.equal(after.loadoutItems.find((i) => i.id === bought.id).rotated, true);
+  assert.equal(after.loadoutItems.find((i) => i.id === bought.id).rotated, 2);
 });
 
 test('[bag-rotated] non-bag rows stay rotated=0 even if the client lies', async () => {

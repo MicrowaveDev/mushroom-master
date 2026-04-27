@@ -13,6 +13,7 @@ import {
   parseJson
 } from '../lib/utils.js';
 import { validateLoadoutItems } from './loadout-utils.js';
+import { normalizeRotation } from '../../shared/bag-shape.js';
 
 export async function getActiveSnapshot(client, playerId) {
   // Active mushroom is always read from player_active_character.
@@ -57,7 +58,7 @@ export async function getActiveSnapshot(client, playerId) {
     height: row.height,
     sortOrder: row.sort_order,
     active: !!row.active,
-    rotated: !!row.rotated
+    rotated: normalizeRotation(row.rotated)
   }));
   // Budget ceiling = all coin income the player has seen so far + the free
   // starter preset gift. Preset items live in the loadout and are summed by

@@ -439,7 +439,7 @@ Recommended v1 model:
 - every player starts at `1000 rating`
 - only battles where both players actively participate should affect both sides' rating and recorded competitive stats
 - leaderboard scope is global-only in v1
-- no season resets or seasonal reward tracks in v1
+- no season resets or paid seasonal reward tracks in v1; the run-complete screen may show a cosmetic persisted Bronze/Silver/Gold/Diamond season level derived from completed runs
 
 Formula:
 
@@ -1175,7 +1175,7 @@ UI:
 
 V1 note:
 
-- do not show season record or seasonal progression in v1
+- show the cosmetic season level on run-complete in v1; do not show a broader season record or reward track yet
 
 #### 19. Inbox / Notifications
 

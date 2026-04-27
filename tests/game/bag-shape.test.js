@@ -16,6 +16,7 @@ import {
   getEffectiveShape,
   getEffectiveDimensions,
   isCellInShape,
+  normalizeRotation,
   rotateShape,
   shapeArea
 } from '../../app/shared/bag-shape.js';
@@ -60,18 +61,44 @@ test('[bag-shape] rotateShape rotates 90° clockwise, swapping cols and rows', (
   ]);
 });
 
-test('[bag-shape] getEffectiveShape applies the rotated flag', () => {
+test('[bag-shape] getEffectiveShape applies four quarter-turn states', () => {
   const tetT = getArtifactById('trefoil_sack');
-  const unrotated = getEffectiveShape(tetT, false);
-  const rotated = getEffectiveShape(tetT, true);
-  assert.equal(unrotated.length, 2, 'T canonical = 2 rows × 3 cols');
-  assert.equal(rotated.length, 3, 'T rotated CW = 3 rows × 2 cols');
+  assert.deepEqual(getEffectiveShape(tetT, 0), [
+    [1, 1, 1],
+    [0, 1, 0]
+  ]);
+  assert.deepEqual(getEffectiveShape(tetT, 1), [
+    [0, 1],
+    [1, 1],
+    [0, 1]
+  ]);
+  assert.deepEqual(getEffectiveShape(tetT, 2), [
+    [0, 1, 0],
+    [1, 1, 1]
+  ]);
+  assert.deepEqual(getEffectiveShape(tetT, 3), [
+    [1, 0],
+    [1, 1],
+    [1, 0]
+  ]);
+  assert.deepEqual(getEffectiveShape(tetT, true), getEffectiveShape(tetT, 1), 'legacy boolean true still means one turn');
 });
 
 test('[bag-shape] getEffectiveDimensions reports cols and rows for both orientations', () => {
   const tetL = getArtifactById('birchbark_hook');
-  assert.deepEqual(getEffectiveDimensions(tetL, false), { cols: 3, rows: 2 });
-  assert.deepEqual(getEffectiveDimensions(tetL, true), { cols: 2, rows: 3 });
+  assert.deepEqual(getEffectiveDimensions(tetL, 0), { cols: 3, rows: 2 });
+  assert.deepEqual(getEffectiveDimensions(tetL, 1), { cols: 2, rows: 3 });
+  assert.deepEqual(getEffectiveDimensions(tetL, 2), { cols: 3, rows: 2 });
+  assert.deepEqual(getEffectiveDimensions(tetL, 3), { cols: 2, rows: 3 });
+});
+
+test('[bag-shape] normalizeRotation preserves 0..3 and wraps legacy values', () => {
+  assert.equal(normalizeRotation(false), 0);
+  assert.equal(normalizeRotation(true), 1);
+  assert.equal(normalizeRotation(2), 2);
+  assert.equal(normalizeRotation(3), 3);
+  assert.equal(normalizeRotation(4), 0);
+  assert.equal(normalizeRotation(-1), 3);
 });
 
 test('[bag-shape] isCellInShape true for filled cells, false for empty / OOB', () => {
@@ -161,6 +188,26 @@ test('[bag-shape] validateItemCoverage respects the shape after a bag is rotated
     () => validateItemCoverage([
       { id: 'tbag', artifactId: 'trefoil_sack', x: 0, y: 0, width: 3, height: 2, rotated: 1, active: true },
       // (0, 0) is now a non-slot cell in the rotated mask.
+      { id: 'oops', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+    ]),
+    /uncovered cell/
+  );
+});
+
+test('[bag-shape] validateItemCoverage respects 180-degree bag rotation', () => {
+  // Birchbark hook canonical:
+  //   ###
+  //   #..
+  // rotated 180:
+  //   ..#
+  //   ###
+  validateItemCoverage([
+    { id: 'lbag', artifactId: 'birchbark_hook', x: 0, y: 0, width: 3, height: 2, rotated: 2, active: true },
+    { id: 'a', artifactId: 'spore_needle', x: 2, y: 0, width: 1, height: 1 }
+  ]);
+  assert.throws(
+    () => validateItemCoverage([
+      { id: 'lbag', artifactId: 'birchbark_hook', x: 0, y: 0, width: 3, height: 2, rotated: 2, active: true },
       { id: 'oops', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
     ]),
     /uncovered cell/

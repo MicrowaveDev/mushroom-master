@@ -49,6 +49,7 @@ import {
   insertLoadoutItem,
   readCurrentRoundItems
 } from './game-run-loadout.js';
+import { awardRunSeasonProgress } from './season-service.js';
 
 // In test environments, set REWARD_MULTIPLIER=N to scale spore+mycelium rewards
 // so unlocks can be reached after a handful of rounds instead of hundreds.
@@ -270,6 +271,30 @@ async function payCompletionBonus(client, playerId, mushroomId, wins) {
   return bonus;
 }
 
+async function awardCompletedRunRecap(client, {
+  playerId,
+  gameRunId,
+  mushroomId,
+  endReason,
+  lastOutcome = null,
+  completedRounds,
+  wins,
+  losses,
+  livesRemaining
+}) {
+  return awardRunSeasonProgress(client, {
+    playerId,
+    gameRunId,
+    mushroomId,
+    endReason,
+    lastOutcome,
+    completedRounds,
+    wins,
+    losses,
+    livesRemaining
+  });
+}
+
 async function applyBatchElo(client, playerId, opponentRating, wins, losses) {
   if (wins + losses === 0) return null;
   const playerResult = await client.query('SELECT rating, rated_battle_count FROM players WHERE id = $1', [playerId]);
@@ -307,6 +332,7 @@ export async function abandonGameRun(playerId, gameRunId) {
       throw new Error('Player is not part of this game run');
     }
 
+    const seasonResults = {};
     for (const grp of allPlayersResult.rows) {
       if (!grp.is_active) continue;
 
@@ -316,6 +342,16 @@ export async function abandonGameRun(playerId, gameRunId) {
       );
       const mushroomId = activeChar.rowCount ? activeChar.rows[0].mushroom_id : null;
       await payCompletionBonus(client, grp.player_id, mushroomId, grp.wins);
+      seasonResults[grp.player_id] = await awardCompletedRunRecap(client, {
+        playerId: grp.player_id,
+        gameRunId,
+        mushroomId,
+        endReason: 'abandoned',
+        completedRounds: grp.completed_rounds,
+        wins: grp.wins,
+        losses: grp.losses,
+        livesRemaining: grp.lives_remaining
+      });
 
       if (run.mode === 'challenge' && grp.wins + grp.losses > 0) {
         const opponent = allPlayersResult.rows.find((r) => r.player_id !== grp.player_id);
@@ -353,7 +389,9 @@ export async function abandonGameRun(playerId, gameRunId) {
         losses: callerRow.losses,
         livesRemaining: callerRow.lives_remaining,
         coins: callerRow.coins
-      }
+      },
+      season: seasonResults[playerId]?.season || null,
+      achievements: seasonResults[playerId]?.achievements || []
     };
   });
 }
@@ -524,7 +562,9 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
       height: item.height,
       sortOrder: index,
       purchasedRound: roundNumber,
-      freshPurchase: false
+      freshPurchase: false,
+      active: item.active,
+      rotated: item.rotated
     });
   }
 
@@ -648,6 +688,19 @@ async function resolveChallengeRound(client, run, gameRunId) {
 
     for (const [grp, pr] of [[grpA, pA], [grpB, pB]]) {
       await payCompletionBonus(client, grp.player_id, pr.mushroomId, pr.wins);
+      const recap = await awardCompletedRunRecap(client, {
+        playerId: grp.player_id,
+        gameRunId,
+        mushroomId: pr.mushroomId,
+        endReason,
+        lastOutcome: pr.lastRound?.outcome || null,
+        completedRounds: pr.completedRounds,
+        wins: pr.wins,
+        losses: pr.losses,
+        livesRemaining: pr.livesRemaining
+      });
+      pr.season = recap.season;
+      pr.achievements = recap.achievements;
 
       const opponentGrp = grp === grpA ? grpB : grpA;
       const opponentRating = (await client.query('SELECT rating FROM players WHERE id = $1', [opponentGrp.player_id])).rows[0]?.rating ?? 1000;
@@ -864,8 +917,20 @@ export async function resolveRound(playerId, gameRunId) {
       endReason = 'max_rounds';
     }
 
+    let recap = null;
     if (runEnded) {
       await payCompletionBonus(client, playerId, mushroomId, newWins);
+      recap = await awardCompletedRunRecap(client, {
+        playerId,
+        gameRunId,
+        mushroomId,
+        endReason,
+        lastOutcome: outcome,
+        completedRounds,
+        wins: newWins,
+        losses: newLosses,
+        livesRemaining: newLives
+      });
       await client.query(
         `UPDATE game_runs SET status = 'completed', ended_at = $2, end_reason = $3 WHERE id = $1`,
         [gameRunId, nowIso(), endReason]
@@ -910,6 +975,8 @@ export async function resolveRound(playerId, gameRunId) {
       endedAt: runEnded ? nowIso() : null,
       endReason,
       completionBonus: runEnded ? getCompletionBonus(newWins) : null,
+      season: runEnded ? recap.season : null,
+      achievements: runEnded ? recap.achievements : [],
       player: {
         completedRounds,
         wins: newWins,
@@ -1189,6 +1256,7 @@ export async function pruneCompletedRuns(maxAgeDays = COMPLETED_RUN_MAX_AGE_DAYS
     await query(`DELETE FROM game_run_loadout_items WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_run_shop_states WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_run_refunds WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM player_season_runs WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_rounds WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_run_players WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_runs WHERE id = $1`, [runId]);

@@ -64,11 +64,28 @@ export function rotateShape(shape) {
 }
 
 /**
- * Return the bag's effective shape, accounting for its rotated flag.
+ * Normalize persisted/client rotation into quarter-turns clockwise.
+ * Historical callers used a boolean `rotated`; keep `true` as 1 turn while
+ * allowing 0, 1, 2, 3 for full tetromino rotation.
  */
-export function getEffectiveShape(bagArtifact, rotated) {
-  const shape = getBagShape(bagArtifact);
-  return rotated ? rotateShape(shape) : shape;
+export function normalizeRotation(rotation) {
+  if (rotation === true) return 1;
+  if (rotation === false || rotation == null) return 0;
+  const value = Number(rotation);
+  if (!Number.isFinite(value)) return 0;
+  return ((Math.trunc(value) % 4) + 4) % 4;
+}
+
+/**
+ * Return the bag's effective shape, accounting for quarter-turn rotation.
+ */
+export function getEffectiveShape(bagArtifact, rotation) {
+  let shape = getBagShape(bagArtifact);
+  const turns = normalizeRotation(rotation);
+  for (let i = 0; i < turns; i += 1) {
+    shape = rotateShape(shape);
+  }
+  return shape;
 }
 
 /**

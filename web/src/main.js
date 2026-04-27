@@ -30,6 +30,7 @@ import { FriendsScreen } from './pages/FriendsScreen.js';
 import { LeaderboardScreen } from './pages/LeaderboardScreen.js';
 import { WikiScreen } from './pages/WikiScreen.js';
 import { WikiDetailScreen } from './pages/WikiDetailScreen.js';
+import { ProfileScreen } from './pages/ProfileScreen.js';
 import { SettingsScreen } from './pages/SettingsScreen.js';
 
 // Existing components
@@ -42,7 +43,7 @@ const App = {
     ArtifactGridBoard, FighterCard, ReplayDuel,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
-    ReplayScreen, RunCompleteScreen,
+    ReplayScreen, RunCompleteScreen, ProfileScreen,
     FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, SettingsScreen
   },
   setup() {
@@ -84,6 +85,7 @@ const App = {
       gameRunResult: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
+      startingFirstRun: false,
       sellDragOver: false,
       actionInFlight: false,
       opponentReady: false,
@@ -113,17 +115,33 @@ const App = {
     // (instead of inside useAuth) avoids a circular dependency on useGameRun,
     // which is constructed after useAuth.
     async function saveCharacter(mushroomId) {
-      const result = await auth.saveCharacter(mushroomId);
-      if (result.failed) return;
-      if (result.wasFirstPick && !state.gameRun) {
-        // First-pick branch: a brand-new player should not have to discover
-        // "Start Game" on the home screen. Auto-start a solo run; the run
-        // creates its own prep screen with the starter preset already seeded.
-        await gameRun.startNewGameRun('solo');
-      } else {
-        // Re-pick branch: existing player switching mushroom. Don't clobber
-        // an active run by auto-starting a new one.
-        gs.goTo('home');
+      const expectedFirstPick = !state.bootstrap?.activeMushroomId;
+      if (expectedFirstPick) {
+        state.startingFirstRun = true;
+        state.screen = 'firstRunStarting';
+        state.menuOpen = false;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+      try {
+        const result = await auth.saveCharacter(mushroomId);
+        if (result.failed) {
+          if (expectedFirstPick) gs.goTo('characters');
+          return;
+        }
+        if (result.wasFirstPick && !state.gameRun) {
+          // First-pick branch: a brand-new player should not have to discover
+          // "Start Game" on the home screen. Auto-start a solo run; the run
+          // creates its own prep screen with the starter preset already seeded.
+          await gameRun.startNewGameRun('solo', { skipTransition: true });
+        } else {
+          // Re-pick branch: existing player switching mushroom. Don't clobber
+          // an active run by auto-starting a new one.
+          gs.goTo('home');
+        }
+      } finally {
+        state.startingFirstRun = false;
+        if (state.screen === 'firstRunStarting') gs.goTo('characters');
       }
     }
 
@@ -271,11 +289,19 @@ const App = {
           <button class="nav-btn" @click="goTo('characters')">{{ t.characters }}</button>
           <button class="nav-btn" @click="goTo('friends')">{{ t.friends }}</button>
           <button class="nav-btn" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
+          <button class="nav-btn" @click="goTo('profile')">{{ t.profile }}</button>
           <button class="nav-btn" @click="goTo('wiki')">{{ t.wiki }}</button>
           <button class="nav-btn" @click="goTo('settings')">{{ t.settings }}</button>
         </nav>
 
-        <onboarding-screen v-if="state.screen === 'onboarding'" :state="state" :t="t" @go="goTo($event)" />
+        <section v-if="state.screen === 'firstRunStarting' || state.startingFirstRun" class="route-loading-screen" data-testid="first-run-starting">
+          <div class="route-loading-card panel">
+            <span class="route-loading-spinner" aria-hidden="true"></span>
+            <h2>{{ t.startingRun }}</h2>
+          </div>
+        </section>
+
+        <onboarding-screen v-else-if="state.screen === 'onboarding'" :state="state" :t="t" @go="goTo($event)" />
 
         <home-screen v-else-if="state.screen === 'home'"
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
@@ -410,16 +436,7 @@ const App = {
           :state="state" :t="t" @go="goTo($event)" @open-wiki="openWiki($event[0], $event[1])"
         />
 
-        <section v-else-if="state.screen === 'profile'" class="profile-screen stack">
-          <h2>{{ t.profile }}</h2>
-          <div class="grid cards profile-card-grid">
-            <article class="panel" v-for="entry in Object.values(state.bootstrap.progression)" :key="entry.mushroomId">
-              <h3>{{ getMushroom(entry.mushroomId)?.name?.[state.lang] || entry.mushroomId }}</h3>
-              <p>{{ t.level }} {{ entry.level }}</p>
-              <p>{{ t.mycelium }} {{ entry.mycelium }}</p>
-            </article>
-          </div>
-        </section>
+        <profile-screen v-else-if="state.screen === 'profile'" :state="state" :t="t" :get-mushroom="getMushroom" />
 
         <settings-screen v-else-if="state.screen === 'settings'" :state="state" :t="t" @save-settings="saveSettings" />
 

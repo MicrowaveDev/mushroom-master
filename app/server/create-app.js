@@ -297,6 +297,22 @@ export async function createApp() {
     })
   );
 
+  app.post(
+    '/api/client-events',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const event = typeof req.body?.event === 'string' ? req.body.event.slice(0, 80) : 'unknown';
+      log.info({
+        kind: 'client_event',
+        event,
+        playerId: req.user.id,
+        gameRunId: req.body?.gameRunId || null,
+        detail: req.body?.detail && typeof req.body.detail === 'object' ? req.body.detail : {}
+      });
+      res.json({ success: true, data: { ok: true } });
+    })
+  );
+
   app.get(
     '/api/profile',
     requireAuth,

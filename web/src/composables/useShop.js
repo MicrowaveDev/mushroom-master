@@ -1,6 +1,6 @@
 import { BAG_COLUMNS, BAG_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
-import { getEffectiveShape, isCellInShape } from '../../../app/shared/bag-shape.js';
+import { getEffectiveShape, isCellInShape, normalizeRotation } from '../../../app/shared/bag-shape.js';
 import { messages } from '../i18n.js';
 
 export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
@@ -10,15 +10,15 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     selectionChanged: typeof feedback.selectionChanged === 'function' ? feedback.selectionChanged : () => {}
   };
 
-  function isBagRotated(bagId, rowId = null) {
-    return state.rotatedBags.some((b) => (rowId ? b.id === rowId : b.artifactId === bagId));
+  function bagRotation(bagId, rowId = null) {
+    const entry = state.rotatedBags.find((b) => (rowId ? b.id === rowId : b.artifactId === bagId));
+    return normalizeRotation(entry?.rotation ?? (entry ? 1 : 0));
   }
 
   function bagLayout(bagId, rowId = null) {
     const bag = getArtifact(bagId);
     if (!bag) return { cols: BAG_COLUMNS, rows: 1, shape: [] };
-    const rotated = isBagRotated(bagId, rowId);
-    const shape = getEffectiveShape(bag, rotated);
+    const shape = getEffectiveShape(bag, bagRotation(bagId, rowId));
     const cols = shape.length > 0 ? shape[0].length : 0;
     const rows = shape.length;
     return { cols: Math.min(cols, BAG_COLUMNS), rows, shape };
@@ -78,15 +78,30 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return true;
   }
 
-  function bagAreaOverlaps(anchorX, anchorY, cols, rows, ignoreBagId = null) {
+  function shapeCellsAt(anchorX, anchorY, shape) {
+    const cells = new Set();
+    for (let dy = 0; dy < shape.length; dy += 1) {
+      const row = shape[dy] || [];
+      for (let dx = 0; dx < row.length; dx += 1) {
+        if (row[dx]) cells.add(`${anchorX + dx}:${anchorY + dy}`);
+      }
+    }
+    return cells;
+  }
+
+  function rectangularShape(cols, rows) {
+    return Array.from({ length: rows }, () => Array(cols).fill(1));
+  }
+
+  function bagAreaOverlaps(anchorX, anchorY, cols, rows, ignoreBagId = null, candidateShape = null) {
+    const candidateCells = shapeCellsAt(anchorX, anchorY, candidateShape || rectangularShape(cols, rows));
     for (const other of state.activeBags) {
       if (other.id === ignoreBagId) continue;
       const oLayout = bagLayout(other.artifactId, other.id);
       const ox = other.anchorX ?? 0;
       const oy = other.anchorY ?? 0;
-      const overlapX = anchorX < ox + oLayout.cols && ox < anchorX + cols;
-      const overlapY = anchorY < oy + oLayout.rows && oy < anchorY + rows;
-      if (overlapX && overlapY) return true;
+      const otherCells = shapeCellsAt(ox, oy, oLayout.shape);
+      if (setsOverlap(candidateCells, otherCells)) return true;
     }
     return false;
   }
@@ -97,12 +112,12 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   // extend downward unbounded (BAG_COLUMNS-wide rows are added on demand).
   // A 2x1 bag with empty layout therefore anchors at (3, 0) — alongside the
   // base inventory — not at (0, 3) below it (Req 2-G).
-  function findFirstFitAnchor(cols, rows, ignoreBagId = null) {
+  function findFirstFitAnchor(cols, rows, ignoreBagId = null, shape = null) {
     // Worst-case: stack below everything currently placed.
     const maxY = Math.max(0, bagsBottomRow()) + rows;
     for (let ay = 0; ay <= maxY; ay += 1) {
       for (let ax = 0; ax + cols <= BAG_COLUMNS; ax += 1) {
-        if (!bagAreaOverlaps(ax, ay, cols, rows, ignoreBagId)) {
+        if (!bagAreaOverlaps(ax, ay, cols, rows, ignoreBagId, shape)) {
           return { anchorX: ax, anchorY: ay };
         }
       }
@@ -125,10 +140,10 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   function bagCellSet(bag, rotatedOverride = null) {
     const artifact = getArtifact(bag.artifactId);
     if (!artifact) return new Set();
-    const rotated = rotatedOverride == null
-      ? state.rotatedBags.some((b) => b.id === bag.id)
-      : rotatedOverride;
-    const shape = getEffectiveShape(artifact, rotated);
+    const rotation = rotatedOverride == null
+      ? bagRotation(bag.artifactId, bag.id)
+      : normalizeRotation(rotatedOverride);
+    const shape = getEffectiveShape(artifact, rotation);
     const ax = bag.anchorX ?? 0;
     const ay = bag.anchorY ?? 0;
     const cells = new Set();
@@ -174,38 +189,53 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     ];
   }
 
-  function rotateBag(bagId) {
-    const activeBag = state.activeBags.find((b) => b.artifactId === bagId);
+  function normalizeArtifactTarget(target) {
+    return typeof target === 'object' && target !== null
+      ? {
+          artifactId: target.artifactId || target.id,
+          rowId: target.rowId || target.id || null
+        }
+      : { artifactId: target, rowId: null };
+  }
+
+  function sameBagTarget(bag, artifactId, rowId = null) {
+    return rowId ? bag.id === rowId : bag.artifactId === artifactId;
+  }
+
+  function rotateBag(target) {
+    const { artifactId: bagId, rowId } = normalizeArtifactTarget(target);
+    const activeBag = state.activeBags.find((b) => sameBagTarget(b, bagId, rowId));
     if (!activeBag) return;
     const bag = getArtifact(bagId);
     if (!bag || bag.width === bag.height) return;
     // Block rotation if the rotated footprint would overflow the bag zone's
     // column budget OR overlap another active bag.
-    const currentlyRotated = state.rotatedBags.some((b) => b.id === activeBag.id);
-    const nextShape = getEffectiveShape(bag, !currentlyRotated);
+    const currentRotation = bagRotation(activeBag.artifactId, activeBag.id);
+    const nextRotation = (currentRotation + 1) % 4;
+    const nextShape = getEffectiveShape(bag, nextRotation);
     const nextCols = nextShape.length > 0 ? nextShape[0].length : 0;
     const nextRows = nextShape.length;
-    const ax = activeBag.anchorX ?? 0;
-    const ay = activeBag.anchorY ?? 0;
-    if (ax + nextCols > BAG_COLUMNS || bagAreaOverlaps(ax, ay, nextCols, nextRows, activeBag.id)) {
+    const { anchorX, anchorY } = findFirstFitAnchor(nextCols, nextRows, activeBag.id, nextShape);
+    if (anchorX + nextCols > BAG_COLUMNS || bagAreaOverlaps(anchorX, anchorY, nextCols, nextRows, activeBag.id, nextShape)) {
       haptics.notify('error');
       return;
     }
-    const rotatedIds = new Set(state.rotatedBags.map((b) => b.id));
     unplaceItemsOverlappingBag(activeBag);
-    // Toggle rotation.
-    if (rotatedIds.has(activeBag.id)) rotatedIds.delete(activeBag.id);
-    else rotatedIds.add(activeBag.id);
+    unplaceItemsOverlappingBag({ ...activeBag, anchorX, anchorY }, nextRotation);
+    state.activeBags = state.activeBags.map((bag) => (
+      bag.id === activeBag.id ? { ...bag, anchorX, anchorY } : bag
+    ));
     const idx = state.rotatedBags.findIndex((b) => b.id === activeBag.id);
-    if (idx >= 0) {
-      state.rotatedBags = [
-        ...state.rotatedBags.slice(0, idx),
-        ...state.rotatedBags.slice(idx + 1)
-      ];
+    if (nextRotation === 0) {
+      state.rotatedBags = state.rotatedBags.filter((entry) => entry.id !== activeBag.id);
+    } else if (idx >= 0) {
+      state.rotatedBags = state.rotatedBags.map((entry, entryIndex) => (
+        entryIndex === idx ? { id: activeBag.id, artifactId: activeBag.artifactId, rotation: nextRotation } : entry
+      ));
     } else {
       state.rotatedBags = [
         ...state.rotatedBags,
-        { id: activeBag.id, artifactId: activeBag.artifactId }
+        { id: activeBag.id, artifactId: activeBag.artifactId, rotation: nextRotation }
       ];
     }
     // Persist immediately — same contract as activateBag / deactivateBag.
@@ -248,8 +278,10 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   // state bucket receives the item (builderItems, activeBags, etc.).
   // Pre-refactor this was a string[] and the pop used indexOf on the id;
   // now it's Array<{ id, artifactId }> — see docs/client-row-id-refactor.md.
-  function popOneFromContainer(artifactId) {
-    const idx = state.containerItems.findIndex((slot) => slot.artifactId === artifactId);
+  function popOneFromContainer(artifactId, rowId = null) {
+    const idx = state.containerItems.findIndex((slot) =>
+      rowId ? slot.id === rowId : slot.artifactId === artifactId
+    );
     if (idx < 0) return { next: state.containerItems, removed: null };
     const removed = state.containerItems[idx];
     const next = [
@@ -416,20 +448,21 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return false;
   }
 
-  function activateBag(artifactId) {
+  function activateBag(target) {
+    const { artifactId, rowId } = normalizeArtifactTarget(target);
     const artifact = getArtifact(artifactId);
     if (!artifact || artifact.family !== 'bag') return;
-    if (state.activeBags.some((b) => b.artifactId === artifactId)) return;
-    const { next, removed } = popOneFromContainer(artifactId);
+    if (state.activeBags.some((b) => sameBagTarget(b, artifactId, rowId))) return;
+    const { next, removed } = popOneFromContainer(artifactId, rowId);
     if (!removed) return;
     // Auto-pack: 2D first-fit anchor assignment so bags pack side-by-side
     // when there's room instead of always stacking vertically below the
     // previous bag. The chip can be dragged later to override the anchor.
-    const rotated = state.rotatedBags.some((b) => b.id === removed.id);
-    const shape = getEffectiveShape(artifact, rotated);
+    const rotation = bagRotation(artifactId, removed.id);
+    const shape = getEffectiveShape(artifact, rotation);
     const cols = Math.min(BAG_COLUMNS, shape.length > 0 ? shape[0].length : 0);
     const rows = shape.length;
-    const { anchorX, anchorY } = findFirstFitAnchor(cols, rows);
+    const { anchorX, anchorY } = findFirstFitAnchor(cols, rows, null, shape);
     state.activeBags = [...state.activeBags, { ...removed, anchorX, anchorY }];
     state.containerItems = next;
     state.error = '';
@@ -437,8 +470,9 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     haptics.impact('medium');
   }
 
-  function deactivateBag(artifactId) {
-    const idx = state.activeBags.findIndex((b) => b.artifactId === artifactId);
+  function deactivateBag(target) {
+    const { artifactId, rowId } = normalizeArtifactTarget(target);
+    const idx = state.activeBags.findIndex((b) => sameBagTarget(b, artifactId, rowId));
     if (idx < 0) return;
     const removed = state.activeBags[idx];
     unplaceItemsOverlappingBag(removed);
@@ -452,15 +486,18 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     haptics.selectionChanged();
   }
 
-  function autoPlaceFromContainer(artifactId) {
+  function autoPlaceFromContainer(target) {
+    const { artifactId, rowId } = normalizeArtifactTarget(target);
     const artifact = getArtifact(artifactId);
     if (!artifact) return;
     if (artifact.family === 'bag') {
-      activateBag(artifactId);
+      activateBag({ artifactId, id: rowId });
       return;
     }
-    const slot = state.containerItems.find((s) => s.artifactId === artifactId);
-    const rowId = slot?.id ?? null;
+    const slot = state.containerItems.find((s) =>
+      rowId ? s.id === rowId : s.artifactId === artifactId
+    );
+    const targetRowId = slot?.id ?? null;
     const orientations = [preferredOrientation(artifact)];
     if (artifact.width !== artifact.height) {
       orientations.push({ width: orientations[0].height, height: orientations[0].width });
@@ -472,10 +509,10 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
         // check inside normalizePlacement filters out empty cells outside
         // the base inventory and any active bag.
         for (let x = 0; x < BAG_COLUMNS; x += 1) {
-          const next = normalizePlacement(artifact, x, y, o.width, o.height, rowId);
+          const next = normalizePlacement(artifact, x, y, o.width, o.height, targetRowId);
           if (next) {
             state.builderItems = next;
-            state.containerItems = popOneFromContainer(artifactId).next;
+            state.containerItems = popOneFromContainer(artifactId, targetRowId).next;
             state.error = '';
             haptics.impact('light');
 
@@ -602,7 +639,7 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
       haptics.notify('error');
       return;
     }
-    if (bagAreaOverlaps(x, y, layout.cols, layout.rows, bagId)) {
+    if (bagAreaOverlaps(x, y, layout.cols, layout.rows, bagId, layout.shape)) {
       state.error = messages[state.lang].errorDoesNotFit;
       haptics.notify('error');
       return;

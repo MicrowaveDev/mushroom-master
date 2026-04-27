@@ -9,6 +9,9 @@ export const InventoryZone = {
     'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
   ],
   methods: {
+    visibleActiveBags() {
+      return this.state.activeBags.filter((bag) => bag.artifactId !== 'starter_bag');
+    },
     bagChipHasItems(bagId) {
       return false;
     },
@@ -45,9 +48,9 @@ export const InventoryZone = {
         @piece-drag-start="$emit('inventory-drag-start', $event)"
         @piece-drag-end="$emit('drag-end')"
       />
-      <div v-if="state.activeBags.length" class="active-bags-bar">
+      <div v-if="visibleActiveBags().length" class="active-bags-bar">
         <span
-          v-for="bag in state.activeBags"
+          v-for="bag in visibleActiveBags()"
           :key="bag.id || bag.artifactId"
           class="active-bag-chip"
           :class="{ 'active-bag-chip--locked': bagChipHasItems(bag.id), 'active-bag-chip--draggable': bagChipDraggable(bag.id) }"
@@ -63,9 +66,9 @@ export const InventoryZone = {
           <button
             v-if="getArtifact(bag.artifactId)?.width !== getArtifact(bag.artifactId)?.height"
             class="active-bag-action"
-            @click="$emit('rotate-bag', bag.artifactId)"
+            @click="$emit('rotate-bag', { id: bag.id, artifactId: bag.artifactId })"
           >↻</button>
-          <button class="active-bag-action" @click="$emit('deactivate-bag', bag.artifactId)">✕</button>
+          <button class="active-bag-action" @click="$emit('deactivate-bag', { id: bag.id, artifactId: bag.artifactId })">✕</button>
         </span>
       </div>
       <div v-if="state.builderItems.length" class="artifact-inventory-footer">

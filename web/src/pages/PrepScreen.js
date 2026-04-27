@@ -1,5 +1,5 @@
 import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
-import { getEffectiveShape } from '../../../app/shared/bag-shape.js';
+import { getEffectiveShape, normalizeRotation } from '../../../app/shared/bag-shape.js';
 import { RunHud } from '../components/prep/RunHud.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
 import { InventoryZone } from '../components/prep/InventoryZone.js';
@@ -40,8 +40,8 @@ export const PrepScreen = {
       for (const activeBag of this.state.activeBags) {
         const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;
-        const rotated = this.state.rotatedBags.some((b) => b.id === activeBag.id);
-        const shape = getEffectiveShape(bag, rotated);
+        const rotationEntry = this.state.rotatedBags.find((b) => b.id === activeBag.id);
+        const shape = getEffectiveShape(bag, normalizeRotation(rotationEntry?.rotation ?? (rotationEntry ? 1 : 0)));
         const rowCount = shape.length;
         const anchorX = activeBag.anchorX ?? 0;
         const anchorY = activeBag.anchorY ?? 0;
@@ -83,8 +83,8 @@ export const PrepScreen = {
       for (const activeBag of this.state.activeBags) {
         const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;
-        const rotated = this.state.rotatedBags.some((b) => b.id === activeBag.id);
-        const shape = getEffectiveShape(bag, rotated);
+        const rotationEntry = this.state.rotatedBags.find((b) => b.id === activeBag.id);
+        const shape = getEffectiveShape(bag, normalizeRotation(rotationEntry?.rotation ?? (rotationEntry ? 1 : 0)));
         const bottom = (activeBag.anchorY ?? 0) + shape.length;
         if (bottom > max) max = bottom;
       }
@@ -104,8 +104,10 @@ export const PrepScreen = {
   },
   template: `
     <section class="prep-screen" :data-testid="state.bootstrapReady ? 'prep-ready' : null">
-      <h2 class="run-round-heading">{{ t.round }} {{ state.gameRun.currentRound }}</h2>
-      <run-hud :state="state" :t="t" />
+      <div class="prep-topbar">
+        <h2 class="run-round-heading">{{ t.round }} {{ state.gameRun.currentRound }}</h2>
+        <run-hud :state="state" :t="t" />
+      </div>
 
       <div class="prep-workspace">
         <div class="prep-loadout-column">

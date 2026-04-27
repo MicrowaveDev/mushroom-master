@@ -11,7 +11,7 @@ import { query } from '../db.js';
 import { BAG_COLUMNS } from '../game-data.js';
 import { getArtifactById } from '../game-data.js';
 import { createId, nowIso } from '../lib/utils.js';
-import { getEffectiveShape } from '../../shared/bag-shape.js';
+import { getEffectiveShape, normalizeRotation } from '../../shared/bag-shape.js';
 import { pieceCells, validateBagPlacement, validateGridItems, validateItemCoverage } from './loadout-utils.js';
 import { isBag } from './artifact-helpers.js';
 
@@ -40,7 +40,7 @@ function assignMissingBagAnchors(items) {
   const bagRows = items.filter((item) => isBag(getArtifactById(item.artifactId)) && item.active);
   for (const bag of bagRows) {
     const artifact = getArtifactById(bag.artifactId);
-    const { shape, cols, rows } = shapeSize(artifact, !!bag.rotated);
+    const { shape, cols, rows } = shapeSize(artifact, bag.rotated);
     if (Number(bag.x) >= 0 && Number(bag.y) >= 0) {
       placed.push(new Set(pieceCells({ ...bag, width: cols, height: rows }, shape)));
       continue;
@@ -50,7 +50,7 @@ function assignMissingBagAnchors(items) {
       .filter((item) => isBag(getArtifactById(item.artifactId)) && item.active && Number(item.y) >= 0)
       .map((item) => {
         const itemArtifact = getArtifactById(item.artifactId);
-        const size = shapeSize(itemArtifact, !!item.rotated);
+        const size = shapeSize(itemArtifact, item.rotated);
         return Number(item.y) + size.rows;
       })) + rows;
     outer: for (let y = 0; y <= maxY; y += 1) {
@@ -88,7 +88,7 @@ export async function insertLoadoutItem(client, params) {
   const height = params.height ?? artifact.height;
   const bagRow = isBag(artifact);
   const active = bagRow && params.active ? 1 : 0;
-  const rotated = bagRow && params.rotated ? 1 : 0;
+  const rotated = bagRow ? normalizeRotation(params.rotated) : 0;
   const x = bagRow && !active ? -1 : (params.x ?? -1);
   const y = bagRow && !active ? -1 : (params.y ?? -1);
   await q(client,
@@ -140,7 +140,7 @@ export async function readCurrentRoundItems(client, gameRunId, playerId, roundNu
     purchasedRound: r.purchased_round,
     freshPurchase: !!r.fresh_purchase,
     active: !!r.active,
-    rotated: !!r.rotated
+    rotated: normalizeRotation(r.rotated)
   }));
 }
 
@@ -332,7 +332,7 @@ export async function applyRunPlacements(client, gameRunId, playerId, roundNumbe
     const rowArtifact = getArtifactById(proposed.artifactId);
     const bagRow = isBag(rowArtifact);
     proposed.active = bagRow ? (entry.active == null ? row.active : (entry.active ? 1 : 0)) : 0;
-    proposed.rotated = bagRow ? (entry.rotated == null ? row.rotated : (entry.rotated ? 1 : 0)) : 0;
+    proposed.rotated = bagRow ? (entry.rotated == null ? row.rotated : normalizeRotation(entry.rotated)) : 0;
     if (bagRow && !proposed.active) {
       proposed.x = -1;
       proposed.y = -1;

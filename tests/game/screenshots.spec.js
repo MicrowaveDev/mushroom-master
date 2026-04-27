@@ -84,6 +84,12 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.home-start-btn')).toBeVisible();
   await assertImagesLoaded(page);
   await saveShot(page, '02-home.png');
+  await expect(page.locator('.home-season-journal-link')).toBeVisible();
+  await page.locator('.home-season-journal-link').click();
+  await page.waitForSelector('.profile-screen');
+  await expect(page.locator('.achievement-journal')).toBeVisible();
+  await page.goto(`${baseURL}/home`);
+  await page.waitForSelector('.home');
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.goto(`${baseURL}/home`);
   await page.waitForSelector('.home');

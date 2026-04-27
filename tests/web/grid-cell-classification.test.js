@@ -9,7 +9,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   bagRowEntryFor,
-  classifyCell
+  classifyCell,
+  occupiedCellKeys
 } from '../../web/src/helpers/grid-cell-classification.js';
 
 const BASE_INV = { cols: 3, rows: 3 };
@@ -116,4 +117,17 @@ test('[grid-cls] bagRowEntryFor is null outside every bag (used by the renderer 
   const bags = [row({ row: 0, anchorX: 3, cols: 2, enabledXs: [3, 4] })];
   assert.equal(bagRowEntryFor(bags, 5, 0), null);
   assert.equal(bagRowEntryFor(bags, 0, 5), null);
+});
+
+test('[grid-cls][regression] occupied cells include the full artifact footprint', () => {
+  const occupied = occupiedCellKeys([
+    { artifactId: 'static_spore_sac', x: 3, y: 2, width: 1, height: 2 },
+    { artifactId: 'thunder_gill', x: 0, y: 4, width: 2, height: 1 }
+  ]);
+
+  assert.ok(occupied.has('3:2'), 'anchor cell is occupied');
+  assert.ok(occupied.has('3:3'), 'second row of a vertical artifact is occupied');
+  assert.ok(occupied.has('0:4'), 'first cell of a horizontal artifact is occupied');
+  assert.ok(occupied.has('1:4'), 'second cell of a horizontal artifact is occupied');
+  assert.equal(occupied.has('4:2'), false, 'neighbor outside the footprint is not occupied');
 });

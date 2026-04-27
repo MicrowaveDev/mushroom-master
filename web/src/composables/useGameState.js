@@ -67,7 +67,7 @@ export function useGameState(state, options = {}) {
     return mushroom?.name?.[state.lang] || mushroom?.name?.en || mushroomId || '';
   }
 
-  function goTo(screen, extra = {}) {
+  function goTo(screen, extra = {}, options = {}) {
     const applyScreenChange = () => {
       state.screen = screen;
       state.menuOpen = false;
@@ -89,7 +89,7 @@ export function useGameState(state, options = {}) {
     // still get the animation; only automated test runs skip it.
     const isAutomatedDriver = typeof navigator !== 'undefined'
       && !!navigator.webdriver;
-    if (hasViewTransitions && shouldAnimateTransitions() && !isAutomatedDriver) {
+    if (!options.skipTransition && hasViewTransitions && shouldAnimateTransitions() && !isAutomatedDriver) {
       // Return a Promise from the update callback so View Transitions waits
       // for Vue's DOM patch (scheduled on the microtask queue) to flush
       // before snapshotting the "new" state. Without nextTick, the

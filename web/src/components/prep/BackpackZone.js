@@ -35,7 +35,7 @@ export const BackpackZone = {
           :key="artifact.instanceKey"
           class="container-item"
           v-bind="itemDataset(artifact)"
-          @click="$emit('auto-place', artifact.id)"
+          @click="$emit('auto-place', { artifactId: artifact.id, id: artifact.rowId })"
         >
           <artifact-grid-board
             class="container-item-visual"

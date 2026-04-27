@@ -28,6 +28,8 @@ import {
   selectActiveMushroom,
   getActiveGameRun
 } from '../../app/server/services/game-service.js';
+import { validateLoadoutItems } from '../../app/server/services/loadout-utils.js';
+import { getStarterPresetCost } from '../../app/server/game-data.js';
 import {
   freshDb,
   createPlayer,
@@ -609,5 +611,33 @@ test('[Req 7-G] bot ghost fallback writes real rows into game_run_loadout_items'
   // with the "ghost:bot:" marker (see §2.4 unification).
   if ((await countBotGhostRows()) === 0) {
     throw new Error('Step 4 not complete: no synthetic ghost:bot rows found in game_run_loadout_items');
+  }
+
+  const ghostRuns = await query(
+    `SELECT DISTINCT game_run_id FROM game_run_loadout_items WHERE game_run_id LIKE 'ghost:bot:%'`
+  );
+  for (const row of ghostRuns.rows) {
+    const [, , mushroomId, budgetText] = row.game_run_id.split(':');
+    const itemsResult = await query(
+      `SELECT artifact_id, x, y, width, height, sort_order, active, rotated
+       FROM game_run_loadout_items
+       WHERE game_run_id = $1 AND player_id = 'bot'
+       ORDER BY sort_order ASC`,
+      [row.game_run_id]
+    );
+    const items = itemsResult.rows.map((item) => ({
+      artifactId: item.artifact_id,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      sortOrder: item.sort_order,
+      active: !!item.active,
+      rotated: Number(item.rotated || 0)
+    }));
+    assert.doesNotThrow(
+      () => validateLoadoutItems(items, Number(budgetText) + getStarterPresetCost(mushroomId)),
+      `synthetic bot rows for ${row.game_run_id} should preserve active/rotated bag state`
+    );
   }
 });

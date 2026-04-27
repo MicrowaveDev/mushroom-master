@@ -136,6 +136,9 @@ For this repo, end-of-game rewards work as follows:
 | 7–9 | 20 | 10 |
 
 - in challenge mode, the player who forces the opponent to 5 losses (or has more wins when 9 rounds complete) receives an additional winner bonus of `+10 spore` and `+5 mycelium`
+- the run-complete screen also shows a persisted cosmetic season level from cumulative season points. Each finished run adds `wins * 3 + completedRounds`, plus `+5` for a max-round clear, into Bronze, Silver, Gold, or Diamond. It powers recap presentation and lore achievement criteria only; it does not affect combat, matchmaking, shop offers, ghosts, rewards, or rating. The current named chapter is `Season of the Deep Ring`; progress is not reset destructively.
+- lore achievements shown on the run-complete screen are defined in JSON and split into season, general, and character-specific achievement lists. Earned achievements are persisted once per player; repeated criteria matches return as already-earned rather than new.
+- home shows the current season level/progress, recent achievement unlocks, and a next-badge hint when no recent unlocks exist; profile contains the achievement journal grouped by Season, General, and Character. Run-complete animates verdict, progress, tier-up, achievements, empty-achievement state, and final action for game-feel. Sound/haptic hooks are emitted as browser events, and client analytics posts achievement/tier events to `/api/client-events`. Sound sourcing guidance is in `docs/sound-design-recommendations.md`.
 - these values are tuning knobs and will be adjusted from real data
 
 ## Current workspace state (post-rework)

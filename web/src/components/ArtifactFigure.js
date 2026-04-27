@@ -1,5 +1,5 @@
 import { h } from 'vue/dist/vue.esm-bundler.js';
-import { artifactTheme } from '../artifacts/render.js';
+import { artifactBitmapPath } from '../artifacts/render.js';
 
 function node(tag, attrs = {}, children = []) {
   return h(tag, attrs, children);
@@ -119,7 +119,6 @@ export const ArtifactFigure = {
     const artifact = this.artifact;
     if (!artifact) return null;
 
-    const theme = artifactTheme(artifact);
     const isBag = artifact.family === 'bag';
     const shape = isBag && artifact.shape ? artifact.shape : null;
     const width = shape
@@ -136,16 +135,15 @@ export const ArtifactFigure = {
         return node('div', { class: 'artifact-figure-cell artifact-figure-cell--empty', key: index });
       }
       return node('div', { class: 'artifact-figure-cell', key: index }, [
-        node('svg', {
-          class: 'artifact-figure-svg',
-          viewBox: '0 0 80 80',
-          preserveAspectRatio: 'xMidYMid meet',
-          'aria-hidden': 'true'
-        }, [
-          node('rect', { x: '4', y: '4', width: '72', height: '72', rx: '20', fill: theme.shell, stroke: theme.border, 'stroke-width': '6' }),
-          node('rect', { x: '10', y: '10', width: '60', height: '60', rx: '16', fill: theme.glow, opacity: '0.8' }),
-          ...(isBag ? [] : glyphNodes(artifact, theme))
-        ])
+        node('span', {
+          class: 'artifact-figure-bitmap',
+          'aria-hidden': 'true',
+          style: {
+            backgroundImage: `url('${artifactBitmapPath(artifact)}')`,
+            backgroundSize: `${width * 100}% ${height * 100}%`,
+            backgroundPosition: `${width > 1 ? (x / (width - 1)) * 100 : 50}% ${height > 1 ? (y / (height - 1)) * 100 : 50}%`
+          }
+        })
       ]);
     });
 
