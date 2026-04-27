@@ -62,15 +62,15 @@ function shapeRule(artifact) {
     return 'irregular bag mask: design the container to exactly follow the occupied cells; empty mask cells must be only chroma-key background';
   }
   if (width === 1 && height === 1) {
-    return '1x1: one centered compact symbol filling about 70-85% of the cell';
+    return '1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop';
   }
   if (width > height && height === 1) {
-    return `${width}x1 horizontal: strictly left-to-right object, no tall central blob, no strong diagonal`;
+    return `${width}x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal`;
   }
   if (height > width && width === 1) {
-    return `1x${height} vertical: strictly top-to-bottom object, every cell contains a visible continuation`;
+    return `1x${height} vertical: strictly top-to-bottom object, filling 82-94% of the canvas height and 70-88% of the canvas width; every cell contains a visible continuation of the same object`;
   }
-  return `${width}x${height} block: one centered blocky object filling all quadrants evenly`;
+  return `${width}x${height} block: one centered blocky object filling all quadrants evenly, with meaningful content in every occupied cell`;
 }
 
 function promptForArtifact(artifact, spec) {
@@ -90,7 +90,7 @@ function promptForArtifact(artifact, spec) {
 
 \`\`\`text
 Use the imagegen skill to create a production game artifact bitmap.
-Use ${styleGuidePath} as the style guide. Follow it exactly: simple small inventory icon, clean outline, high contrast, strict footprint direction, flat #00ff00 chroma-key background.
+Use ${styleGuidePath} as the style guide. Follow it exactly: simple small inventory icon matching data/channel/assets/ornaments/top-right-mushroom.jpg and data/channel/assets/ornaments/bottom-left-mushroom.svg. Use thick dark contour, flat or softly graded vector color regions, simple highlight shapes, sparse dark internal lines, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.
 
 Asset: ${artifact.name.en} / ${artifact.name.ru} (${artifact.id})
 Output file after approval: ${outputPath}
@@ -98,15 +98,15 @@ Footprint: ${size}
 Description: ${description}
 Shape rule: ${shapeRule(artifact)}
 
-Style: simple readable fantasy inventory icon matching the mushroom game world. Clean ink outline, warm hand-painted fill, 2-4 main colors, minimal internal detail. Family visual language: ${familyLanguage(artifact.family)}.
+Style: simple readable fantasy inventory icon matching the two PDF mushroom ornament references. Borrow the bold thick-contour red amanita language from top-right-mushroom.jpg and the rounded blue/cream soft-gradient language from bottom-left-mushroom.svg. Use thick dark brown/black contour, flat or softly graded vector-like color planes, sparse dark internal lines, simple cream/pale highlight blobs, 2-5 main colors, minimal internal detail. Family visual language: ${familyLanguage(artifact.family)}.
 
-Composition: one complete connected placement image across the whole footprint, intended to be sliced by inventory grid cells like Backpack Battles. Do not draw separate repeated icons per cell.
+Composition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.
 
-Small icon requirement: readable at 48-64px per cell. Use a simple silhouette, high contrast, and very few details. No sketch scratches, no noisy halo, no construction lines, no paper texture.
+Small icon requirement: readable at 48-64px per cell. Use a simple silhouette, high contrast, and very few details. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no sketch scratches, no noisy halo, no construction lines, no paper texture.
 
-Background: perfectly flat solid #00ff00 chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #00ff00 inside the artifact.
+Background: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact.
 
-For irregular bag masks, occupied cells contain the connected artifact and empty mask cells contain only #00ff00 so they become transparent after background removal.
+For irregular bag masks, occupied cells contain the connected artifact and empty mask cells contain only #ff00ff so they become transparent after background removal.
 \`\`\``;
 }
 

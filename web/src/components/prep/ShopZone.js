@@ -23,12 +23,20 @@ export const ShopZone = {
         'shop-item--tier3': price >= 3
       };
     },
+    previewOrientation(artifactId) {
+      const artifact = this.getArtifact(artifactId);
+      if (!artifact) return { width: 1, height: 1 };
+      // Real artifact bitmaps are authored in canonical footprint space.
+      // Shop cards should preview that artwork without rotating/squashing it.
+      if (!artifact.shape) return { width: artifact.width, height: artifact.height };
+      return this.preferredOrientation(artifact);
+    },
     previewItem(artifactId) {
-      const orientation = this.preferredOrientation(this.getArtifact(artifactId));
+      const orientation = this.previewOrientation(artifactId);
       return [{ artifactId, x: 0, y: 0, width: orientation.width, height: orientation.height }];
     },
     itemDataset(artifactId) {
-      const orientation = this.preferredOrientation(this.getArtifact(artifactId));
+      const orientation = this.previewOrientation(artifactId);
       return {
         'data-artifact-id': artifactId,
         'data-artifact-width': orientation.width,
@@ -60,8 +68,8 @@ export const ShopZone = {
           <artifact-grid-board
             class="shop-item-visual"
             variant="catalog"
-            :columns="preferredOrientation(getArtifact(artifactId)).width"
-            :rows="preferredOrientation(getArtifact(artifactId)).height"
+            :columns="previewOrientation(artifactId).width"
+            :rows="previewOrientation(artifactId).height"
             :items="previewItem(artifactId)"
             :get-artifact="getArtifact"
           />

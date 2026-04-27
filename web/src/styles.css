@@ -2365,18 +2365,27 @@ select {
   background-clip: border-box;
 }
 
+.artifact-figure-bitmap--full {
+  z-index: 2;
+  pointer-events: none;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
 .artifact-figure-grid {
+  position: relative;
   width: 100%;
   max-width: 100%;
   height: 100%;
   display: grid;
-  gap: 8px;
+  gap: var(--board-gap, 8px);
   align-content: stretch;
   justify-content: stretch;
 }
 
 .artifact-figure-cell {
   position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -2390,6 +2399,13 @@ select {
   overflow: hidden;
 }
 
+.artifact-figure-cell--empty {
+  visibility: hidden;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .artifact-figure-cell::after {
   content: '';
   position: absolute;
@@ -2398,6 +2414,10 @@ select {
   border-radius: 13px;
   border: 1px solid rgba(255, 255, 255, 0.38);
   box-shadow: inset 0 -8px 16px rgba(91, 64, 36, 0.06);
+}
+
+.artifact-figure-cell--empty::after {
+  display: none;
 }
 
 .artifact-grid-board--catalog .artifact-grid-cell {
@@ -2426,6 +2446,7 @@ select {
   position: static;
   inset: auto;
   width: fit-content;
+  height: fit-content;
 }
 
 .artifact-grid-board--catalog .artifact-grid-cell {

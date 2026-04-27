@@ -332,19 +332,7 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
         return `<div class="artifact-figure-cell artifact-figure-cell--empty"></div>`;
       }
     }
-    return `
-      <div class="artifact-figure-cell">
-        <span
-          class="artifact-figure-bitmap"
-          aria-hidden="true"
-          style="
-            background-image: url('${artifactBitmapPath(artifact)}');
-            background-size: ${w * 100}% ${h * 100}%;
-            background-position: ${w > 1 ? (x / (w - 1)) * 100 : 50}% ${h > 1 ? (y / (h - 1)) * 100 : 50}%;
-          "
-        ></span>
-      </div>
-    `;
+    return `<div class="artifact-figure-cell"></div>`;
   }).join('');
   return `
     <div
@@ -352,6 +340,11 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
       style="grid-template-columns: repeat(${w}, minmax(0, 1fr)); grid-template-rows: repeat(${h}, minmax(0, 1fr));"
     >
       ${cells}
+      <span
+        class="artifact-figure-bitmap artifact-figure-bitmap--full"
+        aria-hidden="true"
+        style="background-image: url('${artifactBitmapPath(artifact)}');"
+      ></span>
     </div>
   `;
 }

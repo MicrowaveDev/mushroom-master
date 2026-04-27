@@ -1,6 +1,6 @@
 # Artifact Bitmap Production Todo List
 
-Goal: every artifact has a real painted bitmap that renders as one Backpack Battles-style ornament across its full grid footprint. Each occupied grid cell displays a sliced part of one complete image.
+Goal: every artifact has a real painted bitmap that renders as one Backpack Battles-style ornament across its full grid footprint. The game renders the bitmap once as a continuous overlay above the occupied grid cells.
 
 The previous SVG-derived PNG placeholders were removed from `web/public/artifacts/`. Real production PNGs should be generated one batch at a time and saved as:
 
@@ -21,7 +21,8 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 3. Copy each approved PNG into the exact output path.
 4. Run `npm run game:artifacts:next` again until it reports that all artifacts are done.
 5. Run `node --test tests/web/artifact-render.test.js`.
-6. Run `npm run game:test:screens`.
+6. Run `npm run game:artifacts:validate -- artifact_id` for every newly generated PNG.
+7. Run `npm run game:test:screens`.
 
 ## Global Generation Rules
 
@@ -30,11 +31,37 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 - Keep a clean bitmap silhouette: no scratch halo, no loose construction lines around the object, no background sketch noise.
 - Follow strict footprint direction: horizontal artifacts must be horizontal, vertical artifacts must be vertical, square artifacts must be centered/blocky, irregular bags must follow the mask.
 - Do not make flat vector icons, CSS-looking UI symbols, emoji, stickers, toy renders, or plain silhouettes.
-- The image must be one complete artifact across the whole footprint. It should still read as one object after cell seams cut through it.
-- Generate on a flat removable chroma-key background, preferably `#00ff00`, then remove the background locally before saving the final transparent PNG.
+- The image must be one complete artifact across the whole footprint. It should read as one object over the grid cells.
+- 1x1 icons must fill the cell, not float in the middle: target 72-88% footprint fill on both axes and at least 28% visible alpha coverage.
+- Multi-cell icons must keep at least about 18% visible alpha coverage in every occupied cell.
+- Avoid long skinny diagonal props. Even needles, fangs, blades, lashes, and hooks need broad ornament mass: cap/head, guard, glow body, ribbon, plate, or aura.
+- Generate on a flat removable chroma-key background, preferably `#ff00ff`, then remove the background locally before saving the final transparent PNG.
 - No text, letters, watermarks, grid lines, cell borders, cast shadows, or frames.
 - Empty cells in irregular bag footprints must be transparent in the final PNG.
-- Keep enough padding that the object does not get clipped when sliced in the UI.
+- Keep enough padding that the object does not get clipped when rendered over the footprint.
+
+## Validation
+
+Run the coverage validator before accepting an artifact image:
+
+```bash
+npm run game:artifacts:validate -- artifact_id
+```
+
+For a batch:
+
+```bash
+npm run game:artifacts:validate -- id_a id_b id_c
+```
+
+The validator checks transparent-space problems that are hard to catch from the raw PNG:
+
+- 1x1 artifacts must have enough visible alpha coverage and width/height fill.
+- multi-cell artifacts must have enough visible content in every occupied cell.
+- irregular bag empty mask cells must remain transparent.
+- PNG dimensions must divide cleanly by the artifact footprint.
+
+If it fails with low coverage or low width/height fill, regenerate the asset with a chunkier silhouette and less empty space.
 
 ## Production Image Queue
 

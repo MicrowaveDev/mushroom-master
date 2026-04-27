@@ -134,17 +134,7 @@ export const ArtifactFigure = {
       if (shape && !(shape[y] && shape[y][x])) {
         return node('div', { class: 'artifact-figure-cell artifact-figure-cell--empty', key: index });
       }
-      return node('div', { class: 'artifact-figure-cell', key: index }, [
-        node('span', {
-          class: 'artifact-figure-bitmap',
-          'aria-hidden': 'true',
-          style: {
-            backgroundImage: `url('${artifactBitmapPath(artifact)}')`,
-            backgroundSize: `${width * 100}% ${height * 100}%`,
-            backgroundPosition: `${width > 1 ? (x / (width - 1)) * 100 : 50}% ${height > 1 ? (y / (height - 1)) * 100 : 50}%`
-          }
-        })
-      ]);
+      return node('div', { class: 'artifact-figure-cell', key: index });
     });
 
     return node('div', {
@@ -153,6 +143,15 @@ export const ArtifactFigure = {
         gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${height}, minmax(0, 1fr))`
       }
-    }, cells);
+    }, [
+      ...cells,
+      node('span', {
+        class: 'artifact-figure-bitmap artifact-figure-bitmap--full',
+        'aria-hidden': 'true',
+        style: {
+          backgroundImage: `url('${artifactBitmapPath(artifact)}')`
+        }
+      })
+    ]);
   }
 };

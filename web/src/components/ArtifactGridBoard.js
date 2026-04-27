@@ -78,7 +78,9 @@ export const ArtifactGridBoard = {
     pieceStyle(item) {
       return {
         gridColumn: `${item.x + 1} / span ${item.width}`,
-        gridRow: `${item.y + 1} / span ${item.height}`
+        gridRow: `${item.y + 1} / span ${item.height}`,
+        width: `calc(${item.width} * var(--artifact-cell-size, 50px) + ${Math.max(0, item.width - 1)} * var(--board-gap, 8px))`,
+        height: `calc(${item.height} * var(--artifact-cell-size, 50px) + ${Math.max(0, item.height - 1)} * var(--board-gap, 8px))`
       };
     },
     isBaseInventoryCell(cx, cy) {

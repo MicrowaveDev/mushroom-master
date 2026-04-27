@@ -2,7 +2,7 @@
 
 This document describes how artifact art should look when rendered as Backpack Battles-style puzzle pieces.
 
-The important rule: **an artifact is one complete ornament/image across its whole footprint**. Each grid cell shows a clipped slice of that larger image. Do not draw the same icon independently inside every occupied cell.
+The important rule: **an artifact is one complete ornament/image across its whole footprint**. The game renders that bitmap once as a continuous overlay above the occupied cells. Do not draw the same icon independently inside every occupied cell.
 
 ## Global Rules
 
@@ -15,8 +15,11 @@ The important rule: **an artifact is one complete ornament/image across its whol
   - `1×4` source: `80×320`
   - `3×3` source: `240×240`
 - The whole artifact should read as one object from a distance.
-- Cell borders may cut through the object like puzzle seams, but the object itself continues behind the seams.
-- Keep the item centered inside its full footprint with 8-12px outer breathing room.
+- Cell borders sit behind the object like puzzle slots; the artwork itself remains continuous above them.
+- Keep the item centered inside its full footprint with only small outer breathing room.
+- Avoid thin diagonal props floating in empty space. If an artifact is a needle, fang, blade, lash, or hook, make it a chunky ornament with a broad cap/head, guard, plate, ribbon, glow body, or aura so it fills the cell.
+- For `1×1` source art, target 72-88% fill on both axes and at least 28% visible alpha coverage.
+- For multi-cell source art, every occupied cell needs enough visible object mass to read as intentional.
 - Use transparent corners for irregular bag masks, but do not leave accidental blank occupied cells.
 - Avoid tiny detail that disappears at Telegram mobile scale.
 - Use the same object orientation for every rotation; rotation is handled by the game.
