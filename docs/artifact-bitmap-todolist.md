@@ -63,6 +63,33 @@ The validator checks transparent-space problems that are hard to catch from the 
 
 If it fails with low coverage or low width/height fill, regenerate the asset with a chunkier silhouette and less empty space.
 
+## Local Archive
+
+A local safety archive can be kept at:
+
+```text
+.agent/artifact-image-archives/
+```
+
+That directory is intentionally ignored by git. Use it to preserve an approved generated PNG set before iterating on replacement art. The archive should include:
+
+- `images/` with the exact `web/public/artifacts/*.png` files from the approved pass;
+- `contact-sheet.png` for fast visual review;
+- `README.md` with the source path, count, validation commands, and SHA-256 checksums.
+
+The 2026-04-28 production pass was archived locally as:
+
+```text
+.agent/artifact-image-archives/2026-04-28-production-pngs/
+```
+
+To restore that local archive into the app asset folder:
+
+```bash
+cp .agent/artifact-image-archives/2026-04-28-production-pngs/images/*.png web/public/artifacts/
+npm run game:artifacts:validate -- --all
+```
+
 ## Production Image Queue
 
 ### Damage

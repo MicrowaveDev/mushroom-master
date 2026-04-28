@@ -9,3 +9,4 @@ tmp/*.sqlite
 tmp/*.sqlite-journal
 *.log
 .agent/tasks/*/raw/screenshots/
+.agent/artifact-image-archives/
