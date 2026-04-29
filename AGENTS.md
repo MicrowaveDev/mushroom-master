@@ -6,6 +6,8 @@ Use [docs/character-image-prompt-template.md](/Users/microwavedev/workspace/mush
 
 Use [docs/design-requirements.md](/Users/microwavedev/workspace/mushroom-master/docs/design-requirements.md) as the authoritative canon-facing spec whenever the task touches character design, lore design descriptions, image prompts, portraits, dossier art, or other visual depictions of the Mycelium world and cast. If a visible-character depiction conflicts with that doc, treat it as a canon bug unless the requirement doc is updated in the same change.
 
+For artifact bitmap generation or review, use [docs/artifact-bitmap-todolist.md](/Users/microwavedev/workspace/mushroom-master/docs/artifact-bitmap-todolist.md) as the workflow source. The all-artifacts review bitmap must be generated with `npm run game:artifacts:sheet`; it is deterministic, sectioned, sorted by artifact ID within each section, and uses the current PNG files plus visual classification metadata. Do not use ad hoc `.agent` contact sheets or generator-made collages as sign-off evidence for the full artifact set.
+
 ## Planning, Delegation, and Validation Rules
 
 ### Source of Truth

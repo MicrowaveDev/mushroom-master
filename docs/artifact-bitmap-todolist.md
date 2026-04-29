@@ -22,7 +22,8 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 4. Run `npm run game:artifacts:next` again until it reports that all artifacts are done.
 5. Run `node --test tests/web/artifact-render.test.js`.
 6. Run `npm run game:artifacts:validate -- artifact_id` for every newly generated PNG.
-7. Run `npm run game:test:screens`.
+7. Run `npm run game:artifacts:sheet` to regenerate the deterministic all-artifacts review sheet.
+8. Run `npm run game:test:screens`.
 
 ## Global Generation Rules
 
@@ -93,6 +94,22 @@ To restore that local archive into the app asset folder:
 cp .agent/artifact-image-archives/2026-04-28-production-pngs/images/*.png web/public/artifacts/
 npm run game:artifacts:validate -- --all
 ```
+
+## Review Sheet
+
+Use this deterministic contact sheet for visual review:
+
+```bash
+npm run game:artifacts:sheet
+```
+
+The script writes:
+
+```text
+web/public/artifacts/contact-sheet.png
+```
+
+It groups artifacts by section, sorts artifact IDs alphabetically inside each section, embeds the current PNG files directly, and shows role/shine metadata from `app/shared/artifact-visual-classification.js`. Do not rely on ad hoc `.agent` contact sheets for sign-off.
 
 ## Production Image Queue
 
