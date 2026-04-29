@@ -20,12 +20,13 @@
 - Improvements must preserve the current DOM/CSS-grid inventory direction; **no** canvas/WebGL inventory.
 - Improvements must not change combat balance, economy, artifact stats, or shop eligibility.
 - Production PNGs must not be regenerated, replaced, or deleted as a side effect of phases that don't explicitly own bitmap regeneration.
+- Artifact PNGs, generated review sheets, and runtime-facing provenance manifests must **not be committed** until the artifact image set is explicitly approved as production-ready.
 
 ### Agent assumptions (subject to user correction)
 
 - Visual quality at `32px / 48px / 64px` is the right thumbnail-size budget for Telegram/mobile.
 - Role color must be paired with a non-color cue per W3C [Use of Color](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color); the cue is rendered in UI first, optionally baked into art later.
-- The four-role taxonomy stays at `damage / armor / stun / bag` (no fifth "speed" family) until there are enough speed-first items to justify it; speed-first items are tracked via Phase 2's `secondaryStat` instead.
+- The four-role taxonomy stays at `damage / armor / stun / bag` (no fifth "speed" family) until there are enough speed-first items to justify it; speed-first items are tracked via Phase 2's `secondaryStats` projection instead.
 
 ### Implementation choices left to phases
 
@@ -35,8 +36,8 @@
 ### Open ambiguity affecting execution
 
 - **Should role glyphs be baked into PNG art, drawn by UI, or both?** Recommendation: UI first (Phase 3); revisit baked motifs only after the UI approach has shipped and held up.
-- **Should individual artifact IDs land in battle events?** Recommendation: aggregate role feedback first (Phase 5 early); per-artifact IDs are a contract change that requires a new `[Req X-Y]` in [game-requirements.md](game-requirements.md) and a backwards-compat path for replays of historical battles. Do not start with per-artifact IDs.
-- **Where does image provenance live long term?** Decision pinned in Phase 4 below: `app/shared/artifact-image-metadata.json` (committed, ships in the bundle so the running app can show provenance in dev tools).
+- **Should individual artifact IDs land in battle events?** Recommendation: existing-event replay feedback first (Phase 5 Stage A); per-artifact IDs are a contract change that requires a new `[Req X-Y]` in [game-requirements.md](game-requirements.md) and a backwards-compat path for replays of historical battles. Do not start with per-artifact IDs.
+- **Where does image provenance live long term?** Decision pinned in Phase 4 below: `app/shared/artifact-image-metadata.json` after the image set is production-approved; until then, provenance drafts stay under `.agent/tasks/artifact-image-system/`.
 
 ### Authoritative local inputs
 
@@ -67,7 +68,7 @@ Guardrails:
 - Render role glyphs in UI first. Do not bake new role glyphs into PNGs until the UI approach has been tested and approved.
 - Keep the current DOM/CSS Grid inventory model. Do not move shop, backpack, or inventory rendering to canvas or WebGL.
 - Preserve existing untracked artifact image work unless the task explicitly says to modify or clean it.
-- Prefer deterministic scripts and committed metadata over ad hoc `.agent` contact sheets for sign-off evidence.
+- Before production-ready sign-off, prefer deterministic scripts that write evidence under `.agent/tasks/artifact-image-system/` over ad hoc contact sheets. After production sign-off, commit the approved metadata/review artifacts alongside the approved PNG baseline.
 - Keep image-generation provenance separate from temporary generation scratch files.
 
 Implementation rules:
@@ -81,6 +82,10 @@ Implementation rules:
 ## Current Snapshot
 
 As of this review, the local artifact set contains a complete `web/public/artifacts/*.png` set plus the official contact sheet.
+
+Git tracking caveat:
+
+- `web/public/artifacts/` is currently local/untracked in this worktree. The user decision on 2026-04-29 is to keep artifact images uncommitted until they are absolutely ready for production. Any plan language that says "committed contact sheet", "approved production PNG", or "shared provenance" applies only after explicit production-ready sign-off. Until then, treat the images and generated review sheets as local evidence, not a repository contract.
 
 Validation run:
 
@@ -161,6 +166,36 @@ Design implication:
 
 ## Proposed Work
 
+### Phase 0: Baseline Asset Tracking Policy
+
+Goal: prevent later phases from building provenance or committed review artifacts on top of an ambiguous local asset set.
+
+Current decision:
+
+- **Keep `web/public/artifacts/*.png`, generated contact sheets, generated thumbnail sheets, and runtime-facing provenance manifests uncommitted until explicit production-ready sign-off.** This decision was pinned by the user on 2026-04-29.
+
+Changes:
+
+- Treat the current `web/public/artifacts/*.png` files and `web/public/artifacts/contact-sheet.png` as local-only candidates.
+- Keep Phase 1 thumbnail review output under `.agent/tasks/artifact-image-system/phase-1/raw/` while the PNG set is not production-approved.
+- Keep Phase 4 provenance drafts under `.agent/tasks/artifact-image-system/phase-4/` while the PNG set is not production-approved.
+- When production-ready sign-off happens later, include the complete PNG set, deterministic contact sheet, thumbnail review sheet, and approved runtime provenance in one explicit asset-baseline change. Do not mix that commit with taxonomy, prompt, replay, or UI behavior work.
+- Record local review evidence under `.agent/tasks/artifact-image-system/phase-0/`.
+
+Phase acceptance criteria:
+
+- **AC0.1:** The repo state and docs clearly say artifact PNGs are local-only evidence until explicit production-ready sign-off.
+- **AC0.2:** No `web/public/artifacts/*.png`, generated contact sheet, generated thumbnail sheet, or runtime-facing provenance manifest is staged or committed before production-ready sign-off.
+- **AC0.3:** Phases 1 and 4 explicitly avoid claims about committed review/provenance artifacts until the baseline lands.
+- **AC0.4:** No placeholder SVG-derived regeneration is run as part of this decision.
+
+Phase verification:
+
+```bash
+git status --short -- web/public/artifacts
+git diff --cached --name-only -- web/public/artifacts app/shared/artifact-image-metadata.json
+```
+
 ### Phase 1: Thumbnail QA And Review Evidence
 
 Goal: make visual review match real play conditions.
@@ -169,17 +204,24 @@ Changes:
 
 - Add a deterministic thumbnail review sheet that renders every artifact:
   - on transparent background
-  - on actual cream grid cells (the same `--cell` background the prep grid uses; sample from `web/src/styles.css`)
+  - on actual prep/grid cell backgrounds from `web/src/styles.css` (`.prep-screen .artifact-grid-cell` and `.artifact-figure-cell`, currently `#fffdf5` plus the subtle radial cell treatment)
   - at `32px`, `48px`, and `64px`
   - in grayscale
   - with role/shine labels and warning markers
 - Keep the current large contact sheet for set review, but do not use it as the only sign-off surface.
 - Extend artifact review notes to call out "passes validator but weak at mobile size" cases.
+- Warning markers must use a small, stable rubric so reviewers are not guessing. Initial warning codes:
+  - `LOW_CONTRAST`: silhouette or main accent blends into the real grid cell background.
+  - `ROLE_UNCLEAR`: role cannot be named in grayscale without reading text.
+  - `SECONDARY_MISLEAD`: positive secondary stat reads as the primary family or disappears entirely.
+  - `TRADEOFF_INVISIBLE`: a negative stat/tradeoff has no visual treatment in the art, prompt, or UI metadata.
+  - `EMPTY_CELL`: an occupied footprint cell has too little meaningful object mass.
+  - `MASK_LEAK`: an irregular bag has visible pixels in mask-empty cells.
 
 Deliverable contract (pin before implementation so two agents don't pick differently):
 
 - **Output format:** single PNG composite at `web/public/artifacts/thumbnail-review.png`. PNG, not HTML or SVG, for the same reason `contact-sheet.png` is a PNG: deterministic, diff-friendly, embed-friendly in PRs and `.agent` evidence.
-- **Commit policy:** committed (same as `contact-sheet.png`), so reviewers can inspect the file at HEAD without running a script. Regeneration is a tracked action, not a per-review side effect.
+- **Commit policy:** local-only until explicit production-ready sign-off. Write the thumbnail sheet under `.agent/tasks/artifact-image-system/phase-1/raw/` while the PNG set is still candidate evidence. After production approval, commit the final sheet alongside the approved PNG baseline.
 - **Sheet layout:** four columns × N rows per artifact section. Columns = the four conditions (transparent, cream cell, grayscale, label strip). Each row band shows the same artifact at the three sizes side-by-side. Cell-size budget: each `64px` thumbnail must remain inspectable at typical PR-diff zoom (≥ 4× pixel doubling for the smallest size).
 - **Reuse vs new:** new script `app/scripts/generate-artifact-thumbnail-review.js`. Share section ordering and metadata loading with `generate-artifact-contact-sheet.js` via a small extracted helper; do not duplicate the section list.
 - **npm script:** `npm run game:artifacts:thumbnail-review` (added in this phase; the verification block below already lists it). Update `package.json` in the same change.
@@ -222,7 +264,7 @@ role + shine
 Recommended model:
 
 ```text
-role + shine + secondaryStat + tradeoff + owner + footprintType
+role + shine + secondaryStats + tradeoffs + owner + footprintType
 ```
 
 **Derivation contract (chosen direction): every new field is *derived* deterministically from existing artifact data — no parallel authored metadata file.** Tests pin the projection rules, not authored values per artifact. Rationale: avoids duplicate sources of truth (the `bonus`, `family`, `width`/`height`, `shape`, `characterItem` fields already encode what we need); changing an artifact's stats automatically updates its classification; keeps Phase 4's provenance file focused on prompts, not on re-encoding game data.
@@ -231,8 +273,9 @@ Field projection rules:
 
 - `role`: from `artifact.family` — `damage / armor / stun / bag`. Unchanged from today.
 - `shine`: from existing `artifactShineTier()` projection in [`app/shared/artifact-visual-classification.js`](../app/shared/artifact-visual-classification.js). Unchanged from today.
-- `secondaryStat`: derived from `bonus`. Possible values cover the real shapes in the catalog: `none`, `speed`, `armor`, `damage`, `stun`, `mixed` (more than one non-primary stat). Determined by inspecting which `bonus.*` keys are present besides the role's primary stat. Phase 2 must enumerate the projection rule for every artifact in [`game-data.js`](../app/server/game-data.js) and back it with a unit test that asserts the expected value per artifact id.
-- `tradeoff`: derived from `bonus`. Values: `negativeDamage / negativeArmor / negativeSpeed / none`. A tradeoff is any negative value in `bonus`. (No artifact currently carries one — the field is reserved for future items and tested as `none` for every existing entry.)
+- `primaryStatKey`: derived from `role`: `damage -> damage`, `armor -> armor`, `stun -> stunChance`, `bag -> null`. This key exists so the secondary/tradeoff projection does not have to rediscover role semantics in each consumer.
+- `secondaryStats`: derived from positive `bonus` entries other than the primary stat key. Values are canonical stat ids in stable order: `damage`, `armor`, `speed`, `stun` (where `bonus.stunChance` maps to `stun`). Empty array means no positive secondary stat. If a compact UI label is needed, derive it from this array as `none`, the single stat id, or `mixed`; do not store a second authored value.
+- `tradeoffs`: derived from negative `bonus` entries. Values are canonical stat ids in stable order: `damage`, `armor`, `speed`, `stun`. Empty array means no tradeoff. Several current artifacts already have tradeoffs, including `amber_fang` (`armor`), `burning_cap` (`armor`, `speed`), and `truffle_bulwark` (`damage`, `speed`), so this must be an array or an explicit `mixed` projection, not a single enum.
 - `owner`: **projected from** `artifact.characterItem.mushroomId` when present, else `null`. Not a new field — a derived view of the existing `characterItem` shape, so character ownership has a single source of truth.
 - `footprintType`: derived from `artifact.width`, `artifact.height`, and (for bags) `artifact.shape`. Values: `single` (1×1), `wide` (`width > height`, no shape mask), `tall` (`height > width`, no shape mask), `block` (`width === height` and >1, no shape mask), `mask` (bag with non-rectangular `shape` array, e.g. T/L/J/S/Z/I tetrominoes). **Bag-only for `mask`.** **Tracks the canonical orientation**, not the player's current rotation — rotation is presentation, not identity, so consumers (Phase 5 replay highlights) can use the canonical type and apply orientation styling separately.
 
@@ -252,10 +295,10 @@ Likely files:
 
 Phase acceptance criteria:
 
-- **AC2.1:** Every artifact in [`game-data.js`](../app/server/game-data.js) projects to a deterministic `secondaryStat`, `tradeoff`, `owner`, and `footprintType` value, asserted by a per-artifact-id table test.
+- **AC2.1:** Every artifact in [`game-data.js`](../app/server/game-data.js) projects to deterministic `primaryStatKey`, `secondaryStats`, `tradeoffs`, `owner`, and `footprintType` values, asserted by a per-artifact-id table test.
 - **AC2.2:** Classification tests prove the projection stays stable across a no-op refactor (snapshot test of the projected output for the full catalog).
 - **AC2.3:** Existing `role` and `shine` consumers keep working — no behavior change for the current `cssClasses` or `prompt` strings.
-- **AC2.4:** Prompt and UI consumers (Phases 3 / 4 / 5) can read new metadata without duplicating `bonus`-parsing logic; the projection is the only place that inspects `bonus`.
+- **AC2.4:** Prompt and UI consumers (Phases 3 / 4 / 5) can read new metadata without duplicating `bonus`-parsing logic; the projection is the only place outside existing stat-total code that inspects `bonus`.
 
 Phase verification:
 
@@ -304,7 +347,7 @@ Goal: make image regeneration repeatable instead of artisanal.
 
 Changes:
 
-- Generate and save a per-artifact prompt/provenance record (one entry per approved production image, keyed by artifact id):
+- Generate and save a per-artifact prompt/provenance record (one approved production record per artifact id):
   - artifact id
   - artifact metadata snapshot
   - visual classification snapshot (the Phase 2 projection)
@@ -313,7 +356,7 @@ Changes:
   - **checksum: `sha256` of the PNG file's raw bytes** (not of prompt + metadata; see rationale below)
   - validation output (coverage validator status, mask check)
   - reviewer note
-  - approval status (`approved` / `candidate` / `rejected`)
+  - approval status (`approved` for the runtime-facing record; optional candidate history uses `candidate` / `rejected` entries under `candidates[]`)
 - Split prompt guidance into reusable blocks:
   - global style
   - role palette
@@ -325,25 +368,27 @@ Changes:
   - "role is recognizable without color"
   - "secondary stat uses one small accent, not extra particles"
 - **Characters out of scope for artifact prompts.** Artifacts are objects, not portraits. Even for character items (e.g. `kirt_venom_fang`, `morga_flash_seed`), the prompt template must instruct the generator to render the *object* and explicitly forbid rendering the character likeness. This sidesteps the [visible-ears rule](../AGENTS.md) and the design-requirements canon contract — neither applies when the image is purely an object. Add a one-line "no character likenesses; render the object only" directive to the per-artifact block.
-- **Wrap, don't replace, the existing bitmap pipeline.** [`app/scripts/generate-artifact-bitmaps.js`](../app/scripts/generate-artifact-bitmaps.js) is the regeneration entry point today. Phase 4 wraps it: prompts and provenance records are produced alongside (or feed into) the existing script — do not write a parallel generation pipeline.
+- **Wrap the approved prompt/approval intake, not the placeholder generator.** [`app/scripts/next-artifact-image-prompts.js`](../app/scripts/next-artifact-image-prompts.js) is the existing prompt entry point. [`app/scripts/generate-artifact-bitmaps.js`](../app/scripts/generate-artifact-bitmaps.js) currently creates local SVG-derived reference/placeholder assets and must not be treated as the production art regeneration path. Phase 4 should either rename/guard that placeholder script or make provenance generation sit beside the prompt/approval workflow so it never overwrites production PNGs as a hidden side effect.
 
-**Provenance file location (pinned).** `app/shared/artifact-image-metadata.json` — committed, ships in the bundle so the running app can surface provenance in dev-only tooling. Rationale over the doc-only alternative: a single shared file keeps the Phase 2 classification snapshot, the prompt, and the runtime artifact registry colocated, and means a future "show prompt for this artifact" dev affordance has data already loaded.
+**Provenance file location (pinned for production).** After production-ready sign-off, approved runtime provenance lives in `app/shared/artifact-image-metadata.json` — committed, ships in the bundle so the running app can surface provenance in dev-only tooling. Before that sign-off, provenance drafts stay under `.agent/tasks/artifact-image-system/phase-4/` and must not be committed as runtime-facing metadata.
+
+**Candidate record policy.** The shared metadata file is the approved-image manifest only after production sign-off. It may include rejected/candidate history only as an optional `candidates[]` array under an artifact id with stable candidate ids; temporary scratch prompts, raw generated images, and failed approval attempts belong under `.agent/tasks/artifact-image-system/phase-4/`. Do not let an unapproved `candidate` entry become the runtime source of truth.
 
 **Why `sha256` of PNG bytes (not prompt + metadata).** A prompt-hash answers "did the prompt change?", which the prompt string itself already answers via git diff. A PNG-byte hash answers "did the image actually change?" — that's the more useful drift signal because LLM image regenerations can be near-identical visually but produce different bytes; conversely, a bit-stable PNG with a tweaked prompt is fine. Pin the bytes; let the prompt diff stand alone.
 
 Likely files:
 
 - `app/scripts/next-artifact-image-prompts.js` (extend; this is the existing prompt entry point)
-- `app/scripts/generate-artifact-bitmaps.js` (wrap with provenance write, no behavior change)
+- `app/scripts/generate-artifact-bitmaps.js` (rename, guard, or document as placeholder-only; no production PNG writes in Phase 4)
 - `docs/artifact-image-style-prompt.md`
 - `app/shared/artifact-image-metadata.json` (new)
 
 Phase acceptance criteria:
 
-- **AC4.1:** Future regeneration can answer "why does this image look this way?" — the provenance entry for any approved PNG resolves to its prompt, classification, validator output, and reviewer decision.
+- **AC4.1:** Future regeneration can answer "why does this image look this way?" — the approved provenance entry for any approved PNG resolves to its prompt, classification, validator output, reviewer decision, and optional candidate history.
 - **AC4.2:** Prompt drift can be reviewed in git via the provenance file diff.
 - **AC4.3:** Generated images can be revalidated and compared against the prompt that produced them. A `npm run game:artifacts:provenance:check` script (added in this phase) recomputes the PNG `sha256` for every approved entry and fails when a checksum mismatches the on-disk file.
-- **AC4.4:** Provenance records distinguish approved production images (`status: 'approved'`) from temporary generated candidates (`status: 'candidate'`); only `approved` entries are eligible to drive shop/grid rendering.
+- **AC4.4:** Runtime-facing provenance distinguishes approved production images (`status: 'approved'`) from temporary generated candidates; only approved records are eligible to drive shop/grid rendering or dev-tool display by default.
 
 Phase verification:
 
@@ -360,26 +405,27 @@ Goal: let players feel that their artifact choices mattered.
 
 This phase has **two stages**: Stage A is UI-only and ships first; Stage B is a contract change and only ships after Stage A is stable and a new requirement ID is added.
 
-#### Stage A: Aggregate role feedback (UI-only, no schema change)
+#### Stage A: Existing-event replay feedback (UI-only, no schema change)
 
 Changes:
 
-- Add replay highlights derived from existing battle event fields (role, side, hp delta, stun applied):
-  - damage pulse for damage contribution
-  - shield flash for armor mitigation
-  - spark/spore crackle for stun roll or stun success
+- Add replay highlights derived only from fields that already exist on battle events and snapshots today (`actorSide`, `targetSide`, `damage`, `stunned`, and the current event `state`):
+  - damage pulse for resolved hit damage
+  - spark/spore crackle for stun success
+  - static loadout-role summary chips near the replay inventories, derived from each side's loadout metadata
   - bag glow only when space/placement is being edited, not during combat
 - Reuse the same role color and glyph language from shop and backpack.
 - No new battle-event fields; no server change.
+- Do not claim armor mitigation, stun roll attempts, or per-artifact contribution in Stage A; current events do not expose those values. Those belong in Stage B or another explicit requirement update.
 
 #### Stage B: Per-artifact attribution (contract change, gated)
 
 Changes (only after Stage A holds up in play):
 
-- Include artifact IDs in battle events when a specific artifact contributes meaningfully.
+- Include artifact IDs or aggregate contribution fields in battle events when a specific artifact or stat family contributes meaningfully.
 - **New requirement** in [game-requirements.md](game-requirements.md) — assign a section-letter ID per the [Requirement Traceability Rules](../AGENTS.md). Example wording: *"`[Req X-Y]` battle events SHOULD carry the contributing artifact id when one exists; the replay client MUST render correctly when the field is absent."* The exact ID is chosen during Stage B planning (currently the next available letter in the relevant section).
 - **Backwards-compatibility (mandatory).** Historical battles in the `battles` table do not carry the new field. The replay client must:
-  - degrade to Stage A's aggregate role highlights when the artifact id field is absent
+  - degrade to Stage A's existing-event highlights and static loadout-role summary when the artifact id field is absent
   - never throw or render an empty highlight when the field is missing
   - be covered by an explicit test that loads a pre-Stage-B battle row and renders a clean replay
 
@@ -396,7 +442,7 @@ Likely files (Stage B, additional):
 
 Phase acceptance criteria:
 
-- **AC5.1:** Replay visually answers "what part of my build helped?" — at minimum via Stage A's aggregate role feedback.
+- **AC5.1:** Replay visually answers "what happened in this hit?" via Stage A's existing-event feedback, and "what roles did this loadout bring?" via static loadout-role summary chips. Per-artifact "what helped?" attribution is Stage B.
 - **AC5.2:** Reduced-motion mode still conveys the same information through static states.
 - **AC5.3:** Artifact effects do not become noisy or obscure HP/combat readability.
 - **AC5.4:** Stage B (if shipped) lands a new `[Req X-Y]` in [game-requirements.md](game-requirements.md) **in the same commit** as the schema change, and a `[Req X-Y]`-tagged test proves a pre-Stage-B battle row replays correctly without the new field.
@@ -451,11 +497,12 @@ npm run game:test:screens                        # 6A + 6B: visual proof
 
 This is the single source of truth for phase sequencing. Each phase depends on the previous one's contract being stable; do not parallelize unless the dependency is genuinely absent.
 
-1. **Phase 1 — Thumbnail QA.** Deterministic review sheet. No production PNG changes. Ships standalone.
+0. **Phase 0 — Baseline asset tracking policy.** Local production PNGs stay uncommitted until explicit production-ready sign-off; other phases must treat them as local evidence.
+1. **Phase 1 — Thumbnail QA.** Deterministic review sheet. No production PNG changes. Ships standalone after Phase 0 records the baseline status.
 2. **Phase 2 — Richer visual taxonomy.** Derived metadata projection and tests. Strict API compatibility for existing `role` / `shine` consumers. Ships standalone after Phase 1 (or in parallel with Phase 1; the two don't share files).
 3. **Phase 3 — Non-color role glyphs in UI.** **Depends on Phase 2** — consumes the new metadata projection. Do not start before Phase 2 lands.
-4. **Phase 4 — Prompt and provenance pipeline.** Depends on Phase 2 (classification snapshot) being stable. Wraps the existing bitmap generation script; does not regenerate images.
-5. **Phase 5 Stage A — Aggregate role replay feedback.** UI-only; no schema change. Depends on Phase 3's role-glyph language for visual consistency.
+4. **Phase 4 — Prompt and provenance pipeline.** Depends on Phase 0 (asset tracking policy) and Phase 2 (classification snapshot) being stable. Wraps prompt/approval intake, not the placeholder bitmap generator; does not regenerate images.
+5. **Phase 5 Stage A — Existing-event replay feedback.** UI-only; no schema change. Depends on Phase 3's role-glyph language for visual consistency.
 6. **Phase 5 Stage B — Per-artifact battle-event attribution.** Contract change. Gated on Stage A holding up *and* a new `[Req X-Y]` landing in [game-requirements.md](game-requirements.md). May be deferred indefinitely.
 7. **Phase 6A — UI-only QoL.** Independent of Phase 5; can ship any time after Phase 3.
 8. **Phase 6B — Mechanic-dependent QoL.** Gated on a new `[Req X-Y]` landing in [game-requirements.md](game-requirements.md) per AC6.5. Treat as backlog until then.
@@ -464,7 +511,7 @@ Do not parallel-edit these areas in one agent pass:
 
 - production PNG files and classification metadata
 - replay battle-event contracts and UI-only role glyphs
-- prompt/provenance scripts and bitmap regeneration
+- prompt/provenance scripts and placeholder bitmap regeneration
 - bag-placement behavior and image review tooling
 
 If a future task starts in the middle of the plan, the agent must first verify whether earlier phase contracts already exist (read the listed files; check `package.json` for new scripts; check [`.agent/tasks/artifact-image-system/spec.md`](../.agent/tasks/artifact-image-system/spec.md) for the phase status tracker). Do not reimplement a completed phase just because this plan lists it.

@@ -12,11 +12,12 @@ The plan is the source of truth for scope, ACs, and verification. This file mirr
 
 ## Phase status
 
+- **Phase 0 — Baseline asset tracking policy:** complete (2026-04-29 user decision: artifact images stay local-only until explicit production-ready sign-off).
 - **Phase 1 — Thumbnail QA:** not started.
 - **Phase 2 — Richer visual taxonomy:** not started.
 - **Phase 3 — Non-color role glyphs in UI:** not started.
 - **Phase 4 — Prompt and provenance pipeline:** not started.
-- **Phase 5 Stage A — Aggregate role replay feedback:** not started.
+- **Phase 5 Stage A — Existing-event replay feedback:** not started.
 - **Phase 5 Stage B — Per-artifact battle-event attribution:** not started (gated on Stage A + new `[Req X-Y]`).
 - **Phase 6A — UI-only QoL:** not started.
 - **Phase 6B — Mechanic-dependent QoL:** not started (gated on game-requirements update).
@@ -24,6 +25,13 @@ The plan is the source of truth for scope, ACs, and verification. This file mirr
 When a phase ships, update its bullet to `complete (<short note + commit ref>)` and drop evidence under `<phase>/`.
 
 ## Acceptance criteria (mirrored from the plan)
+
+### Phase 0
+
+- **AC0.1:** The repo state and docs clearly say artifact PNGs are local-only evidence until explicit production-ready sign-off.
+- **AC0.2:** No `web/public/artifacts/*.png`, generated contact sheet, generated thumbnail sheet, or runtime-facing provenance manifest is staged or committed before production-ready sign-off.
+- **AC0.3:** Phases 1 and 4 explicitly avoid claims about committed review/provenance artifacts until the baseline lands.
+- **AC0.4:** No placeholder SVG-derived regeneration is run as part of this decision.
 
 ### Phase 1
 
@@ -34,10 +42,10 @@ When a phase ships, update its bullet to `complete (<short note + commit ref>)` 
 
 ### Phase 2
 
-- **AC2.1:** Every artifact in `app/server/game-data.js` projects to a deterministic `secondaryStat`, `tradeoff`, `owner`, and `footprintType` value, asserted by a per-artifact-id table test.
+- **AC2.1:** Every artifact in `app/server/game-data.js` projects to deterministic `primaryStatKey`, `secondaryStats`, `tradeoffs`, `owner`, and `footprintType` values, asserted by a per-artifact-id table test.
 - **AC2.2:** Classification snapshot tests prove the projection stays stable across no-op refactors.
 - **AC2.3:** Existing `role` and `shine` consumers keep working — no behavior change for current `cssClasses` or `prompt` strings.
-- **AC2.4:** The projection is the only place that inspects `bonus` — Phase 3 / 4 / 5 consumers never re-parse stats.
+- **AC2.4:** The projection is the only place outside existing stat-total code that inspects `bonus` — Phase 3 / 4 / 5 consumers never re-parse stats.
 
 ### Phase 3
 
@@ -48,14 +56,14 @@ When a phase ships, update its bullet to `complete (<short note + commit ref>)` 
 
 ### Phase 4
 
-- **AC4.1:** Provenance entry per approved PNG resolves to prompt, classification, validator output, reviewer decision.
+- **AC4.1:** Approved provenance entry per approved PNG resolves to prompt, classification, validator output, reviewer decision, and optional candidate history.
 - **AC4.2:** Prompt drift is reviewable in git via the provenance file diff.
 - **AC4.3:** `npm run game:artifacts:provenance:check` recomputes PNG `sha256` for every approved entry and fails on mismatch.
-- **AC4.4:** Provenance distinguishes `approved` / `candidate` / `rejected`; only `approved` drives shop/grid rendering.
+- **AC4.4:** Runtime-facing provenance distinguishes approved production images from temporary generated candidates; only `approved` drives shop/grid rendering or dev-tool display by default.
 
 ### Phase 5
 
-- **AC5.1:** Replay visually answers "what part of my build helped?" via Stage A's aggregate role feedback (Stage B optional).
+- **AC5.1:** Replay visually answers "what happened in this hit?" via Stage A's existing-event feedback, and "what roles did this loadout bring?" via static loadout-role summary chips. Per-artifact "what helped?" attribution is Stage B.
 - **AC5.2:** Reduced-motion mode still conveys the same info through static states.
 - **AC5.3:** Artifact effects do not obscure HP/combat readability.
 - **AC5.4:** Stage B (if shipped) lands a new `[Req X-Y]` in `docs/game-requirements.md` in the same commit, plus a `[Req X-Y]`-tagged test proving a pre-Stage-B battle row replays correctly without the new field.
@@ -75,6 +83,7 @@ When a phase ships, update its bullet to `complete (<short note + commit ref>)` 
 - Production PNGs are not regenerated, replaced, or deleted unless the active task explicitly owns bitmap regeneration.
 - Render role glyphs in UI first; do not bake into PNGs until UI approach is approved.
 - New battle-event fields require a new `[Req X-Y]` in `docs/game-requirements.md` in the same commit (per the [Requirement Traceability Rules](../../../AGENTS.md)).
+- The current `web/public/artifacts/` PNG set, generated review sheets, and runtime-facing provenance manifests must be treated as local-only evidence until the user explicitly signs off that the image set is production-ready.
 
 ## Non-goals
 
@@ -95,7 +104,7 @@ Per phase, drop evidence under `<phase>/`:
 
 ## Resume checklist (for a future agent)
 
-1. Read this `spec.md` and find the highest phase whose status is `not started` or partially complete.
+1. Read this `spec.md` and find the earliest phase whose status is `not started` or partially complete.
 2. Read the corresponding phase block in [`docs/artifact-image-system-improvement-plan.md`](../../../docs/artifact-image-system-improvement-plan.md).
 3. Verify nothing in the phase has already shipped: `git log --oneline -- <likely-files>` and direct `Read`/`grep` of the listed files. Treat ACs as hypotheses until verified.
 4. Implement, leave evidence, update the phase status above.
