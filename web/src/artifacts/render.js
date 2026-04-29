@@ -1,3 +1,5 @@
+import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
+
 export function artifactTheme(artifact) {
   const themes = {
     damage: {
@@ -308,6 +310,7 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
     return '';
   }
   const theme = artifactTheme(artifact);
+  const visual = artifactVisualClassification(artifact);
   const isBag = artifact.family === 'bag';
   // Tetromino-shaped bags carry a 2D shape mask. Cells with mask=0 are
   // empty space inside the bounding box and render as transparent gaps
@@ -336,8 +339,8 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
   }).join('');
   return `
     <div
-      class="artifact-figure-grid"
-      style="grid-template-columns: repeat(${w}, minmax(0, 1fr)); grid-template-rows: repeat(${h}, minmax(0, 1fr));"
+      class="artifact-figure-grid ${visual.cssClasses.join(' ')}"
+      style="grid-template-columns: repeat(${w}, minmax(0, 1fr)); grid-template-rows: repeat(${h}, minmax(0, 1fr)); --artifact-role-color: ${visual.role.color};"
     >
       ${cells}
       <span

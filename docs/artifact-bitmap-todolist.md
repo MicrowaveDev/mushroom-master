@@ -27,10 +27,14 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 ## Global Generation Rules
 
 - Use [`artifact-image-style-prompt.md`](artifact-image-style-prompt.md) as the base style prompt for every artifact.
-- Style: simple readable fantasy inventory icon, not full concept art.
+- Style: simple readable fantasy inventory sticker, not full concept art.
+- Match the approved 2026-04-28 direction: `ferment_phial`, `flash_cap`, `kirt_venom_fang`, `settling_guard`, `spore_lash`, and `spore_needle`.
+- Prefer chunky silhouettes, thick contour, flat cel-shaded color blocks, and one or two large accents.
+- Simplify aggressively: if a detail will not read at 48-64px per cell, remove it.
 - Keep a clean bitmap silhouette: no scratch halo, no loose construction lines around the object, no background sketch noise.
 - Follow strict footprint direction: horizontal artifacts must be horizontal, vertical artifacts must be vertical, square artifacts must be centered/blocky, irregular bags must follow the mask.
-- Do not make flat vector icons, CSS-looking UI symbols, emoji, stickers, toy renders, or plain silhouettes.
+- Do not make CSS-looking UI symbols, emoji, toy renders, or plain silhouettes.
+- Do not make painterly realistic mushroom specimens, gritty bark/soil/leather/stone props, glossy loot icons, or dense tiny texture.
 - The image must be one complete artifact across the whole footprint. It should read as one object over the grid cells.
 - 1x1 icons must fill the cell, not float in the middle: target 72-88% footprint fill on both axes and at least 28% visible alpha coverage.
 - Multi-cell icons must keep at least about 18% visible alpha coverage in every occupied cell.

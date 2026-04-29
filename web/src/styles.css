@@ -1950,13 +1950,14 @@ select {
 }
 
 .shop-item {
+  position: relative;
   display: grid;
   /* Three rows so the name pins to the top, the visual centers in the
      flexible middle row, and the stat tags stick to the bottom. The grid
      parent stretches all tiles in a row to the same height, so this
      yields a consistent baseline for tags across cards regardless of
      visual size. */
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   gap: 4px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.7);
@@ -1967,6 +1968,22 @@ select {
   min-width: 0;
   touch-action: manipulation;
   container-type: inline-size;
+  --artifact-role-color: rgba(123, 91, 59, 0.42);
+}
+
+.shop-item--role-damage { --artifact-role-color: #d9612b; }
+.shop-item--role-armor { --artifact-role-color: #6f9b4f; }
+.shop-item--role-stun { --artifact-role-color: #d5b735; }
+.shop-item--role-bag { --artifact-role-color: #b98245; }
+
+.shop-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 10px 0 0 10px;
+  background: var(--artifact-role-color);
+  opacity: 0.82;
 }
 
 .shop-item:active {
@@ -1986,6 +2003,24 @@ select {
   border-width: 2px;
   background: linear-gradient(135deg, rgba(212, 165, 74, 0.06) 0%, transparent 60%);
 }
+
+.shop-item--shine-bright {
+  border-color: color-mix(in srgb, var(--artifact-role-color) 52%, white);
+}
+
+.shop-item--shine-radiant,
+.shop-item--shine-signature {
+  border-color: color-mix(in srgb, var(--artifact-role-color) 76%, white);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--artifact-role-color) 20%, transparent),
+    0 6px 16px rgba(91, 64, 36, 0.12);
+}
+
+.shop-item--shine-signature {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--artifact-role-color) 13%, transparent), transparent 52%),
+    rgba(255, 255, 255, 0.74);
+}
 .shop-item-price {
   font-weight: 700;
   font-size: 0.85rem;
@@ -1993,6 +2028,33 @@ select {
 }
 .shop-item--tier2 .shop-item-price { color: var(--accent); }
 .shop-item--tier3 .shop-item-price { color: #b8860b; }
+
+.shop-item-visual-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: rgba(63, 51, 40, 0.68);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.shop-item-role-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--artifact-role-color);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.62);
+  flex: 0 0 auto;
+}
+
+.shop-item-shine {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .shop-item-visual {
   /* Fluid against .shop-item's inline-size container. Same clamp as
@@ -2346,6 +2408,13 @@ select {
     drop-shadow(0 2px 2px rgba(255, 255, 255, 0.42));
 }
 
+.artifact-shine--radiant .artifact-figure-bitmap,
+.artifact-shine--signature .artifact-figure-bitmap {
+  filter:
+    drop-shadow(0 9px 16px rgba(91, 64, 36, 0.16))
+    drop-shadow(0 0 7px color-mix(in srgb, var(--artifact-role-color) 36%, transparent));
+}
+
 .artifact-piece.mini .artifact-figure-svg {
   filter: drop-shadow(0 6px 10px rgba(91, 64, 36, 0.12));
 }
@@ -2381,7 +2450,13 @@ select {
   gap: var(--board-gap, 8px);
   align-content: stretch;
   justify-content: stretch;
+  --artifact-role-color: rgba(123, 91, 59, 0.42);
 }
+
+.artifact-figure-grid.artifact-role--damage { --artifact-role-color: #d9612b; }
+.artifact-figure-grid.artifact-role--armor { --artifact-role-color: #6f9b4f; }
+.artifact-figure-grid.artifact-role--stun { --artifact-role-color: #d5b735; }
+.artifact-figure-grid.artifact-role--bag { --artifact-role-color: #b98245; }
 
 .artifact-figure-cell {
   position: relative;
@@ -2391,12 +2466,25 @@ select {
   min-width: 0;
   min-height: 0;
   border-radius: 16px;
-  border: 1px solid rgba(94, 70, 39, 0.14);
+  border: 1px solid color-mix(in srgb, var(--artifact-role-color) 28%, rgba(94, 70, 39, 0.14));
   background:
     radial-gradient(circle at top, rgba(140, 188, 135, 0.14), transparent 52%),
     rgba(255, 251, 244, 0.96);
   box-shadow: 0 8px 18px rgba(91, 64, 36, 0.08);
   overflow: hidden;
+}
+
+.artifact-shine--bright .artifact-figure-cell {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--artifact-role-color) 12%, transparent),
+    0 8px 18px rgba(91, 64, 36, 0.08);
+}
+
+.artifact-shine--radiant .artifact-figure-cell,
+.artifact-shine--signature .artifact-figure-cell {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--artifact-role-color) 18%, transparent),
+    0 8px 18px rgba(91, 64, 36, 0.1);
 }
 
 .artifact-figure-cell--empty {

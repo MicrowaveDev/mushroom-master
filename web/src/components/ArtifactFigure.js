@@ -1,5 +1,6 @@
 import { h } from 'vue/dist/vue.esm-bundler.js';
 import { artifactBitmapPath } from '../artifacts/render.js';
+import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 
 function node(tag, attrs = {}, children = []) {
   return h(tag, attrs, children);
@@ -121,6 +122,7 @@ export const ArtifactFigure = {
 
     const isBag = artifact.family === 'bag';
     const shape = isBag && artifact.shape ? artifact.shape : null;
+    const visual = artifactVisualClassification(artifact);
     const width = shape
       ? (shape[0]?.length || 0)
       : (Number(this.displayWidth) > 0 ? Number(this.displayWidth) : artifact.width);
@@ -138,10 +140,11 @@ export const ArtifactFigure = {
     });
 
     return node('div', {
-      class: 'artifact-figure-grid',
+      class: ['artifact-figure-grid', ...visual.cssClasses],
       style: {
         gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${height}, minmax(0, 1fr))`
+        gridTemplateRows: `repeat(${height}, minmax(0, 1fr))`,
+        '--artifact-role-color': visual.role.color
       }
     }, [
       ...cells,

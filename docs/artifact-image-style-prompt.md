@@ -4,6 +4,32 @@ Use this file as the shared style base for production artifact bitmaps.
 
 These images are **small inventory icons**, not character illustrations. They must be simple, readable, and shaped to the artifact footprint. The goal is a clean Backpack Battles-style puzzle item: one clear ornament image rendered as a continuous overlay above the grid cells.
 
+## 2026-04-28 Review Direction
+
+The approved direction from the bitmap review is simpler than the first full production pass.
+
+Use these existing images as the closest local examples:
+
+- `web/public/artifacts/ferment_phial.png`
+- `web/public/artifacts/flash_cap.png`
+- `web/public/artifacts/kirt_venom_fang.png`
+- `web/public/artifacts/settling_guard.png`
+- `web/public/artifacts/spore_lash.png`
+- `web/public/artifacts/spore_needle.png`
+
+What works in those examples:
+
+- chunky compact silhouettes that read at one glance
+- one clear object, not a small scene or specimen
+- thick dark contour around the whole object
+- broad cel-shaded color blocks
+- simple warm highlights, spots, or beads
+- very little texture
+- no scratchy edge noise
+- no realistic bark, dirt, mushroom, leather, or stone rendering
+
+When choosing between detail and readability, always remove detail. These icons sit over pale rounded inventory cells at about 48-64px per cell, with a CSS drop shadow already added by the UI. The bitmap itself should not try to provide atmospheric lighting, cast shadow, grit, or realistic material depth.
+
 The style references are the two mushroom ornament images used in the PDF renderer:
 
 ```text
@@ -18,23 +44,28 @@ Match these two ornament assets more than the character portraits or generic gam
 Generate one isolated artifact icon.
 
 Visual style:
-- simple readable mushroom-ornament inventory icon
+- simple readable mushroom-ornament inventory sticker
 - inspired specifically by `top-right-mushroom.jpg` and `bottom-left-mushroom.svg`, not by detailed character art
 - flat/vector-like illustrated finish with a clean heavy outline
+- chunky cel-shaded silhouette, closer to a sticker than a painting
 - thick dark brown or near-black contour, like `top-right-mushroom.jpg`
 - large smooth color regions
 - simple layered highlight shapes, not painterly rendering
-- soft internal gradients are allowed only like `bottom-left-mushroom.svg`: smooth, controlled, and simple
+- use flat color by default; soft internal gradients are allowed only when broad, smooth, and secondary
 - optional tiny dot clusters only like `top-right-mushroom.jpg`, kept sparse and near spots/seams
 - high contrast between object and transparent background
-- 2-5 main colors only
+- 2-4 main colors only
 - one clear main silhouette
 - minimal internal detail: only one or two readable accents
+- details must be large enough to survive at 48px
 - no busy painterly texture
 - no realistic light/shadow modeling
 - no sketch scratches
 - no construction lines
 - no paper texture
+- no gritty natural texture
+- no glossy bevels or rendered loot-icon shine
+- no fine hatch marks, cracks, pores, fibers, bark grain, soil speckles, or dense bubble fields
 - no loose particles outside the object silhouette unless the artifact itself is a contained glow/spark item
 - no tiny details that disappear at 48-64px
 
@@ -53,6 +84,45 @@ Footprint fill rules:
 - avoid small separated symbols, repeated mini-icons, thin diagonal sticks, or a large blank area in any occupied cell
 
 Important: do not make long skinny objects that only occupy a diagonal strip. Even needles, fangs, blades, lashes, and hooks must be stylized as chunky mushroom ornaments with a broad cap, head, guard, plate, glow body, ribbon, or aura integrated into the silhouette. The item may point diagonally only when its silhouette still fills the cell.
+
+## UI Fit Rules
+
+The app renders each bitmap as `background-size: 100% 100%` over the artifact footprint. The cells behind it are pale cream rounded squares with a subtle green tint and the UI adds its own drop shadow.
+
+Prompt for artwork that works in those conditions:
+
+- clear outside contour first, internal decoration second
+- medium-to-dark outline so the object separates from cream cells
+- saturated mids rather than pale low-contrast colors
+- no object shadow baked into the PNG
+- no soft glow spreading outside the silhouette
+- no tiny transparent gaps inside a 1x1 icon unless the gap is the main shape, such as a ring
+- avoid beige-on-cream and moss-on-cream low contrast
+- avoid realistic material colors if they make the object look muddy at mobile size
+
+For 1x1 items, prefer a single bold emblem-like form. For small fangs, needles, shards, phials, seeds, and caps, the head/body should be chunky enough that the icon still reads when the cell is thumb-sized.
+
+## Visual Classification
+
+Every artifact has two visual signals:
+
+- **Role color**: the artifact's gameplay class. Damage reads amber/red, armor reads moss/green, stun reads gold/yellow, and bags read container/canvas/bark.
+- **Shine tier**: the artifact's coolness/specialness. Plain items are matte, bright items get one strong highlight, radiant items get richer contained shine, and signature items get the most distinctive emblem-like highlight.
+
+Use role color and shine tier together. The role color must be readable at a glance, while shine must stay inside the silhouette and communicate specialness without adding particle noise.
+
+Classification source:
+
+```text
+app/shared/artifact-visual-classification.js
+```
+
+Prompt rule:
+
+- Never let shine override role color. A radiant armor item is still moss/green first, shiny second.
+- Never use loose particles, baked cast shadows, or large outside glow as the shine signal.
+- Use broader highlights, stronger saturation, or a small contained rim accent for higher shine tiers.
+- Signature artifacts may use one distinctive emblem accent, but still only 2-4 main colors.
 
 ## Reference Style Cues
 
@@ -87,7 +157,7 @@ Shared reference rules:
 For generated artifacts, translate these cues into the artifact material. For example:
 
 - amber items use flat amber/orange shapes with dark contour and one cream highlight.
-- bark/armor items use flat brown/green slabs with dark contour and a few grain lines.
+- bark/armor items use flat brown/green slabs with dark contour and at most two broad grain marks.
 - stun items use pale gold/yellow-green shapes with simple contained glow marks.
 - bags use flat cloth/bark silhouettes with dark outline and one or two stitch/spot accents.
 - any mushroom-cap-like item may borrow the red cap, pale oval spots, and dot-cluster language from `top-right-mushroom.jpg`.
@@ -249,24 +319,28 @@ Damage:
 - simple sharp silhouettes
 - fangs, blades, caps, lashes
 - use the red amanita ornament language when possible: dark outline, flat red/orange planes, cream highlights, small pale spots
+- prefer compact weapons with a bold head, guard, cap, or charm mass over thin blades
 
 Armor:
 - moss green, bark green, muted stone, cream
 - rounded protective silhouettes
 - plates, shells, shields, rings, bark, moss
-- use flat bark/stone planes, sparse dark grain lines, and one or two pale highlights
+- use flat bark/stone planes, sparse dark grain marks, and one or two pale highlights
+- avoid realistic dirt, roots, pores, rough shell texture, and muddy beige/green blends
 
 Stun:
 - pale gold, yellow-green, electric olive, smoky cream
 - simple contained glow shapes
 - puffballs, sacs, gills, dust veils, sparks
 - use flat pale-gold shapes with dark outline, not neon VFX or complex particles
+- glow must stay mostly inside the silhouette
 
 Bags:
 - one distinct bag color plus warm canvas/leather/bark
 - clean container silhouettes
 - stitched pouches, bark hooks, logs, vines
 - use the same thick-outline ornament style, with simple stitch marks or oval patches
+- do not render realistic leather grain, textile fuzz, bark texture, or loose fibers
 
 ## Negative Prompt Checklist
 
@@ -293,11 +367,15 @@ Avoid:
 - generic fantasy RPG item icons
 - shiny gold bevels
 - dense bubble fields
+- realistic bark/soil/stone/leather texture
+- gritty natural specimen rendering
+- complex highlights that make the icon look wet or metallic
+- more than two small accent types on one icon
 
 ## Prompt Attachment
 
 When generating an artifact, include this instruction in the prompt:
 
 ```text
-Use docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple small inventory icon matching data/channel/assets/ornaments/top-right-mushroom.jpg and data/channel/assets/ornaments/bottom-left-mushroom.svg. Use thick dark contour, flat or softly graded vector color regions, simple highlight shapes, sparse dark internal lines, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background. The bitmap is rendered once as a continuous placement image above the grid cells, so horizontal artifacts must be strictly horizontal, vertical artifacts strictly vertical, square artifacts blocky/centered, and irregular bags must exactly follow the mask with transparent empty cells.
+Use docs/artifact-image-style-prompt.md and docs/artifact-visual-classification.md as the style guides. Follow them exactly: simple chunky small inventory sticker, matching the approved direction in web/public/artifacts/ferment_phial.png, flash_cap.png, kirt_venom_fang.png, settling_guard.png, spore_lash.png, and spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background. The artifact's role color must be obvious at a glance, and its shine tier must communicate coolness without loose particles, outside glow, or baked-in shadows. Avoid painterly texture, realistic material rendering, glossy loot-icon shine, dense tiny details, and baked-in shadows. The bitmap is rendered once as a continuous placement image above pale rounded grid cells, so horizontal artifacts must be strictly horizontal, vertical artifacts strictly vertical, square artifacts blocky/centered, and irregular bags must exactly follow the mask with transparent empty cells.
 ```

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artifacts } from '../server/game-data.js';
 import { getBagShape } from '../shared/bag-shape.js';
+import { artifactVisualClassification } from '../shared/artifact-visual-classification.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
@@ -43,13 +44,13 @@ function footprintForArtifact(artifact) {
 function familyLanguage(family) {
   switch (family) {
     case 'damage':
-      return 'amber, orange, burnt sienna, chitin, lacquered mushroom shell, sharp diagonals';
+      return 'amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette';
     case 'armor':
-      return 'moss green, bark green, muted stone, cream, rounded protective mass';
+      return 'moss green, bark green, muted stone, cream, rounded protective mass, broad flat planes, at most two grain marks';
     case 'stun':
-      return 'yellow-green, pale gold, electric olive, smoky cream, glowing spores and static';
+      return 'yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads';
     case 'bag':
-      return 'stitched textile, bark, leather, moss cloth, mycelium fiber, decorative container language';
+      return 'stitched textile, bark, leather, moss cloth, mycelium fiber, clean container silhouette, simple patch/stitch accents';
     default:
       return 'mushroom-fantasy charm language with warm parchment colors';
   }
@@ -78,6 +79,15 @@ function promptForArtifact(artifact, spec) {
   const size = footprintForArtifact(artifact);
   const description = spec?.description || `${artifact.name.en} artifact, ${size}.`;
   const imageName = spec?.imageName || `${artifact.id}.png`;
+  const visual = artifactVisualClassification(artifact);
+  const approvedExamples = [
+    'web/public/artifacts/ferment_phial.png',
+    'web/public/artifacts/flash_cap.png',
+    'web/public/artifacts/kirt_venom_fang.png',
+    'web/public/artifacts/settling_guard.png',
+    'web/public/artifacts/spore_lash.png',
+    'web/public/artifacts/spore_needle.png'
+  ].join(', ');
 
   return `### ${artifact.name.en} / ${artifact.name.ru}
 
@@ -86,11 +96,13 @@ function promptForArtifact(artifact, spec) {
 - output: \`${outputPath}\`
 - footprint: ${spec?.footprint || size}
 - family: ${artifact.family}
+- visual class: ${visual.role.label} / ${visual.role.hue}
+- shine tier: ${visual.shine.label} (${visual.shine.id})
 - description: ${description}
 
 \`\`\`text
 Use the imagegen skill to create a production game artifact bitmap.
-Use ${styleGuidePath} as the style guide. Follow it exactly: simple small inventory icon matching data/channel/assets/ornaments/top-right-mushroom.jpg and data/channel/assets/ornaments/bottom-left-mushroom.svg. Use thick dark contour, flat or softly graded vector color regions, simple highlight shapes, sparse dark internal lines, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.
+Use ${styleGuidePath} as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: ${approvedExamples}. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.
 
 Asset: ${artifact.name.en} / ${artifact.name.ru} (${artifact.id})
 Output file after approval: ${outputPath}
@@ -98,13 +110,15 @@ Footprint: ${size}
 Description: ${description}
 Shape rule: ${shapeRule(artifact)}
 
-Style: simple readable fantasy inventory icon matching the two PDF mushroom ornament references. Borrow the bold thick-contour red amanita language from top-right-mushroom.jpg and the rounded blue/cream soft-gradient language from bottom-left-mushroom.svg. Use thick dark brown/black contour, flat or softly graded vector-like color planes, sparse dark internal lines, simple cream/pale highlight blobs, 2-5 main colors, minimal internal detail. Family visual language: ${familyLanguage(artifact.family)}.
+Style: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: ${familyLanguage(artifact.family)}.
+
+Visual classification: ${visual.prompt} The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.
 
 Composition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.
 
-Small icon requirement: readable at 48-64px per cell. Use a simple silhouette, high contrast, and very few details. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no sketch scratches, no noisy halo, no construction lines, no paper texture.
+Small icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.
 
-Background: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact.
+Background: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.
 
 For irregular bag masks, occupied cells contain the connected artifact and empty mask cells contain only #ff00ff so they become transparent after background removal.
 \`\`\``;
