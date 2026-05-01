@@ -150,7 +150,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **6-H.** Battle ends at **step 120** with `endReason = 'step_cap'`; winner is the side with higher HP%.
 - **6-I.** Combat is fully **server-side** and does not depend on client connection.
 - **6-J.** Dalamar's Ashen Veil passive reduces the enemy's defense by 1 after each successful hit, floored at 0.
-- **6-K.** Replay `action` events include artifact attribution for placed non-bag artifacts that contributed positive attack damage, stun chance, or target armor to that action. The attribution is explanatory replay metadata only: it does not change combat math, and replay clients must continue to render older battle events where the attribution field is absent.
+- **6-K.** Replay `action` events include artifact attribution for placed non-bag artifacts that contributed positive attack damage, stun chance, or target armor to that action. The attribution is explanatory replay metadata only: it does not change combat math, does not include bag artifacts or container items, and replay clients must continue to render older battle events where the attribution field is absent.
 
 ### Character Abilities
 
@@ -302,9 +302,12 @@ Membership is not stored. It is derived from overlap between item cells and acti
 ## 13. Replay
 
 - **13-A.** Every battle produces a deterministic replay that can be re-watched.
-- **13-B.** Replays are accessible from the round-result screen and from the battle history list.
+- **13-B.** Replays are accessible as the post-ready battle screen during runs and from the battle history list. There is no separate round-result screen; round rewards render inline after the replay finishes.
 - **13-C.** During an active game run, the post-replay button must show **"Продолжить"** (continue to next round), not "Домой" (home).
 - **13-D.** Outside a game run (standalone replay from history), the post-replay button shows **"Домой"**.
+- **13-E.** Replay combat readability is primary. Portraits, speech bubbles, health, damage/stun feedback, and the combat log must remain visually dominant over supporting loadout context.
+- **13-F.** Replay loadout grids are supporting context, not active placement controls. Grid cells and bag outlines must use subdued fills/borders so artifacts are legible without the cells competing for attention.
+- **13-G.** Replay artifact attribution is presented as compact explanatory text/chips near the active hit feedback. It must stay readable in reduced motion, must not obscure HP or portraits, and must gracefully disappear for legacy events without attribution metadata.
 
 ---
 
