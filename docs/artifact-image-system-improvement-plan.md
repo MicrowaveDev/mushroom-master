@@ -1,6 +1,6 @@
 # Artifact Image System Improvement Plan
 
-**Status:** In progress; Phases 0-6A complete except gated Stage 5B / 6B follow-ups.
+**Status:** In progress; Phases 0-6A and Phase 5B complete except gated Phase 6B follow-up.
 **Created:** 2026-04-29.
 **Scope:** Improve artifact images, classification, prompts, validation, and in-game presentation so the backpack/autobattler loop feels clearer and more rewarding.
 
@@ -406,7 +406,7 @@ node --test tests/game/artifact-visual-classification.test.js
 
 Goal: let players feel that their artifact choices mattered.
 
-This phase has **two stages**: Stage A is UI-only and ships first; Stage B is a contract change and only ships after Stage A is stable and a new requirement ID is added.
+This phase has **two stages**: Stage A is UI-only and ships first; Stage B is a contract change and shipped under `[Req 6-K]`.
 
 #### Stage A: Existing-event replay feedback (UI-only, no schema change)
 
@@ -423,10 +423,10 @@ Changes:
 
 #### Stage B: Per-artifact attribution (contract change, gated)
 
-Changes (only after Stage A holds up in play):
+Changes (shipped under `[Req 6-K]`):
 
-- Include artifact IDs or aggregate contribution fields in battle events when a specific artifact or stat family contributes meaningfully.
-- **New requirement** in [game-requirements.md](game-requirements.md) — assign a section-letter ID per the [Requirement Traceability Rules](../AGENTS.md). Example wording: *"`[Req X-Y]` battle events SHOULD carry the contributing artifact id when one exists; the replay client MUST render correctly when the field is absent."* The exact ID is chosen during Stage B planning (currently the next available letter in the relevant section).
+- Include artifact attribution fields in new battle `action` events when placed non-bag artifacts contribute positive damage, stun chance, or target armor.
+- **New requirement** in [game-requirements.md](game-requirements.md): `[Req 6-K]`.
 - **Backwards-compatibility (mandatory).** Historical battles in the `battles` table do not carry the new field. The replay client must:
   - degrade to Stage A's existing-event highlights and static loadout-role summary when the artifact id field is absent
   - never throw or render an empty highlight when the field is missing
@@ -455,7 +455,7 @@ Phase verification:
 ```bash
 node --test tests/web/artifact-render.test.js   # Stage A
 npm run game:test:screens                        # Stage A + B
-node --test tests/game/replay-backcompat.test.js # Stage B (new test in this phase)
+node --test tests/game/battle-engine.test.js tests/web/replay-attribution.test.js # Stage B
 ```
 
 Add replay-specific screenshot or E2E assertions when replay UI changes. If only Stage A ships, the verification block does not need the Stage B line.

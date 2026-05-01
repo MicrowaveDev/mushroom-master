@@ -149,6 +149,8 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **6-G.** Battle ends on **death** (0 HP) with `endReason = 'death'`.
 - **6-H.** Battle ends at **step 120** with `endReason = 'step_cap'`; winner is the side with higher HP%.
 - **6-I.** Combat is fully **server-side** and does not depend on client connection.
+- **6-J.** Dalamar's Ashen Veil passive reduces the enemy's defense by 1 after each successful hit, floored at 0.
+- **6-K.** Replay `action` events include artifact attribution for placed non-bag artifacts that contributed positive attack damage, stun chance, or target armor to that action. The attribution is explanatory replay metadata only: it does not change combat math, and replay clients must continue to render older battle events where the attribution field is absent.
 
 ### Character Abilities
 

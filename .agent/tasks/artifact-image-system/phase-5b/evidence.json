@@ -1,0 +1,11 @@
+{
+  "phase": "Phase 5B",
+  "status": "PASS",
+  "requirement": "Req 6-K",
+  "acceptanceCriteria": {
+    "AC5.1": "PASS",
+    "AC5.2": "PASS",
+    "AC5.3": "PASS",
+    "AC5.4": "PASS"
+  }
+}

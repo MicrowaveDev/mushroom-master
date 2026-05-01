@@ -18,7 +18,7 @@ The plan is the source of truth for scope, ACs, and verification. This file mirr
 - **Phase 3 — Non-color role glyphs in UI:** complete (shop cards + artifact figures expose UI-driven role glyphs with accessible labels).
 - **Phase 4 — Prompt and provenance pipeline:** complete (approved runtime metadata + checksum verifier for 41 production PNGs).
 - **Phase 5 Stage A — Existing-event replay feedback:** complete (replay keeps existing hit/stun feedback and adds static loadout role summary chips from current loadout metadata).
-- **Phase 5 Stage B — Per-artifact battle-event attribution:** not started (gated on Stage A + new `[Req X-Y]`).
+- **Phase 5 Stage B — Per-artifact battle-event attribution:** complete (`[Req 6-K]` action-event attribution + legacy-event replay fallback).
 - **Phase 6A — UI-only QoL:** complete (ghost placement preview + valid/invalid footprint highlighting using existing placement rules).
 - **Phase 6B — Mechanic-dependent QoL:** not started (gated on game-requirements update).
 

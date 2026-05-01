@@ -1,4 +1,5 @@
 import {
+  getArtifactById,
   getMushroomById,
   MAX_STUN_CHANCE,
   STEP_CAP
@@ -53,6 +54,37 @@ function deriveCombatant(snapshot, side) {
       wasStunnedByPreviousEnemyTurn: false,
       kirtRoundBoostReady: false
     }
+  };
+}
+
+function placedCombatArtifacts(loadout) {
+  return (loadout?.items || [])
+    .map((item) => ({ item, artifact: getArtifactById(item.artifactId || item.artifact_id) }))
+    .filter(({ item, artifact }) =>
+      artifact
+      && artifact.family !== 'bag'
+      && Number(item.x) >= 0
+      && Number(item.y) >= 0
+    );
+}
+
+function artifactContributions(loadout, statKey) {
+  return placedCombatArtifacts(loadout)
+    .map(({ item, artifact }) => ({
+      artifactId: artifact.id,
+      itemId: item.id || null,
+      value: Number(artifact.bonus?.[statKey]) || 0
+    }))
+    .filter((entry) => entry.value > 0);
+}
+
+function actionArtifactAttribution(attacker, defender) {
+  return {
+    actorSide: attacker.side,
+    targetSide: defender.side,
+    damage: artifactContributions(attacker.loadout, 'damage'),
+    stunChance: artifactContributions(attacker.loadout, 'stunChance'),
+    armor: artifactContributions(defender.loadout, 'armor')
   };
 }
 
@@ -213,6 +245,7 @@ function resolveAction(attacker, defender, step, rng, events) {
     actionName: narration,
     damage: resolvedDamage,
     stunned,
+    artifactAttribution: actionArtifactAttribution(attacker, defender),
     narration: `${attacker.name.en} uses ${narration} for ${resolvedDamage} damage${stunned ? ' and stuns the target' : ''}.`,
     state: combatState(left, right)
   });

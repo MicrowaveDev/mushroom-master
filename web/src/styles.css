@@ -2867,6 +2867,64 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+.duel-attribution {
+  display: grid;
+  gap: 4px;
+  width: min(190px, 100%);
+  margin: 2px auto 4px;
+}
+
+.duel-attribution-group {
+  --duel-attribution-color: #7f6547;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--duel-attribution-color) 10%, #fffdf5);
+  border: 1px solid color-mix(in srgb, var(--duel-attribution-color) 24%, rgba(94, 70, 39, 0.12));
+}
+
+.duel-attribution-group--damage { --duel-attribution-color: #d9612b; }
+.duel-attribution-group--armor { --duel-attribution-color: #6f9b4f; }
+.duel-attribution-group--stun { --duel-attribution-color: #b59426; }
+
+.duel-attribution-label {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--duel-attribution-color) 74%, #3f3328);
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.duel-attribution-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 1px 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #4c3927;
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.duel-attribution-name {
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duel-attribution-chip b {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--duel-attribution-color) 82%, #3f3328);
+  font-variant-numeric: tabular-nums;
+}
+
 .duel-loadout-center {
   display: flex;
   flex-direction: column;

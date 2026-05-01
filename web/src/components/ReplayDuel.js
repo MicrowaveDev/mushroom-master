@@ -42,6 +42,30 @@ export const ReplayDuel = {
       if (Number.isFinite(damage) && damage > 0) parts.push(`-${damage}`);
       if (event.stunned) parts.push('STUN');
       return parts.join(' ');
+    },
+    activeAttributionGroups() {
+      const event = this.activeEvent;
+      const attribution = event?.artifactAttribution;
+      if (!attribution || event.type !== 'action' || !this.getArtifact) return [];
+      return [
+        { key: 'damage', label: 'Damage', role: 'damage', items: attribution.damage || [] },
+        { key: 'stunChance', label: 'Stun', role: 'stun', items: attribution.stunChance || [] },
+        { key: 'armor', label: 'Armor', role: 'armor', items: attribution.armor || [] }
+      ]
+        .map((group) => ({
+          ...group,
+          items: group.items
+            .map((entry) => {
+              const artifact = this.getArtifact(entry.artifactId);
+              if (!artifact) return null;
+              return {
+                ...entry,
+                name: artifact.name?.en || entry.artifactId
+              };
+            })
+            .filter(Boolean)
+        }))
+        .filter((group) => group.items.length);
     }
   },
   methods: {
@@ -79,6 +103,10 @@ export const ReplayDuel = {
       if (event?.type === 'action' && event.targetSide === side && event.stunned) classes.push('fighter--stunned');
       if (event?.type === 'skip' && event.actorSide === side) classes.push('fighter--skip');
       return classes.join(' ');
+    },
+    attributionValueText(group, item) {
+      const suffix = group.key === 'stunChance' ? '%' : '';
+      return `+${item.value}${suffix}`;
     }
   },
   template: `
@@ -136,8 +164,27 @@ export const ReplayDuel = {
             :get-artifact="getArtifact"
           />
         </div>
-        <div class="duel-loadout-center">
+          <div class="duel-loadout-center">
           <span v-if="effectText" class="duel-effect-pop" :class="{ 'duel-effect-pop--stun': activeEvent?.stunned }">{{ effectText }}</span>
+          <div v-if="activeAttributionGroups.length" class="duel-attribution" aria-label="Artifact attribution">
+            <div
+              v-for="group in activeAttributionGroups"
+              :key="group.key"
+              class="duel-attribution-group"
+              :class="'duel-attribution-group--' + group.role"
+            >
+              <span class="duel-attribution-label">{{ group.label }}</span>
+              <span
+                v-for="item in group.items"
+                :key="group.key + '-' + item.artifactId + '-' + (item.itemId || '')"
+                class="duel-attribution-chip"
+                :title="item.name"
+              >
+                <span class="duel-attribution-name">{{ item.name }}</span>
+                <b>{{ attributionValueText(group, item) }}</b>
+              </span>
+            </div>
+          </div>
           <p v-if="statusText" class="duel-loadout-status">{{ statusText }}</p>
           <svg v-else class="duel-loadout-icon" viewBox="0 0 64 64" aria-hidden="true">
             <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />

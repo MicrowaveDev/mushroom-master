@@ -377,6 +377,42 @@ test('[Req 6-I] same seed produces identical battle results (deterministic)', ()
   assert.equal(result1.rightState.currentHealth, result2.rightState.currentHealth);
 });
 
+test('[Req 6-K] action events include per-artifact attribution for damage, stun, and armor', () => {
+  const result = simulateBattle(
+    makeSnapshot('thalla', 'lomie',
+      [
+        item('spore_needle', 0, 0),
+        item('shock_puff', 1, 0),
+        item('fang_whip', -1, -1, 2, 1)
+      ],
+      [
+        item('bark_plate', 0, 0),
+        item('truffle_bulwark', 1, 0, 2, 2),
+        item('spore_needle', -1, -1)
+      ]
+    ),
+    'artifact-attribution-seed'
+  );
+
+  const firstLeftAction = result.events.find((e) => e.type === 'action' && e.actorSide === 'left');
+  assert.ok(firstLeftAction, 'left action should exist');
+  assert.deepEqual(
+    firstLeftAction.artifactAttribution.damage.map((entry) => [entry.artifactId, entry.value]),
+    [['spore_needle', 2]],
+    'placed damage artifacts should be attributed and container artifacts ignored'
+  );
+  assert.deepEqual(
+    firstLeftAction.artifactAttribution.stunChance.map((entry) => [entry.artifactId, entry.value]),
+    [['shock_puff', 8]],
+    'placed stun artifacts should be attributed'
+  );
+  assert.deepEqual(
+    firstLeftAction.artifactAttribution.armor.map((entry) => [entry.artifactId, entry.value]),
+    [['bark_plate', 2], ['truffle_bulwark', 7]],
+    'target armor artifacts should be attributed'
+  );
+});
+
 test('[Req 1-B] battle ends at STEP_CAP (120) with endReason step_cap', () => {
   // Two very tanky mushrooms with high armor — battle should hit step cap
   const snapshot = makeSnapshot('lomie', 'lomie',

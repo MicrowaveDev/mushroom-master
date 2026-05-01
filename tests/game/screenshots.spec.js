@@ -154,6 +154,8 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   debugLog('waiting for active fighter bubble');
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(1, { timeout: 5000 });
   await expect(page.locator('.fighter-speech-bubble').first()).toContainText(/^(I |Я |Использую |I'm )/i);
+  await expect(page.locator('.duel-attribution')).toBeVisible();
+  expect(await page.locator('.duel-attribution-chip').count()).toBeGreaterThan(0);
   debugLog('capturing replay');
   await assertImagesLoaded(page);
   await saveShot(page, '06-replay.png');
