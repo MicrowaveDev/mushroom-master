@@ -2760,8 +2760,8 @@ select {
   gap: 8px;
   padding: 10px;
   border-radius: 14px;
-  background: rgba(255, 250, 239, 0.7);
-  border: 1px solid var(--border);
+  background: rgba(255, 250, 239, 0.46);
+  border: 1px solid rgba(138, 97, 53, 0.12);
 }
 
 .duel-loadout-side {
@@ -2800,12 +2800,12 @@ select {
   align-items: center;
   gap: 4px;
   min-height: 18px;
-  padding: 2px 5px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--artifact-role-color) 16%, #fffdf5);
-  color: color-mix(in srgb, var(--artifact-role-color) 72%, #3f3328);
+  padding: 1px 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--artifact-role-color) 7%, rgba(255, 253, 245, 0.66));
+  color: color-mix(in srgb, var(--artifact-role-color) 56%, #6a5743);
   font-size: 0.58rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -2815,6 +2815,7 @@ select {
   height: 10px;
   flex: 0 0 auto;
   color: currentColor;
+  opacity: 0.78;
 }
 
 .duel-role-chip--damage .duel-role-chip-mark::before {
@@ -2869,9 +2870,9 @@ select {
 
 .duel-attribution {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   width: min(190px, 100%);
-  margin: 2px auto 4px;
+  margin: 0 auto 2px;
 }
 
 .duel-attribution-group {
@@ -2881,21 +2882,21 @@ select {
   justify-content: center;
   gap: 4px;
   min-width: 0;
-  padding: 2px 4px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--duel-attribution-color) 10%, #fffdf5);
-  border: 1px solid color-mix(in srgb, var(--duel-attribution-color) 24%, rgba(94, 70, 39, 0.12));
+  padding: 1px 2px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
 }
 
-.duel-attribution-group--damage { --duel-attribution-color: #d9612b; }
-.duel-attribution-group--armor { --duel-attribution-color: #6f9b4f; }
-.duel-attribution-group--stun { --duel-attribution-color: #b59426; }
+.duel-attribution-group--damage { --duel-attribution-color: #b8744d; }
+.duel-attribution-group--armor { --duel-attribution-color: #7d946b; }
+.duel-attribution-group--stun { --duel-attribution-color: #a68e48; }
 
 .duel-attribution-label {
   flex: 0 0 auto;
-  color: color-mix(in srgb, var(--duel-attribution-color) 74%, #3f3328);
-  font-size: 0.58rem;
-  font-weight: 900;
+  color: color-mix(in srgb, var(--duel-attribution-color) 50%, #7b6c5b);
+  font-size: 0.54rem;
+  font-weight: 800;
   text-transform: uppercase;
 }
 
@@ -2904,12 +2905,12 @@ select {
   align-items: center;
   gap: 3px;
   min-width: 0;
-  padding: 1px 4px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.72);
-  color: #4c3927;
-  font-size: 0.58rem;
-  font-weight: 700;
+  padding: 0 2px;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(76, 57, 39, 0.72);
+  font-size: 0.55rem;
+  font-weight: 650;
 }
 
 .duel-attribution-name {
@@ -2921,7 +2922,7 @@ select {
 
 .duel-attribution-chip b {
   flex: 0 0 auto;
-  color: color-mix(in srgb, var(--duel-attribution-color) 82%, #3f3328);
+  color: color-mix(in srgb, var(--duel-attribution-color) 62%, #5e4b38);
   font-variant-numeric: tabular-nums;
 }
 
@@ -3353,7 +3354,7 @@ select {
 
 .fighter-inline-inventory .artifact-figure-cell {
   border-radius: 6px;
-  box-shadow: 0 3px 6px rgba(91, 64, 36, 0.08);
+  box-shadow: none;
 }
 
 .fighter-inline-inventory .artifact-figure-grid {
@@ -3362,6 +3363,28 @@ select {
 
 .fighter-inline-inventory .artifact-grid-cell {
   border-radius: 6px;
+  border: 1px solid rgba(138, 97, 53, 0.075);
+  background:
+    radial-gradient(circle at top, rgba(140, 188, 135, 0.055), transparent 54%),
+    rgba(255, 251, 244, 0.5);
+  box-shadow: none;
+}
+
+.fighter-inline-inventory .artifact-grid-cell--bag {
+  background: rgba(250, 246, 237, 0.48) !important;
+  border: 1px dashed rgba(138, 97, 53, 0.12) !important;
+  animation: none;
+}
+
+.fighter-inline-inventory .artifact-grid-cell--bag.artifact-grid-cell--occupied {
+  background: rgba(255, 253, 245, 0.54) !important;
+  border-color: rgba(138, 97, 53, 0.09) !important;
+}
+
+.fighter-inline-inventory .artifact-grid-cell--bag-disabled,
+.fighter-inline-inventory .artifact-grid-cell--bag-empty {
+  background: rgba(255, 251, 244, 0.22);
+  border: 1px dashed rgba(138, 97, 53, 0.06);
 }
 
 .fighter-portrait-wrap {
