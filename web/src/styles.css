@@ -2050,6 +2050,101 @@ select {
   flex: 0 0 auto;
 }
 
+.artifact-role-glyph {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--artifact-role-color) 52%, rgba(63, 51, 40, 0.26));
+  border-radius: 50%;
+  background: rgba(255, 253, 245, 0.9);
+  color: var(--artifact-role-color);
+  box-shadow: 0 1px 3px rgba(91, 64, 36, 0.14);
+}
+
+.artifact-role-glyph > span {
+  position: relative;
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+.artifact-role-glyph--damage > span::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 12px;
+  border-radius: 4px 4px 1px 1px;
+  background: currentColor;
+  transform: rotate(35deg);
+}
+
+.artifact-role-glyph--damage > span::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  bottom: 2px;
+  width: 8px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(35deg);
+}
+
+.artifact-role-glyph--armor > span::before {
+  content: '';
+  position: absolute;
+  inset: 1px 2px;
+  border: 3px solid currentColor;
+  border-top-width: 4px;
+  border-radius: 5px 5px 7px 7px;
+}
+
+.artifact-role-glyph--stun > span::before {
+  content: '';
+  position: absolute;
+  inset: 0 3px;
+  background: currentColor;
+  clip-path: polygon(56% 0, 18% 48%, 50% 48%, 32% 100%, 84% 38%, 54% 38%);
+}
+
+.artifact-role-glyph--bag > span::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 1px;
+  height: 9px;
+  border: 3px solid currentColor;
+  border-top-width: 2px;
+  border-radius: 3px 3px 6px 6px;
+}
+
+.artifact-role-glyph--bag > span::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 1px;
+  height: 6px;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+}
+
+.shop-item-role-glyph {
+  width: 16px;
+  height: 16px;
+}
+
+.shop-item-role-glyph > span {
+  transform: scale(0.86);
+}
+
 .shop-item-shine {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2441,6 +2536,10 @@ select {
   background-position: center;
 }
 
+.artifact-grid-board--inventory .inventory-pieces .artifact-figure-bitmap--full {
+  z-index: 4;
+}
+
 .artifact-figure-grid {
   position: relative;
   width: 100%;
@@ -2494,6 +2593,13 @@ select {
   box-shadow: none;
 }
 
+.artifact-grid-board--inventory .inventory-pieces .artifact-figure-cell {
+  visibility: hidden;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .artifact-figure-cell::after {
   content: '';
   position: absolute;
@@ -2504,7 +2610,19 @@ select {
   box-shadow: inset 0 -8px 16px rgba(91, 64, 36, 0.06);
 }
 
+.artifact-figure-role-glyph {
+  position: absolute;
+  z-index: 3;
+  top: -5px;
+  right: -5px;
+  pointer-events: none;
+}
+
 .artifact-figure-cell--empty::after {
+  display: none;
+}
+
+.artifact-grid-board--inventory .inventory-pieces .artifact-figure-cell::after {
   display: none;
 }
 

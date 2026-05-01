@@ -216,7 +216,7 @@ Changes:
   - `SECONDARY_MISLEAD`: positive secondary stat reads as the primary family or disappears entirely.
   - `TRADEOFF_INVISIBLE`: a negative stat/tradeoff has no visual treatment in the art, prompt, or UI metadata.
   - `EMPTY_CELL`: an occupied footprint cell has too little meaningful object mass.
-  - `MASK_LEAK`: an irregular bag has visible pixels in mask-empty cells.
+  - `MASK_CUTOUT`: an irregular bag shows obvious rectangular cutouts or stencil edges around mask-empty cells.
 
 Deliverable contract (pin before implementation so two agents don't pick differently):
 

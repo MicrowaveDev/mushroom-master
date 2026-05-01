@@ -50,3 +50,23 @@ test('irregular bag masks keep empty cells as layout holes under one artwork ove
   assert.equal((html.match(/artifact-figure-cell artifact-figure-cell--empty/g) || []).length, 2);
   assert.equal((html.match(/class="artifact-figure-cell/g) || []).length, 6);
 });
+
+test('artifact figures expose UI-driven role glyphs for each role', () => {
+  const examples = [
+    { id: 'spore_needle', family: 'damage', label: 'Damage role' },
+    { id: 'bark_plate', family: 'armor', label: 'Armor role' },
+    { id: 'shock_puff', family: 'stun', label: 'Stun role' },
+    { id: 'moss_pouch', family: 'bag', label: 'Bag role' }
+  ];
+
+  for (const example of examples) {
+    const html = renderArtifactFigure({
+      ...example,
+      width: 1,
+      height: 1,
+      bonus: {}
+    });
+    assert.match(html, new RegExp(`artifact-role-glyph--${example.family}`), example.id);
+    assert.match(html, new RegExp(`aria-label="${example.label}"`), example.id);
+  }
+});

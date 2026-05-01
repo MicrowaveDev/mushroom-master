@@ -60,7 +60,7 @@ function shapeRule(artifact) {
   const width = Number(artifact.width) || 1;
   const height = Number(artifact.height) || 1;
   if (artifact.family === 'bag' && artifact.shape) {
-    return 'irregular bag mask: design the container to exactly follow the occupied cells; empty mask cells must be only chroma-key background';
+    return 'irregular bag mask: design one continuous container whose main mass follows the occupied cells; mild organic visual overhang across empty mask cells is acceptable, but no straight rectangular cutouts';
   }
   if (width === 1 && height === 1) {
     return '1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop';
@@ -120,7 +120,7 @@ Small icon requirement: readable at 48-64px per cell on pale rounded inventory c
 
 Background: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.
 
-For irregular bag masks, occupied cells contain the connected artifact and empty mask cells contain only #ff00ff so they become transparent after background removal.
+For irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.
 \`\`\``;
 }
 

@@ -1,5 +1,5 @@
 import { h } from 'vue/dist/vue.esm-bundler.js';
-import { artifactBitmapPath } from '../artifacts/render.js';
+import { artifactBitmapPath, artifactRoleGlyphLabel } from '../artifacts/render.js';
 import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 
 function node(tag, attrs = {}, children = []) {
@@ -154,7 +154,14 @@ export const ArtifactFigure = {
         style: {
           backgroundImage: `url('${artifactBitmapPath(artifact)}')`
         }
-      })
+      }),
+      node('span', {
+        class: ['artifact-role-glyph', `artifact-role-glyph--${visual.role.id}`, 'artifact-figure-role-glyph'],
+        'aria-label': artifactRoleGlyphLabel(visual.role),
+        title: artifactRoleGlyphLabel(visual.role)
+      }, [
+        node('span', { 'aria-hidden': 'true' })
+      ])
     ]);
   }
 };

@@ -22,6 +22,7 @@
     "game:artifacts:generate": "node app/scripts/generate-artifact-bitmaps.js",
     "game:artifacts:next": "node app/scripts/next-artifact-image-prompts.js",
     "game:artifacts:sheet": "node app/scripts/generate-artifact-contact-sheet.js",
+    "game:artifacts:thumbnail-review": "node app/scripts/generate-artifact-thumbnail-review.js",
     "game:artifacts:validate": "node app/scripts/validate-artifact-image-coverage.js",
     "game:test": "node --test tests/**/*.test.js",
     "game:test:e2e": "node app/scripts/run-game-e2e.js",

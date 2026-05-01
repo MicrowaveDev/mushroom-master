@@ -13,9 +13,9 @@ The plan is the source of truth for scope, ACs, and verification. This file mirr
 ## Phase status
 
 - **Phase 0 — Baseline asset tracking policy:** complete (2026-04-29 user decision: artifact images stay local-only until explicit production-ready sign-off).
-- **Phase 1 — Thumbnail QA:** not started.
-- **Phase 2 — Richer visual taxonomy:** not started.
-- **Phase 3 — Non-color role glyphs in UI:** not started.
+- **Phase 1 — Thumbnail QA:** complete (thumbnail review script + local evidence sheet; raw PNG remains uncommitted candidate evidence).
+- **Phase 2 — Richer visual taxonomy:** complete (shared derived projection + full-catalog snapshot test).
+- **Phase 3 — Non-color role glyphs in UI:** complete (shop cards + artifact figures expose UI-driven role glyphs with accessible labels).
 - **Phase 4 — Prompt and provenance pipeline:** not started.
 - **Phase 5 Stage A — Existing-event replay feedback:** not started.
 - **Phase 5 Stage B — Per-artifact battle-event attribution:** not started (gated on Stage A + new `[Req X-Y]`).

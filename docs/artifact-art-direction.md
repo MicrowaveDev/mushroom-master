@@ -2,7 +2,7 @@
 
 This document describes how artifact art should look when rendered as Backpack Battles-style puzzle pieces.
 
-The important rule: **an artifact is one complete ornament/image across its whole footprint**. The game renders that bitmap once as a continuous overlay above the occupied cells. Do not draw the same icon independently inside every occupied cell.
+The important rule: **an artifact is one complete ornament/image across its whole footprint**. The game renders that bitmap once as a continuous overlay above the footprint; shape masks control which cells are usable underneath. Do not draw the same icon independently inside every occupied cell.
 
 ## Global Rules
 
@@ -20,7 +20,7 @@ The important rule: **an artifact is one complete ornament/image across its whol
 - Avoid thin diagonal props floating in empty space. If an artifact is a needle, fang, blade, lash, or hook, make it a chunky ornament with a broad cap/head, guard, plate, ribbon, glow body, or aura so it fills the cell.
 - For `1×1` source art, target 72-88% fill on both axes and at least 28% visible alpha coverage.
 - For multi-cell source art, every occupied cell needs enough visible object mass to read as intentional.
-- Use transparent corners for irregular bag masks, but do not leave accidental blank occupied cells.
+- Irregular bag masks are placement rules, not clipping stencils. Let the icon stay organic and continuous; do not leave accidental blank occupied cells.
 - Avoid tiny detail that disappears at Telegram mobile scale.
 - Use the same object orientation for every rotation; rotation is handled by the game.
 
@@ -386,7 +386,7 @@ A B C
 
 - A/B/C: three-lobed clover-like top pouch.
 - E: hanging lower lobe/string continuation from B.
-- Empty cells stay transparent and must not contain stray art.
+- The side cells are placement holes. The icon should still read as a T-mask, but soft rounded overhang is acceptable and preferable to rectangular cutouts.
 
 ### Birchbark Hook (`birchbark_hook`) - 3×2 L-shape
 
@@ -450,4 +450,4 @@ web/public/artifacts/{artifact_id}.webp
 web/public/artifacts/{artifact_id}@2x.webp
 ```
 
-For irregular bags, the asset should include transparent pixels in empty footprint cells. The game should still use the artifact `shape` mask for collision and placement.
+For irregular bags, the game uses the artifact `shape` mask for collision and placement. The bitmap may include organic overhang into mask-empty cells when that preserves a continuous icon; do not force transparent rectangular holes into generated art.

@@ -305,6 +305,28 @@ export function artifactBitmapPath(artifact) {
   return artifact?.id ? `/artifacts/${artifact.id}.png` : '';
 }
 
+export function artifactRoleGlyphLabel(role) {
+  const labels = {
+    damage: 'Damage role',
+    armor: 'Armor role',
+    stun: 'Stun role',
+    bag: 'Bag role'
+  };
+  return labels[role?.id] || 'Artifact role';
+}
+
+export function renderArtifactRoleGlyph(visual, className = '') {
+  return `
+    <span
+      class="artifact-role-glyph artifact-role-glyph--${visual.role.id} ${className}"
+      aria-label="${artifactRoleGlyphLabel(visual.role)}"
+      title="${artifactRoleGlyphLabel(visual.role)}"
+    >
+      <span aria-hidden="true"></span>
+    </span>
+  `;
+}
+
 export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
   if (!artifact) {
     return '';
@@ -348,6 +370,7 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
         aria-hidden="true"
         style="background-image: url('${artifactBitmapPath(artifact)}');"
       ></span>
+      ${renderArtifactRoleGlyph(visual, 'artifact-figure-role-glyph')}
     </div>
   `;
 }

@@ -77,7 +77,8 @@ Footprint fill rules:
 - multi-cell icons should fill about 82-94% of the total footprint along their main axis
 - the visible non-transparent silhouette should cover at least about 28% of a 1x1 canvas
 - the visible non-transparent silhouette should cover at least about 18% of every occupied cell in multi-cell artifacts
-- leave only enough outer padding for background removal and the game's cell border
+- leave a narrow but visible outer padding band for background removal and the game's cell border
+- the object must be fully inside the canvas with no cropped outline, no edge-touching alpha, and no side that looks shaved off
 - every occupied cell must contain a readable part of the same continuous object
 - for tall 1x2/1x3/1x4 artifacts, the image must remain visually connected across row boundaries
 - for wide 2x1/3x1 artifacts, the image must remain visually connected across column boundaries
@@ -254,15 +255,15 @@ Good shapes:
 
 ### Irregular Bag Masks
 
-Use a simple bag/container silhouette that exactly follows the occupied cells.
+Use a simple bag/container silhouette that reads as the intended mask shape without treating the mask as a hard clipping stencil.
 
 Rules:
 - the object must be designed for the mask shape, not a normal bag pasted into it
 - occupied cells contain solid connected bag/body material
-- empty cells contain only chroma-key background and become transparent
-- no straps, glow, dust, stitching, or loose decorations may enter empty cells
-- use straight horizontal/vertical segments where the mask is straight
-- use rounded corners only inside occupied cells
+- empty cells are placement holes, not required transparent art holes
+- mild organic overhang, straps, stitching, or rounded material may enter empty cells when it keeps the icon continuous
+- no straight rectangular cutouts, no obvious stencil edges, and no loose noise in mask gaps
+- use straight horizontal/vertical mass where the mask is straight, but keep edges hand-drawn and rounded
 
 Mask-specific guidance:
 - T-mask (`trefoil_sack`): straight three-lobed top bar plus centered lower lobe.
@@ -377,5 +378,5 @@ Avoid:
 When generating an artifact, include this instruction in the prompt:
 
 ```text
-Use docs/artifact-image-style-prompt.md and docs/artifact-visual-classification.md as the style guides. Follow them exactly: simple chunky small inventory sticker, matching the approved direction in web/public/artifacts/ferment_phial.png, flash_cap.png, kirt_venom_fang.png, settling_guard.png, spore_lash.png, and spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background. The artifact's role color must be obvious at a glance, and its shine tier must communicate coolness without loose particles, outside glow, or baked-in shadows. Avoid painterly texture, realistic material rendering, glossy loot-icon shine, dense tiny details, and baked-in shadows. The bitmap is rendered once as a continuous placement image above pale rounded grid cells, so horizontal artifacts must be strictly horizontal, vertical artifacts strictly vertical, square artifacts blocky/centered, and irregular bags must exactly follow the mask with transparent empty cells.
+Use docs/artifact-image-style-prompt.md and docs/artifact-visual-classification.md as the style guides. Follow them exactly: simple chunky small inventory sticker, matching the approved direction in web/public/artifacts/ferment_phial.png, flash_cap.png, kirt_venom_fang.png, settling_guard.png, spore_lash.png, and spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background. The artifact's role color must be obvious at a glance, and its shine tier must communicate coolness without loose particles, outside glow, or baked-in shadows. Avoid painterly texture, realistic material rendering, glossy loot-icon shine, dense tiny details, and baked-in shadows. The bitmap is rendered once as a continuous placement image above pale rounded grid cells, so horizontal artifacts must be strictly horizontal, vertical artifacts strictly vertical, square artifacts blocky/centered, and irregular bags must read as the intended mask shape without rectangular transparent cutouts.
 ```

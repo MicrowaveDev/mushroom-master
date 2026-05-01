@@ -60,6 +60,19 @@ export const ARTIFACT_SHINE_TIERS = {
   }
 };
 
+export const ARTIFACT_STAT_ORDER = ['damage', 'armor', 'speed', 'stun'];
+
+export const ARTIFACT_PRIMARY_STAT_BY_ROLE = {
+  damage: 'damage',
+  armor: 'armor',
+  stun: 'stunChance',
+  bag: null
+};
+
+export function canonicalArtifactStatKey(key) {
+  return key === 'stunChance' ? 'stun' : key;
+}
+
 export function artifactRoleClass(artifact) {
   if (!artifact) return ARTIFACT_ROLE_CLASSES.damage;
   if (artifact.family === 'bag') return ARTIFACT_ROLE_CLASSES.bag;
@@ -78,12 +91,54 @@ export function artifactShineTier(artifact) {
   return ARTIFACT_SHINE_TIERS.plain;
 }
 
+export function artifactPrimaryStatKey(artifact) {
+  const role = artifactRoleClass(artifact);
+  return ARTIFACT_PRIMARY_STAT_BY_ROLE[role.id] ?? null;
+}
+
+export function artifactSecondaryStats(artifact) {
+  const bonus = artifact?.bonus || {};
+  const primary = artifactPrimaryStatKey(artifact);
+  return ARTIFACT_STAT_ORDER.filter((stat) => {
+    const rawKey = stat === 'stun' ? 'stunChance' : stat;
+    return rawKey !== primary && Number(bonus[rawKey] || 0) > 0;
+  });
+}
+
+export function artifactTradeoffs(artifact) {
+  const bonus = artifact?.bonus || {};
+  return ARTIFACT_STAT_ORDER.filter((stat) => {
+    const rawKey = stat === 'stun' ? 'stunChance' : stat;
+    return Number(bonus[rawKey] || 0) < 0;
+  });
+}
+
+export function artifactOwner(artifact) {
+  return artifact?.characterItem?.mushroomId || null;
+}
+
+export function artifactFootprintType(artifact) {
+  if (!artifact) return 'single';
+  if (artifact.family === 'bag' && Array.isArray(artifact.shape)) return 'mask';
+  const width = Number(artifact.width) || 1;
+  const height = Number(artifact.height) || 1;
+  if (width === 1 && height === 1) return 'single';
+  if (width > height) return 'wide';
+  if (height > width) return 'tall';
+  return 'block';
+}
+
 export function artifactVisualClassification(artifact) {
   const role = artifactRoleClass(artifact);
   const shine = artifactShineTier(artifact);
   return {
     role,
     shine,
+    primaryStatKey: artifactPrimaryStatKey(artifact),
+    secondaryStats: artifactSecondaryStats(artifact),
+    tradeoffs: artifactTradeoffs(artifact),
+    owner: artifactOwner(artifact),
+    footprintType: artifactFootprintType(artifact),
     cssClasses: [
       `artifact-role--${role.id}`,
       shine.cssClass
