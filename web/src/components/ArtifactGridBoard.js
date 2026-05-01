@@ -256,7 +256,7 @@ export const ArtifactGridBoard = {
             class="artifact-piece"
             :class="{ mini: variant === 'catalog' }"
             :data-artifact-id="item.artifactId"
-            :title="getArtifact(item.artifactId)?.name?.ru || item.artifactId"
+            :aria-label="clickablePieces ? (getArtifact(item.artifactId)?.name?.ru || item.artifactId) : null"
             @click="clickPiece(item, $event)"
           >
             <artifact-figure
