@@ -24,7 +24,8 @@ export const ArtifactGridBoard = {
     rotatablePieces: { type: Boolean, default: false },
     droppable: { type: Boolean, default: false },
     draggablePieces: { type: Boolean, default: false },
-    bagRows: { type: Array, default: () => [] }
+    bagRows: { type: Array, default: () => [] },
+    placementPreviewForCell: { type: Function, default: null }
   },
   emits: ['cell-click', 'piece-click', 'piece-rotate', 'cell-drop', 'piece-drag-start', 'piece-drag-end'],
   data() {
@@ -52,6 +53,18 @@ export const ArtifactGridBoard = {
     },
     occupiedCells() {
       return occupiedCellKeys(this.items);
+    },
+    placementPreview() {
+      if (!this.placementPreviewForCell || this.hoverCellIndex < 0) return null;
+      const preview = this.placementPreviewForCell({
+        x: this.cellX(this.hoverCellIndex),
+        y: this.cellY(this.hoverCellIndex)
+      });
+      if (!preview?.cells?.length) return null;
+      return {
+        ...preview,
+        cellSet: new Set(preview.cells)
+      };
     },
     gridStyle() {
       return {
@@ -121,6 +134,8 @@ export const ArtifactGridBoard = {
     cellClass(index) {
       const cx = this.cellX(index);
       const cy = this.cellY(index);
+      const preview = this.placementPreview;
+      const inPreview = preview?.cellSet?.has(`${cx}:${cy}`);
       const baseInv = this.isBaseInventoryCell(cx, cy);
       const bagSlot = !baseInv && this.isBagSlotCell(cx, cy);
       const bagBox = !bagSlot && this.isBagBoxCell(cx, cy);
@@ -138,7 +153,11 @@ export const ArtifactGridBoard = {
         'artifact-grid-cell--bag': bagSlot,
         'artifact-grid-cell--occupied': occupied,
         'artifact-grid-cell--bag-disabled': bagBox,
-        'artifact-grid-cell--bag-empty': empty
+        'artifact-grid-cell--bag-empty': empty,
+        'artifact-grid-cell--preview': Boolean(inPreview),
+        'artifact-grid-cell--preview-valid': Boolean(inPreview && preview.valid),
+        'artifact-grid-cell--preview-invalid': Boolean(inPreview && !preview.valid),
+        [`artifact-grid-cell--preview-${preview?.family || 'none'}`]: Boolean(inPreview)
       };
     },
     cellStyle(index) {
@@ -173,7 +192,7 @@ export const ArtifactGridBoard = {
       if (!this.droppable) return;
       const cx = this.cellX(index);
       const cy = this.cellY(index);
-      if (this.isBagBoxCell(cx, cy)) return; // tetromino mask gap — not droppable
+      if (this.isBagBoxCell(cx, cy) && !this.placementPreviewForCell) return; // tetromino mask gap — not droppable
       event.preventDefault();
       if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
       this.hoverCellIndex = index;

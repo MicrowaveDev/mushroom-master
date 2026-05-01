@@ -272,6 +272,87 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return [...state.builderItems, candidate];
   }
 
+  function rectCellKeys(x, y, w, h) {
+    const cells = [];
+    for (let dx = 0; dx < w; dx += 1) {
+      for (let dy = 0; dy < h; dy += 1) {
+        cells.push(`${x + dx}:${y + dy}`);
+      }
+    }
+    return cells;
+  }
+
+  function canMovePlacedItemTo(item, x, y) {
+    const others = state.builderItems.filter((it) => !isSameInstance(it, item));
+    const occupied = buildOccupancy(others);
+    const w = item.width;
+    const h = item.height;
+    if (x + w > BAG_COLUMNS || y + h > effectiveRows()) return false;
+    for (let dx = 0; dx < w; dx += 1) {
+      for (let dy = 0; dy < h; dy += 1) {
+        if (occupied.has(`${x + dx}:${y + dy}`)) return false;
+        if (isCellDisabled(x + dx, y + dy)) return false;
+      }
+    }
+    return footprintInOneContainer(x, y, w, h);
+  }
+
+  function placementPreviewAt(x, y) {
+    if (state.draggingSource === 'bag-chip') {
+      const bagId = state.draggingBagId;
+      const bag = state.activeBags.find((activeBag) => activeBag.id === bagId);
+      if (!bag) return null;
+      const layout = bagLayout(bag.artifactId, bag.id);
+      const cells = Array.from(shapeCellsAt(x, y, layout.shape));
+      const valid = x >= 0
+        && y >= 0
+        && x + layout.cols <= BAG_COLUMNS
+        && !bagAreaOverlaps(x, y, layout.cols, layout.rows, bagId, layout.shape);
+      return {
+        cells,
+        valid,
+        artifactId: bag.artifactId,
+        family: 'bag'
+      };
+    }
+
+    if (state.draggingSource === 'container') {
+      const artifactId = state.draggingArtifactId;
+      const artifact = getArtifact(artifactId);
+      if (!artifact || artifact.family === 'bag') return null;
+      const slot = state.containerItems.find((s) => s.artifactId === artifactId);
+      const rowId = slot?.id ?? null;
+      const preferred = preferredOrientation(artifact);
+      const orientations = [preferred];
+      if (artifact.width !== artifact.height) {
+        orientations.push({ width: preferred.height, height: preferred.width });
+      }
+      const validOrientation = orientations.find((orientation) =>
+        normalizePlacement(artifact, x, y, orientation.width, orientation.height, rowId)
+      );
+      const display = validOrientation || orientations[0];
+      return {
+        cells: rectCellKeys(x, y, display.width, display.height),
+        valid: Boolean(validOrientation),
+        artifactId,
+        family: artifact.family
+      };
+    }
+
+    if (state.draggingSource === 'inventory' && state.draggingItem) {
+      const item = state.draggingItem;
+      const artifact = getArtifact(item.artifactId);
+      return {
+        cells: rectCellKeys(x, y, item.width, item.height),
+        valid: canMovePlacedItemTo(item, x, y),
+        artifactId: item.artifactId,
+        family: artifact?.family || 'damage'
+      };
+    }
+
+    return null;
+  }
+
   // Remove the first slot matching `artifactId` from containerItems and
   // return both the next array and the popped slot. The slot object
   // carries the loadout row id so the caller can thread it into whatever
@@ -748,6 +829,7 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     activateBag, deactivateBag, rotateBag,
     autoPlaceFromContainer, unplaceToContainer,
     rotatePlacedArtifact,
+    placementPreviewAt,
     canMoveBag, onBagChipDragStart, onBagZoneDrop,
     onInventoryCellDrop, onInventoryPieceDragStart,
     onContainerDrop, onContainerDragOver, onContainerPieceDragStart,

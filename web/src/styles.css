@@ -2208,6 +2208,57 @@ select {
   outline-offset: -2px;
 }
 
+.artifact-grid-cell--preview {
+  position: relative;
+  outline-offset: -4px;
+}
+
+.artifact-grid-cell--preview::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.artifact-grid-cell--preview-valid {
+  outline: 2px solid rgba(95, 124, 79, 0.78);
+}
+
+.artifact-grid-cell--preview-valid::before {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(95, 124, 79, 0.18) 0,
+      rgba(95, 124, 79, 0.18) 4px,
+      rgba(255, 253, 245, 0.22) 4px,
+      rgba(255, 253, 245, 0.22) 8px
+    );
+  box-shadow: inset 0 0 0 1px rgba(95, 124, 79, 0.38);
+}
+
+.artifact-grid-cell--preview-invalid {
+  outline: 2px solid rgba(156, 69, 53, 0.72);
+}
+
+.artifact-grid-cell--preview-invalid::before {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(156, 69, 53, 0.18) 0,
+      rgba(156, 69, 53, 0.18) 4px,
+      rgba(255, 253, 245, 0.18) 4px,
+      rgba(255, 253, 245, 0.18) 8px
+    );
+  box-shadow: inset 0 0 0 1px rgba(156, 69, 53, 0.34);
+}
+
+.artifact-grid-cell--preview-damage.artifact-grid-cell--preview-valid { outline-color: rgba(217, 97, 43, 0.72); }
+.artifact-grid-cell--preview-armor.artifact-grid-cell--preview-valid { outline-color: rgba(111, 155, 79, 0.76); }
+.artifact-grid-cell--preview-stun.artifact-grid-cell--preview-valid { outline-color: rgba(181, 148, 38, 0.78); }
+.artifact-grid-cell--preview-bag.artifact-grid-cell--preview-valid { outline-color: rgba(185, 130, 69, 0.78); }
+
 .shop-empty {
   opacity: 0.6;
   font-size: 0.9em;
@@ -2734,6 +2785,86 @@ select {
   font-weight: 700;
   opacity: 0.7;
   text-align: center;
+}
+
+.duel-role-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.duel-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+  padding: 2px 5px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--artifact-role-color) 16%, #fffdf5);
+  color: color-mix(in srgb, var(--artifact-role-color) 72%, #3f3328);
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.duel-role-chip-mark {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.duel-role-chip--damage .duel-role-chip-mark::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 3px;
+  height: 10px;
+  border-radius: 3px 3px 1px 1px;
+  background: currentColor;
+  transform: rotate(35deg);
+}
+
+.duel-role-chip--armor .duel-role-chip-mark::before {
+  content: '';
+  position: absolute;
+  inset: 1px 2px;
+  border: 2px solid currentColor;
+  border-radius: 3px 3px 5px 5px;
+}
+
+.duel-role-chip--stun .duel-role-chip-mark::before {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: currentColor;
+  clip-path: polygon(56% 0, 18% 48%, 50% 48%, 32% 100%, 84% 38%, 54% 38%);
+}
+
+.duel-role-chip--bag .duel-role-chip-mark::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  height: 7px;
+  border: 2px solid currentColor;
+  border-radius: 2px 2px 5px 5px;
+}
+
+.duel-role-chip-label {
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duel-role-chip b {
+  font-variant-numeric: tabular-nums;
 }
 
 .duel-loadout-center {
@@ -4886,6 +5017,16 @@ select {
 .shop-item--bag {
   border: 2px solid var(--telegram-accent, #6b8f5e);
   border-radius: 8px;
+  background: #edf4de;
+}
+.shop-item--bag .shop-item-visual-meta::after {
+  content: '';
+  width: 14px;
+  height: 10px;
+  margin-left: auto;
+  border: 2px solid currentColor;
+  border-radius: 3px 3px 6px 6px;
+  opacity: 0.7;
 }
 .artifact-stat-chip--bag {
   background: #e8f5e9;

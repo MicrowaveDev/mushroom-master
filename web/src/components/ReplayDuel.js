@@ -1,6 +1,7 @@
 import { FighterCard } from './FighterCard.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { prepareGridProps } from '../composables/loadout-projection.js';
+import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 
 export const ReplayDuel = {
   components: { FighterCard, ArtifactGridBoard },
@@ -27,6 +28,12 @@ export const ReplayDuel = {
     rightGridProps() {
       return this.gridPropsFor(this.rightFighter);
     },
+    leftRoleSummary() {
+      return this.roleSummaryFor(this.leftFighter);
+    },
+    rightRoleSummary() {
+      return this.roleSummaryFor(this.rightFighter);
+    },
     effectText() {
       const event = this.activeEvent;
       if (!event || event.type !== 'action') return '';
@@ -45,6 +52,24 @@ export const ReplayDuel = {
         items.filter((i) => this.getArtifact(i.artifactId)?.family === 'bag').map((i) => i.artifactId)
       );
       return prepareGridProps(items, bagIds, this.getArtifact);
+    },
+    roleSummaryFor(fighter) {
+      if (!fighter?.loadout || !this.getArtifact) return [];
+      const counts = new Map();
+      const items = fighter.loadout.items || [];
+      for (const item of items) {
+        if (item.x < 0 || item.y < 0) continue;
+        const artifact = this.getArtifact(item.artifactId);
+        if (!artifact) continue;
+        const visual = artifactVisualClassification(artifact);
+        counts.set(visual.role.id, {
+          role: visual.role,
+          count: (counts.get(visual.role.id)?.count || 0) + 1
+        });
+      }
+      return ['damage', 'armor', 'stun', 'bag']
+        .map((roleId) => counts.get(roleId))
+        .filter(Boolean);
     },
     fighterEffectClass(side) {
       const event = this.activeEvent;
@@ -87,6 +112,19 @@ export const ReplayDuel = {
       <div class="duel-loadouts">
         <div class="duel-loadout-side">
           <span class="duel-loadout-name">{{ leftFighter.nameText }}</span>
+          <div v-if="leftRoleSummary.length" class="duel-role-summary" aria-label="Left loadout roles">
+            <span
+              v-for="item in leftRoleSummary"
+              :key="item.role.id"
+              class="duel-role-chip"
+              :class="'duel-role-chip--' + item.role.id"
+              :style="{ '--artifact-role-color': item.role.color }"
+            >
+              <span class="duel-role-chip-mark" aria-hidden="true"></span>
+              <span class="duel-role-chip-label">{{ item.role.label }}</span>
+              <b>{{ item.count }}</b>
+            </span>
+          </div>
           <artifact-grid-board
             v-if="leftGridProps && renderArtifactFigure"
             variant="inventory"
@@ -124,6 +162,19 @@ export const ReplayDuel = {
         </div>
         <div class="duel-loadout-side duel-loadout-side--right">
           <span class="duel-loadout-name">{{ rightFighter.nameText }}</span>
+          <div v-if="rightRoleSummary.length" class="duel-role-summary" aria-label="Right loadout roles">
+            <span
+              v-for="item in rightRoleSummary"
+              :key="item.role.id"
+              class="duel-role-chip"
+              :class="'duel-role-chip--' + item.role.id"
+              :style="{ '--artifact-role-color': item.role.color }"
+            >
+              <span class="duel-role-chip-mark" aria-hidden="true"></span>
+              <span class="duel-role-chip-label">{{ item.role.label }}</span>
+              <b>{{ item.count }}</b>
+            </span>
+          </div>
           <artifact-grid-board
             v-if="rightGridProps && renderArtifactFigure"
             variant="inventory"

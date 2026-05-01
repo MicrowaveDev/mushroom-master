@@ -11,7 +11,7 @@ export const PrepScreen = {
   props: [
     'state', 't', 'containerArtifacts', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'formatArtifactBonus',
-    'preferredOrientation', 'getArtifactPrice', 'effectiveRows'
+    'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt'
   ],
   emits: [
     'auto-place', 'container-drag-start', 'drag-end',
@@ -130,6 +130,7 @@ export const PrepScreen = {
             :total-rows="totalRows"
             :bag-rows="bagRows"
             :get-artifact="getArtifact"
+            :placement-preview-at="placementPreviewAt"
             @unplace="$emit('unplace', $event)"
             @rotate="$emit('rotate', $event)"
             @cell-drop="$emit('cell-drop', $event)"

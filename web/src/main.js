@@ -353,7 +353,7 @@ const App = {
           :state="state" :t="t" :container-artifacts="containerArtifacts" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
-          :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()"
+          :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()" :placement-preview-at="placementPreviewAt"
           @auto-place="autoPlaceFromContainer($event)" @container-drag-start="onContainerPieceDragStart($event[0] || $event, $event[1])"
           @drag-end="onDragEndAny" @container-dragover="onContainerDragOver($event)" @container-drop="onContainerDrop($event)"
           @unplace="unplaceToContainer($event)" @rotate="rotatePlacedArtifact($event)"

@@ -3,7 +3,7 @@ import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 export const InventoryZone = {
   name: 'InventoryZone',
   components: { ArtifactGridBoard },
-  props: ['state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact'],
+  props: ['state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact', 'placementPreviewAt'],
   emits: [
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
     'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
@@ -42,6 +42,7 @@ export const InventoryZone = {
         :rotatable-pieces="true"
         :droppable="true"
         :draggable-pieces="true"
+        :placement-preview-for-cell="placementPreviewAt"
         @piece-click="$emit('unplace', $event)"
         @piece-rotate="$emit('rotate', $event)"
         @cell-drop="$emit('cell-drop', $event)"

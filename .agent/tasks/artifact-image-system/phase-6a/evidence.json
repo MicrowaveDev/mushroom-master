@@ -1,0 +1,11 @@
+{
+  "phase": "Phase 6A",
+  "status": "PASS",
+  "acceptanceCriteria": {
+    "AC6.1": "PASS",
+    "AC6.2": "PASS",
+    "AC6.3": "PASS",
+    "AC6.4": "PASS",
+    "AC6.5": "NOT_APPLICABLE"
+  }
+}

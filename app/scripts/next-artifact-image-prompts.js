@@ -11,14 +11,14 @@ const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
 const todoPath = path.join(repoRoot, 'docs', 'artifact-bitmap-todolist.md');
 const styleGuidePath = 'docs/artifact-image-style-prompt.md';
 
-function parseLimit(argv) {
+export function parseLimit(argv) {
   const value = argv.find((arg) => arg.startsWith('--limit='));
   if (!value) return 10;
   const limit = Number(value.slice('--limit='.length));
   return Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
 }
 
-function parseDescriptions(markdown) {
+export function parseArtifactDescriptions(markdown) {
   const descriptions = new Map();
   const itemRe = /^- \[[ x]\] `([^`]+)\.png` - `([^`]+)`, ([^.]+)\. (.+)$/gm;
   let match;
@@ -32,7 +32,7 @@ function parseDescriptions(markdown) {
   return descriptions;
 }
 
-function footprintForArtifact(artifact) {
+export function footprintForArtifact(artifact) {
   if (artifact.family === 'bag' && artifact.shape) {
     const shape = getBagShape(artifact, 0);
     const mask = shape.map((row) => row.map((cell) => (cell ? 'X' : '.')).join(' ')).join('\n');
@@ -41,7 +41,7 @@ function footprintForArtifact(artifact) {
   return `${artifact.width}x${artifact.height}`;
 }
 
-function familyLanguage(family) {
+export function familyLanguage(family) {
   switch (family) {
     case 'damage':
       return 'amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette';
@@ -56,7 +56,7 @@ function familyLanguage(family) {
   }
 }
 
-function shapeRule(artifact) {
+export function shapeRule(artifact) {
   const width = Number(artifact.width) || 1;
   const height = Number(artifact.height) || 1;
   if (artifact.family === 'bag' && artifact.shape) {
@@ -74,7 +74,7 @@ function shapeRule(artifact) {
   return `${width}x${height} block: one centered blocky object filling all quadrants evenly, with meaningful content in every occupied cell`;
 }
 
-function promptForArtifact(artifact, spec) {
+export function promptForArtifact(artifact, spec) {
   const outputPath = `web/public/artifacts/${artifact.id}.png`;
   const size = footprintForArtifact(artifact);
   const description = spec?.description || `${artifact.name.en} artifact, ${size}.`;
@@ -124,22 +124,31 @@ For irregular bag masks, the shape mask is a placement rule, not a clipping sten
 \`\`\``;
 }
 
-const limit = parseLimit(process.argv.slice(2));
-const markdown = fs.readFileSync(todoPath, 'utf8');
-const descriptions = parseDescriptions(markdown);
-
-const missing = artifacts
-  .filter((artifact) => !artifact.isCharacter)
-  .filter((artifact) => !fs.existsSync(path.join(artifactDir, `${artifact.id}.png`)))
-  .slice(0, limit);
-
-if (!missing.length) {
-  console.log('All artifact production PNGs exist in web/public/artifacts/.');
-  process.exit(0);
+export function artifactTodoDescriptions() {
+  return parseArtifactDescriptions(fs.readFileSync(todoPath, 'utf8'));
 }
 
-console.log(`# Next ${missing.length} Artifact Images To Generate\n`);
-console.log(`Source list: docs/artifact-bitmap-todolist.md`);
-console.log(`Style guide: ${styleGuidePath}`);
-console.log(`Skip rule: an artifact is skipped once web/public/artifacts/{artifact_id}.png exists.\n`);
-console.log(missing.map((artifact) => promptForArtifact(artifact, descriptions.get(artifact.id))).join('\n\n'));
+function main() {
+  const limit = parseLimit(process.argv.slice(2));
+  const descriptions = artifactTodoDescriptions();
+
+  const missing = artifacts
+    .filter((artifact) => !artifact.isCharacter)
+    .filter((artifact) => !fs.existsSync(path.join(artifactDir, `${artifact.id}.png`)))
+    .slice(0, limit);
+
+  if (!missing.length) {
+    console.log('All artifact production PNGs exist in web/public/artifacts/.');
+    process.exit(0);
+  }
+
+  console.log(`# Next ${missing.length} Artifact Images To Generate\n`);
+  console.log(`Source list: docs/artifact-bitmap-todolist.md`);
+  console.log(`Style guide: ${styleGuidePath}`);
+  console.log(`Skip rule: an artifact is skipped once web/public/artifacts/{artifact_id}.png exists.\n`);
+  console.log(missing.map((artifact) => promptForArtifact(artifact, descriptions.get(artifact.id))).join('\n\n'));
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

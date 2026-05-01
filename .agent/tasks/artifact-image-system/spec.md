@@ -12,14 +12,14 @@ The plan is the source of truth for scope, ACs, and verification. This file mirr
 
 ## Phase status
 
-- **Phase 0 — Baseline asset tracking policy:** complete (2026-04-29 user decision: artifact images stay local-only until explicit production-ready sign-off).
+- **Phase 0 — Baseline asset tracking policy:** complete (2026-04-29 local-only policy superseded by the 2026-05-01 production-ready bitmap baseline).
 - **Phase 1 — Thumbnail QA:** complete (thumbnail review script + local evidence sheet; raw PNG remains uncommitted candidate evidence).
 - **Phase 2 — Richer visual taxonomy:** complete (shared derived projection + full-catalog snapshot test).
 - **Phase 3 — Non-color role glyphs in UI:** complete (shop cards + artifact figures expose UI-driven role glyphs with accessible labels).
-- **Phase 4 — Prompt and provenance pipeline:** not started.
-- **Phase 5 Stage A — Existing-event replay feedback:** not started.
+- **Phase 4 — Prompt and provenance pipeline:** complete (approved runtime metadata + checksum verifier for 41 production PNGs).
+- **Phase 5 Stage A — Existing-event replay feedback:** complete (replay keeps existing hit/stun feedback and adds static loadout role summary chips from current loadout metadata).
 - **Phase 5 Stage B — Per-artifact battle-event attribution:** not started (gated on Stage A + new `[Req X-Y]`).
-- **Phase 6A — UI-only QoL:** not started.
+- **Phase 6A — UI-only QoL:** complete (ghost placement preview + valid/invalid footprint highlighting using existing placement rules).
 - **Phase 6B — Mechanic-dependent QoL:** not started (gated on game-requirements update).
 
 When a phase ships, update its bullet to `complete (<short note + commit ref>)` and drop evidence under `<phase>/`.
@@ -84,7 +84,7 @@ When a phase ships, update its bullet to `complete (<short note + commit ref>)` 
 - Raw imagegen exports and intermediate bitmap candidates stay in the ignored local workspace `.agent/artifact-image-workspace/`, separate from app-facing optimized PNGs in `web/public/artifacts/`.
 - Render role glyphs in UI first; do not bake into PNGs until UI approach is approved.
 - New battle-event fields require a new `[Req X-Y]` in `docs/game-requirements.md` in the same commit (per the [Requirement Traceability Rules](../../../AGENTS.md)).
-- The current `web/public/artifacts/` PNG set, generated review sheets, and runtime-facing provenance manifests must be treated as local-only evidence until the user explicitly signs off that the image set is production-ready.
+- The tracked `web/public/artifacts/` PNG set is the production baseline as of the 2026-05-01 continuation. Generated review sheets and raw/intermediate bitmap candidates remain local evidence unless a task explicitly promotes them.
 
 ## Non-goals
 

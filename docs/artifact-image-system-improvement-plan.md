@@ -1,6 +1,6 @@
 # Artifact Image System Improvement Plan
 
-**Status:** Draft plan.
+**Status:** In progress; Phases 0-6A complete except gated Stage 5B / 6B follow-ups.
 **Created:** 2026-04-29.
 **Scope:** Improve artifact images, classification, prompts, validation, and in-game presentation so the backpack/autobattler loop feels clearer and more rewarding.
 
@@ -20,7 +20,7 @@
 - Improvements must preserve the current DOM/CSS-grid inventory direction; **no** canvas/WebGL inventory.
 - Improvements must not change combat balance, economy, artifact stats, or shop eligibility.
 - Production PNGs must not be regenerated, replaced, or deleted as a side effect of phases that don't explicitly own bitmap regeneration.
-- Artifact PNGs, generated review sheets, and runtime-facing provenance manifests must **not be committed** until the artifact image set is explicitly approved as production-ready.
+- Artifact PNGs, generated review sheets, and runtime-facing provenance manifests must **not be committed** until the artifact image set is explicitly approved as production-ready. The bitmap set received production-readiness handling before the 2026-05-01 continuation, so Phase 4 may now commit runtime-facing approved provenance for the tracked PNG baseline.
 
 ### Agent assumptions (subject to user correction)
 
@@ -81,12 +81,12 @@ Implementation rules:
 
 ## Current Snapshot
 
-As of this review, the local artifact set contains a complete `web/public/artifacts/*.png` set plus the official contact sheet under `.agent/artifact-image-workspace/review/`.
+As of the 2026-05-01 continuation, the production artifact set contains 41 tracked `web/public/artifacts/*.png` files plus the official contact sheet under `.agent/artifact-image-workspace/review/`.
 
 Git tracking caveat:
 
-- `web/public/artifacts/` is currently local/untracked in this worktree. The user decision on 2026-04-29 is to keep artifact images uncommitted until they are absolutely ready for production. Any plan language that says "committed contact sheet", "approved production PNG", or "shared provenance" applies only after explicit production-ready sign-off. Until then, treat the images and generated review sheets as local evidence, not a repository contract.
-- Raw imagegen exports and intermediate bitmap candidates live under the ignored `.agent/artifact-image-workspace/` local workspace, separate from app-facing optimized PNGs in `web/public/artifacts/`.
+- The older 2026-04-29 local-only image policy is superseded for the current baseline by the production-readiness pass completed before the 2026-05-01 continuation. The tracked `web/public/artifacts/*.png` files are now the app-facing production baseline.
+- Raw imagegen exports and intermediate bitmap candidates still live under the ignored `.agent/artifact-image-workspace/` local workspace, separate from app-facing optimized PNGs in `web/public/artifacts/`.
 
 Validation run:
 

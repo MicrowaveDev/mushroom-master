@@ -143,6 +143,8 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.waitForSelector('.replay-log');
   debugLog('entered replay screen', { battleId: ghostBattle.id });
   await expect(page.locator('.duel-loadout-status')).toBeVisible();
+  await expect(page.locator('.duel-role-summary')).toHaveCount(2);
+  expect(await page.locator('.duel-role-chip').count()).toBeGreaterThan(0);
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(0);
   // [Req 2-F] 2 fighters × unified BAG_COLUMNS×BAG_ROWS (6×6) grid = 72 cells.
   // The replay screen runs both loadouts through prepareGridProps so the

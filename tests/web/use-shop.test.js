@@ -1031,3 +1031,60 @@ test('[regression] inventory move succeeds when the footprint spans two active b
   assert.equal(after.x, 2, 'spanning move relocates the item');
   assert.equal(after.bagId, undefined, 'move remains bag-id-free');
 });
+
+test('[phase 6A] placement preview mirrors valid container placement without mutating state', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  const rowId = seedContainer(state, 'bark_plate');
+  state.draggingArtifactId = 'bark_plate';
+  state.draggingSource = 'container';
+
+  const beforeBuilder = [...state.builderItems];
+  const beforeContainer = [...state.containerItems];
+  const preview = shop.placementPreviewAt(2, 0);
+
+  assert.equal(preview.valid, true);
+  assert.deepEqual(preview.cells, ['2:0']);
+  assert.equal(preview.artifactId, 'bark_plate');
+  assert.equal(preview.family, 'armor');
+  assert.deepEqual(state.builderItems, beforeBuilder, 'preview does not place the item');
+  assert.deepEqual(state.containerItems, beforeContainer, 'preview does not pop the container slot');
+  assert.equal(state.containerItems[0].id, rowId);
+});
+
+test('[phase 6A] placement preview marks occupied or uncovered cells invalid', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'bark_plate');
+  state.draggingArtifactId = 'bark_plate';
+  state.draggingSource = 'container';
+
+  const occupiedPreview = shop.placementPreviewAt(0, 0);
+  const uncoveredPreview = shop.placementPreviewAt(5, 5);
+
+  assert.equal(occupiedPreview.valid, false, 'starter preset occupies 0,0');
+  assert.deepEqual(occupiedPreview.cells, ['0:0']);
+  assert.equal(uncoveredPreview.valid, false, 'cell is outside every active bag');
+  assert.deepEqual(uncoveredPreview.cells, ['5:5']);
+});
+
+test('[phase 6A] bag chip preview uses bag shape cells and overlap rules', () => {
+  const state = makeFreshState();
+  const shop = makeShop(state);
+  seedContainer(state, 'moss_pouch');
+  seedContainer(state, 'amber_satchel');
+  shop.activateBag('moss_pouch');
+  shop.activateBag('amber_satchel');
+  const moss = activeBag(state, 'moss_pouch');
+
+  state.draggingBagId = moss.id;
+  state.draggingSource = 'bag-chip';
+  const invalid = shop.placementPreviewAt(3, 1);
+  const valid = shop.placementPreviewAt(0, 3);
+
+  assert.equal(invalid.valid, false, 'moss would overlap amber at 3,1');
+  assert.deepEqual(invalid.cells, ['3:1', '4:1']);
+  assert.equal(valid.valid, true);
+  assert.deepEqual(valid.cells, ['0:3', '1:3']);
+  assert.equal(valid.family, 'bag');
+});
