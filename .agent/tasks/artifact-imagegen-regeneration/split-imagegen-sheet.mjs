@@ -22,7 +22,10 @@ if (ids.length > columns * rows) {
 }
 
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
-const rawDir = path.join(repoRoot, '.agent', 'tasks', 'artifact-imagegen-regeneration', 'raw');
+const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
+  ? path.resolve(process.env.ARTIFACT_IMAGE_WORKSPACE)
+  : path.join(repoRoot, '.agent', 'artifact-image-workspace');
+const rawDir = path.join(artifactImageWorkspace, 'raw');
 const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
 const chromaScript = path.join(repoRoot, '.agent', 'tasks', 'artifact-simple-regeneration', 'chroma-key-artifact.mjs');
 

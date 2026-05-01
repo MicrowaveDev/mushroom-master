@@ -81,6 +81,7 @@ When a phase ships, update its bullet to `complete (<short note + commit ref>)` 
 - DOM/CSS-grid inventory only — no canvas/WebGL.
 - No combat/economy/balance changes.
 - Production PNGs are not regenerated, replaced, or deleted unless the active task explicitly owns bitmap regeneration.
+- Raw imagegen exports and intermediate bitmap candidates stay in the ignored local workspace `.agent/artifact-image-workspace/`, separate from app-facing optimized PNGs in `web/public/artifacts/`.
 - Render role glyphs in UI first; do not bake into PNGs until UI approach is approved.
 - New battle-event fields require a new `[Req X-Y]` in `docs/game-requirements.md` in the same commit (per the [Requirement Traceability Rules](../../../AGENTS.md)).
 - The current `web/public/artifacts/` PNG set, generated review sheets, and runtime-facing provenance manifests must be treated as local-only evidence until the user explicitly signs off that the image set is production-ready.
@@ -101,6 +102,8 @@ Per phase, drop evidence under `<phase>/`:
 - `evidence.json` — per-AC `PASS` / `FAIL` / `UNKNOWN`.
 - `raw/` — command output, screenshots, timestamp captures, the regenerated review sheet PNG.
 - `problems.md` if any AC is not `PASS` after fresh verification.
+
+Imagegen source PNGs and intermediate processed candidates are not phase evidence; keep them in `.agent/artifact-image-workspace/raw/` and `.agent/artifact-image-workspace/processed/`.
 
 ## Resume checklist (for a future agent)
 

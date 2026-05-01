@@ -8,7 +8,10 @@ import { getBagShape } from '../shared/bag-shape.js';
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
-const imagegenRawDir = path.join(repoRoot, '.agent', 'tasks', 'artifact-imagegen-regeneration', 'raw');
+const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
+  ? path.resolve(process.env.ARTIFACT_IMAGE_WORKSPACE)
+  : path.join(repoRoot, '.agent', 'artifact-image-workspace');
+const imagegenRawDir = path.join(artifactImageWorkspace, 'raw');
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 function parseArgs(argv) {
@@ -469,7 +472,7 @@ function freshnessFailures(artifact, stats, freshness) {
     const raw = newestImagegenRawFor(artifact.id);
     if (!raw) {
       failures.push(
-        `no raw imagegen source found at .agent/tasks/artifact-imagegen-regeneration/raw/${artifact.id}.source*.png; copy/process the imagegen output before accepting ${outputLabel}`
+        `no raw imagegen source found at ${path.relative(repoRoot, imagegenRawDir)}/${artifact.id}.source*.png; copy/process the imagegen output before accepting ${outputLabel}`
       );
     } else if (stats.mtimeMs <= raw.mtimeMs) {
       failures.push(

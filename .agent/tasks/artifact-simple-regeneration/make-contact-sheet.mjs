@@ -3,7 +3,7 @@ import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { artifacts } from '../../../app/server/game-data.js';
 
-const outPath = process.argv[2] || '.agent/tasks/artifact-simple-regeneration/contact-sheet.png';
+const outPath = process.argv[2] || '.agent/artifact-image-workspace/review/simple-contact-sheet.png';
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
 const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
 

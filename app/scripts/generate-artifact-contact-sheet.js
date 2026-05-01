@@ -9,11 +9,14 @@ import {
   artifactImageDataUrl,
   buildArtifactSections,
   escapeHtml,
-  repoRoot,
-  artifactDir
+  repoRoot
 } from './artifact-sheet-helpers.js';
 
-const defaultOutPath = path.join(artifactDir, 'contact-sheet.png');
+const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
+  ? path.resolve(process.env.ARTIFACT_IMAGE_WORKSPACE)
+  : path.join(repoRoot, '.agent', 'artifact-image-workspace');
+const artifactReviewDir = path.join(artifactImageWorkspace, 'review');
+const defaultOutPath = path.join(artifactReviewDir, 'contact-sheet.png');
 const sheetCellPx = 50;
 const sheetCellGap = 8;
 const sheetStagePadX = 24;

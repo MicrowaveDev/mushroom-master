@@ -10,3 +10,10 @@ tmp/*.sqlite-journal
 *.log
 .agent/tasks/*/raw/screenshots/
 .agent/artifact-image-archives/
+.agent/artifact-image-workspace/raw/
+.agent/artifact-image-workspace/processed/
+.agent/artifact-image-workspace/review/
+.agent/tasks/artifact-imagegen-regeneration/raw/
+.agent/tasks/artifact-simple-regeneration/raw/
+.agent/tasks/artifact-simple-regeneration/*.png
+.agent/tasks/artifact-image-system/phase-*/raw/

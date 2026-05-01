@@ -81,11 +81,12 @@ Implementation rules:
 
 ## Current Snapshot
 
-As of this review, the local artifact set contains a complete `web/public/artifacts/*.png` set plus the official contact sheet.
+As of this review, the local artifact set contains a complete `web/public/artifacts/*.png` set plus the official contact sheet under `.agent/artifact-image-workspace/review/`.
 
 Git tracking caveat:
 
 - `web/public/artifacts/` is currently local/untracked in this worktree. The user decision on 2026-04-29 is to keep artifact images uncommitted until they are absolutely ready for production. Any plan language that says "committed contact sheet", "approved production PNG", or "shared provenance" applies only after explicit production-ready sign-off. Until then, treat the images and generated review sheets as local evidence, not a repository contract.
+- Raw imagegen exports and intermediate bitmap candidates live under the ignored `.agent/artifact-image-workspace/` local workspace, separate from app-facing optimized PNGs in `web/public/artifacts/`.
 
 Validation run:
 
@@ -98,7 +99,7 @@ npx playwright test tests/game/artifact-bitmap-screenshots.spec.js --config=test
 
 Observed result:
 
-- The deterministic contact sheet regenerated at `web/public/artifacts/contact-sheet.png`.
+- The deterministic contact sheet regenerated at `.agent/artifact-image-workspace/review/contact-sheet.png`.
 - All current artifact PNGs passed coverage and mask validation.
 - `game:artifacts:next` reported that all production PNGs exist.
 - The focused Playwright bitmap test passed for shop and placed-grid rendering.
@@ -176,7 +177,9 @@ Current decision:
 
 Changes:
 
-- Treat the current `web/public/artifacts/*.png` files and `web/public/artifacts/contact-sheet.png` as local-only candidates.
+- Treat the current `web/public/artifacts/*.png` files as local-only app-facing candidates.
+- Keep generated contact sheets and their manifests under `.agent/artifact-image-workspace/review/`, not under `web/public/artifacts/`.
+- Treat `.agent/artifact-image-workspace/raw/`, `.agent/artifact-image-workspace/processed/`, and `.agent/artifact-image-workspace/review/` as local-only source/candidate evidence that must not be committed.
 - Keep Phase 1 thumbnail review output under `.agent/tasks/artifact-image-system/phase-1/raw/` while the PNG set is not production-approved.
 - Keep Phase 4 provenance drafts under `.agent/tasks/artifact-image-system/phase-4/` while the PNG set is not production-approved.
 - When production-ready sign-off happens later, include the complete PNG set, deterministic contact sheet, thumbnail review sheet, and approved runtime provenance in one explicit asset-baseline change. Do not mix that commit with taxonomy, prompt, replay, or UI behavior work.
