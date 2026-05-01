@@ -1,7 +1,6 @@
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 import { SellZone } from './SellZone.js';
 import { artifactVisualClassification } from '../../../../app/shared/artifact-visual-classification.js';
-import { artifactRoleGlyphLabel } from '../../artifacts/render.js';
 
 export const ShopZone = {
   name: 'ShopZone',
@@ -27,12 +26,6 @@ export const ShopZone = {
         [`shop-item--role-${visual.role.id}`]: true,
         [`shop-item--shine-${visual.shine.id}`]: true
       };
-    },
-    visualClass(artifactId) {
-      return artifactVisualClassification(this.getArtifact(artifactId));
-    },
-    roleGlyphLabel(artifactId) {
-      return artifactRoleGlyphLabel(this.visualClass(artifactId).role);
     },
     previewOrientation(artifactId) {
       const artifact = this.getArtifact(artifactId);
@@ -75,16 +68,6 @@ export const ShopZone = {
           <div class="shop-item-header">
             <strong class="shop-item-name">{{ getArtifact(artifactId)?.name?.[state.lang] }}</strong>
             <span class="shop-item-price">🪙 {{ getArtifactPrice(getArtifact(artifactId)) }}</span>
-          </div>
-          <div class="shop-item-visual-meta">
-            <span class="shop-item-role-dot"></span>
-            <span
-              class="artifact-role-glyph shop-item-role-glyph"
-              :class="'artifact-role-glyph--' + visualClass(artifactId).role.id"
-              :aria-label="roleGlyphLabel(artifactId)"
-              :title="roleGlyphLabel(artifactId)"
-            ><span aria-hidden="true"></span></span>
-            <span class="shop-item-shine">{{ visualClass(artifactId).shine.label }}</span>
           </div>
           <artifact-grid-board
             class="shop-item-visual"

@@ -1,4 +1,5 @@
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
+import { ARTIFACT_ROLE_CLASSES } from '../../../../app/shared/artifact-visual-classification.js';
 
 export const InventoryZone = {
   name: 'InventoryZone',
@@ -27,6 +28,28 @@ export const InventoryZone = {
     },
     onChipDragEnd() {
       this.$emit('drag-end');
+    },
+    roleLegendItems() {
+      const labels = {
+        ru: {
+          damage: 'Урон',
+          armor: 'Броня',
+          stun: 'Оглушение',
+          bag: 'Сумки'
+        },
+        en: {
+          damage: 'Damage',
+          armor: 'Armor',
+          stun: 'Stun',
+          bag: 'Bags'
+        }
+      };
+      const lang = this.state.lang === 'en' ? 'en' : 'ru';
+      return ['damage', 'armor', 'stun', 'bag'].map((id) => ({
+        id,
+        role: ARTIFACT_ROLE_CLASSES[id],
+        label: labels[lang][id]
+      }));
     }
   },
   template: `
@@ -49,6 +72,21 @@ export const InventoryZone = {
         @piece-drag-start="$emit('inventory-drag-start', $event)"
         @piece-drag-end="$emit('drag-end')"
       />
+      <div class="artifact-role-legend" aria-label="Artifact role legend">
+        <span
+          v-for="item in roleLegendItems()"
+          :key="item.id"
+          class="artifact-role-legend-item"
+          :style="{ '--artifact-role-color': item.role.color }"
+        >
+          <span
+            class="artifact-role-glyph artifact-role-legend-glyph"
+            :class="'artifact-role-glyph--' + item.id"
+            aria-hidden="true"
+          ><span></span></span>
+          <span>{{ item.label }}</span>
+        </span>
+      </div>
       <div v-if="visibleActiveBags().length" class="active-bags-bar">
         <span
           v-for="bag in visibleActiveBags()"

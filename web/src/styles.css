@@ -1952,12 +1952,10 @@ select {
 .shop-item {
   position: relative;
   display: grid;
-  /* Three rows so the name pins to the top, the visual centers in the
-     flexible middle row, and the stat tags stick to the bottom. The grid
-     parent stretches all tiles in a row to the same height, so this
-     yields a consistent baseline for tags across cards regardless of
-     visual size. */
-  grid-template-rows: auto auto 1fr auto;
+  /* Name pins to the top, the visual centers in the flexible middle row,
+     and stat tags stick to the bottom. The shared role legend lives under
+     the player grid instead of repeating inside every shop card. */
+  grid-template-rows: auto 1fr auto;
   gap: 4px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.7);
@@ -2028,27 +2026,6 @@ select {
 }
 .shop-item--tier2 .shop-item-price { color: var(--accent); }
 .shop-item--tier3 .shop-item-price { color: #b8860b; }
-
-.shop-item-visual-meta {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  color: rgba(63, 51, 40, 0.68);
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.shop-item-role-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--artifact-role-color);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.62);
-  flex: 0 0 auto;
-}
 
 .artifact-role-glyph {
   position: relative;
@@ -2134,21 +2111,6 @@ select {
   border: 2px solid currentColor;
   border-bottom: 0;
   border-radius: 7px 7px 0 0;
-}
-
-.shop-item-role-glyph {
-  width: 16px;
-  height: 16px;
-}
-
-.shop-item-role-glyph > span {
-  transform: scale(0.86);
-}
-
-.shop-item-shine {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .shop-item-visual {
@@ -5126,15 +5088,6 @@ select {
   border-radius: 8px;
   background: #edf4de;
 }
-.shop-item--bag .shop-item-visual-meta::after {
-  content: '';
-  width: 14px;
-  height: 10px;
-  margin-left: auto;
-  border: 2px solid currentColor;
-  border-radius: 3px 3px 6px 6px;
-  opacity: 0.7;
-}
 .artifact-stat-chip--bag {
   background: #e8f5e9;
   color: #2e7d32;
@@ -5294,6 +5247,38 @@ select {
 .prep-screen .artifact-inventory-grid {
   justify-self: center;
   --board-gap: 7px;
+}
+
+.artifact-role-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 10px;
+  width: min(100%, 440px);
+  margin: 8px auto 0;
+  padding: 0 8px;
+}
+
+.artifact-role-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(63, 51, 40, 0.62);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.artifact-role-legend-glyph {
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 253, 245, 0.62);
+  box-shadow: none;
+}
+
+.artifact-role-legend-glyph > span {
+  transform: scale(0.86);
 }
 
 .prep-screen .artifact-grid-cell {
