@@ -2719,6 +2719,32 @@ select {
   filter: none;
 }
 
+.shop-item-visual .artifact-figure-cell {
+  border-radius: 16px;
+  border: 1px solid rgba(138, 97, 53, 0.12);
+  background:
+    radial-gradient(circle at top, rgba(140, 188, 135, 0.14), transparent 55%),
+    #fffdf5;
+  box-shadow: none;
+}
+
+.shop-item-visual .artifact-role--damage .artifact-figure-cell,
+.shop-item-visual .artifact-role--armor .artifact-figure-cell,
+.shop-item-visual .artifact-role--stun .artifact-figure-cell,
+.shop-item-visual .artifact-role--bag .artifact-figure-cell {
+  border-color: rgba(95, 124, 79, 0.2);
+}
+
+.shop-item-visual .artifact-shine--bright .artifact-figure-cell,
+.shop-item-visual .artifact-shine--radiant .artifact-figure-cell,
+.shop-item-visual .artifact-shine--signature .artifact-figure-cell {
+  box-shadow: none;
+}
+
+.shop-item-visual .artifact-figure-cell::after {
+  display: none;
+}
+
 @media (max-width: 820px) {
   .artifact-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
