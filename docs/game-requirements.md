@@ -281,7 +281,7 @@ Phase 1 + Phase 2 ship without any schema change. Phases 3 + 4 add a starter-bag
 ## 13. Replay
 
 - **13-A.** Every battle produces a deterministic replay that can be re-watched.
-- **13-B.** Replays are accessible from the round-result screen and from the battle history list.
+- **13-B.** Replays are accessible from the round-result screen and from the run summary screen — the home and the full history both list **game runs** (one row per run, per Req 1-A); clicking a run opens its summary, which lists the per-round battles inside the run, each linking to its own replay.
 - **13-C.** During an active game run, the post-replay button must show **"Продолжить"** (continue to next round), not "Домой" (home).
 - **13-D.** Outside a game run (standalone replay from history), the post-replay button shows **"Домой"**.
 
@@ -314,7 +314,7 @@ Phase 1 + Phase 2 ship without any schema change. Phases 3 + 4 add a starter-bag
 
   Locked sections render as a lock icon with "Unlocks at N mycelium" copy. Non-character wiki entries (locations, factions, glossary) are always fully visible. Gating is enforced server-side in `getWikiEntry(section, slug, mycelium)`.
 
-- **14-E.** The solo round-result response includes `lastRound.levelBefore` and `lastRound.levelAfter`. The round-result screen displays a level-up notification when `levelAfter > levelBefore`.
+- **14-E.** The solo round-result response includes `lastRound.levelBefore`, `lastRound.levelAfter`, `lastRound.mushroomId`, and the per-mushroom rank-progress payload `lastRound.progressBefore` and `lastRound.progressAfter`. Each progress object has the shape `{ level, tier, current, next }`, where `tier` is `getTier(level)` and `(current, next)` come from `computeLevel(mycelium)` (`next` is `null` at the level cap). The replay screen renders the post-battle rewards card inline (Flow B Step 3) with a sequenced reveal: round outcome banner, reward stats (spore / mycelium / rating), then a rank progress block whose bar animates from `progressBefore.current` toward `progressAfter.current`. When `levelAfter > levelBefore` the bar fills to `progressBefore.next`, plays a level-up flash, then refills toward the new level's `current`. When `progressBefore.tier !== progressAfter.tier` an additional tier-change toast renders the new tier badge. Both the JS reveal timing and the CSS keyframes must be suppressed when the in-app `reducedMotion` setting is on or when `prefers-reduced-motion: reduce` is set.
 
 - **14-F.** Each mushroom may have one or more **portrait variants** defined in `PORTRAIT_VARIANTS` (in `app/server/game-data.js`). The first variant is always `id: 'default'` with `cost: 0`. Additional variants are unlocked when `player_mushrooms.mycelium >= variant.cost` — the threshold is a **cumulative gate, not a purchase**: mycelium is never deducted. The active portrait is stored in `player_mushrooms.active_portrait` (default `'default'`). `getPlayerState` returns `portraits[]` per mushroom, each with an `unlocked` boolean and `activePortraitUrl`. `PUT /api/mushroom/:id/portrait { portraitId }` validates the threshold and persists the choice; it returns 403 if mycelium is below threshold, 400 for an unknown portrait id, and 404 for an unknown mushroom. Mushrooms with only one variant (e.g. Morga) do not expose the portrait picker. Ghosts always use the default portrait regardless of player selection.
 

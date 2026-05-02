@@ -251,6 +251,40 @@ export function useGameState(state, options = {}) {
     return desc;
   }
 
+  function describeRun(run) {
+    if (!run) return null;
+    // Outcome rule (per game-requirements.md §1):
+    //   end_reason='max_rounds' && livesRemaining>0 → win (survived 9 rounds)
+    //   end_reason='max_losses' → loss (5 losses absorbed)
+    //   end_reason='abandoned' → abandoned
+    let outcomeKey = 'abandoned';
+    if (run.endReason === 'max_rounds' && (run.livesRemaining || 0) > 0) {
+      outcomeKey = 'win';
+    } else if (run.endReason === 'max_losses') {
+      outcomeKey = 'loss';
+    } else if (run.endReason === 'abandoned') {
+      outcomeKey = 'abandoned';
+    }
+    const tr = t.value;
+    const outcomeLabel = outcomeKey === 'win'
+      ? tr.runOutcomeWin
+      : outcomeKey === 'loss' ? tr.runOutcomeLoss : tr.runOutcomeAbandoned;
+    const ourMushroom = getMushroom(run.mushroomId);
+    return {
+      outcomeKey,
+      outcomeLabel,
+      ourName: mushroomDisplayName(run.mushroomId),
+      ourImage: ourMushroom?.imagePath || '',
+      mushroomId: run.mushroomId || null,
+      wins: run.wins || 0,
+      losses: run.losses || 0,
+      completedRounds: run.completedRounds || 0,
+      livesRemaining: run.livesRemaining || 0,
+      modeLabel: run.mode === 'challenge' ? tr.modeChallenge : tr.modeSolo,
+      dateLabel: formatReplayDate(run.endedAt || run.startedAt)
+    };
+  }
+
   function artifactGridStyle(item) {
     return {
       gridColumn: `${item.x + 1} / span ${item.width}`,
@@ -268,7 +302,7 @@ export function useGameState(state, options = {}) {
     formatArtifactBonus, formatDelta,
     loadoutStatsText, portraitPosition,
     replayBubbleStyle, sampleBubbleText, buildReplayFighter,
-    resultSpeech, describeReplay, artifactGridStyle,
+    resultSpeech, describeReplay, describeRun, artifactGridStyle,
     getArtifactPrice, renderArtifactFigure, buildOccupancy, preferredOrientation
   };
 }

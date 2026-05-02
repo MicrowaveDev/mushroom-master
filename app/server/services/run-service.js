@@ -7,6 +7,7 @@ import {
   getArtifactById,
   getArtifactPrice,
   getCompletionBonus,
+  getTier,
   COMPLETED_RUN_MAX_AGE_DAYS,
   GHOST_BOT_MAX_AGE_DAYS,
   GHOST_BUDGET_DISCOUNT,
@@ -363,7 +364,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
   }
 
   const roundsResult = await query(
-    `SELECT id, round_number, battle_id, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
+    `SELECT id, round_number, battle_id, player_id, outcome, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
     [gameRunId]
   );
 
@@ -372,6 +373,29 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     [gameRunId, viewerPlayerId, run.current_round]
   );
   const shopOffer = shopResult.rowCount ? parseJson(shopResult.rows[0].offer_json, []) : [];
+
+  // Per-player mushroom ids (read from any battle snapshot belonging to that
+  // player in this run). Falls back to null for runs abandoned before any
+  // battle was created. SQLite-portable IN-list with positional placeholders.
+  const playerIds = playersResult.rows.map((r) => r.player_id);
+  const mushroomByPlayer = new Map();
+  if (playerIds.length) {
+    const placeholders = playerIds.map((_, i) => `$${i + 2}`).join(', ');
+    const mushroomResult = await query(
+      `SELECT bs.player_id, bs.mushroom_id
+       FROM game_rounds gro
+       JOIN battle_snapshots bs ON bs.battle_id = gro.battle_id
+       WHERE gro.game_run_id = $1
+         AND bs.player_id IN (${placeholders})
+       ORDER BY gro.round_number ASC`,
+      [gameRunId, ...playerIds]
+    );
+    for (const row of mushroomResult.rows) {
+      if (!mushroomByPlayer.has(row.player_id)) {
+        mushroomByPlayer.set(row.player_id, row.mushroom_id);
+      }
+    }
+  }
 
   return {
     id: run.id,
@@ -385,6 +409,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     players: playersResult.rows.map((r) => ({
       id: r.id,
       playerId: r.player_id,
+      mushroomId: mushroomByPlayer.get(r.player_id) || null,
       completedRounds: r.completed_rounds,
       wins: r.wins,
       losses: r.losses,
@@ -395,6 +420,8 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
       id: r.id,
       roundNumber: r.round_number,
       battleId: r.battle_id,
+      playerId: r.player_id,
+      outcome: r.outcome,
       createdAt: r.created_at
     }))
   };
@@ -834,8 +861,10 @@ export async function resolveRound(playerId, gameRunId) {
       [playerId, mushroomId, myceliumAwarded]
     );
 
-    const levelBefore = computeLevel(myceliumBefore).level;
-    const levelAfter = computeLevel(myceliumBefore + myceliumAwarded).level;
+    const levelInfoBefore = computeLevel(myceliumBefore);
+    const levelInfoAfter = computeLevel(myceliumBefore + myceliumAwarded);
+    const levelBefore = levelInfoBefore.level;
+    const levelAfter = levelInfoAfter.level;
 
     // Ghost snapshots are no longer written to a separate table (§2.4).
     // The round-N loadout rows in game_run_loadout_items ARE the snapshot —
@@ -913,7 +942,20 @@ export async function resolveRound(playerId, gameRunId) {
         ratingBefore: player.rating,
         ratingAfter,
         levelBefore,
-        levelAfter
+        levelAfter,
+        mushroomId,
+        progressBefore: {
+          level: levelBefore,
+          tier: getTier(levelBefore),
+          current: levelInfoBefore.current,
+          next: levelInfoBefore.next
+        },
+        progressAfter: {
+          level: levelAfter,
+          tier: getTier(levelAfter),
+          current: levelInfoAfter.current,
+          next: levelInfoAfter.next
+        }
       }
     };
   });
@@ -1175,7 +1217,13 @@ export async function pruneCompletedRuns(maxAgeDays = COMPLETED_RUN_MAX_AGE_DAYS
 export async function getGameRunHistory(playerId, limit = 20) {
   const result = await query(
     `SELECT gr.id, gr.mode, gr.status, gr.current_round, gr.started_at, gr.ended_at, gr.end_reason,
-            grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining
+            grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining,
+            (SELECT bs.mushroom_id
+             FROM game_rounds gro
+             JOIN battle_snapshots bs ON bs.battle_id = gro.battle_id AND bs.player_id = grp.player_id
+             WHERE gro.game_run_id = gr.id
+             ORDER BY gro.round_number ASC
+             LIMIT 1) AS mushroom_id
      FROM game_run_players grp
      JOIN game_runs gr ON gr.id = grp.game_run_id
      WHERE grp.player_id = $1 AND gr.status != 'active'
@@ -1195,6 +1243,7 @@ export async function getGameRunHistory(playerId, limit = 20) {
     completedRounds: row.completed_rounds,
     wins: row.wins,
     losses: row.losses,
-    livesRemaining: row.lives_remaining
+    livesRemaining: row.lives_remaining,
+    mushroomId: row.mushroom_id || null
   }));
 }

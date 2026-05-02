@@ -26,6 +26,7 @@ import { CharactersScreen } from './pages/CharactersScreen.js';
 import { PrepScreen } from './pages/PrepScreen.js';
 import { ReplayScreen } from './pages/ReplayScreen.js';
 import { RunCompleteScreen } from './pages/RunCompleteScreen.js';
+import { RunSummaryScreen } from './pages/RunSummaryScreen.js';
 import { FriendsScreen } from './pages/FriendsScreen.js';
 import { LeaderboardScreen } from './pages/LeaderboardScreen.js';
 import { WikiScreen } from './pages/WikiScreen.js';
@@ -42,7 +43,7 @@ const App = {
     ArtifactGridBoard, FighterCard, ReplayDuel,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
-    ReplayScreen, RunCompleteScreen,
+    ReplayScreen, RunCompleteScreen, RunSummaryScreen,
     FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, SettingsScreen
   },
   setup() {
@@ -82,6 +83,7 @@ const App = {
       localLabInput: 'Step 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.',
       gameRun: null,
       gameRunResult: null,
+      gameRunSummary: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
       sellDragOver: false,
@@ -137,6 +139,11 @@ const App = {
       gs.goTo('home');
     }
 
+    function handleRunSummaryClose() {
+      state.gameRunSummary = null;
+      gs.goTo('home');
+    }
+
     async function onReplayFinish() {
       if (state.gameRun) {
         if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
@@ -149,7 +156,10 @@ const App = {
           gs.goTo('prep');
         }
       } else {
-        // Standalone replay (no active game run) — return to home
+        // Standalone replay (no active game run) — return to home.
+        // [Req 13-D] post-replay button says "Домой" so behavior must match label.
+        // The user can re-open the run summary from home if needed.
+        state.gameRunSummary = null;
         gs.goTo('home');
       }
     }
@@ -229,7 +239,7 @@ const App = {
       saveCharacter,
       ...customization,
       saveSettings: auth.saveSettings,
-      ...devTools, handleRunComplete, onReplayFinish,
+      ...devTools, handleRunComplete, handleRunSummaryClose, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
   },
@@ -280,9 +290,9 @@ const App = {
         <home-screen v-else-if="state.screen === 'home'"
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
-          :describe-replay="describeReplay" :format-delta="formatDelta" :portrait-position="portraitPosition"
+          :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta" :portrait-position="portraitPosition"
           @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="abandonRun"
-          @load-replay="loadReplay($event)" @go="goTo($event)"
+          @load-replay="loadReplay($event)" @load-run-summary="loadRunSummary($event)" @go="goTo($event)"
           @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
           @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
           @select-mushroom="saveCharacter($event)"
@@ -345,6 +355,11 @@ const App = {
           :state="state" :t="t" @go-home="handleRunComplete"
         />
 
+        <run-summary-screen v-else-if="state.screen === 'runSummary' && state.gameRunSummary"
+          :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition"
+          @go-home="handleRunSummaryClose" @load-replay="loadReplay($event)"
+        />
+
         <replay-screen v-else-if="state.screen === 'replay' && state.currentBattle"
           :state="state" :t="t" :format-delta="formatDelta"
           :active-event="activeEvent" :active-speech="activeSpeech" :battle-status-text="battleStatusText"
@@ -356,41 +371,33 @@ const App = {
         />
 
         <section v-else-if="state.screen === 'history'" class="panel stack">
-          <h2>{{ t.history }}</h2>
-          <p v-if="!state.bootstrap.battleHistory?.length">{{ t.noReplays }}</p>
-          <ul v-else class="replay-list">
+          <h2>{{ t.runHistory }}</h2>
+          <p v-if="!state.bootstrap.gameRunHistory?.length">{{ t.noGameRunsYet }}</p>
+          <ul v-else class="run-list">
             <li
-              v-for="battle in state.bootstrap.battleHistory"
-              :key="battle.id"
-              class="replay-card"
-              :class="'replay-card--' + (describeReplay(battle)?.outcomeKey || 'draw')"
-              @click="loadReplay(battle.id)"
+              v-for="run in state.bootstrap.gameRunHistory"
+              :key="run.id"
+              class="run-card"
+              :class="'run-card--' + (describeRun(run)?.outcomeKey || 'abandoned')"
+              @click="loadRunSummary(run.id)"
               role="button" tabindex="0"
-              @keydown.enter.prevent="loadReplay(battle.id)"
-              @keydown.space.prevent="loadReplay(battle.id)"
+              @keydown.enter.prevent="loadRunSummary(run.id)"
+              @keydown.space.prevent="loadRunSummary(run.id)"
             >
-              <div class="replay-card-header">
-                <span class="replay-card-outcome">{{ describeReplay(battle)?.outcomeLabel }}</span>
-                <span class="replay-card-meta">
-                  <span class="replay-card-kind">{{ describeReplay(battle)?.opponentKindLabel }}</span>
-                  <span class="replay-card-date">{{ describeReplay(battle)?.dateLabel }}</span>
+              <div class="run-card-header">
+                <span class="run-card-outcome">{{ describeRun(run)?.outcomeLabel }}</span>
+                <span class="run-card-meta">
+                  <span class="run-card-kind">{{ describeRun(run)?.modeLabel }}</span>
+                  <span class="run-card-date">{{ describeRun(run)?.dateLabel }}</span>
                 </span>
               </div>
-              <div class="replay-card-matchup">
-                <div class="replay-card-fighter">
-                  <img v-if="describeReplay(battle)?.ourImage" :src="describeReplay(battle).ourImage" :alt="describeReplay(battle)?.ourName" class="replay-card-portrait" />
-                  <span class="replay-card-name">{{ describeReplay(battle)?.ourName }}</span>
+              <div class="run-card-matchup">
+                <div class="run-card-fighter">
+                  <img v-if="describeRun(run)?.ourImage" :src="describeRun(run).ourImage" :alt="describeRun(run)?.ourName" class="run-card-portrait" />
+                  <span class="run-card-name">{{ describeRun(run)?.ourName }}</span>
                 </div>
-                <span class="replay-card-vs">vs</span>
-                <div class="replay-card-fighter">
-                  <img v-if="describeReplay(battle)?.oppImage" :src="describeReplay(battle).oppImage" :alt="describeReplay(battle)?.oppName" class="replay-card-portrait" />
-                  <span class="replay-card-name">{{ describeReplay(battle)?.oppName }}</span>
-                </div>
-              </div>
-              <div class="replay-card-rewards" v-if="describeReplay(battle)?.ratingDelta != null || describeReplay(battle)?.sporeDelta || describeReplay(battle)?.myceliumDelta">
-                <span v-if="describeReplay(battle)?.ratingDelta != null" class="replay-chip">{{ t.rating }} {{ formatDelta(describeReplay(battle).ratingDelta) }}</span>
-                <span v-if="describeReplay(battle)?.sporeDelta" class="replay-chip">{{ t.spore }} {{ formatDelta(describeReplay(battle).sporeDelta) }}</span>
-                <span v-if="describeReplay(battle)?.myceliumDelta" class="replay-chip">{{ t.mycelium }} {{ formatDelta(describeReplay(battle).myceliumDelta) }}</span>
+                <span class="run-card-vs">·</span>
+                <span class="run-card-name">{{ t.runStatsRecord.replace('{wins}', describeRun(run)?.wins).replace('{losses}', describeRun(run)?.losses).replace('{rounds}', describeRun(run)?.completedRounds) }}</span>
               </div>
             </li>
           </ul>

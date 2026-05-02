@@ -3,7 +3,7 @@ import { artifacts, DAILY_BATTLE_LIMIT, mushroomsForResponse } from '../game-dat
 import { dayKey, nextUtcReset } from '../lib/utils.js';
 import { getBattleHistory } from './battle-service.js';
 import { getPlayerState } from './player-service.js';
-import { getActiveGameRun } from './run-service.js';
+import { getActiveGameRun, getGameRunHistory } from './run-service.js';
 
 export { validateLoadoutItems } from './loadout-utils.js';
 export { simulateBattle } from './battle-engine.js';
@@ -47,7 +47,10 @@ export {
 
 export async function getBootstrap(playerId) {
   const state = await getPlayerState(playerId);
-  const history = await getBattleHistory(playerId, 10);
+  const [history, runHistory] = await Promise.all([
+    getBattleHistory(playerId, 10),
+    getGameRunHistory(playerId, 10)
+  ]);
   const [dailyUsage, activeGameRun] = await Promise.all([
     query(
       `SELECT battle_starts FROM daily_rate_limits WHERE player_id = $1 AND day_key = $2`,
@@ -69,6 +72,7 @@ export async function getBootstrap(playerId) {
       limit: DAILY_BATTLE_LIMIT,
       nextResetAt: nextUtcReset(new Date()).toISOString()
     },
-    battleHistory: history
+    battleHistory: history,
+    gameRunHistory: runHistory
   };
 }

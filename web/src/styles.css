@@ -478,12 +478,12 @@ select {
 
 /* Battle list */
 
-.home-battle-list {
+.home-run-list {
   display: grid;
   gap: 4px;
 }
 
-.home-battle-item {
+.home-run-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -494,28 +494,28 @@ select {
   transition: transform 0.12s ease;
 }
 
-.home-battle-item:hover {
+.home-run-item:hover {
   transform: translateY(-1px);
 }
 
-.home-battle-item--active {
+.home-run-item--active {
   background: rgba(127, 152, 114, 0.12);
   border: 2px solid var(--sage);
 }
 
-.home-battle-item--win {
+.home-run-item--win {
   border-left: 3px solid #4caf50;
 }
 
-.home-battle-item--loss {
+.home-run-item--loss {
   border-left: 3px solid var(--error);
 }
 
-.home-battle-item--draw {
-  border-left: 3px solid #c2a942;
+.home-run-item--abandoned {
+  border-left: 3px solid var(--border);
 }
 
-.home-battle-item-portrait {
+.home-run-item-portrait {
   width: 40px;
   height: 40px;
   border-radius: 8px;
@@ -523,7 +523,7 @@ select {
   flex-shrink: 0;
 }
 
-.home-battle-item-info {
+.home-run-item-info {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -531,11 +531,11 @@ select {
   min-width: 0;
 }
 
-.home-battle-item-info strong {
+.home-run-item-info strong {
   font-size: 0.88em;
 }
 
-.home-battle-item-stats {
+.home-run-item-stats {
   font-size: 0.75em;
   opacity: 0.6;
   white-space: nowrap;
@@ -543,13 +543,13 @@ select {
   text-overflow: ellipsis;
 }
 
-.home-battle-item-date {
+.home-run-item-date {
   font-size: 0.72em;
   opacity: 0.5;
   flex-shrink: 0;
 }
 
-.home-battle-item-action {
+.home-run-item-action {
   flex-shrink: 0;
   font-size: 0.82em;
   padding: 6px 14px;
@@ -567,7 +567,7 @@ select {
   min-height: 80px;
 }
 
-.home-battle-footer {
+.home-run-footer {
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -2205,6 +2205,192 @@ select {
   50% { opacity: 0.75; }
 }
 
+/* --- Post-battle reveal animation (rewards, rank, level-up flash) --- */
+@keyframes reveal-pop {
+  0%   { opacity: 0; transform: scale(0.85); }
+  60%  { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Game-feel pop for each earned stat: scale up past target, settle back,
+ * with a tiny shake so the item lands rather than fades. */
+@keyframes achievement-pop-in {
+  0%   { opacity: 0; transform: scale(0.55) translateY(14px); }
+  55%  { opacity: 1; transform: scale(1.12) translateY(-2px); }
+  78%  { transform: scale(0.97) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+/* Diagonal shine swept across a freshly revealed stat. */
+@keyframes achievement-flash-sweep {
+  0%   { opacity: 0; transform: translateX(-120%) skewX(-20deg); }
+  35%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(220%) skewX(-20deg); }
+}
+@keyframes level-up-glow {
+  0%   { transform: scale(0.9) translateY(6px); opacity: 0; box-shadow: 0 0 0 0 rgba(127,152,114,0); }
+  35%  { transform: scale(1.06) translateY(0); opacity: 1; box-shadow: 0 0 0 6px rgba(127,152,114,0.32); }
+  100% { transform: scale(1) translateY(0); opacity: 1; box-shadow: 0 0 0 0 rgba(127,152,114,0); }
+}
+@keyframes tier-burst {
+  0%   { transform: scale(0.6); opacity: 0; }
+  35%  { transform: scale(1.18); opacity: 1; }
+  70%  { transform: scale(0.96); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.replay-rewards-card { transform-origin: center top; }
+.replay-rewards-card.reveal-stage-0 .replay-rewards-header,
+.replay-rewards-card.reveal-stage-0 .stat-grid,
+.replay-rewards-card.reveal-stage-0 .replay-rank-block,
+.replay-rewards-card.reveal-stage-0 .replay-run-status {
+  opacity: 0;
+}
+.replay-rewards-header.reveal-pop {
+  animation: reveal-pop 0.42s ease-out both;
+}
+
+.replay-rewards-card .stat.achievement-item {
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.55) translateY(14px);
+}
+.replay-rewards-card .stat.achievement-item--in {
+  animation: achievement-pop-in 0.62s cubic-bezier(0.22, 0.85, 0.4, 1.25) forwards;
+}
+.replay-rewards-card .stat.achievement-item dd {
+  font-variant-numeric: tabular-nums;
+}
+.achievement-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+  opacity: 0;
+}
+.replay-rewards-card .stat.achievement-item--in .achievement-flash {
+  animation: achievement-flash-sweep 0.7s ease-out 0.18s forwards;
+}
+
+/* Rank progress block */
+.replay-rank-block {
+  position: relative;
+  padding: 14px 16px 18px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.replay-rank-block.reveal-item--in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.replay-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.replay-rank-tier {
+  /* Reuse home-mushroom-tier sizing tokens. */
+  font-size: 0.62rem;
+}
+.replay-rank-name {
+  font-weight: 700;
+  color: var(--ink);
+}
+.replay-rank-level {
+  margin-left: auto;
+  opacity: 0.75;
+  letter-spacing: 0.04em;
+}
+.replay-rank-level strong {
+  margin-left: 4px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.replay-rank-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.replay-rank-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--sage), var(--accent));
+  transition: width 0.7s cubic-bezier(0.22, 0.85, 0.4, 1);
+  min-width: 2px;
+}
+.replay-rank-bar-fill--leveled {
+  /* Hold the bar at full briefly so the level-up flash registers. */
+  background: linear-gradient(90deg, var(--accent), #c9a84c);
+  filter: brightness(1.1);
+}
+.replay-rank-meta {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.replay-rank-meta-max {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.level-up-toast--floating {
+  position: absolute;
+  inset: auto 16px -10px 16px;
+  margin: 0;
+  text-align: center;
+  animation: level-up-glow 0.7s ease-out both;
+}
+
+.tier-change-toast {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(201, 168, 76, 0.18);
+  border: 1px solid #c9a84c;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  animation: tier-burst 0.85s cubic-bezier(0.22, 0.85, 0.4, 1.2) both;
+}
+.tier-change-toast-label {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #9a7428;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replay-rewards-header.reveal-pop,
+  .level-up-toast--floating,
+  .tier-change-toast,
+  .replay-rewards-card .stat.achievement-item--in,
+  .replay-rewards-card .stat.achievement-item--in .achievement-flash {
+    animation: none;
+  }
+  .replay-rewards-card .stat.achievement-item {
+    opacity: 1;
+    transform: none;
+  }
+  .replay-rank-block,
+  .replay-rank-bar-fill {
+    transition: none;
+  }
+}
+
 .fighter {
   padding: 0;
   border-radius: 18px;
@@ -2659,7 +2845,7 @@ select {
   margin: 0;
 }
 
-.replay-list {
+.run-list {
   list-style: none;
   margin: 10px 0 0;
   padding: 0;
@@ -2667,7 +2853,7 @@ select {
   gap: 8px;
 }
 
-.replay-card {
+.run-card {
   display: grid;
   gap: 10px;
   padding: 12px 14px;
@@ -2678,21 +2864,21 @@ select {
   transition: box-shadow 0.14s ease, border-color 0.14s ease;
 }
 
-.replay-card:hover,
-.replay-card:focus-visible {
+.run-card:hover,
+.run-card:focus-visible {
   border-color: var(--accent);
   box-shadow: 0 2px 12px rgba(91, 64, 36, 0.1);
   outline: none;
 }
 
-.replay-card-header {
+.run-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.replay-card-outcome {
+.run-card-outcome {
   font-size: 0.82em;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -2701,45 +2887,50 @@ select {
   border-radius: 8px;
 }
 
-.replay-card--win .replay-card-outcome {
+.run-card--win .run-card-outcome {
   background: rgba(127, 152, 114, 0.15);
   color: #3d5731;
 }
 
-.replay-card--loss .replay-card-outcome {
+.run-card--loss .run-card-outcome {
   background: rgba(156, 69, 53, 0.1);
   color: var(--error);
 }
 
-.replay-card--draw .replay-card-outcome {
+.run-card--draw .run-card-outcome {
   background: rgba(235, 198, 96, 0.15);
   color: #8a6a1e;
 }
 
-.replay-card-meta {
+.run-card--abandoned .run-card-outcome {
+  background: rgba(94, 70, 39, 0.08);
+  color: #666;
+}
+
+.run-card-meta {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.replay-card-kind {
+.run-card-kind {
   font-size: 0.78em;
   opacity: 0.6;
 }
 
-.replay-card-date {
+.run-card-date {
   font-size: 0.78em;
   opacity: 0.5;
 }
 
-.replay-card-matchup {
+.run-card-matchup {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
 }
 
-.replay-card-fighter {
+.run-card-fighter {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2747,7 +2938,7 @@ select {
   min-width: 0;
 }
 
-.replay-card-portrait {
+.run-card-portrait {
   width: 72px;
   height: 72px;
   border-radius: 14px;
@@ -2756,7 +2947,7 @@ select {
   background: #f1e8d2;
 }
 
-.replay-card-name {
+.run-card-name {
   font-weight: 600;
   font-size: 0.82em;
   text-align: center;
@@ -2766,26 +2957,12 @@ select {
   max-width: 80px;
 }
 
-.replay-card-vs {
+.run-card-vs {
   opacity: 0.35;
   font-size: 0.78em;
   font-weight: 600;
   align-self: center;
   margin-top: -10px;
-}
-
-.replay-card-rewards {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.replay-chip {
-  font-size: 0.78em;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(94, 70, 39, 0.08);
-  white-space: nowrap;
 }
 
 .progression-list {
@@ -3446,6 +3623,73 @@ select {
   font-size: 1.1rem;
   color: #666;
   margin-bottom: 12px;
+}
+
+.run-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+.run-summary-portrait {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+}
+.run-summary-outcome--win { color: #4caf50; }
+.run-summary-outcome--loss { color: var(--error); }
+.run-summary-outcome--abandoned { color: #888; }
+
+.run-summary-rounds {
+  margin-top: 16px;
+  text-align: left;
+}
+.run-summary-rounds h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.run-summary-round-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.run-summary-round-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.run-summary-round-item:hover {
+  transform: translateY(-1px);
+}
+.run-summary-round-item--win { border-left: 3px solid #4caf50; }
+.run-summary-round-item--loss { border-left: 3px solid var(--error); }
+.run-summary-round-item--draw { border-left: 3px solid #c2a942; }
+.run-summary-round-num {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.run-summary-round-outcome {
+  flex-grow: 1;
+  text-align: center;
+  color: #666;
+}
+.run-summary-round-cta {
+  color: var(--accent);
+  font-size: 0.85rem;
 }
 
 /* --- Bag shop item --- */
