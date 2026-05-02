@@ -504,9 +504,16 @@ select {
 }
 .home-season-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
   gap: 14px;
-  align-items: start;
+  align-items: center;
+}
+.home-season-emblem {
+  align-self: center;
+  justify-self: center;
+}
+.home-season-copy {
+  align-self: center;
 }
 .home-season-kicker {
   margin: 0 0 4px;
@@ -543,8 +550,18 @@ select {
   justify-self: end;
   min-height: 0;
   padding: 2px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
   color: #6f4b24;
+  font-weight: 600;
   font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(111, 75, 36, 0.4);
+}
+.home-season-journal-link:hover {
+  text-decoration-color: rgba(111, 75, 36, 0.85);
 }
 .home-season-progress {
   height: 10px;
@@ -636,9 +653,28 @@ select {
   width: 24px;
   height: 24px;
 }
+.achievement-badge--medium {
+  width: 28px;
+  height: 28px;
+}
 .achievement-badge--large {
   width: 34px;
   height: 34px;
+}
+.achievement-badge-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.achievement-badge:has(.achievement-badge-img)::before {
+  content: none;
+}
+.season-rank-emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .achievement-badge::before {
   content: '';
@@ -749,13 +785,21 @@ select {
 
 @media (max-width: 700px) {
   .home-season-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas: 'emblem copy' 'points points';
   }
-
+  .home-season-emblem {
+    grid-area: emblem;
+    width: 64px !important;
+    height: 64px !important;
+  }
+  .home-season-copy {
+    grid-area: copy;
+  }
   .home-season-points {
+    grid-area: points;
     text-align: left;
   }
-
   .home-season-journal-link {
     justify-self: start;
   }
@@ -4950,18 +4994,16 @@ select {
     rgba(255, 251, 244, 0.52);
   animation: recap-reveal 0.42s ease-out 0.24s both;
 }
-.run-season-emblem {
-  width: 96px;
-  height: 96px;
-  display: grid;
+.season-rank-emblem {
+  display: inline-grid;
   place-items: center;
   filter: drop-shadow(0 4px 10px rgba(80, 52, 22, 0.18));
 }
-.run-season-emblem-svg {
+.season-rank-emblem-svg {
   width: 100%;
   height: 100%;
 }
-.run-season-card--level-up .run-season-emblem-svg {
+.run-season-card--level-up .season-rank-emblem-svg {
   animation: season-emblem-pop 0.72s cubic-bezier(0.2, 0.86, 0.24, 1) both;
 }
 @keyframes season-emblem-pop {

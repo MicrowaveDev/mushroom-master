@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import puppeteer from 'puppeteer';
 import { artifactVisualClassification } from '../shared/artifact-visual-classification.js';
 import {
@@ -11,6 +10,16 @@ import {
   escapeHtml,
   repoRoot
 } from './artifact-sheet-helpers.js';
+import {
+  fileSha256,
+  bufferSha256,
+  defaultManifestPathFor,
+  tempPngPathFor,
+  readPreviousManifest,
+  inputSetHash as toolkitInputSetHash,
+  changedIdsFromManifest,
+  writeSheetManifest as toolkitWriteSheetManifest
+} from './lib/bitmap-image-toolkit.js';
 
 const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
   ? path.resolve(process.env.ARTIFACT_IMAGE_WORKSPACE)
@@ -39,28 +48,8 @@ function parseArgs(argv) {
   };
 }
 
-function fileHash(filePath) {
-  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
-}
-
-function bufferHash(buffer) {
-  return crypto.createHash('sha256').update(buffer).digest('hex');
-}
-
-function defaultManifestPathFor(outPath) {
-  const ext = path.extname(outPath);
-  const base = ext ? outPath.slice(0, -ext.length) : outPath;
-  return `${base}.manifest.json`;
-}
-
-function tempPngPathFor(outPath) {
-  return `${outPath}.${process.pid}.${Date.now()}.tmp.png`;
-}
-
-function readPreviousManifest(manifestPath) {
-  if (!fs.existsSync(manifestPath)) return null;
-  return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-}
+const fileHash = fileSha256;
+const bufferHash = bufferSha256;
 
 function artifactInputEntries(sections) {
   return sections.flatMap(([, items]) => items.map((artifact) => {
@@ -77,38 +66,35 @@ function artifactInputEntries(sections) {
 }
 
 function inputSetHash(entries) {
-  const stableEntries = entries
-    .map(({ id, path, sha256, size }) => ({ id, path, sha256, size }))
-    .sort((a, b) => a.id.localeCompare(b.id, 'en'));
-  return bufferHash(Buffer.from(JSON.stringify(stableEntries)));
+  return toolkitInputSetHash(entries);
 }
 
 function changedArtifactIds(currentInputs, previousManifest) {
-  if (!previousManifest?.artifactInputs) {
-    return currentInputs.map((entry) => entry.id);
-  }
-  const previousById = new Map(previousManifest.artifactInputs.map((entry) => [entry.id, entry]));
-  return currentInputs
-    .filter((entry) => previousById.get(entry.id)?.sha256 !== entry.sha256)
-    .map((entry) => entry.id);
+  // The legacy artifact manifest used `artifactInputs` as the inputs key.
+  // Translate to the toolkit's generic `inputs` key.
+  const adapted = previousManifest
+    ? { ...previousManifest, inputs: previousManifest.artifactInputs || previousManifest.inputs }
+    : null;
+  return changedIdsFromManifest(currentInputs, adapted);
 }
 
 function writeSheetManifest({ manifestPath, outPath, outputHash, outputSize, inputHash, inputs, changedIds, previousManifest }) {
-  const manifest = {
-    schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
-    output: {
-      path: path.relative(repoRoot, outPath),
-      sha256: outputHash,
-      size: outputSize
-    },
-    inputSetHash: inputHash,
-    changedArtifactIds: changedIds,
-    previousOutputSha256: previousManifest?.output?.sha256 || null,
-    artifactInputs: inputs
-  };
-  fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
-  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  // Preserve legacy `artifactInputs` + `changedArtifactIds` keys for downstream readers.
+  toolkitWriteSheetManifest({
+    manifestPath,
+    outPath,
+    outputHash,
+    outputSize,
+    inputHash,
+    inputs,
+    changedIds,
+    previousManifest,
+    inputsKey: 'artifactInputs'
+  });
+  const written = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  written.changedArtifactIds = written.changedIds;
+  delete written.changedIds;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(written, null, 2)}\n`);
 }
 
 function sheetDimensionsForArtifact(artifact) {

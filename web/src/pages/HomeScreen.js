@@ -1,6 +1,8 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
 import { getNextRunAchievementHint, getRunAchievementsByIds } from '../../../app/shared/run-achievements.js';
 import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
+import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
+import { AchievementBadge } from '../components/AchievementBadge.js';
 
 export const HomeScreen = {
   name: 'HomeScreen',
@@ -21,7 +23,9 @@ export const HomeScreen = {
     return { expandedMushroomId: null };
   },
   components: {
-    ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard))
+    ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
+    SeasonRankEmblem,
+    AchievementBadge
   },
   methods: {
     selectMushroom(mushroom) {
@@ -210,7 +214,8 @@ export const HomeScreen = {
 
       <article class="panel home-season-panel" :class="'home-season-panel--' + seasonSummary.id">
         <div class="home-season-main">
-          <div>
+          <season-rank-emblem class="home-season-emblem" :rank-id="seasonSummary.id" :size="84" />
+          <div class="home-season-copy">
             <p class="home-season-kicker">{{ seasonSummary.seasonName }}</p>
             <h3>{{ seasonSummary.name }}</h3>
             <p>{{ seasonSummary.seasonTheme }}</p>
@@ -232,10 +237,7 @@ export const HomeScreen = {
             :class="['home-season-achievement--' + achievement.type, 'home-season-achievement--accent-' + achievement.accent]"
             :style="{ animationDelay: (index * 70) + 'ms' }"
           >
-            <span class="achievement-badge achievement-badge--small" aria-hidden="true">
-              <span class="achievement-badge-core"></span>
-              <span class="achievement-badge-glyph">{{ achievement.badgeSymbol }}</span>
-            </span>
+            <achievement-badge :achievement="achievement" size="small" />
             <div>
               <strong>{{ achievement.name }}</strong>
               <p>{{ achievement.lore }}</p>
@@ -243,10 +245,7 @@ export const HomeScreen = {
           </article>
         </div>
         <div v-else-if="nextAchievement" class="home-season-next-badge">
-          <span class="achievement-badge achievement-badge--small" aria-hidden="true">
-            <span class="achievement-badge-core"></span>
-            <span class="achievement-badge-glyph">{{ nextAchievement.badgeSymbol }}</span>
-          </span>
+          <achievement-badge :achievement="nextAchievement" size="small" />
           <div>
             <strong>{{ t.nextAchievement }}</strong>
             <p>{{ nextAchievement.name }}</p>

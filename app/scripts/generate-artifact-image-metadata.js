@@ -1,31 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { artifacts } from '../server/game-data.js';
 import { artifactVisualClassification } from '../shared/artifact-visual-classification.js';
 import { artifactTodoDescriptions, promptForArtifact } from './next-artifact-image-prompts.js';
 import { artifactImagePath, repoRoot } from './artifact-sheet-helpers.js';
+import { readPngHeader, metadataEntriesHash } from './lib/bitmap-image-toolkit.js';
 
 const defaultOutPath = path.join(repoRoot, 'app', 'shared', 'artifact-image-metadata.json');
-const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const readPngInfo = readPngHeader;
 
 function parseArgs(argv) {
   const outArg = argv.find((arg) => arg.startsWith('--out='));
   return {
     outPath: outArg ? path.resolve(outArg.slice('--out='.length)) : defaultOutPath
-  };
-}
-
-function readPngInfo(filePath) {
-  const buffer = fs.readFileSync(filePath);
-  if (!buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
-    throw new Error(`${path.relative(repoRoot, filePath)} is not a PNG`);
-  }
-  return {
-    width: buffer.readUInt32BE(16),
-    height: buffer.readUInt32BE(20),
-    size: buffer.length,
-    sha256: crypto.createHash('sha256').update(buffer).digest('hex')
   };
 }
 
@@ -118,15 +105,7 @@ function buildEntry(artifact, spec) {
   };
 }
 
-function metadataHash(entries) {
-  const stable = entries.map((entry) => ({
-    id: entry.id,
-    outputPath: entry.outputPath,
-    sha256: entry.png.sha256,
-    status: entry.status
-  }));
-  return crypto.createHash('sha256').update(JSON.stringify(stable)).digest('hex');
-}
+const metadataHash = metadataEntriesHash;
 
 function main() {
   const { outPath } = parseArgs(process.argv.slice(2));

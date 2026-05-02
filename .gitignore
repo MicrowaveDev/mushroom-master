@@ -13,6 +13,9 @@ tmp/*.sqlite-journal
 .agent/artifact-image-workspace/raw/
 .agent/artifact-image-workspace/processed/
 .agent/artifact-image-workspace/review/
+.agent/season-image-workspace/raw/
+.agent/season-image-workspace/processed/
+.agent/season-image-workspace/review/
 .agent/tasks/artifact-imagegen-regeneration/raw/
 .agent/tasks/artifact-simple-regeneration/raw/
 .agent/tasks/artifact-simple-regeneration/*.png

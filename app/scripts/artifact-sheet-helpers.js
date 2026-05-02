@@ -1,11 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { artifacts } from '../server/game-data.js';
+import { repoRoot, escapeHtml } from './lib/bitmap-image-toolkit.js';
 
-const scriptPath = fileURLToPath(import.meta.url);
-
-export const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
+export { repoRoot, escapeHtml };
 export const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
 
 export const artifactSectionOrder = [
@@ -17,14 +15,6 @@ export const artifactSectionOrder = [
   'Bags',
   'Utility'
 ];
-
-export function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
 
 export function sectionForArtifact(artifact) {
   if (artifact.family === 'bag') return 'Bags';

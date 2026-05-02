@@ -1,8 +1,11 @@
 import { getEarnedRunAchievements, getRunAchievementsByIds } from '../../../app/shared/run-achievements.js';
 import { getRunSeasonSummary, getSeasonProgressSummary, getSeasonPointsBreakdown } from '../../../app/shared/season-levels.js';
+import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
+import { AchievementBadge } from '../components/AchievementBadge.js';
 
 export const RunCompleteScreen = {
   name: 'RunCompleteScreen',
+  components: { SeasonRankEmblem, AchievementBadge },
   props: ['state', 't'],
   emits: ['go-home'],
   computed: {
@@ -56,15 +59,6 @@ export const RunCompleteScreen = {
         roundsCompleted: this.roundsCompleted,
         endReason: this.endReason
       });
-    },
-    rankPalette() {
-      const palettes = {
-        bronze:  { highlight: '#f5d8a3', mid: '#c98a4a', deep: '#7d4a1f', ring: '#5d3712', glyph: '#fdeac6' },
-        silver:  { highlight: '#f4f8fa', mid: '#aab9c1', deep: '#65737a', ring: '#3a464d', glyph: '#ffffff' },
-        gold:    { highlight: '#fff1be', mid: '#e0b545', deep: '#8b631a', ring: '#5e4310', glyph: '#fff7d6' },
-        diamond: { highlight: '#e9fbff', mid: '#86c8d9', deep: '#3a6b81', ring: '#1f3e51', glyph: '#dff6ff' }
-      };
-      return palettes[this.seasonSummary.id] || palettes.bronze;
     },
     seasonBreakdownText() {
       const b = this.seasonBreakdown;
@@ -209,34 +203,8 @@ export const RunCompleteScreen = {
         </dl>
 
         <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp }]">
-          <div class="run-season-emblem" :class="'run-season-emblem--' + seasonSummary.id" aria-hidden="true">
-            <svg viewBox="0 0 96 96" class="run-season-emblem-svg">
-              <defs>
-                <radialGradient :id="'rankGradient-' + seasonSummary.id" cx="50%" cy="38%" r="62%">
-                  <stop offset="0%" :stop-color="rankPalette.highlight" />
-                  <stop offset="58%" :stop-color="rankPalette.mid" />
-                  <stop offset="100%" :stop-color="rankPalette.deep" />
-                </radialGradient>
-              </defs>
-              <circle cx="48" cy="48" r="42" :fill="'url(#rankGradient-' + seasonSummary.id + ')'" :stroke="rankPalette.ring" stroke-width="3" />
-              <circle cx="48" cy="48" r="32" fill="none" :stroke="rankPalette.ring" stroke-opacity="0.42" stroke-width="1.5" />
-              <g v-if="seasonSummary.id === 'bronze'" :fill="rankPalette.glyph">
-                <circle cx="48" cy="48" r="6" />
-              </g>
-              <g v-else-if="seasonSummary.id === 'silver'" :fill="rankPalette.glyph">
-                <circle cx="40" cy="48" r="5" />
-                <circle cx="56" cy="48" r="5" />
-              </g>
-              <g v-else-if="seasonSummary.id === 'gold'" :fill="rankPalette.glyph">
-                <polygon points="48,28 51,42 65,44 54,53 58,67 48,59 38,67 42,53 31,44 45,42" />
-              </g>
-              <g v-else-if="seasonSummary.id === 'diamond'" :fill="rankPalette.glyph" :stroke="rankPalette.ring" stroke-width="1.4" stroke-linejoin="round">
-                <polygon points="48,26 66,46 48,70 30,46" />
-                <polyline points="36,46 60,46" :stroke="rankPalette.ring" stroke-width="1.2" fill="none" stroke-opacity="0.55" />
-                <polyline points="48,26 48,70" :stroke="rankPalette.ring" stroke-width="1.2" fill="none" stroke-opacity="0.55" />
-              </g>
-            </svg>
-          </div>
+          <season-rank-emblem class="run-season-emblem" :rank-id="seasonSummary.id" :size="96" />
+
           <div class="run-season-copy">
             <p class="run-complete-kicker">{{ t.seasonLevel }}</p>
             <h3>{{ seasonSummary.name }}</h3>
@@ -286,10 +254,7 @@ export const RunCompleteScreen = {
               class="run-achievement"
               :class="achievementClass(achievement)"
             >
-              <span class="achievement-badge" aria-hidden="true">
-                <span class="achievement-badge-core"></span>
-                <span class="achievement-badge-glyph">{{ achievement.badgeSymbol }}</span>
-              </span>
+              <achievement-badge :achievement="achievement" size="medium" />
               <div>
                 <h3>
                   {{ achievement.name }}

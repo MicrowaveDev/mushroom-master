@@ -1,8 +1,10 @@
 import { getAllRunAchievements, getNextRunAchievementHint } from '../../../app/shared/run-achievements.js';
 import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
+import { AchievementBadge } from '../components/AchievementBadge.js';
 
 export const ProfileScreen = {
   name: 'ProfileScreen',
+  components: { AchievementBadge },
   props: ['state', 't', 'getMushroom'],
   computed: {
     seasonSummary() {
@@ -81,10 +83,7 @@ export const ProfileScreen = {
           <small>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</small>
           <small class="profile-season-policy">{{ t.seasonChapterNoReset }}</small>
           <div v-if="nextAchievement" class="profile-next-badge" :class="['profile-next-badge--' + nextAchievement.type, 'profile-next-badge--accent-' + nextAchievement.accent]">
-            <span class="achievement-badge achievement-badge--small" aria-hidden="true">
-              <span class="achievement-badge-core"></span>
-              <span class="achievement-badge-glyph">{{ nextAchievement.badgeSymbol }}</span>
-            </span>
+            <achievement-badge :achievement="nextAchievement" size="small" />
             <div>
               <strong>{{ t.nextAchievement }}</strong>
               <p>{{ nextAchievement.name }}</p>
@@ -111,10 +110,7 @@ export const ProfileScreen = {
               class="journal-achievement"
               :class="achievementClass(achievement)"
             >
-              <span class="achievement-badge achievement-badge--large" aria-hidden="true">
-                <span class="achievement-badge-core"></span>
-                <span class="achievement-badge-glyph">{{ achievement.badgeSymbol }}</span>
-              </span>
+              <achievement-badge :achievement="achievement" size="large" />
               <div>
                 <h4>{{ achievement.earned ? achievement.name : t.achievementLocked }}</h4>
                 <p>{{ achievement.earned ? achievement.lore : achievement.name }}</p>
