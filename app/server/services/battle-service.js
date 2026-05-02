@@ -154,11 +154,15 @@ export async function recordBattle(client, { leftSnapshot, rightSnapshot, simula
 
 export async function getBattle(battleId, viewerPlayerId, existingClient = null) {
   const runner = existingClient || { query: (sql, params) => query(sql, params) };
-  const [battleResult, snapshotResult, eventResult, rewardResult] = await Promise.all([
+  const [battleResult, snapshotResult, eventResult, rewardResult, roundResult] = await Promise.all([
     runner.query(`SELECT * FROM battles WHERE id = $1`, [battleId]),
     runner.query(`SELECT * FROM battle_snapshots WHERE battle_id = $1 ORDER BY side ASC`, [battleId]),
     runner.query(`SELECT * FROM battle_events WHERE battle_id = $1 ORDER BY event_index ASC`, [battleId]),
-    runner.query(`SELECT * FROM battle_rewards WHERE battle_id = $1 ORDER BY player_id ASC`, [battleId])
+    runner.query(`SELECT * FROM battle_rewards WHERE battle_id = $1 ORDER BY player_id ASC`, [battleId]),
+    runner.query(
+      `SELECT * FROM game_rounds WHERE battle_id = $1 AND player_id = $2 ORDER BY round_number DESC LIMIT 1`,
+      [battleId, viewerPlayerId]
+    )
   ]);
 
   if (!battleResult.rowCount) {
@@ -169,6 +173,8 @@ export async function getBattle(battleId, viewerPlayerId, existingClient = null)
   const snapshots = Object.fromEntries(
     snapshotResult.rows.map((row) => [row.side, parseJson(row.payload_json, {})])
   );
+
+  const viewerRound = roundResult.rows[0] || null;
 
   return {
     id: battle.id,
@@ -182,6 +188,18 @@ export async function getBattle(battleId, viewerPlayerId, existingClient = null)
     viewerPlayerId,
     snapshots,
     events: eventResult.rows.map((row) => parseJson(row.payload_json, {})),
+    roundResult: viewerRound ? {
+      roundNumber: viewerRound.round_number,
+      battleId: viewerRound.battle_id,
+      outcome: viewerRound.outcome,
+      rewards: {
+        spore: viewerRound.spore_awarded || 0,
+        mycelium: viewerRound.mycelium_awarded || 0
+      },
+      ratingBefore: viewerRound.rating_before,
+      ratingAfter: viewerRound.rating_after,
+      coinsIncome: viewerRound.coins_income || 0
+    } : null,
     rewards: rewardResult.rows.map((row) => ({
       playerId: row.player_id,
       mushroomId: row.mushroom_id,

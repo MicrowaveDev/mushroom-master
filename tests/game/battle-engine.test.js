@@ -256,6 +256,7 @@ test('[Req 6-D] Kirt ignores 2 points of enemy armor', () => {
   // If first hit: max(1, 7 - 3) = 4. Without ignore first hit: max(1, 5 - 3) = 2
   // Either way Kirt's damage should be > min damage
   assert.ok(kirtAttack.damage >= 4, `Kirt should deal at least 4 damage with armor ignore, got ${kirtAttack.damage}`);
+  assert.equal(typeof kirtAttack.blockedDamage, 'number');
 });
 
 // --- Req 6-E: Stun chance capped at MAX_STUN_CHANCE (35%) ---

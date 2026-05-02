@@ -66,6 +66,27 @@ export const ArtifactGridBoard = {
         cellSet: new Set(preview.cells)
       };
     },
+    bagOverlays() {
+      const groups = new Map();
+      for (const row of this.bagRows || []) {
+        if (!row?.artifactId || row.artifactId === 'starter_bag') continue;
+        const key = row.bagId || `${row.artifactId}:${row.bboxStart}:${row.bboxEnd}`;
+        const group = groups.get(key) || {
+          key,
+          artifactId: row.artifactId,
+          minRow: row.row,
+          maxRow: row.row,
+          minCol: row.bboxStart ?? Math.min(...(row.enabledCells || [0])),
+          maxCol: row.bboxEnd ?? (Math.max(...(row.enabledCells || [0])) + 1)
+        };
+        group.minRow = Math.min(group.minRow, row.row);
+        group.maxRow = Math.max(group.maxRow, row.row);
+        group.minCol = Math.min(group.minCol, row.bboxStart ?? group.minCol);
+        group.maxCol = Math.max(group.maxCol, row.bboxEnd ?? group.maxCol);
+        groups.set(key, group);
+      }
+      return Array.from(groups.values());
+    },
     gridStyle() {
       return {
         gridTemplateColumns: `repeat(${this.gridColumns}, var(--artifact-cell-size, 50px))`,
@@ -94,6 +115,17 @@ export const ArtifactGridBoard = {
         gridRow: `${item.y + 1} / span ${item.height}`,
         width: `calc(${item.width} * var(--artifact-cell-size, 50px) + ${Math.max(0, item.width - 1)} * var(--board-gap, 8px))`,
         height: `calc(${item.height} * var(--artifact-cell-size, 50px) + ${Math.max(0, item.height - 1)} * var(--board-gap, 8px))`
+      };
+    },
+    bagOverlayStyle(overlay) {
+      const colSpan = overlay.maxCol - overlay.minCol;
+      const rowSpan = overlay.maxRow - overlay.minRow + 1;
+      return {
+        left: `calc(${overlay.minCol} * (var(--artifact-cell-size, 50px) + var(--board-gap, 8px)))`,
+        top: `calc(${overlay.minRow} * (var(--artifact-cell-size, 50px) + var(--board-gap, 8px)))`,
+        width: `calc(${colSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, colSpan - 1)} * var(--board-gap, 8px))`,
+        height: `calc(${rowSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, rowSpan - 1)} * var(--board-gap, 8px))`,
+        backgroundImage: `url('/artifacts/${overlay.artifactId}.png')`
       };
     },
     isBaseInventoryCell(cx, cy) {
@@ -228,6 +260,13 @@ export const ArtifactGridBoard = {
   template: `
     <div :class="rootClass" :data-testid="isInventoryVariant ? 'unified-grid' : null">
       <div :class="backgroundClass()" :style="gridStyle">
+        <span
+          v-for="overlay in bagOverlays"
+          :key="'bag-overlay:' + overlay.key"
+          class="artifact-grid-bag-watermark"
+          :style="bagOverlayStyle(overlay)"
+          aria-hidden="true"
+        ></span>
         <component
           :is="interactiveCells ? 'button' : 'span'"
           v-for="cell in totalCells"

@@ -348,6 +348,10 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
   const h = shape
     ? shape.length
     : (Number(displayHeight) > 0 ? Number(displayHeight) : artifact.height);
+  const rotatedBitmap = !shape
+    && Number(artifact.width) !== Number(artifact.height)
+    && Number(w) === Number(artifact.height)
+    && Number(h) === Number(artifact.width);
   const cells = Array.from({ length: w * h }, (_, index) => {
     const x = index % w;
     const y = Math.floor(index / w);
@@ -366,9 +370,9 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
     >
       ${cells}
       <span
-        class="artifact-figure-bitmap artifact-figure-bitmap--full"
+        class="artifact-figure-bitmap artifact-figure-bitmap--full${rotatedBitmap ? ' artifact-figure-bitmap--rotated' : ''}"
         aria-hidden="true"
-        style="background-image: url('${artifactBitmapPath(artifact)}');"
+        style="background-image: url('${artifactBitmapPath(artifact)}');${rotatedBitmap ? ` --artifact-rotated-bitmap-width: ${(h / w) * 100}%; --artifact-rotated-bitmap-height: ${(w / h) * 100}%;` : ''}"
       ></span>
       ${renderArtifactRoleGlyph(visual, 'artifact-figure-role-glyph')}
     </div>

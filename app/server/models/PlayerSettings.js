@@ -5,7 +5,8 @@ export default function definePlayerSettings(sequelize) {
     player_id: { type: DataTypes.TEXT, primaryKey: true, references: { model: 'players', key: 'id' }, onDelete: 'CASCADE' },
     lang: { type: DataTypes.TEXT, allowNull: false, defaultValue: 'ru' },
     reduced_motion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-    battle_speed: { type: DataTypes.TEXT, allowNull: false, defaultValue: '1x' }
+    battle_speed: { type: DataTypes.TEXT, allowNull: false, defaultValue: '1x' },
+    replay_speed: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 2 }
   }, {
     tableName: 'player_settings',
     timestamps: false

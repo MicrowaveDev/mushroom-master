@@ -63,6 +63,7 @@ export const PrepScreen = {
           const bboxStart = anchorX;
           const bboxEnd = Math.min(anchorX + maskRow.length, BAG_COLUMNS);
           rows.push({
+            bagId: activeBag.id,
             row: anchorY + i,
             color: bag.color || '#888',
             artifactId: activeBag.artifactId,

@@ -19,23 +19,25 @@ export const ReplayScreen = {
     };
   },
   computed: {
-    // Inline rewards summary — shown under the battle stage once the
-    // replay finishes, but only when we're inside an active run (Flow B
-    // and Flow C). A standalone replay from history (Flow E) has no
-    // gameRunResult set and should not render a rewards card.
+    // Inline rewards summary — prefer the transient resolveRound payload,
+    // but fall back to the persisted round data on the battle itself so a
+    // refreshed replay can still show spore/mycelium/rating results.
+    roundResult() {
+      return this.state.gameRunResult?.lastRound || this.state.currentBattle?.roundResult || null;
+    },
     showInlineRewards() {
-      return this.replayFinished && this.state.gameRun && this.state.gameRunResult?.lastRound;
+      return this.replayFinished && !!this.roundResult;
     },
     roundRewards() {
-      return this.state.gameRunResult?.lastRound?.rewards || { spore: 0, mycelium: 0 };
+      return this.roundResult?.rewards || { spore: 0, mycelium: 0 };
     },
     ratingDelta() {
-      const r = this.state.gameRunResult?.lastRound;
+      const r = this.roundResult;
       if (!r || r.ratingAfter == null || r.ratingBefore == null) return null;
       return r.ratingAfter - r.ratingBefore;
     },
     roundOutcome() {
-      return this.state.gameRunResult?.lastRound?.outcome;
+      return this.roundResult?.outcome;
     },
     runLivesRemaining() {
       return this.state.gameRun?.player?.livesRemaining;
@@ -72,10 +74,42 @@ export const ReplayScreen = {
         : (this.t.collapseResult || 'Hide result');
     },
     resultTitleText() {
-      if (!this.showInlineRewards) return this.t.results;
+      if (!this.showInlineRewards) return this.resultOutcomeText || this.t.results;
       if (this.roundOutcome === 'win') return this.t.roundWin;
       if (this.roundOutcome === 'loss') return this.t.roundLoss;
       return this.t.outcomeDraw;
+    },
+    resultOutcomeText() {
+      return (this.visibleReplayEvents || []).find((event) => event?.type === 'battle_end')?.display?.logText || '';
+    },
+    resultSummaryText() {
+      return this.showInlineRewards
+        ? (this.resultOutcomeText || this.battleStatusText || '')
+        : (this.battleStatusText || '');
+    },
+    battleRecapRows() {
+      const currentBattle = this.state.currentBattle;
+      const rows = ['left', 'right'].map((side) => ({
+        side,
+        name: this.combatantName(side),
+        damageDealt: 0,
+        stunsMade: 0,
+        damageBlocked: 0
+      }));
+      const bySide = Object.fromEntries(rows.map((row) => [row.side, row]));
+      for (const event of currentBattle?.events || []) {
+        if (event?.type !== 'action') continue;
+        const actor = bySide[event.actorSide];
+        const target = bySide[event.targetSide];
+        if (actor) {
+          actor.damageDealt += Math.max(0, Number(event.damage) || 0);
+          if (event.stunned) actor.stunsMade += 1;
+        }
+        if (target) {
+          target.damageBlocked += this.blockedDamageForEvent(event);
+        }
+      }
+      return rows;
     }
   },
   methods: {
@@ -86,6 +120,16 @@ export const ReplayScreen = {
     },
     toggleResultOverlay() {
       this.resultOverlayCollapsed = !this.resultOverlayCollapsed;
+    },
+    combatantName(side) {
+      const mushroomId = this.state.currentBattle?.snapshots?.[side]?.mushroomId;
+      return this.getMushroom(mushroomId)?.name?.[this.state.lang] || mushroomId || side;
+    },
+    blockedDamageForEvent(event) {
+      const exact = Number(event?.blockedDamage);
+      if (Number.isFinite(exact)) return Math.max(0, exact);
+      const armor = event?.artifactAttribution?.armor || [];
+      return armor.reduce((sum, item) => sum + Math.max(0, Number(item.value) || 0), 0);
     }
   },
   template: `
@@ -117,6 +161,7 @@ export const ReplayScreen = {
           :acting-side="activeEvent?.actorSide || ''"
           :active-event="activeEvent"
           :status-text="battleStatusText"
+          :lang="state.lang"
           :replay-speed="state.replaySpeed || 1"
           @set-speed="$emit('set-speed', $event)"
         />
@@ -136,12 +181,17 @@ export const ReplayScreen = {
             @click="toggleResultOverlay"
           >
             <span class="replay-sheet-grip" aria-hidden="true"></span>
-            <span class="replay-sheet-mini-title">{{ resultTitleText }}</span>
+            <span class="replay-sheet-mini-title" aria-hidden="true"></span>
             <svg class="replay-sheet-chevron" viewBox="0 0 20 20" aria-hidden="true">
               <path d="M4 12 L10 6 L16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <div class="replay-sheet-body">
+            <div class="replay-result-hero" :class="'replay-result-hero--' + (roundOutcome || 'history')">
+              <p class="replay-result-kicker">{{ t.battleRecap || t.results }}</p>
+              <h3>{{ resultTitleText }}</h3>
+              <p v-if="resultSummaryText" class="replay-result-summary">{{ resultSummaryText }}</p>
+            </div>
             <div v-if="showInlineRewards" class="panel replay-rewards-card" :class="'replay-rewards-card--' + roundOutcome" data-testid="replay-rewards">
               <div class="replay-rewards-header" :class="'replay-rewards-header--' + roundOutcome">
                 <h3 class="replay-rewards-title" :class="roundOutcome === 'win' ? 'result-win' : 'result-loss'">
@@ -167,14 +217,34 @@ export const ReplayScreen = {
                 <span class="replay-run-chip"><span class="replay-run-chip-label">{{ t.lives }}</span><span class="replay-run-chip-value">{{ runLivesRemaining }}</span></span>
               </div>
             </div>
-            <button class="primary replay-result-button-full" @click="$emit('go-results')">{{ continueLabel }}</button>
-            <div class="replay-log">
-              <button
-                v-for="event in visibleReplayEvents" :key="event.replayIndex"
-                class="log-entry" :class="{ active: event.replayIndex === state.replayIndex }"
-                @click="state.replayIndex = event.replayIndex"
-              >{{ event.display.logText }}</button>
+            <div class="battle-summary-card">
+              <p class="battle-summary-title">{{ t.battleSummary || t.battleRecap || t.results }}</p>
+              <div class="battle-summary-grid">
+                <article
+                  v-for="row in battleRecapRows"
+                  :key="row.side"
+                  class="battle-summary-row"
+                  :class="'battle-summary-row--' + row.side"
+                >
+                  <strong>{{ row.name }}</strong>
+                  <dl>
+                    <div>
+                      <dt>{{ t.damageDealt || 'Damage dealt' }}</dt>
+                      <dd>{{ row.damageDealt }}</dd>
+                    </div>
+                    <div>
+                      <dt>{{ t.stunsMade || 'Stuns' }}</dt>
+                      <dd>{{ row.stunsMade }}</dd>
+                    </div>
+                    <div>
+                      <dt>{{ t.damageBlocked || 'Blocked' }}</dt>
+                      <dd>{{ row.damageBlocked }}</dd>
+                    </div>
+                  </dl>
+                </article>
+              </div>
             </div>
+            <button class="primary replay-result-button-full" @click="$emit('go-results')">{{ continueLabel }}</button>
           </div>
         </div>
       </section>

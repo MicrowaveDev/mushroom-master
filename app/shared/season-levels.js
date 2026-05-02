@@ -8,7 +8,7 @@ export const CURRENT_SEASON = {
     en: 'Season of the Deep Ring'
   },
   theme: {
-    ru: 'Корни сжимают арену в кольцо, и каждый забег оставляет новый след в мицелии.',
+    ru: 'Корни сжимают арену в кольцо, и каждая партия оставляет новый след в мицелии.',
     en: 'Roots close the arena into a ring, and every run leaves another mark in the mycelium.'
   },
   startsAt: '2026-04-01',

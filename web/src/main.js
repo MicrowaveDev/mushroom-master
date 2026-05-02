@@ -72,7 +72,7 @@ const App = {
       currentBattle: null,
       replayIndex: 0,
       replayTimer: null,
-      replaySpeed: 1,
+      replaySpeed: 2,
       selectedWiki: null,
       wikiHome: null,
       friends: [],

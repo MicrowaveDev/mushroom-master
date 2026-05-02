@@ -29,27 +29,37 @@ export const InventoryZone = {
     onChipDragEnd() {
       this.$emit('drag-end');
     },
-    roleLegendItems() {
+    statSummaryItems() {
       const labels = {
         ru: {
           damage: 'Урон',
           armor: 'Броня',
-          stun: 'Оглушение',
-          bag: 'Сумки'
+          speed: 'Скорость',
+          stunChance: 'Оглушение'
         },
         en: {
           damage: 'Damage',
           armor: 'Armor',
-          stun: 'Stun',
-          bag: 'Bags'
+          speed: 'Speed',
+          stunChance: 'Stun'
         }
       };
       const lang = this.state.lang === 'en' ? 'en' : 'ru';
-      return ['damage', 'armor', 'stun', 'bag'].map((id) => ({
-        id,
-        role: ARTIFACT_ROLE_CLASSES[id],
-        label: labels[lang][id]
+      return [
+        { id: 'damage', roleId: 'damage', value: this.builderTotals.damage || 0 },
+        { id: 'armor', roleId: 'armor', value: this.builderTotals.armor || 0 },
+        { id: 'speed', roleId: null, value: this.builderTotals.speed || 0 },
+        { id: 'stunChance', roleId: 'stun', value: this.builderTotals.stunChance || 0, suffix: '%' }
+      ].map((item) => ({
+        ...item,
+        role: item.roleId ? ARTIFACT_ROLE_CLASSES[item.roleId] : null,
+        label: labels[lang][item.id],
+        text: this.formatStatValue(item.value, item.suffix)
       }));
+    },
+    formatStatValue(value, suffix = '') {
+      const n = Number(value) || 0;
+      return `${n > 0 ? '+' : ''}${n}${suffix}`;
     }
   },
   template: `
@@ -72,21 +82,6 @@ export const InventoryZone = {
         @piece-drag-start="$emit('inventory-drag-start', $event)"
         @piece-drag-end="$emit('drag-end')"
       />
-      <div class="artifact-role-legend" aria-label="Artifact role legend">
-        <span
-          v-for="item in roleLegendItems()"
-          :key="item.id"
-          class="artifact-role-legend-item"
-          :style="{ '--artifact-role-color': item.role.color }"
-        >
-          <span
-            class="artifact-role-glyph artifact-role-legend-glyph"
-            :class="'artifact-role-glyph--' + item.id"
-            aria-hidden="true"
-          ><span></span></span>
-          <span>{{ item.label }}</span>
-        </span>
-      </div>
       <div v-if="visibleActiveBags().length" class="active-bags-bar">
         <span
           v-for="bag in visibleActiveBags()"
@@ -111,7 +106,24 @@ export const InventoryZone = {
         </span>
       </div>
       <div v-if="state.builderItems.length" class="artifact-inventory-footer">
-        <span class="artifact-inventory-stats">+{{ builderTotals.damage }} DMG / +{{ builderTotals.armor }} ARM / +{{ builderTotals.speed }} SPD / +{{ builderTotals.stunChance }}% STUN</span>
+        <span class="artifact-inventory-stats" aria-label="Artifact stat summary">
+          <span
+            v-for="item in statSummaryItems()"
+            :key="item.id"
+            class="artifact-inventory-stat-chip"
+            :class="{ 'artifact-inventory-stat-chip--plain': !item.role }"
+            :style="item.role ? { '--artifact-role-color': item.role.color } : null"
+          >
+            <span
+              v-if="item.role"
+              class="artifact-role-glyph artifact-role-legend-glyph"
+              :class="'artifact-role-glyph--' + item.roleId"
+              aria-hidden="true"
+            ><span></span></span>
+            <span class="artifact-inventory-stat-label">{{ item.label }}</span>
+            <b>{{ item.text }}</b>
+          </span>
+        </span>
       </div>
     </div>
   `

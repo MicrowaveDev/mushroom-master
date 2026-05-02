@@ -228,7 +228,8 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
         body: JSON.stringify({
           lang: state.lang,
           reducedMotion: state.bootstrap.settings.reducedMotion,
-          battleSpeed: state.bootstrap.settings.battleSpeed
+          battleSpeed: state.bootstrap.settings.battleSpeed,
+          replaySpeed: state.bootstrap.settings.replaySpeed
         })
       }, state.sessionKey);
       await refreshBootstrap();

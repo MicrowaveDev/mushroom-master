@@ -1,7 +1,7 @@
 import { FighterCard } from './FighterCard.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { prepareGridProps } from '../composables/loadout-projection.js';
-import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
+import { ARTIFACT_ROLE_CLASSES, artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 
 export const ReplayDuel = {
   components: { FighterCard, ArtifactGridBoard },
@@ -13,7 +13,8 @@ export const ReplayDuel = {
     actingSide: { type: String, default: '' },
     activeEvent: { type: Object, default: null },
     statusText: { type: String, default: '' },
-    replaySpeed: { type: Number, default: 1 }
+    replaySpeed: { type: Number, default: 1 },
+    lang: { type: String, default: 'en' }
   },
   emits: ['set-speed'],
   computed: {
@@ -47,13 +48,18 @@ export const ReplayDuel = {
       const event = this.activeEvent;
       const attribution = event?.artifactAttribution;
       if (!attribution || event.type !== 'action' || !this.getArtifact) return [];
+      const labels = this.lang === 'ru'
+        ? { damage: 'Урон', stunChance: 'Оглушение', armor: 'Броня' }
+        : { damage: 'Damage', stunChance: 'Stun', armor: 'Armor' };
       return [
-        { key: 'damage', label: 'Damage', role: 'damage', items: attribution.damage || [] },
-        { key: 'stunChance', label: 'Stun', role: 'stun', items: attribution.stunChance || [] },
-        { key: 'armor', label: 'Armor', role: 'armor', items: attribution.armor || [] }
+        { key: 'damage', label: labels.damage, role: 'damage', items: attribution.damage || [] },
+        { key: 'stunChance', label: labels.stunChance, role: 'stun', items: attribution.stunChance || [] },
+        { key: 'armor', label: labels.armor, role: 'armor', items: attribution.armor || [] }
       ]
         .map((group) => ({
           ...group,
+          roleClass: ARTIFACT_ROLE_CLASSES[group.role],
+          total: group.items.reduce((sum, item) => sum + (Number(item.value) || 0), 0),
           items: group.items
             .map((entry) => {
               const artifact = this.getArtifact(entry.artifactId);
@@ -65,7 +71,7 @@ export const ReplayDuel = {
             })
             .filter(Boolean)
         }))
-        .filter((group) => group.items.length);
+        .filter((group) => group.items.length && group.total);
     }
   },
   methods: {
@@ -104,9 +110,9 @@ export const ReplayDuel = {
       if (event?.type === 'skip' && event.actorSide === side) classes.push('fighter--skip');
       return classes.join(' ');
     },
-    attributionValueText(group, item) {
+    attributionValueText(group) {
       const suffix = group.key === 'stunChance' ? '%' : '';
-      return `+${item.value}${suffix}`;
+      return `+${group.total}${suffix}`;
     }
   },
   template: `
@@ -167,23 +173,21 @@ export const ReplayDuel = {
           <div class="duel-loadout-center">
           <span v-if="effectText" class="duel-effect-pop" :class="{ 'duel-effect-pop--stun': activeEvent?.stunned }">{{ effectText }}</span>
           <div v-if="activeAttributionGroups.length" class="duel-attribution" aria-label="Artifact attribution">
-            <div
+            <span
               v-for="group in activeAttributionGroups"
               :key="group.key"
-              class="duel-attribution-group"
-              :class="'duel-attribution-group--' + group.role"
+              class="duel-attribution-chip"
+              :class="'duel-attribution-chip--' + group.role"
+              :style="{ '--artifact-role-color': group.roleClass.color }"
             >
-              <span class="duel-attribution-label">{{ group.label }}</span>
               <span
-                v-for="item in group.items"
-                :key="group.key + '-' + item.artifactId + '-' + (item.itemId || '')"
-                class="duel-attribution-chip"
-                :title="item.name"
-              >
-                <span class="duel-attribution-name">{{ item.name }}</span>
-                <b>{{ attributionValueText(group, item) }}</b>
-              </span>
-            </div>
+                class="artifact-role-glyph artifact-role-legend-glyph"
+                :class="'artifact-role-glyph--' + group.role"
+                aria-hidden="true"
+              ><span></span></span>
+              <span class="duel-attribution-label">{{ group.label }}</span>
+              <b>{{ attributionValueText(group) }}</b>
+            </span>
           </div>
           <p v-if="statusText" class="duel-loadout-status">{{ statusText }}</p>
           <svg v-else class="duel-loadout-icon" viewBox="0 0 64 64" aria-hidden="true">
@@ -194,7 +198,7 @@ export const ReplayDuel = {
           </svg>
           <div class="replay-speed-controls">
             <button
-              v-for="item in [{ speed: 1, count: 1 }, { speed: 2, count: 2 }, { speed: 4, count: 3 }]" :key="item.speed"
+              v-for="item in [{ speed: 2, count: 1 }, { speed: 4, count: 2 }, { speed: 8, count: 3 }]" :key="item.speed"
               type="button"
               class="replay-speed-btn"
               :class="{ 'replay-speed-btn--active': replaySpeed === item.speed }"

@@ -97,6 +97,7 @@ export function prepareGridProps(loadoutItems, bagArtifactIds, getArtifact) {
       }
       if (enabledCells.length === 0) continue;
       rows.push({
+        bagId: activeBag.id,
         row: anchorY + i,
         color: bag.color || '#888',
         artifactId: activeBag.artifactId,

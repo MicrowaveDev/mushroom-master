@@ -76,6 +76,17 @@ async function initSchema(sequelize) {
 
   initModels(sequelize);
   await sequelize.sync();
+  await ensureColumnExists(sequelize, 'player_settings', 'replay_speed', 'INTEGER NOT NULL DEFAULT 2');
+}
+
+async function ensureColumnExists(sequelize, table, column, definition) {
+  if (sequelize.getDialect() === 'sqlite') {
+    const rows = await sequelize.query(`PRAGMA table_info(${table})`, { type: QueryTypes.SELECT });
+    if (rows.some((row) => row.name === column)) return;
+    await sequelize.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    return;
+  }
+  await sequelize.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${definition}`);
 }
 
 async function runQuery(sql, params = [], transaction = null) {

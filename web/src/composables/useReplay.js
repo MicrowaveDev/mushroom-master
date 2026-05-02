@@ -51,9 +51,14 @@ export function useReplay(state, goTo, getMushroom) {
     }
   }
 
+  function preferredReplaySpeed() {
+    const fromSettings = Number(state.bootstrap?.settings?.replaySpeed);
+    return [2, 4, 8].includes(fromSettings) ? fromSettings : 2;
+  }
+
   function autoplayReplay() {
     stopReplay();
-    const speed = state.replaySpeed || 1;
+    const speed = state.replaySpeed || preferredReplaySpeed();
     const baseDelay = state.bootstrap?.settings?.battleSpeed === '2x'
       ? DEFAULT_REPLAY_AUTOPLAY_FAST_MS
       : DEFAULT_REPLAY_AUTOPLAY_MS;
@@ -65,8 +70,23 @@ export function useReplay(state, goTo, getMushroom) {
     }, delay);
   }
 
+  function persistReplaySpeed(speed) {
+    if (!state.sessionKey || !state.bootstrap?.settings) return;
+    state.bootstrap.settings.replaySpeed = speed;
+    apiJson('/api/settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        lang: state.bootstrap.settings.lang,
+        reducedMotion: state.bootstrap.settings.reducedMotion,
+        battleSpeed: state.bootstrap.settings.battleSpeed,
+        replaySpeed: speed
+      })
+    }, state.sessionKey).catch(() => {});
+  }
+
   function setReplaySpeed(speed) {
     state.replaySpeed = speed;
+    persistReplaySpeed(speed);
     if (state.replayTimer) {
       autoplayReplay();
     }
@@ -76,7 +96,7 @@ export function useReplay(state, goTo, getMushroom) {
     try {
       state.currentBattle = await apiJson(`/api/battles/${battleId}`, {}, state.sessionKey);
       state.replayIndex = 0;
-      state.replaySpeed = 1;
+      state.replaySpeed = preferredReplaySpeed();
       // Allow signalReady() to pre-fetch the replay payload without navigating
       // away from the round-result screen. The replay screen is opt-in
       // (Flow B Step 4) — autoplay only starts when the user actually opens it.

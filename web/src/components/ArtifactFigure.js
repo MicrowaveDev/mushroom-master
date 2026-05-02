@@ -129,6 +129,10 @@ export const ArtifactFigure = {
     const height = shape
       ? shape.length
       : (Number(this.displayHeight) > 0 ? Number(this.displayHeight) : artifact.height);
+    const rotatedBitmap = !shape
+      && Number(artifact.width) !== Number(artifact.height)
+      && Number(width) === Number(artifact.height)
+      && Number(height) === Number(artifact.width);
 
     const cells = Array.from({ length: width * height }, (_, index) => {
       const x = index % width;
@@ -149,10 +153,20 @@ export const ArtifactFigure = {
     }, [
       ...cells,
       node('span', {
-        class: 'artifact-figure-bitmap artifact-figure-bitmap--full',
+        class: [
+          'artifact-figure-bitmap',
+          'artifact-figure-bitmap--full',
+          rotatedBitmap ? 'artifact-figure-bitmap--rotated' : ''
+        ],
         'aria-hidden': 'true',
         style: {
-          backgroundImage: `url('${artifactBitmapPath(artifact)}')`
+          backgroundImage: `url('${artifactBitmapPath(artifact)}')`,
+          ...(rotatedBitmap
+            ? {
+                '--artifact-rotated-bitmap-width': `${(height / width) * 100}%`,
+                '--artifact-rotated-bitmap-height': `${(width / height) * 100}%`
+              }
+            : {})
         }
       }),
       node('span', {

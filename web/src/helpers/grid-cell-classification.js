@@ -6,6 +6,7 @@
 //
 // `bagRows` shape (as produced by `PrepScreen.bagRows`):
 //   Array<{
+//     bagId: string,
 //     row: number,             // global unified-grid y
 //     color: string,           // CSS colour for the bag
 //     artifactId: string,

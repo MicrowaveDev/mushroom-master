@@ -49,9 +49,10 @@ export async function getPlayerState(playerId) {
     ? {
         lang: settingsResult.rows[0].lang,
         reducedMotion: Boolean(settingsResult.rows[0].reduced_motion),
-        battleSpeed: settingsResult.rows[0].battle_speed
+        battleSpeed: settingsResult.rows[0].battle_speed,
+        replaySpeed: Number(settingsResult.rows[0].replay_speed) || 2
       }
-    : { lang: player.lang, reducedMotion: false, battleSpeed: '1x' };
+    : { lang: player.lang, reducedMotion: false, battleSpeed: '1x', replaySpeed: 2 };
 
   const activeMushroomId = activeResult.rowCount ? activeResult.rows[0].mushroom_id : null;
   // Legacy `loadout` field (read from player_artifact_loadouts) deleted
@@ -157,11 +158,12 @@ export async function updateSettings(playerId, payload) {
   const lang = payload.lang === 'en' ? 'en' : 'ru';
   const reducedMotion = payload.reducedMotion ? 1 : 0;
   const battleSpeed = ['1x', '2x'].includes(payload.battleSpeed) ? payload.battleSpeed : '1x';
+  const replaySpeed = [2, 4, 8].includes(Number(payload.replaySpeed)) ? Number(payload.replaySpeed) : 2;
   await query(
     `UPDATE player_settings
-     SET lang = $2, reduced_motion = $3, battle_speed = $4
+     SET lang = $2, reduced_motion = $3, battle_speed = $4, replay_speed = $5
      WHERE player_id = $1`,
-    [playerId, lang, reducedMotion, battleSpeed]
+    [playerId, lang, reducedMotion, battleSpeed, replaySpeed]
   );
   await query(`UPDATE players SET lang = $2, updated_at = $3 WHERE id = $1`, [playerId, lang, nowIso()]);
   return getPlayerState(playerId);

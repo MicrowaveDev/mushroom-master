@@ -369,6 +369,15 @@ test('[Req 13-A] replay events use step_start type and step field', async () => 
   assert.ok(stepEvents.length > 0);
   assert.ok(stepEvents[0].step >= 1);
   assert.equal(stepEvents[0].type, 'step_start');
+  assert.deepEqual(battle.roundResult, {
+    roundNumber: result.lastRound.roundNumber,
+    battleId: result.lastRound.battleId,
+    outcome: result.lastRound.outcome,
+    rewards: result.lastRound.rewards,
+    ratingBefore: result.lastRound.ratingBefore,
+    ratingAfter: result.lastRound.ratingAfter,
+    coinsIncome: 5
+  });
 
   // Verify no round_start events exist
   const roundEvents = battle.events.filter((e) => e.type === 'round_start');

@@ -32,6 +32,21 @@ test('tall artifacts keep one full-height bitmap over stacked cells', () => {
   assert.equal((html.match(/artifact-figure-cell/g) || []).length, 2);
 });
 
+test('rotated artifacts rotate bitmap instead of stretching canonical art', () => {
+  const html = renderArtifactFigure({
+    id: 'static_spore_sac',
+    family: 'stun',
+    width: 1,
+    height: 2,
+    bonus: {}
+  }, 2, 1);
+
+  assert.match(html, /artifact-figure-bitmap--rotated/);
+  assert.match(html, /--artifact-rotated-bitmap-width: 50%/);
+  assert.match(html, /--artifact-rotated-bitmap-height: 200%/);
+  assert.equal((html.match(/artifact-figure-cell/g) || []).length, 2);
+});
+
 test('irregular bag masks keep empty cells as layout holes under one artwork overlay', () => {
   const html = renderArtifactFigure({
     id: 'trefoil_sack',

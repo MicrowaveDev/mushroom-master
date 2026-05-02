@@ -1731,10 +1731,46 @@ select {
 }
 
 .artifact-inventory-stats {
-  margin: 0;
-  font-size: 0.78em;
-  opacity: 0.55;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 10px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 0 8px;
+  color: rgba(63, 51, 40, 0.62);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.artifact-inventory-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.artifact-inventory-stat-chip--plain::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(138, 97, 53, 0.34) 0 2px, transparent 2.5px),
+    rgba(255, 253, 245, 0.62);
+  border: 1px solid rgba(138, 97, 53, 0.2);
+}
+
+.artifact-inventory-stat-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artifact-inventory-stat-chip b {
+  color: rgba(63, 51, 40, 0.72);
+  font-variant-numeric: tabular-nums;
 }
 
 .artifact-inventory-hint {
@@ -1827,9 +1863,10 @@ select {
 .container-item {
   position: relative;
   display: grid;
-  grid-template-rows: minmax(96px, auto) auto;
-  gap: 6px;
-  padding: 6px;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 8px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(127, 152, 114, 0.25);
   border-radius: 10px;
@@ -1880,10 +1917,10 @@ select {
 }
 
 .container-item-visual {
-  /* Fluid against .container-item's inline-size container. Drops the old
-     @container (max-width: 160px) override in favor of always-fluid
-     clamped between 30px (tight shop card) and 44px (legacy desktop). */
-  --artifact-cell-size: clamp(30px, calc((100cqi - 16px) / 3), 44px);
+  /* Fluid against .container-item's inline-size container. Backpack cards
+     are content-sized, so small artifacts do not reserve an empty preview
+     band while larger footprints still stay comfortably bounded. */
+  --artifact-cell-size: clamp(36px, calc((100cqi - 18px) / 3), 50px);
   pointer-events: none;
   justify-self: center;
 }
@@ -2409,6 +2446,7 @@ select {
 
 .inventory,
 .artifact-grid-background {
+  position: relative;
   display: grid;
   gap: var(--board-gap);
   margin-bottom: 14px;
@@ -2416,6 +2454,8 @@ select {
 
 .cell,
 .artifact-grid-cell {
+  position: relative;
+  z-index: 2;
   padding: 0;
   width: var(--artifact-cell-size);
   height: var(--artifact-cell-size);
@@ -2549,6 +2589,14 @@ select {
   background-position: center;
 }
 
+.artifact-figure-bitmap--rotated {
+  inset: 50% auto auto 50%;
+  width: var(--artifact-rotated-bitmap-width, 100%);
+  height: var(--artifact-rotated-bitmap-height, 100%);
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
+}
+
 .artifact-grid-board--inventory .inventory-pieces .artifact-figure-bitmap--full {
   z-index: 4;
 }
@@ -2629,6 +2677,10 @@ select {
   top: -5px;
   right: -5px;
   pointer-events: none;
+}
+
+.duel-loadouts .artifact-figure-role-glyph {
+  display: none;
 }
 
 .artifact-figure-cell--empty::after {
@@ -2857,60 +2909,45 @@ select {
 }
 
 .duel-attribution {
-  display: grid;
-  gap: 2px;
-  width: min(190px, 100%);
-  margin: 0 auto 2px;
-}
-
-.duel-attribution-group {
-  --duel-attribution-color: #7f6547;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 4px;
-  min-width: 0;
-  padding: 1px 2px;
-  border-radius: 0;
-  background: transparent;
-  border: 0;
-}
-
-.duel-attribution-group--damage { --duel-attribution-color: #b8744d; }
-.duel-attribution-group--armor { --duel-attribution-color: #7d946b; }
-.duel-attribution-group--stun { --duel-attribution-color: #a68e48; }
-
-.duel-attribution-label {
-  flex: 0 0 auto;
-  color: color-mix(in srgb, var(--duel-attribution-color) 50%, #7b6c5b);
-  font-size: 0.54rem;
-  font-weight: 800;
-  text-transform: uppercase;
+  width: min(210px, 100%);
+  margin: 0 auto 2px;
 }
 
 .duel-attribution-chip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  padding: 0 2px;
-  border-radius: 0;
-  background: transparent;
-  color: rgba(76, 57, 39, 0.72);
-  font-size: 0.55rem;
-  font-weight: 650;
+  padding: 2px 7px 2px 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--artifact-role-color) 10%, rgba(255, 253, 245, 0.82));
+  color: color-mix(in srgb, var(--artifact-role-color) 48%, #6d5a45);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.duel-attribution-name {
-  max-width: 74px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.duel-attribution-chip .artifact-role-legend-glyph {
+  width: 15px;
+  height: 15px;
+  background: rgba(255, 253, 245, 0.76);
+}
+
+.duel-attribution-chip .artifact-role-legend-glyph > span {
+  transform: scale(0.78);
+}
+
+.duel-attribution-label {
   white-space: nowrap;
 }
 
 .duel-attribution-chip b {
   flex: 0 0 auto;
-  color: color-mix(in srgb, var(--duel-attribution-color) 62%, #5e4b38);
+  color: color-mix(in srgb, var(--artifact-role-color) 68%, #4f3b29);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2972,10 +3009,10 @@ select {
 }
 
 .replay-result-button-full {
-  width: min(560px, 100%);
+  width: min(420px, 100%);
   justify-self: center;
   font-size: 1.1em;
-  animation: result-pulse 1.6s ease-in-out infinite;
+  min-height: 54px;
 }
 
 .replay-layout--result-ready {
@@ -3057,7 +3094,7 @@ select {
   grid-column: 1 / -1;
   grid-row: 1;
   justify-self: center;
-  padding-top: 13px;
+  padding-top: 0;
   font-size: 0.9rem;
   opacity: 0.7;
 }
@@ -3080,9 +3117,9 @@ select {
 .replay-sheet-body {
   min-height: 0;
   overflow: auto;
-  padding: 0 18px 18px;
+  padding: 18px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .replay-result-overlay--collapsed .replay-sheet-body {
@@ -3102,24 +3139,71 @@ select {
 .replay-result-sheet .replay-rewards-card {
   max-width: none;
   border: 0;
-  border-radius: 0;
+  border-radius: 14px;
   background: transparent;
 }
 
+.replay-result-hero {
+  display: grid;
+  gap: 7px;
+  padding: 18px 20px;
+  border: 1px solid rgba(138, 97, 53, 0.18);
+  border-radius: 14px;
+  background: #f2e8cf;
+}
+
+.replay-result-hero--win {
+  background: #e4ecd8;
+}
+
+.replay-result-hero--loss {
+  background: #eed7d0;
+}
+
+.replay-result-hero--draw {
+  background: #eee2bc;
+}
+
+.replay-result-kicker {
+  margin: 0;
+  color: rgba(63, 51, 40, 0.58);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.replay-result-hero h3 {
+  margin: 0;
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  line-height: 1.05;
+}
+
+.replay-result-summary {
+  margin: 0;
+  color: rgba(47, 36, 25, 0.82);
+  font-size: 1rem;
+  line-height: 1.34;
+}
+
 .replay-rewards-header {
-  padding: 22px 20px 18px;
+  padding: 16px 18px 14px;
   display: grid;
   gap: 8px;
   justify-items: center;
-  border-radius: 0 0 18px 18px;
+  border-radius: 14px 14px 0 0;
 }
 .replay-rewards-header--win { background: #e4ecd8; }
 .replay-rewards-header--loss { background: #eed7d0; }
 .replay-rewards-header--draw { background: #eee2bc; }
 
+.replay-result-sheet .replay-rewards-header {
+  display: none;
+}
+
 .replay-rewards-title {
   margin: 0;
-  font-size: 1.7rem;
+  font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.05;
 }
@@ -3158,7 +3242,7 @@ select {
 
 .replay-rewards-card .stat-grid {
   margin: 0;
-  padding: 18px 16px;
+  padding: 10px 0 0;
   gap: 8px;
   grid-template-columns: repeat(3, 1fr);
 }
@@ -3188,8 +3272,8 @@ select {
 .replay-rewards-card .stat.stat--neg dd { color: var(--error); }
 
 .replay-run-status {
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--border);
+  padding: 9px 0 0;
+  border-top: 0;
   font-size: 0.85rem;
   color: var(--ink);
   opacity: 0.75;
@@ -3212,6 +3296,72 @@ select {
 .replay-run-chip-value {
   font-weight: 700;
   color: var(--accent);
+}
+
+.battle-summary-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(138, 97, 53, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 251, 244, 0.76);
+}
+
+.battle-summary-title {
+  margin: 0;
+  color: rgba(63, 51, 40, 0.58);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.battle-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.battle-summary-row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f4ecd6;
+}
+
+.battle-summary-row > strong {
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.battle-summary-row dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.battle-summary-row dl > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.battle-summary-row dt {
+  color: rgba(63, 51, 40, 0.58);
+  font-size: 0.64rem;
+  font-weight: 750;
+  line-height: 1.05;
+}
+
+.battle-summary-row dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes result-pulse {
@@ -3625,6 +3775,22 @@ select {
   background: rgba(255, 251, 244, 0.74);
 }
 
+.replay-log--result {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-style: solid;
+}
+
+.replay-log-title {
+  margin: 0 2px 2px;
+  color: rgba(63, 51, 40, 0.58);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .replay-log .log-entry {
   width: 100%;
   min-height: 44px;
@@ -3636,6 +3802,40 @@ select {
   font-size: 0.96rem;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.replay-log--result .log-entry {
+  position: relative;
+  min-height: 38px;
+  padding: 8px 10px 8px 26px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.replay-log--result .log-entry::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 17px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(138, 97, 53, 0.42);
+}
+
+.replay-log--result .log-entry + .log-entry {
+  margin-top: 0;
+}
+
+.replay-log--result .log-entry:first-child {
+  background: transparent;
+  border-color: transparent;
+  font-weight: 400;
+}
+
+.replay-log--result .log-entry.active {
+  background: rgba(244, 236, 214, 0.72);
 }
 
 .replay-log .log-entry + .log-entry {
@@ -3706,8 +3906,12 @@ select {
   }
 
   .replay-sheet-body {
-    padding: 0 12px 14px;
+    padding: 12px;
     gap: 12px;
+  }
+
+  .replay-result-hero {
+    padding: 15px 14px;
   }
 
   .replay-rewards-header {
@@ -3733,6 +3937,10 @@ select {
 
   .replay-result-button-full {
     width: 100%;
+  }
+
+  .battle-summary-grid {
+    grid-template-columns: 1fr;
   }
 
   .replay-result-sheet .replay-log {
@@ -4141,6 +4349,20 @@ select {
 
   .duel-loadout-center {
     flex: 0 0 60px;
+  }
+
+  .duel-attribution {
+    width: 60px;
+    gap: 3px;
+  }
+
+  .duel-attribution-chip {
+    max-width: 100%;
+    padding: 2px 4px;
+  }
+
+  .duel-attribution-label {
+    display: none;
   }
 
   .duel-loadouts {
@@ -4717,16 +4939,52 @@ select {
 .run-season-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.48fr);
+  grid-template-columns: 96px minmax(0, 1fr) minmax(190px, 0.48fr);
   align-items: center;
-  gap: 14px;
-  padding: 14px;
+  gap: 16px;
+  padding: 16px;
   border: 1px solid rgba(126, 92, 54, 0.18);
   border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(150, 126, 98, 0.14), rgba(255, 255, 255, 0.38)),
     rgba(255, 251, 244, 0.52);
   animation: recap-reveal 0.42s ease-out 0.24s both;
+}
+.run-season-emblem {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 4px 10px rgba(80, 52, 22, 0.18));
+}
+.run-season-emblem-svg {
+  width: 100%;
+  height: 100%;
+}
+.run-season-card--level-up .run-season-emblem-svg {
+  animation: season-emblem-pop 0.72s cubic-bezier(0.2, 0.86, 0.24, 1) both;
+}
+@keyframes season-emblem-pop {
+  0% { transform: scale(0.7) rotate(-8deg); opacity: 0.4; }
+  60% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@media (max-width: 540px) {
+  .run-season-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-areas: 'emblem copy' 'meter meter';
+  }
+  .run-season-emblem {
+    grid-area: emblem;
+    width: 72px;
+    height: 72px;
+  }
+  .run-season-copy {
+    grid-area: copy;
+  }
+  .run-season-meter {
+    grid-area: meter;
+  }
 }
 .run-season-card--silver {
   background:
@@ -4821,9 +5079,6 @@ select {
   border: 1px solid rgba(126, 92, 54, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.34);
-}
-.run-complete-bonus--quiet {
-  background: rgba(237, 244, 222, 0.5);
 }
 .run-complete-bonus-heading {
   margin: 0;
@@ -5107,6 +5362,7 @@ select {
 
 /* --- Bag grid cells --- */
 .artifact-grid-cell--bag {
+  z-index: 2;
   background:
     radial-gradient(circle at center, var(--bag-color-glow, rgba(107, 143, 94, 0.25)), transparent 70%),
     var(--bag-color-light, rgba(107, 143, 94, 0.2)) !important;
@@ -5125,6 +5381,17 @@ select {
 
 .prep-screen .artifact-grid-cell--bag.artifact-grid-cell--occupied {
   box-shadow: none;
+}
+
+.artifact-grid-bag-watermark {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.16;
+  filter: saturate(0.86);
 }
 @keyframes bag-cell-expand {
   0% { opacity: 0; transform: scaleY(0.3); }
@@ -5300,12 +5567,20 @@ select {
 }
 
 .prep-screen .artifact-grid-cell--bag-empty {
-  background: rgba(255, 255, 255, 0.36);
-  border-color: rgba(138, 97, 53, 0.12);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(138, 97, 53, 0.075);
+  opacity: 0.68;
+}
+
+.prep-screen .artifact-grid-cell--bag-disabled {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(138, 97, 53, 0.065);
+  opacity: 0.6;
 }
 
 .prep-screen .artifact-grid-cell--drop-target {
   transform: scale(1.04);
+  opacity: 1;
 }
 
 .artifact-piece-wrap {

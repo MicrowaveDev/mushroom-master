@@ -6,12 +6,20 @@ export const BackpackZone = {
   props: ['state', 't', 'containerArtifacts', 'getArtifact', 'formatArtifactBonus', 'preferredOrientation'],
   emits: ['auto-place', 'container-dragover', 'container-drop'],
   methods: {
+    previewOrientation(artifact) {
+      if (!artifact) return { width: 1, height: 1 };
+      // Match shop previews: artifact bitmaps are authored in canonical
+      // footprint space, so non-shaped artifacts should not be rotated or
+      // squashed while waiting in the backpack.
+      if (!artifact.shape) return { width: artifact.width, height: artifact.height };
+      return this.preferredOrientation(artifact);
+    },
     previewItem(artifact) {
-      const orientation = this.preferredOrientation(artifact);
+      const orientation = this.previewOrientation(artifact);
       return [{ artifactId: artifact.id, rowId: artifact.rowId, x: 0, y: 0, width: orientation.width, height: orientation.height }];
     },
     itemDataset(artifact) {
-      const orientation = this.preferredOrientation(artifact);
+      const orientation = this.previewOrientation(artifact);
       return {
         'data-artifact-id': artifact.id,
         'data-artifact-row-id': artifact.rowId || '',
@@ -40,8 +48,8 @@ export const BackpackZone = {
           <artifact-grid-board
             class="container-item-visual"
             variant="catalog"
-            :columns="preferredOrientation(artifact).width"
-            :rows="preferredOrientation(artifact).height"
+            :columns="previewOrientation(artifact).width"
+            :rows="previewOrientation(artifact).height"
             :items="previewItem(artifact)"
             :get-artifact="getArtifact"
           />

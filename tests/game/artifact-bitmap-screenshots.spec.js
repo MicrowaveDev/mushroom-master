@@ -129,7 +129,7 @@ test('artifact shop cards expose non-color role glyphs for each role', async ({ 
   for (const artifact of ROLE_ARTIFACTS) {
     const card = page.locator(`.artifact-shop .shop-item[data-artifact-id="${artifact.id}"]`);
     await expect(card).toBeVisible();
-    await expect(card.locator('.shop-item-role-glyph')).toHaveAttribute('aria-label', artifact.label);
+    await expect(card.locator('.artifact-figure-role-glyph')).toHaveAttribute('aria-label', artifact.label);
   }
 
   await saveArtifactShot(page, 'shop-role-glyphs.png');

@@ -198,11 +198,13 @@ function resolveAction(attacker, defender, step, rng, events) {
     }
   }
 
+  const incomingDamage = attackDamage;
   const defenseValue = Math.max(0, defender.defense + defender.state.pendingArmorBonus - armorIgnore);
   let resolvedDamage = Math.max(1, attackDamage - defenseValue);
   if (defender.mushroomId === 'lomie' && !defender.state.receivedFirstHit) {
     resolvedDamage = Math.max(1, resolvedDamage - 3);
   }
+  const blockedDamage = Math.max(0, incomingDamage - resolvedDamage);
 
   defender.currentHealth = Math.max(0, defender.currentHealth - resolvedDamage);
   defender.state.receivedFirstHit = true;
@@ -244,6 +246,7 @@ function resolveAction(attacker, defender, step, rng, events) {
     targetSide: defender.side,
     actionName: narration,
     damage: resolvedDamage,
+    blockedDamage,
     stunned,
     artifactAttribution: actionArtifactAttribution(attacker, defender),
     narration: `${attacker.name.en} uses ${narration} for ${resolvedDamage} damage${stunned ? ' and stuns the target' : ''}.`,
