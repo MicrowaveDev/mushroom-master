@@ -1,5 +1,20 @@
 # Repository Instructions
 
+## Surfaces
+
+This repository contains **two unrelated product surfaces**. Identify which one your task touches before reading the rest of this file or running verify commands — the rest of the file mixes guidance for both.
+
+| Surface | Where the code lives | Verify commands | Design / workflow rules |
+| --- | --- | --- | --- |
+| **Lore PDF pipeline** — Telegram archiver, OCR, lore generation, dossier rendering | `src/`, `data/<channel>/`, lore-side scripts under `app/scripts/` (e.g. `analyze-pdf-structure.js`) | `npm test` (unit), `npm run analyze:pdf-structure` (PDF structure check), `npm run regenerate -- --force` (full rerun), `npm run regenerate -- --force --skip-download` (rebuild from local sources) | "Source Review Workflow", "Hashtag Routing Rules", "Tagging Workflow", "PDF Review Workflow", "Renderer Design Rules" sections below |
+| **Mycelium Autobattler** — Telegram Mini App game (Vue frontend + Express backend + Playwright specs) | `web/` (Vue), `app/server/` (Express), `app/shared/` (shared code), `tests/game/` (specs), `web/public/artifacts/`, `web/public/season-ranks/`, `web/public/achievements/` | `npm test` (all unit), `npm run game:test` (game unit), `npm run game:test:e2e` (Playwright e2e), `npm run game:test:screens` / `:debug` (screenshots) | "UI Verification Rules", "Layout Assertion Rules", "E2E / Integration Test Design Rules", "Inventory Review Rules", `.agent/workflows/ui-design.md` |
+
+For game-UI changes specifically:
+
+- Use the wrapper scripts (`npm run game:test:screens`, `npm run game:test:e2e`) rather than `npx playwright test` directly. They pick the right config (`tests/game/playwright.config.js`), start the isolated test backend on a free port, and seed the test SQLite DB.
+- To target one regression test inside the e2e suite, run `npx playwright test --config=tests/game/playwright.config.js tests/game/solo-run.spec.js --grep "<test name>"`. Direct `npx playwright test` without `--config` will skip the test-server fixture and fail with a missing `baseURL`.
+- The hub manifest's top-level `quickVerifyCommand` / `fullVerifyCommand` are surface-agnostic defaults. The full per-surface mapping lives in `verifyCommandsBySurface` in [submodules.manifest.json](/Users/microwavedev/workspace/microwave-hub/submodules.manifest.json); pick the right entry for the active surface.
+
 Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for both renderer (PDF dossier) and autobattler Mini App UI styling. Before changing any app-frontend visual surface (panels, cards, stat tiles, result screens, headers), read Part 2 — especially the Flat Design Rules, the Stat and Metric Card Pattern, and the Dated Design Signals checklist — and self-audit the change against that list before reporting completion. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
 
 Use [docs/character-image-prompt-template.md](/Users/microwavedev/workspace/mushroom-master/docs/character-image-prompt-template.md) as the base whenever the task is to produce a character image-generation prompt from repo canon. Read the target character's current canon first, then return one final copy-paste-ready prompt block rather than the raw worksheet.
