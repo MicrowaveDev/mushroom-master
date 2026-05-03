@@ -161,9 +161,14 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
     const faceBottom = Number(style.getPropertyValue('--portrait-face-bottom')) || 38;
     const faceTopLine = portraitRect.top + portraitRect.height * (faceTop / 100);
     const faceBottomLine = portraitRect.top + portraitRect.height * (faceBottom / 100);
-    const tailTipTop = bubbleRect.top - 10;
-    const bubbleAboveFace = bubbleRect.bottom <= faceTopLine;
-    const bubbleBelowFace = tailTipTop >= faceBottomLine + 4;
+    const tailEdge = style.getPropertyValue('--bubble-tail-edge').trim() || 'top';
+    const tailTipTop = tailEdge === 'bottom' ? bubbleRect.bottom + 10 : bubbleRect.top - 10;
+    const bubbleAboveFace = tailEdge === 'bottom'
+      ? tailTipTop <= faceTopLine - 4
+      : bubbleRect.bottom <= faceTopLine;
+    const bubbleBelowFace = tailEdge === 'bottom'
+      ? bubbleRect.top >= faceBottomLine + 4
+      : tailTipTop >= faceBottomLine + 4;
     const checks = [
       [Math.abs(portraitRect.width - portraitRect.height) <= 2, 'portrait is not square'],
       [bubbleAboveFace || bubbleBelowFace, `bubble or tail crowds face band (${Math.round(tailTipTop - portraitRect.top)}-${Math.round(bubbleRect.bottom - portraitRect.top)}px vs ${Math.round(faceTopLine - portraitRect.top)}-${Math.round(faceBottomLine - portraitRect.top)}px)`],

@@ -193,7 +193,7 @@ Step 3: Battle Replay (auto-shown after ready)
   Sees (while replay plays):
     - Two fighter cards (left = player, right = opponent)
     - Each card: mushroom portrait, name, HP bar (current / max)
-    - Active speech bubble is anchored inside the speaking fighter's portrait and reads as character speech, not a detached caption. It must not cover or crowd the configured face/head band or the name overlay; preferred placement is near the head with visible breathing room between the head and bubble tail.
+    - Active speech bubble is anchored inside the speaking fighter's portrait and reads as character speech, not a detached caption. It must not cover or crowd the configured face/head band or the name overlay; preferred placement is near the head with visible breathing room between the head and bubble tail. Above-head placement is allowed when that portrait has clear space above the character.
     - [Req 7-C] Ghost opponent has its own character preset + bought items
     - Replay speed controls (▶ ▶▶ ▶▶▶)
     - Step-by-step combat log (scrollable, clickable entries)

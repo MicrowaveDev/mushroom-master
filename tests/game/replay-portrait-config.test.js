@@ -23,6 +23,7 @@ test('replay portrait config covers every character portrait variant', () => {
       }
       assert.equal(typeof layout.underhang, 'string', `${mushroomId}/${variant.id}: underhang must be a string`);
       assert.ok(layout.underhang.length > 0, `${mushroomId}/${variant.id}: underhang must not be empty`);
+      assert.ok(['top', 'bottom'].includes(layout.tailEdge), `${mushroomId}/${variant.id}: tailEdge must be top or bottom`);
       assert.equal(typeof layout.headX, 'number', `${mushroomId}/${variant.id}: headX must be numeric`);
       assert.equal(typeof layout.headY, 'number', `${mushroomId}/${variant.id}: headY must be numeric`);
       assert.ok(layout.headX > 0 && layout.headX < 100, `${mushroomId}/${variant.id}: headX must be a percent inside the portrait`);

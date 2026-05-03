@@ -4,6 +4,7 @@ const portraitLayout = ({
   insetLeft,
   insetRight,
   tailLeft,
+  tailEdge = 'top',
   imagePosition,
   headX = 50,
   headY = 34,
@@ -15,6 +16,7 @@ const portraitLayout = ({
   insetLeft,
   insetRight,
   tailLeft,
+  tailEdge,
   imagePosition,
   headX,
   headY,
@@ -43,7 +45,7 @@ export const replayPortraitConfigByMushroom = {
     1: portraitLayout({ top: '66%', insetLeft: '18px', insetRight: '18px', tailLeft: '50%', imagePosition: '50% 100%', faceBottom: 56 })
   },
   morga: {
-    default: portraitLayout({ insetLeft: '18px', insetRight: '18px', tailLeft: '56%', imagePosition: '54% 8%' })
+    default: portraitLayout({ top: '8%', insetLeft: '18px', insetRight: '18px', tailLeft: '56%', tailEdge: 'bottom', imagePosition: '54% 8%', faceTop: 34, faceBottom: 54 })
   },
   dalamar: {
     default: portraitLayout({ insetLeft: '18px', insetRight: '18px', tailLeft: '48%', imagePosition: '50% 22%' }),

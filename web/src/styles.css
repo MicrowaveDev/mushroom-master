@@ -3755,12 +3755,15 @@ select {
   content: '';
   position: absolute;
   left: var(--bubble-tail-left, 32%);
-  top: -10px;
+  top: var(--bubble-tail-top, -10px);
+  bottom: var(--bubble-tail-bottom, auto);
   width: 18px;
   height: 18px;
   background: rgba(255, 250, 239, 0.96);
-  border-left: 1px solid rgba(138, 97, 53, 0.22);
-  border-top: 1px solid rgba(138, 97, 53, 0.22);
+  border-left: 1px solid var(--bubble-tail-border-left, rgba(138, 97, 53, 0.22));
+  border-top: 1px solid var(--bubble-tail-border-top, rgba(138, 97, 53, 0.22));
+  border-right: 1px solid var(--bubble-tail-border-right, transparent);
+  border-bottom: 1px solid var(--bubble-tail-border-bottom, transparent);
   transform: rotate(45deg);
 }
 
