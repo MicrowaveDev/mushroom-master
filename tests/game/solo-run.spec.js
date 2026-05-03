@@ -688,3 +688,48 @@ test('[Req 2-F] tetromino-bag mask gaps render visibly (no hidden grid holes)', 
 
   await saveShot(page, 'bag-zone-04-tetromino-mask-gaps-desktop.png');
 });
+
+test('backpack tall bag preview does not overlap its caption', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+
+  const player = await createSession(request, { telegramId: 960, username: 'tall_bag_caption', name: 'Tall Bag Caption' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  const ghost = await createSession(request, { telegramId: 961, username: 'tall_bag_caption_ghost', name: 'Tall Bag Ghost' });
+  await api(request, ghost.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'kirt' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await waitForPrepReady(page);
+
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  await forceShopAndBuy(page, request, player.sessionKey, bootstrap.activeGameRun.id, 'mycelium_vine');
+
+  async function expectTallBagCaptionClear() {
+    const tallBag = page.locator('.artifact-container-zone .container-item[data-artifact-id="mycelium_vine"]').first();
+    await expect(tallBag).toBeVisible();
+    const geometry = await tallBag.evaluate((card) => {
+      const visual = card.querySelector('.container-item-visual')?.getBoundingClientRect();
+      const caption = card.querySelector('.container-item-copy strong')?.getBoundingClientRect();
+      if (!visual || !caption) return null;
+      return {
+        visualBottom: visual.bottom,
+        captionTop: caption.top,
+        gap: caption.top - visual.bottom
+      };
+    });
+
+    expect(geometry).not.toBeNull();
+    expect(geometry.gap, 'tall bag preview should leave visible space before the caption').toBeGreaterThanOrEqual(4);
+  }
+
+  await expectTallBagCaptionClear();
+  await saveShot(page, 'bag-zone-05-tall-bag-caption-desktop.png');
+
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await expectTallBagCaptionClear();
+  await saveShot(page, 'bag-zone-05-tall-bag-caption-mobile.png');
+});

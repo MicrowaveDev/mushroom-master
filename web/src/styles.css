@@ -1921,9 +1921,16 @@ select {
   --artifact-cell-size: clamp(36px, calc((100cqi - 18px) / 3), 50px);
   pointer-events: none;
   justify-self: center;
+  margin-bottom: 4px;
+}
+
+.container-item[data-artifact-height="4"] .container-item-visual {
+  margin-bottom: 16px;
 }
 
 .container-item-copy {
+  position: relative;
+  z-index: 4;
   display: grid;
   gap: 3px;
   font-size: 0.82em;
