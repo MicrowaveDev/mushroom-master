@@ -1997,7 +1997,7 @@ select {
   /* Name pins to the top, the visual centers in the flexible middle row,
      and stat tags stick to the bottom. The shared role legend lives under
      the player grid instead of repeating inside every shop card. */
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
   gap: 4px;
   padding: 6px;
   background: rgba(255, 255, 255, 0.7);
@@ -2202,6 +2202,18 @@ select {
   gap: 4px;
   align-self: end;
   font-size: 0.85em;
+}
+
+.shop-item-description {
+  margin: 0;
+  color: rgba(63, 51, 40, 0.68);
+  font-size: 0.74rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .artifact-grid-cell--drop-target {
@@ -4664,7 +4676,7 @@ select {
        tags pin to the bottom — keeps the "name on top, stats on bottom"
        contract while saving vertical space with a side-by-side layout. */
     grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
   }
 
   .shop-item-header {
@@ -4680,6 +4692,11 @@ select {
   }
 
   .shop-item-tags {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .shop-item-description {
     grid-column: 2;
     grid-row: 2;
   }

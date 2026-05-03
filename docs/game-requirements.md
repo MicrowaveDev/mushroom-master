@@ -105,7 +105,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
   - each between-round shop offer
   - each manual refresh result
 - **4-U.** Challenge-mode shop offers remain **viewer-scoped** even when opponent level is used as an eligibility cap. The client may not receive the opponent's private shop offer or hidden future eligible item pool.
-- **4-V.** General lore artifacts may appear in normal shop rolls without character gating. Their names and `loreSource` should point at established world concepts, locations, or factions, and production-ready lore artifacts should have dedicated bitmap art under `web/public/artifacts/{artifact_id}.png`.
+- **4-V.** General lore artifacts may appear in normal shop rolls without character gating. Their names, localized `description`, and `loreSource` should point at established world concepts, locations, or factions, and production-ready lore artifacts should have dedicated bitmap art under `web/public/artifacts/{artifact_id}.png`.
 
 ### Selling
 

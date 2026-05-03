@@ -60,6 +60,7 @@ test('[Req 4-V, 6-L] general lore artifacts are shop-eligible effect carriers', 
   assert.ok(loreArtifacts.length >= 4);
   assert.ok(loreArtifacts.every((artifact) => combatArtifacts.some((item) => item.id === artifact.id)));
   assert.ok(loreArtifacts.every((artifact) => artifact.battleEffect?.id));
+  assert.ok(loreArtifacts.every((artifact) => artifact.description?.en && artifact.description?.ru));
   assert.ok(loreArtifacts.every((artifact) => !artifact.imageId));
   for (const artifact of loreArtifacts) {
     assert.ok(

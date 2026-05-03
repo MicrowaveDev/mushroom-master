@@ -353,6 +353,10 @@ export const artifacts = [
     height: 1,
     price: 2,
     bonus: { stunChance: 9, armor: 1 },
+    description: {
+      ru: 'Золотая печать Реликвария стягивает спорную нить в короткий миг биостазиса.',
+      en: 'A Golden Reliquary seal knots spore-thread into a brief pulse of biostasis.'
+    },
     battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     loreSource: 'golden-reliquary'
   },
@@ -364,6 +368,10 @@ export const artifacts = [
     height: 1,
     price: 2,
     bonus: { damage: 4, armor: -1 },
+    description: {
+      ru: 'Бродильный заряд из Булькающего Грота лопается едкой грибной вспышкой.',
+      en: 'A ferment charge from the Bubbling Grot bursts with sour fungal pressure.'
+    },
     battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
     loreSource: 'bubbling-grot'
   },
@@ -375,6 +383,10 @@ export const artifacts = [
     height: 2,
     price: 2,
     bonus: { armor: 3, stunChance: 5 },
+    description: {
+      ru: 'Спора-кокон Йог-Мицела закрывается зелеными пластинами вокруг холодной пустоты.',
+      en: 'A Ygg-Mycel cocoon spore folds green plates around a cold void core.'
+    },
     battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
     loreSource: 'ygg-mycel'
   },
@@ -386,6 +398,10 @@ export const artifacts = [
     height: 1,
     price: 2,
     bonus: { stunChance: 7, armor: 1 },
+    description: {
+      ru: 'Корневой цензер Йог-Мицела гасит темп боя пепельной спиралью.',
+      en: 'A Ygg-Mycel root censer slows the fight with a pale ash spiral.'
+    },
     battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     loreSource: 'ygg-mycel'
   },

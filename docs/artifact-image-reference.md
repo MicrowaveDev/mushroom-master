@@ -28,6 +28,7 @@ web/public/artifacts/{artifact_id}.png
 | `glass_cap` | Damage, `2x1`, bright. | A fragile wide attack piece; should feel brittle and dangerous without becoming realistic glass. | Glassy mushroom cap spanning both cells; underside gills and stem near the seam, highlight continues across the cap. |
 | `fang_whip` | Damage, `2x1`, bright. | A wide flexible attack piece that rewards spatial planning. | Handle/root knot on the left; curving whip crosses the seam into a fang head on the right. |
 | `burning_cap` | Damage, `2x2`, bright. | A large hot attack commitment; should feel powerful and costly. | Hot mushroom cap with flame core; ember cracks, red rim, lower stem/base, and contained flame glow form one large object. |
+| `bubbling_grot_bomb` | Lore damage, `1x1`, bright. | A general shop artifact tied to the Bubbling Grot; gives a readable ferment hit cue without adding hidden status rules. | Round amber-red fungal flask, corked cap fuse, and contained green ferment bubbles. |
 
 ## Armor
 
@@ -39,6 +40,7 @@ web/public/artifacts/{artifact_id}.png
 | `stone_cap` | Armor, `1x2`, bright. | Tall heavy defense piece with grounded mass. | Cracked stone mushroom cap in upper cell, thick stone stem/base below. |
 | `root_shell` | Armor, `2x2`, bright. | Large protective body that anchors defensive builds. | Root-wrapped shield shell; upper shell plates and lower root tendrils form one continuous protective mass. |
 | `truffle_bulwark` | Armor, `2x2`, bright/radiant defensive commitment. | The densest shield fantasy, with visible bulk and tradeoff weight. | Dense truffle shield; rough pore dome, raised lobe, moss and loam chips, grounded mass. |
+| `void_cocoon_spore` | Lore armor/control, `1x2`, bright. | A general shop artifact tied to Ygg-Mycel cocoon/void imagery; teaches block-triggered frost feedback as protection. | Tall armored cocoon spore; moss-green outer plates wrap a pale frozen core and dark central void slit. |
 
 ## Stun
 
@@ -50,6 +52,8 @@ web/public/artifacts/{artifact_id}.png
 | `static_spore_sac` | Stun, `1x2`, bright. | Charged hanging control item. | Upper neck and static nodes continue into swollen lower membrane. |
 | `thunder_gill` | Stun, `2x1`, bright. | Wide control piece with a readable fan shape. | Exposed mushroom gill with lightning veins; fan ribs continue left-to-right. |
 | `spark_spore` | Stun, `2x2`, bright. | Large control commitment; should feel charged but contained. | One large charged spore orb with pale glow, electric cracks, and a few contained sparks. |
+| `reliquary_biostasis_seal` | Lore stun/armor, `1x1`, bright. | A general shop artifact tied to the Golden Reliquary; communicates biostasis as a short battle-read cue. | Golden reliquary seal shaped like a mushroom-cap stamp with a sacred white knot and contained pale cyan glints. |
+| `root_ash_censer` | Lore stun/armor, `2x1`, bright. | A general shop artifact tied to Ygg-Mycel root and ash imagery; gives decay/ash feedback with a restrained horizontal silhouette. | Horizontal root-ash censer with dark root handles, ash-cream ritual bowl, and carved pale spiral marks. |
 
 ## Hybrid / Utility
 
