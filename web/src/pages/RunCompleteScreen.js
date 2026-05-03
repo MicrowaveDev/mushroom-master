@@ -267,7 +267,7 @@ export const RunCompleteScreen = {
               :class="achievementClass(achievement)"
             >
               <achievement-badge :achievement="achievement" size="medium" />
-              <div>
+              <div class="run-achievement-copy">
                 <h3>
                   {{ achievement.name }}
                   <span v-if="achievement.isNew" class="run-achievement-new">{{ t.newAchievement }}</span>
