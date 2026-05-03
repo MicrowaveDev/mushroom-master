@@ -245,6 +245,7 @@ Step 4: Run Complete (run ended)
     - [Req 9-B] Completion bonus (if any) based on total wins — spore + mycelium
     - Last battle summary with outcome and reward text when lastRound data exists
     - [Req 9-G] Lore achievements earned this run, including general and character-specific entries when criteria match
+    - Achievement entries render as compact cards, not full-width rows, even when only one achievement appears
     - Newly earned achievements reveal one by one and show a "New" marker; matched achievements already owned from older runs show an earned marker
     - If no achievements match, a quiet empty achievement state appears instead of a blank gap
     - The recap reveals in order: verdict first, season meter, rewards/survival, achievements, then the "Домой" / "Home" button settles in
