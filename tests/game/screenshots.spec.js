@@ -145,30 +145,37 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.waitForSelector('.bubble-review-stage');
   await expect(page.locator('.bubble-review-stage')).toHaveCount(portraitVariantCount);
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(portraitVariantCount);
-  const bubbleLayoutOk = await page.locator('.bubble-review-stage').evaluateAll((stages) => stages.every((stage) => {
+  const bubbleLayoutFailures = await page.locator('.bubble-review-stage').evaluateAll((stages) => stages.map((stage) => {
     const wrap = stage.querySelector('.fighter:first-child .fighter-portrait-wrap');
     const bubble = stage.querySelector('.fighter:first-child .fighter-speech-bubble');
     const portrait = stage.querySelector('.fighter:first-child .fighter-portrait');
     const name = stage.querySelector('.fighter:first-child .fighter-name-overlay');
-    if (!wrap || !bubble || !portrait || !name) return false;
+    const label = stage.querySelector('.fighter:first-child .fighter-name')?.textContent?.trim() || 'unknown';
+    if (!wrap || !bubble || !portrait || !name) return `${label}: missing review elements`;
     const wrapRect = wrap.getBoundingClientRect();
     const bubbleRect = bubble.getBoundingClientRect();
     const portraitRect = portrait.getBoundingClientRect();
     const nameRect = name.getBoundingClientRect();
     const style = window.getComputedStyle(wrap);
-    const headY = Number(style.getPropertyValue('--portrait-head-y')) || 34;
-    const headLine = portraitRect.top + portraitRect.height * (headY / 100);
-    return (
-      Math.abs(portraitRect.width - portraitRect.height) <= 2 &&
-      bubbleRect.top >= wrapRect.top &&
-      bubbleRect.left >= wrapRect.left - 1 &&
-      bubbleRect.right <= wrapRect.right + 1 &&
-      bubbleRect.bottom < nameRect.top &&
-      bubbleRect.top < portraitRect.top + portraitRect.height * 0.22 &&
-      bubbleRect.bottom <= headLine
-    );
-  }));
-  expect(bubbleLayoutOk).toBe(true);
+    const faceTop = Number(style.getPropertyValue('--portrait-face-top')) || 18;
+    const faceBottom = Number(style.getPropertyValue('--portrait-face-bottom')) || 38;
+    const faceTopLine = portraitRect.top + portraitRect.height * (faceTop / 100);
+    const faceBottomLine = portraitRect.top + portraitRect.height * (faceBottom / 100);
+    const bubbleAboveFace = bubbleRect.bottom <= faceTopLine;
+    const bubbleBelowFace = bubbleRect.top >= faceBottomLine;
+    const bubbleOutsidePortraitBelow = bubbleRect.top >= portraitRect.bottom + 4;
+    const checks = [
+      [Math.abs(portraitRect.width - portraitRect.height) <= 2, 'portrait is not square'],
+      [bubbleAboveFace || bubbleBelowFace, `bubble intersects face band (${Math.round(bubbleRect.top - portraitRect.top)}-${Math.round(bubbleRect.bottom - portraitRect.top)}px vs ${Math.round(faceTopLine - portraitRect.top)}-${Math.round(faceBottomLine - portraitRect.top)}px)`],
+      [bubbleRect.left >= wrapRect.left - 1, 'bubble overflows left'],
+      [bubbleRect.right <= wrapRect.right + 1, 'bubble overflows right'],
+      [bubbleOutsidePortraitBelow || bubbleRect.bottom < nameRect.top, 'bubble overlaps name overlay'],
+      [bubbleOutsidePortraitBelow || bubbleRect.bottom < portraitRect.bottom - 44, 'bubble sits too low in portrait']
+    ];
+    const failed = checks.filter(([ok]) => !ok).map(([, message]) => message);
+    return failed.length ? `${label}: ${failed.join('; ')}` : null;
+  }).filter(Boolean));
+  expect(bubbleLayoutFailures).toEqual([]);
   await saveShot(page, '04-bubble-review.png');
   await page.addStyleTag({ content: '.app-header { display: none !important; }' });
   for (const mushroomId of Object.keys(PORTRAIT_VARIANTS)) {

@@ -161,12 +161,15 @@ export function useGameState(state, options = {}) {
     const layout = replayPortraitConfig(mushroomId, portraitId);
     return {
       '--bubble-top': layout.top,
+      '--bubble-underhang': layout.underhang,
       '--bubble-inset-left': layout.insetLeft,
       '--bubble-inset-right': layout.insetRight,
       '--bubble-tail-left': layout.tailLeft,
       '--fighter-object-position': layout.imagePosition,
       '--portrait-head-x': `${layout.headX}`,
-      '--portrait-head-y': `${layout.headY}`
+      '--portrait-head-y': `${layout.headY}`,
+      '--portrait-face-top': `${layout.faceTop}`,
+      '--portrait-face-bottom': `${layout.faceBottom}`
     };
   }
 
