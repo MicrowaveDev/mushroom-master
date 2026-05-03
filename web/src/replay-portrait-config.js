@@ -32,7 +32,7 @@ export const replayPortraitConfigByMushroom = {
   },
   lomie: {
     default: portraitLayout({ insetLeft: '20px', insetRight: '18px', tailLeft: '52%', imagePosition: '52% 8%' }),
-    1: portraitLayout({ top: '66%', insetLeft: '18px', insetRight: '20px', tailLeft: '54%', imagePosition: '50% 100%', faceBottom: 56 }),
+    1: portraitLayout({ top: '51%', insetLeft: '18px', insetRight: '20px', tailLeft: '54%', imagePosition: '50% 100%', faceBottom: 38 }),
     2: portraitLayout({ top: '54%', insetLeft: '18px', insetRight: '18px', tailLeft: '50%', imagePosition: '50% 22%', faceBottom: 46 })
   },
   axilin: {
