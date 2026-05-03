@@ -413,6 +413,28 @@ test('[Req 1-G] getGameRunHistory excludes active runs', async () => {
   assert.equal(history.length, 0);
 });
 
+test('[Req 1-A] bootstrap.gameRunHistory lists one entry per run, not per battle', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await selectActiveMushroom(session.player.id, 'thalla');
+
+  const { abandonGameRun, getBootstrap } = await import('../../app/server/services/game-service.js');
+
+  // Play one full round (creates one battle inside the run), then abandon.
+  const run = await startGameRun(session.player.id, 'solo');
+  await resolveRound(session.player.id, run.id);
+  await abandonGameRun(session.player.id, run.id);
+
+  const bootstrap = await getBootstrap(session.player.id);
+  // Single run played → exactly one row in gameRunHistory, regardless of how
+  // many battles were created inside the run. This is the home-screen "Игры"
+  // contract per game-requirements.md §1-A.
+  assert.equal(bootstrap.gameRunHistory.length, 1);
+  assert.equal(bootstrap.gameRunHistory[0].id, run.id);
+  // The mushroom used in the run is exposed for portrait rendering on the home.
+  assert.equal(bootstrap.gameRunHistory[0].mushroomId, 'thalla');
+});
+
 // --- Coin carry-over ---
 
 test('[Req 4-B, 4-C] coins carry over between rounds', async () => {

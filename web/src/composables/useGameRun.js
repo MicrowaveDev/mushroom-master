@@ -147,6 +147,18 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     } catch { /* ignore */ }
   }
 
+  async function loadRunSummary(runId) {
+    if (!runId) return;
+    try {
+      state.error = '';
+      const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
+      state.gameRunSummary = data;
+      goTo('runSummary');
+    } catch (error) {
+      state.error = error.message || 'Could not load game summary';
+    }
+  }
+
   async function abandonRun() {
     if (!state.gameRun) return;
     try {
@@ -356,7 +368,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   return {
     startNewGameRun, resumeGameRun, signalReady,
-    continueToNextRound, abandonRun, loadRunShopOffer,
+    continueToNextRound, abandonRun, loadRunShopOffer, loadRunSummary,
     refreshRunShop, sellRunItemAction, buyRunShopItem,
     getRunRefreshCost, getRunSellPrice, persistRunLoadout,
     onSellZoneDragOver, onSellZoneDragLeave, onSellZoneDrop

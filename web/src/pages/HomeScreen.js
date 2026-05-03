@@ -9,11 +9,11 @@ export const HomeScreen = {
   props: [
     'state', 't', 'activeMushroom', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'getMushroom',
-    'describeReplay', 'formatDelta', 'portraitPosition'
+    'describeRun', 'formatDelta', 'portraitPosition'
   ],
   emits: [
     'resume-run', 'start-run', 'abandon-run',
-    'load-replay', 'go',
+    'load-run-summary', 'go',
     'add-friend', 'challenge-friend',
     'accept-challenge', 'decline-challenge',
     'select-mushroom',
@@ -168,44 +168,44 @@ export const HomeScreen = {
           <div class="home-section-header">
             <h3>{{ t.gameRuns }}</h3>
             <button v-if="!state.gameRun && activeMushroom" class="primary home-start-btn" :disabled="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" :title="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''" @click="$emit('start-run', 'solo')">{{ t.startRun }}</button>
-            <button v-if="state.bootstrap.battleHistory?.length" class="link" @click="$emit('go', 'history')">{{ t.viewAll }}</button>
+            <button v-if="state.bootstrap.gameRunHistory?.length" class="link" @click="$emit('go', 'history')">{{ t.viewAll }}</button>
           </div>
 
           <p v-if="!state.gameRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" class="home-limit-hint">{{ t.dailyLimitReached }}</p>
 
           <!-- Active run as first item -->
-          <div v-if="state.gameRun && activeMushroom" class="home-battle-item home-battle-item--active" @click="$emit('resume-run')">
-            <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="home-battle-item-portrait" :style="{ objectPosition: portraitPosition(activeMushroom.id) }"/>
-            <div class="home-battle-item-info">
+          <div v-if="state.gameRun && activeMushroom" class="home-run-item home-run-item--active" @click="$emit('resume-run')">
+            <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="home-run-item-portrait" :style="{ objectPosition: portraitPosition(activeMushroom.id) }"/>
+            <div class="home-run-item-info">
               <strong>{{ t.round }} {{ state.gameRun.currentRound }}</strong>
-              <span class="home-battle-item-stats">{{ t.wins }} {{ state.gameRun.player?.wins || 0 }} · {{ t.lives }} {{ state.gameRun.player?.livesRemaining || 0 }}</span>
+              <span class="home-run-item-stats">{{ t.wins }} {{ state.gameRun.player?.wins || 0 }} · {{ t.lives }} {{ state.gameRun.player?.livesRemaining || 0 }}</span>
             </div>
-            <button class="primary home-battle-item-action" @click.stop="$emit('resume-run')">{{ t.continueRound }}</button>
+            <button class="primary home-run-item-action" @click.stop="$emit('resume-run')">{{ t.continueRound }}</button>
           </div>
 
-          <!-- Recent battles -->
-          <div v-if="state.bootstrap.battleHistory?.length" class="home-battle-list">
+          <!-- Recent runs (1 row per game run, not per battle — per Req 1-A) -->
+          <div v-if="state.bootstrap.gameRunHistory?.length" class="home-run-list">
             <div
-              v-for="battle in state.bootstrap.battleHistory.slice(0, 5)"
-              :key="battle.id"
-              class="home-battle-item"
-              :class="'home-battle-item--' + (describeReplay(battle)?.outcomeKey || 'draw')"
-              @click="$emit('load-replay', battle.id)"
+              v-for="run in state.bootstrap.gameRunHistory.slice(0, 5)"
+              :key="run.id"
+              class="home-run-item"
+              :class="'home-run-item--' + (describeRun(run)?.outcomeKey || 'abandoned')"
+              @click="$emit('load-run-summary', run.id)"
             >
-              <img v-if="describeReplay(battle)?.oppImage" :src="describeReplay(battle).oppImage" :alt="describeReplay(battle)?.oppName" class="home-battle-item-portrait" />
-              <div class="home-battle-item-info">
-                <strong>{{ describeReplay(battle)?.outcomeLabel }}</strong>
-                <span class="home-battle-item-stats">{{ describeReplay(battle)?.oppName }} · {{ describeReplay(battle)?.opponentKindLabel }}</span>
+              <img v-if="describeRun(run)?.ourImage" :src="describeRun(run).ourImage" :alt="describeRun(run)?.ourName" class="home-run-item-portrait" :style="{ objectPosition: portraitPosition(describeRun(run)?.mushroomId) }" />
+              <div class="home-run-item-info">
+                <strong>{{ describeRun(run)?.outcomeLabel }}</strong>
+                <span class="home-run-item-stats">{{ describeRun(run)?.ourName }} · {{ t.runStatsRecord.replace('{wins}', describeRun(run)?.wins).replace('{losses}', describeRun(run)?.losses).replace('{rounds}', describeRun(run)?.completedRounds) }}</span>
               </div>
-              <span class="home-battle-item-date">{{ describeReplay(battle)?.dateLabel }}</span>
+              <span class="home-run-item-date">{{ describeRun(run)?.dateLabel }}</span>
             </div>
           </div>
 
           <!-- Empty state -->
-          <p v-if="!state.gameRun && !state.bootstrap.battleHistory?.length" class="home-empty-hint home-empty-hint--center">{{ t.noBattlesYet }}</p>
+          <p v-if="!state.gameRun && !state.bootstrap.gameRunHistory?.length" class="home-empty-hint home-empty-hint--center">{{ t.noGameRunsYetCta }}</p>
 
           <!-- Footer stats -->
-          <div class="home-battle-footer">
+          <div class="home-run-footer">
             <span>{{ t.spore }}: {{ state.bootstrap.player.spore }}</span>
             <span>{{ t.battleLimit }}: {{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</span>
           </div>

@@ -448,12 +448,12 @@ test('[Flow G] settings: change language and verify persistence', async ({ page,
 
 // --- Req 13-B: replay accessible from round-result/history ---
 
-test('[Req 13-B] battle history entry navigates to replay', async ({ page, request, baseURL }) => {
+test('[Req 13-B] game run history → run summary → round battle replay', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1050, username: 'history_nav', name: 'History Nav' });
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
 
-  // Create a completed battle by playing one round of a game run.
+  // Seed one completed game run that contains one round battle.
   const run = await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
   await api(request, player.sessionKey, `/api/game-run/${run.id}/ready`, 'POST', {});
   await api(request, player.sessionKey, `/api/game-run/${run.id}/abandon`, 'POST', {});
@@ -461,10 +461,15 @@ test('[Req 13-B] battle history entry navigates to replay', async ({ page, reque
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
-  // Click a battle history entry to navigate to replay.
-  // HomeScreen renders history items as .home-battle-item (not .battle-history-card).
-  const historyEntry = page.locator('.home-battle-item').first();
-  await expect(historyEntry).toBeVisible({ timeout: 5000 });
-  await historyEntry.click();
+  // The home "Игры" section lists game runs (one row per run, per Req 1-A).
+  // Clicking a run opens the run summary screen, which lists the per-round
+  // battles inside that run; each round links to its battle replay. This
+  // drill-down satisfies Req 13-B (replays accessible from history).
+  const runEntry = page.locator('.home-run-item').first();
+  await expect(runEntry).toBeVisible({ timeout: 5000 });
+  await runEntry.click();
+  const roundEntry = page.locator('.run-summary-round-item').first();
+  await expect(roundEntry).toBeVisible({ timeout: 5000 });
+  await roundEntry.click();
   await expect(page.locator('.replay-layout')).toBeVisible({ timeout: 15000 });
 });

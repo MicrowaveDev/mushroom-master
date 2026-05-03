@@ -119,14 +119,18 @@ Step 1: Home Screen
     - Active mushroom portrait + level
     - "Начать Игру" / "Start Game" button (or "Продолжить игру" / resume if active run)
     - Spore count
-    - First 1-2 battle history entries
+    - First 1-2 game run history entries
   Desktop note: Friends list + leaderboard also visible (side columns)
   Sees:
     - Active mushroom portrait + level
     - "Начать Игру" / "Start Game" button
     - Spore count
     - Battle limit (X / 10)
-    - Recent battle history (up to 5)
+    - Recent game run history (up to 5) — one row per run, not per battle [Req 1-A]
+      Each row: player mushroom portrait, run outcome (Победа / Поражение /
+      Прерван), record string ({wins}П · {losses}Пр · {rounds} р.), date.
+      Click → run summary screen, which lists per-round battles each linking
+      to its own replay (preserves [Req 13-B] battle-history accessibility).
     - Friends list (up to 3) + challenge buttons
     - Leaderboard (top 5)
   Action: Click "Start Game"
@@ -194,12 +198,20 @@ Step 3: Battle Replay (auto-shown after ready)
     - Step-by-step combat log (scrollable, clickable entries)
     - [Req 6-I] Combat fully server-resolved, replay is read-only
   Sees (when replay finishes, in-run only — data-testid="replay-rewards"):
-    - Round outcome heading (Victory / Defeat)
-    - [Req 9-A] Per-round reward breakdown (spore + mycelium)
-    - [Req 10-A] Solo: rating delta from this round
+    - Round outcome heading (Victory / Defeat) — pops in first
+    - [Req 9-A] Per-round reward breakdown (spore + mycelium) — fades up next, staggered
+    - [Req 10-A] Solo: rating delta from this round — last item in the stat row
+    - [Req 14-E] Rank progress block (data-testid="replay-rank") — appears
+      after the stats. Shows the active mushroom's tier badge, level number,
+      and a progress bar that animates from `progressBefore.current` toward
+      `progressAfter.current` (per [Req 14-E]).
+    - [Req 14-E] Level-up flash (data-testid="level-up-toast") when
+      `levelAfter > levelBefore`: bar fills to 100%, flashes "Level N!",
+      then resets and refills toward the new level's progress.
+    - [Req 14-E] Tier-change toast (data-testid="tier-change-toast") when
+      `progressBefore.tier !== progressAfter.tier` — shows the new tier badge.
     - Running totals (wins, lives, coins) are intentionally NOT shown on
       this card — they appear on the next prep HUD right after Continue.
-      Keeping the card to three deltas avoids duplicating HUD data.
   Action: Watch replay auto-play (or adjust speed / click log)
   Expected:
     - [Req 13-A] When replay finishes AND state.gameRun exists AND run active:

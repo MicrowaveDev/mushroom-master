@@ -166,7 +166,10 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await saveShot(page, '07-replay-complete.png');
 
   await page.goto(`${baseURL}/history`);
-  await page.waitForSelector('.replay-card');
+  // History screen lists game runs (one row per run, per Req 1-A) using
+  // .run-card; clicking a card opens the run summary which links to per-round
+  // battle replays (Req 13-B drill-down).
+  await page.waitForSelector('.run-card');
   debugLog('capturing history');
   await saveShot(page, '08-history.png');
 
