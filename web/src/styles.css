@@ -5360,15 +5360,18 @@ select {
 }
 .run-achievement-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 280px));
+  justify-content: start;
+  gap: 12px;
 }
 .run-achievement {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-content: start;
+  gap: 12px;
   align-items: start;
-  padding: 12px;
+  min-height: 142px;
+  padding: 14px;
   border: 1px solid rgba(126, 92, 54, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.44);
