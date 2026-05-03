@@ -2,7 +2,7 @@
 
 Goal: every season rank emblem and run-achievement badge has a real painted bitmap that matches the artifact direction in [`artifact-image-style-prompt.md`](artifact-image-style-prompt.md). Same chunky inventory-sticker language, applied to circular medallion-style emblems.
 
-The previous SVG fallback in [`web/src/components/SeasonRankEmblem.js`](../web/src/components/SeasonRankEmblem.js) stays in the repo until every entry has a production PNG with provenance metadata. Mid-batch the runtime falls back to the SVG with `console.warn`.
+Per-rank and per-achievement purpose, motivation, type, and visual target live in [season-rank-image-reference.md](season-rank-image-reference.md) and [achievement-image-reference.md](achievement-image-reference.md). Use this style prompt for shared art direction; use the reference docs for image-specific intent.
 
 Production PNGs live at:
 
@@ -103,4 +103,4 @@ npm run game:season:provenance:check
 
 Writes `app/shared/season-image-metadata.json` (sha256 + prompt + validation snapshot per entry). The provenance check is what the runtime is allowed to trust — it asserts every metadata sha256 matches the file on disk and every entry is `status: approved`.
 
-After every entry has approved metadata, the SVG fallback in [`web/src/components/SeasonRankEmblem.js`](../web/src/components/SeasonRankEmblem.js) can be removed (see backlog item).
+After every entry has approved metadata, runtime rendering is PNG-only; old SVG/glyph fallbacks are not production-art sources.

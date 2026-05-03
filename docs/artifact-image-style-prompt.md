@@ -2,6 +2,8 @@
 
 Use this file as the shared style base for production artifact bitmaps.
 
+Per-artifact purpose, motivation, type, and visual target live in [artifact-image-reference.md](artifact-image-reference.md). Use this style prompt for shared art direction; use the reference doc for item-specific intent.
+
 These images are **small inventory icons**, not character illustrations. They must be simple, readable, and shaped to the artifact footprint. The goal is a clean Backpack Battles-style puzzle item: one clear ornament image rendered as a continuous overlay above the grid cells.
 
 ## 2026-04-28 Review Direction

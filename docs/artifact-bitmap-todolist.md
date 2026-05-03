@@ -2,6 +2,8 @@
 
 Goal: every artifact has a real painted bitmap that renders as one Backpack Battles-style ornament across its full grid footprint. The game renders the bitmap once as a continuous overlay above the footprint; shape masks control placement cells underneath.
 
+Canonical per-artifact purpose, motivation, type, and visual intent live in [artifact-image-reference.md](artifact-image-reference.md). Keep this file focused on production workflow, validation, and script-readable queue scaffolding.
+
 The previous SVG-derived PNG placeholders were removed from `web/public/artifacts/`. Real production PNGs should be generated one batch at a time and saved as:
 
 ```text
@@ -142,6 +144,8 @@ Until the image set is explicitly approved for production, the script writes loc
 The sheet renders every artifact at `32px`, `48px`, and `64px` on transparent background, the actual prep/grid cell background, and grayscale. It also shows role, shine, footprint, and warning markers derived from the shared visual classification metadata.
 
 ## Production Image Queue
+
+The queue below is kept as workflow scaffolding for `npm run game:artifacts:next`. The durable design reference is [artifact-image-reference.md](artifact-image-reference.md); when changing per-artifact meaning or visual intent, update the reference first and keep the queue aligned.
 
 ### Damage
 

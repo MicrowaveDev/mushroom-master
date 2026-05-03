@@ -43,6 +43,7 @@
 
 - [Game requirements](game-requirements.md) — the behavioral contract; any phase that touches battle events updates this.
 - [Artifact bitmap todo list](artifact-bitmap-todolist.md)
+- [Artifact image reference](artifact-image-reference.md)
 - [Artifact image style prompt](artifact-image-style-prompt.md)
 - [Artifact visual classification](artifact-visual-classification.md)
 - [Artifact art direction](artifact-art-direction.md)

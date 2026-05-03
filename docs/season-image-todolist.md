@@ -1,6 +1,8 @@
 # Season Bitmap Production Todo List
 
-Goal: every season rank emblem and run achievement has a real painted bitmap matching the artifact direction. The runtime renders the bitmap at fixed 192x192; the inline SVG in [`SeasonRankEmblem.js`](../web/src/components/SeasonRankEmblem.js) is a transitional fallback only.
+Goal: every season rank emblem and run achievement has a real painted bitmap matching the artifact direction. The runtime renders the bitmap at fixed 192x192.
+
+Canonical per-image purpose, motivation, type, and visual intent live in [season-rank-image-reference.md](season-rank-image-reference.md) and [achievement-image-reference.md](achievement-image-reference.md). Keep this file focused on production workflow, validation, and script-readable queue scaffolding.
 
 Style guide: [`season-image-style-prompt.md`](season-image-style-prompt.md).
 
@@ -24,6 +26,8 @@ npm run game:season:next
 The script skips entries whose target PNG already exists.
 
 ## Production Image Queue
+
+The queue below is kept as workflow scaffolding for `npm run game:season:next`. The durable design references are [season-rank-image-reference.md](season-rank-image-reference.md) and [achievement-image-reference.md](achievement-image-reference.md); when changing per-image meaning or visual intent, update those references first and keep the queue aligned.
 
 ### Season Ranks
 
@@ -61,6 +65,6 @@ The script skips entries whose target PNG already exists.
 
 ## Notes
 
-- The transitional inline SVG in `SeasonRankEmblem.js` covers ranks only. Achievement glyphs use a text symbol fallback in `AchievementBadge.js`.
-- These runtime fallbacks are not production-art sources. Do not trace, screenshot, rasterize, or otherwise convert them into app-facing PNGs.
-- Once every entry has approved provenance metadata in `app/shared/season-image-metadata.json`, the SVG/text fallbacks should be removed (backlog item).
+- Season rank and achievement UI is PNG-only after the approved provenance pass.
+- Do not trace, screenshot, rasterize, or otherwise convert old fallback SVG/glyph artwork into app-facing PNGs.
+- Approved provenance metadata lives in `app/shared/season-image-metadata.json`.
