@@ -3153,10 +3153,10 @@ select {
   position: relative;
   display: grid;
   gap: 7px;
-  min-height: 162px;
+  min-height: 150px;
   align-content: center;
-  padding: 84px 20px 22px;
-  overflow: hidden;
+  padding: 70px 20px 22px;
+  overflow: visible;
   border: 1px solid rgba(138, 97, 53, 0.18);
   border-radius: 14px;
   background: #f2e8cf;
@@ -3165,17 +3165,17 @@ select {
 .replay-result-hero::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -26px;
-  width: min(400px, 90%);
-  height: 112px;
+  top: -42px;
+  left: -18px;
+  width: min(430px, 94%);
+  height: 124px;
   pointer-events: none;
   background-image: url('/ui/mushroom-panel-trim.png');
   background-repeat: no-repeat;
   background-position: left top;
   background-size: contain;
   filter: drop-shadow(0 5px 8px rgba(78, 52, 28, 0.16));
-  opacity: 0.86;
+  opacity: 0.94;
   z-index: 1;
 }
 
@@ -4129,8 +4129,8 @@ select {
   }
 
   .replay-result-hero {
-    min-height: 154px;
-    padding: 78px 14px 18px;
+    min-height: 144px;
+    padding: 66px 14px 18px;
   }
 
   .replay-rewards-header {
