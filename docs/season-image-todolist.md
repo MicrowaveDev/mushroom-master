@@ -4,6 +4,8 @@ Goal: every season rank emblem and run achievement has a real painted bitmap mat
 
 Style guide: [`season-image-style-prompt.md`](season-image-style-prompt.md).
 
+Production artwork rule: generate rank and achievement PNGs with imagegen from the prompts printed by `npm run game:season:next`. Do not create these bitmaps by screenshotting SVG/HTML/CSS/canvas templates, procedural glyphs, Puppeteer medallions, or any other deterministic drawing script. Scripts may be deterministic for prompt selection, raw-export processing, validation, review sheets, and provenance, but not for authoring the artwork.
+
 Output paths:
 
 ```text
@@ -60,4 +62,5 @@ The script skips entries whose target PNG already exists.
 ## Notes
 
 - The transitional inline SVG in `SeasonRankEmblem.js` covers ranks only. Achievement glyphs use a text symbol fallback in `AchievementBadge.js`.
+- These runtime fallbacks are not production-art sources. Do not trace, screenshot, rasterize, or otherwise convert them into app-facing PNGs.
 - Once every entry has approved provenance metadata in `app/shared/season-image-metadata.json`, the SVG/text fallbacks should be removed (backlog item).

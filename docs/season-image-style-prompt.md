@@ -24,12 +24,14 @@ These workspace folders are gitignored. The app should only consume the optimize
 ## Workflow
 
 1. Run `npm run game:season:next` to print the next missing batch as imagegen prompts.
-2. Generate the listed images with the imagegen skill, using this style guide.
+2. Generate the listed images with the imagegen skill/API, using the exact printed prompt plus this style guide. Imagegen is the artwork authoring step.
 3. Save raw imagegen outputs under `.agent/season-image-workspace/raw/`, then run the chroma-key/conversion helper to write each optimized app PNG into the exact output path.
 4. Run `npm run game:season:next` again until it reports all done.
 5. Run `npm run game:season:validate -- --all` for coverage / edge / freshness checks.
 6. Run `npm run game:season:sheet` to regenerate the deterministic contact sheet.
 7. Once the user signs off, run `npm run game:season:provenance:generate` and verify with `npm run game:season:provenance:check`.
+
+Hard rule: do not create production rank or achievement PNGs by writing a deterministic renderer that draws SVG, HTML/CSS, canvas, procedural glyph paths, or Puppeteer screenshots. Those approaches may only create temporary review scaffolds when explicitly requested as non-production placeholders, and they must not write to `web/public/season-ranks/` or `web/public/achievements/`. The only acceptable production sources are raw imagegen outputs plus deterministic local post-processing, validation, review-sheet generation, and provenance.
 
 ## Global Generation Rules
 
@@ -39,6 +41,7 @@ These workspace folders are gitignored. The app should only consume the optimize
 - Generate on a flat removable chroma-key background, preferably `#ff00ff`, then remove the background locally before saving the final transparent PNG.
 - No text, letters, watermarks, grid lines, cell borders, cast shadows, or frames.
 - Do not bake an outer glow into the object — the UI adds its own drop shadow.
+- Do not derive the image from the repo's inline SVG fallback, emoji glyph fallback, or any hardcoded vector/path template.
 
 ### Rank emblems (4 entries)
 

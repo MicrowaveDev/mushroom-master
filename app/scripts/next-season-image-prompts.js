@@ -93,6 +93,8 @@ export function promptForSeasonEntry(entry, spec) {
 ${PROMPT_MARKER}
 Use ${styleGuidePath} as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: ${approvedExamples}. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.
 
+This must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.
+
 Asset: ${headerName} (${entry.id})
 Output file after approval: ${outputPath}
 Canvas: 192x192 square, transparent after chroma-key removal
