@@ -344,9 +344,7 @@ export const artifacts = [
     bonus: { speed: 1 }
   },
   // --- Lore effect artifacts ---
-  // General shop items inspired by wiki locations/factions. imageId reuses
-  // approved bitmap art as a temporary proxy until the artifact bitmap
-  // workflow produces dedicated PNGs for these new items.
+  // General shop items inspired by wiki locations/factions.
   {
     id: 'reliquary_biostasis_seal',
     name: { ru: 'Печать Биостазиса Реликвария', en: 'Reliquary Biostasis Seal' },
@@ -356,8 +354,7 @@ export const artifacts = [
     price: 2,
     bonus: { stunChance: 9, armor: 1 },
     battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
-    loreSource: 'golden-reliquary',
-    imageId: 'thalla_sacred_thread'
+    loreSource: 'golden-reliquary'
   },
   {
     id: 'bubbling_grot_bomb',
@@ -368,8 +365,7 @@ export const artifacts = [
     price: 2,
     bonus: { damage: 4, armor: -1 },
     battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
-    loreSource: 'bubbling-grot',
-    imageId: 'axilin_ferment_core'
+    loreSource: 'bubbling-grot'
   },
   {
     id: 'void_cocoon_spore',
@@ -380,8 +376,7 @@ export const artifacts = [
     price: 2,
     bonus: { armor: 3, stunChance: 5 },
     battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
-    loreSource: 'ygg-mycel',
-    imageId: 'lomie_crystal_lattice'
+    loreSource: 'ygg-mycel'
   },
   {
     id: 'root_ash_censer',
@@ -392,8 +387,7 @@ export const artifacts = [
     price: 2,
     bonus: { stunChance: 7, armor: 1 },
     battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
-    loreSource: 'ygg-mycel',
-    imageId: 'dalamar_ashen_shard'
+    loreSource: 'ygg-mycel'
   },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. One per mushroom.

@@ -155,6 +155,7 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `glass_cap.png` - `glass_cap`, 2x1. Fragile glassy mushroom cap spanning both cells; underside gills and stem begin near the seam, highlight continues across the cap.
 - [ ] `fang_whip.png` - `fang_whip`, 2x1. Flexible whip with fang tip; handle/root knot on the left, curving whip body crossing the seam into a fang head.
 - [ ] `burning_cap.png` - `burning_cap`, 2x2. Hot mushroom cap with flame core; ember cracks, red rim, lower stem/base, and flame glow form one large object.
+- [ ] `bubbling_grot_bomb.png` - `bubbling_grot_bomb`, 1x1. Volatile grotto spore bomb; round amber-red fungal flask, corked cap fuse, and contained green ferment bubbles.
 
 ### Armor
 
@@ -164,6 +165,7 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `stone_cap.png` - `stone_cap`, 1x2. Heavy stone mushroom cap and stem; cracked cap in the upper cell, thick stone stem/base below.
 - [ ] `root_shell.png` - `root_shell`, 2x2. Root-wrapped shield shell; upper shell plates, lower root tendrils, one continuous protective body.
 - [ ] `truffle_bulwark.png` - `truffle_bulwark`, 2x2. Dense truffle shield; rough pore dome, raised lobe, moss and loam chips, grounded mass.
+- [ ] `void_cocoon_spore.png` - `void_cocoon_spore`, 1x2. Tall armored void-cocoon spore; moss-green outer plates wrap a pale frozen core and dark central void slit.
 
 ### Stun
 
@@ -173,6 +175,8 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `static_spore_sac.png` - `static_spore_sac`, 1x2. Hanging charged spore sac; upper neck and static nodes continue into swollen lower membrane.
 - [ ] `thunder_gill.png` - `thunder_gill`, 2x1. Exposed mushroom gill with lightning veins; fan ribs continue from left cell into right cell.
 - [ ] `spark_spore.png` - `spark_spore`, 2x2. Charged spore orb; pale glow, electric cracks, trailing sparks around one large orb.
+- [ ] `reliquary_biostasis_seal.png` - `reliquary_biostasis_seal`, 1x1. Golden reliquary seal; mushroom-cap stamp with a sacred white biostasis knot and contained pale cyan glints.
+- [ ] `root_ash_censer.png` - `root_ash_censer`, 2x1. Horizontal root-ash censer; dark root handles, ash-cream ritual bowl, and carved pale spiral marks.
 
 ### Hybrid / Utility
 
