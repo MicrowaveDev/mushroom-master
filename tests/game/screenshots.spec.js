@@ -161,11 +161,12 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
     const faceBottom = Number(style.getPropertyValue('--portrait-face-bottom')) || 38;
     const faceTopLine = portraitRect.top + portraitRect.height * (faceTop / 100);
     const faceBottomLine = portraitRect.top + portraitRect.height * (faceBottom / 100);
+    const tailTipTop = bubbleRect.top - 10;
     const bubbleAboveFace = bubbleRect.bottom <= faceTopLine;
-    const bubbleBelowFace = bubbleRect.top >= faceBottomLine;
+    const bubbleBelowFace = tailTipTop >= faceBottomLine + 4;
     const checks = [
       [Math.abs(portraitRect.width - portraitRect.height) <= 2, 'portrait is not square'],
-      [bubbleAboveFace || bubbleBelowFace, `bubble intersects face band (${Math.round(bubbleRect.top - portraitRect.top)}-${Math.round(bubbleRect.bottom - portraitRect.top)}px vs ${Math.round(faceTopLine - portraitRect.top)}-${Math.round(faceBottomLine - portraitRect.top)}px)`],
+      [bubbleAboveFace || bubbleBelowFace, `bubble or tail crowds face band (${Math.round(tailTipTop - portraitRect.top)}-${Math.round(bubbleRect.bottom - portraitRect.top)}px vs ${Math.round(faceTopLine - portraitRect.top)}-${Math.round(faceBottomLine - portraitRect.top)}px)`],
       [bubbleRect.top >= portraitRect.top + 6, 'bubble is above portrait image'],
       [bubbleRect.bottom <= portraitRect.bottom - 36, 'bubble is outside or too low in portrait image'],
       [bubbleRect.left >= wrapRect.left - 1, 'bubble overflows left'],
