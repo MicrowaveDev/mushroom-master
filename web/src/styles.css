@@ -3066,23 +3066,6 @@ select {
   transition: transform 0.28s ease, max-height 0.28s ease;
 }
 
-.replay-result-sheet::before {
-  content: '';
-  position: absolute;
-  top: 44px;
-  left: -18px;
-  z-index: 2;
-  width: min(390px, 76%);
-  height: 118px;
-  pointer-events: none;
-  background-image: url('/ui/mushroom-panel-trim.png');
-  background-repeat: no-repeat;
-  background-position: left top;
-  background-size: contain;
-  filter: drop-shadow(0 5px 8px rgba(78, 52, 28, 0.16));
-  opacity: 0.74;
-}
-
 .replay-result-overlay--collapsed .replay-result-sheet {
   transform: translateY(calc(100% - 58px));
 }
@@ -3170,23 +3153,29 @@ select {
   position: relative;
   display: grid;
   gap: 7px;
-  min-height: 126px;
-  padding: 58px 20px 20px;
+  min-height: 162px;
+  align-content: center;
+  padding: 84px 20px 22px;
   overflow: hidden;
   border: 1px solid rgba(138, 97, 53, 0.18);
   border-radius: 14px;
   background: #f2e8cf;
 }
 
-.battle-summary-card::before {
+.replay-result-hero::before {
   content: '';
   position: absolute;
+  top: -24px;
+  left: -26px;
+  width: min(400px, 90%);
+  height: 112px;
   pointer-events: none;
   background-image: url('/ui/mushroom-panel-trim.png');
   background-repeat: no-repeat;
   background-position: left top;
   background-size: contain;
-  filter: drop-shadow(0 5px 8px rgba(78, 52, 28, 0.14));
+  filter: drop-shadow(0 5px 8px rgba(78, 52, 28, 0.16));
+  opacity: 0.86;
   z-index: 1;
 }
 
@@ -3342,27 +3331,12 @@ select {
 }
 
 .battle-summary-card {
-  position: relative;
   display: grid;
   gap: 12px;
-  padding: 52px 14px 14px;
-  overflow: hidden;
+  padding: 14px;
   border: 1px solid rgba(138, 97, 53, 0.16);
   border-radius: 14px;
   background: rgba(255, 251, 244, 0.76);
-}
-
-.battle-summary-card::before {
-  top: -28px;
-  left: -24px;
-  width: min(360px, 82%);
-  height: 108px;
-  opacity: 0.42;
-}
-
-.battle-summary-card > * {
-  position: relative;
-  z-index: 2;
 }
 
 .battle-summary-title {
@@ -4155,7 +4129,8 @@ select {
   }
 
   .replay-result-hero {
-    padding: 58px 14px 16px;
+    min-height: 154px;
+    padding: 78px 14px 18px;
   }
 
   .replay-rewards-header {
