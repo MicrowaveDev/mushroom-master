@@ -184,25 +184,37 @@ export const RunCompleteScreen = {
         'run-achievement--accent-' + (achievement.accent || achievement.type),
         achievement.isNew ? 'run-achievement--new' : 'run-achievement--earned'
       ];
+    },
+    recapStageDelay(step) {
+      return `${step * 180}ms`;
+    },
+    achievementRevealDelay(index) {
+      return `${960 + index * 150}ms`;
+    },
+    actionRevealDelay() {
+      const achievementDelay = this.earnedAchievements.length
+        ? 1600 + Math.max(0, this.earnedAchievements.length - 1) * 150
+        : 1020;
+      return `${achievementDelay}ms`;
     }
   },
   template: `
     <section class="run-complete-screen" :class="'run-complete-screen--' + outcomeTone">
       <div class="panel run-complete-card">
-        <div class="run-complete-hero">
+        <div class="run-complete-hero" :style="{ '--recap-delay': recapStageDelay(0) }">
           <p class="run-complete-kicker">{{ t.runCompleteKicker }}</p>
           <h2>{{ titleText }}</h2>
           <p class="run-end-reason">{{ reasonText }}</p>
         </div>
 
-        <dl class="stat-grid run-complete-stats">
+        <dl class="stat-grid run-complete-stats" :style="{ '--recap-delay': recapStageDelay(1) }">
           <div class="stat run-complete-stat--primary"><dt>{{ t.wins }}</dt><dd>{{ wins }}</dd></div>
           <div class="stat"><dt>{{ t.roundsCompleted }}</dt><dd>{{ roundsCompleted }}</dd></div>
           <div class="stat"><dt>{{ t.losses }}</dt><dd>{{ losses }}</dd></div>
           <div class="stat"><dt>{{ t.runWinRate }}</dt><dd>{{ winRate }}%</dd></div>
         </dl>
 
-        <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp }]">
+        <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp }]" :style="{ '--recap-delay': recapStageDelay(2) }">
           <season-rank-emblem class="run-season-emblem" :rank-id="seasonSummary.id" :size="96" />
 
           <div class="run-season-copy">
@@ -223,7 +235,7 @@ export const RunCompleteScreen = {
           </div>
         </section>
 
-        <div v-if="hasBonus" class="run-complete-body">
+        <div v-if="hasBonus" class="run-complete-body" :style="{ '--recap-delay': recapStageDelay(3) }">
           <div class="run-complete-bonus">
             <h3 class="run-complete-bonus-heading">{{ t.completionBonus }}</h3>
             <dl class="stat-grid">
@@ -233,7 +245,7 @@ export const RunCompleteScreen = {
           </div>
         </div>
 
-        <div v-if="lastRound" class="run-complete-last-round">
+        <div v-if="lastRound" class="run-complete-last-round" :style="{ '--recap-delay': recapStageDelay(hasBonus ? 4 : 3) }">
           <div>
             <p class="run-complete-last-label">{{ t.lastBattle }}</p>
             <strong>{{ t.round }} {{ lastRound.roundNumber }} · {{ lastRoundOutcomeLabel }}</strong>
@@ -241,7 +253,7 @@ export const RunCompleteScreen = {
           <span v-if="lastRoundRewardText" class="run-complete-reward-chip">{{ lastRoundRewardText }}</span>
         </div>
 
-        <section v-if="earnedAchievements.length" class="run-achievements" :aria-label="t.achievementsEarned">
+        <section v-if="earnedAchievements.length" class="run-achievements" :aria-label="t.achievementsEarned" :style="{ '--recap-delay': recapStageDelay(lastRound ? (hasBonus ? 5 : 4) : (hasBonus ? 4 : 3)) }">
           <div class="run-achievements-heading-row">
             <p class="run-complete-kicker">{{ t.achievementsEarned }}</p>
             <span class="run-achievements-count">{{ earnedAchievements.length }}</span>
@@ -250,7 +262,7 @@ export const RunCompleteScreen = {
             <article
               v-for="(achievement, index) in earnedAchievements"
               :key="achievement.id"
-              :style="{ animationDelay: (index * 90) + 'ms' }"
+              :style="{ '--achievement-delay': achievementRevealDelay(index) }"
               class="run-achievement"
               :class="achievementClass(achievement)"
             >
@@ -266,7 +278,7 @@ export const RunCompleteScreen = {
             </article>
           </div>
         </section>
-        <section v-else class="run-achievements run-achievements--empty" :aria-label="t.achievementsEarned">
+        <section v-else class="run-achievements run-achievements--empty" :aria-label="t.achievementsEarned" :style="{ '--recap-delay': recapStageDelay(lastRound ? (hasBonus ? 5 : 4) : (hasBonus ? 4 : 3)) }">
           <div class="run-achievements-heading-row">
             <p class="run-complete-kicker">{{ t.achievementsEarned }}</p>
           </div>
@@ -274,7 +286,7 @@ export const RunCompleteScreen = {
           <p class="run-achievements-empty-copy">{{ t.achievementNoneHint }}</p>
         </section>
 
-        <button class="primary run-complete-action" @click="$emit('go-home')">{{ t.home }}</button>
+        <button class="primary run-complete-action" :style="{ '--recap-delay': actionRevealDelay() }" @click="$emit('go-home')">{{ t.home }}</button>
       </div>
     </section>
   `

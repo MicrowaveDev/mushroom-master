@@ -42,7 +42,9 @@ function viewModel(state) {
       get: () => getter.call(vm)
     });
   }
-  vm.achievementClass = RunCompleteScreen.methods.achievementClass.bind(vm);
+  for (const [key, method] of Object.entries(RunCompleteScreen.methods)) {
+    vm[key] = method.bind(vm);
+  }
   return vm;
 }
 
@@ -239,6 +241,31 @@ test('run complete recap shows already-earned achievements without marking them 
 
   assert.equal(vm.earnedAchievements[0].isNew, false);
   assert.ok(vm.achievementClass(vm.earnedAchievements[0]).includes('run-achievement--earned'));
+});
+
+test('run complete reveal timing stages achievements one by one before action', () => {
+  const vm = viewModel({
+    gameRun: { endReason: 'max_rounds' },
+    gameRunResult: {
+      achievements: [
+        { id: 'season_diamond_node', isNew: true },
+        { id: 'perfect_circle', isNew: true }
+      ],
+      player: {
+        completedRounds: 9,
+        wins: 7,
+        losses: 2,
+        livesRemaining: 3
+      }
+    },
+    bootstrap: { activeMushroomId: 'kirt' },
+    lang: 'en'
+  });
+
+  assert.equal(vm.recapStageDelay(3), '540ms');
+  assert.equal(vm.achievementRevealDelay(0), '960ms');
+  assert.equal(vm.achievementRevealDelay(1), '1110ms');
+  assert.equal(vm.actionRevealDelay(), '1750ms');
 });
 
 test('run complete game-feel hooks log client events when session exists', () => {

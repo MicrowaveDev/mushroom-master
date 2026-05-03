@@ -5096,7 +5096,7 @@ select {
   background:
     linear-gradient(135deg, rgba(122, 157, 108, 0.16), rgba(232, 201, 136, 0.22)),
     rgba(255, 255, 255, 0.42);
-  animation: recap-reveal 0.42s ease-out both;
+  animation: recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 0ms) both;
 }
 .run-complete-screen--eliminated .run-complete-hero {
   background:
@@ -5126,7 +5126,7 @@ select {
 }
 .run-complete-stats {
   margin-top: 0;
-  animation: recap-reveal 0.42s ease-out 0.12s both;
+  animation: recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 160ms) both;
 }
 .run-complete-stats .stat,
 .run-complete-bonus .stat {
@@ -5148,7 +5148,7 @@ select {
   background:
     linear-gradient(135deg, rgba(150, 126, 98, 0.14), rgba(255, 255, 255, 0.38)),
     rgba(255, 251, 244, 0.52);
-  animation: recap-reveal 0.42s ease-out 0.24s both;
+  animation: recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 320ms) both;
 }
 .season-rank-emblem {
   display: inline-grid;
@@ -5240,13 +5240,15 @@ select {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #7d9b6b, #d8ba66);
-  animation: season-progress-fill 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.14s both;
+  animation: season-progress-fill 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--recap-delay, 320ms) + 220ms) both;
 }
 .run-season-card--diamond .run-season-progress span {
   background: linear-gradient(90deg, #679aae, #c8eef4);
 }
 .run-season-card--level-up {
-  animation: season-level-up-pop 0.72s cubic-bezier(0.2, 0.86, 0.24, 1) both;
+  animation:
+    recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 320ms) both,
+    season-level-up-pop 0.72s cubic-bezier(0.2, 0.86, 0.24, 1) calc(var(--recap-delay, 320ms) + 120ms) both;
 }
 .run-season-card--level-up::after {
   content: '';
@@ -5266,7 +5268,7 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 12px;
-  animation: recap-reveal 0.42s ease-out 0.36s both;
+  animation: recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 480ms) both;
 }
 .run-complete-bonus {
   padding: 14px;
@@ -5288,7 +5290,7 @@ select {
   border: 1px dashed rgba(126, 92, 54, 0.22);
   border-radius: 8px;
   background: rgba(255, 248, 230, 0.48);
-  animation: recap-reveal 0.42s ease-out 0.44s both;
+  animation: recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 640ms) both;
 }
 .run-complete-last-round strong {
   display: block;
@@ -5308,7 +5310,7 @@ select {
 .run-complete-action {
   justify-self: center;
   min-width: 136px;
-  animation: recap-action-settle 0.48s cubic-bezier(0.2, 0.9, 0.2, 1) 0.72s both;
+  animation: recap-action-settle 0.48s cubic-bezier(0.2, 0.9, 0.2, 1) var(--recap-delay, 1320ms) both;
 }
 .run-achievements {
   display: grid;
@@ -5319,7 +5321,7 @@ select {
   background:
     radial-gradient(circle at 18% 0%, rgba(210, 224, 195, 0.48), transparent 40%),
     rgba(255, 251, 244, 0.5);
-  animation: recap-reveal 0.42s ease-out 0.52s both;
+  animation: recap-reveal 0.56s cubic-bezier(0.2, 0.84, 0.2, 1) var(--recap-delay, 800ms) both;
 }
 .run-achievements--empty {
   border-style: dashed;
@@ -5371,8 +5373,8 @@ select {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.44);
   opacity: 0;
-  transform: translateY(10px) scale(0.98);
-  animation: achievement-reveal 0.45s ease-out both;
+  transform: translateY(12px) scale(0.96);
+  animation: achievement-reveal 0.52s cubic-bezier(0.16, 0.92, 0.24, 1) var(--achievement-delay, 960ms) both;
 }
 .run-achievement--character {
   border-color: rgba(95, 124, 79, 0.25);
