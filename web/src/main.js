@@ -333,14 +333,22 @@ const App = {
         <section v-else-if="state.screen === 'bubble-review' && isLocalDevAuthEnabled" class="stack bubble-review-screen">
           <h2>Bubble Review</h2>
           <div class="bubble-review-grid">
-            <article class="panel battle-stage bubble-review-stage" v-for="mushroom in state.bootstrap.mushrooms" :key="mushroom.id">
-              <replay-duel
-                :left-fighter="buildReplayFighter(mushroom.id, { nameText: mushroom.name[state.lang], speechText: sampleBubbleText(mushroom) })"
-                :right-fighter="buildReplayFighter(mushroom.id, { nameText: mushroom.name[state.lang] })"
-                :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
-                status-text=" "
-              />
-            </article>
+            <section
+              v-for="group in portraitReviewGroups()"
+              :key="group.mushroomId"
+              class="bubble-review-character"
+              :data-mushroom-id="group.mushroomId"
+            >
+              <h3>{{ group.nameText }}</h3>
+              <article class="panel battle-stage bubble-review-stage" v-for="item in group.items" :key="item.id">
+                <replay-duel
+                  :left-fighter="buildReplayFighter(item.mushroomId, { nameText: item.nameText, speechText: sampleBubbleText(item.mushroom), portraitId: item.portraitId, imagePath: item.imagePath })"
+                  :right-fighter="buildReplayFighter(item.mushroomId, { nameText: item.nameText, portraitId: item.portraitId, imagePath: item.imagePath })"
+                  :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
+                  status-text=" "
+                />
+              </article>
+            </section>
           </div>
         </section>
 

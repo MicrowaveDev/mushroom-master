@@ -1,11 +1,18 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
-import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
+import {
+  captureElementScreenshot,
+  captureScreenshot,
+  assertImagesLoaded,
+  assertNoHorizontalOverflow
+} from './screenshot-capture.js';
 import { resetDevDb, createSession, api, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
+import { PORTRAIT_VARIANTS } from '../../app/server/game-data.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
 const debugScreens = process.env.PLAYWRIGHT_SCREEN_DEBUG === '1';
+const portraitVariantCount = Object.values(PORTRAIT_VARIANTS).reduce((sum, variants) => sum + variants.length, 0);
 
 const saveShot = async (page, name) => {
   await captureScreenshot(page, screenshotDir, name);
@@ -134,7 +141,46 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await saveShot(page, '03-characters-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);
 
-  // 04-artifacts and 05-battle-prep screenshots removed: ArtifactsScreen
+  await page.goto(`${baseURL}/bubble-review`);
+  await page.waitForSelector('.bubble-review-stage');
+  await expect(page.locator('.bubble-review-stage')).toHaveCount(portraitVariantCount);
+  await expect(page.locator('.fighter-speech-bubble')).toHaveCount(portraitVariantCount);
+  const bubbleLayoutOk = await page.locator('.bubble-review-stage').evaluateAll((stages) => stages.every((stage) => {
+    const wrap = stage.querySelector('.fighter:first-child .fighter-portrait-wrap');
+    const bubble = stage.querySelector('.fighter:first-child .fighter-speech-bubble');
+    const portrait = stage.querySelector('.fighter:first-child .fighter-portrait');
+    const name = stage.querySelector('.fighter:first-child .fighter-name-overlay');
+    if (!wrap || !bubble || !portrait || !name) return false;
+    const wrapRect = wrap.getBoundingClientRect();
+    const bubbleRect = bubble.getBoundingClientRect();
+    const portraitRect = portrait.getBoundingClientRect();
+    const nameRect = name.getBoundingClientRect();
+    const style = window.getComputedStyle(wrap);
+    const headY = Number(style.getPropertyValue('--portrait-head-y')) || 34;
+    const headLine = portraitRect.top + portraitRect.height * (headY / 100);
+    return (
+      Math.abs(portraitRect.width - portraitRect.height) <= 2 &&
+      bubbleRect.top >= wrapRect.top &&
+      bubbleRect.left >= wrapRect.left - 1 &&
+      bubbleRect.right <= wrapRect.right + 1 &&
+      bubbleRect.bottom < nameRect.top &&
+      bubbleRect.top < portraitRect.top + portraitRect.height * 0.22 &&
+      bubbleRect.bottom <= headLine
+    );
+  }));
+  expect(bubbleLayoutOk).toBe(true);
+  await saveShot(page, '04-bubble-review.png');
+  await page.addStyleTag({ content: '.app-header { display: none !important; }' });
+  for (const mushroomId of Object.keys(PORTRAIT_VARIANTS)) {
+    await captureElementScreenshot(
+      page,
+      screenshotDir,
+      `.bubble-review-character[data-mushroom-id="${mushroomId}"]`,
+      `04-bubble-review-${mushroomId}.png`
+    );
+  }
+
+  // Legacy artifact and battle-prep screenshots removed: ArtifactsScreen
   // and BattlePrepScreen were deleted with the rest of the legacy
   // single-battle flow on 2026-04-13. The current prep flow is captured
   // by solo-run.spec.js (`solo-02-prep-round1`).
