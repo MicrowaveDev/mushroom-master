@@ -5,6 +5,16 @@ export const STATUS_EFFECTS = {
   }
 };
 
+export const BATTLE_EFFECTS = {
+  biostasis: { label: { en: 'BIND', ru: 'УЗЫ' }, className: 'biostasis' },
+  poison: { label: { en: 'POISON', ru: 'ЯД' }, className: 'poison' },
+  freeze: { label: { en: 'FROST', ru: 'ИНЕЙ' }, className: 'freeze' },
+  ferment: { label: { en: 'FERMENT', ru: 'БРОЖ' }, className: 'ferment' },
+  flash: { label: { en: 'FLASH', ru: 'ВСПЫШ' }, className: 'flash' },
+  decay: { label: { en: 'ASH', ru: 'ПЕПЕЛ' }, className: 'decay' },
+  burn: { label: { en: 'BURN', ru: 'ЖАР' }, className: 'burn' }
+};
+
 function numberOrZero(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -26,7 +36,18 @@ function activeStatusesFor(side, replayState = {}, lang = 'en') {
 
 function targetLabelsFor(event, side, lang = 'en') {
   if (!event || event.type !== 'action' || event.targetSide !== side) {
-    return [];
+    return (event?.effectTags || [])
+      .filter((tag) => tag.targetSide === side)
+      .map((tag) => {
+        const effect = BATTLE_EFFECTS[tag.id];
+        if (!effect) return null;
+        return {
+          id: `effect:${tag.id}:${tag.sourceArtifactId || ''}:${tag.itemId || ''}`,
+          text: labelFor(effect.label, lang),
+          className: effect.className
+        };
+      })
+      .filter(Boolean);
   }
 
   const labels = [];
@@ -39,6 +60,16 @@ function targetLabelsFor(event, side, lang = 'en') {
   }
   if (event.stunned) {
     labels.push({ id: 'stun', text: labelFor(STATUS_EFFECTS.stun.label, lang), className: STATUS_EFFECTS.stun.className });
+  }
+  for (const tag of event.effectTags || []) {
+    if (tag.targetSide !== side) continue;
+    const effect = BATTLE_EFFECTS[tag.id];
+    if (!effect) continue;
+    labels.push({
+      id: `effect:${tag.id}:${tag.sourceArtifactId || ''}:${tag.itemId || ''}`,
+      text: labelFor(effect.label, lang),
+      className: effect.className
+    });
   }
   return labels;
 }

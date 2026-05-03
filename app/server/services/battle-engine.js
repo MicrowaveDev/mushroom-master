@@ -78,6 +78,41 @@ function artifactContributions(loadout, statKey) {
     .filter((entry) => entry.value > 0);
 }
 
+function artifactBattleEffects({ attacker, defender, blockedDamage }) {
+  const tags = [];
+  for (const { item, artifact } of placedCombatArtifacts(attacker.loadout)) {
+    const effect = artifact.battleEffect;
+    if (!effect || effect.trigger !== 'hit') continue;
+    if (effect.statKey && !(Number(artifact.bonus?.[effect.statKey]) > 0)) continue;
+    tags.push({
+      id: effect.id,
+      trigger: effect.trigger,
+      sourceArtifactId: artifact.id,
+      itemId: item.id || null,
+      actorSide: attacker.side,
+      targetSide: effect.target === 'actor' ? attacker.side : defender.side
+    });
+  }
+
+  if (blockedDamage > 0) {
+    for (const { item, artifact } of placedCombatArtifacts(defender.loadout)) {
+      const effect = artifact.battleEffect;
+      if (!effect || effect.trigger !== 'block') continue;
+      if (effect.statKey && !(Number(artifact.bonus?.[effect.statKey]) > 0)) continue;
+      tags.push({
+        id: effect.id,
+        trigger: effect.trigger,
+        sourceArtifactId: artifact.id,
+        itemId: item.id || null,
+        actorSide: attacker.side,
+        targetSide: effect.target === 'actor' ? attacker.side : defender.side
+      });
+    }
+  }
+
+  return tags;
+}
+
 function actionArtifactAttribution(attacker, defender) {
   return {
     actorSide: attacker.side,
@@ -249,6 +284,7 @@ function resolveAction(attacker, defender, step, rng, events) {
     blockedDamage,
     stunned,
     artifactAttribution: actionArtifactAttribution(attacker, defender),
+    effectTags: artifactBattleEffects({ attacker, defender, blockedDamage }),
     narration: `${attacker.name.en} uses ${narration} for ${resolvedDamage} damage${stunned ? ' and stuns the target' : ''}.`,
     state: combatState(left, right)
   });

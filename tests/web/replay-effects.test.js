@@ -101,3 +101,37 @@ test('[Req 13-E] replay fighter status labels localize compact combat terms', ()
   assert.deepEqual(effects.floatingLabels.map((label) => label.text), ['-2', 'БЛОК', 'ОГЛУШ']);
   assert.deepEqual(effects.statusBadges.map((badge) => badge.label), ['ОГЛУШ']);
 });
+
+test('[Req 6-L, 13-G] replay fighter effects render lore artifact effect tags on their target side', () => {
+  const targetEffects = replayFighterEffects({
+    side: 'right',
+    lang: 'en',
+    event: {
+      type: 'action',
+      actorSide: 'left',
+      targetSide: 'right',
+      damage: 5,
+      effectTags: [
+        { id: 'poison', sourceArtifactId: 'kirt_venom_fang', targetSide: 'right' },
+        { id: 'freeze', sourceArtifactId: 'lomie_crystal_lattice', targetSide: 'left' }
+      ]
+    }
+  });
+  const actorEffects = replayFighterEffects({
+    side: 'left',
+    lang: 'ru',
+    event: {
+      type: 'action',
+      actorSide: 'left',
+      targetSide: 'right',
+      damage: 5,
+      effectTags: [
+        { id: 'poison', sourceArtifactId: 'kirt_venom_fang', targetSide: 'right' },
+        { id: 'freeze', sourceArtifactId: 'lomie_crystal_lattice', targetSide: 'left' }
+      ]
+    }
+  });
+
+  assert.deepEqual(targetEffects.floatingLabels.map((label) => label.text), ['-5', 'POISON']);
+  assert.deepEqual(actorEffects.floatingLabels.map((label) => label.text), ['ИНЕЙ']);
+});

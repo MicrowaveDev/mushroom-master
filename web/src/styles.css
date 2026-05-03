@@ -3882,6 +3882,37 @@ select {
   color: #785d18;
 }
 
+.fighter-effect-pop--biostasis {
+  background: #efe3ba;
+  color: #715315;
+}
+
+.fighter-effect-pop--poison {
+  background: #d8ebbf;
+  color: #3c6b1e;
+}
+
+.fighter-effect-pop--freeze {
+  background: #edf4f4;
+  color: #4f7f86;
+}
+
+.fighter-effect-pop--ferment,
+.fighter-effect-pop--burn {
+  background: #f2d3a7;
+  color: #955119;
+}
+
+.fighter-effect-pop--flash {
+  background: #f3e7b8;
+  color: #84620f;
+}
+
+.fighter-effect-pop--decay {
+  background: #dddcd2;
+  color: #56584c;
+}
+
 .bubble-review-grid {
   display: grid;
   grid-template-columns: 1fr;

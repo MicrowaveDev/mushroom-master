@@ -211,7 +211,8 @@ export const artifacts = [
     width: 2,
     height: 2,
     price: 2,
-    bonus: { damage: 8, armor: -2, speed: -1 }
+    bonus: { damage: 8, armor: -2, speed: -1 },
+    battleEffect: { id: 'burn', trigger: 'hit', target: 'target', statKey: 'damage' }
   },
   // --- Armor family ---
   {
@@ -342,6 +343,58 @@ export const artifacts = [
     price: 1,
     bonus: { speed: 1 }
   },
+  // --- Lore effect artifacts ---
+  // General shop items inspired by wiki locations/factions. imageId reuses
+  // approved bitmap art as a temporary proxy until the artifact bitmap
+  // workflow produces dedicated PNGs for these new items.
+  {
+    id: 'reliquary_biostasis_seal',
+    name: { ru: 'Печать Биостазиса Реликвария', en: 'Reliquary Biostasis Seal' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 9, armor: 1 },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'golden-reliquary',
+    imageId: 'thalla_sacred_thread'
+  },
+  {
+    id: 'bubbling_grot_bomb',
+    name: { ru: 'Бомба Булькающего Грота', en: 'Bubbling Grot Bomb' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { damage: 4, armor: -1 },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'bubbling-grot',
+    imageId: 'axilin_ferment_core'
+  },
+  {
+    id: 'void_cocoon_spore',
+    name: { ru: 'Спора Пустотного Кокона', en: 'Void Cocoon Spore' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 3, stunChance: 5 },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'ygg-mycel',
+    imageId: 'lomie_crystal_lattice'
+  },
+  {
+    id: 'root_ash_censer',
+    name: { ru: 'Корневая Пепельница', en: 'Root Ash Censer' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 7, armor: 1 },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'ygg-mycel',
+    imageId: 'dalamar_ashen_shard'
+  },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. One per mushroom.
   // [Req 4-P] through [Req 4-T].
@@ -353,6 +406,7 @@ export const artifacts = [
     height: 2,
     price: 2,
     bonus: { stunChance: 10, damage: 2 },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     characterItem: { mushroomId: 'thalla', requiredLevel: 5 }
   },
   {
@@ -363,6 +417,7 @@ export const artifacts = [
     height: 1,
     price: 2,
     bonus: { armor: 5, speed: 1 },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
     characterItem: { mushroomId: 'lomie', requiredLevel: 5 }
   },
   {
@@ -373,6 +428,7 @@ export const artifacts = [
     height: 2,
     price: 2,
     bonus: { damage: 5, speed: 1 },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
     characterItem: { mushroomId: 'axilin', requiredLevel: 5 }
   },
   {
@@ -383,6 +439,7 @@ export const artifacts = [
     height: 1,
     price: 2,
     bonus: { damage: 3, armor: 2 },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
     characterItem: { mushroomId: 'kirt', requiredLevel: 5 }
   },
   {
@@ -393,6 +450,7 @@ export const artifacts = [
     height: 1,
     price: 2,
     bonus: { stunChance: 12, speed: 2 },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     characterItem: { mushroomId: 'morga', requiredLevel: 5 }
   },
   {
@@ -403,6 +461,7 @@ export const artifacts = [
     height: 2,
     price: 2,
     bonus: { stunChance: 8, armor: 2 },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     characterItem: { mushroomId: 'dalamar', requiredLevel: 5 }
   },
   // --- Character signature starters ---

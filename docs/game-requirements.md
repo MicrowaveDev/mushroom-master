@@ -105,6 +105,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
   - each between-round shop offer
   - each manual refresh result
 - **4-U.** Challenge-mode shop offers remain **viewer-scoped** even when opponent level is used as an eligibility cap. The client may not receive the opponent's private shop offer or hidden future eligible item pool.
+- **4-V.** General lore artifacts may appear in normal shop rolls without character gating. Their names and `loreSource` should point at established world concepts, locations, or factions; if a new artifact temporarily reuses an existing approved bitmap via `imageId`, that is an art-production placeholder only and should not change its combat stats or shop eligibility.
 
 ### Selling
 
@@ -151,6 +152,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **6-I.** Combat is fully **server-side** and does not depend on client connection.
 - **6-J.** Dalamar's Ashen Veil passive reduces the enemy's defense by 1 after each successful hit, floored at 0.
 - **6-K.** Replay `action` events include artifact attribution for placed non-bag artifacts that contributed positive attack damage, stun chance, or target armor to that action. The attribution is explanatory replay metadata only: it does not change combat math, does not include bag artifacts or container items, and replay clients must continue to render older battle events where the attribution field is absent.
+- **6-L.** Lore-linked artifacts may emit replay-only `effectTags` when their existing stat contribution matters in the action. These tags drive momentary visual effects such as poison, frost, ash, ferment, flash, or biostasis, but they do not add hidden damage, turn skips, stat scaling, or persistent status unless a future requirement explicitly defines that mechanic.
 
 ### Character Abilities
 
@@ -307,7 +309,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **13-D.** Outside a game run (standalone replay from history), the post-replay button shows **"Домой"**.
 - **13-E.** Replay combat readability is primary. Portraits, speech bubbles, health, damage/stun feedback, and the combat log must remain visually dominant over supporting loadout context. Attack, hit, block, stun, and skip feedback must be side-symmetric: the same event class should read with equivalent strength whether it happens to the player portrait or the opponent portrait. Momentary damage/block/stun labels anchor to the affected portrait, not the center of the duel, and must not cover HP, names, speech bubbles, or configured face/head bands. Speech bubbles must read as coming from the speaking character without covering or crowding the character's face/head: each portrait variant used in replay must have configured framing, bubble placement, tail direction, and a head/face band. Replay screenshot tests must assert the bubble body stays inside the portrait image, the tail tip leaves breathing room from that band, and the bubble stays above the name overlay.
 - **13-F.** Replay loadout grids are supporting context, not active placement controls. Grid cells and bag outlines must use subdued fills/borders so artifacts are legible without the cells competing for attention.
-- **13-G.** Replay artifact attribution is presented as compact explanatory text/chips near the active hit feedback. It must stay readable in reduced motion, must not obscure HP or portraits, and must gracefully disappear for legacy events without attribution metadata. Persistent combat status indicators are rendered as compact portrait badges only for states that exist in replay data; current gameplay supports stun, while poison/freeze/etc. require explicit future battle-event metadata before they may be shown as real effects.
+- **13-G.** Replay artifact attribution is presented as compact explanatory text/chips near the active hit feedback. It must stay readable in reduced motion, must not obscure HP or portraits, and must gracefully disappear for legacy events without attribution metadata. Persistent combat status indicators are rendered as compact portrait badges only for states that exist in replay data; current gameplay supports stun. Momentary lore artifact `effectTags` from [Req 6-L] may render as one-shot portrait labels/effects, but poison/freeze/etc. may not be shown as persistent statuses until battle-event state exists for them.
 
 ---
 

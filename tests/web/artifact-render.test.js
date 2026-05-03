@@ -47,6 +47,19 @@ test('rotated artifacts rotate bitmap instead of stretching canonical art', () =
   assert.equal((html.match(/artifact-figure-cell/g) || []).length, 2);
 });
 
+test('lore artifact proxies can reuse approved bitmap art by imageId', () => {
+  const html = renderArtifactFigure({
+    id: 'bubbling_grot_bomb',
+    imageId: 'axilin_ferment_core',
+    family: 'damage',
+    width: 1,
+    height: 1,
+    bonus: { damage: 4 }
+  });
+
+  assert.match(html, /background-image: url\('\/artifacts\/axilin_ferment_core\.png'\)/);
+});
+
 test('irregular bag masks keep empty cells as layout holes under one artwork overlay', () => {
   const html = renderArtifactFigure({
     id: 'trefoil_sack',

@@ -2,6 +2,8 @@
 
 Reading guide: this is a planning document for the replay/battle feedback layer. Current gameplay contracts remain in [game-requirements.md](game-requirements.md), especially Req 6-K and Req 13-E/13-G. If this plan ships into implementation, move durable UI contracts into the requirements doc and keep this file as the design record.
 
+Status update: the first replay feedback pass shipped with side-anchored hit/block/stun feedback and persistent stun badges. A follow-up added replay-only lore artifact `effectTags` for momentary poison/frost/ash/ferment/flash/biostasis cues, plus general shop artifacts inspired by the Golden Reliquary, Bubbling Grotto, Ygg-Mycel's void/cocoon imagery, and the root/ash layer. Persistent poison/freeze mechanics remain future work until the combat rules define real ongoing statuses.
+
 ## Source Of Truth
 
 Original request: the battle replay currently feels inconsistent because the opponent portrait shows animation while the player portrait does not. Develop this feature into a complete, proportionate game experience where players understand what is happening in battle from animations, including possible item/status effects such as green poison, white freeze, and stun spirals.
@@ -246,4 +248,3 @@ Non-goals:
 - No poison/freeze effects until backend event data exists.
 - No sound assets.
 - No full-screen camera shake or constant portrait idle motion.
-

@@ -302,7 +302,8 @@ export function renderArtifactSvgContent(artifact, theme, width, height) {
 }
 
 export function artifactBitmapPath(artifact) {
-  return artifact?.id ? `/artifacts/${artifact.id}.png` : '';
+  const bitmapId = artifact?.imageId || artifact?.id;
+  return bitmapId ? `/artifacts/${bitmapId}.png` : '';
 }
 
 export function artifactRoleGlyphLabel(role) {
