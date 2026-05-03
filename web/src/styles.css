@@ -5360,18 +5360,17 @@ select {
 }
 .run-achievement-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 280px));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 320px));
   justify-content: start;
   gap: 12px;
 }
 .run-achievement {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   align-content: start;
   gap: 12px;
   align-items: start;
-  min-height: 142px;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid rgba(126, 92, 54, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.44);
@@ -5393,9 +5392,14 @@ select {
 .run-achievement--earned {
   background: rgba(255, 255, 255, 0.34);
 }
+.run-achievement .achievement-badge {
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 4px 8px rgba(55, 43, 32, 0.16));
+}
 .run-achievement h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.06rem;
   line-height: 1.1;
 }
 .run-achievement-new {
