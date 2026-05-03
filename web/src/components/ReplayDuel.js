@@ -1,6 +1,7 @@
 import { FighterCard } from './FighterCard.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { prepareGridProps } from '../composables/loadout-projection.js';
+import { replayFighterEffects } from '../replay/effects.js';
 import { ARTIFACT_ROLE_CLASSES, artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 
 export const ReplayDuel = {
@@ -12,6 +13,8 @@ export const ReplayDuel = {
     getArtifact: { type: Function, default: null },
     actingSide: { type: String, default: '' },
     activeEvent: { type: Object, default: null },
+    activeReplayState: { type: Object, default: null },
+    replayIndex: { type: Number, default: 0 },
     statusText: { type: String, default: '' },
     replaySpeed: { type: Number, default: 1 },
     lang: { type: String, default: 'en' }
@@ -35,14 +38,11 @@ export const ReplayDuel = {
     rightRoleSummary() {
       return this.roleSummaryFor(this.rightFighter);
     },
-    effectText() {
-      const event = this.activeEvent;
-      if (!event || event.type !== 'action') return '';
-      const damage = Number(event.damage);
-      const parts = [];
-      if (Number.isFinite(damage) && damage > 0) parts.push(`-${damage}`);
-      if (event.stunned) parts.push('STUN');
-      return parts.join(' ');
+    leftVisualEffects() {
+      return this.visualEffectsFor('left');
+    },
+    rightVisualEffects() {
+      return this.visualEffectsFor('right');
     },
     activeAttributionGroups() {
       const event = this.activeEvent;
@@ -101,14 +101,14 @@ export const ReplayDuel = {
         .map((roleId) => counts.get(roleId))
         .filter(Boolean);
     },
-    fighterEffectClass(side) {
-      const event = this.activeEvent;
-      const classes = [];
-      if (this.actingSide === side) classes.push('fighter--acting-now');
-      if (event?.type === 'action' && event.targetSide === side) classes.push('fighter--hit');
-      if (event?.type === 'action' && event.targetSide === side && event.stunned) classes.push('fighter--stunned');
-      if (event?.type === 'skip' && event.actorSide === side) classes.push('fighter--skip');
-      return classes.join(' ');
+    visualEffectsFor(side) {
+      return replayFighterEffects({
+        event: this.activeEvent,
+        side,
+        replayState: this.activeReplayState,
+        replayIndex: this.replayIndex,
+        lang: this.lang
+      });
     },
     attributionValueText(group) {
       const suffix = group.key === 'stunChance' ? '%' : '';
@@ -127,8 +127,9 @@ export const ReplayDuel = {
           :render-artifact-figure="renderArtifactFigure"
           :get-artifact="getArtifact"
           :acting="actingSide === 'left'"
+          side="left"
           :bubble-style="leftFighter.bubbleStyle"
-          :extra-class="fighterEffectClass('left')"
+          :visual-effects="leftVisualEffects"
           :hide-loadout="true"
         />
         <fighter-card
@@ -140,8 +141,9 @@ export const ReplayDuel = {
           :render-artifact-figure="renderArtifactFigure"
           :get-artifact="getArtifact"
           :acting="actingSide === 'right'"
+          side="right"
           :bubble-style="rightFighter.bubbleStyle"
-          :extra-class="fighterEffectClass('right')"
+          :visual-effects="rightVisualEffects"
           :hide-loadout="true"
         />
       </div>
@@ -173,7 +175,6 @@ export const ReplayDuel = {
           />
         </div>
           <div class="duel-loadout-center">
-          <span v-if="effectText" class="duel-effect-pop" :class="{ 'duel-effect-pop--stun': activeEvent?.stunned }">{{ effectText }}</span>
           <div v-if="activeAttributionGroups.length" class="duel-attribution" aria-label="Artifact attribution">
             <span
               v-for="group in activeAttributionGroups"

@@ -213,6 +213,62 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   debugLog('waiting for active fighter bubble');
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(1, { timeout: 5000 });
   await expect(page.locator('.fighter-speech-bubble').first()).toContainText(/^(I |Я |Использую |I'm )/i);
+  await expect(page.locator('.fighter-effect-pop').first()).toBeVisible({ timeout: 5000 });
+  const effectOverlayFailures = await page.locator('.fighter').evaluateAll((fighters) => fighters.map((fighter) => {
+    const effect = fighter.querySelector('.fighter-effect-stack');
+    const badges = fighter.querySelector('.fighter-status-badges');
+    if (!effect && !badges) return null;
+    const portrait = fighter.querySelector('.fighter-portrait');
+    const name = fighter.querySelector('.fighter-name-overlay');
+    const hp = fighter.querySelector('.fighter-hp-wrap');
+    const bubble = fighter.querySelector('.fighter-speech-bubble');
+    const label = fighter.querySelector('.fighter-name')?.textContent?.trim() || 'unknown';
+    if (!portrait || !name || !hp) return `${label}: missing fighter geometry landmarks`;
+    const portraitRect = portrait.getBoundingClientRect();
+    const nameRect = name.getBoundingClientRect();
+    const hpRect = hp.getBoundingClientRect();
+    const bubbleRect = bubble?.getBoundingClientRect();
+    const style = window.getComputedStyle(fighter);
+    const faceTop = Number(style.getPropertyValue('--portrait-face-top')) || 18;
+    const faceBottom = Number(style.getPropertyValue('--portrait-face-bottom')) || 38;
+    const faceTopLine = portraitRect.top + portraitRect.height * (faceTop / 100);
+    const faceBottomLine = portraitRect.top + portraitRect.height * (faceBottom / 100);
+    const faceBand = {
+      top: faceTopLine,
+      bottom: faceBottomLine,
+      left: portraitRect.left,
+      right: portraitRect.right
+    };
+    const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const checks = [];
+    if (effect) {
+      const effectRect = effect.getBoundingClientRect();
+      checks.push(
+        [effectRect.left >= portraitRect.left - 1 && effectRect.right <= portraitRect.right + 1, 'effect pop leaves portrait bounds'],
+        [effectRect.bottom < nameRect.top, 'effect pop overlaps name overlay'],
+        [!overlaps(effectRect, hpRect), 'effect pop overlaps HP meter'],
+        [!overlaps(effectRect, faceBand), 'effect pop overlaps configured face band']
+      );
+      if (bubbleRect) {
+        checks.push([!overlaps(effectRect, bubbleRect), 'effect pop overlaps speech bubble']);
+      }
+    }
+    if (badges) {
+      const badgeRect = badges.getBoundingClientRect();
+      checks.push(
+        [badgeRect.left >= portraitRect.left - 1 && badgeRect.right <= portraitRect.right + 1, 'status badge leaves portrait bounds'],
+        [badgeRect.bottom < nameRect.top, 'status badge overlaps name overlay'],
+        [!overlaps(badgeRect, hpRect), 'status badge overlaps HP meter'],
+        [!overlaps(badgeRect, faceBand), 'status badge overlaps configured face band']
+      );
+      if (bubbleRect) {
+        checks.push([!overlaps(badgeRect, bubbleRect), 'status badge overlaps speech bubble']);
+      }
+    }
+    const failed = checks.filter(([ok]) => !ok).map(([, message]) => message);
+    return failed.length ? `${label}: ${failed.join('; ')}` : null;
+  }).filter(Boolean));
+  expect(effectOverlayFailures).toEqual([]);
   await expect(page.locator('.duel-attribution')).toBeVisible();
   expect(await page.locator('.duel-attribution-chip').count()).toBeGreaterThan(0);
   debugLog('capturing replay');

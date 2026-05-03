@@ -3579,6 +3579,26 @@ select {
   align-content: start;
 }
 
+.fighter--left {
+  --fighter-direction: 1;
+  --fighter-lunge-x: 5px;
+  --fighter-recoil-x: -5px;
+  --fighter-effect-inset: auto;
+  --fighter-effect-opposite-inset: 10px;
+  --fighter-badge-inset: 10px;
+  --fighter-badge-opposite-inset: auto;
+}
+
+.fighter--right {
+  --fighter-direction: -1;
+  --fighter-lunge-x: -5px;
+  --fighter-recoil-x: 5px;
+  --fighter-effect-inset: 10px;
+  --fighter-effect-opposite-inset: auto;
+  --fighter-badge-inset: auto;
+  --fighter-badge-opposite-inset: 10px;
+}
+
 .fighter--speaking {
   padding-bottom: var(--bubble-underhang, 0);
 }
@@ -3593,6 +3613,11 @@ select {
 .fighter-portrait-inner {
   position: relative;
   line-height: 0;
+}
+
+.fighter-portrait-inner::before,
+.fighter-portrait-inner::after {
+  pointer-events: none;
 }
 
 .fighter-name-overlay {
@@ -3765,6 +3790,96 @@ select {
   border-right: 1px solid var(--bubble-tail-border-right, transparent);
   border-bottom: 1px solid var(--bubble-tail-border-bottom, transparent);
   transform: rotate(45deg);
+}
+
+.fighter-status-badges {
+  position: absolute;
+  top: 10px;
+  left: var(--fighter-badge-inset, auto);
+  right: var(--fighter-badge-opposite-inset, 10px);
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: calc(100% - 20px);
+  line-height: 1;
+}
+
+.fighter-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 4px 7px;
+  border-radius: 8px;
+  border: 1px solid rgba(138, 97, 53, 0.18);
+  background: rgba(255, 250, 239, 0.92);
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  box-shadow: 0 6px 14px rgba(91, 64, 36, 0.11);
+}
+
+.fighter-status-badge--stun {
+  background: #eee2bc;
+  color: #785d18;
+}
+
+.fighter-status-badge--stun::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border: 2px solid currentColor;
+  border-left-color: transparent;
+  border-radius: 50%;
+}
+
+.fighter-effect-stack {
+  position: absolute;
+  top: 58%;
+  left: var(--fighter-effect-inset, auto);
+  right: var(--fighter-effect-opposite-inset, 10px);
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 54px;
+  max-width: 82px;
+  line-height: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.fighter-effect-pop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #eed2ca;
+  color: var(--error);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(91, 64, 36, 0.16);
+  animation: fighter-effect-pop 0.58s ease-out both;
+}
+
+.fighter-effect-pop--blocked {
+  background: #efe1c1;
+  color: #806124;
+  font-size: 0.62rem;
+}
+
+.fighter-effect-pop--stun {
+  background: #eee2bc;
+  color: #785d18;
 }
 
 .bubble-review-grid {
@@ -5913,6 +6028,20 @@ select {
   animation: fighter-hit-shake 0.28s ease;
 }
 
+.fighter--blocked .fighter-portrait-inner::before {
+  content: '';
+  position: absolute;
+  top: 12%;
+  bottom: 24%;
+  left: 10px;
+  right: 10px;
+  z-index: 3;
+  border-radius: 14px;
+  border: 2px solid rgba(160, 123, 59, 0.42);
+  background: rgba(239, 225, 193, 0.16);
+  animation: block-shimmer 0.46s ease-out both;
+}
+
 .fighter--stunned .fighter-portrait-inner::after {
   content: '';
   position: absolute;
@@ -5927,29 +6056,6 @@ select {
 
 .fighter--skip .fighter-portrait {
   filter: saturate(0.72) brightness(0.92);
-}
-
-.duel-effect-pop {
-  position: absolute;
-  top: max(4px, 18%);
-  left: 50%;
-  z-index: 5;
-  transform: translateX(-50%);
-  padding: 5px 9px;
-  border-radius: 8px;
-  background: #eed2ca;
-  color: var(--error);
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  box-shadow: 0 8px 18px rgba(91, 64, 36, 0.16);
-  animation: damage-pop 0.58s ease-out both;
-}
-
-.duel-effect-pop--stun {
-  background: #eee2bc;
-  color: #8a6a1e;
 }
 
 @keyframes artifact-snap-in {
@@ -5970,9 +6076,15 @@ select {
 
 @keyframes fighter-hit-shake {
   0%, 100% { transform: translateX(0); }
-  22% { transform: translateX(-5px); }
-  46% { transform: translateX(4px); }
-  68% { transform: translateX(-2px); }
+  22% { transform: translateX(var(--fighter-recoil-x, -5px)); }
+  46% { transform: translateX(calc(var(--fighter-recoil-x, -5px) * -0.8)); }
+  68% { transform: translateX(calc(var(--fighter-recoil-x, -5px) * 0.4)); }
+}
+
+@keyframes block-shimmer {
+  0% { opacity: 0; transform: scale(0.96); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.04); }
 }
 
 @keyframes stun-flash {
@@ -5981,10 +6093,10 @@ select {
   100% { opacity: 0; transform: scale(1.04); }
 }
 
-@keyframes damage-pop {
-  0% { opacity: 0; transform: translate(-50%, 10px) scale(0.82); }
+@keyframes fighter-effect-pop {
+  0% { opacity: 0; transform: translateY(10px) scale(0.82); }
   20% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -18px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-18px) scale(1.05); }
 }
 
 @media (max-width: 640px) {

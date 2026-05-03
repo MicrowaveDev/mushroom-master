@@ -15,13 +15,21 @@ export const FighterCard = {
     renderArtifactFigure: { type: Function, default: null },
     getArtifact: { type: Function, default: null },
     acting: { type: Boolean, default: false },
+    side: { type: String, default: '' },
     bubbleStyle: { type: Object, default: () => ({}) },
     extraClass: { type: String, default: '' },
+    visualEffects: { type: Object, default: () => ({}) },
     hideLoadout: { type: Boolean, default: false }
   },
   computed: {
     rootClass() {
-      return ['fighter', this.extraClass, { acting: this.acting, 'fighter--speaking': !!this.speechText }];
+      return [
+        'fighter',
+        this.side ? `fighter--${this.side}` : '',
+        this.extraClass,
+        ...(this.visualEffects?.classes || []),
+        { acting: this.acting, 'fighter--speaking': !!this.speechText }
+      ];
     },
     hpPercent() {
       const match = String(this.healthText || '').match(/(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
@@ -41,6 +49,15 @@ export const FighterCard = {
       const bagIds = this.bagArtifactIds
         || new Set(items.filter((i) => this.getArtifact(i.artifactId)?.family === 'bag').map((i) => i.artifactId));
       return prepareGridProps(items, bagIds, this.getArtifact);
+    },
+    floatingLabels() {
+      return this.visualEffects?.floatingLabels || [];
+    },
+    statusBadges() {
+      return this.visualEffects?.statusBadges || [];
+    },
+    effectKey() {
+      return this.visualEffects?.key || 'idle';
     }
   },
   template: `
@@ -54,6 +71,27 @@ export const FighterCard = {
             :alt="mushroom.name?.ru || mushroom.name?.en || mushroom.id"
             class="fighter-portrait"
           />
+          <div v-if="statusBadges.length" class="fighter-status-badges" aria-label="Status effects">
+            <span
+              v-for="badge in statusBadges"
+              :key="badge.className"
+              class="fighter-status-badge"
+              :class="'fighter-status-badge--' + badge.className"
+            >{{ badge.label }}</span>
+          </div>
+          <div
+            v-if="floatingLabels.length"
+            :key="effectKey"
+            class="fighter-effect-stack"
+            aria-live="polite"
+          >
+            <span
+              v-for="label in floatingLabels"
+              :key="label.id"
+              class="fighter-effect-pop"
+              :class="'fighter-effect-pop--' + label.className"
+            >{{ label.text }}</span>
+          </div>
           <div class="fighter-name-overlay">
             <h3 class="fighter-name">{{ nameText || mushroom?.name?.ru || mushroom?.name?.en || mushroom?.id }}</h3>
             <div v-if="healthText" class="fighter-hp-wrap">
