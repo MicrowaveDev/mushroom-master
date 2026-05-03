@@ -7,7 +7,8 @@ import {
   validateCoinBudget,
   validateLoadoutItems,
   buildArtifactSummary,
-  bagsContainingItem
+  bagsContainingItem,
+  effectiveGridHeight
 } from '../../app/server/services/loadout-utils.js';
 import { BAG_COLUMNS, BAG_ROWS } from '../../app/server/game-data.js';
 
@@ -27,6 +28,23 @@ test('[Req 2-J] validateGridItems accepts absolute placed artifacts', () => {
     { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
   ]);
   assert.equal(result.occupied.size, 2);
+});
+
+test('[Req 2-J] validateLoadoutItems accepts items inside a bag whose footprint extends past BAG_ROWS', () => {
+  // Regression: a player with bags packed deep on the prep grid (e.g. a
+  // 1×4 mycelium_vine anchored at row 3 occupying rows 3-6) could place an
+  // item in a slot at row 6 — the client allows it because totalRows grows
+  // — but the server validator hardcoded the grid height at BAG_ROWS=6
+  // and rejected with "exceeds grid 6x6". The fix derives gridHeight from
+  // active bag extents so the validator accepts the same placements the
+  // player can drop on.
+  const items = [
+    starterBag,
+    { id: 'vine', artifactId: 'mycelium_vine', x: 3, y: 3, width: 1, height: 4, active: true },
+    { artifactId: 'loam_scale', x: 3, y: 6, width: 1, height: 1, bagId: 'vine' }
+  ];
+  assert.equal(effectiveGridHeight(items), 7);
+  validateLoadoutItems(items);
 });
 
 test('[Req 2-J] validateGridItems rejects item overlap and bounds', () => {

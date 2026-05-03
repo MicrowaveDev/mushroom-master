@@ -69,6 +69,25 @@ function activeBagRows(items) {
 }
 
 /**
+ * Effective grid height for a loadout — at least BAG_ROWS, expanding
+ * downward to cover any active bag whose footprint extends past row
+ * BAG_ROWS - 1. Mirrors the client's `PrepScreen.totalRows` so the
+ * validator accepts the same placements the player can drop on.
+ */
+export function effectiveGridHeight(items) {
+  let max = BAG_ROWS;
+  for (const item of items) {
+    const artifact = getArtifactById(item.artifactId);
+    if (!artifact || !isBag(artifact)) continue;
+    if (!item.active) continue;
+    const shape = getEffectiveShape(artifact, normalizeRotation(item.rotated));
+    const bottom = (Number(item.y) || 0) + shape.length;
+    if (bottom > max) max = bottom;
+  }
+  return max;
+}
+
+/**
  * Validate absolute grid placements for placed non-bag artifacts.
  */
 export function validateGridItems(gridItems, gridWidth = BAG_COLUMNS, gridHeight = BAG_ROWS) {
@@ -219,7 +238,7 @@ export function validateLoadoutItems(items, coinBudget = MAX_ARTIFACT_COINS) {
   }
 
   validateBagPlacement(items);
-  validateGridItems(items);
+  validateGridItems(items, BAG_COLUMNS, effectiveGridHeight(items));
   validateItemCoverage(items);
   const { totalCoins } = validateCoinBudget(items, coinBudget);
 

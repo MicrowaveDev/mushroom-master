@@ -12,7 +12,7 @@ import {
   nowIso,
   parseJson
 } from '../lib/utils.js';
-import { validateLoadoutItems } from './loadout-utils.js';
+import { effectiveGridHeight, validateLoadoutItems } from './loadout-utils.js';
 import { normalizeRotation } from '../../shared/bag-shape.js';
 
 export async function getActiveSnapshot(client, playerId) {
@@ -74,7 +74,7 @@ export async function getActiveSnapshot(client, playerId) {
     mushroomId,
     loadout: {
       gridWidth: BAG_COLUMNS,
-      gridHeight: BAG_ROWS,
+      gridHeight: effectiveGridHeight(items),
       items
     }
   };

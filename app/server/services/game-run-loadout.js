@@ -12,7 +12,7 @@ import { BAG_COLUMNS } from '../game-data.js';
 import { getArtifactById } from '../game-data.js';
 import { createId, nowIso } from '../lib/utils.js';
 import { getEffectiveShape, normalizeRotation } from '../../shared/bag-shape.js';
-import { pieceCells, validateBagPlacement, validateGridItems, validateItemCoverage } from './loadout-utils.js';
+import { effectiveGridHeight, pieceCells, validateBagPlacement, validateGridItems, validateItemCoverage } from './loadout-utils.js';
 import { isBag } from './artifact-helpers.js';
 
 async function q(client, sql, params) {
@@ -345,7 +345,7 @@ export async function applyRunPlacements(client, gameRunId, playerId, roundNumbe
   const projected = Array.from(projectedById.values());
   assignMissingBagAnchors(projected);
   validateBagPlacement(projected);
-  validateGridItems(projected);
+  validateGridItems(projected, BAG_COLUMNS, effectiveGridHeight(projected));
   validateItemCoverage(projected);
 
   // Second pass: persist the validated updates.
