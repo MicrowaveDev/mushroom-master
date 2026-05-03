@@ -163,14 +163,14 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
     const faceBottomLine = portraitRect.top + portraitRect.height * (faceBottom / 100);
     const bubbleAboveFace = bubbleRect.bottom <= faceTopLine;
     const bubbleBelowFace = bubbleRect.top >= faceBottomLine;
-    const bubbleOutsidePortraitBelow = bubbleRect.top >= portraitRect.bottom + 4;
     const checks = [
       [Math.abs(portraitRect.width - portraitRect.height) <= 2, 'portrait is not square'],
       [bubbleAboveFace || bubbleBelowFace, `bubble intersects face band (${Math.round(bubbleRect.top - portraitRect.top)}-${Math.round(bubbleRect.bottom - portraitRect.top)}px vs ${Math.round(faceTopLine - portraitRect.top)}-${Math.round(faceBottomLine - portraitRect.top)}px)`],
+      [bubbleRect.top >= portraitRect.top + 6, 'bubble is above portrait image'],
+      [bubbleRect.bottom <= portraitRect.bottom - 36, 'bubble is outside or too low in portrait image'],
       [bubbleRect.left >= wrapRect.left - 1, 'bubble overflows left'],
       [bubbleRect.right <= wrapRect.right + 1, 'bubble overflows right'],
-      [bubbleOutsidePortraitBelow || bubbleRect.bottom < nameRect.top, 'bubble overlaps name overlay'],
-      [bubbleOutsidePortraitBelow || bubbleRect.bottom < portraitRect.bottom - 44, 'bubble sits too low in portrait']
+      [bubbleRect.bottom < nameRect.top, 'bubble overlaps name overlay']
     ];
     const failed = checks.filter(([ok]) => !ok).map(([, message]) => message);
     return failed.length ? `${label}: ${failed.join('; ')}` : null;
