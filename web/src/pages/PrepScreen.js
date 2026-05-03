@@ -41,7 +41,8 @@ export const PrepScreen = {
         const bag = this.getArtifact(activeBag.artifactId);
         if (!bag) continue;
         const rotationEntry = this.state.rotatedBags.find((b) => b.id === activeBag.id);
-        const shape = getEffectiveShape(bag, normalizeRotation(rotationEntry?.rotation ?? (rotationEntry ? 1 : 0)));
+        const rotation = normalizeRotation(rotationEntry?.rotation ?? (rotationEntry ? 1 : 0));
+        const shape = getEffectiveShape(bag, rotation);
         const rowCount = shape.length;
         const anchorX = activeBag.anchorX ?? 0;
         const anchorY = activeBag.anchorY ?? 0;
@@ -67,6 +68,11 @@ export const PrepScreen = {
             row: anchorY + i,
             color: bag.color || '#888',
             artifactId: activeBag.artifactId,
+            // Quarter-turns CW (0..3). Drives the bag-watermark image
+            // rotation in ArtifactGridBoard so the canonical PNG follows
+            // the slot mask through 90°/180°/270° rotations instead of
+            // being stretched into the rotated bbox.
+            rotation,
             enabledCells,
             bboxStart,
             bboxEnd

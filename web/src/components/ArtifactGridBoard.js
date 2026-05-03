@@ -74,6 +74,9 @@ export const ArtifactGridBoard = {
         const group = groups.get(key) || {
           key,
           artifactId: row.artifactId,
+          // Quarter-turns CW (0..3) for this bag instance. All row entries
+          // for a single bag carry the same rotation, so the first one wins.
+          rotation: ((row.rotation % 4) + 4) % 4 || 0,
           minRow: row.row,
           maxRow: row.row,
           minCol: row.bboxStart ?? Math.min(...(row.enabledCells || [0])),
@@ -120,12 +123,36 @@ export const ArtifactGridBoard = {
     bagOverlayStyle(overlay) {
       const colSpan = overlay.maxCol - overlay.minCol;
       const rowSpan = overlay.maxRow - overlay.minRow + 1;
+      const rotation = overlay.rotation || 0;
+      // For 90°/270° rotations, the canonical PNG's aspect is SWAPPED
+      // relative to the rotated bbox. We size the element to its CANONICAL
+      // (pre-rotation) dims, anchor it at the bbox top-left with
+      // transform-origin: 0 0, then rotate about that corner and translate
+      // so the rotated visual lands exactly inside the rotated bbox
+      // without distorting the PNG.
+      const isQuarter = rotation === 1 || rotation === 3;
+      const elemCols = isQuarter ? rowSpan : colSpan;
+      const elemRows = isQuarter ? colSpan : rowSpan;
+      const cellGap = '(var(--artifact-cell-size, 50px) + var(--board-gap, 8px))';
+      const elemWidth = `calc(${elemCols} * var(--artifact-cell-size, 50px) + ${Math.max(0, elemCols - 1)} * var(--board-gap, 8px))`;
+      const elemHeight = `calc(${elemRows} * var(--artifact-cell-size, 50px) + ${Math.max(0, elemRows - 1)} * var(--board-gap, 8px))`;
+      const bboxWidth = `calc(${colSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, colSpan - 1)} * var(--board-gap, 8px))`;
+      const bboxHeight = `calc(${rowSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, rowSpan - 1)} * var(--board-gap, 8px))`;
+      // CSS transform list applies right-to-left: rotate first, then
+      // translate. So `translate(X, Y) rotate(deg)` rotates the element
+      // about its top-left, then shifts the rotated result by (X, Y).
+      let transform = 'none';
+      if (rotation === 1) transform = `translate(${bboxWidth}, 0) rotate(90deg)`;
+      else if (rotation === 2) transform = `translate(${bboxWidth}, ${bboxHeight}) rotate(180deg)`;
+      else if (rotation === 3) transform = `translate(0, ${bboxHeight}) rotate(-90deg)`;
       return {
-        left: `calc(${overlay.minCol} * (var(--artifact-cell-size, 50px) + var(--board-gap, 8px)))`,
-        top: `calc(${overlay.minRow} * (var(--artifact-cell-size, 50px) + var(--board-gap, 8px)))`,
-        width: `calc(${colSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, colSpan - 1)} * var(--board-gap, 8px))`,
-        height: `calc(${rowSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, rowSpan - 1)} * var(--board-gap, 8px))`,
-        backgroundImage: `url('/artifacts/${overlay.artifactId}.png')`
+        left: `calc(${overlay.minCol} * ${cellGap})`,
+        top: `calc(${overlay.minRow} * ${cellGap})`,
+        width: elemWidth,
+        height: elemHeight,
+        backgroundImage: `url('/artifacts/${overlay.artifactId}.png')`,
+        transform,
+        transformOrigin: '0 0'
       };
     },
     isBaseInventoryCell(cx, cy) {

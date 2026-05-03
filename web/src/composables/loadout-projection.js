@@ -82,7 +82,8 @@ export function prepareGridProps(loadoutItems, bagArtifactIds, getArtifact) {
   for (const activeBag of projected.activeBags) {
     const bag = lookupArtifact(activeBag.artifactId);
     if (!bag) continue;
-    const shape = getEffectiveShape(bag, rotationById.get(activeBag.id) ?? 0);
+    const rotation = rotationById.get(activeBag.id) ?? 0;
+    const shape = getEffectiveShape(bag, rotation);
     const anchorX = activeBag.anchorX ?? 0;
     const anchorY = activeBag.anchorY ?? 0;
     const bottom = anchorY + shape.length;
@@ -101,6 +102,7 @@ export function prepareGridProps(loadoutItems, bagArtifactIds, getArtifact) {
         row: anchorY + i,
         color: bag.color || '#888',
         artifactId: activeBag.artifactId,
+        rotation,
         enabledCells,
         bboxStart: anchorX,
         bboxEnd: Math.min(anchorX + maskRow.length, BAG_COLUMNS)
