@@ -63,7 +63,7 @@ The scaffolding is shipped (commit `7e4297a` on `codex/artifact-image-style-queu
 
 ## Backlog (after `provenance:check` reports 25/25)
 
-- [ ] Remove the inline SVG fallback from [`web/src/components/SeasonRankEmblem.js`](../../../web/src/components/SeasonRankEmblem.js) and the emoji glyph fallback from [`web/src/components/AchievementBadge.js`](../../../web/src/components/AchievementBadge.js). PNG only.
-- [ ] Drop the `.season-rank-emblem-svg` + `.achievement-badge-glyph` style rules from [`web/src/styles.css`](../../../web/src/styles.css) after the SVG/glyph fallbacks are removed.
-- [ ] Drop `RANK_PALETTES` from `SeasonRankEmblem.js` (only used by the SVG fallback).
+- [x] Remove the inline SVG fallback from [`web/src/components/SeasonRankEmblem.js`](../../../web/src/components/SeasonRankEmblem.js) and the emoji glyph fallback from [`web/src/components/AchievementBadge.js`](../../../web/src/components/AchievementBadge.js). PNG only.
+- [x] Drop the `.season-rank-emblem-svg` + `.achievement-badge-glyph` style rules from [`web/src/styles.css`](../../../web/src/styles.css) after the SVG/glyph fallbacks are removed.
+- [x] Drop `RANK_PALETTES` from `SeasonRankEmblem.js` (only used by the SVG fallback).
 - [ ] Add a thumbnail-review sheet for season images at `32px / 48px / 64px` rendering, mirroring `npm run game:artifacts:thumbnail-review`. Skipped now because every season emblem is a fixed-size square; the regular contact sheet already covers it. Reconsider if real PNGs reveal readability issues at small sizes.

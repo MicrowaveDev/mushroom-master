@@ -668,56 +668,10 @@ select {
   height: 100%;
   object-fit: contain;
 }
-.achievement-badge:has(.achievement-badge-img)::before {
-  content: none;
-}
 .season-rank-emblem-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-.achievement-badge::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 9px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.82), transparent 40%),
-    linear-gradient(135deg, var(--badge-a), var(--badge-b));
-  clip-path: polygon(50% 0, 92% 17%, 100% 60%, 72% 100%, 28% 100%, 0 60%, 8% 17%);
-}
-.achievement-badge-core {
-  position: absolute;
-  inset: 6px;
-  border-radius: 6px;
-  background:
-    radial-gradient(circle at 38% 30%, rgba(255, 255, 255, 0.76) 0 18%, transparent 19%),
-    rgba(255, 251, 231, 0.55);
-  box-shadow: inset 0 0 0 1px rgba(55, 43, 32, 0.13);
-  z-index: 1;
-}
-.achievement-badge-glyph {
-  position: relative;
-  z-index: 2;
-  color: var(--badge-ink);
-  font-size: 0.78rem;
-  font-weight: 900;
-  line-height: 1;
-}
-.achievement-badge--large .achievement-badge-glyph {
-  font-size: 0.92rem;
-}
-.run-achievement--season .achievement-badge::before,
-.journal-achievement--season .achievement-badge::before,
-.home-season-achievement--season .achievement-badge::before,
-.profile-next-badge--season .achievement-badge::before {
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-}
-.run-achievement--general .achievement-badge::before,
-.journal-achievement--general .achievement-badge::before,
-.home-season-achievement--general .achievement-badge::before,
-.profile-next-badge--general .achievement-badge::before {
-  clip-path: polygon(50% 0, 88% 18%, 88% 78%, 50% 100%, 12% 78%, 12% 18%);
 }
 .run-achievement--accent-silver,
 .journal-achievement--accent-silver,
@@ -5176,11 +5130,7 @@ select {
   place-items: center;
   filter: drop-shadow(0 4px 10px rgba(80, 52, 22, 0.18));
 }
-.season-rank-emblem-svg {
-  width: 100%;
-  height: 100%;
-}
-.run-season-card--level-up .season-rank-emblem-svg {
+.run-season-card--level-up .season-rank-emblem-img {
   animation: season-emblem-pop 0.72s cubic-bezier(0.2, 0.86, 0.24, 1) both;
 }
 @keyframes season-emblem-pop {

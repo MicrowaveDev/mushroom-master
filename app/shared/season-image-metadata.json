@@ -1,0 +1,1438 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-03",
+  "status": "approved-production-baseline",
+  "policy": {
+    "runtimeUsesApprovedOnly": true,
+    "temporaryCandidatesLocation": ".agent/season-image-workspace/",
+    "productionImageLocations": [
+      "web/public/season-ranks/",
+      "web/public/achievements/"
+    ]
+  },
+  "entryCount": 25,
+  "metadataHash": "43f6b1253e549402a66d2beda8e511a3f98d5133c3abfa9c7b63cb1e4bc498a8",
+  "entries": [
+    {
+      "id": "rank_bronze",
+      "status": "approved",
+      "outputPath": "web/public/season-ranks/bronze.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 43580,
+        "sha256": "a193905f3d1efddea145849a3d13271ee9bc040b39a9bbf1c5d10ca7594ce518"
+      },
+      "entry": {
+        "id": "rank_bronze",
+        "kind": "rank",
+        "rankId": "bronze",
+        "achievementId": null,
+        "section": "Season Ranks",
+        "type": "rank",
+        "accent": "bronze",
+        "characterId": null,
+        "name": {
+          "ru": "Бронза",
+          "en": "Bronze"
+        },
+        "lore": {
+          "ru": "Первый знак сезона уже проступил на мицелии.",
+          "en": "The first season mark has appeared on the mycelium."
+        },
+        "criteria": null
+      },
+      "prompt": "### Bronze rank\n\n- id: `rank_bronze`\n- image: `bronze.png`\n- output: `web/public/season-ranks/bronze.png`\n- size: 192x192 (square)\n- kind: rank\n- type: rank\n- accent: bronze\n- name (ru / en): Бронза / Bronze\n- lore: The first season mark has appeared on the mycelium.\n- description: Warm copper medallion with a single cream cap-dot center; thick dark contour.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Bronze rank (rank_bronze)\nOutput file after approval: web/public/season-ranks/bronze.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Warm copper medallion with a single cream cap-dot center; thick dark contour.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: warm copper, burnt amber, dark brown contour, cream highlight.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "rank_silver",
+      "status": "approved",
+      "outputPath": "web/public/season-ranks/silver.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 48263,
+        "sha256": "1d6b43a2a94c60a77c106954a26fd65110611d539a0deaa46f894ae36999fa74"
+      },
+      "entry": {
+        "id": "rank_silver",
+        "kind": "rank",
+        "rankId": "silver",
+        "achievementId": null,
+        "section": "Season Ranks",
+        "type": "rank",
+        "accent": "silver",
+        "characterId": null,
+        "name": {
+          "ru": "Серебро",
+          "en": "Silver"
+        },
+        "lore": {
+          "ru": "Серебряные нити начали держать твой путь.",
+          "en": "Silver threads have begun to hold your path."
+        },
+        "criteria": null
+      },
+      "prompt": "### Silver rank\n\n- id: `rank_silver`\n- image: `silver.png`\n- output: `web/public/season-ranks/silver.png`\n- size: 192x192 (square)\n- kind: rank\n- type: rank\n- accent: silver\n- name (ru / en): Серебро / Silver\n- lore: Silver threads have begun to hold your path.\n- description: Cool steel medallion with two small white cap-dots side by side.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Silver rank (rank_silver)\nOutput file after approval: web/public/season-ranks/silver.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Cool steel medallion with two small white cap-dots side by side.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: cool steel grey, pale platinum, deep slate contour, white highlight.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "rank_gold",
+      "status": "approved",
+      "outputPath": "web/public/season-ranks/gold.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 47205,
+        "sha256": "2d0485562cc6850ac67bd10d8f706d39fc438fb6057b1f9fa6c24a4187ea4000"
+      },
+      "entry": {
+        "id": "rank_gold",
+        "kind": "rank",
+        "rankId": "gold",
+        "achievementId": null,
+        "section": "Season Ranks",
+        "type": "rank",
+        "accent": "gold",
+        "characterId": null,
+        "name": {
+          "ru": "Золото",
+          "en": "Gold"
+        },
+        "lore": {
+          "ru": "Золотой след виден даже в глубине корней.",
+          "en": "A golden trace is visible even beneath the roots."
+        },
+        "criteria": null
+      },
+      "prompt": "### Gold rank\n\n- id: `rank_gold`\n- image: `gold.png`\n- output: `web/public/season-ranks/gold.png`\n- size: 192x192 (square)\n- kind: rank\n- type: rank\n- accent: gold\n- name (ru / en): Золото / Gold\n- lore: A golden trace is visible even beneath the roots.\n- description: Rich gold medallion with a chunky ivory star at center.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Gold rank (rank_gold)\nOutput file after approval: web/public/season-ranks/gold.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Rich gold medallion with a chunky ivory star at center.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: rich gold, warm amber, dark walnut contour, ivory shine.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "rank_diamond",
+      "status": "approved",
+      "outputPath": "web/public/season-ranks/diamond.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 58377,
+        "sha256": "f293ee77b91da686000009e58ea9af46f0d30421deec8281c467be95994b7093"
+      },
+      "entry": {
+        "id": "rank_diamond",
+        "kind": "rank",
+        "rankId": "diamond",
+        "achievementId": null,
+        "section": "Season Ranks",
+        "type": "rank",
+        "accent": "diamond",
+        "characterId": null,
+        "name": {
+          "ru": "Алмаз",
+          "en": "Diamond"
+        },
+        "lore": {
+          "ru": "Алмазный узел сезона выдержал давление круга.",
+          "en": "The season's diamond knot endured the ring's pressure."
+        },
+        "criteria": null
+      },
+      "prompt": "### Diamond rank\n\n- id: `rank_diamond`\n- image: `diamond.png`\n- output: `web/public/season-ranks/diamond.png`\n- size: 192x192 (square)\n- kind: rank\n- type: rank\n- accent: diamond\n- name (ru / en): Алмаз / Diamond\n- lore: The season's diamond knot endured the ring's pressure.\n- description: Teal/cyan medallion with a faceted icy gem glyph at center.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Diamond rank (rank_diamond)\nOutput file after approval: web/public/season-ranks/diamond.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Teal/cyan medallion with a faceted icy gem glyph at center.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: cool teal, pale cyan, deep navy contour, icy white shine.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_first_ring_crossed",
+      "status": "approved",
+      "outputPath": "web/public/achievements/first_ring_crossed.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 54661,
+        "sha256": "69ddd6b01616e9404b1300a68cd633cf033e5160f364075e2869dc95746ff4c0"
+      },
+      "entry": {
+        "id": "ach_first_ring_crossed",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "first_ring_crossed",
+        "section": "General Achievements",
+        "type": "general",
+        "accent": "general",
+        "characterId": null,
+        "name": {
+          "ru": "Первый След",
+          "en": "First Ring Crossed"
+        },
+        "lore": {
+          "ru": "Мицелий впервые узнал твой шаг на боевой тропе.",
+          "en": "The mycelium learned your step for the first time in the arena."
+        },
+        "criteria": {
+          "minRounds": 1
+        }
+      },
+      "prompt": "### First Ring Crossed\n\n- id: `ach_first_ring_crossed`\n- image: `first_ring_crossed.png`\n- output: `web/public/achievements/first_ring_crossed.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: general\n- accent: general\n- name (ru / en): Первый След / First Ring Crossed\n- lore: The mycelium learned your step for the first time in the arena.\n- description: Concentric mossy ring with a small step-mark glyph at center; parchment medallion.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: First Ring Crossed (ach_first_ring_crossed)\nOutput file after approval: web/public/achievements/first_ring_crossed.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Concentric mossy ring with a small step-mark glyph at center; parchment medallion.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: moss-green / parchment palette with one warm accent.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_deep_run",
+      "status": "approved",
+      "outputPath": "web/public/achievements/deep_run.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 64745,
+        "sha256": "fc4588fa1b5ef3eebafd47850863c78ed72322939f52b74bd77e0bf1935849c9"
+      },
+      "entry": {
+        "id": "ach_deep_run",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "deep_run",
+        "section": "General Achievements",
+        "type": "general",
+        "accent": "general",
+        "characterId": null,
+        "name": {
+          "ru": "Глубокий ход",
+          "en": "Deep Run"
+        },
+        "lore": {
+          "ru": "Ты дошла до слоя, где корни хранят имена сильных бойцов.",
+          "en": "You reached the layer where roots keep the names of strong fighters."
+        },
+        "criteria": {
+          "minRounds": 5
+        }
+      },
+      "prompt": "### Deep Run\n\n- id: `ach_deep_run`\n- image: `deep_run.png`\n- output: `web/public/achievements/deep_run.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: general\n- accent: general\n- name (ru / en): Глубокий ход / Deep Run\n- lore: You reached the layer where roots keep the names of strong fighters.\n- description: Descending mycelium root or stair motif inside a parchment medallion.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Deep Run (ach_deep_run)\nOutput file after approval: web/public/achievements/deep_run.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Descending mycelium root or stair motif inside a parchment medallion.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: moss-green / parchment palette with one warm accent.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_three_caps_taken",
+      "status": "approved",
+      "outputPath": "web/public/achievements/three_caps_taken.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 59714,
+        "sha256": "40c4b3f0ef2968f1a913d095bcfbb6173aedb322d0fdff9458ad78d6c598a4ab"
+      },
+      "entry": {
+        "id": "ach_three_caps_taken",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "three_caps_taken",
+        "section": "General Achievements",
+        "type": "general",
+        "accent": "general",
+        "characterId": null,
+        "name": {
+          "ru": "Три Шляпки",
+          "en": "Three Caps Taken"
+        },
+        "lore": {
+          "ru": "Три победы сложились в первый уверенный узор силы.",
+          "en": "Three victories formed your first steady pattern of strength."
+        },
+        "criteria": {
+          "minWins": 3
+        }
+      },
+      "prompt": "### Three Caps Taken\n\n- id: `ach_three_caps_taken`\n- image: `three_caps_taken.png`\n- output: `web/public/achievements/three_caps_taken.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: general\n- accent: general\n- name (ru / en): Три Шляпки / Three Caps Taken\n- lore: Three victories formed your first steady pattern of strength.\n- description: Three small mushroom caps arranged in a triangle on a parchment medallion.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Three Caps Taken (ach_three_caps_taken)\nOutput file after approval: web/public/achievements/three_caps_taken.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Three small mushroom caps arranged in a triangle on a parchment medallion.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: moss-green / parchment palette with one warm accent.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_season_bronze_spore",
+      "status": "approved",
+      "outputPath": "web/public/achievements/season_bronze_spore.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 48541,
+        "sha256": "6603a9c6e4dffe40f27515cb66a332ae2ed297cb0b3bcd153079ced0c2c11e44"
+      },
+      "entry": {
+        "id": "ach_season_bronze_spore",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "season_bronze_spore",
+        "section": "General Achievements",
+        "type": "season",
+        "accent": "bronze",
+        "characterId": null,
+        "name": {
+          "ru": "Бронзовая спора",
+          "en": "Bronze Spore"
+        },
+        "lore": {
+          "ru": "Глубокое Кольцо приняло первую спору твоего сезона.",
+          "en": "The Deep Ring accepted the first spore of your season."
+        },
+        "criteria": {
+          "seasonLevel": "bronze"
+        }
+      },
+      "prompt": "### Bronze Spore\n\n- id: `ach_season_bronze_spore`\n- image: `season_bronze_spore.png`\n- output: `web/public/achievements/season_bronze_spore.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: season\n- accent: bronze\n- name (ru / en): Бронзовая спора / Bronze Spore\n- lore: The Deep Ring accepted the first spore of your season.\n- description: Small bright spore mote on a parchment medallion with a copper accent ring.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Bronze Spore (ach_season_bronze_spore)\nOutput file after approval: web/public/achievements/season_bronze_spore.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Small bright spore mote on a parchment medallion with a copper accent ring.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: warm copper accent on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_season_silver_thread",
+      "status": "approved",
+      "outputPath": "web/public/achievements/season_silver_thread.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 53392,
+        "sha256": "3d6c85e54cdda73866527b6cc3b9052a3268fb2259ad6ee24989862bfa6e1fd6"
+      },
+      "entry": {
+        "id": "ach_season_silver_thread",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "season_silver_thread",
+        "section": "General Achievements",
+        "type": "season",
+        "accent": "silver",
+        "characterId": null,
+        "name": {
+          "ru": "Серебряная нить",
+          "en": "Silver Thread"
+        },
+        "lore": {
+          "ru": "Серебряные нити уже держат твой путь между раундами.",
+          "en": "Silver threads now hold your path between rounds."
+        },
+        "criteria": {
+          "seasonLevel": "silver"
+        }
+      },
+      "prompt": "### Silver Thread\n\n- id: `ach_season_silver_thread`\n- image: `season_silver_thread.png`\n- output: `web/public/achievements/season_silver_thread.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: season\n- accent: silver\n- name (ru / en): Серебряная нить / Silver Thread\n- lore: Silver threads now hold your path between rounds.\n- description: Single woven thread loop on a parchment medallion with a steel accent ring.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Silver Thread (ach_season_silver_thread)\nOutput file after approval: web/public/achievements/season_silver_thread.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Single woven thread loop on a parchment medallion with a steel accent ring.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: cool steel accent on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_season_gold_cap",
+      "status": "approved",
+      "outputPath": "web/public/achievements/season_gold_cap.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 57184,
+        "sha256": "22360e9a34ba56144ebdde70379fee28bbd1864c83f4e3c8169acf5d738605ab"
+      },
+      "entry": {
+        "id": "ach_season_gold_cap",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "season_gold_cap",
+        "section": "General Achievements",
+        "type": "season",
+        "accent": "gold",
+        "characterId": null,
+        "name": {
+          "ru": "Золотая шляпка",
+          "en": "Golden Cap"
+        },
+        "lore": {
+          "ru": "Золото легло на край шляпки после сильного круга.",
+          "en": "Gold settled on the cap after a strong circle."
+        },
+        "criteria": {
+          "seasonLevel": "gold"
+        }
+      },
+      "prompt": "### Golden Cap\n\n- id: `ach_season_gold_cap`\n- image: `season_gold_cap.png`\n- output: `web/public/achievements/season_gold_cap.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: season\n- accent: gold\n- name (ru / en): Золотая шляпка / Golden Cap\n- lore: Gold settled on the cap after a strong circle.\n- description: Small gold mushroom cap on a parchment medallion with a gold accent ring.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Golden Cap (ach_season_gold_cap)\nOutput file after approval: web/public/achievements/season_gold_cap.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Small gold mushroom cap on a parchment medallion with a gold accent ring.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: gold accent on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_season_diamond_node",
+      "status": "approved",
+      "outputPath": "web/public/achievements/season_diamond_node.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 51248,
+        "sha256": "38fb6c85809de6a8ee61e44473a26b03d992797f13f0d508832db19f4a8a5e64"
+      },
+      "entry": {
+        "id": "ach_season_diamond_node",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "season_diamond_node",
+        "section": "General Achievements",
+        "type": "season",
+        "accent": "diamond",
+        "characterId": null,
+        "name": {
+          "ru": "Алмазный узел",
+          "en": "Diamond Node"
+        },
+        "lore": {
+          "ru": "Мицелий сжал твой путь в прочный алмазный узел.",
+          "en": "The mycelium compressed your path into a hard diamond node."
+        },
+        "criteria": {
+          "seasonLevel": "diamond"
+        }
+      },
+      "prompt": "### Diamond Node\n\n- id: `ach_season_diamond_node`\n- image: `season_diamond_node.png`\n- output: `web/public/achievements/season_diamond_node.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: season\n- accent: diamond\n- name (ru / en): Алмазный узел / Diamond Node\n- lore: The mycelium compressed your path into a hard diamond node.\n- description: Faceted gem-knot motif on a parchment medallion with a teal accent ring.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Diamond Node (ach_season_diamond_node)\nOutput file after approval: web/public/achievements/season_diamond_node.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Faceted gem-knot motif on a parchment medallion with a teal accent ring.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: teal/cyan accent on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_perfect_circle",
+      "status": "approved",
+      "outputPath": "web/public/achievements/perfect_circle.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 57288,
+        "sha256": "84c55e4ace50958cf6593bd339062640827a12c948cd24d4c38f778444da293c"
+      },
+      "entry": {
+        "id": "ach_perfect_circle",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "perfect_circle",
+        "section": "General Achievements",
+        "type": "general",
+        "accent": "general",
+        "characterId": null,
+        "name": {
+          "ru": "Полный круг",
+          "en": "Perfect Circle"
+        },
+        "lore": {
+          "ru": "Все раунды выдержаны, и кольцо сомкнулось без трещин.",
+          "en": "Every round held, and the ring closed without a crack."
+        },
+        "criteria": {
+          "endReason": "max_rounds"
+        }
+      },
+      "prompt": "### Perfect Circle\n\n- id: `ach_perfect_circle`\n- image: `perfect_circle.png`\n- output: `web/public/achievements/perfect_circle.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: general\n- accent: general\n- name (ru / en): Полный круг / Perfect Circle\n- lore: Every round held, and the ring closed without a crack.\n- description: Closed wreath or full ring with a small gold accent.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Perfect Circle (ach_perfect_circle)\nOutput file after approval: web/public/achievements/perfect_circle.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Closed wreath or full ring with a small gold accent.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: moss-green / parchment palette with one warm accent.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_last_spore",
+      "status": "approved",
+      "outputPath": "web/public/achievements/last_spore.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 43680,
+        "sha256": "1c76adaf32546b63fed11b846cfb7a94a9a0820fa36906810f81cac98256ccf8"
+      },
+      "entry": {
+        "id": "ach_last_spore",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "last_spore",
+        "section": "General Achievements",
+        "type": "general",
+        "accent": "general",
+        "characterId": null,
+        "name": {
+          "ru": "Последняя спора",
+          "en": "Last Spore"
+        },
+        "lore": {
+          "ru": "Даже на последнем дыхании споры оставили тёплый след.",
+          "en": "Even at the final breath, the spores left a warm trail."
+        },
+        "criteria": {
+          "endReason": "max_losses",
+          "minWins": 1
+        }
+      },
+      "prompt": "### Last Spore\n\n- id: `ach_last_spore`\n- image: `last_spore.png`\n- output: `web/public/achievements/last_spore.png`\n- size: 192x192 (square)\n- kind: achievement\n- type: general\n- accent: general\n- name (ru / en): Последняя спора / Last Spore\n- lore: Even at the final breath, the spores left a warm trail.\n- description: Single bright spore mote on a darker parchment medallion; bittersweet tone.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Last Spore (ach_last_spore)\nOutput file after approval: web/public/achievements/last_spore.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Single bright spore mote on a darker parchment medallion; bittersweet tone.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: moss-green / parchment palette with one warm accent.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_thalla_spore_echo",
+      "status": "approved",
+      "outputPath": "web/public/achievements/thalla_spore_echo.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 62159,
+        "sha256": "f72966da1b467a01df075953af6789f6dea360ca88b5b56585614ee8e585ebfd"
+      },
+      "entry": {
+        "id": "ach_thalla_spore_echo",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "thalla_spore_echo",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "thalla",
+        "characterId": "thalla",
+        "name": {
+          "ru": "Эхо Споры",
+          "en": "Spore Echo"
+        },
+        "lore": {
+          "ru": "Хлыст Тхаллы оставил в арене тихий звон спор.",
+          "en": "Thalla's lash left a quiet spore-chime in the arena."
+        },
+        "criteria": {
+          "minWins": 1
+        }
+      },
+      "prompt": "### Spore Echo (thalla)\n\n- id: `ach_thalla_spore_echo`\n- image: `thalla_spore_echo.png`\n- output: `web/public/achievements/thalla_spore_echo.png`\n- size: 192x192 (square)\n- kind: achievement / thalla\n- type: character\n- accent: thalla\n- name (ru / en): Эхо Споры / Spore Echo\n- lore: Thalla's lash left a quiet spore-chime in the arena.\n- description: Soft green parchment medallion with a glow thread loop.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Spore Echo (thalla) (ach_thalla_spore_echo)\nOutput file after approval: web/public/achievements/thalla_spore_echo.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Soft green parchment medallion with a glow thread loop.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: thalla character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_thalla_sacred_thread",
+      "status": "approved",
+      "outputPath": "web/public/achievements/thalla_sacred_thread.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 61463,
+        "sha256": "28d91498eb8ec078deed2824e805be544b1af2def73acf353d4a109d4d6a767b"
+      },
+      "entry": {
+        "id": "ach_thalla_sacred_thread",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "thalla_sacred_thread",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "thalla",
+        "characterId": "thalla",
+        "name": {
+          "ru": "Священная нить",
+          "en": "Sacred Thread"
+        },
+        "lore": {
+          "ru": "Победы легли ровно, как священная нить между светом и тенью.",
+          "en": "The victories settled like a sacred thread between light and shadow."
+        },
+        "criteria": {
+          "minWins": 4
+        }
+      },
+      "prompt": "### Sacred Thread (thalla)\n\n- id: `ach_thalla_sacred_thread`\n- image: `thalla_sacred_thread.png`\n- output: `web/public/achievements/thalla_sacred_thread.png`\n- size: 192x192 (square)\n- kind: achievement / thalla\n- type: character\n- accent: thalla\n- name (ru / en): Священная нить / Sacred Thread\n- lore: The victories settled like a sacred thread between light and shadow.\n- description: Sacred spore-thread knot on a soft green parchment medallion.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Sacred Thread (thalla) (ach_thalla_sacred_thread)\nOutput file after approval: web/public/achievements/thalla_sacred_thread.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Sacred spore-thread knot on a soft green parchment medallion.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: thalla character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_lomie_soft_wall",
+      "status": "approved",
+      "outputPath": "web/public/achievements/lomie_soft_wall.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 57768,
+        "sha256": "3acc9a982116f3e03c20bfa194c6db4e43279d31bfe24e86312908b66df2e4ed"
+      },
+      "entry": {
+        "id": "ach_lomie_soft_wall",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "lomie_soft_wall",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "lomie",
+        "characterId": "lomie",
+        "name": {
+          "ru": "Мягкая стена",
+          "en": "Soft Wall"
+        },
+        "lore": {
+          "ru": "Ломиэ выдержала натиск и не дала кольцу рассыпаться.",
+          "en": "Lomie held the pressure and kept the ring from scattering."
+        },
+        "criteria": {
+          "minRounds": 3
+        }
+      },
+      "prompt": "### Soft Wall (lomie)\n\n- id: `ach_lomie_soft_wall`\n- image: `lomie_soft_wall.png`\n- output: `web/public/achievements/lomie_soft_wall.png`\n- size: 192x192 (square)\n- kind: achievement / lomie\n- type: character\n- accent: lomie\n- name (ru / en): Мягкая стена / Soft Wall\n- lore: Lomie held the pressure and kept the ring from scattering.\n- description: Moss-cream medallion with a small soft wall-plate motif.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Soft Wall (lomie) (ach_lomie_soft_wall)\nOutput file after approval: web/public/achievements/lomie_soft_wall.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Moss-cream medallion with a small soft wall-plate motif.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: lomie character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_lomie_stone_breath",
+      "status": "approved",
+      "outputPath": "web/public/achievements/lomie_stone_breath.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 60529,
+        "sha256": "6e90d74879a2f2a6a50a7b69a1638b19e0085ce80fefa136c2dbcd05b30591de"
+      },
+      "entry": {
+        "id": "ach_lomie_stone_breath",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "lomie_stone_breath",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "lomie",
+        "characterId": "lomie",
+        "name": {
+          "ru": "Каменное дыхание",
+          "en": "Stone Breath"
+        },
+        "lore": {
+          "ru": "Её защита стала спокойной, как кора древнего ствола.",
+          "en": "Her guard became as calm as bark around an ancient trunk."
+        },
+        "criteria": {
+          "maxLosses": 1,
+          "minRounds": 5
+        }
+      },
+      "prompt": "### Stone Breath (lomie)\n\n- id: `ach_lomie_stone_breath`\n- image: `lomie_stone_breath.png`\n- output: `web/public/achievements/lomie_stone_breath.png`\n- size: 192x192 (square)\n- kind: achievement / lomie\n- type: character\n- accent: lomie\n- name (ru / en): Каменное дыхание / Stone Breath\n- lore: Her guard became as calm as bark around an ancient trunk.\n- description: Moss-cream medallion with a stone-rim motif and breath line.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Stone Breath (lomie) (ach_lomie_stone_breath)\nOutput file after approval: web/public/achievements/lomie_stone_breath.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Moss-cream medallion with a stone-rim motif and breath line.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: lomie character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_axilin_volatile_brew",
+      "status": "approved",
+      "outputPath": "web/public/achievements/axilin_volatile_brew.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 57039,
+        "sha256": "ba2870273f43830fc288daab606e4481db4f79aef3a9bee4fc7c5f24e225cdc7"
+      },
+      "entry": {
+        "id": "ach_axilin_volatile_brew",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "axilin_volatile_brew",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "axilin",
+        "characterId": "axilin",
+        "name": {
+          "ru": "Летучий отвар",
+          "en": "Volatile Brew"
+        },
+        "lore": {
+          "ru": "Аксилин вскипела быстро и оставила в бою едкий след.",
+          "en": "Axilin boiled fast and left a biting mark on the fight."
+        },
+        "criteria": {
+          "minWins": 1
+        }
+      },
+      "prompt": "### Volatile Brew (axilin)\n\n- id: `ach_axilin_volatile_brew`\n- image: `axilin_volatile_brew.png`\n- output: `web/public/achievements/axilin_volatile_brew.png`\n- size: 192x192 (square)\n- kind: achievement / axilin\n- type: character\n- accent: axilin\n- name (ru / en): Летучий отвар / Volatile Brew\n- lore: Axilin boiled fast and left a biting mark on the fight.\n- description: Purple-grey medallion with a bubbling phial glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Volatile Brew (axilin) (ach_axilin_volatile_brew)\nOutput file after approval: web/public/achievements/axilin_volatile_brew.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Purple-grey medallion with a bubbling phial glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: axilin character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_axilin_ferment_storm",
+      "status": "approved",
+      "outputPath": "web/public/achievements/axilin_ferment_storm.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 63391,
+        "sha256": "e23736d48a2ed9c3f03a82f1c24b9afbc34eb4bf82be9c26391a342f6f5b4d63"
+      },
+      "entry": {
+        "id": "ach_axilin_ferment_storm",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "axilin_ferment_storm",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "axilin",
+        "characterId": "axilin",
+        "name": {
+          "ru": "Ферментная буря",
+          "en": "Ferment Storm"
+        },
+        "lore": {
+          "ru": "Там, где она прошла, мицелий ещё долго шипел.",
+          "en": "Where she passed, the mycelium kept hissing long afterward."
+        },
+        "criteria": {
+          "minWins": 5
+        }
+      },
+      "prompt": "### Ferment Storm (axilin)\n\n- id: `ach_axilin_ferment_storm`\n- image: `axilin_ferment_storm.png`\n- output: `web/public/achievements/axilin_ferment_storm.png`\n- size: 192x192 (square)\n- kind: achievement / axilin\n- type: character\n- accent: axilin\n- name (ru / en): Ферментная буря / Ferment Storm\n- lore: Where she passed, the mycelium kept hissing long afterward.\n- description: Purple-grey medallion with a storm-spore swirl glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Ferment Storm (axilin) (ach_axilin_ferment_storm)\nOutput file after approval: web/public/achievements/axilin_ferment_storm.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Purple-grey medallion with a storm-spore swirl glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: axilin character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_kirt_measured_rhythm",
+      "status": "approved",
+      "outputPath": "web/public/achievements/kirt_measured_rhythm.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 44985,
+        "sha256": "b6fdedf6ab315d9f7a323ae2f284630eaf63a6f989aabe3f75b65cecd27990f8"
+      },
+      "entry": {
+        "id": "ach_kirt_measured_rhythm",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "kirt_measured_rhythm",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "kirt",
+        "characterId": "kirt",
+        "name": {
+          "ru": "Размеренный ритм",
+          "en": "Measured Rhythm"
+        },
+        "lore": {
+          "ru": "Кирт поймал ритм боя и удержал его до конца.",
+          "en": "Kirt caught the battle rhythm and held it to the end."
+        },
+        "criteria": {
+          "minRounds": 3
+        }
+      },
+      "prompt": "### Measured Rhythm (kirt)\n\n- id: `ach_kirt_measured_rhythm`\n- image: `kirt_measured_rhythm.png`\n- output: `web/public/achievements/kirt_measured_rhythm.png`\n- size: 192x192 (square)\n- kind: achievement / kirt\n- type: character\n- accent: kirt\n- name (ru / en): Размеренный ритм / Measured Rhythm\n- lore: Kirt caught the battle rhythm and held it to the end.\n- description: Warm rust-olive medallion with a measured spear-mark glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Measured Rhythm (kirt) (ach_kirt_measured_rhythm)\nOutput file after approval: web/public/achievements/kirt_measured_rhythm.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Warm rust-olive medallion with a measured spear-mark glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: kirt character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_kirt_clean_path",
+      "status": "approved",
+      "outputPath": "web/public/achievements/kirt_clean_path.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 48913,
+        "sha256": "070d2fe91dee24c1341d7a64bd0d84b67b2a1ecf78a1370597ea5abe5e19ce00"
+      },
+      "entry": {
+        "id": "ach_kirt_clean_path",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "kirt_clean_path",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "kirt",
+        "characterId": "kirt",
+        "name": {
+          "ru": "Чистая тропа",
+          "en": "Clean Path"
+        },
+        "lore": {
+          "ru": "Каждый точный удар расчистил путь глубже в кольцо.",
+          "en": "Each clean strike cleared the path deeper into the ring."
+        },
+        "criteria": {
+          "minWinRate": 70,
+          "minRounds": 5
+        }
+      },
+      "prompt": "### Clean Path (kirt)\n\n- id: `ach_kirt_clean_path`\n- image: `kirt_clean_path.png`\n- output: `web/public/achievements/kirt_clean_path.png`\n- size: 192x192 (square)\n- kind: achievement / kirt\n- type: character\n- accent: kirt\n- name (ru / en): Чистая тропа / Clean Path\n- lore: Each clean strike cleared the path deeper into the ring.\n- description: Warm rust-olive medallion with a clean fang or arrow-mark glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Clean Path (kirt) (ach_kirt_clean_path)\nOutput file after approval: web/public/achievements/kirt_clean_path.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Warm rust-olive medallion with a clean fang or arrow-mark glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: kirt character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_morga_first_bloom",
+      "status": "approved",
+      "outputPath": "web/public/achievements/morga_first_bloom.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 54560,
+        "sha256": "91e80e13231bb8d2943be7fdde70de39f221fa0e811288abacc7df41ac63ad76"
+      },
+      "entry": {
+        "id": "ach_morga_first_bloom",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "morga_first_bloom",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "morga",
+        "characterId": "morga",
+        "name": {
+          "ru": "Первый цвет",
+          "en": "First Bloom"
+        },
+        "lore": {
+          "ru": "Морга вспыхнула первой, и арена это запомнила.",
+          "en": "Morga bloomed first, and the arena remembered."
+        },
+        "criteria": {
+          "minWins": 1
+        }
+      },
+      "prompt": "### First Bloom (morga)\n\n- id: `ach_morga_first_bloom`\n- image: `morga_first_bloom.png`\n- output: `web/public/achievements/morga_first_bloom.png`\n- size: 192x192 (square)\n- kind: achievement / morga\n- type: character\n- accent: morga\n- name (ru / en): Первый цвет / First Bloom\n- lore: Morga bloomed first, and the arena remembered.\n- description: Bright spark-cream medallion with a small bloom flash glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: First Bloom (morga) (ach_morga_first_bloom)\nOutput file after approval: web/public/achievements/morga_first_bloom.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Bright spark-cream medallion with a small bloom flash glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: morga character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_morga_flash_trail",
+      "status": "approved",
+      "outputPath": "web/public/achievements/morga_flash_trail.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 52736,
+        "sha256": "a9dab9e0aef2cd645350541c91484d7654fb3d1a3c84ac4fb00f9f9917ed416e"
+      },
+      "entry": {
+        "id": "ach_morga_flash_trail",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "morga_flash_trail",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "morga",
+        "characterId": "morga",
+        "name": {
+          "ru": "След вспышки",
+          "en": "Flash Trail"
+        },
+        "lore": {
+          "ru": "Быстрый след Морги остался на самой границе зрения.",
+          "en": "Morga's flash trail stayed at the very edge of sight."
+        },
+        "criteria": {
+          "minWins": 3,
+          "lastOutcome": "win"
+        }
+      },
+      "prompt": "### Flash Trail (morga)\n\n- id: `ach_morga_flash_trail`\n- image: `morga_flash_trail.png`\n- output: `web/public/achievements/morga_flash_trail.png`\n- size: 192x192 (square)\n- kind: achievement / morga\n- type: character\n- accent: morga\n- name (ru / en): След вспышки / Flash Trail\n- lore: Morga's flash trail stayed at the very edge of sight.\n- description: Bright spark-cream medallion with a flash trail streak glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Flash Trail (morga) (ach_morga_flash_trail)\nOutput file after approval: web/public/achievements/morga_flash_trail.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Bright spark-cream medallion with a flash trail streak glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: morga character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_dalamar_ashen_veil",
+      "status": "approved",
+      "outputPath": "web/public/achievements/dalamar_ashen_veil.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 54918,
+        "sha256": "e7bdbf0c79164b90817f110502004496b7e5e29bdc48dd1e1525403fd71a7497"
+      },
+      "entry": {
+        "id": "ach_dalamar_ashen_veil",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "dalamar_ashen_veil",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "dalamar",
+        "characterId": "dalamar",
+        "name": {
+          "ru": "Пепельный покров",
+          "en": "Ashen Veil"
+        },
+        "lore": {
+          "ru": "Даламар оставил на броне врагов серый знак распада.",
+          "en": "Dalamar left a gray mark of decay on enemy armor."
+        },
+        "criteria": {
+          "minRounds": 3
+        }
+      },
+      "prompt": "### Ashen Veil (dalamar)\n\n- id: `ach_dalamar_ashen_veil`\n- image: `dalamar_ashen_veil.png`\n- output: `web/public/achievements/dalamar_ashen_veil.png`\n- size: 192x192 (square)\n- kind: achievement / dalamar\n- type: character\n- accent: dalamar\n- name (ru / en): Пепельный покров / Ashen Veil\n- lore: Dalamar left a gray mark of decay on enemy armor.\n- description: Ash-teal medallion with a small veil-mote glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Ashen Veil (dalamar) (ach_dalamar_ashen_veil)\nOutput file after approval: web/public/achievements/dalamar_ashen_veil.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Ash-teal medallion with a small veil-mote glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: dalamar character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ach_dalamar_entropy_bone",
+      "status": "approved",
+      "outputPath": "web/public/achievements/dalamar_entropy_bone.png",
+      "png": {
+        "width": 192,
+        "height": 192,
+        "size": 48339,
+        "sha256": "263f1612dbc5748120eb2ec1fa328a34d3f3a711e4f628ae59333e9f8a82a431"
+      },
+      "entry": {
+        "id": "ach_dalamar_entropy_bone",
+        "kind": "achievement",
+        "rankId": null,
+        "achievementId": "dalamar_entropy_bone",
+        "section": "Character Achievements",
+        "type": "character",
+        "accent": "dalamar",
+        "characterId": "dalamar",
+        "name": {
+          "ru": "Кость энтропии",
+          "en": "Bone of Entropy"
+        },
+        "lore": {
+          "ru": "Кольцо дрогнуло, когда энтропия встала на его сторону.",
+          "en": "The ring trembled when entropy took his side."
+        },
+        "criteria": {
+          "minWins": 4
+        }
+      },
+      "prompt": "### Bone of Entropy (dalamar)\n\n- id: `ach_dalamar_entropy_bone`\n- image: `dalamar_entropy_bone.png`\n- output: `web/public/achievements/dalamar_entropy_bone.png`\n- size: 192x192 (square)\n- kind: achievement / dalamar\n- type: character\n- accent: dalamar\n- name (ru / en): Кость энтропии / Bone of Entropy\n- lore: The ring trembled when entropy took his side.\n- description: Ash-teal medallion with a broken crown-shard glyph.\n\n```text\nUse the imagegen skill to create a production game season bitmap.\nUse docs/season-image-style-prompt.md as the style guide. Follow it exactly: simple chunky inventory-sticker emblem matching the artifact direction in these approved examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png, web/public/artifacts/flash_cap.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, and a flat #ff00ff chroma-key background.\n\nThis must be an imagegen-created bitmap source. Do not satisfy this prompt by drawing or rasterizing SVG, HTML/CSS, canvas, procedural glyph paths, Puppeteer screenshots, the repo's inline SVG fallback, emoji fallback, or a hardcoded medallion template. Deterministic scripts may only post-process the raw imagegen export after generation.\n\nAsset: Bone of Entropy (dalamar) (ach_dalamar_entropy_bone)\nOutput file after approval: web/public/achievements/dalamar_entropy_bone.png\nCanvas: 192x192 square, transparent after chroma-key removal\nDescription: Ash-teal medallion with a broken crown-shard glyph.\n\nComposition rule: one centered medallion-style emblem filling 70-86% of the canvas on both axes; leave a comfortable transparent margin around all four edges (no visible alpha within ~6 px of the edge). Subject reads as a single rounded badge object with one or two readable inner glyphs (mushroom motif, ring, star, gem, leaf, fang — pick from the kind / lore). Avoid loose text, avoid skinny diagonal-stick props, avoid generic RPG loot.\n\nPalette guidance: dalamar character accent (mushroom-themed) on a parchment medallion.\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. Match the approved artifact examples in chunkiness and saturation.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the emblem. Do not bake a cast shadow or outer glow into the object — the UI adds its own drop shadow.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:season:validate -- --all",
+        "checkedAt": "2026-05-03",
+        "pngDimensions": {
+          "width": 192,
+          "height": 192
+        },
+        "checks": [
+          "png-rgba",
+          "fixed-square-canvas",
+          "alpha-coverage",
+          "bbox-fill-window",
+          "safe-edge-margin",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-03",
+        "reviewer": "user",
+        "note": "Production-ready season emblem approved after local generation, contact-sheet review, and coverage validation."
+      },
+      "candidates": []
+    }
+  ]
+}
