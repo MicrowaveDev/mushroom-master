@@ -27,7 +27,7 @@ const portraitLayout = ({
 export const replayPortraitConfigByMushroom = {
   thalla: {
     default: portraitLayout({ insetLeft: '20px', insetRight: '20px', tailLeft: '47%', imagePosition: '50% 12%' }),
-    1: portraitLayout({ top: '66%', insetLeft: '18px', insetRight: '18px', tailLeft: '44%', imagePosition: '50% 100%', faceBottom: 56 }),
+    1: portraitLayout({ top: '44%', insetLeft: '18px', insetRight: '18px', tailLeft: '44%', imagePosition: '50% 100%', faceBottom: 34 }),
     2: portraitLayout({ insetLeft: '18px', insetRight: '18px', tailLeft: '50%', imagePosition: '50% 2%', headY: 36 })
   },
   lomie: {
