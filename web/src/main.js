@@ -300,10 +300,10 @@ const App = {
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 
-      <section v-if="state.loading" class="auth-screen">
-        <div class="auth-hero-card panel">
-          <h2 class="auth-title">{{ t.authTitle }}</h2>
-          <p class="auth-tagline">{{ t.authTagline }}</p>
+      <section v-if="state.loading" class="route-loading-screen" data-testid="app-loading">
+        <div class="route-loading-card panel">
+          <span class="route-loading-spinner" aria-hidden="true"></span>
+          <h2>{{ t.title }}</h2>
         </div>
       </section>
 
