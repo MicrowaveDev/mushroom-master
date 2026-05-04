@@ -70,6 +70,10 @@ test('[Req 1-G] active solo runs can coexist for different mushrooms', async () 
   );
   assert.equal((await getActiveGameRun(session.player.id, 'thalla')).id, thallaRun.id);
   assert.equal((await getActiveGameRun(session.player.id, 'lomie')).id, lomieRun.id);
+  assert.equal((await getActiveGameRun(session.player.id)).id, lomieRun.id);
+
+  await saveSetup(session.player.id, 'thalla', loadout);
+  assert.equal((await getActiveGameRun(session.player.id)).id, thallaRun.id);
 });
 
 test('getActiveGameRun returns null when no active run exists', async () => {
@@ -234,6 +238,24 @@ test('[Req 1-G, 12-D] bootstrap activeGameRun follows selected mushroom', async 
   assert.equal(bootstrap.activeMushroomId, 'thalla');
   assert.equal(bootstrap.activeGameRun.id, thallaRun.id);
   assert.equal(bootstrap.activeGameRuns.length, 2);
+});
+
+test('[Req 1-G, 12-D] bootstrap maps legacy active runs to selected mushroom', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await saveSetup(session.player.id, 'thalla', loadout);
+  const run = await startGameRun(session.player.id, 'solo');
+  await query(
+    `UPDATE game_run_players SET mushroom_id = NULL WHERE game_run_id = $1 AND player_id = $2`,
+    [run.id, session.player.id]
+  );
+
+  const bootstrap = await getBootstrap(session.player.id);
+
+  assert.equal(bootstrap.activeMushroomId, 'thalla');
+  assert.equal(bootstrap.activeGameRun.id, run.id);
+  assert.equal(bootstrap.activeGameRun.mushroomId, 'thalla');
+  assert.deepEqual(bootstrap.activeGameRuns.map((activeRun) => activeRun.mushroomId), ['thalla']);
 });
 
 test('bootstrap has null activeGameRun when no run is active', async () => {

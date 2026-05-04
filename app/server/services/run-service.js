@@ -254,16 +254,27 @@ async function shapeActiveGameRun(row, playerId) {
 }
 
 export async function getActiveGameRun(playerId, mushroomId = null) {
+  let targetMushroomId = mushroomId;
+  if (!targetMushroomId) {
+    const activeMushroomResult = await query(
+      `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+      [playerId]
+    );
+    targetMushroomId = activeMushroomResult.rowCount
+      ? activeMushroomResult.rows[0].mushroom_id
+      : null;
+  }
+
   const result = await query(
     `SELECT gr.id, gr.mode, gr.status, gr.current_round, gr.started_at, gr.ended_at, gr.end_reason,
             grp.id AS grp_id, grp.mushroom_id, grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining, grp.coins
      FROM game_run_players grp
      JOIN game_runs gr ON gr.id = grp.game_run_id
      WHERE grp.player_id = $1 AND grp.is_active = 1
-       AND ($2 IS NULL OR grp.mushroom_id = $2)
-     ORDER BY gr.started_at DESC
+       AND ($2 IS NULL OR grp.mushroom_id = $2 OR grp.mushroom_id IS NULL)
+     ORDER BY CASE WHEN grp.mushroom_id = $2 THEN 0 ELSE 1 END, gr.started_at DESC
      LIMIT 1`,
-    [playerId, mushroomId]
+    [playerId, targetMushroomId]
   );
 
   if (!result.rowCount) {

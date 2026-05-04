@@ -59,7 +59,13 @@ export async function getBootstrap(playerId) {
     ),
     getActiveGameRuns(playerId)
   ]);
-  const activeGameRun = activeGameRuns.find((run) => run.mushroomId === state.activeMushroomId) || null;
+  const legacyActiveRun = activeGameRuns.find((run) => !run.mushroomId && run.mode === 'solo') || null;
+  const normalizedActiveGameRuns = activeGameRuns.map((run) => (
+    run === legacyActiveRun && state.activeMushroomId
+      ? { ...run, mushroomId: state.activeMushroomId, player: { ...run.player, mushroomId: state.activeMushroomId } }
+      : run
+  ));
+  const activeGameRun = normalizedActiveGameRuns.find((run) => run.mushroomId === state.activeMushroomId) || null;
   return {
     ...state,
     // Re-stamp portrait URLs with current mtime at response time so a file
@@ -69,7 +75,7 @@ export async function getBootstrap(playerId) {
     artifacts,
     shopState: null,
     activeGameRun,
-    activeGameRuns,
+    activeGameRuns: normalizedActiveGameRuns,
     battleLimit: {
       used: dailyUsage.rowCount ? Number(dailyUsage.rows[0].battle_starts) : 0,
       limit: DAILY_BATTLE_LIMIT,
