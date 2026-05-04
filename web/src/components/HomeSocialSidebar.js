@@ -10,6 +10,21 @@ export const HomeSocialSidebar = {
     'set-mobile-action-mode'
   ],
   components: { AchievementBadge },
+  methods: {
+    inviteText() {
+      return this.t.friendInviteText.replace('{code}', this.state.bootstrap.player.friendCode);
+    },
+    async shareInvite() {
+      const text = this.inviteText();
+      try {
+        if (navigator.share) {
+          await navigator.share({ text });
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        }
+      } catch {}
+    }
+  },
   computed: {
     isFriends() {
       return this.panel === 'friends';
@@ -49,7 +64,8 @@ export const HomeSocialSidebar = {
               <button class="secondary home-friend-challenge" @click="$emit('challenge-friend', friend.id)">{{ t.createChallenge }}</button>
             </div>
           </div>
-          <div v-else class="home-empty-hint">
+          <div v-else class="home-friends-empty">
+            <span aria-hidden="true">:(</span>
             <p>{{ t.noFriendsYet }}</p>
           </div>
           <form class="home-add-friend-row" @submit.prevent="$emit('add-friend', $event)">
@@ -57,6 +73,7 @@ export const HomeSocialSidebar = {
             <button class="primary" type="submit">{{ t.addFriend }}</button>
           </form>
           <span class="home-friend-code">{{ t.yourCode }}: <strong>{{ state.bootstrap.player.friendCode }}</strong></span>
+          <button class="secondary home-share-friend-link" type="button" @click="shareInvite">{{ t.shareFriendInvite }}</button>
         </template>
 
         <section v-if="isSettings" class="home-sidebar-settings">
