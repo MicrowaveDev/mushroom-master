@@ -20,10 +20,10 @@ export function useSocial(state, goTo) {
     }
   }
 
-  async function openChallenge(challengeId) {
+  async function openChallenge(challengeId, options = {}) {
     try {
       state.challenge = await apiJson(`/api/friends/challenges/${challengeId}`, {}, state.sessionKey);
-      goTo('friends', { challenge: challengeId });
+      goTo('friends', { challenge: challengeId }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load challenge';
     }

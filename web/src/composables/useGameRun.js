@@ -147,19 +147,19 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     } catch { /* ignore */ }
   }
 
-  async function loadRunSummary(runId) {
+  async function loadRunSummary(runId, options = {}) {
     if (!runId) return;
     try {
       state.error = '';
       const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
       state.gameRunSummary = data;
-      goTo('runSummary');
+      goTo('runSummary', { gameRunId: runId }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load game summary';
     }
   }
 
-  async function loadRunComplete(runId) {
+  async function loadRunComplete(runId, options = {}) {
     if (!runId) return;
     try {
       state.error = '';
@@ -167,7 +167,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       if (data.status !== 'completed' && data.status !== 'abandoned') {
         state.gameRun = data;
         state.gameRunResult = null;
-        goTo('prep');
+        goTo('prep', {}, options.routeOptions || {});
         return;
       }
       state.gameRun = {
@@ -195,7 +195,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         playerResults: data.playerResults || null,
         lastRound: data.lastRound || null
       };
-      goTo('runComplete', { gameRunId: data.id });
+      goTo('runComplete', { gameRunId: data.id }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load completed run';
       goTo('home');

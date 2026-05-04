@@ -101,7 +101,7 @@ export function useReplay(state, goTo, getMushroom) {
       // away from the round-result screen. The replay screen is opt-in
       // (Flow B Step 4) — autoplay only starts when the user actually opens it.
       if (options.navigate === false) return;
-      goTo('replay', { replay: battleId });
+      goTo('replay', { replay: battleId }, options.routeOptions || {});
       autoplayReplay();
     } catch (error) {
       state.error = error.message || 'Could not load replay';

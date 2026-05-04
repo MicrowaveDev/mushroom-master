@@ -6,6 +6,7 @@ const ROUTE_PARAMS = {
   replay: 'replay',
   friends: 'challenge',
   'game-run': 'gameRunId',
+  runSummary: 'gameRunId',
   runComplete: 'gameRunId'
 };
 
@@ -22,13 +23,16 @@ export function parseStartParams() {
   return result;
 }
 
-export function setScreenQuery(screen, extra = {}) {
+export function setScreenQuery(screen, extra = {}, options = {}) {
+  if (options.skipHistory) return;
   let path = `/${screen}`;
   const paramKey = ROUTE_PARAMS[screen];
   if (paramKey && extra[paramKey]) {
     path += `/${encodeURIComponent(extra[paramKey])}`;
   }
-  window.history.replaceState({}, '', path);
+  if (window.location.pathname === path) return;
+  const method = options.replaceHistory ? 'replaceState' : 'pushState';
+  window.history[method]({}, '', path);
 }
 
 export function apiHeaders(sessionKey) {

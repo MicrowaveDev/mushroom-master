@@ -162,6 +162,23 @@ const App = {
       gs.goTo('home');
     }
 
+    async function openRoute(startParams, routeOptions = {}) {
+      const options = { routeOptions };
+      if (startParams.screen === 'runComplete' && startParams.gameRunId && state.sessionKey) {
+        await gameRun.loadRunComplete(startParams.gameRunId, options);
+      } else if (startParams.screen === 'runSummary' && startParams.gameRunId && state.sessionKey) {
+        await gameRun.loadRunSummary(startParams.gameRunId, options);
+      } else if (startParams.replay && state.sessionKey) {
+        await replay.loadReplay(startParams.replay, options);
+      } else if (startParams.challenge && state.sessionKey) {
+        await social.openChallenge(startParams.challenge, options);
+      } else if (startParams.screen === 'game-run' && state.gameRun?.id === startParams.gameRunId) {
+        gs.goTo('prep', {}, routeOptions);
+      } else if (startParams.screen) {
+        gs.goTo(startParams.screen, {}, routeOptions);
+      }
+    }
+
     async function onReplayFinish() {
       if (state.gameRun) {
         if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
@@ -215,6 +232,7 @@ const App = {
     // --- Mount ---
     let appRootEl = null;
     let cleanupTelegram = () => {};
+    let cleanupPopstate = () => {};
     onMounted(async () => {
       cleanupTelegram = telegram.init();
       auth.applyTelegramTheme();
@@ -230,12 +248,12 @@ const App = {
         await replay.loadReplay(state.pendingReconnectBattleId);
         state.pendingReconnectBattleId = null;
       }
-      const startParams = parseStartParams();
-      if (startParams.screen === 'runComplete' && startParams.gameRunId && state.sessionKey) {
-        await gameRun.loadRunComplete(startParams.gameRunId);
-      }
-      if (startParams.challenge && state.sessionKey) await social.openChallenge(startParams.challenge);
-      if (startParams.replay && state.sessionKey) await replay.loadReplay(startParams.replay);
+      await openRoute(parseStartParams(), { replaceHistory: true });
+      const onPopstate = () => {
+        openRoute(parseStartParams(), { skipHistory: true, skipTransition: true });
+      };
+      window.addEventListener('popstate', onPopstate);
+      cleanupPopstate = () => window.removeEventListener('popstate', onPopstate);
       if (state.screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
         await devTools.loadInventoryReview();
       }
@@ -247,6 +265,7 @@ const App = {
     onUnmounted(() => {
       sse.disconnect();
       cleanupTelegram();
+      cleanupPopstate();
       touch.detachTouch(appRootEl);
       motionTracker.destroy();
     });
@@ -403,6 +422,13 @@ const App = {
           :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition"
           @go-home="handleRunSummaryClose" @load-replay="loadReplay($event)"
         />
+
+        <section v-else-if="state.screen === 'runSummary'" class="route-loading-screen" data-testid="run-summary-loading">
+          <div class="route-loading-card panel">
+            <span class="route-loading-spinner" aria-hidden="true"></span>
+            <h2>{{ t.runComplete }}</h2>
+          </div>
+        </section>
 
         <replay-screen v-else-if="state.screen === 'replay' && state.currentBattle"
           :state="state" :t="t" :format-delta="formatDelta"
