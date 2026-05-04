@@ -3776,12 +3776,15 @@ select {
   content: '';
   position: absolute;
   left: var(--bubble-tail-left, 32%);
-  bottom: -10px;
+  top: var(--bubble-tail-top, auto);
+  bottom: var(--bubble-tail-bottom, -10px);
   width: 18px;
   height: 18px;
   background: rgba(255, 250, 239, 0.96);
-  border-right: 1px solid rgba(138, 97, 53, 0.22);
-  border-bottom: 1px solid rgba(138, 97, 53, 0.22);
+  border-left: 1px solid var(--bubble-tail-border-left, transparent);
+  border-top: 1px solid var(--bubble-tail-border-top, transparent);
+  border-right: 1px solid var(--bubble-tail-border-right, rgba(138, 97, 53, 0.22));
+  border-bottom: 1px solid var(--bubble-tail-border-bottom, rgba(138, 97, 53, 0.22));
   transform: rotate(45deg);
 }
 
