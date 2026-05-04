@@ -93,7 +93,12 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.goto(`${baseURL}/home`);
   await page.waitForSelector('.home');
-  await expect(page.locator('.friends-panel')).toBeVisible();
+  await expect(page.locator('.home-social-tab')).toBeVisible();
+  await page.locator('.home-social-tab').click();
+  await expect(page.locator('.home-social-sidebar')).toBeVisible();
+  await expect(page.locator('.home-friend-code')).toBeVisible();
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.locator('.home-social-backdrop').click();
   await expect(page.locator('.leaderboard-panel')).toBeVisible();
   await saveShot(page, '02-home-desktop.png');
 

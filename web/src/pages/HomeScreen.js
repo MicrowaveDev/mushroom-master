@@ -20,7 +20,10 @@ export const HomeScreen = {
     'switch-portrait', 'switch-preset'
   ],
   data() {
-    return { expandedMushroomId: null };
+    return {
+      expandedMushroomId: null,
+      socialOpen: false
+    };
   },
   components: {
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
@@ -75,95 +78,198 @@ export const HomeScreen = {
     },
     nextAchievement() {
       return getNextRunAchievementHint(this.state.bootstrap?.season?.achievements || [], this.state.lang || 'en');
+    },
+    activityFeed() {
+      const achievements = getRunAchievementsByIds(this.state.bootstrap?.season?.recentAchievements || [], this.state.lang || 'en')
+        .slice(0, 4)
+        .map((achievement) => ({
+          id: `achievement-${achievement.id}`,
+          title: achievement.name,
+          meta: this.state.lang === 'ru' ? 'Достижение получено' : 'Achievement unlocked',
+          type: 'achievement',
+          achievement
+        }));
+      const runs = (this.state.bootstrap?.gameRunHistory || [])
+        .slice(0, 4)
+        .map((run) => {
+          const described = this.describeRun(run);
+          return {
+            id: `run-${run.id}`,
+            title: described?.outcomeLabel || this.t.gameRuns,
+            meta: `${described?.ourName || ''} · ${this.t.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', described?.completedRounds || 0)}`,
+            type: described?.outcomeKey || 'run'
+          };
+        });
+      return [...achievements, ...runs].slice(0, 6);
     }
   },
   template: `
     <section class="home">
-      <!-- Two-column layout: Mushrooms + Battles -->
-      <div class="home-columns">
-        <!-- Mushrooms list -->
-        <article class="panel home-section">
+      <button class="home-social-tab" :aria-expanded="socialOpen" @click="socialOpen = true">{{ t.friends }}</button>
+      <div v-if="socialOpen" class="home-social-backdrop" @click="socialOpen = false"></div>
+      <aside class="home-social-sidebar" :class="{ 'home-social-sidebar--open': socialOpen }" aria-label="Social">
+        <div class="home-section-header">
+          <h3>{{ t.friends }}</h3>
+          <button class="ghost home-social-close" @click="socialOpen = false">×</button>
+        </div>
+        <div v-if="state.challenge" class="home-challenge-banner">
+          <span>{{ state.challenge.status === 'pending' ? t.pendingChallenge : state.challenge.status }}</span>
+          <div class="home-challenge-actions">
+            <button class="primary" @click="$emit('accept-challenge')">{{ t.acceptChallenge }}</button>
+            <button class="ghost" @click="$emit('decline-challenge')">{{ t.declineChallenge }}</button>
+          </div>
+        </div>
+        <div class="home-friends-list" v-if="state.friends?.length">
+          <div v-for="friend in state.friends" :key="friend.id" class="home-friend-row">
+            <div class="home-friend-info">
+              <strong>{{ friend.name }}</strong>
+              <span class="home-friend-rating">{{ friend.rating }}</span>
+            </div>
+            <button class="secondary home-friend-challenge" @click="$emit('challenge-friend', friend.id)">{{ t.createChallenge }}</button>
+          </div>
+        </div>
+        <div v-else class="home-empty-hint">
+          <p>{{ t.noFriendsYet }}</p>
+        </div>
+        <form class="home-add-friend-row" @submit.prevent="$emit('add-friend', $event)">
+          <input name="friendCode" :placeholder="t.friendCode" class="home-friend-input" />
+          <button class="primary" type="submit">{{ t.addFriend }}</button>
+        </form>
+        <span class="home-friend-code">{{ t.yourCode }}: <strong>{{ state.bootstrap.player.friendCode }}</strong></span>
+
+        <section class="home-activity-feed">
+          <h3>{{ state.lang === 'ru' ? 'События' : 'Activity' }}</h3>
+          <article v-for="item in activityFeed" :key="item.id" class="home-activity-item" :class="'home-activity-item--' + item.type">
+            <achievement-badge v-if="item.achievement" :achievement="item.achievement" size="small" />
+            <span v-else class="home-activity-dot"></span>
+            <div>
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.meta }}</p>
+            </div>
+          </article>
+        </section>
+      </aside>
+
+      <article class="panel home-roster-panel">
+        <div class="home-section-header">
           <h3>{{ t.characters }}</h3>
-          <div class="home-mushroom-list">
-            <div v-for="m in roster" :key="m.id" class="home-mushroom-card">
-              <div
-                class="home-mushroom-row"
-                :class="{ 'home-mushroom-row--active': m.isActive }"
-                @click="selectMushroom(m)"
-                @keydown.enter.prevent="selectMushroom(m)"
-                @keydown.space.prevent="selectMushroom(m)"
-                :role="m.isActive ? 'group' : 'button'"
-                :tabindex="m.isActive ? -1 : 0"
-              >
-                <img :src="m.portraitUrl" :alt="m.name[state.lang]" class="home-mushroom-portrait" :style="{ objectPosition: portraitPosition(m.id) }"/>
-                <div class="home-mushroom-info">
-                  <div class="home-mushroom-name-row">
-                    <strong>{{ m.name[state.lang] }}</strong>
-                    <span v-if="m.isActive" class="home-mushroom-active-tag">{{ t.active }}</span>
-                    <span :class="'home-mushroom-tier tier--' + m.tier">{{ t['tier_' + m.tier] }}</span>
-                  </div>
-                  <span class="home-mushroom-style">{{ m.styleTag }}</span>
-                  <span class="home-mushroom-stats">
-                    <span class="home-mushroom-level">{{ t.level }} {{ m.level }}</span>
-                    <span v-if="m.wins || m.losses || m.draws" class="home-mushroom-record">{{ m.wins }}<small>{{ t.winsShort }}</small> {{ m.losses }}<small>{{ t.lossesShort }}</small> {{ m.draws }}<small>{{ t.drawsShort }}</small></span>
-                  </span>
-                  <div v-if="m.nextLevelMycelium !== null" class="home-mushroom-progress" :title="m.currentLevelMycelium + ' / ' + m.nextLevelMycelium">
-                    <div class="home-mushroom-progress-fill" :style="{ width: Math.min(100, Math.round(m.currentLevelMycelium / m.nextLevelMycelium * 100)) + '%' }"></div>
-                  </div>
+        </div>
+        <div class="home-mushroom-list">
+          <div v-for="m in roster" :key="m.id" class="home-mushroom-card">
+            <div
+              class="home-mushroom-row"
+              :class="{ 'home-mushroom-row--active': m.isActive }"
+              @click="selectMushroom(m)"
+              @keydown.enter.prevent="selectMushroom(m)"
+              @keydown.space.prevent="selectMushroom(m)"
+              :role="m.isActive ? 'group' : 'button'"
+              :tabindex="m.isActive ? -1 : 0"
+            >
+              <img :src="m.portraitUrl" :alt="m.name[state.lang]" class="home-mushroom-portrait" :style="{ objectPosition: portraitPosition(m.id) }"/>
+              <div class="home-mushroom-info">
+                <div class="home-mushroom-name-row">
+                  <strong>{{ m.name[state.lang] }}</strong>
+                  <span v-if="m.isActive" class="home-mushroom-active-tag">{{ t.active }}</span>
+                  <span :class="'home-mushroom-tier tier--' + m.tier">{{ t['tier_' + m.tier] }}</span>
                 </div>
-                <div class="home-mushroom-actions">
-                  <button v-if="!m.isActive" class="ghost home-mushroom-select" @click.stop="$emit('select-mushroom', m.id)">{{ t.pick }}</button>
-                  <button
-                    v-if="m.portraits.length > 1 || m.presets.length > 1"
-                    class="ghost home-mushroom-customize"
-                    :class="{ 'home-mushroom-customize--open': expandedMushroomId === m.id }"
-                    @click.stop="expandedMushroomId = expandedMushroomId === m.id ? null : m.id"
-                    :title="t.customize"
-                  >✎</button>
+                <span class="home-mushroom-style">{{ m.styleTag }}</span>
+                <span class="home-mushroom-stats">
+                  <span class="home-mushroom-level">{{ t.level }} {{ m.level }}</span>
+                  <span v-if="m.wins || m.losses || m.draws" class="home-mushroom-record">{{ m.wins }}<small>{{ t.winsShort }}</small> {{ m.losses }}<small>{{ t.lossesShort }}</small> {{ m.draws }}<small>{{ t.drawsShort }}</small></span>
+                </span>
+                <div v-if="m.nextLevelMycelium !== null" class="home-mushroom-progress" :title="m.currentLevelMycelium + ' / ' + m.nextLevelMycelium">
+                  <div class="home-mushroom-progress-fill" :style="{ width: Math.min(100, Math.round(m.currentLevelMycelium / m.nextLevelMycelium * 100)) + '%' }"></div>
                 </div>
               </div>
-
-              <!-- Portrait + preset picker (expanded) -->
-              <div v-if="expandedMushroomId === m.id" class="home-mushroom-picker">
-                <!-- Portrait swatches -->
-                <div v-if="m.portraits.length > 1" class="home-picker-section">
-                  <span class="home-picker-label">{{ t.portraits }}</span>
-                  <div class="home-portrait-swatches">
-                    <button
-                      v-for="p in m.portraits" :key="p.id"
-                      class="home-portrait-swatch"
-                      :class="{ 'home-portrait-swatch--active': m.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked }"
-                      :title="p.unlocked ? p.name[state.lang] : t.portraitLocked.replace('{n}', p.cost)"
-                      @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: m.id, portraitId: p.id })"
-                    >
-                      <img :src="p.path" :alt="p.name[state.lang]" />
-                      <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
-                        <span class="home-swatch-price-icon">🍄</span>
-                        <span class="home-swatch-price-value">{{ p.cost }}</span>
-                      </span>
-                    </button>
-                  </div>
+              <div class="home-mushroom-actions">
+                <button v-if="!m.isActive" class="ghost home-mushroom-select" @click.stop="$emit('select-mushroom', m.id)">{{ t.pick }}</button>
+                <button
+                  v-if="m.portraits.length > 1 || m.presets.length > 1"
+                  class="ghost home-mushroom-customize"
+                  :class="{ 'home-mushroom-customize--open': expandedMushroomId === m.id }"
+                  @click.stop="expandedMushroomId = expandedMushroomId === m.id ? null : m.id"
+                  :title="t.customize"
+                >✎</button>
+              </div>
+            </div>
+            <div v-if="expandedMushroomId === m.id" class="home-mushroom-picker">
+              <div v-if="m.portraits.length > 1" class="home-picker-section">
+                <span class="home-picker-label">{{ t.portraits }}</span>
+                <div class="home-portrait-swatches">
+                  <button
+                    v-for="p in m.portraits" :key="p.id"
+                    class="home-portrait-swatch"
+                    :class="{ 'home-portrait-swatch--active': m.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked }"
+                    :title="p.unlocked ? p.name[state.lang] : t.portraitLocked.replace('{n}', p.cost)"
+                    @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: m.id, portraitId: p.id })"
+                  >
+                    <img :src="p.path" :alt="p.name[state.lang]" />
+                    <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
+                      <span class="home-swatch-price-icon">🍄</span>
+                      <span class="home-swatch-price-value">{{ p.cost }}</span>
+                    </span>
+                  </button>
                 </div>
-
-                <!-- Preset pills -->
-                <div v-if="m.presets.length > 1" class="home-picker-section">
-                  <span class="home-picker-label">{{ t.starterPreset }}</span>
-                  <div class="home-preset-pills">
-                    <button
-                      v-for="p in m.presets" :key="p.id"
-                      class="home-preset-pill"
-                      :class="{ 'home-preset-pill--active': m.activePreset === p.id, 'home-preset-pill--locked': !p.unlocked }"
-                      :title="p.unlocked ? '' : t.presetLocked.replace('{n}', p.requiredLevel)"
-                      @click.stop="p.unlocked && $emit('switch-preset', { mushroomId: m.id, presetId: p.id })"
-                    >{{ p.name[state.lang] }}{{ !p.unlocked ? ' 🔒' : '' }}</button>
-                  </div>
+              </div>
+              <div v-if="m.presets.length > 1" class="home-picker-section">
+                <span class="home-picker-label">{{ t.starterPreset }}</span>
+                <div class="home-preset-pills">
+                  <button
+                    v-for="p in m.presets" :key="p.id"
+                    class="home-preset-pill"
+                    :class="{ 'home-preset-pill--active': m.activePreset === p.id, 'home-preset-pill--locked': !p.unlocked }"
+                    :title="p.unlocked ? '' : t.presetLocked.replace('{n}', p.requiredLevel)"
+                    @click.stop="p.unlocked && $emit('switch-preset', { mushroomId: m.id, presetId: p.id })"
+                  >{{ p.name[state.lang] }}{{ !p.unlocked ? ' 🔒' : '' }}</button>
                 </div>
               </div>
             </div>
           </div>
-        </article>
+        </div>
+      </article>
 
-        <!-- Battles list -->
+      <article class="panel home-season-panel" :class="'home-season-panel--' + seasonSummary.id">
+        <div class="home-season-main">
+          <season-rank-emblem class="home-season-emblem" :rank-id="seasonSummary.id" :size="84" />
+          <div class="home-season-copy">
+            <p class="home-season-kicker">{{ seasonSummary.seasonName }}</p>
+            <h3>{{ seasonSummary.name }}</h3>
+            <p>{{ seasonSummary.seasonTheme }}</p>
+          </div>
+          <div class="home-season-points">
+            <strong>{{ seasonSummary.totalPoints }} {{ t.seasonPoints }}</strong>
+            <span>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</span>
+            <button class="link home-season-journal-link" @click="$emit('go', 'profile')">{{ t.achievementJournal }}</button>
+          </div>
+        </div>
+        <div class="home-season-progress" aria-hidden="true">
+          <span :style="{ width: seasonSummary.progress + '%' }"></span>
+        </div>
+        <div v-if="seasonAchievements.length" class="home-season-achievements">
+          <article
+            v-for="(achievement, index) in seasonAchievements"
+            :key="achievement.id"
+            class="home-season-achievement"
+            :class="['home-season-achievement--' + achievement.type, 'home-season-achievement--accent-' + achievement.accent]"
+            :style="{ animationDelay: (index * 70) + 'ms' }"
+          >
+            <achievement-badge :achievement="achievement" size="small" />
+            <div>
+              <strong>{{ achievement.name }}</strong>
+              <p>{{ achievement.lore }}</p>
+            </div>
+          </article>
+        </div>
+        <div v-else-if="nextAchievement" class="home-season-next-badge">
+          <achievement-badge :achievement="nextAchievement" size="small" />
+          <div>
+            <strong>{{ t.nextAchievement }}</strong>
+            <p>{{ nextAchievement.name }}</p>
+          </div>
+        </div>
+      </article>
+
+      <div class="home-columns home-main-columns">
         <article class="panel home-section">
           <div class="home-section-header">
             <h3>{{ t.gameRuns }}</h3>
@@ -210,84 +316,7 @@ export const HomeScreen = {
             <span>{{ t.battleLimit }}: {{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</span>
           </div>
         </article>
-      </div>
 
-      <article class="panel home-season-panel" :class="'home-season-panel--' + seasonSummary.id">
-        <div class="home-season-main">
-          <season-rank-emblem class="home-season-emblem" :rank-id="seasonSummary.id" :size="84" />
-          <div class="home-season-copy">
-            <p class="home-season-kicker">{{ seasonSummary.seasonName }}</p>
-            <h3>{{ seasonSummary.name }}</h3>
-            <p>{{ seasonSummary.seasonTheme }}</p>
-          </div>
-          <div class="home-season-points">
-            <strong>{{ seasonSummary.totalPoints }} {{ t.seasonPoints }}</strong>
-            <span>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</span>
-            <button class="link home-season-journal-link" @click="$emit('go', 'profile')">{{ t.achievementJournal }}</button>
-          </div>
-        </div>
-        <div class="home-season-progress" aria-hidden="true">
-          <span :style="{ width: seasonSummary.progress + '%' }"></span>
-        </div>
-        <div v-if="seasonAchievements.length" class="home-season-achievements">
-          <article
-            v-for="(achievement, index) in seasonAchievements"
-            :key="achievement.id"
-            class="home-season-achievement"
-            :class="['home-season-achievement--' + achievement.type, 'home-season-achievement--accent-' + achievement.accent]"
-            :style="{ animationDelay: (index * 70) + 'ms' }"
-          >
-            <achievement-badge :achievement="achievement" size="small" />
-            <div>
-              <strong>{{ achievement.name }}</strong>
-              <p>{{ achievement.lore }}</p>
-            </div>
-          </article>
-        </div>
-        <div v-else-if="nextAchievement" class="home-season-next-badge">
-          <achievement-badge :achievement="nextAchievement" size="small" />
-          <div>
-            <strong>{{ t.nextAchievement }}</strong>
-            <p>{{ nextAchievement.name }}</p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Friends + Leaderboard -->
-      <div class="home-columns">
-        <!-- Friends -->
-        <article class="panel home-friends-compact friends-panel">
-          <div class="home-section-header">
-            <h3>{{ t.friends }} <span v-if="state.friends?.length" class="home-friends-count">{{ state.friends.length }}</span></h3>
-          </div>
-          <div v-if="state.challenge" class="home-challenge-banner">
-            <span>{{ state.challenge.status === 'pending' ? t.pendingChallenge : state.challenge.status }}</span>
-            <div class="home-challenge-actions">
-              <button class="primary" @click="$emit('accept-challenge')">{{ t.acceptChallenge }}</button>
-              <button class="ghost" @click="$emit('decline-challenge')">{{ t.declineChallenge }}</button>
-            </div>
-          </div>
-          <div class="home-friends-list" v-if="state.friends?.length">
-            <div v-for="friend in state.friends.slice(0, 3)" :key="friend.id" class="home-friend-row">
-              <div class="home-friend-info">
-                <strong>{{ friend.name }}</strong>
-                <span class="home-friend-rating">{{ friend.rating }}</span>
-              </div>
-              <button class="secondary home-friend-challenge" @click="$emit('challenge-friend', friend.id)">{{ t.createChallenge }}</button>
-            </div>
-            <button v-if="state.friends.length > 3" class="link" @click="$emit('go', 'friends')">{{ t.viewAll }}</button>
-          </div>
-          <div v-else class="home-empty-hint">
-            <p>{{ t.noFriendsYet }}</p>
-          </div>
-          <form class="home-add-friend-row" @submit.prevent="$emit('add-friend', $event)">
-            <input name="friendCode" :placeholder="t.friendCode" class="home-friend-input" />
-            <button class="primary" type="submit">{{ t.addFriend }}</button>
-          </form>
-          <span class="home-friend-code">{{ t.yourCode }}: <strong>{{ state.bootstrap.player.friendCode }}</strong></span>
-        </article>
-
-        <!-- Leaderboard -->
         <article class="panel home-section leaderboard-panel" v-if="topLeaderboard.length">
           <div class="home-section-header">
             <h3>{{ t.leaderboard }}</h3>
