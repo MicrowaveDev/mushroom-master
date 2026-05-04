@@ -135,10 +135,15 @@ export const HomeScreen = {
             .replace('{mode}', described?.modeLabel || this.t.gameRuns)
             .replace('{outcome}', described?.outcomeLabel || this.t.gameRuns)
             .replace('{rounds}', completedRounds);
+          const meta = [
+            described?.ourName || '',
+            this.t.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', completedRounds),
+            described?.dateLabel || ''
+          ].filter(Boolean).join(' · ');
           return {
             id: `run-${run.id}`,
             title,
-            meta: `${described?.ourName || ''} · ${this.t.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', completedRounds)}`,
+            meta,
             type: described?.outcomeKey || 'run',
             at: run.endedAt || run.startedAt || run.createdAt || new Date().toISOString()
           };
