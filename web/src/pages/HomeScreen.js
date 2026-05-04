@@ -3,6 +3,7 @@ import { getNextRunAchievementHint, getRunAchievementsByIds } from '../../../app
 import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
 import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
 import { AchievementBadge } from '../components/AchievementBadge.js';
+import { HomeSocialSidebar } from '../components/HomeSocialSidebar.js';
 
 export const HomeScreen = {
   name: 'HomeScreen',
@@ -22,21 +23,50 @@ export const HomeScreen = {
   data() {
     return {
       expandedMushroomId: null,
-      socialOpen: false
+      socialPanel: '',
+      quickSettingsOpen: false,
+      homeAtTop: true
     };
   },
   components: {
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
     SeasonRankEmblem,
-    AchievementBadge
+    AchievementBadge,
+    HomeSocialSidebar
   },
   methods: {
     selectMushroom(mushroom) {
       if (mushroom.isActive) return;
       this.$emit('select-mushroom', mushroom.id);
+    },
+    openSocialPanel(panel) {
+      this.quickSettingsOpen = false;
+      this.socialPanel = panel;
+    },
+    setMobileActionMode(mode) {
+      this.state.mobileHomeActionsMode = mode;
+      this.quickSettingsOpen = false;
+    },
+    onScroll() {
+      this.homeAtTop = window.scrollY <= 24;
     }
   },
+  mounted() {
+    this.onScroll();
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+  },
+  beforeUnmount() {
+    window.removeEventListener('scroll', this.onScroll);
+  },
   computed: {
+    mobileActionMode() {
+      return this.state.mobileHomeActionsMode || 'auto';
+    },
+    showMobileBottomActions() {
+      if (this.mobileActionMode === 'always') return true;
+      if (this.mobileActionMode === 'auto') return this.homeAtTop;
+      return false;
+    },
     playerRank() {
       const id = this.state.bootstrap?.player?.id;
       if (!id || !this.state.leaderboard?.length) return null;
@@ -105,50 +135,60 @@ export const HomeScreen = {
   },
   template: `
     <section class="home">
-      <button class="home-social-tab" :aria-expanded="socialOpen" @click="socialOpen = true">{{ t.friends }}</button>
-      <div v-if="socialOpen" class="home-social-backdrop" @click="socialOpen = false"></div>
-      <aside class="home-social-sidebar" :class="{ 'home-social-sidebar--open': socialOpen }" aria-label="Social">
-        <div class="home-section-header">
-          <h3>{{ t.friends }}</h3>
-          <button class="ghost home-social-close" @click="socialOpen = false">×</button>
-        </div>
-        <div v-if="state.challenge" class="home-challenge-banner">
-          <span>{{ state.challenge.status === 'pending' ? t.pendingChallenge : state.challenge.status }}</span>
-          <div class="home-challenge-actions">
-            <button class="primary" @click="$emit('accept-challenge')">{{ t.acceptChallenge }}</button>
-            <button class="ghost" @click="$emit('decline-challenge')">{{ t.declineChallenge }}</button>
-          </div>
-        </div>
-        <div class="home-friends-list" v-if="state.friends?.length">
-          <div v-for="friend in state.friends" :key="friend.id" class="home-friend-row">
-            <div class="home-friend-info">
-              <strong>{{ friend.name }}</strong>
-              <span class="home-friend-rating">{{ friend.rating }}</span>
-            </div>
-            <button class="secondary home-friend-challenge" @click="$emit('challenge-friend', friend.id)">{{ t.createChallenge }}</button>
-          </div>
-        </div>
-        <div v-else class="home-empty-hint">
-          <p>{{ t.noFriendsYet }}</p>
-        </div>
-        <form class="home-add-friend-row" @submit.prevent="$emit('add-friend', $event)">
-          <input name="friendCode" :placeholder="t.friendCode" class="home-friend-input" />
-          <button class="primary" type="submit">{{ t.addFriend }}</button>
-        </form>
-        <span class="home-friend-code">{{ t.yourCode }}: <strong>{{ state.bootstrap.player.friendCode }}</strong></span>
+      <div class="home-action-rail" :class="{ 'home-action-rail--mobile': mobileActionMode === 'side' }">
+        <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
+          <span aria-hidden="true">!</span>
+        </button>
+        <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
 
-        <section class="home-activity-feed">
-          <h3>{{ state.lang === 'ru' ? 'События' : 'Activity' }}</h3>
-          <article v-for="item in activityFeed" :key="item.id" class="home-activity-item" :class="'home-activity-item--' + item.type">
-            <achievement-badge v-if="item.achievement" :achievement="item.achievement" size="small" />
-            <span v-else class="home-activity-dot"></span>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.meta }}</p>
-            </div>
-          </article>
-        </section>
-      </aside>
+      <nav
+        v-if="mobileActionMode !== 'menu'"
+        class="home-bottom-actions"
+        :class="{ 'home-bottom-actions--visible': showMobileBottomActions }"
+        :aria-hidden="!showMobileBottomActions"
+      >
+        <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
+          <span aria-hidden="true">!</span>
+        </button>
+        <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="quickSettingsOpen = !quickSettingsOpen">
+          <span aria-hidden="true">⚙</span>
+        </button>
+        <div v-if="quickSettingsOpen" class="home-quick-settings">
+          <strong>{{ t.mobileActionsMode }}</strong>
+          <button :class="{ active: mobileActionMode === 'auto' }" @click="setMobileActionMode('auto')">{{ t.mobileActionsAuto }}</button>
+          <button :class="{ active: mobileActionMode === 'always' }" @click="setMobileActionMode('always')">{{ t.mobileActionsAlways }}</button>
+          <button :class="{ active: mobileActionMode === 'side' }" @click="setMobileActionMode('side')">{{ t.mobileActionsSide }}</button>
+          <button :class="{ active: mobileActionMode === 'menu' }" @click="setMobileActionMode('menu')">{{ t.mobileActionsMenu }}</button>
+        </div>
+      </nav>
+
+      <home-social-sidebar
+        :open="!!socialPanel"
+        :panel="socialPanel"
+        :state="state"
+        :t="t"
+        :activity-feed="activityFeed"
+        @close="socialPanel = ''"
+        @add-friend="$emit('add-friend', $event)"
+        @challenge-friend="$emit('challenge-friend', $event)"
+        @accept-challenge="$emit('accept-challenge')"
+        @decline-challenge="$emit('decline-challenge')"
+      />
+
+      <div v-if="mobileActionMode === 'menu' && state.menuOpen" class="home-menu-actions">
+        <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
+          <span aria-hidden="true">!</span>
+        </button>
+        <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
 
       <article class="panel home-roster-panel">
         <div class="home-section-header">

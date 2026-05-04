@@ -67,6 +67,7 @@ const App = {
       shopOffer: [],
       rerollSpent: 0,
       menuOpen: false,
+      mobileHomeActionsMode: localStorage.getItem('mobileHomeActionsMode') || 'auto',
       draggingArtifactId: '',
       draggingItem: null,
       draggingBagId: '',
@@ -208,6 +209,9 @@ const App = {
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
     watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
+    watch(() => state.mobileHomeActionsMode, (mode) => {
+      localStorage.setItem('mobileHomeActionsMode', mode || 'auto');
+    });
     watch(() => state.bootstrap?.settings?.reducedMotion, (reduced) => {
       document.documentElement.classList.toggle('reduced-motion', !!reduced);
       motionTracker.setAppPreference(!!reduced);
