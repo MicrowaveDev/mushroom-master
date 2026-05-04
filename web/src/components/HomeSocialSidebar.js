@@ -2,18 +2,23 @@ import { AchievementBadge } from './AchievementBadge.js';
 
 export const HomeSocialSidebar = {
   name: 'HomeSocialSidebar',
-  props: ['open', 'panel', 'state', 't', 'activityFeed'],
+  props: ['open', 'panel', 'state', 't', 'activityFeed', 'mobileActionMode'],
   emits: [
     'close',
     'add-friend', 'challenge-friend',
-    'accept-challenge', 'decline-challenge'
+    'accept-challenge', 'decline-challenge',
+    'set-mobile-action-mode'
   ],
   components: { AchievementBadge },
   computed: {
     isFriends() {
       return this.panel === 'friends';
     },
+    isSettings() {
+      return this.panel === 'settings';
+    },
     title() {
+      if (this.isSettings) return this.t.settings;
       if (this.isFriends) return this.t.friends;
       return this.t.notifications;
     }
@@ -54,7 +59,17 @@ export const HomeSocialSidebar = {
           <span class="home-friend-code">{{ t.yourCode }}: <strong>{{ state.bootstrap.player.friendCode }}</strong></span>
         </template>
 
-        <section class="home-activity-feed">
+        <section v-if="isSettings" class="home-sidebar-settings">
+          <h3>{{ t.mobileActionsMode }}</h3>
+          <div class="home-sidebar-option-list">
+            <button :class="{ active: mobileActionMode === 'auto' }" @click="$emit('set-mobile-action-mode', 'auto')">{{ t.mobileActionsAuto }}</button>
+            <button :class="{ active: mobileActionMode === 'always' }" @click="$emit('set-mobile-action-mode', 'always')">{{ t.mobileActionsAlways }}</button>
+            <button :class="{ active: mobileActionMode === 'side' }" @click="$emit('set-mobile-action-mode', 'side')">{{ t.mobileActionsSide }}</button>
+            <button :class="{ active: mobileActionMode === 'menu' }" @click="$emit('set-mobile-action-mode', 'menu')">{{ t.mobileActionsMenu }}</button>
+          </div>
+        </section>
+
+        <section v-if="!isSettings" class="home-activity-feed">
           <h3>{{ t.activity }}</h3>
           <article v-for="item in activityFeed" :key="item.id" class="home-activity-item" :class="'home-activity-item--' + item.type">
             <achievement-badge v-if="item.achievement" :achievement="item.achievement" size="small" />
