@@ -1,4 +1,5 @@
 import { AchievementBadge } from './AchievementBadge.js';
+import { buildFriendInviteLink } from '../helpers/telegram-links.js';
 
 export const HomeSocialSidebar = {
   name: 'HomeSocialSidebar',
@@ -12,13 +13,22 @@ export const HomeSocialSidebar = {
   components: { AchievementBadge },
   methods: {
     inviteText() {
-      return this.t.friendInviteText.replace('{code}', this.state.bootstrap.player.friendCode);
+      return this.t.friendInviteText
+        .replace('{code}', this.state.bootstrap.player.friendCode)
+        .replace('{link}', this.inviteLink());
+    },
+    inviteLink() {
+      return buildFriendInviteLink({
+        friendCode: this.state.bootstrap.player.friendCode,
+        botUsername: this.state.appConfig?.botUsername
+      });
     },
     async shareInvite() {
       const text = this.inviteText();
+      const url = this.inviteLink();
       try {
         if (navigator.share) {
-          await navigator.share({ text });
+          await navigator.share({ text, url });
         } else if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(text);
         }

@@ -228,9 +228,10 @@ export async function createApp() {
   app.get('/api/app-config', (_req, res) => {
     res.json({
       success: true,
-        data: {
+      data: {
         localAiLabEnabled: isLocalAiLabEnabled(),
-        localDevAuthEnabled: process.env.NODE_ENV !== 'production'
+        localDevAuthEnabled: process.env.NODE_ENV !== 'production',
+        botUsername: botUsername()
       }
     });
   });
