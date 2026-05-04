@@ -321,15 +321,24 @@ const App = {
       />
 
       <template v-else-if="state.bootstrap">
-        <nav v-if="state.menuOpen" class="nav-dropdown">
-          <button class="nav-btn" @click="goTo('home')">{{ t.home }}</button>
-          <button class="nav-btn" @click="goTo('characters')">{{ t.characters }}</button>
-          <button class="nav-btn" @click="goTo('friends')">{{ t.friends }}</button>
-          <button class="nav-btn" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
-          <button class="nav-btn" @click="goTo('profile')">{{ t.profile }}</button>
-          <button class="nav-btn" @click="goTo('wiki')">{{ t.wiki }}</button>
-          <button class="nav-btn" @click="goTo('settings')">{{ t.settings }}</button>
-        </nav>
+        <template v-if="state.menuOpen">
+          <div class="nav-sidebar-backdrop" @click="state.menuOpen = false"></div>
+          <aside class="nav-sidebar" aria-label="Menu">
+            <div class="home-section-header">
+              <h3>{{ t.title }}</h3>
+              <button class="ghost nav-sidebar-close" @click="state.menuOpen = false" aria-label="Close">×</button>
+            </div>
+            <nav class="nav-sidebar-list">
+              <button class="nav-btn" :class="{ active: state.screen === 'home' }" @click="goTo('home')">{{ t.home }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'characters' }" @click="goTo('characters')">{{ t.characters }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'friends' }" @click="goTo('friends')">{{ t.friends }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'leaderboard' }" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'profile' }" @click="goTo('profile')">{{ t.profile }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'wiki' || state.screen === 'wiki-detail' }" @click="goTo('wiki')">{{ t.wiki }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'settings' }" @click="goTo('settings')">{{ t.settings }}</button>
+            </nav>
+          </aside>
+        </template>
 
         <section v-if="state.screen === 'firstRunStarting' || state.startingFirstRun" class="route-loading-screen" data-testid="first-run-starting">
           <div class="route-loading-card panel">
