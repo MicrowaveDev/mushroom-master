@@ -103,7 +103,7 @@ export const HomeSocialSidebar = {
           </div>
         </section>
 
-        <section v-if="!isSettings" class="home-activity-feed">
+        <section v-if="!isSettings && !isFriends" class="home-activity-feed">
           <template v-if="activityGroups?.length">
             <section v-for="group in activityGroups" :key="group.label" class="home-activity-group">
               <h3>{{ group.label }}</h3>
