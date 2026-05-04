@@ -9,7 +9,7 @@ export const ProfileScreen = {
   computed: {
     seasonSummary() {
       const season = this.state.bootstrap?.season || {};
-      return getSeasonProgressSummary(season.totalPoints || 0, this.state.lang || 'en', 0);
+      return getSeasonProgressSummary(season.totalPoints || 0, this.state.lang || 'en', 0, season.peakPoints || season.totalPoints || 0);
     },
     earnedAchievementMap() {
       const entries = this.state.bootstrap?.season?.achievements || [];
@@ -77,11 +77,13 @@ export const ProfileScreen = {
         <div class="profile-season-meter">
           <strong>{{ seasonSummary.name }}</strong>
           <span>{{ seasonSummary.totalPoints }} {{ t.seasonPoints }}</span>
+          <span>{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }} {{ t.seasonPoints }}</span>
           <div class="home-season-progress" aria-hidden="true">
             <span :style="{ width: seasonSummary.progress + '%' }"></span>
           </div>
           <small>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</small>
           <small class="profile-season-policy">{{ t.seasonChapterNoReset }}</small>
+          <small class="profile-season-policy">{{ t.seasonRulesHint }}</small>
           <div v-if="nextAchievement" class="profile-next-badge" :class="['profile-next-badge--' + nextAchievement.type, 'profile-next-badge--accent-' + nextAchievement.accent]">
             <achievement-badge :achievement="nextAchievement" size="small" />
             <div>

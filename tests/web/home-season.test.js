@@ -22,8 +22,10 @@ test('home screen exposes persisted season progress and recent achievements', ()
       mushrooms: [],
       progression: {},
       season: {
-        totalPoints: 31,
+        totalPoints: 140,
         levelId: 'diamond',
+        peakPoints: 140,
+        peakLevelId: 'diamond',
         recentAchievements: [
           { id: 'season_diamond_node', earnedAt: '2026-04-26T22:00:00.000Z' },
           { id: 'perfect_circle', earnedAt: '2026-04-26T22:00:00.000Z' }
@@ -33,7 +35,9 @@ test('home screen exposes persisted season progress and recent achievements', ()
   });
 
   assert.equal(vm.seasonSummary.id, 'diamond');
-  assert.equal(vm.seasonSummary.totalPoints, 31);
+  assert.equal(vm.seasonSummary.totalPoints, 140);
+  assert.equal(vm.seasonSummary.peakLevelId, 'diamond');
+  assert.equal(vm.seasonSummary.peakPoints, 140);
   assert.deepEqual(vm.seasonAchievements.map((achievement) => achievement.id), ['season_diamond_node', 'perfect_circle']);
 });
 

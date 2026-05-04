@@ -19,7 +19,7 @@ Last verified against code: 2026-04-16.
 - **1-C.** The player starts with **5 lives** (`STARTING_LIVES`).
 - **1-D.** The player loses **1 life per round lost** (not per step).
 - **1-E.** The run ends when lives reach 0 (`end_reason = 'max_losses'`) or all 9 rounds complete (`end_reason = 'max_rounds'`).
-- **1-F.** The player may abandon the run at any time (`end_reason = 'abandoned'`).
+- **1-F.** The player may abandon the run at any time (`end_reason = 'abandoned'`). Before the abandon request is sent, the client shows a confirmation dialog that explains the season-rank penalty and offers cancel/confirm actions.
 - **1-G.** A player may keep **one active solo game run per mushroom** at a time. Starting a solo run for a different active mushroom does not abandon earlier mushroom runs; selecting that mushroom later can resume its run. Challenge runs still require both players to have no active run.
 - **1-H.** Max **10 game starts per player per day** (`DAILY_BATTLE_LIMIT`). Both solo game runs and challenge runs increment the same `daily_rate_limits.battle_starts` counter. (The counter is named `battle_starts` for historical reasons — it formerly tracked the now-deleted legacy single-battle flow as well.)
 
@@ -236,28 +236,34 @@ Membership is not stored. It is derived from overlap between item cells and acti
 
 ### Season Level Recap
 
+> Designer/operator notes, tuning checklist, and maintenance commands live in [`season-ranking.md`](season-ranking.md). The requirements below remain the authoritative behavior.
+
 - **9-E.** The run-complete screen derives a cosmetic **season score** from the finished run:
 
-  `seasonPoints = wins * 3 + completedRounds + 5 if endReason == max_rounds`
+  `seasonPoints = min(wins, 7) * 2 - losses + 3 if endReason == max_rounds - abandonPenalty`
 
-  Season points are persisted per player in `player_season_progress`, with one idempotency row per finished run in `player_season_runs`. The current season identity is `Season of the Deep Ring` / `Сезон Глубокого Кольца` (`season_1`). It behaves as a named chapter, not a destructive reset: accumulated progress remains part of the player history unless a future migration explicitly archives it. Season points do not affect matchmaking, rewards, combat, shop offers, ghosts, or rating. They exist to make the end-of-run recap feel important and to support lore achievements.
+  `abandonPenalty` is `2` when the run is abandoned before any completed round, and `5` after at least one completed round. Only the first 7 wins in a run award season points; the final 2 possible wins still matter for completion rewards and full-clear status, but the cap prevents a single perfect run from over-farming the ladder. Season points are persisted per player in `player_season_progress`, with one idempotency row per finished run in `player_season_runs`. Run deltas may be negative: losses reduce the season score, and abandoned runs add the exit penalty. Total persisted season points are clamped at 0, so Bronze cannot demote below the floor. `player_season_progress` also stores `peak_points` and `peak_level_id` so end-of-season rewards can use the player's best reached rank even if later losses reduce current rank. The current season identity is `Season of the Deep Ring` / `Сезон Глубокого Кольца` (`season_1`). It behaves as a named chapter, not a destructive reset: accumulated progress remains part of the player history unless a future migration explicitly archives it. Season points do not affect matchmaking, rewards, combat, shop offers, ghosts, or rating. They exist to make the end-of-run recap feel important and to support lore achievements.
 
-- **9-F.** Season score maps to the following **season levels** in `app/shared/season-levels.json`:
+  When the season formula or rank thresholds change, run `npm run game:season:recalculate` first as a dry run, then `npm run game:season:recalculate -- --write` to backfill `player_season_runs.points`, `player_season_progress.total_points`, and stored peak fields from stored wins/losses/end reasons.
 
-  | Season level | Points |
+- **9-F.** Season score maps to the following **season ranks** in `app/shared/season-levels.json`:
+
+  | Season rank | Points |
   |---|---:|
   | Bronze | 0+ |
-  | Silver | 8+ |
-  | Gold | 18+ |
-  | Diamond | 30+ |
+  | Silver | 25+ |
+  | Gold | 70+ |
+  | Diamond | 140+ |
 
-  The run-complete screen shows the reached level, a short lore line, points earned by the run, a points breakdown (`wins * 3`, completed rounds, full-clear bonus), total season points, and progress toward the next level. Diamond shows a max-level state.
-  The home screen also shows current persisted season level, total points, next-level progress, season identity, and recent achievement unlocks from `getPlayerState`. If there are no recent unlocks, it should show a small next-achievement hint instead of leaving the season panel feeling empty.
-  The season progress bar should animate into place, and run completion should visually emphasize a season level-up when `leveledUp` is true. The client also emits `mushroom:season-tier-up` and triggers Telegram haptics when available.
+  The run-complete screen shows the reached rank, peak rank, a short lore line, points earned by the run, a points breakdown (win points, loss penalty, full-clear bonus, and exit penalty when present), total season rank points, and progress toward the next rank. Diamond shows a max-rank state.
+  The prep HUD shows projected season-rank stakes for the current run and the abandon outcome before the player commits to Ready or Abandon.
+  The home screen also shows current persisted season rank, peak rank, total points, next-rank progress, season identity, the "first 7 wins count" rule hint, and recent achievement unlocks from `getPlayerState`. If there are no recent unlocks, it should show a small next-achievement hint instead of leaving the season panel feeling empty.
+  The season progress bar should animate into place. Run completion visually emphasizes a season rank-up when `leveledUp` is true, and applies a subdued penalty state when `leveledDown` is true. The client also emits `mushroom:season-tier-up` and triggers Telegram haptics for rank-ups when available.
+  Season-end archival uses `peak_level_id`, not current `level_id`, when assigning rewards. `npm run game:season:archive` previews the archive and `npm run game:season:archive -- --write` writes one archive row per player-season and grants the peak-rank reward once. Current reward tuning is defined in `seasonEndRewards`: Bronze `50 spore`, Silver `150 spore + 5 mycelium`, Gold `350 spore + 15 mycelium`, Diamond `800 spore + 40 mycelium`.
 
 - **9-G.** Lore achievements are defined in `app/shared/run-achievements.json`, split into `general` and `characters.<mushroomId>` lists. Earned achievements are persisted in `player_achievements` with a unique `(player_id, achievement_id)` constraint, so the same achievement is not re-awarded every run. A completed run may display newly earned general, season, and character-specific achievements on the run-complete screen. Achievement criteria may reference wins, losses, rounds completed, end reason, last-round outcome, win rate, season points, and season level.
   Newly earned achievements should reveal with a short staggered animation unless reduced motion is requested. If a run matches no achievements, the recap should show a quiet empty state that still acknowledges the run. Achievements already earned in an older run may still appear when criteria match, but must be marked as already earned rather than `New`. The client emits `mushroom:achievement-unlock` and triggers a light haptic hook when new achievements exist.
-  The client logs `achievement_unlock` and `season_tier_up` to `/api/client-events` for product analytics. Sound recommendations and generation prompts live in [`sound-design-recommendations.md`](sound-design-recommendations.md); no sound assets are required by this spec yet.
+  The client logs `achievement_unlock`, `season_tier_up`, and `season_rank_change` to `/api/client-events` for product analytics; those events are also persisted in `client_events`. `season_rank_change` includes direction, run points, total points, previous rank, and current rank so thresholds can be tuned from live distribution. Use `npm run game:season:inspect` for a player/rank debug table and `npm run game:season:analytics` for rank distribution, abandon/demotion rate, and opponent-kind/repeated-opponent summaries. Sound recommendations and generation prompts live in [`sound-design-recommendations.md`](sound-design-recommendations.md); no sound assets are required by this spec yet.
   The profile screen contains an achievement journal grouped by Season, General, and Character, with earned and locked states. Badge visuals should distinguish general, character, and season achievements; character badges use character accents, and season badges use Bronze/Silver/Gold/Diamond styling.
 
 ### ~~Legacy Single-Battle Rewards~~ (Deprecated)

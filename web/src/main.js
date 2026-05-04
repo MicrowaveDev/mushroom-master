@@ -89,6 +89,8 @@ const App = {
       gameRunSummary: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
+      abandonConfirmOpen: false,
+      pendingAbandonPenalty: -2,
       startingFirstRun: false,
       sellDragOver: false,
       actionInFlight: false,
@@ -353,7 +355,7 @@ const App = {
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
           :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta" :portrait-position="portraitPosition"
-          @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="abandonRun"
+          @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="requestAbandonRun"
           @load-replay="loadReplay($event)" @load-run-summary="loadRunSummary($event)" @go="goTo($event)"
           @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
           @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
@@ -415,7 +417,7 @@ const App = {
           @buy-run-item="buyRunShopItem($event)" @refresh-shop="refreshRunShop"
           @sell-dragover="onSellZoneDragOver($event)" @sell-dragleave="onSellZoneDragLeave"
           @sell-drop="onSellZoneDrop($event)"
-          @signal-ready="signalReady" @abandon="abandonRun"
+          @signal-ready="signalReady" @abandon="requestAbandonRun"
           @deactivate-bag="deactivateBag($event)"
           @rotate-bag="rotateBag($event)"
           @bag-chip-drag-start="onBagChipDragStart($event.bagId, $event.event)"
@@ -523,6 +525,25 @@ const App = {
         <h2>{{ t.authTitle }}</h2>
         <p>{{ t.authTagline }}</p>
       </section>
+
+      <div
+        v-if="state.abandonConfirmOpen"
+        class="confirm-backdrop"
+        role="presentation"
+        @click.self="cancelAbandonRun"
+      >
+        <section class="confirm-dialog panel" role="dialog" aria-modal="true" :aria-label="t.abandonConfirmTitle">
+          <h2>{{ t.abandonConfirmTitle }}</h2>
+          <p>{{ t.abandonConfirmBody }}</p>
+          <p class="confirm-penalty">
+            {{ t.abandonConfirmPenalty.replace('{points}', state.pendingAbandonPenalty) }}
+          </p>
+          <div class="confirm-actions">
+            <button class="ghost" :disabled="state.actionInFlight" @click="cancelAbandonRun">{{ t.cancel }}</button>
+            <button class="primary confirm-danger" :disabled="state.actionInFlight" @click="confirmAbandonRun">{{ state.actionInFlight ? t.abandonConfirming : t.abandonConfirmAction }}</button>
+          </div>
+        </section>
+      </div>
     </div>
   `
 };

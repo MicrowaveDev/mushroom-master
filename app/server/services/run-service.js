@@ -53,7 +53,7 @@ import {
 } from './game-run-loadout.js';
 import { awardRunSeasonProgress } from './season-service.js';
 import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
-import { getSeasonLevel, getSeasonPointsBreakdown } from '../../shared/season-levels.js';
+import { getSeasonLevel, getSeasonPointsBreakdown, seasonLevelRank } from '../../shared/season-levels.js';
 
 // In test environments, set REWARD_MULTIPLIER=N to scale spore+mycelium rewards
 // so unlocks can be reached after a handful of rounds instead of hundreds.
@@ -512,19 +512,26 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
          WHERE player_id = $1 AND season_id = $2 AND created_at <= $3`,
         [viewerPlayerId, seasonRun.season_id, seasonRun.created_at]
       );
-      const totalPoints = Number(totalResult.rows[0]?.total_points || 0);
+      const totalPoints = Math.max(0, Number(totalResult.rows[0]?.total_points || 0));
       const previousPoints = Math.max(0, totalPoints - Number(seasonRun.points || 0));
       const previousLevelId = getSeasonLevel(previousPoints).id;
       const totalLevelId = getSeasonLevel(totalPoints).id;
+      const previousRank = seasonLevelRank(previousLevelId);
+      const totalRank = seasonLevelRank(totalLevelId);
       season = {
         seasonId: seasonRun.season_id,
         runPoints: seasonRun.points,
         totalPoints,
         previousLevelId,
         levelId: totalLevelId,
-        leveledUp: previousLevelId !== totalLevelId,
+        peakPoints: totalPoints,
+        peakLevelId: totalLevelId,
+        leveledUp: totalRank > previousRank,
+        leveledDown: totalRank < previousRank,
+        levelChanged: previousLevelId !== totalLevelId,
         breakdown: getSeasonPointsBreakdown({
           wins: seasonRun.wins,
+          losses: seasonRun.losses,
           roundsCompleted: seasonRun.completed_rounds,
           endReason: seasonRun.end_reason
         })

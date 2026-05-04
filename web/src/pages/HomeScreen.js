@@ -129,7 +129,7 @@ export const HomeScreen = {
     },
     seasonSummary() {
       const season = this.state.bootstrap?.season || {};
-      return getSeasonProgressSummary(season.totalPoints || 0, this.state.lang || 'en', 0);
+      return getSeasonProgressSummary(season.totalPoints || 0, this.state.lang || 'en', 0, season.peakPoints || season.totalPoints || 0);
     },
     seasonAchievements() {
       return getRunAchievementsByIds(this.state.bootstrap?.season?.recentAchievements || [], this.state.lang || 'en').slice(0, 3);
@@ -340,7 +340,9 @@ export const HomeScreen = {
           </div>
           <div class="home-season-points">
             <strong>{{ seasonSummary.totalPoints }} {{ t.seasonPoints }}</strong>
+            <span>{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }} {{ t.seasonPoints }}</span>
             <span>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</span>
+            <small>{{ t.seasonRulesHint }}</small>
             <button class="link home-season-journal-link" @click="$emit('go', 'profile')">{{ t.achievementJournal }}</button>
           </div>
         </div>

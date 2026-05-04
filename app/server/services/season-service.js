@@ -1,5 +1,5 @@
 import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
-import { calculateSeasonPoints, getSeasonLevel, getSeasonPointsBreakdown } from '../../shared/season-levels.js';
+import { applySeasonPointProtection, calculateRawSeasonPoints, getSeasonLevel, getSeasonPointsBreakdown, seasonLevelRank } from '../../shared/season-levels.js';
 import { createId, nowIso } from '../lib/utils.js';
 
 export const CURRENT_SEASON_ID = 'season_1';
@@ -38,19 +38,28 @@ async function persistSeasonProgress(client, {
   );
   if (existingRun.rowCount) {
     const progress = await readSeasonProgress(client, playerId, seasonId);
+    const totalPoints = progress?.total_points ?? existingRun.rows[0].points;
+    const peakPoints = Math.max(progress?.peak_points ?? totalPoints, totalPoints);
     return {
       alreadyProcessed: true,
       runRow: existingRun.rows[0],
-      totalPoints: progress?.total_points ?? existingRun.rows[0].points,
-      levelId: progress?.level_id ?? existingRun.rows[0].level_id
+      totalPoints,
+      levelId: progress?.level_id ?? existingRun.rows[0].level_id,
+      peakPoints,
+      peakLevelId: getSeasonLevel(peakPoints).id
     };
   }
 
   const progress = await readSeasonProgress(client, playerId, seasonId);
   const previousPoints = progress?.total_points ?? 0;
   const previousLevelId = progress?.level_id ?? getSeasonLevel(previousPoints).id;
-  const totalPoints = previousPoints + runPoints;
+  const protectedRunPoints = applySeasonPointProtection({ runPoints });
+  const totalPoints = Math.max(0, previousPoints + protectedRunPoints);
   const totalLevelId = getSeasonLevel(totalPoints).id;
+  const previousPeakPoints = Math.max(progress?.peak_points ?? previousPoints, previousPoints);
+  const previousPeakLevelId = getSeasonLevel(previousPeakPoints).id;
+  const peakPoints = Math.max(previousPeakPoints, totalPoints);
+  const peakLevelId = getSeasonLevel(peakPoints).id;
 
   await client.query(
     `INSERT INTO player_season_runs (id, player_id, game_run_id, season_id, points, level_id, wins, losses, completed_rounds, end_reason, created_at)
@@ -60,7 +69,7 @@ async function persistSeasonProgress(client, {
       playerId,
       gameRunId,
       seasonId,
-      runPoints,
+      protectedRunPoints,
       levelId,
       wins,
       losses,
@@ -72,24 +81,32 @@ async function persistSeasonProgress(client, {
 
   if (progress) {
     await client.query(
-      `UPDATE player_season_progress SET total_points = $3, level_id = $4, updated_at = $5 WHERE player_id = $1 AND season_id = $2`,
-      [playerId, seasonId, totalPoints, totalLevelId, now]
+      `UPDATE player_season_progress
+       SET total_points = $3, level_id = $4, peak_points = $5, peak_level_id = $6, updated_at = $7
+       WHERE player_id = $1 AND season_id = $2`,
+      [playerId, seasonId, totalPoints, totalLevelId, peakPoints, peakLevelId, now]
     );
   } else {
     await client.query(
-      `INSERT INTO player_season_progress (player_id, season_id, total_points, level_id, updated_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [playerId, seasonId, totalPoints, totalLevelId, now]
+      `INSERT INTO player_season_progress (player_id, season_id, total_points, level_id, peak_points, peak_level_id, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [playerId, seasonId, totalPoints, totalLevelId, peakPoints, peakLevelId, now]
     );
   }
 
   return {
     alreadyProcessed: false,
     runRow: null,
+    runPoints: protectedRunPoints,
     totalPoints,
     previousLevelId,
     levelId: totalLevelId,
-    leveledUp: previousLevelId !== totalLevelId
+    peakPoints,
+    peakLevelId,
+    previousPeakLevelId,
+    leveledUp: seasonLevelRank(totalLevelId) > seasonLevelRank(previousLevelId),
+    leveledDown: seasonLevelRank(totalLevelId) < seasonLevelRank(previousLevelId),
+    levelChanged: previousLevelId !== totalLevelId
   };
 }
 
@@ -138,9 +155,9 @@ export async function awardRunSeasonProgress(client, {
 }) {
   const seasonId = CURRENT_SEASON_ID;
   const now = nowIso();
-  const runPoints = calculateSeasonPoints({ wins, roundsCompleted: completedRounds, endReason });
-  const breakdown = getSeasonPointsBreakdown({ wins, roundsCompleted: completedRounds, endReason });
-  const runLevelId = getSeasonLevel(runPoints).id;
+  const runPoints = calculateRawSeasonPoints({ wins, losses, roundsCompleted: completedRounds, endReason });
+  let breakdown = getSeasonPointsBreakdown({ wins, losses, roundsCompleted: completedRounds, endReason });
+  const runLevelId = getSeasonLevel(Math.max(0, runPoints)).id;
 
   const persisted = await persistSeasonProgress(client, {
     playerId,
@@ -154,6 +171,13 @@ export async function awardRunSeasonProgress(client, {
     endReason,
     now
   });
+  if (!persisted.alreadyProcessed) {
+    breakdown = {
+      ...breakdown,
+      total: persisted.runPoints,
+      protectionAdjustment: persisted.runPoints - runPoints
+    };
+  }
 
   if (persisted.alreadyProcessed) {
     return {
@@ -163,7 +187,11 @@ export async function awardRunSeasonProgress(client, {
         totalPoints: persisted.totalPoints,
         previousLevelId: persisted.levelId,
         levelId: persisted.levelId,
+        peakPoints: persisted.peakPoints,
+        peakLevelId: persisted.peakLevelId,
         leveledUp: false,
+        leveledDown: false,
+        levelChanged: false,
         breakdown
       },
       achievements: await readSourceAchievements(client, playerId, gameRunId)
@@ -189,11 +217,16 @@ export async function awardRunSeasonProgress(client, {
   return {
     season: {
       seasonId,
-      runPoints,
+      runPoints: persisted.runPoints,
       totalPoints,
       previousLevelId: persisted.previousLevelId,
       levelId: totalLevelId,
+      peakPoints: persisted.peakPoints,
+      peakLevelId: persisted.peakLevelId,
+      previousPeakLevelId: persisted.previousPeakLevelId,
       leveledUp: persisted.leveledUp,
+      leveledDown: persisted.leveledDown,
+      levelChanged: persisted.levelChanged,
       breakdown
     },
     achievements: await persistAchievements(client, {

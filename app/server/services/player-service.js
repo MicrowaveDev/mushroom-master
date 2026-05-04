@@ -12,6 +12,7 @@ import {
   createId,
   nowIso
 } from '../lib/utils.js';
+import { getSeasonLevel } from '../../shared/season-levels.js';
 import { createBotGhostSnapshot } from './bot-loadout.js';
 
 function rowToPlayerProfile(row) {
@@ -123,12 +124,18 @@ export async function getPlayerState(playerId) {
     seasonId: row.season_id,
     earnedAt: row.earned_at
   }));
+  const seasonRow = seasonResult.rows[0] || null;
+  const seasonPeakPoints = seasonRow
+    ? Math.max(seasonRow.peak_points ?? seasonRow.total_points, seasonRow.total_points)
+    : 0;
   const season = seasonResult.rowCount
     ? {
-        seasonId: seasonResult.rows[0].season_id,
-        totalPoints: seasonResult.rows[0].total_points,
-        levelId: seasonResult.rows[0].level_id,
-        updatedAt: seasonResult.rows[0].updated_at,
+        seasonId: seasonRow.season_id,
+        totalPoints: seasonRow.total_points,
+        levelId: seasonRow.level_id,
+        peakPoints: seasonPeakPoints,
+        peakLevelId: getSeasonLevel(seasonPeakPoints).id,
+        updatedAt: seasonRow.updated_at,
         achievements,
         recentAchievements: recentAchievementsResult.rows.map((row) => ({
           id: row.achievement_id,
@@ -139,6 +146,8 @@ export async function getPlayerState(playerId) {
         seasonId: 'season_1',
         totalPoints: 0,
         levelId: 'bronze',
+        peakPoints: 0,
+        peakLevelId: 'bronze',
         updatedAt: null,
         achievements,
         recentAchievements: []

@@ -186,7 +186,7 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
 
   // Start game run
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
   // Refresh shop until a bag appears
@@ -253,7 +253,7 @@ test('[Req 4-F, 12-D] game run state and shop offer survive page reload', async 
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await expect(page.locator('.prep-screen')).toBeVisible();
 
   // Snapshot ALL state before reload: HUD, coins, shop artifact IDs
@@ -295,7 +295,7 @@ test('[Req 10-A, 13-C] post-Ready lands on replay with rewards, Continue label, 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await page.getByRole('button', { name: /ready|готов/i }).click();
 
@@ -386,7 +386,7 @@ test('replay rewards stat-grid resolves to display:grid (not stacked vertical li
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await expect(page.locator('.prep-screen')).toBeVisible();
   await page.getByRole('button', { name: /ready|готов/i }).click();
 

@@ -15,7 +15,7 @@ import {
 import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
 import { getDb, resetDb, query as dbQuery } from './db.js';
 import { CHALLENGE_IDLE_TIMEOUT_MS, ROUND_INCOME, PORTRAIT_VARIANTS, STARTER_PRESET_VARIANTS } from './game-data.js';
-import { computeLevel } from './lib/utils.js';
+import { computeLevel, createId, nowIso } from './lib/utils.js';
 import {
   acceptFriendChallenge,
   addFriendByCode,
@@ -310,6 +310,18 @@ export async function createApp() {
         gameRunId: req.body?.gameRunId || null,
         detail: req.body?.detail && typeof req.body.detail === 'object' ? req.body.detail : {}
       });
+      await dbQuery(
+        `INSERT INTO client_events (id, player_id, event, game_run_id, detail_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          createId('cevt'),
+          req.user.id,
+          event,
+          req.body?.gameRunId || null,
+          JSON.stringify(req.body?.detail && typeof req.body.detail === 'object' ? req.body.detail : {}),
+          nowIso()
+        ]
+      );
       res.json({ success: true, data: { ok: true } });
     })
   );

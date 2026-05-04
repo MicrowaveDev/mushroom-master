@@ -78,6 +78,8 @@ async function initSchema(sequelize) {
   await sequelize.sync();
   await ensureColumnExists(sequelize, 'player_settings', 'replay_speed', 'INTEGER NOT NULL DEFAULT 2');
   await ensureColumnExists(sequelize, 'game_run_players', 'mushroom_id', 'TEXT');
+  await ensureColumnExists(sequelize, 'player_season_progress', 'peak_points', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumnExists(sequelize, 'player_season_progress', 'peak_level_id', "TEXT NOT NULL DEFAULT 'bronze'");
   await sequelize.query('DROP INDEX IF EXISTS idx_one_active_run_per_player');
   await backfillActiveRunMushrooms(sequelize);
   await sequelize.query(

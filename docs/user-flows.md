@@ -155,6 +155,7 @@ Step 2: Prep Screen (Round N)
   Sees:
     - Round HUD: "Раунд N" / "Round N"
     - Stats HUD: Wins W, Lives L, Coins C
+    - Season-rank stakes line: current run points and projected abandon result
     - [Req 2-A, 2-F] Unified grid, `BAG_COLUMNS = 6` wide — the base inventory occupies the top-left 3×3 (9 cells) and is always visible; the remaining cells are empty bag area (faint dashed borders, drop targets for bag chips). With no bags activated, 18 cells total render.
     - [Req 3-A, 3-B] Round 1: 2 preset items at base-inventory (0,0) and (1,0)
     - Container zone (purchased but unplaced items)
@@ -212,6 +213,10 @@ Step 3: Battle Replay (auto-shown after ready)
       `progressBefore.tier !== progressAfter.tier` — shows the new tier badge.
     - Running totals (wins, lives, coins) are intentionally NOT shown on
       this card — they appear on the next prep HUD right after Continue.
+  Sees (when abandoning from prep):
+    - [Req 1-F] A confirmation dialog explains the season-rank penalty
+    - Cancel closes the dialog and keeps the player on prep
+    - Confirm ends the run and opens the runComplete recap with the penalty visible
   Action: Watch replay auto-play (or adjust speed / click log)
   Expected:
     - [Req 13-A] When replay finishes AND state.gameRun exists AND run active:
@@ -232,14 +237,15 @@ Step 4: Run Complete (run ended)
   Screenshot: screenshots/run/solo-09-run-complete.png
   Condition: run status = 'completed' or 'abandoned'
   Above the fold (mobile + desktop):
-    - Verdict, season level, final stats, and primary reward context are visible
+    - Verdict, season rank, final stats, and primary reward context are visible
     - Extra achievements may extend the card; vertical page scroll is allowed
   Sees:
     - Lore-styled verdict heading and end reason for max_losses, max_rounds, or abandon
     - [Req 1-E] End reason matches: max_losses (0 lives) or max_rounds (9 rounds)
     - Final stats: total wins, rounds completed, losses, win rate
-    - [Req 9-E/F] Season level card: Bronze / Silver / Gold / Diamond, season points, progress toward next level
-    - Season progress fill animates; when the run crosses a season tier, the season card performs a short level-up emphasis animation
+    - [Req 9-E/F] Season rank card: Bronze / Silver / Gold / Diamond, rank points, peak rank, progress toward next rank
+    - Season rule hint: first 7 wins count for rank; season rewards use peak rank
+    - Season progress fill animates; when the run crosses a season rank upward, the season card performs a short level-up emphasis animation; when penalties drop the rank, the card uses a subdued penalty state
     - [Req 9-B] Completion bonus (if any) based on total wins — spore + mycelium
     - Last battle summary with outcome and reward text when lastRound data exists
     - [Req 9-G] Lore achievements earned this run, including general and character-specific entries when criteria match
@@ -251,7 +257,7 @@ Step 4: Run Complete (run ended)
   Expected:
     - state.gameRun cleared to null
     - Navigate to home screen — player sees updated mushroom progression,
-      spore total, season level/progress, recent achievements, and run-history entry for the just-completed run
+      spore total, season rank/progress, recent achievements, and run-history entry for the just-completed run
 ```
 
 ```

@@ -84,7 +84,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   await saveShot(page, 'solo-01-home-start-game.png');
 
   // --- Start game run → prep screen ---
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
   const hud = page.locator('.run-hud');
   const roundHeading = page.locator('.run-round-heading');
@@ -221,14 +221,20 @@ test('[Req 1-F] solo game run: abandon mid-game with screenshots', async ({ page
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
   await saveShot(page, 'solo-abandon-01-prep.png');
 
   await page.getByRole('button', { name: /abandon|покинуть/i }).click();
+  await expect(page.getByRole('dialog', { name: /abandon this run|покинуть партию/i })).toBeVisible();
+  await expect(page.locator('.confirm-penalty')).toContainText(/penalty|штраф/i);
+  await page.getByRole('button', { name: /abandon with penalty|покинуть со штрафом/i }).click();
+  await expect(page.locator('.run-complete-card')).toBeVisible({ timeout: 10000 });
+  await saveShot(page, 'solo-abandon-02-confirmed-penalty.png');
+  await page.getByRole('button', { name: /home|домой/i }).click();
   await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole('button', { name: /resume|продолжить игру/i })).toHaveCount(0);
-  await saveShot(page, 'solo-abandon-02-home-no-resume.png');
+  await saveShot(page, 'solo-abandon-03-home-no-resume.png');
 });
 
 test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistence', async ({ page, request, baseURL }) => {
@@ -247,7 +253,7 @@ test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistenc
 
   // Start a game run
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
   // Unified grid: BAG_COLUMNS × BAG_ROWS = 6×6 = 36 cells when no bag has
@@ -319,7 +325,7 @@ test('round transitions: replay → continue → next prep (not home) while live
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
   const hud = page.locator('.run-hud');
@@ -503,7 +509,7 @@ test('items, bags, and sell state all survive page reload', async ({ page, reque
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
   const bs = await api(request, player.sessionKey, '/api/bootstrap');
@@ -571,7 +577,7 @@ test('[Req 2-F, 2-G, 2-H] unified grid packs bags alongside the base inventory',
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
   const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
@@ -655,7 +661,7 @@ test('[Req 2-F] tetromino-bag mask gaps render visibly (no hidden grid holes)', 
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
   const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
@@ -700,7 +706,7 @@ test('backpack tall bag preview does not overlap its caption', async ({ page, re
 
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /start game|начать игру/i }).click();
+  await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
   const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
