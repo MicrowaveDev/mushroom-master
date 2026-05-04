@@ -102,13 +102,13 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.leaderboard-panel')).toBeVisible();
   await saveShot(page, '02-home-desktop.png');
 
-  // Skin-unlock picker coverage: expand the first mushroom that has a
-  // customize (✎) button and capture the portrait picker. Asserts that
+  // Skin-unlock picker coverage: use the roster action panel to expand the
+  // active mushroom skin picker. Asserts that
   // the locked-state restyle (faded portrait + centered mycelium price
   // pill) actually renders — added 2026-04-23 because no prior spec
   // exercised the home roster picker expanded state.
   debugLog('capturing skin picker (desktop)');
-  const customizeBtn = page.locator('.home-mushroom-customize').first();
+  const customizeBtn = page.locator('.home-roster-change-skin').first();
   await customizeBtn.waitFor({ timeout: 5000 });
   await customizeBtn.click();
   await page.locator('.home-mushroom-picker').first().waitFor({ timeout: 5000 });
@@ -120,7 +120,7 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.setViewportSize(MOBILE_VIEWPORT);
   await page.goto(`${baseURL}/home`);
   await page.waitForSelector('.home');
-  const customizeBtnMobile = page.locator('.home-mushroom-customize').first();
+  const customizeBtnMobile = page.locator('.home-roster-change-skin').first();
   await customizeBtnMobile.waitFor({ timeout: 5000 });
   await customizeBtnMobile.click();
   await page.locator('.home-mushroom-picker').first().waitFor({ timeout: 5000 });

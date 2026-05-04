@@ -1063,7 +1063,7 @@ select {
 
 .home-mushroom-row {
   display: grid;
-  grid-template-rows: 148px minmax(92px, auto) 34px;
+  grid-template-rows: 148px minmax(92px, auto);
   align-items: stretch;
   gap: 7px;
   height: 100%;
@@ -1088,6 +1088,14 @@ select {
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(222, 231, 207, 0.34)),
     rgba(127, 152, 114, 0.08);
   box-shadow: inset 0 0 0 1px rgba(95, 124, 79, 0.18), 0 10px 24px rgba(95, 124, 79, 0.08);
+}
+
+.home-mushroom-row--selected {
+  box-shadow: inset 0 0 0 2px rgba(138, 97, 53, 0.16), 0 10px 24px rgba(55, 43, 32, 0.08);
+}
+
+.home-mushroom-row--active.home-mushroom-row--selected {
+  box-shadow: inset 0 0 0 1px rgba(95, 124, 79, 0.22), 0 12px 28px rgba(95, 124, 79, 0.12);
 }
 
 .home-mushroom-portrait {
@@ -1202,18 +1210,6 @@ select {
   opacity: 0.7;
 }
 
-.home-mushroom-select {
-  flex-shrink: 0;
-  min-height: 32px;
-  padding: 6px 13px;
-  border-radius: 999px;
-  border-color: rgba(138, 97, 53, 0.22);
-  background: rgba(255, 251, 244, 0.78);
-  font-size: 0.78em;
-  font-weight: 800;
-  box-shadow: none;
-}
-
 .home-mushroom-card {
   flex: 0 0 clamp(196px, 21vw, 248px);
   display: flex;
@@ -1221,51 +1217,58 @@ select {
   scroll-snap-align: start;
 }
 
-.home-mushroom-actions {
+.home-roster-action-panel {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(138, 97, 53, 0.14);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(127, 152, 114, 0.1), rgba(255, 251, 244, 0.72)),
+    rgba(244, 238, 224, 0.74);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
 }
 
-.home-mushroom-customize {
-  width: 32px;
-  height: 32px;
-  display: inline-grid;
-  place-items: center;
-  padding: 0;
-  border-radius: 999px;
-  border-color: rgba(138, 97, 53, 0.16);
-  background: rgba(255, 251, 244, 0.64);
-  color: rgba(47, 36, 25, 0.72);
-  opacity: 0.9;
-  line-height: 1;
-  box-shadow: none;
+.home-roster-action-panel > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
-.home-mushroom-customize svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+
+.home-roster-action-panel span {
+  color: rgba(47, 36, 25, 0.62);
+  font-size: 0.78em;
+  font-weight: 700;
 }
-.home-mushroom-customize--open {
-  opacity: 1;
+
+.home-roster-action-panel strong {
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.home-roster-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.home-roster-action-buttons .secondary.active {
   background: rgba(127, 152, 114, 0.16);
   color: #3d5731;
 }
 
 /* Portrait + preset picker */
 .home-mushroom-picker {
-  border-top: 1px solid var(--border);
-  padding: 10px 14px 12px;
+  border: 1px solid rgba(138, 97, 53, 0.14);
+  border-radius: 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: rgba(0,0,0,0.15);
+  background: rgba(255, 251, 244, 0.66);
 }
 
 .home-picker-section {

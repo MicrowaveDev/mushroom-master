@@ -23,6 +23,7 @@ export const HomeScreen = {
   data() {
     return {
       expandedMushroomId: null,
+      selectedMushroomId: null,
       socialPanel: '',
       homeAtTop: true
     };
@@ -34,9 +35,21 @@ export const HomeScreen = {
     HomeSocialSidebar
   },
   methods: {
-    selectMushroom(mushroom) {
+    focusMushroom(mushroom) {
+      this.selectedMushroomId = mushroom.id;
       if (mushroom.isActive) return;
       this.$emit('select-mushroom', mushroom.id);
+    },
+    playSelectedMushroom() {
+      if (this.state.gameRun) {
+        this.$emit('resume-run');
+        return;
+      }
+      this.$emit('start-run', 'solo');
+    },
+    toggleSelectedSkinPanel() {
+      if (!this.selectedMushroom) return;
+      this.expandedMushroomId = this.expandedMushroomId === this.selectedMushroom.id ? null : this.selectedMushroom.id;
     },
     openSocialPanel(panel) {
       this.socialPanel = panel;
@@ -101,6 +114,11 @@ export const HomeScreen = {
           presets: prog.presets || []
         };
       });
+    },
+    selectedMushroom() {
+      return this.roster.find((m) => m.id === this.selectedMushroomId) ||
+        this.roster.find((m) => m.isActive) ||
+        null;
     },
     topLeaderboard() {
       return (this.state.leaderboard || []).slice(0, 5);
@@ -210,12 +228,12 @@ export const HomeScreen = {
           <div v-for="m in roster" :key="m.id" class="home-mushroom-card">
             <div
               class="home-mushroom-row"
-              :class="{ 'home-mushroom-row--active': m.isActive }"
-              @click="selectMushroom(m)"
-              @keydown.enter.prevent="selectMushroom(m)"
-              @keydown.space.prevent="selectMushroom(m)"
-              :role="m.isActive ? 'group' : 'button'"
-              :tabindex="m.isActive ? -1 : 0"
+              :class="{ 'home-mushroom-row--active': m.isActive, 'home-mushroom-row--selected': selectedMushroom?.id === m.id }"
+              @click="focusMushroom(m)"
+              @keydown.enter.prevent="focusMushroom(m)"
+              @keydown.space.prevent="focusMushroom(m)"
+              role="button"
+              tabindex="0"
             >
               <img :src="m.portraitUrl" :alt="m.name[state.lang]" class="home-mushroom-portrait" :style="{ objectPosition: portraitPosition(m.id) }"/>
               <div class="home-mushroom-info">
@@ -233,51 +251,58 @@ export const HomeScreen = {
                   <div class="home-mushroom-progress-fill" :style="{ width: Math.min(100, Math.round(m.currentLevelMycelium / m.nextLevelMycelium * 100)) + '%' }"></div>
                 </div>
               </div>
-              <div class="home-mushroom-actions">
-                <button v-if="!m.isActive" class="ghost home-mushroom-select" @click.stop="$emit('select-mushroom', m.id)">{{ t.pick }}</button>
-                <button
-                  v-if="m.portraits.length > 1 || m.presets.length > 1"
-                  class="ghost home-mushroom-customize"
-                  :class="{ 'home-mushroom-customize--open': expandedMushroomId === m.id }"
-                  @click.stop="expandedMushroomId = expandedMushroomId === m.id ? null : m.id"
-                  :title="t.customize"
-                  :aria-label="t.customize"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5 4.5 4.5M4 20l4.8-1 10-10a3.2 3.2 0 0 0-4.5-4.5l-10 10L4 20Z"/><path d="m8.8 19-3.7-3.7"/></svg>
-                </button>
-              </div>
             </div>
-            <div v-if="expandedMushroomId === m.id" class="home-mushroom-picker">
-              <div v-if="m.portraits.length > 1" class="home-picker-section">
-                <span class="home-picker-label">{{ t.portraits }}</span>
-                <div class="home-portrait-swatches">
-                  <button
-                    v-for="p in m.portraits" :key="p.id"
-                    class="home-portrait-swatch"
-                    :class="{ 'home-portrait-swatch--active': m.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked }"
-                    :title="p.unlocked ? p.name[state.lang] : t.portraitLocked.replace('{n}', p.cost)"
-                    @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: m.id, portraitId: p.id })"
-                  >
-                    <img :src="p.path" :alt="p.name[state.lang]" />
-                    <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
-                      <span class="home-swatch-price-icon">🍄</span>
-                      <span class="home-swatch-price-value">{{ p.cost }}</span>
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <div v-if="m.presets.length > 1" class="home-picker-section">
-                <span class="home-picker-label">{{ t.starterPreset }}</span>
-                <div class="home-preset-pills">
-                  <button
-                    v-for="p in m.presets" :key="p.id"
-                    class="home-preset-pill"
-                    :class="{ 'home-preset-pill--active': m.activePreset === p.id, 'home-preset-pill--locked': !p.unlocked }"
-                    :title="p.unlocked ? '' : t.presetLocked.replace('{n}', p.requiredLevel)"
-                    @click.stop="p.unlocked && $emit('switch-preset', { mushroomId: m.id, presetId: p.id })"
-                  >{{ p.name[state.lang] }}{{ !p.unlocked ? ' 🔒' : '' }}</button>
-                </div>
-              </div>
+          </div>
+        </div>
+        <div v-if="selectedMushroom" class="home-roster-action-panel">
+          <div>
+            <span>{{ selectedMushroom.name[state.lang] }}</span>
+            <strong>{{ selectedMushroom.isActive ? t.active : t.pick }}</strong>
+          </div>
+          <div class="home-roster-action-buttons">
+            <button
+              class="primary"
+              :disabled="!selectedMushroom.isActive || state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit"
+              :title="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''"
+              @click="playSelectedMushroom"
+            >{{ state.gameRun ? t.resumeRun : t.startRun }}</button>
+            <button
+              v-if="selectedMushroom.portraits.length > 1 || selectedMushroom.presets.length > 1"
+              class="secondary home-roster-change-skin"
+              :class="{ active: expandedMushroomId === selectedMushroom.id }"
+              @click="toggleSelectedSkinPanel"
+            >{{ t.changeSkin }}</button>
+          </div>
+        </div>
+        <div v-if="selectedMushroom && expandedMushroomId === selectedMushroom.id" class="home-mushroom-picker">
+          <div v-if="selectedMushroom.portraits.length > 1" class="home-picker-section">
+            <span class="home-picker-label">{{ t.portraits }}</span>
+            <div class="home-portrait-swatches">
+              <button
+                v-for="p in selectedMushroom.portraits" :key="p.id"
+                class="home-portrait-swatch"
+                :class="{ 'home-portrait-swatch--active': selectedMushroom.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked }"
+                :title="p.unlocked ? p.name[state.lang] : t.portraitLocked.replace('{n}', p.cost)"
+                @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id })"
+              >
+                <img :src="p.path" :alt="p.name[state.lang]" />
+                <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
+                  <span class="home-swatch-price-icon">🍄</span>
+                  <span class="home-swatch-price-value">{{ p.cost }}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <div v-if="selectedMushroom.presets.length > 1" class="home-picker-section">
+            <span class="home-picker-label">{{ t.starterPreset }}</span>
+            <div class="home-preset-pills">
+              <button
+                v-for="p in selectedMushroom.presets" :key="p.id"
+                class="home-preset-pill"
+                :class="{ 'home-preset-pill--active': selectedMushroom.activePreset === p.id, 'home-preset-pill--locked': !p.unlocked }"
+                :title="p.unlocked ? '' : t.presetLocked.replace('{n}', p.requiredLevel)"
+                @click.stop="p.unlocked && $emit('switch-preset', { mushroomId: selectedMushroom.id, presetId: p.id })"
+              >{{ p.name[state.lang] }}{{ !p.unlocked ? ' 🔒' : '' }}</button>
             </div>
           </div>
         </div>
