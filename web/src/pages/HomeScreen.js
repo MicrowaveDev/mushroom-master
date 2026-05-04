@@ -239,7 +239,6 @@ export const HomeScreen = {
               <div class="home-mushroom-info">
                 <div class="home-mushroom-name-row">
                   <strong>{{ m.name[state.lang] }}</strong>
-                  <span v-if="m.isActive" class="home-mushroom-active-tag">{{ t.active }}</span>
                   <span :class="'home-mushroom-tier tier--' + m.tier">{{ t['tier_' + m.tier] }}</span>
                 </div>
                 <span class="home-mushroom-style">{{ m.styleTag }}</span>

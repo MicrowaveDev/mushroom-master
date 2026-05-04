@@ -1128,19 +1128,6 @@ select {
   overflow-wrap: anywhere;
 }
 
-.home-mushroom-active-tag {
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 0.58em;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: rgba(95, 124, 79, 0.14);
-  color: #4e6b42;
-  box-shadow: inset 0 0 0 1px rgba(95, 124, 79, 0.12);
-}
-
 .home-mushroom-style {
   width: fit-content;
   margin-top: 1px;
