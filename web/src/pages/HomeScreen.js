@@ -130,10 +130,15 @@ export const HomeScreen = {
         .slice(0, 4)
         .map((run) => {
           const described = this.describeRun(run);
+          const completedRounds = described?.completedRounds || 0;
+          const title = this.t.runActivityTitle
+            .replace('{mode}', described?.modeLabel || this.t.gameRuns)
+            .replace('{outcome}', described?.outcomeLabel || this.t.gameRuns)
+            .replace('{rounds}', completedRounds);
           return {
             id: `run-${run.id}`,
-            title: described?.outcomeLabel || this.t.gameRuns,
-            meta: `${described?.ourName || ''} · ${this.t.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', described?.completedRounds || 0)}`,
+            title,
+            meta: `${described?.ourName || ''} · ${this.t.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', completedRounds)}`,
             type: described?.outcomeKey || 'run',
             at: run.endedAt || run.startedAt || run.createdAt || new Date().toISOString()
           };
