@@ -46,6 +46,15 @@ export const HomeScreen = {
     },
     onScroll() {
       this.homeAtTop = window.scrollY <= 24;
+    },
+    activityDayLabel(date) {
+      const value = date ? new Date(date) : new Date();
+      if (Number.isNaN(value.getTime())) return this.t.today;
+      const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const diff = Math.round((startOf(new Date()) - startOf(value)) / 86400000);
+      if (diff <= 0) return this.t.today;
+      if (diff === 1) return this.t.yesterday;
+      return value.toLocaleDateString(this.state.lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'long' });
     }
   },
   mounted() {
@@ -106,7 +115,7 @@ export const HomeScreen = {
     nextAchievement() {
       return getNextRunAchievementHint(this.state.bootstrap?.season?.achievements || [], this.state.lang || 'en');
     },
-    activityFeed() {
+    activityGroups() {
       const achievements = getRunAchievementsByIds(this.state.bootstrap?.season?.recentAchievements || [], this.state.lang || 'en')
         .slice(0, 4)
         .map((achievement) => ({
@@ -114,7 +123,8 @@ export const HomeScreen = {
           title: achievement.name,
           meta: this.state.lang === 'ru' ? 'Достижение получено' : 'Achievement unlocked',
           type: 'achievement',
-          achievement
+          achievement,
+          at: new Date().toISOString()
         }));
       const runs = (this.state.bootstrap?.gameRunHistory || [])
         .slice(0, 4)
@@ -124,10 +134,20 @@ export const HomeScreen = {
             id: `run-${run.id}`,
             title: described?.outcomeLabel || this.t.gameRuns,
             meta: `${described?.ourName || ''} · ${this.t.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', described?.completedRounds || 0)}`,
-            type: described?.outcomeKey || 'run'
+            type: described?.outcomeKey || 'run',
+            at: run.endedAt || run.startedAt || run.createdAt || new Date().toISOString()
           };
         });
-      return [...achievements, ...runs].slice(0, 6);
+      const groups = new Map();
+      [...achievements, ...runs]
+        .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+        .slice(0, 8)
+        .forEach((item) => {
+          const label = this.activityDayLabel(item.at);
+          if (!groups.has(label)) groups.set(label, []);
+          groups.get(label).push(item);
+        });
+      return Array.from(groups, ([label, items]) => ({ label, items }));
     }
   },
   template: `
@@ -146,7 +166,7 @@ export const HomeScreen = {
         :panel="socialPanel"
         :state="state"
         :t="t"
-        :activity-feed="activityFeed"
+        :activity-groups="activityGroups"
         :mobile-action-mode="mobileActionMode"
         @close="socialPanel = ''"
         @add-friend="$emit('add-friend', $event)"

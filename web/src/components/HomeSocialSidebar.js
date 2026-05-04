@@ -2,7 +2,7 @@ import { AchievementBadge } from './AchievementBadge.js';
 
 export const HomeSocialSidebar = {
   name: 'HomeSocialSidebar',
-  props: ['open', 'panel', 'state', 't', 'activityFeed', 'mobileActionMode'],
+  props: ['open', 'panel', 'state', 't', 'activityGroups', 'mobileActionMode'],
   emits: [
     'close',
     'add-friend', 'challenge-friend',
@@ -70,16 +70,20 @@ export const HomeSocialSidebar = {
         </section>
 
         <section v-if="!isSettings" class="home-activity-feed">
-          <h3>{{ t.activity }}</h3>
-          <article v-for="item in activityFeed" :key="item.id" class="home-activity-item" :class="'home-activity-item--' + item.type">
-            <achievement-badge v-if="item.achievement" :achievement="item.achievement" size="small" />
-            <span v-else class="home-activity-dot"></span>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.meta }}</p>
-            </div>
-          </article>
-          <p v-if="!activityFeed?.length" class="home-empty-hint">{{ t.noNotificationsYet }}</p>
+          <template v-if="activityGroups?.length">
+            <section v-for="group in activityGroups" :key="group.label" class="home-activity-group">
+              <h3>{{ group.label }}</h3>
+              <article v-for="item in group.items" :key="item.id" class="home-activity-item" :class="'home-activity-item--' + item.type">
+                <achievement-badge v-if="item.achievement" :achievement="item.achievement" size="small" />
+                <span v-else class="home-activity-dot"></span>
+                <div>
+                  <strong>{{ item.title }}</strong>
+                  <p>{{ item.meta }}</p>
+                </div>
+              </article>
+            </section>
+          </template>
+          <p v-else class="home-empty-hint">{{ t.noNotificationsYet }}</p>
         </section>
       </aside>
     </template>
