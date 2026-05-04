@@ -137,36 +137,12 @@ export const HomeScreen = {
     <section class="home">
       <div class="home-action-rail" :class="{ 'home-action-rail--mobile': mobileActionMode === 'side' }">
         <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
-          <span aria-hidden="true">!</span>
+          <span aria-hidden="true"></span>
         </button>
         <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
           <span aria-hidden="true"></span>
         </button>
       </div>
-
-      <nav
-        v-if="mobileActionMode !== 'menu'"
-        class="home-bottom-actions"
-        :class="{ 'home-bottom-actions--visible': showMobileBottomActions }"
-        :aria-hidden="!showMobileBottomActions"
-      >
-        <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
-          <span aria-hidden="true">!</span>
-        </button>
-        <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
-          <span aria-hidden="true"></span>
-        </button>
-        <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="quickSettingsOpen = !quickSettingsOpen">
-          <span aria-hidden="true">⚙</span>
-        </button>
-        <div v-if="quickSettingsOpen" class="home-quick-settings">
-          <strong>{{ t.mobileActionsMode }}</strong>
-          <button :class="{ active: mobileActionMode === 'auto' }" @click="setMobileActionMode('auto')">{{ t.mobileActionsAuto }}</button>
-          <button :class="{ active: mobileActionMode === 'always' }" @click="setMobileActionMode('always')">{{ t.mobileActionsAlways }}</button>
-          <button :class="{ active: mobileActionMode === 'side' }" @click="setMobileActionMode('side')">{{ t.mobileActionsSide }}</button>
-          <button :class="{ active: mobileActionMode === 'menu' }" @click="setMobileActionMode('menu')">{{ t.mobileActionsMenu }}</button>
-        </div>
-      </nav>
 
       <home-social-sidebar
         :open="!!socialPanel"
@@ -183,7 +159,7 @@ export const HomeScreen = {
 
       <div v-if="mobileActionMode === 'menu' && state.menuOpen" class="home-menu-actions">
         <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
-          <span aria-hidden="true">!</span>
+          <span aria-hidden="true"></span>
         </button>
         <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
           <span aria-hidden="true"></span>
@@ -267,6 +243,33 @@ export const HomeScreen = {
           </div>
         </div>
       </article>
+
+      <nav
+        v-if="mobileActionMode !== 'menu'"
+        class="home-bottom-actions"
+        :class="{
+          'home-bottom-actions--visible': showMobileBottomActions,
+          'home-bottom-actions--fixed': mobileActionMode === 'always'
+        }"
+        :aria-hidden="!showMobileBottomActions"
+      >
+        <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openSocialPanel('notifications')">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
+          <span aria-hidden="true"></span>
+        </button>
+        <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="quickSettingsOpen = !quickSettingsOpen">
+          <span aria-hidden="true">⚙</span>
+        </button>
+        <div v-if="quickSettingsOpen" class="home-quick-settings">
+          <strong>{{ t.mobileActionsMode }}</strong>
+          <button :class="{ active: mobileActionMode === 'auto' }" @click="setMobileActionMode('auto')">{{ t.mobileActionsAuto }}</button>
+          <button :class="{ active: mobileActionMode === 'always' }" @click="setMobileActionMode('always')">{{ t.mobileActionsAlways }}</button>
+          <button :class="{ active: mobileActionMode === 'side' }" @click="setMobileActionMode('side')">{{ t.mobileActionsSide }}</button>
+          <button :class="{ active: mobileActionMode === 'menu' }" @click="setMobileActionMode('menu')">{{ t.mobileActionsMenu }}</button>
+        </div>
+      </nav>
 
       <article class="panel home-season-panel" :class="'home-season-panel--' + seasonSummary.id">
         <div class="home-season-main">
