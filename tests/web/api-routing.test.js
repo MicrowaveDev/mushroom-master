@@ -5,7 +5,7 @@ import { parseStartParams, setScreenQuery } from '../../web/src/api.js';
 test('run result routes carry the completed game run id and push browser history', () => {
   const oldWindow = globalThis.window;
   globalThis.window = {
-    location: { pathname: '/runComplete/run_123' },
+    location: { pathname: '/run-complete/run_123' },
     history: {
       pushedPath: '',
       replacedPath: '',
@@ -27,13 +27,13 @@ test('run result routes carry the completed game run id and push browser history
     });
 
     setScreenQuery('runComplete', { gameRunId: 'run_456' });
-    assert.equal(globalThis.window.history.pushedPath, '/runComplete/run_456');
+    assert.equal(globalThis.window.history.pushedPath, '/run-complete/run_456');
 
     globalThis.window.location.pathname = '/home';
     setScreenQuery('runSummary', { gameRunId: 'run_789' }, { replaceHistory: true });
-    assert.equal(globalThis.window.history.replacedPath, '/runSummary/run_789');
+    assert.equal(globalThis.window.history.replacedPath, '/run-summary/run_789');
 
-    globalThis.window.location.pathname = '/runSummary/run_789';
+    globalThis.window.location.pathname = '/run-summary/run_789';
     assert.deepEqual(parseStartParams(), {
       screen: 'runSummary',
       challenge: null,

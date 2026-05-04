@@ -1,5 +1,6 @@
-// Route param mapping: which extra key becomes the path segment for each screen.
-// Screens listed here support `/screen/:param` deep links.
+// Route mapping: internal Vue screen ids stay stable, while public URL paths
+// use lowercase separated words (`run-complete`, `run-summary`, `game-run`).
+// Screens listed here support `/path/:param` deep links.
 // `game-run` supports `/game-run/:gameRunId` so active runs are bookmarkable and
 // shareable (docs/loadout-refactor-plan.md §2.7).
 const ROUTE_PARAMS = {
@@ -10,10 +11,19 @@ const ROUTE_PARAMS = {
   runComplete: 'gameRunId'
 };
 
+const SCREEN_ROUTES = {
+  runSummary: 'run-summary',
+  runComplete: 'run-complete'
+};
+
+const ROUTE_SCREENS = Object.fromEntries(
+  Object.entries(SCREEN_ROUTES).map(([screen, route]) => [route, screen])
+);
+
 export function parseStartParams() {
   const path = window.location.pathname.replace(/^\/+/, '');
   const parts = path.split('/').filter(Boolean);
-  const screen = parts[0] || null;
+  const screen = ROUTE_SCREENS[parts[0]] || parts[0] || null;
   const result = { screen, challenge: null, replay: null, gameRunId: null };
 
   if (screen && ROUTE_PARAMS[screen] && parts[1]) {
@@ -25,7 +35,7 @@ export function parseStartParams() {
 
 export function setScreenQuery(screen, extra = {}, options = {}) {
   if (options.skipHistory) return;
-  let path = `/${screen}`;
+  let path = `/${SCREEN_ROUTES[screen] || screen}`;
   const paramKey = ROUTE_PARAMS[screen];
   if (paramKey && extra[paramKey]) {
     path += `/${encodeURIComponent(extra[paramKey])}`;
