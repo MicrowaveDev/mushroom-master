@@ -147,6 +147,8 @@ export const ReplayScreen = {
             healthText: activeReplayState?.left.currentHealth + ' / ' + activeReplayState?.left.maxHealth,
             statsText: loadoutStatsText(state.currentBattle.snapshots.left.loadout),
             speechText: activeSpeech?.side === 'left' ? activeSpeech.narration : '',
+            portraitId: state.currentBattle.snapshots.left.portraitId,
+            imagePath: state.currentBattle.snapshots.left.imagePath,
             loadout: state.currentBattle.snapshots.left.loadout
           })"
           :right-fighter="buildReplayFighter(state.currentBattle.snapshots.right.mushroomId, {
@@ -154,6 +156,8 @@ export const ReplayScreen = {
             healthText: activeReplayState?.right.currentHealth + ' / ' + activeReplayState?.right.maxHealth,
             statsText: loadoutStatsText(state.currentBattle.snapshots.right.loadout),
             speechText: activeSpeech?.side === 'right' ? activeSpeech.narration : '',
+            portraitId: state.currentBattle.snapshots.right.portraitId,
+            imagePath: state.currentBattle.snapshots.right.imagePath,
             loadout: state.currentBattle.snapshots.right.loadout
           })"
           :render-artifact-figure="renderArtifactFigure"

@@ -19,7 +19,8 @@ import {
   ROUND_INCOME,
   runRewardTable,
   SHOP_OFFER_SIZE,
-  STARTING_LIVES
+  STARTING_LIVES,
+  portraitUrl
 } from '../game-data.js';
 import {
   computeLevel,
@@ -531,9 +532,16 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
     const { game_run_id: ghostRunId, player_id: ghostPlayerId } = realResult.rows[0];
     const items = await readCurrentRoundItems(client, ghostRunId, ghostPlayerId, roundNumber);
     if (items.length > 0) {
+      const portraitResult = await client.query(
+        `SELECT active_portrait FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+        [ghostPlayerId, targetMushroomId]
+      );
+      const portraitId = portraitResult.rows[0]?.active_portrait || 'default';
       return {
         playerId: ghostPlayerId,
         mushroomId: targetMushroomId,
+        portraitId,
+        imagePath: portraitUrl(targetMushroomId, portraitId),
         loadout: {
           gridWidth: 3,
           gridHeight: 2,
@@ -557,6 +565,8 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
     return {
       playerId: null,
       mushroomId: targetMushroomId,
+      portraitId: 'default',
+      imagePath: portraitUrl(targetMushroomId),
       loadout: { gridWidth: 3, gridHeight: 2, items: existing }
     };
   }
@@ -599,6 +609,8 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
   return {
     playerId: null,
     mushroomId: targetMushroomId,
+    portraitId: 'default',
+    imagePath: portraitUrl(targetMushroomId),
     loadout: { gridWidth: 3, gridHeight: 2, items: inserted }
   };
 }

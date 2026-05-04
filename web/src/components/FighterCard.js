@@ -5,6 +5,7 @@ export const FighterCard = {
   components: { ArtifactGridBoard },
   props: {
     mushroom: { type: Object, default: null },
+    imagePath: { type: String, default: '' },
     nameText: { type: String, default: '' },
     healthText: { type: String, default: '' },
     statsText: { type: String, default: '' },
@@ -20,7 +21,7 @@ export const FighterCard = {
   },
   computed: {
     rootClass() {
-      return ['fighter', this.extraClass, { acting: this.acting }];
+      return ['fighter', this.extraClass, { acting: this.acting, 'fighter--speaking': !!this.speechText }];
     },
     hpPercent() {
       const match = String(this.healthText || '').match(/(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
@@ -43,13 +44,13 @@ export const FighterCard = {
     }
   },
   template: `
-    <article :class="rootClass">
-      <div class="fighter-portrait-wrap" :style="bubbleStyle">
+    <article :class="rootClass" :style="bubbleStyle">
+      <div class="fighter-portrait-wrap">
         <div v-if="speechText" class="fighter-speech-bubble">{{ speechText }}</div>
         <div class="fighter-portrait-inner">
           <img
             v-if="mushroom"
-            :src="mushroom.imagePath"
+            :src="imagePath || mushroom.imagePath"
             :alt="mushroom.name?.ru || mushroom.name?.en || mushroom.id"
             class="fighter-portrait"
           />

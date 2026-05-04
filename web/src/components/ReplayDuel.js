@@ -120,6 +120,7 @@ export const ReplayDuel = {
       <div class="duel-fighters">
         <fighter-card
           :mushroom="leftFighter.mushroom"
+          :image-path="leftFighter.imagePath"
           :name-text="leftFighter.nameText"
           :health-text="leftFighter.healthText"
           :speech-text="leftFighter.speechText"
@@ -132,6 +133,7 @@ export const ReplayDuel = {
         />
         <fighter-card
           :mushroom="rightFighter.mushroom"
+          :image-path="rightFighter.imagePath"
           :name-text="rightFighter.nameText"
           :health-text="rightFighter.healthText"
           :speech-text="rightFighter.speechText"
