@@ -42,7 +42,9 @@ function viewModel(state) {
       get: () => getter.call(vm)
     });
   }
-  vm.achievementClass = RunCompleteScreen.methods.achievementClass.bind(vm);
+  for (const [key, method] of Object.entries(RunCompleteScreen.methods)) {
+    vm[key] = method.bind(vm);
+  }
   return vm;
 }
 
@@ -239,6 +241,31 @@ test('run complete recap shows already-earned achievements without marking them 
 
   assert.equal(vm.earnedAchievements[0].isNew, false);
   assert.ok(vm.achievementClass(vm.earnedAchievements[0]).includes('run-achievement--earned'));
+});
+
+test('run complete achievement cards reveal after the section and then one by one', () => {
+  const vm = viewModel({
+    gameRun: { endReason: 'max_rounds' },
+    gameRunResult: {
+      achievements: [
+        { id: 'season_gold_cap', isNew: true },
+        { id: 'first_ring_crossed', isNew: false },
+        { id: 'deep_run', isNew: false }
+      ],
+      player: {
+        completedRounds: 9,
+        wins: 5,
+        losses: 1,
+        livesRemaining: 4
+      }
+    },
+    bootstrap: { activeMushroomId: 'thalla' },
+    lang: 'en'
+  });
+
+  assert.equal(vm.achievementRevealDelay(0), '760ms');
+  assert.equal(vm.achievementRevealDelay(1), '940ms');
+  assert.equal(vm.achievementRevealDelay(2), '1120ms');
 });
 
 test('run complete game-feel hooks log client events when session exists', () => {

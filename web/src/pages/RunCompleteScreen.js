@@ -184,6 +184,9 @@ export const RunCompleteScreen = {
         'run-achievement--accent-' + (achievement.accent || achievement.type),
         achievement.isNew ? 'run-achievement--new' : 'run-achievement--earned'
       ];
+    },
+    achievementRevealDelay(index) {
+      return `${760 + index * 180}ms`;
     }
   },
   template: `
@@ -250,12 +253,12 @@ export const RunCompleteScreen = {
             <article
               v-for="(achievement, index) in earnedAchievements"
               :key="achievement.id"
-              :style="{ animationDelay: (index * 90) + 'ms' }"
+              :style="{ '--achievement-delay': achievementRevealDelay(index) }"
               class="run-achievement"
               :class="achievementClass(achievement)"
             >
               <achievement-badge :achievement="achievement" size="medium" />
-              <div>
+              <div class="run-achievement-copy">
                 <h3>
                   {{ achievement.name }}
                   <span v-if="achievement.isNew" class="run-achievement-new">{{ t.newAchievement }}</span>
