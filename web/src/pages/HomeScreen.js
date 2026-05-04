@@ -159,6 +159,9 @@ export const HomeScreen = {
         <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
         </button>
+        <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openSocialPanel('settings')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
+        </button>
       </div>
 
       <home-social-sidebar
@@ -174,6 +177,7 @@ export const HomeScreen = {
         @accept-challenge="$emit('accept-challenge')"
         @decline-challenge="$emit('decline-challenge')"
         @set-mobile-action-mode="setMobileActionMode($event)"
+        @switch-panel="socialPanel = $event"
       />
 
       <div v-if="mobileActionMode === 'menu' && state.menuOpen" class="home-menu-actions">

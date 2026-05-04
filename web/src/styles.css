@@ -1385,7 +1385,7 @@ select {
 .home-action-btn--friends {
   color: #3d5731;
 }
-.home-action-btn--settings {
+.home-action-rail .home-action-btn--settings {
   display: none;
 }
 .home-bottom-actions,
@@ -1424,6 +1424,55 @@ select {
   min-height: 38px;
   padding: 0;
   font-size: 1.25rem;
+}
+.home-sidebar-switcher {
+  display: flex;
+  gap: 5px;
+  width: max-content;
+  padding: 5px;
+  border: 1px solid rgba(138, 97, 53, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 251, 244, 0.74);
+  box-shadow: 0 8px 22px rgba(55, 43, 32, 0.1);
+  backdrop-filter: blur(8px);
+}
+.home-sidebar-switcher .home-action-btn {
+  width: 36px;
+  height: 36px;
+  border-color: rgba(138, 97, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 251, 244, 0.62);
+  box-shadow: none;
+}
+.home-sidebar-switcher .home-action-btn--settings {
+  display: inline-grid;
+}
+.home-sidebar-switcher .home-action-btn.active {
+  background: rgba(127, 152, 114, 0.16);
+  border-color: rgba(95, 124, 79, 0.34);
+}
+.home-sidebar-switcher--top {
+  width: 100%;
+  justify-content: center;
+}
+.home-sidebar-switcher--bottom {
+  position: sticky;
+  bottom: 0;
+  justify-self: center;
+  order: 20;
+}
+.home-sidebar-switcher--side {
+  position: fixed;
+  left: 0;
+  top: 52%;
+  z-index: 80;
+  display: grid;
+  transform: translateY(-50%);
+  border-left: 0;
+  border-radius: 0 16px 16px 0;
+}
+.home-sidebar-switcher--side .home-action-btn {
+  border-radius: 0 12px 12px 0;
 }
 .home-activity-feed {
   display: grid;
