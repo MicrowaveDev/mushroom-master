@@ -1334,60 +1334,17 @@ select {
   font-size: 1rem;
   box-shadow: 0 6px 18px rgba(55, 43, 32, 0.08);
 }
-.home-action-btn--notifications span {
-  position: relative;
-  width: 19px;
-  height: 20px;
-  border: 2px solid currentColor;
-  border-bottom: 0;
-  border-radius: 10px 10px 5px 5px;
+.home-action-btn svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.home-action-btn--notifications {
   color: #7b5835;
-}
-.home-action-btn--notifications span::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -5px;
-  width: 6px;
-  height: 5px;
-  border: 2px solid currentColor;
-  border-bottom: 0;
-  border-radius: 6px 6px 0 0;
-  transform: translateX(-50%);
-}
-.home-action-btn--notifications span::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: -10px -2px 0 -2px currentColor, 10px -2px 0 -2px currentColor;
-  transform: translateX(-50%);
-}
-.home-action-btn--friends span {
-  position: relative;
-  width: 22px;
-  height: 18px;
-}
-.home-action-btn--friends span::before,
-.home-action-btn--friends span::after {
-  content: '';
-  position: absolute;
-  top: 1px;
-  width: 11px;
-  height: 11px;
-  border: 2px solid currentColor;
-  border-radius: 999px;
-  background: rgba(255, 251, 244, 0.95);
-}
-.home-action-btn--friends span::before {
-  left: 1px;
-}
-.home-action-btn--friends span::after {
-  right: 1px;
 }
 .home-action-btn--friends {
   color: #3d5731;
@@ -1510,9 +1467,10 @@ select {
     top: 52%;
   }
   .home-bottom-actions {
-    position: relative;
-    z-index: 1;
-    justify-self: center;
+    position: fixed;
+    left: 50%;
+    bottom: calc(8px + var(--app-safe-area-bottom));
+    z-index: 66;
     display: flex;
     gap: 5px;
     padding: 5px;
@@ -1523,22 +1481,12 @@ select {
     backdrop-filter: blur(8px);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-4px);
+    transform: translate(-50%, 18px);
     transition: opacity 0.18s ease, transform 0.18s ease;
   }
   .home-bottom-actions--visible {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
-  }
-  .home-bottom-actions--fixed {
-    position: fixed;
-    left: 50%;
-    bottom: calc(8px + var(--app-safe-area-bottom));
-    z-index: 66;
-    transform: translate(-50%, 18px);
-  }
-  .home-bottom-actions--fixed.home-bottom-actions--visible {
     transform: translate(-50%, 0);
   }
   .home-bottom-actions .home-action-btn {
