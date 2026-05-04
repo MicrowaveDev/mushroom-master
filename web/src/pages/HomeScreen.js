@@ -205,7 +205,10 @@ export const HomeScreen = {
                   :class="{ 'home-mushroom-customize--open': expandedMushroomId === m.id }"
                   @click.stop="expandedMushroomId = expandedMushroomId === m.id ? null : m.id"
                   :title="t.customize"
-                >✎</button>
+                  :aria-label="t.customize"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5 4.5 4.5M4 20l4.8-1 10-10a3.2 3.2 0 0 0-4.5-4.5l-10 10L4 20Z"/><path d="m8.8 19-3.7-3.7"/></svg>
+                </button>
               </div>
             </div>
             <div v-if="expandedMushroomId === m.id" class="home-mushroom-picker">
