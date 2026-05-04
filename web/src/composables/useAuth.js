@@ -2,6 +2,9 @@ import { apiJson, parseStartParams } from '../api.js';
 import { projectLoadoutItems } from './loadout-projection.js';
 import { useTelegramWebApp } from './useTelegramWebApp.js';
 
+const BOOTSTRAP_CACHE_KEY = 'mushroomBootstrapCache';
+const BOOTSTRAP_LOADER_DELAY_MS = 320;
+
 export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   function navigate(screen, extra = {}) {
     if (typeof goTo === 'function') {
@@ -16,6 +19,77 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     telegram.syncViewportVars();
   }
 
+  function readCachedBootstrap(sessionKey) {
+    if (typeof sessionStorage === 'undefined' || !sessionKey) return null;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(BOOTSTRAP_CACHE_KEY) || 'null');
+      if (cached?.sessionKey !== sessionKey || !cached.bootstrap) return null;
+      return cached.bootstrap;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeCachedBootstrap(sessionKey, bootstrap) {
+    if (typeof sessionStorage === 'undefined' || !sessionKey || !bootstrap) return;
+    try {
+      sessionStorage.setItem(BOOTSTRAP_CACHE_KEY, JSON.stringify({
+        sessionKey,
+        bootstrap,
+        cachedAt: Date.now()
+      }));
+    } catch {
+      // Best-effort cache. Storage quota/private mode should not affect play.
+    }
+  }
+
+  function clearCachedBootstrap() {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      sessionStorage.removeItem(BOOTSTRAP_CACHE_KEY);
+    } catch {}
+  }
+
+  function applyBootstrapData(bootstrap) {
+    state.bootstrap = bootstrap;
+    state.lang = state.bootstrap.settings.lang;
+    // bootstrap.loadout / bootstrap.shopState are always null after the
+    // 2026-04-13 legacy deletion. The active run's grid is hydrated below
+    // from bootstrap.activeGameRun.loadoutItems.
+    state.builderItems = [];
+    if (state.bootstrap.activeGameRun) {
+      state.gameRun = state.bootstrap.activeGameRun;
+      state.gameRunShopOffer = state.bootstrap.activeGameRun.shopOffer || [];
+
+      // Single-source projection (§2.5): derive all UI state buckets from
+      // the server's loadoutItems array via the pure projectLoadoutItems
+      // helper. See loadout-projection.js for the routing rules and
+      // docs/bag-active-persistence.md / docs/bag-rotated-persistence.md /
+      // docs/client-row-id-refactor.md for the design context.
+      const allArtifacts = state.bootstrap?.artifacts || [];
+      const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+      const artifactById = new Map(allArtifacts.map((a) => [a.id, a]));
+      const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
+      const projected = projectLoadoutItems(loadoutItems, bagsSet, (id) => artifactById.get(id));
+      state.builderItems = projected.builderItems;
+      state.containerItems = projected.containerItems;
+      state.activeBags = projected.activeBags;
+      state.rotatedBags = projected.rotatedBags;
+      state.freshPurchases = projected.freshPurchases;
+    } else {
+      state.gameRun = null;
+    }
+  }
+
+  function scheduleLoader() {
+    if (state.bootstrap) return null;
+    state.showLoading = false;
+    return globalThis.setTimeout(() => {
+      state.showLoading = true;
+      state.loading = true;
+    }, BOOTSTRAP_LOADER_DELAY_MS);
+  }
+
   async function refreshBootstrap() {
     try {
       state.appConfig = await apiJson('/api/app-config');
@@ -25,9 +99,15 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     if (!state.sessionKey) {
       navigate('auth');
       state.loading = false;
+      state.showLoading = true;
       return;
     }
-    state.loading = true;
+    const cachedBootstrap = readCachedBootstrap(state.sessionKey);
+    if (cachedBootstrap) {
+      applyBootstrapData(cachedBootstrap);
+      state.loading = false;
+    }
+    const loadingTimer = scheduleLoader();
     // bootstrapReady is a deterministic "prep screen has finished projecting
     // server state into UI buckets" signal. Tests wait on
     // `[data-testid="prep-ready"]` (set in PrepScreen) which mirrors this
@@ -35,37 +115,12 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     // race the loadoutItems → containerItems projection during cold Vite.
     state.bootstrapReady = false;
     try {
-      state.bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
-      state.lang = state.bootstrap.settings.lang;
-      // bootstrap.loadout / bootstrap.shopState are always null after the
-      // 2026-04-13 legacy deletion. The active run's grid is hydrated below
-      // from bootstrap.activeGameRun.loadoutItems.
-      state.builderItems = [];
+      const bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
+      applyBootstrapData(bootstrap);
+      writeCachedBootstrap(state.sessionKey, bootstrap);
       try { state.friends = await apiJson('/api/friends', {}, state.sessionKey); } catch { state.friends = []; }
       try { state.leaderboard = await apiJson('/api/leaderboard', {}, state.sessionKey); } catch { state.leaderboard = []; }
       try { state.wikiHome = await apiJson('/api/wiki/home'); } catch { state.wikiHome = null; }
-      if (state.bootstrap.activeGameRun) {
-        state.gameRun = state.bootstrap.activeGameRun;
-        state.gameRunShopOffer = state.bootstrap.activeGameRun.shopOffer || [];
-
-        // Single-source projection (§2.5): derive all UI state buckets from
-        // the server's loadoutItems array via the pure projectLoadoutItems
-        // helper. See loadout-projection.js for the routing rules and
-        // docs/bag-active-persistence.md / docs/bag-rotated-persistence.md /
-        // docs/client-row-id-refactor.md for the design context.
-        const allArtifacts = state.bootstrap?.artifacts || [];
-        const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
-        const artifactById = new Map(allArtifacts.map((a) => [a.id, a]));
-        const loadoutItems = state.bootstrap.activeGameRun.loadoutItems || [];
-        const projected = projectLoadoutItems(loadoutItems, bagsSet, (id) => artifactById.get(id));
-        state.builderItems = projected.builderItems;
-        state.containerItems = projected.containerItems;
-        state.activeBags = projected.activeBags;
-        state.rotatedBags = projected.rotatedBags;
-        state.freshPurchases = projected.freshPurchases;
-      } else {
-        state.gameRun = null;
-      }
       // URL-driven deep link: /game-run/:id loads the active run into prep
       // when the ids match (§2.7 bookmarkable runs).
       const urlParams = parseStartParams();
@@ -116,11 +171,14 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.leaderboard = [];
       state.wikiHome = null;
       state.builderItems = [];
+      clearCachedBootstrap();
       localStorage.removeItem('sessionKey');
       state.sessionKey = '';
       navigate('auth');
     } finally {
+      if (loadingTimer) clearTimeout(loadingTimer);
       state.loading = false;
+      state.showLoading = false;
       state.bootstrapReady = true;
     }
   }

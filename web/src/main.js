@@ -54,6 +54,7 @@ const App = {
       appConfig: { localAiLabEnabled: false, localDevAuthEnabled: false },
       authCode: null,
       loading: true,
+      showLoading: !localStorage.getItem('sessionKey'),
       bootstrapReady: false,
       error: '',
       screen: parseStartParams().screen || 'auth',
@@ -300,7 +301,7 @@ const App = {
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 
-      <section v-if="state.loading" class="route-loading-screen" data-testid="app-loading">
+      <section v-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
         <div class="route-loading-card panel">
           <span class="route-loading-spinner" aria-hidden="true"></span>
           <h2>{{ t.title }}</h2>
@@ -502,6 +503,8 @@ const App = {
           </article>
         </section>
       </template>
+
+      <section v-else-if="state.sessionKey" class="route-loading-screen" data-testid="app-pending" aria-hidden="true"></section>
 
       <section v-else class="panel stack">
         <h2>{{ t.authTitle }}</h2>
