@@ -1406,7 +1406,7 @@ select {
   display: grid;
   align-content: start;
   gap: 12px;
-  padding: 18px;
+  padding: 18px 18px 82px;
   overflow-y: auto;
   background:
     radial-gradient(circle at 0% 0%, rgba(210, 224, 195, 0.48), transparent 34%),
@@ -1456,10 +1456,11 @@ select {
   justify-content: center;
 }
 .home-sidebar-switcher--bottom {
-  position: sticky;
-  bottom: 0;
-  justify-self: center;
-  order: 20;
+  position: fixed;
+  left: calc(min(360px, calc(100vw - 34px)) / 2);
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 80;
+  transform: translateX(-50%);
 }
 .home-sidebar-switcher--side {
   position: fixed;
