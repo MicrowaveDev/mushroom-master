@@ -20,7 +20,7 @@ Last verified against code: 2026-04-16.
 - **1-D.** The player loses **1 life per round lost** (not per step).
 - **1-E.** The run ends when lives reach 0 (`end_reason = 'max_losses'`) or all 9 rounds complete (`end_reason = 'max_rounds'`).
 - **1-F.** The player may abandon the run at any time (`end_reason = 'abandoned'`).
-- **1-G.** Only **one active game run per player** at a time.
+- **1-G.** A player may keep **one active solo game run per mushroom** at a time. Starting a solo run for a different active mushroom does not abandon earlier mushroom runs; selecting that mushroom later can resume its run. Challenge runs still require both players to have no active run.
 - **1-H.** Max **10 game starts per player per day** (`DAILY_BATTLE_LIMIT`). Both solo game runs and challenge runs increment the same `daily_rate_limits.battle_starts` counter. (The counter is named `battle_starts` for historical reasons — it formerly tracked the now-deleted legacy single-battle flow as well.)
 
 ---

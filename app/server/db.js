@@ -77,6 +77,13 @@ async function initSchema(sequelize) {
   initModels(sequelize);
   await sequelize.sync();
   await ensureColumnExists(sequelize, 'player_settings', 'replay_speed', 'INTEGER NOT NULL DEFAULT 2');
+  await ensureColumnExists(sequelize, 'game_run_players', 'mushroom_id', 'TEXT');
+  await sequelize.query('DROP INDEX IF EXISTS idx_one_active_run_per_player');
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_run_per_player_mushroom
+     ON game_run_players(player_id, mushroom_id)
+     WHERE is_active = 1 AND mushroom_id IS NOT NULL`
+  );
 }
 
 async function ensureColumnExists(sequelize, table, column, definition) {

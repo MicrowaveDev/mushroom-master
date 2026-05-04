@@ -41,7 +41,8 @@ export const HomeScreen = {
       this.$emit('select-mushroom', mushroom.id);
     },
     playSelectedMushroom() {
-      if (this.state.gameRun) {
+      if (this.selectedMushroom?.activeRun) {
+        this.state.gameRun = this.selectedMushroom.activeRun;
         this.$emit('resume-run');
         return;
       }
@@ -95,6 +96,8 @@ export const HomeScreen = {
     roster() {
       const mushrooms = this.state.bootstrap?.mushrooms || [];
       const progression = this.state.bootstrap?.progression || {};
+      const activeRunsByMushroom = new Map((this.state.bootstrap?.activeGameRuns || [])
+        .map((run) => [run.mushroomId, run]));
       return mushrooms.map(m => {
         const prog = progression[m.id] || {};
         return {
@@ -107,6 +110,7 @@ export const HomeScreen = {
           losses: prog.losses || 0,
           draws: prog.draws || 0,
           isActive: m.id === this.state.bootstrap?.activeMushroomId,
+          activeRun: activeRunsByMushroom.get(m.id) || null,
           activePortrait: prog.activePortrait || 'default',
           portraitUrl: prog.activePortraitUrl || m.imagePath,
           portraits: prog.portraits || [],
@@ -256,15 +260,15 @@ export const HomeScreen = {
         <div v-if="selectedMushroom" class="home-roster-action-panel">
           <div>
             <span>{{ selectedMushroom.name[state.lang] }}</span>
-            <strong>{{ selectedMushroom.isActive ? t.active : t.pick }}</strong>
+            <strong>{{ selectedMushroom.activeRun ? t.resumeRun : selectedMushroom.isActive ? t.active : t.pick }}</strong>
           </div>
           <div class="home-roster-action-buttons">
             <button
               class="primary"
-              :disabled="!selectedMushroom.isActive || state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit"
-              :title="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''"
+              :disabled="!selectedMushroom.isActive || (!selectedMushroom.activeRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit)"
+              :title="!selectedMushroom.activeRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''"
               @click="playSelectedMushroom"
-            >{{ state.gameRun ? t.resumeRun : t.startRun }}</button>
+            >{{ selectedMushroom.activeRun ? t.resumeRun : t.startRun }}</button>
             <button
               v-if="selectedMushroom.portraits.length > 1 || selectedMushroom.presets.length > 1"
               class="secondary home-roster-change-skin"

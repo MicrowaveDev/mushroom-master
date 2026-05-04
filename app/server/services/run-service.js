@@ -72,12 +72,25 @@ export async function startGameRun(playerId, mode = 'solo') {
     throw new Error('Invalid mode — use /challenge for challenge runs');
   }
   return withTransaction(async (client) => {
-    const existingRun = await client.query(
-      `SELECT id FROM game_run_players WHERE player_id = $1 AND is_active = 1`,
+    // Solo runs are bound to the player's currently selected mushroom. This
+    // lets a player keep one active run per mushroom and resume each later.
+    const activeMushroomResult = await client.query(
+      `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
       [playerId]
     );
+    const activeMushroomId = activeMushroomResult.rowCount
+      ? activeMushroomResult.rows[0].mushroom_id
+      : null;
+    if (!activeMushroomId) {
+      throw new Error('Choose a mushroom before starting a run');
+    }
+
+    const existingRun = await client.query(
+      `SELECT id FROM game_run_players WHERE player_id = $1 AND mushroom_id = $2 AND is_active = 1`,
+      [playerId, activeMushroomId]
+    );
     if (existingRun.rowCount) {
-      throw new Error('You already have an active game run');
+      throw new Error('You already have an active game run for this mushroom');
     }
 
     const usage = await getDailyUsage(client, playerId);
@@ -97,9 +110,9 @@ export async function startGameRun(playerId, mode = 'solo') {
 
     const runPlayerId = createId('grp');
     await client.query(
-      `INSERT INTO game_run_players (id, game_run_id, player_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
-       VALUES ($1, $2, $3, 1, 0, 0, 0, $4, $5)`,
-      [runPlayerId, runId, playerId, STARTING_LIVES, initialCoins]
+      `INSERT INTO game_run_players (id, game_run_id, player_id, mushroom_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
+       VALUES ($1, $2, $3, $4, 1, 0, 0, 0, $5, $6)`,
+      [runPlayerId, runId, playerId, activeMushroomId, STARTING_LIVES, initialCoins]
     );
 
     const currentDay = dayKey(new Date());
@@ -115,14 +128,6 @@ export async function startGameRun(playerId, mode = 'solo') {
     // at (0,0) and (1,0)). These are free — they're not bought from the shop
     // and don't deduct coins — but they count toward ghost budget scaling in
     // resolveRound() because playerSpent uses getArtifactPrice().
-    const activeMushroomResult = await client.query(
-      `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
-      [playerId]
-    );
-    const activeMushroomId = activeMushroomResult.rowCount
-      ? activeMushroomResult.rows[0].mushroom_id
-      : null;
-
     // [Req 4-P–4-R] Compute eligible character shop items for the initial offer
     const myceliumResult = activeMushroomId
       ? await client.query(`SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`, [playerId, activeMushroomId])
@@ -181,6 +186,7 @@ export async function startGameRun(playerId, mode = 'solo') {
       id: runId,
       mode,
       status: 'active',
+      mushroomId: activeMushroomId,
       currentRound: 1,
       startedAt: now,
       endedAt: null,
@@ -190,6 +196,7 @@ export async function startGameRun(playerId, mode = 'solo') {
       player: {
         id: runPlayerId,
         playerId,
+        mushroomId: activeMushroomId,
         completedRounds: 0,
         wins: 0,
         losses: 0,
@@ -200,21 +207,7 @@ export async function startGameRun(playerId, mode = 'solo') {
   });
 }
 
-export async function getActiveGameRun(playerId) {
-  const result = await query(
-    `SELECT gr.id, gr.mode, gr.status, gr.current_round, gr.started_at, gr.ended_at, gr.end_reason,
-            grp.id AS grp_id, grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining, grp.coins
-     FROM game_run_players grp
-     JOIN game_runs gr ON gr.id = grp.game_run_id
-     WHERE grp.player_id = $1 AND grp.is_active = 1`,
-    [playerId]
-  );
-
-  if (!result.rowCount) {
-    return null;
-  }
-
-  const row = result.rows[0];
+async function shapeActiveGameRun(row, playerId) {
   const currentRound = row.current_round;
   const [roundsResult, shopResult, loadoutRows] = await Promise.all([
     query(
@@ -234,6 +227,7 @@ export async function getActiveGameRun(playerId) {
     id: row.id,
     mode: row.mode,
     status: row.status,
+    mushroomId: row.mushroom_id || null,
     currentRound,
     startedAt: row.started_at,
     endedAt: row.ended_at,
@@ -243,6 +237,7 @@ export async function getActiveGameRun(playerId) {
     player: {
       id: row.grp_id,
       playerId,
+      mushroomId: row.mushroom_id || null,
       completedRounds: row.completed_rounds,
       wins: row.wins,
       losses: row.losses,
@@ -256,6 +251,40 @@ export async function getActiveGameRun(playerId) {
       createdAt: r.created_at
     }))
   };
+}
+
+export async function getActiveGameRun(playerId, mushroomId = null) {
+  const result = await query(
+    `SELECT gr.id, gr.mode, gr.status, gr.current_round, gr.started_at, gr.ended_at, gr.end_reason,
+            grp.id AS grp_id, grp.mushroom_id, grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining, grp.coins
+     FROM game_run_players grp
+     JOIN game_runs gr ON gr.id = grp.game_run_id
+     WHERE grp.player_id = $1 AND grp.is_active = 1
+       AND ($2 IS NULL OR grp.mushroom_id = $2)
+     ORDER BY gr.started_at DESC
+     LIMIT 1`,
+    [playerId, mushroomId]
+  );
+
+  if (!result.rowCount) {
+    return null;
+  }
+
+  return shapeActiveGameRun(result.rows[0], playerId);
+}
+
+export async function getActiveGameRuns(playerId) {
+  const result = await query(
+    `SELECT gr.id, gr.mode, gr.status, gr.current_round, gr.started_at, gr.ended_at, gr.end_reason,
+            grp.id AS grp_id, grp.mushroom_id, grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining, grp.coins
+     FROM game_run_players grp
+     JOIN game_runs gr ON gr.id = grp.game_run_id
+     WHERE grp.player_id = $1 AND grp.is_active = 1
+     ORDER BY gr.started_at DESC`,
+    [playerId]
+  );
+
+  return Promise.all(result.rows.map((row) => shapeActiveGameRun(row, playerId)));
 }
 
 async function payCompletionBonus(client, playerId, mushroomId, wins) {
@@ -1234,10 +1263,17 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
     for (const pid of players) {
       const grpId = createId('grp');
       grpIds[pid] = grpId;
+      const activeCharResult = await client.query(
+        `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,
+        [pid]
+      );
+      const activeMushroomId = activeCharResult.rowCount
+        ? activeCharResult.rows[0].mushroom_id
+        : null;
       await client.query(
-        `INSERT INTO game_run_players (id, game_run_id, player_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
-         VALUES ($1, $2, $3, 1, 0, 0, 0, $4, $5)`,
-        [grpId, runId, pid, STARTING_LIVES, initialCoins]
+        `INSERT INTO game_run_players (id, game_run_id, player_id, mushroom_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
+         VALUES ($1, $2, $3, $4, 1, 0, 0, 0, $5, $6)`,
+        [grpId, runId, pid, activeMushroomId, STARTING_LIVES, initialCoins]
       );
     }
 
@@ -1425,13 +1461,13 @@ export async function pruneCompletedRuns(maxAgeDays = COMPLETED_RUN_MAX_AGE_DAYS
 export async function getGameRunHistory(playerId, limit = 20) {
   const result = await query(
     `SELECT gr.id, gr.mode, gr.status, gr.current_round, gr.started_at, gr.ended_at, gr.end_reason,
-            grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining,
-            (SELECT bs.mushroom_id
+            grp.mushroom_id, grp.completed_rounds, grp.wins, grp.losses, grp.lives_remaining,
+            COALESCE(grp.mushroom_id, (SELECT bs.mushroom_id
              FROM game_rounds gro
              JOIN battle_snapshots bs ON bs.battle_id = gro.battle_id AND bs.player_id = grp.player_id
              WHERE gro.game_run_id = gr.id
              ORDER BY gro.round_number ASC
-             LIMIT 1) AS mushroom_id
+             LIMIT 1)) AS run_mushroom_id
      FROM game_run_players grp
      JOIN game_runs gr ON gr.id = grp.game_run_id
      WHERE grp.player_id = $1 AND gr.status != 'active'
@@ -1452,6 +1488,6 @@ export async function getGameRunHistory(playerId, limit = 20) {
     wins: row.wins,
     losses: row.losses,
     livesRemaining: row.lives_remaining,
-    mushroomId: row.mushroom_id || null
+    mushroomId: row.run_mushroom_id || null
   }));
 }

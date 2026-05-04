@@ -78,6 +78,11 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.freshPurchases = projected.freshPurchases;
     } else {
       state.gameRun = null;
+      state.gameRunShopOffer = [];
+      state.containerItems = [];
+      state.activeBags = [];
+      state.rotatedBags = [];
+      state.freshPurchases = [];
     }
   }
 

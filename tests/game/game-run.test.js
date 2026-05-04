@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   startGameRun,
   getActiveGameRun,
+  getActiveGameRuns,
   abandonGameRun,
   getGameRun,
   getBootstrap
@@ -36,7 +37,7 @@ test('[Req 1-A, 1-C, 4-A] starting a solo run creates an active game run', async
   assert.ok(run.startedAt);
 });
 
-test('[Req 1-G] only one active run per player is allowed', async () => {
+test('[Req 1-G] only one active solo run per mushroom is allowed', async () => {
   await freshDb();
   const session = await createPlayer();
   await saveSetup(session.player.id, 'thalla', loadout);
@@ -45,8 +46,30 @@ test('[Req 1-G] only one active run per player is allowed', async () => {
 
   await assert.rejects(
     () => startGameRun(session.player.id, 'solo'),
-    /already have an active game run|Unique|Validation error|CONSTRAINT/i
+    /already have an active game run for this mushroom|Unique|Validation error|CONSTRAINT/i
   );
+});
+
+test('[Req 1-G] active solo runs can coexist for different mushrooms', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await saveSetup(session.player.id, 'thalla', loadout);
+  const thallaRun = await startGameRun(session.player.id, 'solo');
+
+  await saveSetup(session.player.id, 'lomie', loadout);
+  const lomieRun = await startGameRun(session.player.id, 'solo');
+
+  assert.notEqual(lomieRun.id, thallaRun.id);
+  assert.equal(thallaRun.mushroomId, 'thalla');
+  assert.equal(lomieRun.mushroomId, 'lomie');
+
+  const allActive = await getActiveGameRuns(session.player.id);
+  assert.deepEqual(
+    allActive.map((run) => run.mushroomId).sort(),
+    ['lomie', 'thalla']
+  );
+  assert.equal((await getActiveGameRun(session.player.id, 'thalla')).id, thallaRun.id);
+  assert.equal((await getActiveGameRun(session.player.id, 'lomie')).id, lomieRun.id);
 });
 
 test('getActiveGameRun returns null when no active run exists', async () => {
@@ -188,6 +211,29 @@ test('[Req 12-D] bootstrap includes activeGameRun when a run is active', async (
 
   assert.ok(bootstrap.activeGameRun);
   assert.equal(bootstrap.activeGameRun.id, run.id);
+  assert.equal(bootstrap.activeGameRun.mushroomId, 'thalla');
+  assert.equal(bootstrap.activeGameRuns.length, 1);
+});
+
+test('[Req 1-G, 12-D] bootstrap activeGameRun follows selected mushroom', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await saveSetup(session.player.id, 'thalla', loadout);
+  const thallaRun = await startGameRun(session.player.id, 'solo');
+
+  await saveSetup(session.player.id, 'lomie', loadout);
+  const lomieRun = await startGameRun(session.player.id, 'solo');
+
+  let bootstrap = await getBootstrap(session.player.id);
+  assert.equal(bootstrap.activeMushroomId, 'lomie');
+  assert.equal(bootstrap.activeGameRun.id, lomieRun.id);
+  assert.equal(bootstrap.activeGameRuns.length, 2);
+
+  await saveSetup(session.player.id, 'thalla', loadout);
+  bootstrap = await getBootstrap(session.player.id);
+  assert.equal(bootstrap.activeMushroomId, 'thalla');
+  assert.equal(bootstrap.activeGameRun.id, thallaRun.id);
+  assert.equal(bootstrap.activeGameRuns.length, 2);
 });
 
 test('bootstrap has null activeGameRun when no run is active', async () => {
