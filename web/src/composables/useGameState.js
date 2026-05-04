@@ -3,7 +3,7 @@ import { messages } from '../i18n.js';
 import { apiJson, parseStartParams, setScreenQuery } from '../api.js';
 import { deriveTotals, getArtifactPrice, buildOccupancy, preferredOrientation } from '../artifacts/grid.js';
 import { renderArtifactFigure } from '../artifacts/render.js';
-import { defaultReplayPortraitConfig, replayPortraitConfigByMushroom } from '../replay-portrait-config.js';
+import { replayPortraitConfig } from '../replay-portrait-config.js';
 import { formatReplayEvent } from '../replay/format.js';
 import { MAX_ARTIFACT_COINS } from '../constants.js';
 
@@ -157,19 +157,67 @@ export function useGameState(state, options = {}) {
     return parts.join(' / ');
   }
 
-  function replayBubbleStyle(mushroomId) {
-    const layout = replayPortraitConfigByMushroom[mushroomId] || defaultReplayPortraitConfig;
+  function replayBubbleStyle(mushroomId, portraitId = 'default') {
+    const layout = replayPortraitConfig(mushroomId, portraitId);
     return {
       '--bubble-top': layout.top,
+      '--bubble-underhang': layout.underhang,
       '--bubble-inset-left': layout.insetLeft,
       '--bubble-inset-right': layout.insetRight,
       '--bubble-tail-left': layout.tailLeft,
-      '--fighter-object-position': layout.imagePosition
+      '--bubble-tail-edge': layout.tailEdge,
+      '--bubble-tail-top': layout.tailEdge === 'bottom' ? 'auto' : '-10px',
+      '--bubble-tail-bottom': layout.tailEdge === 'bottom' ? '-10px' : 'auto',
+      '--bubble-tail-border-left': layout.tailEdge === 'bottom' ? 'transparent' : 'rgba(138, 97, 53, 0.22)',
+      '--bubble-tail-border-top': layout.tailEdge === 'bottom' ? 'transparent' : 'rgba(138, 97, 53, 0.22)',
+      '--bubble-tail-border-right': layout.tailEdge === 'bottom' ? 'rgba(138, 97, 53, 0.22)' : 'transparent',
+      '--bubble-tail-border-bottom': layout.tailEdge === 'bottom' ? 'rgba(138, 97, 53, 0.22)' : 'transparent',
+      '--fighter-object-position': layout.imagePosition,
+      '--portrait-head-x': `${layout.headX}`,
+      '--portrait-head-y': `${layout.headY}`,
+      '--portrait-face-top': `${layout.faceTop}`,
+      '--portrait-face-bottom': `${layout.faceBottom}`
     };
   }
 
   function portraitPosition(mushroomId) {
-    return (replayPortraitConfigByMushroom[mushroomId] || defaultReplayPortraitConfig).imagePosition;
+    return replayPortraitConfig(mushroomId).imagePosition;
+  }
+
+  function portraitPositionFor(mushroomId, portraitId = 'default') {
+    return replayPortraitConfig(mushroomId, portraitId).imagePosition;
+  }
+
+  function portraitPathFor(mushroomId, portraitId = 'default') {
+    const mushroom = getMushroom(mushroomId);
+    if (!portraitId || portraitId === 'default') return mushroom?.imagePath || '';
+    const variants = state.bootstrap?.progression?.[mushroomId]?.portraits || [];
+    return variants.find((variant) => variant.id === portraitId)?.path || mushroom?.imagePath || '';
+  }
+
+  function portraitReviewItems() {
+    return (state.bootstrap?.mushrooms || []).flatMap((mushroom) => {
+      const variants = state.bootstrap?.progression?.[mushroom.id]?.portraits || [
+        { id: 'default', path: mushroom.imagePath, name: { ru: 'Базовый', en: 'Default' } }
+      ];
+      return variants.map((variant) => ({
+        mushroom,
+        id: `${mushroom.id}:${variant.id}`,
+        mushroomId: mushroom.id,
+        portraitId: variant.id || 'default',
+        imagePath: variant.path || mushroom.imagePath,
+        nameText: `${mushroom.name?.[state.lang] || mushroom.name?.en || mushroom.id} · ${variant.name?.[state.lang] || variant.name?.en || variant.id}`
+      }));
+    });
+  }
+
+  function portraitReviewGroups() {
+    return (state.bootstrap?.mushrooms || []).map((mushroom) => ({
+      mushroom,
+      mushroomId: mushroom.id,
+      nameText: mushroom.name?.[state.lang] || mushroom.name?.en || mushroom.id,
+      items: portraitReviewItems().filter((item) => item.mushroomId === mushroom.id)
+    }));
   }
 
   function sampleBubbleText(mushroom) {
@@ -181,14 +229,17 @@ export function useGameState(state, options = {}) {
 
   function buildReplayFighter(mushroomId, options = {}) {
     const mushroom = getMushroom(mushroomId);
+    const portraitId = options.portraitId || 'default';
     return {
       mushroom,
+      imagePath: options.imagePath || portraitPathFor(mushroomId, portraitId),
+      portraitId,
       nameText: options.nameText || mushroom?.name?.[state.lang] || mushroom?.name?.en || mushroomId || '',
       healthText: options.healthText || '',
       statsText: options.statsText || '',
       speechText: options.speechText || '',
       loadout: options.loadout || null,
-      bubbleStyle: mushroomId ? replayBubbleStyle(mushroomId) : {}
+      bubbleStyle: mushroomId ? replayBubbleStyle(mushroomId, portraitId) : {}
     };
   }
 
@@ -300,8 +351,8 @@ export function useGameState(state, options = {}) {
     getArtifact, getMushroom, mushroomDisplayName,
     goTo, toggleMenu,
     formatArtifactBonus, formatDelta,
-    loadoutStatsText, portraitPosition,
-    replayBubbleStyle, sampleBubbleText, buildReplayFighter,
+    loadoutStatsText, portraitPosition, portraitPositionFor, portraitPathFor,
+    replayBubbleStyle, sampleBubbleText, portraitReviewItems, portraitReviewGroups, buildReplayFighter,
     resultSpeech, describeReplay, describeRun, artifactGridStyle,
     getArtifactPrice, renderArtifactFigure, buildOccupancy, preferredOrientation
   };

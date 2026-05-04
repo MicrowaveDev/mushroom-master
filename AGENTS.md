@@ -212,18 +212,22 @@ These rules govern `tests/game/*.test.js` (Node.js `node:test` runner) — the b
   - portrait object-position or equivalent image crop controls
   - bubble top/side offsets
   - bubble tail anchor
+  - configured head/face anchor coordinates used by tests to prove the bubble does not cover the speaking character's face
 - For `object-position: '<x>% <y>%'` portrait tuning in this repo:
   - increasing the second percent moves the visible framing upward
   - decreasing the second percent moves the visible framing downward
   - do not rely on intuition here; verify each change against a freshly regenerated screenshot
+- Box-only geometry checks are insufficient for this surface. A bubble can be inside the portrait, above the name, and still cover or crowd the character's face. When adding or adjusting a portrait variant, define or verify its head/face band in [web/src/replay-portrait-config.js](/Users/microwavedev/workspace/mushroom-master/web/src/replay-portrait-config.js), then assert the bubble body is inside the portrait image, outside that face band, clear of the tail tip, and above the name overlay. Preferred placement is near the head with visible breathing room between the head and bubble tail; use an above-head bubble with a downward tail when the portrait has enough empty space above the character.
 - When portrait or bubble positioning is wrong for a specific character, adjust [web/src/replay-portrait-config.js](/Users/microwavedev/workspace/mushroom-master/web/src/replay-portrait-config.js) first before changing shared CSS or component structure.
-- For cast-wide portrait or bubble changes, generate a fresh all-characters review screenshot from the current code and inspect it before sign-off.
+- For cast-wide portrait or bubble changes, generate a fresh all-characters review screenshot from the current code and inspect it before sign-off. Also generate deterministic per-character review crops (one image per character group) so variants can be checked one by one without scanning a single tall screenshot.
 - If one or more characters are still framed incorrectly after the first pass, adjust the config and regenerate the review screenshot instead of patching unrelated global CSS.
 - For this kind of surface, tests should prove:
   - all expected character cards render
   - all expected bubbles render
+  - every configured portrait variant renders in the bubble-review surface
+  - bubble/body geometry is checked against the configured head/face anchor, not only against the card rectangle
   - the cast-wide review screenshot was regenerated from the current config
-  - the screenshot for agent review was regenerated in the same pass
+  - per-character review screenshots and their JSON sidecars were regenerated in the same pass
 
 ### Inventory Review Rules
 
