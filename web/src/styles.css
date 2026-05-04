@@ -5376,10 +5376,11 @@ select {
 }
 .run-achievement {
   display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
-  padding: 8px 10px 8px 8px;
+  min-height: 118px;
+  padding: 7px 10px 7px 7px;
   border: 1px solid rgba(126, 92, 54, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.44);
@@ -5403,9 +5404,9 @@ select {
   background: rgba(255, 255, 255, 0.34);
 }
 .run-achievement .achievement-badge {
-  width: 80px;
-  height: 80px;
-  filter: drop-shadow(0 4px 9px rgba(55, 43, 32, 0.16));
+  width: 104px;
+  height: 104px;
+  filter: drop-shadow(0 5px 11px rgba(55, 43, 32, 0.18));
 }
 .run-achievement-copy {
   display: grid;
