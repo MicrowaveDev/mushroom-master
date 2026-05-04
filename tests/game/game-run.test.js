@@ -8,6 +8,7 @@ import {
   getBootstrap
 } from '../../app/server/services/game-service.js';
 import { STARTING_LIVES, ROUND_INCOME } from '../../app/server/game-data.js';
+import { query } from '../../app/server/db.js';
 import { freshDb, createPlayer, saveSetup } from './helpers.js';
 
 const loadout = [
@@ -111,6 +112,56 @@ test('getGameRun returns run summary for participant', async () => {
   assert.equal(details.players.length, 1);
   assert.equal(details.players[0].playerId, session.player.id);
   assert.deepEqual(details.rounds, []);
+});
+
+test('getGameRun returns persisted completed-run recap for refreshable runComplete route', async () => {
+  await freshDb();
+  const session = await createPlayer();
+  await saveSetup(session.player.id, 'thalla', loadout);
+
+  const run = await startGameRun(session.player.id, 'solo');
+  await query(
+    `UPDATE game_runs SET status = 'completed', ended_at = $2, end_reason = 'max_losses' WHERE id = $1`,
+    [run.id, '2026-05-04T10:00:00.000Z']
+  );
+  await query(
+    `UPDATE game_run_players
+     SET is_active = 0, completed_rounds = 1, wins = 0, losses = 1, lives_remaining = 4, coins = 2
+     WHERE game_run_id = $1 AND player_id = $2`,
+    [run.id, session.player.id]
+  );
+  await query(
+    `INSERT INTO game_rounds
+      (id, game_run_id, round_number, battle_id, player_id, outcome, spore_awarded, mycelium_awarded, created_at)
+     VALUES ('round_refresh_receipt', $1, 1, NULL, $2, 'loss', 1, 5, '2026-05-04T09:59:00.000Z')`,
+    [run.id, session.player.id]
+  );
+  await query(
+    `INSERT INTO player_season_runs
+      (id, player_id, game_run_id, season_id, points, level_id, wins, losses, completed_rounds, end_reason, created_at)
+     VALUES ('season_refresh_receipt', $1, $2, 'season_1', 1, 'bronze', 0, 1, 1, 'max_losses', '2026-05-04T10:00:00.000Z')`,
+    [session.player.id, run.id]
+  );
+  await query(
+    `INSERT INTO player_achievements (id, player_id, achievement_id, source_type, source_id, season_id, earned_at)
+     VALUES
+      ('ach_refresh_old', $1, 'first_ring_crossed', 'run', 'older_run', 'season_1', '2026-05-04T09:00:00.000Z'),
+      ('ach_refresh_new', $1, 'season_bronze_spore', 'run', $2, 'season_1', '2026-05-04T10:00:00.000Z')`,
+    [session.player.id, run.id]
+  );
+
+  const details = await getGameRun(run.id, session.player.id);
+
+  assert.equal(details.status, 'completed');
+  assert.equal(details.player.completedRounds, 1);
+  assert.equal(details.lastRound.roundNumber, 1);
+  assert.deepEqual(details.lastRound.rewards, { spore: 1, mycelium: 5 });
+  assert.equal(details.season.runPoints, 1);
+  assert.equal(details.season.totalPoints, 1);
+  assert.deepEqual(details.achievements, [
+    { id: 'season_bronze_spore', isNew: true },
+    { id: 'first_ring_crossed', isNew: false }
+  ]);
 });
 
 test('getGameRun rejects non-participant', async () => {

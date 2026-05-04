@@ -159,6 +159,49 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     }
   }
 
+  async function loadRunComplete(runId) {
+    if (!runId) return;
+    try {
+      state.error = '';
+      const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
+      if (data.status !== 'completed' && data.status !== 'abandoned') {
+        state.gameRun = data;
+        state.gameRunResult = null;
+        goTo('prep');
+        return;
+      }
+      state.gameRun = {
+        id: data.id,
+        mode: data.mode,
+        status: data.status,
+        currentRound: data.currentRound,
+        startedAt: data.startedAt,
+        endedAt: data.endedAt,
+        endReason: data.endReason,
+        completionBonus: data.completionBonus || null,
+        player: data.player || null
+      };
+      state.gameRunResult = {
+        id: data.id,
+        mode: data.mode,
+        status: data.status,
+        currentRound: data.currentRound,
+        endedAt: data.endedAt,
+        endReason: data.endReason,
+        completionBonus: data.completionBonus || null,
+        season: data.season || null,
+        achievements: data.achievements || [],
+        player: data.player || null,
+        playerResults: data.playerResults || null,
+        lastRound: data.lastRound || null
+      };
+      goTo('runComplete', { gameRunId: data.id });
+    } catch (error) {
+      state.error = error.message || 'Could not load completed run';
+      goTo('home');
+    }
+  }
+
   async function abandonRun() {
     if (!state.gameRun) return;
     try {
@@ -368,7 +411,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   return {
     startNewGameRun, resumeGameRun, signalReady,
-    continueToNextRound, abandonRun, loadRunShopOffer, loadRunSummary,
+    continueToNextRound, abandonRun, loadRunShopOffer, loadRunSummary, loadRunComplete,
     refreshRunShop, sellRunItemAction, buyRunShopItem,
     getRunRefreshCost, getRunSellPrice, persistRunLoadout,
     onSellZoneDragOver, onSellZoneDragLeave, onSellZoneDrop

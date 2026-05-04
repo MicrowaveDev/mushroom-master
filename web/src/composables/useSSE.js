@@ -50,7 +50,7 @@ export function useSSE(state, goTo, loadReplay = null) {
         if (battleId && loadReplay) {
           try { await loadReplay(battleId); } catch { /* ignore */ }
         } else if (data.status === 'completed' || data.status === 'abandoned') {
-          goTo('runComplete');
+          goTo('runComplete', { gameRunId: data.id || state.gameRun?.id });
         }
       } catch { /* ignore malformed */ }
     });
@@ -59,7 +59,7 @@ export function useSSE(state, goTo, loadReplay = null) {
       state.error = state.lang === 'ru' ? 'Противник покинул игру' : 'Opponent left the game';
       state.gameRun = state.gameRun ? { ...state.gameRun, status: 'abandoned', endReason: 'opponent_abandoned' } : null;
       disconnect();
-      goTo('runComplete');
+      goTo('runComplete', { gameRunId: state.gameRun?.id });
     });
 
     eventSource.addEventListener('run_ended', (e) => {
@@ -70,7 +70,7 @@ export function useSSE(state, goTo, loadReplay = null) {
         }
       } catch { /* ignore */ }
       disconnect();
-      goTo('runComplete');
+      goTo('runComplete', { gameRunId: state.gameRun?.id });
     });
 
     eventSource.onopen = () => {

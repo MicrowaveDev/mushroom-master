@@ -5,7 +5,8 @@
 const ROUTE_PARAMS = {
   replay: 'replay',
   friends: 'challenge',
-  'game-run': 'gameRunId'
+  'game-run': 'gameRunId',
+  runComplete: 'gameRunId'
 };
 
 export function parseStartParams() {

@@ -165,7 +165,7 @@ const App = {
     async function onReplayFinish() {
       if (state.gameRun) {
         if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
-          gs.goTo('runComplete');
+          gs.goTo('runComplete', { gameRunId: state.gameRunResult?.id || state.gameRun.id });
         } else if (state.gameRunResult) {
           await gameRun.continueToNextRound();
         } else {
@@ -231,6 +231,9 @@ const App = {
         state.pendingReconnectBattleId = null;
       }
       const startParams = parseStartParams();
+      if (startParams.screen === 'runComplete' && startParams.gameRunId && state.sessionKey) {
+        await gameRun.loadRunComplete(startParams.gameRunId);
+      }
       if (startParams.challenge && state.sessionKey) await social.openChallenge(startParams.challenge);
       if (startParams.replay && state.sessionKey) await replay.loadReplay(startParams.replay);
       if (state.screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
@@ -385,9 +388,16 @@ const App = {
           @bag-chip-drag-start="onBagChipDragStart($event.bagId, $event.event)"
         />
 
-        <run-complete-screen v-else-if="state.screen === 'runComplete'"
+        <run-complete-screen v-else-if="state.screen === 'runComplete' && state.gameRunResult"
           :state="state" :t="t" @go-home="handleRunComplete"
         />
+
+        <section v-else-if="state.screen === 'runComplete'" class="route-loading-screen" data-testid="run-complete-loading">
+          <div class="route-loading-card panel">
+            <span class="route-loading-spinner" aria-hidden="true"></span>
+            <h2>{{ t.runComplete }}</h2>
+          </div>
+        </section>
 
         <run-summary-screen v-else-if="state.screen === 'runSummary' && state.gameRunSummary"
           :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition"

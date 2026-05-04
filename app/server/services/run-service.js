@@ -52,6 +52,8 @@ import {
   readCurrentRoundItems
 } from './game-run-loadout.js';
 import { awardRunSeasonProgress } from './season-service.js';
+import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
+import { getSeasonLevel, getSeasonPointsBreakdown } from '../../shared/season-levels.js';
 
 // In test environments, set REWARD_MULTIPLIER=N to scale spore+mycelium rewards
 // so unlocks can be reached after a handful of rounds instead of hundreds.
@@ -416,7 +418,9 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
   }
 
   const roundsResult = await query(
-    `SELECT id, round_number, battle_id, player_id, outcome, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
+    `SELECT id, round_number, battle_id, player_id, outcome, spore_awarded, mycelium_awarded,
+            rating_before, rating_after, created_at
+     FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
     [gameRunId]
   );
 
@@ -449,6 +453,84 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     }
   }
 
+  const viewerRounds = roundsResult.rows.filter((r) => r.player_id === viewerPlayerId);
+  const lastViewerRound = viewerRounds[viewerRounds.length - 1] || null;
+  const viewerMushroomId = mushroomByPlayer.get(viewerPlayerId) || null;
+
+  let season = null;
+  let achievements = [];
+  if (run.status !== 'active') {
+    const seasonRunResult = await query(
+      `SELECT * FROM player_season_runs WHERE player_id = $1 AND game_run_id = $2`,
+      [viewerPlayerId, gameRunId]
+    );
+    if (seasonRunResult.rowCount) {
+      const seasonRun = seasonRunResult.rows[0];
+      const totalResult = await query(
+        `SELECT COALESCE(SUM(points), 0) AS total_points
+         FROM player_season_runs
+         WHERE player_id = $1 AND season_id = $2 AND created_at <= $3`,
+        [viewerPlayerId, seasonRun.season_id, seasonRun.created_at]
+      );
+      const totalPoints = Number(totalResult.rows[0]?.total_points || 0);
+      const previousPoints = Math.max(0, totalPoints - Number(seasonRun.points || 0));
+      const previousLevelId = getSeasonLevel(previousPoints).id;
+      const totalLevelId = getSeasonLevel(totalPoints).id;
+      season = {
+        seasonId: seasonRun.season_id,
+        runPoints: seasonRun.points,
+        totalPoints,
+        previousLevelId,
+        levelId: totalLevelId,
+        leveledUp: previousLevelId !== totalLevelId,
+        breakdown: getSeasonPointsBreakdown({
+          wins: seasonRun.wins,
+          roundsCompleted: seasonRun.completed_rounds,
+          endReason: seasonRun.end_reason
+        })
+      };
+
+      const existingAchievementsResult = await query(
+        `SELECT achievement_id, source_id
+         FROM player_achievements
+         WHERE player_id = $1`,
+        [viewerPlayerId]
+      );
+      const achievementSourceById = new Map(existingAchievementsResult.rows.map((row) => [
+        row.achievement_id,
+        row.source_id
+      ]));
+      achievements = getEarnedRunAchievements({
+        mushroomId: viewerMushroomId,
+        endReason: run.end_reason,
+        lastOutcome: lastViewerRound?.outcome || null,
+        wins: viewerPlayer.wins,
+        losses: viewerPlayer.losses,
+        roundsCompleted: viewerPlayer.completed_rounds,
+        livesRemaining: viewerPlayer.lives_remaining,
+        winRate: viewerPlayer.completed_rounds ? Math.round((viewerPlayer.wins / viewerPlayer.completed_rounds) * 100) : 0,
+        seasonLevel: totalLevelId,
+        seasonPoints: totalPoints
+      }, 'en', Number.POSITIVE_INFINITY)
+        .filter((achievement) => achievementSourceById.has(achievement.id))
+        .map((achievement) => ({
+          id: achievement.id,
+          isNew: achievementSourceById.get(achievement.id) === gameRunId
+        }));
+    }
+  }
+
+  const player = {
+    id: viewerPlayer.id,
+    playerId: viewerPlayer.player_id,
+    mushroomId: viewerMushroomId,
+    completedRounds: viewerPlayer.completed_rounds,
+    wins: viewerPlayer.wins,
+    losses: viewerPlayer.losses,
+    livesRemaining: viewerPlayer.lives_remaining,
+    coins: viewerPlayer.coins
+  };
+
   return {
     id: run.id,
     mode: run.mode,
@@ -457,6 +539,21 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     startedAt: run.started_at,
     endedAt: run.ended_at,
     endReason: run.end_reason,
+    completionBonus: run.status !== 'active' ? getCompletionBonus(viewerPlayer.wins) : null,
+    player,
+    season,
+    achievements,
+    lastRound: lastViewerRound ? {
+      roundNumber: lastViewerRound.round_number,
+      battleId: lastViewerRound.battle_id,
+      outcome: lastViewerRound.outcome,
+      rewards: {
+        spore: lastViewerRound.spore_awarded,
+        mycelium: lastViewerRound.mycelium_awarded
+      },
+      ratingBefore: lastViewerRound.rating_before,
+      ratingAfter: lastViewerRound.rating_after
+    } : null,
     shopOffer,
     players: playersResult.rows.map((r) => ({
       id: r.id,
@@ -474,6 +571,12 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
       battleId: r.battle_id,
       playerId: r.player_id,
       outcome: r.outcome,
+      rewards: {
+        spore: r.spore_awarded,
+        mycelium: r.mycelium_awarded
+      },
+      ratingBefore: r.rating_before,
+      ratingAfter: r.rating_after,
       createdAt: r.created_at
     }))
   };

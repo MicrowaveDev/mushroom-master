@@ -76,6 +76,9 @@ export function useGameState(state, options = {}) {
       // Other screens write their own URL via the default mapping.
       if (screen === 'prep' && state.gameRun?.id) {
         setScreenQuery('game-run', { gameRunId: state.gameRun.id });
+      } else if (screen === 'runComplete') {
+        const gameRunId = extra.gameRunId || state.gameRunResult?.id || state.gameRun?.id || null;
+        setScreenQuery(screen, gameRunId ? { gameRunId } : extra);
       } else {
         setScreenQuery(screen, extra);
       }
