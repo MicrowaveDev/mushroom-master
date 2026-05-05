@@ -80,6 +80,50 @@ export async function captureScreenshot(page, dir, name, options = {}) {
   await fs.writeFile(path.join(dir, jsonName), JSON.stringify(manifest, null, 2) + '\n');
 }
 
+export async function captureElementScreenshot(page, dir, selector, name) {
+  await fs.mkdir(dir, { recursive: true });
+  const locator = page.locator(selector);
+  await expect(locator).toBeVisible();
+
+  const diagnostics = await locator.evaluate((element) => {
+    const broken = [];
+    for (const img of Array.from(element.querySelectorAll('img'))) {
+      if (img.naturalWidth === 0) {
+        broken.push({ src: img.src, alt: img.alt || '' });
+        img.style.outline = '3px solid #ff0040';
+        img.style.outlineOffset = '-3px';
+        img.style.background = 'rgba(255, 0, 64, 0.18)';
+      }
+    }
+    const headings = Array.from(element.querySelectorAll('h1, h2, h3'))
+      .map((h) => h.textContent.trim())
+      .filter(Boolean)
+      .slice(0, 10);
+    const rect = element.getBoundingClientRect();
+    return {
+      broken,
+      headings,
+      element: {
+        width: Math.round(rect.width),
+        height: Math.round(rect.height)
+      },
+      viewport: { width: window.innerWidth, height: window.innerHeight }
+    };
+  });
+
+  await locator.screenshot({ path: path.join(dir, name) });
+
+  const jsonName = name.replace(/\.png$/, '.json');
+  await fs.writeFile(path.join(dir, jsonName), JSON.stringify({
+    screenshot: name,
+    selector,
+    viewport: diagnostics.viewport,
+    element: diagnostics.element,
+    headings: diagnostics.headings,
+    brokenImages: diagnostics.broken
+  }, null, 2) + '\n');
+}
+
 export async function assertImagesLoaded(page) {
   const broken = await page.locator('img').evaluateAll((imgs) =>
     imgs.filter((i) => i.naturalWidth === 0).map((i) => i.src)

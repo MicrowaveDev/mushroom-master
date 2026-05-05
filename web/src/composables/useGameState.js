@@ -207,9 +207,9 @@ export function useGameState(state, options = {}) {
         mushroom,
         id: `${mushroom.id}:${variant.id}`,
         mushroomId: mushroom.id,
-        portraitId: variant.id,
+        portraitId: variant.id || 'default',
         imagePath: variant.path || mushroom.imagePath,
-        nameText: `${mushroom.name?.[state.lang] || mushroom.name?.en || mushroom.id} • ${variant.name?.[state.lang] || variant.name?.en || variant.id}`
+        nameText: `${mushroom.name?.[state.lang] || mushroom.name?.en || mushroom.id} · ${variant.name?.[state.lang] || variant.name?.en || variant.id}`
       }));
     });
   }

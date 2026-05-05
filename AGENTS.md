@@ -15,6 +15,8 @@ For game-UI changes specifically:
 - To target one regression test inside the e2e suite, run `npx playwright test --config=tests/game/playwright.config.js tests/game/solo-run.spec.js --grep "<test name>"`. Direct `npx playwright test` without `--config` will skip the test-server fixture and fail with a missing `baseURL`.
 - The hub manifest's top-level `quickVerifyCommand` / `fullVerifyCommand` are surface-agnostic defaults. The full per-surface mapping lives in `verifyCommandsBySurface` in [submodules.manifest.json](/Users/microwavedev/workspace/microwave-hub/submodules.manifest.json); pick the right entry for the active surface.
 
+Push/publish rule: when the user asks an agent to push completed mushroom-master work, publish it to the repository default branch (`main`; historically "master") rather than leaving it only on an agent feature branch, unless the user explicitly asks for a feature branch or PR-only handoff.
+
 Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for both renderer (PDF dossier) and autobattler Mini App UI styling. Before changing any app-frontend visual surface (panels, cards, stat tiles, result screens, headers), read Part 2 — especially the Flat Design Rules, the Stat and Metric Card Pattern, and the Dated Design Signals checklist — and self-audit the change against that list before reporting completion. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
 
 Use [docs/character-image-prompt-template.md](/Users/microwavedev/workspace/mushroom-master/docs/character-image-prompt-template.md) as the base whenever the task is to produce a character image-generation prompt from repo canon. Read the target character's current canon first, then return one final copy-paste-ready prompt block rather than the raw worksheet.
@@ -212,18 +214,22 @@ These rules govern `tests/game/*.test.js` (Node.js `node:test` runner) — the b
   - portrait object-position or equivalent image crop controls
   - bubble top/side offsets
   - bubble tail anchor
+  - configured head/face anchor coordinates used by tests to prove the bubble does not cover the speaking character's face
 - For `object-position: '<x>% <y>%'` portrait tuning in this repo:
   - increasing the second percent moves the visible framing upward
   - decreasing the second percent moves the visible framing downward
   - do not rely on intuition here; verify each change against a freshly regenerated screenshot
+- Box-only geometry checks are insufficient for this surface. A bubble can be inside the portrait, above the name, and still cover or crowd the character's face. When adding or adjusting a portrait variant, define or verify its head/face band in [web/src/replay-portrait-config.js](/Users/microwavedev/workspace/mushroom-master/web/src/replay-portrait-config.js), then assert the bubble body is inside the portrait image, outside that face band, clear of the tail tip, and above the name overlay. Preferred placement is near the head with visible breathing room between the head and bubble tail; use an above-head bubble with a downward tail when the portrait has enough empty space above the character.
 - When portrait or bubble positioning is wrong for a specific character, adjust [web/src/replay-portrait-config.js](/Users/microwavedev/workspace/mushroom-master/web/src/replay-portrait-config.js) first before changing shared CSS or component structure.
-- For cast-wide portrait or bubble changes, generate a fresh all-characters review screenshot from the current code and inspect it before sign-off.
+- For cast-wide portrait or bubble changes, generate a fresh all-characters review screenshot from the current code and inspect it before sign-off. Also generate deterministic per-character review crops (one image per character group) so variants can be checked one by one without scanning a single tall screenshot.
 - If one or more characters are still framed incorrectly after the first pass, adjust the config and regenerate the review screenshot instead of patching unrelated global CSS.
 - For this kind of surface, tests should prove:
   - all expected character cards render
   - all expected bubbles render
+  - every configured portrait variant renders in the bubble-review surface
+  - bubble/body geometry is checked against the configured head/face anchor, not only against the card rectangle
   - the cast-wide review screenshot was regenerated from the current config
-  - the screenshot for agent review was regenerated in the same pass
+  - per-character review screenshots and their JSON sidecars were regenerated in the same pass
 
 ### Inventory Review Rules
 

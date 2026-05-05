@@ -80,6 +80,7 @@ export async function getActiveSnapshot(client, playerId) {
     mushroomId,
     portraitId,
     imagePath: portraitUrl(mushroomId, portraitId),
+    activePortrait: portraitId,
     loadout: {
       gridWidth: BAG_COLUMNS,
       gridHeight: effectiveGridHeight(items),

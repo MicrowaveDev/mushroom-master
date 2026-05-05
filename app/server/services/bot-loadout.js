@@ -241,6 +241,7 @@ export function createBotGhostSnapshot(seedInput, mushroomId = null, budget = MA
     mushroomId: mushroom.id,
     portraitId: 'default',
     imagePath: portraitUrl(mushroom.id),
+    activePortrait: 'default',
     loadout: createBotLoadout(mushroom, rng, budget)
   };
 }
