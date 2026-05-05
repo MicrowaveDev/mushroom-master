@@ -349,12 +349,19 @@ const App = {
           </div>
         </section>
 
-        <onboarding-screen v-else-if="state.screen === 'onboarding'" :state="state" :t="t" @go="goTo($event)" />
+        <onboarding-screen
+          v-else-if="state.screen === 'onboarding'"
+          :state="state"
+          :t="t"
+          :portrait-position="portraitPosition"
+          @go="goTo($event)"
+        />
 
         <home-screen v-else-if="state.screen === 'home'"
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
-          :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta" :portrait-position="portraitPosition"
+          :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta"
+          :portrait-position="portraitPosition" :portrait-position-for="portraitPositionFor"
           @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="requestAbandonRun"
           @load-replay="loadReplay($event)" @load-run-summary="loadRunSummary($event)" @go="goTo($event)"
           @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
