@@ -2,7 +2,7 @@ import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
-import { calculateSeasonAbandonPenalty } from '../../../app/shared/season-levels.js';
+import { calculateSeasonAbandonPenalty, calculateSeasonPoints } from '../../../app/shared/season-levels.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
   const haptics = {
@@ -212,7 +212,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   function requestAbandonRun() {
     if (!state.gameRun) return;
-    state.pendingAbandonPenalty = previewAbandonPenalty();
+    const player = state.gameRun.player || {};
+    const currentPoints = calculateSeasonPoints({
+      wins: player.wins || 0,
+      losses: player.losses || 0,
+      roundsCompleted: player.completedRounds || 0
+    });
+    const penalty = previewAbandonPenalty();
+    state.pendingAbandonCurrentPoints = currentPoints;
+    state.pendingAbandonPenalty = penalty;
+    state.pendingAbandonNetPoints = currentPoints + penalty;
     state.abandonConfirmOpen = true;
   }
 

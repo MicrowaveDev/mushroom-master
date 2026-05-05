@@ -90,7 +90,9 @@ const App = {
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
       abandonConfirmOpen: false,
+      pendingAbandonCurrentPoints: 0,
       pendingAbandonPenalty: -2,
+      pendingAbandonNetPoints: -2,
       startingFirstRun: false,
       sellDragOver: false,
       actionInFlight: false,
@@ -545,6 +547,16 @@ const App = {
           <p class="confirm-penalty">
             {{ t.abandonConfirmPenalty.replace('{points}', state.pendingAbandonPenalty) }}
           </p>
+          <div class="confirm-rank-impact" aria-live="polite">
+            <span>
+              <span>{{ t.rankNoPenalty }}</span>
+              <strong>{{ formatDelta(state.pendingAbandonCurrentPoints) }}</strong>
+            </span>
+            <span>
+              <span>{{ t.rankExitNow }}</span>
+              <strong>{{ formatDelta(state.pendingAbandonNetPoints) }}</strong>
+            </span>
+          </div>
           <div class="confirm-actions">
             <button class="ghost" :disabled="state.actionInFlight" @click="cancelAbandonRun">{{ t.cancel }}</button>
             <button class="primary confirm-danger" :disabled="state.actionInFlight" @click="confirmAbandonRun">{{ state.actionInFlight ? t.abandonConfirming : t.abandonConfirmAction }}</button>
