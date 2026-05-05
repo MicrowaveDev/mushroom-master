@@ -125,6 +125,12 @@ export async function captureElementScreenshot(page, dir, selector, name) {
 }
 
 export async function assertImagesLoaded(page) {
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('img'))
+      .every((img) => img.complete && img.naturalWidth > 0),
+    null,
+    { timeout: 5000 }
+  ).catch(() => {});
   const broken = await page.locator('img').evaluateAll((imgs) =>
     imgs.filter((i) => i.naturalWidth === 0).map((i) => i.src)
   );

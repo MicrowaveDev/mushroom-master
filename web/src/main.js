@@ -86,6 +86,7 @@ const App = {
       localLabInput: 'Step 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.',
       gameRun: null,
       gameRunResult: null,
+      gameRunRounds: [],
       gameRunSummary: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
@@ -159,8 +160,17 @@ const App = {
     function handleRunComplete() {
       state.gameRun = null;
       state.gameRunResult = null;
+      state.gameRunRounds = [];
       auth.refreshBootstrap();
       gs.goTo('home');
+    }
+
+    async function handleRunRetry() {
+      state.gameRun = null;
+      state.gameRunResult = null;
+      state.gameRunRounds = [];
+      await auth.refreshBootstrap();
+      await gameRun.startNewGameRun('solo');
     }
 
     function handleRunSummaryClose() {
@@ -288,7 +298,7 @@ const App = {
       saveCharacter,
       ...customization,
       saveSettings: auth.saveSettings,
-      ...devTools, handleRunComplete, handleRunSummaryClose, onReplayFinish,
+      ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
   },
@@ -433,7 +443,7 @@ const App = {
         />
 
         <run-complete-screen v-else-if="state.screen === 'runComplete' && state.gameRunResult"
-          :state="state" :t="t" @go-home="handleRunComplete"
+          :state="state" :t="t" @go-home="handleRunComplete" @play-again="handleRunRetry"
         />
 
         <section v-else-if="state.screen === 'runComplete'" class="route-loading-screen" data-testid="run-complete-loading">

@@ -200,10 +200,12 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   // --- Run complete screen + completion bonus [Req 9-B] ---
   await expect(page.locator('.run-complete-screen')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.run-complete-card')).toBeVisible();
-  // Verify completion bonus is displayed (merged from coverage-gaps Req 9-B).
-  // The stat-grid inside run-complete-card shows spore/mycelium bonus.
+  // Verify the run record and completion actions are displayed.
   const completeCard = page.locator('.run-complete-card');
-  await expect(completeCard.locator('.stat-grid')).toBeVisible();
+  await expect(completeCard.locator('.run-complete-record')).toBeVisible();
+  await expect(completeCard.getByRole('button', { name: /play again|играть снова/i })).toBeVisible();
+  await expect(completeCard.getByRole('button', { name: /home|домой/i })).toBeVisible();
+  await page.waitForTimeout(1400);
   await saveShot(page, 'solo-09-run-complete.png');
 
   // --- Go home ---

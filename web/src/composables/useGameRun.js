@@ -67,6 +67,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.error = '';
       const data = await apiJson('/api/game-run/start', { method: 'POST', body: JSON.stringify({ mode }) }, state.sessionKey);
       state.gameRun = data;
+      state.gameRunRounds = [];
       state.gameRunShopOffer = data.shopOffer || [];
       state.gameRunRefreshCount = 0;
       state.gameRunResult = null;
@@ -101,9 +102,21 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       const data = await apiJson(`/api/game-run/${state.gameRun.id}/ready`, { method: 'POST' }, state.sessionKey);
       haptics.impact('medium');
       if (data.waiting) return;
-      state.gameRunResult = data;
+      const previousRounds = Array.isArray(state.gameRunRounds)
+        ? state.gameRunRounds
+        : (Array.isArray(state.gameRun?.rounds) ? state.gameRun.rounds : []);
+      const currentRound = data.lastRound || null;
+      const runRounds = currentRound
+        ? [
+            ...previousRounds.filter((round) => round.roundNumber !== currentRound.roundNumber),
+            currentRound
+          ].sort((a, b) => (a.roundNumber || 0) - (b.roundNumber || 0))
+        : previousRounds;
+      state.gameRunResult = { ...data, rounds: data.rounds || runRounds };
+      state.gameRunRounds = runRounds;
+      if (state.gameRun) state.gameRun = { ...state.gameRun, rounds: runRounds };
       if (data.status === 'completed' || data.status === 'abandoned') {
-        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null };
+        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null, rounds: runRounds };
       }
       // Spec: docs/user-flows.md Flow B Step 3 — post-Ready lands directly
       // on the replay screen, which autoplays the battle and then renders
@@ -194,8 +207,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         achievements: data.achievements || [],
         player: data.player || null,
         playerResults: data.playerResults || null,
-        lastRound: data.lastRound || null
+        lastRound: data.lastRound || null,
+        rounds: data.rounds || []
       };
+      state.gameRunRounds = data.rounds || [];
       goTo('runComplete', { gameRunId: data.id }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load completed run';
@@ -259,8 +274,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         achievements: data.achievements || [],
         player: data.player || null,
         playerResults: data.playerResults || null,
-        lastRound: data.lastRound || null
+        lastRound: data.lastRound || null,
+        rounds: data.rounds || []
       };
+      state.gameRunRounds = data.rounds || [];
       state.gameRunShopOffer = [];
       await refreshBootstrap();
       goTo('runComplete', { gameRunId: data.id });

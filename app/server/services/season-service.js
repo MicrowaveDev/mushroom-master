@@ -1,4 +1,4 @@
-import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
+import { getAwardableRunAchievements } from '../../shared/run-achievements.js';
 import { applySeasonPointProtection, calculateRawSeasonPoints, getSeasonLevel, getSeasonPointsBreakdown, seasonLevelRank } from '../../shared/season-levels.js';
 import { createId, nowIso } from '../lib/utils.js';
 
@@ -201,7 +201,11 @@ export async function awardRunSeasonProgress(client, {
   const totalLevelId = persisted.levelId;
   const totalPoints = persisted.totalPoints;
   const winRate = completedRounds ? Math.round((wins / completedRounds) * 100) : 0;
-  const earned = getEarnedRunAchievements({
+  const existingAchievements = await client.query(
+    `SELECT achievement_id FROM player_achievements WHERE player_id = $1`,
+    [playerId]
+  );
+  const earned = getAwardableRunAchievements({
     mushroomId,
     endReason,
     lastOutcome,
@@ -212,7 +216,9 @@ export async function awardRunSeasonProgress(client, {
     winRate,
     seasonLevel: totalLevelId,
     seasonPoints: totalPoints
-  }, 'en', Number.POSITIVE_INFINITY);
+  }, 'en', {
+    alreadyEarnedIds: existingAchievements.rows.map((row) => row.achievement_id)
+  });
 
   return {
     season: {

@@ -170,6 +170,14 @@ Three-zone single-column layout (mobile), two-column on desktop (left: backpack 
 - Two-column fighter cards below (using `FighterCard` with portrait config).
 - "Home" button at the bottom.
 
+### Run Complete / Finish Blocks
+
+- Lead with the verdict, not generic closure. A loss finish should say "Defeat" / "Поражение" first, with the end reason as supporting copy.
+- Do not duplicate the same metric in adjacent hero, stat, and detail rows. If the detail row says "Round 6", the summary tiles should use orthogonal stats such as wins, win rate, losses, rewards, or rank movement — not "Rounds: 6".
+- Prefer a one-symbol-per-round outcome timeline over two large stat cards when summarizing a completed run: trophy for each win, broken heart for each loss, in actual round order. It should read like `🏆 🏆 💔 💔 🏆`, not like numeric counters.
+- Primary action should keep the player in the loop ("Play again" / "Играть снова"). Keep "Home" as a secondary exit action.
+- Read-only reward summaries are recap text, not tiny chips. Use a small label such as "Earned" plus the signed values; a full-width soft green reward band is acceptable when it helps a loss screen still feel rewarding. Reserve small pill/chip styling for selectable controls or image-legibility exceptions.
+
 ### Replay Screen
 
 - Two-column duel layout on desktop, single column on mobile.
