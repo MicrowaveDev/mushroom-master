@@ -8,7 +8,8 @@ import {
   BAG_COLUMNS,
   BAG_ROWS,
   MAX_ARTIFACT_COINS,
-  mushrooms
+  mushrooms,
+  portraitUrl
 } from '../game-data.js';
 import { getEffectiveShape } from '../../shared/bag-shape.js';
 import { createRng } from '../lib/utils.js';
@@ -238,6 +239,8 @@ export function createBotGhostSnapshot(seedInput, mushroomId = null, budget = MA
   return {
     playerId: null,
     mushroomId: mushroom.id,
+    portraitId: 'default',
+    imagePath: portraitUrl(mushroom.id),
     activePortrait: 'default',
     loadout: createBotLoadout(mushroom, rng, budget)
   };

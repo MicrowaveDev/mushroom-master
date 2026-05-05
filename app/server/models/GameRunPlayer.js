@@ -5,6 +5,7 @@ export default function defineGameRunPlayer(sequelize) {
     id: { type: DataTypes.TEXT, primaryKey: true },
     game_run_id: { type: DataTypes.TEXT, allowNull: false, references: { model: 'game_runs', key: 'id' }, onDelete: 'CASCADE' },
     player_id: { type: DataTypes.TEXT, allowNull: false, references: { model: 'players', key: 'id' }, onDelete: 'CASCADE' },
+    mushroom_id: { type: DataTypes.TEXT },
     is_active: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
     completed_rounds: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     wins: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
@@ -13,14 +14,6 @@ export default function defineGameRunPlayer(sequelize) {
     coins: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
   }, {
     tableName: 'game_run_players',
-    timestamps: false,
-    indexes: [
-      {
-        unique: true,
-        fields: ['player_id'],
-        where: { is_active: 1 },
-        name: 'idx_one_active_run_per_player'
-      }
-    ]
+    timestamps: false
   });
 }

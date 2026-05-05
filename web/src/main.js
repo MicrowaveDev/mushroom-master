@@ -54,6 +54,7 @@ const App = {
       appConfig: { localAiLabEnabled: false, localDevAuthEnabled: false },
       authCode: null,
       loading: true,
+      showLoading: !localStorage.getItem('sessionKey'),
       bootstrapReady: false,
       error: '',
       screen: parseStartParams().screen || 'auth',
@@ -66,6 +67,7 @@ const App = {
       shopOffer: [],
       rerollSpent: 0,
       menuOpen: false,
+      mobileHomeActionsMode: localStorage.getItem('mobileHomeActionsMode') || 'auto',
       draggingArtifactId: '',
       draggingItem: null,
       draggingBagId: '',
@@ -87,6 +89,8 @@ const App = {
       gameRunSummary: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
+      abandonConfirmOpen: false,
+      pendingAbandonPenalty: -2,
       startingFirstRun: false,
       sellDragOver: false,
       actionInFlight: false,
@@ -162,10 +166,27 @@ const App = {
       gs.goTo('home');
     }
 
+    async function openRoute(startParams, routeOptions = {}) {
+      const options = { routeOptions };
+      if (startParams.screen === 'runComplete' && startParams.gameRunId && state.sessionKey) {
+        await gameRun.loadRunComplete(startParams.gameRunId, options);
+      } else if (startParams.screen === 'runSummary' && startParams.gameRunId && state.sessionKey) {
+        await gameRun.loadRunSummary(startParams.gameRunId, options);
+      } else if (startParams.replay && state.sessionKey) {
+        await replay.loadReplay(startParams.replay, options);
+      } else if (startParams.challenge && state.sessionKey) {
+        await social.openChallenge(startParams.challenge, options);
+      } else if (startParams.screen === 'game-run' && state.gameRun?.id === startParams.gameRunId) {
+        gs.goTo('prep', {}, routeOptions);
+      } else if (startParams.screen) {
+        gs.goTo(startParams.screen, {}, routeOptions);
+      }
+    }
+
     async function onReplayFinish() {
       if (state.gameRun) {
         if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
-          gs.goTo('runComplete');
+          gs.goTo('runComplete', { gameRunId: state.gameRunResult?.id || state.gameRun.id });
         } else if (state.gameRunResult) {
           await gameRun.continueToNextRound();
         } else {
@@ -190,6 +211,9 @@ const App = {
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
     watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
+    watch(() => state.mobileHomeActionsMode, (mode) => {
+      localStorage.setItem('mobileHomeActionsMode', mode || 'auto');
+    });
     watch(() => state.bootstrap?.settings?.reducedMotion, (reduced) => {
       document.documentElement.classList.toggle('reduced-motion', !!reduced);
       motionTracker.setAppPreference(!!reduced);
@@ -215,6 +239,7 @@ const App = {
     // --- Mount ---
     let appRootEl = null;
     let cleanupTelegram = () => {};
+    let cleanupPopstate = () => {};
     onMounted(async () => {
       cleanupTelegram = telegram.init();
       auth.applyTelegramTheme();
@@ -230,9 +255,12 @@ const App = {
         await replay.loadReplay(state.pendingReconnectBattleId);
         state.pendingReconnectBattleId = null;
       }
-      const startParams = parseStartParams();
-      if (startParams.challenge && state.sessionKey) await social.openChallenge(startParams.challenge);
-      if (startParams.replay && state.sessionKey) await replay.loadReplay(startParams.replay);
+      await openRoute(parseStartParams(), { replaceHistory: true });
+      const onPopstate = () => {
+        openRoute(parseStartParams(), { skipHistory: true, skipTransition: true });
+      };
+      window.addEventListener('popstate', onPopstate);
+      cleanupPopstate = () => window.removeEventListener('popstate', onPopstate);
       if (state.screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
         await devTools.loadInventoryReview();
       }
@@ -244,6 +272,7 @@ const App = {
     onUnmounted(() => {
       sse.disconnect();
       cleanupTelegram();
+      cleanupPopstate();
       touch.detachTouch(appRootEl);
       motionTracker.destroy();
     });
@@ -278,10 +307,10 @@ const App = {
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 
-      <section v-if="state.loading" class="auth-screen">
-        <div class="auth-hero-card panel">
-          <h2 class="auth-title">{{ t.authTitle }}</h2>
-          <p class="auth-tagline">{{ t.authTagline }}</p>
+      <section v-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
+        <div class="route-loading-card panel">
+          <span class="route-loading-spinner" aria-hidden="true"></span>
+          <h2>{{ t.title }}</h2>
         </div>
       </section>
 
@@ -294,15 +323,24 @@ const App = {
       />
 
       <template v-else-if="state.bootstrap">
-        <nav v-if="state.menuOpen" class="nav-dropdown">
-          <button class="nav-btn" @click="goTo('home')">{{ t.home }}</button>
-          <button class="nav-btn" @click="goTo('characters')">{{ t.characters }}</button>
-          <button class="nav-btn" @click="goTo('friends')">{{ t.friends }}</button>
-          <button class="nav-btn" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
-          <button class="nav-btn" @click="goTo('profile')">{{ t.profile }}</button>
-          <button class="nav-btn" @click="goTo('wiki')">{{ t.wiki }}</button>
-          <button class="nav-btn" @click="goTo('settings')">{{ t.settings }}</button>
-        </nav>
+        <template v-if="state.menuOpen">
+          <div class="nav-sidebar-backdrop" @click="state.menuOpen = false"></div>
+          <aside class="nav-sidebar" aria-label="Menu">
+            <div class="home-section-header">
+              <h3>{{ t.title }}</h3>
+              <button class="ghost nav-sidebar-close" @click="state.menuOpen = false" aria-label="Close">×</button>
+            </div>
+            <nav class="nav-sidebar-list">
+              <button class="nav-btn" :class="{ active: state.screen === 'home' }" @click="goTo('home')">{{ t.home }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'characters' }" @click="goTo('characters')">{{ t.characters }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'friends' }" @click="goTo('friends')">{{ t.friends }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'leaderboard' }" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'profile' }" @click="goTo('profile')">{{ t.profile }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'wiki' || state.screen === 'wiki-detail' }" @click="goTo('wiki')">{{ t.wiki }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'settings' }" @click="goTo('settings')">{{ t.settings }}</button>
+            </nav>
+          </aside>
+        </template>
 
         <section v-if="state.screen === 'firstRunStarting' || state.startingFirstRun" class="route-loading-screen" data-testid="first-run-starting">
           <div class="route-loading-card panel">
@@ -317,7 +355,7 @@ const App = {
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
           :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta" :portrait-position="portraitPosition"
-          @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="abandonRun"
+          @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="requestAbandonRun"
           @load-replay="loadReplay($event)" @load-run-summary="loadRunSummary($event)" @go="goTo($event)"
           @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
           @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
@@ -379,20 +417,34 @@ const App = {
           @buy-run-item="buyRunShopItem($event)" @refresh-shop="refreshRunShop"
           @sell-dragover="onSellZoneDragOver($event)" @sell-dragleave="onSellZoneDragLeave"
           @sell-drop="onSellZoneDrop($event)"
-          @signal-ready="signalReady" @abandon="abandonRun"
+          @signal-ready="signalReady" @abandon="requestAbandonRun"
           @deactivate-bag="deactivateBag($event)"
           @rotate-bag="rotateBag($event)"
           @bag-chip-drag-start="onBagChipDragStart($event.bagId, $event.event)"
         />
 
-        <run-complete-screen v-else-if="state.screen === 'runComplete'"
+        <run-complete-screen v-else-if="state.screen === 'runComplete' && state.gameRunResult"
           :state="state" :t="t" @go-home="handleRunComplete"
         />
+
+        <section v-else-if="state.screen === 'runComplete'" class="route-loading-screen" data-testid="run-complete-loading">
+          <div class="route-loading-card panel">
+            <span class="route-loading-spinner" aria-hidden="true"></span>
+            <h2>{{ t.runComplete }}</h2>
+          </div>
+        </section>
 
         <run-summary-screen v-else-if="state.screen === 'runSummary' && state.gameRunSummary"
           :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition"
           @go-home="handleRunSummaryClose" @load-replay="loadReplay($event)"
         />
+
+        <section v-else-if="state.screen === 'runSummary'" class="route-loading-screen" data-testid="run-summary-loading">
+          <div class="route-loading-card panel">
+            <span class="route-loading-spinner" aria-hidden="true"></span>
+            <h2>{{ t.runComplete }}</h2>
+          </div>
+        </section>
 
         <replay-screen v-else-if="state.screen === 'replay' && state.currentBattle"
           :state="state" :t="t" :format-delta="formatDelta"
@@ -467,10 +519,31 @@ const App = {
         </section>
       </template>
 
+      <section v-else-if="state.sessionKey" class="route-loading-screen" data-testid="app-pending" aria-hidden="true"></section>
+
       <section v-else class="panel stack">
         <h2>{{ t.authTitle }}</h2>
         <p>{{ t.authTagline }}</p>
       </section>
+
+      <div
+        v-if="state.abandonConfirmOpen"
+        class="confirm-backdrop"
+        role="presentation"
+        @click.self="cancelAbandonRun"
+      >
+        <section class="confirm-dialog panel" role="dialog" aria-modal="true" :aria-label="t.abandonConfirmTitle">
+          <h2>{{ t.abandonConfirmTitle }}</h2>
+          <p>{{ t.abandonConfirmBody }}</p>
+          <p class="confirm-penalty">
+            {{ t.abandonConfirmPenalty.replace('{points}', state.pendingAbandonPenalty) }}
+          </p>
+          <div class="confirm-actions">
+            <button class="ghost" :disabled="state.actionInFlight" @click="cancelAbandonRun">{{ t.cancel }}</button>
+            <button class="primary confirm-danger" :disabled="state.actionInFlight" @click="confirmAbandonRun">{{ state.actionInFlight ? t.abandonConfirming : t.abandonConfirmAction }}</button>
+          </div>
+        </section>
+      </div>
     </div>
   `
 };

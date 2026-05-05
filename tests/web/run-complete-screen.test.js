@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { RunCompleteScreen } from '../../web/src/pages/RunCompleteScreen.js';
 import { getEarnedRunAchievements, runAchievements } from '../../app/shared/run-achievements.js';
-import { calculateSeasonPoints, getRunSeasonSummary, seasonLevels } from '../../app/shared/season-levels.js';
+import { calculateSeasonPoints, getRunSeasonSummary, getSeasonEndReward, getSeasonProgressSummary, seasonLevels } from '../../app/shared/season-levels.js';
 
 const t = {
   runComplete: 'Game Complete',
@@ -20,15 +20,18 @@ const t = {
   spore: 'Spore',
   mycelium: 'Mycelium',
   wins: 'Wins',
+  losses: 'Losses',
   roundsCompleted: 'Rounds',
   achievementsEarned: 'Achievements earned',
   seasonLevel: 'Season level',
   seasonPoints: 'points',
   seasonPointsToNext: 'points to',
   seasonMaxLevel: 'Season peak',
+  seasonPeakRank: 'Peak rank',
   newAchievement: 'New',
   alreadyEarned: 'Earned',
   clearBonus: 'Full clear',
+  abandonPenalty: 'Exit',
   achievementNoneTitle: 'No new marks',
   achievementNoneHint: 'The mycelium still remembers this run.',
   thisRun: 'this run'
@@ -42,7 +45,9 @@ function viewModel(state) {
       get: () => getter.call(vm)
     });
   }
-  vm.achievementClass = RunCompleteScreen.methods.achievementClass.bind(vm);
+  for (const [key, method] of Object.entries(RunCompleteScreen.methods)) {
+    vm[key] = method.bind(vm);
+  }
   return vm;
 }
 
@@ -61,11 +66,13 @@ test('run achievements catalogue is split into general and every character list'
 
 test('season levels use bronze silver gold diamond thresholds', () => {
   assert.deepEqual(seasonLevels.map((level) => level.id), ['bronze', 'silver', 'gold', 'diamond']);
-  assert.equal(getRunSeasonSummary({ wins: 0, roundsCompleted: 1 }, 'en').id, 'bronze');
-  assert.equal(getRunSeasonSummary({ wins: 2, roundsCompleted: 2 }, 'en').id, 'silver');
-  assert.equal(getRunSeasonSummary({ wins: 4, roundsCompleted: 6 }, 'en').id, 'gold');
-  assert.equal(getRunSeasonSummary({ wins: 7, roundsCompleted: 9, endReason: 'max_rounds' }, 'en').id, 'diamond');
-  assert.equal(calculateSeasonPoints({ wins: 7, roundsCompleted: 9, endReason: 'max_rounds' }), 35);
+  assert.equal(getRunSeasonSummary({ wins: 0, losses: 1 }, 'en').id, 'bronze');
+  assert.equal(getSeasonProgressSummary(25, 'en').id, 'silver');
+  assert.equal(getSeasonProgressSummary(70, 'en').id, 'gold');
+  assert.equal(getSeasonProgressSummary(140, 'en').id, 'diamond');
+  assert.equal(calculateSeasonPoints({ wins: 9, losses: 0, roundsCompleted: 9, endReason: 'max_rounds' }), 17);
+  assert.equal(calculateSeasonPoints({ wins: 1, losses: 3, roundsCompleted: 4, endReason: 'abandoned' }), -6);
+  assert.deepEqual(getSeasonEndReward('diamond'), { spore: 800, mycelium: 40 });
 });
 
 test('run complete recap uses final result stats and last battle details', () => {
@@ -99,14 +106,14 @@ test('run complete recap uses final result stats and last battle details', () =>
   assert.equal(vm.losses, 4);
   assert.equal(vm.roundsCompleted, 6);
   assert.equal(vm.winRate, 33);
-  assert.equal(vm.seasonSummary.id, 'silver');
-  assert.equal(vm.seasonSummary.points, 12);
+  assert.equal(vm.seasonSummary.id, 'bronze');
+  assert.equal(vm.seasonSummary.points, 0);
   assert.equal(vm.livesRemaining, 0);
   assert.equal(vm.hasBonus, true);
   assert.equal(vm.lastRoundOutcomeLabel, 'Defeat');
   assert.equal(vm.lastRoundRewardText, '+1 Spore');
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'thalla_spore_echo'));
-  assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'season_silver_thread' && achievement.type === 'season'));
+  assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'season_bronze_spore' && achievement.type === 'season'));
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'last_spore'));
 });
 
@@ -164,11 +171,11 @@ test('run complete recap handles max-round clears and challenge bonus maps', () 
   assert.equal(vm.titleText, 'Mycelium held');
   assert.equal(vm.reasonText, 'You cleared every round and claimed the full bonus.');
   assert.equal(vm.winRate, 78);
-  assert.equal(vm.seasonSummary.id, 'diamond');
+  assert.equal(vm.seasonSummary.id, 'bronze');
   assert.deepEqual(vm.bonus, { spore: 40, mycelium: 15 });
   assert.equal(vm.lastRoundOutcomeLabel, 'Victory');
   assert.equal(vm.lastRoundRewardText, '+3 Spore / +2 Mycelium');
-  assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'season_diamond_node'));
+  assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'season_bronze_spore'));
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'perfect_circle'));
 });
 
@@ -180,8 +187,8 @@ test('run complete recap prefers persisted season and achievement unlocks', () =
     gameRunResult: {
       season: {
         seasonId: 'season_1',
-        runPoints: 12,
-        totalPoints: 31,
+        runPoints: 15,
+        totalPoints: 145,
         levelId: 'diamond',
         leveledUp: true
       },
@@ -190,9 +197,9 @@ test('run complete recap prefers persisted season and achievement unlocks', () =
         { id: 'perfect_circle', isNew: true }
       ],
       player: {
-        completedRounds: 2,
-        wins: 1,
-        losses: 1,
+        completedRounds: 9,
+        wins: 7,
+        losses: 2,
         livesRemaining: 4,
         coins: 0
       }
@@ -202,10 +209,10 @@ test('run complete recap prefers persisted season and achievement unlocks', () =
   });
 
   assert.equal(vm.seasonSummary.id, 'diamond');
-  assert.equal(vm.seasonSummary.runPoints, 12);
-  assert.equal(vm.seasonSummary.totalPoints, 31);
+  assert.equal(vm.seasonSummary.runPoints, 15);
+  assert.equal(vm.seasonSummary.totalPoints, 145);
   assert.equal(vm.seasonSummary.leveledUp, true);
-  assert.equal(vm.seasonBreakdownText, 'Wins +3 / Rounds +2 / Full clear +5');
+  assert.equal(vm.seasonBreakdownText, 'Wins +14 / Losses -2 / Full clear +3');
   assert.deepEqual(vm.earnedAchievements.map((achievement) => achievement.id), ['season_diamond_node', 'perfect_circle']);
   assert.ok(vm.achievementClass(vm.earnedAchievements[0]).includes('run-achievement--season'));
 });
@@ -216,11 +223,13 @@ test('run complete recap shows already-earned achievements without marking them 
     gameRunResult: {
       season: {
         seasonId: 'season_1',
-        runPoints: 8,
-        totalPoints: 16,
+        runPoints: -4,
+        totalPoints: 66,
         levelId: 'silver',
         leveledUp: false,
-        breakdown: { winsPoints: 6, roundsPoints: 2, clearBonus: 0 }
+        leveledDown: true,
+        levelChanged: true,
+        breakdown: { winsPoints: 4, lossesPenalty: -3, clearBonus: 0, abandonPenalty: -5 }
       },
       achievements: [
         { id: 'season_silver_thread', isNew: false }
@@ -238,7 +247,34 @@ test('run complete recap shows already-earned achievements without marking them 
   });
 
   assert.equal(vm.earnedAchievements[0].isNew, false);
+  assert.equal(vm.formattedRunPoints, '-4');
+  assert.equal(vm.runPointsTone, 'run-season-run-points--negative');
   assert.ok(vm.achievementClass(vm.earnedAchievements[0]).includes('run-achievement--earned'));
+});
+
+test('run complete achievement cards reveal after the section and then one by one', () => {
+  const vm = viewModel({
+    gameRun: { endReason: 'max_rounds' },
+    gameRunResult: {
+      achievements: [
+        { id: 'season_gold_cap', isNew: true },
+        { id: 'first_ring_crossed', isNew: false },
+        { id: 'deep_run', isNew: false }
+      ],
+      player: {
+        completedRounds: 9,
+        wins: 5,
+        losses: 1,
+        livesRemaining: 4
+      }
+    },
+    bootstrap: { activeMushroomId: 'thalla' },
+    lang: 'en'
+  });
+
+  assert.equal(vm.achievementRevealDelay(0), '760ms');
+  assert.equal(vm.achievementRevealDelay(1), '940ms');
+  assert.equal(vm.achievementRevealDelay(2), '1120ms');
 });
 
 test('run complete game-feel hooks log client events when session exists', () => {
@@ -291,8 +327,9 @@ test('run complete game-feel hooks log client events when session exists', () =>
     vm.emitGameFeelHooks = RunCompleteScreen.methods.emitGameFeelHooks.bind(vm);
     vm.emitGameFeelHooks();
 
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 3);
     assert.ok(calls.every((call) => call.url === '/api/client-events'));
+    assert.ok(calls.some((call) => JSON.parse(call.options.body).event === 'season_rank_change'));
     assert.ok(calls.some((call) => JSON.parse(call.options.body).event === 'season_tier_up'));
     assert.ok(calls.some((call) => JSON.parse(call.options.body).event === 'achievement_unlock'));
   } finally {

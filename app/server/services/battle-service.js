@@ -4,7 +4,8 @@ import {
   getStarterPresetCost,
   BAG_COLUMNS,
   BAG_ROWS,
-  ROUND_INCOME
+  ROUND_INCOME,
+  portraitUrl
 } from '../game-data.js';
 import {
   createId,
@@ -29,7 +30,7 @@ export async function getActiveSnapshot(client, playerId) {
     `SELECT active_portrait FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
     [playerId, mushroomId]
   );
-  const activePortrait = portraitResult.rows[0]?.active_portrait || 'default';
+  const portraitId = portraitResult.rows[0]?.active_portrait || 'default';
 
   // The player MUST be in an active game run for this call to succeed.
   // Legacy single-battle fallback (player_artifact_loadouts) was deleted in
@@ -77,7 +78,9 @@ export async function getActiveSnapshot(client, playerId) {
   return {
     playerId,
     mushroomId,
-    activePortrait,
+    portraitId,
+    imagePath: portraitUrl(mushroomId, portraitId),
+    activePortrait: portraitId,
     loadout: {
       gridWidth: BAG_COLUMNS,
       gridHeight: effectiveGridHeight(items),

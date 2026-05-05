@@ -1,6 +1,13 @@
 import levels from './season-levels.json' with { type: 'json' };
 
 export const seasonLevels = levels;
+export const SEASON_MAX_SCORING_WINS = 7;
+export const seasonEndRewards = {
+  bronze: { spore: 50, mycelium: 0 },
+  silver: { spore: 150, mycelium: 5 },
+  gold: { spore: 350, mycelium: 15 },
+  diamond: { spore: 800, mycelium: 40 }
+};
 export const CURRENT_SEASON = {
   id: 'season_1',
   name: {
@@ -21,27 +28,71 @@ function localized(value, lang = 'en') {
   return value[lang] || value.en || value.ru || '';
 }
 
-export function calculateSeasonPoints({ wins = 0, roundsCompleted = 0, endReason = null } = {}) {
-  return Math.max(0, wins * 3 + roundsCompleted + (endReason === 'max_rounds' ? 5 : 0));
+export function calculateSeasonPoints({
+  wins = 0,
+  losses = 0,
+  roundsCompleted = 0,
+  endReason = null
+} = {}) {
+  const breakdown = getSeasonPointsBreakdown({ wins, losses, roundsCompleted, endReason });
+  return breakdown.total;
 }
 
-export function getSeasonPointsBreakdown({ wins = 0, roundsCompleted = 0, endReason = null } = {}) {
-  const winsPoints = Math.max(0, wins * 3);
-  const roundsPoints = Math.max(0, roundsCompleted);
-  const clearBonus = endReason === 'max_rounds' ? 5 : 0;
+export function calculateRawSeasonPoints({ wins = 0, losses = 0, roundsCompleted = 0, endReason = null } = {}) {
+  const scoringWins = Math.min(Math.max(0, wins), SEASON_MAX_SCORING_WINS);
+  const winsPoints = scoringWins * 2;
+  const lossesPenalty = Math.max(0, losses) * -1;
+  const clearBonus = endReason === 'max_rounds' ? 3 : 0;
+  const abandonPenalty = calculateSeasonAbandonPenalty({ endReason, roundsCompleted });
+  return winsPoints + lossesPenalty + clearBonus + abandonPenalty;
+}
+
+export function calculateSeasonAbandonPenalty({ endReason = null, roundsCompleted = 0 } = {}) {
+  if (endReason !== 'abandoned') return 0;
+  return Math.max(0, roundsCompleted) > 0 ? -5 : -2;
+}
+
+export function applySeasonPointProtection({ runPoints = 0 } = {}) {
+  return runPoints;
+}
+
+export function getSeasonPointsBreakdown({
+  wins = 0,
+  losses = 0,
+  roundsCompleted = 0,
+  endReason = null
+} = {}) {
+  const safeWins = Math.max(0, wins);
+  const scoringWins = Math.min(safeWins, SEASON_MAX_SCORING_WINS);
+  const cappedWins = Math.max(0, safeWins - scoringWins);
+  const winsPoints = scoringWins * 2;
+  const lossesPenalty = Math.max(0, losses) * -1;
+  const clearBonus = endReason === 'max_rounds' ? 3 : 0;
+  const abandonPenalty = calculateSeasonAbandonPenalty({ endReason, roundsCompleted });
+  const rawTotal = winsPoints + lossesPenalty + clearBonus + abandonPenalty;
+  const total = applySeasonPointProtection({ runPoints: rawTotal });
   return {
-    wins: Math.max(0, wins),
+    wins: safeWins,
+    scoringWins,
+    cappedWins,
+    losses: Math.max(0, losses),
     roundsCompleted: Math.max(0, roundsCompleted),
     winsPoints,
-    roundsPoints,
+    lossesPenalty,
     clearBonus,
-    total: winsPoints + roundsPoints + clearBonus
+    abandonPenalty,
+    protectionAdjustment: total - rawTotal,
+    total
   };
 }
 
 export function seasonLevelRank(levelId) {
   const index = levels.findIndex((level) => level.id === levelId);
   return index < 0 ? -1 : index;
+}
+
+export function getSeasonEndReward(levelId = 'bronze') {
+  return seasonEndRewards[levelId] || seasonEndRewards.bronze;
 }
 
 export function getSeasonLevel(points) {
@@ -73,13 +124,18 @@ export function getRunSeasonSummary(context = {}, lang = 'en') {
   return getSeasonProgressSummary(points, lang, points);
 }
 
-export function getSeasonProgressSummary(totalPoints, lang = 'en', runPoints = 0) {
+export function getSeasonProgressSummary(totalPoints, lang = 'en', runPoints = 0, peakPoints = totalPoints) {
   const points = Math.max(0, totalPoints || 0);
+  const safePeakPoints = Math.max(points, peakPoints || 0);
   const level = getSeasonLevel(points);
+  const peakLevel = getSeasonLevel(safePeakPoints);
   return {
     ...level,
     runPoints,
     totalPoints: level.points,
+    peakPoints: peakLevel.points,
+    peakLevelId: peakLevel.id,
+    peakName: localized(peakLevel.raw.name, lang),
     seasonName: localized(CURRENT_SEASON.name, lang),
     seasonTheme: localized(CURRENT_SEASON.theme, lang),
     seasonStartsAt: CURRENT_SEASON.startsAt,

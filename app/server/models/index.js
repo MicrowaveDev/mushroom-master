@@ -28,6 +28,8 @@ import defineGameRunShopState from './GameRunShopState.js';
 import definePlayerSeasonProgress from './PlayerSeasonProgress.js';
 import definePlayerSeasonRun from './PlayerSeasonRun.js';
 import definePlayerAchievement from './PlayerAchievement.js';
+import defineClientEvent from './ClientEvent.js';
+import definePlayerSeasonArchive from './PlayerSeasonArchive.js';
 
 export function initModels(sequelize) {
   const Player = definePlayer(sequelize);
@@ -54,6 +56,8 @@ export function initModels(sequelize) {
   const PlayerSeasonProgress = definePlayerSeasonProgress(sequelize);
   const PlayerSeasonRun = definePlayerSeasonRun(sequelize);
   const PlayerAchievement = definePlayerAchievement(sequelize);
+  const ClientEvent = defineClientEvent(sequelize);
+  const PlayerSeasonArchive = definePlayerSeasonArchive(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
   Player.hasMany(Session, { foreignKey: 'player_id' });
@@ -65,6 +69,8 @@ export function initModels(sequelize) {
   Player.hasMany(PlayerSeasonProgress, { foreignKey: 'player_id' });
   Player.hasMany(PlayerSeasonRun, { foreignKey: 'player_id' });
   Player.hasMany(PlayerAchievement, { foreignKey: 'player_id' });
+  Player.hasMany(ClientEvent, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerSeasonArchive, { foreignKey: 'player_id' });
 
   Battle.hasMany(BattleSnapshot, { foreignKey: 'battle_id' });
   Battle.hasMany(BattleEvent, { foreignKey: 'battle_id' });
@@ -106,6 +112,8 @@ export function initModels(sequelize) {
     GameRunShopState,
     PlayerSeasonProgress,
     PlayerSeasonRun,
-    PlayerAchievement
+    PlayerAchievement,
+    ClientEvent,
+    PlayerSeasonArchive
   };
 }

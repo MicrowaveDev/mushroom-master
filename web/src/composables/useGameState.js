@@ -75,9 +75,12 @@ export function useGameState(state, options = {}) {
       // /game-run/:id so the tab is bookmarkable and shareable (§2.7).
       // Other screens write their own URL via the default mapping.
       if (screen === 'prep' && state.gameRun?.id) {
-        setScreenQuery('game-run', { gameRunId: state.gameRun.id });
+        setScreenQuery('game-run', { gameRunId: state.gameRun.id }, options);
+      } else if (screen === 'runComplete') {
+        const gameRunId = extra.gameRunId || state.gameRunResult?.id || state.gameRun?.id || null;
+        setScreenQuery(screen, gameRunId ? { gameRunId } : extra, options);
       } else {
-        setScreenQuery(screen, extra);
+        setScreenQuery(screen, extra, options);
       }
     };
     const hasViewTransitions = typeof document !== 'undefined'

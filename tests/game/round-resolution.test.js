@@ -11,6 +11,7 @@ import {
   refreshRunShop,
   sellRunItem,
   selectActiveMushroom,
+  switchPortrait,
   generateShopOffer
 } from '../../app/server/services/game-service.js';
 import {
@@ -398,6 +399,34 @@ test('[Req 7-D] round 1 ghost budget has grace factor (≤ 70% of player spend)'
   const ghostCost = await getLastGhostCost(playerId);
   const maxPresetCost = 2;
   assert.ok(ghostCost <= 3 + maxPresetCost, `Round 1 ghost cost ${ghostCost} should be ≤ ${3 + maxPresetCost} (shop budget floored + preset)`);
+});
+
+test('[Req 14-H] player battle snapshot preserves active portrait variant for replay config', async () => {
+  await freshDb();
+  const session = await createPlayer({ telegramId: 91401 });
+  const playerId = session.player.id;
+
+  await selectActiveMushroom(playerId, 'thalla');
+  const unlockRun = await startGameRun(playerId, 'solo');
+  await earnMycelium(playerId, unlockRun.id, 100);
+  await abandonGameRun(playerId, unlockRun.id);
+  await switchPortrait(playerId, 'thalla', '1');
+
+  const run = await startGameRun(playerId, 'solo');
+  await seedRunLoadout(playerId, run.id, loadout);
+  const result = await resolveRound(playerId, run.id);
+  const snapshots = await query(
+    `SELECT payload_json FROM battle_snapshots WHERE battle_id = $1 AND side = 'left'`,
+    [result.lastRound.battleId]
+  );
+  const snapshot = JSON.parse(snapshots.rows[0].payload_json);
+
+  assert.equal(snapshot.mushroomId, 'thalla');
+  assert.equal(snapshot.portraitId, '1');
+  assert.ok(
+    snapshot.imagePath.includes('/portraits/thalla/1'),
+    `imagePath should point at active portrait variant, got: ${snapshot.imagePath}`
+  );
 });
 
 test('[Req 7-C, 7-E] round 1 ghost snapshot includes a bought combat artifact beyond preset', async () => {

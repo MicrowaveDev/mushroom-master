@@ -3,7 +3,7 @@ import { artifacts, DAILY_BATTLE_LIMIT, mushroomsForResponse } from '../game-dat
 import { dayKey, nextUtcReset } from '../lib/utils.js';
 import { getBattleHistory } from './battle-service.js';
 import { getPlayerState } from './player-service.js';
-import { getActiveGameRun, getGameRunHistory } from './run-service.js';
+import { getActiveGameRun, getActiveGameRuns, getGameRunHistory } from './run-service.js';
 
 export { validateLoadoutItems } from './loadout-utils.js';
 export { simulateBattle } from './battle-engine.js';
@@ -34,6 +34,7 @@ export {
   createChallengeRun,
   generateShopOffer,
   getActiveGameRun,
+  getActiveGameRuns,
   getGameRun,
   getGameRunHistory,
   pruneCompletedRuns,
@@ -51,13 +52,20 @@ export async function getBootstrap(playerId) {
     getBattleHistory(playerId, 10),
     getGameRunHistory(playerId, 10)
   ]);
-  const [dailyUsage, activeGameRun] = await Promise.all([
+  const [dailyUsage, activeGameRuns] = await Promise.all([
     query(
       `SELECT battle_starts FROM daily_rate_limits WHERE player_id = $1 AND day_key = $2`,
       [playerId, dayKey(new Date())]
     ),
-    getActiveGameRun(playerId)
+    getActiveGameRuns(playerId)
   ]);
+  const legacyActiveRun = activeGameRuns.find((run) => !run.mushroomId && run.mode === 'solo') || null;
+  const normalizedActiveGameRuns = activeGameRuns.map((run) => (
+    run === legacyActiveRun && state.activeMushroomId
+      ? { ...run, mushroomId: state.activeMushroomId, player: { ...run.player, mushroomId: state.activeMushroomId } }
+      : run
+  ));
+  const activeGameRun = normalizedActiveGameRuns.find((run) => run.mushroomId === state.activeMushroomId) || null;
   return {
     ...state,
     // Re-stamp portrait URLs with current mtime at response time so a file
@@ -67,6 +75,7 @@ export async function getBootstrap(playerId) {
     artifacts,
     shopState: null,
     activeGameRun,
+    activeGameRuns: normalizedActiveGameRuns,
     battleLimit: {
       used: dailyUsage.rowCount ? Number(dailyUsage.rows[0].battle_starts) : 0,
       limit: DAILY_BATTLE_LIMIT,

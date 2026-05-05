@@ -77,6 +77,42 @@ async function initSchema(sequelize) {
   initModels(sequelize);
   await sequelize.sync();
   await ensureColumnExists(sequelize, 'player_settings', 'replay_speed', 'INTEGER NOT NULL DEFAULT 2');
+  await ensureColumnExists(sequelize, 'game_run_players', 'mushroom_id', 'TEXT');
+  await ensureColumnExists(sequelize, 'player_season_progress', 'peak_points', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumnExists(sequelize, 'player_season_progress', 'peak_level_id', "TEXT NOT NULL DEFAULT 'bronze'");
+  await sequelize.query('DROP INDEX IF EXISTS idx_one_active_run_per_player');
+  await backfillActiveRunMushrooms(sequelize);
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_run_per_player_mushroom
+     ON game_run_players(player_id, mushroom_id)
+     WHERE is_active = 1 AND mushroom_id IS NOT NULL`
+  );
+}
+
+async function backfillActiveRunMushrooms(sequelize) {
+  await sequelize.query(
+    `UPDATE game_run_players
+     SET mushroom_id = (
+       SELECT pac.mushroom_id
+       FROM player_active_character pac
+       WHERE pac.player_id = game_run_players.player_id
+     )
+     WHERE mushroom_id IS NULL
+       AND is_active = 1
+       AND EXISTS (
+         SELECT 1
+         FROM player_active_character pac
+         WHERE pac.player_id = game_run_players.player_id
+       )
+       AND NOT EXISTS (
+         SELECT 1
+         FROM game_run_players existing
+         JOIN player_active_character pac ON pac.player_id = existing.player_id
+         WHERE existing.player_id = game_run_players.player_id
+           AND existing.mushroom_id = pac.mushroom_id
+           AND existing.is_active = 1
+       )`
+  );
 }
 
 async function ensureColumnExists(sequelize, table, column, definition) {

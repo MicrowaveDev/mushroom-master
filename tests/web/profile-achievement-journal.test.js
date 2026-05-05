@@ -7,12 +7,14 @@ const t = {
   seasonPoints: 'points',
   seasonPointsToNext: 'points to',
   seasonMaxLevel: 'Season peak',
+  seasonPeakRank: 'Peak rank',
   achievementsEarned: 'Achievements earned',
   achievementJournal: 'Achievement Journal',
   achievementJournalHint: 'Collect badges.',
   achievementLocked: 'Locked',
   nextAchievement: 'Next badge',
-  seasonChapterNoReset: 'Season chapter: progress stays in your history.'
+  seasonChapterNoReset: 'Season chapter: progress stays in your history.',
+  seasonRulesHint: 'First 7 wins count for rank.'
 };
 
 function viewModel(state) {
@@ -39,7 +41,7 @@ test('profile journal groups earned and locked achievements', () => {
     lang: 'en',
     bootstrap: {
       season: {
-        totalPoints: 18,
+        totalPoints: 70,
         achievements: [
           { id: 'season_silver_thread', earnedAt: '2026-04-26T22:00:00.000Z' },
           { id: 'thalla_spore_echo', earnedAt: '2026-04-26T22:01:00.000Z' }

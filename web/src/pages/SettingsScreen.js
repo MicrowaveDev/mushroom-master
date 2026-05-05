@@ -17,6 +17,15 @@ export const SettingsScreen = {
         <span>{{ t.battleSpeed }}</span>
         <select v-model="state.bootstrap.settings.battleSpeed"><option value="1x">1x</option><option value="2x">2x</option></select>
       </label>
+      <label class="setting-row">
+        <span>{{ t.mobileActionsMode }}</span>
+        <select v-model="state.mobileHomeActionsMode">
+          <option value="auto">{{ t.mobileActionsAuto }}</option>
+          <option value="always">{{ t.mobileActionsAlways }}</option>
+          <option value="side">{{ t.mobileActionsSide }}</option>
+          <option value="menu">{{ t.mobileActionsMenu }}</option>
+        </select>
+      </label>
       <button class="primary" @click="$emit('save-settings')">{{ t.save }}</button>
     </section>
   `

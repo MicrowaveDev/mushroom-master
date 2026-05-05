@@ -36,9 +36,16 @@ export const RunCompleteScreen = {
       const persisted = this.state.gameRunResult?.season;
       if (persisted) {
         return {
-          ...getSeasonProgressSummary(persisted.totalPoints ?? persisted.points ?? 0, this.state.lang || 'en', persisted.runPoints || 0),
+          ...getSeasonProgressSummary(
+            persisted.totalPoints ?? persisted.points ?? 0,
+            this.state.lang || 'en',
+            persisted.runPoints ?? 0,
+            persisted.peakPoints ?? persisted.totalPoints ?? persisted.points ?? 0
+          ),
           seasonId: persisted.seasonId || persisted.season_id || 'season_1',
           leveledUp: Boolean(persisted.leveledUp),
+          leveledDown: Boolean(persisted.leveledDown),
+          levelChanged: Boolean(persisted.levelChanged || persisted.leveledUp || persisted.leveledDown),
           breakdown: persisted.breakdown || null
         };
       }
@@ -50,23 +57,34 @@ export const RunCompleteScreen = {
         endReason: this.endReason
         }, this.state.lang || 'en'),
         leveledUp: false,
+        leveledDown: false,
+        levelChanged: false,
         breakdown: null
       };
     },
     seasonBreakdown() {
       return this.seasonSummary.breakdown || getSeasonPointsBreakdown({
         wins: this.wins,
+        losses: this.losses,
         roundsCompleted: this.roundsCompleted,
         endReason: this.endReason
       });
     },
+    formattedRunPoints() {
+      const value = Number(this.seasonSummary.runPoints || 0);
+      return value > 0 ? `+${value}` : String(value);
+    },
+    runPointsTone() {
+      return Number(this.seasonSummary.runPoints || 0) < 0 ? 'run-season-run-points--negative' : 'run-season-run-points--positive';
+    },
     seasonBreakdownText() {
       const b = this.seasonBreakdown;
       const parts = [
-        `${this.t.wins} +${b.winsPoints}`,
-        `${this.t.roundsCompleted} +${b.roundsPoints}`
+        `${this.t.wins} +${b.winsPoints}`
       ];
+      if (b.lossesPenalty) parts.push(`${this.t.losses} ${b.lossesPenalty}`);
       if (b.clearBonus) parts.push(`${this.t.clearBonus} +${b.clearBonus}`);
+      if (b.abandonPenalty) parts.push(`${this.t.abandonPenalty} ${b.abandonPenalty}`);
       return parts.join(' / ');
     },
     mushroomId() {
@@ -143,6 +161,17 @@ export const RunCompleteScreen = {
   methods: {
     emitGameFeelHooks() {
       if (typeof window === 'undefined') return;
+      if (this.seasonSummary.levelChanged) {
+        const direction = this.seasonSummary.leveledDown ? 'down' : 'up';
+        this.logGameFeelEvent('season_rank_change', {
+          levelId: this.seasonSummary.id,
+          previousLevelId: this.state.gameRunResult?.season?.previousLevelId || null,
+          seasonId: this.seasonSummary.seasonId,
+          direction,
+          runPoints: this.seasonSummary.runPoints,
+          totalPoints: this.seasonSummary.totalPoints
+        });
+      }
       if (this.seasonSummary.leveledUp) {
         window.dispatchEvent(new CustomEvent('mushroom:season-tier-up', {
           detail: { levelId: this.seasonSummary.id, seasonId: this.seasonSummary.seasonId }
@@ -184,6 +213,9 @@ export const RunCompleteScreen = {
         'run-achievement--accent-' + (achievement.accent || achievement.type),
         achievement.isNew ? 'run-achievement--new' : 'run-achievement--earned'
       ];
+    },
+    achievementRevealDelay(index) {
+      return `${760 + index * 180}ms`;
     }
   },
   template: `
@@ -202,7 +234,7 @@ export const RunCompleteScreen = {
           <div class="stat"><dt>{{ t.runWinRate }}</dt><dd>{{ winRate }}%</dd></div>
         </dl>
 
-        <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp }]">
+        <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp, 'run-season-card--level-down': seasonSummary.leveledDown }]">
           <season-rank-emblem class="run-season-emblem" :rank-id="seasonSummary.id" :size="96" />
 
           <div class="run-season-copy">
@@ -212,7 +244,8 @@ export const RunCompleteScreen = {
           </div>
           <div class="run-season-meter">
             <span class="run-season-points">{{ seasonSummary.points }} {{ t.seasonPoints }}</span>
-            <span v-if="seasonSummary.runPoints" class="run-season-run-points">+{{ seasonSummary.runPoints }} {{ t.thisRun }}</span>
+            <span v-if="seasonSummary.runPoints" class="run-season-run-points" :class="runPointsTone">{{ formattedRunPoints }} {{ t.thisRun }}</span>
+            <span class="run-season-peak">{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }} {{ t.seasonPoints }}</span>
             <div class="run-season-progress" aria-hidden="true">
               <span :style="{ width: seasonSummary.progress + '%' }"></span>
             </div>
@@ -250,12 +283,12 @@ export const RunCompleteScreen = {
             <article
               v-for="(achievement, index) in earnedAchievements"
               :key="achievement.id"
-              :style="{ animationDelay: (index * 90) + 'ms' }"
+              :style="{ '--achievement-delay': achievementRevealDelay(index) }"
               class="run-achievement"
               :class="achievementClass(achievement)"
             >
               <achievement-badge :achievement="achievement" size="medium" />
-              <div>
+              <div class="run-achievement-copy">
                 <h3>
                   {{ achievement.name }}
                   <span v-if="achievement.isNew" class="run-achievement-new">{{ t.newAchievement }}</span>

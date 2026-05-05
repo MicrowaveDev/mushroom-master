@@ -2,6 +2,7 @@ import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
+import { calculateSeasonAbandonPenalty } from '../../../app/shared/season-levels.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
   const haptics = {
@@ -147,29 +148,118 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     } catch { /* ignore */ }
   }
 
-  async function loadRunSummary(runId) {
+  async function loadRunSummary(runId, options = {}) {
     if (!runId) return;
     try {
       state.error = '';
       const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
       state.gameRunSummary = data;
-      goTo('runSummary');
+      goTo('runSummary', { gameRunId: runId }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load game summary';
     }
   }
 
-  async function abandonRun() {
+  async function loadRunComplete(runId, options = {}) {
+    if (!runId) return;
+    try {
+      state.error = '';
+      const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
+      if (data.status !== 'completed' && data.status !== 'abandoned') {
+        state.gameRun = data;
+        state.gameRunResult = null;
+        goTo('prep', {}, options.routeOptions || {});
+        return;
+      }
+      state.gameRun = {
+        id: data.id,
+        mode: data.mode,
+        status: data.status,
+        currentRound: data.currentRound,
+        startedAt: data.startedAt,
+        endedAt: data.endedAt,
+        endReason: data.endReason,
+        completionBonus: data.completionBonus || null,
+        player: data.player || null
+      };
+      state.gameRunResult = {
+        id: data.id,
+        mode: data.mode,
+        status: data.status,
+        currentRound: data.currentRound,
+        endedAt: data.endedAt,
+        endReason: data.endReason,
+        completionBonus: data.completionBonus || null,
+        season: data.season || null,
+        achievements: data.achievements || [],
+        player: data.player || null,
+        playerResults: data.playerResults || null,
+        lastRound: data.lastRound || null
+      };
+      goTo('runComplete', { gameRunId: data.id }, options.routeOptions || {});
+    } catch (error) {
+      state.error = error.message || 'Could not load completed run';
+      goTo('home');
+    }
+  }
+
+  function previewAbandonPenalty() {
+    return calculateSeasonAbandonPenalty({
+      endReason: 'abandoned',
+      roundsCompleted: state.gameRun?.player?.completedRounds || 0
+    });
+  }
+
+  function requestAbandonRun() {
+    if (!state.gameRun) return;
+    state.pendingAbandonPenalty = previewAbandonPenalty();
+    state.abandonConfirmOpen = true;
+  }
+
+  function cancelAbandonRun() {
+    state.abandonConfirmOpen = false;
+  }
+
+  async function confirmAbandonRun() {
     if (!state.gameRun) return;
     try {
-      await apiJson(`/api/game-run/${state.gameRun.id}/abandon`, { method: 'POST' }, state.sessionKey);
-      state.gameRun = null;
-      state.gameRunResult = null;
+      state.actionInFlight = true;
+      state.error = '';
+      const data = await apiJson(`/api/game-run/${state.gameRun.id}/abandon`, { method: 'POST' }, state.sessionKey);
+      state.abandonConfirmOpen = false;
+      state.gameRun = {
+        id: data.id,
+        mode: data.mode,
+        status: data.status,
+        currentRound: data.currentRound,
+        startedAt: data.startedAt,
+        endedAt: data.endedAt,
+        endReason: data.endReason,
+        completionBonus: data.completionBonus || null,
+        player: data.player || null
+      };
+      state.gameRunResult = {
+        id: data.id,
+        mode: data.mode,
+        status: data.status,
+        currentRound: data.currentRound,
+        endedAt: data.endedAt,
+        endReason: data.endReason,
+        completionBonus: data.completionBonus || null,
+        season: data.season || null,
+        achievements: data.achievements || [],
+        player: data.player || null,
+        playerResults: data.playerResults || null,
+        lastRound: data.lastRound || null
+      };
       state.gameRunShopOffer = [];
       await refreshBootstrap();
-      goTo('home');
+      goTo('runComplete', { gameRunId: data.id });
     } catch (error) {
       state.error = error.message || 'Could not abandon game run';
+      haptics.notify('error');
+    } finally {
+      state.actionInFlight = false;
     }
   }
 
@@ -368,7 +458,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   return {
     startNewGameRun, resumeGameRun, signalReady,
-    continueToNextRound, abandonRun, loadRunShopOffer, loadRunSummary,
+    continueToNextRound, requestAbandonRun, cancelAbandonRun, confirmAbandonRun, loadRunShopOffer, loadRunSummary, loadRunComplete,
     refreshRunShop, sellRunItemAction, buyRunShopItem,
     getRunRefreshCost, getRunSellPrice, persistRunLoadout,
     onSellZoneDragOver, onSellZoneDragLeave, onSellZoneDrop
