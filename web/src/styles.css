@@ -5622,6 +5622,7 @@ select {
 /* --- Run Complete Screen --- */
 .run-complete-screen {
   display: grid;
+  gap: 16px;
   place-items: start center;
   padding: 24px 0 44px;
 }
@@ -5629,26 +5630,33 @@ select {
   max-width: 720px;
   width: 100%;
   display: grid;
-  gap: 16px;
+  gap: 18px;
   overflow: hidden;
+  text-align: center;
+}
+.run-complete-screen--eliminated .run-complete-card {
+  background:
+    linear-gradient(160deg, rgba(178, 96, 86, 0.12), rgba(255, 255, 255, 0.42) 60%),
+    var(--surface);
+  border-color: rgba(156, 69, 53, 0.22);
+}
+.run-complete-screen--cleared .run-complete-card {
+  background:
+    linear-gradient(160deg, rgba(125, 155, 107, 0.14), rgba(255, 255, 255, 0.42) 60%),
+    var(--surface);
+  border-color: rgba(95, 124, 79, 0.24);
+}
+.run-complete-screen--ended .run-complete-card {
+  background:
+    linear-gradient(160deg, rgba(150, 126, 98, 0.12), rgba(255, 255, 255, 0.42) 60%),
+    var(--surface);
 }
 .run-complete-hero {
   position: relative;
-  padding: 18px;
-  border: 1px solid rgba(126, 92, 54, 0.18);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(122, 157, 108, 0.16), rgba(232, 201, 136, 0.22)),
-    rgba(255, 255, 255, 0.42);
+  padding: 2px 4px 0;
   animation: recap-reveal 0.42s ease-out both;
 }
-.run-complete-screen--eliminated .run-complete-hero {
-  background:
-    linear-gradient(135deg, rgba(143, 83, 70, 0.16), rgba(232, 201, 136, 0.2)),
-    rgba(255, 255, 255, 0.42);
-}
-.run-complete-kicker,
-.run-complete-last-label {
+.run-complete-kicker {
   margin: 0 0 4px;
   color: rgba(55, 43, 32, 0.66);
   font-size: 0.78rem;
@@ -5658,34 +5666,39 @@ select {
 }
 .run-complete-card h2 {
   margin: 0;
-  font-size: clamp(2rem, 8vw, 3.4rem);
-  line-height: 0.95;
+  font-size: clamp(1.9rem, 7vw, 2.8rem);
+  line-height: 1;
 }
 .run-end-reason {
-  max-width: 42rem;
-  margin: 10px 0 0;
+  max-width: 24rem;
+  margin: 12px auto 0;
   color: rgba(55, 43, 32, 0.72);
   font-size: 1.05rem;
   line-height: 1.35;
 }
-.run-complete-stats {
-  margin-top: 0;
+.run-complete-record {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px 6px 0;
   animation: recap-reveal 0.42s ease-out 0.12s both;
 }
-.run-complete-stats .stat,
-.run-complete-bonus .stat {
-  border: 1px solid rgba(126, 92, 54, 0.12);
-  border-radius: 8px;
+.run-complete-round-icon {
+  font-size: 1.34rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(55, 43, 32, 0.12));
 }
-.run-complete-stat--primary dd {
-  color: #5f8a52;
+.run-complete-details {
+  width: 100%;
+  max-width: 720px;
+  display: grid;
+  gap: 12px;
 }
 .run-season-card {
   position: relative;
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) minmax(190px, 0.48fr);
-  align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: 16px;
   border: 1px solid rgba(126, 92, 54, 0.18);
   border-radius: 8px;
@@ -5693,6 +5706,12 @@ select {
     linear-gradient(135deg, rgba(150, 126, 98, 0.14), rgba(255, 255, 255, 0.38)),
     rgba(255, 251, 244, 0.52);
   animation: recap-reveal 0.42s ease-out 0.24s both;
+}
+.run-season-header {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
 }
 .season-rank-emblem {
   display: inline-grid;
@@ -5706,23 +5725,6 @@ select {
   0% { transform: scale(0.7) rotate(-8deg); opacity: 0.4; }
   60% { transform: scale(1.08) rotate(2deg); opacity: 1; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
-}
-@media (max-width: 540px) {
-  .run-season-card {
-    grid-template-columns: 72px minmax(0, 1fr);
-    grid-template-areas: 'emblem copy' 'meter meter';
-  }
-  .run-season-emblem {
-    grid-area: emblem;
-    width: 72px;
-    height: 72px;
-  }
-  .run-season-copy {
-    grid-area: copy;
-  }
-  .run-season-meter {
-    grid-area: meter;
-  }
 }
 .run-season-card--silver {
   background:
@@ -5752,25 +5754,32 @@ select {
   color: rgba(55, 43, 32, 0.68);
   line-height: 1.32;
 }
-.run-season-meter {
-  display: grid;
-  gap: 7px;
+.run-season-points-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   min-width: 0;
+  text-align: right;
+  white-space: nowrap;
 }
-.run-season-points,
-.run-season-run-points {
+.run-season-points-value {
+  color: var(--ink);
+  font-size: 1.6rem;
   font-weight: 800;
-  text-align: right;
+  line-height: 1;
+}
+.run-season-points-label {
+  color: rgba(55, 43, 32, 0.6);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .run-season-run-points {
-  margin-top: -4px;
+  margin-top: 4px;
   font-size: 0.86rem;
-}
-.run-season-peak {
-  color: rgba(55, 43, 32, 0.68);
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-align: right;
+  font-weight: 800;
 }
 .run-season-run-points--positive {
   color: rgba(65, 109, 59, 0.82);
@@ -5778,11 +5787,22 @@ select {
 .run-season-run-points--negative {
   color: var(--error);
 }
-.run-season-breakdown {
-  color: rgba(55, 43, 32, 0.58);
+.run-season-meter {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.run-season-meter-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.run-season-peak {
+  color: rgba(55, 43, 32, 0.68);
   font-size: 0.78rem;
-  line-height: 1.25;
-  text-align: right;
+  font-weight: 700;
 }
 .run-season-progress {
   height: 10px;
@@ -5820,56 +5840,76 @@ select {
 }
 .run-season-next {
   color: rgba(55, 43, 32, 0.62);
-  font-size: 0.86rem;
-  text-align: right;
-}
-.run-complete-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: 12px;
-  animation: recap-reveal 0.42s ease-out 0.36s both;
-}
-.run-complete-bonus {
-  padding: 14px;
-  border: 1px solid rgba(126, 92, 54, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.34);
-}
-.run-complete-bonus-heading {
-  margin: 0;
-  color: rgba(55, 43, 32, 0.78);
-  font-size: 1.05rem;
-}
-.run-complete-last-round {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  border: 1px dashed rgba(126, 92, 54, 0.22);
-  border-radius: 8px;
-  background: rgba(255, 248, 230, 0.48);
-  animation: recap-reveal 0.42s ease-out 0.44s both;
-}
-.run-complete-last-round strong {
-  display: block;
-  color: var(--ink);
-  font-size: 1.08rem;
-}
-.run-complete-reward-chip {
-  flex: 0 0 auto;
-  max-width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(107, 143, 94, 0.15);
-  color: #416d3b;
+  font-size: 0.78rem;
   font-weight: 700;
   text-align: right;
 }
+@media (max-width: 540px) {
+  .run-season-header {
+    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-areas: 'emblem copy' 'points points';
+  }
+  .run-season-emblem {
+    grid-area: emblem;
+    width: 72px;
+    height: 72px;
+  }
+  .run-season-copy {
+    grid-area: copy;
+  }
+  .run-season-points-block {
+    grid-area: points;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    text-align: left;
+    padding-top: 2px;
+    border-top: 1px solid rgba(126, 92, 54, 0.12);
+  }
+  .run-season-points-value {
+    font-size: 1.4rem;
+  }
+}
+.run-complete-run-earnings {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid rgba(126, 92, 54, 0.14);
+  line-height: 1.3;
+  animation: recap-reveal 0.42s ease-out 0.18s both;
+}
+.run-complete-run-earnings-label {
+  color: rgba(55, 43, 32, 0.6);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.run-complete-run-earnings-values {
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.run-complete-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
 .run-complete-action {
-  justify-self: center;
   min-width: 136px;
+  margin-top: -2px;
   animation: recap-action-settle 0.48s cubic-bezier(0.2, 0.9, 0.2, 1) 0.72s both;
+}
+.run-complete-action--secondary {
+  min-width: 104px;
 }
 .run-achievements {
   display: grid;
@@ -6061,8 +6101,7 @@ select {
   .run-complete-hero,
   .run-complete-stats,
   .run-season-card,
-  .run-complete-body,
-  .run-complete-last-round,
+  .run-complete-run-earnings,
   .run-achievements,
   .run-complete-action {
     animation: none;
@@ -6078,30 +6117,6 @@ select {
 
   .run-complete-hero {
     padding: 16px;
-  }
-
-  .run-complete-body {
-    grid-template-columns: 1fr;
-  }
-
-  .run-season-card {
-    grid-template-columns: 1fr;
-  }
-
-  .run-season-points,
-  .run-season-run-points,
-  .run-season-next {
-    text-align: left;
-  }
-
-  .run-complete-last-round {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .run-complete-reward-chip {
-    width: fit-content;
-    text-align: left;
   }
 
   .run-achievement-list {

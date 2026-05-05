@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { RunCompleteScreen } from '../../web/src/pages/RunCompleteScreen.js';
-import { getEarnedRunAchievements, runAchievements } from '../../app/shared/run-achievements.js';
+import { getAwardableRunAchievements, getEarnedRunAchievements, runAchievements } from '../../app/shared/run-achievements.js';
 import { calculateSeasonPoints, getRunSeasonSummary, getSeasonEndReward, getSeasonProgressSummary, seasonLevels } from '../../app/shared/season-levels.js';
 
 const t = {
@@ -34,6 +34,8 @@ const t = {
   abandonPenalty: 'Exit',
   achievementNoneTitle: 'No new marks',
   achievementNoneHint: 'The mycelium still remembers this run.',
+  earnedThisBattle: 'Earned',
+  playAgain: 'Play again',
   thisRun: 'this run'
 };
 
@@ -93,15 +95,23 @@ test('run complete recap uses final result stats and last battle details', () =>
         roundNumber: 6,
         outcome: 'loss',
       rewards: { spore: 1, mycelium: 0 }
-      }
+      },
+      rounds: [
+        { roundNumber: 1, outcome: 'win', rewards: { spore: 2, mycelium: 15 } },
+        { roundNumber: 2, outcome: 'loss', rewards: { spore: 1, mycelium: 5 } },
+        { roundNumber: 3, outcome: 'win', rewards: { spore: 2, mycelium: 15 } },
+        { roundNumber: 4, outcome: 'loss', rewards: { spore: 1, mycelium: 5 } },
+        { roundNumber: 5, outcome: 'loss', rewards: { spore: 1, mycelium: 5 } },
+        { roundNumber: 6, outcome: 'loss', rewards: { spore: 1, mycelium: 0 } }
+      ]
     },
     bootstrap: { activeMushroomId: 'thalla' },
     lang: 'en'
   });
 
   assert.equal(vm.outcomeTone, 'eliminated');
-  assert.equal(vm.titleText, 'Run ended');
-  assert.equal(vm.reasonText, 'Your lives are gone, but the gathered resources stay with you.');
+  assert.equal(vm.titleText, 'Defeat');
+  assert.equal(vm.reasonText, 'All lives lost');
   assert.equal(vm.wins, 2);
   assert.equal(vm.losses, 4);
   assert.equal(vm.roundsCompleted, 6);
@@ -112,6 +122,9 @@ test('run complete recap uses final result stats and last battle details', () =>
   assert.equal(vm.hasBonus, true);
   assert.equal(vm.lastRoundOutcomeLabel, 'Defeat');
   assert.equal(vm.lastRoundRewardText, '+1 Spore');
+  assert.deepEqual(vm.runTotals, { spore: 28, mycelium: 53 });
+  assert.equal(vm.runEarnedText, '+28 Spore · +53 Mycelium');
+  assert.deepEqual(vm.roundTimeline.map((round) => round.icon), ['🏆', '💔', '🏆', '💔', '💔', '💔']);
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'thalla_spore_echo'));
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'season_bronze_spore' && achievement.type === 'season'));
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'last_spore'));
@@ -134,6 +147,51 @@ test('fallback achievement calculation preserves season type styling', () => {
   const seasonAchievement = earned.find((achievement) => achievement.id === 'season_silver_thread');
   assert.equal(seasonAchievement.type, 'season');
   assert.equal(seasonAchievement.accent, 'silver');
+});
+
+test('achievement awarding paces first full-clear unlocks', () => {
+  const awarded = getAwardableRunAchievements({
+    mushroomId: 'thalla',
+    endReason: 'max_rounds',
+    lastOutcome: 'win',
+    wins: 7,
+    losses: 2,
+    roundsCompleted: 9,
+    livesRemaining: 3,
+    winRate: 78,
+    seasonLevel: 'bronze',
+    seasonPoints: 17
+  }, 'en');
+
+  assert.deepEqual(awarded.map((achievement) => achievement.id), [
+    'first_ring_crossed',
+    'season_bronze_spore',
+    'perfect_circle'
+  ]);
+});
+
+test('achievement awarding rolls forward delayed matching achievements', () => {
+  const awarded = getAwardableRunAchievements({
+    mushroomId: 'thalla',
+    endReason: 'max_losses',
+    lastOutcome: 'win',
+    wins: 1,
+    losses: 1,
+    roundsCompleted: 2,
+    livesRemaining: 4,
+    winRate: 50,
+    seasonLevel: 'bronze',
+    seasonPoints: 19
+  }, 'en', {
+    alreadyEarnedIds: ['first_ring_crossed', 'season_bronze_spore', 'perfect_circle']
+  });
+
+  assert.deepEqual(awarded.map((achievement) => achievement.id), [
+    'thalla_spore_echo',
+    'last_spore',
+    'first_ring_crossed',
+    'season_bronze_spore'
+  ]);
 });
 
 test('run complete recap handles max-round clears and challenge bonus maps', () => {

@@ -7,7 +7,7 @@ export const RunCompleteScreen = {
   name: 'RunCompleteScreen',
   components: { SeasonRankEmblem, AchievementBadge },
   props: ['state', 't'],
-  emits: ['go-home'],
+  emits: ['go-home', 'play-again'],
   computed: {
     player() {
       const playerId = this.state.bootstrap?.player?.id;
@@ -31,6 +31,31 @@ export const RunCompleteScreen = {
     winRate() {
       if (!this.roundsCompleted) return 0;
       return Math.round((this.wins / this.roundsCompleted) * 100);
+    },
+    winShare() {
+      if (!this.roundsCompleted) return 0;
+      return Math.round((this.wins / this.roundsCompleted) * 100);
+    },
+    lossShare() {
+      if (!this.roundsCompleted) return 0;
+      return Math.max(0, 100 - this.winShare);
+    },
+    roundTimeline() {
+      const sourceRounds = Array.isArray(this.state.gameRunResult?.rounds) ? this.state.gameRunResult.rounds : [];
+      const viewerPlayerId = this.player.playerId || this.state.bootstrap?.player?.id || null;
+      const viewerRounds = sourceRounds
+        .filter((round) => !viewerPlayerId || !round.playerId || round.playerId === viewerPlayerId)
+        .filter((round) => round.outcome === 'win' || round.outcome === 'loss')
+        .sort((a, b) => (a.roundNumber || 0) - (b.roundNumber || 0));
+      const outcomes = viewerRounds.length >= this.roundsCompleted
+        ? viewerRounds.map((round) => round.outcome)
+        : this.fallbackRoundOutcomes();
+      return outcomes.map((outcome, index) => ({
+        key: `${index}-${outcome}`,
+        icon: outcome === 'win' ? '🏆' : '💔',
+        label: outcome === 'win' ? this.t.outcomeWin : this.t.outcomeLoss,
+        className: outcome === 'win' ? 'run-complete-round-icon--win' : 'run-complete-round-icon--loss'
+      }));
     },
     seasonSummary() {
       const persisted = this.state.gameRunResult?.season;
@@ -112,12 +137,12 @@ export const RunCompleteScreen = {
     },
     titleText() {
       if (this.endReason === 'max_rounds') return this.t.runCompleteClearedTitle || this.t.runComplete;
-      if (this.endReason === 'max_losses') return this.t.runCompleteEliminatedTitle || this.t.runComplete;
+      if (this.endReason === 'max_losses') return this.t.outcomeLoss || this.t.runCompleteEliminatedTitle || this.t.runComplete;
       return this.t.runComplete;
     },
     reasonText() {
       if (this.endReason === 'max_rounds') return this.t.runCompleteClearedText || this.t.maxRounds;
-      if (this.endReason === 'max_losses') return this.t.runCompleteEliminatedText || this.t.eliminated;
+      if (this.endReason === 'max_losses') return this.t.eliminated || this.t.runCompleteEliminatedText;
       return this.t.runCompleteAbandonedText || this.t.abandonRun;
     },
     lastRound() {
@@ -135,6 +160,30 @@ export const RunCompleteScreen = {
       if (rewards.spore) parts.push(`+${rewards.spore} ${this.t.spore}`);
       if (rewards.mycelium) parts.push(`+${rewards.mycelium} ${this.t.mycelium}`);
       return parts.join(' / ');
+    },
+    runTotals() {
+      const sourceRounds = Array.isArray(this.state.gameRunResult?.rounds) ? this.state.gameRunResult.rounds : [];
+      const viewerPlayerId = this.player.playerId || this.state.bootstrap?.player?.id || null;
+      let spore = 0;
+      let mycelium = 0;
+      for (const round of sourceRounds) {
+        if (viewerPlayerId && round.playerId && round.playerId !== viewerPlayerId) continue;
+        spore += Number(round.rewards?.spore || 0);
+        mycelium += Number(round.rewards?.mycelium || 0);
+      }
+      const bonus = this.bonus;
+      if (bonus) {
+        spore += Number(bonus.spore || 0);
+        mycelium += Number(bonus.mycelium || 0);
+      }
+      return { spore, mycelium };
+    },
+    runEarnedText() {
+      const totals = this.runTotals;
+      const parts = [];
+      if (totals.spore) parts.push(`+${totals.spore} ${this.t.spore}`);
+      if (totals.mycelium) parts.push(`+${totals.mycelium} ${this.t.mycelium}`);
+      return parts.join(' · ');
     },
     earnedAchievements() {
       const persisted = this.state.gameRunResult?.achievements;
@@ -216,63 +265,81 @@ export const RunCompleteScreen = {
     },
     achievementRevealDelay(index) {
       return `${760 + index * 180}ms`;
+    },
+    fallbackRoundOutcomes() {
+      const lastOutcome = this.lastRound?.outcome === 'win' || this.lastRound?.outcome === 'loss'
+        ? this.lastRound.outcome
+        : null;
+      let wins = this.wins;
+      let losses = this.losses;
+      if (lastOutcome === 'win') wins = Math.max(0, wins - 1);
+      if (lastOutcome === 'loss') losses = Math.max(0, losses - 1);
+      const outcomes = [
+        ...Array.from({ length: wins }, () => 'win'),
+        ...Array.from({ length: losses }, () => 'loss')
+      ];
+      if (lastOutcome) outcomes.push(lastOutcome);
+      return outcomes;
     }
   },
   template: `
     <section class="run-complete-screen" :class="'run-complete-screen--' + outcomeTone">
       <div class="panel run-complete-card">
         <div class="run-complete-hero">
-          <p class="run-complete-kicker">{{ t.runCompleteKicker }}</p>
           <h2>{{ titleText }}</h2>
           <p class="run-end-reason">{{ reasonText }}</p>
         </div>
 
-        <dl class="stat-grid run-complete-stats">
-          <div class="stat run-complete-stat--primary"><dt>{{ t.wins }}</dt><dd>{{ wins }}</dd></div>
-          <div class="stat"><dt>{{ t.roundsCompleted }}</dt><dd>{{ roundsCompleted }}</dd></div>
-          <div class="stat"><dt>{{ t.losses }}</dt><dd>{{ losses }}</dd></div>
-          <div class="stat"><dt>{{ t.runWinRate }}</dt><dd>{{ winRate }}%</dd></div>
-        </dl>
+        <div class="run-complete-record" :aria-label="t.wins + ': ' + wins + ', ' + t.losses + ': ' + losses">
+          <span
+            v-for="round in roundTimeline"
+            :key="round.key"
+            class="run-complete-round-icon"
+            :class="round.className"
+            :title="round.label"
+            aria-hidden="true"
+          >{{ round.icon }}</span>
+        </div>
 
+        <p v-if="runEarnedText" class="run-complete-run-earnings">
+          <span class="run-complete-run-earnings-label">{{ t.earnedThisRun }}</span>
+          <span class="run-complete-run-earnings-values">{{ runEarnedText }}</span>
+        </p>
+
+        <div class="run-complete-actions">
+          <button class="primary run-complete-action" @click="$emit('play-again')">{{ t.playAgain }}</button>
+          <button class="secondary run-complete-action run-complete-action--secondary" @click="$emit('go-home')">{{ t.home }}</button>
+        </div>
+      </div>
+
+      <div class="run-complete-details">
         <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp, 'run-season-card--level-down': seasonSummary.leveledDown }]">
-          <season-rank-emblem class="run-season-emblem" :rank-id="seasonSummary.id" :size="96" />
+          <div class="run-season-header">
+            <season-rank-emblem class="run-season-emblem" :rank-id="seasonSummary.id" :size="96" />
 
-          <div class="run-season-copy">
-            <p class="run-complete-kicker">{{ t.seasonLevel }}</p>
-            <h3>{{ seasonSummary.name }}</h3>
-            <p>{{ seasonSummary.lore }}</p>
+            <div class="run-season-copy">
+              <p class="run-complete-kicker">{{ t.seasonLevel }}</p>
+              <h3>{{ seasonSummary.name }}</h3>
+              <p>{{ seasonSummary.lore }}</p>
+            </div>
+            <div class="run-season-points-block">
+              <span class="run-season-points-value">{{ seasonSummary.points }}</span>
+              <span class="run-season-points-label">{{ t.seasonPoints }}</span>
+              <span v-if="seasonSummary.runPoints" class="run-season-run-points" :class="runPointsTone">{{ formattedRunPoints }} {{ t.thisRun }}</span>
+            </div>
           </div>
           <div class="run-season-meter">
-            <span class="run-season-points">{{ seasonSummary.points }} {{ t.seasonPoints }}</span>
-            <span v-if="seasonSummary.runPoints" class="run-season-run-points" :class="runPointsTone">{{ formattedRunPoints }} {{ t.thisRun }}</span>
-            <span class="run-season-peak">{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }} {{ t.seasonPoints }}</span>
             <div class="run-season-progress" aria-hidden="true">
               <span :style="{ width: seasonSummary.progress + '%' }"></span>
             </div>
-            <span class="run-season-breakdown">{{ seasonBreakdownText }}</span>
-            <span class="run-season-next">
-              {{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}
-            </span>
+            <div class="run-season-meter-footer">
+              <span class="run-season-peak">{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }}</span>
+              <span class="run-season-next">
+                {{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}
+              </span>
+            </div>
           </div>
         </section>
-
-        <div v-if="hasBonus" class="run-complete-body">
-          <div class="run-complete-bonus">
-            <h3 class="run-complete-bonus-heading">{{ t.completionBonus }}</h3>
-            <dl class="stat-grid">
-              <div class="stat"><dt>{{ t.spore }}</dt><dd>+{{ bonus.spore || 0 }}</dd></div>
-              <div class="stat"><dt>{{ t.mycelium }}</dt><dd>+{{ bonus.mycelium || 0 }}</dd></div>
-            </dl>
-          </div>
-        </div>
-
-        <div v-if="lastRound" class="run-complete-last-round">
-          <div>
-            <p class="run-complete-last-label">{{ t.lastBattle }}</p>
-            <strong>{{ t.round }} {{ lastRound.roundNumber }} · {{ lastRoundOutcomeLabel }}</strong>
-          </div>
-          <span v-if="lastRoundRewardText" class="run-complete-reward-chip">{{ lastRoundRewardText }}</span>
-        </div>
 
         <section v-if="earnedAchievements.length" class="run-achievements" :aria-label="t.achievementsEarned">
           <div class="run-achievements-heading-row">
@@ -306,8 +373,6 @@ export const RunCompleteScreen = {
           <p class="run-achievements-empty-title">{{ t.achievementNoneTitle }}</p>
           <p class="run-achievements-empty-copy">{{ t.achievementNoneHint }}</p>
         </section>
-
-        <button class="primary run-complete-action" @click="$emit('go-home')">{{ t.home }}</button>
       </div>
     </section>
   `
