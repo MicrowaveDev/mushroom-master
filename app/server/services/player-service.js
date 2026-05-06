@@ -33,12 +33,21 @@ function rowToPlayerProfile(row) {
 }
 
 export async function getPlayerState(playerId) {
-  const [playerResult, settingsResult, activeResult, playerMushroomsResult] =
+  const [playerResult, settingsResult, activeResult, playerMushroomsResult, perMushroomBattleStatsResult] =
     await Promise.all([
       query('SELECT * FROM players WHERE id = $1', [playerId]),
       query('SELECT * FROM player_settings WHERE player_id = $1', [playerId]),
       query('SELECT * FROM player_active_character WHERE player_id = $1', [playerId]),
-      query('SELECT * FROM player_mushrooms WHERE player_id = $1 ORDER BY mushroom_id ASC', [playerId])
+      query('SELECT * FROM player_mushrooms WHERE player_id = $1 ORDER BY mushroom_id ASC', [playerId]),
+      query(
+        `SELECT mushroom_id,
+                COALESCE(SUM(wins), 0) AS wins,
+                COALESCE(SUM(losses), 0) AS losses
+         FROM game_run_players
+         WHERE player_id = $1
+         GROUP BY mushroom_id`,
+        [playerId]
+      )
     ]);
 
   if (!playerResult.rowCount) {
@@ -66,6 +75,13 @@ export async function getPlayerState(playerId) {
   // /api/bootstrap without a server restart.
   const freshPortraitVariants = portraitVariantsForResponse();
 
+  const battleStatsByMushroom = new Map(
+    perMushroomBattleStatsResult.rows.map((row) => [row.mushroom_id, {
+      wins: Number(row.wins) || 0,
+      losses: Number(row.losses) || 0
+    }])
+  );
+
   const progression = Object.fromEntries(
     playerMushroomsResult.rows.map((row) => {
       const levelInfo = computeLevel(row.mycelium);
@@ -78,6 +94,10 @@ export async function getPlayerState(playerId) {
       const presetVariants = STARTER_PRESET_VARIANTS[row.mushroom_id] || [];
       const activePresetId = row.active_preset || 'default';
 
+      const aggregatedStats = battleStatsByMushroom.get(row.mushroom_id) || { wins: 0, losses: 0 };
+      const wins = Math.max(row.wins || 0, aggregatedStats.wins);
+      const losses = Math.max(row.losses || 0, aggregatedStats.losses);
+
       return [
         row.mushroom_id,
         {
@@ -87,8 +107,8 @@ export async function getPlayerState(playerId) {
           tier: getTier(level),
           currentLevelMycelium: levelInfo.current,
           nextLevelMycelium: levelInfo.next,
-          wins: row.wins,
-          losses: row.losses,
+          wins,
+          losses,
           draws: row.draws,
           activePortrait: activePortraitId,
           activePortraitUrl: activePortraitDef?.path || '',

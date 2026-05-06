@@ -79,6 +79,13 @@ export function useGameState(state, options = {}) {
       } else if (screen === 'runComplete') {
         const gameRunId = extra.gameRunId || state.gameRunResult?.id || state.gameRun?.id || null;
         setScreenQuery(screen, gameRunId ? { gameRunId } : extra, options);
+      } else if (screen === 'profile') {
+        const profilePlayerId = extra.profilePlayerId
+          || state.bootstrap?.player?.username
+          || state.bootstrap?.player?.friendCode
+          || state.bootstrap?.player?.id
+          || null;
+        setScreenQuery(screen, profilePlayerId ? { profilePlayerId } : extra, options);
       } else {
         setScreenQuery(screen, extra, options);
       }

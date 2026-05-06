@@ -91,8 +91,15 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.home-start-btn')).toBeVisible();
   await assertImagesLoaded(page);
   await saveShot(page, '02-home.png');
-  await expect(page.locator('.home-season-journal-link')).toBeVisible();
-  await page.locator('.home-season-journal-link').click();
+  // Capture stats-popover interaction state.
+  const firstStats = page.locator('.home-mushroom-stats').first();
+  if (await firstStats.count()) {
+    await firstStats.click({ force: true });
+    await page.locator('.home-mushroom-stats--open .home-mushroom-stats-popover').first().waitFor({ timeout: 2000 });
+    await saveShot(page, '02-home-stats-popover.png');
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+  }
+  await page.goto(`${baseURL}/profile`);
   await page.waitForSelector('.profile-screen');
   await expect(page.locator('.achievement-journal')).toBeVisible();
   await page.goto(`${baseURL}/home`);
@@ -262,6 +269,11 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.profile-screen h2')).toBeVisible();
   debugLog('capturing profile');
   await saveShot(page, '13-profile.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.goto(`${baseURL}/profile`);
+  await page.waitForSelector('.profile-screen');
+  await saveShot(page, '13-profile-desktop.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
 
   await page.goto(`${baseURL}/settings`);
   await page.waitForSelector('.setting-row');

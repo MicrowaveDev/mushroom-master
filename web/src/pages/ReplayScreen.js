@@ -210,7 +210,7 @@ export const ReplayScreen = {
               </div>
               <dl class="stat-grid">
                 <div class="stat" :class="statSignClass(roundRewards.spore)"><dt>{{ t.spore }}</dt><dd>{{ formatDelta(roundRewards.spore || 0) || '0' }}</dd></div>
-                <div class="stat" :class="statSignClass(roundRewards.mycelium)"><dt>{{ t.mycelium }}</dt><dd>{{ formatDelta(roundRewards.mycelium || 0) || '0' }}</dd></div>
+                <div class="stat" :class="statSignClass(roundRewards.mycelium)"><dt>{{ t.mycelium }} <span aria-hidden="true">🍄</span></dt><dd>{{ formatDelta(roundRewards.mycelium || 0) || '0' }}</dd></div>
                 <div v-if="ratingDelta != null" class="stat" :class="statSignClass(ratingDelta)">
                   <dt>{{ t.rating }}</dt>
                   <dd>{{ formatDelta(ratingDelta) }}</dd>

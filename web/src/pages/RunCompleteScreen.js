@@ -133,26 +133,26 @@ export const RunCompleteScreen = {
       const rewards = this.lastRound?.rewards || {};
       const parts = [];
       if (rewards.spore) parts.push(`+${rewards.spore} ${this.t.spore}`);
-      if (rewards.mycelium) parts.push(`+${rewards.mycelium} ${this.t.mycelium}`);
+      if (rewards.mycelium) parts.push(`+${rewards.mycelium} 🍄`);
       return parts.join(' / ');
     },
     earnedAchievements() {
       const persisted = this.state.gameRunResult?.achievements;
-      if (Array.isArray(persisted)) {
-        return getRunAchievementsByIds(persisted, this.state.lang || 'en');
-      }
-      return getEarnedRunAchievements({
-        mushroomId: this.mushroomId,
-        endReason: this.endReason,
-        lastOutcome: this.lastRound?.outcome || null,
-        wins: this.wins,
-        losses: this.losses,
-        roundsCompleted: this.roundsCompleted,
-        livesRemaining: this.livesRemaining,
-        winRate: this.winRate,
-        seasonLevel: this.seasonSummary.id,
-        seasonPoints: this.seasonSummary.points
-      }, this.state.lang || 'en');
+      const list = Array.isArray(persisted)
+        ? getRunAchievementsByIds(persisted, this.state.lang || 'en')
+        : getEarnedRunAchievements({
+            mushroomId: this.mushroomId,
+            endReason: this.endReason,
+            lastOutcome: this.lastRound?.outcome || null,
+            wins: this.wins,
+            losses: this.losses,
+            roundsCompleted: this.roundsCompleted,
+            livesRemaining: this.livesRemaining,
+            winRate: this.winRate,
+            seasonLevel: this.seasonSummary.id,
+            seasonPoints: this.seasonSummary.points
+          }, this.state.lang || 'en');
+      return list.filter((achievement) => achievement.isNew !== false);
     }
   },
   mounted() {
@@ -211,7 +211,7 @@ export const RunCompleteScreen = {
       return [
         'run-achievement--' + achievement.type,
         'run-achievement--accent-' + (achievement.accent || achievement.type),
-        achievement.isNew ? 'run-achievement--new' : 'run-achievement--earned'
+        'run-achievement--new'
       ];
     },
     achievementRevealDelay(index) {
@@ -261,7 +261,7 @@ export const RunCompleteScreen = {
             <h3 class="run-complete-bonus-heading">{{ t.completionBonus }}</h3>
             <dl class="stat-grid">
               <div class="stat"><dt>{{ t.spore }}</dt><dd>+{{ bonus.spore || 0 }}</dd></div>
-              <div class="stat"><dt>{{ t.mycelium }}</dt><dd>+{{ bonus.mycelium || 0 }}</dd></div>
+              <div class="stat"><dt>{{ t.mycelium }} <span aria-hidden="true">🍄</span></dt><dd>+{{ bonus.mycelium || 0 }}</dd></div>
             </dl>
           </div>
         </div>
@@ -291,20 +291,12 @@ export const RunCompleteScreen = {
               <div class="run-achievement-copy">
                 <h3>
                   {{ achievement.name }}
-                  <span v-if="achievement.isNew" class="run-achievement-new">{{ t.newAchievement }}</span>
-                  <span v-else class="run-achievement-earned">{{ t.alreadyEarned }}</span>
+                  <span class="run-achievement-new">{{ t.newAchievement }}</span>
                 </h3>
                 <p>{{ achievement.lore }}</p>
               </div>
             </article>
           </div>
-        </section>
-        <section v-else class="run-achievements run-achievements--empty" :aria-label="t.achievementsEarned">
-          <div class="run-achievements-heading-row">
-            <p class="run-complete-kicker">{{ t.achievementsEarned }}</p>
-          </div>
-          <p class="run-achievements-empty-title">{{ t.achievementNoneTitle }}</p>
-          <p class="run-achievements-empty-copy">{{ t.achievementNoneHint }}</p>
         </section>
 
         <button class="primary run-complete-action" @click="$emit('go-home')">{{ t.home }}</button>

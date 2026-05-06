@@ -95,6 +95,7 @@ For any surface that shows numeric outcomes (round rewards, run summary, leaderb
 - **Use `formatDelta` (or equivalent) for signed values.** Negative values must render with a single `-`. Templates that hard-prefix `+{{ value }}` produce `+-2` when the value is already negative — that is a bug, not a style choice.
 - **Force explicit column count when the item count is fixed.** Three stats → `grid-template-columns: repeat(3, 1fr)`. Do not rely on `auto-fit` with `minmax(90px, 1fr)` in a narrow card; it silently bails to a single-column stack when the computed track width falls below the floor.
 - **Cap focused-result panels.** Cards that summarize a single event (round result, battle outcome, earned-reward panel) should set `max-width` ≈520–560px and `margin: auto`. Without the cap, they stretch across a desktop viewport and look sparse.
+- **Multi-data cards use header + full-width meter rows, not 3-column grids.** When a card carries emblem + name + lore + points + progress bar + footnotes, a 3-column grid (emblem | copy | meter) squeezes the copy into a narrow middle and pins the meter into the right gutter where the progress bar has no room. A two-row layout — header row (emblem | copy | points-block) on top, full-width meter row (progress bar + peak/next footer split) below — gives the bar horizontal space and lets the lore span its natural width.
 
 ### Chips vs Inline Text
 
@@ -169,6 +170,40 @@ Three-zone single-column layout (mobile), two-column on desktop (left: backpack 
 - Two-column fighter cards below (using `FighterCard` with portrait config).
 - "Home" button at the bottom.
 
+### Run-Complete Screen
+
+The end-of-run recap stacks several richly-styled cards (outcome card, season/rank card, achievements panel). Four rules keep the stack readable:
+
+- **Tonal identity per outcome.** Defeat / cleared / abandoned cards each carry a soft tinted background matching their tone (warm-red for `eliminated`, sage for `cleared`, neutral warm for `ended`). A flat `.panel` background sitting next to richly tinted sibling cards reads as unfinished — match the tinting language across the stack.
+- **Run-level facts only — no last-battle recap.** This screen is the moment for run totals (rounds played, total spore/mycelium, season delta). Per-battle facts (last round number, last reward) duplicate what was already shown on the prior round-result screen and add visual weight without information.
+- **No subset cards next to a totals line.** If the screen shows an "earned this run" total, fold the completion bonus into that total rather than rendering it as a separate sibling card. Two cards that show partial vs full of the same number invite "why are these different?" — players have to read both before answering.
+- **Drop technical breakdown captions.** "Wins +14 / Losses -2 / Full clear +3" under a points number is debug telemetry: useful for designers, noise for players. If the headline number tells the story, drop the decomposition.
+
+### Player / Roster Card Pattern
+
+Profile cards, leaderboard rows, friend cards — any surface that summarizes a *player + character* — should follow this shape:
+
+- **Magazine-zigzag rows over a uniform grid.** Stack full-width rows vertically and alternate which side carries the portrait (`row 1: portrait | meta`, `row 2: meta | portrait`, etc., via a `--reversed` modifier on every other row). A grid of identical cards reads as a roster export; alternating rows reads as a curated character page.
+- **Cap the portrait to ~200–240px on desktop.** A full-bleed portrait dominating an info-dense card eats half the row without earning it. Keep the portrait at 4:5 (`aspect-ratio: 4 / 5`) and ~220px wide; let the meta column take the rest. On mobile collapse to a single column with the portrait at 16:11 (banner-style) and a tight `object-position: 50% 18%` so the face stays visible.
+- **Card content order, top to bottom**: small kicker (style/class tag + level), big character name, *what they do* callout (passive/ability description, sage-tinted left-bordered box — see below), level progress bar with `current / next → Level N+1` caption, stat tiles. This answers "who is this, what do they do, how am I progressing, how have they done in battle" in that priority order.
+- **Show ability description, not generic lore.** On a player-facing roster card, "what does this character do in a fight?" beats abstract flavor text every time. Pull from `passive.description` / `active.description` and lead with the ability *name* in caps + description below. If the character has both, prefer the passive — it's the always-on identity.
+- **Reuse the existing progress-bar idiom.** The character level bar uses the same sage→amber gradient track as the season-progress bar (`linear-gradient(90deg, #7d9b6b, #d8ba66)`). Don't invent a new visual vocabulary for the same metaphor (linear progression toward a threshold).
+- **Filter to active state, not the full catalogue.** A profile shows characters the player has *touched* (any wins/losses/draws or any mycelium earned), not all six characters with zero stats — empty rows make the card list feel padded.
+
+### Sharable Page Pattern
+
+When adding a screen users would want to share with friends (profile, roster, run summary, leaderboard entry):
+
+- **Scaffold the URL identifier from the start.** Add the route to `ROUTE_PARAMS` in `web/src/api.js` (`profile: 'profilePlayerId'`, etc.) and write the current user's id into the URL when they navigate to that screen — even before the backend public-fetch endpoint exists. The URL identity is half the value.
+- **Pair the URL with a share button.** Use `navigator.share` with a clipboard-copy fallback (the friends-screen and profile-screen patterns are the canonical implementations). Show a "Copied" / "Shared" confirmation pill for ~1.6s on success.
+- **Be honest about backend gaps.** When the public-fetch endpoint isn't built yet, render the page from local bootstrap data and document the limitation: the URL plumbing is correct, but a friend opening *your* shared URL will see *their own* page until the public endpoint lands. Don't fake cross-player rendering with stale or invented data.
+
+### Profile Page
+
+- **Section order: characters → season/rank → achievements journal.** Lead with what the player came to look at (their roster + identity), then the abstract metric (rank), then the long catalogue (achievements). Inverting this — putting the rank card on top — buries the player's personal connection to the page behind a leaderboard number.
+- **Header carries identity, not metrics.** Player display name as the heading, `#friendCode` as the handle, share button on the right. No stats in the header itself — those belong on the character cards or the season card.
+- **Compact season card after the roster.** Three-column header (emblem | copy | total points) with a full-width progress bar and a single "X to next rank" footer line. Drop the peak-rank breakdown, "first 7 wins count for rank" hint, and "season chapter" footnote — those are help-modal copy, not card copy.
+
 ### Replay Screen
 
 - Two-column duel layout on desktop, single column on mobile.
@@ -210,6 +245,8 @@ Three-zone single-column layout (mobile), two-column on desktop (left: backpack 
 - Use strong accent color sparingly for headings, dividers, and small emphasis points.
 - Avoid large blocks of intense color behind reading text.
 - Do not import another repo's SCSS tokens, component assumptions, or layout systems without verifying they exist here.
+- **Media-query overrides come AFTER the base rules they override.** Equal-specificity rules win by source order, and bundlers do not reshuffle by media-query specificity. If `@media (max-width: 540px) .X { ... }` precedes the base `.X { ... }` in source, the mobile override is silently dead in the bundle. Either co-locate base + mobile pairs tightly, or keep all media queries at the end of their feature block. JS test suites cannot catch this — only a fresh mobile screenshot can.
+- **Reuse existing visual primitives for the same metaphor.** Linear progression bars (season points, character level, run progress) all use the sage→amber gradient track at 8–10px height with `border-radius: 999px`. Tonal card tints (defeat, cleared, ended, level-down) all use the same `linear-gradient(135deg/160deg, <accent>, <fade>), <surface>` recipe. Stat tiles all use the `dt`/`dd` pattern with `order: -1` on `dd`. Adding a parallel implementation for a metaphor that already has a primitive in the codebase is a smell — find the existing one and extend it, or refactor the existing one if the new use case really needs different shape.
 
 ### Responsive Expectations
 
@@ -250,6 +287,12 @@ Before reporting a design change as done, scan the changed surface for these sig
 - **Box-shadow + border + gradient on the same element.** Triple-layered depth is a 2014–2017 signature. Pick one treatment.
 - **Hardcoded `+` prefix in templates.** `+{{ value }}` renders `+-2` for negative values. Always go through `formatDelta` (or equivalent) so the sign is correct.
 - **Full-bleed focused panels on desktop.** A single result/outcome card stretching across 1200px+ screen width should have a `max-width` cap (≈520–560px) with `margin: auto`.
+- **Plain panel next to tinted sibling cards.** A `.panel` with the default surface background sitting next to richly gradient-tinted neighbors reads as unstyled. If the surface is part of a stack of cards that already carry tonal backgrounds, give it tonal identity too.
+- **A subset-of-totals as a separate card.** Surfacing "Completion bonus: +20" as its own card while a sibling already shows "Earned this run: +36" forces the player to mentally subtract one from the other. Pick one — totals OR components, never both.
+- **Technical breakdown captions under a number.** Captions like "Wins +14 / Losses -2 / Full clear +3" decompose a number that the big headline already implies. The breakdown is debug copy; drop it unless the player can act on each component.
+- **Full-bleed portrait dominating an info-dense card.** When the meta column also has to carry a name, ability, progress bar, and stats, a portrait taking 45–50% of card width starves the meta of horizontal space. Cap portraits to ~200–240px on player/roster cards and let the meta column run.
+- **Generic lore copy where ability description belongs.** A profile or roster card that says "the first sign of the deep ring shows on the mycelium…" instead of "after a successful stun, this character's next hit deals +2 damage" is failing the player's actual question ("what does this do in a fight?"). Pull from gameplay descriptions, not flavor text, on player-facing cards.
+- **Inventing a new visual idiom for an existing metaphor.** A second style of progress bar (different colors, different height, different easing) on the same screen as the canonical one signals nothing new — it just makes the page feel less unified. Reuse the existing primitive when the metaphor matches.
 
 If any signal is present and the agent cannot justify keeping it, the design change is not done — fix it before reporting completion. When in doubt about whether a treatment is "modern," flat-first is the safer default in this repo.
 

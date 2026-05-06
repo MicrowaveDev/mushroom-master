@@ -8,7 +8,8 @@ const ROUTE_PARAMS = {
   friends: 'challenge',
   'game-run': 'gameRunId',
   runSummary: 'gameRunId',
-  runComplete: 'gameRunId'
+  runComplete: 'gameRunId',
+  profile: 'profilePlayerId'
 };
 
 const SCREEN_ROUTES = {
@@ -24,7 +25,7 @@ export function parseStartParams() {
   const path = window.location.pathname.replace(/^\/+/, '');
   const parts = path.split('/').filter(Boolean);
   const screen = ROUTE_SCREENS[parts[0]] || parts[0] || null;
-  const result = { screen, challenge: null, replay: null, gameRunId: null };
+  const result = { screen, challenge: null, replay: null, gameRunId: null, profilePlayerId: null };
 
   if (screen && ROUTE_PARAMS[screen] && parts[1]) {
     result[ROUTE_PARAMS[screen]] = decodeURIComponent(parts[1]);

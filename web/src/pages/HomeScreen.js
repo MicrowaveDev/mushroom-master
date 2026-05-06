@@ -25,8 +25,21 @@ export const HomeScreen = {
       expandedMushroomId: null,
       selectedMushroomId: null,
       socialPanel: '',
-      homeAtTop: true
+      homeAtTop: true,
+      pulsingMushroomIds: {},
+      pulsingMushroomDeltas: {},
+      openStatsPopover: null
     };
+  },
+  mounted() {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', this.handleStatsPopoverOutsideClick);
+    }
+  },
+  beforeUnmount() {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('click', this.handleStatsPopoverOutsideClick);
+    }
   },
   components: {
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
@@ -35,6 +48,16 @@ export const HomeScreen = {
     HomeSocialSidebar
   },
   methods: {
+    toggleStatsPopover(id, event) {
+      if (event) event.stopPropagation();
+      this.openStatsPopover = this.openStatsPopover === id ? null : id;
+    },
+    handleStatsPopoverOutsideClick(event) {
+      if (!this.openStatsPopover) return;
+      const target = event.target;
+      if (target && typeof target.closest === 'function' && target.closest('.home-mushroom-stats')) return;
+      this.openStatsPopover = null;
+    },
     focusMushroom(mushroom) {
       this.selectedMushroomId = mushroom.id;
       if (mushroom.isActive) return;
@@ -61,6 +84,22 @@ export const HomeScreen = {
     onScroll() {
       this.homeAtTop = window.scrollY <= 24;
     },
+    flashMyceliumGain(mushroomId, delta) {
+      this.pulsingMushroomIds = { ...this.pulsingMushroomIds, [mushroomId]: true };
+      this.pulsingMushroomDeltas = { ...this.pulsingMushroomDeltas, [mushroomId]: delta };
+      const existing = this._pulseTimers.get(mushroomId);
+      if (existing) clearTimeout(existing);
+      const timer = setTimeout(() => {
+        const ids = { ...this.pulsingMushroomIds };
+        const deltas = { ...this.pulsingMushroomDeltas };
+        delete ids[mushroomId];
+        delete deltas[mushroomId];
+        this.pulsingMushroomIds = ids;
+        this.pulsingMushroomDeltas = deltas;
+        this._pulseTimers.delete(mushroomId);
+      }, 2400);
+      this._pulseTimers.set(mushroomId, timer);
+    },
     activityDayLabel(date) {
       const value = date ? new Date(date) : new Date();
       if (Number.isNaN(value.getTime())) return this.t.today;
@@ -71,12 +110,40 @@ export const HomeScreen = {
       return value.toLocaleDateString(this.state.lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'long' });
     }
   },
+  created() {
+    this._prevMycelium = new Map();
+    this._pulseTimers = new Map();
+    const progression = this.state.bootstrap?.progression || {};
+    for (const [id, prog] of Object.entries(progression)) {
+      this._prevMycelium.set(id, prog.mycelium || 0);
+    }
+  },
   mounted() {
     this.onScroll();
     window.addEventListener('scroll', this.onScroll, { passive: true });
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.onScroll);
+    if (this._pulseTimers) {
+      for (const timer of this._pulseTimers.values()) clearTimeout(timer);
+      this._pulseTimers.clear();
+    }
+  },
+  watch: {
+    'state.bootstrap.progression': {
+      deep: true,
+      handler(progression) {
+        if (!progression) return;
+        for (const [id, prog] of Object.entries(progression)) {
+          const prev = this._prevMycelium.get(id);
+          const curr = prog.mycelium || 0;
+          if (typeof prev === 'number' && curr > prev) {
+            this.flashMyceliumGain(id, curr - prev);
+          }
+          this._prevMycelium.set(id, curr);
+        }
+      }
+    }
   },
   computed: {
     mobileActionMode() {
@@ -104,6 +171,7 @@ export const HomeScreen = {
           ...m,
           level: prog.level || 1,
           tier: prog.tier || 'spore',
+          mycelium: prog.mycelium || 0,
           currentLevelMycelium: prog.currentLevelMycelium || 0,
           nextLevelMycelium: prog.nextLevelMycelium ?? null,
           wins: prog.wins || 0,
@@ -232,7 +300,7 @@ export const HomeScreen = {
           <div v-for="m in roster" :key="m.id" class="home-mushroom-card">
             <div
               class="home-mushroom-row"
-              :class="{ 'home-mushroom-row--active': m.isActive, 'home-mushroom-row--selected': selectedMushroom?.id === m.id }"
+              :class="{ 'home-mushroom-row--active': m.isActive, 'home-mushroom-row--selected': selectedMushroom?.id === m.id, 'home-mushroom-row--pulse': pulsingMushroomIds[m.id] }"
               @click="focusMushroom(m)"
               @keydown.enter.prevent="focusMushroom(m)"
               @keydown.space.prevent="focusMushroom(m)"
@@ -243,12 +311,50 @@ export const HomeScreen = {
               <div class="home-mushroom-info">
                 <div class="home-mushroom-name-row">
                   <strong>{{ m.name[state.lang] }}</strong>
-                  <span :class="'home-mushroom-tier tier--' + m.tier">{{ t['tier_' + m.tier] }}</span>
+                  <span v-if="m.tier && ((m.wins || 0) + (m.losses || 0) + (m.draws || 0) > 0)" :class="'home-mushroom-tier tier--' + m.tier">{{ t['tier_' + m.tier] }}</span>
                 </div>
                 <span class="home-mushroom-style">{{ m.styleTag }}</span>
-                <span class="home-mushroom-stats">
+                <span
+                  class="home-mushroom-stats"
+                  :class="{ 'home-mushroom-stats--open': openStatsPopover === m.id }"
+                  role="button"
+                  tabindex="0"
+                  :aria-expanded="openStatsPopover === m.id"
+                  :aria-label="t.statsLegendOpen"
+                  @click="toggleStatsPopover(m.id, $event)"
+                  @keydown.enter.stop.prevent="toggleStatsPopover(m.id)"
+                  @keydown.space.stop.prevent="toggleStatsPopover(m.id)"
+                >
                   <span class="home-mushroom-level">{{ t.level }} {{ m.level }}</span>
-                  <span v-if="m.wins || m.losses || m.draws" class="home-mushroom-record">{{ m.wins }}<small>{{ t.winsShort }}</small> {{ m.losses }}<small>{{ t.lossesShort }}</small> {{ m.draws }}<small>{{ t.drawsShort }}</small></span>
+                  <span class="home-mushroom-mycelium">
+                    <span class="home-mushroom-mycelium-icon" aria-hidden="true">🍄</span>{{ m.mycelium }}<span v-if="pulsingMushroomDeltas[m.id]" class="home-mushroom-mycelium-delta">+{{ pulsingMushroomDeltas[m.id] }}</span>
+                  </span>
+                  <span v-if="m.wins || m.losses || m.draws" class="home-mushroom-record">
+                    <span class="home-mushroom-record-stat home-mushroom-record-stat--win">{{ m.wins }}</span>
+                    <span class="home-mushroom-record-stat home-mushroom-record-stat--loss">{{ m.losses }}</span>
+                    <span v-if="m.draws" class="home-mushroom-record-stat home-mushroom-record-stat--draw">{{ m.draws }}</span>
+                  </span>
+                  <div class="home-mushroom-stats-popover" role="tooltip">
+                    <p class="home-mushroom-stats-popover-title">{{ t.statsLegendTitle }}</p>
+                    <ul>
+                      <li>
+                        <span class="home-mushroom-mycelium-icon" aria-hidden="true">🍄</span>
+                        <span>{{ t.mycelium }}</span>
+                      </li>
+                      <li>
+                        <span class="home-mushroom-record-stat home-mushroom-record-stat--win" aria-hidden="true"></span>
+                        <span>{{ t.wins }}</span>
+                      </li>
+                      <li>
+                        <span class="home-mushroom-record-stat home-mushroom-record-stat--loss" aria-hidden="true"></span>
+                        <span>{{ t.losses }}</span>
+                      </li>
+                      <li>
+                        <span class="home-mushroom-record-stat home-mushroom-record-stat--draw" aria-hidden="true"></span>
+                        <span>{{ t.draws }}</span>
+                      </li>
+                    </ul>
+                  </div>
                 </span>
                 <div v-if="m.nextLevelMycelium !== null" class="home-mushroom-progress" :title="m.currentLevelMycelium + ' / ' + m.nextLevelMycelium">
                   <div class="home-mushroom-progress-fill" :style="{ width: Math.min(100, Math.round(m.currentLevelMycelium / m.nextLevelMycelium * 100)) + '%' }"></div>
@@ -270,7 +376,7 @@ export const HomeScreen = {
               @click="playSelectedMushroom"
             >{{ selectedMushroom.activeRun ? t.resumeRun : t.startRun }}</button>
             <button
-              v-if="selectedMushroom.portraits.length > 1 || selectedMushroom.presets.length > 1"
+              v-if="selectedMushroom.portraits.length > 1"
               class="secondary home-roster-change-skin"
               :class="{ active: expandedMushroomId === selectedMushroom.id }"
               @click="toggleSelectedSkinPanel"
@@ -291,21 +397,11 @@ export const HomeScreen = {
                 <img :src="p.path" :alt="p.name[state.lang]" />
                 <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
                   <span class="home-swatch-price-icon">🍄</span>
-                  <span class="home-swatch-price-value">{{ p.cost }}</span>
+                  <span class="home-swatch-price-value">
+                    <span class="home-swatch-price-have">{{ selectedMushroom.mycelium }}</span><span class="home-swatch-price-sep">/</span>{{ p.cost }}
+                  </span>
                 </span>
               </button>
-            </div>
-          </div>
-          <div v-if="selectedMushroom.presets.length > 1" class="home-picker-section">
-            <span class="home-picker-label">{{ t.starterPreset }}</span>
-            <div class="home-preset-pills">
-              <button
-                v-for="p in selectedMushroom.presets" :key="p.id"
-                class="home-preset-pill"
-                :class="{ 'home-preset-pill--active': selectedMushroom.activePreset === p.id, 'home-preset-pill--locked': !p.unlocked }"
-                :title="p.unlocked ? '' : t.presetLocked.replace('{n}', p.requiredLevel)"
-                @click.stop="p.unlocked && $emit('switch-preset', { mushroomId: selectedMushroom.id, presetId: p.id })"
-              >{{ p.name[state.lang] }}{{ !p.unlocked ? ' 🔒' : '' }}</button>
             </div>
           </div>
         </div>
@@ -340,10 +436,7 @@ export const HomeScreen = {
           </div>
           <div class="home-season-points">
             <strong>{{ seasonSummary.totalPoints }} {{ t.seasonPoints }}</strong>
-            <span>{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }} {{ t.seasonPoints }}</span>
             <span>{{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}</span>
-            <small>{{ t.seasonRulesHint }}</small>
-            <button class="link home-season-journal-link" @click="$emit('go', 'profile')">{{ t.achievementJournal }}</button>
           </div>
         </div>
         <div class="home-season-progress" aria-hidden="true">
@@ -405,7 +498,13 @@ export const HomeScreen = {
               <img v-if="describeRun(run)?.ourImage" :src="describeRun(run).ourImage" :alt="describeRun(run)?.ourName" class="home-run-item-portrait" :style="{ objectPosition: portraitPosition(describeRun(run)?.mushroomId) }" />
               <div class="home-run-item-info">
                 <strong>{{ describeRun(run)?.outcomeLabel }}</strong>
-                <span class="home-run-item-stats">{{ describeRun(run)?.ourName }} · {{ t.runStatsRecord.replace('{wins}', describeRun(run)?.wins).replace('{losses}', describeRun(run)?.losses).replace('{rounds}', describeRun(run)?.completedRounds) }}</span>
+                <span class="home-run-item-stats">
+                  <span class="home-run-item-stats-name">{{ describeRun(run)?.ourName }}</span>
+                  <span v-if="(describeRun(run)?.wins || 0) + (describeRun(run)?.losses || 0) > 0" class="home-run-item-record">
+                    <span class="home-mushroom-record-stat home-mushroom-record-stat--win">{{ describeRun(run)?.wins || 0 }}</span>
+                    <span class="home-mushroom-record-stat home-mushroom-record-stat--loss">{{ describeRun(run)?.losses || 0 }}</span>
+                  </span>
+                </span>
               </div>
               <span class="home-run-item-date">{{ describeRun(run)?.dateLabel }}</span>
             </div>
@@ -416,8 +515,8 @@ export const HomeScreen = {
 
           <!-- Footer stats -->
           <div class="home-run-footer">
-            <span>{{ t.spore }}: {{ state.bootstrap.player.spore }}</span>
-            <span>{{ t.battleLimit }}: {{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</span>
+            <span>{{ t.spore }} <strong>{{ state.bootstrap.player.spore }}</strong></span>
+            <span>{{ t.battleLimit }} <strong>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</strong></span>
           </div>
         </article>
 

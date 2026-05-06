@@ -503,7 +503,7 @@ const App = {
           :state="state" :t="t" @go="goTo($event)" @open-wiki="openWiki($event[0], $event[1])"
         />
 
-        <profile-screen v-else-if="state.screen === 'profile'" :state="state" :t="t" :get-mushroom="getMushroom" />
+        <profile-screen v-else-if="state.screen === 'profile'" :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition" />
 
         <settings-screen v-else-if="state.screen === 'settings'" :state="state" :t="t" @save-settings="saveSettings" />
 
