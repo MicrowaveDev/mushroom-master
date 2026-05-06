@@ -483,7 +483,7 @@ test('[Flow G] settings: change language and verify persistence', async ({ page,
   await page.goto(`${baseURL}/settings`, { waitUntil: 'networkidle' });
 
   // Should see settings panel
-  const settingsPanel = page.locator('.panel.stack');
+  const settingsPanel = page.locator('.settings-panel');
   await expect(settingsPanel).toBeVisible();
 
   // Change language from RU to EN
