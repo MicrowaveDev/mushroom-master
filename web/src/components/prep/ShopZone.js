@@ -39,6 +39,11 @@ export const ShopZone = {
       const orientation = this.previewOrientation(artifactId);
       return [{ artifactId, x: 0, y: 0, width: orientation.width, height: orientation.height }];
     },
+    artifactDescription(artifactId) {
+      const description = this.getArtifact(artifactId)?.description;
+      if (!description) return '';
+      return description[this.state.lang] || description.en || description.ru || '';
+    },
     itemDataset(artifactId) {
       const orientation = this.previewOrientation(artifactId);
       return {
@@ -77,6 +82,7 @@ export const ShopZone = {
             :items="previewItem(artifactId)"
             :get-artifact="getArtifact"
           />
+          <p v-if="artifactDescription(artifactId)" class="shop-item-description">{{ artifactDescription(artifactId) }}</p>
           <div class="shop-item-tags">
             <span v-if="getArtifact(artifactId)?.characterItem" class="artifact-stat-chip artifact-stat-chip--character">{{ t.characterItem }}</span>
             <span v-if="getArtifact(artifactId)?.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ getArtifact(artifactId)?.slotCount }} {{ t.bagSlots }}</span>

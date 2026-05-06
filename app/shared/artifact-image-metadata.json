@@ -7,8 +7,8 @@
     "temporaryCandidatesLocation": ".agent/artifact-image-workspace/",
     "productionImageLocation": "web/public/artifacts/"
   },
-  "artifactCount": 41,
-  "metadataHash": "7f06ae719828c4e8f95fdcfd0b17a244116133dbf375908865d63d46a09c4718",
+  "artifactCount": 45,
+  "metadataHash": "7bcf74fc6159d7d94022b0c7b46d3565f2a82df702926fa289592a9f84399a8b",
   "artifacts": [
     {
       "id": "spore_needle",
@@ -26,6 +26,7 @@
           "ru": "Споровая Игла",
           "en": "Spore Needle"
         },
+        "description": null,
         "family": "damage",
         "price": 1,
         "width": 1,
@@ -105,6 +106,7 @@
           "ru": "Споровый Клинок",
           "en": "Sporeblade"
         },
+        "description": null,
         "family": "damage",
         "price": 1,
         "width": 1,
@@ -184,6 +186,7 @@
           "ru": "Янтарный Клык",
           "en": "Amber Fang"
         },
+        "description": null,
         "family": "damage",
         "price": 2,
         "width": 1,
@@ -266,6 +269,7 @@
           "ru": "Стеклянная Шляпка",
           "en": "Glass Cap"
         },
+        "description": null,
         "family": "damage",
         "price": 2,
         "width": 2,
@@ -348,6 +352,7 @@
           "ru": "Клык-Плеть",
           "en": "Fang Whip"
         },
+        "description": null,
         "family": "damage",
         "price": 2,
         "width": 2,
@@ -430,6 +435,7 @@
           "ru": "Пылающая Шляпка",
           "en": "Burning Cap"
         },
+        "description": null,
         "family": "damage",
         "price": 2,
         "width": 2,
@@ -514,6 +520,7 @@
           "ru": "Кора-Пластина",
           "en": "Bark Plate"
         },
+        "description": null,
         "family": "armor",
         "price": 1,
         "width": 1,
@@ -593,6 +600,7 @@
           "ru": "Суглинковая Чешуя",
           "en": "Loam Scale"
         },
+        "description": null,
         "family": "armor",
         "price": 1,
         "width": 1,
@@ -675,6 +683,7 @@
           "ru": "Мицелиевый Пояс",
           "en": "Mycelium Wrap"
         },
+        "description": null,
         "family": "armor",
         "price": 1,
         "width": 2,
@@ -754,6 +763,7 @@
           "ru": "Каменная Шляпка",
           "en": "Stone Cap"
         },
+        "description": null,
         "family": "armor",
         "price": 2,
         "width": 1,
@@ -833,6 +843,7 @@
           "ru": "Корневой Панцирь",
           "en": "Root Shell"
         },
+        "description": null,
         "family": "armor",
         "price": 2,
         "width": 2,
@@ -915,6 +926,7 @@
           "ru": "Трюфельный Бастион",
           "en": "Truffle Bulwark"
         },
+        "description": null,
         "family": "armor",
         "price": 2,
         "width": 2,
@@ -999,6 +1011,7 @@
           "ru": "Шоковая Пышка",
           "en": "Shock Puff"
         },
+        "description": null,
         "family": "stun",
         "price": 1,
         "width": 1,
@@ -1078,6 +1091,7 @@
           "ru": "Мерцающая Шляпка",
           "en": "Glimmer Cap"
         },
+        "description": null,
         "family": "stun",
         "price": 1,
         "width": 1,
@@ -1157,6 +1171,7 @@
           "ru": "Пылевая Вуаль",
           "en": "Dust Veil"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 1,
@@ -1236,6 +1251,7 @@
           "ru": "Статический Споровый Мешок",
           "en": "Static Spore Sac"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 1,
@@ -1318,6 +1334,7 @@
           "ru": "Громовая Пластина",
           "en": "Thunder Gill"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 2,
@@ -1400,6 +1417,7 @@
           "ru": "Искровая Спора",
           "en": "Spark Spore"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 2,
@@ -1482,6 +1500,7 @@
           "ru": "Моховое Кольцо",
           "en": "Moss Ring"
         },
+        "description": null,
         "family": "armor",
         "price": 1,
         "width": 1,
@@ -1564,6 +1583,7 @@
           "ru": "Проворный Блик",
           "en": "Haste Wisp"
         },
+        "description": null,
         "family": "damage",
         "price": 1,
         "width": 1,
@@ -1630,6 +1650,350 @@
       "candidates": []
     },
     {
+      "id": "reliquary_biostasis_seal",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/reliquary_biostasis_seal.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 32197,
+        "sha256": "2e04ad82657fb7c850365224dd2df029f0a3fb9c2f7bec998b99b44a9d7b6904"
+      },
+      "artifact": {
+        "id": "reliquary_biostasis_seal",
+        "name": {
+          "ru": "Печать Биостазиса Реликвария",
+          "en": "Reliquary Biostasis Seal"
+        },
+        "description": {
+          "ru": "Золотая печать Реликвария стягивает спорную нить в короткий миг биостазиса.",
+          "en": "A Golden Reliquary seal knots spore-thread into a brief pulse of biostasis."
+        },
+        "family": "stun",
+        "price": 2,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 9,
+          "armor": 1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "armor"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--bright"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Reliquary Biostasis Seal / Печать Биостазиса Реликвария\n\n- id: `reliquary_biostasis_seal`\n- image: `reliquary_biostasis_seal.png`\n- output: `web/public/artifacts/reliquary_biostasis_seal.png`\n- footprint: 1x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Bright (bright)\n- description: Golden reliquary seal; mushroom-cap stamp with a sacred white biostasis knot and contained pale cyan glints.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Reliquary Biostasis Seal / Печать Биостазиса Реликвария (reliquary_biostasis_seal)\nOutput file after approval: web/public/artifacts/reliquary_biostasis_seal.png\nFootprint: 1x1\nDescription: Golden reliquary seal; mushroom-cap stamp with a sacred white biostasis knot and contained pale cyan glints.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "bubbling_grot_bomb",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/bubbling_grot_bomb.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 28273,
+        "sha256": "9471fe2ef6e385fb6dc758751b48853ce0f0eb455c68dae0b6d770ea93273b7e"
+      },
+      "artifact": {
+        "id": "bubbling_grot_bomb",
+        "name": {
+          "ru": "Бомба Булькающего Грота",
+          "en": "Bubbling Grot Bomb"
+        },
+        "description": {
+          "ru": "Бродильный заряд из Булькающего Грота лопается едкой грибной вспышкой.",
+          "en": "A ferment charge from the Bubbling Grot bursts with sour fungal pressure."
+        },
+        "family": "damage",
+        "price": 2,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "damage": 4,
+          "armor": -1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": null,
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--bright"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Bubbling Grot Bomb / Бомба Булькающего Грота\n\n- id: `bubbling_grot_bomb`\n- image: `bubbling_grot_bomb.png`\n- output: `web/public/artifacts/bubbling_grot_bomb.png`\n- footprint: 1x1\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Bright (bright)\n- description: Volatile grotto spore bomb; round amber-red fungal flask, corked cap fuse, and contained green ferment bubbles.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Bubbling Grot Bomb / Бомба Булькающего Грота (bubbling_grot_bomb)\nOutput file after approval: web/public/artifacts/bubbling_grot_bomb.png\nFootprint: 1x1\nDescription: Volatile grotto spore bomb; round amber-red fungal flask, corked cap fuse, and contained green ferment bubbles.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "void_cocoon_spore",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/void_cocoon_spore.png",
+      "png": {
+        "width": 160,
+        "height": 320,
+        "size": 60585,
+        "sha256": "e2da2e5b5783e04168a104259e0bd27cd1feb6717844fed36c802925be0e60f1"
+      },
+      "artifact": {
+        "id": "void_cocoon_spore",
+        "name": {
+          "ru": "Спора Пустотного Кокона",
+          "en": "Void Cocoon Spore"
+        },
+        "description": {
+          "ru": "Спора-кокон Йог-Мицела закрывается зелеными пластинами вокруг холодной пустоты.",
+          "en": "A Ygg-Mycel cocoon spore folds green plates around a cold void core."
+        },
+        "family": "armor",
+        "price": 2,
+        "width": 1,
+        "height": 2,
+        "shape": null,
+        "bonus": {
+          "armor": 3,
+          "stunChance": 5
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "armor",
+          "label": "Armor",
+          "hue": "moss-green",
+          "color": "#6f9b4f"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "armor",
+        "secondaryStats": [
+          "stun"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "tall",
+        "cssClasses": [
+          "artifact-role--armor",
+          "artifact-shine--bright"
+        ],
+        "prompt": "armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Void Cocoon Spore / Спора Пустотного Кокона\n\n- id: `void_cocoon_spore`\n- image: `void_cocoon_spore.png`\n- output: `web/public/artifacts/void_cocoon_spore.png`\n- footprint: 1x2\n- family: armor\n- visual class: Armor / moss-green\n- shine tier: Bright (bright)\n- description: Tall armored void-cocoon spore; moss-green outer plates wrap a pale frozen core and dark central void slit.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Void Cocoon Spore / Спора Пустотного Кокона (void_cocoon_spore)\nOutput file after approval: web/public/artifacts/void_cocoon_spore.png\nFootprint: 1x2\nDescription: Tall armored void-cocoon spore; moss-green outer plates wrap a pale frozen core and dark central void slit.\nShape rule: 1x2 vertical: strictly top-to-bottom object, filling 82-94% of the canvas height and 70-88% of the canvas width; every cell contains a visible continuation of the same object\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: moss green, bark green, muted stone, cream, rounded protective mass, broad flat planes, at most two grain marks.\n\nVisual classification: armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 320
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "root_ash_censer",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/root_ash_censer.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 49339,
+        "sha256": "82dafaaf1bcb703864b1234501a9bbc232810c264a0a982c2ae4f4945b02473f"
+      },
+      "artifact": {
+        "id": "root_ash_censer",
+        "name": {
+          "ru": "Корневая Пепельница",
+          "en": "Root Ash Censer"
+        },
+        "description": {
+          "ru": "Корневой цензер Йог-Мицела гасит темп боя пепельной спиралью.",
+          "en": "A Ygg-Mycel root censer slows the fight with a pale ash spiral."
+        },
+        "family": "stun",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 7,
+          "armor": 1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "armor"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--bright"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Root Ash Censer / Корневая Пепельница\n\n- id: `root_ash_censer`\n- image: `root_ash_censer.png`\n- output: `web/public/artifacts/root_ash_censer.png`\n- footprint: 2x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Bright (bright)\n- description: Horizontal root-ash censer; dark root handles, ash-cream ritual bowl, and carved pale spiral marks.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Root Ash Censer / Корневая Пепельница (root_ash_censer)\nOutput file after approval: web/public/artifacts/root_ash_censer.png\nFootprint: 2x1\nDescription: Horizontal root-ash censer; dark root handles, ash-cream ritual bowl, and carved pale spiral marks.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
       "id": "thalla_sacred_thread",
       "status": "approved",
       "outputPath": "web/public/artifacts/thalla_sacred_thread.png",
@@ -1645,6 +2009,7 @@
           "ru": "Священная Нить Тхаллы",
           "en": "Thalla's Sacred Thread"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 1,
@@ -1730,6 +2095,7 @@
           "ru": "Кристаллическая Решётка Ломиэ",
           "en": "Lomie's Crystal Lattice"
         },
+        "description": null,
         "family": "armor",
         "price": 2,
         "width": 2,
@@ -1815,6 +2181,7 @@
           "ru": "Ферментное Ядро Аксилина",
           "en": "Axilin's Ferment Core"
         },
+        "description": null,
         "family": "damage",
         "price": 2,
         "width": 1,
@@ -1900,6 +2267,7 @@
           "ru": "Ядовитый Клык Кирт",
           "en": "Kirt's Venom Fang"
         },
+        "description": null,
         "family": "damage",
         "price": 2,
         "width": 1,
@@ -1985,6 +2353,7 @@
           "ru": "Вспышка-Семя Морги",
           "en": "Morga's Flash Seed"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 2,
@@ -2070,6 +2439,7 @@
           "ru": "Пепельный Осколок Даламара",
           "en": "Dalamar's Ashen Shard"
         },
+        "description": null,
         "family": "stun",
         "price": 2,
         "width": 1,
@@ -2155,6 +2525,7 @@
           "ru": "Споровый Хлыст",
           "en": "Spore Lash"
         },
+        "description": null,
         "family": "stun",
         "price": 1,
         "width": 1,
@@ -2237,6 +2608,7 @@
           "ru": "Оседающий Щит",
           "en": "Settling Guard"
         },
+        "description": null,
         "family": "armor",
         "price": 1,
         "width": 1,
@@ -2316,6 +2688,7 @@
           "ru": "Ферментная Фляга",
           "en": "Ferment Phial"
         },
+        "description": null,
         "family": "damage",
         "price": 1,
         "width": 1,
@@ -2398,6 +2771,7 @@
           "ru": "Размеренный Удар",
           "en": "Measured Strike"
         },
+        "description": null,
         "family": "damage",
         "price": 1,
         "width": 1,
@@ -2480,6 +2854,7 @@
           "ru": "Вспышка Шляпки",
           "en": "Flash Cap"
         },
+        "description": null,
         "family": "stun",
         "price": 1,
         "width": 1,
@@ -2562,6 +2937,7 @@
           "ru": "Осколок Энтропии",
           "en": "Entropy Shard"
         },
+        "description": null,
         "family": "stun",
         "price": 1,
         "width": 1,
@@ -2644,6 +3020,7 @@
           "ru": "Стартовая Сумка",
           "en": "Starter Bag"
         },
+        "description": null,
         "family": "bag",
         "price": 0,
         "width": 3,
@@ -2721,6 +3098,7 @@
           "ru": "Моховой Мешочек",
           "en": "Moss Pouch"
         },
+        "description": null,
         "family": "bag",
         "price": 2,
         "width": 1,
@@ -2798,6 +3176,7 @@
           "ru": "Янтарная Сумка",
           "en": "Amber Satchel"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 2,
@@ -2875,6 +3254,7 @@
           "ru": "Трилистник",
           "en": "Trefoil Sack"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 3,
@@ -2964,6 +3344,7 @@
           "ru": "Берестяной Крюк",
           "en": "Birchbark Hook"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 3,
@@ -3053,6 +3434,7 @@
           "ru": "Дуплистое Бревно",
           "en": "Hollow Log"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 3,
@@ -3142,6 +3524,7 @@
           "ru": "Витой Стебель",
           "en": "Twisted Stalk"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 3,
@@ -3231,6 +3614,7 @@
           "ru": "Спиральная Шляпка",
           "en": "Spiral Cap"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 3,
@@ -3320,6 +3704,7 @@
           "ru": "Грибная Лоза",
           "en": "Mycelium Vine"
         },
+        "description": null,
         "family": "bag",
         "price": 3,
         "width": 1,

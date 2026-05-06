@@ -500,15 +500,18 @@ async function main() {
   const previousManifest = writeManifest ? readPreviousManifest(manifestPath) : null;
   const changedIds = changedArtifactIds(inputs, previousManifest);
   const inputHash = inputSetHash(inputs);
-  const html = renderHtml(sections, {
-    changedIds: new Set(changedIds),
-    highlightChanged
-  });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   let tmpPath = null;
 
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   try {
+    const html = renderHtml(sections, {
+      changedIds: new Set(changedIds),
+      highlightChanged
+    });
     const page = await browser.newPage();
     await page.setViewport({ width: 1120, height: 1600, deviceScaleFactor: 1 });
     await page.setContent(html, { waitUntil: 'networkidle0' });

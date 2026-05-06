@@ -389,11 +389,14 @@ function renderHtml(sections) {
 async function main() {
   const { outPath } = parseArgs(process.argv.slice(2));
   const sections = buildArtifactSections();
-  const html = renderHtml(sections);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   try {
+    const html = renderHtml(sections);
     const page = await browser.newPage();
     await page.setViewport({ width: 1560, height: 1800, deviceScaleFactor: 1 });
     await page.setContent(html, { waitUntil: 'networkidle0' });

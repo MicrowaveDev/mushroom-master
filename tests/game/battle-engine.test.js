@@ -414,6 +414,27 @@ test('[Req 6-K] action events include per-artifact attribution for damage, stun,
   );
 });
 
+test('[Req 6-L] lore artifact battle effects are emitted as replay metadata', () => {
+  const result = simulateBattle(
+    makeSnapshot('kirt', 'lomie',
+      [item('kirt_venom_fang', 0, 0)],
+      [item('lomie_crystal_lattice', 0, 0, 2, 1)]
+    ),
+    'lore-effect-tags-seed'
+  );
+
+  const kirtAction = result.events.find((e) => e.type === 'action' && e.actorSide === 'left');
+  assert.ok(kirtAction, 'Kirt action should exist');
+  assert.ok(kirtAction.blockedDamage > 0, 'Lomie lattice should block some damage');
+  assert.deepEqual(
+    kirtAction.effectTags.map((tag) => [tag.id, tag.trigger, tag.sourceArtifactId, tag.targetSide]),
+    [
+      ['poison', 'hit', 'kirt_venom_fang', 'right'],
+      ['freeze', 'block', 'lomie_crystal_lattice', 'left']
+    ]
+  );
+});
+
 test('[Req 1-B] battle ends at STEP_CAP (120) with endReason step_cap', () => {
   // Two very tanky mushrooms with high armor — battle should hit step cap
   const snapshot = makeSnapshot('lomie', 'lomie',

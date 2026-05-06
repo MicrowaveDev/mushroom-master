@@ -20,6 +20,7 @@ function stableArtifactSnapshot(artifact) {
   return {
     id: artifact.id,
     name: artifact.name,
+    description: artifact.description || null,
     family: artifact.family,
     price: artifact.price ?? null,
     width: artifact.width,

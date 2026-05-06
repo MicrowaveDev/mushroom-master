@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   validateLoadoutItems,
   startGameRun,
@@ -22,6 +24,7 @@ import {
   runRewardTable,
   getCompletionBonus
 } from '../../app/server/game-data.js';
+import { repoRoot } from '../../app/shared/repo-root.js';
 import { freshDb, createPlayer, seedRunLoadout, forceShopOffer } from './helpers.js';
 import { query } from '../../app/server/db.js';
 
@@ -50,6 +53,21 @@ test('[Req 3-D, 5-F] combatArtifacts excludes bags, starter-only, and character 
     combatArtifacts.length + bags.length + starterOnly.length + characterShopItems.length,
     artifacts.length
   );
+});
+
+test('[Req 4-V, 6-L] general lore artifacts are shop-eligible effect carriers', () => {
+  const loreArtifacts = artifacts.filter((artifact) => artifact.loreSource);
+  assert.ok(loreArtifacts.length >= 4);
+  assert.ok(loreArtifacts.every((artifact) => combatArtifacts.some((item) => item.id === artifact.id)));
+  assert.ok(loreArtifacts.every((artifact) => artifact.battleEffect?.id));
+  assert.ok(loreArtifacts.every((artifact) => artifact.description?.en && artifact.description?.ru));
+  assert.ok(loreArtifacts.every((artifact) => !artifact.imageId));
+  for (const artifact of loreArtifacts) {
+    assert.ok(
+      fs.existsSync(path.join(repoRoot, 'web/public/artifacts', `${artifact.id}.png`)),
+      `${artifact.id} should have a dedicated bitmap`
+    );
+  }
 });
 
 // --- Bag in loadout validation ---
