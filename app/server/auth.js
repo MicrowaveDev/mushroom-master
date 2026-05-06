@@ -155,6 +155,11 @@ export async function loginWithTelegram(initData, botToken) {
   return upsertTelegramPlayer(telegramUser, 'telegram');
 }
 
+export async function logoutSession(sessionKey) {
+  if (!sessionKey) return;
+  await query(`DELETE FROM sessions WHERE session_key = $1`, [sessionKey]);
+}
+
 async function createUniqueFriendCode(client) {
   for (let attempt = 0; attempt < 30; attempt += 1) {
     const code = String(Math.floor(100000 + Math.random() * 900000));

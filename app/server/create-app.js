@@ -9,6 +9,7 @@ import {
   createTelegramAuthCode,
   loginWithDevSession,
   loginWithTelegram,
+  logoutSession,
   requireAuth,
   verifyTelegramAuthCode
 } from './auth.js';
@@ -253,6 +254,15 @@ export async function createApp() {
           }
         }
       });
+    })
+  );
+
+  app.post(
+    '/api/auth/logout',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      await logoutSession(req.session.session_key);
+      res.json({ success: true, data: { loggedOut: true } });
     })
   );
 

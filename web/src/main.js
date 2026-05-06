@@ -166,6 +166,11 @@ const App = {
       gs.goTo('home');
     }
 
+    async function handleLogout() {
+      sse.disconnect();
+      await auth.logout();
+    }
+
     async function openRoute(startParams, routeOptions = {}) {
       const options = { routeOptions };
       if (startParams.screen === 'runComplete' && startParams.gameRunId && state.sessionKey) {
@@ -283,6 +288,7 @@ const App = {
       loginViaTelegram: auth.loginViaTelegram,
       loginViaBrowserCode: auth.loginViaBrowserCode,
       loginViaDevSession: auth.loginViaDevSession,
+      handleLogout,
       saveCharacter,
       ...customization,
       saveSettings: auth.saveSettings,
@@ -338,6 +344,7 @@ const App = {
               <button class="nav-btn" :class="{ active: state.screen === 'profile' }" @click="goTo('profile')">{{ t.profile }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'wiki' || state.screen === 'wiki-detail' }" @click="goTo('wiki')">{{ t.wiki }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'settings' }" @click="goTo('settings')">{{ t.settings }}</button>
+              <button class="nav-btn nav-btn--logout" data-testid="menu-logout" @click="handleLogout">{{ t.logout }}</button>
             </nav>
           </aside>
         </template>
