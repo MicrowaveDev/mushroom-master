@@ -2,6 +2,7 @@ import achievements from './run-achievements.json' with { type: 'json' };
 import { seasonLevelRank } from './season-levels.js';
 
 export const runAchievements = achievements;
+export const MAX_NEW_RUN_ACHIEVEMENTS = 3;
 
 const characterAccents = {
   thalla: 'thalla',
@@ -39,6 +40,43 @@ function availableAchievementsForContext(context) {
     if (achievement.type === 'character' && achievement.characterId !== context.mushroomId) return false;
     return criteriaMatches(achievement.criteria, context);
   });
+}
+
+function achievementPriority(achievement) {
+  const priorityById = {
+    first_ring_crossed: 10,
+    season_bronze_spore: 20,
+    perfect_circle: 30,
+    last_spore: 35,
+    thalla_spore_echo: 30,
+    lomie_soft_wall: 30,
+    axilin_volatile_brew: 30,
+    kirt_measured_rhythm: 30,
+    morga_first_bloom: 30,
+    dalamar_ashen_veil: 30,
+    deep_run: 50,
+    three_caps_taken: 55,
+    season_silver_thread: 20,
+    season_gold_cap: 20,
+    season_diamond_node: 20,
+    thalla_sacred_thread: 80,
+    lomie_stone_breath: 80,
+    axilin_ferment_storm: 80,
+    kirt_clean_path: 80,
+    morga_flash_trail: 80,
+    dalamar_entropy_bone: 80
+  };
+  return priorityById[achievement.id] ?? 100;
+}
+
+function sortForAwarding(a, b) {
+  const byPriority = achievementPriority(a) - achievementPriority(b);
+  if (byPriority) return byPriority;
+  return a.id.localeCompare(b.id);
+}
+
+function normalizeEarnedIds(earnedIds = []) {
+  return new Set(earnedIds.map((entry) => typeof entry === 'string' ? entry : entry?.id).filter(Boolean));
 }
 
 function localized(value, lang = 'en') {
@@ -105,7 +143,7 @@ export function getAllRunAchievements(lang = 'en') {
 }
 
 export function getNextRunAchievementHint(earnedIds = [], lang = 'en') {
-  const earned = new Set(earnedIds.map((entry) => typeof entry === 'string' ? entry : entry?.id).filter(Boolean));
+  const earned = normalizeEarnedIds(earnedIds);
   const next = allAchievements().find((achievement) => !earned.has(achievement.id));
   return next ? decorateAchievement(next, next.type, lang) : null;
 }
@@ -132,4 +170,21 @@ export function getEarnedRunAchievements(context, lang = 'en', limit = 6) {
     })
     .map((achievement) => decorateAchievement(achievement, achievement.type, lang))
     .slice(0, limit);
+}
+
+// Persistence uses a tighter ordering than the journal. A good run can match
+// many milestones at once, but only the highest-signal new ones should pop.
+export function getAwardableRunAchievements(context, lang = 'en', {
+  alreadyEarnedIds = [],
+  maxNew = MAX_NEW_RUN_ACHIEVEMENTS
+} = {}) {
+  const earned = normalizeEarnedIds(alreadyEarnedIds);
+  const matches = availableAchievementsForContext(context).sort(sortForAwarding);
+  const alreadyEarned = matches.filter((achievement) => earned.has(achievement.id));
+  const newAchievements = matches
+    .filter((achievement) => !earned.has(achievement.id))
+    .slice(0, maxNew);
+
+  return [...newAchievements, ...alreadyEarned]
+    .map((achievement) => decorateAchievement(achievement, achievement.type, lang));
 }

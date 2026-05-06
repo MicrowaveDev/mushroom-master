@@ -10,7 +10,7 @@ export const HomeScreen = {
   props: [
     'state', 't', 'activeMushroom', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'getMushroom',
-    'describeRun', 'formatDelta', 'portraitPosition'
+    'describeRun', 'formatDelta', 'portraitPosition', 'portraitPositionFor'
   ],
   emits: [
     'resume-run', 'start-run', 'abandon-run',
@@ -394,7 +394,11 @@ export const HomeScreen = {
                 :title="p.unlocked ? p.name[state.lang] : t.portraitLocked.replace('{n}', p.cost)"
                 @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id })"
               >
-                <img :src="p.path" :alt="p.name[state.lang]" />
+                <img
+                  :src="p.path"
+                  :alt="p.name[state.lang]"
+                  :style="{ objectPosition: portraitPositionFor(selectedMushroom.id, p.id) }"
+                />
                 <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
                   <span class="home-swatch-price-icon">🍄</span>
                   <span class="home-swatch-price-value">

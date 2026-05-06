@@ -22,7 +22,7 @@
         "ru": "Ты дошла до слоя, где корни хранят имена сильных бойцов.",
         "en": "You reached the layer where roots keep the names of strong fighters."
       },
-      "criteria": { "minRounds": 5 }
+      "criteria": { "minRounds": 5, "minSeasonPoints": 25 }
     },
     {
       "id": "three_caps_taken",
@@ -34,7 +34,7 @@
         "ru": "Три победы сложились в первый уверенный узор силы.",
         "en": "Three victories formed your first steady pattern of strength."
       },
-      "criteria": { "minWins": 3 }
+      "criteria": { "minWins": 3, "minSeasonPoints": 25 }
     },
     {
       "id": "season_bronze_spore",
@@ -133,7 +133,7 @@
           "ru": "Победы легли ровно, как священная нить между светом и тенью.",
           "en": "The victories settled like a sacred thread between light and shadow."
         },
-        "criteria": { "minWins": 4 }
+        "criteria": { "minWins": 4, "minSeasonPoints": 25 }
       }
     ],
     "lomie": [
@@ -159,7 +159,7 @@
           "ru": "Её защита стала спокойной, как кора древнего ствола.",
           "en": "Her guard became as calm as bark around an ancient trunk."
         },
-        "criteria": { "maxLosses": 1, "minRounds": 5 }
+        "criteria": { "maxLosses": 1, "minRounds": 5, "minSeasonPoints": 25 }
       }
     ],
     "axilin": [
@@ -185,7 +185,7 @@
           "ru": "Там, где она прошла, мицелий ещё долго шипел.",
           "en": "Where she passed, the mycelium kept hissing long afterward."
         },
-        "criteria": { "minWins": 5 }
+        "criteria": { "minWins": 5, "minSeasonPoints": 25 }
       }
     ],
     "kirt": [
@@ -211,7 +211,7 @@
           "ru": "Каждый точный удар расчистил путь глубже в кольцо.",
           "en": "Each clean strike cleared the path deeper into the ring."
         },
-        "criteria": { "minWinRate": 70, "minRounds": 5 }
+        "criteria": { "minWinRate": 70, "minRounds": 5, "minSeasonPoints": 25 }
       }
     ],
     "morga": [
@@ -237,7 +237,7 @@
           "ru": "Быстрый след Морги остался на самой границе зрения.",
           "en": "Morga's flash trail stayed at the very edge of sight."
         },
-        "criteria": { "minWins": 3, "lastOutcome": "win" }
+        "criteria": { "minWins": 3, "lastOutcome": "win", "minSeasonPoints": 25 }
       }
     ],
     "dalamar": [
@@ -263,7 +263,7 @@
           "ru": "Кольцо дрогнуло, когда энтропия встала на его сторону.",
           "en": "The ring trembled when entropy took his side."
         },
-        "criteria": { "minWins": 4 }
+        "criteria": { "minWins": 4, "minSeasonPoints": 25 }
       }
     ]
   }

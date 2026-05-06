@@ -5,6 +5,26 @@ import {
 } from '../helpers/grid-cell-classification.js';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
+function bagWatermarkPosition(artifactId, rotation) {
+  if (artifactId !== 'birchbark_hook') return 'center';
+  switch (rotation) {
+    case 1:
+      return 'calc(50% + 5px) center';
+    case 2:
+      return 'center calc(50% - 5px)';
+    case 3:
+      return 'calc(50% - 5px) center';
+    default:
+      return 'center calc(50% + 5px)';
+  }
+}
+
+function bagWatermarkTopCellGap(artifactId, rotation, defaultCellGap) {
+  return artifactId === 'birchbark_hook' && rotation === 1
+    ? '(var(--artifact-cell-size, 50px) - 3px)'
+    : defaultCellGap;
+}
+
 export const ArtifactGridBoard = {
   components: { ArtifactFigure },
   props: {
@@ -138,6 +158,7 @@ export const ArtifactGridBoard = {
       const elemHeight = `calc(${elemRows} * var(--artifact-cell-size, 50px) + ${Math.max(0, elemRows - 1)} * var(--board-gap, 8px))`;
       const bboxWidth = `calc(${colSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, colSpan - 1)} * var(--board-gap, 8px))`;
       const bboxHeight = `calc(${rowSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, rowSpan - 1)} * var(--board-gap, 8px))`;
+      const topCellGap = bagWatermarkTopCellGap(overlay.artifactId, rotation, cellGap);
       // CSS transform list applies right-to-left: rotate first, then
       // translate. So `translate(X, Y) rotate(deg)` rotates the element
       // about its top-left, then shifts the rotated result by (X, Y).
@@ -147,10 +168,11 @@ export const ArtifactGridBoard = {
       else if (rotation === 3) transform = `translate(0, ${bboxHeight}) rotate(-90deg)`;
       return {
         left: `calc(${overlay.minCol} * ${cellGap})`,
-        top: `calc(${overlay.minRow} * ${cellGap})`,
+        top: `calc(${overlay.minRow} * ${topCellGap})`,
         width: elemWidth,
         height: elemHeight,
         backgroundImage: `url('/artifacts/${overlay.artifactId}.png')`,
+        '--bag-watermark-position': bagWatermarkPosition(overlay.artifactId, rotation),
         transform,
         transformOrigin: '0 0'
       };

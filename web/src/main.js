@@ -86,11 +86,14 @@ const App = {
       localLabInput: 'Step 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.',
       gameRun: null,
       gameRunResult: null,
+      gameRunRounds: [],
       gameRunSummary: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
       abandonConfirmOpen: false,
+      pendingAbandonCurrentPoints: 0,
       pendingAbandonPenalty: -2,
+      pendingAbandonNetPoints: -2,
       startingFirstRun: false,
       sellDragOver: false,
       actionInFlight: false,
@@ -157,8 +160,17 @@ const App = {
     function handleRunComplete() {
       state.gameRun = null;
       state.gameRunResult = null;
+      state.gameRunRounds = [];
       auth.refreshBootstrap();
       gs.goTo('home');
+    }
+
+    async function handleRunRetry() {
+      state.gameRun = null;
+      state.gameRunResult = null;
+      state.gameRunRounds = [];
+      await auth.refreshBootstrap();
+      await gameRun.startNewGameRun('solo');
     }
 
     function handleRunSummaryClose() {
@@ -300,7 +312,7 @@ const App = {
       saveCharacter,
       ...customization,
       saveSettings: auth.saveSettings,
-      ...devTools, handleRunComplete, handleRunSummaryClose, onReplayFinish,
+      ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
   },
@@ -364,12 +376,19 @@ const App = {
           </div>
         </section>
 
-        <onboarding-screen v-else-if="state.screen === 'onboarding'" :state="state" :t="t" @go="goTo($event)" />
+        <onboarding-screen
+          v-else-if="state.screen === 'onboarding'"
+          :state="state"
+          :t="t"
+          :portrait-position="portraitPosition"
+          @go="goTo($event)"
+        />
 
         <home-screen v-else-if="state.screen === 'home'"
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
-          :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta" :portrait-position="portraitPosition"
+          :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta"
+          :portrait-position="portraitPosition" :portrait-position-for="portraitPositionFor"
           @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="requestAbandonRun"
           @load-replay="loadReplay($event)" @load-run-summary="loadRunSummary($event)" @go="goTo($event)"
           @add-friend="addFriend($event)" @challenge-friend="challengeFriend($event)"
@@ -439,7 +458,7 @@ const App = {
         />
 
         <run-complete-screen v-else-if="state.screen === 'runComplete' && state.gameRunResult"
-          :state="state" :t="t" @go-home="handleRunComplete"
+          :state="state" :t="t" @go-home="handleRunComplete" @play-again="handleRunRetry"
         />
 
         <section v-else-if="state.screen === 'runComplete'" class="route-loading-screen" data-testid="run-complete-loading">
@@ -553,6 +572,16 @@ const App = {
           <p class="confirm-penalty">
             {{ t.abandonConfirmPenalty.replace('{points}', state.pendingAbandonPenalty) }}
           </p>
+          <div class="confirm-rank-impact" aria-live="polite">
+            <span>
+              <span>{{ t.rankNoPenalty }}</span>
+              <strong>{{ formatDelta(state.pendingAbandonCurrentPoints) }}</strong>
+            </span>
+            <span>
+              <span>{{ t.rankExitNow }}</span>
+              <strong>{{ formatDelta(state.pendingAbandonNetPoints) }}</strong>
+            </span>
+          </div>
           <div class="confirm-actions">
             <button class="ghost" :disabled="state.actionInFlight" @click="cancelAbandonRun">{{ t.cancel }}</button>
             <button class="primary confirm-danger" :disabled="state.actionInFlight" @click="confirmAbandonRun">{{ state.actionInFlight ? t.abandonConfirming : t.abandonConfirmAction }}</button>

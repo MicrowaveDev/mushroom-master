@@ -2,7 +2,7 @@ import { apiJson } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
-import { calculateSeasonAbandonPenalty } from '../../../app/shared/season-levels.js';
+import { calculateSeasonAbandonPenalty, calculateSeasonPoints } from '../../../app/shared/season-levels.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
   const haptics = {
@@ -67,6 +67,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.error = '';
       const data = await apiJson('/api/game-run/start', { method: 'POST', body: JSON.stringify({ mode }) }, state.sessionKey);
       state.gameRun = data;
+      state.gameRunRounds = [];
       state.gameRunShopOffer = data.shopOffer || [];
       state.gameRunRefreshCount = 0;
       state.gameRunResult = null;
@@ -101,9 +102,21 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       const data = await apiJson(`/api/game-run/${state.gameRun.id}/ready`, { method: 'POST' }, state.sessionKey);
       haptics.impact('medium');
       if (data.waiting) return;
-      state.gameRunResult = data;
+      const previousRounds = Array.isArray(state.gameRunRounds)
+        ? state.gameRunRounds
+        : (Array.isArray(state.gameRun?.rounds) ? state.gameRun.rounds : []);
+      const currentRound = data.lastRound || null;
+      const runRounds = currentRound
+        ? [
+            ...previousRounds.filter((round) => round.roundNumber !== currentRound.roundNumber),
+            currentRound
+          ].sort((a, b) => (a.roundNumber || 0) - (b.roundNumber || 0))
+        : previousRounds;
+      state.gameRunResult = { ...data, rounds: data.rounds || runRounds };
+      state.gameRunRounds = runRounds;
+      if (state.gameRun) state.gameRun = { ...state.gameRun, rounds: runRounds };
       if (data.status === 'completed' || data.status === 'abandoned') {
-        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null };
+        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null, rounds: runRounds };
       }
       // Spec: docs/user-flows.md Flow B Step 3 — post-Ready lands directly
       // on the replay screen, which autoplays the battle and then renders
@@ -194,8 +207,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         achievements: data.achievements || [],
         player: data.player || null,
         playerResults: data.playerResults || null,
-        lastRound: data.lastRound || null
+        lastRound: data.lastRound || null,
+        rounds: data.rounds || []
       };
+      state.gameRunRounds = data.rounds || [];
       goTo('runComplete', { gameRunId: data.id }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load completed run';
@@ -212,7 +227,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   function requestAbandonRun() {
     if (!state.gameRun) return;
-    state.pendingAbandonPenalty = previewAbandonPenalty();
+    const player = state.gameRun.player || {};
+    const currentPoints = calculateSeasonPoints({
+      wins: player.wins || 0,
+      losses: player.losses || 0,
+      roundsCompleted: player.completedRounds || 0
+    });
+    const penalty = previewAbandonPenalty();
+    state.pendingAbandonCurrentPoints = currentPoints;
+    state.pendingAbandonPenalty = penalty;
+    state.pendingAbandonNetPoints = currentPoints + penalty;
     state.abandonConfirmOpen = true;
   }
 
@@ -250,8 +274,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         achievements: data.achievements || [],
         player: data.player || null,
         playerResults: data.playerResults || null,
-        lastRound: data.lastRound || null
+        lastRound: data.lastRound || null,
+        rounds: data.rounds || []
       };
+      state.gameRunRounds = data.rounds || [];
       state.gameRunShopOffer = [];
       await refreshBootstrap();
       goTo('runComplete', { gameRunId: data.id });

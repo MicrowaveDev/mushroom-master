@@ -1,6 +1,6 @@
 export const OnboardingScreen = {
   name: 'OnboardingScreen',
-  props: ['state', 't'],
+  props: ['state', 't', 'portraitPosition'],
   emits: ['go'],
   template: `
     <section class="onboarding-screen">
@@ -14,7 +14,14 @@ export const OnboardingScreen = {
           </ol>
           <div class="onboarding-preview">
             <div class="onboarding-preview-roster">
-              <img v-for="m in state.bootstrap.mushrooms.slice(0, 5)" :key="m.id" :src="m.imagePath" :alt="m.name[state.lang]" class="onboarding-preview-portrait" />
+              <img
+                v-for="m in state.bootstrap.mushrooms.slice(0, 5)"
+                :key="m.id"
+                :src="m.imagePath"
+                :alt="m.name[state.lang]"
+                class="onboarding-preview-portrait"
+                :style="{ objectPosition: portraitPosition(m.id) }"
+              />
             </div>
             <p class="onboarding-preview-caption">{{ t.onboardingStep1Sub }}</p>
           </div>
