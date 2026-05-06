@@ -6,9 +6,9 @@ const BOOTSTRAP_CACHE_KEY = 'mushroomBootstrapCache';
 const BOOTSTRAP_LOADER_DELAY_MS = 320;
 
 export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
-  function navigate(screen, extra = {}) {
+  function navigate(screen, extra = {}, options = {}) {
     if (typeof goTo === 'function') {
-      goTo(screen, extra);
+      goTo(screen, extra, options);
     } else {
       state.screen = screen;
     }
@@ -48,6 +48,31 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     try {
       sessionStorage.removeItem(BOOTSTRAP_CACHE_KEY);
     } catch {}
+  }
+
+  function clearSessionState() {
+    clearCachedBootstrap();
+    localStorage.removeItem('sessionKey');
+    state.sessionKey = '';
+    state.bootstrap = null;
+    state.authCode = null;
+    state.friends = [];
+    state.leaderboard = [];
+    state.wikiHome = null;
+    state.builderItems = [];
+    state.containerItems = [];
+    state.activeBags = [];
+    state.rotatedBags = [];
+    state.freshPurchases = [];
+    state.gameRun = null;
+    state.gameRunResult = null;
+    state.gameRunSummary = null;
+    state.gameRunShopOffer = [];
+    state.gameRunRefreshCount = 0;
+    state.currentBattle = null;
+    state.challenge = null;
+    state.pendingReconnectBattleId = null;
+    state.menuOpen = false;
   }
 
   function applyBootstrapData(bootstrap) {
@@ -184,9 +209,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.leaderboard = [];
       state.wikiHome = null;
       state.builderItems = [];
-      clearCachedBootstrap();
-      localStorage.removeItem('sessionKey');
-      state.sessionKey = '';
+      clearSessionState();
       navigate('auth');
     } finally {
       if (loadingTimer) clearTimeout(loadingTimer);
@@ -266,6 +289,25 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     }
   }
 
+  async function logout() {
+    clearAuthPoll();
+    const sessionKey = state.sessionKey;
+    state.error = '';
+    if (sessionKey) {
+      try {
+        await apiJson('/api/auth/logout', { method: 'POST' }, sessionKey);
+      } catch {
+        // Local logout should still clear this device even if the session
+        // already expired or the network request fails.
+      }
+    }
+    clearSessionState();
+    state.loading = false;
+    state.showLoading = true;
+    state.bootstrapReady = false;
+    navigate('auth', {}, { replaceHistory: true });
+  }
+
   /**
    * Persist the player's mushroom selection.
    *
@@ -312,6 +354,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   return {
     applyTelegramTheme, refreshBootstrap,
     loginViaTelegram, loginViaBrowserCode, loginViaDevSession,
+    logout,
     saveCharacter, saveSettings
   };
 }

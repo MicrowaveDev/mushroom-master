@@ -1,7 +1,7 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
-import { resetDevDb, createSession, api } from './e2e-helpers.js';
+import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
@@ -73,6 +73,36 @@ test('[Flow A] local dev session recovers stale run-complete URL without run id'
   await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('[data-testid="run-complete-loading"]')).toHaveCount(0);
   await expect(page).toHaveURL(/\/home$/);
+});
+
+test('[Flow A] menu logout clears the current session and returns to auth', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1002, username: 'logout_player', name: 'Logout Player' });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
+  await page.locator('.menu-toggle').click();
+  await expect(page.locator('.nav-sidebar')).toBeVisible();
+  await expect(page.getByTestId('menu-logout')).toContainText(/выйти|log out/i);
+  const logoutBox = await page.getByTestId('menu-logout').boundingBox();
+  expect(logoutBox?.y).toBeLessThan(667);
+  await saveShot(page, 'menu-logout.png');
+  await page.getByTestId('menu-logout').click();
+
+  await expect(page.locator('.auth-screen')).toBeVisible({ timeout: 10000 });
+  await expect(page).toHaveURL(/\/auth$/);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('sessionKey'))).toBeNull();
+
+  const staleSessionResponse = await request.fetch('/api/bootstrap', {
+    headers: { 'X-Session-Key': player.sessionKey }
+  });
+  expect(staleSessionResponse.status()).toBe(401);
+  const staleSessionJson = await staleSessionResponse.json();
+  expect(staleSessionJson.success).toBe(false);
+  expect(staleSessionJson.error).toMatch(/Authentication required/i);
 });
 
 // --- Flow A Step 3: first-pick auto-start ---
