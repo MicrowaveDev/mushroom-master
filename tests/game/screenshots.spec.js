@@ -9,6 +9,7 @@ import {
 import { resetDevDb, createSession, api, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 import { PORTRAIT_VARIANTS } from '../../app/server/game-data.js';
+import { replayPortraitConfig } from '../../web/src/replay-portrait-config.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
 const debugScreens = process.env.PLAYWRIGHT_SCREEN_DEBUG === '1';
@@ -72,6 +73,12 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await saveShot(page, '01-auth-gate.png');
   await assertImagesLoaded(page);
   await expect(page.locator('.auth-portrait')).toHaveCount(3);
+  await expect(page.locator('.auth-portrait[data-mushroom-id="thalla"]'))
+    .toHaveCSS('object-position', replayPortraitConfig('thalla').imagePosition);
+  await expect(page.locator('.auth-portrait[data-mushroom-id="lomie"]'))
+    .toHaveCSS('object-position', replayPortraitConfig('lomie').imagePosition);
+  await expect(page.locator('.auth-portrait[data-mushroom-id="kirt"]'))
+    .toHaveCSS('object-position', replayPortraitConfig('kirt').imagePosition);
   await expect(page.locator('.auth-title')).toBeVisible();
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await expect(page.getByRole('button', { name: /Telegram/i })).toBeVisible();

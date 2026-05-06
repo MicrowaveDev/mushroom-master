@@ -1,15 +1,34 @@
+import { replayPortraitConfig } from '../replay-portrait-config.js';
+
+const AUTH_PORTRAITS = ['thalla', 'lomie', 'kirt'].map((mushroomId) => ({
+  mushroomId,
+  src: `/portraits/${mushroomId}/default.png`,
+  objectPosition: replayPortraitConfig(mushroomId).imagePosition
+}));
+
 export const AuthScreen = {
   name: 'AuthScreen',
   props: ['state', 't', 'isLocalDevAuthEnabled'],
   emits: ['login-telegram', 'login-browser', 'login-dev'],
+  data() {
+    return {
+      authPortraits: AUTH_PORTRAITS
+    };
+  },
   template: `
     <section class="auth-screen">
       <div class="auth-hero-card panel">
         <p class="eyebrow auth-eyebrow">{{ t.title }}</p>
         <div class="auth-portraits">
-          <img src="/portraits/thalla/default.png" alt="" class="auth-portrait" />
-          <img src="/portraits/lomie/default.png" alt="" class="auth-portrait" />
-          <img src="/portraits/kirt/default.png" alt="" class="auth-portrait" />
+          <img
+            v-for="portrait in authPortraits"
+            :key="portrait.mushroomId"
+            :src="portrait.src"
+            :data-mushroom-id="portrait.mushroomId"
+            :style="{ objectPosition: portrait.objectPosition }"
+            alt=""
+            class="auth-portrait"
+          />
         </div>
         <h2 class="auth-title">{{ t.authTitle }}</h2>
         <p class="auth-tagline">{{ t.authTagline }}</p>
