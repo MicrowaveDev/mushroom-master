@@ -2,7 +2,7 @@
 
 Goal: every artifact has a real painted bitmap that renders as one Backpack Battles-style ornament across its full grid footprint. The game renders the bitmap once as a continuous overlay above the footprint; shape masks control placement cells underneath.
 
-Canonical per-artifact purpose, motivation, type, and visual intent live in [artifact-image-reference.md](artifact-image-reference.md). Keep this file focused on production workflow, validation, and script-readable queue scaffolding.
+Canonical per-artifact purpose, motivation, type, and visual intent live in [artifact-image-reference.md](artifact-image-reference.md). Candidate expansion ideas live in [artifact-expansion-catalog.md](artifact-expansion-catalog.md); promote them into the canonical reference only when they are ready for live data, bitmap generation, and validation. Keep this file focused on production workflow, validation, and script-readable queue scaffolding.
 
 The previous SVG-derived PNG placeholders were removed from `web/public/artifacts/`. Real production PNGs should be generated one batch at a time and saved as:
 
