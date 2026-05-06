@@ -86,6 +86,11 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     }
   }
 
+  function fallbackScreenAfterBootstrap() {
+    if (!state.bootstrap?.activeMushroomId) return 'onboarding';
+    return state.gameRun ? 'prep' : 'home';
+  }
+
   function scheduleLoader() {
     if (state.bootstrap) return null;
     state.showLoading = false;
@@ -130,6 +135,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       // when the ids match (§2.7 bookmarkable runs).
       const urlParams = parseStartParams();
       const urlWantsGameRun = urlParams.screen === 'game-run' && urlParams.gameRunId;
+      const urlMissingRequiredRunId = ['runComplete', 'runSummary'].includes(urlParams.screen) && !urlParams.gameRunId;
 
       // [Req 12-A/12-B] Reconnection detection: if a round was completed
       // while the player was away (e.g. challenge mode where the *opponent*
@@ -154,6 +160,8 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
 
       if (!state.bootstrap.activeMushroomId) {
         navigate('onboarding');
+      } else if (urlMissingRequiredRunId) {
+        navigate(fallbackScreenAfterBootstrap());
       } else if (urlWantsGameRun && state.gameRun && state.gameRun.id === urlParams.gameRunId) {
         navigate('prep');
       } else if (urlWantsGameRun && !state.gameRun) {

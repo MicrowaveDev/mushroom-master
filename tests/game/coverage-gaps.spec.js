@@ -50,6 +50,31 @@ test('unauthenticated redirect rewrites stale deep-link URL to auth', async ({ p
   await expect(page).toHaveURL(/\/auth$/);
 });
 
+test('[Flow A] local dev session recovers stale run-complete URL without run id', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const seededLocal = await createSession(request, {
+    telegramId: 999001,
+    username: 'local_player',
+    name: 'Local Player'
+  });
+  await api(request, seededLocal.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  const seededBootstrap = await api(request, seededLocal.sessionKey, '/api/bootstrap');
+  expect(seededBootstrap.activeMushroomId).toBe('thalla');
+  expect(seededBootstrap.activeGameRun).toBeNull();
+
+  await page.goto(baseURL, { waitUntil: 'networkidle' });
+  await expect(page.locator('.auth-screen')).toBeVisible({ timeout: 5000 });
+  const localSessionButton = page.locator('.auth-actions .ghost');
+  await expect(localSessionButton).toContainText(/локальная сессия|local session/i);
+  await localSessionButton.click();
+  await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
+
+  await page.goto(`${baseURL}/run-complete`, { waitUntil: 'networkidle' });
+  await expect(page.locator('.home')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('[data-testid="run-complete-loading"]')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/home$/);
+});
+
 // --- Flow A Step 3: first-pick auto-start ---
 
 test('[Flow A Step 3] first mushroom pick auto-starts solo run and lands on prep', async ({ page, request, baseURL }) => {

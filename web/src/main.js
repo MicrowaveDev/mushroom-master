@@ -166,12 +166,20 @@ const App = {
       gs.goTo('home');
     }
 
+    function fallbackScreenForRoute() {
+      if (!state.sessionKey) return 'auth';
+      if (!state.bootstrap?.activeMushroomId) return 'onboarding';
+      return state.gameRun ? 'prep' : 'home';
+    }
+
     async function openRoute(startParams, routeOptions = {}) {
       const options = { routeOptions };
       if (startParams.screen === 'runComplete' && startParams.gameRunId && state.sessionKey) {
         await gameRun.loadRunComplete(startParams.gameRunId, options);
       } else if (startParams.screen === 'runSummary' && startParams.gameRunId && state.sessionKey) {
         await gameRun.loadRunSummary(startParams.gameRunId, options);
+      } else if (['runComplete', 'runSummary'].includes(startParams.screen) && !startParams.gameRunId) {
+        gs.goTo(fallbackScreenForRoute(), {}, routeOptions);
       } else if (startParams.replay && state.sessionKey) {
         await replay.loadReplay(startParams.replay, options);
       } else if (startParams.challenge && state.sessionKey) {

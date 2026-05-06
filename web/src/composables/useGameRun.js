@@ -115,7 +115,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         await loadReplay(battleId);
       } else if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
         // No battleId (shouldn't happen) — fall through to the summary.
-        goTo('runComplete');
+        goTo('runComplete', { gameRunId: data.id || state.gameRun.id });
       } else {
         goTo('prep');
       }

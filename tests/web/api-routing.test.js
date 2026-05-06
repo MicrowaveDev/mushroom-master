@@ -23,7 +23,8 @@ test('run result routes carry the completed game run id and push browser history
       screen: 'runComplete',
       challenge: null,
       replay: null,
-      gameRunId: 'run_123'
+      gameRunId: 'run_123',
+      profilePlayerId: null
     });
 
     setScreenQuery('runComplete', { gameRunId: 'run_456' });
@@ -38,7 +39,8 @@ test('run result routes carry the completed game run id and push browser history
       screen: 'runSummary',
       challenge: null,
       replay: null,
-      gameRunId: 'run_789'
+      gameRunId: 'run_789',
+      profilePlayerId: null
     });
   } finally {
     globalThis.window = oldWindow;
