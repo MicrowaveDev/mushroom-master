@@ -7,8 +7,8 @@
     "temporaryCandidatesLocation": ".agent/artifact-image-workspace/",
     "productionImageLocation": "web/public/artifacts/"
   },
-  "artifactCount": 45,
-  "metadataHash": "7bcf74fc6159d7d94022b0c7b46d3565f2a82df702926fa289592a9f84399a8b",
+  "artifactCount": 63,
+  "metadataHash": "3579e8a120835b01b6941d05719ab599f5b934342ba210143f8283e95f565414",
   "artifacts": [
     {
       "id": "spore_needle",
@@ -1994,6 +1994,1050 @@
       "candidates": []
     },
     {
+      "id": "hyphae_corset_lace",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/hyphae_corset_lace.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 64437,
+        "sha256": "267f00db24fd4489b43c220a31a940b49bdab7be418f171d7caf921f7b2bd462"
+      },
+      "artifact": {
+        "id": "hyphae_corset_lace",
+        "name": {
+          "ru": "Шнуровка Гифного Корсета",
+          "en": "Hyphae Corset Lace"
+        },
+        "description": {
+          "ru": "Живая золотисто-белая шнуровка защищает и стягивает одной и той же нитью.",
+          "en": "A living gold-white lace protects and constricts with the same thread."
+        },
+        "family": "armor",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "armor": 4,
+          "stunChance": 4
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "armor",
+          "label": "Armor",
+          "hue": "moss-green",
+          "color": "#6f9b4f"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "armor",
+        "secondaryStats": [
+          "stun"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--armor",
+          "artifact-shine--bright"
+        ],
+        "prompt": "armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Hyphae Corset Lace / Шнуровка Гифного Корсета\n\n- id: `hyphae_corset_lace`\n- image: `hyphae_corset_lace.png`\n- output: `web/public/artifacts/hyphae_corset_lace.png`\n- footprint: 2x1\n- family: armor\n- visual class: Armor / moss-green\n- shine tier: Bright (bright)\n- description: Braided gold-white corset lace spanning both cells, protective knot on one side, invasive fibers on the other.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Hyphae Corset Lace / Шнуровка Гифного Корсета (hyphae_corset_lace)\nOutput file after approval: web/public/artifacts/hyphae_corset_lace.png\nFootprint: 2x1\nDescription: Braided gold-white corset lace spanning both cells, protective knot on one side, invasive fibers on the other.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: moss green, bark green, muted stone, cream, rounded protective mass, broad flat planes, at most two grain marks.\n\nVisual classification: armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "triple_knot_seed",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/triple_knot_seed.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 65551,
+        "sha256": "1fe3514439f1595b840cb681eeea0447f1c4faa0d4f9f4c9a4d29a8aa70b901e"
+      },
+      "artifact": {
+        "id": "triple_knot_seed",
+        "name": {
+          "ru": "Семя Тройного Узла",
+          "en": "Triple Knot Seed"
+        },
+        "description": {
+          "ru": "Три решетчатых зачатка держат пустоту в форме короткого, точного сбоя.",
+          "en": "Three lattice bulbs hold the void in the shape of a short, precise interruption."
+        },
+        "family": "stun",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 12,
+          "speed": 1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--bright"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Triple Knot Seed / Семя Тройного Узла\n\n- id: `triple_knot_seed`\n- image: `triple_knot_seed.png`\n- output: `web/public/artifacts/triple_knot_seed.png`\n- footprint: 2x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Bright (bright)\n- description: Three lattice bulbs joined on one black twig, violet void visible through the cells, white spores kept inside the silhouette.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Triple Knot Seed / Семя Тройного Узла (triple_knot_seed)\nOutput file after approval: web/public/artifacts/triple_knot_seed.png\nFootprint: 2x1\nDescription: Three lattice bulbs joined on one black twig, violet void visible through the cells, white spores kept inside the silhouette.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "sour_vinegar_ampoule",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/sour_vinegar_ampoule.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 43299,
+        "sha256": "ff8ce3ab00d1ff13726f1a667d299dc5c24d8af563bbe71b2106434e9d41fc5a"
+      },
+      "artifact": {
+        "id": "sour_vinegar_ampoule",
+        "name": {
+          "ru": "Ампула Синего Уксуса",
+          "en": "Sour Vinegar Ampoule"
+        },
+        "description": {
+          "ru": "Капля портального уксуса прожигает защиту раньше, чем успевает пахнуть сладко.",
+          "en": "A drop of portal vinegar bites through protection before it has time to smell sweet."
+        },
+        "family": "damage",
+        "price": 1,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "damage": 3,
+          "armor": -1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "plain",
+          "label": "Plain",
+          "rank": 1,
+          "cssClass": "artifact-shine--plain"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": null,
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--plain"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. plain shine: mostly matte, one small highlight, no glow aura."
+      },
+      "prompt": "### Sour Vinegar Ampoule / Ампула Синего Уксуса\n\n- id: `sour_vinegar_ampoule`\n- image: `sour_vinegar_ampoule.png`\n- output: `web/public/artifacts/sour_vinegar_ampoule.png`\n- footprint: 1x1\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Plain (plain)\n- description: Tiny blue-violet vinegar ampoule with amber stopper, sour vapor curl, and chunky one-cell silhouette.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Sour Vinegar Ampoule / Ампула Синего Уксуса (sour_vinegar_ampoule)\nOutput file after approval: web/public/artifacts/sour_vinegar_ampoule.png\nFootprint: 1x1\nDescription: Tiny blue-violet vinegar ampoule with amber stopper, sour vapor curl, and chunky one-cell silhouette.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. plain shine: mostly matte, one small highlight, no glow aura. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "rainpuff_mine",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/rainpuff_mine.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 70652,
+        "sha256": "29e70fa4f66ccfbe29cb43350b6d54c3a36072f9cf581ae2a049f04047251c8e"
+      },
+      "artifact": {
+        "id": "rainpuff_mine",
+        "name": {
+          "ru": "Мина-Дождевик",
+          "en": "Rainpuff Mine"
+        },
+        "description": {
+          "ru": "Плоский дождевик Кирт держит споровое давление до одного резкого хлопка.",
+          "en": "A low rainpuff trap holds spore pressure until one sharp snap."
+        },
+        "family": "stun",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 16,
+          "damage": -1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [],
+        "tradeoffs": [
+          "damage"
+        ],
+        "owner": null,
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--bright"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Rainpuff Mine / Мина-Дождевик\n\n- id: `rainpuff_mine`\n- image: `rainpuff_mine.png`\n- output: `web/public/artifacts/rainpuff_mine.png`\n- footprint: 2x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Bright (bright)\n- description: Low puffball mine with green fuse, violet spore pressure line, broad horizontal body.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Rainpuff Mine / Мина-Дождевик (rainpuff_mine)\nOutput file after approval: web/public/artifacts/rainpuff_mine.png\nFootprint: 2x1\nDescription: Low puffball mine with green fuse, violet spore pressure line, broad horizontal body.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "sound_eater_velvet",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/sound_eater_velvet.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 77430,
+        "sha256": "e2695d5b0182fa4513bde9427bddc2dd175f76ea9b2916b899e1bfb5769a81af"
+      },
+      "artifact": {
+        "id": "sound_eater_velvet",
+        "name": {
+          "ru": "Бархат Пожирателя Звука",
+          "en": "Sound-Eater Velvet"
+        },
+        "description": {
+          "ru": "Белая плесневая складка из склепа гасит удар так же тихо, как голос.",
+          "en": "A fold of white crypt mold muffles a blow as quietly as it muffles a voice."
+        },
+        "family": "armor",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "armor": 4,
+          "stunChance": 6,
+          "speed": -1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "armor",
+          "label": "Armor",
+          "hue": "moss-green",
+          "color": "#6f9b4f"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "armor",
+        "secondaryStats": [
+          "stun"
+        ],
+        "tradeoffs": [
+          "speed"
+        ],
+        "owner": null,
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--armor",
+          "artifact-shine--bright"
+        ],
+        "prompt": "armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Sound-Eater Velvet / Бархат Пожирателя Звука\n\n- id: `sound_eater_velvet`\n- image: `sound_eater_velvet.png`\n- output: `web/public/artifacts/sound_eater_velvet.png`\n- footprint: 2x1\n- family: armor\n- visual class: Armor / moss-green\n- shine tier: Bright (bright)\n- description: Folded white mold-velvet pad absorbing a black sound ripple across the whole horizontal footprint.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Sound-Eater Velvet / Бархат Пожирателя Звука (sound_eater_velvet)\nOutput file after approval: web/public/artifacts/sound_eater_velvet.png\nFootprint: 2x1\nDescription: Folded white mold-velvet pad absorbing a black sound ripple across the whole horizontal footprint.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: moss green, bark green, muted stone, cream, rounded protective mass, broad flat planes, at most two grain marks.\n\nVisual classification: armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "afterimage_cap",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/afterimage_cap.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 71767,
+        "sha256": "2fbdfec55e0c1faa05daf2628934765846626afa2dc67a6b1a850e4a4b4e6643"
+      },
+      "artifact": {
+        "id": "afterimage_cap",
+        "name": {
+          "ru": "Шляпка-Послеслед",
+          "en": "Afterimage Cap"
+        },
+        "description": {
+          "ru": "Шляпка оставляет световой след в двух местах сразу, сбивая ритм противника.",
+          "en": "The cap leaves light in two places at once, knocking the enemy off rhythm."
+        },
+        "family": "stun",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 10,
+          "speed": 2
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--bright"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Afterimage Cap / Шляпка-Послеслед\n\n- id: `afterimage_cap`\n- image: `afterimage_cap.png`\n- output: `web/public/artifacts/afterimage_cap.png`\n- footprint: 2x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Bright (bright)\n- description: Cap smeared into two flash silhouettes across the footprint, left origin and right afterimage connected by light.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Afterimage Cap / Шляпка-Послеслед (afterimage_cap)\nOutput file after approval: web/public/artifacts/afterimage_cap.png\nFootprint: 2x1\nDescription: Cap smeared into two flash silhouettes across the footprint, left origin and right afterimage connected by light.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "bone_cocoon_greaves",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/bone_cocoon_greaves.png",
+      "png": {
+        "width": 160,
+        "height": 320,
+        "size": 67108,
+        "sha256": "11534f9660fa6b4aa14932b1e1b81ad2ef2ce3f890d5305262af9042f2941037"
+      },
+      "artifact": {
+        "id": "bone_cocoon_greaves",
+        "name": {
+          "ru": "Поножи Костяного Кокона",
+          "en": "Bone Cocoon Greaves"
+        },
+        "description": {
+          "ru": "Кость и белая грибница срастаются в тяжелую защиту для долгого боя.",
+          "en": "Bone and white mycelium knit into heavy protection for a long fight."
+        },
+        "family": "armor",
+        "price": 2,
+        "width": 1,
+        "height": 2,
+        "shape": null,
+        "bonus": {
+          "armor": 5,
+          "speed": -1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "armor",
+          "label": "Armor",
+          "hue": "moss-green",
+          "color": "#6f9b4f"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "armor",
+        "secondaryStats": [],
+        "tradeoffs": [
+          "speed"
+        ],
+        "owner": null,
+        "footprintType": "tall",
+        "cssClasses": [
+          "artifact-role--armor",
+          "artifact-shine--bright"
+        ],
+        "prompt": "armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Bone Cocoon Greaves / Поножи Костяного Кокона\n\n- id: `bone_cocoon_greaves`\n- image: `bone_cocoon_greaves.png`\n- output: `web/public/artifacts/bone_cocoon_greaves.png`\n- footprint: 1x2\n- family: armor\n- visual class: Armor / moss-green\n- shine tier: Bright (bright)\n- description: Tall bone-white leg armor wrapped in golden mycelium, strong upper plate and grounded lower greave.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Bone Cocoon Greaves / Поножи Костяного Кокона (bone_cocoon_greaves)\nOutput file after approval: web/public/artifacts/bone_cocoon_greaves.png\nFootprint: 1x2\nDescription: Tall bone-white leg armor wrapped in golden mycelium, strong upper plate and grounded lower greave.\nShape rule: 1x2 vertical: strictly top-to-bottom object, filling 82-94% of the canvas height and 70-88% of the canvas width; every cell contains a visible continuation of the same object\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: moss green, bark green, muted stone, cream, rounded protective mass, broad flat planes, at most two grain marks.\n\nVisual classification: armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 320
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "mirrorfloor_shard",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/mirrorfloor_shard.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 36002,
+        "sha256": "6471ad6fc5b613c00861f3f1bc6d2a3088bdda4fdb0b257baaff83cf913a3d45"
+      },
+      "artifact": {
+        "id": "mirrorfloor_shard",
+        "name": {
+          "ru": "Осколок Зеркального Пола",
+          "en": "Mirrorfloor Shard"
+        },
+        "description": {
+          "ru": "Черное стекло Ломиэ отражает удар чуть раньше, чем он становится настоящим.",
+          "en": "Lomie black glass reflects a strike a fraction before it becomes real."
+        },
+        "family": "armor",
+        "price": 1,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "armor": 2,
+          "speed": 1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "armor",
+          "label": "Armor",
+          "hue": "moss-green",
+          "color": "#6f9b4f"
+        },
+        "shine": {
+          "id": "plain",
+          "label": "Plain",
+          "rank": 1,
+          "cssClass": "artifact-shine--plain"
+        },
+        "primaryStatKey": "armor",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--armor",
+          "artifact-shine--plain"
+        ],
+        "prompt": "armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. plain shine: mostly matte, one small highlight, no glow aura."
+      },
+      "prompt": "### Mirrorfloor Shard / Осколок Зеркального Пола\n\n- id: `mirrorfloor_shard`\n- image: `mirrorfloor_shard.png`\n- output: `web/public/artifacts/mirrorfloor_shard.png`\n- footprint: 1x1\n- family: armor\n- visual class: Armor / moss-green\n- shine tier: Plain (plain)\n- description: Black mirror-glass shard reflecting cold portal light, wide enough to avoid a thin sliver.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Mirrorfloor Shard / Осколок Зеркального Пола (mirrorfloor_shard)\nOutput file after approval: web/public/artifacts/mirrorfloor_shard.png\nFootprint: 1x1\nDescription: Black mirror-glass shard reflecting cold portal light, wide enough to avoid a thin sliver.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: moss green, bark green, muted stone, cream, rounded protective mass, broad flat planes, at most two grain marks.\n\nVisual classification: armor class color: moss green, olive, bark brown, muted stone, warm cream highlight. plain shine: mostly matte, one small highlight, no glow aura. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "overpressure_retort",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/overpressure_retort.png",
+      "png": {
+        "width": 320,
+        "height": 320,
+        "size": 153538,
+        "sha256": "8e4f9c87e95496e6c0f4048f56c28398a9cdf78de960f2cdb630565a6808f7c0"
+      },
+      "artifact": {
+        "id": "overpressure_retort",
+        "name": {
+          "ru": "Перегретая Реторта",
+          "en": "Overpressure Retort"
+        },
+        "description": {
+          "ru": "Лабораторная ошибка Аксилин, которую никто не успел запретить до взрыва.",
+          "en": "An Axilin lab accident nobody managed to forbid before it became useful."
+        },
+        "family": "damage",
+        "price": 3,
+        "width": 2,
+        "height": 2,
+        "shape": null,
+        "bonus": {
+          "damage": 9,
+          "speed": 1,
+          "armor": -2
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "radiant",
+          "label": "Radiant",
+          "rank": 3,
+          "cssClass": "artifact-shine--radiant"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": null,
+        "footprintType": "block",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--radiant"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray."
+      },
+      "prompt": "### Overpressure Retort / Перегретая Реторта\n\n- id: `overpressure_retort`\n- image: `overpressure_retort.png`\n- output: `web/public/artifacts/overpressure_retort.png`\n- footprint: 2x2\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Radiant (radiant)\n- description: Bulging amber retort about to pop; organic glass body, green pressure bubbles, one connected object filling all four cells.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Overpressure Retort / Перегретая Реторта (overpressure_retort)\nOutput file after approval: web/public/artifacts/overpressure_retort.png\nFootprint: 2x2\nDescription: Bulging amber retort about to pop; organic glass body, green pressure bubbles, one connected object filling all four cells.\nShape rule: 2x2 block: one centered blocky object filling all quadrants evenly, with meaningful content in every occupied cell\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 320
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "green_star_sight",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/green_star_sight.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 33559,
+        "sha256": "43de14fe7edc85b81bd79027ecd0dc125607853e0702728a2b50e47050543dad"
+      },
+      "artifact": {
+        "id": "green_star_sight",
+        "name": {
+          "ru": "Прицел Зеленой Звезды",
+          "en": "Green Star Sight"
+        },
+        "description": {
+          "ru": "Малый прицельный знак Кирт ловит темп цели раньше руки.",
+          "en": "Kirt small sight-mark catches the target rhythm before the hand does."
+        },
+        "family": "damage",
+        "price": 1,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "damage": 2,
+          "speed": 1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "plain",
+          "label": "Plain",
+          "rank": 1,
+          "cssClass": "artifact-shine--plain"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [],
+        "owner": null,
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--plain"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. plain shine: mostly matte, one small highlight, no glow aura."
+      },
+      "prompt": "### Green Star Sight / Прицел Зеленой Звезды\n\n- id: `green_star_sight`\n- image: `green_star_sight.png`\n- output: `web/public/artifacts/green_star_sight.png`\n- footprint: 1x1\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Plain (plain)\n- description: Neon-green targeting sight charm with a violet arrow notch and broad star silhouette.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Green Star Sight / Прицел Зеленой Звезды (green_star_sight)\nOutput file after approval: web/public/artifacts/green_star_sight.png\nFootprint: 1x1\nDescription: Neon-green targeting sight charm with a violet arrow notch and broad star silhouette.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. plain shine: mostly matte, one small highlight, no glow aura. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "ash_library_urn",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/ash_library_urn.png",
+      "png": {
+        "width": 320,
+        "height": 320,
+        "size": 171140,
+        "sha256": "3f15de8c03f0e252b3922b4ce8ba502472a680d9011461ce0322818696c1c2ae"
+      },
+      "artifact": {
+        "id": "ash_library_urn",
+        "name": {
+          "ru": "Урна Библиотеки Пыли",
+          "en": "Ash Library Urn"
+        },
+        "description": {
+          "ru": "Прах старых артефактов помнит, как заставить сопротивление замолчать.",
+          "en": "The dust of old artifacts remembers how to make resistance fall silent."
+        },
+        "family": "stun",
+        "price": 3,
+        "width": 2,
+        "height": 2,
+        "shape": null,
+        "bonus": {
+          "stunChance": 24,
+          "armor": 3,
+          "damage": -2
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "radiant",
+          "label": "Radiant",
+          "rank": 3,
+          "cssClass": "artifact-shine--radiant"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "armor"
+        ],
+        "tradeoffs": [
+          "damage"
+        ],
+        "owner": null,
+        "footprintType": "block",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--radiant"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray."
+      },
+      "prompt": "### Ash Library Urn / Урна Библиотеки Пыли\n\n- id: `ash_library_urn`\n- image: `ash_library_urn.png`\n- output: `web/public/artifacts/ash_library_urn.png`\n- footprint: 2x2\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Radiant (radiant)\n- description: Square ceremonial urn of gray artifact dust, black lid, pale mold seal, one heavy object filling all quadrants.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Ash Library Urn / Урна Библиотеки Пыли (ash_library_urn)\nOutput file after approval: web/public/artifacts/ash_library_urn.png\nFootprint: 2x2\nDescription: Square ceremonial urn of gray artifact dust, black lid, pale mold seal, one heavy object filling all quadrants.\nShape rule: 2x2 block: one centered blocky object filling all quadrants evenly, with meaningful content in every occupied cell\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 320
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "flashstep_tendon",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/flashstep_tendon.png",
+      "png": {
+        "width": 160,
+        "height": 320,
+        "size": 54966,
+        "sha256": "9909cb35a05309a0f47e0b12968ef57734da1298c9d9814b17ab0d33c4193758"
+      },
+      "artifact": {
+        "id": "flashstep_tendon",
+        "name": {
+          "ru": "Сухожилие Мгновенного Шага",
+          "en": "Flashstep Tendon"
+        },
+        "description": {
+          "ru": "Живое сухожилие натянуто между двумя вспышками и дергает владельца вперед.",
+          "en": "A living tendon stretched between two flashes pulls its bearer forward."
+        },
+        "family": "damage",
+        "price": 2,
+        "width": 1,
+        "height": 2,
+        "shape": null,
+        "bonus": {
+          "damage": 4,
+          "speed": 2,
+          "armor": -1
+        },
+        "starterOnly": false,
+        "characterItem": null,
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "bright",
+          "label": "Bright",
+          "rank": 2,
+          "cssClass": "artifact-shine--bright"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": null,
+        "footprintType": "tall",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--bright"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow."
+      },
+      "prompt": "### Flashstep Tendon / Сухожилие Мгновенного Шага\n\n- id: `flashstep_tendon`\n- image: `flashstep_tendon.png`\n- output: `web/public/artifacts/flashstep_tendon.png`\n- footprint: 1x2\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Bright (bright)\n- description: Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Flashstep Tendon / Сухожилие Мгновенного Шага (flashstep_tendon)\nOutput file after approval: web/public/artifacts/flashstep_tendon.png\nFootprint: 1x2\nDescription: Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette.\nShape rule: 1x2 vertical: strictly top-to-bottom object, filling 82-94% of the canvas height and 70-88% of the canvas width; every cell contains a visible continuation of the same object\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 320
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
       "id": "thalla_sacred_thread",
       "status": "approved",
       "outputPath": "web/public/artifacts/thalla_sacred_thread.png",
@@ -2490,6 +3534,531 @@
         "pngDimensions": {
           "width": 160,
           "height": 320
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "thalla_golden_veil_pin",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/thalla_golden_veil_pin.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 37889,
+        "sha256": "a5e13aa0005d9874333c0b69ab6489a8bd80a7d9f54df20577cf1b2feb4cc187"
+      },
+      "artifact": {
+        "id": "thalla_golden_veil_pin",
+        "name": {
+          "ru": "Булавка Золотой Вуали",
+          "en": "Thalla's Golden Veil Pin"
+        },
+        "description": null,
+        "family": "stun",
+        "price": 1,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 7
+        },
+        "starterOnly": false,
+        "characterItem": {
+          "mushroomId": "thalla",
+          "requiredLevel": 8
+        },
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "signature",
+          "label": "Signature",
+          "rank": 4,
+          "cssClass": "artifact-shine--signature"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [],
+        "tradeoffs": [],
+        "owner": "thalla",
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--signature"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette."
+      },
+      "prompt": "### Thalla's Golden Veil Pin / Булавка Золотой Вуали\n\n- id: `thalla_golden_veil_pin`\n- image: `thalla_golden_veil_pin.png`\n- output: `web/public/artifacts/thalla_golden_veil_pin.png`\n- footprint: 1x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Signature (signature)\n- description: Sacred gold pin with a small trailing veil and contained pale cyan biostasis glint.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Thalla's Golden Veil Pin / Булавка Золотой Вуали (thalla_golden_veil_pin)\nOutput file after approval: web/public/artifacts/thalla_golden_veil_pin.png\nFootprint: 1x1\nDescription: Sacred gold pin with a small trailing veil and contained pale cyan biostasis glint.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "lomie_portal_dust_vial",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/lomie_portal_dust_vial.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 51086,
+        "sha256": "51f22eef433ae879d1f28a8480fa40dad8bf8c94296053aafa477abb49da5b5e"
+      },
+      "artifact": {
+        "id": "lomie_portal_dust_vial",
+        "name": {
+          "ru": "Склянка Портальной Пыли Ломиэ",
+          "en": "Lomie's Portal Dust Vial"
+        },
+        "description": null,
+        "family": "stun",
+        "price": 1,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 6,
+          "speed": 1
+        },
+        "starterOnly": false,
+        "characterItem": {
+          "mushroomId": "lomie",
+          "requiredLevel": 8
+        },
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "signature",
+          "label": "Signature",
+          "rank": 4,
+          "cssClass": "artifact-shine--signature"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [],
+        "owner": "lomie",
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--signature"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette."
+      },
+      "prompt": "### Lomie's Portal Dust Vial / Склянка Портальной Пыли Ломиэ\n\n- id: `lomie_portal_dust_vial`\n- image: `lomie_portal_dust_vial.png`\n- output: `web/public/artifacts/lomie_portal_dust_vial.png`\n- footprint: 1x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Signature (signature)\n- description: Tiny vial of violet-green portal dust, white star-spores escaping through a cork, broad glass body.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Lomie's Portal Dust Vial / Склянка Портальной Пыли Ломиэ (lomie_portal_dust_vial)\nOutput file after approval: web/public/artifacts/lomie_portal_dust_vial.png\nFootprint: 1x1\nDescription: Tiny vial of violet-green portal dust, white star-spores escaping through a cork, broad glass body.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "axilin_ginger_bite_root",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/axilin_ginger_bite_root.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 43536,
+        "sha256": "596bc235ff3ff6228cd5ca419a06ad54ade9e05dcf25694d8a0e404b89218269"
+      },
+      "artifact": {
+        "id": "axilin_ginger_bite_root",
+        "name": {
+          "ru": "Кусающий Имбирный Корень Аксилин",
+          "en": "Axilin's Ginger Bite Root"
+        },
+        "description": null,
+        "family": "damage",
+        "price": 2,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "damage": 4,
+          "speed": 1,
+          "armor": -1
+        },
+        "starterOnly": false,
+        "characterItem": {
+          "mushroomId": "axilin",
+          "requiredLevel": 8
+        },
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "signature",
+          "label": "Signature",
+          "rank": 4,
+          "cssClass": "artifact-shine--signature"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": "axilin",
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--signature"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette."
+      },
+      "prompt": "### Axilin's Ginger Bite Root / Кусающий Имбирный Корень Аксилин\n\n- id: `axilin_ginger_bite_root`\n- image: `axilin_ginger_bite_root.png`\n- output: `web/public/artifacts/axilin_ginger_bite_root.png`\n- footprint: 1x1\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Signature (signature)\n- description: Angry mandrake-like ginger root charm with one bitten side and amber bubbles.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Axilin's Ginger Bite Root / Кусающий Имбирный Корень Аксилин (axilin_ginger_bite_root)\nOutput file after approval: web/public/artifacts/axilin_ginger_bite_root.png\nFootprint: 1x1\nDescription: Angry mandrake-like ginger root charm with one bitten side and amber bubbles.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "kirt_mantrap_claws",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/kirt_mantrap_claws.png",
+      "png": {
+        "width": 320,
+        "height": 160,
+        "size": 75070,
+        "sha256": "9af291f74a6cdb93e3e56b1cfe733bd8c08ae865f9f0baea6692caea73ec8894"
+      },
+      "artifact": {
+        "id": "kirt_mantrap_claws",
+        "name": {
+          "ru": "Когти-Ловушки Кирт",
+          "en": "Kirt's Mantrap Claws"
+        },
+        "description": null,
+        "family": "damage",
+        "price": 2,
+        "width": 2,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "damage": 5,
+          "stunChance": 5,
+          "armor": -1
+        },
+        "starterOnly": false,
+        "characterItem": {
+          "mushroomId": "kirt",
+          "requiredLevel": 8
+        },
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "signature",
+          "label": "Signature",
+          "rank": 4,
+          "cssClass": "artifact-shine--signature"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [
+          "stun"
+        ],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": "kirt",
+        "footprintType": "wide",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--signature"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette."
+      },
+      "prompt": "### Kirt's Mantrap Claws / Когти-Ловушки Кирт\n\n- id: `kirt_mantrap_claws`\n- image: `kirt_mantrap_claws.png`\n- output: `web/public/artifacts/kirt_mantrap_claws.png`\n- footprint: 2x1\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Signature (signature)\n- description: Paired carnivorous clamp-claws snapping shut, violet hinge, neon-green toothed inner lips, one horizontal object.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Kirt's Mantrap Claws / Когти-Ловушки Кирт (kirt_mantrap_claws)\nOutput file after approval: web/public/artifacts/kirt_mantrap_claws.png\nFootprint: 2x1\nDescription: Paired carnivorous clamp-claws snapping shut, violet hinge, neon-green toothed inner lips, one horizontal object.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 320,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "morga_first_bloom_spur",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/morga_first_bloom_spur.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 38569,
+        "sha256": "5d29760e9b77d5a51885bc94699c0c0108929d1fae2e68c6a0b7cf1f65368079"
+      },
+      "artifact": {
+        "id": "morga_first_bloom_spur",
+        "name": {
+          "ru": "Шпора Первого Цвета Морги",
+          "en": "Morga's First Bloom Spur"
+        },
+        "description": null,
+        "family": "damage",
+        "price": 2,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "damage": 3,
+          "speed": 2,
+          "armor": -1
+        },
+        "starterOnly": false,
+        "characterItem": {
+          "mushroomId": "morga",
+          "requiredLevel": 8
+        },
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "damage",
+          "label": "Damage",
+          "hue": "amber-red",
+          "color": "#d9612b"
+        },
+        "shine": {
+          "id": "signature",
+          "label": "Signature",
+          "rank": 4,
+          "cssClass": "artifact-shine--signature"
+        },
+        "primaryStatKey": "damage",
+        "secondaryStats": [
+          "speed"
+        ],
+        "tradeoffs": [
+          "armor"
+        ],
+        "owner": "morga",
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--damage",
+          "artifact-shine--signature"
+        ],
+        "prompt": "damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette."
+      },
+      "prompt": "### Morga's First Bloom Spur / Шпора Первого Цвета Морги\n\n- id: `morga_first_bloom_spur`\n- image: `morga_first_bloom_spur.png`\n- output: `web/public/artifacts/morga_first_bloom_spur.png`\n- footprint: 1x1\n- family: damage\n- visual class: Damage / amber-red\n- shine tier: Signature (signature)\n- description: Sharp bloom-spur bursting forward with a short flash trail, chunky flower-thorn silhouette.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Morga's First Bloom Spur / Шпора Первого Цвета Морги (morga_first_bloom_spur)\nOutput file after approval: web/public/artifacts/morga_first_bloom_spur.png\nFootprint: 1x1\nDescription: Sharp bloom-spur bursting forward with a short flash trail, chunky flower-thorn silhouette.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: amber, orange, red, burnt sienna, dark contour, compact cap/head/guard mass, simple sharp silhouette.\n\nVisual classification: damage class color: saturated amber, red-orange, burnt sienna, warm cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
+        },
+        "checks": [
+          "png-rgba",
+          "footprint-divisibility",
+          "alpha-coverage",
+          "per-cell-coverage",
+          "edge-padding",
+          "margin-balance",
+          "fresh-from-imagegen-raw"
+        ]
+      },
+      "review": {
+        "decision": "approved",
+        "decidedAt": "2026-05-01",
+        "reviewer": "user",
+        "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
+      },
+      "candidates": []
+    },
+    {
+      "id": "dalamar_pallid_moth_pin",
+      "status": "approved",
+      "outputPath": "web/public/artifacts/dalamar_pallid_moth_pin.png",
+      "png": {
+        "width": 160,
+        "height": 160,
+        "size": 37023,
+        "sha256": "fce2cd7457082cbf732328b6d4aee9a71f95c0181b9f2d22defd812e8859a03c"
+      },
+      "artifact": {
+        "id": "dalamar_pallid_moth_pin",
+        "name": {
+          "ru": "Булавка Бледной Моли Даламар",
+          "en": "Dalamar's Pallid Moth Pin"
+        },
+        "description": null,
+        "family": "stun",
+        "price": 1,
+        "width": 1,
+        "height": 1,
+        "shape": null,
+        "bonus": {
+          "stunChance": 8,
+          "armor": 1,
+          "damage": -1
+        },
+        "starterOnly": false,
+        "characterItem": {
+          "mushroomId": "dalamar",
+          "requiredLevel": 8
+        },
+        "slotCount": null
+      },
+      "visualClassification": {
+        "role": {
+          "id": "stun",
+          "label": "Stun",
+          "hue": "gold-yellow",
+          "color": "#d5b735"
+        },
+        "shine": {
+          "id": "signature",
+          "label": "Signature",
+          "rank": 4,
+          "cssClass": "artifact-shine--signature"
+        },
+        "primaryStatKey": "stunChance",
+        "secondaryStats": [
+          "armor"
+        ],
+        "tradeoffs": [
+          "damage"
+        ],
+        "owner": "dalamar",
+        "footprintType": "single",
+        "cssClasses": [
+          "artifact-role--stun",
+          "artifact-shine--signature"
+        ],
+        "prompt": "stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette."
+      },
+      "prompt": "### Dalamar's Pallid Moth Pin / Булавка Бледной Моли Даламар\n\n- id: `dalamar_pallid_moth_pin`\n- image: `dalamar_pallid_moth_pin.png`\n- output: `web/public/artifacts/dalamar_pallid_moth_pin.png`\n- footprint: 1x1\n- family: stun\n- visual class: Stun / gold-yellow\n- shine tier: Signature (signature)\n- description: Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Dalamar's Pallid Moth Pin / Булавка Бледной Моли Даламар (dalamar_pallid_moth_pin)\nOutput file after approval: web/public/artifacts/dalamar_pallid_moth_pin.png\nFootprint: 1x1\nDescription: Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle.\nShape rule: 1x1: one centered compact symbol filling about 72-88% of the cell on both axes; visible silhouette should cover at least 28% of the canvas; no skinny diagonal line or tiny centered prop\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: yellow-green, pale gold, electric olive, smoky cream, contained glow marks, simple spore beads.\n\nVisual classification: stun class color: pale gold, yellow-green, electric olive, smoky cream highlight. signature shine: distinctive hero-item highlight, saturated accent, one emblem-like glow contained inside the silhouette. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "validation": {
+        "status": "passed",
+        "command": "npm run game:artifacts:validate -- --all",
+        "checkedAt": "2026-05-01",
+        "pngDimensions": {
+          "width": 160,
+          "height": 160
         },
         "checks": [
           "png-rgba",
