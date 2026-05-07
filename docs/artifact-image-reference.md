@@ -33,6 +33,14 @@ web/public/artifacts/{artifact_id}.png
 | `overpressure_retort` | Expansion damage, `2x2`, radiant. | A large volatile attack commitment for players who want a high-risk damage spike. | Bulging amber retort about to pop; glassy organic body, green pressure bubbles, one connected object filling all four cells. |
 | `green_star_sight` | Expansion damage/speed, `1x1`, plain. | A compact tempo pickup inspired by Kirt's targeting star. | Small neon-green sight charm with a violet arrow notch, broad star silhouette, no tiny crosshair lines. |
 | `flashstep_tendon` | Expansion damage/speed, `1x2`, bright. | A vertical speed-risk piece that echoes Morga's snap-forward initiative. | Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette. |
+| `rotlight_lantern` | Deep lore damage/armor, `2x1`, bright. | Thalla-adjacent rotlight that gives attack builds a warmer defensive branch. | Horizontal bone lantern with warm gold rotlight inside and chunky side caps, filling both cells. |
+| `portal_cut_sickle` | Deep lore damage/speed, `2x1`, bright. | Lomie route-cutting fantasy for fragile tempo attackers. | Curved void sickle crossing a violet portal edge, broad blade mass across both cells. |
+| `ferment_sea_pearl` | Deep lore damage, `2x2`, radiant. | Axilin-style high-risk pressure object for late-run damage spikes. | Heavy amber pearl with green pressure bubbles and sour cracks, one round blocky body filling all quadrants. |
+| `spore_burst_arrow` | Deep lore damage/control, `2x1`, bright. | Kirt bio-archery item that mixes strike and interruption without new mechanics. | Chunky arrow pod with violet shaft and green puffball warhead, connected left-to-right. |
+| `rustbone_key` | Deep lore damage/control, `1x2`, bright. | Dalamar dead-gate motif as a tall attack charm. | Tall black-bone key corroding into ash at the teeth, broad bow at top and heavy key bit below. |
+| `snaplight_husk` | Deep lore damage/speed, `2x1`, bright. | Morga snap-burst fantasy for faster risky strike builds. | Split seed husk mid-snap with a bright contained flash line between two chunky halves. |
+| `amber_needle_swarm` | Deep lore damage, `2x2`, radiant. | Ygg-Mycel stinger swarm as a large aggressive commitment with speed/armor tradeoffs. | Cluster of thick amber stingers orbiting one resin node, dense connected block rather than loose particles. |
+| `crownthorn_cleaver` | Deep lore damage, `1x2`, bright. | Thorn Crown branch made into a vertical heavy strike piece. | Vertical black-branch cleaver with green resin teeth, broad head and rooted handle. |
 
 ## Armor
 
@@ -49,6 +57,14 @@ web/public/artifacts/{artifact_id}.png
 | `sound_eater_velvet` | Expansion armor/control, `2x1`, bright. | Dalamar crypt material for slower defensive control builds. | Folded white mold-velvet pad absorbing a black sound ripple across the whole horizontal footprint. |
 | `bone_cocoon_greaves` | Expansion armor, `1x2`, bright. | Heavy vertical protection with a speed tradeoff. | Tall bone-white leg armor wrapped in golden mycelium, strong upper plate and grounded lower greave. |
 | `mirrorfloor_shard` | Expansion armor/speed, `1x1`, plain. | A tiny Lomie defensive-tempo piece that feels precise rather than bulky. | Black mirror-glass shard reflecting cold portal light, wide enough to avoid reading as a thin sliver. |
+| `star_spore_sash` | Deep lore armor/speed, `2x1`, bright. | Lomie star-spore clothing as a light defensive tempo pickup. | Flowing indigo sash with white spore constellations, one connected ribbon across both cells. |
+| `trophy_helm_plate` | Deep lore armor, `1x1`, plain. | Kirt trophy-wall scrap that gives small defense with a speed tradeoff. | Bitten metal plate patched with green resin, square enough to read as armor. |
+| `gingerroot_filter` | Deep lore armor/damage, `1x2`, bright. | Axilin ginger companion motif turned into a defensive converter. | Tall root-filter cartridge with amber fluid draining through it, rooted top and heavy lower chamber. |
+| `voidglass_pauldron` | Deep lore armor/speed, `1x2`, bright. | Lomie voidglass protection with precise movement flavor. | Tall green-violet glass shoulder plate with a black slit, broad enough for one-cell width. |
+| `golden_garden_carapace` | Deep lore armor/control, `2x2`, radiant. | Thalla/Golden Reliquary heavy garden shell for defensive control builds. | Broad shell grown from gold oyster caps and white mycelium, one heavy object filling all quadrants. |
+| `amber_resin_shield` | Deep lore armor, `2x1`, bright. | Axilin stabilized resin as a wide durable shield with tempo cost. | Wide amber shield with trapped bubbles and bark rim, strong horizontal face. |
+| `porcelain_mold_mask` | Deep lore armor/control, `1x1`, bright. | Dalamar porcelain decay made into a compact defensive charm. | White porcelain face shard with black eye hollow and green mold sparks, chunky mask silhouette. |
+| `living_bark_latch` | Deep lore armor/damage, `1x1`, plain. | Ygg-Mycel living tissue as a small flexible clasp. | Small bark clasp that looks like it is breathing, moss hinge and cream highlight. |
 
 ## Stun
 
@@ -66,6 +82,14 @@ web/public/artifacts/{artifact_id}.png
 | `rainpuff_mine` | Expansion stun, `2x1`, bright. | Kirt-style trap fantasy with a damage tradeoff. | Low puffball mine with green fuse, violet spore pressure line, broad horizontal body. |
 | `afterimage_cap` | Expansion stun/speed, `2x1`, bright. | Morga tempo-control piece that should feel fast without adding hidden mechanics. | A cap smeared into two flash silhouettes across the footprint, left origin and right afterimage connected by light. |
 | `ash_library_urn` | Expansion stun/armor, `2x2`, radiant. | Big Dalamar control commitment with defensive support and damage tradeoff. | Square ceremonial urn of gray artifact dust, black lid, pale mold seal, one heavy object filling all quadrants. |
+| `body_memory_splinter` | Deep lore stun/damage, `1x1`, bright. | Thalla body-memory theme as a compact interrupt charm with a speed tradeoff. | Warm flesh-gold shard wrapped in white nerve mycelium, compact but not needle-thin. |
+| `ramaria_snare` | Deep lore stun/damage, `1x2`, bright. | Kirt coral-fungus trap for tall control planning. | Tall branching coral-fungus snare with neon green tips and connected lower root. |
+| `ashen_heart_smoke` | Deep lore stun/armor, `1x2`, bright. | Dalamar censer plume for slow heavy control builds. | Vertical plume from a tiny bone censer, gray-white smoke with a dense readable silhouette. |
+| `silent_bell_mold` | Deep lore stun/armor, `2x2`, radiant. | Crypt silence as a large control commitment. | Bell-shaped mold mass, black clapper swallowed by white fuzz, one blocky object filling all quadrants. |
+| `crystal_rift_chime` | Deep lore stun/speed, `1x2`, bright. | Lomie rift sound as vertical tempo control. | Tall crystal chime with split violet-green light and thick dark rim. |
+| `biostasis_crown_seed` | Deep lore stun/armor, `2x2`, radiant. | Golden Reliquary sacred control object for high-cost builds. | Crown-like seed pod, sacred and heavy, with pale cyan glints and broad base. |
+| `spore_snow_globe` | Deep lore stun/armor, `1x1`, plain. | Dalamar ash snow as a tiny defensive-control pickup. | Tiny globe of gray-white spore snow over black roots, round clear silhouette. |
+| `forgotten_crossroads_ring` | Deep lore stun/damage, `2x1`, bright. | Lomie/Thalla crossroads as a wide hybrid control charm. | Ring split between violet void and gold mycelium teeth, stretched as one horizontal emblem. |
 
 ## Hybrid / Utility
 

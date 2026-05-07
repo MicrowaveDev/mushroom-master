@@ -2,9 +2,9 @@
 
 **Purpose:** candidate artifact ideas for turning the current catalog into a fuller game-feeling loot pool.
 
-The live game currently has 45 artifact definitions in `app/server/game-data.js`: 24 normal combat artifacts, 6 character shop items, 8 shop bags, 6 signature starters, and the starter bag. This catalog proposes 68 more candidates: 18 in the first implementation wave and 50 reserve candidates. That would bring the long-term concept pool to 113 artifacts before future mechanic-only ideas.
+The live game currently has 87 artifact definitions in `app/server/game-data.js`: 60 normal combat artifacts, 12 character shop items, 8 shop bags, 6 signature starters, and the starter bag. This catalog originally proposed 68 more candidates; the 18-item priority batch and 24-item general shop wave have been promoted into live data. The remaining reserve pool focuses on future character ladder items, bag/container variety, and mechanic-gated ideas.
 
-This is intentionally not wired into `game-data.js` yet. Live shop artifacts need production bitmap assets, image provenance, visual-classification snapshot updates, and balance validation. Use this doc as the source list for the next implementation batches.
+Rows marked as promoted are wired into `game-data.js`; remaining rows are still candidates. Future live shop promotions need production bitmap assets, image provenance, visual-classification snapshot updates, and balance validation. Use this doc as the source list for future implementation batches.
 
 ## Guardrails
 
@@ -18,7 +18,7 @@ This is intentionally not wired into `game-data.js` yet. Live shop artifacts nee
 
 These 18 are the strongest first implementation wave: broad silhouettes, clear stats, and strong lore hooks. Start here if the next task is "make them playable".
 
-**Status:** promoted to live gameplay data on the follow-up pass. They currently use approved `imageId` proxy art so the shop/grid does not render blank while dedicated PNGs are generated. Their unique PNGs remain queued in `docs/artifact-bitmap-todolist.md`.
+**Status:** promoted to live gameplay data on the follow-up pass. They now use dedicated production PNGs under `web/public/artifacts/`, with provenance and visual-classification coverage refreshed alongside the general shop wave.
 
 | ID | Name | Source | Role | Size | Cost | Candidate bonus | Visual target |
 | --- | --- | --- | --- | ---: | ---: | --- | --- |
@@ -43,7 +43,7 @@ These 18 are the strongest first implementation wave: broad silhouettes, clear s
 
 ## General Shop Candidates
 
-These are not character-gated. They should roll in normal shops once their images are ready.
+These are not character-gated. The full 24-item wave below has been promoted into live shop data as the second content expansion wave; their production PNGs are tracked by `docs/artifact-bitmap-todolist.md`.
 
 ### Damage
 

@@ -160,6 +160,14 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `overpressure_retort.png` - `overpressure_retort`, 2x2. Bulging amber retort about to pop; organic glass body, green pressure bubbles, one connected object filling all four cells.
 - [ ] `green_star_sight.png` - `green_star_sight`, 1x1. Neon-green targeting sight charm with a violet arrow notch and broad star silhouette.
 - [ ] `flashstep_tendon.png` - `flashstep_tendon`, 1x2. Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette.
+- [ ] `rotlight_lantern.png` - `rotlight_lantern`, 2x1. Horizontal bone lantern with warm gold rotlight inside and chunky side caps, filling both cells.
+- [ ] `portal_cut_sickle.png` - `portal_cut_sickle`, 2x1. Curved void sickle crossing a violet portal edge, broad blade mass across both cells.
+- [ ] `ferment_sea_pearl.png` - `ferment_sea_pearl`, 2x2. Heavy amber pearl with green pressure bubbles and sour cracks, one round blocky body filling all quadrants.
+- [ ] `spore_burst_arrow.png` - `spore_burst_arrow`, 2x1. Chunky arrow pod with violet shaft and green puffball warhead, connected left-to-right.
+- [ ] `rustbone_key.png` - `rustbone_key`, 1x2. Tall black-bone key corroding into ash at the teeth, broad bow at top and heavy key bit below.
+- [ ] `snaplight_husk.png` - `snaplight_husk`, 2x1. Split seed husk mid-snap with a bright contained flash line between two chunky halves.
+- [ ] `amber_needle_swarm.png` - `amber_needle_swarm`, 2x2. Cluster of thick amber stingers orbiting one resin node, dense connected block rather than loose particles.
+- [ ] `crownthorn_cleaver.png` - `crownthorn_cleaver`, 1x2. Vertical black-branch cleaver with green resin teeth, broad head and rooted handle.
 
 ### Armor
 
@@ -174,6 +182,14 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `sound_eater_velvet.png` - `sound_eater_velvet`, 2x1. Folded white mold-velvet pad absorbing a black sound ripple across the whole horizontal footprint.
 - [ ] `bone_cocoon_greaves.png` - `bone_cocoon_greaves`, 1x2. Tall bone-white leg armor wrapped in golden mycelium, strong upper plate and grounded lower greave.
 - [ ] `mirrorfloor_shard.png` - `mirrorfloor_shard`, 1x1. Black mirror-glass shard reflecting cold portal light, wide enough to avoid a thin sliver.
+- [ ] `star_spore_sash.png` - `star_spore_sash`, 2x1. Flowing indigo sash with white spore constellations, one connected ribbon across both cells.
+- [ ] `trophy_helm_plate.png` - `trophy_helm_plate`, 1x1. Bitten metal plate patched with green resin, square enough to read as armor.
+- [ ] `gingerroot_filter.png` - `gingerroot_filter`, 1x2. Tall root-filter cartridge with amber fluid draining through it, rooted top and heavy lower chamber.
+- [ ] `voidglass_pauldron.png` - `voidglass_pauldron`, 1x2. Tall green-violet glass shoulder plate with a black slit, broad enough for one-cell width.
+- [ ] `golden_garden_carapace.png` - `golden_garden_carapace`, 2x2. Broad shell grown from gold oyster caps and white mycelium, one heavy object filling all quadrants.
+- [ ] `amber_resin_shield.png` - `amber_resin_shield`, 2x1. Wide amber shield with trapped bubbles and bark rim, strong horizontal face.
+- [ ] `porcelain_mold_mask.png` - `porcelain_mold_mask`, 1x1. White porcelain face shard with black eye hollow and green mold sparks, chunky mask silhouette.
+- [ ] `living_bark_latch.png` - `living_bark_latch`, 1x1. Small bark clasp that looks like it is breathing, moss hinge and cream highlight.
 
 ### Stun
 
@@ -189,6 +205,14 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `rainpuff_mine.png` - `rainpuff_mine`, 2x1. Low puffball mine with green fuse, violet spore pressure line, broad horizontal body.
 - [ ] `afterimage_cap.png` - `afterimage_cap`, 2x1. Cap smeared into two flash silhouettes across the footprint, left origin and right afterimage connected by light.
 - [ ] `ash_library_urn.png` - `ash_library_urn`, 2x2. Square ceremonial urn of gray artifact dust, black lid, pale mold seal, one heavy object filling all quadrants.
+- [ ] `body_memory_splinter.png` - `body_memory_splinter`, 1x1. Warm flesh-gold shard wrapped in white nerve mycelium, compact but not needle-thin.
+- [ ] `ramaria_snare.png` - `ramaria_snare`, 1x2. Tall branching coral-fungus snare with neon green tips and connected lower root.
+- [ ] `ashen_heart_smoke.png` - `ashen_heart_smoke`, 1x2. Vertical plume from a tiny bone censer, gray-white smoke with a dense readable silhouette.
+- [ ] `silent_bell_mold.png` - `silent_bell_mold`, 2x2. Bell-shaped mold mass, black clapper swallowed by white fuzz, one blocky object filling all quadrants.
+- [ ] `crystal_rift_chime.png` - `crystal_rift_chime`, 1x2. Tall crystal chime with split violet-green light and thick dark rim.
+- [ ] `biostasis_crown_seed.png` - `biostasis_crown_seed`, 2x2. Crown-like seed pod, sacred and heavy, with pale cyan glints and broad base.
+- [ ] `spore_snow_globe.png` - `spore_snow_globe`, 1x1. Tiny globe of gray-white spore snow over black roots, round clear silhouette.
+- [ ] `forgotten_crossroads_ring.png` - `forgotten_crossroads_ring`, 2x1. Ring split between violet void and gold mycelium teeth, stretched as one horizontal emblem.
 
 ### Hybrid / Utility
 

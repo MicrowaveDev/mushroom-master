@@ -407,12 +407,10 @@ export const artifacts = [
   },
   // --- Priority expansion artifacts ---
   // Promoted from docs/artifact-expansion-catalog.md. These are gameplay-live
-  // stat artifacts that fit the current combat contract. `imageId` points at
-  // approved temporary proxy art; dedicated PNGs remain queued by
-  // npm run game:artifacts:next.
+  // stat artifacts that fit the current combat contract. Dedicated PNGs live
+  // under web/public/artifacts and are required by the artifact workflow.
   {
     id: 'hyphae_corset_lace',
-    imageId: 'mycelium_wrap',
     name: { ru: 'Шнуровка Гифного Корсета', en: 'Hyphae Corset Lace' },
     family: 'armor',
     width: 2,
@@ -427,7 +425,6 @@ export const artifacts = [
   },
   {
     id: 'triple_knot_seed',
-    imageId: 'lomie_crystal_lattice',
     name: { ru: 'Семя Тройного Узла', en: 'Triple Knot Seed' },
     family: 'stun',
     width: 2,
@@ -442,7 +439,6 @@ export const artifacts = [
   },
   {
     id: 'sour_vinegar_ampoule',
-    imageId: 'bubbling_grot_bomb',
     name: { ru: 'Ампула Синего Уксуса', en: 'Sour Vinegar Ampoule' },
     family: 'damage',
     width: 1,
@@ -457,7 +453,6 @@ export const artifacts = [
   },
   {
     id: 'rainpuff_mine',
-    imageId: 'thunder_gill',
     name: { ru: 'Мина-Дождевик', en: 'Rainpuff Mine' },
     family: 'stun',
     width: 2,
@@ -472,7 +467,6 @@ export const artifacts = [
   },
   {
     id: 'sound_eater_velvet',
-    imageId: 'mycelium_wrap',
     name: { ru: 'Бархат Пожирателя Звука', en: 'Sound-Eater Velvet' },
     family: 'armor',
     width: 2,
@@ -487,7 +481,6 @@ export const artifacts = [
   },
   {
     id: 'afterimage_cap',
-    imageId: 'morga_flash_seed',
     name: { ru: 'Шляпка-Послеслед', en: 'Afterimage Cap' },
     family: 'stun',
     width: 2,
@@ -502,7 +495,6 @@ export const artifacts = [
   },
   {
     id: 'bone_cocoon_greaves',
-    imageId: 'stone_cap',
     name: { ru: 'Поножи Костяного Кокона', en: 'Bone Cocoon Greaves' },
     family: 'armor',
     width: 1,
@@ -517,7 +509,6 @@ export const artifacts = [
   },
   {
     id: 'mirrorfloor_shard',
-    imageId: 'bark_plate',
     name: { ru: 'Осколок Зеркального Пола', en: 'Mirrorfloor Shard' },
     family: 'armor',
     width: 1,
@@ -532,7 +523,6 @@ export const artifacts = [
   },
   {
     id: 'overpressure_retort',
-    imageId: 'burning_cap',
     name: { ru: 'Перегретая Реторта', en: 'Overpressure Retort' },
     family: 'damage',
     width: 2,
@@ -547,7 +537,6 @@ export const artifacts = [
   },
   {
     id: 'green_star_sight',
-    imageId: 'haste_wisp',
     name: { ru: 'Прицел Зеленой Звезды', en: 'Green Star Sight' },
     family: 'damage',
     width: 1,
@@ -562,7 +551,6 @@ export const artifacts = [
   },
   {
     id: 'ash_library_urn',
-    imageId: 'spark_spore',
     name: { ru: 'Урна Библиотеки Пыли', en: 'Ash Library Urn' },
     family: 'stun',
     width: 2,
@@ -577,7 +565,6 @@ export const artifacts = [
   },
   {
     id: 'flashstep_tendon',
-    imageId: 'amber_fang',
     name: { ru: 'Сухожилие Мгновенного Шага', en: 'Flashstep Tendon' },
     family: 'damage',
     width: 1,
@@ -589,6 +576,369 @@ export const artifacts = [
       en: 'A living tendon stretched between two flashes pulls its bearer forward.'
     },
     battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' }
+  },
+  // --- Deep lore artifact wave ---
+  // General shop items from the reserve catalog. They stay inside the current
+  // combat contract: visible stats only, with battleEffect as replay flavor.
+  {
+    id: 'rotlight_lantern',
+    name: { ru: 'Фонарь Гнилостного Света', en: 'Rotlight Lantern' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 4, armor: 1 },
+    description: {
+      ru: 'Костяной фонарь кормит удар теплым светом распада и не дает ему рассыпаться.',
+      en: 'A bone lantern feeds each strike with warm rotlight and keeps it from falling apart.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'thalla-rotlight'
+  },
+  {
+    id: 'portal_cut_sickle',
+    name: { ru: 'Серп Портального Разреза', en: 'Portal-Cut Sickle' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 5, speed: 1, armor: -2 },
+    description: {
+      ru: 'Лезвие Ломиэ режет не плоть, а короткий путь между защитой и болью.',
+      en: 'A Lomie blade cuts the shortcut between protection and pain.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'crystal-rifts'
+  },
+  {
+    id: 'ferment_sea_pearl',
+    name: { ru: 'Жемчужина Моря Ферментации', en: 'Fermentation Sea Pearl' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 8, speed: 1, armor: -2 },
+    description: {
+      ru: 'Тяжелая янтарная жемчужина бурлит так громко, что ее используют как оружие.',
+      en: 'A heavy amber pearl ferments loudly enough to be used as a weapon.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'fermentation-sea'
+  },
+  {
+    id: 'spore_burst_arrow',
+    name: { ru: 'Споровзрывная Стрела', en: 'Spore-Burst Arrow' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 6, stunChance: 4, armor: -2 },
+    description: {
+      ru: 'Живой наконечник Кирт взрывается спорами в тот же миг, когда находит щель.',
+      en: 'Kirt living arrowhead bursts into spores the moment it finds a gap.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'thorn-crown'
+  },
+  {
+    id: 'rustbone_key',
+    name: { ru: 'Ржавокостный Ключ', en: 'Rustbone Key' },
+    family: 'damage',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { damage: 4, stunChance: 5 },
+    description: {
+      ru: 'Ключ Даламара открывает старые ворота так же легко, как свежую рану.',
+      en: 'Dalamar key opens old gates as easily as it opens a fresh wound.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'dead-gates'
+  },
+  {
+    id: 'snaplight_husk',
+    name: { ru: 'Щелкающая Свето-Шелуха', en: 'Snaplight Husk' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 4, speed: 2, armor: -1 },
+    description: {
+      ru: 'Шелуха Морги раскрывается щелчком и оставляет после себя только удар.',
+      en: 'Morga husk snaps open and leaves only the strike behind.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'morga-snaplight'
+  },
+  {
+    id: 'amber_needle_swarm',
+    name: { ru: 'Рой Янтарных Игл', en: 'Amber Needle Swarm' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 9, speed: -1, armor: -2 },
+    description: {
+      ru: 'Смоляной узел держит толстые жала вокруг себя, пока они не находят цель.',
+      en: 'A resin node holds thick stingers in orbit until they find a target.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'ygg-mycel'
+  },
+  {
+    id: 'crownthorn_cleaver',
+    name: { ru: 'Колючий Секач Кроны', en: 'Crownthorn Cleaver' },
+    family: 'damage',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { damage: 5, armor: -1 },
+    description: {
+      ru: 'Черная ветвь Терновой Кроны заточена не металлом, а голодной смолой.',
+      en: 'A black Thorn Crown branch sharpened with hungry resin instead of metal.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'thorn-crown'
+  },
+  {
+    id: 'star_spore_sash',
+    name: { ru: 'Пояс Звездных Спор', en: 'Star-Spore Sash' },
+    family: 'armor',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { armor: 3, speed: 1 },
+    description: {
+      ru: 'Лента Ломиэ переводит входящий удар на соседнюю звезду и возвращает темп владельцу.',
+      en: 'Lomie sash routes an incoming blow through a neighboring star and returns tempo to its wearer.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'glass-mycelium'
+  },
+  {
+    id: 'trophy_helm_plate',
+    name: { ru: 'Пластина Трофейного Шлема', en: 'Trophy Helm Plate' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { armor: 3, speed: -1 },
+    description: {
+      ru: 'Надкушенная пластина из стены трофеев Кирт все еще помнит, как держать удар.',
+      en: 'A bitten plate from Kirt trophy wall still remembers how to hold a blow.'
+    },
+    battleEffect: { id: 'poison', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'kirt-trophy-wall'
+  },
+  {
+    id: 'gingerroot_filter',
+    name: { ru: 'Имбирный Фильтр', en: 'Gingerroot Filter' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 3, damage: 1 },
+    description: {
+      ru: 'Живой имбирный фильтр Аксилин процеживает яд так долго, что он становится полезным.',
+      en: 'Axilin living ginger filter strains poison until it becomes useful.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'axilin-ginger'
+  },
+  {
+    id: 'voidglass_pauldron',
+    name: { ru: 'Пустотный Наплечник', en: 'Voidglass Pauldron' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 4, speed: 1 },
+    description: {
+      ru: 'Зеленое стекло Ломиэ держит пустоту у плеча и сдвигает удар в сторону.',
+      en: 'Lomie green glass keeps void at the shoulder and shifts the strike aside.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'void-glass'
+  },
+  {
+    id: 'golden_garden_carapace',
+    name: { ru: 'Панцирь Золотого Сада', en: 'Golden Garden Carapace' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { armor: 7, stunChance: 4, damage: -1 },
+    description: {
+      ru: 'Золотые вешенки и белая грибница срастаются в тяжелую садовую корону.',
+      en: 'Golden oyster caps and white mycelium grow into a heavy garden crown.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'golden-reliquary'
+  },
+  {
+    id: 'amber_resin_shield',
+    name: { ru: 'Щит Янтарной Смолы', en: 'Amber Resin Shield' },
+    family: 'armor',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { armor: 5, speed: -1 },
+    description: {
+      ru: 'Смола Аксилин застыла как раз перед тем, как должна была взорваться.',
+      en: 'Axilin resin hardened just before it was supposed to explode.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'bubbling-grot'
+  },
+  {
+    id: 'porcelain_mold_mask',
+    name: { ru: 'Фарфоровая Маска Плесени', en: 'Porcelain Mold Mask' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { armor: 3, stunChance: 4 },
+    description: {
+      ru: 'Белая маска Даламара не защищает лицо, а убеждает удар забыть о нем.',
+      en: 'Dalamar white mask does not protect the face so much as persuade the blow to forget it.'
+    },
+    battleEffect: { id: 'decay', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'dalamar-crypt'
+  },
+  {
+    id: 'living_bark_latch',
+    name: { ru: 'Живая Кора-Застежка', en: 'Living Bark Latch' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { armor: 2, damage: 1 },
+    description: {
+      ru: 'Маленькая застежка Йог-Мицела дышит вместе с владельцем и держится крепче стали.',
+      en: 'A small Ygg-Mycel latch breathes with its wearer and grips harder than steel.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'ygg-mycel'
+  },
+  {
+    id: 'body_memory_splinter',
+    name: { ru: 'Осколок Памяти Тела', en: 'Body-Memory Splinter' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 10, damage: 1, speed: -1 },
+    description: {
+      ru: 'Теплый осколок напоминает телу, кем оно было, и на миг сбивает движение.',
+      en: 'A warm splinter reminds the body what it used to be and interrupts its motion.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'thalla-body-memory'
+  },
+  {
+    id: 'ramaria_snare',
+    name: { ru: 'Рамариевая Петля', en: 'Ramaria Snare' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 12, damage: 2 },
+    description: {
+      ru: 'Коралловая петля Кирт растет туда, где противник собирался сделать следующий шаг.',
+      en: 'Kirt coral snare grows exactly where the enemy planned to step next.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'thorn-crown'
+  },
+  {
+    id: 'ashen_heart_smoke',
+    name: { ru: 'Дым Пепельного Сердца', en: 'Ashen Heart Smoke' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 14, armor: 1, speed: -1 },
+    description: {
+      ru: 'Дым из сердца Даламара тяжелый, как обещание, которое никто не произнес.',
+      en: 'Smoke from Dalamar heart is as heavy as a promise nobody spoke aloud.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'dalamar-censer'
+  },
+  {
+    id: 'silent_bell_mold',
+    name: { ru: 'Плесень Беззвучного Колокола', en: 'Silent Bell Mold' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { stunChance: 26, armor: 2, damage: -2 },
+    description: {
+      ru: 'Колокол из белой плесени не звонит; он просто забирает звук у удара.',
+      en: 'A white mold bell does not ring; it takes the sound away from the blow.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'silent-crypt'
+  },
+  {
+    id: 'crystal_rift_chime',
+    name: { ru: 'Звон Хрустального Разлома', en: 'Crystal Rift Chime' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 15, speed: 1, armor: -1 },
+    description: {
+      ru: 'Разлом Ломиэ звенит только внутри костей, поэтому от него трудно увернуться.',
+      en: 'Lomie rift chimes only inside the bones, which makes it hard to dodge.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'crystal-rifts'
+  },
+  {
+    id: 'biostasis_crown_seed',
+    name: { ru: 'Семя Короны Биостазиса', en: 'Biostasis Crown Seed' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { stunChance: 22, armor: 3, speed: -2 },
+    description: {
+      ru: 'Тяжелое семя Реликвария держит время в форме короны и давит ею на врага.',
+      en: 'A heavy Reliquary seed holds time in the shape of a crown and presses it onto the enemy.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'golden-reliquary'
+  },
+  {
+    id: 'spore_snow_globe',
+    name: { ru: 'Шар Спорового Снега', en: 'Spore Snow Globe' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { stunChance: 7, armor: 1 },
+    description: {
+      ru: 'Внутри маленького шара падает пепельный снег, который никто не может стряхнуть.',
+      en: 'Inside the tiny globe falls ash snow nobody can shake off.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'dalamar-ash-snow'
+  },
+  {
+    id: 'forgotten_crossroads_ring',
+    name: { ru: 'Кольцо Забытого Перекрестка', en: 'Forgotten Crossroads Ring' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 9, damage: 2 },
+    description: {
+      ru: 'Кольцо сшивает золотой путь Тхаллы и черный путь Ломиэ в один неверный шаг.',
+      en: 'The ring stitches Thalla golden path and Lomie black path into one uncertain step.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'forgotten-crossroads'
   },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. The level-5 tier has one per
@@ -663,7 +1013,6 @@ export const artifacts = [
   // Level-8 character items from the priority expansion wave.
   {
     id: 'thalla_golden_veil_pin',
-    imageId: 'reliquary_biostasis_seal',
     name: { ru: 'Булавка Золотой Вуали', en: 'Thalla\'s Golden Veil Pin' },
     family: 'stun',
     width: 1,
@@ -675,7 +1024,6 @@ export const artifacts = [
   },
   {
     id: 'lomie_portal_dust_vial',
-    imageId: 'glimmer_cap',
     name: { ru: 'Склянка Портальной Пыли Ломиэ', en: 'Lomie\'s Portal Dust Vial' },
     family: 'stun',
     width: 1,
@@ -687,7 +1035,6 @@ export const artifacts = [
   },
   {
     id: 'axilin_ginger_bite_root',
-    imageId: 'ferment_phial',
     name: { ru: 'Кусающий Имбирный Корень Аксилин', en: 'Axilin\'s Ginger Bite Root' },
     family: 'damage',
     width: 1,
@@ -699,7 +1046,6 @@ export const artifacts = [
   },
   {
     id: 'kirt_mantrap_claws',
-    imageId: 'fang_whip',
     name: { ru: 'Когти-Ловушки Кирт', en: 'Kirt\'s Mantrap Claws' },
     family: 'damage',
     width: 2,
@@ -711,7 +1057,6 @@ export const artifacts = [
   },
   {
     id: 'morga_first_bloom_spur',
-    imageId: 'flash_cap',
     name: { ru: 'Шпора Первого Цвета Морги', en: 'Morga\'s First Bloom Spur' },
     family: 'damage',
     width: 1,
@@ -723,7 +1068,6 @@ export const artifacts = [
   },
   {
     id: 'dalamar_pallid_moth_pin',
-    imageId: 'entropy_shard',
     name: { ru: 'Булавка Бледной Моли Даламар', en: 'Dalamar\'s Pallid Moth Pin' },
     family: 'stun',
     width: 1,
