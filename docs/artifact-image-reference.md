@@ -41,6 +41,12 @@ web/public/artifacts/{artifact_id}.png
 | `snaplight_husk` | Deep lore damage/speed, `2x1`, bright. | Morga snap-burst fantasy for faster risky strike builds. | Split seed husk mid-snap with a bright contained flash line between two chunky halves. |
 | `amber_needle_swarm` | Deep lore damage, `2x2`, radiant. | Ygg-Mycel stinger swarm as a large aggressive commitment with speed/armor tradeoffs. | Cluster of thick amber stingers orbiting one resin node, dense connected block rather than loose particles. |
 | `crownthorn_cleaver` | Deep lore damage, `1x2`, bright. | Thorn Crown branch made into a vertical heavy strike piece. | Vertical black-branch cleaver with green resin teeth, broad head and rooted handle. |
+| `heartwood_splinter_bow` | Circle relic damage/armor, `2x1`, bright. | Ygg-Mycel heartwood as a balanced strike piece that helps attackers survive. | Horizontal black heartwood bow with green resin string and one amber arrowbud, chunky across both cells. |
+| `blue_vinegar_chakram` | Circle relic damage/control, `2x1`, bright. | Axilin blue vinegar shaped into a risky slicing ring with interruption flavor. | Wide blue-violet vinegar chakram with amber stopper nodes and contained green fizz, broad ring silhouette. |
+| `first_bloom_cinder` | Circle relic damage/speed, `1x1`, bright. | Morga opener fantasy in a compact cell: fast, hot, and fragile. | Compact orange flower-coal with cap-like petals and one white flash slash, filling one cell. |
+| `dead_city_nail` | Circle relic damage/control, `1x2`, bright. | Dalamar dead-gate hardware turned into a slow heavy puncture charm. | Tall black-bone nail with ash cap at top and corroded tooth point below, thick vertical silhouette. |
+| `golden_spore_mace` | Circle relic damage/armor, `2x2`, radiant. | Thalla royal force as a large anchored attack object with defensive weight. | Heavy golden spore mace head with white mycelium haft and pale cyan biostasis marks, one blocky object. |
+| `riftfang_comet` | Circle relic damage/speed, `2x1`, bright. | Lomie rift motion as a fast fragile strike item. | Horizontal violet fang-comet with green rift tail and dark rim, broad enough to fill both cells. |
 
 ## Armor
 
@@ -65,6 +71,12 @@ web/public/artifacts/{artifact_id}.png
 | `amber_resin_shield` | Deep lore armor, `2x1`, bright. | Axilin stabilized resin as a wide durable shield with tempo cost. | Wide amber shield with trapped bubbles and bark rim, strong horizontal face. |
 | `porcelain_mold_mask` | Deep lore armor/control, `1x1`, bright. | Dalamar porcelain decay made into a compact defensive charm. | White porcelain face shard with black eye hollow and green mold sparks, chunky mask silhouette. |
 | `living_bark_latch` | Deep lore armor/damage, `1x1`, plain. | Ygg-Mycel living tissue as a small flexible clasp. | Small bark clasp that looks like it is breathing, moss hinge and cream highlight. |
+| `reliquary_bone_buckle` | Circle relic armor/control, `1x1`, plain. | A cheap Thalla defensive buckle that adds a small biostasis cue. | Compact gold-bone buckle with a sacred knot and moss-green clasp, square readable silhouette. |
+| `soft_wall_tile` | Circle relic armor/speed, `2x1`, bright. | Lomie passive as normal-shop protection: softening and repositioning in one item. | Wide translucent pale-green wall tile with crystal rim and one soft bend line across both cells. |
+| `ferment_glass_bracer` | Circle relic armor/damage, `1x2`, bright. | Axilin pressure vessel turned into a counterpunch bracer. | Tall amber glass bracer with green ferment bubbles, heavy cuff at top and lower pressure chamber. |
+| `thornhide_scale` | Circle relic armor/damage, `1x1`, plain. | Kirt hunting hide as a small armor pickup that still bites. | Square black-bark scale with one green resin thorn and cream highlight, compact and protective. |
+| `flashcap_knee_guard` | Circle relic armor/speed, `1x2`, bright. | Morga evasive defense as a tall tempo guard. | Vertical orange flashcap knee guard with moss strap and white speed stripe, connected top-to-bottom. |
+| `obsidian_throne_chip` | Circle relic armor/control, `1x2`, bright. | Dalamar throne fragment for slow defensive control. | Tall black obsidian throne shard with white mold crown and gray ash edge, broad vertical mass. |
 
 ## Stun
 
@@ -90,6 +102,12 @@ web/public/artifacts/{artifact_id}.png
 | `biostasis_crown_seed` | Deep lore stun/armor, `2x2`, radiant. | Golden Reliquary sacred control object for high-cost builds. | Crown-like seed pod, sacred and heavy, with pale cyan glints and broad base. |
 | `spore_snow_globe` | Deep lore stun/armor, `1x1`, plain. | Dalamar ash snow as a tiny defensive-control pickup. | Tiny globe of gray-white spore snow over black roots, round clear silhouette. |
 | `forgotten_crossroads_ring` | Deep lore stun/damage, `2x1`, bright. | Lomie/Thalla crossroads as a wide hybrid control charm. | Ring split between violet void and gold mycelium teeth, stretched as one horizontal emblem. |
+| `spore_lullaby_conch` | Circle relic stun/armor, `2x1`, bright. | Thalla command-over-body fantasy in a wide control charm. | Horizontal pale-gold fungal conch with white spore curls kept inside the outline and dark lip. |
+| `mirrorloop_knot` | Circle relic stun/speed, `1x1`, plain. | Lomie mirror-route logic as a tiny tempo interrupt. | Compact black-violet loop knot with green mirror highlight and one pale spore bead. |
+| `ginger_spark_bottle` | Circle relic stun/damage, `1x2`, bright. | Axilin ginger alchemy as a tall bottle that pops into disruption. | Tall ginger-shaped amber bottle with yellow spark cork and green fizz core, chunky vertical form. |
+| `abyss_bow_knot` | Circle relic stun/damage, `2x2`, radiant. | Kirt Black Wind bow material as a large risky control artifact. | Heavy black-violet bow knot with green resin eye and amber string arcs, filling all quadrants. |
+| `opening_bell_spore` | Circle relic stun/speed, `2x2`, radiant. | Morga opening tempo as a large flash-control commitment. | Bell-shaped orange spore split by a white flash petal, broad base and contained yellow glow. |
+| `entropy_scepter_tip` | Circle relic stun/armor, `1x2`, bright. | Dalamar scepter fragment as vertical ash-control support. | Tall ash-gray scepter tip with porcelain crown and black shard core, thick enough for one-cell width. |
 
 ## Hybrid / Utility
 

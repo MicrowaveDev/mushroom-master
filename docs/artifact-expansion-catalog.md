@@ -2,7 +2,7 @@
 
 **Purpose:** candidate artifact ideas for turning the current catalog into a fuller game-feeling loot pool.
 
-The live game currently has 87 artifact definitions in `app/server/game-data.js`: 60 normal combat artifacts, 12 character shop items, 8 shop bags, 6 signature starters, and the starter bag. This catalog originally proposed 68 more candidates; the 18-item priority batch and 24-item general shop wave have been promoted into live data. The remaining reserve pool focuses on future character ladder items, bag/container variety, and mechanic-gated ideas.
+The live game currently has 105 artifact definitions in `app/server/game-data.js`: 78 normal combat artifacts, 12 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, and 18-item circle relic wave have been promoted into live data. The remaining reserve pool focuses on future character ladder items, bag/container variety, and mechanic-gated ideas.
 
 Rows marked as promoted are wired into `game-data.js`; remaining rows are still candidates. Future live shop promotions need production bitmap assets, image provenance, visual-classification snapshot updates, and balance validation. Use this doc as the source list for future implementation batches.
 
@@ -83,6 +83,45 @@ These are not character-gated. The full 24-item wave below has been promoted int
 | `biostasis_crown_seed` | Biostasis Crown Seed / Семя Короны Биостазиса | Golden Reliquary | 2x2 | 3 | `stunChance +22`, `armor +3`, `speed -2` | Crown-like seed pod, sacred and heavy, with pale cyan glints. |
 | `spore_snow_globe` | Spore Snow Globe / Шар Спорового Снега | Dalamar's ash snow | 1x1 | 1 | `stunChance +7`, `armor +1` | Tiny globe of gray-white spore snow over black roots. |
 | `forgotten_crossroads_ring` | Forgotten Crossroads Ring / Кольцо Забытого Перекрестка | Lomie meets Thalla | 2x1 | 2 | `stunChance +9`, `damage +2` | Ring split between violet void and gold mycelium teeth. |
+
+## Circle Relic Shop Wave
+
+These 18 are normal-shop artifacts, not character-gated, but each one borrows a clear character or world motif. This keeps run shops feeling varied while preserving the current combat contract.
+
+**Status:** promoted to live gameplay data in the third content pass. Production PNGs live under `web/public/artifacts/`; provenance, visual-classification snapshots, and the review sheet are refreshed with the wave.
+
+### Damage
+
+| ID | Name | Lore hook | Size | Cost | Candidate bonus | Visual target |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| `heartwood_splinter_bow` | Heartwood Splinter Bow / Лук из Сердцевинной Щепы | Ygg-Mycel heartwood | 2x1 | 2 | `damage +5`, `armor +1` | Horizontal black heartwood bow with green resin string and amber arrowbud. |
+| `blue_vinegar_chakram` | Blue Vinegar Chakram / Чакрам Синего Уксуса | Axilin's blue vinegar | 2x1 | 2 | `damage +5`, `stunChance +5`, `armor -2` | Wide blue-violet vinegar ring with amber stopper nodes and green fizz. |
+| `first_bloom_cinder` | First-Bloom Cinder / Уголек Первого Цвета | Morga's opening burst | 1x1 | 2 | `damage +3`, `speed +2`, `armor -1` | Compact flower-coal with orange cap petals and one flash slash. |
+| `dead_city_nail` | Dead City Nail / Гвоздь Мертвого Города | Dalamar dead gates | 1x2 | 2 | `damage +5`, `stunChance +4`, `speed -1` | Tall black-bone nail with ash cap and corroded point. |
+| `golden_spore_mace` | Golden Spore Mace / Булава Золотых Спор | Thalla's royal force | 2x2 | 3 | `damage +8`, `armor +2`, `speed -2` | Heavy golden spore mace with white mycelium haft and cyan biostasis marks. |
+| `riftfang_comet` | Riftfang Comet / Комета Разломного Клыка | Lomie crystal rifts | 2x1 | 2 | `damage +6`, `speed +1`, `armor -1` | Horizontal violet fang-comet with green rift tail. |
+
+### Armor
+
+| ID | Name | Lore hook | Size | Cost | Candidate bonus | Visual target |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| `reliquary_bone_buckle` | Reliquary Bone Buckle / Костяная Пряжка Реликвария | Golden Reliquary regalia | 1x1 | 1 | `armor +2`, `stunChance +3` | Compact gold-bone buckle with sacred knot and moss-green clasp. |
+| `soft_wall_tile` | Soft Wall Tile / Плитка Мягкой Стены | Lomie's passive wall | 2x1 | 2 | `armor +4`, `speed +1` | Wide translucent wall tile with crystal rim and soft bend line. |
+| `ferment_glass_bracer` | Ferment-Glass Bracer / Браслет Ферментного Стекла | Axilin pressure glass | 1x2 | 2 | `armor +4`, `damage +1`, `speed -1` | Tall amber glass bracer with ferment bubbles and pressure chamber. |
+| `thornhide_scale` | Thornhide Scale / Чешуя Терновой Кожи | Kirt's hunting hide | 1x1 | 1 | `armor +3`, `damage +1` | Square black-bark scale with green resin thorn. |
+| `flashcap_knee_guard` | Flashcap Knee Guard / Наколенник Вспышечной Шляпки | Morga evasive armor | 1x2 | 2 | `armor +3`, `speed +2`, `damage -1` | Vertical orange flashcap guard with moss strap and white speed stripe. |
+| `obsidian_throne_chip` | Obsidian Throne Chip / Осколок Обсидианового Трона | Dalamar's throne | 1x2 | 2 | `armor +5`, `stunChance +4`, `speed -1` | Tall black throne shard with white mold crown and ash edge. |
+
+### Stun And Control
+
+| ID | Name | Lore hook | Size | Cost | Candidate bonus | Visual target |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| `spore_lullaby_conch` | Spore Lullaby Conch / Раковина Споровой Колыбельной | Thalla body-command | 2x1 | 2 | `stunChance +12`, `armor +1` | Horizontal pale-gold fungal conch with contained white spore curls. |
+| `mirrorloop_knot` | Mirrorloop Knot / Узел Зеркальной Петли | Lomie mirror route | 1x1 | 1 | `stunChance +7`, `speed +1` | Compact black-violet loop knot with green mirror highlight. |
+| `ginger_spark_bottle` | Ginger Spark Bottle / Бутыль Имбирной Искры | Axilin ginger alchemy | 1x2 | 2 | `stunChance +11`, `damage +2`, `armor -1` | Tall ginger-shaped bottle with yellow spark cork and green fizz core. |
+| `abyss_bow_knot` | Abyss Bow Knot / Узел Лука Бездны | Kirt's Black Wind bow | 2x2 | 3 | `stunChance +20`, `damage +3`, `armor -2` | Heavy black-violet bow knot with green resin eye and amber string arcs. |
+| `opening_bell_spore` | Opening Bell Spore / Спора Вступительного Колокола | Morga opener tempo | 2x2 | 3 | `stunChance +18`, `speed +2`, `armor -2` | Bell-shaped orange spore split by a white flash petal. |
+| `entropy_scepter_tip` | Entropy Scepter Tip / Наконечник Скипетра Энтропии | Dalamar entropy scepter | 1x2 | 2 | `stunChance +14`, `armor +2`, `damage -1` | Tall ash-gray scepter tip with porcelain crown and black shard core. |
 
 ## Character Shop Ladder
 

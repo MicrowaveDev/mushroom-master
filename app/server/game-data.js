@@ -940,6 +940,279 @@ export const artifacts = [
     battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     loreSource: 'forgotten-crossroads'
   },
+  // --- Circle relic artifact wave ---
+  // A third normal-shop expansion pass. Each item pulls from one character's
+  // lore domain while staying in the visible-stat combat model.
+  {
+    id: 'heartwood_splinter_bow',
+    name: { ru: 'Лук из Сердцевинной Щепы', en: 'Heartwood Splinter Bow' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 5, armor: 1 },
+    description: {
+      ru: 'Черная сердцевина Йог-Мицела гнется в лук, который укрепляет руку вместе с выстрелом.',
+      en: 'Black Ygg-Mycel heartwood bends into a bow that braces the hand as it strikes.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'ygg-mycel-heartwood'
+  },
+  {
+    id: 'blue_vinegar_chakram',
+    name: { ru: 'Чакрам Синего Уксуса', en: 'Blue Vinegar Chakram' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 5, stunChance: 5, armor: -2 },
+    description: {
+      ru: 'Кольцо уксуса Аксилин режет защиту кругом и оставляет после себя кислую паузу.',
+      en: 'Axilin vinegar ring cuts a circle through armor and leaves a sour pause behind.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'axilin-blue-vinegar'
+  },
+  {
+    id: 'first_bloom_cinder',
+    name: { ru: 'Уголек Первого Цвета', en: 'First-Bloom Cinder' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { damage: 3, speed: 2, armor: -1 },
+    description: {
+      ru: 'Малый уголь Морги вспыхивает до того, как бой успевает назвать свой первый шаг.',
+      en: 'A small Morga cinder flares before the fight can name its first step.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'morga-first-bloom'
+  },
+  {
+    id: 'dead_city_nail',
+    name: { ru: 'Гвоздь Мертвого Города', en: 'Dead City Nail' },
+    family: 'damage',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { damage: 5, stunChance: 4, speed: -1 },
+    description: {
+      ru: 'Ржавый гвоздь Даламара держит ворота закрытыми даже после того, как становится оружием.',
+      en: 'Dalamar rusted nail keeps the gate shut even after it becomes a weapon.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'dead-city'
+  },
+  {
+    id: 'golden_spore_mace',
+    name: { ru: 'Булава Золотых Спор', en: 'Golden Spore Mace' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 8, armor: 2, speed: -2 },
+    description: {
+      ru: 'Тяжелая реликвия Тхаллы бьет как царский запрет и держит владельца на месте.',
+      en: 'A heavy Thalla relic hits like a royal interdiction and anchors its bearer.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'golden-reliquary'
+  },
+  {
+    id: 'riftfang_comet',
+    name: { ru: 'Комета Разломного Клыка', en: 'Riftfang Comet' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 6, speed: 1, armor: -1 },
+    description: {
+      ru: 'Клык Ломиэ оставляет за собой короткий зеленый разлом вместо хвоста.',
+      en: 'A Lomie fang leaves a short green rift behind it instead of a tail.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'crystal-rifts'
+  },
+  {
+    id: 'reliquary_bone_buckle',
+    name: { ru: 'Костяная Пряжка Реликвария', en: 'Reliquary Bone Buckle' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { armor: 2, stunChance: 3 },
+    description: {
+      ru: 'Священная пряжка не закрывает весь удар, но убеждает его задержаться.',
+      en: 'The sacred buckle does not stop the whole blow, but persuades it to linger.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'golden-reliquary'
+  },
+  {
+    id: 'soft_wall_tile',
+    name: { ru: 'Плитка Мягкой Стены', en: 'Soft Wall Tile' },
+    family: 'armor',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { armor: 4, speed: 1 },
+    description: {
+      ru: 'Оседающая плитка Ломиэ принимает форму удара и сдвигает владельца в сторону.',
+      en: 'Lomie settling tile takes the shape of the blow and nudges its bearer aside.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'soft-wall'
+  },
+  {
+    id: 'ferment_glass_bracer',
+    name: { ru: 'Браслет Ферментного Стекла', en: 'Ferment-Glass Bracer' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 4, damage: 1, speed: -1 },
+    description: {
+      ru: 'Браслет Аксилин держит давление в стекле до тех пор, пока рука не ударит обратно.',
+      en: 'Axilin bracer keeps pressure in the glass until the hand strikes back.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'bubbling-grot'
+  },
+  {
+    id: 'thornhide_scale',
+    name: { ru: 'Чешуя Терновой Кожи', en: 'Thornhide Scale' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { armor: 3, damage: 1 },
+    description: {
+      ru: 'Черная чешуя Кирт не ждет атаки: она царапает первой.',
+      en: 'Kirt black scale does not wait for the attack; it scratches first.'
+    },
+    battleEffect: { id: 'poison', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'thorn-crown'
+  },
+  {
+    id: 'flashcap_knee_guard',
+    name: { ru: 'Наколенник Вспышечной Шляпки', en: 'Flashcap Knee Guard' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 3, speed: 2, damage: -1 },
+    description: {
+      ru: 'Защита Морги легче щита: она просто оказывается там, где удар уже опоздал.',
+      en: 'Morga guard is lighter than a shield: it is simply where the blow arrives too late.'
+    },
+    battleEffect: { id: 'flash', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'morga-flashcap'
+  },
+  {
+    id: 'obsidian_throne_chip',
+    name: { ru: 'Осколок Обсидианового Трона', en: 'Obsidian Throne Chip' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 5, stunChance: 4, speed: -1 },
+    description: {
+      ru: 'Трон Даламара крошится медленно; даже осколок заставляет бой говорить тише.',
+      en: 'Dalamar throne crumbles slowly; even a chip makes the fight speak softer.'
+    },
+    battleEffect: { id: 'decay', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'obsidian-throne'
+  },
+  {
+    id: 'spore_lullaby_conch',
+    name: { ru: 'Раковина Споровой Колыбельной', en: 'Spore Lullaby Conch' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 12, armor: 1 },
+    description: {
+      ru: 'Тхалла хранит в раковине не звук, а приказ телу уснуть на долю мгновения.',
+      en: 'Thalla conch stores not sound, but an order for the body to sleep for a fraction.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'thalla-spore-lullaby'
+  },
+  {
+    id: 'mirrorloop_knot',
+    name: { ru: 'Узел Зеркальной Петли', en: 'Mirrorloop Knot' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { stunChance: 7, speed: 1 },
+    description: {
+      ru: 'Узел Ломиэ отражает следующий шаг обратно в ногу, которая его сделала.',
+      en: 'Lomie knot reflects the next step back into the foot that made it.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'mirror-route'
+  },
+  {
+    id: 'ginger_spark_bottle',
+    name: { ru: 'Бутыль Имбирной Искры', en: 'Ginger Spark Bottle' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 11, damage: 2, armor: -1 },
+    description: {
+      ru: 'Аксилин называет это лекарством, хотя пробка отлетает быстрее любого рецепта.',
+      en: 'Axilin calls it medicine, though the cork moves faster than any prescription.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'axilin-ginger'
+  },
+  {
+    id: 'abyss_bow_knot',
+    name: { ru: 'Узел Лука Бездны', en: 'Abyss Bow Knot' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { stunChance: 20, damage: 3, armor: -2 },
+    description: {
+      ru: 'Кусок Черного Ветра Бездны Кирт все еще запоминает цель раньше стрелы.',
+      en: 'A chip of Kirt Black Wind of the Abyss remembers the target before the arrow does.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'black-wind-abyss'
+  },
+  {
+    id: 'opening_bell_spore',
+    name: { ru: 'Спора Вступительного Колокола', en: 'Opening Bell Spore' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { stunChance: 18, speed: 2, armor: -2 },
+    description: {
+      ru: 'Колокол Морги звонит только в начале, но эхо хватает на весь обмен ударами.',
+      en: 'Morga bell rings only at the opening, but its echo lasts through the exchange.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'morga-opening-bell'
+  },
+  {
+    id: 'entropy_scepter_tip',
+    name: { ru: 'Наконечник Скипетра Энтропии', en: 'Entropy Scepter Tip' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 14, armor: 2, damage: -1 },
+    description: {
+      ru: 'Обломок скипетра Даламара ставит точку там, где противник хотел сделать запятую.',
+      en: 'A shard of Dalamar scepter places a period where the enemy wanted a comma.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'entropy-scepter'
+  },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. The level-5 tier has one per
   // mushroom; later tiers may add more.

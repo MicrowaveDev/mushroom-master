@@ -168,6 +168,12 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `snaplight_husk.png` - `snaplight_husk`, 2x1. Split seed husk mid-snap with a bright contained flash line between two chunky halves.
 - [ ] `amber_needle_swarm.png` - `amber_needle_swarm`, 2x2. Cluster of thick amber stingers orbiting one resin node, dense connected block rather than loose particles.
 - [ ] `crownthorn_cleaver.png` - `crownthorn_cleaver`, 1x2. Vertical black-branch cleaver with green resin teeth, broad head and rooted handle.
+- [ ] `heartwood_splinter_bow.png` - `heartwood_splinter_bow`, 2x1. Horizontal black heartwood bow with green resin string and one amber arrowbud, chunky across both cells.
+- [ ] `blue_vinegar_chakram.png` - `blue_vinegar_chakram`, 2x1. Wide blue-violet vinegar chakram with amber stopper nodes and contained green fizz, broad ring silhouette.
+- [ ] `first_bloom_cinder.png` - `first_bloom_cinder`, 1x1. Compact orange flower-coal with cap-like petals and one white flash slash, filling one cell.
+- [ ] `dead_city_nail.png` - `dead_city_nail`, 1x2. Tall black-bone nail with ash cap at top and corroded tooth point below, thick vertical silhouette.
+- [ ] `golden_spore_mace.png` - `golden_spore_mace`, 2x2. Heavy golden spore mace head with white mycelium haft and pale cyan biostasis marks, one blocky object.
+- [ ] `riftfang_comet.png` - `riftfang_comet`, 2x1. Horizontal violet fang-comet with green rift tail and dark rim, broad enough to fill both cells.
 
 ### Armor
 
@@ -190,6 +196,12 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `amber_resin_shield.png` - `amber_resin_shield`, 2x1. Wide amber shield with trapped bubbles and bark rim, strong horizontal face.
 - [ ] `porcelain_mold_mask.png` - `porcelain_mold_mask`, 1x1. White porcelain face shard with black eye hollow and green mold sparks, chunky mask silhouette.
 - [ ] `living_bark_latch.png` - `living_bark_latch`, 1x1. Small bark clasp that looks like it is breathing, moss hinge and cream highlight.
+- [ ] `reliquary_bone_buckle.png` - `reliquary_bone_buckle`, 1x1. Compact gold-bone buckle with a sacred knot and moss-green clasp, square readable silhouette.
+- [ ] `soft_wall_tile.png` - `soft_wall_tile`, 2x1. Wide translucent pale-green wall tile with crystal rim and one soft bend line across both cells.
+- [ ] `ferment_glass_bracer.png` - `ferment_glass_bracer`, 1x2. Tall amber glass bracer with green ferment bubbles, heavy cuff at top and lower pressure chamber.
+- [ ] `thornhide_scale.png` - `thornhide_scale`, 1x1. Square black-bark scale with one green resin thorn and cream highlight, compact and protective.
+- [ ] `flashcap_knee_guard.png` - `flashcap_knee_guard`, 1x2. Vertical orange flashcap knee guard with moss strap and white speed stripe, connected top-to-bottom.
+- [ ] `obsidian_throne_chip.png` - `obsidian_throne_chip`, 1x2. Tall black obsidian throne shard with white mold crown and gray ash edge, broad vertical mass.
 
 ### Stun
 
@@ -213,6 +225,12 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `biostasis_crown_seed.png` - `biostasis_crown_seed`, 2x2. Crown-like seed pod, sacred and heavy, with pale cyan glints and broad base.
 - [ ] `spore_snow_globe.png` - `spore_snow_globe`, 1x1. Tiny globe of gray-white spore snow over black roots, round clear silhouette.
 - [ ] `forgotten_crossroads_ring.png` - `forgotten_crossroads_ring`, 2x1. Ring split between violet void and gold mycelium teeth, stretched as one horizontal emblem.
+- [ ] `spore_lullaby_conch.png` - `spore_lullaby_conch`, 2x1. Horizontal pale-gold fungal conch with white spore curls kept inside the outline and dark lip.
+- [ ] `mirrorloop_knot.png` - `mirrorloop_knot`, 1x1. Compact black-violet loop knot with green mirror highlight and one pale spore bead.
+- [ ] `ginger_spark_bottle.png` - `ginger_spark_bottle`, 1x2. Tall ginger-shaped amber bottle with yellow spark cork and green fizz core, chunky vertical form.
+- [ ] `abyss_bow_knot.png` - `abyss_bow_knot`, 2x2. Heavy black-violet bow knot with green resin eye and amber string arcs, filling all quadrants.
+- [ ] `opening_bell_spore.png` - `opening_bell_spore`, 2x2. Bell-shaped orange spore split by a white flash petal, broad base and contained yellow glow.
+- [ ] `entropy_scepter_tip.png` - `entropy_scepter_tip`, 1x2. Tall ash-gray scepter tip with porcelain crown and black shard core, thick enough for one-cell width.
 
 ### Hybrid / Utility
 
