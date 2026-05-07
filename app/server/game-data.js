@@ -405,8 +405,194 @@ export const artifacts = [
     battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     loreSource: 'ygg-mycel'
   },
+  // --- Priority expansion artifacts ---
+  // Promoted from docs/artifact-expansion-catalog.md. These are gameplay-live
+  // stat artifacts that fit the current combat contract. `imageId` points at
+  // approved temporary proxy art; dedicated PNGs remain queued by
+  // npm run game:artifacts:next.
+  {
+    id: 'hyphae_corset_lace',
+    imageId: 'mycelium_wrap',
+    name: { ru: 'Шнуровка Гифного Корсета', en: 'Hyphae Corset Lace' },
+    family: 'armor',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { armor: 4, stunChance: 4 },
+    description: {
+      ru: 'Живая золотисто-белая шнуровка защищает и стягивает одной и той же нитью.',
+      en: 'A living gold-white lace protects and constricts with the same thread.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'block', target: 'actor', statKey: 'armor' }
+  },
+  {
+    id: 'triple_knot_seed',
+    imageId: 'lomie_crystal_lattice',
+    name: { ru: 'Семя Тройного Узла', en: 'Triple Knot Seed' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 12, speed: 1 },
+    description: {
+      ru: 'Три решетчатых зачатка держат пустоту в форме короткого, точного сбоя.',
+      en: 'Three lattice bulbs hold the void in the shape of a short, precise interruption.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' }
+  },
+  {
+    id: 'sour_vinegar_ampoule',
+    imageId: 'bubbling_grot_bomb',
+    name: { ru: 'Ампула Синего Уксуса', en: 'Sour Vinegar Ampoule' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { damage: 3, armor: -1 },
+    description: {
+      ru: 'Капля портального уксуса прожигает защиту раньше, чем успевает пахнуть сладко.',
+      en: 'A drop of portal vinegar bites through protection before it has time to smell sweet.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' }
+  },
+  {
+    id: 'rainpuff_mine',
+    imageId: 'thunder_gill',
+    name: { ru: 'Мина-Дождевик', en: 'Rainpuff Mine' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 16, damage: -1 },
+    description: {
+      ru: 'Плоский дождевик Кирт держит споровое давление до одного резкого хлопка.',
+      en: 'A low rainpuff trap holds spore pressure until one sharp snap.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'stunChance' }
+  },
+  {
+    id: 'sound_eater_velvet',
+    imageId: 'mycelium_wrap',
+    name: { ru: 'Бархат Пожирателя Звука', en: 'Sound-Eater Velvet' },
+    family: 'armor',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { armor: 4, stunChance: 6, speed: -1 },
+    description: {
+      ru: 'Белая плесневая складка из склепа гасит удар так же тихо, как голос.',
+      en: 'A fold of white crypt mold muffles a blow as quietly as it muffles a voice.'
+    },
+    battleEffect: { id: 'decay', trigger: 'block', target: 'actor', statKey: 'armor' }
+  },
+  {
+    id: 'afterimage_cap',
+    imageId: 'morga_flash_seed',
+    name: { ru: 'Шляпка-Послеслед', en: 'Afterimage Cap' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 10, speed: 2 },
+    description: {
+      ru: 'Шляпка оставляет световой след в двух местах сразу, сбивая ритм противника.',
+      en: 'The cap leaves light in two places at once, knocking the enemy off rhythm.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'stunChance' }
+  },
+  {
+    id: 'bone_cocoon_greaves',
+    imageId: 'stone_cap',
+    name: { ru: 'Поножи Костяного Кокона', en: 'Bone Cocoon Greaves' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 5, speed: -1 },
+    description: {
+      ru: 'Кость и белая грибница срастаются в тяжелую защиту для долгого боя.',
+      en: 'Bone and white mycelium knit into heavy protection for a long fight.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'block', target: 'actor', statKey: 'armor' }
+  },
+  {
+    id: 'mirrorfloor_shard',
+    imageId: 'bark_plate',
+    name: { ru: 'Осколок Зеркального Пола', en: 'Mirrorfloor Shard' },
+    family: 'armor',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { armor: 2, speed: 1 },
+    description: {
+      ru: 'Черное стекло Ломиэ отражает удар чуть раньше, чем он становится настоящим.',
+      en: 'Lomie black glass reflects a strike a fraction before it becomes real.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' }
+  },
+  {
+    id: 'overpressure_retort',
+    imageId: 'burning_cap',
+    name: { ru: 'Перегретая Реторта', en: 'Overpressure Retort' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 9, speed: 1, armor: -2 },
+    description: {
+      ru: 'Лабораторная ошибка Аксилин, которую никто не успел запретить до взрыва.',
+      en: 'An Axilin lab accident nobody managed to forbid before it became useful.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' }
+  },
+  {
+    id: 'green_star_sight',
+    imageId: 'haste_wisp',
+    name: { ru: 'Прицел Зеленой Звезды', en: 'Green Star Sight' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { damage: 2, speed: 1 },
+    description: {
+      ru: 'Малый прицельный знак Кирт ловит темп цели раньше руки.',
+      en: 'Kirt small sight-mark catches the target rhythm before the hand does.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' }
+  },
+  {
+    id: 'ash_library_urn',
+    imageId: 'spark_spore',
+    name: { ru: 'Урна Библиотеки Пыли', en: 'Ash Library Urn' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { stunChance: 24, armor: 3, damage: -2 },
+    description: {
+      ru: 'Прах старых артефактов помнит, как заставить сопротивление замолчать.',
+      en: 'The dust of old artifacts remembers how to make resistance fall silent.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' }
+  },
+  {
+    id: 'flashstep_tendon',
+    imageId: 'amber_fang',
+    name: { ru: 'Сухожилие Мгновенного Шага', en: 'Flashstep Tendon' },
+    family: 'damage',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { damage: 4, speed: 2, armor: -1 },
+    description: {
+      ru: 'Живое сухожилие натянуто между двумя вспышками и дергает владельца вперед.',
+      en: 'A living tendon stretched between two flashes pulls its bearer forward.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' }
+  },
   // --- Character shop items ---
-  // Lore-based items gated by requiredLevel. One per mushroom.
+  // Lore-based items gated by requiredLevel. The level-5 tier has one per
+  // mushroom; later tiers may add more.
   // [Req 4-P] through [Req 4-T].
   {
     id: 'thalla_sacred_thread',
@@ -473,6 +659,79 @@ export const artifacts = [
     bonus: { stunChance: 8, armor: 2 },
     battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     characterItem: { mushroomId: 'dalamar', requiredLevel: 5 }
+  },
+  // Level-8 character items from the priority expansion wave.
+  {
+    id: 'thalla_golden_veil_pin',
+    imageId: 'reliquary_biostasis_seal',
+    name: { ru: 'Булавка Золотой Вуали', en: 'Thalla\'s Golden Veil Pin' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { stunChance: 7 },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'thalla', requiredLevel: 8 }
+  },
+  {
+    id: 'lomie_portal_dust_vial',
+    imageId: 'glimmer_cap',
+    name: { ru: 'Склянка Портальной Пыли Ломиэ', en: 'Lomie\'s Portal Dust Vial' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { stunChance: 6, speed: 1 },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'lomie', requiredLevel: 8 }
+  },
+  {
+    id: 'axilin_ginger_bite_root',
+    imageId: 'ferment_phial',
+    name: { ru: 'Кусающий Имбирный Корень Аксилин', en: 'Axilin\'s Ginger Bite Root' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { damage: 4, speed: 1, armor: -1 },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    characterItem: { mushroomId: 'axilin', requiredLevel: 8 }
+  },
+  {
+    id: 'kirt_mantrap_claws',
+    imageId: 'fang_whip',
+    name: { ru: 'Когти-Ловушки Кирт', en: 'Kirt\'s Mantrap Claws' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { damage: 5, stunChance: 5, armor: -1 },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    characterItem: { mushroomId: 'kirt', requiredLevel: 8 }
+  },
+  {
+    id: 'morga_first_bloom_spur',
+    imageId: 'flash_cap',
+    name: { ru: 'Шпора Первого Цвета Морги', en: 'Morga\'s First Bloom Spur' },
+    family: 'damage',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { damage: 3, speed: 2, armor: -1 },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' },
+    characterItem: { mushroomId: 'morga', requiredLevel: 8 }
+  },
+  {
+    id: 'dalamar_pallid_moth_pin',
+    imageId: 'entropy_shard',
+    name: { ru: 'Булавка Бледной Моли Даламар', en: 'Dalamar\'s Pallid Moth Pin' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 1,
+    bonus: { stunChance: 8, armor: 1, damage: -1 },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'dalamar', requiredLevel: 8 }
   },
   // --- Character signature starters ---
   // Each of these is preset into the round-1 inventory of one specific

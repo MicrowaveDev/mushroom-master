@@ -18,6 +18,8 @@ This is intentionally not wired into `game-data.js` yet. Live shop artifacts nee
 
 These 18 are the strongest first implementation wave: broad silhouettes, clear stats, and strong lore hooks. Start here if the next task is "make them playable".
 
+**Status:** promoted to live gameplay data on the follow-up pass. They currently use approved `imageId` proxy art so the shop/grid does not render blank while dedicated PNGs are generated. Their unique PNGs remain queued in `docs/artifact-bitmap-todolist.md`.
+
 | ID | Name | Source | Role | Size | Cost | Candidate bonus | Visual target |
 | --- | --- | --- | --- | ---: | ---: | --- | --- |
 | `kirt_mantrap_claws` | Kirt's Mantrap Claws / Когти-Ловушки Кирт | Kirt, Thorn Crown | damage | 2x1 | 2 | `damage +5`, `stunChance +5`, `armor -1` | Paired carnivorous clamp-claws, like a mantrap snapping shut, violet hinge, neon-green toothed inner lips. |

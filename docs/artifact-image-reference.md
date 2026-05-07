@@ -29,6 +29,10 @@ web/public/artifacts/{artifact_id}.png
 | `fang_whip` | Damage, `2x1`, bright. | A wide flexible attack piece that rewards spatial planning. | Handle/root knot on the left; curving whip crosses the seam into a fang head on the right. |
 | `burning_cap` | Damage, `2x2`, bright. | A large hot attack commitment; should feel powerful and costly. | Hot mushroom cap with flame core; ember cracks, red rim, lower stem/base, and contained flame glow form one large object. |
 | `bubbling_grot_bomb` | Lore damage, `1x1`, bright. | A general shop artifact tied to the Bubbling Grot; gives a readable ferment hit cue without adding hidden status rules. | Round amber-red fungal flask, corked cap fuse, and contained green ferment bubbles. |
+| `sour_vinegar_ampoule` | Expansion damage, `1x1`, plain. | A cheap Axilin-flavored risk pickup: efficient bite with an armor drawback. | Tiny blue-violet vinegar ampoule, amber stopper, sour vapor curl, chunky enough to fill one cell. |
+| `overpressure_retort` | Expansion damage, `2x2`, radiant. | A large volatile attack commitment for players who want a high-risk damage spike. | Bulging amber retort about to pop; glassy organic body, green pressure bubbles, one connected object filling all four cells. |
+| `green_star_sight` | Expansion damage/speed, `1x1`, plain. | A compact tempo pickup inspired by Kirt's targeting star. | Small neon-green sight charm with a violet arrow notch, broad star silhouette, no tiny crosshair lines. |
+| `flashstep_tendon` | Expansion damage/speed, `1x2`, bright. | A vertical speed-risk piece that echoes Morga's snap-forward initiative. | Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette. |
 
 ## Armor
 
@@ -41,6 +45,10 @@ web/public/artifacts/{artifact_id}.png
 | `root_shell` | Armor, `2x2`, bright. | Large protective body that anchors defensive builds. | Root-wrapped shield shell; upper shell plates and lower root tendrils form one continuous protective mass. |
 | `truffle_bulwark` | Armor, `2x2`, bright/radiant defensive commitment. | The densest shield fantasy, with visible bulk and tradeoff weight. | Dense truffle shield; rough pore dome, raised lobe, moss and loam chips, grounded mass. |
 | `void_cocoon_spore` | Lore armor/control, `1x2`, bright. | A general shop artifact tied to Ygg-Mycel cocoon/void imagery; teaches block-triggered frost feedback as protection. | Tall armored cocoon spore; moss-green outer plates wrap a pale frozen core and dark central void slit. |
+| `hyphae_corset_lace` | Expansion armor/control, `2x1`, bright. | Defensive binding that turns Thalla's living-corset motif into a normal shop item. | Braided gold-white corset lace spanning both cells, protective knot on one side, invasive fibers on the other. |
+| `sound_eater_velvet` | Expansion armor/control, `2x1`, bright. | Dalamar crypt material for slower defensive control builds. | Folded white mold-velvet pad absorbing a black sound ripple across the whole horizontal footprint. |
+| `bone_cocoon_greaves` | Expansion armor, `1x2`, bright. | Heavy vertical protection with a speed tradeoff. | Tall bone-white leg armor wrapped in golden mycelium, strong upper plate and grounded lower greave. |
+| `mirrorfloor_shard` | Expansion armor/speed, `1x1`, plain. | A tiny Lomie defensive-tempo piece that feels precise rather than bulky. | Black mirror-glass shard reflecting cold portal light, wide enough to avoid reading as a thin sliver. |
 
 ## Stun
 
@@ -54,6 +62,10 @@ web/public/artifacts/{artifact_id}.png
 | `spark_spore` | Stun, `2x2`, bright. | Large control commitment; should feel charged but contained. | One large charged spore orb with pale glow, electric cracks, and a few contained sparks. |
 | `reliquary_biostasis_seal` | Lore stun/armor, `1x1`, bright. | A general shop artifact tied to the Golden Reliquary; communicates biostasis as a short battle-read cue. | Golden reliquary seal shaped like a mushroom-cap stamp with a sacred white knot and contained pale cyan glints. |
 | `root_ash_censer` | Lore stun/armor, `2x1`, bright. | A general shop artifact tied to Ygg-Mycel root and ash imagery; gives decay/ash feedback with a restrained horizontal silhouette. | Horizontal root-ash censer with dark root handles, ash-cream ritual bowl, and carved pale spiral marks. |
+| `triple_knot_seed` | Expansion stun/speed, `2x1`, bright. | Lomie route-control object for wide stun builds. | Three lattice bulbs joined on one black twig, violet void visible through the cells, white spores kept inside the silhouette. |
+| `rainpuff_mine` | Expansion stun, `2x1`, bright. | Kirt-style trap fantasy with a damage tradeoff. | Low puffball mine with green fuse, violet spore pressure line, broad horizontal body. |
+| `afterimage_cap` | Expansion stun/speed, `2x1`, bright. | Morga tempo-control piece that should feel fast without adding hidden mechanics. | A cap smeared into two flash silhouettes across the footprint, left origin and right afterimage connected by light. |
+| `ash_library_urn` | Expansion stun/armor, `2x2`, radiant. | Big Dalamar control commitment with defensive support and damage tradeoff. | Square ceremonial urn of gray artifact dust, black lid, pale mold seal, one heavy object filling all quadrants. |
 
 ## Hybrid / Utility
 
@@ -72,6 +84,12 @@ web/public/artifacts/{artifact_id}.png
 | `kirt_venom_fang` | Kirt signature, `1x1`. | Compact strike charm tied to Kirt's measured precision. | Curved fang with a small venom dot, broad enough to avoid a skinny icon. |
 | `morga_flash_seed` | Morga signature, `2x1`. | Character-specific speed/burst motif. | Seed body on the left, light trail and crackle extending right. |
 | `dalamar_ashen_shard` | Dalamar signature, `1x2`. | Character-specific decay/entropy motif. | Broken crown above, tapering shard point and falling gray dust below. |
+| `thalla_golden_veil_pin` | Thalla level-8 signature, `1x1`. | A smaller control charm tied to the Golden Veil and paralysis dust. | Sacred gold pin with a small trailing veil; pale cyan biostasis glint contained inside the silhouette. |
+| `lomie_portal_dust_vial` | Lomie level-8 signature, `1x1`. | Portable portal-dust control charm. | Tiny vial of violet-green dust, white star-spores escaping through a cork, broad glass body. |
+| `axilin_ginger_bite_root` | Axilin level-8 signature, `1x1`. | Ginger-root companion fantasy made into a compact strike item. | Angry mandrake-like ginger root charm with one bitten side and amber bubbles. |
+| `kirt_mantrap_claws` | Kirt level-8 signature, `2x1`. | The requested mantrap-like claws: predatory, toxic, and readable as Kirt's pressure tool. | Paired carnivorous clamp-claws snapping shut, violet hinge, neon-green toothed inner lips, one horizontal object. |
+| `morga_first_bloom_spur` | Morga level-8 signature, `1x1`. | Opener-tempo charm that carries Morga's first-bloom pressure. | Sharp bloom-spur bursting forward with a short flash trail, chunky flower-thorn silhouette. |
+| `dalamar_pallid_moth_pin` | Dalamar level-8 signature, `1x1`. | Silent crypt moth charm with decay-control flavor. | Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle. |
 
 ## Signature Starters
 

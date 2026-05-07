@@ -156,6 +156,10 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `fang_whip.png` - `fang_whip`, 2x1. Flexible whip with fang tip; handle/root knot on the left, curving whip body crossing the seam into a fang head.
 - [ ] `burning_cap.png` - `burning_cap`, 2x2. Hot mushroom cap with flame core; ember cracks, red rim, lower stem/base, and flame glow form one large object.
 - [ ] `bubbling_grot_bomb.png` - `bubbling_grot_bomb`, 1x1. Volatile grotto spore bomb; round amber-red fungal flask, corked cap fuse, and contained green ferment bubbles.
+- [ ] `sour_vinegar_ampoule.png` - `sour_vinegar_ampoule`, 1x1. Tiny blue-violet vinegar ampoule with amber stopper, sour vapor curl, and chunky one-cell silhouette.
+- [ ] `overpressure_retort.png` - `overpressure_retort`, 2x2. Bulging amber retort about to pop; organic glass body, green pressure bubbles, one connected object filling all four cells.
+- [ ] `green_star_sight.png` - `green_star_sight`, 1x1. Neon-green targeting sight charm with a violet arrow notch and broad star silhouette.
+- [ ] `flashstep_tendon.png` - `flashstep_tendon`, 1x2. Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette.
 
 ### Armor
 
@@ -166,6 +170,10 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `root_shell.png` - `root_shell`, 2x2. Root-wrapped shield shell; upper shell plates, lower root tendrils, one continuous protective body.
 - [ ] `truffle_bulwark.png` - `truffle_bulwark`, 2x2. Dense truffle shield; rough pore dome, raised lobe, moss and loam chips, grounded mass.
 - [ ] `void_cocoon_spore.png` - `void_cocoon_spore`, 1x2. Tall armored void-cocoon spore; moss-green outer plates wrap a pale frozen core and dark central void slit.
+- [ ] `hyphae_corset_lace.png` - `hyphae_corset_lace`, 2x1. Braided gold-white corset lace spanning both cells, protective knot on one side, invasive fibers on the other.
+- [ ] `sound_eater_velvet.png` - `sound_eater_velvet`, 2x1. Folded white mold-velvet pad absorbing a black sound ripple across the whole horizontal footprint.
+- [ ] `bone_cocoon_greaves.png` - `bone_cocoon_greaves`, 1x2. Tall bone-white leg armor wrapped in golden mycelium, strong upper plate and grounded lower greave.
+- [ ] `mirrorfloor_shard.png` - `mirrorfloor_shard`, 1x1. Black mirror-glass shard reflecting cold portal light, wide enough to avoid a thin sliver.
 
 ### Stun
 
@@ -177,6 +185,10 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `spark_spore.png` - `spark_spore`, 2x2. Charged spore orb; pale glow, electric cracks, trailing sparks around one large orb.
 - [ ] `reliquary_biostasis_seal.png` - `reliquary_biostasis_seal`, 1x1. Golden reliquary seal; mushroom-cap stamp with a sacred white biostasis knot and contained pale cyan glints.
 - [ ] `root_ash_censer.png` - `root_ash_censer`, 2x1. Horizontal root-ash censer; dark root handles, ash-cream ritual bowl, and carved pale spiral marks.
+- [ ] `triple_knot_seed.png` - `triple_knot_seed`, 2x1. Three lattice bulbs joined on one black twig, violet void visible through the cells, white spores kept inside the silhouette.
+- [ ] `rainpuff_mine.png` - `rainpuff_mine`, 2x1. Low puffball mine with green fuse, violet spore pressure line, broad horizontal body.
+- [ ] `afterimage_cap.png` - `afterimage_cap`, 2x1. Cap smeared into two flash silhouettes across the footprint, left origin and right afterimage connected by light.
+- [ ] `ash_library_urn.png` - `ash_library_urn`, 2x2. Square ceremonial urn of gray artifact dust, black lid, pale mold seal, one heavy object filling all quadrants.
 
 ### Hybrid / Utility
 
@@ -191,6 +203,12 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `kirt_venom_fang.png` - `kirt_venom_fang`, 1x1. Kirt compact venom fang charm; curved fang with a small venom dot.
 - [ ] `morga_flash_seed.png` - `morga_flash_seed`, 2x1. Morga bright flash seed; seed body on the left, light trail and crackle extending right.
 - [ ] `dalamar_ashen_shard.png` - `dalamar_ashen_shard`, 1x2. Dalamar dark ash shard; broken crown above, tapering shard point and falling gray dust below.
+- [ ] `thalla_golden_veil_pin.png` - `thalla_golden_veil_pin`, 1x1. Sacred gold pin with a small trailing veil and contained pale cyan biostasis glint.
+- [ ] `lomie_portal_dust_vial.png` - `lomie_portal_dust_vial`, 1x1. Tiny vial of violet-green portal dust, white star-spores escaping through a cork, broad glass body.
+- [ ] `axilin_ginger_bite_root.png` - `axilin_ginger_bite_root`, 1x1. Angry mandrake-like ginger root charm with one bitten side and amber bubbles.
+- [ ] `kirt_mantrap_claws.png` - `kirt_mantrap_claws`, 2x1. Paired carnivorous clamp-claws snapping shut, violet hinge, neon-green toothed inner lips, one horizontal object.
+- [ ] `morga_first_bloom_spur.png` - `morga_first_bloom_spur`, 1x1. Sharp bloom-spur bursting forward with a short flash trail, chunky flower-thorn silhouette.
+- [ ] `dalamar_pallid_moth_pin.png` - `dalamar_pallid_moth_pin`, 1x1. Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle.
 
 ### Signature Starters
 
