@@ -1350,6 +1350,188 @@ export const artifacts = [
     battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     characterItem: { mushroomId: 'dalamar', requiredLevel: 8 }
   },
+  // Level-12 and level-16 mastery character items. These extend long-term
+  // mushroom progression without changing the normal shop pool.
+  {
+    id: 'thalla_first_host_locket',
+    name: { ru: 'Медальон Первого Носителя Тхаллы', en: 'Thalla\'s First Host Locket' },
+    family: 'stun',
+    width: 1,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 11, armor: 1 },
+    description: {
+      ru: 'Запретный медальон хранит теплую память об Ильве и заставляет тело вспомнить паузу.',
+      en: 'A forbidden locket keeps Ilve warm memory and teaches the body to remember stillness.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'thalla', requiredLevel: 12 }
+  },
+  {
+    id: 'thalla_gold_oyster_crown',
+    name: { ru: 'Корона Золотых Вешенок Тхаллы', en: 'Thalla\'s Gold Oyster Crown' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { armor: 8, stunChance: 8, speed: -2 },
+    description: {
+      ru: 'Тяжелая садовая корона защищает как трон и командует временем как приказ.',
+      en: 'A heavy garden crown protects like a throne and commands time like an edict.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'block', target: 'actor', statKey: 'armor' },
+    characterItem: { mushroomId: 'thalla', requiredLevel: 16 }
+  },
+  {
+    id: 'lomie_mirror_route_map',
+    name: { ru: 'Зеркальная Карта Пути Ломиэ', en: 'Lomie\'s Mirror Route Map' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 4, speed: 2 },
+    description: {
+      ru: 'Черная карта прокладывает безопасный путь там, где удар уже решил попасть.',
+      en: 'A black route-map draws a safe path where the blow already decided to land.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
+    characterItem: { mushroomId: 'lomie', requiredLevel: 12 }
+  },
+  {
+    id: 'lomie_void_lattice_gate',
+    name: { ru: 'Пустотные Врата Решетки Ломиэ', en: 'Lomie\'s Void Lattice Gate' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { armor: 7, stunChance: 10, damage: -1 },
+    description: {
+      ru: 'Миниатюрные врата держат пустоту в трех грибных ячейках и закрывают лишний путь.',
+      en: 'A miniature gate holds void inside three fungal cells and closes the extra route.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'block', target: 'actor', statKey: 'armor' },
+    characterItem: { mushroomId: 'lomie', requiredLevel: 16 }
+  },
+  {
+    id: 'axilin_blue_vinegar_flask',
+    name: { ru: 'Фляга Синего Уксуса Аксилин', en: 'Axilin\'s Blue Vinegar Flask' },
+    family: 'stun',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { stunChance: 10, damage: 2 },
+    description: {
+      ru: 'Украденная портальная пыль делает уксус достаточно кислым, чтобы сбивать ритм.',
+      en: 'Stolen portal dust makes the vinegar sour enough to knock rhythm sideways.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'axilin', requiredLevel: 12 }
+  },
+  {
+    id: 'axilin_ginger_overdrive',
+    name: { ru: 'Имбирный Разгон Аксилин', en: 'Axilin\'s Ginger Overdrive' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 10, speed: 1, armor: -3 },
+    description: {
+      ru: 'Имбирное ядро работает слишком хорошо и слишком громко, чтобы считаться лекарством.',
+      en: 'The ginger core works too well and too loudly to count as medicine.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    characterItem: { mushroomId: 'axilin', requiredLevel: 16 }
+  },
+  {
+    id: 'kirt_rainpuff_quiver',
+    name: { ru: 'Колчан Дождевиков Кирт', en: 'Kirt\'s Rainpuff Quiver' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 14, damage: 3, armor: -1 },
+    description: {
+      ru: 'Живой колчан держит дождевики под давлением, пока цель не сделает ошибку.',
+      en: 'A living quiver keeps puffballs under pressure until the target makes a mistake.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'kirt', requiredLevel: 12 }
+  },
+  {
+    id: 'kirt_black_wind_bowchip',
+    name: { ru: 'Щепа Черного Ветра Кирт', en: 'Kirt\'s Black Wind Bowchip' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 8, stunChance: 8, armor: -2 },
+    description: {
+      ru: 'Щепка из Черного Ветра Бездны все еще натягивает тетиву в сторону слабого места.',
+      en: 'A chip from Black Wind of the Abyss still draws the string toward a weak point.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    characterItem: { mushroomId: 'kirt', requiredLevel: 16 }
+  },
+  {
+    id: 'morga_afterimage_crown',
+    name: { ru: 'Корона Послеследа Морги', en: 'Morga\'s Afterimage Crown' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 2,
+    bonus: { stunChance: 10, speed: 2 },
+    description: {
+      ru: 'Корона появляется в двух местах сразу, и противник выбирает неправильное.',
+      en: 'The crown appears in two places at once, and the enemy chooses the wrong one.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'morga', requiredLevel: 12 }
+  },
+  {
+    id: 'morga_bellstrike_calyx',
+    name: { ru: 'Чашечка Колокольного Удара Морги', en: 'Morga\'s Bellstrike Calyx' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { damage: 7, speed: 2, armor: -2 },
+    description: {
+      ru: 'Чашечка звенит только при первом рывке, зато весь бой помнит этот звук.',
+      en: 'The calyx rings only on the first lunge, but the whole fight remembers the sound.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' },
+    characterItem: { mushroomId: 'morga', requiredLevel: 16 }
+  },
+  {
+    id: 'dalamar_throne_splinter',
+    name: { ru: 'Тронная Заноза Даламара', en: 'Dalamar\'s Throne Splinter' },
+    family: 'armor',
+    width: 1,
+    height: 2,
+    price: 2,
+    bonus: { armor: 5, stunChance: 5, speed: -1 },
+    description: {
+      ru: 'Узкая заноза обсидианового трона защищает тем, что делает движение тяжелым.',
+      en: 'A narrow splinter of the obsidian throne protects by making motion heavy.'
+    },
+    battleEffect: { id: 'decay', trigger: 'block', target: 'actor', statKey: 'armor' },
+    characterItem: { mushroomId: 'dalamar', requiredLevel: 12 }
+  },
+  {
+    id: 'dalamar_dead_gate_seal',
+    name: { ru: 'Печать Мертвых Врат Даламара', en: 'Dalamar\'s Dead Gate Seal' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    bonus: { stunChance: 25, armor: 2, damage: -2 },
+    description: {
+      ru: 'Печать уже осыпается в полезную пыль, но ворота все равно не открываются.',
+      en: 'The seal is already crumbling into useful dust, yet the gate still will not open.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    characterItem: { mushroomId: 'dalamar', requiredLevel: 16 }
+  },
   // --- Character signature starters ---
   // Each of these is preset into the round-1 inventory of one specific
   // mushroom on run start (see STARTER_PRESETS below). They do not appear

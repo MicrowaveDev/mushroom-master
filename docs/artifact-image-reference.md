@@ -132,6 +132,18 @@ web/public/artifacts/{artifact_id}.png
 | `kirt_mantrap_claws` | Kirt level-8 signature, `2x1`. | The requested mantrap-like claws: predatory, toxic, and readable as Kirt's pressure tool. | Paired carnivorous clamp-claws snapping shut, violet hinge, neon-green toothed inner lips, one horizontal object. |
 | `morga_first_bloom_spur` | Morga level-8 signature, `1x1`. | Opener-tempo charm that carries Morga's first-bloom pressure. | Sharp bloom-spur bursting forward with a short flash trail, chunky flower-thorn silhouette. |
 | `dalamar_pallid_moth_pin` | Dalamar level-8 signature, `1x1`. | Silent crypt moth charm with decay-control flavor. | Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle. |
+| `thalla_first_host_locket` | Thalla mastery, `1x1`, level 12. | Forbidden memory of Ilve as a compact biostasis/control charm. | Warm gold locket with white nerve-mycelium clasp and a pale cyan stillness glint, one chunky cell. |
+| `thalla_gold_oyster_crown` | Thalla mastery, `2x2`, level 16. | Heavy royal garden armor that feels like a throne and a living crown. | Golden oyster crown grown from layered caps and white mycelium, broad sacred block filling all quadrants. |
+| `lomie_mirror_route_map` | Lomie mastery, `1x2`, level 12. | A defensive route-map that turns her soft-wall fantasy into a tall planning relic. | Tall black mirror map with green route lines and a crystal frame, broad enough for one-cell width. |
+| `lomie_void_lattice_gate` | Lomie mastery, `2x2`, level 16. | Miniature void gate for late defensive-control builds. | Square green-violet lattice gate holding a black void center, one connected block with four corner knots. |
+| `axilin_blue_vinegar_flask` | Axilin mastery, `1x2`, level 12. | Tall portal-vinegar stun flask, more dangerous than the normal ampoule. | Tall blue-violet vinegar flask with amber stopper, green fizz core, and chunky glass belly. |
+| `axilin_ginger_overdrive` | Axilin mastery, `2x2`, level 16. | Volatile ginger engine for high-risk damage spikes. | Large ginger-red overdrive core with amber glass chambers and green pressure bubbles, dense block form. |
+| `kirt_rainpuff_quiver` | Kirt mastery, `2x1`, level 12. | Living trap quiver for control-heavy Kirt builds. | Horizontal black-branch quiver packed with green puffballs and amber thorn binding, one wide object. |
+| `kirt_black_wind_bowchip` | Kirt mastery, `2x2`, level 16. | Black Wind of the Abyss as a high-risk strike relic. | Heavy black-violet bow knot chip with neon green eye and amber string arcs, dense in all quadrants. |
+| `morga_afterimage_crown` | Morga mastery, `2x1`, level 12. | Speed-control crown that appears in two places at once. | Orange flash crown split into left origin and right afterimage, connected by a white speed band. |
+| `morga_bellstrike_calyx` | Morga mastery, `2x2`, level 16. | Opening-bell damage relic distinct from the normal control spore. | Large orange bell-flower calyx with white flash clapper and red damage petals, filling all quadrants. |
+| `dalamar_throne_splinter` | Dalamar mastery, `1x2`, level 12. | Obsidian-throne armor shard for slow control builds. | Tall black obsidian splinter with white mold crown and ash-gray side plates, heavy vertical silhouette. |
+| `dalamar_dead_gate_seal` | Dalamar mastery, `2x2`, level 16. | Dead City gate seal as a late control commitment. | Square bone-gray gate seal crumbling into ash, black keyhole center, white mold rim, one heavy block. |
 
 ## Signature Starters
 

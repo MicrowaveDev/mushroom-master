@@ -2,7 +2,7 @@
 
 **Purpose:** candidate artifact ideas for turning the current catalog into a fuller game-feeling loot pool.
 
-The live game currently has 105 artifact definitions in `app/server/game-data.js`: 78 normal combat artifacts, 12 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, and 18-item circle relic wave have been promoted into live data. The remaining reserve pool focuses on future character ladder items, bag/container variety, and mechanic-gated ideas.
+The live game currently has 117 artifact definitions in `app/server/game-data.js`: 78 normal combat artifacts, 24 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, 18-item circle relic wave, and 12-item mastery character ladder have been promoted into live data. The remaining reserve pool focuses on bag/container variety and mechanic-gated ideas.
 
 Rows marked as promoted are wired into `game-data.js`; remaining rows are still candidates. Future live shop promotions need production bitmap assets, image provenance, visual-classification snapshot updates, and balance validation. Use this doc as the source list for future implementation batches.
 
@@ -125,27 +125,23 @@ These 18 are normal-shop artifacts, not character-gated, but each one borrows a 
 
 ## Character Shop Ladder
 
-These extend the existing level-5 signature items into a proper character progression ladder. Suggested unlock levels are drafts; exact thresholds should follow the live mycelium curve.
+These extend the existing level-5 and level-8 signature items into a proper character progression ladder.
+
+**Status:** the level-12 and level-16 mastery rows below are promoted to live gameplay data. They use dedicated production PNGs under `web/public/artifacts/`, and the level-8 row for each character remains covered by the priority batch.
 
 | ID | Character | Unlock | Role | Size | Cost | Candidate bonus | Fantasy |
 | --- | --- | ---: | --- | ---: | ---: | --- | --- |
-| `thalla_living_corset` | Thalla | 8 | armor | 1x2 | 2 | `armor +5`, `stunChance +5`, `speed -1` | A living cordyceps corset lace that heals and binds with the same threads. |
 | `thalla_first_host_locket` | Thalla | 12 | stun | 1x1 | 2 | `stunChance +11`, `armor +1` | A forbidden locket holding a warm memory of Ilve, her first body. |
 | `thalla_gold_oyster_crown` | Thalla | 16 | armor | 2x2 | 3 | `armor +8`, `stunChance +8`, `speed -2` | Heavy golden oyster crown, regal but assimilating. |
-| `lomie_mirror_route_map` | Lomie | 8 | armor | 1x2 | 2 | `armor +4`, `speed +2` | A black mirror route-map whose lines re-route incoming force. |
-| `lomie_void_lattice_gate` | Lomie | 12 | armor | 2x2 | 3 | `armor +7`, `stunChance +10`, `damage -1` | A miniature lattice gate with void held in three fungal cells. |
-| `lomie_white_spore_cloud` | Lomie | 16 | stun | 2x1 | 2 | `stunChance +13`, `speed +2`, `armor -1` | A soft white spore cloud that bends position and timing. |
-| `axilin_blue_vinegar` | Axilin | 8 | stun | 1x2 | 2 | `stunChance +10`, `damage +2` | A tall blue vinegar flask made with stolen portal dust. |
-| `axilin_grot_pressure_cap` | Axilin | 12 | damage | 2x1 | 2 | `damage +6`, `speed +1`, `armor -2` | A cap from the Bubbling Grot inflated to unsafe pressure. |
+| `lomie_mirror_route_map` | Lomie | 12 | armor | 1x2 | 2 | `armor +4`, `speed +2` | A black mirror route-map whose lines re-route incoming force. |
+| `lomie_void_lattice_gate` | Lomie | 16 | armor | 2x2 | 3 | `armor +7`, `stunChance +10`, `damage -1` | A miniature lattice gate with void held in three fungal cells. |
+| `axilin_blue_vinegar_flask` | Axilin | 12 | stun | 1x2 | 2 | `stunChance +10`, `damage +2` | A tall blue vinegar flask made with stolen portal dust. |
 | `axilin_ginger_overdrive` | Axilin | 16 | damage | 2x2 | 3 | `damage +10`, `speed +1`, `armor -3` | Ginger-processed elixir core, powerful and rude. |
-| `kirt_green_star_sight` | Kirt | 8 | damage | 1x1 | 1 | `damage +2`, `speed +1` | Her targeting star miniaturized into a bow-sight charm. |
 | `kirt_rainpuff_quiver` | Kirt | 12 | stun | 2x1 | 2 | `stunChance +14`, `damage +3`, `armor -1` | A living quiver packed with explosive puffballs. |
 | `kirt_black_wind_bowchip` | Kirt | 16 | damage | 2x2 | 3 | `damage +8`, `stunChance +8`, `armor -2` | A chipped knot from Black Wind of the Abyss, still pulsing violet. |
-| `morga_snaplight_claw` | Morga | 8 | damage | 1x1 | 2 | `damage +3`, `speed +2` | A small snap-claw that opens like a flash trap. |
-| `morga_afterimage_cap` | Morga | 12 | stun | 2x1 | 2 | `stunChance +10`, `speed +2` | A cap split into several visible positions at once. |
-| `morga_opening_bell_spore` | Morga | 16 | damage | 2x2 | 3 | `damage +7`, `speed +2`, `armor -2` | A bell-spore that rings only at the beginning of a fight. |
-| `dalamar_ash_moth_pin` | Dalamar | 8 | stun | 1x1 | 1 | `stunChance +8`, `armor +1` | A pale moth pinned without a needle, held by silence. |
-| `dalamar_obsidian_throne_chip` | Dalamar | 12 | armor | 1x2 | 2 | `armor +5`, `stunChance +5`, `speed -1` | A narrow obsidian throne fragment dusted with white mold. |
+| `morga_afterimage_crown` | Morga | 12 | stun | 2x1 | 2 | `stunChance +10`, `speed +2` | A crown split into several visible positions at once. |
+| `morga_bellstrike_calyx` | Morga | 16 | damage | 2x2 | 3 | `damage +7`, `speed +2`, `armor -2` | A bell-flower that rings only at the beginning of a fight. |
+| `dalamar_throne_splinter` | Dalamar | 12 | armor | 1x2 | 2 | `armor +5`, `stunChance +5`, `speed -1` | A narrow obsidian throne fragment dusted with white mold. |
 | `dalamar_dead_gate_seal` | Dalamar | 16 | stun | 2x2 | 3 | `stunChance +25`, `armor +2`, `damage -2` | Seal from the Dead City gate, already crumbling into useful dust. |
 
 ## Bag And Container Candidates

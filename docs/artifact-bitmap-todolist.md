@@ -251,6 +251,18 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `kirt_mantrap_claws.png` - `kirt_mantrap_claws`, 2x1. Paired carnivorous clamp-claws snapping shut, violet hinge, neon-green toothed inner lips, one horizontal object.
 - [ ] `morga_first_bloom_spur.png` - `morga_first_bloom_spur`, 1x1. Sharp bloom-spur bursting forward with a short flash trail, chunky flower-thorn silhouette.
 - [ ] `dalamar_pallid_moth_pin.png` - `dalamar_pallid_moth_pin`, 1x1. Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle.
+- [ ] `thalla_first_host_locket.png` - `thalla_first_host_locket`, 1x1. Warm gold locket with white nerve-mycelium clasp and a pale cyan stillness glint, one chunky cell.
+- [ ] `thalla_gold_oyster_crown.png` - `thalla_gold_oyster_crown`, 2x2. Golden oyster crown grown from layered caps and white mycelium, broad sacred block filling all quadrants.
+- [ ] `lomie_mirror_route_map.png` - `lomie_mirror_route_map`, 1x2. Tall black mirror map with green route lines and a crystal frame, broad enough for one-cell width.
+- [ ] `lomie_void_lattice_gate.png` - `lomie_void_lattice_gate`, 2x2. Square green-violet lattice gate holding a black void center, one connected block with four corner knots.
+- [ ] `axilin_blue_vinegar_flask.png` - `axilin_blue_vinegar_flask`, 1x2. Tall blue-violet vinegar flask with amber stopper, green fizz core, and chunky glass belly.
+- [ ] `axilin_ginger_overdrive.png` - `axilin_ginger_overdrive`, 2x2. Large ginger-red overdrive core with amber glass chambers and green pressure bubbles, dense block form.
+- [ ] `kirt_rainpuff_quiver.png` - `kirt_rainpuff_quiver`, 2x1. Horizontal black-branch quiver packed with green puffballs and amber thorn binding, one wide object.
+- [ ] `kirt_black_wind_bowchip.png` - `kirt_black_wind_bowchip`, 2x2. Heavy black-violet bow knot chip with neon green eye and amber string arcs, dense in all quadrants.
+- [ ] `morga_afterimage_crown.png` - `morga_afterimage_crown`, 2x1. Orange flash crown split into left origin and right afterimage, connected by a white speed band.
+- [ ] `morga_bellstrike_calyx.png` - `morga_bellstrike_calyx`, 2x2. Large orange bell-flower calyx with white flash clapper and red damage petals, filling all quadrants.
+- [ ] `dalamar_throne_splinter.png` - `dalamar_throne_splinter`, 1x2. Tall black obsidian splinter with white mold crown and ash-gray side plates, heavy vertical silhouette.
+- [ ] `dalamar_dead_gate_seal.png` - `dalamar_dead_gate_seal`, 2x2. Square bone-gray gate seal crumbling into ash, black keyhole center, white mold rim, one heavy block.
 
 ### Signature Starters
 
