@@ -8,7 +8,7 @@
     "productionImageLocation": "web/public/artifacts/"
   },
   "artifactCount": 63,
-  "metadataHash": "3579e8a120835b01b6941d05719ab599f5b934342ba210143f8283e95f565414",
+  "metadataHash": "296b2f05ddd25b4487d808ef9efa50089b5393d3914da1376c755efabd02413a",
   "artifacts": [
     {
       "id": "spore_needle",
@@ -2258,8 +2258,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 70652,
-        "sha256": "29e70fa4f66ccfbe29cb43350b6d54c3a36072f9cf581ae2a049f04047251c8e"
+        "size": 74460,
+        "sha256": "bf1420834256e5b9bdbff54293e942b733269770ae5aa18e8dc7efde0f4fc9d1"
       },
       "artifact": {
         "id": "rainpuff_mine",
