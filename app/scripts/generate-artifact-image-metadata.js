@@ -8,6 +8,7 @@ import { readPngHeader, metadataEntriesHash } from './lib/bitmap-image-toolkit.j
 
 const defaultOutPath = path.join(repoRoot, 'app', 'shared', 'artifact-image-metadata.json');
 const readPngInfo = readPngHeader;
+const approvedAt = '2026-05-09';
 
 function parseArgs(argv) {
   const outArg = argv.find((arg) => arg.startsWith('--out='));
@@ -61,7 +62,7 @@ function validationSnapshot(artifact, pngInfo) {
   return {
     status: 'passed',
     command: 'npm run game:artifacts:validate -- --all',
-    checkedAt: '2026-05-01',
+    checkedAt: approvedAt,
     pngDimensions: {
       width: pngInfo.width,
       height: pngInfo.height
@@ -98,7 +99,7 @@ function buildEntry(artifact, spec) {
     validation: validationSnapshot(artifact, pngInfo),
     review: {
       decision: 'approved',
-      decidedAt: '2026-05-01',
+      decidedAt: approvedAt,
       reviewer: 'user',
       note: 'Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation.'
     },
@@ -116,7 +117,7 @@ function main() {
     .map((artifact) => buildEntry(artifact, descriptions.get(artifact.id)));
   const metadata = {
     schemaVersion: 1,
-    generatedAt: '2026-05-01',
+    generatedAt: approvedAt,
     status: 'approved-production-baseline',
     policy: {
       runtimeUsesApprovedOnly: true,

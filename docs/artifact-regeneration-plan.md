@@ -1,6 +1,6 @@
 # Artifact Regeneration Plan
 
-> Status: planning snapshot for the next artifact-art implementation pass. The live contract still lives in `app/server/game-data.js`, `docs/artifact-image-reference.md`, `docs/artifact-bitmap-todolist.md`, and the artifact image pipeline scripts.
+> Status: shipped on 2026-05-09. This document is now the historical ship record for the targeted regeneration pass. The live contract still lives in `app/server/game-data.js`, `docs/artifact-image-reference.md`, `docs/artifact-bitmap-todolist.md`, and the artifact image pipeline scripts.
 
 ## Source Of Truth
 
@@ -38,13 +38,13 @@ Open assumptions:
 
 ## Current Findings
 
-The validation suite currently accepts the simplified artifact PNGs, but validation is only geometry-oriented. It does not judge whether an icon is too detailed, visually compressed, or conceptually muddy.
+The validation suite accepts the regenerated artifact PNGs, but validation is still geometry-oriented. It does not judge whether an icon is too detailed, visually compressed, or conceptually muddy; use the official contact sheet and thumbnail review as visual evidence.
 
-`moss_pouch` has a real source-of-truth mismatch:
+`moss_pouch` had a real source-of-truth mismatch, fixed in this pass:
 
 - `getBagShape(moss_pouch)` treats legacy rectangular bags as landscape, so the displayed bag footprint is 2x1.
-- Some artifact image tools still use raw `width`/`height`, which makes `moss_pouch` appear as 1x2 in the official sheet and generation queue.
-- The next implementation should use the same canonical displayed bag shape everywhere artifact bitmaps are generated, validated, classified for visual footprint, and reviewed.
+- Artifact image tools now use the canonical displayed bag shape for generation, validation, contact sheets, thumbnail labels, visual classification, and figure fallback rendering.
+- `moss_pouch.png` was regenerated as a horizontal 2x1 pouch.
 
 The recent blanket simplification pass reduced noise, but it applied the same treatment to every footprint. That made some 2x1/2x2 pieces look lower quality than older approved anchors. Detail normalization should be deterministic by occupied cell count, not a one-size filter.
 
@@ -92,7 +92,7 @@ Suggested pipeline command shape:
 npm run game:artifacts:normalize-detail -- artifact_id...
 ```
 
-The implementation can either be a new script or an option in the existing chroma-key helper, but it must use the canonical displayed footprint and be deterministic.
+Implemented as `npm run game:artifacts:normalize-detail -- artifact_id...`. The script reads the canonical displayed footprint, preserves final dimensions at `cols * 160` by `rows * 160`, and applies deterministic footprint-aware smoothing/quantization without a blanket mixed-size downsampling pass.
 
 ## Implementation Plan
 
@@ -134,3 +134,12 @@ The implementation can either be a new script or an option in the existing chrom
 7. Commit as one focused art-pipeline pass.
 
    Keep the commit scoped to artifact pipeline fixes, the seven regenerated PNGs, optional `spore_burst_arrow` reprocessing, metadata, and docs. Do not update hub pointers unless explicitly requested.
+
+## Completion Notes - 2026-05-09
+
+- Completed Step 1: canonical bitmap footprint handling now uses `getBagShape(artifact)` for all bag artifacts in chroma-key conversion, coverage validation, contact sheet dimensions, thumbnail footprint labels, prompt generation, visual classification, and artifact figure fallback rendering.
+- Completed Step 2: added `npm run game:artifacts:normalize-detail -- artifact_id...`, a deterministic footprint-aware detail normalization pass that preserves `cols * 160` by `rows * 160` PNG dimensions.
+- Completed Step 3: regenerated `lomie_mirror_route_map`, `golden_spore_mace`, `haste_wisp`, `heartwood_splinter_bow`, `morga_afterimage_crown`, `moss_pouch`, and `obsidian_throne_chip` from fresh imagegen raws.
+- Completed Step 4: reprocessed `spore_burst_arrow` with the deterministic normalizer; no redraw was needed after review.
+- Completed Step 5: regenerated `app/shared/artifact-image-metadata.json`, `.agent/artifact-image-workspace/review/contact-sheet.png`, `.agent/artifact-image-workspace/review/contact-sheet.manifest.json`, and `.agent/tasks/artifact-image-system/phase-1/raw/thumbnail-review.png`.
+- Completed Step 6: targeted validation, provenance generation/check, contact-sheet generation/DOM validation, and thumbnail review generation passed. Broader unit verification is recorded in the handoff for this pass.

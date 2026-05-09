@@ -79,6 +79,22 @@ test('irregular bag masks keep empty cells as layout holes under one artwork ove
   assert.equal((html.match(/class="artifact-figure-cell/g) || []).length, 6);
 });
 
+test('rectangular bags use displayed landscape bag shape for bitmap fallback rendering', () => {
+  const html = renderArtifactFigure({
+    id: 'moss_pouch',
+    family: 'bag',
+    width: 1,
+    height: 2,
+    slotCount: 2,
+    bonus: {}
+  });
+
+  assert.match(html, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(html, /grid-template-rows: repeat\(1, minmax\(0, 1fr\)\)/);
+  assert.match(html, /background-image: url\('\/artifacts\/moss_pouch\.png'\)/);
+  assert.equal((html.match(/class="artifact-figure-cell"/g) || []).length, 2);
+});
+
 test('artifact figures expose UI-driven role glyphs for each role', () => {
   const examples = [
     { id: 'spore_needle', family: 'damage', label: 'Damage role' },

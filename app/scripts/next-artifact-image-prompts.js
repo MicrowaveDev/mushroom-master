@@ -33,10 +33,12 @@ export function parseArtifactDescriptions(markdown) {
 }
 
 export function footprintForArtifact(artifact) {
-  if (artifact.family === 'bag' && artifact.shape) {
+  if (artifact.family === 'bag') {
     const shape = getBagShape(artifact, 0);
     const mask = shape.map((row) => row.map((cell) => (cell ? 'X' : '.')).join(' ')).join('\n');
-    return `${shape[0]?.length || artifact.width}x${shape.length} mask:\n${mask}`;
+    const hasMaskGaps = shape.flat().some((cell) => !cell);
+    const label = `${shape[0]?.length || artifact.width}x${shape.length}`;
+    return hasMaskGaps ? `${label} mask:\n${mask}` : label;
   }
   return `${artifact.width}x${artifact.height}`;
 }
@@ -57,9 +59,11 @@ export function familyLanguage(family) {
 }
 
 export function shapeRule(artifact) {
-  const width = Number(artifact.width) || 1;
-  const height = Number(artifact.height) || 1;
-  if (artifact.family === 'bag' && artifact.shape) {
+  const shape = artifact.family === 'bag' ? getBagShape(artifact, 0) : null;
+  const width = shape ? (shape[0]?.length || 1) : (Number(artifact.width) || 1);
+  const height = shape ? shape.length : (Number(artifact.height) || 1);
+  const hasMaskGaps = Boolean(shape?.flat().some((cell) => !cell));
+  if (artifact.family === 'bag' && hasMaskGaps) {
     return 'irregular bag mask: design one continuous container whose main mass follows the occupied cells; mild organic visual overhang across empty mask cells is acceptable, but no straight rectangular cutouts';
   }
   if (width === 1 && height === 1) {

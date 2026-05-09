@@ -60,24 +60,25 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 - The chroma-key conversion helper should fail when a raw source touches the canvas edge. Treat that failure as a source problem, not a conversion problem; `--allow-clipped-source` is only for diagnostics.
 - Detail/compression must be footprint-aware. Do not apply the same smoothing or quantization pass to 1x1, 2-cell, and 2x2 artifacts; normalize by the artifact's displayed grid cells so large pieces do not look blurrier or more compressed than small pieces.
 - For bag artifacts, use the displayed bag shape from `getBagShape(artifact)` as the bitmap footprint. This matters for legacy rectangular bags such as `moss_pouch`, whose game display is 2x1 even though the persisted data is `width: 1`, `height: 2`.
+- Use `npm run game:artifacts:normalize-detail -- artifact_id...` after chroma-key conversion when a target needs deterministic detail normalization. It preserves the displayed footprint dimensions and scales simplification by occupied cell count.
 
 ## Targeted Regeneration Review - 2026-05-09
 
-See [artifact-regeneration-plan.md](artifact-regeneration-plan.md) for source of truth, implementation sequencing, and verification commands.
+See [artifact-regeneration-plan.md](artifact-regeneration-plan.md) for source of truth, implementation sequencing, completion notes, and verification commands.
 
-Regenerate in the next art pass:
+Regenerated in the 2026-05-09 art pass:
 
-- `lomie_mirror_route_map.png` - redraw as a clean 1x2 black mirror tablet with only a few broad route lines.
-- `golden_spore_mace.png` - redraw as a solid 2x2 mace head with a few large spore bumps, not dense holes.
-- `haste_wisp.png` - redraw as a compact 1x1 speed leaf/flame emblem.
-- `heartwood_splinter_bow.png` - redraw as one broad 2x1 heartwood bow, not a tiny decorated branch.
-- `morga_afterimage_crown.png` - redraw as two readable crown silhouettes connected by one speed band.
-- `moss_pouch.png` - fix the footprint pipeline first, then redraw as a 2x1 displayed pouch/satchel.
-- `obsidian_throne_chip.png` - redraw as a broad 1x2 throne shard with simple mold crown, not gritty texture.
+- `lomie_mirror_route_map.png` - clean 1x2 black mirror tablet with only a few broad route lines.
+- `golden_spore_mace.png` - solid 2x2 mace head with a few large spore bumps, not dense holes.
+- `haste_wisp.png` - compact 1x1 speed leaf/flame emblem.
+- `heartwood_splinter_bow.png` - one broad 2x1 heartwood bow, not a tiny decorated branch.
+- `morga_afterimage_crown.png` - two readable crown silhouettes connected by one speed band.
+- `moss_pouch.png` - footprint pipeline fixed first, then redrawn as a 2x1 displayed pouch/satchel.
+- `obsidian_throne_chip.png` - broad 1x2 throne shard with simple mold crown, not gritty texture.
 
 Quality watch:
 
-- `spore_burst_arrow.png` - reprocess with the deterministic footprint-aware detail normalizer after it exists; regenerate only if it still reads compressed or muddy at thumbnail sizes.
+- `spore_burst_arrow.png` - reprocessed with the deterministic footprint-aware detail normalizer; no redraw was needed in this pass.
 
 Backlog:
 
@@ -300,7 +301,7 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 ### Bags
 
 - [ ] `starter_bag.png` - `starter_bag`, 3x3. Soft canvas starter bag; stitched upper flap, centered clasp, folds and base seam across all nine cells.
-- [ ] `moss_pouch.png` - `moss_pouch`, 1x2. Mossy drawstring pouch; fabric rim above, rounded pouch belly and fibers below.
+- [ ] `moss_pouch.png` - `moss_pouch`, displayed 2x1. Horizontal mossy drawstring pouch/satchel; mouth, tie, and rounded belly continue left-to-right across both cells.
 - [ ] `amber_satchel.png` - `amber_satchel`, 2x2. Amber leather satchel; handle and top flap span the upper cells, amber clasp centered across the lower body.
 - [ ] `trefoil_sack.png` - `trefoil_sack`, 3x2 T-mask. Three-lobed clover-like top pouch with one hanging lower lobe from the center; side lower cells are placement holes but the painted sack may have soft rounded overhang.
 - [ ] `birchbark_hook.png` - `birchbark_hook`, 3x2 L-mask. Birchbark strip with stitched top seam across the top row and a hooked bend descending from the left cell.

@@ -1,6 +1,7 @@
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 import { SellZone } from './SellZone.js';
 import { artifactVisualClassification } from '../../../../app/shared/artifact-visual-classification.js';
+import { getBagShape } from '../../../../app/shared/bag-shape.js';
 
 export const ShopZone = {
   name: 'ShopZone',
@@ -32,6 +33,10 @@ export const ShopZone = {
       if (!artifact) return { width: 1, height: 1 };
       // Real artifact bitmaps are authored in canonical footprint space.
       // Shop cards should preview that artwork without rotating/squashing it.
+      if (artifact.family === 'bag') {
+        const shape = getBagShape(artifact);
+        return { width: shape[0]?.length || 1, height: shape.length || 1 };
+      }
       if (!artifact.shape) return { width: artifact.width, height: artifact.height };
       return this.preferredOrientation(artifact);
     },

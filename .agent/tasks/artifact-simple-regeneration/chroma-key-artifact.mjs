@@ -31,7 +31,7 @@ if (!artifact) {
 }
 
 function shapeForArtifact(item) {
-  if (item.family === 'bag' && item.shape) return getBagShape(item, 0);
+  if (item.family === 'bag') return getBagShape(item, 0);
   return Array.from({ length: item.height }, () => Array(item.width).fill(1));
 }
 

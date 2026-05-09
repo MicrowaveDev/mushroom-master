@@ -72,7 +72,7 @@ The shared projection also exposes richer metadata derived from existing artifac
 | `secondaryStats` | Positive bonus stats other than the primary stat. Stable canonical order: `damage`, `armor`, `speed`, `stun`; `bonus.stunChance` is exposed as `stun`. |
 | `tradeoffs` | Negative bonus stats in the same canonical order. Multiple tradeoffs stay as an array. |
 | `owner` | `artifact.characterItem.mushroomId` when present, otherwise `null`. |
-| `footprintType` | `single`, `wide`, `tall`, `block`, or bag-only `mask`, derived from canonical dimensions and bag shape. |
+| `footprintType` | `single`, `wide`, `tall`, `block`, or bag-only `mask`, derived from the displayed artifact footprint. Bags use `getBagShape(artifact)` even when legacy data stores a different raw `width` / `height` orientation; explicit shape-bearing bags remain `mask` because consumers treat them as mask-driven even when the I-bag has no empty cells. |
 
 Consumers should read these fields from `artifactVisualClassification(artifact)` or its helper functions. New prompt, UI, and replay code should not inspect `artifact.bonus` directly for visual semantics.
 

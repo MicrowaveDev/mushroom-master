@@ -1,6 +1,7 @@
 import { h } from 'vue/dist/vue.esm-bundler.js';
 import { artifactBitmapPath, artifactRoleGlyphLabel } from '../artifacts/render.js';
 import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
+import { getBagShape } from '../../../app/shared/bag-shape.js';
 
 function node(tag, attrs = {}, children = []) {
   return h(tag, attrs, children);
@@ -121,7 +122,7 @@ export const ArtifactFigure = {
     if (!artifact) return null;
 
     const isBag = artifact.family === 'bag';
-    const shape = isBag && artifact.shape ? artifact.shape : null;
+    const shape = isBag ? getBagShape(artifact) : null;
     const visual = artifactVisualClassification(artifact);
     const width = shape
       ? (shape[0]?.length || 0)

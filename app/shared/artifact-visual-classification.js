@@ -1,3 +1,5 @@
+import { getBagShape } from './bag-shape.js';
+
 export const ARTIFACT_ROLE_CLASSES = {
   damage: {
     id: 'damage',
@@ -85,7 +87,8 @@ export function artifactShineTier(artifact) {
   if (artifact.starterOnly && artifact.family !== 'bag') return ARTIFACT_SHINE_TIERS.signature;
   if (artifact.family === 'bag' && Number(artifact.price) >= 3) return ARTIFACT_SHINE_TIERS.radiant;
   if (Number(artifact.price) >= 3) return ARTIFACT_SHINE_TIERS.radiant;
-  if (Number(artifact.price) >= 2 || (Number(artifact.width) || 1) * (Number(artifact.height) || 1) >= 2) {
+  const footprint = artifactFootprintDimensions(artifact);
+  if (Number(artifact.price) >= 2 || footprint.cols * footprint.rows >= 2) {
     return ARTIFACT_SHINE_TIERS.bright;
   }
   return ARTIFACT_SHINE_TIERS.plain;
@@ -117,14 +120,29 @@ export function artifactOwner(artifact) {
   return artifact?.characterItem?.mushroomId || null;
 }
 
+export function artifactFootprintShape(artifact) {
+  if (!artifact) return [[1]];
+  if (artifact.family === 'bag') return getBagShape(artifact);
+  const width = Number(artifact.width) || 1;
+  const height = Number(artifact.height) || 1;
+  return Array.from({ length: height }, () => Array(width).fill(1));
+}
+
+export function artifactFootprintDimensions(artifact) {
+  const shape = artifactFootprintShape(artifact);
+  return {
+    cols: shape[0]?.length || 1,
+    rows: shape.length || 1
+  };
+}
+
 export function artifactFootprintType(artifact) {
   if (!artifact) return 'single';
   if (artifact.family === 'bag' && Array.isArray(artifact.shape)) return 'mask';
-  const width = Number(artifact.width) || 1;
-  const height = Number(artifact.height) || 1;
-  if (width === 1 && height === 1) return 'single';
-  if (width > height) return 'wide';
-  if (height > width) return 'tall';
+  const { cols, rows } = artifactFootprintDimensions(artifact);
+  if (cols === 1 && rows === 1) return 'single';
+  if (cols > rows) return 'wide';
+  if (rows > cols) return 'tall';
   return 'block';
 }
 

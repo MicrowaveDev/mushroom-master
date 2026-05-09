@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-01",
+  "generatedAt": "2026-05-09",
   "status": "approved-production-baseline",
   "policy": {
     "runtimeUsesApprovedOnly": true,
@@ -8,7 +8,7 @@
     "productionImageLocation": "web/public/artifacts/"
   },
   "artifactCount": 117,
-  "metadataHash": "c852c0a833a77f5c6151c7362b9bf54a5ae3457146dafbe0f2702f5b0a485e30",
+  "metadataHash": "59153337e498d1fe25d716894cb8e64d8d400fc292b8bf99fda3b35f4017834e",
   "artifacts": [
     {
       "id": "spore_needle",
@@ -67,7 +67,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -84,7 +84,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -147,7 +147,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -164,7 +164,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -230,7 +230,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -247,7 +247,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -313,7 +313,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -330,7 +330,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -396,7 +396,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -413,7 +413,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -481,7 +481,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -498,7 +498,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -561,7 +561,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -578,7 +578,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -644,7 +644,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -661,7 +661,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -724,7 +724,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -741,7 +741,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -804,7 +804,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -821,7 +821,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -887,7 +887,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -904,7 +904,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -972,7 +972,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -989,7 +989,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1052,7 +1052,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -1069,7 +1069,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1132,7 +1132,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -1149,7 +1149,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1212,7 +1212,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -1229,7 +1229,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1295,7 +1295,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -1312,7 +1312,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1378,7 +1378,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -1395,7 +1395,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1461,7 +1461,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -1478,7 +1478,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1544,7 +1544,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -1561,7 +1561,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1574,8 +1574,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 39118,
-        "sha256": "24b217f9d526989096b1fa30d2d8e2984024b0e797d9ed02ca63e51e5995ac1e"
+        "size": 7274,
+        "sha256": "62b26a91b8ed697ba53b7130f857f7e0898e35e0c373b4ade619f9da0170a9f0"
       },
       "artifact": {
         "id": "haste_wisp",
@@ -1626,7 +1626,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -1643,7 +1643,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1712,7 +1712,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -1729,7 +1729,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1798,7 +1798,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -1815,7 +1815,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1884,7 +1884,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -1901,7 +1901,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -1970,7 +1970,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -1987,7 +1987,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2056,7 +2056,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -2073,7 +2073,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2142,7 +2142,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -2159,7 +2159,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2228,7 +2228,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -2245,7 +2245,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2314,7 +2314,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -2331,7 +2331,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2403,7 +2403,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -2420,7 +2420,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2489,7 +2489,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -2506,7 +2506,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2575,7 +2575,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -2592,7 +2592,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2661,7 +2661,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -2678,7 +2678,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2750,7 +2750,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -2767,7 +2767,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2836,7 +2836,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -2853,7 +2853,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -2925,7 +2925,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -2942,7 +2942,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3014,7 +3014,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -3031,7 +3031,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3100,7 +3100,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -3117,7 +3117,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3189,7 +3189,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -3206,7 +3206,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3278,7 +3278,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -3295,7 +3295,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3308,8 +3308,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 25862,
-        "sha256": "f7387e59c8bda50ba8cd372598028a717343ec574b0ccc58041315bccb48e64b"
+        "size": 16497,
+        "sha256": "1554c9fdd34171c0adfdefaea0153868ad40792e081f3130947932fcf5df7e82"
       },
       "artifact": {
         "id": "spore_burst_arrow",
@@ -3367,7 +3367,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -3384,7 +3384,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3453,7 +3453,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -3470,7 +3470,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3542,7 +3542,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -3559,7 +3559,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3630,7 +3630,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -3647,7 +3647,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3716,7 +3716,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -3733,7 +3733,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3802,7 +3802,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -3819,7 +3819,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3888,7 +3888,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -3905,7 +3905,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -3974,7 +3974,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -3991,7 +3991,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4060,7 +4060,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -4077,7 +4077,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4149,7 +4149,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -4166,7 +4166,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4235,7 +4235,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -4252,7 +4252,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4321,7 +4321,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -4338,7 +4338,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4407,7 +4407,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -4424,7 +4424,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4496,7 +4496,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -4513,7 +4513,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4582,7 +4582,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -4599,7 +4599,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4671,7 +4671,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -4688,7 +4688,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4760,7 +4760,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -4777,7 +4777,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4849,7 +4849,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -4866,7 +4866,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -4938,7 +4938,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -4955,7 +4955,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5024,7 +5024,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -5041,7 +5041,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5110,7 +5110,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -5127,7 +5127,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5140,8 +5140,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 22430,
-        "sha256": "ce1e27929f5845476f9a59cf628d0454d0b1cfc7e3f72338aa53191902291728"
+        "size": 18100,
+        "sha256": "b938484db58ecaff2d9201eabe70a974e23c686179bc36a18b7d793f9e0d8f4c"
       },
       "artifact": {
         "id": "heartwood_splinter_bow",
@@ -5196,7 +5196,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -5213,7 +5213,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5285,7 +5285,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -5302,7 +5302,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5374,7 +5374,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -5391,7 +5391,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5463,7 +5463,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -5480,7 +5480,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5493,8 +5493,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 98315,
-        "sha256": "2520a784e45fc13e04d1d495df9fab5229f4f1fb3ad62267b976238e80095cbb"
+        "size": 47341,
+        "sha256": "5fcf6c23eacf082ecc34941aa05cdfd3e0d6c4f0f5cdb4d8894ee5f8a5f67c2e"
       },
       "artifact": {
         "id": "golden_spore_mace",
@@ -5552,7 +5552,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -5569,7 +5569,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5641,7 +5641,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -5658,7 +5658,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5727,7 +5727,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -5744,7 +5744,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5813,7 +5813,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -5830,7 +5830,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5902,7 +5902,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -5919,7 +5919,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -5988,7 +5988,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -6005,7 +6005,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6077,7 +6077,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -6094,7 +6094,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6107,8 +6107,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 22440,
-        "sha256": "86bc454dc08062dc63e3065c22932639de68675ac4baf06ddaed6e6f787e3be7"
+        "size": 19633,
+        "sha256": "fe9073cbfddb26931bfb2d130861b30fdc292c7734a079177294e22676ae8c56"
       },
       "artifact": {
         "id": "obsidian_throne_chip",
@@ -6166,7 +6166,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -6183,7 +6183,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6252,7 +6252,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -6269,7 +6269,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6338,7 +6338,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -6355,7 +6355,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6427,7 +6427,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -6444,7 +6444,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6516,7 +6516,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -6533,7 +6533,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6605,7 +6605,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -6622,7 +6622,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6694,7 +6694,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -6711,7 +6711,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6780,7 +6780,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -6797,7 +6797,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6866,7 +6866,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -6883,7 +6883,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -6952,7 +6952,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -6969,7 +6969,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7038,7 +7038,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7055,7 +7055,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7124,7 +7124,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -7141,7 +7141,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7210,7 +7210,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -7227,7 +7227,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7293,7 +7293,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7310,7 +7310,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7379,7 +7379,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7396,7 +7396,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7468,7 +7468,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7485,7 +7485,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7557,7 +7557,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -7574,7 +7574,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7646,7 +7646,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7663,7 +7663,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7735,7 +7735,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7752,7 +7752,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7824,7 +7824,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -7841,7 +7841,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7916,7 +7916,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -7933,7 +7933,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -7946,8 +7946,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 30705,
-        "sha256": "a58b873859d0c4e0b435409d7c2a0b8303b15ad7ac0a0ff63c4dd4248ea89c36"
+        "size": 16809,
+        "sha256": "5e49002f99df456e2dc162d22492274ecf8b56317c917cbf77c70666145e18b4"
       },
       "artifact": {
         "id": "lomie_mirror_route_map",
@@ -8005,7 +8005,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -8022,7 +8022,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8097,7 +8097,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -8114,7 +8114,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8186,7 +8186,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -8203,7 +8203,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8278,7 +8278,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -8295,7 +8295,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8370,7 +8370,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -8387,7 +8387,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8462,7 +8462,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -8479,7 +8479,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8492,8 +8492,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 34355,
-        "sha256": "d9be318fd7bacae09dd058a9ae3b11d3f1acac0c5ea1f374686dabbf9d0f88c3"
+        "size": 19146,
+        "sha256": "6a65b8adc2638659cc2b953f638637161280aadc3b4b36a8274717db79315fd1"
       },
       "artifact": {
         "id": "morga_afterimage_crown",
@@ -8551,7 +8551,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 160
@@ -8568,7 +8568,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8643,7 +8643,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -8660,7 +8660,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8735,7 +8735,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 320
@@ -8752,7 +8752,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8827,7 +8827,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -8844,7 +8844,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8910,7 +8910,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -8927,7 +8927,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -8990,7 +8990,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -9007,7 +9007,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9073,7 +9073,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -9090,7 +9090,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9156,7 +9156,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -9173,7 +9173,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9239,7 +9239,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -9256,7 +9256,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9322,7 +9322,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 160
@@ -9339,7 +9339,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9400,7 +9400,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 480,
           "height": 480
@@ -9417,7 +9417,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9428,10 +9428,10 @@
       "status": "approved",
       "outputPath": "web/public/artifacts/moss_pouch.png",
       "png": {
-        "width": 160,
-        "height": 320,
-        "size": 59201,
-        "sha256": "10c8adf747376ee9dd051a6bc6650843ed677f57fd9556550c324932626b8dfb"
+        "width": 320,
+        "height": 160,
+        "size": 19601,
+        "sha256": "c74a4fc0d728d80e897d18201ae66e033a8244497b776be2cf9b3110644efc8b"
       },
       "artifact": {
         "id": "moss_pouch",
@@ -9467,21 +9467,21 @@
         "secondaryStats": [],
         "tradeoffs": [],
         "owner": null,
-        "footprintType": "tall",
+        "footprintType": "wide",
         "cssClasses": [
           "artifact-role--bag",
           "artifact-shine--bright"
         ],
         "prompt": "bag class color: warm canvas, amber leather, bark, moss cloth, mycelium fiber. bright shine: one strong highlight shape, modest inner glow, no outer glow."
       },
-      "prompt": "### Moss Pouch / Моховой Мешочек\n\n- id: `moss_pouch`\n- image: `moss_pouch.png`\n- output: `web/public/artifacts/moss_pouch.png`\n- footprint: 1x2\n- family: bag\n- visual class: Bag / container\n- shine tier: Bright (bright)\n- description: Mossy drawstring pouch; fabric rim above, rounded pouch belly and fibers below.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Moss Pouch / Моховой Мешочек (moss_pouch)\nOutput file after approval: web/public/artifacts/moss_pouch.png\nFootprint: 1x2\nDescription: Mossy drawstring pouch; fabric rim above, rounded pouch belly and fibers below.\nShape rule: 1x2 vertical: strictly top-to-bottom object, filling 82-94% of the canvas height and 70-88% of the canvas width; every cell contains a visible continuation of the same object\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: stitched textile, bark, leather, moss cloth, mycelium fiber, clean container silhouette, simple patch/stitch accents.\n\nVisual classification: bag class color: warm canvas, amber leather, bark, moss cloth, mycelium fiber. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "prompt": "### Moss Pouch / Моховой Мешочек\n\n- id: `moss_pouch`\n- image: `moss_pouch.png`\n- output: `web/public/artifacts/moss_pouch.png`\n- footprint: displayed 2x1\n- family: bag\n- visual class: Bag / container\n- shine tier: Bright (bright)\n- description: Horizontal mossy drawstring pouch/satchel; mouth, tie, and rounded belly continue left-to-right across both cells.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Moss Pouch / Моховой Мешочек (moss_pouch)\nOutput file after approval: web/public/artifacts/moss_pouch.png\nFootprint: 2x1\nDescription: Horizontal mossy drawstring pouch/satchel; mouth, tie, and rounded belly continue left-to-right across both cells.\nShape rule: 2x1 horizontal: strictly left-to-right object, filling 82-94% of the canvas width; every cell contains a connected part of the same object; no tall central blob, no strong diagonal\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: stitched textile, bark, leather, moss cloth, mycelium fiber, clean container silhouette, simple patch/stitch accents.\n\nVisual classification: bag class color: warm canvas, amber leather, bark, moss cloth, mycelium fiber. bright shine: one strong highlight shape, modest inner glow, no outer glow. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
-          "width": 160,
-          "height": 320
+          "width": 320,
+          "height": 160
         },
         "checks": [
           "png-rgba",
@@ -9495,7 +9495,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9556,7 +9556,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 320,
           "height": 320
@@ -9573,7 +9573,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9645,7 +9645,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 480,
           "height": 320
@@ -9663,7 +9663,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9735,7 +9735,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 480,
           "height": 320
@@ -9753,7 +9753,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9825,7 +9825,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 480,
           "height": 320
@@ -9843,7 +9843,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -9915,7 +9915,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 480,
           "height": 320
@@ -9933,7 +9933,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -10005,7 +10005,7 @@
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 480,
           "height": 320
@@ -10023,7 +10023,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },
@@ -10093,11 +10093,11 @@
         ],
         "prompt": "bag class color: warm canvas, amber leather, bark, moss cloth, mycelium fiber. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray."
       },
-      "prompt": "### Mycelium Vine / Грибная Лоза\n\n- id: `mycelium_vine`\n- image: `mycelium_vine.png`\n- output: `web/public/artifacts/mycelium_vine.png`\n- footprint: 1x4\n- family: bag\n- visual class: Bag / container\n- shine tier: Radiant (radiant)\n- description: Continuous braided mycelium vine; tip and glowing node above, long body through the middle, lower tendril end.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Mycelium Vine / Грибная Лоза (mycelium_vine)\nOutput file after approval: web/public/artifacts/mycelium_vine.png\nFootprint: 1x4 mask:\nX\nX\nX\nX\nDescription: Continuous braided mycelium vine; tip and glowing node above, long body through the middle, lower tendril end.\nShape rule: irregular bag mask: design one continuous container whose main mass follows the occupied cells; mild organic visual overhang across empty mask cells is acceptable, but no straight rectangular cutouts\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: stitched textile, bark, leather, moss cloth, mycelium fiber, clean container silhouette, simple patch/stitch accents.\n\nVisual classification: bag class color: warm canvas, amber leather, bark, moss cloth, mycelium fiber. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
+      "prompt": "### Mycelium Vine / Грибная Лоза\n\n- id: `mycelium_vine`\n- image: `mycelium_vine.png`\n- output: `web/public/artifacts/mycelium_vine.png`\n- footprint: 1x4\n- family: bag\n- visual class: Bag / container\n- shine tier: Radiant (radiant)\n- description: Continuous braided mycelium vine; tip and glowing node above, long body through the middle, lower tendril end.\n\n```text\nUse the imagegen skill to create a production game artifact bitmap.\nUse docs/artifact-image-style-prompt.md as the style guide. Follow it exactly: simple chunky small inventory sticker matching these approved local examples: web/public/artifacts/ferment_phial.png, web/public/artifacts/flash_cap.png, web/public/artifacts/kirt_venom_fang.png, web/public/artifacts/settling_guard.png, web/public/artifacts/spore_lash.png, web/public/artifacts/spore_needle.png. Use thick dark contour, flat cel-shaded color regions, one or two large highlight/accent shapes, high contrast, strict footprint direction, and a flat #ff00ff chroma-key background.\n\nAsset: Mycelium Vine / Грибная Лоза (mycelium_vine)\nOutput file after approval: web/public/artifacts/mycelium_vine.png\nFootprint: 1x4\nDescription: Continuous braided mycelium vine; tip and glowing node above, long body through the middle, lower tendril end.\nShape rule: 1x4 vertical: strictly top-to-bottom object, filling 82-94% of the canvas height and 70-88% of the canvas width; every cell contains a visible continuation of the same object\n\nStyle: simple readable fantasy inventory sticker for tiny UI cells. Prefer flat cel shading over painting. Use a thick dark brown/black contour, 2-4 main colors, broad color blocks, sparse dark internal lines, and simple cream/pale highlight blobs. The approved examples are chunky, saturated, emblem-like, and low-detail; match that simplicity more than realistic materials or generic RPG loot art. Family visual language: stitched textile, bark, leather, moss cloth, mycelium fiber, clean container silhouette, simple patch/stitch accents.\n\nVisual classification: bag class color: warm canvas, amber leather, bark, moss cloth, mycelium fiber. radiant shine: clear polished highlight, richer saturation, subtle rim accent, no particle spray. The class color must be obvious at a glance, while the shine tier communicates coolness/specialness. Keep shine inside the object silhouette; do not use loose particles or a baked cast shadow.\n\nComposition: one complete connected placement image across the whole footprint, rendered once above the inventory grid cells like Backpack Battles. Multi-cell artifacts must fill 82-94% of the main axis and each occupied cell must contain a meaningful continuation of the same object. For 1x1 artifacts, fill 72-88% of both axes and keep visible silhouette coverage above 28% of the canvas. Do not draw separate repeated icons per cell, do not leave a mostly empty cell, and do not make skinny diagonal-stick props floating in empty space.\n\nSmall icon requirement: readable at 48-64px per cell on pale rounded inventory cells. Clear outside contour first, internal decoration second. No generic RPG item icon style, no glossy loot-icon rendering, no shiny gold bevels, no photorealism, no airbrushed material, no realistic bark/soil/stone/leather texture, no grit, no scratchy edge noise, no dense bubbles, no fine cracks or fibers, no noisy halo, no construction lines, no paper texture.\n\nBackground: perfectly flat solid #ff00ff chroma-key background for removal. No shadows, gradients, texture, floor plane, frames, grid lines, cell borders, text, letters, or watermark. Do not use #ff00ff inside the artifact. Do not bake a cast shadow or outer glow into the object because the UI already adds a CSS drop shadow.\n\nFor irregular bag masks, the shape mask is a placement rule, not a clipping stencil. Keep the object visually continuous and organic; do not carve rectangular transparent holes into the art. Empty mask cells may stay chroma-key when the generated silhouette naturally leaves them empty, but small curved overhang is preferred over broken cutouts.\n```",
       "validation": {
         "status": "passed",
         "command": "npm run game:artifacts:validate -- --all",
-        "checkedAt": "2026-05-01",
+        "checkedAt": "2026-05-09",
         "pngDimensions": {
           "width": 160,
           "height": 640
@@ -10115,7 +10115,7 @@
       },
       "review": {
         "decision": "approved",
-        "decidedAt": "2026-05-01",
+        "decidedAt": "2026-05-09",
         "reviewer": "user",
         "note": "Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation."
       },

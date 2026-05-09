@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { artifactVisualClassification } from '../shared/artifact-visual-classification.js';
+import { getBagShape } from '../shared/bag-shape.js';
 import {
   artifactFootprintLabel,
   artifactImagePath,
@@ -98,8 +99,9 @@ function writeSheetManifest({ manifestPath, outPath, outputHash, outputSize, inp
 }
 
 function sheetDimensionsForArtifact(artifact) {
-  const rows = artifact.shape?.length || artifact.height || 1;
-  const cols = artifact.shape?.[0]?.length || artifact.width || 1;
+  const shape = shapeForArtifact(artifact);
+  const rows = shape.length || artifact.height || 1;
+  const cols = shape[0]?.length || artifact.width || 1;
   const cellGap = sheetCellGap;
   const cellPx = sheetCellPx;
   return {
@@ -123,7 +125,7 @@ function sheetStageForArtifact(artifact) {
 }
 
 function shapeForArtifact(artifact) {
-  if (artifact.shape) return artifact.shape;
+  if (artifact.family === 'bag') return getBagShape(artifact);
   return Array.from({ length: artifact.height || 1 }, () => Array(artifact.width || 1).fill(1));
 }
 

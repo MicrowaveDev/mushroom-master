@@ -399,7 +399,7 @@ async function main() {
     const html = renderHtml(sections);
     const page = await browser.newPage();
     await page.setViewport({ width: 1560, height: 1800, deviceScaleFactor: 1 });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'load', timeout: 0 });
     const height = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight));
     await page.setViewport({ width: 1560, height, deviceScaleFactor: 1 });
     const screenshot = await page.screenshot({ clip: { x: 0, y: 0, width: 1560, height } });

@@ -122,7 +122,7 @@ const expectedClassificationSnapshot = {
   flash_cap: { role: 'stun', shine: 'signature', primaryStatKey: 'stunChance', secondaryStats: ['damage'], tradeoffs: [], owner: null, footprintType: 'single' },
   entropy_shard: { role: 'stun', shine: 'signature', primaryStatKey: 'stunChance', secondaryStats: ['armor'], tradeoffs: [], owner: null, footprintType: 'single' },
   starter_bag: { role: 'bag', shine: 'bright', primaryStatKey: null, secondaryStats: [], tradeoffs: [], owner: null, footprintType: 'block' },
-  moss_pouch: { role: 'bag', shine: 'bright', primaryStatKey: null, secondaryStats: [], tradeoffs: [], owner: null, footprintType: 'tall' },
+  moss_pouch: { role: 'bag', shine: 'bright', primaryStatKey: null, secondaryStats: [], tradeoffs: [], owner: null, footprintType: 'wide' },
   amber_satchel: { role: 'bag', shine: 'radiant', primaryStatKey: null, secondaryStats: [], tradeoffs: [], owner: null, footprintType: 'block' },
   trefoil_sack: { role: 'bag', shine: 'radiant', primaryStatKey: null, secondaryStats: [], tradeoffs: [], owner: null, footprintType: 'mask' },
   birchbark_hook: { role: 'bag', shine: 'radiant', primaryStatKey: null, secondaryStats: [], tradeoffs: [], owner: null, footprintType: 'mask' },

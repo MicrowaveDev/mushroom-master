@@ -44,13 +44,16 @@ function parseArgs(argv) {
 }
 
 function shapeForArtifact(artifact) {
-  if (artifact.family === 'bag' && artifact.shape) return getBagShape(artifact, 0);
+  if (artifact.family === 'bag') return getBagShape(artifact, 0);
   return Array.from({ length: artifact.height }, () => Array(artifact.width).fill(1));
 }
 
 function thresholdsFor(artifact) {
-  const cells = artifact.width * artifact.height;
-  const hasMaskGaps = Boolean(artifact.shape?.flat().some((cell) => !cell));
+  const shape = shapeForArtifact(artifact);
+  const rows = shape.length || 1;
+  const cols = shape[0]?.length || 1;
+  const cells = shape.flat().filter(Boolean).length;
+  const hasMaskGaps = shape.flat().some((cell) => !cell);
   if (artifact.family === 'bag' && hasMaskGaps) {
     return {
       totalCoverage: 0.20,
@@ -70,13 +73,13 @@ function thresholdsFor(artifact) {
   return {
     totalCoverage: 0.30,
     cellCoverage: 0.18,
-    bboxFillX: artifact.width > 1 ? 0.78 : 0.58,
-    bboxFillY: artifact.height > 1 ? 0.78 : 0.58
+    bboxFillX: cols > 1 ? 0.78 : 0.58,
+    bboxFillY: rows > 1 ? 0.78 : 0.58
   };
 }
 
 function hasMaskGaps(artifact) {
-  return Boolean(artifact.shape?.flat().some((cell) => !cell));
+  return shapeForArtifact(artifact).flat().some((cell) => !cell);
 }
 
 function allowsVisualMaskOverhang(artifact, { strictMaskTransparency = false } = {}) {
@@ -84,7 +87,10 @@ function allowsVisualMaskOverhang(artifact, { strictMaskTransparency = false } =
 }
 
 function shouldHaveCenteredSilhouette(artifact) {
-  return artifact.width === artifact.height && artifact.width > 1 && !hasMaskGaps(artifact);
+  const shape = shapeForArtifact(artifact);
+  const rows = shape.length || 1;
+  const cols = shape[0]?.length || 1;
+  return cols === rows && cols > 1 && !hasMaskGaps(artifact);
 }
 
 function edgePaddingFailures(artifact, image, total) {

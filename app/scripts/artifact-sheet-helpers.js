@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { artifacts } from '../server/game-data.js';
+import { getBagShape } from '../shared/bag-shape.js';
 import { repoRoot, escapeHtml } from './lib/bitmap-image-toolkit.js';
 
 export { repoRoot, escapeHtml };
@@ -56,7 +57,9 @@ export function artifactImageDataUrl(artifact) {
 }
 
 export function artifactFootprintLabel(artifact) {
-  return artifact.shape
-    ? `${artifact.shape[0]?.length || artifact.width}x${artifact.shape.length}`
-    : `${artifact.width}x${artifact.height}`;
+  if (artifact.family === 'bag') {
+    const shape = getBagShape(artifact);
+    return `${shape[0]?.length || artifact.width}x${shape.length || artifact.height}`;
+  }
+  return `${artifact.width}x${artifact.height}`;
 }

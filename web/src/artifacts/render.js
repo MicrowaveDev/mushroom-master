@@ -1,4 +1,5 @@
 import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
+import { getBagShape } from '../../../app/shared/bag-shape.js';
 
 export function artifactTheme(artifact) {
   const themes = {
@@ -342,7 +343,7 @@ export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
   // Shape-bearing bags pin their preview dimensions to the shape so
   // preferredOrientation's landscape rotation can't clip non-rectangular
   // pieces (e.g. the 1×4 I-bag).
-  const shape = isBag && artifact.shape ? artifact.shape : null;
+  const shape = isBag ? getBagShape(artifact) : null;
   const w = shape
     ? (shape[0]?.length || 0)
     : (Number(displayWidth) > 0 ? Number(displayWidth) : artifact.width);
