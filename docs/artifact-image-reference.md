@@ -34,18 +34,18 @@ web/public/artifacts/{artifact_id}.png
 | `green_star_sight` | Expansion damage/speed, `1x1`, plain. | A compact tempo pickup inspired by Kirt's targeting star. | Small neon-green sight charm with a violet arrow notch, broad star silhouette, no tiny crosshair lines. |
 | `flashstep_tendon` | Expansion damage/speed, `1x2`, bright. | A vertical speed-risk piece that echoes Morga's snap-forward initiative. | Living tendon pulled taut top-to-bottom, bright flash knots at both ends, orange-white motion glow inside the silhouette. |
 | `rotlight_lantern` | Deep lore damage/armor, `2x1`, bright. | Thalla-adjacent rotlight that gives attack builds a warmer defensive branch. | Horizontal bone lantern with warm gold rotlight inside and chunky side caps, filling both cells. |
-| `portal_cut_sickle` | Deep lore damage/speed, `2x1`, bright. | Lomie route-cutting fantasy for fragile tempo attackers. | Curved void sickle crossing a violet portal edge, broad blade mass across both cells. |
+| `portal_cut_sickle` | Deep lore damage/speed, `2x1`, bright. | Lomie route-cutting fantasy for fragile tempo attackers; also a backlog seed for a future merged-artifact recipe. | If kept as a normal live item, simplify to one broad curved void sickle crossing both cells. Keep the stronger portal-plus-blade fusion concept for the merge backlog. |
 | `ferment_sea_pearl` | Deep lore damage, `2x2`, radiant. | Axilin-style high-risk pressure object for late-run damage spikes. | Heavy amber pearl with green pressure bubbles and sour cracks, one round blocky body filling all quadrants. |
-| `spore_burst_arrow` | Deep lore damage/control, `2x1`, bright. | Kirt bio-archery item that mixes strike and interruption without new mechanics. | Chunky arrow pod with violet shaft and green puffball warhead, connected left-to-right. |
+| `spore_burst_arrow` | Deep lore damage/control, `2x1`, bright. | Kirt bio-archery item that mixes strike and interruption without new mechanics; quality-watch item for the footprint-aware detail pass. | Chunky arrow pod with violet shaft and green puffball warhead, connected left-to-right; avoid blur, overcompression, and tiny pod texture. |
 | `rustbone_key` | Deep lore damage/control, `1x2`, bright. | Dalamar dead-gate motif as a tall attack charm. | Tall black-bone key corroding into ash at the teeth, broad bow at top and heavy key bit below. |
 | `snaplight_husk` | Deep lore damage/speed, `2x1`, bright. | Morga snap-burst fantasy for faster risky strike builds. | Split seed husk mid-snap with a bright contained flash line between two chunky halves. |
 | `amber_needle_swarm` | Deep lore damage, `2x2`, radiant. | Ygg-Mycel stinger swarm as a large aggressive commitment with speed/armor tradeoffs. | Cluster of thick amber stingers orbiting one resin node, dense connected block rather than loose particles. |
 | `crownthorn_cleaver` | Deep lore damage, `1x2`, bright. | Thorn Crown branch made into a vertical heavy strike piece. | Vertical black-branch cleaver with green resin teeth, broad head and rooted handle. |
-| `heartwood_splinter_bow` | Circle relic damage/armor, `2x1`, bright. | Ygg-Mycel heartwood as a balanced strike piece that helps attackers survive. | Horizontal black heartwood bow with green resin string and one amber arrowbud, chunky across both cells. |
+| `heartwood_splinter_bow` | Circle relic damage/armor, `2x1`, bright. | Ygg-Mycel heartwood as a balanced strike piece that helps attackers survive. | One broad horizontal black heartwood bow with green resin string and one amber arrowbud, chunky across both cells; avoid small bark knots and tiny end decorations. |
 | `blue_vinegar_chakram` | Circle relic damage/control, `2x1`, bright. | Axilin blue vinegar shaped into a risky slicing ring with interruption flavor. | Wide blue-violet vinegar chakram with amber stopper nodes and contained green fizz, broad ring silhouette. |
 | `first_bloom_cinder` | Circle relic damage/speed, `1x1`, bright. | Morga opener fantasy in a compact cell: fast, hot, and fragile. | Compact orange flower-coal with cap-like petals and one white flash slash, filling one cell. |
 | `dead_city_nail` | Circle relic damage/control, `1x2`, bright. | Dalamar dead-gate hardware turned into a slow heavy puncture charm. | Tall black-bone nail with ash cap at top and corroded tooth point below, thick vertical silhouette. |
-| `golden_spore_mace` | Circle relic damage/armor, `2x2`, radiant. | Thalla royal force as a large anchored attack object with defensive weight. | Heavy golden spore mace head with white mycelium haft and pale cyan biostasis marks, one blocky object. |
+| `golden_spore_mace` | Circle relic damage/armor, `2x2`, radiant. | Thalla royal force as a large anchored attack object with defensive weight. | Heavy solid golden spore mace head with short white mycelium haft, a few large spore bumps, and one pale cyan biostasis mark; avoid dense holes or filigree. |
 | `riftfang_comet` | Circle relic damage/speed, `2x1`, bright. | Lomie rift motion as a fast fragile strike item. | Horizontal violet fang-comet with green rift tail and dark rim, broad enough to fill both cells. |
 
 ## Armor
@@ -76,7 +76,7 @@ web/public/artifacts/{artifact_id}.png
 | `ferment_glass_bracer` | Circle relic armor/damage, `1x2`, bright. | Axilin pressure vessel turned into a counterpunch bracer. | Tall amber glass bracer with green ferment bubbles, heavy cuff at top and lower pressure chamber. |
 | `thornhide_scale` | Circle relic armor/damage, `1x1`, plain. | Kirt hunting hide as a small armor pickup that still bites. | Square black-bark scale with one green resin thorn and cream highlight, compact and protective. |
 | `flashcap_knee_guard` | Circle relic armor/speed, `1x2`, bright. | Morga evasive defense as a tall tempo guard. | Vertical orange flashcap knee guard with moss strap and white speed stripe, connected top-to-bottom. |
-| `obsidian_throne_chip` | Circle relic armor/control, `1x2`, bright. | Dalamar throne fragment for slow defensive control. | Tall black obsidian throne shard with white mold crown and gray ash edge, broad vertical mass. |
+| `obsidian_throne_chip` | Circle relic armor/control, `1x2`, bright. | Dalamar throne fragment for slow defensive control. | Tall broad black obsidian throne shard with simple white mold crown and one gray ash edge; avoid gritty stone texture and many small cracks. |
 
 ## Stun
 
@@ -114,7 +114,7 @@ web/public/artifacts/{artifact_id}.png
 | ID | Type / Purpose | Motivation | Visual Target |
 | --- | --- | --- | --- |
 | `moss_ring` | Utility, `1x1`, plain. | Compact flexible charm; should look like a neutral support pickup. | Mossy ring charm with circular moss edge and pale center. |
-| `haste_wisp` | Utility/speed, `1x1`, plain. | Speed-forward item that must avoid reading as pure damage. | Fast leaf-like flame with angled wisp, motion streak, and bright tip. |
+| `haste_wisp` | Utility/speed, `1x1`, plain. | Speed-forward item that must avoid reading as pure damage. | Compact speed leaf/flame emblem with one bright tip and one motion stripe, 2-3 large shapes only. |
 
 ## Character Shop Artifacts
 
@@ -134,13 +134,13 @@ web/public/artifacts/{artifact_id}.png
 | `dalamar_pallid_moth_pin` | Dalamar level-8 signature, `1x1`. | Silent crypt moth charm with decay-control flavor. | Porcelain-white moth with black wing veins and green mold sparks, pinned by silence rather than a needle. |
 | `thalla_first_host_locket` | Thalla mastery, `1x1`, level 12. | Forbidden memory of Ilve as a compact biostasis/control charm. | Warm gold locket with white nerve-mycelium clasp and a pale cyan stillness glint, one chunky cell. |
 | `thalla_gold_oyster_crown` | Thalla mastery, `2x2`, level 16. | Heavy royal garden armor that feels like a throne and a living crown. | Golden oyster crown grown from layered caps and white mycelium, broad sacred block filling all quadrants. |
-| `lomie_mirror_route_map` | Lomie mastery, `1x2`, level 12. | A defensive route-map that turns her soft-wall fantasy into a tall planning relic. | Tall black mirror map with green route lines and a crystal frame, broad enough for one-cell width. |
+| `lomie_mirror_route_map` | Lomie mastery, `1x2`, level 12. | A defensive route-map that turns her soft-wall fantasy into a tall planning relic. | Tall black-violet mirror tablet with thick frame, 2-3 broad teal route lines, and a few large gate dots; avoid icy texture, cracks, and many tiny nodes. |
 | `lomie_void_lattice_gate` | Lomie mastery, `2x2`, level 16. | Miniature void gate for late defensive-control builds. | Square green-violet lattice gate holding a black void center, one connected block with four corner knots. |
 | `axilin_blue_vinegar_flask` | Axilin mastery, `1x2`, level 12. | Tall portal-vinegar stun flask, more dangerous than the normal ampoule. | Tall blue-violet vinegar flask with amber stopper, green fizz core, and chunky glass belly. |
 | `axilin_ginger_overdrive` | Axilin mastery, `2x2`, level 16. | Volatile ginger engine for high-risk damage spikes. | Large ginger-red overdrive core with amber glass chambers and green pressure bubbles, dense block form. |
 | `kirt_rainpuff_quiver` | Kirt mastery, `2x1`, level 12. | Living trap quiver for control-heavy Kirt builds. | Horizontal black-branch quiver packed with green puffballs and amber thorn binding, one wide object. |
 | `kirt_black_wind_bowchip` | Kirt mastery, `2x2`, level 16. | Black Wind of the Abyss as a high-risk strike relic. | Heavy black-violet bow knot chip with neon green eye and amber string arcs, dense in all quadrants. |
-| `morga_afterimage_crown` | Morga mastery, `2x1`, level 12. | Speed-control crown that appears in two places at once. | Orange flash crown split into left origin and right afterimage, connected by a white speed band. |
+| `morga_afterimage_crown` | Morga mastery, `2x1`, level 12. | Speed-control crown that appears in two places at once. | Two readable crown silhouettes, left solid and right translucent, connected by one white speed band; must not read as a flame smear. |
 | `morga_bellstrike_calyx` | Morga mastery, `2x2`, level 16. | Opening-bell damage relic distinct from the normal control spore. | Large orange bell-flower calyx with white flash clapper and red damage petals, filling all quadrants. |
 | `dalamar_throne_splinter` | Dalamar mastery, `1x2`, level 12. | Obsidian-throne armor shard for slow control builds. | Tall black obsidian splinter with white mold crown and ash-gray side plates, heavy vertical silhouette. |
 | `dalamar_dead_gate_seal` | Dalamar mastery, `2x2`, level 16. | Dead City gate seal as a late control commitment. | Square bone-gray gate seal crumbling into ash, black keyhole center, white mold rim, one heavy block. |
@@ -161,7 +161,7 @@ web/public/artifacts/{artifact_id}.png
 | ID | Type / Purpose | Motivation | Visual Target |
 | --- | --- | --- | --- |
 | `starter_bag` | Bag/container, `3x3`. | Default container fantasy for the inventory system. | Soft canvas starter bag with stitched upper flap, centered clasp, folds, and base seam across all nine cells. |
-| `moss_pouch` | Bag/container, `1x2`. | Small vertical pouch; simple early container shape. | Mossy drawstring pouch with fabric rim above and rounded pouch belly/fibers below. |
+| `moss_pouch` | Bag/container, displayed `2x1` from legacy `1x2` data. | Small early container; it must match the game's landscape display orientation. | Horizontal mossy drawstring pouch/satchel spanning both cells, with mouth, tie, and rounded belly continuing left-to-right. |
 | `amber_satchel` | Bag/container, `2x2`. | Medium container with warmer material language. | Amber leather satchel; handle/top flap span upper cells, amber clasp centered across lower body. |
 | `trefoil_sack` | Bag/container, `3x2` T-mask. | Irregular bag that teaches non-rectangular container placement. | Three-lobed clover-like top pouch with one hanging lower lobe from the center; side lower cells are logical placement holes. |
 | `birchbark_hook` | Bag/container, `3x2` L-mask. | Hook-shaped irregular container. | Birchbark strip with stitched top seam across top row and hooked bend descending from the left cell. |

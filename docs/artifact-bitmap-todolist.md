@@ -58,6 +58,30 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 - Keep enough transparent padding that the object does not get clipped when rendered over the footprint. No visible alpha should touch or sit nearly flush with the canvas edge; centered/blocky artifacts should have visually balanced left/right and top/bottom margins.
 - If a converted PNG looks shifted or cut, inspect both the app-facing PNG alpha bounds and the raw imagegen source. Rerun the raw-to-bitmap conversion only when the raw contains the full object plus background; if the raw source is already clipped at an edge, reselect/regenerate the raw image or restore an approved archive candidate instead of reprocessing the same broken pixels.
 - The chroma-key conversion helper should fail when a raw source touches the canvas edge. Treat that failure as a source problem, not a conversion problem; `--allow-clipped-source` is only for diagnostics.
+- Detail/compression must be footprint-aware. Do not apply the same smoothing or quantization pass to 1x1, 2-cell, and 2x2 artifacts; normalize by the artifact's displayed grid cells so large pieces do not look blurrier or more compressed than small pieces.
+- For bag artifacts, use the displayed bag shape from `getBagShape(artifact)` as the bitmap footprint. This matters for legacy rectangular bags such as `moss_pouch`, whose game display is 2x1 even though the persisted data is `width: 1`, `height: 2`.
+
+## Targeted Regeneration Review - 2026-05-09
+
+See [artifact-regeneration-plan.md](artifact-regeneration-plan.md) for source of truth, implementation sequencing, and verification commands.
+
+Regenerate in the next art pass:
+
+- `lomie_mirror_route_map.png` - redraw as a clean 1x2 black mirror tablet with only a few broad route lines.
+- `golden_spore_mace.png` - redraw as a solid 2x2 mace head with a few large spore bumps, not dense holes.
+- `haste_wisp.png` - redraw as a compact 1x1 speed leaf/flame emblem.
+- `heartwood_splinter_bow.png` - redraw as one broad 2x1 heartwood bow, not a tiny decorated branch.
+- `morga_afterimage_crown.png` - redraw as two readable crown silhouettes connected by one speed band.
+- `moss_pouch.png` - fix the footprint pipeline first, then redraw as a 2x1 displayed pouch/satchel.
+- `obsidian_throne_chip.png` - redraw as a broad 1x2 throne shard with simple mold crown, not gritty texture.
+
+Quality watch:
+
+- `spore_burst_arrow.png` - reprocess with the deterministic footprint-aware detail normalizer after it exists; regenerate only if it still reads compressed or muddy at thumbnail sizes.
+
+Backlog:
+
+- `portal_cut_sickle.png` - current concept reads like a merged artifact. Keep the future merge/fusion idea in [artifact-expansion-catalog.md](artifact-expansion-catalog.md); do not treat it as a normal redraw until the live/future direction is chosen.
 
 ## Validation
 

@@ -14,6 +14,14 @@ Rows marked as promoted are wired into `game-data.js`; remaining rows are still 
 - Character items should use `characterItem: { mushroomId, requiredLevel }`; suggested levels below assume the existing level-5 items stay as the first unlock tier.
 - Russian names are draft flavor, not localization sign-off.
 
+## Backlog: Merge Artifact Ideas
+
+These are design notes for a future Backpack Battles-like fusion layer, not live gameplay rules yet. They need requirements, balance, UI, and recipe validation before implementation.
+
+| Seed | Why It Belongs Here | Possible Direction |
+| --- | --- | --- |
+| `portal_cut_sickle` | Its current silhouette already reads like two artifacts fused together: a portal edge plus a cutting blade. | Keep the live item simple for now, but reserve the concept as a future merged Lomie weapon recipe such as portal charm + sickle/blade. |
+
 ## Priority Batch
 
 These 18 are the strongest first implementation wave: broad silhouettes, clear stats, and strong lore hooks. Start here if the next task is "make them playable".
