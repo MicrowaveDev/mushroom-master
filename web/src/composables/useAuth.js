@@ -183,6 +183,23 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
 
       // Store missed battle for main.js to pick up after bootstrap
       state.pendingReconnectBattleId = missedRoundResult ? lastRound.battleId : null;
+      if (missedRoundResult) {
+        state.gameRunResult = {
+          id: run.id,
+          mode: run.mode,
+          status: run.status,
+          currentRound: run.currentRound,
+          endedAt: run.endedAt || null,
+          endReason: run.endReason || null,
+          completionBonus: null,
+          season: null,
+          achievements: [],
+          fusions: Array.isArray(run.pendingFusions) ? run.pendingFusions : [],
+          player: run.player || null,
+          lastRound,
+          rounds: run.rounds || []
+        };
+      }
 
       if (!state.bootstrap.activeMushroomId) {
         navigate('onboarding');

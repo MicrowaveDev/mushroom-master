@@ -6205,6 +6205,8 @@ select {
     margin-top: 0;
     min-width: 0;
     overflow: hidden;
+    gap: 6px;
+    padding: 8px;
   }
 
   .prep-workspace .artifact-shop-items {
@@ -6217,11 +6219,35 @@ select {
   }
 
   .prep-workspace .shop-item-visual {
-    --artifact-cell-size: 38px;
+    --artifact-cell-size: 34px;
+  }
+
+  .prep-workspace .shop-item-name,
+  .prep-workspace .shop-item-description {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .prep-workspace .shop-item-description {
+    font-size: 0.68rem;
+    line-height: 1.15;
+  }
+
+  .prep-workspace .shop-item-tags {
+    gap: 3px;
+    font-size: 0.78em;
+  }
+
+  .prep-workspace .artifact-stat-chip {
+    padding: 2px 5px;
   }
 
   .prep-screen .prep-actions {
     margin-top: 0;
+  }
+
+  .prep-ready-btn {
+    padding: 10px 22px;
   }
 }
 
@@ -7706,7 +7732,7 @@ select {
   z-index: 90;
   display: grid;
   place-items: center;
-  pointer-events: none;
+  pointer-events: auto;
   background: rgba(36, 28, 48, 0.18);
   animation: fusion-reveal-overlay 2s ease both;
 }
@@ -7729,18 +7755,14 @@ select {
   --artifact-cell-size: clamp(44px, 12vw, 64px);
 }
 
+.fusion-reveal-ingredient {
+  animation: fusion-ingredient-in 1.35s cubic-bezier(.2, .8, .24, 1) both;
+}
+
 .fusion-reveal-ingredient .artifact-figure-grid,
 .fusion-reveal-result .artifact-figure-grid {
   width: 100%;
   height: 100%;
-}
-
-.fusion-reveal-ingredient--0 {
-  animation: fusion-ingredient-left 1.35s cubic-bezier(.2, .8, .24, 1) both;
-}
-
-.fusion-reveal-ingredient--1 {
-  animation: fusion-ingredient-right 1.35s cubic-bezier(.2, .8, .24, 1) both;
 }
 
 .fusion-reveal-burst {
@@ -7766,33 +7788,18 @@ select {
   100% { opacity: 0; }
 }
 
-@keyframes fusion-ingredient-left {
+@keyframes fusion-ingredient-in {
   0% {
     opacity: 1;
-    transform: translateX(-122px) scale(1);
+    transform: translate(var(--fusion-start-x, -122px), var(--fusion-start-y, 0)) scale(1);
   }
   68% {
     opacity: 1;
-    transform: translateX(-10px) scale(0.62);
+    transform: translate(var(--fusion-near-x, -10px), var(--fusion-near-y, 0)) scale(0.62);
   }
   100% {
     opacity: 0;
-    transform: translateX(0) scale(0.18);
-  }
-}
-
-@keyframes fusion-ingredient-right {
-  0% {
-    opacity: 1;
-    transform: translateX(122px) scale(1);
-  }
-  68% {
-    opacity: 1;
-    transform: translateX(10px) scale(0.62);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(0) scale(0.18);
+    transform: translate(0, 0) scale(0.18);
   }
 }
 

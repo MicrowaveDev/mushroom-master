@@ -23,6 +23,7 @@ import defineGameRun from './GameRun.js';
 import defineGameRunPlayer from './GameRunPlayer.js';
 import defineGameRound from './GameRound.js';
 import defineGameRunLoadoutItem from './GameRunLoadoutItem.js';
+import defineGameRunFusion from './GameRunFusion.js';
 import defineGameRunRefund from './GameRunRefund.js';
 import defineGameRunShopState from './GameRunShopState.js';
 import definePlayerSeasonProgress from './PlayerSeasonProgress.js';
@@ -51,6 +52,7 @@ export function initModels(sequelize) {
   const GameRunPlayer = defineGameRunPlayer(sequelize);
   const GameRound = defineGameRound(sequelize);
   const GameRunLoadoutItem = defineGameRunLoadoutItem(sequelize);
+  const GameRunFusion = defineGameRunFusion(sequelize);
   const GameRunRefund = defineGameRunRefund(sequelize);
   const GameRunShopState = defineGameRunShopState(sequelize);
   const PlayerSeasonProgress = definePlayerSeasonProgress(sequelize);
@@ -83,6 +85,7 @@ export function initModels(sequelize) {
   GameRound.belongsTo(Battle, { foreignKey: 'battle_id' });
 
   GameRun.hasMany(GameRunShopState, { foreignKey: 'game_run_id' });
+  GameRun.hasMany(GameRunFusion, { foreignKey: 'game_run_id' });
   GameRun.hasMany(GameRunRefund, { foreignKey: 'game_run_id' });
   GameRun.hasMany(PlayerSeasonRun, { foreignKey: 'game_run_id' });
   // GameRunLoadoutItem intentionally has no FK to GameRun so synthetic

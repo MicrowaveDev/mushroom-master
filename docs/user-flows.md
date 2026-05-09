@@ -232,6 +232,7 @@ Step 3: Battle Replay (auto-shown after ready)
   Action: Click "Continue" or "Home"
   Expected:
     - Mid-run: continueToNextRound() called → next round prep
+    - [Req 11-E] If the completed round produced artifact fusions, the next prep entry shows the fusion reveal first and blocks prep edits until it completes.
     - Run ended: navigate to runComplete
     - Standalone: navigate back to home
 
@@ -469,6 +470,7 @@ Step 2: Player reopens app
     - [Req 12-B] If combat completed while away (challenge mode), the
       missed battleId is loaded and the player lands on the replay
       screen with the rewards card already visible.
+    - [Req 11-E] If that missed transition produced artifact fusions, the reveal is still queued after replay continue.
     - Navigate to prep (if mid-round) or replay (if round resolved)
 
 Step 3: Challenge idle timeout

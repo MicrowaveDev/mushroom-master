@@ -5,11 +5,13 @@ import {
   acceptFriendChallenge,
   resolveRound,
   abandonGameRun,
+  getActiveGameRun,
+  getGameRun,
   getPlayerState,
   addFriendByCode
 } from '../../app/server/services/game-service.js';
 import { STARTING_LIVES, ROUND_INCOME, CHALLENGE_WINNER_BONUS, MAX_ROUNDS_PER_RUN } from '../../app/server/game-data.js';
-import { freshDb, createPlayer, saveSetup } from './helpers.js';
+import { freshDb, createPlayer, saveSetup, seedRunLoadout } from './helpers.js';
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -108,6 +110,38 @@ test('[Req 8-A, 9-A] challenge round resolution gives opposite outcomes', async 
   // Both get rewards independently
   assert.ok(resultA.lastRound.rewards.spore > 0);
   assert.ok(resultB.lastRound.rewards.spore > 0);
+});
+
+test('[Req 11-E] challenge fusion reveal events persist for reconnect', async () => {
+  await freshDb();
+  const { playerA, playerB } = await setupTwoFriends();
+
+  const challenge = await createRunChallenge(playerA, playerB);
+  const run = await acceptFriendChallenge(challenge.id, playerB);
+  await seedRunLoadout(playerA, run.id, [
+    { artifactId: 'sporeblade', x: 0, y: 0, width: 1, height: 1 },
+    { artifactId: 'mirrorloop_knot', x: 1, y: 0, width: 1, height: 1 }
+  ]);
+  await seedRunLoadout(playerB, run.id, [
+    { artifactId: 'amber_fang', x: 0, y: 0, width: 1, height: 2 },
+    { artifactId: 'shock_puff', x: 1, y: 0, width: 1, height: 1 }
+  ]);
+
+  const result = await resolveRound(playerA, run.id);
+  assert.equal(result.status, 'active');
+  assert.equal(result.playerResults[playerA].fusions.length, 1);
+  assert.equal(result.playerResults[playerA].fusions[0].resultArtifactId, 'portal_cut_sickle');
+  assert.deepEqual(result.playerResults[playerA].fusions[0].ingredientArtifactIds, ['sporeblade', 'mirrorloop_knot']);
+
+  const reloaded = await getGameRun(run.id, playerA);
+  assert.equal(reloaded.currentRound, 2);
+  assert.equal(reloaded.fusions.length, 1);
+  assert.equal(reloaded.fusions[0].resultArtifactId, 'portal_cut_sickle');
+  assert.deepEqual(reloaded.fusions[0].ingredientArtifactIds, ['sporeblade', 'mirrorloop_knot']);
+
+  const active = await getActiveGameRun(playerA);
+  assert.equal(active.pendingFusions.length, 1);
+  assert.equal(active.pendingFusions[0].resultArtifactId, 'portal_cut_sickle');
 });
 
 test('[Req 8-E] challenge mode has no per-round Elo changes', async () => {

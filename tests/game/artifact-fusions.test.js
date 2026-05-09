@@ -59,3 +59,22 @@ test('[fusion] consumes each duplicate row only once', () => {
     ['blade_two', 'knot_two']
   ]);
 });
+
+test('[fusion] does not reuse one row for repeated same-artifact ingredients', () => {
+  const recipes = [{
+    id: 'double_sporeblade',
+    resultArtifactId: 'portal_cut_sickle',
+    ingredientArtifactIds: ['sporeblade', 'sporeblade']
+  }];
+
+  assert.equal(findArtifactFusionMatches([
+    row('only_blade', 'sporeblade')
+  ], getArtifact, recipes).length, 0);
+
+  const matches = findArtifactFusionMatches([
+    row('blade_one', 'sporeblade'),
+    row('blade_two', 'sporeblade')
+  ], getArtifact, recipes);
+  assert.equal(matches.length, 1);
+  assert.deepEqual(matches[0].ingredientRowIds, ['blade_one', 'blade_two']);
+});

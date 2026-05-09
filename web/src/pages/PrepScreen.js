@@ -185,6 +185,7 @@ export const PrepScreen = {
 
       <fusion-reveal
         v-if="state.fusionRevealQueue?.length"
+        :key="state.fusionRevealQueue[0]?.id || state.fusionRevealQueue[0]?.recipeId || state.fusionRevealQueue.length"
         :reveal="state.fusionRevealQueue[0]"
         :state="state"
         :get-artifact="getArtifact"

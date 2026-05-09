@@ -44,6 +44,21 @@ export const FusionReveal = {
         width: artifact?.width || 1,
         height: artifact?.height || 1
       };
+    },
+    ingredientStyle(index) {
+      const count = Math.max(1, this.ingredientArtifacts.length);
+      const radius = 122;
+      const angle = count === 2
+        ? (index === 0 ? Math.PI : 0)
+        : (-Math.PI / 2) + ((Math.PI * 2 * index) / count);
+      const startX = Math.round(Math.cos(angle) * radius);
+      const startY = Math.round(Math.sin(angle) * radius);
+      return {
+        '--fusion-start-x': `${startX}px`,
+        '--fusion-start-y': `${startY}px`,
+        '--fusion-near-x': `${Math.round(startX * 0.08)}px`,
+        '--fusion-near-y': `${Math.round(startY * 0.08)}px`
+      };
     }
   },
   template: `
@@ -54,6 +69,7 @@ export const FusionReveal = {
           :key="artifact.id + ':' + index"
           class="fusion-reveal-ingredient"
           :class="'fusion-reveal-ingredient--' + index"
+          :style="ingredientStyle(index)"
         >
           <artifact-figure
             :artifact="artifact"

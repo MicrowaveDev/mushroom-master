@@ -35,13 +35,16 @@ export function findArtifactFusionMatches(rows, getArtifact, recipes = artifactF
 
     while (true) {
       const ingredients = [];
+      const ingredientRowIds = new Set();
       for (const ingredientArtifactId of recipe.ingredientArtifactIds) {
         const row = sourceRows.find((candidate) =>
           !usedRowIds.has(candidate.id)
+          && !ingredientRowIds.has(candidate.id)
           && rowMatchesIngredient(candidate, ingredientArtifactId, getArtifact, recipe)
         );
         if (!row) break;
         ingredients.push(row);
+        ingredientRowIds.add(row.id);
       }
 
       if (ingredients.length !== recipe.ingredientArtifactIds.length) break;

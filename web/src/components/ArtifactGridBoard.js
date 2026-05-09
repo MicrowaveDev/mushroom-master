@@ -46,7 +46,8 @@ export const ArtifactGridBoard = {
     draggablePieces: { type: Boolean, default: false },
     bagRows: { type: Array, default: () => [] },
     placementPreviewForCell: { type: Function, default: null },
-    highlightedRowIds: { type: [Array, Object], default: () => new Set() }
+    highlightedRowIds: { type: [Array, Object], default: () => new Set() },
+    highlightedTitle: { type: String, default: '' }
   },
   emits: ['cell-click', 'piece-click', 'piece-rotate', 'cell-drop', 'piece-drag-start', 'piece-drag-end'],
   data() {
@@ -346,6 +347,7 @@ export const ArtifactGridBoard = {
           class="artifact-piece-wrap"
           :class="{ 'artifact-piece-wrap--fusion-pending': isHighlighted(item) }"
           :style="pieceStyle(item)"
+          :title="isHighlighted(item) ? highlightedTitle : null"
           v-bind="pieceDataset(item)"
         >
           <component

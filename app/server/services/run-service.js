@@ -51,7 +51,7 @@ import {
   insertLoadoutItem,
   readCurrentRoundItems
 } from './game-run-loadout.js';
-import { applyRoundStartFusions } from './artifact-fusion-service.js';
+import { applyRoundStartFusions, readFusionReveals } from './artifact-fusion-service.js';
 import { awardRunSeasonProgress } from './season-service.js';
 import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
 import { getSeasonLevel, getSeasonPointsBreakdown, seasonLevelRank } from '../../shared/season-levels.js';
@@ -210,16 +210,21 @@ export async function startGameRun(playerId, mode = 'solo') {
 
 async function shapeActiveGameRun(row, playerId) {
   const currentRound = row.current_round;
-  const [roundsResult, shopResult, loadoutRows] = await Promise.all([
+  const [roundsResult, shopResult, loadoutRows, pendingFusions] = await Promise.all([
     query(
-      `SELECT id, round_number, battle_id, created_at FROM game_rounds WHERE game_run_id = $1 ORDER BY round_number ASC`,
-      [row.id]
+      `SELECT id, round_number, battle_id, player_id, outcome, spore_awarded, mycelium_awarded,
+              rating_before, rating_after, created_at
+       FROM game_rounds
+       WHERE game_run_id = $1 AND player_id = $2
+       ORDER BY round_number ASC`,
+      [row.id, playerId]
     ),
     query(
       `SELECT offer_json FROM game_run_shop_states WHERE game_run_id = $1 AND player_id = $2 AND round_number = $3`,
       [row.id, playerId, currentRound]
     ),
-    readCurrentRoundItems(null, row.id, playerId, currentRound)
+    readCurrentRoundItems(null, row.id, playerId, currentRound),
+    currentRound > 1 ? readFusionReveals(null, row.id, playerId, currentRound) : []
   ]);
 
   const shopOffer = shopResult.rowCount ? parseJson(shopResult.rows[0].offer_json, []) : [];
@@ -234,6 +239,7 @@ async function shapeActiveGameRun(row, playerId) {
     endedAt: row.ended_at,
     endReason: row.end_reason,
     shopOffer,
+    pendingFusions,
     loadoutItems: loadoutRows,
     player: {
       id: row.grp_id,
@@ -249,6 +255,14 @@ async function shapeActiveGameRun(row, playerId) {
       id: r.id,
       roundNumber: r.round_number,
       battleId: r.battle_id,
+      playerId: r.player_id,
+      outcome: r.outcome,
+      rewards: {
+        spore: r.spore_awarded,
+        mycelium: r.mycelium_awarded
+      },
+      ratingBefore: r.rating_before,
+      ratingAfter: r.rating_after,
       createdAt: r.created_at
     }))
   };
@@ -497,6 +511,9 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
   const viewerRounds = roundsResult.rows.filter((r) => r.player_id === viewerPlayerId);
   const lastViewerRound = viewerRounds[viewerRounds.length - 1] || null;
   const viewerMushroomId = mushroomByPlayer.get(viewerPlayerId) || null;
+  const fusions = run.status === 'active' && run.current_round > 1
+    ? await readFusionReveals(null, gameRunId, viewerPlayerId, run.current_round)
+    : [];
 
   let season = null;
   let achievements = [];
@@ -591,6 +608,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     player,
     season,
     achievements,
+    fusions,
     lastRound: lastViewerRound ? {
       roundNumber: lastViewerRound.round_number,
       battleId: lastViewerRound.battle_id,
@@ -1516,6 +1534,7 @@ export async function pruneCompletedRuns(maxAgeDays = COMPLETED_RUN_MAX_AGE_DAYS
   // Delete child rows first (loadout items, shop states, refunds)
   for (const runId of runIds) {
     await query(`DELETE FROM game_run_loadout_items WHERE game_run_id = $1`, [runId]);
+    await query(`DELETE FROM game_run_fusions WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_run_shop_states WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM game_run_refunds WHERE game_run_id = $1`, [runId]);
     await query(`DELETE FROM player_season_runs WHERE game_run_id = $1`, [runId]);

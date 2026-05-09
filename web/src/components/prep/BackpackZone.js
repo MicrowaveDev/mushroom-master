@@ -37,6 +37,9 @@ export const BackpackZone = {
     },
     isFusionPending(artifact) {
       return artifact?.rowId && this.fusionIngredientRowIds?.has(artifact.rowId);
+    },
+    fusionPendingTitle(artifact) {
+      return this.isFusionPending(artifact) ? (this.t?.fusionPendingHint || 'Will fuse after this round') : null;
     }
   },
   template: `
@@ -54,6 +57,7 @@ export const BackpackZone = {
           :key="artifact.instanceKey"
           class="container-item"
           :class="{ 'container-item--fusion-pending': isFusionPending(artifact) }"
+          :title="fusionPendingTitle(artifact)"
           v-bind="itemDataset(artifact)"
           @click="$emit('auto-place', { artifactId: artifact.id, id: artifact.rowId })"
         >

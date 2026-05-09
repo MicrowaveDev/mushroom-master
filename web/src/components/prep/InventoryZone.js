@@ -80,6 +80,7 @@ export const InventoryZone = {
         :draggable-pieces="true"
         :placement-preview-for-cell="placementPreviewAt"
         :highlighted-row-ids="fusionIngredientRowIds"
+        :highlighted-title="t.fusionPendingHint"
         @piece-click="$emit('unplace', $event)"
         @piece-rotate="$emit('rotate', $event)"
         @cell-drop="$emit('cell-drop', $event)"

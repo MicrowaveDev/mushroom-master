@@ -35,6 +35,11 @@ test('[fusion] prep highlights ingredients and next shop entry reveals fused res
 
   await waitForPrepReady(page);
   await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 5000 });
+  const revealBlocksShop = await page.evaluate(() => {
+    const top = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    return !!top?.closest?.('.fusion-reveal');
+  });
+  expect(revealBlocksShop).toBe(true);
   await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="portal_cut_sickle"]')).toBeVisible();
   await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="sporeblade"]')).toHaveCount(0);
   await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="mirrorloop_knot"]')).toHaveCount(0);
