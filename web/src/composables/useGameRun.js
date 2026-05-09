@@ -71,6 +71,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.gameRunShopOffer = data.shopOffer || [];
       state.gameRunRefreshCount = 0;
       state.gameRunResult = null;
+      state.fusionRevealQueue = [];
       // Fetch the full run state from the server (the new run-scoped read
       // path) and let refreshBootstrap project loadoutItems into the UI
       // buckets. Guarantees starter + any future round-forward rows
@@ -142,6 +143,9 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   async function continueToNextRound() {
     if (!state.gameRunResult || !state.gameRun) return;
+    const fusionReveals = Array.isArray(state.gameRunResult.fusions)
+      ? state.gameRunResult.fusions
+      : [];
     state.gameRunResult = null;
     state.gameRunRefreshCount = 0;
     // Full re-hydrate from the server — picks up the copy-forward round N+1
@@ -150,6 +154,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     // could drift when the server's copy-forward produced a different
     // layout than the client last sent (§2.5 projection).
     if (refreshBootstrap) await refreshBootstrap();
+    state.fusionRevealQueue = fusionReveals;
     goTo('prep');
   }
 

@@ -602,6 +602,7 @@ export const artifacts = [
     width: 2,
     height: 1,
     price: 2,
+    fusionOnly: true,
     bonus: { damage: 5, speed: 1, armor: -2 },
     description: {
       ru: 'Лезвие Ломиэ режет не плоть, а короткий путь между защитой и болью.',
@@ -1958,9 +1959,11 @@ export function getMushroomById(id) {
 export const bags = artifacts.filter((a) => a.family === 'bag' && !a.starterOnly);
 // `starterOnly` items are preset into a specific character's round-1 inventory
 // and must never appear in shop rolls or ghost loadouts.
+// `fusionOnly` items are created by between-round artifact recipes and must
+// not appear in random shops or ghost shop-purchase pools.
 // `characterItem` items are level-gated per-mushroom items — they appear only
 // through the guaranteed character-item slot, not the general combat pool.
-export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag' && !a.starterOnly && !a.characterItem);
+export const combatArtifacts = artifacts.filter((a) => a.family !== 'bag' && !a.starterOnly && !a.characterItem && !a.fusionOnly);
 export const characterShopItems = artifacts.filter((a) => a.characterItem);
 
 /**

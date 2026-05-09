@@ -45,18 +45,19 @@ test('[Req 5-A, 5-B, 5-C] bag items exist in artifacts with family=bag', () => {
   assert.equal(amberSatchel.price, 3);
 });
 
-test('[Req 3-D, 5-F] combatArtifacts excludes bags, starter-only, and character shop items', () => {
+test('[Req 3-D, 4-W, 5-F] combatArtifacts excludes bags, starter-only, character shop, and fusion-only items', () => {
   assert.ok(combatArtifacts.length > 0);
-  assert.ok(combatArtifacts.every((a) => a.family !== 'bag' && !a.starterOnly && !a.characterItem));
+  assert.ok(combatArtifacts.every((a) => a.family !== 'bag' && !a.starterOnly && !a.characterItem && !a.fusionOnly));
   const starterOnly = artifacts.filter((a) => a.starterOnly);
+  const fusionOnly = artifacts.filter((a) => a.fusionOnly);
   assert.equal(
-    combatArtifacts.length + bags.length + starterOnly.length + characterShopItems.length,
+    combatArtifacts.length + bags.length + starterOnly.length + characterShopItems.length + fusionOnly.length,
     artifacts.length
   );
 });
 
 test('[Req 4-V, 6-L] general lore artifacts are shop-eligible effect carriers', () => {
-  const loreArtifacts = artifacts.filter((artifact) => artifact.loreSource);
+  const loreArtifacts = artifacts.filter((artifact) => artifact.loreSource && !artifact.fusionOnly);
   assert.ok(loreArtifacts.length >= 4);
   assert.ok(loreArtifacts.every((artifact) => combatArtifacts.some((item) => item.id === artifact.id)));
   assert.ok(loreArtifacts.every((artifact) => artifact.battleEffect?.id));

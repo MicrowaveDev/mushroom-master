@@ -4,7 +4,10 @@ import { getBagShape } from '../../../../app/shared/bag-shape.js';
 export const BackpackZone = {
   name: 'BackpackZone',
   components: { ArtifactGridBoard },
-  props: ['state', 't', 'containerArtifacts', 'getArtifact', 'formatArtifactBonus', 'preferredOrientation'],
+  props: [
+    'state', 't', 'containerArtifacts', 'getArtifact', 'formatArtifactBonus',
+    'preferredOrientation', 'fusionIngredientRowIds'
+  ],
   emits: ['auto-place', 'container-dragover', 'container-drop'],
   methods: {
     previewOrientation(artifact) {
@@ -31,6 +34,9 @@ export const BackpackZone = {
         'data-artifact-width': orientation.width,
         'data-artifact-height': orientation.height
       };
+    },
+    isFusionPending(artifact) {
+      return artifact?.rowId && this.fusionIngredientRowIds?.has(artifact.rowId);
     }
   },
   template: `
@@ -47,6 +53,7 @@ export const BackpackZone = {
           v-for="artifact in containerArtifacts"
           :key="artifact.instanceKey"
           class="container-item"
+          :class="{ 'container-item--fusion-pending': isFusionPending(artifact) }"
           v-bind="itemDataset(artifact)"
           @click="$emit('auto-place', { artifactId: artifact.id, id: artifact.rowId })"
         >

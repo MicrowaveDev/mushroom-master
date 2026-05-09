@@ -51,6 +51,7 @@ import {
   insertLoadoutItem,
   readCurrentRoundItems
 } from './game-run-loadout.js';
+import { applyRoundStartFusions } from './artifact-fusion-service.js';
 import { awardRunSeasonProgress } from './season-service.js';
 import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
 import { getSeasonLevel, getSeasonPointsBreakdown, seasonLevelRank } from '../../shared/season-levels.js';
@@ -924,6 +925,12 @@ async function resolveChallengeRound(client, run, gameRunId) {
     for (const grp of [grpA, grpB]) {
       // Copy round N loadout → round N+1 per player (§2.3 copy-forward).
       await copyRoundForward(client, gameRunId, grp.player_id, roundNumber, nextRound);
+      playerResults[grp.player_id].fusions = await applyRoundStartFusions(
+        client,
+        gameRunId,
+        grp.player_id,
+        nextRound
+      );
 
       // Insert a new shop state row for round N+1 (§2.8).
       const prevShopState = await client.query(
@@ -1139,6 +1146,7 @@ export async function resolveRound(playerId, gameRunId) {
 
       // Copy round N loadout → round N+1 (§2.3 copy-forward).
       await copyRoundForward(client, gameRunId, playerId, roundNumber, nextRound);
+      const fusions = await applyRoundStartFusions(client, gameRunId, playerId, nextRound);
 
       // Insert a NEW shop state row for round N+1 (§2.8 round-scoped shop state).
       // The old row for round N stays as frozen history.
@@ -1156,6 +1164,49 @@ export async function resolveRound(playerId, gameRunId) {
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
         [createId('shopstate'), gameRunId, playerId, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
       );
+
+      return {
+        id: gameRunId,
+        mode: run.mode,
+        status: 'active',
+        currentRound: nextRound,
+        endedAt: null,
+        endReason: null,
+        completionBonus: null,
+        season: null,
+        achievements: [],
+        fusions,
+        player: {
+          completedRounds,
+          wins: newWins,
+          losses: newLosses,
+          livesRemaining: newLives,
+          coins: newCoins
+        },
+        lastRound: {
+          roundNumber,
+          battleId: battle.id,
+          outcome,
+          rewards,
+          ratingBefore: player.rating,
+          ratingAfter,
+          levelBefore,
+          levelAfter,
+          mushroomId,
+          progressBefore: {
+            level: levelBefore,
+            tier: getTier(levelBefore),
+            current: levelInfoBefore.current,
+            next: levelInfoBefore.next
+          },
+          progressAfter: {
+            level: levelAfter,
+            tier: getTier(levelAfter),
+            current: levelInfoAfter.current,
+            next: levelInfoAfter.next
+          }
+        }
+      };
     }
 
     return {

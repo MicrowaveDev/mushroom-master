@@ -90,6 +90,7 @@ const App = {
       gameRunSummary: null,
       gameRunShopOffer: [],
       gameRunRefreshCount: 0,
+      fusionRevealQueue: [],
       abandonConfirmOpen: false,
       pendingAbandonCurrentPoints: 0,
       pendingAbandonPenalty: -2,
@@ -176,6 +177,10 @@ const App = {
     function handleRunSummaryClose() {
       state.gameRunSummary = null;
       gs.goTo('home');
+    }
+
+    function completeFusionReveal() {
+      state.fusionRevealQueue = state.fusionRevealQueue.slice(1);
     }
 
     function fallbackScreenForRoute() {
@@ -310,6 +315,7 @@ const App = {
       loginViaDevSession: auth.loginViaDevSession,
       handleLogout,
       saveCharacter,
+      completeFusionReveal,
       ...customization,
       saveSettings: auth.saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
@@ -444,6 +450,7 @@ const App = {
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
           :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()" :placement-preview-at="placementPreviewAt"
+          :fusion-ingredient-row-ids="fusionIngredientRowIds"
           @auto-place="autoPlaceFromContainer($event)" @container-drag-start="onContainerPieceDragStart($event[0] || $event, $event[1])"
           @drag-end="onDragEndAny" @container-dragover="onContainerDragOver($event)" @container-drop="onContainerDrop($event)"
           @unplace="unplaceToContainer($event)" @rotate="rotatePlacedArtifact($event)"
@@ -455,6 +462,7 @@ const App = {
           @deactivate-bag="deactivateBag($event)"
           @rotate-bag="rotateBag($event)"
           @bag-chip-drag-start="onBagChipDragStart($event.bagId, $event.event)"
+          @fusion-reveal-complete="completeFusionReveal"
         />
 
         <run-complete-screen v-else-if="state.screen === 'runComplete' && state.gameRunResult"

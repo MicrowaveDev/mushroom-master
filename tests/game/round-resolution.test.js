@@ -136,6 +136,41 @@ test('[Req 10-A] Elo is updated per round in solo mode', async () => {
   assert.ok(result.lastRound.ratingAfter >= RATING_FLOOR);
 });
 
+test('[fusion] eligible artifacts fuse after round resolution and before next shop', async () => {
+  await freshDb();
+  const { playerId, run } = await bootRun({
+    telegramId: 7110,
+    username: 'fusion_round'
+  });
+  await seedRunLoadout(playerId, run.id, [
+    { artifactId: 'sporeblade', x: 0, y: 0, width: 1, height: 1 },
+    { artifactId: 'mirrorloop_knot', x: 1, y: 0, width: 1, height: 1 }
+  ]);
+
+  const result = await resolveRound(playerId, run.id);
+
+  assert.equal(result.status, 'active');
+  assert.equal(result.currentRound, 2);
+  assert.equal(result.fusions.length, 1);
+  assert.equal(result.fusions[0].resultArtifactId, 'portal_cut_sickle');
+  assert.deepEqual(result.fusions[0].ingredientArtifactIds, ['sporeblade', 'mirrorloop_knot']);
+
+  const nextRound = await readRoundLoadoutRows(run.id, playerId, 2);
+  assert.equal(nextRound.filter((row) => row.artifact_id === 'sporeblade').length, 0);
+  assert.equal(nextRound.filter((row) => row.artifact_id === 'mirrorloop_knot').length, 0);
+  const fused = nextRound.find((row) => row.artifact_id === 'portal_cut_sickle');
+  assert.ok(fused, 'next-round loadout should contain the fused result');
+  assert.equal(fused.x, -1);
+  assert.equal(fused.y, -1);
+  assert.ok(await getShopOffer(run.id, playerId, 2), 'round 2 shop should still be created');
+});
+
+test('[fusion] fusion-only result is excluded from normal combat shop pool', () => {
+  const result = getArtifactById('portal_cut_sickle');
+  assert.equal(result.fusionOnly, true);
+  assert.equal(combatArtifacts.some((artifact) => artifact.id === 'portal_cut_sickle'), false);
+});
+
 test('[Req 1-E] elimination at 5 losses ends the run', async () => {
   await freshDb();
   const { playerId, run } = await setupPlayerWithRun();

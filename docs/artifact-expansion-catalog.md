@@ -2,7 +2,7 @@
 
 **Purpose:** candidate artifact ideas for turning the current catalog into a fuller game-feeling loot pool.
 
-The live game currently has 117 artifact definitions in `app/server/game-data.js`: 78 normal combat artifacts, 24 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, 18-item circle relic wave, and 12-item mastery character ladder have been promoted into live data. The remaining reserve pool focuses on bag/container variety and mechanic-gated ideas.
+The live game currently has 117 artifact definitions in `app/server/game-data.js`: 77 normal combat artifacts, 1 fusion-only result, 24 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, 18-item circle relic wave, and 12-item mastery character ladder have been promoted into live data. The remaining reserve pool focuses on bag/container variety and mechanic-gated ideas.
 
 Rows marked as promoted are wired into `game-data.js`; remaining rows are still candidates. Future live shop promotions need production bitmap assets, image provenance, visual-classification snapshot updates, and balance validation. Use this doc as the source list for future implementation batches.
 
@@ -16,11 +16,11 @@ Rows marked as promoted are wired into `game-data.js`; remaining rows are still 
 
 ## Backlog: Merge Artifact Ideas
 
-These are design notes for a future Backpack Battles-like fusion layer, not live gameplay rules yet. They need requirements, balance, UI, and recipe validation before implementation.
+The first Backpack Battles-like fusion rule is live: `sporeblade` + `mirrorloop_knot` fuses into `portal_cut_sickle` after a completed round and before the next shop/prep screen. Future rows still need requirements, balance, UI, and recipe validation before implementation.
 
 | Seed | Why It Belongs Here | Possible Direction |
 | --- | --- | --- |
-| `portal_cut_sickle` | Its current silhouette already reads like two artifacts fused together: a portal edge plus a cutting blade. | Keep the live item simple for now, but reserve the concept as a future merged Lomie weapon recipe such as portal charm + sickle/blade. |
+| `portal_cut_sickle` | Its current silhouette already reads like two artifacts fused together: a portal edge plus a cutting blade. | Shipped as the first automatic fusion result: `sporeblade` + `mirrorloop_knot`. It is now fusion-only, not a normal shop roll. |
 
 ## Priority Batch
 

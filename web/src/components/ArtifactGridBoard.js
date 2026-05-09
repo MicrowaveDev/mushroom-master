@@ -45,7 +45,8 @@ export const ArtifactGridBoard = {
     droppable: { type: Boolean, default: false },
     draggablePieces: { type: Boolean, default: false },
     bagRows: { type: Array, default: () => [] },
-    placementPreviewForCell: { type: Function, default: null }
+    placementPreviewForCell: { type: Function, default: null },
+    highlightedRowIds: { type: [Array, Object], default: () => new Set() }
   },
   emits: ['cell-click', 'piece-click', 'piece-rotate', 'cell-drop', 'piece-drag-start', 'piece-drag-end'],
   data() {
@@ -304,6 +305,13 @@ export const ArtifactGridBoard = {
         'data-artifact-width': item.width,
         'data-artifact-height': item.height
       };
+    },
+    isHighlighted(item) {
+      const rowId = item?.id || item?.rowId || '';
+      if (!rowId || !this.highlightedRowIds) return false;
+      if (typeof this.highlightedRowIds.has === 'function') return this.highlightedRowIds.has(rowId);
+      if (Array.isArray(this.highlightedRowIds)) return this.highlightedRowIds.includes(rowId);
+      return false;
     }
   },
   template: `
@@ -336,6 +344,7 @@ export const ArtifactGridBoard = {
           v-for="item in items"
           :key="item.artifactId + ':' + item.x + ':' + item.y"
           class="artifact-piece-wrap"
+          :class="{ 'artifact-piece-wrap--fusion-pending': isHighlighted(item) }"
           :style="pieceStyle(item)"
           v-bind="pieceDataset(item)"
         >

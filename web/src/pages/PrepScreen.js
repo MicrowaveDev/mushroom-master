@@ -5,13 +5,15 @@ import { BackpackZone } from '../components/prep/BackpackZone.js';
 import { InventoryZone } from '../components/prep/InventoryZone.js';
 import { ShopZone } from '../components/prep/ShopZone.js';
 import { PrepActions } from '../components/prep/PrepActions.js';
+import { FusionReveal } from '../components/prep/FusionReveal.js';
 
 export const PrepScreen = {
   name: 'PrepScreen',
   props: [
     'state', 't', 'containerArtifacts', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'formatArtifactBonus',
-    'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt'
+    'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt',
+    'fusionIngredientRowIds'
   ],
   emits: [
     'auto-place', 'container-drag-start', 'drag-end',
@@ -19,14 +21,16 @@ export const PrepScreen = {
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start',
     'buy-run-item', 'refresh-shop',
     'sell-dragover', 'sell-dragleave', 'sell-drop',
-    'signal-ready', 'abandon', 'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
+    'signal-ready', 'abandon', 'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start',
+    'fusion-reveal-complete'
   ],
   components: {
     RunHud,
     BackpackZone,
     InventoryZone,
     ShopZone,
-    PrepActions
+    PrepActions,
+    FusionReveal
   },
   computed: {
     // Bag background metadata in unified-grid coords: ONE entry per (bag ×
@@ -125,6 +129,7 @@ export const PrepScreen = {
             :get-artifact="getArtifact"
             :format-artifact-bonus="formatArtifactBonus"
             :preferred-orientation="preferredOrientation"
+            :fusion-ingredient-row-ids="fusionIngredientRowIds"
             @auto-place="$emit('auto-place', $event)"
             @container-dragover="$emit('container-dragover', $event)"
             @container-drop="$emit('container-drop', $event)"
@@ -138,6 +143,7 @@ export const PrepScreen = {
             :bag-rows="bagRows"
             :get-artifact="getArtifact"
             :placement-preview-at="placementPreviewAt"
+            :fusion-ingredient-row-ids="fusionIngredientRowIds"
             @unplace="$emit('unplace', $event)"
             @rotate="$emit('rotate', $event)"
             @cell-drop="$emit('cell-drop', $event)"
@@ -175,6 +181,14 @@ export const PrepScreen = {
         :t="t"
         @signal-ready="$emit('signal-ready')"
         @abandon="$emit('abandon')"
+      />
+
+      <fusion-reveal
+        v-if="state.fusionRevealQueue?.length"
+        :reveal="state.fusionRevealQueue[0]"
+        :state="state"
+        :get-artifact="getArtifact"
+        @done="$emit('fusion-reveal-complete')"
       />
     </section>
   `

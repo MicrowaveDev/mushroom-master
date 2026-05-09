@@ -29,6 +29,7 @@ function stableArtifactSnapshot(artifact) {
     shape: artifact.shape || null,
     bonus: artifact.bonus || {},
     starterOnly: Boolean(artifact.starterOnly),
+    fusionOnly: Boolean(artifact.fusionOnly),
     characterItem: artifact.characterItem || null,
     slotCount: artifact.slotCount ?? null
   };

@@ -106,6 +106,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
   - each manual refresh result
 - **4-U.** Challenge-mode shop offers remain **viewer-scoped** even when opponent level is used as an eligibility cap. The client may not receive the opponent's private shop offer or hidden future eligible item pool.
 - **4-V.** General lore artifacts may appear in normal shop rolls without character gating. Their names, localized `description`, and `loreSource` should point at established world concepts, locations, or factions, and production-ready lore artifacts should have dedicated bitmap art under `web/public/artifacts/{artifact_id}.png`.
+- **4-W.** Fusion-only artifacts are excluded from normal shop rolls and ghost shop-purchase pools. They are created only by artifact fusion recipes during round transition.
 
 ### Selling
 
@@ -295,6 +296,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **11-B.** New coins are added: `coins += ROUND_INCOME[roundNumber]`.
 - **11-C.** A new 5-item shop offer is generated.
 - **11-D.** Shop `refresh_count` resets to 0.
+- **11-E.** After round N is copied to round N+1 and before the round N+1 shop is shown, eligible artifact fusion recipes consume their ingredient rows and insert the result row into the container. The battle for round N always uses the pre-fusion loadout. The prep UI highlights rows that will fuse, and the next prep entry plays a fusion reveal animation before the player edits the new shop state.
 
 ---
 

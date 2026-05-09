@@ -69,6 +69,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     state.gameRunSummary = null;
     state.gameRunShopOffer = [];
     state.gameRunRefreshCount = 0;
+    state.fusionRevealQueue = [];
     state.currentBattle = null;
     state.challenge = null;
     state.pendingReconnectBattleId = null;

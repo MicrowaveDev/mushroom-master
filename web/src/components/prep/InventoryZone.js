@@ -4,7 +4,10 @@ import { ARTIFACT_ROLE_CLASSES } from '../../../../app/shared/artifact-visual-cl
 export const InventoryZone = {
   name: 'InventoryZone',
   components: { ArtifactGridBoard },
-  props: ['state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact', 'placementPreviewAt'],
+  props: [
+    'state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
+    'placementPreviewAt', 'fusionIngredientRowIds'
+  ],
   emits: [
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
     'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
@@ -76,6 +79,7 @@ export const InventoryZone = {
         :droppable="true"
         :draggable-pieces="true"
         :placement-preview-for-cell="placementPreviewAt"
+        :highlighted-row-ids="fusionIngredientRowIds"
         @piece-click="$emit('unplace', $event)"
         @piece-rotate="$emit('rotate', $event)"
         @cell-drop="$emit('cell-drop', $event)"

@@ -80,9 +80,9 @@ Quality watch:
 
 - `spore_burst_arrow.png` - reprocessed with the deterministic footprint-aware detail normalizer; no redraw was needed in this pass.
 
-Backlog:
+Fusion note:
 
-- `portal_cut_sickle.png` - current concept reads like a merged artifact. Keep the future merge/fusion idea in [artifact-expansion-catalog.md](artifact-expansion-catalog.md); do not treat it as a normal redraw until the live/future direction is chosen.
+- `portal_cut_sickle.png` - current concept is now intentional: it is the first fusion-only result (`sporeblade` + `mirrorloop_knot`), so future redraws should preserve the fused portal-edge-plus-blade read.
 
 ## Validation
 

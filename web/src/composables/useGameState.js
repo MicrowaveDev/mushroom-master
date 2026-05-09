@@ -5,7 +5,11 @@ import { deriveTotals, getArtifactPrice, buildOccupancy, preferredOrientation } 
 import { renderArtifactFigure } from '../artifacts/render.js';
 import { replayPortraitConfig } from '../replay-portrait-config.js';
 import { formatReplayEvent } from '../replay/format.js';
-import { MAX_ARTIFACT_COINS } from '../constants.js';
+import { MAX_ARTIFACT_COINS, MAX_ROUNDS_PER_RUN } from '../constants.js';
+import {
+  findArtifactFusionMatches,
+  fusionIngredientRowIdSet
+} from '../../../app/shared/artifact-fusions.js';
 
 export function useGameState(state, options = {}) {
   // Progressive enhancement: wrap screen changes in the View Transitions API
@@ -53,6 +57,30 @@ export function useGameState(state, options = {}) {
       })
       .filter(Boolean)
   );
+  const fusionMatches = computed(() => {
+    if (!state.gameRun || state.gameRun.status !== 'active') return [];
+    if (Number(state.gameRun.currentRound || 0) >= MAX_ROUNDS_PER_RUN) return [];
+    const rows = [
+      ...state.builderItems.map((item) => ({
+        id: item.id,
+        artifactId: item.artifactId,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height
+      })),
+      ...state.containerItems.map((slot) => ({
+        id: slot.id,
+        artifactId: slot.artifactId,
+        x: -1,
+        y: -1,
+        width: getArtifact(slot.artifactId)?.width || 1,
+        height: getArtifact(slot.artifactId)?.height || 1
+      }))
+    ];
+    return findArtifactFusionMatches(rows, getArtifact);
+  });
+  const fusionIngredientRowIds = computed(() => fusionIngredientRowIdSet(fusionMatches.value));
 
   function getArtifact(artifactId) {
     return state.bootstrap?.artifacts?.find((item) => item.id === artifactId) || null;
@@ -356,7 +384,7 @@ export function useGameState(state, options = {}) {
   return {
     t, isLocalLabEnabled, isLocalDevAuthEnabled,
     activeMushroom, builderTotals, usedCoins, remainingCoins,
-    shopArtifacts, containerArtifacts,
+    shopArtifacts, containerArtifacts, fusionMatches, fusionIngredientRowIds,
     maxCoins: MAX_ARTIFACT_COINS,
     getArtifact, getMushroom, mushroomDisplayName,
     goTo, toggleMenu,

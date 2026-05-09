@@ -36,6 +36,7 @@
           "damage": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -116,6 +117,7 @@
           "damage": 3
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -197,6 +199,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -280,6 +283,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -363,6 +367,7 @@
           "armor": -3
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -447,6 +452,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -530,6 +536,7 @@
           "armor": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -611,6 +618,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -693,6 +701,7 @@
           "armor": 3
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -773,6 +782,7 @@
           "armor": 4
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -854,6 +864,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -938,6 +949,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1021,6 +1033,7 @@
           "stunChance": 8
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1101,6 +1114,7 @@
           "stunChance": 6
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1181,6 +1195,7 @@
           "stunChance": 12
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1262,6 +1277,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1345,6 +1361,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1428,6 +1445,7 @@
           "damage": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1511,6 +1529,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1593,6 +1612,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1679,6 +1699,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1765,6 +1786,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1851,6 +1873,7 @@
           "stunChance": 5
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -1937,6 +1960,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2023,6 +2047,7 @@
           "stunChance": 4
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2109,6 +2134,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2195,6 +2221,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2281,6 +2308,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2368,6 +2396,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2456,6 +2485,7 @@
           "speed": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2542,6 +2572,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2628,6 +2659,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2715,6 +2747,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2803,6 +2836,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2890,6 +2924,7 @@
           "damage": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -2979,6 +3014,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3067,6 +3103,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3154,6 +3191,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": true,
         "characterItem": null,
         "slotCount": null
       },
@@ -3243,6 +3281,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3332,6 +3371,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3420,6 +3460,7 @@
           "stunChance": 5
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3507,6 +3548,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3596,6 +3638,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3683,6 +3726,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3769,6 +3813,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3855,6 +3900,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -3941,6 +3987,7 @@
           "damage": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4027,6 +4074,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4114,6 +4162,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4202,6 +4251,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4288,6 +4338,7 @@
           "stunChance": 4
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4374,6 +4425,7 @@
           "damage": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4461,6 +4513,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4549,6 +4602,7 @@
           "damage": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4636,6 +4690,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4725,6 +4780,7 @@
           "damage": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4814,6 +4870,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4903,6 +4960,7 @@
           "speed": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -4991,6 +5049,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5077,6 +5136,7 @@
           "damage": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5163,6 +5223,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5250,6 +5311,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5339,6 +5401,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5428,6 +5491,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5517,6 +5581,7 @@
           "speed": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5606,6 +5671,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5694,6 +5760,7 @@
           "stunChance": 3
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5780,6 +5847,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5867,6 +5935,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -5955,6 +6024,7 @@
           "damage": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6042,6 +6112,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6131,6 +6202,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6219,6 +6291,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6305,6 +6378,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6392,6 +6466,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6481,6 +6556,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6570,6 +6646,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6659,6 +6736,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -6744,6 +6822,7 @@
           "damage": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "thalla",
           "requiredLevel": 5
@@ -6830,6 +6909,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "lomie",
           "requiredLevel": 5
@@ -6916,6 +6996,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "axilin",
           "requiredLevel": 5
@@ -7002,6 +7083,7 @@
           "armor": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "kirt",
           "requiredLevel": 5
@@ -7088,6 +7170,7 @@
           "speed": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "morga",
           "requiredLevel": 5
@@ -7174,6 +7257,7 @@
           "armor": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "dalamar",
           "requiredLevel": 5
@@ -7259,6 +7343,7 @@
           "stunChance": 7
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "thalla",
           "requiredLevel": 8
@@ -7343,6 +7428,7 @@
           "speed": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "lomie",
           "requiredLevel": 8
@@ -7430,6 +7516,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "axilin",
           "requiredLevel": 8
@@ -7519,6 +7606,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "kirt",
           "requiredLevel": 8
@@ -7608,6 +7696,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "morga",
           "requiredLevel": 8
@@ -7697,6 +7786,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "dalamar",
           "requiredLevel": 8
@@ -7788,6 +7878,7 @@
           "armor": 1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "thalla",
           "requiredLevel": 12
@@ -7878,6 +7969,7 @@
           "speed": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "thalla",
           "requiredLevel": 16
@@ -7969,6 +8061,7 @@
           "speed": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "lomie",
           "requiredLevel": 12
@@ -8059,6 +8152,7 @@
           "damage": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "lomie",
           "requiredLevel": 16
@@ -8150,6 +8244,7 @@
           "damage": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "axilin",
           "requiredLevel": 12
@@ -8240,6 +8335,7 @@
           "armor": -3
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "axilin",
           "requiredLevel": 16
@@ -8332,6 +8428,7 @@
           "armor": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "kirt",
           "requiredLevel": 12
@@ -8424,6 +8521,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "kirt",
           "requiredLevel": 16
@@ -8515,6 +8613,7 @@
           "speed": 2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "morga",
           "requiredLevel": 12
@@ -8605,6 +8704,7 @@
           "armor": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "morga",
           "requiredLevel": 16
@@ -8697,6 +8797,7 @@
           "speed": -1
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "dalamar",
           "requiredLevel": 12
@@ -8789,6 +8890,7 @@
           "damage": -2
         },
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": {
           "mushroomId": "dalamar",
           "requiredLevel": 16
@@ -8877,6 +8979,7 @@
           "damage": 1
         },
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -8959,6 +9062,7 @@
           "armor": 2
         },
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -9040,6 +9144,7 @@
           "speed": 1
         },
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -9123,6 +9228,7 @@
           "armor": 1
         },
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -9206,6 +9312,7 @@
           "damage": 1
         },
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -9289,6 +9396,7 @@
           "armor": 1
         },
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": null
       },
@@ -9369,6 +9477,7 @@
         "shape": null,
         "bonus": {},
         "starterOnly": true,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 9
       },
@@ -9447,6 +9556,7 @@
         "shape": null,
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 2
       },
@@ -9525,6 +9635,7 @@
         "shape": null,
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
@@ -9614,6 +9725,7 @@
         ],
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
@@ -9704,6 +9816,7 @@
         ],
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
@@ -9794,6 +9907,7 @@
         ],
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
@@ -9884,6 +9998,7 @@
         ],
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
@@ -9974,6 +10089,7 @@
         ],
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
@@ -10066,6 +10182,7 @@
         ],
         "bonus": {},
         "starterOnly": false,
+        "fusionOnly": false,
         "characterItem": null,
         "slotCount": 4
       },
