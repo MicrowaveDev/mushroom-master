@@ -8,7 +8,7 @@
     "productionImageLocation": "web/public/artifacts/"
   },
   "artifactCount": 117,
-  "metadataHash": "8c354374441f0ab3e16036bde31f946db16e0af2367f2db2dc0bbeaf3d330bf8",
+  "metadataHash": "c852c0a833a77f5c6151c7362b9bf54a5ae3457146dafbe0f2702f5b0a485e30",
   "artifacts": [
     {
       "id": "spore_needle",
@@ -3044,8 +3044,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 69522,
-        "sha256": "bfd796816d3a27f0c651a01591c63474a67733ea231cce1974fad619a0a51e83"
+        "size": 26803,
+        "sha256": "b2f92fffd63e5c3905f182b288e2e58842089c7d5c98bfb6ebc7b05fc120fa8a"
       },
       "artifact": {
         "id": "rotlight_lantern",
@@ -3130,8 +3130,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 70397,
-        "sha256": "cc639f62a290f6da61cf2a72525a2e57680f12aca19c887acbc5a87e00514166"
+        "size": 29884,
+        "sha256": "328c2851ee4d07f29420c87943d967875db70bce632c62a1645d480348a85fd6"
       },
       "artifact": {
         "id": "portal_cut_sickle",
@@ -3219,8 +3219,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 179477,
-        "sha256": "ef3b3724d5034c9a84c35c1ca2ff66be1e40710d17c312df7c4cd90868c21a17"
+        "size": 60551,
+        "sha256": "1e3524ff45f2969bf69007a98ed83d5273abaf96c3fc89897eb6f65497e7be07"
       },
       "artifact": {
         "id": "ferment_sea_pearl",
@@ -3308,8 +3308,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 60693,
-        "sha256": "6c92ff043c2c6325eeb56c5b93bdd9dae612e678ced891632c1112a719b21a89"
+        "size": 25862,
+        "sha256": "f7387e59c8bda50ba8cd372598028a717343ec574b0ccc58041315bccb48e64b"
       },
       "artifact": {
         "id": "spore_burst_arrow",
@@ -3397,8 +3397,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 63795,
-        "sha256": "4f68a84e0678375bb4dcf291b50e5efba5806d667ff01bcb7cb5e5c23b845f9b"
+        "size": 25186,
+        "sha256": "fa424e15e70c0f2ec61386ab8a7a41e15c0c6ec4d1aa8751c1ce964504417672"
       },
       "artifact": {
         "id": "rustbone_key",
@@ -3483,8 +3483,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 64238,
-        "sha256": "890c19be80321aa383449ed1d0019f29ed979b3ce5e209055ad140f287cfacb0"
+        "size": 25334,
+        "sha256": "601e1af2ebe94ffd10c2f0498d2b2c4fa01dcd225a0a0c86516fa57e08612dbd"
       },
       "artifact": {
         "id": "snaplight_husk",
@@ -3572,8 +3572,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 143332,
-        "sha256": "89fcd602109f584f79415ea5d95117361235d92e2172bceb321cacd52c4a337d"
+        "size": 51630,
+        "sha256": "d8dfec57fcecfb746217bad92073b0fc2df2c98184cefbc71f6e6bd910d6531b"
       },
       "artifact": {
         "id": "amber_needle_swarm",
@@ -3660,8 +3660,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 61147,
-        "sha256": "2ceb2bc813e6f736a943de1d8f9b01faea32fced546801a8e15e12ebe4fdceee"
+        "size": 22948,
+        "sha256": "c7766f5425eab67b794090815fc1de9338f1863b7fa0129ec857b7e5babcaa1e"
       },
       "artifact": {
         "id": "crownthorn_cleaver",
@@ -3746,8 +3746,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 72308,
-        "sha256": "5e431629e289d07f0772ab3827a628a3632fc32987a5cc251b41e8ebc44a57e0"
+        "size": 28262,
+        "sha256": "f4aa8f1cd4e2107eb7a9b0c63eb55295f30df96bc383eb72f9d3d5df008fc04a"
       },
       "artifact": {
         "id": "star_spore_sash",
@@ -3832,8 +3832,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 49933,
-        "sha256": "7e7f6c218b3f5c6f3cf5a14ae5e4266208c5378f43a6d24e71e872b3b4b1e2cd"
+        "size": 17125,
+        "sha256": "7d2c964b5eb1f989f0692a2a6665fa20309e7ce5b5f86b8005f825351942e039"
       },
       "artifact": {
         "id": "trophy_helm_plate",
@@ -3918,8 +3918,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 69234,
-        "sha256": "5363a6798fed78b8981ca5095f8441754f62f58bedc45ab073bc9f4bb072f87f"
+        "size": 28045,
+        "sha256": "390336a2e34391d1c1277f3dda6e0ffff3a6848197736c70fdf037704760a3e1"
       },
       "artifact": {
         "id": "gingerroot_filter",
@@ -4004,8 +4004,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 71070,
-        "sha256": "2e72850595fdf641334c47a8c6704c7698ae0cd9a8535f7d802777fc4351c588"
+        "size": 26697,
+        "sha256": "a3827cbde12772c26ec01c4ae3fc791f138a553dd3349cb2523a905bdbfe1fcc"
       },
       "artifact": {
         "id": "voidglass_pauldron",
@@ -4090,8 +4090,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 176759,
-        "sha256": "2e91643fdcea0a87995f83dd38fb14dea6ad356abac711fcb3a666d49357ddb7"
+        "size": 66086,
+        "sha256": "af09623d0051c4d2feace8d92731bd2417b8878b9537d8586ebb1b3768db70d0"
       },
       "artifact": {
         "id": "golden_garden_carapace",
@@ -4179,8 +4179,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 73172,
-        "sha256": "25b183ea3ce6875a43728ebb95583775aed352c61305eb8fea4d752c5186356f"
+        "size": 24538,
+        "sha256": "38b38eea9785db483f6e437cb599fdb7f96406d6a1a64289575d54a96141150f"
       },
       "artifact": {
         "id": "amber_resin_shield",
@@ -4265,8 +4265,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 40356,
-        "sha256": "2601408e62216225509eb705a84815bc7e324e8da055a8fc215582a9d869469d"
+        "size": 16671,
+        "sha256": "8f16486d1f491f79f21f61251d03fed30c2651722164ee2dd4e41803c7917e67"
       },
       "artifact": {
         "id": "porcelain_mold_mask",
@@ -4351,8 +4351,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 53618,
-        "sha256": "cbe6aac4c67bcca90c8b86df6804620d8323edaf84695dd0fb04ff6daaf4a270"
+        "size": 17388,
+        "sha256": "76a366eec6c9f1c6c4299bbe6431d77f22bc6698f3103460de96c1a44ac30f36"
       },
       "artifact": {
         "id": "living_bark_latch",
@@ -4437,8 +4437,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 40721,
-        "sha256": "a4ff0f7def6246448f05ebdbbb8479f4549a87fcb8b9bf4890681d69ee57bc9d"
+        "size": 16551,
+        "sha256": "57397d2a60a643b04f2a5c914a0c6366360957697ef441f32a494b3fc23bfd7e"
       },
       "artifact": {
         "id": "body_memory_splinter",
@@ -4526,8 +4526,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 75664,
-        "sha256": "dab4b6fd1d81e8367b2d6c4e368664afb167a722ef362cef1a67bea524350fa8"
+        "size": 33097,
+        "sha256": "ecaaa77cf3658c5dcf41487e579c2241bf55f724d305873356ea7082bd0443f7"
       },
       "artifact": {
         "id": "ramaria_snare",
@@ -4612,8 +4612,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 66040,
-        "sha256": "f935298a4931be0dda2852ee0d6e235e14fae6531fe7502274e958eb09dc71f6"
+        "size": 28091,
+        "sha256": "89f48056fdcbe39c1d77357b21576933ff3069d32b564a279d5f8c13160adb8b"
       },
       "artifact": {
         "id": "ashen_heart_smoke",
@@ -4701,8 +4701,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 143795,
-        "sha256": "423917a9cbc056d7184639cb0d00d5299705fa63e8319b3cd95aa298ce942705"
+        "size": 53895,
+        "sha256": "c823dd97d9190e438614954a1b1ffbd5d3a94e195b98906ff842de05f43cf2d8"
       },
       "artifact": {
         "id": "silent_bell_mold",
@@ -4790,8 +4790,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 67686,
-        "sha256": "d2ff2b064f9c2bf66deb13a6f9e89f506fb2bb3de5b8f14e76954da32daeaab2"
+        "size": 29102,
+        "sha256": "a19335b11a7c929c61b16bcf039a4693cc42f0564cff25c3beeeefe3ec015d18"
       },
       "artifact": {
         "id": "crystal_rift_chime",
@@ -4879,8 +4879,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 177259,
-        "sha256": "d5defc17b496acf955d8c3cd5c4f918f07f19d78660ec2948b3d69a9717c9db4"
+        "size": 65855,
+        "sha256": "5ba9fe46a9d9f5d1fbd400ed892506217622945e1c136752ebddf4e745cc4685"
       },
       "artifact": {
         "id": "biostasis_crown_seed",
@@ -4968,8 +4968,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 50502,
-        "sha256": "6e0e803ec0e8d9c23ce4ac4ba10983229cc69db2c26c9764560c3d729b024fd3"
+        "size": 19379,
+        "sha256": "9568cf7b8d8b01619bb3ff56b9a4c4156f17c97c73e90764b2ff0592d5ba27db"
       },
       "artifact": {
         "id": "spore_snow_globe",
@@ -5054,8 +5054,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 83207,
-        "sha256": "d357b993ad50141fd39cabf055131c511ea27201cc79fa0f3d815342b2c4e9e2"
+        "size": 35312,
+        "sha256": "634c33c208d7b0ba43bd8f48b3608d00abbd5957979c5573d78ac5906a6f54dd"
       },
       "artifact": {
         "id": "forgotten_crossroads_ring",
@@ -5140,8 +5140,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 63798,
-        "sha256": "701d501b96401b41c804f356126d264106bfc4db0b7b6b275713ceb3a8ac7259"
+        "size": 22430,
+        "sha256": "ce1e27929f5845476f9a59cf628d0454d0b1cfc7e3f72338aa53191902291728"
       },
       "artifact": {
         "id": "heartwood_splinter_bow",
@@ -5226,8 +5226,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 59263,
-        "sha256": "1e858253b70e3f088a452bebc8078a19a3d7ecb457422bdb4d40474174ede66b"
+        "size": 26783,
+        "sha256": "acb17d54c391dac2d102ec1aaf2122f10282a46f14068da487b809917da4cf42"
       },
       "artifact": {
         "id": "blue_vinegar_chakram",
@@ -5315,8 +5315,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 42103,
-        "sha256": "5e14dff1dedae8af1bd01fe78d6280d699fd21700988895f1abd0ae425530539"
+        "size": 16220,
+        "sha256": "979f772e4b9eab9f579ff13625f65c0bd6fcbcccfaca31e560a160d31a124702"
       },
       "artifact": {
         "id": "first_bloom_cinder",
@@ -5404,8 +5404,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 49585,
-        "sha256": "bef32da115e588aa032cd17c888576e9bd873b18fc27960f61453a18b21fe7aa"
+        "size": 18950,
+        "sha256": "d32a348ef36f166b9a7da92e32c3172142e4100530aa35ab5fc2791f2b32cbce"
       },
       "artifact": {
         "id": "dead_city_nail",
@@ -5493,8 +5493,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 132514,
-        "sha256": "0f95eca2e1dc5494edaa2be7a52fc75fa74a4c5228d938b24bd9f13722891866"
+        "size": 98315,
+        "sha256": "2520a784e45fc13e04d1d495df9fab5229f4f1fb3ad62267b976238e80095cbb"
       },
       "artifact": {
         "id": "golden_spore_mace",
@@ -5582,8 +5582,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 65488,
-        "sha256": "22230cbb8485b3cad3e58f94f4ab91707d726b5d1919ce2036df3085a1eb19b9"
+        "size": 30626,
+        "sha256": "79d94121231bf3c00b0d027980f41af32f7db53881123a27ad31a19a5d367e62"
       },
       "artifact": {
         "id": "riftfang_comet",
@@ -5671,8 +5671,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 53345,
-        "sha256": "4c2abddf461a30fbdda3b8c40182b2d371686dc2e998fc8c6a74a35d9a11403d"
+        "size": 20759,
+        "sha256": "64dea9cdad7b043d75d104bd5bfcceccdc81283f869eacb2be275fe81f7cc6de"
       },
       "artifact": {
         "id": "reliquary_bone_buckle",
@@ -5757,8 +5757,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 74919,
-        "sha256": "536a51da92ee83bc2dad2bc7fde7d9235f342660a755a9f28d42e96e272ef19a"
+        "size": 25436,
+        "sha256": "b46bfa1030b7c7def62cfe0fc32f705b638a79f2affede8359ee05b8d815dfaa"
       },
       "artifact": {
         "id": "soft_wall_tile",
@@ -5843,8 +5843,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 69018,
-        "sha256": "c4246554a5bc7990edc14bb99ed18048f3e0c84d010c70b54b875d289046e5ef"
+        "size": 23684,
+        "sha256": "9a8ba1cdb1d220e9e2dd54b4fc9852abf0d58f04f6f3d527b852b848f8374645"
       },
       "artifact": {
         "id": "ferment_glass_bracer",
@@ -5932,8 +5932,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 48885,
-        "sha256": "088f523493ef9fb3b6a006f73c0e04841ebe0c2e6b6745aabfd5f0e6e97c2d9a"
+        "size": 16530,
+        "sha256": "82bbedd502040172e538827eb4302c421adab1cb97e7e7cd25d24bcf6ca5ebe8"
       },
       "artifact": {
         "id": "thornhide_scale",
@@ -6018,8 +6018,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 72440,
-        "sha256": "7770d3ac450358cde2b961df576698c73fe5ebd5aafb0e3d5c9f28a6ed4c3ba9"
+        "size": 24489,
+        "sha256": "e92c30c231347ca78d2b71b10229e060cf169890f0c01a4e06a11e3ebe63fea5"
       },
       "artifact": {
         "id": "flashcap_knee_guard",
@@ -6107,8 +6107,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 60828,
-        "sha256": "8b5cc0b5809ecd6475c6311232ef46853c681e1ecede85d106c8e05bef53a5c0"
+        "size": 22440,
+        "sha256": "86bc454dc08062dc63e3065c22932639de68675ac4baf06ddaed6e6f787e3be7"
       },
       "artifact": {
         "id": "obsidian_throne_chip",
@@ -6196,8 +6196,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 62189,
-        "sha256": "09ac4315411d8463a13aa69fc713a5d23a84bba70ce2fb7bfc6d443b9c74ee6e"
+        "size": 24795,
+        "sha256": "5427e0eda38e9369e44e3284aa6127a81baa1946670684af871313d0c933adfe"
       },
       "artifact": {
         "id": "spore_lullaby_conch",
@@ -6282,8 +6282,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 43592,
-        "sha256": "64134c1749975a0b24157672afcf875d5bf7474f5d082433a2184301b68ad835"
+        "size": 16466,
+        "sha256": "b8a3192cddd7769a6893266a9c0a4792221f6684aa0b0be28084d3c17b626701"
       },
       "artifact": {
         "id": "mirrorloop_knot",
@@ -6368,8 +6368,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 58828,
-        "sha256": "cd072449b70e8a6af11ae99cff474d18a1c776d32e421c6de68edffa7faebb52"
+        "size": 21735,
+        "sha256": "bf52b66beeb6c9ed85db43ec225a84ace71ef7d1bbace349e134fded6bb6b959"
       },
       "artifact": {
         "id": "ginger_spark_bottle",
@@ -6457,8 +6457,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 170252,
-        "sha256": "17ae58caba5febebfe5d96b7f4064c5a6467ad992a510b7de4a2954de3bc3a34"
+        "size": 57867,
+        "sha256": "266b097c5e755361757eaa08b2b34675271d63a02f4b4a4b015b1e4108f4de01"
       },
       "artifact": {
         "id": "abyss_bow_knot",
@@ -6546,8 +6546,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 127966,
-        "sha256": "121ba6cacd58aa62d2f89dcd19cab1af76ed61a6f2041df01f39a69184f87e07"
+        "size": 45094,
+        "sha256": "34a7137f49a34098da15fa6f8e5f7d08d7087d75607ff1683dce2ed86f6b4b71"
       },
       "artifact": {
         "id": "opening_bell_spore",
@@ -6635,8 +6635,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 59636,
-        "sha256": "61dea505e75d7c27ad3bd67a4332afe90d7180c2c57a3d21b67dfbcf8e261dc6"
+        "size": 23964,
+        "sha256": "96fbfe26fde1d844ed3d4e74285fad661dc872d7523fae8197b8748e90d35dac"
       },
       "artifact": {
         "id": "entropy_scepter_tip",
@@ -7765,8 +7765,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 44885,
-        "sha256": "d0cce87b00cd7a17ba135aa5ab80cf869122d18b3a2e64002e2037799cb4d5b7"
+        "size": 18451,
+        "sha256": "b981ff9ee7cae60c738cd37da475ad6474fcf1d557eea0f7b8f58236f7df013b"
       },
       "artifact": {
         "id": "thalla_first_host_locket",
@@ -7854,8 +7854,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 177360,
-        "sha256": "a5dd3735cc91ef12747c025f8c5445ee3ee759c7e2eb8b569cd078dd7ae45e82"
+        "size": 68623,
+        "sha256": "3836e0259d5ab8ea07f655b3810dbe791787454cd6a2d727f5cc4d5395117019"
       },
       "artifact": {
         "id": "thalla_gold_oyster_crown",
@@ -7946,8 +7946,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 73533,
-        "sha256": "c8b647644af06bba0281487253f39a9bf78c2482c17ac2ff58ed9205163c33cc"
+        "size": 30705,
+        "sha256": "a58b873859d0c4e0b435409d7c2a0b8303b15ad7ac0a0ff63c4dd4248ea89c36"
       },
       "artifact": {
         "id": "lomie_mirror_route_map",
@@ -8035,8 +8035,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 200060,
-        "sha256": "340007da5aefce9943d65934ba7e0c3c1a17e91e37919de9a44aa6f279b66e42"
+        "size": 77484,
+        "sha256": "5ce6fd97165f2004b11ad9eb5d87e31dedaa7522c95eeafc6dad2f03dece0cfd"
       },
       "artifact": {
         "id": "lomie_void_lattice_gate",
@@ -8127,8 +8127,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 66229,
-        "sha256": "b0bf34508a6664c099b8bbd77742de8821040dc00ccee4dfcee8bca805f5c7d6"
+        "size": 28560,
+        "sha256": "49b9ef7b529fe4bfe7df3bd3a3190be370e4ead93a170062df30c709376eb3e7"
       },
       "artifact": {
         "id": "axilin_blue_vinegar_flask",
@@ -8216,8 +8216,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 170205,
-        "sha256": "1a0ced797a2eac93d0e3bc4523b213c5cbee2158c01d8567d1f193bdcbf84fc9"
+        "size": 60251,
+        "sha256": "edd630549ba4416dc1268547ae951e88c729fb805fb2afb05a778263443c3214"
       },
       "artifact": {
         "id": "axilin_ginger_overdrive",
@@ -8308,8 +8308,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 67824,
-        "sha256": "a54638d00664e71e12f7ec8342555e4802fc1a9e55cc88c259f23e3c58d85457"
+        "size": 26288,
+        "sha256": "f7b3f6797c4a1620cc6dacaa0da4fadd340c5743503568ad65c5e97435ef5c37"
       },
       "artifact": {
         "id": "kirt_rainpuff_quiver",
@@ -8400,8 +8400,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 212407,
-        "sha256": "da95e549bbe6fe08abc766787fabf0511abce2369f13bd398e218347374b2d64"
+        "size": 70419,
+        "sha256": "e8beaef480fe62a8c49a7626a167d26d9364a27191faa2abfe002a60ad40c971"
       },
       "artifact": {
         "id": "kirt_black_wind_bowchip",
@@ -8492,8 +8492,8 @@
       "png": {
         "width": 320,
         "height": 160,
-        "size": 76054,
-        "sha256": "3997d3cf11d8be25d9d42bb2c7289e2f4718561782223c3aa55a2bd943170f44"
+        "size": 34355,
+        "sha256": "d9be318fd7bacae09dd058a9ae3b11d3f1acac0c5ea1f374686dabbf9d0f88c3"
       },
       "artifact": {
         "id": "morga_afterimage_crown",
@@ -8581,8 +8581,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 210180,
-        "sha256": "c31a68cf2dbe01fda73e188153d0f1c85a1434f49571314e67369a8932d413c5"
+        "size": 75260,
+        "sha256": "0e404f78ad0ba788e12c3b1ed05c8eca4660ae5dd2cf7964d60c6ca84e8b7bd8"
       },
       "artifact": {
         "id": "morga_bellstrike_calyx",
@@ -8673,8 +8673,8 @@
       "png": {
         "width": 160,
         "height": 320,
-        "size": 65125,
-        "sha256": "de330561bec8a890cae341f4f854fa02ff1695c77f9023e4e9394f3b44d41574"
+        "size": 23522,
+        "sha256": "c33aac34789926650522e9a16f469953f792ee23d018d0afe81f8d37ce98feee"
       },
       "artifact": {
         "id": "dalamar_throne_splinter",
@@ -8765,8 +8765,8 @@
       "png": {
         "width": 320,
         "height": 320,
-        "size": 223387,
-        "sha256": "3b6665c97f5d36e14b3d7a391760b296a68bd0face4b7d47712c56b945d817f4"
+        "size": 79447,
+        "sha256": "697b2592d632413b9bd95e1fcadb4177fa94e770a6087eb5b9df29c5e42bb99f"
       },
       "artifact": {
         "id": "dalamar_dead_gate_seal",
