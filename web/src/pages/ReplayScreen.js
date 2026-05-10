@@ -40,10 +40,10 @@ export const ReplayScreen = {
       return this.roundResult?.outcome;
     },
     runLivesRemaining() {
-      return this.state.gameRun?.player?.livesRemaining;
+      return this.state.gameRunResult?.player?.livesRemaining ?? this.state.gameRun?.player?.livesRemaining;
     },
     runWins() {
-      return this.state.gameRun?.player?.wins || 0;
+      return this.state.gameRunResult?.player?.wins ?? this.state.gameRun?.player?.wins ?? 0;
     },
     opponentMushroomId() {
       return this.state.currentBattle?.snapshots?.right?.mushroomId;

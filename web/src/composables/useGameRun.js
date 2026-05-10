@@ -115,7 +115,14 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         : previousRounds;
       state.gameRunResult = { ...data, rounds: data.rounds || runRounds };
       state.gameRunRounds = runRounds;
-      if (state.gameRun) state.gameRun = { ...state.gameRun, rounds: runRounds };
+      if (state.gameRun) {
+        state.gameRun = {
+          ...state.gameRun,
+          currentRound: data.currentRound ?? state.gameRun.currentRound,
+          player: data.player || state.gameRun.player,
+          rounds: runRounds
+        };
+      }
       if (data.status === 'completed' || data.status === 'abandoned') {
         state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null, rounds: runRounds };
       }
