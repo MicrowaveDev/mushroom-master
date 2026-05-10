@@ -184,8 +184,8 @@ const App = {
       state.fusionRevealQueue = state.fusionRevealQueue.slice(1);
     }
 
-    function showGameRecipesShortcut() {
-      return state.screen === 'prep' || state.screen === 'replay';
+    function showGameSidebar() {
+      return state.screen === 'prep' || state.screen === 'replay' || (state.screen === 'recipes' && state.gameRun);
     }
 
     function fallbackScreenForRoute() {
@@ -321,7 +321,7 @@ const App = {
       handleLogout,
       saveCharacter,
       completeFusionReveal,
-      showGameRecipesShortcut,
+      showGameSidebar,
       ...customization,
       saveSettings: auth.saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
@@ -337,18 +337,29 @@ const App = {
           <span class="menu-toggle-bar"></span>
         </button>
         <span class="app-header-title">{{ t.title }}</span>
-        <button
-          v-if="showGameRecipesShortcut()"
-          type="button"
-          class="game-recipes-shortcut"
-          data-testid="game-recipes-shortcut"
-          @click="goTo('recipes')"
-        >{{ t.recipes }}</button>
         <div class="lang-toggle-group">
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'en' }" @click="state.lang = 'en'">EN</button>
         </div>
       </header>
+
+      <aside
+        v-if="state.sessionKey && state.bootstrap && showGameSidebar()"
+        class="game-side-menu"
+        data-testid="game-sidebar-menu"
+        aria-label="Game menu"
+      >
+        <p class="game-side-menu-title">{{ t.gameMenu || 'Menu' }}</p>
+        <nav class="game-side-menu-list" aria-label="Game menu">
+          <button
+            type="button"
+            class="game-side-menu-link"
+            :class="{ active: state.screen === 'recipes' }"
+            data-testid="game-sidebar-recipes"
+            @click="goTo('recipes')"
+          >{{ t.recipes }}</button>
+        </nav>
+      </aside>
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 

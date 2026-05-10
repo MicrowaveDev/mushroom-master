@@ -87,8 +87,23 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
-  await expect(page.getByTestId('game-recipes-shortcut')).toBeVisible();
-  await expect(page.getByTestId('game-recipes-shortcut')).toHaveText(/recipes|рецепты/i);
+  await expect(page.getByTestId('game-sidebar-menu')).toBeVisible();
+  await expect(page.getByTestId('game-sidebar-recipes')).toBeVisible();
+  await expect(page.getByTestId('game-sidebar-recipes')).toHaveText(/recipes|рецепты/i);
+  const shopSidebarGeometry = await page.evaluate(() => {
+    const sidebar = document.querySelector('[data-testid="game-sidebar-menu"]')?.getBoundingClientRect();
+    const prep = document.querySelector('.prep-screen')?.getBoundingClientRect();
+    return sidebar && prep ? {
+      height: sidebar.height,
+      width: sidebar.width,
+      right: sidebar.right,
+      prepLeft: prep.left
+    } : null;
+  });
+  expect(shopSidebarGeometry).toBeTruthy();
+  expect(shopSidebarGeometry.height).toBeGreaterThan(500);
+  expect(shopSidebarGeometry.width).toBeGreaterThanOrEqual(120);
+  expect(shopSidebarGeometry.right).toBeLessThan(shopSidebarGeometry.prepLeft);
   await page.locator('.menu-toggle').click();
   await expect(page.locator('.nav-sidebar')).toBeVisible();
   await expect(page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
@@ -99,7 +114,8 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   const replayContinue = page.locator('.replay-result-button-full');
   await expect(replayContinue).toBeVisible({ timeout: 30000 });
 
-  await expect(page.getByTestId('game-recipes-shortcut')).toBeVisible();
+  await expect(page.getByTestId('game-sidebar-menu')).toBeVisible();
+  await expect(page.getByTestId('game-sidebar-recipes')).toBeVisible();
   await page.locator('.menu-toggle').click();
   await expect(page.locator('.nav-sidebar')).toBeVisible();
   await expect(page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
@@ -114,7 +130,8 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await page.locator('.nav-sidebar-close').click();
   await expect(page.locator('.nav-sidebar')).toHaveCount(0);
 
-  await page.getByTestId('game-recipes-shortcut').click();
+  await page.getByTestId('game-sidebar-recipes').click();
   await expect(page.locator('.recipes-screen')).toBeVisible();
+  await expect(page.getByTestId('game-sidebar-menu')).toBeVisible();
   await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
 });
