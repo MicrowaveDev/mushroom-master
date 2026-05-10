@@ -7,11 +7,13 @@ const DEFAULT_REPLAY_AUTOPLAY_MS = readReplayDelay(import.meta.env?.VITE_REPLAY_
 const DEFAULT_REPLAY_AUTOPLAY_FAST_MS = readReplayDelay(import.meta.env?.VITE_REPLAY_AUTOPLAY_FAST_MS, 600);
 export const LONG_BATTLE_SPEED_BOOST_2X_INDEX = 45;
 export const LONG_BATTLE_SPEED_BOOST_3X_INDEX = 90;
+export const LONG_BATTLE_SPEED_BOOST_4X_INDEX = 120;
 
 export function replayLongBattleSpeedBoost(eventCount, replayIndex) {
   const count = Number(eventCount) || 0;
   const index = Number(replayIndex) || 0;
   if (count <= LONG_BATTLE_SPEED_BOOST_2X_INDEX || index < LONG_BATTLE_SPEED_BOOST_2X_INDEX) return 1;
+  if (count > LONG_BATTLE_SPEED_BOOST_4X_INDEX && index >= LONG_BATTLE_SPEED_BOOST_4X_INDEX) return 4;
   if (count > LONG_BATTLE_SPEED_BOOST_3X_INDEX && index >= LONG_BATTLE_SPEED_BOOST_3X_INDEX) return 3;
   return 2;
 }
