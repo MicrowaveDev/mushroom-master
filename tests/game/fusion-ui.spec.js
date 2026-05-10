@@ -70,3 +70,46 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"]')).toBeVisible();
   await expect(page.locator('.recipe-artifact-tile[data-artifact-id="haste_wisp"]')).toBeVisible();
 });
+
+test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  await page.setViewportSize(MOBILE_VIEWPORT);
+
+  const player = await createSession(request, {
+    telegramId: 9403,
+    username: 'fusion_recipes_runtime',
+    name: 'Fusion Recipes Runtime'
+  });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'morga' });
+  await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+
+  await page.locator('.menu-toggle').click();
+  await expect(page.locator('.nav-sidebar')).toBeVisible();
+  await expect(page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
+  await page.locator('.nav-sidebar-close').click();
+  await expect(page.locator('.nav-sidebar')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /ready|готов/i }).click();
+  const replayContinue = page.locator('.replay-result-button-full');
+  await expect(replayContinue).toBeVisible({ timeout: 30000 });
+
+  await page.locator('.menu-toggle').click();
+  await expect(page.locator('.nav-sidebar')).toBeVisible();
+  await expect(page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
+  const sidebarStacksAboveBattleResult = await page.evaluate(() => {
+    const sidebar = document.querySelector('.nav-sidebar');
+    const overlay = document.querySelector('.replay-result-overlay');
+    const sidebarZ = Number.parseInt(getComputedStyle(sidebar).zIndex, 10);
+    const overlayZ = Number.parseInt(getComputedStyle(overlay).zIndex, 10);
+    return sidebarZ > overlayZ;
+  });
+  expect(sidebarStacksAboveBattleResult).toBe(true);
+
+  await page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i }).click();
+  await expect(page.locator('.recipes-screen')).toBeVisible();
+  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
+});
