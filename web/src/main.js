@@ -494,6 +494,7 @@ const App = {
           :state="state" :t="t" :format-delta="formatDelta"
           :active-event="activeEvent" :active-speech="activeSpeech" :battle-status-text="battleStatusText"
           :replay-finished="replayFinished" :active-replay-state="activeReplayState" :visible-replay-events="visibleReplayEvents"
+          :long-battle-speed-boost="longBattleSpeedBoost"
           :build-replay-fighter="buildReplayFighter" :get-mushroom="getMushroom" :loadout-stats-text="loadoutStatsText"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           @go-results="onReplayFinish"

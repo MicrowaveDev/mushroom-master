@@ -17,6 +17,7 @@ export const ReplayDuel = {
     replayIndex: { type: Number, default: 0 },
     statusText: { type: String, default: '' },
     replaySpeed: { type: Number, default: 1 },
+    speedBoost: { type: Number, default: 1 },
     lang: { type: String, default: 'en' }
   },
   emits: ['set-speed'],
@@ -212,6 +213,9 @@ export const ReplayDuel = {
                 <polygon v-for="n in item.count" :key="n" :points="((n - 1) * 8) + ',1 ' + ((n - 1) * 8 + 7) + ',5 ' + ((n - 1) * 8) + ',9'" fill="currentColor" />
               </svg>
             </button>
+            <span v-if="speedBoost > 1" class="replay-speed-boost" aria-label="Long battle speed boost">
+              {{ speedBoost }}x
+            </span>
           </div>
         </div>
         <div class="duel-loadout-side duel-loadout-side--right">

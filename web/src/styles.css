@@ -4127,6 +4127,15 @@ select {
 .replay-speed-btn--active {
   opacity: 1;
 }
+.replay-speed-boost {
+  align-self: center;
+  color: var(--accent-strong, #8a6135);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.9;
+  font-variant-numeric: tabular-nums;
+}
 
 .replay-result-button-full {
   width: min(420px, 100%);

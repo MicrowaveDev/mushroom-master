@@ -3,8 +3,18 @@ import { apiJson } from '../api.js';
 import { formatReplayEvent } from '../replay/format.js';
 import { readReplayDelay } from '../constants.js';
 
-const DEFAULT_REPLAY_AUTOPLAY_MS = readReplayDelay(import.meta.env.VITE_REPLAY_AUTOPLAY_MS, 1200);
-const DEFAULT_REPLAY_AUTOPLAY_FAST_MS = readReplayDelay(import.meta.env.VITE_REPLAY_AUTOPLAY_FAST_MS, 600);
+const DEFAULT_REPLAY_AUTOPLAY_MS = readReplayDelay(import.meta.env?.VITE_REPLAY_AUTOPLAY_MS, 1200);
+const DEFAULT_REPLAY_AUTOPLAY_FAST_MS = readReplayDelay(import.meta.env?.VITE_REPLAY_AUTOPLAY_FAST_MS, 600);
+export const LONG_BATTLE_SPEED_BOOST_2X_INDEX = 45;
+export const LONG_BATTLE_SPEED_BOOST_3X_INDEX = 90;
+
+export function replayLongBattleSpeedBoost(eventCount, replayIndex) {
+  const count = Number(eventCount) || 0;
+  const index = Number(replayIndex) || 0;
+  if (count <= LONG_BATTLE_SPEED_BOOST_2X_INDEX || index < LONG_BATTLE_SPEED_BOOST_2X_INDEX) return 1;
+  if (count > LONG_BATTLE_SPEED_BOOST_3X_INDEX && index >= LONG_BATTLE_SPEED_BOOST_3X_INDEX) return 3;
+  return 2;
+}
 
 export function useReplay(state, goTo, getMushroom) {
   const activeEvent = computed(() => state.currentBattle?.events?.[state.replayIndex] || null);
@@ -43,6 +53,9 @@ export function useReplay(state, goTo, getMushroom) {
       .reverse();
   });
   const activeReplayState = computed(() => activeEvent.value?.state || null);
+  const longBattleSpeedBoost = computed(() =>
+    replayLongBattleSpeedBoost(state.currentBattle?.events?.length || 0, state.replayIndex)
+  );
 
   function stopReplay() {
     if (state.replayTimer) {
@@ -58,7 +71,9 @@ export function useReplay(state, goTo, getMushroom) {
 
   function autoplayReplay() {
     stopReplay();
-    const speed = state.replaySpeed || preferredReplaySpeed();
+    const selectedSpeed = state.replaySpeed || preferredReplaySpeed();
+    const boost = replayLongBattleSpeedBoost(state.currentBattle?.events?.length || 0, state.replayIndex);
+    const speed = selectedSpeed * boost;
     const baseDelay = state.bootstrap?.settings?.battleSpeed === '2x'
       ? DEFAULT_REPLAY_AUTOPLAY_FAST_MS
       : DEFAULT_REPLAY_AUTOPLAY_MS;
@@ -66,7 +81,12 @@ export function useReplay(state, goTo, getMushroom) {
     state.replayTimer = window.setInterval(() => {
       if (!state.currentBattle) { stopReplay(); return; }
       if (state.replayIndex >= state.currentBattle.events.length - 1) { stopReplay(); return; }
+      const previousBoost = replayLongBattleSpeedBoost(state.currentBattle.events.length, state.replayIndex);
       state.replayIndex += 1;
+      const nextBoost = replayLongBattleSpeedBoost(state.currentBattle.events.length, state.replayIndex);
+      if (nextBoost !== previousBoost && state.replayIndex < state.currentBattle.events.length - 1) {
+        autoplayReplay();
+      }
     }, delay);
   }
 
@@ -110,7 +130,7 @@ export function useReplay(state, goTo, getMushroom) {
 
   return {
     activeEvent, activeSpeech, battleStatusText, replayFinished,
-    activeReplayState, visibleReplayEvents,
+    activeReplayState, visibleReplayEvents, longBattleSpeedBoost,
     stopReplay, autoplayReplay, loadReplay,
     setReplaySpeed
   };

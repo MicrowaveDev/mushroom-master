@@ -5,7 +5,7 @@ export const ReplayScreen = {
   props: [
     'state', 't', 'formatDelta',
     'activeEvent', 'activeSpeech', 'battleStatusText', 'replayFinished',
-    'activeReplayState', 'visibleReplayEvents',
+    'activeReplayState', 'visibleReplayEvents', 'longBattleSpeedBoost',
     'buildReplayFighter', 'getMushroom', 'loadoutStatsText',
     'renderArtifactFigure', 'getArtifact'
   ],
@@ -169,6 +169,7 @@ export const ReplayScreen = {
           :status-text="battleStatusText"
           :lang="state.lang"
           :replay-speed="state.replaySpeed || 1"
+          :speed-boost="longBattleSpeedBoost || 1"
           @set-speed="$emit('set-speed', $event)"
         />
       </div>
