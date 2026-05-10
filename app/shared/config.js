@@ -32,7 +32,7 @@ export const DAILY_BATTLE_LIMIT = 10;
 
 // --- Combat ---
 export const MAX_STUN_CHANCE = 35;
-export const STEP_CAP = 120;
+export const STEP_CAP = 150;
 
 // --- Rating / economy ---
 export const RATING_FLOOR = 100;

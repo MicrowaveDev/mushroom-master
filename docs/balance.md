@@ -8,10 +8,10 @@ The goal is to keep the game **competitive but not punishing** — a duel betwee
 
 ## 1. Core Game Loop
 
-A **game** (Русский: *Игра*) is a single run between two players (or a player and ghosts/bots). It consists of up to 9 **rounds** (*Раунды*). Each round is a 1v1 **battle** that resolves in up to 120 combat **steps** (*Ходы*).
+A **game** (Русский: *Игра*) is a single run between two players (or a player and ghosts/bots). It consists of up to 9 **rounds** (*Раунды*). Each round is a 1v1 **battle** that resolves in up to 150 combat **steps** (*Ходы*).
 
 ```
-Game = up to 9 Rounds = up to 9 × 120 Steps
+Game = up to 9 Rounds = up to 9 × 150 Steps
 ```
 
 Terminology — used consistently in code and UI:
@@ -32,7 +32,7 @@ All constants live in [app/server/game-data.js](../app/server/game-data.js).
 |----------|-------|---------|
 | `MAX_ROUNDS_PER_RUN` | **9** | Rounds before the game is force-ended at max rounds |
 | `STARTING_LIVES` | **5** | A player is eliminated after losing 5 rounds |
-| `STEP_CAP` | **120** | Combat steps before a battle is decided by HP percentage |
+| `STEP_CAP` | **150** | Combat steps before a battle is decided by HP percentage |
 | `MAX_ARTIFACT_COINS` | **5** | Per-round income ceiling (matches `ROUND_INCOME[0]`) |
 | `SHOP_OFFER_SIZE` | **5** | Items in the shop each round |
 | `ROUND_INCOME` | `[5, 5, 5, 6, 6, 7, 7, 8, 8]` | Coins awarded at the start of each round |
@@ -166,7 +166,7 @@ The "loss counter" model is simpler to explain and display than a damage-scaling
 
 ## 6. Battle Step Cap
 
-`STEP_CAP = 120` means a battle can run up to 120 combat steps before being decided by HP percentage. This was raised from 12 (too low — many builds hit the cap without a decisive winner) to 120 (roomy enough that step-cap endings are rare in normal play).
+`STEP_CAP = 150` means a battle can run up to 150 combat steps before being decided by HP percentage. This was raised from 12 (too low — many builds hit the cap without a decisive winner) to 120 during the combat rework, then to 150 after replay auto-speed gained a 4x stage at replay index 120.
 
 When a battle ends via step cap (not death), the replay log and result show **"Лимит ходов исчерпан — X побеждает по здоровью"** ("Step limit reached — X wins on health") to make the tiebreak explicit.
 

@@ -66,12 +66,13 @@ test('[Req 6-G] last action event state matches battle_end state when battle end
 });
 
 test('[Req 6-H] step_cap ending has both combatants alive with endReason set', () => {
-  // Heavy armor vs low damage to force step cap with long STEP_CAP
+  // Heavy armor plus stun keeps both sides alive long enough to hit the cap
+  // even after STEP_CAP was raised to 150.
   for (let i = 0; i < 50; i++) {
     const result = simulateBattle(
       makeSnapshot('lomie', 'lomie',
-        [{ artifactId: 'truffle_bulwark', x: 0, y: 0, width: 2, height: 2 }],
-        [{ artifactId: 'truffle_bulwark', x: 0, y: 0, width: 2, height: 2 }]
+        [item('bark_plate', 0, 0), item('biostasis_crown_seed', 1, 0)],
+        [item('bark_plate', 0, 0), item('biostasis_crown_seed', 1, 0)]
       ),
       `cap-${i}`
     );
@@ -84,24 +85,23 @@ test('[Req 6-H] step_cap ending has both combatants alive with endReason set', (
       return;
     }
   }
-  // With STEP_CAP=120 most battles resolve by death; skip test gracefully if no step_cap found
+  // With STEP_CAP=150 most battles resolve by death; skip test gracefully if no step_cap found
 });
 
 test('[Req 6-H] step_cap winner is the side with the higher HP%', () => {
   // Pin the tiebreaker rule: when the battle reaches STEP_CAP without a death,
   // the winner is determined by higher HP%. Force this scenario reliably by:
-  //   1. Mirror Lomie (max HP = 125) with truffle_bulwark on both sides so
-  //      damage stays at the floor of 1 per hit and neither dies before cap.
-  //   2. Give the right side an extra thunder_gill (stun artifact) so it
-  //      occasionally stuns the left, making the left lose more HP than the
-  //      right by step 120. Asymmetric stun → asymmetric HP% at cap.
+  //   1. Mirror Lomie (max HP = 125) with bark_plate on both sides so
+  //      damage stays low.
+  //   2. Give both sides biostasis_crown_seed so stuns skip enough actions for
+  //      both to survive to step 150, while seeded RNG still creates an unequal
+  //      final HP% at cap.
   let assertedAtLeastOnce = false;
   for (let i = 0; i < 200; i++) {
     const result = simulateBattle(
       makeSnapshot('lomie', 'lomie',
-        [{ artifactId: 'truffle_bulwark', x: 0, y: 0, width: 2, height: 2 }],
-        [{ artifactId: 'truffle_bulwark', x: 0, y: 0, width: 2, height: 2 },
-         { artifactId: 'thunder_gill', x: 0, y: 2, width: 2, height: 1 }]
+        [item('bark_plate', 0, 0), item('biostasis_crown_seed', 1, 0)],
+        [item('bark_plate', 0, 0), item('biostasis_crown_seed', 1, 0)]
       ),
       `hp-pct-${i}`
     );
@@ -435,7 +435,7 @@ test('[Req 6-L] lore artifact battle effects are emitted as replay metadata', ()
   );
 });
 
-test('[Req 1-B] battle ends at STEP_CAP (120) with endReason step_cap', () => {
+test('[Req 1-B] battle ends at STEP_CAP (150) with endReason step_cap', () => {
   // Two very tanky mushrooms with high armor — battle should hit step cap
   const snapshot = makeSnapshot('lomie', 'lomie',
     [item('bark_plate', 0, 0), item('root_shell', 1, 0, 2, 2), item('truffle_bulwark', 0, 2, 2, 2)],

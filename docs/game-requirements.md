@@ -15,7 +15,7 @@ Last verified against code: 2026-04-16.
 ## 1. Game Structure
 
 - **1-A.** A **game run** consists of up to **9 rounds** (`MAX_ROUNDS_PER_RUN`).
-- **1-B.** Each round is a 1v1 battle that ends on death or after at most **120 combat steps** (`STEP_CAP`); most battles end well before the cap.
+- **1-B.** Each round is a 1v1 battle that ends on death or after at most **150 combat steps** (`STEP_CAP`); most battles end well before the cap.
 - **1-C.** The player starts with **5 lives** (`STARTING_LIVES`).
 - **1-D.** The player loses **1 life per round lost** (not per step).
 - **1-E.** The run ends when lives reach 0 (`end_reason = 'max_losses'`) or all 9 rounds complete (`end_reason = 'max_rounds'`).
@@ -149,7 +149,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **6-E.** **Stun check** after damage: `stunChance = artifact_stun% + ability_bonus%`, capped at **35%** (`MAX_STUN_CHANCE`).
 - **6-F.** If stunned, the defender skips their next action; the stun flag clears after one skip.
 - **6-G.** Battle ends on **death** (0 HP) with `endReason = 'death'`.
-- **6-H.** Battle ends at **step 120** with `endReason = 'step_cap'`; winner is the side with higher HP%.
+- **6-H.** Battle ends at **step 150** with `endReason = 'step_cap'`; winner is the side with higher HP%.
 - **6-I.** Combat is fully **server-side** and does not depend on client connection.
 - **6-J.** Dalamar's Ashen Veil passive reduces the enemy's defense by 1 after each successful hit, floored at 0.
 - **6-K.** Replay `action` events include artifact attribution for placed non-bag artifacts that contributed positive attack damage, stun chance, or target armor to that action. The attribution is explanatory replay metadata only: it does not change combat math, does not include bag artifacts or container items, and replay clients must continue to render older battle events where the attribution field is absent.
