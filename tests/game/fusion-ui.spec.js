@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { api, createSession, resetDevDb, waitForPrepReady, MOBILE_VIEWPORT } from './e2e-helpers.js';
+import { api, createSession, resetDevDb, waitForPrepReady, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
 
 test('[fusion] prep highlights ingredients and next shop entry reveals fused result', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
@@ -73,7 +73,7 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
 
 test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
-  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.setViewportSize(DESKTOP_VIEWPORT);
 
   const player = await createSession(request, {
     telegramId: 9403,
@@ -87,6 +87,8 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
+  await expect(page.getByTestId('game-recipes-shortcut')).toBeVisible();
+  await expect(page.getByTestId('game-recipes-shortcut')).toHaveText(/recipes|рецепты/i);
   await page.locator('.menu-toggle').click();
   await expect(page.locator('.nav-sidebar')).toBeVisible();
   await expect(page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
@@ -97,6 +99,7 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   const replayContinue = page.locator('.replay-result-button-full');
   await expect(replayContinue).toBeVisible({ timeout: 30000 });
 
+  await expect(page.getByTestId('game-recipes-shortcut')).toBeVisible();
   await page.locator('.menu-toggle').click();
   await expect(page.locator('.nav-sidebar')).toBeVisible();
   await expect(page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
@@ -108,8 +111,10 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
     return sidebarZ > overlayZ;
   });
   expect(sidebarStacksAboveBattleResult).toBe(true);
+  await page.locator('.nav-sidebar-close').click();
+  await expect(page.locator('.nav-sidebar')).toHaveCount(0);
 
-  await page.locator('.nav-sidebar').getByRole('button', { name: /recipes|рецепты/i }).click();
+  await page.getByTestId('game-recipes-shortcut').click();
   await expect(page.locator('.recipes-screen')).toBeVisible();
   await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
 });

@@ -184,6 +184,10 @@ const App = {
       state.fusionRevealQueue = state.fusionRevealQueue.slice(1);
     }
 
+    function showGameRecipesShortcut() {
+      return state.screen === 'prep' || state.screen === 'replay';
+    }
+
     function fallbackScreenForRoute() {
       if (!state.sessionKey) return 'auth';
       if (!state.bootstrap?.activeMushroomId) return 'onboarding';
@@ -317,6 +321,7 @@ const App = {
       handleLogout,
       saveCharacter,
       completeFusionReveal,
+      showGameRecipesShortcut,
       ...customization,
       saveSettings: auth.saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
@@ -332,6 +337,13 @@ const App = {
           <span class="menu-toggle-bar"></span>
         </button>
         <span class="app-header-title">{{ t.title }}</span>
+        <button
+          v-if="showGameRecipesShortcut()"
+          type="button"
+          class="game-recipes-shortcut"
+          data-testid="game-recipes-shortcut"
+          @click="goTo('recipes')"
+        >{{ t.recipes }}</button>
         <div class="lang-toggle-group">
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'en' }" @click="state.lang = 'en'">EN</button>
