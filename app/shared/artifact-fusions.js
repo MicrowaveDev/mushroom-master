@@ -3,6 +3,26 @@ export const artifactFusionRecipes = [
     id: 'portal_cut_sickle',
     resultArtifactId: 'portal_cut_sickle',
     ingredientArtifactIds: ['sporeblade', 'mirrorloop_knot']
+  },
+  {
+    id: 'riftfang_comet',
+    resultArtifactId: 'riftfang_comet',
+    ingredientArtifactIds: ['amber_fang', 'haste_wisp']
+  },
+  {
+    id: 'biostasis_crown_seed',
+    resultArtifactId: 'biostasis_crown_seed',
+    ingredientArtifactIds: ['reliquary_biostasis_seal', 'triple_knot_seed']
+  },
+  {
+    id: 'abyss_bow_knot',
+    resultArtifactId: 'abyss_bow_knot',
+    ingredientArtifactIds: ['heartwood_splinter_bow', 'mirrorloop_knot']
+  },
+  {
+    id: 'opening_bell_spore',
+    resultArtifactId: 'opening_bell_spore',
+    ingredientArtifactIds: ['afterimage_cap', 'first_bloom_cinder']
   }
 ];
 

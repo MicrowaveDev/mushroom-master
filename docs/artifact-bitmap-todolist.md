@@ -83,6 +83,7 @@ Quality watch:
 Fusion note:
 
 - `portal_cut_sickle.png` - current concept is now intentional: it is the first fusion-only result (`sporeblade` + `mirrorloop_knot`), so future redraws should preserve the fused portal-edge-plus-blade read.
+- `riftfang_comet.png`, `biostasis_crown_seed.png`, `abyss_bow_knot.png`, and `opening_bell_spore.png` are also fusion-only results as of the recipe-catalog pass; future redraws should preserve their fused-result read rather than simplifying them into normal shop items.
 
 ## Validation
 

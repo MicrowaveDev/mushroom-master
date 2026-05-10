@@ -30,6 +30,7 @@ import {
   SHOP_REFRESH_CHEAP_LIMIT,
   BAG_PITY_THRESHOLD
 } from '../../app/server/game-data.js';
+import { artifactFusionRecipes } from '../../app/shared/artifact-fusions.js';
 import { createRng } from '../../app/server/lib/utils.js';
 import {
   freshDb,
@@ -166,9 +167,15 @@ test('[fusion] eligible artifacts fuse after round resolution and before next sh
 });
 
 test('[fusion] fusion-only result is excluded from normal combat shop pool', () => {
-  const result = getArtifactById('portal_cut_sickle');
-  assert.equal(result.fusionOnly, true);
-  assert.equal(combatArtifacts.some((artifact) => artifact.id === 'portal_cut_sickle'), false);
+  for (const recipe of artifactFusionRecipes) {
+    const result = getArtifactById(recipe.resultArtifactId);
+    assert.equal(result.fusionOnly, true, `${recipe.resultArtifactId} should be fusion-only`);
+    assert.equal(
+      combatArtifacts.some((artifact) => artifact.id === recipe.resultArtifactId),
+      false,
+      `${recipe.resultArtifactId} should not appear in combat shop pool`
+    );
+  }
 });
 
 test('[Req 1-E] elimination at 5 losses ends the run', async () => {

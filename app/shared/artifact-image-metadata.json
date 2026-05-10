@@ -4960,7 +4960,7 @@
           "speed": -2
         },
         "starterOnly": false,
-        "fusionOnly": false,
+        "fusionOnly": true,
         "characterItem": null,
         "slotCount": null
       },
@@ -5671,7 +5671,7 @@
           "armor": -1
         },
         "starterOnly": false,
-        "fusionOnly": false,
+        "fusionOnly": true,
         "characterItem": null,
         "slotCount": null
       },
@@ -6556,7 +6556,7 @@
           "armor": -2
         },
         "starterOnly": false,
-        "fusionOnly": false,
+        "fusionOnly": true,
         "characterItem": null,
         "slotCount": null
       },
@@ -6646,7 +6646,7 @@
           "armor": -2
         },
         "starterOnly": false,
-        "fusionOnly": false,
+        "fusionOnly": true,
         "characterItem": null,
         "slotCount": null
       },

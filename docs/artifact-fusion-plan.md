@@ -1,6 +1,6 @@
 # Artifact Fusion Plan
 
-> Status: shipped on 2026-05-09 for the first automatic fusion recipe; hardening follow-up active on 2026-05-10. This is now a historical ship record plus the follow-up checklist. The runtime contract is in `app/shared/artifact-fusions.js`, `app/server/services/artifact-fusion-service.js`, `docs/game-requirements.md`, and the prep UI components.
+> Status: shipped on 2026-05-09 for the first automatic fusion recipe; hardening and recipe-catalog follow-ups shipped on 2026-05-10. This is now a historical ship record plus the follow-up checklist. The runtime contract is in `app/shared/artifact-fusions.js`, `app/server/services/artifact-fusion-service.js`, `docs/game-requirements.md`, and the prep/recipe UI components.
 
 ## Goal
 
@@ -20,16 +20,21 @@ Add a Backpack Battles-style fusion layer without turning fusion into a manual s
 - V1 ingredients cannot be bags, starter-only artifacts, or existing fusion-only results.
 - Fusion-only results do not appear in normal shop rolls or ghost shop-purchase pools.
 - The prep UI highlights current rows that match a recipe while `currentRound < MAX_ROUNDS_PER_RUN`.
-- On replay continue into the next shop, the client plays a fusion reveal: ingredient artifact images move toward the center, shrink into the infusion point, then reveal the result. The reveal blocks prep input until it completes.
+- On replay continue into the next shop, the client plays a fusion reveal: ingredient artifact images pull toward each other like magnets, shrink into the infusion point, then reveal the result. The reveal blocks prep input until it completes.
 - Applied fusions are persisted as reveal events so challenge reconnect can still show the post-replay fusion animation.
+- The sidebar Recipes screen renders the same deterministic recipe list with ingredient visuals, result visuals, localized result text, and result stats.
 
-## First Recipe
+## Live Recipes
 
 | Recipe | Ingredients | Result |
 | --- | --- | --- |
 | `portal_cut_sickle` | `sporeblade` + `mirrorloop_knot` | `portal_cut_sickle` |
+| `riftfang_comet` | `amber_fang` + `haste_wisp` | `riftfang_comet` |
+| `biostasis_crown_seed` | `reliquary_biostasis_seal` + `triple_knot_seed` | `biostasis_crown_seed` |
+| `abyss_bow_knot` | `heartwood_splinter_bow` + `mirrorloop_knot` | `abyss_bow_knot` |
+| `opening_bell_spore` | `afterimage_cap` + `first_bloom_cinder` | `opening_bell_spore` |
 
-`portal_cut_sickle` is now `fusionOnly: true`. It keeps the existing live stats and bitmap, but no longer belongs to the normal combat shop pool.
+These result artifacts are `fusionOnly: true`. They keep existing live stats and bitmaps, but no longer belong to the normal combat shop pool.
 
 ## Implementation Steps
 
@@ -58,3 +63,4 @@ npm run game:test:screens
 3. Block prep interactions while the fusion reveal is visible.
 4. Generalize ingredient animation positions for recipes with more than two ingredients.
 5. Add tests for same-row reuse, persisted challenge fusions, and UI input blocking.
+6. Add more live fusion recipes and expose them in the sidebar recipe section.

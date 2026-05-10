@@ -109,6 +109,21 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.goto(`${baseURL}/profile`);
   await page.waitForSelector('.profile-screen');
   await expect(page.locator('.achievement-journal')).toBeVisible();
+
+  await page.goto(`${baseURL}/recipes`);
+  await page.waitForSelector('.recipes-screen');
+  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await assertImagesLoaded(page);
+  await saveShot(page, '02c-recipes.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.goto(`${baseURL}/recipes`);
+  await page.waitForSelector('.recipes-screen');
+  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
+  await assertImagesLoaded(page);
+  await saveShot(page, '02c-recipes-desktop.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
+
   await page.goto(`${baseURL}/home`);
   await page.waitForSelector('.home');
   await page.setViewportSize(DESKTOP_VIEWPORT);

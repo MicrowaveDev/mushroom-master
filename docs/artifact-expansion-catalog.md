@@ -2,7 +2,7 @@
 
 **Purpose:** candidate artifact ideas for turning the current catalog into a fuller game-feeling loot pool.
 
-The live game currently has 117 artifact definitions in `app/server/game-data.js`: 77 normal combat artifacts, 1 fusion-only result, 24 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, 18-item circle relic wave, and 12-item mastery character ladder have been promoted into live data. The remaining reserve pool focuses on bag/container variety and mechanic-gated ideas.
+The live game currently has 117 artifact definitions in `app/server/game-data.js`: 73 normal combat artifacts, 5 fusion-only results, 24 character shop items, 8 shop bags, 6 signature starters, and the starter bag. The 18-item priority batch, 24-item general shop wave, 18-item circle relic wave, and 12-item mastery character ladder have been promoted into live data. Some promoted rows are now fusion-only results rather than normal shop rolls. The remaining reserve pool focuses on bag/container variety and mechanic-gated ideas.
 
 Rows marked as promoted are wired into `game-data.js`; remaining rows are still candidates. Future live shop promotions need production bitmap assets, image provenance, visual-classification snapshot updates, and balance validation. Use this doc as the source list for future implementation batches.
 
@@ -16,11 +16,15 @@ Rows marked as promoted are wired into `game-data.js`; remaining rows are still 
 
 ## Backlog: Merge Artifact Ideas
 
-The first Backpack Battles-like fusion rule is live: `sporeblade` + `mirrorloop_knot` fuses into `portal_cut_sickle` after a completed round and before the next shop/prep screen. Future rows still need requirements, balance, UI, and recipe validation before implementation.
+The Backpack Battles-like fusion layer is live: eligible ingredients fuse after a completed round and before the next shop/prep screen. Future rows still need requirements, balance, UI, and recipe validation before implementation.
 
 | Seed | Why It Belongs Here | Possible Direction |
 | --- | --- | --- |
 | `portal_cut_sickle` | Its current silhouette already reads like two artifacts fused together: a portal edge plus a cutting blade. | Shipped as the first automatic fusion result: `sporeblade` + `mirrorloop_knot`. It is now fusion-only, not a normal shop roll. |
+| `riftfang_comet` | A fang plus speed source reads naturally as a pulled comet/rift strike. | Shipped as `amber_fang` + `haste_wisp`; fusion-only, not a normal shop roll. |
+| `biostasis_crown_seed` | Reliquary seal plus triple-knot control escalates into a heavy crown seed. | Shipped as `reliquary_biostasis_seal` + `triple_knot_seed`; fusion-only, not a normal shop roll. |
+| `abyss_bow_knot` | Heartwood bow plus mirror-loop knot becomes a larger bow-knot control relic. | Shipped as `heartwood_splinter_bow` + `mirrorloop_knot`; fusion-only, not a normal shop roll. |
+| `opening_bell_spore` | Afterimage tempo plus first-bloom burst becomes Morga's opening bell. | Shipped as `afterimage_cap` + `first_bloom_cinder`; fusion-only, not a normal shop roll. |
 
 ## Priority Batch
 

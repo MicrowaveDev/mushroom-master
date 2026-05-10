@@ -31,6 +31,7 @@ import { FriendsScreen } from './pages/FriendsScreen.js';
 import { LeaderboardScreen } from './pages/LeaderboardScreen.js';
 import { WikiScreen } from './pages/WikiScreen.js';
 import { WikiDetailScreen } from './pages/WikiDetailScreen.js';
+import { RecipesScreen } from './pages/RecipesScreen.js';
 import { ProfileScreen } from './pages/ProfileScreen.js';
 import { SettingsScreen } from './pages/SettingsScreen.js';
 
@@ -45,7 +46,7 @@ const App = {
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
-    FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, SettingsScreen
+    FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, RecipesScreen, SettingsScreen
   },
   setup() {
     const state = reactive({
@@ -369,6 +370,7 @@ const App = {
               <button class="nav-btn" :class="{ active: state.screen === 'leaderboard' }" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'profile' }" @click="goTo('profile')">{{ t.profile }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'wiki' || state.screen === 'wiki-detail' }" @click="goTo('wiki')">{{ t.wiki }}</button>
+              <button class="nav-btn" :class="{ active: state.screen === 'recipes' }" @click="goTo('recipes')">{{ t.recipes }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'settings' }" @click="goTo('settings')">{{ t.settings }}</button>
               <button class="nav-btn nav-btn--logout" data-testid="menu-logout" @click="handleLogout">{{ t.logout }}</button>
             </nav>
@@ -543,6 +545,10 @@ const App = {
 
         <wiki-detail-screen v-else-if="state.screen === 'wiki-detail' && state.selectedWiki"
           :state="state" :t="t" @go="goTo($event)" @open-wiki="openWiki($event[0], $event[1])"
+        />
+
+        <recipes-screen v-else-if="state.screen === 'recipes'"
+          :state="state" :t="t" :get-artifact="getArtifact" :format-artifact-bonus="formatArtifactBonus"
         />
 
         <profile-screen v-else-if="state.screen === 'profile'" :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition" />

@@ -903,6 +903,7 @@ export const artifacts = [
     width: 2,
     height: 2,
     price: 3,
+    fusionOnly: true,
     bonus: { stunChance: 22, armor: 3, speed: -2 },
     description: {
       ru: 'Тяжелое семя Реликвария держит время в форме короны и давит ею на врага.',
@@ -1026,6 +1027,7 @@ export const artifacts = [
     width: 2,
     height: 1,
     price: 2,
+    fusionOnly: true,
     bonus: { damage: 6, speed: 1, armor: -1 },
     description: {
       ru: 'Клык Ломиэ оставляет за собой короткий зеленый разлом вместо хвоста.',
@@ -1176,6 +1178,7 @@ export const artifacts = [
     width: 2,
     height: 2,
     price: 3,
+    fusionOnly: true,
     bonus: { stunChance: 20, damage: 3, armor: -2 },
     description: {
       ru: 'Кусок Черного Ветра Бездны Кирт все еще запоминает цель раньше стрелы.',
@@ -1191,6 +1194,7 @@ export const artifacts = [
     width: 2,
     height: 2,
     price: 3,
+    fusionOnly: true,
     bonus: { stunChance: 18, speed: 2, armor: -2 },
     description: {
       ru: 'Колокол Морги звонит только в начале, но эхо хватает на весь обмен ударами.',

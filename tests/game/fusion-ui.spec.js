@@ -44,3 +44,29 @@ test('[fusion] prep highlights ingredients and next shop entry reveals fused res
   await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="sporeblade"]')).toHaveCount(0);
   await expect(page.locator('.artifact-container-zone .container-item[data-artifact-id="mirrorloop_knot"]')).toHaveCount(0);
 });
+
+test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  await page.setViewportSize(MOBILE_VIEWPORT);
+
+  const player = await createSession(request, {
+    telegramId: 9402,
+    username: 'fusion_recipes',
+    name: 'Fusion Recipes'
+  });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'lomie' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+
+  await page.locator('.menu-toggle').click();
+  await page.getByRole('button', { name: /recipes|рецепты/i }).click();
+
+  await expect(page.locator('.recipes-screen')).toBeVisible();
+  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await expect(page.locator('[data-result-artifact-id="riftfang_comet"]')).toBeVisible();
+  await expect(page.locator('[data-result-artifact-id="biostasis_crown_seed"]')).toBeVisible();
+  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"]')).toBeVisible();
+  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="haste_wisp"]')).toBeVisible();
+});

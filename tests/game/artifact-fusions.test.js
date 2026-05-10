@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  artifactFusionRecipes,
   findArtifactFusionMatches,
   fusionIngredientRowIdSet
 } from '../../app/shared/artifact-fusions.js';
@@ -8,6 +9,12 @@ import {
 const artifacts = new Map([
   ['sporeblade', { id: 'sporeblade', family: 'damage' }],
   ['mirrorloop_knot', { id: 'mirrorloop_knot', family: 'stun' }],
+  ['amber_fang', { id: 'amber_fang', family: 'damage' }],
+  ['haste_wisp', { id: 'haste_wisp', family: 'damage' }],
+  ['riftfang_comet', { id: 'riftfang_comet', family: 'damage', fusionOnly: true }],
+  ['biostasis_crown_seed', { id: 'biostasis_crown_seed', family: 'stun', fusionOnly: true }],
+  ['abyss_bow_knot', { id: 'abyss_bow_knot', family: 'stun', fusionOnly: true }],
+  ['opening_bell_spore', { id: 'opening_bell_spore', family: 'stun', fusionOnly: true }],
   ['portal_cut_sickle', { id: 'portal_cut_sickle', family: 'damage', fusionOnly: true }],
   ['starter_bag', { id: 'starter_bag', family: 'bag', starterOnly: true }],
   ['starter_item', { id: 'starter_item', family: 'damage', starterOnly: true }]
@@ -32,6 +39,26 @@ test('[fusion] finds portal-cut sickle recipe from owned row ids', () => {
   assert.equal(matches[0].resultArtifactId, 'portal_cut_sickle');
   assert.deepEqual(matches[0].ingredientRowIds, ['a', 'b']);
   assert.deepEqual([...fusionIngredientRowIdSet(matches)].sort(), ['a', 'b']);
+});
+
+test('[fusion] ships multiple deterministic recipe results', () => {
+  assert.deepEqual(artifactFusionRecipes.map((recipe) => recipe.resultArtifactId), [
+    'portal_cut_sickle',
+    'riftfang_comet',
+    'biostasis_crown_seed',
+    'abyss_bow_knot',
+    'opening_bell_spore'
+  ]);
+
+  const matches = findArtifactFusionMatches([
+    row('fang', 'amber_fang'),
+    row('wisp', 'haste_wisp')
+  ], getArtifact);
+
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].recipeId, 'riftfang_comet');
+  assert.equal(matches[0].resultArtifactId, 'riftfang_comet');
+  assert.deepEqual(matches[0].ingredientRowIds, ['fang', 'wisp']);
 });
 
 test('[fusion] ignores bags, starter-only rows, and existing fusion results', () => {

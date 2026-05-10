@@ -286,6 +286,25 @@ Step 5: Achievement Journal
     - Mobile layout remains a single readable column with no horizontal scroll
 ```
 
+```
+Step 6: Fusion Recipes
+  Screen: recipes → RecipesScreen.js
+  Screenshot: screenshots/02c-recipes.png, screenshots/02c-recipes-desktop.png
+  E2E: fusion-ui.spec.js — sidebar recipe navigation; screenshots.spec.js — dual-viewport recipes capture
+  Above the fold (mobile):
+    - Recipes heading
+    - First fusion recipe card
+    - Ingredient artifact visuals and fusion-only result visual
+  Sees:
+    - [Req 11-F] All recipes from `app/shared/artifact-fusions.js`
+    - Ingredient names
+    - Result name, localized description, and visible stats
+  Action: Open from sidebar Recipes item
+  Expected:
+    - Menu closes and routes to `recipes`
+    - Recipe cards render without broken artifact visuals or horizontal overflow
+```
+
 **Flow B summary** (canonical post-2026-04-14):
 ```
 home → start game → prep round 1 → ready → replay (autoplay) →
@@ -518,6 +537,7 @@ Step 1: Open Settings
 | `settings` | SettingsScreen.js | Menu |
 | `wiki` | WikiScreen.js | Menu |
 | `wiki-detail` | WikiDetailScreen.js | Wiki entry click |
+| `recipes` | RecipesScreen.js | Menu |
 | ~~`artifacts`~~ | ~~ArtifactsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
 | ~~`battle`~~ | ~~BattlePrepScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
 | ~~`results`~~ | ~~ResultsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |

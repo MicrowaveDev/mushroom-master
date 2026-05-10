@@ -46,7 +46,7 @@ web/public/artifacts/{artifact_id}.png
 | `first_bloom_cinder` | Circle relic damage/speed, `1x1`, bright. | Morga opener fantasy in a compact cell: fast, hot, and fragile. | Compact orange flower-coal with cap-like petals and one white flash slash, filling one cell. |
 | `dead_city_nail` | Circle relic damage/control, `1x2`, bright. | Dalamar dead-gate hardware turned into a slow heavy puncture charm. | Tall black-bone nail with ash cap at top and corroded tooth point below, thick vertical silhouette. |
 | `golden_spore_mace` | Circle relic damage/armor, `2x2`, radiant. | Thalla royal force as a large anchored attack object with defensive weight. | Heavy solid golden spore mace head with short white mycelium haft, a few large spore bumps, and one pale cyan biostasis mark; avoid dense holes or filigree. |
-| `riftfang_comet` | Circle relic damage/speed, `2x1`, bright. | Lomie rift motion as a fast fragile strike item. | Horizontal violet fang-comet with green rift tail and dark rim, broad enough to fill both cells. |
+| `riftfang_comet` | Fusion-only damage/speed, `2x1`, bright. | Lomie rift motion created when `amber_fang` and `haste_wisp` fuse after a round. | Horizontal violet fang-comet with green rift tail and dark rim, broad enough to fill both cells. |
 
 ## Armor
 
@@ -99,14 +99,14 @@ web/public/artifacts/{artifact_id}.png
 | `ashen_heart_smoke` | Deep lore stun/armor, `1x2`, bright. | Dalamar censer plume for slow heavy control builds. | Vertical plume from a tiny bone censer, gray-white smoke with a dense readable silhouette. |
 | `silent_bell_mold` | Deep lore stun/armor, `2x2`, radiant. | Crypt silence as a large control commitment. | Bell-shaped mold mass, black clapper swallowed by white fuzz, one blocky object filling all quadrants. |
 | `crystal_rift_chime` | Deep lore stun/speed, `1x2`, bright. | Lomie rift sound as vertical tempo control. | Tall crystal chime with split violet-green light and thick dark rim. |
-| `biostasis_crown_seed` | Deep lore stun/armor, `2x2`, radiant. | Golden Reliquary sacred control object for high-cost builds. | Crown-like seed pod, sacred and heavy, with pale cyan glints and broad base. |
+| `biostasis_crown_seed` | Fusion-only stun/armor, `2x2`, radiant. | Golden Reliquary sacred control object created when `reliquary_biostasis_seal` and `triple_knot_seed` fuse after a round. | Crown-like seed pod, sacred and heavy, with pale cyan glints and broad base. |
 | `spore_snow_globe` | Deep lore stun/armor, `1x1`, plain. | Dalamar ash snow as a tiny defensive-control pickup. | Tiny globe of gray-white spore snow over black roots, round clear silhouette. |
 | `forgotten_crossroads_ring` | Deep lore stun/damage, `2x1`, bright. | Lomie/Thalla crossroads as a wide hybrid control charm. | Ring split between violet void and gold mycelium teeth, stretched as one horizontal emblem. |
 | `spore_lullaby_conch` | Circle relic stun/armor, `2x1`, bright. | Thalla command-over-body fantasy in a wide control charm. | Horizontal pale-gold fungal conch with white spore curls kept inside the outline and dark lip. |
 | `mirrorloop_knot` | Circle relic stun/speed, `1x1`, plain. | Lomie mirror-route logic as a tiny tempo interrupt. | Compact black-violet loop knot with green mirror highlight and one pale spore bead. |
 | `ginger_spark_bottle` | Circle relic stun/damage, `1x2`, bright. | Axilin ginger alchemy as a tall bottle that pops into disruption. | Tall ginger-shaped amber bottle with yellow spark cork and green fizz core, chunky vertical form. |
-| `abyss_bow_knot` | Circle relic stun/damage, `2x2`, radiant. | Kirt Black Wind bow material as a large risky control artifact. | Heavy black-violet bow knot with green resin eye and amber string arcs, filling all quadrants. |
-| `opening_bell_spore` | Circle relic stun/speed, `2x2`, radiant. | Morga opening tempo as a large flash-control commitment. | Bell-shaped orange spore split by a white flash petal, broad base and contained yellow glow. |
+| `abyss_bow_knot` | Fusion-only stun/damage, `2x2`, radiant. | Kirt Black Wind bow material created when `heartwood_splinter_bow` and `mirrorloop_knot` fuse after a round. | Heavy black-violet bow knot with green resin eye and amber string arcs, filling all quadrants. |
+| `opening_bell_spore` | Fusion-only stun/speed, `2x2`, radiant. | Morga opening tempo created when `afterimage_cap` and `first_bloom_cinder` fuse after a round. | Bell-shaped orange spore split by a white flash petal, broad base and contained yellow glow. |
 | `entropy_scepter_tip` | Circle relic stun/armor, `1x2`, bright. | Dalamar scepter fragment as vertical ash-control support. | Tall ash-gray scepter tip with porcelain crown and black shard core, thick enough for one-cell width. |
 
 ## Hybrid / Utility

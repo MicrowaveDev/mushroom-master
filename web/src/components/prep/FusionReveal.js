@@ -53,11 +53,16 @@ export const FusionReveal = {
         : (-Math.PI / 2) + ((Math.PI * 2 * index) / count);
       const startX = Math.round(Math.cos(angle) * radius);
       const startY = Math.round(Math.sin(angle) * radius);
+      const spin = index % 2 === 0 ? '-9deg' : '9deg';
       return {
         '--fusion-start-x': `${startX}px`,
         '--fusion-start-y': `${startY}px`,
-        '--fusion-near-x': `${Math.round(startX * 0.08)}px`,
-        '--fusion-near-y': `${Math.round(startY * 0.08)}px`
+        '--fusion-magnet-x': `${Math.round(startX * 0.26)}px`,
+        '--fusion-magnet-y': `${Math.round(startY * 0.26)}px`,
+        '--fusion-impact-x': `${Math.round(startX * -0.05)}px`,
+        '--fusion-impact-y': `${Math.round(startY * -0.05)}px`,
+        '--fusion-spin': spin,
+        '--fusion-spin-reverse': spin.startsWith('-') ? '8deg' : '-8deg'
       };
     }
   },
@@ -77,6 +82,7 @@ export const FusionReveal = {
             :display-height="figureSize(artifact).height"
           />
         </div>
+        <div class="fusion-reveal-field"></div>
         <div class="fusion-reveal-burst"></div>
         <div v-if="resultArtifact" class="fusion-reveal-result">
           <artifact-figure
