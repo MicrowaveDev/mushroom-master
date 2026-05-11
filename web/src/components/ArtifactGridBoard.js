@@ -13,7 +13,7 @@ function bagWatermarkOffset(artifactId, rotation) {
     case 2:
       return { x: '8px', y: '3px' };
     case 3:
-      return { x: '3px', y: '-8px' };
+      return { x: '-3px', y: '10px' };
     default:
       return { x: '-8px', y: '-3px' };
   }
