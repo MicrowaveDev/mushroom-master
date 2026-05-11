@@ -123,3 +123,51 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
 
   await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(5);
 });
+
+test('[Req 11-F] mobile recipes sidebar switcher stays docked while recipes scroll', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  await page.setViewportSize(MOBILE_VIEWPORT);
+
+  const player = await createSession(request, {
+    telegramId: 9404,
+    username: 'fusion_recipes_mobile_dock',
+    name: 'Fusion Recipes Mobile Dock'
+  });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'morga' });
+  await api(request, player.sessionKey, '/api/game-run/start', 'POST', { mode: 'solo' });
+
+  await page.addInitScript((sessionKey) => {
+    localStorage.setItem('sessionKey', sessionKey);
+    localStorage.setItem('mobileHomeActionsMode', 'auto');
+  }, player.sessionKey);
+  await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+
+  const bottomRecipes = page.locator('.game-bottom-actions.home-bottom-actions--visible .home-action-btn--recipes');
+  await expect(bottomRecipes).toBeVisible();
+  await bottomRecipes.click();
+
+  await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(5);
+
+  const dockMetrics = await page.evaluate(() => {
+    const sidebar = document.querySelector('.home-social-sidebar');
+    const switcher = document.querySelector('.home-sidebar-switcher--bottom');
+    if (!sidebar || !switcher) throw new Error('recipes sidebar dock was not rendered');
+
+    const before = switcher.getBoundingClientRect();
+    sidebar.scrollTop = sidebar.scrollHeight;
+    const after = switcher.getBoundingClientRect();
+    return {
+      sidebarContainsSwitcher: sidebar.contains(switcher),
+      beforeTop: before.top,
+      afterTop: after.top,
+      afterBottom: after.bottom,
+      viewportHeight: window.innerHeight
+    };
+  });
+
+  expect(dockMetrics.sidebarContainsSwitcher).toBe(false);
+  expect(Math.abs(dockMetrics.beforeTop - dockMetrics.afterTop)).toBeLessThanOrEqual(1);
+  expect(Math.abs(dockMetrics.afterBottom - dockMetrics.viewportHeight)).toBeLessThanOrEqual(1);
+});

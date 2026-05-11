@@ -110,7 +110,7 @@ export const HomeSocialSidebar = {
           <button class="ghost home-social-close" @click="$emit('close')" aria-label="Close">×</button>
         </div>
 
-        <nav class="home-sidebar-switcher" :class="switcherClass()" :aria-label="t.settings">
+        <nav v-if="switcherClass() === 'home-sidebar-switcher--top'" class="home-sidebar-switcher" :class="switcherClass()" :aria-label="t.settings">
           <button class="home-action-btn home-action-btn--notifications" :class="{ active: panel === 'notifications' }" :aria-label="t.notifications" @click="$emit('switch-panel', 'notifications')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
           </button>
@@ -229,6 +229,20 @@ export const HomeSocialSidebar = {
           <p v-else class="home-empty-hint">{{ t.noNotificationsYet }}</p>
         </section>
       </aside>
+      <nav v-if="switcherClass() !== 'home-sidebar-switcher--top'" class="home-sidebar-switcher" :class="switcherClass()" :aria-label="t.settings">
+        <button class="home-action-btn home-action-btn--notifications" :class="{ active: panel === 'notifications' }" :aria-label="t.notifications" @click="$emit('switch-panel', 'notifications')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
+        </button>
+        <button class="home-action-btn home-action-btn--friends" :class="{ active: panel === 'friends' }" :aria-label="t.friends" @click="$emit('switch-panel', 'friends')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+        </button>
+        <button class="home-action-btn home-action-btn--recipes" :class="{ active: panel === 'recipes' }" :aria-label="t.recipes" @click="$emit('switch-panel', 'recipes')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
+        </button>
+        <button class="home-action-btn home-action-btn--settings" :class="{ active: panel === 'settings' }" :aria-label="t.settings" @click="$emit('switch-panel', 'settings')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
+        </button>
+      </nav>
     </template>
   `
 };
