@@ -166,6 +166,43 @@ test('[fusion] eligible artifacts fuse after round resolution and before next sh
   assert.ok(await getShopOffer(run.id, playerId, 2), 'round 2 shop should still be created');
 });
 
+test('[Req 11-E] fusion requires placed adjacent grid ingredients', async () => {
+  await freshDb();
+  const { playerId, run } = await bootRun({
+    telegramId: 7111,
+    username: 'fusion_grid_only'
+  });
+  await seedRunLoadout(playerId, run.id, [
+    { artifactId: 'sporeblade', x: -1, y: -1, width: 1, height: 1 },
+    { artifactId: 'mirrorloop_knot', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+
+  const backpackResult = await resolveRound(playerId, run.id);
+
+  assert.equal(backpackResult.fusions.length, 0);
+  let nextRound = await readRoundLoadoutRows(run.id, playerId, 2);
+  assert.ok(nextRound.find((row) => row.artifact_id === 'sporeblade'), 'backpack ingredient should not be consumed');
+  assert.ok(nextRound.find((row) => row.artifact_id === 'mirrorloop_knot'), 'placed ingredient should not be consumed alone');
+  assert.equal(nextRound.filter((row) => row.artifact_id === 'portal_cut_sickle').length, 0);
+
+  const second = await bootRun({
+    telegramId: 7112,
+    username: 'fusion_not_adjacent'
+  });
+  await seedRunLoadout(second.playerId, second.run.id, [
+    { artifactId: 'sporeblade', x: 0, y: 0, width: 1, height: 1 },
+    { artifactId: 'mirrorloop_knot', x: 2, y: 0, width: 1, height: 1 }
+  ]);
+
+  const nonAdjacentResult = await resolveRound(second.playerId, second.run.id);
+
+  assert.equal(nonAdjacentResult.fusions.length, 0);
+  nextRound = await readRoundLoadoutRows(second.run.id, second.playerId, 2);
+  assert.ok(nextRound.find((row) => row.artifact_id === 'sporeblade'), 'non-adjacent ingredient should not be consumed');
+  assert.ok(nextRound.find((row) => row.artifact_id === 'mirrorloop_knot'), 'non-adjacent partner should not be consumed');
+  assert.equal(nextRound.filter((row) => row.artifact_id === 'portal_cut_sickle').length, 0);
+});
+
 test('[fusion] fusion-only result is excluded from normal combat shop pool', () => {
   for (const recipe of artifactFusionRecipes) {
     const result = getArtifactById(recipe.resultArtifactId);

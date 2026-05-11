@@ -7,11 +7,10 @@ import { replayPortraitConfig } from '../replay-portrait-config.js';
 import { formatReplayEvent } from '../replay/format.js';
 import { MAX_ARTIFACT_COINS, MAX_ROUNDS_PER_RUN } from '../constants.js';
 import {
+  artifactFusionRecipes,
   findArtifactFusionMatches,
   fusionIngredientRowIdSet
 } from '../../../app/shared/artifact-fusions.js';
-
-const SHOP_FUSION_ROW_PREFIX = 'shop:';
 
 export function useGameState(state, options = {}) {
   // Progressive enhancement: wrap screen changes in the View Transitions API
@@ -59,25 +58,15 @@ export function useGameState(state, options = {}) {
       })
       .filter(Boolean)
   );
-  function ownedFusionRows() {
-    return [
-      ...state.builderItems.map((item) => ({
-        id: item.id,
-        artifactId: item.artifactId,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height
-      })),
-      ...state.containerItems.map((slot) => ({
-        id: slot.id,
-        artifactId: slot.artifactId,
-        x: -1,
-        y: -1,
-        width: getArtifact(slot.artifactId)?.width || 1,
-        height: getArtifact(slot.artifactId)?.height || 1
-      }))
-    ];
+  function placedFusionRows() {
+    return state.builderItems.map((item) => ({
+      id: item.id,
+      artifactId: item.artifactId,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height
+    }));
   }
 
   function canCheckFusionCandidates() {
@@ -86,46 +75,92 @@ export function useGameState(state, options = {}) {
     return true;
   }
 
-  function isShopFusionRowId(rowId) {
-    return typeof rowId === 'string' && rowId.startsWith(SHOP_FUSION_ROW_PREFIX);
+  function countArtifacts(artifactIds) {
+    const counts = new Map();
+    for (const artifactId of artifactIds || []) {
+      counts.set(artifactId, (counts.get(artifactId) || 0) + 1);
+    }
+    return counts;
+  }
+
+  function countPlacedRows(rows) {
+    return countArtifacts((rows || []).map((row) => row.artifactId));
+  }
+
+  function countsCover(actualCounts, requiredCounts) {
+    for (const [artifactId, required] of requiredCounts.entries()) {
+      if ((actualCounts.get(artifactId) || 0) < required) return false;
+    }
+    return true;
+  }
+
+  function countsAfterTakingOne(requiredCounts, artifactId) {
+    const next = new Map(requiredCounts);
+    const remaining = (next.get(artifactId) || 0) - 1;
+    if (remaining > 0) next.set(artifactId, remaining);
+    else next.delete(artifactId);
+    return next;
+  }
+
+  function addPlacedRowsForCounts(rowIds, rows, requiredCounts) {
+    for (const [artifactId, required] of requiredCounts.entries()) {
+      let added = 0;
+      for (const row of rows) {
+        if (row.artifactId !== artifactId) continue;
+        rowIds.add(row.id);
+        added += 1;
+        if (added >= required) break;
+      }
+    }
   }
 
   const fusionMatches = computed(() => {
     if (!canCheckFusionCandidates()) return [];
-    return findArtifactFusionMatches(ownedFusionRows(), getArtifact);
+    return findArtifactFusionMatches(placedFusionRows(), getArtifact);
   });
   const fusionIngredientRowIds = computed(() => fusionIngredientRowIdSet(fusionMatches.value));
+  const fusionCandidateData = computed(() => {
+    const rowIds = new Set(fusionIngredientRowIds.value);
+    const shopArtifactIds = new Set();
+    if (!canCheckFusionCandidates()) return { rowIds, shopArtifactIds };
+
+    const placedRows = placedFusionRows();
+    const placedCounts = countPlacedRows(placedRows);
+    const shopCounts = countArtifacts(state.gameRunShopOffer || []);
+
+    for (const recipe of artifactFusionRecipes) {
+      const requiredCounts = countArtifacts(recipe.ingredientArtifactIds);
+      const shopHasFullRecipe = countsCover(shopCounts, requiredCounts);
+      const uniqueIngredientIds = [...requiredCounts.keys()];
+
+      if (shopHasFullRecipe) {
+        for (const artifactId of uniqueIngredientIds) shopArtifactIds.add(artifactId);
+      }
+
+      for (const artifactId of uniqueIngredientIds) {
+        if ((shopCounts.get(artifactId) || 0) <= 0) continue;
+        const placedNeeded = countsAfterTakingOne(requiredCounts, artifactId);
+        if (!countsCover(placedCounts, placedNeeded)) continue;
+        shopArtifactIds.add(artifactId);
+        addPlacedRowsForCounts(rowIds, placedRows, placedNeeded);
+      }
+    }
+
+    return { rowIds, shopArtifactIds };
+  });
   const fusionAvailableMatches = computed(() => {
     if (!canCheckFusionCandidates()) return [];
-    const shopRows = (state.gameRunShopOffer || []).map((artifactId, idx) => ({
-      id: `${SHOP_FUSION_ROW_PREFIX}${idx}:${artifactId}`,
-      artifactId,
-      x: -2,
-      y: -2,
-      width: getArtifact(artifactId)?.width || 1,
-      height: getArtifact(artifactId)?.height || 1
-    }));
-    return findArtifactFusionMatches([...ownedFusionRows(), ...shopRows], getArtifact);
+    return fusionMatches.value;
   });
-  const fusionCandidateRowIds = computed(() => {
-    const ids = new Set();
-    for (const match of fusionAvailableMatches.value) {
-      for (const rowId of match.ingredientRowIds || []) {
-        if (!isShopFusionRowId(rowId)) ids.add(rowId);
-      }
-    }
-    return ids;
-  });
+  const fusionCandidateRowIds = computed(() => fusionCandidateData.value?.rowIds || new Set());
   const fusionCandidateShopArtifactIds = computed(() => {
-    const ids = new Set();
-    for (const match of fusionAvailableMatches.value) {
-      for (const ingredient of match.ingredients || []) {
-        if (isShopFusionRowId(ingredient.id)) ids.add(ingredient.artifactId);
-      }
-    }
-    return ids;
+    return fusionCandidateData.value?.shopArtifactIds || new Set();
   });
-  const hasFusionCandidates = computed(() => fusionAvailableMatches.value.length > 0);
+  const hasFusionCandidates = computed(() =>
+    fusionMatches.value.length > 0
+    || fusionCandidateShopArtifactIds.value.size > 0
+    || fusionCandidateRowIds.value.size > 0
+  );
 
   function getArtifact(artifactId) {
     return state.bootstrap?.artifacts?.find((item) => item.id === artifactId) || null;

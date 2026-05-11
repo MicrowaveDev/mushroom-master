@@ -4,12 +4,13 @@
 
 ## Goal
 
-Add a Backpack Battles-style fusion layer without turning fusion into a manual shop purchase. When a player owns the ingredients for a recipe, those rows are highlighted during prep. The current round still fights with the unfused ingredients. After the round resolves, the copied next-round loadout fuses automatically before the next shop/prep screen appears.
+Add a Backpack Battles-style fusion layer without turning fusion into a manual shop purchase. When a player places recipe ingredients next to each other in the grid, those rows are highlighted during prep. The current round still fights with the unfused ingredients. After the round resolves, the copied next-round loadout fuses automatically before the next shop/prep screen appears.
 
 ## V1 Contract
 
 - Recipes are deterministic shared data in `app/shared/artifact-fusions.js`.
 - Fusion ingredients are matched by `game_run_loadout_items.id`, not only by artifact id, so duplicates are safe.
+- Fusion ingredients must be placed in the grid and touch by an edge; backpack/container rows and non-adjacent grid rows are not eligible.
 - Recipe matching must not reuse the same row twice inside one recipe, including future recipes like `A + A`.
 - Fusion runs only between active rounds:
   1. resolve round N using the current loadout;
@@ -19,7 +20,7 @@ Add a Backpack Battles-style fusion layer without turning fusion into a manual s
   5. create/show the round N+1 shop.
 - V1 ingredients cannot be bags, starter-only artifacts, or existing fusion-only results.
 - Fusion-only results do not appear in normal shop rolls or ghost shop-purchase pools.
-- The prep UI highlights current rows that match a recipe while `currentRound < MAX_ROUNDS_PER_RUN`.
+- The prep UI highlights current adjacent grid rows that match a recipe while `currentRound < MAX_ROUNDS_PER_RUN`, and may also hint at shop recipe ingredients before the player places them.
 - On replay continue into the next shop, the client plays a fusion reveal: ingredient artifact images pull toward each other like magnets, shrink into the infusion point, then reveal the result. The reveal blocks prep input until it completes.
 - Applied fusions are persisted as reveal events so challenge reconnect can still show the post-replay fusion animation.
 - The sidebar Recipes screen renders the same deterministic recipe list with ingredient visuals, result visuals, localized result text, and result stats.

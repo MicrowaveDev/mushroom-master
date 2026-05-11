@@ -24,14 +24,14 @@ function getArtifact(id) {
   return artifacts.get(id) || null;
 }
 
-function row(id, artifactId) {
-  return { id, artifactId, x: -1, y: -1, width: 1, height: 1 };
+function row(id, artifactId, x = 0, y = 0, width = 1, height = 1) {
+  return { id, artifactId, x, y, width, height };
 }
 
-test('[fusion] finds portal-cut sickle recipe from owned row ids', () => {
+test('[fusion] finds portal-cut sickle recipe from adjacent placed row ids', () => {
   const matches = findArtifactFusionMatches([
-    row('a', 'sporeblade'),
-    row('b', 'mirrorloop_knot')
+    row('a', 'sporeblade', 0, 0),
+    row('b', 'mirrorloop_knot', 1, 0)
   ], getArtifact);
 
   assert.equal(matches.length, 1);
@@ -51,8 +51,8 @@ test('[fusion] ships multiple deterministic recipe results', () => {
   ]);
 
   const matches = findArtifactFusionMatches([
-    row('fang', 'amber_fang'),
-    row('wisp', 'haste_wisp')
+    row('fang', 'amber_fang', 0, 0),
+    row('wisp', 'haste_wisp', 1, 0)
   ], getArtifact);
 
   assert.equal(matches.length, 1);
@@ -63,10 +63,10 @@ test('[fusion] ships multiple deterministic recipe results', () => {
 
 test('[fusion] ignores bags, starter-only rows, and existing fusion results', () => {
   const matches = findArtifactFusionMatches([
-    row('bag', 'starter_bag'),
-    row('starter', 'starter_item'),
-    row('fusion', 'portal_cut_sickle'),
-    row('blade', 'sporeblade')
+    row('bag', 'starter_bag', 0, 0),
+    row('starter', 'starter_item', 1, 0),
+    row('fusion', 'portal_cut_sickle', 2, 0),
+    row('blade', 'sporeblade', 3, 0)
   ], getArtifact);
 
   assert.equal(matches.length, 0);
@@ -74,10 +74,10 @@ test('[fusion] ignores bags, starter-only rows, and existing fusion results', ()
 
 test('[fusion] consumes each duplicate row only once', () => {
   const matches = findArtifactFusionMatches([
-    row('blade_one', 'sporeblade'),
-    row('knot_one', 'mirrorloop_knot'),
-    row('blade_two', 'sporeblade'),
-    row('knot_two', 'mirrorloop_knot')
+    row('blade_one', 'sporeblade', 0, 0),
+    row('knot_one', 'mirrorloop_knot', 1, 0),
+    row('blade_two', 'sporeblade', 0, 1),
+    row('knot_two', 'mirrorloop_knot', 1, 1)
   ], getArtifact);
 
   assert.equal(matches.length, 2);
@@ -95,13 +95,41 @@ test('[fusion] does not reuse one row for repeated same-artifact ingredients', (
   }];
 
   assert.equal(findArtifactFusionMatches([
-    row('only_blade', 'sporeblade')
+    row('only_blade', 'sporeblade', 0, 0)
   ], getArtifact, recipes).length, 0);
 
   const matches = findArtifactFusionMatches([
-    row('blade_one', 'sporeblade'),
-    row('blade_two', 'sporeblade')
+    row('blade_one', 'sporeblade', 0, 0),
+    row('blade_two', 'sporeblade', 1, 0)
   ], getArtifact, recipes);
   assert.equal(matches.length, 1);
   assert.deepEqual(matches[0].ingredientRowIds, ['blade_one', 'blade_two']);
+});
+
+test('[fusion] ignores backpack rows and non-adjacent grid rows', () => {
+  assert.equal(findArtifactFusionMatches([
+    row('blade', 'sporeblade', -1, -1),
+    row('knot', 'mirrorloop_knot', 0, 0)
+  ], getArtifact).length, 0);
+
+  assert.equal(findArtifactFusionMatches([
+    row('blade', 'sporeblade', 0, 0),
+    row('knot', 'mirrorloop_knot', 2, 0)
+  ], getArtifact).length, 0);
+
+  assert.equal(findArtifactFusionMatches([
+    row('blade', 'sporeblade', 0, 0),
+    row('knot', 'mirrorloop_knot', 1, 1)
+  ], getArtifact).length, 0);
+});
+
+test('[fusion] can skip a non-adjacent duplicate and use the adjacent copy', () => {
+  const matches = findArtifactFusionMatches([
+    row('far_blade', 'sporeblade', 0, 0),
+    row('knot', 'mirrorloop_knot', 3, 0),
+    row('near_blade', 'sporeblade', 2, 0)
+  ], getArtifact);
+
+  assert.equal(matches.length, 1);
+  assert.deepEqual(matches[0].ingredientRowIds, ['near_blade', 'knot']);
 });

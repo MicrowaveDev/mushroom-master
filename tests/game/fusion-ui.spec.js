@@ -32,19 +32,41 @@ test('[fusion] prep highlights ingredients and next shop entry reveals fused res
   await page.locator('.home-social-close').click();
   await expect(page.getByTestId('sidebar-recipes-panel')).toHaveCount(0);
 
-  await page.locator('.shop-item[data-artifact-id="sporeblade"]').click();
-  await expect(page.locator('.container-item--fusion-candidate[data-artifact-id="sporeblade"]')).toBeVisible();
+  const boughtBlade = await api(request, player.sessionKey, `/api/game-run/${run.id}/buy`, 'POST', {
+    artifactId: 'sporeblade'
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await expect(page.locator('.container-item[data-artifact-id="sporeblade"]')).toBeVisible();
+  await expect(page.locator('.container-item--fusion-pending, .container-item--fusion-candidate')).toHaveCount(0);
+  await expect(page.locator('.shop-item--fusion-candidate')).toHaveCount(0);
+
+  await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', {
+    items: [
+      { id: boughtBlade.id, artifactId: 'sporeblade', x: 2, y: 0, width: 1, height: 1 }
+    ]
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await expect(page.locator('.artifact-piece-wrap[data-artifact-id="sporeblade"]')).toBeVisible();
   await expect(page.locator('.shop-item--fusion-candidate[data-artifact-id="mirrorloop_knot"]')).toBeVisible();
 
-  await page.locator('.shop-item[data-artifact-id="mirrorloop_knot"]').click();
+  const boughtKnot = await api(request, player.sessionKey, `/api/game-run/${run.id}/buy`, 'POST', {
+    artifactId: 'mirrorloop_knot'
+  });
+  await api(request, player.sessionKey, '/api/artifact-loadout', 'PUT', {
+    items: [
+      { id: boughtBlade.id, artifactId: 'sporeblade', x: 2, y: 0, width: 1, height: 1 },
+      { id: boughtKnot.id, artifactId: 'mirrorloop_knot', x: 2, y: 1, width: 1, height: 1 }
+    ]
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
 
-  await expect(page.locator('.container-item--fusion-pending')).toHaveCount(2);
-  await expect(page.locator('.container-item--fusion-pending[data-artifact-id="sporeblade"]')).toBeVisible();
-  await expect(page.locator('.container-item--fusion-pending[data-artifact-id="mirrorloop_knot"]')).toBeVisible();
-  await expect(page.locator('.game-bottom-actions .home-action-btn--recipes.home-action-btn--fusion-candidate')).toBeVisible();
-
-  await page.locator('.container-item[data-artifact-id="sporeblade"]').click();
+  await expect(page.locator('.container-item--fusion-pending')).toHaveCount(0);
   await expect(page.locator('.artifact-piece-wrap--fusion-pending[data-artifact-id="sporeblade"]')).toBeVisible();
+  await expect(page.locator('.artifact-piece-wrap--fusion-pending[data-artifact-id="mirrorloop_knot"]')).toBeVisible();
+  await expect(page.locator('.game-bottom-actions .home-action-btn--recipes.home-action-btn--fusion-candidate')).toBeVisible();
 
   await page.getByRole('button', { name: /ready|готов/i }).click();
   const replayContinue = page.locator('.replay-result-button-full');
