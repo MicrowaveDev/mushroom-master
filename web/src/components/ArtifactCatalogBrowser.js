@@ -8,6 +8,24 @@ function artifactDisplayName(artifact, lang) {
   return artifact?.name?.[lang] || artifact?.name?.en || artifact?.id || '';
 }
 
+function canPlace(cells, x, y, width, height, columns) {
+  if (x + width > columns) return false;
+  for (let cy = y; cy < y + height; cy += 1) {
+    for (let cx = x; cx < x + width; cx += 1) {
+      if (cells.has(`${cx}:${cy}`)) return false;
+    }
+  }
+  return true;
+}
+
+function markPlaced(cells, x, y, width, height) {
+  for (let cy = y; cy < y + height; cy += 1) {
+    for (let cx = x; cx < x + width; cx += 1) {
+      cells.add(`${cx}:${cy}`);
+    }
+  }
+}
+
 export const ArtifactCatalogBrowser = {
   name: 'ArtifactCatalogBrowser',
   components: { ArtifactGridBoard, ArtifactStatSummary },
@@ -71,6 +89,60 @@ export const ArtifactCatalogBrowser = {
     },
     selectedDescription() {
       return this.artifactDescription(this.selectedArtifact) || this.t.artifactCatalogNoDescription;
+    },
+    artifactGroups() {
+      const definitions = [
+        {
+          id: 'fusion',
+          label: this.t.artifactGroupFusion,
+          matches: (artifact) => this.recipeByResultId.has(artifact.id)
+        },
+        {
+          id: 'damage',
+          label: this.t.artifactFamily_damage,
+          matches: (artifact) => artifact.family === 'damage' && !this.recipeByResultId.has(artifact.id) && !artifact.characterItem && !artifact.starterOnly
+        },
+        {
+          id: 'armor',
+          label: this.t.artifactFamily_armor,
+          matches: (artifact) => artifact.family === 'armor' && !this.recipeByResultId.has(artifact.id) && !artifact.characterItem && !artifact.starterOnly
+        },
+        {
+          id: 'stun',
+          label: this.t.artifactFamily_stun,
+          matches: (artifact) => artifact.family === 'stun' && !this.recipeByResultId.has(artifact.id) && !artifact.characterItem && !artifact.starterOnly
+        },
+        {
+          id: 'character',
+          label: this.t.artifactGroupCharacter,
+          matches: (artifact) => !!artifact.characterItem
+        },
+        {
+          id: 'starter',
+          label: this.t.artifactGroupStarter,
+          matches: (artifact) => !!artifact.starterOnly && artifact.family !== 'bag'
+        },
+        {
+          id: 'bag',
+          label: this.t.artifactFamily_bag,
+          matches: (artifact) => artifact.family === 'bag'
+        }
+      ];
+
+      return definitions
+        .map((definition) => this.buildGroup(
+          definition.id,
+          definition.label,
+          this.artifacts.filter(definition.matches)
+        ))
+        .filter((group) => group.artifacts.length);
+    },
+    selectedGroupId() {
+      const group = this.artifactGroups.find((item) => item.artifacts.some((artifact) => artifact.id === this.activeArtifactId));
+      return group?.id || '';
+    },
+    selectedRowIds() {
+      return this.activeArtifactId ? new Set([this.activeArtifactId]) : new Set();
     }
   },
   methods: {
@@ -136,6 +208,40 @@ export const ArtifactCatalogBrowser = {
     },
     priceLabel(artifact) {
       return Number.isFinite(artifact?.price) ? artifact.price : 1;
+    },
+    buildGroup(id, label, artifacts) {
+      const columns = 6;
+      const occupied = new Set();
+      const items = [];
+      let rows = 1;
+
+      for (const artifact of artifacts) {
+        const orientation = this.previewOrientation(artifact);
+        const width = Math.min(columns, Math.max(1, orientation.width));
+        const height = Math.max(1, orientation.height);
+        let placed = false;
+
+        for (let y = 0; !placed; y += 1) {
+          for (let x = 0; x <= columns - width; x += 1) {
+            if (!canPlace(occupied, x, y, width, height, columns)) continue;
+            markPlaced(occupied, x, y, width, height);
+            items.push({
+              id: artifact.id,
+              rowId: artifact.id,
+              artifactId: artifact.id,
+              x,
+              y,
+              width,
+              height
+            });
+            rows = Math.max(rows, y + height);
+            placed = true;
+            break;
+          }
+        }
+      }
+
+      return { id, label, artifacts, columns, rows, items };
     }
   },
   template: `
@@ -149,136 +255,130 @@ export const ArtifactCatalogBrowser = {
           <span class="artifact-catalog-count">{{ artifacts.length }}</span>
         </div>
 
-        <div class="artifact-catalog-grid" role="list">
-          <button
-            v-for="artifact in artifacts"
-            :key="artifact.id"
-            type="button"
-            class="artifact-catalog-tile"
-            :class="{
-              'artifact-catalog-tile--active': isSelected(artifact),
-              'artifact-catalog-tile--fusion': recipeByResultId.has(artifact.id)
-            }"
-            data-testid="artifact-catalog-tile"
-            :data-artifact-id="artifact.id"
-            :data-fusion-result="recipeByResultId.has(artifact.id) ? 'true' : null"
-            @click="selectArtifact(artifact.id)"
+        <div class="artifact-catalog-groups">
+          <section
+            v-for="group in artifactGroups"
+            :key="group.id"
+            class="artifact-catalog-group"
+            data-testid="artifact-catalog-group"
+            :data-artifact-group="group.id"
           >
-            <span class="artifact-catalog-tile-art" aria-hidden="true">
-              <artifact-grid-board
-                variant="catalog"
-                :columns="previewOrientation(artifact).width"
-                :rows="previewOrientation(artifact).height"
-                :items="previewItem(artifact)"
-                :get-artifact="getArtifact"
+            <div class="artifact-catalog-group-header">
+              <h4>{{ group.label }}</h4>
+              <span>{{ group.artifacts.length }}</span>
+            </div>
+            <artifact-grid-board
+              class="artifact-catalog-group-board"
+              variant="catalog"
+              :columns="group.columns"
+              :rows="group.rows"
+              :items="group.items"
+              :get-artifact="getArtifact"
+              :clickable-pieces="true"
+              :highlighted-row-ids="selectedRowIds"
+              :highlighted-title="artifactName(selectedArtifact)"
+              @piece-click="selectArtifact($event.artifactId)"
+            />
+            <aside
+              v-if="selectedGroupId === group.id && selectedArtifact"
+              class="artifact-catalog-detail"
+              data-testid="artifact-catalog-detail"
+              :data-artifact-id="selectedArtifact.id"
+            >
+              <div class="artifact-catalog-detail-top">
+                <div class="artifact-catalog-detail-art" aria-hidden="true">
+                  <artifact-grid-board
+                    variant="catalog"
+                    :columns="selectedOrientation.width"
+                    :rows="selectedOrientation.height"
+                    :items="selectedPreviewItem"
+                    :get-artifact="getArtifact"
+                  />
+                </div>
+                <div class="artifact-catalog-detail-copy">
+                  <span class="artifact-catalog-detail-kicker">
+                    {{ selectedRecipe ? t.recipeFusionOnly : familyLabel(selectedArtifact) }}
+                  </span>
+                  <h3>{{ artifactName(selectedArtifact) }}</h3>
+                  <p>{{ selectedDescription }}</p>
+                </div>
+              </div>
+
+              <artifact-stat-summary
+                class="artifact-catalog-detail-stats"
+                :artifact="selectedArtifact"
+                :lang="state.lang"
+                :include-zeroes="false"
+                variant="compact"
+                :aria-label="artifactName(selectedArtifact) + ' stats'"
               />
-            </span>
-            <span class="artifact-catalog-tile-name">{{ artifactName(artifact) }}</span>
-            <span class="artifact-catalog-tile-meta">
-              <span>{{ footprintLabel(artifact) }}</span>
-              <span>{{ badgeLabel(artifact) }}</span>
-            </span>
-          </button>
+
+              <dl class="artifact-catalog-facts">
+                <div>
+                  <dt>{{ t.artifactCatalogFootprint }}</dt>
+                  <dd>{{ footprintLabel(selectedArtifact) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t.artifactCatalogPrice }}</dt>
+                  <dd>{{ priceLabel(selectedArtifact) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t.artifactCatalogFamily }}</dt>
+                  <dd>{{ familyLabel(selectedArtifact) }}</dd>
+                </div>
+                <div v-if="selectedArtifact.family === 'bag'">
+                  <dt>{{ t.artifactCatalogSlots }}</dt>
+                  <dd>{{ selectedArtifact.slotCount || 0 }}</dd>
+                </div>
+              </dl>
+
+              <section
+                v-if="selectedRecipe"
+                class="artifact-catalog-selected-recipe"
+                data-testid="artifact-catalog-selected-recipe"
+                :data-selected-result-artifact-id="selectedRecipe.resultArtifactId"
+              >
+                <h4>{{ t.recipeIngredients }}</h4>
+                <div class="artifact-catalog-recipe-flow" aria-hidden="true">
+                  <div class="artifact-catalog-recipe-ingredients">
+                    <button
+                      v-for="ingredient in selectedRecipeIngredients"
+                      :key="selectedRecipe.id + ':' + ingredient.id"
+                      type="button"
+                      class="artifact-catalog-recipe-artifact"
+                      :data-artifact-id="ingredient.id"
+                      @click="selectArtifact(ingredient.id)"
+                    >
+                      <artifact-grid-board
+                        variant="catalog"
+                        :columns="previewOrientation(ingredient).width"
+                        :rows="previewOrientation(ingredient).height"
+                        :items="previewItem(ingredient)"
+                        :get-artifact="getArtifact"
+                      />
+                    </button>
+                  </div>
+                  <span class="recipe-magnet-mark">+</span>
+                  <button
+                    type="button"
+                    class="artifact-catalog-recipe-artifact artifact-catalog-recipe-artifact--result"
+                    :data-artifact-id="selectedRecipe.resultArtifactId"
+                    @click="selectArtifact(selectedRecipe.resultArtifactId)"
+                  >
+                    <artifact-grid-board
+                      variant="catalog"
+                      :columns="previewOrientation(selectedRecipe.result).width"
+                      :rows="previewOrientation(selectedRecipe.result).height"
+                      :items="previewItem(selectedRecipe.result)"
+                      :get-artifact="getArtifact"
+                    />
+                  </button>
+                </div>
+              </section>
+            </aside>
+          </section>
         </div>
       </div>
-
-      <aside
-        v-if="selectedArtifact"
-        class="artifact-catalog-detail panel"
-        data-testid="artifact-catalog-detail"
-        :data-artifact-id="selectedArtifact.id"
-      >
-        <div class="artifact-catalog-detail-top">
-          <div class="artifact-catalog-detail-art" aria-hidden="true">
-            <artifact-grid-board
-              variant="catalog"
-              :columns="selectedOrientation.width"
-              :rows="selectedOrientation.height"
-              :items="selectedPreviewItem"
-              :get-artifact="getArtifact"
-            />
-          </div>
-          <div class="artifact-catalog-detail-copy">
-            <span class="artifact-catalog-detail-kicker">
-              {{ selectedRecipe ? t.recipeFusionOnly : familyLabel(selectedArtifact) }}
-            </span>
-            <h3>{{ artifactName(selectedArtifact) }}</h3>
-            <p>{{ selectedDescription }}</p>
-          </div>
-        </div>
-
-        <artifact-stat-summary
-          class="artifact-catalog-detail-stats"
-          :artifact="selectedArtifact"
-          :lang="state.lang"
-          :include-zeroes="false"
-          variant="compact"
-          :aria-label="artifactName(selectedArtifact) + ' stats'"
-        />
-
-        <dl class="artifact-catalog-facts">
-          <div>
-            <dt>{{ t.artifactCatalogFootprint }}</dt>
-            <dd>{{ footprintLabel(selectedArtifact) }}</dd>
-          </div>
-          <div>
-            <dt>{{ t.artifactCatalogPrice }}</dt>
-            <dd>{{ priceLabel(selectedArtifact) }}</dd>
-          </div>
-          <div>
-            <dt>{{ t.artifactCatalogFamily }}</dt>
-            <dd>{{ familyLabel(selectedArtifact) }}</dd>
-          </div>
-          <div v-if="selectedArtifact.family === 'bag'">
-            <dt>{{ t.artifactCatalogSlots }}</dt>
-            <dd>{{ selectedArtifact.slotCount || 0 }}</dd>
-          </div>
-        </dl>
-
-        <section
-          v-if="selectedRecipe"
-          class="artifact-catalog-selected-recipe"
-          data-testid="artifact-catalog-selected-recipe"
-          :data-selected-result-artifact-id="selectedRecipe.resultArtifactId"
-        >
-          <h4>{{ t.recipeIngredients }}</h4>
-          <div class="artifact-catalog-recipe-flow" aria-hidden="true">
-            <div class="artifact-catalog-recipe-ingredients">
-              <button
-                v-for="ingredient in selectedRecipeIngredients"
-                :key="selectedRecipe.id + ':' + ingredient.id"
-                type="button"
-                class="artifact-catalog-recipe-artifact"
-                :data-artifact-id="ingredient.id"
-                @click="selectArtifact(ingredient.id)"
-              >
-                <artifact-grid-board
-                  variant="catalog"
-                  :columns="previewOrientation(ingredient).width"
-                  :rows="previewOrientation(ingredient).height"
-                  :items="previewItem(ingredient)"
-                  :get-artifact="getArtifact"
-                />
-              </button>
-            </div>
-            <span class="recipe-magnet-mark">+</span>
-            <button
-              type="button"
-              class="artifact-catalog-recipe-artifact artifact-catalog-recipe-artifact--result"
-              :data-artifact-id="selectedRecipe.resultArtifactId"
-              @click="selectArtifact(selectedRecipe.resultArtifactId)"
-            >
-              <artifact-grid-board
-                variant="catalog"
-                :columns="previewOrientation(selectedRecipe.result).width"
-                :rows="previewOrientation(selectedRecipe.result).height"
-                :items="previewItem(selectedRecipe.result)"
-                :get-artifact="getArtifact"
-              />
-            </button>
-          </div>
-        </section>
-      </aside>
     </section>
   `
 };

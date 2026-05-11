@@ -1,6 +1,5 @@
 .artifact-catalog-browser {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.38fr);
   gap: 14px;
   align-items: start;
 }
@@ -36,96 +35,101 @@
   font-weight: 900;
 }
 
-.artifact-catalog-grid {
+.artifact-catalog-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 12px;
 }
 
-.artifact-catalog-tile {
+.artifact-catalog-group {
   min-width: 0;
-  min-height: 158px;
   display: grid;
-  grid-template-rows: 94px auto auto;
-  gap: 7px;
-  justify-items: center;
-  align-items: center;
-  padding: 10px 8px;
+  gap: 10px;
+  align-content: start;
+  padding: 10px;
   border: 1px solid rgba(138, 97, 53, 0.16);
   border-radius: 8px;
   background: rgba(255, 251, 244, 0.76);
-  color: var(--ink);
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-  --artifact-cell-size: 26px;
-  --board-gap: 5px;
+  --artifact-cell-size: 50px;
+  --board-gap: 7px;
 }
 
-.artifact-catalog-tile:hover,
-.artifact-catalog-tile:focus-visible {
-  border-color: rgba(95, 124, 79, 0.5);
-  outline: none;
-  transform: translateY(-1px);
+.artifact-catalog-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.artifact-catalog-tile--active {
-  border-color: rgba(95, 124, 79, 0.75);
-  background: rgba(239, 248, 226, 0.86);
-  box-shadow: 0 0 0 2px rgba(95, 124, 79, 0.12), 0 10px 24px rgba(68, 88, 50, 0.12);
+.artifact-catalog-group-header h4 {
+  margin: 0;
+  color: #30251b;
+  font-size: 1.08rem;
+  line-height: 1.1;
 }
 
-.artifact-catalog-tile--fusion {
-  background:
-    radial-gradient(circle at 72% 24%, rgba(125, 92, 167, 0.14), transparent 48%),
-    rgba(255, 251, 244, 0.82);
-}
-
-.artifact-catalog-tile-art {
-  width: 100%;
-  min-height: 94px;
-  display: grid;
+.artifact-catalog-group-header span {
+  display: inline-grid;
+  min-width: 32px;
+  min-height: 28px;
   place-items: center;
+  border-radius: 999px;
+  background: rgba(241, 233, 214, 0.82);
+  color: rgba(55, 43, 32, 0.72);
+  font-size: 0.82rem;
+  font-weight: 900;
 }
 
-.artifact-catalog-tile-art .artifact-grid-board--catalog,
+.artifact-catalog-group-board.artifact-grid-board--catalog {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.artifact-catalog-group-board.artifact-grid-board--catalog .artifact-grid-background {
+  display: grid;
+  gap: var(--board-gap);
+}
+
+.artifact-catalog-group-board.artifact-grid-board--catalog .artifact-grid-pieces {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: var(--board-gap);
+}
+
+.artifact-catalog-group-board .artifact-piece-wrap[data-artifact-id] {
+  cursor: pointer;
+}
+
+.artifact-catalog-group-board .artifact-piece-wrap--fusion-pending .artifact-piece {
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 2px rgba(95, 124, 79, 0.36),
+    0 0 16px rgba(95, 124, 79, 0.18);
+  animation: none;
+}
+
+.artifact-catalog-group-board .artifact-piece-wrap--fusion-pending::after {
+  border-color: rgba(95, 124, 79, 0.42);
+}
+
 .artifact-catalog-detail-art .artifact-grid-board--catalog,
 .artifact-catalog-recipe-artifact .artifact-grid-board--catalog {
   max-width: none;
 }
 
-.artifact-catalog-tile-name {
-  max-width: 100%;
-  overflow: hidden;
-  color: #30251b;
-  font-weight: 900;
-  line-height: 1.08;
-  text-overflow: ellipsis;
-}
-
-.artifact-catalog-tile-meta {
-  display: flex;
-  max-width: 100%;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
-  color: rgba(55, 43, 32, 0.64);
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.artifact-catalog-tile-meta span {
-  padding: 3px 6px;
-  border-radius: 999px;
-  background: rgba(241, 233, 214, 0.86);
-}
-
 .artifact-catalog-detail {
-  position: sticky;
-  top: calc(96px + var(--telegram-content-safe-area-top));
   display: grid;
   gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(95, 124, 79, 0.32);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 9% 15%, rgba(127, 152, 114, 0.18), transparent 42%),
+    rgba(255, 251, 244, 0.92);
+  box-shadow: 0 10px 26px rgba(68, 88, 50, 0.1);
 }
 
 .artifact-catalog-detail-top {
@@ -262,27 +266,14 @@
   margin-top: 2px;
 }
 
-@media (max-width: 900px) {
-  .artifact-catalog-browser {
+@media (max-width: 560px) {
+  .artifact-catalog-groups {
     grid-template-columns: 1fr;
   }
 
-  .artifact-catalog-detail {
-    position: static;
-    order: -1;
-  }
-}
-
-@media (max-width: 560px) {
-  .artifact-catalog-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .artifact-catalog-tile {
-    min-height: 148px;
-    grid-template-rows: 88px auto auto;
-    --artifact-cell-size: 23px;
-    --board-gap: 4px;
+  .artifact-catalog-group {
+    --artifact-cell-size: 42px;
+    --board-gap: 5px;
   }
 
   .artifact-catalog-detail-top {
