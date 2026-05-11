@@ -272,10 +272,6 @@
   outline: none;
 }
 
-.artifact-catalog-recipe-list {
-  margin-top: 2px;
-}
-
 @media (max-width: 900px) {
   .artifact-catalog-browser {
     grid-template-columns: 1fr;

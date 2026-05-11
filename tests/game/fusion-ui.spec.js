@@ -103,20 +103,23 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await page.locator('.nav-sidebar-list').getByRole('button', { name: /recipes|рецепты/i }).click();
 
   await expect(page.locator('.recipes-screen')).toBeVisible();
-  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="riftfang_comet"]')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="biostasis_crown_seed"]')).toBeVisible();
-  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"]')).toBeVisible();
-  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="haste_wisp"]')).toBeVisible();
-  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
-  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-inventory-stat-chip')).toHaveCount(3);
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-role-glyph--damage')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--positive')).toHaveCount(2);
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--negative')).toHaveCount(1);
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--zero')).toHaveCount(0);
+  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="artifact-catalog-browser"]')).toBeVisible();
+  await expect(page.locator('[data-testid="artifact-catalog-group"]')).toHaveCount(7);
+  await expect(page.locator('[data-artifact-group="fusion"] .artifact-piece[data-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await expect(page.locator('[data-artifact-group="fusion"] .artifact-piece[data-artifact-id="riftfang_comet"]')).toBeVisible();
+  await expect(page.locator('[data-artifact-group="fusion"] .artifact-piece[data-artifact-id="biostasis_crown_seed"]')).toBeVisible();
+
+  const selectedDetail = page.locator('[data-testid="artifact-catalog-detail"]');
+  await expect(selectedDetail).toHaveCSS('display', 'none');
+  await page.locator('[data-artifact-group="fusion"] .artifact-piece[data-artifact-id="portal_cut_sickle"]').click();
+  await expect(page.locator('[data-testid="artifact-catalog-detail"][data-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await expect(page.locator('[data-testid="artifact-catalog-selected-recipe"][data-selected-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await expect(page.locator('[data-testid="artifact-catalog-detail"] .artifact-stat-summary .artifact-role-glyph--damage')).toBeVisible();
+  await expect(page.locator('[data-testid="artifact-catalog-detail"] .artifact-inventory-stat-chip')).toHaveCount(3);
+  await expect(page.locator('[data-testid="artifact-catalog-detail"] .artifact-inventory-stat-chip--positive')).toHaveCount(2);
+  await expect(page.locator('[data-testid="artifact-catalog-detail"] .artifact-inventory-stat-chip--negative')).toHaveCount(1);
+  await expect(page.locator('[data-testid="artifact-catalog-detail"] .artifact-inventory-stat-chip--zero')).toHaveCount(0);
 });
 
 test('[fusion] local animation lab demonstrates every recipe with the production reveal', async ({ page, request, baseURL }) => {
