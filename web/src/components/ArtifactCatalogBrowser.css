@@ -1,4 +1,5 @@
 .artifact-catalog-browser {
+  --artifact-catalog-sticky-top: 112px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
   gap: 14px;
@@ -38,7 +39,7 @@
 
 .artifact-catalog-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -123,8 +124,8 @@
 
 .artifact-catalog-detail {
   position: sticky;
-  top: calc(14px + var(--app-safe-area-top));
-  max-height: calc(100dvh - var(--app-safe-area-top) - var(--app-safe-area-bottom) - 28px);
+  top: calc(var(--artifact-catalog-sticky-top) + var(--app-safe-area-top));
+  max-height: calc(100dvh - var(--artifact-catalog-sticky-top) - var(--app-safe-area-top) - var(--app-safe-area-bottom) - 14px);
   overflow: auto;
   display: grid;
   gap: 14px;

@@ -26,6 +26,9 @@ function markPlaced(cells, x, y, width, height) {
   }
 }
 
+const MIN_GROUP_COLUMNS = 6;
+const MAX_GROUP_COLUMNS = 18;
+
 export const ArtifactCatalogBrowser = {
   name: 'ArtifactCatalogBrowser',
   components: { ArtifactGridBoard, ArtifactStatSummary },
@@ -36,7 +39,8 @@ export const ArtifactCatalogBrowser = {
   },
   data() {
     return {
-      selectedArtifactId: ''
+      selectedArtifactId: '',
+      groupBoardColumns: MIN_GROUP_COLUMNS
     };
   },
   computed: {
@@ -133,7 +137,8 @@ export const ArtifactCatalogBrowser = {
         .map((definition) => this.buildGroup(
           definition.id,
           definition.label,
-          this.artifacts.filter(definition.matches)
+          this.artifacts.filter(definition.matches),
+          this.groupBoardColumns
         ))
         .filter((group) => group.artifacts.length);
     },
@@ -141,7 +146,46 @@ export const ArtifactCatalogBrowser = {
       return this.selectedArtifactId ? new Set([this.selectedArtifactId]) : new Set();
     }
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateGroupBoardColumns();
+      if (typeof ResizeObserver !== 'undefined' && this.$refs.gridPanel) {
+        this.catalogResizeObserver = new ResizeObserver(this.updateGroupBoardColumns);
+        this.catalogResizeObserver.observe(this.$refs.gridPanel);
+      }
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', this.updateGroupBoardColumns);
+      }
+    });
+  },
+  beforeUnmount() {
+    if (this.catalogResizeObserver) {
+      this.catalogResizeObserver.disconnect();
+      this.catalogResizeObserver = null;
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.updateGroupBoardColumns);
+    }
+  },
   methods: {
+    updateGroupBoardColumns() {
+      const panelWidth = this.$refs.gridPanel?.clientWidth || 0;
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : panelWidth;
+      const compact = viewportWidth <= 560 || panelWidth <= 520;
+      const cellSize = compact ? 42 : 50;
+      const gap = compact ? 5 : 7;
+      const panelPadding = compact ? 32 : 44;
+      const maxColumns = compact ? 7 : MAX_GROUP_COLUMNS;
+      const minimumWidth = (MIN_GROUP_COLUMNS * cellSize) + ((MIN_GROUP_COLUMNS - 1) * gap);
+      const availableWidth = Math.max(minimumWidth, panelWidth - panelPadding);
+      const columns = Math.min(
+        maxColumns,
+        Math.max(MIN_GROUP_COLUMNS, Math.floor((availableWidth + gap) / (cellSize + gap)))
+      );
+      if (columns !== this.groupBoardColumns) {
+        this.groupBoardColumns = columns;
+      }
+    },
     familyOrder(artifact) {
       if (artifact?.family === 'damage') return 0;
       if (artifact?.family === 'armor') return 1;
@@ -208,8 +252,7 @@ export const ArtifactCatalogBrowser = {
     priceLabel(artifact) {
       return Number.isFinite(artifact?.price) ? artifact.price : 1;
     },
-    buildGroup(id, label, artifacts) {
-      const columns = 6;
+    buildGroup(id, label, artifacts, columns = MIN_GROUP_COLUMNS) {
       const occupied = new Set();
       const items = [];
       let rows = 1;
@@ -249,7 +292,7 @@ export const ArtifactCatalogBrowser = {
       :class="{ 'artifact-catalog-browser--has-selection': !!selectedArtifactId }"
       data-testid="artifact-catalog-browser"
     >
-      <div class="artifact-catalog-grid-panel panel">
+      <div ref="gridPanel" class="artifact-catalog-grid-panel panel">
         <div class="artifact-catalog-grid-header">
           <div>
             <p class="eyebrow">{{ t.artifactCatalogAll }}</p>
