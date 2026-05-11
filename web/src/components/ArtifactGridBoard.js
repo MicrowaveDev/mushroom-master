@@ -5,17 +5,17 @@ import {
 } from '../helpers/grid-cell-classification.js';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
-function bagWatermarkPosition(artifactId, rotation) {
-  if (artifactId !== 'birchbark_hook') return 'center';
+function bagWatermarkOffset(artifactId, rotation) {
+  if (artifactId !== 'birchbark_hook') return { x: '0px', y: '0px' };
   switch (rotation) {
     case 1:
-      return 'calc(50% + 5px) center';
+      return { x: '5px', y: '0px' };
     case 2:
-      return 'center calc(50% - 5px)';
+      return { x: '0px', y: '-5px' };
     case 3:
-      return 'calc(50% - 5px) center';
+      return { x: '-5px', y: '0px' };
     default:
-      return 'center calc(50% + 5px)';
+      return { x: '0px', y: '5px' };
   }
 }
 
@@ -168,13 +168,13 @@ export const ArtifactGridBoard = {
       if (rotation === 1) transform = `translate(${bboxWidth}, 0) rotate(90deg)`;
       else if (rotation === 2) transform = `translate(${bboxWidth}, ${bboxHeight}) rotate(180deg)`;
       else if (rotation === 3) transform = `translate(0, ${bboxHeight}) rotate(-90deg)`;
+      const watermarkOffset = bagWatermarkOffset(overlay.artifactId, rotation);
       return {
-        left: `calc(${overlay.minCol} * ${cellGap})`,
-        top: `calc(${overlay.minRow} * ${topCellGap})`,
+        left: `calc(${overlay.minCol} * ${cellGap} + ${watermarkOffset.x})`,
+        top: `calc(${overlay.minRow} * ${topCellGap} + ${watermarkOffset.y})`,
         width: elemWidth,
         height: elemHeight,
         backgroundImage: `url('/artifacts/${overlay.artifactId}.png')`,
-        '--bag-watermark-position': bagWatermarkPosition(overlay.artifactId, rotation),
         transform,
         transformOrigin: '0 0'
       };
