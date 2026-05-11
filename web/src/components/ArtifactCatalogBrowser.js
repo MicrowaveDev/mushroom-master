@@ -137,12 +137,8 @@ export const ArtifactCatalogBrowser = {
         ))
         .filter((group) => group.artifacts.length);
     },
-    selectedGroupId() {
-      const group = this.artifactGroups.find((item) => item.artifacts.some((artifact) => artifact.id === this.activeArtifactId));
-      return group?.id || '';
-    },
     selectedRowIds() {
-      return this.activeArtifactId ? new Set([this.activeArtifactId]) : new Set();
+      return this.selectedArtifactId ? new Set([this.selectedArtifactId]) : new Set();
     }
   },
   methods: {
@@ -190,6 +186,9 @@ export const ArtifactCatalogBrowser = {
     },
     selectArtifact(artifactId) {
       this.selectedArtifactId = artifactId;
+    },
+    clearSelection() {
+      this.selectedArtifactId = '';
     },
     isSelected(artifact) {
       return artifact?.id === this.activeArtifactId;
@@ -245,7 +244,11 @@ export const ArtifactCatalogBrowser = {
     }
   },
   template: `
-    <section class="artifact-catalog-browser" data-testid="artifact-catalog-browser">
+    <section
+      class="artifact-catalog-browser"
+      :class="{ 'artifact-catalog-browser--has-selection': !!selectedArtifactId }"
+      data-testid="artifact-catalog-browser"
+    >
       <div class="artifact-catalog-grid-panel panel">
         <div class="artifact-catalog-grid-header">
           <div>
@@ -279,106 +282,115 @@ export const ArtifactCatalogBrowser = {
               :highlighted-title="artifactName(selectedArtifact)"
               @piece-click="selectArtifact($event.artifactId)"
             />
-            <aside
-              v-if="selectedGroupId === group.id && selectedArtifact"
-              class="artifact-catalog-detail"
-              data-testid="artifact-catalog-detail"
-              :data-artifact-id="selectedArtifact.id"
-            >
-              <div class="artifact-catalog-detail-top">
-                <div class="artifact-catalog-detail-art" aria-hidden="true">
-                  <artifact-grid-board
-                    variant="catalog"
-                    :columns="selectedOrientation.width"
-                    :rows="selectedOrientation.height"
-                    :items="selectedPreviewItem"
-                    :get-artifact="getArtifact"
-                  />
-                </div>
-                <div class="artifact-catalog-detail-copy">
-                  <span class="artifact-catalog-detail-kicker">
-                    {{ selectedRecipe ? t.recipeFusionOnly : familyLabel(selectedArtifact) }}
-                  </span>
-                  <h3>{{ artifactName(selectedArtifact) }}</h3>
-                  <p>{{ selectedDescription }}</p>
-                </div>
-              </div>
-
-              <artifact-stat-summary
-                class="artifact-catalog-detail-stats"
-                :artifact="selectedArtifact"
-                :lang="state.lang"
-                :include-zeroes="false"
-                variant="compact"
-                :aria-label="artifactName(selectedArtifact) + ' stats'"
-              />
-
-              <dl class="artifact-catalog-facts">
-                <div>
-                  <dt>{{ t.artifactCatalogFootprint }}</dt>
-                  <dd>{{ footprintLabel(selectedArtifact) }}</dd>
-                </div>
-                <div>
-                  <dt>{{ t.artifactCatalogPrice }}</dt>
-                  <dd>{{ priceLabel(selectedArtifact) }}</dd>
-                </div>
-                <div>
-                  <dt>{{ t.artifactCatalogFamily }}</dt>
-                  <dd>{{ familyLabel(selectedArtifact) }}</dd>
-                </div>
-                <div v-if="selectedArtifact.family === 'bag'">
-                  <dt>{{ t.artifactCatalogSlots }}</dt>
-                  <dd>{{ selectedArtifact.slotCount || 0 }}</dd>
-                </div>
-              </dl>
-
-              <section
-                v-if="selectedRecipe"
-                class="artifact-catalog-selected-recipe"
-                data-testid="artifact-catalog-selected-recipe"
-                :data-selected-result-artifact-id="selectedRecipe.resultArtifactId"
-              >
-                <h4>{{ t.recipeIngredients }}</h4>
-                <div class="artifact-catalog-recipe-flow" aria-hidden="true">
-                  <div class="artifact-catalog-recipe-ingredients">
-                    <button
-                      v-for="ingredient in selectedRecipeIngredients"
-                      :key="selectedRecipe.id + ':' + ingredient.id"
-                      type="button"
-                      class="artifact-catalog-recipe-artifact"
-                      :data-artifact-id="ingredient.id"
-                      @click="selectArtifact(ingredient.id)"
-                    >
-                      <artifact-grid-board
-                        variant="catalog"
-                        :columns="previewOrientation(ingredient).width"
-                        :rows="previewOrientation(ingredient).height"
-                        :items="previewItem(ingredient)"
-                        :get-artifact="getArtifact"
-                      />
-                    </button>
-                  </div>
-                  <span class="recipe-magnet-mark">+</span>
-                  <button
-                    type="button"
-                    class="artifact-catalog-recipe-artifact artifact-catalog-recipe-artifact--result"
-                    :data-artifact-id="selectedRecipe.resultArtifactId"
-                    @click="selectArtifact(selectedRecipe.resultArtifactId)"
-                  >
-                    <artifact-grid-board
-                      variant="catalog"
-                      :columns="previewOrientation(selectedRecipe.result).width"
-                      :rows="previewOrientation(selectedRecipe.result).height"
-                      :items="previewItem(selectedRecipe.result)"
-                      :get-artifact="getArtifact"
-                    />
-                  </button>
-                </div>
-              </section>
-            </aside>
           </section>
         </div>
       </div>
+
+      <aside
+        v-if="selectedArtifact"
+        class="artifact-catalog-detail"
+        data-testid="artifact-catalog-detail"
+        :data-artifact-id="selectedArtifact.id"
+      >
+        <button
+          type="button"
+          class="artifact-catalog-detail-close"
+          :aria-label="t.artifactCatalogCloseDetails"
+          @pointerdown.stop.prevent="clearSelection"
+          @click.stop.prevent="clearSelection"
+        >×</button>
+
+        <div class="artifact-catalog-detail-top">
+          <div class="artifact-catalog-detail-art" aria-hidden="true">
+            <artifact-grid-board
+              variant="catalog"
+              :columns="selectedOrientation.width"
+              :rows="selectedOrientation.height"
+              :items="selectedPreviewItem"
+              :get-artifact="getArtifact"
+            />
+          </div>
+          <div class="artifact-catalog-detail-copy">
+            <span class="artifact-catalog-detail-kicker">
+              {{ selectedRecipe ? t.recipeFusionOnly : familyLabel(selectedArtifact) }}
+            </span>
+            <h3>{{ artifactName(selectedArtifact) }}</h3>
+            <p>{{ selectedDescription }}</p>
+          </div>
+        </div>
+
+        <artifact-stat-summary
+          class="artifact-catalog-detail-stats"
+          :artifact="selectedArtifact"
+          :lang="state.lang"
+          :include-zeroes="false"
+          variant="compact"
+          :aria-label="artifactName(selectedArtifact) + ' stats'"
+        />
+
+        <dl class="artifact-catalog-facts">
+          <div>
+            <dt>{{ t.artifactCatalogFootprint }}</dt>
+            <dd>{{ footprintLabel(selectedArtifact) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t.artifactCatalogPrice }}</dt>
+            <dd>{{ priceLabel(selectedArtifact) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t.artifactCatalogFamily }}</dt>
+            <dd>{{ familyLabel(selectedArtifact) }}</dd>
+          </div>
+          <div v-if="selectedArtifact.family === 'bag'">
+            <dt>{{ t.artifactCatalogSlots }}</dt>
+            <dd>{{ selectedArtifact.slotCount || 0 }}</dd>
+          </div>
+        </dl>
+
+        <section
+          v-if="selectedRecipe"
+          class="artifact-catalog-selected-recipe"
+          data-testid="artifact-catalog-selected-recipe"
+          :data-selected-result-artifact-id="selectedRecipe.resultArtifactId"
+        >
+          <h4>{{ t.recipeIngredients }}</h4>
+          <div class="artifact-catalog-recipe-flow" aria-hidden="true">
+            <div class="artifact-catalog-recipe-ingredients">
+              <button
+                v-for="ingredient in selectedRecipeIngredients"
+                :key="selectedRecipe.id + ':' + ingredient.id"
+                type="button"
+                class="artifact-catalog-recipe-artifact"
+                :data-artifact-id="ingredient.id"
+                @click="selectArtifact(ingredient.id)"
+              >
+                <artifact-grid-board
+                  variant="catalog"
+                  :columns="previewOrientation(ingredient).width"
+                  :rows="previewOrientation(ingredient).height"
+                  :items="previewItem(ingredient)"
+                  :get-artifact="getArtifact"
+                />
+              </button>
+            </div>
+            <span class="recipe-magnet-mark">+</span>
+            <button
+              type="button"
+              class="artifact-catalog-recipe-artifact artifact-catalog-recipe-artifact--result"
+              :data-artifact-id="selectedRecipe.resultArtifactId"
+              @click="selectArtifact(selectedRecipe.resultArtifactId)"
+            >
+              <artifact-grid-board
+                variant="catalog"
+                :columns="previewOrientation(selectedRecipe.result).width"
+                :rows="previewOrientation(selectedRecipe.result).height"
+                :items="previewItem(selectedRecipe.result)"
+                :get-artifact="getArtifact"
+              />
+            </button>
+          </div>
+        </section>
+      </aside>
     </section>
   `
 };

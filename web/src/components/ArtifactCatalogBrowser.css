@@ -1,5 +1,6 @@
 .artifact-catalog-browser {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
   gap: 14px;
   align-items: start;
 }
@@ -121,6 +122,10 @@
 }
 
 .artifact-catalog-detail {
+  position: sticky;
+  top: calc(14px + var(--app-safe-area-top));
+  max-height: calc(100dvh - var(--app-safe-area-top) - var(--app-safe-area-bottom) - 28px);
+  overflow: auto;
   display: grid;
   gap: 14px;
   padding: 14px;
@@ -130,6 +135,10 @@
     radial-gradient(circle at 9% 15%, rgba(127, 152, 114, 0.18), transparent 42%),
     rgba(255, 251, 244, 0.92);
   box-shadow: 0 10px 26px rgba(68, 88, 50, 0.1);
+}
+
+.artifact-catalog-detail-close {
+  display: none;
 }
 
 .artifact-catalog-detail-top {
@@ -264,6 +273,59 @@
 
 .artifact-catalog-recipe-list {
   margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .artifact-catalog-browser {
+    grid-template-columns: 1fr;
+  }
+
+  .artifact-catalog-browser--has-selection {
+    padding-bottom: min(62dvh, 440px);
+  }
+
+  .artifact-catalog-detail {
+    display: none;
+    position: fixed;
+    inset: auto 12px calc(10px + var(--app-safe-area-bottom));
+    z-index: 80;
+    max-height: min(62dvh, 440px);
+    overflow: auto;
+    padding: 14px;
+    padding-top: 46px;
+    border-color: rgba(95, 124, 79, 0.4);
+    box-shadow:
+      0 -12px 34px rgba(47, 36, 25, 0.18),
+      0 0 0 1px rgba(255, 251, 244, 0.82) inset;
+  }
+
+  .artifact-catalog-browser--has-selection .artifact-catalog-detail {
+    display: grid;
+  }
+
+  .artifact-catalog-detail-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    width: 34px;
+    height: 34px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid rgba(138, 97, 53, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 251, 244, 0.9);
+    color: #30251b;
+    font-size: 1.45rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(47, 36, 25, 0.1);
+  }
+
+  .artifact-catalog-detail-close:focus-visible {
+    outline: 2px solid rgba(95, 124, 79, 0.62);
+    outline-offset: 2px;
+  }
 }
 
 @media (max-width: 560px) {
