@@ -184,6 +184,10 @@ const App = {
       state.fusionRevealQueue = state.fusionRevealQueue.slice(1);
     }
 
+    function showGameNavSidebar() {
+      return state.screen === 'prep' || state.screen === 'replay' || (state.screen === 'recipes' && state.gameRun);
+    }
+
     function fallbackScreenForRoute() {
       if (!state.sessionKey) return 'auth';
       if (!state.bootstrap?.activeMushroomId) return 'onboarding';
@@ -317,6 +321,7 @@ const App = {
       handleLogout,
       saveCharacter,
       completeFusionReveal,
+      showGameNavSidebar,
       ...customization,
       saveSettings: auth.saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
@@ -324,7 +329,7 @@ const App = {
     };
   },
   template: `
-    <div class="shell">
+    <div class="shell" :class="{ 'shell--with-game-sidebar': showGameNavSidebar() }">
       <header v-if="state.sessionKey && state.bootstrap" class="app-header">
         <button class="menu-toggle" @click="toggleMenu" :aria-expanded="state.menuOpen" aria-label="Menu">
           <span class="menu-toggle-bar"></span>
@@ -356,9 +361,18 @@ const App = {
       />
 
       <template v-else-if="state.bootstrap">
-        <template v-if="state.menuOpen">
-          <div class="nav-sidebar-backdrop" @click="state.menuOpen = false"></div>
-          <aside class="nav-sidebar" aria-label="Menu">
+        <template v-if="state.menuOpen || showGameNavSidebar()">
+          <div
+            v-if="state.menuOpen"
+            class="nav-sidebar-backdrop"
+            :class="{ 'nav-sidebar-backdrop--game-docked': showGameNavSidebar() }"
+            @click="state.menuOpen = false"
+          ></div>
+          <aside
+            class="nav-sidebar"
+            :class="{ 'nav-sidebar--game-docked': showGameNavSidebar(), 'nav-sidebar--menu-open': state.menuOpen }"
+            aria-label="Menu"
+          >
             <div class="home-section-header">
               <h3>{{ t.title }}</h3>
               <button class="ghost nav-sidebar-close" @click="state.menuOpen = false" aria-label="Close">×</button>
