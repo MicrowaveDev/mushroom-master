@@ -501,7 +501,15 @@ const App = {
         </nav>
       </template>
 
-      <p v-if="state.error" class="error">{{ state.error }}</p>
+      <div
+        v-if="state.error"
+        class="error app-notification app-notification--error"
+        role="alert"
+        aria-live="assertive"
+        data-testid="error-notification"
+      >
+        {{ state.error }}
+      </div>
 
       <section v-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
         <div class="route-loading-card panel">

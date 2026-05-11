@@ -286,7 +286,14 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   // with an error message and the bag must remain active.
   const hasItemsInBag = await page.locator('.artifact-grid-cell--bag .artifact-grid-piece').count() > 0;
   if (hasItemsInBag) {
-    await expect(page.locator('.error')).toBeVisible({ timeout: 3000 });
+    const errorNotification = page.getByTestId('error-notification');
+    await expect(errorNotification).toBeVisible({ timeout: 3000 });
+    const box = await errorNotification.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(box.x + box.width).toBeGreaterThan(viewport.width - 420);
+    expect(box.y + box.height).toBeGreaterThan(viewport.height - 220);
     await expect(page.locator('.active-bags-bar')).toBeVisible();
   }
   await expect(page.locator('.prep-screen')).toBeVisible();

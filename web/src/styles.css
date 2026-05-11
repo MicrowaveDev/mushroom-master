@@ -6139,6 +6139,31 @@ select {
   border-radius: 16px;
 }
 
+.app-notification {
+  position: fixed;
+  right: calc(18px + env(safe-area-inset-right, 0px));
+  bottom: calc(18px + var(--app-safe-area-bottom));
+  z-index: 160;
+  width: min(360px, calc(100vw - 36px));
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.25;
+  box-shadow: 0 12px 28px rgba(55, 43, 32, 0.16);
+}
+
+.app-notification--error {
+  background: rgba(255, 237, 232, 0.96);
+  border-color: rgba(156, 69, 53, 0.28);
+}
+
+@media (max-width: 640px) {
+  .app-notification {
+    right: 14px;
+    bottom: calc(124px + var(--app-safe-area-bottom));
+    width: calc(100vw - 28px);
+  }
+}
+
 .confirm-backdrop {
   position: fixed;
   inset: 0;
