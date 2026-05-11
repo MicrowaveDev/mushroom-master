@@ -1,6 +1,7 @@
-import { createApp, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
+import { createApp, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
 import { parseStartParams } from './api.js';
+import { getRunAchievementsByIds } from '../../app/shared/run-achievements.js';
 
 // Composables
 import { useGameState } from './composables/useGameState.js';
@@ -39,10 +40,11 @@ import { SettingsScreen } from './pages/SettingsScreen.js';
 import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
 import { FighterCard } from './components/FighterCard.js';
 import { ReplayDuel } from './components/ReplayDuel.js';
+import { HomeSocialSidebar } from './components/HomeSocialSidebar.js';
 
 const App = {
   components: {
-    ArtifactGridBoard, FighterCard, ReplayDuel,
+    ArtifactGridBoard, FighterCard, ReplayDuel, HomeSocialSidebar,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
@@ -68,6 +70,7 @@ const App = {
       shopOffer: [],
       rerollSpent: 0,
       menuOpen: false,
+      gameSidebarPanel: '',
       mobileHomeActionsMode: localStorage.getItem('mobileHomeActionsMode') || 'auto',
       draggingArtifactId: '',
       draggingItem: null,
@@ -184,9 +187,83 @@ const App = {
       state.fusionRevealQueue = state.fusionRevealQueue.slice(1);
     }
 
-    function showGameNavSidebar() {
-      return state.screen === 'prep' || state.screen === 'replay' || (state.screen === 'recipes' && state.gameRun);
+    function showGameSocialActions() {
+      return state.screen === 'prep' || state.screen === 'replay';
     }
+
+    function gameSidebarMode() {
+      return state.mobileHomeActionsMode || 'auto';
+    }
+
+    function showGameBottomActions() {
+      const mode = gameSidebarMode();
+      return mode === 'always' || mode === 'auto';
+    }
+
+    function openGameSidebarPanel(panel) {
+      state.gameSidebarPanel = panel;
+    }
+
+    function closeGameSidebarPanel() {
+      state.gameSidebarPanel = '';
+    }
+
+    function activityDayLabel(date) {
+      const tr = gs.t.value;
+      const value = date ? new Date(date) : new Date();
+      if (Number.isNaN(value.getTime())) return tr.today;
+      const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const diff = Math.round((startOf(new Date()) - startOf(value)) / 86400000);
+      if (diff <= 0) return tr.today;
+      if (diff === 1) return tr.yesterday;
+      return value.toLocaleDateString(state.lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'long' });
+    }
+
+    const gameActivityGroups = computed(() => {
+      const tr = gs.t.value;
+      const achievements = getRunAchievementsByIds(state.bootstrap?.season?.recentAchievements || [], state.lang || 'en')
+        .slice(0, 4)
+        .map((achievement) => ({
+          id: `achievement-${achievement.id}`,
+          title: achievement.name,
+          meta: state.lang === 'ru' ? 'Достижение получено' : 'Achievement unlocked',
+          type: 'achievement',
+          achievement,
+          at: new Date().toISOString()
+        }));
+      const runs = (state.bootstrap?.gameRunHistory || [])
+        .slice(0, 4)
+        .map((run) => {
+          const described = gs.describeRun(run);
+          const completedRounds = described?.completedRounds || 0;
+          const title = tr.runActivityTitle
+            .replace('{mode}', described?.modeLabel || tr.gameRuns)
+            .replace('{outcome}', described?.outcomeLabel || tr.gameRuns)
+            .replace('{rounds}', completedRounds);
+          const meta = [
+            described?.ourName || '',
+            tr.runStatsRecord.replace('{wins}', described?.wins || 0).replace('{losses}', described?.losses || 0).replace('{rounds}', completedRounds),
+            described?.dateLabel || ''
+          ].filter(Boolean).join(' · ');
+          return {
+            id: `run-${run.id}`,
+            title,
+            meta,
+            type: described?.outcomeKey || 'run',
+            at: run.endedAt || run.startedAt || run.createdAt || new Date().toISOString()
+          };
+        });
+      const groups = new Map();
+      [...achievements, ...runs]
+        .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+        .slice(0, 8)
+        .forEach((item) => {
+          const label = activityDayLabel(item.at);
+          if (!groups.has(label)) groups.set(label, []);
+          groups.get(label).push(item);
+        });
+      return Array.from(groups, ([label, items]) => ({ label, items }));
+    });
 
     function fallbackScreenForRoute() {
       if (!state.sessionKey) return 'auth';
@@ -258,6 +335,9 @@ const App = {
         await nextTick();
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       }
+      if (!showGameSocialActions()) {
+        state.gameSidebarPanel = '';
+      }
       if (screen === 'inventory-review' && gs.isLocalDevAuthEnabled.value && state.sessionKey) {
         await devTools.loadInventoryReview();
       }
@@ -321,7 +401,12 @@ const App = {
       handleLogout,
       saveCharacter,
       completeFusionReveal,
-      showGameNavSidebar,
+      showGameSocialActions,
+      gameSidebarMode,
+      showGameBottomActions,
+      openGameSidebarPanel,
+      closeGameSidebarPanel,
+      gameActivityGroups,
       ...customization,
       saveSettings: auth.saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
@@ -329,7 +414,7 @@ const App = {
     };
   },
   template: `
-    <div class="shell" :class="{ 'shell--with-game-sidebar': showGameNavSidebar() }">
+    <div class="shell">
       <header v-if="state.sessionKey && state.bootstrap" class="app-header">
         <button class="menu-toggle" @click="toggleMenu" :aria-expanded="state.menuOpen" aria-label="Menu">
           <span class="menu-toggle-bar"></span>
@@ -342,6 +427,76 @@ const App = {
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'en' }" @click="state.lang = 'en'">EN</button>
         </div>
       </header>
+
+      <template v-if="state.sessionKey && state.bootstrap && showGameSocialActions()">
+        <div class="home-action-rail game-social-action-rail" :class="{ 'home-action-rail--mobile': gameSidebarMode() === 'side' }">
+          <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openGameSidebarPanel('friends')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openGameSidebarPanel('settings')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
+          </button>
+        </div>
+
+        <home-social-sidebar
+          :open="!!state.gameSidebarPanel"
+          :panel="state.gameSidebarPanel"
+          :state="state"
+          :t="t"
+          :activity-groups="gameActivityGroups"
+          :mobile-action-mode="gameSidebarMode()"
+          :get-artifact="getArtifact"
+          :format-artifact-bonus="formatArtifactBonus"
+          @close="closeGameSidebarPanel"
+          @add-friend="addFriend($event)"
+          @challenge-friend="challengeFriend($event)"
+          @accept-challenge="acceptChallenge"
+          @decline-challenge="declineChallenge"
+          @set-mobile-action-mode="state.mobileHomeActionsMode = $event"
+          @switch-panel="state.gameSidebarPanel = $event"
+        />
+
+        <div v-if="gameSidebarMode() === 'menu' && state.menuOpen" class="home-menu-actions game-menu-actions">
+          <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openGameSidebarPanel('friends')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openGameSidebarPanel('settings')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
+          </button>
+        </div>
+
+        <nav
+          v-if="gameSidebarMode() !== 'menu'"
+          class="home-bottom-actions game-bottom-actions"
+          :class="{ 'home-bottom-actions--visible': showGameBottomActions() }"
+          :aria-hidden="!showGameBottomActions()"
+        >
+          <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openGameSidebarPanel('friends')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openGameSidebarPanel('settings')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
+          </button>
+        </nav>
+      </template>
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 
@@ -361,18 +516,9 @@ const App = {
       />
 
       <template v-else-if="state.bootstrap">
-        <template v-if="state.menuOpen || showGameNavSidebar()">
-          <div
-            v-if="state.menuOpen"
-            class="nav-sidebar-backdrop"
-            :class="{ 'nav-sidebar-backdrop--game-docked': showGameNavSidebar() }"
-            @click="state.menuOpen = false"
-          ></div>
-          <aside
-            class="nav-sidebar"
-            :class="{ 'nav-sidebar--game-docked': showGameNavSidebar(), 'nav-sidebar--menu-open': state.menuOpen }"
-            aria-label="Menu"
-          >
+        <template v-if="state.menuOpen">
+          <div class="nav-sidebar-backdrop" @click="state.menuOpen = false"></div>
+          <aside class="nav-sidebar" aria-label="Menu">
             <div class="home-section-header">
               <h3>{{ t.title }}</h3>
               <button class="ghost nav-sidebar-close" @click="state.menuOpen = false" aria-label="Close">×</button>
@@ -410,6 +556,7 @@ const App = {
           :state="state" :t="t" :active-mushroom="activeMushroom" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact" :get-mushroom="getMushroom"
           :describe-replay="describeReplay" :describe-run="describeRun" :format-delta="formatDelta"
+          :format-artifact-bonus="formatArtifactBonus"
           :portrait-position="portraitPosition" :portrait-position-for="portraitPositionFor"
           @resume-run="resumeGameRun" @start-run="startNewGameRun($event)" @abandon-run="requestAbandonRun"
           @load-replay="loadReplay($event)" @load-run-summary="loadRunSummary($event)" @go="goTo($event)"

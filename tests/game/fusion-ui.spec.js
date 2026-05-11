@@ -60,7 +60,7 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
 
   await page.locator('.menu-toggle').click();
-  await page.getByRole('button', { name: /recipes|рецепты/i }).click();
+  await page.locator('.nav-sidebar-list').getByRole('button', { name: /recipes|рецепты/i }).click();
 
   await expect(page.locator('.recipes-screen')).toBeVisible();
   await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
@@ -87,33 +87,29 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
-  const sidebar = page.locator('.nav-sidebar');
-  await expect(sidebar).toBeVisible();
-  await expect(sidebar).toHaveClass(/nav-sidebar--game-docked/);
-  await expect(sidebar.getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
-  const shopSidebarGeometry = await page.evaluate(() => {
-    const dockedSidebar = document.querySelector('.nav-sidebar--game-docked')?.getBoundingClientRect();
-    const prep = document.querySelector('.prep-screen')?.getBoundingClientRect();
-    return dockedSidebar && prep ? {
-      height: dockedSidebar.height,
-      width: dockedSidebar.width,
-      right: dockedSidebar.right,
-      prepLeft: prep.left
-    } : null;
-  });
-  expect(shopSidebarGeometry).toBeTruthy();
-  expect(shopSidebarGeometry.height).toBeGreaterThan(500);
-  expect(shopSidebarGeometry.width).toBeGreaterThanOrEqual(200);
-  expect(shopSidebarGeometry.right).toBeLessThan(shopSidebarGeometry.prepLeft);
+  const gameActionRail = page.locator('.game-social-action-rail');
+  await expect(gameActionRail).toBeVisible();
+  await expect(gameActionRail.locator('.home-action-btn--recipes')).toBeVisible();
+  await gameActionRail.locator('.home-action-btn--recipes').click();
+
+  const socialSidebar = page.locator('.home-social-sidebar');
+  await expect(socialSidebar).toBeVisible();
+  await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(5);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await page.locator('.home-social-close').click();
+  await expect(socialSidebar).toHaveCount(0);
 
   await page.getByRole('button', { name: /ready|готов/i }).click();
   const replayContinue = page.locator('.replay-result-button-full');
   await expect(replayContinue).toBeVisible({ timeout: 30000 });
 
-  await expect(sidebar).toBeVisible();
-  await expect(sidebar.getByRole('button', { name: /recipes|рецепты/i })).toBeVisible();
+  await expect(gameActionRail).toBeVisible();
+  await gameActionRail.locator('.home-action-btn--recipes').click();
+  await expect(socialSidebar).toBeVisible();
+  await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
   const sidebarStacksAboveBattleResult = await page.evaluate(() => {
-    const sidebar = document.querySelector('.nav-sidebar');
+    const sidebar = document.querySelector('.home-social-sidebar');
     const overlay = document.querySelector('.replay-result-overlay');
     const sidebarZ = Number.parseInt(getComputedStyle(sidebar).zIndex, 10);
     const overlayZ = Number.parseInt(getComputedStyle(overlay).zIndex, 10);
@@ -121,7 +117,5 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   });
   expect(sidebarStacksAboveBattleResult).toBe(true);
 
-  await sidebar.getByRole('button', { name: /recipes|рецепты/i }).click();
-  await expect(page.locator('.recipes-screen')).toBeVisible();
-  await expect(page.locator('[data-testid="recipe-card"]')).toHaveCount(5);
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(5);
 });

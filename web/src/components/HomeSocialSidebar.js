@@ -1,16 +1,18 @@
 import { AchievementBadge } from './AchievementBadge.js';
+import { ArtifactFigure } from './ArtifactFigure.js';
 import { buildFriendInviteLink } from '../helpers/telegram-links.js';
+import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 
 export const HomeSocialSidebar = {
   name: 'HomeSocialSidebar',
-  props: ['open', 'panel', 'state', 't', 'activityGroups', 'mobileActionMode'],
+  props: ['open', 'panel', 'state', 't', 'activityGroups', 'mobileActionMode', 'getArtifact', 'formatArtifactBonus'],
   emits: [
     'close',
     'add-friend', 'challenge-friend',
     'accept-challenge', 'decline-challenge',
     'set-mobile-action-mode', 'switch-panel'
   ],
-  components: { AchievementBadge },
+  components: { AchievementBadge, ArtifactFigure },
   methods: {
     inviteText() {
       return this.t.friendInviteText
@@ -38,6 +40,23 @@ export const HomeSocialSidebar = {
       if (this.mobileActionMode === 'menu') return 'home-sidebar-switcher--top';
       if (this.mobileActionMode === 'side') return 'home-sidebar-switcher--side';
       return 'home-sidebar-switcher--bottom';
+    },
+    artifactName(artifact) {
+      return artifact?.name?.[this.state.lang] || artifact?.name?.en || artifact?.id || '';
+    },
+    artifactDescription(artifact) {
+      return artifact?.description?.[this.state.lang] || artifact?.description?.en || '';
+    },
+    artifactStats(artifact) {
+      return (this.formatArtifactBonus?.(artifact) || [])
+        .map((part) => `${part.label} ${part.value}`)
+        .join(' · ');
+    },
+    figureSize(artifact) {
+      return {
+        width: artifact?.width || 1,
+        height: artifact?.height || 1
+      };
     }
   },
   computed: {
@@ -47,9 +66,27 @@ export const HomeSocialSidebar = {
     isSettings() {
       return this.panel === 'settings';
     },
+    isRecipes() {
+      return this.panel === 'recipes';
+    },
+    recipes() {
+      if (!this.getArtifact) return [];
+      return artifactFusionRecipes
+        .map((recipe) => {
+          const ingredients = recipe.ingredientArtifactIds
+            .map((artifactId) => this.getArtifact(artifactId))
+            .filter(Boolean);
+          const result = this.getArtifact(recipe.resultArtifactId);
+          return result && ingredients.length === recipe.ingredientArtifactIds.length
+            ? { ...recipe, ingredients, result }
+            : null;
+        })
+        .filter(Boolean);
+    },
     title() {
       if (this.isSettings) return this.t.settings;
       if (this.isFriends) return this.t.friends;
+      if (this.isRecipes) return this.t.recipes;
       return this.t.notifications;
     }
   },
@@ -68,6 +105,9 @@ export const HomeSocialSidebar = {
           </button>
           <button class="home-action-btn home-action-btn--friends" :class="{ active: panel === 'friends' }" :aria-label="t.friends" @click="$emit('switch-panel', 'friends')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+          </button>
+          <button class="home-action-btn home-action-btn--recipes" :class="{ active: panel === 'recipes' }" :aria-label="t.recipes" @click="$emit('switch-panel', 'recipes')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
           </button>
           <button class="home-action-btn home-action-btn--settings" :class="{ active: panel === 'settings' }" :aria-label="t.settings" @click="$emit('switch-panel', 'settings')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
@@ -113,7 +153,49 @@ export const HomeSocialSidebar = {
           </div>
         </section>
 
-        <section v-if="!isSettings && !isFriends" class="home-activity-feed">
+        <section v-if="isRecipes" class="home-sidebar-recipes" data-testid="sidebar-recipes-panel">
+          <article
+            v-for="recipe in recipes"
+            :key="recipe.id"
+            class="home-sidebar-recipe"
+            data-testid="sidebar-recipe-card"
+            :data-result-artifact-id="recipe.resultArtifactId"
+          >
+            <div class="home-sidebar-recipe-flow" aria-hidden="true">
+              <div class="home-sidebar-recipe-ingredients">
+                <div
+                  v-for="artifact in recipe.ingredients"
+                  :key="recipe.id + ':' + artifact.id"
+                  class="home-sidebar-recipe-artifact"
+                  :data-artifact-id="artifact.id"
+                >
+                  <artifact-figure
+                    :artifact="artifact"
+                    :display-width="figureSize(artifact).width"
+                    :display-height="figureSize(artifact).height"
+                  />
+                </div>
+              </div>
+              <span class="home-sidebar-recipe-plus">+</span>
+              <div class="home-sidebar-recipe-artifact home-sidebar-recipe-artifact--result" :data-artifact-id="recipe.resultArtifactId">
+                <artifact-figure
+                  :artifact="recipe.result"
+                  :display-width="figureSize(recipe.result).width"
+                  :display-height="figureSize(recipe.result).height"
+                />
+              </div>
+            </div>
+            <div class="home-sidebar-recipe-copy">
+              <span>{{ t.recipeFusionOnly }}</span>
+              <strong>{{ artifactName(recipe.result) }}</strong>
+              <p>{{ artifactDescription(recipe.result) }}</p>
+              <small v-if="artifactStats(recipe.result)">{{ artifactStats(recipe.result) }}</small>
+            </div>
+          </article>
+          <p v-if="recipes.length === 0" class="home-empty-hint">{{ t.noRecipesYet }}</p>
+        </section>
+
+        <section v-if="!isSettings && !isFriends && !isRecipes" class="home-activity-feed">
           <template v-if="activityGroups?.length">
             <section v-for="group in activityGroups" :key="group.label" class="home-activity-group">
               <h3>{{ group.label }}</h3>

@@ -10,7 +10,7 @@ export const HomeScreen = {
   props: [
     'state', 't', 'activeMushroom', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'getMushroom',
-    'describeRun', 'formatDelta', 'portraitPosition', 'portraitPositionFor'
+    'describeRun', 'formatDelta', 'formatArtifactBonus', 'portraitPosition', 'portraitPositionFor'
   ],
   emits: [
     'resume-run', 'start-run', 'abandon-run',
@@ -259,6 +259,9 @@ export const HomeScreen = {
         <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
         </button>
+        <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openSocialPanel('recipes')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
+        </button>
         <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openSocialPanel('settings')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
         </button>
@@ -271,6 +274,8 @@ export const HomeScreen = {
         :t="t"
         :activity-groups="activityGroups"
         :mobile-action-mode="mobileActionMode"
+        :get-artifact="getArtifact"
+        :format-artifact-bonus="formatArtifactBonus"
         @close="socialPanel = ''"
         @add-friend="$emit('add-friend', $event)"
         @challenge-friend="$emit('challenge-friend', $event)"
@@ -286,6 +291,9 @@ export const HomeScreen = {
         </button>
         <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+        </button>
+        <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openSocialPanel('recipes')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
         </button>
         <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openSocialPanel('settings')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
@@ -424,6 +432,9 @@ export const HomeScreen = {
         </button>
         <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openSocialPanel('friends')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
+        </button>
+        <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openSocialPanel('recipes')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
         </button>
         <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openSocialPanel('settings')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm7.4-2.2a7.7 7.7 0 0 0 0-2l2-1.5-2-3.5-2.4 1a7.2 7.2 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7.2 7.2 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1c.5.4 1.1.8 1.7 1l.3 2.5h4l.3-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.5-2-1.5Z"/></svg>
