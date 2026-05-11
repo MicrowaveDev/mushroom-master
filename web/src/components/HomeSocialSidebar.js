@@ -1,7 +1,8 @@
 import { AchievementBadge } from './AchievementBadge.js';
-import { ArtifactFigure } from './ArtifactFigure.js';
+import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { buildFriendInviteLink } from '../helpers/telegram-links.js';
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
+import { getBagShape } from '../../../app/shared/bag-shape.js';
 
 export const HomeSocialSidebar = {
   name: 'HomeSocialSidebar',
@@ -12,7 +13,7 @@ export const HomeSocialSidebar = {
     'accept-challenge', 'decline-challenge',
     'set-mobile-action-mode', 'switch-panel'
   ],
-  components: { AchievementBadge, ArtifactFigure },
+  components: { AchievementBadge, ArtifactGridBoard },
   methods: {
     inviteText() {
       return this.t.friendInviteText
@@ -52,11 +53,21 @@ export const HomeSocialSidebar = {
         .map((part) => `${part.label} ${part.value}`)
         .join(' · ');
     },
-    figureSize(artifact) {
-      return {
-        width: artifact?.width || 1,
-        height: artifact?.height || 1
-      };
+    previewOrientation(artifact) {
+      if (!artifact) return { width: 1, height: 1 };
+      if (artifact.family === 'bag') {
+        const shape = getBagShape(artifact);
+        return { width: shape[0]?.length || 1, height: shape.length || 1 };
+      }
+      if (artifact.shape) {
+        const shape = artifact.shape;
+        return { width: shape[0]?.length || artifact.width || 1, height: shape.length || artifact.height || 1 };
+      }
+      return { width: artifact.width || 1, height: artifact.height || 1 };
+    },
+    previewItem(artifact) {
+      const orientation = this.previewOrientation(artifact);
+      return [{ artifactId: artifact.id, x: 0, y: 0, width: orientation.width, height: orientation.height }];
     }
   },
   computed: {
@@ -169,19 +180,25 @@ export const HomeSocialSidebar = {
                   class="home-sidebar-recipe-artifact"
                   :data-artifact-id="artifact.id"
                 >
-                  <artifact-figure
-                    :artifact="artifact"
-                    :display-width="figureSize(artifact).width"
-                    :display-height="figureSize(artifact).height"
+                  <artifact-grid-board
+                    class="home-sidebar-recipe-artifact-board"
+                    variant="catalog"
+                    :columns="previewOrientation(artifact).width"
+                    :rows="previewOrientation(artifact).height"
+                    :items="previewItem(artifact)"
+                    :get-artifact="getArtifact"
                   />
                 </div>
               </div>
               <span class="home-sidebar-recipe-plus">+</span>
               <div class="home-sidebar-recipe-artifact home-sidebar-recipe-artifact--result" :data-artifact-id="recipe.resultArtifactId">
-                <artifact-figure
-                  :artifact="recipe.result"
-                  :display-width="figureSize(recipe.result).width"
-                  :display-height="figureSize(recipe.result).height"
+                <artifact-grid-board
+                  class="home-sidebar-recipe-artifact-board"
+                  variant="catalog"
+                  :columns="previewOrientation(recipe.result).width"
+                  :rows="previewOrientation(recipe.result).height"
+                  :items="previewItem(recipe.result)"
+                  :get-artifact="getArtifact"
                 />
               </div>
             </div>

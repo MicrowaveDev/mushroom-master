@@ -1,9 +1,10 @@
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
-import { ArtifactFigure } from '../components/ArtifactFigure.js';
+import { getBagShape } from '../../../app/shared/bag-shape.js';
+import { ArtifactGridBoard } from '../components/ArtifactGridBoard.js';
 
 export const RecipesScreen = {
   name: 'RecipesScreen',
-  components: { ArtifactFigure },
+  components: { ArtifactGridBoard },
   props: ['state', 't', 'getArtifact', 'formatArtifactBonus'],
   computed: {
     recipes() {
@@ -32,11 +33,21 @@ export const RecipesScreen = {
         .map((part) => `${part.label} ${part.value}`)
         .join(' · ');
     },
-    figureSize(artifact) {
-      return {
-        width: artifact?.width || 1,
-        height: artifact?.height || 1
-      };
+    previewOrientation(artifact) {
+      if (!artifact) return { width: 1, height: 1 };
+      if (artifact.family === 'bag') {
+        const shape = getBagShape(artifact);
+        return { width: shape[0]?.length || 1, height: shape.length || 1 };
+      }
+      if (artifact.shape) {
+        const shape = artifact.shape;
+        return { width: shape[0]?.length || artifact.width || 1, height: shape.length || artifact.height || 1 };
+      }
+      return { width: artifact.width || 1, height: artifact.height || 1 };
+    },
+    previewItem(artifact) {
+      const orientation = this.previewOrientation(artifact);
+      return [{ artifactId: artifact.id, x: 0, y: 0, width: orientation.width, height: orientation.height }];
     }
   },
   template: `
@@ -63,19 +74,23 @@ export const RecipesScreen = {
                 class="recipe-artifact-tile recipe-artifact-tile--ingredient"
                 :data-artifact-id="artifact.id"
               >
-                <artifact-figure
-                  :artifact="artifact"
-                  :display-width="figureSize(artifact).width"
-                  :display-height="figureSize(artifact).height"
+                <artifact-grid-board
+                  variant="catalog"
+                  :columns="previewOrientation(artifact).width"
+                  :rows="previewOrientation(artifact).height"
+                  :items="previewItem(artifact)"
+                  :get-artifact="getArtifact"
                 />
               </div>
             </div>
             <span class="recipe-magnet-mark">+</span>
             <div class="recipe-artifact-tile recipe-artifact-tile--result" :data-artifact-id="recipe.resultArtifactId">
-              <artifact-figure
-                :artifact="recipe.result"
-                :display-width="figureSize(recipe.result).width"
-                :display-height="figureSize(recipe.result).height"
+              <artifact-grid-board
+                variant="catalog"
+                :columns="previewOrientation(recipe.result).width"
+                :rows="previewOrientation(recipe.result).height"
+                :items="previewItem(recipe.result)"
+                :get-artifact="getArtifact"
               />
             </div>
           </div>

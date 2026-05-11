@@ -2152,7 +2152,7 @@ select {
 }
 .home-sidebar-recipe-flow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 74px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(88px, auto);
   gap: 8px;
   align-items: center;
 }
@@ -2162,7 +2162,8 @@ select {
   gap: 6px;
 }
 .home-sidebar-recipe-artifact {
-  width: 58px;
+  width: max-content;
+  min-width: 58px;
   min-height: 58px;
   display: grid;
   place-items: center;
@@ -2170,17 +2171,19 @@ select {
   border: 1px solid rgba(138, 97, 53, 0.14);
   border-radius: 8px;
   background: rgba(255, 251, 244, 0.72);
+  --artifact-cell-size: 34px;
+  --board-gap: 6px;
 }
 .home-sidebar-recipe-artifact--result {
-  width: 74px;
-  min-height: 64px;
+  min-width: 88px;
+  min-height: 88px;
   border-color: rgba(95, 124, 79, 0.28);
   background: rgba(127, 152, 114, 0.14);
+  --artifact-cell-size: 36px;
+  --board-gap: 6px;
 }
-.home-sidebar-recipe-artifact .artifact-figure-grid {
-  width: 100%;
-  max-width: 62px;
-  aspect-ratio: 1;
+.home-sidebar-recipe-artifact .artifact-grid-board--catalog {
+  max-width: none;
 }
 .home-sidebar-recipe-plus {
   color: rgba(95, 79, 53, 0.74);
@@ -6680,25 +6683,27 @@ select {
 .recipe-artifact-tile {
   display: grid;
   place-items: center;
-  width: 58px;
+  width: max-content;
+  min-width: 58px;
   min-height: 58px;
   padding: 5px;
   border: 1px solid rgba(95, 124, 79, 0.2);
   border-radius: 8px;
   background: rgba(241, 233, 214, 0.76);
-  --artifact-cell-size: 24px;
+  --artifact-cell-size: 38px;
+  --board-gap: 6px;
 }
 
 .recipe-artifact-tile--result {
-  width: 72px;
-  min-height: 72px;
+  min-width: 98px;
+  min-height: 98px;
   background: rgba(211, 224, 195, 0.54);
-  --artifact-cell-size: 28px;
+  --artifact-cell-size: 44px;
+  --board-gap: 8px;
 }
 
-.recipe-artifact-tile .artifact-figure-grid {
-  width: 100%;
-  height: 100%;
+.recipe-artifact-tile .artifact-grid-board--catalog {
+  max-width: none;
 }
 
 .recipe-magnet-mark {

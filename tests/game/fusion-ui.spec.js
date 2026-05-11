@@ -69,6 +69,8 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await expect(page.locator('[data-result-artifact-id="biostasis_crown_seed"]')).toBeVisible();
   await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"]')).toBeVisible();
   await expect(page.locator('.recipe-artifact-tile[data-artifact-id="haste_wisp"]')).toBeVisible();
+  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
+  await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
 });
 
 test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', async ({ page, request, baseURL }) => {
@@ -97,6 +99,8 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
   await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(5);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
+  await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
+  await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
   await page.locator('.home-social-close').click();
   await expect(socialSidebar).toHaveCount(0);
 
