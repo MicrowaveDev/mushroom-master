@@ -1,11 +1,12 @@
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
+import { ArtifactCatalogBrowser } from '../components/ArtifactCatalogBrowser.js';
 import { ArtifactGridBoard } from '../components/ArtifactGridBoard.js';
 import { ArtifactStatSummary } from '../components/ArtifactStatSummary.js';
 
 export const RecipesScreen = {
   name: 'RecipesScreen',
-  components: { ArtifactGridBoard, ArtifactStatSummary },
+  components: { ArtifactCatalogBrowser, ArtifactGridBoard, ArtifactStatSummary },
   props: ['state', 't', 'getArtifact', 'formatArtifactBonus'],
   computed: {
     recipes() {
@@ -54,7 +55,13 @@ export const RecipesScreen = {
         <p class="recipes-cover-copy">{{ t.recipesIntro }}</p>
       </header>
 
-      <div class="recipe-list">
+      <artifact-catalog-browser
+        :state="state"
+        :t="t"
+        :get-artifact="getArtifact"
+      />
+
+      <div class="recipe-list artifact-catalog-recipe-list" :aria-label="t.recipesTitle">
         <article
           v-for="recipe in recipes"
           :key="recipe.id"

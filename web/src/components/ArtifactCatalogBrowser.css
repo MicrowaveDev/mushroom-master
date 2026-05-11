@@ -1,0 +1,301 @@
+.artifact-catalog-browser {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.38fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.artifact-catalog-grid-panel,
+.artifact-catalog-detail {
+  min-width: 0;
+}
+
+.artifact-catalog-grid-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.artifact-catalog-grid-header h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.05;
+}
+
+.artifact-catalog-count {
+  display: inline-grid;
+  min-width: 46px;
+  min-height: 38px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(127, 152, 114, 0.16);
+  color: #3f5f35;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.artifact-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+  gap: 10px;
+}
+
+.artifact-catalog-tile {
+  min-width: 0;
+  min-height: 158px;
+  display: grid;
+  grid-template-rows: 94px auto auto;
+  gap: 7px;
+  justify-items: center;
+  align-items: center;
+  padding: 10px 8px;
+  border: 1px solid rgba(138, 97, 53, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 251, 244, 0.76);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  --artifact-cell-size: 26px;
+  --board-gap: 5px;
+}
+
+.artifact-catalog-tile:hover,
+.artifact-catalog-tile:focus-visible {
+  border-color: rgba(95, 124, 79, 0.5);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.artifact-catalog-tile--active {
+  border-color: rgba(95, 124, 79, 0.75);
+  background: rgba(239, 248, 226, 0.86);
+  box-shadow: 0 0 0 2px rgba(95, 124, 79, 0.12), 0 10px 24px rgba(68, 88, 50, 0.12);
+}
+
+.artifact-catalog-tile--fusion {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(125, 92, 167, 0.14), transparent 48%),
+    rgba(255, 251, 244, 0.82);
+}
+
+.artifact-catalog-tile-art {
+  width: 100%;
+  min-height: 94px;
+  display: grid;
+  place-items: center;
+}
+
+.artifact-catalog-tile-art .artifact-grid-board--catalog,
+.artifact-catalog-detail-art .artifact-grid-board--catalog,
+.artifact-catalog-recipe-artifact .artifact-grid-board--catalog {
+  max-width: none;
+}
+
+.artifact-catalog-tile-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: #30251b;
+  font-weight: 900;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+}
+
+.artifact-catalog-tile-meta {
+  display: flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  color: rgba(55, 43, 32, 0.64);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.artifact-catalog-tile-meta span {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(241, 233, 214, 0.86);
+}
+
+.artifact-catalog-detail {
+  position: sticky;
+  top: calc(96px + var(--telegram-content-safe-area-top));
+  display: grid;
+  gap: 14px;
+}
+
+.artifact-catalog-detail-top {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.34fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.artifact-catalog-detail-art {
+  min-height: 132px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(95, 124, 79, 0.18);
+  border-radius: 8px;
+  background: rgba(241, 248, 230, 0.62);
+  --artifact-cell-size: 44px;
+  --board-gap: 8px;
+}
+
+.artifact-catalog-detail-copy {
+  min-width: 0;
+}
+
+.artifact-catalog-detail-kicker {
+  color: var(--sage);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.artifact-catalog-detail-copy h3 {
+  margin: 4px 0 6px;
+  font-size: 1.65rem;
+  line-height: 1.04;
+}
+
+.artifact-catalog-detail-copy p {
+  margin: 0;
+  color: rgba(47, 36, 25, 0.72);
+  line-height: 1.36;
+}
+
+.artifact-catalog-detail-stats {
+  justify-content: flex-start;
+}
+
+.artifact-catalog-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.artifact-catalog-facts div {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(241, 233, 214, 0.58);
+}
+
+.artifact-catalog-facts dt {
+  color: rgba(55, 43, 32, 0.58);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.artifact-catalog-facts dd {
+  margin: 2px 0 0;
+  color: #30251b;
+  font-weight: 900;
+}
+
+.artifact-catalog-selected-recipe {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(138, 97, 53, 0.16);
+}
+
+.artifact-catalog-selected-recipe h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.artifact-catalog-recipe-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(86px, auto);
+  gap: 8px;
+  align-items: center;
+}
+
+.artifact-catalog-recipe-ingredients {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.artifact-catalog-recipe-artifact {
+  width: max-content;
+  min-width: 58px;
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border: 1px solid rgba(95, 124, 79, 0.2);
+  border-radius: 8px;
+  background: rgba(241, 233, 214, 0.76);
+  color: inherit;
+  cursor: pointer;
+  --artifact-cell-size: 38px;
+  --board-gap: 6px;
+}
+
+.artifact-catalog-recipe-artifact--result {
+  min-width: 98px;
+  min-height: 98px;
+  background: rgba(211, 224, 195, 0.54);
+  --artifact-cell-size: 44px;
+  --board-gap: 8px;
+}
+
+.artifact-catalog-recipe-artifact:hover,
+.artifact-catalog-recipe-artifact:focus-visible {
+  border-color: rgba(95, 124, 79, 0.58);
+  outline: none;
+}
+
+.artifact-catalog-recipe-list {
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .artifact-catalog-browser {
+    grid-template-columns: 1fr;
+  }
+
+  .artifact-catalog-detail {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .artifact-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .artifact-catalog-tile {
+    min-height: 148px;
+    grid-template-rows: 88px auto auto;
+    --artifact-cell-size: 23px;
+    --board-gap: 4px;
+  }
+
+  .artifact-catalog-detail-top {
+    grid-template-columns: 1fr;
+  }
+
+  .artifact-catalog-detail-art {
+    min-height: 126px;
+    --artifact-cell-size: 40px;
+    --board-gap: 7px;
+  }
+
+  .artifact-catalog-detail-copy h3 {
+    font-size: 1.42rem;
+  }
+}
