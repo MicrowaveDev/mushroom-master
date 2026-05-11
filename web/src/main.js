@@ -33,6 +33,7 @@ import { LeaderboardScreen } from './pages/LeaderboardScreen.js';
 import { WikiScreen } from './pages/WikiScreen.js';
 import { WikiDetailScreen } from './pages/WikiDetailScreen.js';
 import { RecipesScreen } from './pages/RecipesScreen.js';
+import { FusionAnimationLabScreen } from './pages/FusionAnimationLabScreen.js';
 import { ProfileScreen } from './pages/ProfileScreen.js';
 import { SettingsScreen } from './pages/SettingsScreen.js';
 
@@ -48,7 +49,8 @@ const App = {
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
-    FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, RecipesScreen, SettingsScreen
+    FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
+    FusionAnimationLabScreen, SettingsScreen
   },
   setup() {
     const state = reactive({
@@ -532,6 +534,7 @@ const App = {
               <button class="nav-btn" :class="{ active: state.screen === 'profile' }" @click="goTo('profile')">{{ t.profile }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'wiki' || state.screen === 'wiki-detail' }" @click="goTo('wiki')">{{ t.wiki }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'recipes' }" @click="goTo('recipes')">{{ t.recipes }}</button>
+              <button v-if="isLocalDevAuthEnabled" class="nav-btn" :class="{ active: state.screen === 'fusion-lab' }" @click="goTo('fusion-lab')">{{ t.fusionLab }}</button>
               <button class="nav-btn" :class="{ active: state.screen === 'settings' }" @click="goTo('settings')">{{ t.settings }}</button>
               <button class="nav-btn nav-btn--logout" data-testid="menu-logout" @click="handleLogout">{{ t.logout }}</button>
             </nav>
@@ -714,6 +717,10 @@ const App = {
 
         <recipes-screen v-else-if="state.screen === 'recipes'"
           :state="state" :t="t" :get-artifact="getArtifact" :format-artifact-bonus="formatArtifactBonus"
+        />
+
+        <fusion-animation-lab-screen v-else-if="state.screen === 'fusion-lab' && isLocalDevAuthEnabled"
+          :state="state" :t="t" :get-artifact="getArtifact"
         />
 
         <profile-screen v-else-if="state.screen === 'profile'" :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition" />

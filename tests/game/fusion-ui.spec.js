@@ -119,6 +119,35 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--zero')).toHaveCount(0);
 });
 
+test('[fusion] local animation lab demonstrates every recipe with the production reveal', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+
+  const player = await createSession(request, {
+    telegramId: 9410,
+    username: 'fusion_animation_lab',
+    name: 'Fusion Animation Lab'
+  });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/fusion-lab`, { waitUntil: 'networkidle' });
+
+  await expect(page.getByTestId('fusion-lab-screen')).toBeVisible();
+  await expect(page.getByTestId('fusion-lab-recipe-card')).toHaveCount(5);
+  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(15);
+  await expect(page.locator('.fusion-lab-stage-card[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
+
+  await page.getByTestId('fusion-lab-play-all').click();
+  await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 1500 });
+  await expect(page.locator('.fusion-lab-card--active[data-result-artifact-id="opening_bell_spore"]')).toBeVisible({ timeout: 13000 });
+  await expect(page.locator('.fusion-reveal')).toHaveCount(0, { timeout: 4000 });
+
+  await page.locator('.fusion-lab-card[data-result-artifact-id="riftfang_comet"]').click();
+  await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 1500 });
+  await expect(page.locator('.fusion-lab-stage-card[data-result-artifact-id="riftfang_comet"]')).toBeVisible();
+});
+
 test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   await page.setViewportSize(DESKTOP_VIEWPORT);
