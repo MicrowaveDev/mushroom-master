@@ -1,5 +1,6 @@
 import { AchievementBadge } from './AchievementBadge.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
+import { ArtifactStatSummary } from './ArtifactStatSummary.js';
 import { buildFriendInviteLink } from '../helpers/telegram-links.js';
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
@@ -13,7 +14,7 @@ export const HomeSocialSidebar = {
     'accept-challenge', 'decline-challenge',
     'set-mobile-action-mode', 'switch-panel'
   ],
-  components: { AchievementBadge, ArtifactGridBoard },
+  components: { AchievementBadge, ArtifactGridBoard, ArtifactStatSummary },
   methods: {
     inviteText() {
       return this.t.friendInviteText
@@ -47,11 +48,6 @@ export const HomeSocialSidebar = {
     },
     artifactDescription(artifact) {
       return artifact?.description?.[this.state.lang] || artifact?.description?.en || '';
-    },
-    artifactStats(artifact) {
-      return (this.formatArtifactBonus?.(artifact) || [])
-        .map((part) => `${part.label} ${part.value}`)
-        .join(' · ');
     },
     previewOrientation(artifact) {
       if (!artifact) return { width: 1, height: 1 };
@@ -203,10 +199,15 @@ export const HomeSocialSidebar = {
               </div>
             </div>
             <div class="home-sidebar-recipe-copy">
-              <span>{{ t.recipeFusionOnly }}</span>
+              <span class="home-sidebar-recipe-kicker">{{ t.recipeFusionOnly }}</span>
               <strong>{{ artifactName(recipe.result) }}</strong>
               <p>{{ artifactDescription(recipe.result) }}</p>
-              <small v-if="artifactStats(recipe.result)">{{ artifactStats(recipe.result) }}</small>
+              <artifact-stat-summary
+                :artifact="recipe.result"
+                :lang="state.lang"
+                variant="compact"
+                :aria-label="artifactName(recipe.result) + ' stats'"
+              />
             </div>
           </article>
           <p v-if="recipes.length === 0" class="home-empty-hint">{{ t.noRecipesYet }}</p>

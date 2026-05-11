@@ -1,10 +1,11 @@
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
 import { ArtifactGridBoard } from '../components/ArtifactGridBoard.js';
+import { ArtifactStatSummary } from '../components/ArtifactStatSummary.js';
 
 export const RecipesScreen = {
   name: 'RecipesScreen',
-  components: { ArtifactGridBoard },
+  components: { ArtifactGridBoard, ArtifactStatSummary },
   props: ['state', 't', 'getArtifact', 'formatArtifactBonus'],
   computed: {
     recipes() {
@@ -27,11 +28,6 @@ export const RecipesScreen = {
     },
     artifactDescription(artifact) {
       return artifact?.description?.[this.state.lang] || artifact?.description?.en || '';
-    },
-    artifactStats(artifact) {
-      return (this.formatArtifactBonus?.(artifact) || [])
-        .map((part) => `${part.label} ${part.value}`)
-        .join(' · ');
     },
     previewOrientation(artifact) {
       if (!artifact) return { width: 1, height: 1 };
@@ -99,7 +95,13 @@ export const RecipesScreen = {
             <span class="recipe-card-kicker">{{ t.recipeFusionOnly }}</span>
             <h3>{{ artifactName(recipe.result) }}</h3>
             <p>{{ artifactDescription(recipe.result) }}</p>
-            <strong v-if="artifactStats(recipe.result)" class="recipe-card-stats">{{ artifactStats(recipe.result) }}</strong>
+            <artifact-stat-summary
+              class="recipe-card-stats"
+              :artifact="recipe.result"
+              :lang="state.lang"
+              variant="compact"
+              :aria-label="artifactName(recipe.result) + ' stats'"
+            />
             <div class="recipe-ingredient-names" :aria-label="t.recipeIngredients">
               <span v-for="artifact in recipe.ingredients" :key="artifact.id">{{ artifactName(artifact) }}</span>
             </div>

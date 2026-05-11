@@ -1,9 +1,9 @@
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
-import { ARTIFACT_ROLE_CLASSES } from '../../../../app/shared/artifact-visual-classification.js';
+import { ArtifactStatSummary } from '../ArtifactStatSummary.js';
 
 export const InventoryZone = {
   name: 'InventoryZone',
-  components: { ArtifactGridBoard },
+  components: { ArtifactGridBoard, ArtifactStatSummary },
   props: [
     'state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
     'placementPreviewAt', 'fusionIngredientRowIds'
@@ -32,38 +32,6 @@ export const InventoryZone = {
     onChipDragEnd() {
       this.$emit('drag-end');
     },
-    statSummaryItems() {
-      const labels = {
-        ru: {
-          damage: 'Урон',
-          armor: 'Броня',
-          speed: 'Скорость',
-          stunChance: 'Оглушение'
-        },
-        en: {
-          damage: 'Damage',
-          armor: 'Armor',
-          speed: 'Speed',
-          stunChance: 'Stun'
-        }
-      };
-      const lang = this.state.lang === 'en' ? 'en' : 'ru';
-      return [
-        { id: 'damage', roleId: 'damage', value: this.builderTotals.damage || 0 },
-        { id: 'armor', roleId: 'armor', value: this.builderTotals.armor || 0 },
-        { id: 'speed', roleId: null, value: this.builderTotals.speed || 0 },
-        { id: 'stunChance', roleId: 'stun', value: this.builderTotals.stunChance || 0, suffix: '%' }
-      ].map((item) => ({
-        ...item,
-        role: item.roleId ? ARTIFACT_ROLE_CLASSES[item.roleId] : null,
-        label: labels[lang][item.id],
-        text: this.formatStatValue(item.value, item.suffix)
-      }));
-    },
-    formatStatValue(value, suffix = '') {
-      const n = Number(value) || 0;
-      return `${n > 0 ? '+' : ''}${n}${suffix}`;
-    }
   },
   template: `
     <div class="artifact-inventory-section panel">
@@ -111,24 +79,11 @@ export const InventoryZone = {
         </span>
       </div>
       <div v-if="state.builderItems.length" class="artifact-inventory-footer">
-        <span class="artifact-inventory-stats" aria-label="Artifact stat summary">
-          <span
-            v-for="item in statSummaryItems()"
-            :key="item.id"
-            class="artifact-inventory-stat-chip"
-            :class="{ 'artifact-inventory-stat-chip--plain': !item.role }"
-            :style="item.role ? { '--artifact-role-color': item.role.color } : null"
-          >
-            <span
-              v-if="item.role"
-              class="artifact-role-glyph artifact-role-legend-glyph"
-              :class="'artifact-role-glyph--' + item.roleId"
-              aria-hidden="true"
-            ><span></span></span>
-            <span class="artifact-inventory-stat-label">{{ item.label }}</span>
-            <b>{{ item.text }}</b>
-          </span>
-        </span>
+        <artifact-stat-summary
+          :totals="builderTotals"
+          :lang="state.lang"
+          aria-label="Artifact stat summary"
+        />
       </div>
     </div>
   `
