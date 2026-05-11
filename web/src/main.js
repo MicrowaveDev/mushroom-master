@@ -184,10 +184,6 @@ const App = {
       state.fusionRevealQueue = state.fusionRevealQueue.slice(1);
     }
 
-    function showGameSidebar() {
-      return state.screen === 'prep' || state.screen === 'replay' || (state.screen === 'recipes' && state.gameRun);
-    }
-
     function fallbackScreenForRoute() {
       if (!state.sessionKey) return 'auth';
       if (!state.bootstrap?.activeMushroomId) return 'onboarding';
@@ -321,7 +317,6 @@ const App = {
       handleLogout,
       saveCharacter,
       completeFusionReveal,
-      showGameSidebar,
       ...customization,
       saveSettings: auth.saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
@@ -342,24 +337,6 @@ const App = {
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'en' }" @click="state.lang = 'en'">EN</button>
         </div>
       </header>
-
-      <aside
-        v-if="state.sessionKey && state.bootstrap && showGameSidebar()"
-        class="game-side-menu"
-        data-testid="game-sidebar-menu"
-        aria-label="Game menu"
-      >
-        <p class="game-side-menu-title">{{ t.gameMenu || 'Menu' }}</p>
-        <nav class="game-side-menu-list" aria-label="Game menu">
-          <button
-            type="button"
-            class="game-side-menu-link"
-            :class="{ active: state.screen === 'recipes' }"
-            data-testid="game-sidebar-recipes"
-            @click="goTo('recipes')"
-          >{{ t.recipes }}</button>
-        </nav>
-      </aside>
 
       <p v-if="state.error" class="error">{{ state.error }}</p>
 
