@@ -9,20 +9,14 @@ function bagWatermarkOffset(artifactId, rotation) {
   if (artifactId !== 'birchbark_hook') return { x: '0px', y: '0px' };
   switch (rotation) {
     case 1:
-      return { x: '5px', y: '0px' };
+      return { x: '-3px', y: '8px' };
     case 2:
-      return { x: '0px', y: '-5px' };
+      return { x: '8px', y: '3px' };
     case 3:
-      return { x: '-5px', y: '0px' };
+      return { x: '3px', y: '-8px' };
     default:
-      return { x: '0px', y: '5px' };
+      return { x: '-8px', y: '-3px' };
   }
-}
-
-function bagWatermarkTopCellGap(artifactId, rotation, defaultCellGap) {
-  return artifactId === 'birchbark_hook' && rotation === 1
-    ? '(var(--artifact-cell-size, 50px) - 3px)'
-    : defaultCellGap;
 }
 
 export const ArtifactGridBoard = {
@@ -160,7 +154,6 @@ export const ArtifactGridBoard = {
       const elemHeight = `calc(${elemRows} * var(--artifact-cell-size, 50px) + ${Math.max(0, elemRows - 1)} * var(--board-gap, 8px))`;
       const bboxWidth = `calc(${colSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, colSpan - 1)} * var(--board-gap, 8px))`;
       const bboxHeight = `calc(${rowSpan} * var(--artifact-cell-size, 50px) + ${Math.max(0, rowSpan - 1)} * var(--board-gap, 8px))`;
-      const topCellGap = bagWatermarkTopCellGap(overlay.artifactId, rotation, cellGap);
       // CSS transform list applies right-to-left: rotate first, then
       // translate. So `translate(X, Y) rotate(deg)` rotates the element
       // about its top-left, then shifts the rotated result by (X, Y).
@@ -171,7 +164,7 @@ export const ArtifactGridBoard = {
       const watermarkOffset = bagWatermarkOffset(overlay.artifactId, rotation);
       return {
         left: `calc(${overlay.minCol} * ${cellGap} + ${watermarkOffset.x})`,
-        top: `calc(${overlay.minRow} * ${topCellGap} + ${watermarkOffset.y})`,
+        top: `calc(${overlay.minRow} * ${cellGap} + ${watermarkOffset.y})`,
         width: elemWidth,
         height: elemHeight,
         backgroundImage: `url('/artifacts/${overlay.artifactId}.png')`,
