@@ -9,7 +9,7 @@ function bagWatermarkOffset(artifactId, rotation) {
   if (artifactId !== 'birchbark_hook') return { x: '0px', y: '0px' };
   switch (rotation) {
     case 1:
-      return { x: '-3px', y: '8px' };
+      return { x: '4px', y: '-10px' };
     case 2:
       return { x: '8px', y: '3px' };
     case 3:
