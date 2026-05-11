@@ -2956,6 +2956,25 @@ select {
   font-variant-numeric: lining-nums tabular-nums;
 }
 
+.artifact-inventory-stat-chip--negative {
+  color: var(--error);
+}
+
+.artifact-inventory-stat-chip--negative b {
+  color: var(--error);
+}
+
+.artifact-inventory-stat-chip--negative .artifact-role-glyph {
+  --artifact-role-color: var(--error);
+}
+
+.artifact-inventory-stat-chip--negative.artifact-inventory-stat-chip--plain::before {
+  background:
+    radial-gradient(circle at center, color-mix(in srgb, var(--error) 62%, transparent) 0 2px, transparent 2.5px),
+    color-mix(in srgb, var(--error) 10%, rgba(255, 253, 245, 0.72));
+  border-color: color-mix(in srgb, var(--error) 34%, rgba(138, 97, 53, 0.2));
+}
+
 .artifact-stat-summary--compact .artifact-inventory-stat-chip {
   gap: 3px;
 }

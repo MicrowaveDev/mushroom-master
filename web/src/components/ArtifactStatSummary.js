@@ -45,7 +45,8 @@ export const ArtifactStatSummary = {
             value,
             role: item.roleId ? ARTIFACT_ROLE_CLASSES[item.roleId] : null,
             label: STAT_LABELS[lang][item.id],
-            text: this.formatStatValue(value, item.suffix)
+            text: this.formatStatValue(value, item.suffix),
+            sign: value > 0 ? 'positive' : value < 0 ? 'negative' : 'zero'
           };
         })
         .filter((item) => this.includeZeroes || item.value !== 0);
@@ -71,7 +72,10 @@ export const ArtifactStatSummary = {
         v-for="item in statSummaryItems"
         :key="item.id"
         class="artifact-inventory-stat-chip"
-        :class="{ 'artifact-inventory-stat-chip--plain': !item.role }"
+        :class="[
+          'artifact-inventory-stat-chip--' + item.sign,
+          { 'artifact-inventory-stat-chip--plain': !item.role }
+        ]"
         :style="item.role ? { '--artifact-role-color': item.role.color } : null"
       >
         <span
