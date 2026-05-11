@@ -205,6 +205,7 @@ export const HomeSocialSidebar = {
               <artifact-stat-summary
                 :artifact="recipe.result"
                 :lang="state.lang"
+                :include-zeroes="false"
                 variant="compact"
                 :aria-label="artifactName(recipe.result) + ' stats'"
               />

@@ -99,6 +99,7 @@ export const RecipesScreen = {
               class="recipe-card-stats"
               :artifact="recipe.result"
               :lang="state.lang"
+              :include-zeroes="false"
               variant="compact"
               :aria-label="artifactName(recipe.result) + ' stats'"
             />

@@ -72,10 +72,11 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
   await expect(page.locator('.recipe-artifact-tile[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-inventory-stat-chip')).toHaveCount(4);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-inventory-stat-chip')).toHaveCount(3);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-role-glyph--damage')).toBeVisible();
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--positive')).toHaveCount(2);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--negative')).toHaveCount(1);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--zero')).toHaveCount(0);
 });
 
 test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', async ({ page, request, baseURL }) => {
@@ -107,10 +108,11 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
   await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary')).toBeVisible();
-  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-inventory-stat-chip')).toHaveCount(4);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-inventory-stat-chip')).toHaveCount(3);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-role-glyph--damage')).toBeVisible();
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--positive')).toHaveCount(2);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--negative')).toHaveCount(1);
+  await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--zero')).toHaveCount(0);
   await page.locator('.home-social-close').click();
   await expect(socialSidebar).toHaveCount(0);
 
