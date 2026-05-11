@@ -7,7 +7,7 @@ import { getBagShape } from '../../../app/shared/bag-shape.js';
 
 export const HomeSocialSidebar = {
   name: 'HomeSocialSidebar',
-  props: ['open', 'panel', 'state', 't', 'activityGroups', 'mobileActionMode', 'getArtifact', 'formatArtifactBonus'],
+  props: ['open', 'panel', 'state', 't', 'activityGroups', 'mobileActionMode', 'getArtifact', 'formatArtifactBonus', 'hasFusionCandidates'],
   emits: [
     'close',
     'add-friend', 'challenge-friend',
@@ -113,7 +113,7 @@ export const HomeSocialSidebar = {
           <button class="home-action-btn home-action-btn--friends" :class="{ active: panel === 'friends' }" :aria-label="t.friends" @click="$emit('switch-panel', 'friends')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
           </button>
-          <button class="home-action-btn home-action-btn--recipes" :class="{ active: panel === 'recipes' }" :aria-label="t.recipes" @click="$emit('switch-panel', 'recipes')">
+          <button class="home-action-btn home-action-btn--recipes" :class="{ active: panel === 'recipes', 'home-action-btn--fusion-candidate': hasFusionCandidates }" :aria-label="t.recipes" @click="$emit('switch-panel', 'recipes')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
           </button>
           <button class="home-action-btn home-action-btn--settings" :class="{ active: panel === 'settings' }" :aria-label="t.settings" @click="$emit('switch-panel', 'settings')">
@@ -238,7 +238,7 @@ export const HomeSocialSidebar = {
         <button class="home-action-btn home-action-btn--friends" :class="{ active: panel === 'friends' }" :aria-label="t.friends" @click="$emit('switch-panel', 'friends')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
         </button>
-        <button class="home-action-btn home-action-btn--recipes" :class="{ active: panel === 'recipes' }" :aria-label="t.recipes" @click="$emit('switch-panel', 'recipes')">
+        <button class="home-action-btn home-action-btn--recipes" :class="{ active: panel === 'recipes', 'home-action-btn--fusion-candidate': hasFusionCandidates }" :aria-label="t.recipes" @click="$emit('switch-panel', 'recipes')">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
         </button>
         <button class="home-action-btn home-action-btn--settings" :class="{ active: panel === 'settings' }" :aria-label="t.settings" @click="$emit('switch-panel', 'settings')">

@@ -11,6 +11,8 @@ import {
   fusionIngredientRowIdSet
 } from '../../../app/shared/artifact-fusions.js';
 
+const SHOP_FUSION_ROW_PREFIX = 'shop:';
+
 export function useGameState(state, options = {}) {
   // Progressive enhancement: wrap screen changes in the View Transitions API
   // when the browser supports it and the caller says animations are allowed.
@@ -57,10 +59,8 @@ export function useGameState(state, options = {}) {
       })
       .filter(Boolean)
   );
-  const fusionMatches = computed(() => {
-    if (!state.gameRun || state.gameRun.status !== 'active') return [];
-    if (Number(state.gameRun.currentRound || 0) >= MAX_ROUNDS_PER_RUN) return [];
-    const rows = [
+  function ownedFusionRows() {
+    return [
       ...state.builderItems.map((item) => ({
         id: item.id,
         artifactId: item.artifactId,
@@ -78,9 +78,54 @@ export function useGameState(state, options = {}) {
         height: getArtifact(slot.artifactId)?.height || 1
       }))
     ];
-    return findArtifactFusionMatches(rows, getArtifact);
+  }
+
+  function canCheckFusionCandidates() {
+    if (!state.gameRun || state.gameRun.status !== 'active') return false;
+    if (Number(state.gameRun.currentRound || 0) >= MAX_ROUNDS_PER_RUN) return false;
+    return true;
+  }
+
+  function isShopFusionRowId(rowId) {
+    return typeof rowId === 'string' && rowId.startsWith(SHOP_FUSION_ROW_PREFIX);
+  }
+
+  const fusionMatches = computed(() => {
+    if (!canCheckFusionCandidates()) return [];
+    return findArtifactFusionMatches(ownedFusionRows(), getArtifact);
   });
   const fusionIngredientRowIds = computed(() => fusionIngredientRowIdSet(fusionMatches.value));
+  const fusionAvailableMatches = computed(() => {
+    if (!canCheckFusionCandidates()) return [];
+    const shopRows = (state.gameRunShopOffer || []).map((artifactId, idx) => ({
+      id: `${SHOP_FUSION_ROW_PREFIX}${idx}:${artifactId}`,
+      artifactId,
+      x: -2,
+      y: -2,
+      width: getArtifact(artifactId)?.width || 1,
+      height: getArtifact(artifactId)?.height || 1
+    }));
+    return findArtifactFusionMatches([...ownedFusionRows(), ...shopRows], getArtifact);
+  });
+  const fusionCandidateRowIds = computed(() => {
+    const ids = new Set();
+    for (const match of fusionAvailableMatches.value) {
+      for (const rowId of match.ingredientRowIds || []) {
+        if (!isShopFusionRowId(rowId)) ids.add(rowId);
+      }
+    }
+    return ids;
+  });
+  const fusionCandidateShopArtifactIds = computed(() => {
+    const ids = new Set();
+    for (const match of fusionAvailableMatches.value) {
+      for (const ingredient of match.ingredients || []) {
+        if (isShopFusionRowId(ingredient.id)) ids.add(ingredient.artifactId);
+      }
+    }
+    return ids;
+  });
+  const hasFusionCandidates = computed(() => fusionAvailableMatches.value.length > 0);
 
   function getArtifact(artifactId) {
     return state.bootstrap?.artifacts?.find((item) => item.id === artifactId) || null;
@@ -384,7 +429,9 @@ export function useGameState(state, options = {}) {
   return {
     t, isLocalLabEnabled, isLocalDevAuthEnabled,
     activeMushroom, builderTotals, usedCoins, remainingCoins,
-    shopArtifacts, containerArtifacts, fusionMatches, fusionIngredientRowIds,
+    shopArtifacts, containerArtifacts,
+    fusionMatches, fusionIngredientRowIds,
+    fusionAvailableMatches, fusionCandidateRowIds, fusionCandidateShopArtifactIds, hasFusionCandidates,
     maxCoins: MAX_ARTIFACT_COINS,
     getArtifact, getMushroom, mushroomDisplayName,
     goTo, toggleMenu,

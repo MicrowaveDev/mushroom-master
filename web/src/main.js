@@ -436,7 +436,7 @@ const App = {
           <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openGameSidebarPanel('friends')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
           </button>
-          <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
+          <button class="home-action-btn home-action-btn--recipes" :class="{ 'home-action-btn--fusion-candidate': hasFusionCandidates }" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
           </button>
           <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openGameSidebarPanel('settings')">
@@ -453,6 +453,7 @@ const App = {
           :mobile-action-mode="gameSidebarMode()"
           :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus"
+          :has-fusion-candidates="hasFusionCandidates"
           @close="closeGameSidebarPanel"
           @add-friend="addFriend($event)"
           @challenge-friend="challengeFriend($event)"
@@ -469,7 +470,7 @@ const App = {
           <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openGameSidebarPanel('friends')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
           </button>
-          <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
+          <button class="home-action-btn home-action-btn--recipes" :class="{ 'home-action-btn--fusion-candidate': hasFusionCandidates }" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
           </button>
           <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openGameSidebarPanel('settings')">
@@ -489,7 +490,7 @@ const App = {
           <button class="home-action-btn home-action-btn--friends" :aria-label="t.friends" @click="openGameSidebarPanel('friends')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4m12 0c0-1.6-1-3-2.4-3.6M4 19c0-1.6 1-3 2.4-3.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm6-1a2.4 2.4 0 1 0 0-4.8M6 11a2.4 2.4 0 1 1 0-4.8"/></svg>
           </button>
-          <button class="home-action-btn home-action-btn--recipes" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
+          <button class="home-action-btn home-action-btn--recipes" :class="{ 'home-action-btn--fusion-candidate': hasFusionCandidates }" :aria-label="t.recipes" @click="openGameSidebarPanel('recipes')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 7h8M8 11h6"/></svg>
           </button>
           <button class="home-action-btn home-action-btn--settings" :aria-label="t.settings" @click="openGameSidebarPanel('settings')">
@@ -614,6 +615,8 @@ const App = {
           :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
           :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()" :placement-preview-at="placementPreviewAt"
           :fusion-ingredient-row-ids="fusionIngredientRowIds"
+          :fusion-candidate-row-ids="fusionCandidateRowIds"
+          :fusion-candidate-shop-artifact-ids="fusionCandidateShopArtifactIds"
           @auto-place="autoPlaceFromContainer($event)" @container-drag-start="onContainerPieceDragStart($event[0] || $event, $event[1])"
           @drag-end="onDragEndAny" @container-dragover="onContainerDragOver($event)" @container-drop="onContainerDrop($event)"
           @unplace="unplaceToContainer($event)" @rotate="rotatePlacedArtifact($event)"

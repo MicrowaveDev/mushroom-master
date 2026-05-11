@@ -21,12 +21,30 @@ test('[fusion] prep highlights ingredients and next shop entry reveals fused res
   await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
+  await expect(page.locator('.shop-item--fusion-candidate')).toHaveCount(2);
+  await expect(page.locator('.shop-item--fusion-candidate[data-artifact-id="sporeblade"]')).toBeVisible();
+  await expect(page.locator('.shop-item--fusion-candidate[data-artifact-id="mirrorloop_knot"]')).toBeVisible();
+  const bottomRecipes = page.locator('.game-bottom-actions .home-action-btn--recipes.home-action-btn--fusion-candidate');
+  await expect(bottomRecipes).toBeVisible();
+  await bottomRecipes.click();
+  await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
+  await expect(page.locator('.home-sidebar-switcher .home-action-btn--recipes.home-action-btn--fusion-candidate')).toBeVisible();
+  await page.locator('.home-social-close').click();
+  await expect(page.getByTestId('sidebar-recipes-panel')).toHaveCount(0);
+
   await page.locator('.shop-item[data-artifact-id="sporeblade"]').click();
+  await expect(page.locator('.container-item--fusion-candidate[data-artifact-id="sporeblade"]')).toBeVisible();
+  await expect(page.locator('.shop-item--fusion-candidate[data-artifact-id="mirrorloop_knot"]')).toBeVisible();
+
   await page.locator('.shop-item[data-artifact-id="mirrorloop_knot"]').click();
 
   await expect(page.locator('.container-item--fusion-pending')).toHaveCount(2);
   await expect(page.locator('.container-item--fusion-pending[data-artifact-id="sporeblade"]')).toBeVisible();
   await expect(page.locator('.container-item--fusion-pending[data-artifact-id="mirrorloop_knot"]')).toBeVisible();
+  await expect(page.locator('.game-bottom-actions .home-action-btn--recipes.home-action-btn--fusion-candidate')).toBeVisible();
+
+  await page.locator('.container-item[data-artifact-id="sporeblade"]').click();
+  await expect(page.locator('.artifact-piece-wrap--fusion-pending[data-artifact-id="sporeblade"]')).toBeVisible();
 
   await page.getByRole('button', { name: /ready|готов/i }).click();
   const replayContinue = page.locator('.replay-result-button-full');

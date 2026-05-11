@@ -6,7 +6,7 @@ export const BackpackZone = {
   components: { ArtifactGridBoard },
   props: [
     'state', 't', 'containerArtifacts', 'getArtifact', 'formatArtifactBonus',
-    'preferredOrientation', 'fusionIngredientRowIds'
+    'preferredOrientation', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
   ],
   emits: ['auto-place', 'container-dragover', 'container-drop'],
   methods: {
@@ -38,8 +38,13 @@ export const BackpackZone = {
     isFusionPending(artifact) {
       return artifact?.rowId && this.fusionIngredientRowIds?.has(artifact.rowId);
     },
+    isFusionCandidate(artifact) {
+      return artifact?.rowId && this.fusionCandidateRowIds?.has?.(artifact.rowId);
+    },
     fusionPendingTitle(artifact) {
-      return this.isFusionPending(artifact) ? (this.t?.fusionPendingHint || 'Will fuse after this round') : null;
+      if (this.isFusionPending(artifact)) return this.t?.fusionPendingHint || 'Will fuse after this round';
+      if (this.isFusionCandidate(artifact)) return this.t?.fusionCandidateHint || this.t?.recipes || 'Can fuse by recipe';
+      return null;
     }
   },
   template: `
@@ -56,7 +61,10 @@ export const BackpackZone = {
           v-for="artifact in containerArtifacts"
           :key="artifact.instanceKey"
           class="container-item"
-          :class="{ 'container-item--fusion-pending': isFusionPending(artifact) }"
+          :class="{
+            'container-item--fusion-pending': isFusionPending(artifact),
+            'container-item--fusion-candidate': !isFusionPending(artifact) && isFusionCandidate(artifact)
+          }"
           :title="fusionPendingTitle(artifact)"
           v-bind="itemDataset(artifact)"
           @click="$emit('auto-place', { artifactId: artifact.id, id: artifact.rowId })"

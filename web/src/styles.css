@@ -1992,6 +1992,17 @@ select {
 .home-action-btn--recipes {
   color: #66538d;
 }
+.home-action-btn--fusion-candidate {
+  color: #4f3b86;
+  border-color: rgba(128, 83, 191, 0.46);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(74, 187, 154, 0.18), transparent 58%),
+    rgba(255, 251, 244, 0.94);
+  box-shadow:
+    0 0 0 2px rgba(128, 83, 191, 0.14),
+    0 8px 20px rgba(72, 44, 112, 0.16);
+  animation: fusion-candidate-glow 1.6s ease-in-out infinite;
+}
 .home-action-rail .home-action-btn--settings {
   display: none;
 }
@@ -3154,6 +3165,15 @@ select {
   animation: fusion-pending-pulse 1.4s ease-in-out infinite;
 }
 
+.container-item--fusion-candidate,
+.shop-item--fusion-candidate {
+  border-color: rgba(128, 83, 191, 0.5);
+  box-shadow:
+    0 0 0 2px rgba(128, 83, 191, 0.13),
+    0 8px 20px rgba(72, 44, 112, 0.13);
+  animation: fusion-candidate-glow 1.6s ease-in-out infinite;
+}
+
 .container-item-visual {
   /* Fluid against .container-item's inline-size container. Backpack cards
      are content-sized, so small artifacts do not reserve an empty preview
@@ -3782,14 +3802,18 @@ select {
 }
 
 .artifact-piece-wrap--fusion-pending .artifact-figure-bitmap,
-.container-item--fusion-pending .artifact-figure-bitmap {
+.container-item--fusion-pending .artifact-figure-bitmap,
+.container-item--fusion-candidate .artifact-figure-bitmap,
+.shop-item--fusion-candidate .artifact-figure-bitmap {
   filter:
     drop-shadow(0 9px 16px rgba(91, 64, 36, 0.13))
     drop-shadow(0 0 10px rgba(128, 83, 191, 0.38));
 }
 
 .artifact-piece-wrap--fusion-pending::after,
-.container-item--fusion-pending::after {
+.container-item--fusion-pending::after,
+.container-item--fusion-candidate::after,
+.shop-item--fusion-candidate::after {
   content: '';
   position: absolute;
   inset: -4px;
@@ -3801,10 +3825,23 @@ select {
 
 @keyframes fusion-pending-pulse {
   0%, 100% {
-    transform: translateY(0);
+    filter: brightness(1);
   }
   50% {
-    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+}
+
+@keyframes fusion-candidate-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(128, 83, 191, 0.13),
+      0 8px 20px rgba(72, 44, 112, 0.13);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(74, 187, 154, 0.18),
+      0 8px 22px rgba(72, 44, 112, 0.2);
   }
 }
 

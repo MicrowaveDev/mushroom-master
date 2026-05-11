@@ -13,7 +13,7 @@ export const PrepScreen = {
     'state', 't', 'containerArtifacts', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'formatArtifactBonus',
     'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt',
-    'fusionIngredientRowIds'
+    'fusionIngredientRowIds', 'fusionCandidateRowIds', 'fusionCandidateShopArtifactIds'
   ],
   emits: [
     'auto-place', 'container-drag-start', 'drag-end',
@@ -130,6 +130,7 @@ export const PrepScreen = {
             :format-artifact-bonus="formatArtifactBonus"
             :preferred-orientation="preferredOrientation"
             :fusion-ingredient-row-ids="fusionIngredientRowIds"
+            :fusion-candidate-row-ids="fusionCandidateRowIds"
             @auto-place="$emit('auto-place', $event)"
             @container-dragover="$emit('container-dragover', $event)"
             @container-drop="$emit('container-drop', $event)"
@@ -144,6 +145,7 @@ export const PrepScreen = {
             :get-artifact="getArtifact"
             :placement-preview-at="placementPreviewAt"
             :fusion-ingredient-row-ids="fusionIngredientRowIds"
+            :fusion-candidate-row-ids="fusionCandidateRowIds"
             @unplace="$emit('unplace', $event)"
             @rotate="$emit('rotate', $event)"
             @cell-drop="$emit('cell-drop', $event)"
@@ -164,6 +166,7 @@ export const PrepScreen = {
           :get-artifact-price="getArtifactPrice"
           :preferred-orientation="preferredOrientation"
           :format-artifact-bonus="formatArtifactBonus"
+          :fusion-candidate-shop-artifact-ids="fusionCandidateShopArtifactIds"
           @buy-run-item="$emit('buy-run-item', $event)"
           @refresh-shop="$emit('refresh-shop')"
           @sell-dragover="$emit('sell-dragover', $event)"

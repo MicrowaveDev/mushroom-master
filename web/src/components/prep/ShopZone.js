@@ -8,7 +8,8 @@ export const ShopZone = {
   components: { ArtifactGridBoard, SellZone },
   props: [
     'state', 't', 'runRefreshCost', 'runSellPriceLabel', 'getArtifact',
-    'getArtifactPrice', 'preferredOrientation', 'formatArtifactBonus'
+    'getArtifactPrice', 'preferredOrientation', 'formatArtifactBonus',
+    'fusionCandidateShopArtifactIds'
   ],
   emits: ['buy-run-item', 'refresh-shop', 'sell-dragover', 'sell-dragleave', 'sell-drop'],
   methods: {
@@ -24,9 +25,13 @@ export const ShopZone = {
         'shop-item--bag': artifact?.family === 'bag',
         'shop-item--tier2': price === 2 && artifact?.family !== 'bag',
         'shop-item--tier3': price >= 3,
+        'shop-item--fusion-candidate': this.isFusionCandidate(artifactId),
         [`shop-item--role-${visual.role.id}`]: true,
         [`shop-item--shine-${visual.shine.id}`]: true
       };
+    },
+    isFusionCandidate(artifactId) {
+      return !!artifactId && this.fusionCandidateShopArtifactIds?.has?.(artifactId);
     },
     previewOrientation(artifactId) {
       const artifact = this.getArtifact(artifactId);
@@ -53,9 +58,11 @@ export const ShopZone = {
       const orientation = this.previewOrientation(artifactId);
       return {
         'data-artifact-id': artifactId,
+        'data-fusion-candidate': this.isFusionCandidate(artifactId) ? 'true' : null,
         'data-artifact-width': orientation.width,
         'data-artifact-height': orientation.height,
-        'aria-disabled': this.canAfford(artifactId) ? null : 'true'
+        'aria-disabled': this.canAfford(artifactId) ? null : 'true',
+        title: this.isFusionCandidate(artifactId) ? (this.t?.fusionCandidateHint || this.t?.recipes) : null
       };
     }
   },

@@ -6,7 +6,7 @@ export const InventoryZone = {
   components: { ArtifactGridBoard, ArtifactStatSummary },
   props: [
     'state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
-    'placementPreviewAt', 'fusionIngredientRowIds'
+    'placementPreviewAt', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
   ],
   emits: [
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
@@ -47,8 +47,8 @@ export const InventoryZone = {
         :droppable="true"
         :draggable-pieces="true"
         :placement-preview-for-cell="placementPreviewAt"
-        :highlighted-row-ids="fusionIngredientRowIds"
-        :highlighted-title="t.fusionPendingHint"
+        :highlighted-row-ids="fusionCandidateRowIds"
+        :highlighted-title="t.fusionCandidateHint"
         @piece-click="$emit('unplace', $event)"
         @piece-rotate="$emit('rotate', $event)"
         @cell-drop="$emit('cell-drop', $event)"
