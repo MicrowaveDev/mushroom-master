@@ -45,7 +45,16 @@ export const FusionReveal = {
         height: artifact?.height || 1
       };
     },
-    ingredientStyle(index) {
+    figureFrameStyle(artifact) {
+      const size = this.figureSize(artifact);
+      const gapCols = Math.max(0, size.width - 1);
+      const gapRows = Math.max(0, size.height - 1);
+      return {
+        width: `calc(${size.width} * var(--fusion-reveal-cell-size, 64px) + ${gapCols} * var(--fusion-reveal-gap, 8px))`,
+        height: `calc(${size.height} * var(--fusion-reveal-cell-size, 64px) + ${gapRows} * var(--fusion-reveal-gap, 8px))`
+      };
+    },
+    ingredientStyle(artifact, index) {
       const count = Math.max(1, this.ingredientArtifacts.length);
       const radius = 122;
       const angle = count === 2
@@ -55,6 +64,7 @@ export const FusionReveal = {
       const startY = Math.round(Math.sin(angle) * radius);
       const spin = index % 2 === 0 ? '-9deg' : '9deg';
       return {
+        ...this.figureFrameStyle(artifact),
         '--fusion-start-x': `${startX}px`,
         '--fusion-start-y': `${startY}px`,
         '--fusion-magnet-x': `${Math.round(startX * 0.26)}px`,
@@ -74,7 +84,7 @@ export const FusionReveal = {
           :key="artifact.id + ':' + index"
           class="fusion-reveal-ingredient"
           :class="'fusion-reveal-ingredient--' + index"
-          :style="ingredientStyle(index)"
+          :style="ingredientStyle(artifact, index)"
         >
           <artifact-figure
             :artifact="artifact"
@@ -84,7 +94,7 @@ export const FusionReveal = {
         </div>
         <div class="fusion-reveal-field"></div>
         <div class="fusion-reveal-burst"></div>
-        <div v-if="resultArtifact" class="fusion-reveal-result">
+        <div v-if="resultArtifact" class="fusion-reveal-result" :style="figureFrameStyle(resultArtifact)">
           <artifact-figure
             :artifact="resultArtifact"
             :display-width="figureSize(resultArtifact).width"

@@ -138,7 +138,7 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await saveShot(page, '02d-fusion-lab.png');
   await page.getByTestId('fusion-lab-replay').click();
   await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 1500 });
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(1350);
   await saveShot(page, '02d-fusion-lab-reveal.png');
 
   await page.goto(`${baseURL}/home`);

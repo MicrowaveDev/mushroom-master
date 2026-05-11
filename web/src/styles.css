@@ -8228,11 +8228,12 @@ select {
 .fusion-reveal-ingredient,
 .fusion-reveal-result {
   position: absolute;
-  width: clamp(72px, 22vw, 118px);
-  aspect-ratio: 1;
   display: grid;
   place-items: center;
-  --artifact-cell-size: clamp(44px, 12vw, 64px);
+  --fusion-reveal-cell-size: clamp(44px, 12vw, 64px);
+  --fusion-reveal-gap: clamp(5px, 1.8vw, 8px);
+  --artifact-cell-size: var(--fusion-reveal-cell-size);
+  --board-gap: var(--fusion-reveal-gap);
 }
 
 .fusion-reveal-ingredient {

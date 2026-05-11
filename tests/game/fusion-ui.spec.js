@@ -146,6 +146,11 @@ test('[fusion] local animation lab demonstrates every recipe with the production
   await page.locator('.fusion-lab-card[data-result-artifact-id="riftfang_comet"]').click();
   await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 1500 });
   await expect(page.locator('.fusion-lab-stage-card[data-result-artifact-id="riftfang_comet"]')).toBeVisible();
+  const revealResultAspect = await page.locator('.fusion-reveal-result .artifact-figure-grid').evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    return rect.width / rect.height;
+  });
+  expect(revealResultAspect).toBeGreaterThan(1.7);
 });
 
 test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', async ({ page, request, baseURL }) => {
