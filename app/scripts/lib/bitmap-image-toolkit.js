@@ -77,7 +77,7 @@ export function readPngHeader(filePath) {
   };
 }
 
-export function readPngRgba(filePath) {
+function decodePngToRgba(filePath, { allowRgb = false } = {}) {
   const buf = fs.readFileSync(filePath);
   if (!buf.subarray(0, 8).equals(PNG_SIGNATURE)) {
     throw new Error(`${filePath} is not a PNG`);
@@ -108,28 +108,29 @@ export function readPngRgba(filePath) {
     }
   }
 
-  if (bitDepth !== 8 || colorType !== 6) {
+  const isRgba = colorType === 6;
+  const isRgb = colorType === 2;
+  if (bitDepth !== 8 || (!isRgba && !(allowRgb && isRgb))) {
     throw new Error(`${path.basename(filePath)} must be an 8-bit RGBA PNG after chroma-key removal`);
   }
 
-  const bytesPerPixel = 4;
-  const stride = width * bytesPerPixel;
+  const sourceBytesPerPixel = isRgba ? 4 : 3;
+  const sourceStride = width * sourceBytesPerPixel;
   const inflated = zlib.inflateSync(Buffer.concat(idat));
-  const rgba = Buffer.alloc(width * height * bytesPerPixel);
+  const rgba = Buffer.alloc(width * height * 4);
   let src = 0;
-  let prev = Buffer.alloc(stride);
+  let prev = Buffer.alloc(sourceStride);
 
   for (let y = 0; y < height; y += 1) {
     const filter = inflated[src];
     src += 1;
-    const row = Buffer.from(inflated.subarray(src, src + stride));
-    src += stride;
-    const outStart = y * stride;
+    const row = Buffer.from(inflated.subarray(src, src + sourceStride));
+    src += sourceStride;
 
-    for (let x = 0; x < stride; x += 1) {
-      const left = x >= bytesPerPixel ? row[x - bytesPerPixel] : 0;
+    for (let x = 0; x < sourceStride; x += 1) {
+      const left = x >= sourceBytesPerPixel ? row[x - sourceBytesPerPixel] : 0;
       const up = prev[x] || 0;
-      const upLeft = x >= bytesPerPixel ? prev[x - bytesPerPixel] : 0;
+      const upLeft = x >= sourceBytesPerPixel ? prev[x - sourceBytesPerPixel] : 0;
       let value = row[x];
       if (filter === 1) value = (value + left) & 255;
       else if (filter === 2) value = (value + up) & 255;
@@ -137,12 +138,27 @@ export function readPngRgba(filePath) {
       else if (filter === 4) value = (value + paeth(left, up, upLeft)) & 255;
       else if (filter !== 0) throw new Error(`Unsupported PNG filter ${filter}`);
       row[x] = value;
-      rgba[outStart + x] = value;
+    }
+    for (let x = 0; x < width; x += 1) {
+      const sourceOffset = x * sourceBytesPerPixel;
+      const outOffset = (y * width + x) * 4;
+      rgba[outOffset] = row[sourceOffset];
+      rgba[outOffset + 1] = row[sourceOffset + 1];
+      rgba[outOffset + 2] = row[sourceOffset + 2];
+      rgba[outOffset + 3] = isRgba ? row[sourceOffset + 3] : 255;
     }
     prev = row;
   }
 
   return { width, height, rgba };
+}
+
+export function readPngRgba(filePath) {
+  return decodePngToRgba(filePath);
+}
+
+export function readPngAsRgba(filePath) {
+  return decodePngToRgba(filePath, { allowRgb: true });
 }
 
 export function pngChunk(type, data = Buffer.alloc(0)) {

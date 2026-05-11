@@ -8,11 +8,13 @@ import { getBagShape } from '../../../app/shared/bag-shape.js';
 const args = process.argv.slice(2);
 const allowUnchanged = args.includes('--allow-unchanged');
 const allowClippedSource = args.includes('--allow-clipped-source');
+const allowSourceAspectMismatch = args.includes('--allow-source-aspect-mismatch');
 const forceCellMask = args.includes('--force-cell-mask');
 const organicMask = args.includes('--organic-mask');
 const positionalArgs = args.filter((arg) => ![
   '--allow-unchanged',
   '--allow-clipped-source',
+  '--allow-source-aspect-mismatch',
   '--force-cell-mask',
   '--organic-mask',
   '--no-organic-mask'
@@ -20,7 +22,7 @@ const positionalArgs = args.filter((arg) => ![
 const [inputPath, artifactId, outputPath] = positionalArgs;
 
 if (!inputPath || !artifactId || !outputPath) {
-  console.error('Usage: node chroma-key-artifact.mjs input.png artifact_id output.png [--allow-unchanged] [--allow-clipped-source] [--force-cell-mask] [--organic-mask]');
+  console.error('Usage: node chroma-key-artifact.mjs input.png artifact_id output.png [--allow-unchanged] [--allow-clipped-source] [--allow-source-aspect-mismatch] [--force-cell-mask] [--organic-mask]');
   process.exit(2);
 }
 
@@ -43,6 +45,7 @@ const hasMaskGaps = occupiedCells < rows * cols;
 const cellPx = 160;
 const outWidth = cols * cellPx;
 const outHeight = rows * cellPx;
+const sourceAspectMaxDrift = hasMaskGaps ? 1.9 : 1.65;
 const inputData = fs.readFileSync(inputPath).toString('base64');
 
 function bufferHash(buffer) {
@@ -53,7 +56,18 @@ const browser = await puppeteer.launch({ headless: 'new' });
 try {
   const page = await browser.newPage();
   const pngBase64 = await page.evaluate(
-    async ({ inputData, outWidth, outHeight, shape, hasMaskGaps, forceCellMask, organicMask, allowClippedSource }) => {
+    async ({
+      inputData,
+      outWidth,
+      outHeight,
+      shape,
+      hasMaskGaps,
+      forceCellMask,
+      organicMask,
+      allowClippedSource,
+      allowSourceAspectMismatch,
+      sourceAspectMaxDrift
+    }) => {
       const image = new Image();
       image.src = `data:image/png;base64,${inputData}`;
       await image.decode();
@@ -110,6 +124,14 @@ try {
 
       const cropW = Math.max(1, maxX - minX + 1);
       const cropH = Math.max(1, maxY - minY + 1);
+      const sourceAspect = cropW / cropH;
+      const footprintAspect = outWidth / outHeight;
+      const sourceAspectDrift = Math.max(sourceAspect / footprintAspect, footprintAspect / sourceAspect);
+      if (sourceAspectDrift > sourceAspectMaxDrift && !allowSourceAspectMismatch) {
+        throw new Error(
+          `raw source silhouette aspect ${sourceAspect.toFixed(2)} does not match ${shape[0].length}x${shape.length} footprint aspect ${footprintAspect.toFixed(2)} (drift ${sourceAspectDrift.toFixed(2)} > ${sourceAspectMaxDrift}). This would squeeze/stretch the generated art into the artifact cells; regenerate with the correct footprint orientation or pass --allow-source-aspect-mismatch only after manual review.`
+        );
+      }
       const pad = Math.round(Math.max(cropW, cropH) * 0.035);
       const sx = Math.max(0, minX - pad);
       const sy = Math.max(0, minY - pad);
@@ -220,7 +242,18 @@ try {
       outCtx.putImageData(outData, 0, 0);
       return out.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
     },
-    { inputData, outWidth, outHeight, shape, hasMaskGaps, forceCellMask, organicMask, allowClippedSource }
+    {
+      inputData,
+      outWidth,
+      outHeight,
+      shape,
+      hasMaskGaps,
+      forceCellMask,
+      organicMask,
+      allowClippedSource,
+      allowSourceAspectMismatch,
+      sourceAspectMaxDrift
+    }
   );
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });

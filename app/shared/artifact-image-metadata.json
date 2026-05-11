@@ -8,7 +8,7 @@
     "productionImageLocation": "web/public/artifacts/"
   },
   "artifactCount": 117,
-  "metadataHash": "f2bea690868dab649be6a460042ee41d0e59b1de327104198a6094579362bff0",
+  "metadataHash": "b55ff4219f72ef4bfe72559a03e644d9eb1c8de29e7e5b7ab67c60eac914af91",
   "artifacts": [
     {
       "id": "spore_needle",
@@ -80,7 +80,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -161,7 +162,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -245,7 +247,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -329,7 +332,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -413,7 +417,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -499,7 +504,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -580,7 +586,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -664,7 +671,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -745,7 +753,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -826,7 +835,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -910,7 +920,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -996,7 +1007,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1077,7 +1089,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1158,7 +1171,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1239,7 +1253,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1323,7 +1338,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1407,7 +1423,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1491,7 +1508,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1575,7 +1593,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1658,7 +1677,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1745,7 +1765,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1832,7 +1853,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -1919,7 +1941,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2006,7 +2029,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2093,7 +2117,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2180,7 +2205,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2267,7 +2293,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2354,7 +2381,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2444,7 +2472,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2531,7 +2560,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2618,7 +2648,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2705,7 +2736,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2795,7 +2827,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2882,7 +2915,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -2972,7 +3006,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3062,7 +3097,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3149,7 +3185,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3239,7 +3276,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3329,7 +3367,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3419,7 +3458,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3506,7 +3546,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3596,7 +3637,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3685,7 +3727,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3772,7 +3815,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3859,7 +3903,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -3946,7 +3991,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4033,7 +4079,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4120,7 +4167,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4210,7 +4258,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4297,7 +4346,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4384,7 +4434,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4471,7 +4522,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4561,7 +4613,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4648,7 +4701,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4738,7 +4792,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4828,7 +4883,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -4918,7 +4974,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5008,7 +5065,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5095,7 +5153,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5182,7 +5241,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5269,7 +5329,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5359,7 +5420,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5449,7 +5511,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5539,7 +5602,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5629,7 +5693,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5719,7 +5784,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5806,7 +5872,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5893,7 +5960,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -5983,7 +6051,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6070,7 +6139,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6160,7 +6230,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6250,7 +6321,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6337,7 +6409,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6355,8 +6428,8 @@
       "png": {
         "width": 160,
         "height": 160,
-        "size": 16466,
-        "sha256": "b8a3192cddd7769a6893266a9c0a4792221f6684aa0b0be28084d3c17b626701"
+        "size": 15079,
+        "sha256": "a84cdad9cf25cc8025e0ad48c2b6c65352b3800770f7cf495827ef6e8a9020b6"
       },
       "artifact": {
         "id": "mirrorloop_knot",
@@ -6424,7 +6497,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6514,7 +6588,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6604,7 +6679,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6694,7 +6770,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6784,7 +6861,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6871,7 +6949,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -6958,7 +7037,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7045,7 +7125,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7132,7 +7213,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7219,7 +7301,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7306,7 +7389,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7390,7 +7474,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7477,7 +7562,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7567,7 +7653,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7657,7 +7744,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7747,7 +7835,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7837,7 +7926,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -7927,7 +8017,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8020,7 +8111,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8110,7 +8202,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8203,7 +8296,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8293,7 +8387,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8386,7 +8481,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8479,7 +8575,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8572,7 +8669,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8662,7 +8760,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8755,7 +8854,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8848,7 +8948,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -8941,7 +9042,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9025,7 +9127,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9106,7 +9209,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9190,7 +9294,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9274,7 +9379,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9358,7 +9464,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9442,7 +9549,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9521,7 +9629,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9600,7 +9709,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9679,7 +9789,8 @@
           "per-cell-coverage",
           "edge-padding",
           "margin-balance",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9770,7 +9881,8 @@
           "edge-padding",
           "margin-balance",
           "organic-mask-overhang",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9861,7 +9973,8 @@
           "edge-padding",
           "margin-balance",
           "organic-mask-overhang",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -9952,7 +10065,8 @@
           "edge-padding",
           "margin-balance",
           "organic-mask-overhang",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -10043,7 +10157,8 @@
           "edge-padding",
           "margin-balance",
           "organic-mask-overhang",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -10134,7 +10249,8 @@
           "edge-padding",
           "margin-balance",
           "organic-mask-overhang",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {
@@ -10227,7 +10343,8 @@
           "edge-padding",
           "margin-balance",
           "organic-mask-overhang",
-          "fresh-from-imagegen-raw"
+          "fresh-from-imagegen-raw",
+          "raw-source-aspect"
         ]
       },
       "review": {

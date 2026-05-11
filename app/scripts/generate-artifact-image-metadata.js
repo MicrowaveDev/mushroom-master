@@ -76,7 +76,8 @@ function validationSnapshot(artifact, pngInfo) {
       'edge-padding',
       'margin-balance',
       artifact.shape ? 'organic-mask-overhang' : null,
-      'fresh-from-imagegen-raw'
+      'fresh-from-imagegen-raw',
+      'raw-source-aspect'
     ].filter(Boolean)
   };
 }

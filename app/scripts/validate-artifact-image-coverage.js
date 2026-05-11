@@ -5,6 +5,7 @@ import { getBagShape } from '../shared/bag-shape.js';
 import {
   repoRoot,
   readPngRgba,
+  readPngAsRgba,
   alphaAt,
   alphaStats,
   resolveFreshAfterTimestamp
@@ -15,18 +16,27 @@ const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
   ? path.resolve(process.env.ARTIFACT_IMAGE_WORKSPACE)
   : path.join(repoRoot, '.agent', 'artifact-image-workspace');
 const imagegenRawDir = path.join(artifactImageWorkspace, 'raw');
+const RAW_SOURCE_ASPECT_MAX_DRIFT = 1.65;
+const RAW_SOURCE_ASPECT_APPROVED_EXCEPTIONS = new Set([
+  // Existing approved 1x1 diagonal shard source is tall, but the final icon
+  // remains square-readable and is not a two-cell source squeezed into one.
+  'body_memory_splinter'
+]);
 
 function parseArgs(argv) {
   const ids = [];
   let all = false;
   let freshAfter = null;
   let freshFromImagegenRaw = true;
+  let rawSourceAspect = true;
   let strictMaskTransparency = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--all') all = true;
     else if (arg === '--fresh-from-imagegen-raw') freshFromImagegenRaw = true;
     else if (arg === '--no-fresh-from-imagegen-raw') freshFromImagegenRaw = false;
+    else if (arg === '--raw-source-aspect') rawSourceAspect = true;
+    else if (arg === '--no-raw-source-aspect') rawSourceAspect = false;
     else if (arg === '--strict-mask-transparency') strictMaskTransparency = true;
     else if (arg === '--fresh-after') {
       freshAfter = argv[i + 1];
@@ -40,7 +50,7 @@ function parseArgs(argv) {
       ids.push(arg.replace(/\.png$/, ''));
     }
   }
-  return { all, ids, freshAfter, freshFromImagegenRaw, strictMaskTransparency };
+  return { all, ids, freshAfter, freshFromImagegenRaw, rawSourceAspect, strictMaskTransparency };
 }
 
 function shapeForArtifact(artifact) {
@@ -299,6 +309,78 @@ function formatTime(ms) {
   return new Date(ms).toISOString();
 }
 
+function isMagentaKeyPixel(r, g, b) {
+  const magentaDistance = Math.abs(r - 255) + Math.abs(g - 0) + Math.abs(b - 255);
+  const isStrongMagenta = r > 150 && b > 135 && g < 140 && Math.abs(r - b) < 95;
+  return magentaDistance < 140 || isStrongMagenta;
+}
+
+function rawSourceSubjectStats(raw) {
+  const image = readPngAsRgba(raw.filePath);
+  let minX = image.width;
+  let minY = image.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      const offset = (y * image.width + x) * 4;
+      const r = image.rgba[offset];
+      const g = image.rgba[offset + 1];
+      const b = image.rgba[offset + 2];
+      const alpha = image.rgba[offset + 3];
+      if (alpha <= 12 || isMagentaKeyPixel(r, g, b)) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return null;
+  }
+
+  const width = maxX - minX + 1;
+  const height = maxY - minY + 1;
+  return {
+    width,
+    height,
+    aspect: width / height
+  };
+}
+
+function rawSourceAspectFailures(artifact, raw) {
+  const failures = [];
+  const shape = shapeForArtifact(artifact);
+  const rows = shape.length || 1;
+  const cols = shape[0]?.length || 1;
+  const expectedAspect = cols / rows;
+
+  let sourceStats;
+  try {
+    sourceStats = rawSourceSubjectStats(raw);
+  } catch (error) {
+    failures.push(`could not inspect raw imagegen source aspect for ${raw.label}: ${error.message}`);
+    return failures;
+  }
+
+  if (!sourceStats) {
+    failures.push(`raw imagegen source ${raw.label} has no non-key subject pixels to compare against footprint ${cols}x${rows}`);
+    return failures;
+  }
+
+  const drift = Math.max(sourceStats.aspect / expectedAspect, expectedAspect / sourceStats.aspect);
+  const maxDrift = hasMaskGaps(artifact) ? 1.9 : RAW_SOURCE_ASPECT_MAX_DRIFT;
+  if (drift > maxDrift && !RAW_SOURCE_ASPECT_APPROVED_EXCEPTIONS.has(artifact.id)) {
+    failures.push(
+      `raw imagegen source subject aspect ${sourceStats.aspect.toFixed(2)} (${sourceStats.width}x${sourceStats.height}px bbox) does not match ${cols}x${rows} footprint aspect ${expectedAspect.toFixed(2)} (drift ${drift.toFixed(2)} > ${maxDrift}); regenerate with the correct footprint orientation instead of squeezing/stretching into web/public/artifacts/${artifact.id}.png`
+    );
+  }
+
+  return failures;
+}
+
 function parseFreshAfter(value) {
   if (!value) return null;
 
@@ -350,6 +432,8 @@ function newestImagegenRawFor(id) {
 function freshnessFailures(artifact, stats, freshness) {
   const failures = [];
   const outputLabel = `web/public/artifacts/${artifact.id}.png`;
+  const needsRaw = freshness.freshFromImagegenRaw || freshness.rawSourceAspect;
+  const raw = needsRaw ? newestImagegenRawFor(artifact.id) : null;
 
   if (freshness.freshAfter && stats.mtimeMs <= freshness.freshAfter.mtimeMs) {
     failures.push(
@@ -358,7 +442,6 @@ function freshnessFailures(artifact, stats, freshness) {
   }
 
   if (freshness.freshFromImagegenRaw) {
-    const raw = newestImagegenRawFor(artifact.id);
     if (!raw) {
       failures.push(
         `no raw imagegen source found at ${path.relative(repoRoot, imagegenRawDir)}/${artifact.id}.source*.png; copy/process the imagegen output before accepting ${outputLabel}`
@@ -368,6 +451,10 @@ function freshnessFailures(artifact, stats, freshness) {
         `${outputLabel} was updated at ${formatTime(stats.mtimeMs)}, not after raw imagegen source ${raw.label} (${formatTime(raw.mtimeMs)}); keep cropping/keying/fitting until the app PNG is newer`
       );
     }
+  }
+
+  if (freshness.rawSourceAspect && raw) {
+    failures.push(...rawSourceAspectFailures(artifact, raw));
   }
 
   return failures;
@@ -389,7 +476,7 @@ const targets = all
 
 if (!targets.length) {
   console.error('Usage: npm run game:artifacts:validate -- --all OR npm run game:artifacts:validate -- artifact_id [...artifact_id]');
-  console.error('Freshness defaults to --fresh-from-imagegen-raw. Options: --no-fresh-from-imagegen-raw OR --fresh-after <path|ISO date|epoch> OR --strict-mask-transparency');
+  console.error('Freshness defaults to --fresh-from-imagegen-raw. Raw source aspect checking defaults on. Options: --no-fresh-from-imagegen-raw OR --fresh-after <path|ISO date|epoch> OR --strict-mask-transparency OR --no-raw-source-aspect');
   process.exit(2);
 }
 
