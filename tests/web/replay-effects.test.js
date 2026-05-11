@@ -102,7 +102,7 @@ test('[Req 13-E] replay fighter status labels localize compact combat terms', ()
   assert.deepEqual(effects.statusBadges.map((badge) => badge.label), ['ОГЛУШ']);
 });
 
-test('[Req 6-L, 13-G] replay fighter effects render lore artifact effect tags on their target side', () => {
+test('[Req 6-L, 13-G] replay fighter effects keep lore artifact effect tags out of portrait labels', () => {
   const targetEffects = replayFighterEffects({
     side: 'right',
     lang: 'en',
@@ -132,6 +132,31 @@ test('[Req 6-L, 13-G] replay fighter effects render lore artifact effect tags on
     }
   });
 
-  assert.deepEqual(targetEffects.floatingLabels.map((label) => label.text), ['-5', 'POISON']);
-  assert.deepEqual(actorEffects.floatingLabels.map((label) => label.text), ['ИНЕЙ']);
+  assert.deepEqual(targetEffects.floatingLabels.map((label) => label.text), ['-5']);
+  assert.deepEqual(actorEffects.floatingLabels, []);
+});
+
+test('[Req 13-E, 13-G] replay fighter effects keep portrait labels compact', () => {
+  const effects = replayFighterEffects({
+    side: 'right',
+    lang: 'ru',
+    event: {
+      type: 'action',
+      actorSide: 'left',
+      targetSide: 'right',
+      damage: 11,
+      blockedDamage: 2,
+      stunned: true,
+      effectTags: [
+        { id: 'poison', sourceArtifactId: 'kirt_venom_fang', itemId: 'a', targetSide: 'right' },
+        { id: 'poison', sourceArtifactId: 'kirt_venom_fang', itemId: 'b', targetSide: 'right' },
+        { id: 'biostasis', sourceArtifactId: 'mirrorloop_knot', targetSide: 'right' },
+        { id: 'freeze', sourceArtifactId: 'lomie_crystal_lattice', targetSide: 'right' },
+        { id: 'decay', sourceArtifactId: 'morga_ash_pin', targetSide: 'right' }
+      ]
+    },
+    replayState: { right: { stunned: true } }
+  });
+
+  assert.deepEqual(effects.floatingLabels.map((label) => label.text), ['-11', 'БЛОК', 'ОГЛУШ']);
 });

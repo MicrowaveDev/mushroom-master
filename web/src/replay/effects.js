@@ -15,6 +15,8 @@ export const BATTLE_EFFECTS = {
   burn: { label: { en: 'BURN', ru: 'ЖАР' }, className: 'burn' }
 };
 
+const MAX_FLOATING_LABELS = 4;
+
 function numberOrZero(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -34,20 +36,13 @@ function activeStatusesFor(side, replayState = {}, lang = 'en') {
   return statuses;
 }
 
+function compactLabels(labels) {
+  return labels.slice(0, MAX_FLOATING_LABELS);
+}
+
 function targetLabelsFor(event, side, lang = 'en') {
   if (!event || event.type !== 'action' || event.targetSide !== side) {
-    return (event?.effectTags || [])
-      .filter((tag) => tag.targetSide === side)
-      .map((tag) => {
-        const effect = BATTLE_EFFECTS[tag.id];
-        if (!effect) return null;
-        return {
-          id: `effect:${tag.id}:${tag.sourceArtifactId || ''}:${tag.itemId || ''}`,
-          text: labelFor(effect.label, lang),
-          className: effect.className
-        };
-      })
-      .filter(Boolean);
+    return [];
   }
 
   const labels = [];
@@ -61,17 +56,7 @@ function targetLabelsFor(event, side, lang = 'en') {
   if (event.stunned) {
     labels.push({ id: 'stun', text: labelFor(STATUS_EFFECTS.stun.label, lang), className: STATUS_EFFECTS.stun.className });
   }
-  for (const tag of event.effectTags || []) {
-    if (tag.targetSide !== side) continue;
-    const effect = BATTLE_EFFECTS[tag.id];
-    if (!effect) continue;
-    labels.push({
-      id: `effect:${tag.id}:${tag.sourceArtifactId || ''}:${tag.itemId || ''}`,
-      text: labelFor(effect.label, lang),
-      className: effect.className
-    });
-  }
-  return labels;
+  return compactLabels(labels);
 }
 
 export function replayFighterEffects({ event, side, replayState = {}, replayIndex = 0, lang = 'en' } = {}) {

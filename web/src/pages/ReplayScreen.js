@@ -147,6 +147,7 @@ export const ReplayScreen = {
             healthText: activeReplayState?.left.currentHealth + ' / ' + activeReplayState?.left.maxHealth,
             statsText: loadoutStatsText(state.currentBattle.snapshots.left.loadout),
             speechText: activeSpeech?.side === 'left' ? activeSpeech.narration : '',
+            speechParts: activeSpeech?.side === 'left' ? activeSpeech.parts : [],
             portraitId: state.currentBattle.snapshots.left.portraitId || state.currentBattle.snapshots.left.activePortrait || 'default',
             imagePath: state.currentBattle.snapshots.left.imagePath,
             loadout: state.currentBattle.snapshots.left.loadout
@@ -156,6 +157,7 @@ export const ReplayScreen = {
             healthText: activeReplayState?.right.currentHealth + ' / ' + activeReplayState?.right.maxHealth,
             statsText: loadoutStatsText(state.currentBattle.snapshots.right.loadout),
             speechText: activeSpeech?.side === 'right' ? activeSpeech.narration : '',
+            speechParts: activeSpeech?.side === 'right' ? activeSpeech.parts : [],
             portraitId: state.currentBattle.snapshots.right.portraitId || state.currentBattle.snapshots.right.activePortrait || 'default',
             imagePath: state.currentBattle.snapshots.right.imagePath,
             loadout: state.currentBattle.snapshots.right.loadout

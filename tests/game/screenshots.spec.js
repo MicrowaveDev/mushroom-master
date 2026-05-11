@@ -267,6 +267,7 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   debugLog('waiting for active fighter bubble');
   await expect(page.locator('.fighter-speech-bubble')).toHaveCount(1, { timeout: 5000 });
   await expect(page.locator('.fighter-speech-bubble').first()).toContainText(/^(I |Я |Использую |I'm )/i);
+  await expect(page.locator('.fighter-speech-part').first()).toBeVisible();
   await expect(page.locator('.fighter-effect-pop').first()).toBeAttached({ timeout: 5000 });
   const effectOverlayFailures = await page.locator('.fighter').evaluateAll((fighters) => fighters.map((fighter) => {
     let effect = fighter.querySelector('.fighter-effect-stack');

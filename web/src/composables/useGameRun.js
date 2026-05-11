@@ -125,6 +125,25 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       }
       if (data.status === 'completed' || data.status === 'abandoned') {
         state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null, rounds: runRounds };
+        try {
+          const fullRun = await apiJson(`/api/game-run/${data.id || state.gameRun.id}`, {}, state.sessionKey);
+          const fullRounds = Array.isArray(fullRun.rounds) ? fullRun.rounds : runRounds;
+          state.gameRun = {
+            ...state.gameRun,
+            player: fullRun.player || state.gameRun.player,
+            completionBonus: fullRun.completionBonus || state.gameRun.completionBonus || null,
+            rounds: fullRounds
+          };
+          state.gameRunResult = {
+            ...state.gameRunResult,
+            ...fullRun,
+            rounds: fullRounds,
+            lastRound: fullRun.lastRound || state.gameRunResult.lastRound || currentRound
+          };
+          state.gameRunRounds = fullRounds;
+        } catch {
+          // Keep the just-resolved run usable even if the recap refresh fails.
+        }
       }
       // Spec: docs/user-flows.md Flow B Step 3 — post-Ready lands directly
       // on the replay screen, which autoplays the battle and then renders

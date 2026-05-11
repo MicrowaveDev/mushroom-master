@@ -356,6 +356,7 @@ export function useGameState(state, options = {}) {
       healthText: options.healthText || '',
       statsText: options.statsText || '',
       speechText: options.speechText || '',
+      speechParts: options.speechParts || [],
       loadout: options.loadout || null,
       bubbleStyle: mushroomId ? replayBubbleStyle(mushroomId, portraitId) : {}
     };

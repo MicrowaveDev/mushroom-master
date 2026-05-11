@@ -10,6 +10,7 @@ export const FighterCard = {
     healthText: { type: String, default: '' },
     statsText: { type: String, default: '' },
     speechText: { type: String, default: '' },
+    speechParts: { type: Array, default: () => [] },
     loadout: { type: Object, default: null },
     bagArtifactIds: { type: [Array, Set], default: null },
     renderArtifactFigure: { type: Function, default: null },
@@ -28,8 +29,11 @@ export const FighterCard = {
         this.side ? `fighter--${this.side}` : '',
         this.extraClass,
         ...(this.visualEffects?.classes || []),
-        { acting: this.acting, 'fighter--speaking': !!this.speechText }
+        { acting: this.acting, 'fighter--speaking': this.hasSpeech }
       ];
+    },
+    hasSpeech() {
+      return !!this.speechText || this.speechParts.length > 0;
     },
     hpPercent() {
       const match = String(this.healthText || '').match(/(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
@@ -54,7 +58,7 @@ export const FighterCard = {
       return this.visualEffects?.floatingLabels || [];
     },
     statusBadges() {
-      return this.visualEffects?.statusBadges || [];
+      return [];
     },
     effectKey() {
       return this.visualEffects?.key || 'idle';
@@ -63,7 +67,16 @@ export const FighterCard = {
   template: `
     <article :class="rootClass" :style="bubbleStyle">
       <div class="fighter-portrait-wrap">
-        <div v-if="speechText" class="fighter-speech-bubble">{{ speechText }}</div>
+        <div v-if="hasSpeech" class="fighter-speech-bubble">
+          <template v-if="speechParts.length">
+            <span
+              v-for="(part, index) in speechParts"
+              :key="index"
+              :class="part.kind ? ['fighter-speech-part', 'fighter-speech-part--' + part.kind] : ''"
+            >{{ part.text }}</span>
+          </template>
+          <template v-else>{{ speechText }}</template>
+        </div>
         <div class="fighter-portrait-inner">
           <img
             v-if="mushroom"

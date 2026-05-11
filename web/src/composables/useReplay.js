@@ -35,7 +35,11 @@ export function useReplay(state, goTo, getMushroom) {
   });
   const activeSpeech = computed(() => {
     if (!activeReplayDisplay.value?.speechSide || !activeReplayDisplay.value?.speechText) return null;
-    return { side: activeReplayDisplay.value.speechSide, narration: activeReplayDisplay.value.speechText };
+    return {
+      side: activeReplayDisplay.value.speechSide,
+      narration: activeReplayDisplay.value.speechText,
+      parts: activeReplayDisplay.value.speechParts || []
+    };
   });
   const battleStatusText = computed(() => activeReplayDisplay.value?.statusText || '');
   const visibleReplayEvents = computed(() => {
