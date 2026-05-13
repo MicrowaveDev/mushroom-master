@@ -1223,7 +1223,6 @@ export const artifacts = [
   // next-round fusion system creates a result that does not roll in shops.
   {
     id: 'reliquary_ash_crown',
-    imageId: 'biostasis_crown_seed',
     name: { ru: 'Пепельная Корона Реликвария', en: 'Reliquary Ash Crown' },
     family: 'stun',
     width: 2,
@@ -1240,7 +1239,6 @@ export const artifacts = [
   },
   {
     id: 'portal_vinegar_lens',
-    imageId: 'blue_vinegar_chakram',
     name: { ru: 'Линза Портального Уксуса', en: 'Portal Vinegar Lens' },
     family: 'damage',
     width: 2,
@@ -1257,7 +1255,6 @@ export const artifacts = [
   },
   {
     id: 'deadwind_arrow',
-    imageId: 'spore_burst_arrow',
     name: { ru: 'Стрела Мертвого Ветра', en: 'Deadwind Arrow' },
     family: 'damage',
     width: 2,
@@ -1274,7 +1271,6 @@ export const artifacts = [
   },
   {
     id: 'pressure_bloom_bulwark',
-    imageId: 'amber_resin_shield',
     name: { ru: 'Панцирь Цветущего Давления', en: 'Pressure-Bloom Bulwark' },
     family: 'armor',
     width: 2,
@@ -1291,7 +1287,6 @@ export const artifacts = [
   },
   {
     id: 'snap_lullaby_bell',
-    imageId: 'opening_bell_spore',
     name: { ru: 'Щелчок Колыбельного Колокола', en: 'Snap-Lullaby Bell' },
     family: 'stun',
     width: 2,
@@ -1308,7 +1303,6 @@ export const artifacts = [
   },
   {
     id: 'riftpuff_snare',
-    imageId: 'rainpuff_mine',
     name: { ru: 'Разломная Петля-Дождевик', en: 'Riftpuff Snare' },
     family: 'stun',
     width: 2,

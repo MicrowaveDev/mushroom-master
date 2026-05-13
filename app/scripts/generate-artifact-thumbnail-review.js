@@ -22,6 +22,7 @@ const defaultOutPath = path.join(
 );
 
 const THUMBNAIL_SIZES = [32, 48, 64];
+const SCREENSHOT_TILE_HEIGHT = 4000;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
   let crc = index;
@@ -170,6 +171,53 @@ function encodeDeterministicPng({ width, height, rgba }) {
   ]);
 }
 
+function stitchVerticalTiles({ width, height, tiles }) {
+  const rgba = Buffer.alloc(width * height * 4);
+  for (const tile of tiles) {
+    for (let y = 0; y < tile.image.height; y += 1) {
+      const sourceStart = y * tile.image.width * 4;
+      const targetStart = ((tile.y + y) * width) * 4;
+      tile.image.rgba.copy(
+        rgba,
+        targetStart,
+        sourceStart,
+        sourceStart + tile.image.width * 4
+      );
+    }
+  }
+  return { width, height, rgba };
+}
+
+function stitchVerticalImages(images) {
+  const width = images[0]?.width || 0;
+  const height = images.reduce((sum, image) => sum + image.height, 0);
+  return stitchVerticalTiles({
+    width,
+    height,
+    tiles: images.reduce((tiles, image) => {
+      const y = tiles.reduce((sum, tile) => sum + tile.image.height, 0);
+      tiles.push({ y, image });
+      return tiles;
+    }, [])
+  });
+}
+
+async function screenshotTallPage(page, width, height) {
+  const tiles = [];
+  for (let y = 0; y < height; y += SCREENSHOT_TILE_HEIGHT) {
+    const tileHeight = Math.min(SCREENSHOT_TILE_HEIGHT, height - y);
+    const buffer = await page.screenshot({
+      clip: { x: 0, y, width, height: tileHeight }
+    });
+    const image = readPngRgba(buffer);
+    if (image.width !== width || image.height !== tileHeight) {
+      throw new Error(`Unexpected thumbnail tile dimensions ${image.width}x${image.height}`);
+    }
+    tiles.push({ y, image });
+  }
+  return stitchVerticalTiles({ width, height, tiles });
+}
+
 function renderSizeSet(artifact, dataUrl, className = '') {
   return THUMBNAIL_SIZES.map((size) => `
     <span class="thumbnail thumbnail--${size} ${className}" style="width: ${size * 4}px; height: ${size * 4}px;">
@@ -216,7 +264,7 @@ function renderArtifactRow(artifact) {
     </div>`;
 }
 
-function renderHtml(sections) {
+function renderHtml(sections, { showHeader = true } = {}) {
   return `<!doctype html>
 <html>
   <head>
@@ -368,8 +416,10 @@ function renderHtml(sections) {
   </head>
   <body>
     <main class="sheet">
-      <h1 class="sheet-title">Artifact Thumbnail Review</h1>
-      <p class="sheet-note">Deterministic local evidence: transparent, real prep/grid cell background, grayscale, and role/shine warning labels at 32px, 48px, and 64px.</p>
+      ${showHeader ? `
+        <h1 class="sheet-title">Artifact Thumbnail Review</h1>
+        <p class="sheet-note">Deterministic local evidence: transparent, real prep/grid cell background, grayscale, and role/shine warning labels at 32px, 48px, and 64px.</p>
+      ` : ''}
       ${sections.map(([section, items]) => {
         const visual = artifactVisualClassification(items[0]);
         const sectionColor = section === 'Character Artifacts' || section === 'Signature Starters'
@@ -396,14 +446,17 @@ async function main() {
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   try {
-    const html = renderHtml(sections);
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1560, height: 1800, deviceScaleFactor: 1 });
-    await page.setContent(html, { waitUntil: 'load', timeout: 0 });
-    const height = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight));
-    await page.setViewport({ width: 1560, height, deviceScaleFactor: 1 });
-    const screenshot = await page.screenshot({ clip: { x: 0, y: 0, width: 1560, height } });
-    fs.writeFileSync(outPath, encodeDeterministicPng(readPngRgba(screenshot)));
+    const sectionScreenshots = [];
+    for (const [index, section] of sections.entries()) {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1560, height: 1800, deviceScaleFactor: 1 });
+      await page.setContent(renderHtml([section], { showHeader: index === 0 }), { waitUntil: 'load', timeout: 0 });
+      const height = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight));
+      await page.setViewport({ width: 1560, height: Math.min(height, SCREENSHOT_TILE_HEIGHT), deviceScaleFactor: 1 });
+      sectionScreenshots.push(await screenshotTallPage(page, 1560, height));
+      await page.close();
+    }
+    fs.writeFileSync(outPath, encodeDeterministicPng(stitchVerticalImages(sectionScreenshots)));
     console.log(`generated ${path.relative(repoRoot, outPath)}`);
   } finally {
     await browser.close();

@@ -84,7 +84,7 @@ Fusion note:
 
 - `portal_cut_sickle.png` - current concept is now intentional: it is the first fusion-only result (`sporeblade` + `mirrorloop_knot`), so future redraws should preserve the fused portal-edge-plus-blade read.
 - `riftfang_comet.png`, `biostasis_crown_seed.png`, `abyss_bow_knot.png`, and `opening_bell_spore.png` are also fusion-only results as of the recipe-catalog pass; future redraws should preserve their fused-result read rather than simplifying them into normal shop items.
-- `reliquary_ash_crown.png`, `portal_vinegar_lens.png`, `deadwind_arrow.png`, `pressure_bloom_bulwark.png`, `snap_lullaby_bell.png`, and `riftpuff_snare.png` are the second fusion-only wave. Until bespoke PNGs are generated, their gameplay definitions point `imageId` at the closest approved production bitmap so the UI does not show broken art; future image work should replace that proxy by generating dedicated files from [artifact-image-reference.md](artifact-image-reference.md).
+- `reliquary_ash_crown.png`, `portal_vinegar_lens.png`, `deadwind_arrow.png`, `pressure_bloom_bulwark.png`, `snap_lullaby_bell.png`, and `riftpuff_snare.png` are the second fusion-only wave. Dedicated imagegen-created PNGs were generated in the 2026-05-13 continuation; future redraws should preserve their cross-domain fused-result read rather than simplifying them into normal shop items.
 
 ## Validation
 
