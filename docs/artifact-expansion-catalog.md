@@ -31,6 +31,10 @@ The Backpack Battles-like fusion layer is live: eligible ingredients fuse after 
 | `pressure_bloom_bulwark` | Ferment pressure forced into amber resin blooms outward as armor instead of exploding. | Shipped as `bubbling_grot_bomb` + `amber_resin_shield`; fusion-only, not a normal shop roll. |
 | `snap_lullaby_bell` | Thalla's body-command lullaby plus Morga's opening snap creates a faster control bell. | Shipped as `spore_lullaby_conch` + `snaplight_husk`; fusion-only, not a normal shop roll. |
 | `riftpuff_snare` | Lomie rift geometry folds Kirt's rainpuff trap into a route-based snare. | Shipped as `crystal_rift_chime` + `rainpuff_mine`; fusion-only, not a normal shop roll. |
+| `golden_thorn_aegis` | Thalla's golden garden shell accepts Kirt thornhide and becomes a defensive relic that bites on block. | Shipped as `golden_garden_carapace` + `thornhide_scale`; fusion-only, not a normal shop roll. |
+| `soft_ash_hourglass` | Lomie soft-wall geometry holding Dalamar ash snow creates a gentle time trap. | Shipped as `soft_wall_tile` + `spore_snow_globe`; fusion-only, not a normal shop roll. |
+| `ginger_star_compass` | Axilin ginger spark travelling through Lomie star-spore cloth points a fast disruptive route. | Shipped as `ginger_spark_bottle` + `star_spore_sash`; fusion-only, not a normal shop roll. |
+| `memory_flash_tendon` | Thalla body-memory bound into Morga flash tissue turns remembered pain into initiative. | Shipped as `body_memory_splinter` + `flashstep_tendon`; fusion-only, not a normal shop roll. |
 
 ## Priority Batch
 

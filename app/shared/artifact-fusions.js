@@ -53,6 +53,26 @@ export const artifactFusionRecipes = [
     id: 'riftpuff_snare',
     resultArtifactId: 'riftpuff_snare',
     ingredientArtifactIds: ['crystal_rift_chime', 'rainpuff_mine']
+  },
+  {
+    id: 'golden_thorn_aegis',
+    resultArtifactId: 'golden_thorn_aegis',
+    ingredientArtifactIds: ['golden_garden_carapace', 'thornhide_scale']
+  },
+  {
+    id: 'soft_ash_hourglass',
+    resultArtifactId: 'soft_ash_hourglass',
+    ingredientArtifactIds: ['soft_wall_tile', 'spore_snow_globe']
+  },
+  {
+    id: 'ginger_star_compass',
+    resultArtifactId: 'ginger_star_compass',
+    ingredientArtifactIds: ['ginger_spark_bottle', 'star_spore_sash']
+  },
+  {
+    id: 'memory_flash_tendon',
+    resultArtifactId: 'memory_flash_tendon',
+    ingredientArtifactIds: ['body_memory_splinter', 'flashstep_tendon']
   }
 ];
 

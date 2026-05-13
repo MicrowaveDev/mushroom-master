@@ -40,6 +40,10 @@ Add a Backpack Battles-style fusion layer without turning fusion into a manual s
 | `pressure_bloom_bulwark` | `bubbling_grot_bomb` + `amber_resin_shield` | `pressure_bloom_bulwark` |
 | `snap_lullaby_bell` | `spore_lullaby_conch` + `snaplight_husk` | `snap_lullaby_bell` |
 | `riftpuff_snare` | `crystal_rift_chime` + `rainpuff_mine` | `riftpuff_snare` |
+| `golden_thorn_aegis` | `golden_garden_carapace` + `thornhide_scale` | `golden_thorn_aegis` |
+| `soft_ash_hourglass` | `soft_wall_tile` + `spore_snow_globe` | `soft_ash_hourglass` |
+| `ginger_star_compass` | `ginger_spark_bottle` + `star_spore_sash` | `ginger_star_compass` |
+| `memory_flash_tendon` | `body_memory_splinter` + `flashstep_tendon` | `memory_flash_tendon` |
 
 These result artifacts are `fusionOnly: true`. They keep existing live stats and bitmaps, but no longer belong to the normal combat shop pool.
 

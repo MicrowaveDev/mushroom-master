@@ -114,6 +114,10 @@ web/public/artifacts/{artifact_id}.png
 | `reliquary_ash_crown` | Fusion-only stun/armor, `2x2`, radiant. | Thalla sacred reliquary command filtered through Ygg-Mycel root ash and Dalamar-like stillness. | Heavy gold-and-ash crown seed, white mold rim, black root bowl, pale cyan stillness marks; sacred but funerary, filling all quadrants. |
 | `snap_lullaby_bell` | Fusion-only stun/damage/speed, `2x1`, radiant. | Thalla body-command lullaby accelerated by Morga's snaplight opening pressure. | Horizontal pale-gold bell-conch cracked by an orange snap flash, broad lip on the left and speed slash on the right. |
 | `riftpuff_snare` | Fusion-only stun/speed, `2x2`, radiant. | Lomie route geometry folded around Kirt's rainpuff mine, making a trap that arrives from a neighboring path. | Square rift trap with violet-green portal frame, central puffball mine, black route loop and neon snare teeth; one dense object in all quadrants. |
+| `golden_thorn_aegis` | Fusion-only armor/damage, `2x2`, radiant. | Thalla Golden Garden armor overgrown with Kirt thornhide, a block relic that punishes contact. | Heavy golden oyster shield with black-bark thorn rim, green resin teeth, and white mycelium seams; one compact block-filling aegis. |
+| `soft_ash_hourglass` | Fusion-only stun/armor/speed, `2x1`, radiant. | Lomie soft wall bends around Dalamar spore snow, turning passive protection into a quiet time trap. | Wide translucent pale-green hourglass tile with gray spore snow suspended inside and black root grains gathering at both ends. |
+| `ginger_star_compass` | Fusion-only stun/damage/speed, `2x2`, radiant. | Axilin ginger spark energizes Lomie star-spore cloth into a navigational burst charm. | Amber ginger compass wrapped in an indigo star-spore sash, green fizz needle and white constellation dots, filling all quadrants. |
+| `memory_flash_tendon` | Fusion-only damage/stun/speed, `1x2`, radiant. | Thalla body-memory splinter threaded into Morga flashstep tendon, turning recollection into a snap strike. | Tall flesh-gold tendon with orange-white flash knots and a warm memory shard embedded in the center, vertical and chunky. |
 
 ## Hybrid / Utility
 

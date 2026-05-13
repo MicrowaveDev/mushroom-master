@@ -1317,6 +1317,70 @@ export const artifacts = [
     battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     loreSource: 'crystal-rifts-thorn-crown'
   },
+  {
+    id: 'golden_thorn_aegis',
+    name: { ru: 'Золотая Терновая Эгида', en: 'Golden Thorn Aegis' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { armor: 8, damage: 2, speed: -2 },
+    description: {
+      ru: 'Золотой сад Тхаллы отращивает шипы Кирт и становится щитом, который тоже кусает.',
+      en: 'Thalla Golden Garden grows Kirt thorns and becomes a shield that bites back.'
+    },
+    battleEffect: { id: 'poison', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'golden-garden-thorn-crown'
+  },
+  {
+    id: 'soft_ash_hourglass',
+    name: { ru: 'Мягкие Пепельные Часы', en: 'Soft Ash Hourglass' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 3,
+    fusionOnly: true,
+    bonus: { stunChance: 16, armor: 3, speed: 1 },
+    description: {
+      ru: 'Мягкая стена Ломиэ держит снег спор Даламара, пока время сгущается в тихий песок.',
+      en: 'Lomie soft wall holds Dalamar spore snow until time thickens into quiet sand.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'soft-wall-ash-snow'
+  },
+  {
+    id: 'ginger_star_compass',
+    name: { ru: 'Имбирный Звездный Компас', en: 'Ginger Star Compass' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { stunChance: 16, damage: 3, speed: 1, armor: -1 },
+    description: {
+      ru: 'Искра Аксилин пробегает по звездным спорам Ломиэ и указывает самый резкий путь.',
+      en: 'Axilin spark runs through Lomie star spores and points to the sharpest route.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'ginger-alchemy-star-spores'
+  },
+  {
+    id: 'memory_flash_tendon',
+    name: { ru: 'Сухожилие Вспышки Памяти', en: 'Memory-Flash Tendon' },
+    family: 'damage',
+    width: 1,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { damage: 5, stunChance: 10, speed: 2, armor: -1 },
+    description: {
+      ru: 'Память тела Тхаллы дергает сухожилие Морги до того, как боль понимает направление.',
+      en: 'Thalla body memory pulls Morga flash tendon before pain understands the direction.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'body-memory-opening-flash'
+  },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. The level-5 tier has one per
   // mushroom; later tiers may add more.

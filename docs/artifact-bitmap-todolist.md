@@ -85,6 +85,7 @@ Fusion note:
 - `portal_cut_sickle.png` - current concept is now intentional: it is the first fusion-only result (`sporeblade` + `mirrorloop_knot`), so future redraws should preserve the fused portal-edge-plus-blade read.
 - `riftfang_comet.png`, `biostasis_crown_seed.png`, `abyss_bow_knot.png`, and `opening_bell_spore.png` are also fusion-only results as of the recipe-catalog pass; future redraws should preserve their fused-result read rather than simplifying them into normal shop items.
 - `reliquary_ash_crown.png`, `portal_vinegar_lens.png`, `deadwind_arrow.png`, `pressure_bloom_bulwark.png`, `snap_lullaby_bell.png`, and `riftpuff_snare.png` are the second fusion-only wave. Dedicated imagegen-created PNGs were generated in the 2026-05-13 continuation; future redraws should preserve their cross-domain fused-result read rather than simplifying them into normal shop items.
+- `golden_thorn_aegis.png`, `soft_ash_hourglass.png`, `ginger_star_compass.png`, and `memory_flash_tendon.png` are the third fusion-only wave. They should read as lore-border artifacts first, not as alternate skins for their ingredient silhouettes.
 
 ## Validation
 
@@ -264,6 +265,10 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `reliquary_ash_crown.png` - `reliquary_ash_crown`, 2x2. Fused root-ash censer plus reliquary buckle result: heavy gold-and-ash crown seed with white mold rim, black root bowl, and pale cyan stillness marks.
 - [ ] `snap_lullaby_bell.png` - `snap_lullaby_bell`, 2x1. Fused spore-lullaby conch plus snaplight husk result: horizontal pale-gold bell-conch cracked by orange snap flash, broad lip on the left and speed slash on the right.
 - [ ] `riftpuff_snare.png` - `riftpuff_snare`, 2x2. Fused crystal-rift chime plus rainpuff mine result: square rift trap with violet-green portal frame, central puffball mine, black route loop, and neon snare teeth.
+- [ ] `golden_thorn_aegis.png` - `golden_thorn_aegis`, 2x2. Heavy golden oyster shield with black-bark thorn rim, green resin teeth, and white mycelium seams, one compact block-filling aegis.
+- [ ] `soft_ash_hourglass.png` - `soft_ash_hourglass`, 2x1. Wide translucent pale-green hourglass tile with gray spore snow suspended inside and black root grains gathering at both ends.
+- [ ] `ginger_star_compass.png` - `ginger_star_compass`, 2x2. Amber ginger compass wrapped in an indigo star-spore sash, green fizz needle and white constellation dots, filling all quadrants.
+- [ ] `memory_flash_tendon.png` - `memory_flash_tendon`, 1x2. Tall flesh-gold tendon with orange-white flash knots and a warm memory shard embedded in the center, vertical and chunky.
 
 ### Hybrid / Utility
 
