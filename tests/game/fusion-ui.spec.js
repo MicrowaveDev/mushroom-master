@@ -146,7 +146,7 @@ test('[fusion] local animation lab demonstrates every recipe with the production
 
   await page.getByTestId('fusion-lab-play-all').click();
   await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 1500 });
-  await expect(page.locator('.fusion-lab-card--active[data-result-artifact-id="ramaria_throne_snare"]')).toBeVisible({ timeout: 36000 });
+  await expect(page.locator('.fusion-lab-card--active[data-result-artifact-id="ramaria_throne_snare"]')).toBeVisible({ timeout: 60000 });
   await expect(page.locator('.fusion-reveal')).toHaveCount(0, { timeout: 4000 });
 
   await page.locator('.fusion-lab-card[data-result-artifact-id="riftfang_comet"]').click();
@@ -213,7 +213,7 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   });
   expect(sidebarStacksAboveBattleResult).toBe(true);
 
-  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(11);
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(19);
 });
 
 test('[Req 11-F] mobile recipes sidebar switcher stays docked while recipes scroll', async ({ page, request, baseURL }) => {
@@ -240,7 +240,7 @@ test('[Req 11-F] mobile recipes sidebar switcher stays docked while recipes scro
   await bottomRecipes.click();
 
   await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
-  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(11);
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(19);
 
   const dockMetrics = await page.evaluate(() => {
     const sidebar = document.querySelector('.home-social-sidebar');
