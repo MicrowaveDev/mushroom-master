@@ -22,7 +22,8 @@ const defaultOutPath = path.join(
 );
 
 const THUMBNAIL_SIZES = [32, 48, 64];
-const SCREENSHOT_TILE_HEIGHT = 4000;
+const SCREENSHOT_TILE_HEIGHT = 1400;
+const SECTION_CHUNK_SIZE = 8;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
   let crc = index;
@@ -200,6 +201,15 @@ function stitchVerticalImages(images) {
       return tiles;
     }, [])
   });
+}
+
+function chunkSection([section, items]) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += SECTION_CHUNK_SIZE) {
+    const suffix = index === 0 ? '' : ' (continued)';
+    chunks.push([`${section}${suffix}`, items.slice(index, index + SECTION_CHUNK_SIZE)]);
+  }
+  return chunks;
 }
 
 async function screenshotTallPage(page, width, height) {
@@ -447,7 +457,8 @@ async function main() {
   });
   try {
     const sectionScreenshots = [];
-    for (const [index, section] of sections.entries()) {
+    const chunks = sections.flatMap(chunkSection);
+    for (const [index, section] of chunks.entries()) {
       const page = await browser.newPage();
       await page.setViewport({ width: 1560, height: 1800, deviceScaleFactor: 1 });
       await page.setContent(renderHtml([section], { showHeader: index === 0 }), { waitUntil: 'load', timeout: 0 });

@@ -31,6 +31,14 @@ const artifacts = new Map([
   ['star_spore_sash', { id: 'star_spore_sash', family: 'armor' }],
   ['body_memory_splinter', { id: 'body_memory_splinter', family: 'stun' }],
   ['flashstep_tendon', { id: 'flashstep_tendon', family: 'damage' }],
+  ['rotlight_lantern', { id: 'rotlight_lantern', family: 'damage' }],
+  ['porcelain_mold_mask', { id: 'porcelain_mold_mask', family: 'armor' }],
+  ['blue_vinegar_chakram', { id: 'blue_vinegar_chakram', family: 'damage' }],
+  ['rustbone_key', { id: 'rustbone_key', family: 'damage' }],
+  ['voidglass_pauldron', { id: 'voidglass_pauldron', family: 'armor' }],
+  ['flashcap_knee_guard', { id: 'flashcap_knee_guard', family: 'armor' }],
+  ['ramaria_snare', { id: 'ramaria_snare', family: 'stun' }],
+  ['obsidian_throne_chip', { id: 'obsidian_throne_chip', family: 'armor' }],
   ['riftfang_comet', { id: 'riftfang_comet', family: 'damage', fusionOnly: true }],
   ['biostasis_crown_seed', { id: 'biostasis_crown_seed', family: 'stun', fusionOnly: true }],
   ['abyss_bow_knot', { id: 'abyss_bow_knot', family: 'stun', fusionOnly: true }],
@@ -45,6 +53,10 @@ const artifacts = new Map([
   ['soft_ash_hourglass', { id: 'soft_ash_hourglass', family: 'stun', fusionOnly: true }],
   ['ginger_star_compass', { id: 'ginger_star_compass', family: 'stun', fusionOnly: true }],
   ['memory_flash_tendon', { id: 'memory_flash_tendon', family: 'damage', fusionOnly: true }],
+  ['porcelain_rotlight_lantern', { id: 'porcelain_rotlight_lantern', family: 'damage', fusionOnly: true }],
+  ['vinegar_gate_chakram', { id: 'vinegar_gate_chakram', family: 'damage', fusionOnly: true }],
+  ['voidflash_pauldron', { id: 'voidflash_pauldron', family: 'armor', fusionOnly: true }],
+  ['ramaria_throne_snare', { id: 'ramaria_throne_snare', family: 'stun', fusionOnly: true }],
   ['portal_cut_sickle', { id: 'portal_cut_sickle', family: 'damage', fusionOnly: true }],
   ['starter_bag', { id: 'starter_bag', family: 'bag', starterOnly: true }],
   ['starter_item', { id: 'starter_item', family: 'damage', starterOnly: true }]
@@ -87,7 +99,11 @@ test('[fusion] ships multiple deterministic recipe results', () => {
     'golden_thorn_aegis',
     'soft_ash_hourglass',
     'ginger_star_compass',
-    'memory_flash_tendon'
+    'memory_flash_tendon',
+    'porcelain_rotlight_lantern',
+    'vinegar_gate_chakram',
+    'voidflash_pauldron',
+    'ramaria_throne_snare'
   ]);
 
   const matches = findArtifactFusionMatches([
@@ -146,6 +162,32 @@ test('[fusion] finds the garden, ash, star, and memory recipe wave', () => {
     ['wall', 'snow'],
     ['ginger', 'sash'],
     ['memory', 'tendon']
+  ]);
+});
+
+test('[fusion] finds the rotlight, vinegar, voidflash, and throne recipe wave', () => {
+  const matches = findArtifactFusionMatches([
+    row('rotlight', 'rotlight_lantern', 0, 0, 2, 1),
+    row('mask', 'porcelain_mold_mask', 2, 0),
+    row('vinegar', 'blue_vinegar_chakram', 0, 2, 2, 1),
+    row('key', 'rustbone_key', 2, 2, 1, 2),
+    row('pauldron', 'voidglass_pauldron', 0, 5, 1, 2),
+    row('knee', 'flashcap_knee_guard', 1, 5, 1, 2),
+    row('ramaria', 'ramaria_snare', 0, 8, 1, 2),
+    row('throne', 'obsidian_throne_chip', 1, 8, 1, 2)
+  ], getArtifact);
+
+  assert.deepEqual(matches.map((match) => match.resultArtifactId), [
+    'porcelain_rotlight_lantern',
+    'vinegar_gate_chakram',
+    'voidflash_pauldron',
+    'ramaria_throne_snare'
+  ]);
+  assert.deepEqual(matches.map((match) => match.ingredientRowIds), [
+    ['rotlight', 'mask'],
+    ['vinegar', 'key'],
+    ['pauldron', 'knee'],
+    ['ramaria', 'throne']
   ]);
 });
 

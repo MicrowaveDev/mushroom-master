@@ -44,6 +44,10 @@ Add a Backpack Battles-style fusion layer without turning fusion into a manual s
 | `soft_ash_hourglass` | `soft_wall_tile` + `spore_snow_globe` | `soft_ash_hourglass` |
 | `ginger_star_compass` | `ginger_spark_bottle` + `star_spore_sash` | `ginger_star_compass` |
 | `memory_flash_tendon` | `body_memory_splinter` + `flashstep_tendon` | `memory_flash_tendon` |
+| `porcelain_rotlight_lantern` | `rotlight_lantern` + `porcelain_mold_mask` | `porcelain_rotlight_lantern` |
+| `vinegar_gate_chakram` | `blue_vinegar_chakram` + `rustbone_key` | `vinegar_gate_chakram` |
+| `voidflash_pauldron` | `voidglass_pauldron` + `flashcap_knee_guard` | `voidflash_pauldron` |
+| `ramaria_throne_snare` | `ramaria_snare` + `obsidian_throne_chip` | `ramaria_throne_snare` |
 
 These result artifacts are `fusionOnly: true`. They keep existing live stats and bitmaps, but no longer belong to the normal combat shop pool.
 

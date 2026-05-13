@@ -35,6 +35,10 @@ The Backpack Battles-like fusion layer is live: eligible ingredients fuse after 
 | `soft_ash_hourglass` | Lomie soft-wall geometry holding Dalamar ash snow creates a gentle time trap. | Shipped as `soft_wall_tile` + `spore_snow_globe`; fusion-only, not a normal shop roll. |
 | `ginger_star_compass` | Axilin ginger spark travelling through Lomie star-spore cloth points a fast disruptive route. | Shipped as `ginger_spark_bottle` + `star_spore_sash`; fusion-only, not a normal shop roll. |
 | `memory_flash_tendon` | Thalla body-memory bound into Morga flash tissue turns remembered pain into initiative. | Shipped as `body_memory_splinter` + `flashstep_tendon`; fusion-only, not a normal shop roll. |
+| `porcelain_rotlight_lantern` | Thalla rotlight sealed behind Dalamar porcelain makes a slow-burning damage relic with defensive weight. | Shipped as `rotlight_lantern` + `porcelain_mold_mask`; fusion-only, not a normal shop roll. |
+| `vinegar_gate_chakram` | Axilin blue vinegar forced through Dalamar rustbone key cuts a doorway through armor. | Shipped as `blue_vinegar_chakram` + `rustbone_key`; fusion-only, not a normal shop roll. |
+| `voidflash_pauldron` | Lomie voidglass catching Morga flash turns dodge timing into a radiant shoulder guard. | Shipped as `voidglass_pauldron` + `flashcap_knee_guard`; fusion-only, not a normal shop roll. |
+| `ramaria_throne_snare` | Kirt ramaria growth climbing Dalamar's throne becomes a trap that roots authority itself. | Shipped as `ramaria_snare` + `obsidian_throne_chip`; fusion-only, not a normal shop roll. |
 
 ## Priority Batch
 

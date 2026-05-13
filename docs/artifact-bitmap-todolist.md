@@ -86,6 +86,7 @@ Fusion note:
 - `riftfang_comet.png`, `biostasis_crown_seed.png`, `abyss_bow_knot.png`, and `opening_bell_spore.png` are also fusion-only results as of the recipe-catalog pass; future redraws should preserve their fused-result read rather than simplifying them into normal shop items.
 - `reliquary_ash_crown.png`, `portal_vinegar_lens.png`, `deadwind_arrow.png`, `pressure_bloom_bulwark.png`, `snap_lullaby_bell.png`, and `riftpuff_snare.png` are the second fusion-only wave. Dedicated imagegen-created PNGs were generated in the 2026-05-13 continuation; future redraws should preserve their cross-domain fused-result read rather than simplifying them into normal shop items.
 - `golden_thorn_aegis.png`, `soft_ash_hourglass.png`, `ginger_star_compass.png`, and `memory_flash_tendon.png` are the third fusion-only wave. They should read as lore-border artifacts first, not as alternate skins for their ingredient silhouettes.
+- `porcelain_rotlight_lantern.png`, `vinegar_gate_chakram.png`, `voidflash_pauldron.png`, and `ramaria_throne_snare.png` are the fourth fusion-only wave. They use previously unused normal-shop ingredients to widen the recipe graph.
 
 ## Validation
 
@@ -269,6 +270,10 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `soft_ash_hourglass.png` - `soft_ash_hourglass`, 2x1. Wide translucent pale-green hourglass tile with gray spore snow suspended inside and black root grains gathering at both ends.
 - [ ] `ginger_star_compass.png` - `ginger_star_compass`, 2x2. Amber ginger compass wrapped in an indigo star-spore sash, green fizz needle and white constellation dots, filling all quadrants.
 - [ ] `memory_flash_tendon.png` - `memory_flash_tendon`, 1x2. Tall flesh-gold tendon with orange-white flash knots and a warm memory shard embedded in the center, vertical and chunky.
+- [ ] `porcelain_rotlight_lantern.png` - `porcelain_rotlight_lantern`, 2x2. Square porcelain mask-lantern with warm rotlight core, black eye vents, white mold rim, and amber glow plates filling all quadrants.
+- [ ] `vinegar_gate_chakram.png` - `vinegar_gate_chakram`, 2x2. Broad blue-violet acid chakram with rustbone key teeth across the center, amber stopper nodes, green fizz slashes, and a heavy circular silhouette.
+- [ ] `voidflash_pauldron.png` - `voidflash_pauldron`, 2x2. Bulky green-violet glass pauldron with orange flashcap fins, black void slit, white speed stripe, and one connected shoulder-armor mass.
+- [ ] `ramaria_throne_snare.png` - `ramaria_throne_snare`, 2x2. Black obsidian throne shard tangled in coral ramaria branches, neon green tips, white mold crown, and a square trap silhouette.
 
 ### Hybrid / Utility
 

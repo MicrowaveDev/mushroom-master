@@ -73,6 +73,26 @@ export const artifactFusionRecipes = [
     id: 'memory_flash_tendon',
     resultArtifactId: 'memory_flash_tendon',
     ingredientArtifactIds: ['body_memory_splinter', 'flashstep_tendon']
+  },
+  {
+    id: 'porcelain_rotlight_lantern',
+    resultArtifactId: 'porcelain_rotlight_lantern',
+    ingredientArtifactIds: ['rotlight_lantern', 'porcelain_mold_mask']
+  },
+  {
+    id: 'vinegar_gate_chakram',
+    resultArtifactId: 'vinegar_gate_chakram',
+    ingredientArtifactIds: ['blue_vinegar_chakram', 'rustbone_key']
+  },
+  {
+    id: 'voidflash_pauldron',
+    resultArtifactId: 'voidflash_pauldron',
+    ingredientArtifactIds: ['voidglass_pauldron', 'flashcap_knee_guard']
+  },
+  {
+    id: 'ramaria_throne_snare',
+    resultArtifactId: 'ramaria_throne_snare',
+    ingredientArtifactIds: ['ramaria_snare', 'obsidian_throne_chip']
   }
 ];
 

@@ -1381,6 +1381,70 @@ export const artifacts = [
     battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'damage' },
     loreSource: 'body-memory-opening-flash'
   },
+  {
+    id: 'porcelain_rotlight_lantern',
+    name: { ru: 'Фарфоровый Фонарь Гнилосвета', en: 'Porcelain Rotlight Lantern' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { damage: 7, armor: 3, speed: -1 },
+    description: {
+      ru: 'Гнилой свет Тхаллы, закрытый фарфором Даламара, горит медленно и больно.',
+      en: 'Thalla rotlight sealed behind Dalamar porcelain burns slowly and painfully.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'rotlight-silent-crypt'
+  },
+  {
+    id: 'vinegar_gate_chakram',
+    name: { ru: 'Чакрам Уксусных Врат', en: 'Vinegar Gate Chakram' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { damage: 7, stunChance: 8, armor: -2 },
+    description: {
+      ru: 'Синий уксус Аксилин проходит через ржавый ключ Даламара и режет дверь в защите.',
+      en: 'Axilin blue vinegar passes through Dalamar rust key and cuts a door in armor.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'blue-vinegar-dead-gates'
+  },
+  {
+    id: 'voidflash_pauldron',
+    name: { ru: 'Наплечник Пустотной Вспышки', en: 'Voidflash Pauldron' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { armor: 6, speed: 3, damage: -1 },
+    description: {
+      ru: 'Пустотное стекло Ломиэ принимает вспышку Морги и делает уклонение частью брони.',
+      en: 'Lomie voidglass accepts Morga flash and turns evasion into armor.'
+    },
+    battleEffect: { id: 'flash', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'void-glass-opening-flash'
+  },
+  {
+    id: 'ramaria_throne_snare',
+    name: { ru: 'Рамариевая Петля Трона', en: 'Ramaria Throne Snare' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { stunChance: 22, armor: 3, speed: -2 },
+    description: {
+      ru: 'Коралловая ловушка Кирт врастает в трон Даламара и заставляет шаг склониться.',
+      en: 'Kirt coral trap grows into Dalamar throne and makes the next step kneel.'
+    },
+    battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'thorn-crown-obsidian-throne'
+  },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. The level-5 tier has one per
   // mushroom; later tiers may add more.
