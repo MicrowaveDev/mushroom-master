@@ -84,6 +84,7 @@ Fusion note:
 
 - `portal_cut_sickle.png` - current concept is now intentional: it is the first fusion-only result (`sporeblade` + `mirrorloop_knot`), so future redraws should preserve the fused portal-edge-plus-blade read.
 - `riftfang_comet.png`, `biostasis_crown_seed.png`, `abyss_bow_knot.png`, and `opening_bell_spore.png` are also fusion-only results as of the recipe-catalog pass; future redraws should preserve their fused-result read rather than simplifying them into normal shop items.
+- `reliquary_ash_crown.png`, `portal_vinegar_lens.png`, `deadwind_arrow.png`, `pressure_bloom_bulwark.png`, `snap_lullaby_bell.png`, and `riftpuff_snare.png` are the second fusion-only wave. Until bespoke PNGs are generated, their gameplay definitions point `imageId` at the closest approved production bitmap so the UI does not show broken art; future image work should replace that proxy by generating dedicated files from [artifact-image-reference.md](artifact-image-reference.md).
 
 ## Validation
 
@@ -200,6 +201,8 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `dead_city_nail.png` - `dead_city_nail`, 1x2. Tall black-bone nail with ash cap at top and corroded tooth point below, thick vertical silhouette.
 - [ ] `golden_spore_mace.png` - `golden_spore_mace`, 2x2. Heavy golden spore mace head with white mycelium haft and pale cyan biostasis marks, one blocky object.
 - [ ] `riftfang_comet.png` - `riftfang_comet`, 2x1. Fused amber fang plus haste-wisp result: broad violet-amber fang comet with a thick green rift tail across both cells.
+- [ ] `portal_vinegar_lens.png` - `portal_vinegar_lens`, 2x1. Fused sour-vinegar plus mirrorfloor result: wide blue-violet lens ring with amber acid core, black mirror rim, and contained green fizz.
+- [ ] `deadwind_arrow.png` - `deadwind_arrow`, 2x2. Fused spore-burst arrow plus dead-city nail result: heavy cross-shaped arrow-nail relic with violet shaft, green puffball charge, black-bone nail spine, and ash cap.
 
 ### Armor
 
@@ -228,6 +231,7 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `thornhide_scale.png` - `thornhide_scale`, 1x1. Square black-bark scale with one green resin thorn and cream highlight, compact and protective.
 - [ ] `flashcap_knee_guard.png` - `flashcap_knee_guard`, 1x2. Vertical orange flashcap knee guard with moss strap and white speed stripe, connected top-to-bottom.
 - [ ] `obsidian_throne_chip.png` - `obsidian_throne_chip`, 1x2. Tall black obsidian throne shard with white mold crown and gray ash edge, broad vertical mass.
+- [ ] `pressure_bloom_bulwark.png` - `pressure_bloom_bulwark`, 2x2. Fused grotto bomb plus amber-resin shield result: large amber shield-flower swollen with green pressure bubbles, bark-rimmed petals, and a heavy lower guard.
 
 ### Stun
 
@@ -257,6 +261,9 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 - [ ] `abyss_bow_knot.png` - `abyss_bow_knot`, 2x2. Fused heartwood bow plus mirrorloop-knot result: heavy black-violet bow knot with a green resin eye and amber string arcs, filling all quadrants.
 - [ ] `opening_bell_spore.png` - `opening_bell_spore`, 2x2. Fused afterimage cap plus first-bloom cinder result: bell-shaped orange spore with a white flash clapper, broad base, and contained yellow glow.
 - [ ] `entropy_scepter_tip.png` - `entropy_scepter_tip`, 1x2. Tall ash-gray scepter tip with porcelain crown and black shard core, thick enough for one-cell width.
+- [ ] `reliquary_ash_crown.png` - `reliquary_ash_crown`, 2x2. Fused root-ash censer plus reliquary buckle result: heavy gold-and-ash crown seed with white mold rim, black root bowl, and pale cyan stillness marks.
+- [ ] `snap_lullaby_bell.png` - `snap_lullaby_bell`, 2x1. Fused spore-lullaby conch plus snaplight husk result: horizontal pale-gold bell-conch cracked by orange snap flash, broad lip on the left and speed slash on the right.
+- [ ] `riftpuff_snare.png` - `riftpuff_snare`, 2x2. Fused crystal-rift chime plus rainpuff mine result: square rift trap with violet-green portal frame, central puffball mine, black route loop, and neon snare teeth.
 
 ### Hybrid / Utility
 

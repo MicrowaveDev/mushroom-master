@@ -23,6 +23,36 @@ export const artifactFusionRecipes = [
     id: 'opening_bell_spore',
     resultArtifactId: 'opening_bell_spore',
     ingredientArtifactIds: ['afterimage_cap', 'first_bloom_cinder']
+  },
+  {
+    id: 'reliquary_ash_crown',
+    resultArtifactId: 'reliquary_ash_crown',
+    ingredientArtifactIds: ['root_ash_censer', 'reliquary_bone_buckle']
+  },
+  {
+    id: 'portal_vinegar_lens',
+    resultArtifactId: 'portal_vinegar_lens',
+    ingredientArtifactIds: ['sour_vinegar_ampoule', 'mirrorfloor_shard']
+  },
+  {
+    id: 'deadwind_arrow',
+    resultArtifactId: 'deadwind_arrow',
+    ingredientArtifactIds: ['spore_burst_arrow', 'dead_city_nail']
+  },
+  {
+    id: 'pressure_bloom_bulwark',
+    resultArtifactId: 'pressure_bloom_bulwark',
+    ingredientArtifactIds: ['bubbling_grot_bomb', 'amber_resin_shield']
+  },
+  {
+    id: 'snap_lullaby_bell',
+    resultArtifactId: 'snap_lullaby_bell',
+    ingredientArtifactIds: ['spore_lullaby_conch', 'snaplight_husk']
+  },
+  {
+    id: 'riftpuff_snare',
+    resultArtifactId: 'riftpuff_snare',
+    ingredientArtifactIds: ['crystal_rift_chime', 'rainpuff_mine']
   }
 ];
 

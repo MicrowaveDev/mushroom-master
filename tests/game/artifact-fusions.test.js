@@ -11,10 +11,28 @@ const artifacts = new Map([
   ['mirrorloop_knot', { id: 'mirrorloop_knot', family: 'stun' }],
   ['amber_fang', { id: 'amber_fang', family: 'damage' }],
   ['haste_wisp', { id: 'haste_wisp', family: 'damage' }],
+  ['reliquary_bone_buckle', { id: 'reliquary_bone_buckle', family: 'armor' }],
+  ['root_ash_censer', { id: 'root_ash_censer', family: 'stun' }],
+  ['sour_vinegar_ampoule', { id: 'sour_vinegar_ampoule', family: 'damage' }],
+  ['mirrorfloor_shard', { id: 'mirrorfloor_shard', family: 'armor' }],
+  ['spore_burst_arrow', { id: 'spore_burst_arrow', family: 'damage' }],
+  ['dead_city_nail', { id: 'dead_city_nail', family: 'damage' }],
+  ['bubbling_grot_bomb', { id: 'bubbling_grot_bomb', family: 'damage' }],
+  ['amber_resin_shield', { id: 'amber_resin_shield', family: 'armor' }],
+  ['spore_lullaby_conch', { id: 'spore_lullaby_conch', family: 'stun' }],
+  ['snaplight_husk', { id: 'snaplight_husk', family: 'damage' }],
+  ['crystal_rift_chime', { id: 'crystal_rift_chime', family: 'stun' }],
+  ['rainpuff_mine', { id: 'rainpuff_mine', family: 'stun' }],
   ['riftfang_comet', { id: 'riftfang_comet', family: 'damage', fusionOnly: true }],
   ['biostasis_crown_seed', { id: 'biostasis_crown_seed', family: 'stun', fusionOnly: true }],
   ['abyss_bow_knot', { id: 'abyss_bow_knot', family: 'stun', fusionOnly: true }],
   ['opening_bell_spore', { id: 'opening_bell_spore', family: 'stun', fusionOnly: true }],
+  ['reliquary_ash_crown', { id: 'reliquary_ash_crown', family: 'stun', fusionOnly: true }],
+  ['portal_vinegar_lens', { id: 'portal_vinegar_lens', family: 'damage', fusionOnly: true }],
+  ['deadwind_arrow', { id: 'deadwind_arrow', family: 'damage', fusionOnly: true }],
+  ['pressure_bloom_bulwark', { id: 'pressure_bloom_bulwark', family: 'armor', fusionOnly: true }],
+  ['snap_lullaby_bell', { id: 'snap_lullaby_bell', family: 'stun', fusionOnly: true }],
+  ['riftpuff_snare', { id: 'riftpuff_snare', family: 'stun', fusionOnly: true }],
   ['portal_cut_sickle', { id: 'portal_cut_sickle', family: 'damage', fusionOnly: true }],
   ['starter_bag', { id: 'starter_bag', family: 'bag', starterOnly: true }],
   ['starter_item', { id: 'starter_item', family: 'damage', starterOnly: true }]
@@ -47,7 +65,13 @@ test('[fusion] ships multiple deterministic recipe results', () => {
     'riftfang_comet',
     'biostasis_crown_seed',
     'abyss_bow_knot',
-    'opening_bell_spore'
+    'opening_bell_spore',
+    'reliquary_ash_crown',
+    'portal_vinegar_lens',
+    'deadwind_arrow',
+    'pressure_bloom_bulwark',
+    'snap_lullaby_bell',
+    'riftpuff_snare'
   ]);
 
   const matches = findArtifactFusionMatches([
@@ -59,6 +83,28 @@ test('[fusion] ships multiple deterministic recipe results', () => {
   assert.equal(matches[0].recipeId, 'riftfang_comet');
   assert.equal(matches[0].resultArtifactId, 'riftfang_comet');
   assert.deepEqual(matches[0].ingredientRowIds, ['fang', 'wisp']);
+});
+
+test('[fusion] finds the lore-border recipe wave from adjacent ingredients', () => {
+  const matches = findArtifactFusionMatches([
+    row('ash', 'root_ash_censer', 0, 0, 2, 1),
+    row('buckle', 'reliquary_bone_buckle', 2, 0),
+    row('vinegar', 'sour_vinegar_ampoule', 0, 1),
+    row('mirror', 'mirrorfloor_shard', 1, 1),
+    row('arrow', 'spore_burst_arrow', 0, 2, 2, 1),
+    row('nail', 'dead_city_nail', 2, 2, 1, 2)
+  ], getArtifact);
+
+  assert.deepEqual(matches.map((match) => match.resultArtifactId), [
+    'reliquary_ash_crown',
+    'portal_vinegar_lens',
+    'deadwind_arrow'
+  ]);
+  assert.deepEqual(matches.map((match) => match.ingredientRowIds), [
+    ['ash', 'buckle'],
+    ['vinegar', 'mirror'],
+    ['arrow', 'nail']
+  ]);
 });
 
 test('[fusion] ignores bags, starter-only rows, and existing fusion results', () => {

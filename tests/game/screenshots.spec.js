@@ -128,15 +128,15 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
 
   await page.goto(`${baseURL}/fusion-lab`);
   await page.waitForSelector('[data-testid="fusion-lab-screen"]');
-  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(5);
-  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(15);
+  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(11);
+  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(33);
   await assertImagesLoaded(page);
   await saveShot(page, '02d-fusion-lab-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);
 
   await page.goto(`${baseURL}/fusion-lab`);
   await page.waitForSelector('[data-testid="fusion-lab-screen"]');
-  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(5);
+  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(11);
   await assertImagesLoaded(page);
   await saveShot(page, '02d-fusion-lab.png');
   await page.getByTestId('fusion-lab-replay').click();

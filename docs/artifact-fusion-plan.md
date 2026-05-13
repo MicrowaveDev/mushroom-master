@@ -34,6 +34,12 @@ Add a Backpack Battles-style fusion layer without turning fusion into a manual s
 | `biostasis_crown_seed` | `reliquary_biostasis_seal` + `triple_knot_seed` | `biostasis_crown_seed` |
 | `abyss_bow_knot` | `heartwood_splinter_bow` + `mirrorloop_knot` | `abyss_bow_knot` |
 | `opening_bell_spore` | `afterimage_cap` + `first_bloom_cinder` | `opening_bell_spore` |
+| `reliquary_ash_crown` | `root_ash_censer` + `reliquary_bone_buckle` | `reliquary_ash_crown` |
+| `portal_vinegar_lens` | `sour_vinegar_ampoule` + `mirrorfloor_shard` | `portal_vinegar_lens` |
+| `deadwind_arrow` | `spore_burst_arrow` + `dead_city_nail` | `deadwind_arrow` |
+| `pressure_bloom_bulwark` | `bubbling_grot_bomb` + `amber_resin_shield` | `pressure_bloom_bulwark` |
+| `snap_lullaby_bell` | `spore_lullaby_conch` + `snaplight_husk` | `snap_lullaby_bell` |
+| `riftpuff_snare` | `crystal_rift_chime` + `rainpuff_mine` | `riftpuff_snare` |
 
 These result artifacts are `fusionOnly: true`. They keep existing live stats and bitmaps, but no longer belong to the normal combat shop pool.
 

@@ -47,6 +47,8 @@ web/public/artifacts/{artifact_id}.png
 | `dead_city_nail` | Circle relic damage/control, `1x2`, bright. | Dalamar dead-gate hardware turned into a slow heavy puncture charm. | Tall black-bone nail with ash cap at top and corroded tooth point below, thick vertical silhouette. |
 | `golden_spore_mace` | Circle relic damage/armor, `2x2`, radiant. | Thalla royal force as a large anchored attack object with defensive weight. | Heavy solid golden spore mace head with short white mycelium haft, a few large spore bumps, and one pale cyan biostasis mark; avoid dense holes or filigree. |
 | `riftfang_comet` | Fusion-only damage/speed, `2x1`, bright. | Lomie rift motion created when `amber_fang` and `haste_wisp` fuse after a round. | Horizontal violet fang-comet with green rift tail and dark rim, broad enough to fill both cells. |
+| `portal_vinegar_lens` | Fusion-only damage/speed, `2x1`, radiant. | Axilin sour-vinegar chemistry caught in Lomie mirror glass: fast route-cutting with a defensive tradeoff. | Wide blue-violet lens ring with an amber acid core and black mirror rim, one connected horizontal object with green fizz contained inside. |
+| `deadwind_arrow` | Fusion-only damage/control, `2x2`, radiant. | Kirt bio-archery pinned through Dalamar dead-city metal, turning a normal spore arrow into a crypt projectile. | Heavy cross-shaped arrow-nail relic: violet shaft, green puffball charge, black-bone nail spine, ash cap; dense block silhouette filling all quadrants. |
 
 ## Armor
 
@@ -77,6 +79,7 @@ web/public/artifacts/{artifact_id}.png
 | `thornhide_scale` | Circle relic armor/damage, `1x1`, plain. | Kirt hunting hide as a small armor pickup that still bites. | Square black-bark scale with one green resin thorn and cream highlight, compact and protective. |
 | `flashcap_knee_guard` | Circle relic armor/speed, `1x2`, bright. | Morga evasive defense as a tall tempo guard. | Vertical orange flashcap knee guard with moss strap and white speed stripe, connected top-to-bottom. |
 | `obsidian_throne_chip` | Circle relic armor/control, `1x2`, bright. | Dalamar throne fragment for slow defensive control. | Tall broad black obsidian throne shard with simple white mold crown and one gray ash edge; avoid gritty stone texture and many small cracks. |
+| `pressure_bloom_bulwark` | Fusion-only armor/damage, `2x2`, radiant. | Axilin ferment pressure forced into amber resin, becoming armor rather than a burst. | Large amber shield-flower swollen with green pressure bubbles, bark-rimmed petals and one heavy lower guard, blocky in every quadrant. |
 
 ## Stun
 
@@ -108,6 +111,9 @@ web/public/artifacts/{artifact_id}.png
 | `abyss_bow_knot` | Fusion-only stun/damage, `2x2`, radiant. | Kirt Black Wind bow material created when `heartwood_splinter_bow` and `mirrorloop_knot` fuse after a round. | Heavy black-violet bow knot with green resin eye and amber string arcs, filling all quadrants. |
 | `opening_bell_spore` | Fusion-only stun/speed, `2x2`, radiant. | Morga opening tempo created when `afterimage_cap` and `first_bloom_cinder` fuse after a round. | Bell-shaped orange spore split by a white flash petal, broad base and contained yellow glow. |
 | `entropy_scepter_tip` | Circle relic stun/armor, `1x2`, bright. | Dalamar scepter fragment as vertical ash-control support. | Tall ash-gray scepter tip with porcelain crown and black shard core, thick enough for one-cell width. |
+| `reliquary_ash_crown` | Fusion-only stun/armor, `2x2`, radiant. | Thalla sacred reliquary command filtered through Ygg-Mycel root ash and Dalamar-like stillness. | Heavy gold-and-ash crown seed, white mold rim, black root bowl, pale cyan stillness marks; sacred but funerary, filling all quadrants. |
+| `snap_lullaby_bell` | Fusion-only stun/damage/speed, `2x1`, radiant. | Thalla body-command lullaby accelerated by Morga's snaplight opening pressure. | Horizontal pale-gold bell-conch cracked by an orange snap flash, broad lip on the left and speed slash on the right. |
+| `riftpuff_snare` | Fusion-only stun/speed, `2x2`, radiant. | Lomie route geometry folded around Kirt's rainpuff mine, making a trap that arrives from a neighboring path. | Square rift trap with violet-green portal frame, central puffball mine, black route loop and neon snare teeth; one dense object in all quadrants. |
 
 ## Hybrid / Utility
 

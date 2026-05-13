@@ -25,6 +25,12 @@ The Backpack Battles-like fusion layer is live: eligible ingredients fuse after 
 | `biostasis_crown_seed` | Reliquary seal plus triple-knot control escalates into a heavy crown seed. | Shipped as `reliquary_biostasis_seal` + `triple_knot_seed`; fusion-only, not a normal shop roll. |
 | `abyss_bow_knot` | Heartwood bow plus mirror-loop knot becomes a larger bow-knot control relic. | Shipped as `heartwood_splinter_bow` + `mirrorloop_knot`; fusion-only, not a normal shop roll. |
 | `opening_bell_spore` | Afterimage tempo plus first-bloom burst becomes Morga's opening bell. | Shipped as `afterimage_cap` + `first_bloom_cinder`; fusion-only, not a normal shop roll. |
+| `reliquary_ash_crown` | Thalla's biostasis authority crossing Dalamar-style root ash reads as sacred stillness turning funerary. | Shipped as `root_ash_censer` + `reliquary_bone_buckle`; fusion-only, not a normal shop roll. |
+| `portal_vinegar_lens` | Axilin's sour chemistry stabilized through Lomie mirror glass gives a fast cutting lens. | Shipped as `sour_vinegar_ampoule` + `mirrorfloor_shard`; fusion-only, not a normal shop roll. |
+| `deadwind_arrow` | Kirt's spore-burst arrow pinned through Dalamar's dead-city nail becomes a heavier crypt projectile. | Shipped as `spore_burst_arrow` + `dead_city_nail`; fusion-only, not a normal shop roll. |
+| `pressure_bloom_bulwark` | Ferment pressure forced into amber resin blooms outward as armor instead of exploding. | Shipped as `bubbling_grot_bomb` + `amber_resin_shield`; fusion-only, not a normal shop roll. |
+| `snap_lullaby_bell` | Thalla's body-command lullaby plus Morga's opening snap creates a faster control bell. | Shipped as `spore_lullaby_conch` + `snaplight_husk`; fusion-only, not a normal shop roll. |
+| `riftpuff_snare` | Lomie rift geometry folds Kirt's rainpuff trap into a route-based snare. | Shipped as `crystal_rift_chime` + `rainpuff_mine`; fusion-only, not a normal shop roll. |
 
 ## Priority Batch
 

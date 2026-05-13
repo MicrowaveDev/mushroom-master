@@ -1218,6 +1218,111 @@ export const artifacts = [
     battleEffect: { id: 'decay', trigger: 'hit', target: 'target', statKey: 'stunChance' },
     loreSource: 'entropy-scepter'
   },
+  // --- Second fusion relic wave ---
+  // These are lore-border artifacts: two established domains touch, then the
+  // next-round fusion system creates a result that does not roll in shops.
+  {
+    id: 'reliquary_ash_crown',
+    imageId: 'biostasis_crown_seed',
+    name: { ru: 'Пепельная Корона Реликвария', en: 'Reliquary Ash Crown' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { stunChance: 20, armor: 4, damage: -1 },
+    description: {
+      ru: 'Золотой приказ Тхаллы проходит через корневой пепел и становится короной тихого запрета.',
+      en: 'Thalla golden command passes through root ash and becomes a crown of quiet interdiction.'
+    },
+    battleEffect: { id: 'biostasis', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'golden-reliquary-root-ash'
+  },
+  {
+    id: 'portal_vinegar_lens',
+    imageId: 'blue_vinegar_chakram',
+    name: { ru: 'Линза Портального Уксуса', en: 'Portal Vinegar Lens' },
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 3,
+    fusionOnly: true,
+    bonus: { damage: 6, speed: 2, armor: -2 },
+    description: {
+      ru: 'Кислота Аксилин, пойманная в зеркальном стекле Ломиэ, режет путь раньше тела.',
+      en: 'Axilin sourness caught in Lomie mirror glass cuts the route before it cuts the body.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'bubbling-grot-crystal-rifts'
+  },
+  {
+    id: 'deadwind_arrow',
+    imageId: 'spore_burst_arrow',
+    name: { ru: 'Стрела Мертвого Ветра', en: 'Deadwind Arrow' },
+    family: 'damage',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { damage: 8, stunChance: 8, speed: -1 },
+    description: {
+      ru: 'Стрела Кирт проходит через гвоздь Мертвого Города и приносит с собой сухой ветер склепа.',
+      en: 'Kirt arrow passes through a Dead City nail and carries the crypt dry wind with it.'
+    },
+    battleEffect: { id: 'poison', trigger: 'hit', target: 'target', statKey: 'damage' },
+    loreSource: 'thorn-crown-dead-city'
+  },
+  {
+    id: 'pressure_bloom_bulwark',
+    imageId: 'amber_resin_shield',
+    name: { ru: 'Панцирь Цветущего Давления', en: 'Pressure-Bloom Bulwark' },
+    family: 'armor',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { armor: 7, damage: 3, speed: -1 },
+    description: {
+      ru: 'Бомба Грота не взрывается: янтарная смола заставляет ее цвести наружу броней.',
+      en: 'The Grotto bomb does not burst; amber resin makes it bloom outward as armor.'
+    },
+    battleEffect: { id: 'ferment', trigger: 'block', target: 'actor', statKey: 'armor' },
+    loreSource: 'bubbling-grot'
+  },
+  {
+    id: 'snap_lullaby_bell',
+    imageId: 'opening_bell_spore',
+    name: { ru: 'Щелчок Колыбельного Колокола', en: 'Snap-Lullaby Bell' },
+    family: 'stun',
+    width: 2,
+    height: 1,
+    price: 3,
+    fusionOnly: true,
+    bonus: { stunChance: 14, damage: 3, speed: 1 },
+    description: {
+      ru: 'Приказ Тхаллы уснуть встречает щелчок Морги и приходит раньше сопротивления.',
+      en: 'Thalla command to sleep meets Morga snap and arrives before resistance can gather.'
+    },
+    battleEffect: { id: 'flash', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'thalla-morga-opening'
+  },
+  {
+    id: 'riftpuff_snare',
+    imageId: 'rainpuff_mine',
+    name: { ru: 'Разломная Петля-Дождевик', en: 'Riftpuff Snare' },
+    family: 'stun',
+    width: 2,
+    height: 2,
+    price: 3,
+    fusionOnly: true,
+    bonus: { stunChance: 24, speed: 1, armor: -1 },
+    description: {
+      ru: 'Разлом Ломиэ складывает мину Кирт в ловушку, которая хлопает из соседнего пути.',
+      en: 'Lomie rift folds Kirt mine into a trap that snaps from the neighboring route.'
+    },
+    battleEffect: { id: 'freeze', trigger: 'hit', target: 'target', statKey: 'stunChance' },
+    loreSource: 'crystal-rifts-thorn-crown'
+  },
   // --- Character shop items ---
   // Lore-based items gated by requiredLevel. The level-5 tier has one per
   // mushroom; later tiers may add more.
