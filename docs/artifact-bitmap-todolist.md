@@ -28,13 +28,22 @@ The script skips files that already exist in `web/public/artifacts/`, so the wor
 
 1. Run `npm run game:artifacts:next`.
 2. Generate the listed 10 images with the imagegen skill, using [`artifact-image-style-prompt.md`](artifact-image-style-prompt.md) as the shared style guide.
-3. Save raw imagegen outputs under `.agent/artifact-image-workspace/raw/`, then run the chroma-key/conversion helper to write each optimized app PNG into the exact output path.
+3. Save raw imagegen outputs under `.agent/artifact-image-workspace/raw/{artifact_id}.source.png`, then run `npm run game:artifacts:produce -- artifact_id...` to chroma-key each raw source, fit the visible alpha into a safe centered canvas, write `web/public/artifacts/`, and validate it. If validation still reports low coverage, stale output, or clipping, inspect the raw source and regenerate/reselect or reprocess until the helper passes. Use `--no-fit` only when deliberately diagnosing the raw conversion.
 4. Run `npm run game:artifacts:next` again until it reports that all artifacts are done.
 5. Run `node --test tests/web/artifact-render.test.js`.
 6. Run `npm run game:artifacts:validate -- artifact_id` for every newly generated PNG.
 7. Run `npm run game:artifacts:sheet` to regenerate the deterministic all-artifacts review sheet.
 8. Run `npm run game:artifacts:thumbnail-review` to regenerate the small-size readability sheet under `.agent/tasks/artifact-image-system/phase-1/raw/` while images are still candidate evidence.
 9. Run `npm run game:test:screens`.
+
+For fusion-catalog waves, finish with:
+
+```bash
+npm run game:fusions:check
+npm run game:artifacts:release-check
+```
+
+`game:fusions:check` fails on duplicate recipes/results, ineligible ingredients, missing fusion result PNGs, fusion-only artifacts without recipes, and stale hard-coded fusion recipe counts in the UI specs. `game:artifacts:release-check` is the full production gate for artifact/fusion changes; it includes missing-art checks, provenance, full artifact coverage, contact-sheet validation, thumbnail review, fusion checks, production build, and e2e.
 
 ## Global Generation Rules
 

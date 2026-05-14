@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { api, createSession, resetDevDb, waitForPrepReady, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
+import {
+  expectedFusionLabArtifactGridCount,
+  expectedFusionPlayAllTimeoutMs,
+  expectedFusionRecipeCount
+} from './fusion-catalog-helpers.js';
 
 test('[fusion] prep highlights ingredients and next shop entry reveals fused result', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
@@ -140,13 +145,15 @@ test('[fusion] local animation lab demonstrates every recipe with the production
   await page.goto(`${baseURL}/fusion-lab`, { waitUntil: 'networkidle' });
 
   await expect(page.getByTestId('fusion-lab-screen')).toBeVisible();
-  await expect(page.getByTestId('fusion-lab-recipe-card')).toHaveCount(19);
-  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(57);
+  await expect(page.getByTestId('fusion-lab-recipe-card')).toHaveCount(expectedFusionRecipeCount);
+  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(expectedFusionLabArtifactGridCount);
   await expect(page.locator('.fusion-lab-stage-card[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
 
   await page.getByTestId('fusion-lab-play-all').click();
   await expect(page.locator('.fusion-reveal')).toBeVisible({ timeout: 1500 });
-  await expect(page.locator('.fusion-lab-card--active[data-result-artifact-id="ramaria_throne_snare"]')).toBeVisible({ timeout: 60000 });
+  await expect(page.locator('.fusion-lab-card--active[data-result-artifact-id="ramaria_throne_snare"]')).toBeVisible({
+    timeout: expectedFusionPlayAllTimeoutMs()
+  });
   await expect(page.locator('.fusion-reveal')).toHaveCount(0, { timeout: 4000 });
 
   await page.locator('.fusion-lab-card[data-result-artifact-id="riftfang_comet"]').click();
@@ -183,7 +190,7 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   const socialSidebar = page.locator('.home-social-sidebar');
   await expect(socialSidebar).toBeVisible();
   await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
-  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(19);
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(expectedFusionRecipeCount);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
   await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
   await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
@@ -213,7 +220,7 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   });
   expect(sidebarStacksAboveBattleResult).toBe(true);
 
-  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(19);
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(expectedFusionRecipeCount);
 });
 
 test('[Req 11-F] mobile recipes sidebar switcher stays docked while recipes scroll', async ({ page, request, baseURL }) => {
@@ -240,7 +247,7 @@ test('[Req 11-F] mobile recipes sidebar switcher stays docked while recipes scro
   await bottomRecipes.click();
 
   await expect(page.getByTestId('sidebar-recipes-panel')).toBeVisible();
-  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(19);
+  await expect(page.getByTestId('sidebar-recipe-card')).toHaveCount(expectedFusionRecipeCount);
 
   const dockMetrics = await page.evaluate(() => {
     const sidebar = document.querySelector('.home-social-sidebar');

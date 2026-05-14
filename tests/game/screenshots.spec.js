@@ -10,6 +10,10 @@ import { resetDevDb, createSession, api, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } fro
 import { repoRoot } from '../../app/shared/repo-root.js';
 import { PORTRAIT_VARIANTS } from '../../app/server/game-data.js';
 import { replayPortraitConfig } from '../../web/src/replay-portrait-config.js';
+import {
+  expectedFusionLabArtifactGridCount,
+  expectedFusionRecipeCount
+} from './fusion-catalog-helpers.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
 const debugScreens = process.env.PLAYWRIGHT_SCREEN_DEBUG === '1';
@@ -128,15 +132,15 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
 
   await page.goto(`${baseURL}/fusion-lab`);
   await page.waitForSelector('[data-testid="fusion-lab-screen"]');
-  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(19);
-  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(57);
+  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(expectedFusionRecipeCount);
+  await expect(page.locator('.fusion-lab-list .artifact-grid-board--catalog')).toHaveCount(expectedFusionLabArtifactGridCount);
   await assertImagesLoaded(page);
   await saveShot(page, '02d-fusion-lab-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);
 
   await page.goto(`${baseURL}/fusion-lab`);
   await page.waitForSelector('[data-testid="fusion-lab-screen"]');
-  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(19);
+  await expect(page.locator('[data-testid="fusion-lab-recipe-card"]')).toHaveCount(expectedFusionRecipeCount);
   await assertImagesLoaded(page);
   await saveShot(page, '02d-fusion-lab.png');
   await page.getByTestId('fusion-lab-replay').click();
