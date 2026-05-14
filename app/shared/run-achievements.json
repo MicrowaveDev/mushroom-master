@@ -134,6 +134,18 @@
           "en": "The victories settled like a sacred thread between light and shadow."
         },
         "criteria": { "minWins": 4, "minSeasonPoints": 25 }
+      },
+      {
+        "id": "thalla_circle_canticle",
+        "name": {
+          "ru": "Песнь Круга",
+          "en": "Circle Canticle"
+        },
+      "lore": {
+          "ru": "Тхалла провела нить через весь круг, и споры ответили хором.",
+          "en": "Thalla drew one thread through the whole ring, and the spores answered in chorus."
+        },
+        "criteria": { "minWins": 7, "maxLosses": 2, "minSeasonLevel": "gold", "minSeasonPoints": 70 }
       }
     ],
     "lomie": [
@@ -160,6 +172,18 @@
           "en": "Her guard became as calm as bark around an ancient trunk."
         },
         "criteria": { "maxLosses": 1, "minRounds": 5, "minSeasonPoints": 25 }
+      },
+      {
+        "id": "lomie_ancient_bastion",
+        "name": {
+          "ru": "Древний бастион",
+          "en": "Ancient Bastion"
+        },
+      "lore": {
+          "ru": "Ломиэ стояла так спокойно, что само кольцо стало стеной.",
+          "en": "Lomie stood so calmly that the ring itself became a wall."
+        },
+        "criteria": { "minWins": 7, "maxLosses": 1, "minSeasonLevel": "gold", "minSeasonPoints": 70 }
       }
     ],
     "axilin": [
@@ -186,6 +210,18 @@
           "en": "Where she passed, the mycelium kept hissing long afterward."
         },
         "criteria": { "minWins": 5, "minSeasonPoints": 25 }
+      },
+      {
+        "id": "axilin_cauldron_star",
+        "name": {
+          "ru": "Котельная звезда",
+          "en": "Cauldron Star"
+        },
+      "lore": {
+          "ru": "Отвар Аксилин вспыхнул звездой, и путь зашипел от побед.",
+          "en": "Axilin's brew flared like a star, and the path hissed with victories."
+        },
+        "criteria": { "minWins": 7, "maxLosses": 2, "minSeasonLevel": "gold", "minSeasonPoints": 70 }
       }
     ],
     "kirt": [
@@ -212,6 +248,18 @@
           "en": "Each clean strike cleared the path deeper into the ring."
         },
         "criteria": { "minWinRate": 70, "minRounds": 5, "minSeasonPoints": 25 }
+      },
+      {
+        "id": "kirt_unbroken_cadence",
+        "name": {
+          "ru": "Несломанный такт",
+          "en": "Unbroken Cadence"
+        },
+      "lore": {
+          "ru": "Кирт прошёл круг без сбоя, удар за ударом удерживая меру.",
+          "en": "Kirt crossed the ring without a missed beat, keeping measure strike by strike."
+        },
+        "criteria": { "minWins": 7, "maxLosses": 2, "minSeasonLevel": "gold", "minSeasonPoints": 70 }
       }
     ],
     "morga": [
@@ -238,6 +286,18 @@
           "en": "Morga's flash trail stayed at the very edge of sight."
         },
         "criteria": { "minWins": 3, "lastOutcome": "win", "minSeasonPoints": 25 }
+      },
+      {
+        "id": "morga_sunburst_crown",
+        "name": {
+          "ru": "Корона вспышки",
+          "en": "Sunburst Crown"
+        },
+      "lore": {
+          "ru": "Морга зажгла круг так ярко, что победы легли вокруг неё короной.",
+          "en": "Morga lit the ring so brightly that victories settled around her like a crown."
+        },
+        "criteria": { "minWins": 7, "maxLosses": 2, "minSeasonLevel": "gold", "minSeasonPoints": 70 }
       }
     ],
     "dalamar": [
@@ -264,6 +324,18 @@
           "en": "The ring trembled when entropy took his side."
         },
         "criteria": { "minWins": 4, "minSeasonPoints": 25 }
+      },
+      {
+        "id": "dalamar_null_crown",
+        "name": {
+          "ru": "Нулевая корона",
+          "en": "Null Crown"
+        },
+      "lore": {
+          "ru": "Даламар оставил за собой тишину, в которой даже броня забывала форму.",
+          "en": "Dalamar left a hush behind him where even armor forgot its shape."
+        },
+        "criteria": { "minWins": 7, "maxLosses": 2, "minSeasonLevel": "gold", "minSeasonPoints": 70 }
       }
     ]
   }

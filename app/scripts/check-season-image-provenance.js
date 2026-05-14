@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { repoRoot } from './season-sheet-helpers.js';
+import { buildSeasonImageEntries, repoRoot } from './season-sheet-helpers.js';
 import { checkProvenance, fileSha256 } from './lib/bitmap-image-toolkit.js';
 import fs from 'node:fs';
 
@@ -27,6 +27,7 @@ function main() {
   }
   const raw = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
   const allowedPrefixes = ['web/public/season-ranks/', 'web/public/achievements/'];
+  const expectedEntries = buildSeasonImageEntries();
 
   const { entries } = checkProvenance({
     metadataPath,
@@ -45,8 +46,22 @@ function main() {
     }
   }
 
+  const approvedIds = new Set(entries.map((entry) => entry.id));
+  for (const expected of expectedEntries) {
+    if (!approvedIds.has(expected.id)) {
+      fail(`${expected.id}: missing approved provenance entry for ${path.relative(repoRoot, expected.outputPath)}`);
+    }
+  }
+
+  const expectedIds = new Set(expectedEntries.map((entry) => entry.id));
+  for (const entry of entries) {
+    if (!expectedIds.has(entry.id)) {
+      fail(`${entry.id}: approved provenance entry no longer exists in season image source list`);
+    }
+  }
+
   if (!process.exitCode) {
-    console.log(`OK season image provenance: ${entries.length} approved entries`);
+    console.log(`OK season image provenance: ${entries.length}/${expectedEntries.length} approved entries`);
   }
 }
 

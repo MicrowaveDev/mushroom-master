@@ -59,16 +59,16 @@ Hard rule: do not create production rank or achievement PNGs by writing a determ
 - `perfect_circle` — closed wreath or full ring, gold accent.
 - `last_spore` — single bright spore mote on a darker parchment, bittersweet tone.
 
-### Character achievements (12 entries — 2 per character)
+### Character achievements (18 entries — 3 per character)
 
 Use the character's mushroom palette as the medallion accent, then a small motif from their lore line:
 
-- thalla — soft green / parchment, glow thread or sacred knot.
-- lomie — moss / cream, soft wall plate or stone-breath rim.
-- axilin — fermented purple-grey / cream, bubbling phial or storm spore.
-- kirt — warm rust / olive, fang or measured-strike spear-mark.
-- morga — bright spark / cream, flash bloom or trail.
-- dalamar — ash / muted teal, broken crown shard or veil mote.
+- thalla — soft green / parchment, glow thread, sacred knot, or complete canticle circle.
+- lomie — moss / cream, soft wall plate, stone-breath rim, or rounded bark bastion.
+- axilin — fermented purple-grey / cream, bubbling phial, storm spore, or cauldron starburst.
+- kirt — warm rust / olive, fang, measured-strike spear-mark, or unbroken rhythm loop.
+- morga — bright spark / cream, flash bloom, trail, or sunburst cap crown.
+- dalamar — ash / muted teal, broken crown shard, veil mote, or hollow null crown.
 
 ## Validation
 

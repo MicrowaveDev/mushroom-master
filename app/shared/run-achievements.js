@@ -64,7 +64,13 @@ function achievementPriority(achievement) {
     axilin_ferment_storm: 80,
     kirt_clean_path: 80,
     morga_flash_trail: 80,
-    dalamar_entropy_bone: 80
+    dalamar_entropy_bone: 80,
+    thalla_circle_canticle: 90,
+    lomie_ancient_bastion: 90,
+    axilin_cauldron_star: 90,
+    kirt_unbroken_cadence: 90,
+    morga_sunburst_crown: 90,
+    dalamar_null_crown: 90
   };
   return priorityById[achievement.id] ?? 100;
 }

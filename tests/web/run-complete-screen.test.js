@@ -60,7 +60,7 @@ test('run achievements catalogue is split into general and every character list'
   for (const mushroomId of ['thalla', 'lomie', 'axilin', 'kirt', 'morga', 'dalamar']) {
     const list = runAchievements.characters[mushroomId];
     assert.ok(Array.isArray(list), `${mushroomId} achievement list should exist`);
-    assert.ok(list.length >= 2, `${mushroomId} should have multiple lore achievements`);
+    assert.ok(list.length >= 3, `${mushroomId} should have production-depth lore achievements`);
     assert.ok(list.every((achievement) => achievement.name?.ru && achievement.name?.en));
     assert.ok(list.every((achievement) => achievement.lore?.ru && achievement.lore?.en));
   }
@@ -192,6 +192,36 @@ test('achievement awarding rolls forward delayed matching achievements', () => {
     'first_ring_crossed',
     'season_bronze_spore'
   ]);
+});
+
+test('achievement awarding includes late character mastery after early milestones are earned', () => {
+  const awarded = getAwardableRunAchievements({
+    mushroomId: 'morga',
+    endReason: 'max_rounds',
+    lastOutcome: 'win',
+    wins: 7,
+    losses: 2,
+    roundsCompleted: 9,
+    livesRemaining: 3,
+    winRate: 78,
+    seasonLevel: 'gold',
+    seasonPoints: 72
+  }, 'en', {
+    alreadyEarnedIds: [
+      'first_ring_crossed',
+      'season_bronze_spore',
+      'season_silver_thread',
+      'season_gold_cap',
+      'perfect_circle',
+      'deep_run',
+      'three_caps_taken',
+      'morga_first_bloom',
+      'morga_flash_trail'
+    ]
+  });
+
+  assert.equal(awarded[0].id, 'morga_sunburst_crown');
+  assert.equal(awarded[0].type, 'character');
 });
 
 test('run complete recap handles max-round clears and challenge bonus maps', () => {

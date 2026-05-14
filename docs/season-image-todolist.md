@@ -52,16 +52,22 @@ The queue below is kept as workflow scaffolding for `npm run game:season:next`. 
 
 - [x] `thalla_spore_echo.png` - `thalla_spore_echo`, thalla character achievement. Soft green parchment medallion with a glow thread loop.
 - [x] `thalla_sacred_thread.png` - `thalla_sacred_thread`, thalla character achievement. Sacred spore-thread knot on a soft green parchment medallion.
+- [x] `thalla_circle_canticle.png` - `thalla_circle_canticle`, thalla character achievement. Soft green medallion with a complete thread circle and three small echo-spores.
 - [x] `lomie_soft_wall.png` - `lomie_soft_wall`, lomie character achievement. Moss-cream medallion with a small soft wall-plate motif.
 - [x] `lomie_stone_breath.png` - `lomie_stone_breath`, lomie character achievement. Moss-cream medallion with a stone-rim motif and breath line.
+- [x] `lomie_ancient_bastion.png` - `lomie_ancient_bastion`, lomie character achievement. Moss-cream medallion with a rounded bark bastion and tiny root brace marks.
 - [x] `axilin_volatile_brew.png` - `axilin_volatile_brew`, axilin character achievement. Purple-grey medallion with a bubbling phial glyph.
 - [x] `axilin_ferment_storm.png` - `axilin_ferment_storm`, axilin character achievement. Purple-grey medallion with a storm-spore swirl glyph.
+- [x] `axilin_cauldron_star.png` - `axilin_cauldron_star`, axilin character achievement. Purple-grey medallion with a chunky cauldron starburst and two bubbling motes.
 - [x] `kirt_measured_rhythm.png` - `kirt_measured_rhythm`, kirt character achievement. Warm rust-olive medallion with a measured spear-mark glyph.
 - [x] `kirt_clean_path.png` - `kirt_clean_path`, kirt character achievement. Warm rust-olive medallion with a clean fang or arrow-mark glyph.
+- [x] `kirt_unbroken_cadence.png` - `kirt_unbroken_cadence`, kirt character achievement. Warm rust-olive medallion with an unbroken rhythm loop and broad spear notch.
 - [x] `morga_first_bloom.png` - `morga_first_bloom`, morga character achievement. Bright spark-cream medallion with a small bloom flash glyph.
 - [x] `morga_flash_trail.png` - `morga_flash_trail`, morga character achievement. Bright spark-cream medallion with a flash trail streak glyph.
+- [x] `morga_sunburst_crown.png` - `morga_sunburst_crown`, morga character achievement. Bright spark-cream medallion with a sunburst cap crown and one bold flash stroke.
 - [x] `dalamar_ashen_veil.png` - `dalamar_ashen_veil`, dalamar character achievement. Ash-teal medallion with a small veil-mote glyph.
 - [x] `dalamar_entropy_bone.png` - `dalamar_entropy_bone`, dalamar character achievement. Ash-teal medallion with a broken crown-shard glyph.
+- [x] `dalamar_null_crown.png` - `dalamar_null_crown`, dalamar character achievement. Ash-teal medallion with a hollow crown shard and dark quiet center.
 
 ## Notes
 
