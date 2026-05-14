@@ -1,3 +1,5 @@
+import { replayPortraitConfig } from '../replay-portrait-config.js';
+
 const WikiInline = {
   name: 'WikiInline',
   props: {
@@ -70,6 +72,9 @@ export const WikiDetailScreen = {
     },
     visibleSections() {
       return this.entry.sections || [{ tier: 0, locked: false, blocks: this.entry.blocks || [] }];
+    },
+    coverPortraitStyle() {
+      return this.portraitStyleFor(this.entry);
     }
   },
   methods: {
@@ -93,6 +98,10 @@ export const WikiDetailScreen = {
         }
         return String(block.text || '').trim().toLowerCase() !== title;
       });
+    },
+    portraitStyleFor(item) {
+      if (!item || item.section !== 'characters') return null;
+      return { objectPosition: replayPortraitConfig(item.slug).imagePosition };
     }
   },
   template: `
@@ -100,7 +109,7 @@ export const WikiDetailScreen = {
       <button class="ghost wiki-back-button" @click="$emit('go', 'wiki')">{{ t.wiki }}</button>
 
       <header class="wiki-detail-cover panel" :class="{ 'has-media': entry.image }">
-        <img v-if="entry.image" :src="entry.image" :alt="title" class="wiki-detail-portrait" />
+        <img v-if="entry.image" :src="entry.image" :alt="title" class="wiki-detail-portrait" :style="coverPortraitStyle" />
         <div class="wiki-detail-cover-copy">
           <p class="eyebrow">{{ t.wiki }}</p>
           <h2>{{ title }}</h2>
@@ -142,7 +151,7 @@ export const WikiDetailScreen = {
             class="wiki-related-card"
             @click="$emit('open-wiki', [related.section, related.slug])"
           >
-            <img v-if="related.imagePath" :src="related.imagePath" :alt="titleFor(related)" />
+            <img v-if="related.imagePath" :src="related.imagePath" :alt="titleFor(related)" :style="portraitStyleFor(related)" />
             <span>
               <strong>{{ titleFor(related) }}</strong>
               <small>{{ summaryFor(related) }}</small>

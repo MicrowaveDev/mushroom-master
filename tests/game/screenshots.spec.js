@@ -362,6 +362,13 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.waitForSelector('.log-entry');
   debugLog('capturing wiki home');
   await saveShot(page, '11-wiki-home.png');
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.goto(`${baseURL}/wiki`);
+  await page.waitForSelector('.log-entry');
+  await saveShot(page, '11-wiki-home-desktop.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.goto(`${baseURL}/wiki`);
+  await page.waitForSelector('.log-entry');
 
   await page.locator('.log-entry').first().click();
   await page.waitForSelector('h2');

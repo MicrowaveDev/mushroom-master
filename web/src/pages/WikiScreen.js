@@ -1,3 +1,5 @@
+import { replayPortraitConfig } from '../replay-portrait-config.js';
+
 export const WikiScreen = {
   name: 'WikiScreen',
   props: ['state', 't'],
@@ -54,6 +56,10 @@ export const WikiScreen = {
     categoryName(section) {
       const found = this.categories.find((category) => category.key === section);
       return found ? this.label(found) : section;
+    },
+    portraitStyle(entry) {
+      if (entry.section !== 'characters') return null;
+      return { objectPosition: replayPortraitConfig(entry.slug).imagePosition };
     }
   },
   template: `
@@ -94,10 +100,10 @@ export const WikiScreen = {
           class="wiki-entry-card log-entry"
           @click="$emit('open-wiki', [entry.section, entry.slug])"
         >
-          <img v-if="entry.imagePath" :src="entry.imagePath" :alt="title(entry)" class="wiki-entry-card-media" />
+          <img v-if="entry.imagePath" :src="entry.imagePath" :alt="title(entry)" class="wiki-entry-card-media" :style="portraitStyle(entry)" />
           <span v-else class="wiki-entry-card-index">{{ categoryName(entry.section).slice(0, 2) }}</span>
           <span class="wiki-entry-card-copy">
-            <span class="wiki-entry-card-kicker">{{ categoryName(entry.section) }}</span>
+            <span v-if="activeCategory === 'all'" class="wiki-entry-card-kicker">{{ categoryName(entry.section) }}</span>
             <strong>{{ title(entry) }}</strong>
             <span>{{ summary(entry) }}</span>
           </span>

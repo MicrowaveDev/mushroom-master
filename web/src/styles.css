@@ -6607,7 +6607,7 @@ select {
 .wiki-home,
 .wiki-detail {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .wiki-cover,
@@ -6619,10 +6619,10 @@ select {
 .wiki-cover h2,
 .wiki-detail-cover h2 {
   margin: 0;
-  font-size: 2.6rem;
-  line-height: 0.98;
-  max-width: 11ch;
-  overflow-wrap: anywhere;
+  font-size: clamp(1.8rem, 4.2vw, 2.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.005em;
+  overflow-wrap: break-word;
 }
 
 .wiki-cover-copy,
@@ -6637,24 +6637,37 @@ select {
   display: grid;
   gap: 6px;
   max-width: 520px;
+  margin-top: 4px;
   color: var(--accent);
   font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .wiki-search input {
   width: 100%;
   min-height: 44px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+}
+
+.wiki-search input::placeholder {
+  color: rgba(47, 36, 25, 0.42);
 }
 
 .wiki-category-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: thin;
 }
@@ -6663,14 +6676,20 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
   white-space: nowrap;
   cursor: pointer;
+  font-size: 0.92rem;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.wiki-category-tab:hover {
+  border-color: rgba(138, 97, 53, 0.32);
 }
 
 .wiki-category-tab.active {
@@ -6681,52 +6700,58 @@ select {
 }
 
 .wiki-category-tab small {
-  min-width: 1.65rem;
-  padding: 2px 6px;
+  min-width: 1.55rem;
+  padding: 2px 7px;
   border-radius: 999px;
   background: rgba(127, 152, 114, 0.16);
   color: var(--sage);
   text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .wiki-entry-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .wiki-entry-card,
 .wiki-related-card {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
   width: 100%;
-  min-height: 88px;
+  min-height: 112px;
   margin-bottom: 0;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 14px;
   background: var(--surface);
   color: var(--ink);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(94, 70, 39, 0.05);
+  box-shadow: 0 6px 14px rgba(94, 70, 39, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .wiki-entry-card:hover,
 .wiki-related-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: rgba(138, 97, 53, 0.32);
+  box-shadow: 0 14px 26px rgba(94, 70, 39, 0.1);
 }
 
 .wiki-entry-card-media,
 .wiki-related-card img {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   object-fit: cover;
   background: #f1e8d2;
+  align-self: center;
 }
 
 .wiki-entry-card-index,
@@ -6734,39 +6759,49 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.4rem;
+  width: 88px;
+  height: 88px;
   border: 1px solid rgba(138, 97, 53, 0.24);
-  border-radius: 999px;
+  border-radius: 10px;
   background: rgba(220, 196, 157, 0.18);
   color: var(--accent);
   font-family: "Courier New", monospace;
   font-weight: 700;
   letter-spacing: 0.06em;
+  align-self: center;
 }
 
 .wiki-entry-card-copy,
 .wiki-related-card span {
   display: grid;
   gap: 4px;
+  align-content: center;
   min-width: 0;
 }
 
 .wiki-entry-card-copy strong,
 .wiki-related-card strong {
   overflow-wrap: anywhere;
+  font-size: 1.05rem;
+  line-height: 1.2;
 }
 
 .wiki-entry-card-copy > span:last-child,
 .wiki-related-card small {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   color: rgba(47, 36, 25, 0.7);
-  line-height: 1.35;
+  line-height: 1.4;
+  font-size: 0.88rem;
 }
 
 .wiki-entry-card-kicker {
   color: var(--sage);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -6777,6 +6812,23 @@ select {
 
 .wiki-back-button {
   justify-self: start;
+}
+
+@media (max-width: 520px) {
+  .wiki-entry-card,
+  .wiki-related-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-height: 96px;
+    gap: 12px;
+  }
+
+  .wiki-entry-card-media,
+  .wiki-related-card img,
+  .wiki-entry-card-index,
+  .wiki-section-index {
+    width: 72px;
+    height: 72px;
+  }
 }
 
 /* --- Recipes --- */
