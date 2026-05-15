@@ -90,6 +90,32 @@ sudo app/scripts/setup-nginx-production.sh --install --tls on
 
 The script defaults to proxying nginx to the Node app on `127.0.0.1:3021`. Use `--port <PORT>` if production runs the app on another port.
 
+## PM2 Setup
+
+The repo includes a production PM2 helper that builds the web bundle, starts the Express app, saves the PM2 process list, and installs the systemd startup hook:
+
+```bash
+# Make sure .env contains production values before running this.
+app/scripts/setup-pm2-production.sh --check-only
+app/scripts/setup-pm2-production.sh
+
+# If PM2 is not installed yet:
+sudo app/scripts/setup-pm2-production.sh --install-pm2
+
+# If you keep production secrets outside .env:
+app/scripts/setup-pm2-production.sh --env-file .env.production
+```
+
+The script refuses to start production unless the selected env file contains `DATABASE_URL=postgres://...` or `DATABASE_URL=postgresql://...`. This keeps production on PostgreSQL instead of the local SQLite fallback. It starts the app as `mushroom-battles` on `PORT=3021` by default; use `--port <PORT>` if nginx proxies to another port.
+
+Useful server checks:
+
+```bash
+pm2 status mushroom-battles
+pm2 logs mushroom-battles
+curl -I http://127.0.0.1:3021
+```
+
 ## Sending Real Game Messages
 
 To get Telegram's in-chat Game preview and scoreboard UI, the bot must send a Game message, not only a Mini App link:
