@@ -989,8 +989,21 @@ export async function createApp() {
     },
     express.static(path.join(webPublic, 'portraits'))
   );
-  app.use(express.static(webDist));
+  app.use(express.static(webDist, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store, must-revalidate');
+        return;
+      }
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        return;
+      }
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }));
   app.get(/.*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, must-revalidate');
     res.sendFile(path.join(webDist, 'index.html'));
   });
 
