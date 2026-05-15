@@ -9,6 +9,8 @@ UPSTREAM_PORT="${PORT:-3021}"
 TLS_MODE="auto"
 CERT_PATH=""
 KEY_PATH=""
+CERTBOT_SSL_OPTIONS="/etc/letsencrypt/options-ssl-nginx.conf"
+CERTBOT_SSL_DHPARAM="/etc/letsencrypt/ssl-dhparams.pem"
 INSTALL=0
 RELOAD=1
 NGINX_AVAILABLE="/etc/nginx/sites-available"
@@ -37,6 +39,8 @@ Options:
   --tls auto|on|off    auto uses HTTPS only when cert files exist. Default: auto
   --cert PATH          TLS fullchain path. Default: /etc/letsencrypt/live/DOMAIN/fullchain.pem
   --key PATH           TLS private key path. Default: /etc/letsencrypt/live/DOMAIN/privkey.pem
+  --ssl-options PATH   Optional Certbot SSL options include.
+  --ssl-dhparam PATH   Optional Certbot ssl_dhparam file.
   --install            Write to sites-available, enable symlink, nginx -t, reload.
   --no-reload          Validate but do not reload nginx.
   --available DIR      sites-available directory. Default: /etc/nginx/sites-available
@@ -70,6 +74,8 @@ while [[ $# -gt 0 ]]; do
     --tls) need_arg "$@"; TLS_MODE="$2"; shift 2 ;;
     --cert) need_arg "$@"; CERT_PATH="$2"; shift 2 ;;
     --key) need_arg "$@"; KEY_PATH="$2"; shift 2 ;;
+    --ssl-options) need_arg "$@"; CERTBOT_SSL_OPTIONS="$2"; shift 2 ;;
+    --ssl-dhparam) need_arg "$@"; CERTBOT_SSL_DHPARAM="$2"; shift 2 ;;
     --install) INSTALL=1; shift ;;
     --no-reload) RELOAD=0; shift ;;
     --available) need_arg "$@"; NGINX_AVAILABLE="$2"; shift 2 ;;
@@ -131,6 +137,33 @@ render_proxy_locations() {
 EOF
 }
 
+render_tls_settings() {
+  cat <<EOF
+  ssl_certificate ${CERT_PATH};
+  ssl_certificate_key ${KEY_PATH};
+EOF
+
+  if [[ -f "$CERTBOT_SSL_OPTIONS" ]]; then
+    cat <<EOF
+  include ${CERTBOT_SSL_OPTIONS};
+EOF
+  else
+    cat <<'EOF'
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers off;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 1d;
+  ssl_session_tickets off;
+EOF
+  fi
+
+  if [[ -f "$CERTBOT_SSL_DHPARAM" ]]; then
+    cat <<EOF
+  ssl_dhparam ${CERTBOT_SSL_DHPARAM};
+EOF
+  fi
+}
+
 render_config() {
   cat <<EOF
 # Managed by app/scripts/setup-nginx-production.sh.
@@ -172,20 +205,15 @@ EOF
 EOF
     cat <<EOF
 server {
-  listen 443 ssl http2;
-  listen [::]:443 ssl http2;
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  http2 on;
   server_name ${SERVER_NAMES};
 
   access_log /var/log/nginx/${SITE_NAME}.access.log;
   error_log /var/log/nginx/${SITE_NAME}.error.log warn;
 
-  ssl_certificate ${CERT_PATH};
-  ssl_certificate_key ${KEY_PATH};
-  ssl_protocols TLSv1.2 TLSv1.3;
-  ssl_prefer_server_ciphers off;
-  ssl_session_cache shared:SSL:10m;
-  ssl_session_timeout 1d;
-  ssl_session_tickets off;
+$(render_tls_settings)
 
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
