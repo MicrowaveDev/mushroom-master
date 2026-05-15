@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Mushroom Battles</title>
+  <desc id="desc">A battle mushroom cap over crossed artifact blades.</desc>
+  <rect width="512" height="512" rx="112" fill="#f7efe1"/>
+  <circle cx="256" cy="254" r="186" fill="#d9c59a"/>
+  <path d="M145 330 329 146c18-18 49 13 31 31L176 361c-18 18-49-13-31-31Z" fill="#5d3d2a"/>
+  <path d="M367 330 183 146c-18-18-49 13-31 31l184 184c18 18 49-13 31-31Z" fill="#6c8a5f"/>
+  <path d="M110 226c6-78 69-136 146-136s140 58 146 136c2 28-21 52-49 52H159c-28 0-51-24-49-52Z" fill="#9b4f3f"/>
+  <path d="M183 228c7-30 35-52 73-52s66 22 73 52c6 27-15 50-43 50h-60c-28 0-49-23-43-50Z" fill="#f7efe1"/>
+  <circle cx="186" cy="180" r="24" fill="#f7efe1"/>
+  <circle cx="326" cy="180" r="24" fill="#f7efe1"/>
+  <path d="M222 270h68l18 104c5 31-19 58-52 58s-57-27-52-58l18-104Z" fill="#ead7b3"/>
+  <path d="M215 347h82" stroke="#5d3d2a" stroke-width="22" stroke-linecap="round"/>
+</svg>

@@ -52,6 +52,7 @@ export const AuthScreen = {
           <button class="secondary" @click="$emit('login-browser')">{{ t.authBrowser }}</button>
           <button v-if="isLocalDevAuthEnabled" class="ghost" @click="$emit('login-dev')">{{ t.authDev }}</button>
         </div>
+        <p class="auth-browser-note">{{ t.authBrowserNote }}</p>
         <div v-if="state.authCode" class="note">
           <p>{{ t.botCodeHint }}</p>
           <a :href="state.authCode.botUrl" target="_blank">{{ state.authCode.botUrl }}</a>

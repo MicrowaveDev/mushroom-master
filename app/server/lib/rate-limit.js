@@ -28,12 +28,13 @@ function getBucket(playerId, now, capacity, refillPerSec) {
 export function rateLimit({
   capacity = DEFAULT_CAPACITY,
   refillPerSec = DEFAULT_REFILL_PER_SEC,
-  force = false
+  force = false,
+  keyFn = (req) => req.user?.id
 } = {}) {
   const disabled = !force && process.env.NODE_ENV !== 'production';
   return function rateLimitMiddleware(req, res, next) {
     if (disabled) return next();
-    const playerId = req.user?.id;
+    const playerId = keyFn(req);
     if (!playerId) return next();
 
     const bucket = getBucket(playerId, Date.now(), capacity, refillPerSec);

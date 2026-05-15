@@ -86,7 +86,8 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await expect(page.locator('.auth-title')).toBeVisible();
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await expect(page.getByRole('button', { name: /Telegram/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /код бота|bot code/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /играть в браузере|play in browser/i })).toBeVisible();
+  await expect(page.locator('.auth-browser-note')).toBeVisible();
   await expect(page.getByRole('button', { name: /локальная сессия|local session/i })).toBeVisible();
   await expect(page.locator('.auth-lang-row')).toBeVisible();
   await saveShot(page, '01-auth-gate-desktop.png');

@@ -202,3 +202,25 @@ test('rate-limit: unauthenticated requests bypass the limiter', () => {
   mw({ user: undefined, headers: {} }, makeRes(), () => { called++; });
   assert.equal(called, 2, 'anonymous requests should not be rate-limited here');
 });
+
+test('rate-limit: custom keyFn supports public IP-scoped buckets', () => {
+  clearRateLimitBuckets();
+  const mw = rateLimit({
+    capacity: 1,
+    refillPerSec: 0,
+    force: true,
+    keyFn: (req) => req.headers['x-forwarded-for'] || req.ip
+  });
+
+  let firstPassed = false;
+  mw({ user: null, headers: { 'x-forwarded-for': '203.0.113.1' } }, makeRes(), () => { firstPassed = true; });
+  assert.equal(firstPassed, true);
+
+  const rejected = makeRes();
+  mw({ user: null, headers: { 'x-forwarded-for': '203.0.113.1' } }, rejected, () => {});
+  assert.equal(rejected.statusCode, 429);
+
+  let secondIpPassed = false;
+  mw({ user: null, headers: { 'x-forwarded-for': '203.0.113.2' } }, makeRes(), () => { secondIpPassed = true; });
+  assert.equal(secondIpPassed, true, 'a different public IP should get a separate bucket');
+});

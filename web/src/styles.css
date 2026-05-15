@@ -209,6 +209,13 @@ select {
   padding: 14px 20px;
 }
 
+.auth-browser-note {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.82em;
+  line-height: 1.35;
+}
+
 .auth-lang-row {
   display: flex;
   justify-content: center;

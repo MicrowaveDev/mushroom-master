@@ -171,6 +171,24 @@ function verifyTelegramWebhookSecret(req, res) {
   return true;
 }
 
+function clientIp(req) {
+  const forwardedFor = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwardedFor || req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+function securityHeaders() {
+  return function securityHeadersMiddleware(_req, res, next) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    }
+    next();
+  };
+}
+
 function asyncRoute(handler) {
   return async (req, res, next) => {
     try {
@@ -241,10 +259,16 @@ export async function createApp() {
   syncPublicPortraitsToDist();
   const app = express();
   app.use(express.json({ limit: '2mb' }));
+  app.use(securityHeaders());
   app.use(requestLogger());
   app.use(authenticateRequest);
 
   const runMutationGuards = [rateLimit(), idempotency()];
+  const publicAuthRateLimit = rateLimit({
+    capacity: 8,
+    refillPerSec: 1 / 30,
+    keyFn: (req) => `ip:${clientIp(req)}`
+  });
 
   app.get('/api/health', (_req, res) => {
     res.json({ success: true, data: { ok: true } });
@@ -264,6 +288,7 @@ export async function createApp() {
 
   app.post(
     '/api/auth/telegram',
+    publicAuthRateLimit,
     asyncRoute(async (req, res) => {
       const result = await loginWithTelegram(req.body.initData, process.env.TELEGRAM_BOT_TOKEN || '');
       res.json({
@@ -293,6 +318,7 @@ export async function createApp() {
 
   app.post(
     '/api/auth/telegram/code',
+    publicAuthRateLimit,
     asyncRoute(async (_req, res) => {
       const payload = await createBrowserFallbackPayload(botUsername());
       res.json({ success: true, data: payload });
@@ -301,6 +327,7 @@ export async function createApp() {
 
   app.post(
     '/api/auth/telegram/verify-code',
+    publicAuthRateLimit,
     asyncRoute(async (req, res) => {
       const result = await verifyTelegramAuthCode(req.body.privateCode);
       if (!result.success) {
@@ -326,6 +353,7 @@ export async function createApp() {
 
   app.post(
     '/api/auth/web',
+    publicAuthRateLimit,
     asyncRoute(async (req, res) => {
       const result = await loginWithWebSession(req.body || {});
       res.json({
