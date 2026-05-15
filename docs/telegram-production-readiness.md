@@ -69,6 +69,27 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 
 Production refuses unauthenticated webhook requests unless `X-Telegram-Bot-Api-Secret-Token` matches `TELEGRAM_WEBHOOK_SECRET`.
 
+## Nginx Setup
+
+The repo includes a production nginx helper:
+
+```bash
+# Print the generated config without changing the server.
+app/scripts/setup-nginx-production.sh
+
+# First install HTTP reverse proxy so certbot can complete ACME challenges.
+sudo app/scripts/setup-nginx-production.sh --install --tls off
+
+# Request the certificate after DNS points mushroombattles.com at the server.
+sudo certbot certonly --webroot -w /var/www/certbot \
+  -d mushroombattles.com -d www.mushroombattles.com
+
+# Reinstall with HTTPS redirect and TLS proxying enabled.
+sudo app/scripts/setup-nginx-production.sh --install --tls on
+```
+
+The script defaults to proxying nginx to the Node app on `127.0.0.1:3021`. Use `--port <PORT>` if production runs the app on another port.
+
 ## Sending Real Game Messages
 
 To get Telegram's in-chat Game preview and scoreboard UI, the bot must send a Game message, not only a Mini App link:
