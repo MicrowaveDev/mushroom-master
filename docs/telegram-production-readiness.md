@@ -48,10 +48,14 @@ TELEGRAM_BOT_USERNAME=mushroom_game_bot
 TELEGRAM_MINI_APP_NAME=app
 TELEGRAM_GAME_SHORT_NAME=mushroom_master
 TELEGRAM_WEBHOOK_SECRET=<random-long-secret>
-DATABASE_URL=postgres://...
+POSTGRES_DB=mushroom_battles
+POSTGRES_USER=mushroom_user
+POSTGRES_PASSWORD=<strong-random-password>
 ```
 
 `PUBLIC_GAME_URL` is used for public links and previews. `TELEGRAM_GAME_URL` is used when Telegram presses the Play button on a Game message. They can be the same URL.
+
+Docker Compose production sets `DATABASE_URL` automatically for the app container as `postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/$POSTGRES_DB`.
 
 ## Webhook Setup
 
@@ -90,30 +94,43 @@ sudo app/scripts/setup-nginx-production.sh --install --tls on
 
 The script defaults to proxying nginx to the Node app on `127.0.0.1:3021`. Use `--port <PORT>` if production runs the app on another port.
 
-## PM2 Setup
+## Docker Compose Setup
 
-The repo includes a production PM2 helper that builds the web bundle, starts the Express app, saves the PM2 process list, and installs the systemd startup hook:
+The repo includes a production Docker Compose setup with one app container and one Postgres container:
 
 ```bash
-# Make sure .env contains production values before running this.
-app/scripts/setup-pm2-production.sh --check-only
-app/scripts/setup-pm2-production.sh
+# If this server was previously running the PM2 setup, stop it first.
+pm2 delete mushroom-battles || true
+pm2 save || true
 
-# If PM2 is not installed yet:
-sudo app/scripts/setup-pm2-production.sh --install-pm2
+# Make sure .env contains production values before running this.
+app/scripts/setup-docker-production.sh --check-only
+app/scripts/setup-docker-production.sh
+
+# Pull the Postgres image before starting, useful on first deploy.
+app/scripts/setup-docker-production.sh --pull
 
 # If you keep production secrets outside .env:
-app/scripts/setup-pm2-production.sh --env-file .env.production
+app/scripts/setup-docker-production.sh --env-file .env.production
 ```
 
-The script refuses to start production unless the selected env file contains `DATABASE_URL=postgres://...` or `DATABASE_URL=postgresql://...`. This keeps production on PostgreSQL instead of the local SQLite fallback. It starts the app as `mushroom-battles` on `PORT=3021` by default; use `--port <PORT>` if nginx proxies to another port.
+The app container listens on `127.0.0.1:${PORT:-3021}` on the host, so nginx can keep proxying to `127.0.0.1:3021`. The Postgres data is stored in the named Docker volume `mushroom-master_mushroom_battles_postgres` unless the Compose project name is overridden.
+
+The setup script refuses to start unless the selected env file includes `POSTGRES_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, and `TELEGRAM_WEBHOOK_SECRET`. `DATABASE_URL` is injected into the app container from the Compose file so production uses the Postgres service, not SQLite.
 
 Useful server checks:
 
 ```bash
-pm2 status mushroom-battles
-pm2 logs mushroom-battles
+docker compose --env-file .env -f docker-compose.production.yml ps
+docker compose --env-file .env -f docker-compose.production.yml logs -f app
 curl -I http://127.0.0.1:3021
+```
+
+Back up the production database before risky deploys:
+
+```bash
+docker compose --env-file .env -f docker-compose.production.yml exec postgres \
+  sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > mushroom_battles.dump.sql
 ```
 
 ## Sending Real Game Messages

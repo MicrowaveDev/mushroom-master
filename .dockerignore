@@ -1,0 +1,14 @@
+.git
+.agent
+node_modules
+npm-debug.log
+.env
+.env.*
+tmp
+screenshots
+test-results
+playwright-report
+data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

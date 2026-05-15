@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mushroom_battles}
+      POSTGRES_USER: ${POSTGRES_USER:-mushroom_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - mushroom_battles_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3021
+      PUBLIC_GAME_URL: ${PUBLIC_GAME_URL:-https://mushroombattles.com/}
+      TELEGRAM_GAME_URL: ${TELEGRAM_GAME_URL:-https://mushroombattles.com/}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN is required}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:?TELEGRAM_BOT_USERNAME is required}
+      TELEGRAM_MINI_APP_NAME: ${TELEGRAM_MINI_APP_NAME:-app}
+      TELEGRAM_GAME_SHORT_NAME: ${TELEGRAM_GAME_SHORT_NAME:-mushroom_master}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:?TELEGRAM_WEBHOOK_SECRET is required}
+      BOT_SEND_TO_CHANNEL: ${BOT_SEND_TO_CHANNEL:-false}
+      ADMIN_CHAT_IDS: ${ADMIN_CHAT_IDS:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-mushroom_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-mushroom_battles}
+      SQLITE_STORAGE: ""
+    ports:
+      - "127.0.0.1:${PORT:-3021}:3021"
+
+volumes:
+  mushroom_battles_postgres:
