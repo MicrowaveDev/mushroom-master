@@ -416,6 +416,7 @@ const App = {
       loginViaTelegram: auth.loginViaTelegram,
       loginViaBrowserCode: auth.loginViaBrowserCode,
       loginViaDevSession: auth.loginViaDevSession,
+      cancelTelegramCodeLogin: auth.cancelTelegramCodeLogin,
       handleLogout,
       saveCharacter,
       completeFusionReveal,
@@ -540,6 +541,7 @@ const App = {
         @login-telegram="loginViaTelegram"
         @login-browser="loginViaBrowserCode"
         @login-dev="loginViaDevSession"
+        @cancel-telegram-code="cancelTelegramCodeLogin"
       />
 
       <template v-else-if="state.bootstrap">

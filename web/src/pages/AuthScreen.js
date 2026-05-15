@@ -9,7 +9,7 @@ const AUTH_PORTRAITS = ['thalla', 'lomie', 'kirt'].map((mushroomId) => ({
 export const AuthScreen = {
   name: 'AuthScreen',
   props: ['state', 't', 'isLocalDevAuthEnabled'],
-  emits: ['login-telegram', 'login-browser', 'login-dev'],
+  emits: ['login-telegram', 'login-browser', 'login-dev', 'cancel-telegram-code'],
   data() {
     return {
       authPortraits: AUTH_PORTRAITS
@@ -54,8 +54,11 @@ export const AuthScreen = {
         </div>
         <p class="auth-browser-note">{{ t.authBrowserNote }}</p>
         <div v-if="state.authCode" class="note">
+          <p><strong>{{ t.botCodeTitle }}</strong></p>
           <p>{{ t.botCodeHint }}</p>
-          <a :href="state.authCode.botUrl" target="_blank">{{ state.authCode.botUrl }}</a>
+          <a :href="state.authCode.botUrl" target="_blank" rel="noopener noreferrer">{{ t.botCodeOpen }}</a>
+          <p class="muted">{{ t.botCodeWaiting }}</p>
+          <button class="ghost" @click="$emit('cancel-telegram-code')">{{ t.botCodeCancel }}</button>
         </div>
         <div class="auth-lang-row">
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>

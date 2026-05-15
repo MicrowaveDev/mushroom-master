@@ -5,6 +5,7 @@ This is the Telegram launch checklist for Mushroom Battles. The game should also
 ## What Is Implemented In Repo
 
 - The app validates Telegram Mini App `initData` before creating a session.
+- Telegram login supports two paths: signed Mini App `initData` inside Telegram and a one-time bot-code handoff when a browser session does not have `initData`.
 - Visitors outside Telegram can create a browser-backed web session through `/api/auth/web`; the frontend stores a local browser id so progress survives normal page reloads and session renewal on the same device/browser.
 - Public auth endpoints are IP rate-limited in production to reduce account-creation and auth-code abuse.
 - Direct Mini App links are generated as `https://t.me/<bot>/<mini-app-name>?startapp=<payload>`.
@@ -73,6 +74,8 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 ```
 
 Production refuses unauthenticated webhook requests unless `X-Telegram-Bot-Api-Secret-Token` matches `TELEGRAM_WEBHOOK_SECRET`.
+
+The browser-to-bot Telegram login path also depends on this webhook. When a player opens the bot link and sends `/start auth-...`, Telegram must deliver that update to `/api/bot/webhook` so the waiting browser session can complete.
 
 ## Nginx Setup
 

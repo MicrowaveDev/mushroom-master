@@ -1,11 +1,39 @@
 import { apiJson, parseStartParams } from '../api.js';
-import { buildTelegramMiniAppLink } from '../helpers/telegram-links.js';
 import { projectLoadoutItems } from './loadout-projection.js';
 import { useTelegramWebApp } from './useTelegramWebApp.js';
 
 const BOOTSTRAP_CACHE_KEY = 'mushroomBootstrapCache';
 const WEB_CLIENT_ID_KEY = 'mushroomWebClientId';
 const BOOTSTRAP_LOADER_DELAY_MS = 320;
+const TELEGRAM_AUTH_POLL_INTERVAL_MS = 3000;
+const TELEGRAM_AUTH_MAX_POLLS = 200;
+
+export function extractTelegramInitData({ win = globalThis.window, telegram } = {}) {
+  const directInitData = telegram?.getWebApp?.()?.initData || win?.Telegram?.WebApp?.initData;
+  if (typeof directInitData === 'string' && directInitData.trim()) {
+    return directInitData.trim();
+  }
+
+  const candidates = [];
+  if (win?.location?.search) candidates.push(win.location.search.replace(/^\?/, ''));
+  if (win?.location?.hash) {
+    const hashQuery = String(win.location.hash).split('?')[1] || String(win.location.hash).replace(/^#/, '');
+    candidates.push(hashQuery);
+  }
+
+  for (const candidate of candidates) {
+    const params = new URLSearchParams(candidate);
+    const raw = params.get('tgWebAppData');
+    if (!raw) continue;
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+
+  return '';
+}
 
 export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   function navigate(screen, extra = {}, options = {}) {
@@ -259,29 +287,85 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     }
   }
 
-  async function loginViaTelegram() {
-    clearAuthPoll();
-    const initData = telegram.getWebApp()?.initData;
-    if (!initData) {
-      const telegramLink = buildTelegramMiniAppLink({
-        botUsername: state.appConfig?.botUsername,
-        startParam: 'web_entry'
-      });
-      if (telegramLink) {
-        window.location.href = telegramLink;
-      } else {
-        state.error = 'Telegram is available only inside the Telegram app.';
-      }
+  function openTelegramAuthLink(botUrl) {
+    if (!botUrl) return;
+    const tg = telegram.getWebApp?.();
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(botUrl);
       return;
     }
+    globalThis.open?.(botUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  async function verifyTelegramAuthCode(privateCode) {
+    const response = await fetch('/api/auth/telegram/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ privateCode })
+    });
+    const json = await response.json();
+    if (!json.success && !json.needsBotAuth) {
+      throw new Error(json.error || 'Telegram bot login failed');
+    }
+    return json;
+  }
+
+  function pollTelegramAuthCode(privateCode, attempt = 0) {
+    clearAuthPoll();
+    authPollTimer = globalThis.setTimeout(async () => {
+      try {
+        const result = await verifyTelegramAuthCode(privateCode);
+        if (result.success) {
+          state.sessionKey = result.data.sessionKey;
+          localStorage.setItem('sessionKey', result.data.sessionKey);
+          state.authCode = null;
+          await refreshBootstrap();
+          return;
+        }
+        if (attempt + 1 >= TELEGRAM_AUTH_MAX_POLLS) {
+          state.authCode = null;
+          state.error = state.lang === 'ru'
+            ? 'Вход через Telegram не подтверждён. Попробуй ещё раз.'
+            : 'Telegram login was not confirmed. Try again.';
+          return;
+        }
+        pollTelegramAuthCode(privateCode, attempt + 1);
+      } catch (error) {
+        state.authCode = null;
+        state.error = error.message || 'Telegram bot login failed';
+      }
+    }, TELEGRAM_AUTH_POLL_INTERVAL_MS);
+  }
+
+  async function startTelegramBotCodeLogin() {
+    const data = await apiJson('/api/auth/telegram/code', { method: 'POST' });
+    state.authCode = data;
+    openTelegramAuthLink(data.botUrl);
+    pollTelegramAuthCode(data.privateCode);
+  }
+
+  async function loginViaTelegram() {
+    clearAuthPoll();
+    state.error = '';
     try {
+      const initData = extractTelegramInitData({ telegram });
+      if (!initData) {
+        await startTelegramBotCodeLogin();
+        return;
+      }
       const data = await apiJson('/api/auth/telegram', { method: 'POST', body: JSON.stringify({ initData }) });
       state.sessionKey = data.sessionKey;
       localStorage.setItem('sessionKey', data.sessionKey);
+      state.authCode = null;
       await refreshBootstrap();
     } catch (error) {
       state.error = error.message || 'Telegram login failed';
     }
+  }
+
+  function cancelTelegramCodeLogin() {
+    clearAuthPoll();
+    state.authCode = null;
   }
 
   async function loginViaBrowserCode() {
@@ -383,6 +467,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   return {
     applyTelegramTheme, refreshBootstrap,
     loginViaTelegram, loginViaBrowserCode, loginViaDevSession,
+    cancelTelegramCodeLogin,
     logout,
     saveCharacter, saveSettings
   };
