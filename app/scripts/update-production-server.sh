@@ -156,16 +156,33 @@ docker_build_cache_kb() {
   printf '%s\n' "$total_kb"
 }
 
+docker_context_extra_kb() {
+  local total=0
+  local size
+  for path in \
+    "${PROJECT_ROOT}/node_modules" \
+    "${PROJECT_ROOT}/screenshots" \
+    "${PROJECT_ROOT}/test-results" \
+    "${PROJECT_ROOT}/playwright-report" \
+    "${PROJECT_ROOT}/data"; do
+    size="$(path_size_kb "$path")"
+    total=$((total + size))
+  done
+  printf '%s\n' "$total"
+}
+
 print_disk_summary() {
   local free_kb="$1"
   local repo_cache_kb="$2"
   local docker_cache_kb="$3"
+  local context_extra_kb="$4"
 
   echo ""
   echo "Disk/cache summary:"
-  echo "  root free:          $(df -h / | awk 'NR == 2 { print $4 }')"
-  echo "  repo build cache:   $((repo_cache_kb / 1024)) MB"
-  echo "  docker build cache: $((docker_cache_kb / 1024)) MB"
+  echo "  root free:            $(df -h / | awk 'NR == 2 { print $4 }')"
+  echo "  repo build cache:     $((repo_cache_kb / 1024)) MB"
+  echo "  docker build cache:   $((docker_cache_kb / 1024)) MB"
+  echo "  excluded local files: $((context_extra_kb / 1024)) MB"
 }
 
 cleanup_repo_cache() {
@@ -203,6 +220,7 @@ maybe_cleanup_docker_space() {
   local free_kb
   local repo_cache_kb
   local docker_cache_kb
+  local context_extra_kb
   local needs_cleanup=0
   local remove_repo_cache=0
   local cleanup_mode="preflight"
@@ -214,8 +232,9 @@ maybe_cleanup_docker_space() {
   free_kb="$(root_free_kb)"
   repo_cache_kb="$(repo_build_cache_kb)"
   docker_cache_kb="$(docker_build_cache_kb)"
+  context_extra_kb="$(docker_context_extra_kb)"
 
-  print_disk_summary "$free_kb" "$repo_cache_kb" "$docker_cache_kb"
+  print_disk_summary "$free_kb" "$repo_cache_kb" "$docker_cache_kb" "$context_extra_kb"
 
   if [[ "$AGGRESSIVE_CLEANUP" -eq 1 ]]; then
     needs_cleanup=1
@@ -246,6 +265,10 @@ maybe_cleanup_docker_space() {
   free_kb="$(root_free_kb)"
   if [[ -n "$free_kb" && "$free_kb" -lt "$MIN_FREE_DISK_AFTER_CLEANUP_KB" ]]; then
     die "root free space is still too low for a Docker build: $(df -h / | awk 'NR == 2 { print $4 }') free"
+  fi
+
+  if [[ -n "$context_extra_kb" && "$context_extra_kb" -gt "$MAX_REPO_BUILD_CACHE_KB" ]]; then
+    echo "Large local deploy artifacts are present but excluded from Docker context by .dockerignore."
   fi
 }
 
