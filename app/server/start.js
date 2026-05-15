@@ -43,7 +43,7 @@ async function runPrune() {
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Telegram Mushroom Battles listening on http://localhost:${port}`);
+  console.log(`Mushroom Battles server listening on http://localhost:${port}`);
 
   runPrune();
   const pruneTimer = setInterval(runPrune, PRUNE_INTERVAL_MS);

@@ -159,6 +159,25 @@ export async function loginWithDevSession(payload = {}) {
   });
 }
 
+export async function loginWithWebSession(payload = {}) {
+  const clientId = String(payload.clientId || '').trim();
+  if (!/^[a-zA-Z0-9:_-]{8,80}$/.test(clientId)) {
+    throw new Error('Invalid browser session id');
+  }
+  return withTransaction(async (client) => {
+    const syntheticWebUser = {
+      id: `web:${clientId}`,
+      username: null,
+      first_name: payload.name || 'Web',
+      last_name: payload.lastName || 'Player',
+      language_code: payload.lang || 'ru'
+    };
+    const player = await upsertTelegramPlayerWithClient(client, syntheticWebUser);
+    const session = await createSession(client, player.id, 'web');
+    return { player, session };
+  });
+}
+
 export async function loginWithTelegram(initData, botToken) {
   if (!verifyTelegramInitData(initData, botToken)) {
     throw new Error('Invalid Telegram signature');

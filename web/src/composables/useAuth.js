@@ -1,8 +1,10 @@
 import { apiJson, parseStartParams } from '../api.js';
+import { buildTelegramMiniAppLink } from '../helpers/telegram-links.js';
 import { projectLoadoutItems } from './loadout-projection.js';
 import { useTelegramWebApp } from './useTelegramWebApp.js';
 
 const BOOTSTRAP_CACHE_KEY = 'mushroomBootstrapCache';
+const WEB_CLIENT_ID_KEY = 'mushroomWebClientId';
 const BOOTSTRAP_LOADER_DELAY_MS = 320;
 
 export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
@@ -261,7 +263,15 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     clearAuthPoll();
     const initData = telegram.getWebApp()?.initData;
     if (!initData) {
-      state.error = 'Missing Telegram initData';
+      const telegramLink = buildTelegramMiniAppLink({
+        botUsername: state.appConfig?.botUsername,
+        startParam: 'web_entry'
+      });
+      if (telegramLink) {
+        window.location.href = telegramLink;
+      } else {
+        state.error = 'Telegram is available only inside the Telegram app.';
+      }
       return;
     }
     try {
@@ -276,34 +286,23 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
 
   async function loginViaBrowserCode() {
     clearAuthPoll();
-    state.authCode = await apiJson('/api/auth/telegram/code', { method: 'POST' });
-    const startedAt = Date.now();
-    const poll = async () => {
-      if (!state.authCode || Date.now() - startedAt > 10 * 60 * 1000) {
-        state.error = 'Telegram auth timed out';
-        authPollTimer = null;
-        return;
-      }
-      try {
-        const result = await fetch('/api/auth/telegram/verify-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ privateCode: state.authCode.privateCode })
-        });
-        const json = await result.json();
-        if (json.success) {
-          state.sessionKey = json.data.sessionKey;
-          localStorage.setItem('sessionKey', json.data.sessionKey);
-          state.authCode = null;
-          authPollTimer = null;
-          await refreshBootstrap();
-          return;
-        }
-      } catch (_error) {}
-      authPollTimer = window.setTimeout(poll, 3000);
-    };
-    window.open(state.authCode.botUrl, '_blank');
-    poll();
+    let clientId = localStorage.getItem(WEB_CLIENT_ID_KEY);
+    if (!clientId) {
+      clientId = globalThis.crypto?.randomUUID?.() || `web_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(WEB_CLIENT_ID_KEY, clientId);
+    }
+    try {
+      const data = await apiJson('/api/auth/web', {
+        method: 'POST',
+        body: JSON.stringify({ clientId, lang: state.lang })
+      });
+      state.sessionKey = data.sessionKey;
+      localStorage.setItem('sessionKey', data.sessionKey);
+      state.authCode = null;
+      await refreshBootstrap();
+    } catch (error) {
+      state.error = error.message || 'Browser login failed';
+    }
   }
 
   async function loginViaDevSession() {

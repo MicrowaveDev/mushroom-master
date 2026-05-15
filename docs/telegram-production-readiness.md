@@ -1,17 +1,18 @@
 # Telegram Production Readiness
 
-This is the launch checklist for making Mushroom Battles behave like a real Telegram Mini App plus a classic Telegram Game surface.
+This is the Telegram launch checklist for Mushroom Battles. The game should also remain usable as a normal web game for visitors who arrive from Google or direct web links.
 
 ## What Is Implemented In Repo
 
 - The app validates Telegram Mini App `initData` before creating a session.
+- Visitors outside Telegram can create a browser-backed web session through `/api/auth/web`; the frontend stores a local browser id so progress survives normal page reloads and session renewal on the same device/browser.
 - Direct Mini App links are generated as `https://t.me/<bot>/<mini-app-name>?startapp=<payload>`.
 - Friend invites now use Telegram's native share link inside Telegram clients before falling back to browser share/clipboard.
 - The server exposes `/api/bot/webhook` for Bot API updates.
 - Game callback queries with `game_short_name` are answered through `answerCallbackQuery` with a launch URL.
 - `/api/bot/game-score` can report a Telegram Game score through `setGameScore` when the client provides the Telegram game message context.
 - The frontend captures `tgGameChatId`, `tgGameMessageId`, and `tgInlineMessageId` from Telegram Game launch URLs and reports the season score when a run completes.
-- The HTML shell includes basic Open Graph metadata for Telegram link previews.
+- The HTML shell includes basic SEO, Open Graph, Twitter, and structured metadata for web search and Telegram link previews.
 
 ## BotFather Setup
 

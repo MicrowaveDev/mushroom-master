@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import {
   authenticateRequest,
   createTelegramAuthCode,
+  loginWithWebSession,
   loginWithTelegram,
   pruneExpiredAuthRecords,
   verifyTelegramAuthCode,
@@ -75,6 +76,29 @@ test('telegram auth and shared session bootstrap work', async () => {
   await authenticateRequest(bearerReq, {}, next);
   assert.equal(bearerReq.authenticated, true);
   assert.equal(bearerReq.user.name, 'Thalla');
+});
+
+test('web auth creates a browser-playable session without Telegram initData', async () => {
+  await freshDb();
+  const login = await loginWithWebSession({
+    clientId: 'browser-player-001',
+    name: 'Browser',
+    lastName: 'Player',
+    lang: 'en'
+  });
+
+  assert.ok(login.session.sessionKey);
+  assert.equal(login.session.provider, 'web');
+  assert.equal(login.player.telegram_id, 'web:browser-player-001');
+  assert.equal(login.player.name, 'Browser Player');
+
+  const secondLogin = await loginWithWebSession({
+    clientId: 'browser-player-001',
+    name: 'Browser',
+    lastName: 'Player',
+    lang: 'en'
+  });
+  assert.equal(secondLogin.player.id, login.player.id);
 });
 
 test('browser fallback auth code can be confirmed through the bot start flow', async () => {

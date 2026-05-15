@@ -2,12 +2,12 @@
 
 ## V1 Game App
 
-This repository now also contains the v1 Telegram Mushroom Battles described in `docs/telegram-mushroom-autobattler-plan.md`.
+This repository now also contains the v1 Mushroom Battles web game with Telegram Mini App and Telegram Game integration described in `docs/telegram-mushroom-autobattler-plan.md`.
 
 Game implementation surfaces:
 
 - backend: `app/server/`
-- frontend Mini App: `web/`
+- frontend web game / Mini App: `web/`
 - structured wiki source: `wiki/`
 - game verification: `tests/game/`
 - **game rules**: [`docs/game-requirements.md`](docs/game-requirements.md) — authoritative behavioral spec covering game structure, combat, economy, ghost scaling, rewards, challenge mode, and all testable invariants. Read this first before changing game logic.

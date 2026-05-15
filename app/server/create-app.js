@@ -9,6 +9,7 @@ import {
   createTelegramAuthCode,
   loginWithDevSession,
   loginWithTelegram,
+  loginWithWebSession,
   logoutSession,
   requireAuth,
   verifyTelegramAuthCode
@@ -307,6 +308,26 @@ export async function createApp() {
         return;
       }
 
+      res.json({
+        success: true,
+        data: {
+          sessionKey: result.session.sessionKey,
+          user: {
+            id: result.player.id,
+            telegramId: result.player.telegram_id,
+            telegramUsername: result.player.telegram_username,
+            name: result.player.name,
+            lang: result.player.lang
+          }
+        }
+      });
+    })
+  );
+
+  app.post(
+    '/api/auth/web',
+    asyncRoute(async (req, res) => {
+      const result = await loginWithWebSession(req.body || {});
       res.json({
         success: true,
         data: {
