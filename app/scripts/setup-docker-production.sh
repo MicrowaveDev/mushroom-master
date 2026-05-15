@@ -37,7 +37,7 @@ Options:
 Required env file values:
   NODE_ENV=production
   PORT=3021
-  POSTGRES_PASSWORD=<strong-password>
+  POSTGRES_PASSWORD=<strong-url-safe-password>
   TELEGRAM_BOT_TOKEN=...
   TELEGRAM_BOT_USERNAME=...
   TELEGRAM_WEBHOOK_SECRET=...
@@ -49,6 +49,9 @@ Optional env file values:
   TELEGRAM_GAME_URL=https://mushroombattles.com/
   TELEGRAM_MINI_APP_NAME=app
   TELEGRAM_GAME_SHORT_NAME=mushroom_master
+
+Generate a URL-safe database password with:
+  openssl rand -hex 32
 EOF
 }
 
@@ -136,6 +139,7 @@ TELEGRAM_WEBHOOK_SECRET_VALUE="$(read_env_value TELEGRAM_WEBHOOK_SECRET "$ENV_FI
 [[ -z "$PORT_VALUE" || "$PORT_VALUE" =~ ^[0-9]+$ ]] || die "PORT in $ENV_FILE must be numeric"
 [[ -n "$POSTGRES_PASSWORD_VALUE" ]] || die "POSTGRES_PASSWORD is required in $ENV_FILE"
 [[ "$POSTGRES_PASSWORD_VALUE" != "change-me" && "$POSTGRES_PASSWORD_VALUE" != "YOUR_POSTGRES_PASSWORD" ]] || die "POSTGRES_PASSWORD must be changed from the placeholder"
+[[ "$POSTGRES_PASSWORD_VALUE" =~ ^[A-Za-z0-9._~-]+$ ]] || die "POSTGRES_PASSWORD must be URL-safe because it is embedded in DATABASE_URL. Use only letters, numbers, dot, underscore, tilde, or dash. Generate one with: openssl rand -hex 32"
 [[ -n "$TELEGRAM_BOT_TOKEN_VALUE" ]] || die "TELEGRAM_BOT_TOKEN is required in $ENV_FILE"
 [[ -n "$TELEGRAM_BOT_USERNAME_VALUE" ]] || die "TELEGRAM_BOT_USERNAME is required in $ENV_FILE"
 [[ -n "$TELEGRAM_WEBHOOK_SECRET_VALUE" ]] || die "TELEGRAM_WEBHOOK_SECRET is required in $ENV_FILE"

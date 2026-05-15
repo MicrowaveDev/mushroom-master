@@ -50,12 +50,13 @@ TELEGRAM_GAME_SHORT_NAME=mushroom_master
 TELEGRAM_WEBHOOK_SECRET=<random-long-secret>
 POSTGRES_DB=mushroom_battles
 POSTGRES_USER=mushroom_user
-POSTGRES_PASSWORD=<strong-random-password>
+POSTGRES_PASSWORD=<strong-url-safe-password-from-openssl-rand-hex-32>
 ```
 
 `PUBLIC_GAME_URL` is used for public links and previews. `TELEGRAM_GAME_URL` is used when Telegram presses the Play button on a Game message. They can be the same URL.
 
 Docker Compose production sets `DATABASE_URL` automatically for the app container as `postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/$POSTGRES_DB`.
+Because the password is embedded in a URL, generate it with `openssl rand -hex 32` or use only letters, numbers, `.`, `_`, `~`, and `-`.
 
 ## Webhook Setup
 
