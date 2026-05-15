@@ -31,16 +31,6 @@ export const HomeScreen = {
       openStatsPopover: null
     };
   },
-  mounted() {
-    if (typeof document !== 'undefined') {
-      document.addEventListener('click', this.handleStatsPopoverOutsideClick);
-    }
-  },
-  beforeUnmount() {
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('click', this.handleStatsPopoverOutsideClick);
-    }
-  },
   components: {
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
     SeasonRankEmblem,
@@ -119,10 +109,16 @@ export const HomeScreen = {
     }
   },
   mounted() {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', this.handleStatsPopoverOutsideClick);
+    }
     this.onScroll();
     window.addEventListener('scroll', this.onScroll, { passive: true });
   },
   beforeUnmount() {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('click', this.handleStatsPopoverOutsideClick);
+    }
     window.removeEventListener('scroll', this.onScroll);
     if (this._pulseTimers) {
       for (const timer of this._pulseTimers.values()) clearTimeout(timer);

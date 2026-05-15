@@ -372,15 +372,6 @@ export async function createApp() {
   );
 
   app.put(
-    '/api/shop-state',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      await saveShopState(req.user.id, req.body);
-      res.json({ success: true, data: null });
-    })
-  );
-
-  app.put(
     '/api/artifact-loadout',
     requireAuth,
     ...runMutationGuards,
@@ -877,7 +868,9 @@ export async function createApp() {
     );
   }
 
-  app.use('/data', express.static(path.join(repoRoot, 'data')));
+  if (process.env.NODE_ENV !== 'production') {
+    app.use('/data', express.static(path.join(repoRoot, 'data')));
+  }
   // Portrait files are authored in web/public/portraits and bundled into
   // web/dist/portraits by vite build. Serve the authored tree directly so
   // dropping a new default.png into /public/ is live immediately — no

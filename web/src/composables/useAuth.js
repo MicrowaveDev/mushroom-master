@@ -132,6 +132,18 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     } catch (_error) {
       state.appConfig = { localAiLabEnabled: false, localDevAuthEnabled: false };
     }
+    try {
+      const [characters, artifacts] = await Promise.all([
+        apiJson('/api/characters'),
+        apiJson('/api/artifacts')
+      ]);
+      state.catalogCounts = {
+        mushrooms: characters.mushrooms?.length || 0,
+        artifacts: artifacts.artifacts?.length || 0
+      };
+    } catch (_error) {
+      state.catalogCounts = { mushrooms: 0, artifacts: 0 };
+    }
     if (!state.sessionKey) {
       navigate('auth');
       state.loading = false;

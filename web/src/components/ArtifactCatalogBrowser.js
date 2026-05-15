@@ -92,7 +92,7 @@ export const ArtifactCatalogBrowser = {
       return this.previewOrientation(this.selectedArtifact);
     },
     selectedDescription() {
-      return this.artifactDescription(this.selectedArtifact) || this.t.artifactCatalogNoDescription;
+      return this.artifactDescription(this.selectedArtifact);
     },
     artifactGroups() {
       const definitions = [
@@ -358,7 +358,7 @@ export const ArtifactCatalogBrowser = {
               {{ selectedRecipe ? t.recipeFusionOnly : familyLabel(selectedArtifact) }}
             </span>
             <h3>{{ artifactName(selectedArtifact) }}</h3>
-            <p>{{ selectedDescription }}</p>
+            <p v-if="selectedDescription">{{ selectedDescription }}</p>
           </div>
         </div>
 

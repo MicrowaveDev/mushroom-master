@@ -15,7 +15,7 @@ export const OnboardingScreen = {
           <div class="onboarding-preview">
             <div class="onboarding-preview-roster">
               <img
-                v-for="m in state.bootstrap.mushrooms.slice(0, 5)"
+                v-for="m in state.bootstrap.mushrooms"
                 :key="m.id"
                 :src="m.imagePath"
                 :alt="m.name[state.lang]"

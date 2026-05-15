@@ -3,6 +3,9 @@ import { query, withTransaction } from './db.js';
 import { createId, createSessionKey, createShortCode, normalizeLanguage, nowIso } from './lib/utils.js';
 import { mushrooms, SESSION_TTL_HOURS } from './game-data.js';
 
+const TELEGRAM_INIT_DATA_MAX_AGE_SECONDS = 24 * 60 * 60;
+const TELEGRAM_INIT_DATA_FUTURE_SKEW_SECONDS = 5 * 60;
+
 function telegramSecret(botToken) {
   return crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
 }
@@ -15,6 +18,15 @@ export function verifyTelegramInitData(initData, botToken) {
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
   if (!hash) {
+    return false;
+  }
+  const authDate = Number(params.get('auth_date'));
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (
+    !Number.isFinite(authDate) ||
+    authDate < nowSeconds - TELEGRAM_INIT_DATA_MAX_AGE_SECONDS ||
+    authDate > nowSeconds + TELEGRAM_INIT_DATA_FUTURE_SKEW_SECONDS
+  ) {
     return false;
   }
 

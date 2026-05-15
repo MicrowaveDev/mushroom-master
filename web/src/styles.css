@@ -6451,6 +6451,10 @@ select {
 }
 
 @media (min-width: 680px) {
+  .prep-screen {
+    gap: 8px;
+  }
+
   .prep-workspace {
     grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
     /* Stretch (not start) so both columns share the tallest column's
@@ -6466,6 +6470,7 @@ select {
        with the shop column regardless of how full the inventory is. */
     display: flex;
     flex-direction: column;
+    gap: 10px;
   }
 
   .prep-loadout-column > .artifact-inventory-section {
@@ -6520,7 +6525,7 @@ select {
   }
 
   .prep-ready-btn {
-    padding: 10px 22px;
+    padding: 9px 22px;
   }
 }
 

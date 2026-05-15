@@ -625,8 +625,8 @@ test('[Req 3-D] manual refreshRunShop never returns starterOnly artifacts (integ
     artifacts.filter((a) => a.starterOnly).map((a) => a.id)
   );
 
-  // Loop over enough player seeds to cover all 5 mushrooms with varied seeds.
-  for (const mushroomId of ['thalla', 'lomie', 'axilin', 'kirt', 'morga']) {
+  // Loop over the live roster with varied seeds so the test tracks catalog growth.
+  for (const mushroomId of mushrooms.map((m) => m.id)) {
     const session = await createPlayer({ telegramId: 7000 + mushroomId.charCodeAt(0), username: `refresh_${mushroomId}` });
     await selectActiveMushroom(session.player.id, mushroomId);
     const run = await startGameRun(session.player.id, 'solo');

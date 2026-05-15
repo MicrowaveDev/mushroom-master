@@ -13,7 +13,22 @@ import { freshDb } from './helpers.js';
 
 function createInitData(botToken, user) {
   const params = new URLSearchParams();
-  params.set('auth_date', '1710000000');
+  params.set('auth_date', String(Math.floor(Date.now() / 1000)));
+  params.set('query_id', 'AAEAAAE');
+  params.set('user', JSON.stringify(user));
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+  const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const hash = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+  params.set('hash', hash);
+  return params.toString();
+}
+
+function createInitDataWithAuthDate(botToken, user, authDate) {
+  const params = new URLSearchParams();
+  params.set('auth_date', String(authDate));
   params.set('query_id', 'AAEAAAE');
   params.set('user', JSON.stringify(user));
   const dataCheckString = [...params.entries()]
@@ -76,4 +91,16 @@ test('browser fallback auth code can be confirmed through the bot start flow', a
   const verified = await verifyTelegramAuthCode(authCode.privateCode);
   assert.equal(verified.success, true);
   assert.ok(verified.session.sessionKey);
+});
+
+test('telegram auth rejects stale signed init data', () => {
+  const botToken = 'bot:test-token';
+  const staleInitData = createInitDataWithAuthDate(botToken, {
+    id: 303,
+    username: 'stale_user',
+    first_name: 'Stale',
+    language_code: 'en'
+  }, Math.floor(Date.now() / 1000) - (25 * 60 * 60));
+
+  assert.equal(verifyTelegramInitData(staleInitData, botToken), false);
 });

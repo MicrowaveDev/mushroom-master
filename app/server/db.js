@@ -50,6 +50,10 @@ async function resolveSqliteStorage() {
 }
 
 async function createSequelize() {
+  if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is required in production; production must use PostgreSQL, not SQLite.');
+  }
+
   if (process.env.DATABASE_URL) {
     const sequelize = new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',

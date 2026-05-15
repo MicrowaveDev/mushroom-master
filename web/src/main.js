@@ -56,6 +56,7 @@ const App = {
     const state = reactive({
       sessionKey: localStorage.getItem('sessionKey') || '',
       bootstrap: null,
+      catalogCounts: { mushrooms: 0, artifacts: 0 },
       appConfig: { localAiLabEnabled: false, localDevAuthEnabled: false },
       authCode: null,
       loading: true,

@@ -25,7 +25,10 @@ test('[Flow A] onboarding screen shows for new player without active mushroom', 
   // Should show onboarding (no activeMushroomId in bootstrap)
   await expect(page.locator('.onboarding-screen')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('.onboarding-step')).toHaveCount(3);
-  await expect(page.locator('.onboarding-preview-portrait')).toHaveCount(5);
+  const characters = await request.get('/api/characters');
+  const characterJson = await characters.json();
+  expect(characterJson.success).toBe(true);
+  await expect(page.locator('.onboarding-preview-portrait')).toHaveCount(characterJson.data.mushrooms.length);
 
   await page.setViewportSize({ width: 375, height: 667 });
   await assertImagesLoaded(page);
@@ -41,6 +44,23 @@ test('[Flow A] onboarding screen shows for new player without active mushroom', 
   await expect(page.locator('.character-card').first()).toBeVisible({ timeout: 5000 });
 });
 
+test('[Flow A] auth screen catalog claims match live public data', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const [charactersResponse, artifactsResponse] = await Promise.all([
+    request.get('/api/characters'),
+    request.get('/api/artifacts')
+  ]);
+  const characters = await charactersResponse.json();
+  const artifacts = await artifactsResponse.json();
+  expect(characters.success).toBe(true);
+  expect(artifacts.success).toBe(true);
+
+  await page.goto(baseURL, { waitUntil: 'networkidle' });
+  await expect(page.locator('.auth-screen')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('.auth-features')).toContainText(`${characters.data.mushrooms.length} грибов`);
+  await expect(page.locator('.auth-features')).toContainText(`${artifacts.data.artifacts.length} артефактов`);
+});
+
 test('unauthenticated redirect rewrites stale deep-link URL to auth', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
 
@@ -48,6 +68,17 @@ test('unauthenticated redirect rewrites stale deep-link URL to auth', async ({ p
 
   await expect(page.locator('.auth-screen')).toBeVisible({ timeout: 5000 });
   await expect(page).toHaveURL(/\/auth$/);
+});
+
+test('legacy shop-state endpoint is not available', async ({ request }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, { telegramId: 1003, username: 'legacy_route', name: 'Legacy Route' });
+  const response = await request.fetch('/api/shop-state', {
+    method: 'PUT',
+    headers: { 'X-Session-Key': player.sessionKey, 'Content-Type': 'application/json' },
+    data: { offer: [] }
+  });
+  expect(response.status()).toBe(404);
 });
 
 test('[Flow A] local dev session recovers stale run-complete URL without run id', async ({ page, request, baseURL }) => {

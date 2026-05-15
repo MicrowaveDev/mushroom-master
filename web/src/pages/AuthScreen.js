@@ -15,6 +15,16 @@ export const AuthScreen = {
       authPortraits: AUTH_PORTRAITS
     };
   },
+  computed: {
+    authFeature1() {
+      const count = this.state.catalogCounts?.mushrooms || 0;
+      return count > 0 ? this.t.authFeature1.replace('{count}', count) : this.t.authFeature1Fallback;
+    },
+    authFeature2() {
+      const count = this.state.catalogCounts?.artifacts || 0;
+      return count > 0 ? this.t.authFeature2.replace('{count}', count) : this.t.authFeature2Fallback;
+    }
+  },
   template: `
     <section class="auth-screen">
       <div class="auth-hero-card panel">
@@ -33,8 +43,8 @@ export const AuthScreen = {
         <h2 class="auth-title">{{ t.authTitle }}</h2>
         <p class="auth-tagline">{{ t.authTagline }}</p>
         <ul class="auth-features">
-          <li>{{ t.authFeature1 }}</li>
-          <li>{{ t.authFeature2 }}</li>
+          <li>{{ authFeature1 }}</li>
+          <li>{{ authFeature2 }}</li>
           <li>{{ t.authFeature3 }}</li>
         </ul>
         <div class="auth-actions">
