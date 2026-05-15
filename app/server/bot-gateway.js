@@ -25,7 +25,7 @@ export function buildDmStartLink(botUsername, startParam) {
 export function createMentionReply({ botUsername, chatType = 'group' }) {
   const playLink = buildMiniAppLink(botUsername, `entry_${chatType}`);
   return {
-    text: 'Открыть грибной автобаттлер и собрать первый бой.',
+    text: 'Открыть Mushroom Battles и собрать первый бой.',
     ctas: [
       { label: 'Play', url: playLink },
       { label: 'Start in DM', url: buildDmStartLink(botUsername, 'play') }

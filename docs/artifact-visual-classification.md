@@ -16,7 +16,7 @@ Do not make the object art carry all meaning by itself. The bitmap, shop card, g
 
 RPG inventory systems commonly reserve color as a fast quality/classification signal. World of Warcraft's official manual describes item rarity/potency as readable from item color, and Blizzard's Diablo itemization posts repeatedly frame loot readability around making item upgrades easier to evaluate quickly. This pattern is useful because it lets players compare items before reading details.
 
-For this game, pure rarity color would conflict with combat readability: players also need to know whether an artifact is damage, armor, stun, or bag. So Mushroom Master uses a two-channel system:
+For this game, pure rarity color would conflict with combat readability: players also need to know whether an artifact is damage, armor, stun, or bag. So Mushroom Battles uses a two-channel system:
 
 - **Hue = role/class.**
 - **Shine = coolness/specialness.**

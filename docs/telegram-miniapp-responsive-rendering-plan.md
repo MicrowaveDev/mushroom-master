@@ -6,7 +6,7 @@ This document is now a shipped-history record plus the active V3 wiki/docs backl
 
 ## Direction
 
-Mushroom Master should keep the shop, backpack, inventory, and wiki/docs as a responsive HTML app surface: Vue components, semantic HTML, CSS Grid/Flexbox, and SVG artifact art. Canvas/WebGL should be reserved for optional battle/replay flourishes, particle effects, or future real-time scenes, not for the shop or inventory UI.
+Mushroom Battles should keep the shop, backpack, inventory, and wiki/docs as a responsive HTML app surface: Vue components, semantic HTML, CSS Grid/Flexbox, and SVG artifact art. Canvas/WebGL should be reserved for optional battle/replay flourishes, particle effects, or future real-time scenes, not for the shop or inventory UI.
 
 This direction matches the product shape: the most important screens are UI-heavy, text-rich, touch-first, and need Telegram theme/safe-area support, accessibility, screenshot assertions, and responsive layout. A canvas-first inventory would make buttons, text, wrapping, accessibility, and Telegram integration harder without meaningful benefit.
 

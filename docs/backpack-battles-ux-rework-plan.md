@@ -7,7 +7,7 @@
 
 Original request:
 
-- Analyze Mushroom Master goals, game requirements, user flows, and current views.
+- Analyze Mushroom Battles goals, game requirements, user flows, and current views.
 - Propose how the UX can move closer to Backpack Battles.
 - Improve animations, effects, and responsive backpack grid view.
 - Decide whether other HTML5 technologies are needed.

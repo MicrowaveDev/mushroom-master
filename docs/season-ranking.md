@@ -1,6 +1,6 @@
 # Season Ranking Guide
 
-**Scope:** Designer and operator reference for the Mushroom Master season rank system.
+**Scope:** Designer and operator reference for the Mushroom Battles season rank system.
 [`game-requirements.md`](game-requirements.md#season-level-recap) remains the authoritative behavioral spec; this document explains how to tune, inspect, and operate the system.
 
 ## Current Season

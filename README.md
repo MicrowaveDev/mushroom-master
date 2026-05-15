@@ -2,7 +2,7 @@
 
 ## V1 Game App
 
-This repository now also contains the v1 Telegram mushroom autobattler described in `docs/telegram-mushroom-autobattler-plan.md`.
+This repository now also contains the v1 Telegram Mushroom Battles described in `docs/telegram-mushroom-autobattler-plan.md`.
 
 Game implementation surfaces:
 

@@ -257,7 +257,7 @@ export const messages = {
     gameSummaryTitle: 'Итог игры'
   },
   en: {
-    title: 'Mycelium Autobattler',
+    title: 'Mushroom Battles',
     authTitle: 'The mushroom arena awaits',
     authTagline: 'Draft artifacts, gear up your mushroom, and send it into battle.',
     authFeature1: '{count} mushroom fighters with unique styles',

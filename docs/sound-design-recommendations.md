@@ -48,7 +48,7 @@ Good places to source or generate sounds:
 Use this prompt for an AI sound generator:
 
 ```text
-Create a cohesive set of short fantasy UI sound effects for a cozy mushroom autobattler game called "Mycelium Autobattler".
+Create a cohesive set of short fantasy UI sound effects for a cozy auto-battler game called "Mushroom Battles".
 
 Style:
 - organic, warm, tactile, magical

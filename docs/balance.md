@@ -1,4 +1,4 @@
-# Mushroom Master — Game Balance Notes
+# Mushroom Battles — Game Balance Notes
 
 This document describes the tunable constants that control game feel, the design rationale behind each decision, and a log of balance issues that have been reported and how they were handled.
 

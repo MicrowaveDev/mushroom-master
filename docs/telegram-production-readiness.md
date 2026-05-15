@@ -1,6 +1,6 @@
 # Telegram Production Readiness
 
-This is the launch checklist for making Mushroom Master behave like a real Telegram Mini App plus a classic Telegram Game surface.
+This is the launch checklist for making Mushroom Battles behave like a real Telegram Mini App plus a classic Telegram Game surface.
 
 ## What Is Implemented In Repo
 
@@ -98,7 +98,7 @@ The repo exposes `/api/bot/game-score`, but the production client still needs th
 4. On run completion, the frontend submits the season score to `/api/bot/game-score`.
 5. The backend calls `setGameScore`; Telegram updates the in-chat scoreboard.
 
-Current Mushroom Master score formula:
+Current Mushroom Battles score formula:
 
 ```text
 score = season_points_after_run
@@ -126,6 +126,7 @@ Before launch, create final media:
 - Mini App profile preview video/GIF
 - Game animation GIF showing artifact packing and a battle result
 - link preview image at a stable public URL
+- replace every `https://mushroom-battles.example/` placeholder in `web/index.html` with the final production domain and stable preview image URL
 
 ## Manual QA In Telegram
 

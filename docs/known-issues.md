@@ -1,6 +1,6 @@
 # Known Issues
 
-Living list of known UX/visual issues in the Mycelium Autobattler Mini App that an agent might otherwise treat as a fresh bug. When you encounter a symptom matching one of these, prefer the documented mitigation/context over re-investigating from scratch. When you fix one, remove the entry; when you discover a new recurring trap, add an entry here in the same change.
+Living list of known UX/visual issues in the Mushroom Battles Mini App that an agent might otherwise treat as a fresh bug. When you encounter a symptom matching one of these, prefer the documented mitigation/context over re-investigating from scratch. When you fix one, remove the entry; when you discover a new recurring trap, add an entry here in the same change.
 
 Scope: app-frontend (Vue Mini App) and adjacent visual surfaces. Lore-pipeline issues belong elsewhere.
 
