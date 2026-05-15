@@ -49,10 +49,10 @@ export const AuthScreen = {
         </ul>
         <div class="auth-actions">
           <button class="primary auth-cta" @click="$emit('login-telegram')">{{ t.authTelegram }}</button>
-          <button class="secondary" @click="$emit('login-browser')">{{ t.authBrowser }}</button>
+          <button v-if="isLocalDevAuthEnabled" class="secondary" @click="$emit('login-browser')">{{ t.authBrowser }}</button>
           <button v-if="isLocalDevAuthEnabled" class="ghost" @click="$emit('login-dev')">{{ t.authDev }}</button>
         </div>
-        <p class="auth-browser-note">{{ t.authBrowserNote }}</p>
+        <p v-if="isLocalDevAuthEnabled" class="auth-browser-note">{{ t.authBrowserNote }}</p>
         <div v-if="state.authCode" class="note">
           <p><strong>{{ t.botCodeTitle }}</strong></p>
           <p>{{ t.botCodeHint }}</p>
