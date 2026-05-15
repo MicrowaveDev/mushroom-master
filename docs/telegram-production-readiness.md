@@ -128,6 +128,14 @@ docker compose --env-file .env -f docker-compose.production.yml logs -f app
 curl -I http://127.0.0.1:3021
 ```
 
+Routine production updates should use the update helper. It pulls `origin/main`, checks disk/cache pressure, safely prunes Docker build/image cache when needed, rebuilds the app container, and waits for `/api/health`:
+
+```bash
+app/scripts/update-production-server.sh
+app/scripts/update-production-server.sh --logs
+app/scripts/update-production-server.sh --aggressive-cleanup
+```
+
 Back up the production database before risky deploys:
 
 ```bash
