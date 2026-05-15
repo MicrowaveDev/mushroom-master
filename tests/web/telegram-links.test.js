@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import {
   buildFriendInviteLink,
   buildFriendRefParam,
+  buildTelegramShareUrl,
   buildTelegramMiniAppLink,
   buildWebsiteFriendInviteLink,
   isTelegramMiniAppEnvironment,
-  normalizeTelegramBotUsername
+  normalizeTelegramBotUsername,
+  shareTelegramText
 } from '../../web/src/helpers/telegram-links.js';
 
 test('[telegram-links] detects Telegram Mini App environment', () => {
@@ -55,4 +57,21 @@ test('[telegram-links] chooses Telegram link only inside Mini App with configure
     }),
     'https://mycelium.example/friends?ref=231555'
   );
+});
+
+test('[telegram-links] builds Telegram share URLs and prefers WebApp openTelegramLink', async () => {
+  assert.equal(
+    buildTelegramShareUrl({ url: 'https://mycelium.example/friends?ref=231555', text: 'Join me' }),
+    'https://t.me/share/url?url=https%3A%2F%2Fmycelium.example%2Ffriends%3Fref%3D231555&text=Join+me'
+  );
+
+  const opened = [];
+  const result = await shareTelegramText({
+    text: 'Join me',
+    url: 'https://mycelium.example/friends?ref=231555',
+    win: { Telegram: { WebApp: { openTelegramLink: (url) => opened.push(url) } } }
+  });
+  assert.equal(result, 'telegram');
+  assert.equal(opened.length, 1);
+  assert.match(opened[0], /^https:\/\/t\.me\/share\/url/);
 });

@@ -1,4 +1,4 @@
-import { buildFriendInviteLink } from '../helpers/telegram-links.js';
+import { buildFriendInviteLink, shareTelegramText } from '../helpers/telegram-links.js';
 
 export const FriendsScreen = {
   name: 'FriendsScreen',
@@ -47,11 +47,7 @@ export const FriendsScreen = {
       const text = this.inviteText();
       const url = this.inviteLink();
       try {
-        if (navigator.share) {
-          await navigator.share({ text, url });
-        } else if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(text);
-        }
+        await shareTelegramText({ text, url });
       } catch {}
     }
   },

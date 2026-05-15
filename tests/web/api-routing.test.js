@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseStartParams, setScreenQuery } from '../../web/src/api.js';
+import { parseStartParams, parseTelegramGameContext, setScreenQuery } from '../../web/src/api.js';
 
 test('run result routes carry the completed game run id and push browser history', () => {
   const oldWindow = globalThis.window;
@@ -24,7 +24,8 @@ test('run result routes carry the completed game run id and push browser history
       challenge: null,
       replay: null,
       gameRunId: 'run_123',
-      profilePlayerId: null
+      profilePlayerId: null,
+      telegramGameContext: null
     });
 
     setScreenQuery('runComplete', { gameRunId: 'run_456' });
@@ -40,9 +41,23 @@ test('run result routes carry the completed game run id and push browser history
       challenge: null,
       replay: null,
       gameRunId: 'run_789',
-      profilePlayerId: null
+      profilePlayerId: null,
+      telegramGameContext: null
     });
   } finally {
     globalThis.window = oldWindow;
   }
+});
+
+test('telegram game launch context is parsed from callback URL params', () => {
+  const params = new URLSearchParams(
+    'tgGame=mushroom_master&tgChatInstance=chat-abc&tgGameChatId=-100123&tgGameMessageId=42'
+  );
+  assert.deepEqual(parseTelegramGameContext(params), {
+    gameShortName: 'mushroom_master',
+    chatInstance: 'chat-abc',
+    chatId: '-100123',
+    messageId: '42',
+    inlineMessageId: null
+  });
 });

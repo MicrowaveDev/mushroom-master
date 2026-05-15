@@ -1,7 +1,7 @@
 import { AchievementBadge } from './AchievementBadge.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { ArtifactStatSummary } from './ArtifactStatSummary.js';
-import { buildFriendInviteLink } from '../helpers/telegram-links.js';
+import { buildFriendInviteLink, shareTelegramText } from '../helpers/telegram-links.js';
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
 
@@ -31,11 +31,7 @@ export const HomeSocialSidebar = {
       const text = this.inviteText();
       const url = this.inviteLink();
       try {
-        if (navigator.share) {
-          await navigator.share({ text, url });
-        } else if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(text);
-        }
+        await shareTelegramText({ text, url });
       } catch {}
     },
     switcherClass() {

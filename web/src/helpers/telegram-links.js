@@ -29,6 +29,31 @@ export function buildTelegramMiniAppLink({ botUsername, startParam }) {
   return `https://t.me/${username}/app${suffix}`;
 }
 
+export function buildTelegramShareUrl({ url = '', text = '' } = {}) {
+  const shareUrl = new URL('https://t.me/share/url');
+  if (url) shareUrl.searchParams.set('url', url);
+  if (text) shareUrl.searchParams.set('text', text);
+  return shareUrl.toString();
+}
+
+export async function shareTelegramText({ text = '', url = '', win = defaultWindow(), navigatorRef = win?.navigator } = {}) {
+  const tg = getTelegramWebApp(win);
+  const shareUrl = buildTelegramShareUrl({ text, url });
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(shareUrl);
+    return 'telegram';
+  }
+  if (navigatorRef?.share) {
+    await navigatorRef.share({ text, url });
+    return 'native';
+  }
+  if (navigatorRef?.clipboard?.writeText) {
+    await navigatorRef.clipboard.writeText([text, url].filter(Boolean).join('\n'));
+    return 'clipboard';
+  }
+  return 'none';
+}
+
 export function buildWebsiteFriendInviteLink({ friendCode, location = defaultLocation() }) {
   const origin = location?.origin || 'https://example.com';
   const url = new URL('/friends', origin);

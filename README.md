@@ -67,6 +67,14 @@ Game-specific environment additions:
   - tests use in-memory SQLite automatically through Sequelize
 - `TELEGRAM_BOT_USERNAME`
   - bot username used to build discovery and fallback-auth deep links
+- `TELEGRAM_MINI_APP_NAME`
+  - direct Mini App slug configured in BotFather, defaults to `app`
+- `TELEGRAM_GAME_SHORT_NAME`
+  - classic Telegram Game short name configured through BotFather `/newgame`
+- `TELEGRAM_GAME_URL` / `PUBLIC_GAME_URL`
+  - public HTTPS game URL used when answering Telegram game callbacks and link previews
+- `TELEGRAM_WEBHOOK_SECRET`
+  - secret token expected in `X-Telegram-Bot-Api-Secret-Token` on `/api/bot/webhook`; required in production
 - `PORT`
   - local HTTP port for the game server
 

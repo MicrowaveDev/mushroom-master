@@ -206,8 +206,46 @@ export const RunCompleteScreen = {
   },
   mounted() {
     this.emitGameFeelHooks();
+    this.reportTelegramGameScore();
   },
   methods: {
+    telegramScoreValue() {
+      const rawScore = this.seasonSummary?.points
+        ?? this.seasonSummary?.totalPoints
+        ?? this.state.gameRunResult?.season?.totalPoints
+        ?? null;
+      const score = Math.floor(Number(rawScore));
+      return Number.isFinite(score) && score >= 0 ? score : null;
+    },
+    reportTelegramGameScore() {
+      const context = this.state.telegramGameContext;
+      const score = this.telegramScoreValue();
+      const runId = this.state.gameRunResult?.id || this.state.gameRun?.id || '';
+      if (!context || score == null || !this.state.sessionKey || typeof fetch !== 'function') return;
+      if (!context.inlineMessageId && (!context.chatId || !context.messageId)) return;
+      const reportKey = `telegramGameScore:${runId}:${score}:${context.inlineMessageId || `${context.chatId}:${context.messageId}`}`;
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(reportKey)) return;
+
+      fetch('/api/bot/game-score', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Key': this.state.sessionKey
+        },
+        body: JSON.stringify({
+          score,
+          chatId: context.chatId,
+          messageId: context.messageId,
+          inlineMessageId: context.inlineMessageId
+        })
+      })
+        .then((response) => {
+          if (response.ok && typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(reportKey, '1');
+          }
+        })
+        .catch(() => {});
+    },
     emitGameFeelHooks() {
       if (typeof window === 'undefined') return;
       if (this.seasonSummary.levelChanged) {

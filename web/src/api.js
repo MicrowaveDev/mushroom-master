@@ -25,13 +25,37 @@ export function parseStartParams() {
   const path = window.location.pathname.replace(/^\/+/, '');
   const parts = path.split('/').filter(Boolean);
   const screen = ROUTE_SCREENS[parts[0]] || parts[0] || null;
-  const result = { screen, challenge: null, replay: null, gameRunId: null, profilePlayerId: null };
+  const searchParams = new URLSearchParams(window.location.search || '');
+  const result = {
+    screen,
+    challenge: null,
+    replay: null,
+    gameRunId: null,
+    profilePlayerId: null,
+    telegramGameContext: parseTelegramGameContext(searchParams)
+  };
 
   if (screen && ROUTE_PARAMS[screen] && parts[1]) {
     result[ROUTE_PARAMS[screen]] = decodeURIComponent(parts[1]);
   }
 
   return result;
+}
+
+export function parseTelegramGameContext(searchParams = new URLSearchParams()) {
+  const chatId = searchParams.get('tgGameChatId');
+  const messageId = searchParams.get('tgGameMessageId');
+  const inlineMessageId = searchParams.get('tgInlineMessageId');
+  const gameShortName = searchParams.get('tgGame');
+  const chatInstance = searchParams.get('tgChatInstance');
+  if (!chatId && !messageId && !inlineMessageId && !gameShortName && !chatInstance) return null;
+  return {
+    gameShortName,
+    chatInstance,
+    chatId,
+    messageId,
+    inlineMessageId
+  };
 }
 
 export function setScreenQuery(screen, extra = {}, options = {}) {

@@ -53,6 +53,20 @@ const App = {
     FusionAnimationLabScreen, SettingsScreen
   },
   setup() {
+    const startParams = parseStartParams();
+    function readStoredTelegramGameContext() {
+      try {
+        return JSON.parse(sessionStorage.getItem('telegramGameContext') || 'null');
+      } catch {
+        return null;
+      }
+    }
+    const telegramGameContext = startParams.telegramGameContext
+      || readStoredTelegramGameContext();
+    if (startParams.telegramGameContext) {
+      sessionStorage.setItem('telegramGameContext', JSON.stringify(startParams.telegramGameContext));
+    }
+
     const state = reactive({
       sessionKey: localStorage.getItem('sessionKey') || '',
       bootstrap: null,
@@ -63,7 +77,8 @@ const App = {
       showLoading: !localStorage.getItem('sessionKey'),
       bootstrapReady: false,
       error: '',
-      screen: parseStartParams().screen || 'auth',
+      screen: startParams.screen || 'auth',
+      telegramGameContext,
       lang: 'ru',
       builderItems: [],
       containerItems: [],

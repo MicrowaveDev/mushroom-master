@@ -13,7 +13,14 @@ import {
   requireAuth,
   verifyTelegramAuthCode
 } from './auth.js';
-import { createMentionReply, createBrowserFallbackPayload, handleBotStartParam } from './bot-gateway.js';
+import {
+  createMentionReply,
+  createBrowserFallbackPayload,
+  gameShortName,
+  handleBotStartParam,
+  handleTelegramWebhook,
+  reportTelegramGameScore
+} from './bot-gateway.js';
 import { getDb, resetDb, query as dbQuery } from './db.js';
 import { CHALLENGE_IDLE_TIMEOUT_MS, ROUND_INCOME, PORTRAIT_VARIANTS, STARTER_PRESET_VARIANTS } from './game-data.js';
 import { computeLevel, createId, nowIso } from './lib/utils.js';
@@ -147,6 +154,22 @@ function botUsername() {
   return process.env.TELEGRAM_BOT_USERNAME || 'mushroom_game_bot';
 }
 
+function verifyTelegramWebhookSecret(req, res) {
+  const configuredSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!configuredSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      res.status(503).json({ success: false, error: 'TELEGRAM_WEBHOOK_SECRET is required in production' });
+      return false;
+    }
+    return true;
+  }
+  if (req.header('x-telegram-bot-api-secret-token') !== configuredSecret) {
+    res.status(403).json({ success: false, error: 'Invalid Telegram webhook secret' });
+    return false;
+  }
+  return true;
+}
+
 function asyncRoute(handler) {
   return async (req, res, next) => {
     try {
@@ -232,7 +255,8 @@ export async function createApp() {
       data: {
         localAiLabEnabled: isLocalAiLabEnabled(),
         localDevAuthEnabled: process.env.NODE_ENV !== 'production',
-        botUsername: botUsername()
+        botUsername: botUsername(),
+        telegramGameShortName: gameShortName()
       }
     });
   });
@@ -760,6 +784,37 @@ export async function createApp() {
     asyncRoute(async (req, res) => {
       const data = await handleBotStartParam(req.body.startParam, req.body.telegramUser);
       res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/bot/webhook',
+    asyncRoute(async (req, res) => {
+      if (!verifyTelegramWebhookSecret(req, res)) return;
+      const data = await handleTelegramWebhook(req.body, { botUsername: botUsername() });
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/bot/game-score',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      const telegramUserId = req.user.telegramId;
+      if (!telegramUserId) {
+        res.status(400).json({ success: false, error: 'Telegram user id is required for game scores' });
+        return;
+      }
+      const result = await reportTelegramGameScore({
+        telegramUserId,
+        score: req.body.score,
+        chatId: req.body.chatId,
+        messageId: req.body.messageId,
+        inlineMessageId: req.body.inlineMessageId,
+        force: false,
+        disableEditMessage: Boolean(req.body.disableEditMessage)
+      });
+      res.json({ success: true, data: result });
     })
   );
 
