@@ -39,8 +39,8 @@ This is the Telegram launch checklist for Mushroom Battles. The game should also
 
 ```bash
 NODE_ENV=production
-PUBLIC_GAME_URL=https://your-domain.example/
-TELEGRAM_GAME_URL=https://your-domain.example/
+PUBLIC_GAME_URL=https://mushroombattles.com/
+TELEGRAM_GAME_URL=https://mushroombattles.com/
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_BOT_USERNAME=mushroom_game_bot
 TELEGRAM_MINI_APP_NAME=app
@@ -59,7 +59,7 @@ Register the webhook after deploy:
 curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -H "Content-Type: application/json" \
   -d "{
-    \"url\": \"https://your-domain.example/api/bot/webhook\",
+    \"url\": \"https://mushroombattles.com/api/bot/webhook\",
     \"secret_token\": \"$TELEGRAM_WEBHOOK_SECRET\",
     \"allowed_updates\": [\"message\", \"callback_query\"]
   }"
@@ -127,7 +127,7 @@ Before launch, create final media:
 - Mini App profile preview video/GIF
 - Game animation GIF showing artifact packing and a battle result
 - link preview image at a stable public URL
-- replace every `https://mushroom-battles.example/` placeholder in `web/index.html` with the final production domain and stable preview image URL
+- verify `https://mushroombattles.com/ui/mushroom-panel-trim.png` is replaced with the final polished preview image URL if the launch artwork changes
 
 ## Manual QA In Telegram
 
