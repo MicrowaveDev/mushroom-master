@@ -4,11 +4,11 @@ This is the Telegram launch checklist for Mushroom Battles. The game should also
 
 ## What Is Implemented In Repo
 
-- The app validates Telegram Mini App `initData` before creating a session.
-- Telegram login supports two paths: signed Mini App `initData` inside Telegram and a one-time bot-code handoff when a browser session does not have `initData`.
+- The production auth button uses a one-time Telegram bot-code handoff for web users.
+- The backend still supports signed Telegram Mini App `initData`, but a Mini App is not required for normal web login.
 - Visitors outside Telegram can create a browser-backed web session through `/api/auth/web`; the frontend stores a local browser id so progress survives normal page reloads and session renewal on the same device/browser.
 - Public auth endpoints are IP rate-limited in production to reduce account-creation and auth-code abuse.
-- Direct Mini App links are generated as `https://t.me/<bot>/<mini-app-name>?startapp=<payload>`.
+- Auth links are generated as `https://t.me/<bot>?start=auth-<code>`, so they only require the bot username and webhook.
 - Friend invites now use Telegram's native share link inside Telegram clients before falling back to browser share/clipboard.
 - The server exposes `/api/bot/webhook` for Bot API updates.
 - Game callback queries with `game_short_name` are answered through `answerCallbackQuery` with a launch URL.
@@ -23,10 +23,9 @@ This is the Telegram launch checklist for Mushroom Battles. The game should also
    - Set `TELEGRAM_BOT_TOKEN`.
    - Set `TELEGRAM_BOT_USERNAME` without `@`.
 
-2. Configure the Main Mini App.
-   - In BotFather, set the bot's Main Mini App URL to the production HTTPS URL.
-   - Set the direct Mini App short name to match `TELEGRAM_MINI_APP_NAME` (`app` by default).
+2. Configure bot profile media.
    - Upload localized media previews for the bot profile. These are not controlled by repo code.
+   - A Telegram Mini App short name is optional for this deployment; the web auth flow does not use it.
 
 3. Configure the classic Telegram Game.
    - Use BotFather `/newgame`.
@@ -46,7 +45,6 @@ PUBLIC_GAME_URL=https://mushroombattles.com/
 TELEGRAM_GAME_URL=https://mushroombattles.com/
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_BOT_USERNAME=mushroom_game_bot
-TELEGRAM_MINI_APP_NAME=app
 TELEGRAM_GAME_SHORT_NAME=mushroom_master
 TELEGRAM_WEBHOOK_SECRET=<random-long-secret>
 POSTGRES_DB=mushroom_battles

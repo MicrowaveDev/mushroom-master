@@ -348,16 +348,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     clearAuthPoll();
     state.error = '';
     try {
-      const initData = extractTelegramInitData({ telegram });
-      if (!initData) {
-        await startTelegramBotCodeLogin();
-        return;
-      }
-      const data = await apiJson('/api/auth/telegram', { method: 'POST', body: JSON.stringify({ initData }) });
-      state.sessionKey = data.sessionKey;
-      localStorage.setItem('sessionKey', data.sessionKey);
-      state.authCode = null;
-      await refreshBootstrap();
+      await startTelegramBotCodeLogin();
     } catch (error) {
       state.error = error.message || 'Telegram login failed';
     }
