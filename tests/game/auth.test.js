@@ -5,11 +5,13 @@ import {
   authenticateRequest,
   createTelegramAuthCode,
   loginWithTelegram,
+  pruneExpiredAuthRecords,
   verifyTelegramAuthCode,
   verifyTelegramInitData,
   confirmTelegramAuthCode
 } from '../../app/server/auth.js';
 import { freshDb } from './helpers.js';
+import { query } from '../../app/server/db.js';
 
 function createInitData(botToken, user) {
   const params = new URLSearchParams();
@@ -103,4 +105,33 @@ test('telegram auth rejects stale signed init data', () => {
   }, Math.floor(Date.now() / 1000) - (25 * 60 * 60));
 
   assert.equal(verifyTelegramInitData(staleInitData, botToken), false);
+});
+
+test('[production-db] auth pruning removes expired sessions and browser auth codes', async () => {
+  process.env.TELEGRAM_BOT_TOKEN = 'bot:test-token';
+  await freshDb();
+  const initData = createInitData(process.env.TELEGRAM_BOT_TOKEN, {
+    id: 404,
+    username: 'expired_auth',
+    first_name: 'Expired',
+    language_code: 'en'
+  });
+  const login = await loginWithTelegram(initData, process.env.TELEGRAM_BOT_TOKEN);
+  const authCode = await createTelegramAuthCode();
+
+  await query(`UPDATE sessions SET expires_at = '2020-01-01T00:00:00.000Z' WHERE session_key = $1`, [
+    login.session.sessionKey
+  ]);
+  await query(`UPDATE auth_codes SET expires_at = '2020-01-01T00:00:00.000Z' WHERE private_code = $1`, [
+    authCode.privateCode
+  ]);
+
+  const result = await pruneExpiredAuthRecords('2021-01-01T00:00:00.000Z');
+  assert.equal(result.prunedSessions, 1);
+  assert.equal(result.prunedAuthCodes, 1);
+
+  const sessions = await query(`SELECT 1 FROM sessions WHERE session_key = $1`, [login.session.sessionKey]);
+  assert.equal(sessions.rowCount, 0);
+  const authCodes = await query(`SELECT 1 FROM auth_codes WHERE private_code = $1`, [authCode.privateCode]);
+  assert.equal(authCodes.rowCount, 0);
 });

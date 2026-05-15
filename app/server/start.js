@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { createApp } from './create-app.js';
+import { pruneExpiredAuthRecords } from './auth.js';
 import { pruneOldGhostSnapshots, pruneCompletedRuns } from './services/game-service.js';
 
 const port = Number(process.env.PORT || 3021);
@@ -8,6 +9,16 @@ const app = await createApp();
 // Run ghost snapshot prune on startup and then every 24 hours.
 const PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 async function runPrune() {
+  try {
+    const result = await pruneExpiredAuthRecords();
+    if (result.prunedSessions > 0 || result.prunedAuthCodes > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`Auth prune: ${result.prunedSessions} sessions, ${result.prunedAuthCodes} auth codes removed`);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Auth prune failed:', err.message);
+  }
   try {
     const result = await pruneOldGhostSnapshots();
     if (result.prunedBots > 0 || result.prunedSnapshots > 0) {

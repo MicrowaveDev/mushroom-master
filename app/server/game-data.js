@@ -1987,6 +1987,359 @@ export const artifacts = [
   }
 ];
 
+const artifactProductionContent = {
+  spore_needle: {
+    description: {
+      ru: 'Тонкая игла впрыскивает споры прямо в слабое место и делает первый удар заметнее.',
+      en: 'A thin needle drives spores into a weak point and makes the first strike matter.'
+    },
+    loreSource: 'ygg-mycel'
+  },
+  sporeblade: {
+    description: {
+      ru: 'Короткий грибной клинок режет быстро, пока край еще влажный от свежего мицелия.',
+      en: 'A short fungal blade cuts quickly while its edge is still wet with fresh mycelium.'
+    },
+    loreSource: 'ygg-mycel'
+  },
+  amber_fang: {
+    description: {
+      ru: 'Янтарный клык кусает глубоко, но тянет владельца вперед без защиты.',
+      en: 'An amber fang bites deep, but pulls its bearer forward without cover.'
+    },
+    loreSource: 'golden-reliquary'
+  },
+  glass_cap: {
+    description: {
+      ru: 'Стеклянная шляпка фокусирует удар в яркий скол и почти не терпит ответного удара.',
+      en: 'A glass cap focuses each strike into a bright fracture and barely tolerates a reply.'
+    },
+    loreSource: 'glass-mycelium'
+  },
+  fang_whip: {
+    description: {
+      ru: 'Гибкая плеть из клыков достает цель первой ценой открытого корпуса.',
+      en: 'A flexible lash of fangs reaches the target first at the cost of an open guard.'
+    },
+    loreSource: 'thorn-crown'
+  },
+  burning_cap: {
+    description: {
+      ru: 'Пылающая шляпка разжигает каждый удар, но тяжелый жар замедляет шаг.',
+      en: 'A burning cap sets each blow alight, though its heavy heat slows the step.'
+    },
+    loreSource: 'fermentation-sea'
+  },
+  bark_plate: {
+    description: {
+      ru: 'Пластина старой коры принимает мелкие удары и пахнет спокойным лесом.',
+      en: 'A plate of old bark catches small blows and smells of a quiet forest.'
+    },
+    loreSource: 'ygg-mycel-heartwood'
+  },
+  loam_scale: {
+    description: {
+      ru: 'Суглинковая чешуя держит крепко, но липкая земля крадет немного скорости.',
+      en: 'A loam scale holds firm, though sticky earth steals a little speed.'
+    },
+    loreSource: 'forgotten-crossroads'
+  },
+  mycelium_wrap: {
+    description: {
+      ru: 'Мягкий пояс из гиф стягивает трещины в защите до того, как они станут раной.',
+      en: 'A soft wrap of hyphae tightens cracks in the guard before they become wounds.'
+    },
+    loreSource: 'soft-wall'
+  },
+  stone_cap: {
+    description: {
+      ru: 'Каменная шляпка гасит удар сверху вниз и заставляет владельца стоять тверже.',
+      en: 'A stone cap dampens blows from crown to stem and makes its bearer stand firmer.'
+    },
+    loreSource: 'dead-gates'
+  },
+  root_shell: {
+    description: {
+      ru: 'Корневой панцирь закрывает тело плотной сеткой, будто земля решила держать оборону.',
+      en: 'A root shell covers the body in a dense mesh, as if the soil chose to defend.'
+    },
+    loreSource: 'ygg-mycel-heartwood'
+  },
+  truffle_bulwark: {
+    description: {
+      ru: 'Трюфельный бастион тяжел и надежен: спрячься за ним и пережди бурю.',
+      en: 'A truffle bulwark is heavy and reliable: shelter behind it and wait out the storm.'
+    },
+    loreSource: 'golden-reliquary'
+  },
+  shock_puff: {
+    description: {
+      ru: 'Маленькая пышка взрывается сухой искрой и сбивает противника с ритма.',
+      en: 'A small puff bursts with a dry spark and knocks the enemy off rhythm.'
+    },
+    loreSource: 'morga-snaplight'
+  },
+  glimmer_cap: {
+    description: {
+      ru: 'Мерцающая шляпка отвлекает взгляд ровно настолько, чтобы удар пришел поздно.',
+      en: 'A glimmering cap distracts the eye just long enough for the answer to arrive late.'
+    },
+    loreSource: 'morga-flashcap'
+  },
+  dust_veil: {
+    description: {
+      ru: 'Пылевая вуаль превращает шаг в облако, где цель теряет счет ударам.',
+      en: 'A dust veil turns a step into a cloud where the target loses count of strikes.'
+    },
+    loreSource: 'dalamar-ash-snow'
+  },
+  static_spore_sac: {
+    description: {
+      ru: 'Статический мешок копит раздраженную искру и выпускает ее в чужую паузу.',
+      en: 'A static sac stores an irritated spark and releases it into the enemy pause.'
+    },
+    loreSource: 'crystal-rifts'
+  },
+  thunder_gill: {
+    description: {
+      ru: 'Громовая пластина звенит под пальцами и превращает блок в короткое оцепенение.',
+      en: 'A thunder gill rings under the fingers and turns a block into brief numbness.'
+    },
+    loreSource: 'crystal-rifts'
+  },
+  spark_spore: {
+    description: {
+      ru: 'Искровая спора лопается рядом с целью и оставляет после себя дрожащую тишину.',
+      en: 'A spark spore pops beside the target and leaves a trembling silence behind.'
+    },
+    loreSource: 'morga-opening-bell'
+  },
+  moss_ring: {
+    description: {
+      ru: 'Моховое кольцо амортизирует мелкие удары и учит руку держать линию.',
+      en: 'A moss ring cushions small impacts and teaches the hand to hold the line.'
+    },
+    loreSource: 'soft-wall'
+  },
+  haste_wisp: {
+    description: {
+      ru: 'Проворный блик горит у края взгляда и тянет удар быстрее, чем мысль.',
+      en: 'A quick wisp burns at the edge of sight and pulls the strike faster than thought.'
+    },
+    loreSource: 'mirror-route'
+  },
+  hyphae_corset_lace: { loreSource: 'soft-wall' },
+  triple_knot_seed: { loreSource: 'thorn-crown' },
+  sour_vinegar_ampoule: { loreSource: 'axilin-blue-vinegar' },
+  rainpuff_mine: { loreSource: 'kirt-rainpuff' },
+  sound_eater_velvet: { loreSource: 'silent-crypt' },
+  afterimage_cap: { loreSource: 'mirror-route' },
+  bone_cocoon_greaves: { loreSource: 'dead-gates' },
+  mirrorfloor_shard: { loreSource: 'mirror-route' },
+  overpressure_retort: { loreSource: 'fermentation-sea' },
+  green_star_sight: { loreSource: 'green-star' },
+  ash_library_urn: { loreSource: 'dalamar-ash-snow' },
+  flashstep_tendon: { loreSource: 'morga-flashcap' },
+  thalla_sacred_thread: {
+    description: {
+      ru: 'Священная нить мягко фиксирует мгновение, пока Тхалла выбирает следующий приказ.',
+      en: 'A sacred thread softly pins a moment while Thalla chooses the next command.'
+    },
+    loreSource: 'thalla-spore-lullaby'
+  },
+  lomie_crystal_lattice: {
+    description: {
+      ru: 'Кристаллическая решетка Ломиэ принимает удар и перенаправляет его в холодный угол.',
+      en: 'Lomie crystal lattice receives a blow and redirects it into a cold angle.'
+    },
+    loreSource: 'crystal-rifts'
+  },
+  axilin_ferment_core: {
+    description: {
+      ru: 'Ферментное ядро Аксилина бурлит слишком бодро и превращает риск в темп.',
+      en: 'Axilin ferment core bubbles too eagerly and turns risk into tempo.'
+    },
+    loreSource: 'fermentation-sea'
+  },
+  kirt_venom_fang: {
+    description: {
+      ru: 'Ядовитый клык Кирт не просто ранит: он убеждает цель ошибиться следующей.',
+      en: 'Kirt venom fang does more than wound: it persuades the target to err next.'
+    },
+    loreSource: 'thorn-crown'
+  },
+  morga_flash_seed: {
+    description: {
+      ru: 'Вспышка-семя Морги раскрывается раньше удара и оставляет противнику поздний ответ.',
+      en: 'Morga flash seed blooms before the hit and leaves the enemy answer late.'
+    },
+    loreSource: 'morga-first-bloom'
+  },
+  dalamar_ashen_shard: {
+    description: {
+      ru: 'Пепельный осколок Даламара сыплет серую память туда, где должен быть шаг.',
+      en: 'Dalamar ashen shard scatters gray memory where a step should have been.'
+    },
+    loreSource: 'dalamar-ash-snow'
+  },
+  thalla_golden_veil_pin: {
+    description: {
+      ru: 'Булавка золотой вуали закрепляет тишину на краю движения.',
+      en: 'A golden veil pin fastens silence to the edge of motion.'
+    },
+    loreSource: 'golden-reliquary'
+  },
+  lomie_portal_dust_vial: {
+    description: {
+      ru: 'Склянка портальной пыли Ломиэ делает расстояние ненадежным для чужого удара.',
+      en: 'Lomie vial of portal dust makes distance unreliable for an enemy strike.'
+    },
+    loreSource: 'mirror-route'
+  },
+  axilin_ginger_bite_root: {
+    description: {
+      ru: 'Имбирный корень Аксилин кусается первым и подталкивает тело вперед.',
+      en: 'Axilin ginger bite root bites first and urges the body forward.'
+    },
+    loreSource: 'axilin-ginger'
+  },
+  kirt_mantrap_claws: {
+    description: {
+      ru: 'Когти-ловушки Кирт закрываются на слабом месте и оставляют яд работать.',
+      en: 'Kirt mantrap claws close on a weak point and leave poison to work.'
+    },
+    loreSource: 'thorn-crown'
+  },
+  morga_first_bloom_spur: {
+    description: {
+      ru: 'Шпора первого цвета Морги толкает выпад туда, где защита еще не проснулась.',
+      en: 'Morga first bloom spur drives a lunge where the guard has not awakened.'
+    },
+    loreSource: 'morga-first-bloom'
+  },
+  dalamar_pallid_moth_pin: {
+    description: {
+      ru: 'Булавка бледной моли Даламар садится на цель и делает движение хрупким.',
+      en: 'Dalamar pallid moth pin lands on the target and makes movement fragile.'
+    },
+    loreSource: 'silent-crypt'
+  },
+  thalla_first_host_locket: { loreSource: 'thalla-body-memory' },
+  thalla_gold_oyster_crown: { loreSource: 'golden-reliquary' },
+  lomie_mirror_route_map: { loreSource: 'mirror-route' },
+  lomie_void_lattice_gate: { loreSource: 'void-glass' },
+  axilin_blue_vinegar_flask: { loreSource: 'axilin-blue-vinegar' },
+  axilin_ginger_overdrive: { loreSource: 'axilin-ginger' },
+  kirt_rainpuff_quiver: { loreSource: 'kirt-rainpuff' },
+  kirt_black_wind_bowchip: { loreSource: 'black-wind-abyss' },
+  morga_afterimage_crown: { loreSource: 'mirror-route' },
+  morga_bellstrike_calyx: { loreSource: 'morga-opening-bell' },
+  dalamar_throne_splinter: { loreSource: 'obsidian-throne' },
+  dalamar_dead_gate_seal: { loreSource: 'dead-gates' },
+  spore_lash: {
+    description: {
+      ru: 'Споровый хлыст срывает ритм в начале пути и помогает первому оглушению.',
+      en: 'A spore lash breaks rhythm early and helps the first stun land.'
+    },
+    loreSource: 'thalla-spore-lullaby'
+  },
+  settling_guard: {
+    description: {
+      ru: 'Оседающий щит собирает пыль вокруг стойки и делает начало боя спокойнее.',
+      en: 'A settling guard gathers dust around the stance and steadies the opening fight.'
+    },
+    loreSource: 'soft-wall'
+  },
+  ferment_phial: {
+    description: {
+      ru: 'Ферментная фляга согревает кровь маленьким риском и быстрым ударом.',
+      en: 'A ferment phial warms the blood with a small risk and a quick strike.'
+    },
+    loreSource: 'fermentation-sea'
+  },
+  measured_strike: {
+    description: {
+      ru: 'Размеренный удар не спешит: он кладет силу туда, где защита уже раскрыта.',
+      en: 'A measured strike does not rush; it places force where the guard has opened.'
+    },
+    loreSource: 'kirt-trophy-wall'
+  },
+  flash_cap: {
+    description: {
+      ru: 'Вспышка шляпки дает Морге долю секунды, которой хватает на весь бой.',
+      en: 'A flash cap gives Morga a fraction of a second that can last the whole fight.'
+    },
+    loreSource: 'morga-flashcap'
+  },
+  entropy_shard: {
+    description: {
+      ru: 'Осколок энтропии делает порядок тяжелым и заставляет противника запинаться.',
+      en: 'An entropy shard makes order heavy and forces the enemy to stumble.'
+    },
+    loreSource: 'entropy-scepter'
+  },
+  starter_bag: {
+    description: {
+      ru: 'Простая стартовая сумка: девять ячеек для первых находок и безопасного начала.',
+      en: 'A simple starter bag: nine cells for first finds and a safe beginning.'
+    }
+  },
+  moss_pouch: {
+    description: {
+      ru: 'Моховой мешочек добавляет две мягкие ячейки и легко цепляется к основной сумке.',
+      en: 'A moss pouch adds two soft cells and hooks easily onto the main bag.'
+    }
+  },
+  amber_satchel: {
+    description: {
+      ru: 'Янтарная сумка дает компактный квадрат места для более смелой сборки.',
+      en: 'An amber satchel gives a compact square of space for a bolder build.'
+    }
+  },
+  trefoil_sack: {
+    description: {
+      ru: 'Трилистник раскрывается в три стороны и оставляет форму, которую нужно обдумать.',
+      en: 'A trefoil sack opens in three directions and leaves a shape worth planning around.'
+    }
+  },
+  birchbark_hook: {
+    description: {
+      ru: 'Берестяной крюк цепляет ряд и дает неудобный, но полезный угол хранения.',
+      en: 'A birchbark hook catches a row and gives an awkward but useful storage angle.'
+    }
+  },
+  hollow_log: {
+    description: {
+      ru: 'Дуплистое бревно хранит находки в длинной нише с крепким боковым упором.',
+      en: 'A hollow log stores finds in a long niche with a sturdy side brace.'
+    }
+  },
+  twisted_stalk: {
+    description: {
+      ru: 'Витой стебель расширяет сумку по диагонали и вознаграждает аккуратную укладку.',
+      en: 'A twisted stalk expands the bag diagonally and rewards careful packing.'
+    }
+  },
+  spiral_cap: {
+    description: {
+      ru: 'Спиральная шляпка заворачивает место в обратную сторону для плотных сборок.',
+      en: 'A spiral cap curls space the other way for tightly packed builds.'
+    }
+  },
+  mycelium_vine: {
+    description: {
+      ru: 'Грибная лоза тянется узкой вертикалью и открывает место там, где ширины нет.',
+      en: 'A mycelium vine climbs in a narrow column and opens space where width is scarce.'
+    }
+  }
+};
+
+for (const artifact of artifacts) {
+  const productionContent = artifactProductionContent[artifact.id];
+  if (!productionContent) continue;
+  Object.assign(artifact, productionContent);
+}
+
 export const mushrooms = [
   {
     id: 'thalla',

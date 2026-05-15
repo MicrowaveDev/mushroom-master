@@ -17,7 +17,14 @@ Database runtime:
 
 - all game DB access now goes through Sequelize
 - local development defaults to SQLite
-- production-style deployments can use PostgreSQL by setting `DATABASE_URL`
+- production deployments must set `DATABASE_URL`; production SQLite is refused at startup
+- the first production deployment is intentionally single-server. Idempotency,
+  rate-limit buckets, ready-state coordination, and SSE fanout are process-local;
+  do not run multiple app instances until those stores are moved to shared
+  infrastructure or routing is pinned to one instance.
+- schema creation currently uses Sequelize `sync()` plus explicit compatibility
+  `ALTER` checks. Keep that contract for the current launch; take a backup before
+  deploys that change models.
 
 Game commands:
 
@@ -52,8 +59,8 @@ See [`docs/flaky-tests.md`](docs/flaky-tests.md) for notes on a small cluster of
 Game-specific environment additions:
 
 - `DATABASE_URL`
-  - optional PostgreSQL connection string
-  - when present, Sequelize uses PostgreSQL through `pg`
+  - required in production
+  - PostgreSQL connection string used through `pg`
 - `SQLITE_STORAGE`
   - optional SQLite file path for local development
   - default local dev path: `tmp/telegram-autobattler-dev.sqlite`

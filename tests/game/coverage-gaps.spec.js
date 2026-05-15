@@ -1,7 +1,7 @@
 import path from 'path';
 import { test, expect } from '@playwright/test';
 import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
-import { resetDevDb, createSession, api, MOBILE_VIEWPORT } from './e2e-helpers.js';
+import { resetDevDb, createSession, api, waitForPrepReady, MOBILE_VIEWPORT } from './e2e-helpers.js';
 import { repoRoot } from '../../app/shared/repo-root.js';
 
 const screenshotDir = path.join(repoRoot, '.agent/tasks/telegram-autobattler-v1/raw/screenshots');
@@ -274,39 +274,27 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
   await page.locator('.home-start-btn').click();
   await expect(page.locator('.prep-screen')).toBeVisible();
+  await waitForPrepReady(page);
 
-  // Refresh shop until a bag appears
-  let foundBag = false;
-  for (let i = 0; i < 10; i++) {
-    if (await page.locator('.shop-item--bag').isVisible().catch(() => false)) {
-      foundBag = true;
-      break;
-    }
-    const refreshBtn = page.locator('.artifact-shop-header button');
-    if (await refreshBtn.isEnabled()) {
-      await refreshBtn.click();
-      await page.waitForTimeout(300);
-    }
-  }
-  if (!foundBag) return; // Skip if no bag appeared
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  await api(request, player.sessionKey, `/api/dev/game-run/${bootstrap.activeGameRun.id}/force-shop`, 'POST', {
+    artifactIds: ['moss_pouch', 'spore_needle']
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
 
   // Buy and activate the bag
-  await page.locator('.shop-item--bag').first().click();
-  const containerBag = page.locator('.artifact-container-zone .container-item').last();
+  await page.locator('.shop-item--bag[data-artifact-id="moss_pouch"]').click();
+  const containerBag = page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]');
   await expect(containerBag).toBeVisible({ timeout: 3000 });
   await containerBag.click();
   await expect(page.locator('.active-bags-bar')).toBeVisible();
 
   // Buy a regular item and place it in the bag rows
-  const shopItem = page.locator('.prep-screen .shop-item').first();
-  if (await shopItem.isVisible().catch(() => false)) {
-    await shopItem.click();
-    // Auto-place from container — it may land in bag rows
-    const containerItem = page.locator('.artifact-container-zone .container-item').first();
-    if (await containerItem.isVisible().catch(() => false)) {
-      await containerItem.click();
-    }
-  }
+  await page.locator('.prep-screen .shop-item[data-artifact-id="spore_needle"]').click();
+  const containerItem = page.locator('.artifact-container-zone .container-item[data-artifact-id="spore_needle"]');
+  await expect(containerItem).toBeVisible({ timeout: 3000 });
+  await containerItem.click();
 
   // Try to deactivate the bag — should show error and bag stays active
   const bagChip = page.locator('.active-bag-chip').first();

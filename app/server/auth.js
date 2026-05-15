@@ -172,6 +172,17 @@ export async function logoutSession(sessionKey) {
   await query(`DELETE FROM sessions WHERE session_key = $1`, [sessionKey]);
 }
 
+export async function pruneExpiredAuthRecords(now = nowIso()) {
+  const sessionCount = await query(`SELECT COUNT(*) AS count FROM sessions WHERE expires_at < $1`, [now]);
+  const authCodeCount = await query(`SELECT COUNT(*) AS count FROM auth_codes WHERE expires_at < $1`, [now]);
+  const expiredSessions = await query(`DELETE FROM sessions WHERE expires_at < $1`, [now]);
+  const expiredAuthCodes = await query(`DELETE FROM auth_codes WHERE expires_at < $1`, [now]);
+  return {
+    prunedSessions: Number(sessionCount.rows[0]?.count || expiredSessions.rowCount || 0),
+    prunedAuthCodes: Number(authCodeCount.rows[0]?.count || expiredAuthCodes.rowCount || 0)
+  };
+}
+
 async function createUniqueFriendCode(client) {
   for (let attempt = 0; attempt < 30; attempt += 1) {
     const code = String(Math.floor(100000 + Math.random() * 900000));

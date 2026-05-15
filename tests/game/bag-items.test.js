@@ -57,7 +57,14 @@ test('[Req 3-D, 4-W, 5-F] combatArtifacts excludes bags, starter-only, character
 });
 
 test('[Req 4-V, 6-L] general lore artifacts are shop-eligible effect carriers', () => {
-  const loreArtifacts = artifacts.filter((artifact) => artifact.loreSource && !artifact.fusionOnly);
+  const loreArtifacts = artifacts.filter(
+    (artifact) => artifact.loreSource
+      && artifact.battleEffect?.id
+      && !artifact.fusionOnly
+      && !artifact.characterItem
+      && !artifact.starterOnly
+      && artifact.family !== 'bag'
+  );
   assert.ok(loreArtifacts.length >= 4);
   assert.ok(loreArtifacts.every((artifact) => combatArtifacts.some((item) => item.id === artifact.id)));
   assert.ok(loreArtifacts.every((artifact) => artifact.battleEffect?.id));
@@ -69,6 +76,14 @@ test('[Req 4-V, 6-L] general lore artifacts are shop-eligible effect carriers', 
       `${artifact.id} should have a dedicated bitmap`
     );
   }
+});
+
+test('[production-content] player-visible artifacts have localized copy and canon links', () => {
+  const missingDescriptions = artifacts.filter((artifact) => !artifact.description?.en || !artifact.description?.ru);
+  assert.deepEqual(missingDescriptions.map((artifact) => artifact.id), []);
+
+  const nonBagArtifactsMissingLore = artifacts.filter((artifact) => artifact.family !== 'bag' && !artifact.loreSource);
+  assert.deepEqual(nonBagArtifactsMissingLore.map((artifact) => artifact.id), []);
 });
 
 // --- Bag in loadout validation ---
