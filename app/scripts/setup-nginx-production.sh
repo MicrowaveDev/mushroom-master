@@ -205,9 +205,8 @@ EOF
 EOF
     cat <<EOF
 server {
-  listen 443 ssl;
-  listen [::]:443 ssl;
-  http2 on;
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
   server_name ${SERVER_NAMES};
 
   access_log /var/log/nginx/${SITE_NAME}.access.log;
