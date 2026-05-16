@@ -114,6 +114,45 @@ export async function callTelegramBotApi(method, payload, {
   return json.result;
 }
 
+export function buildWebhookUrl(baseUrl = process.env.PUBLIC_GAME_URL || process.env.TELEGRAM_GAME_URL || '') {
+  if (!baseUrl) return '';
+  return new URL('/api/bot/webhook', baseUrl).toString();
+}
+
+export async function getTelegramWebhookInfo(options = {}) {
+  return callTelegramBotApi('getWebhookInfo', {}, options);
+}
+
+export async function setTelegramWebhook({ webhookUrl = buildWebhookUrl(), secretToken = process.env.TELEGRAM_WEBHOOK_SECRET } = {}, options = {}) {
+  if (!webhookUrl) throw new Error('PUBLIC_GAME_URL or TELEGRAM_GAME_URL is required to set Telegram webhook');
+  if (!secretToken && process.env.NODE_ENV === 'production') {
+    throw new Error('TELEGRAM_WEBHOOK_SECRET is required to set Telegram webhook in production');
+  }
+  return callTelegramBotApi('setWebhook', {
+    url: webhookUrl,
+    secret_token: secretToken || undefined,
+    allowed_updates: ['message', 'callback_query']
+  }, options);
+}
+
+export async function ensureTelegramWebhook(options = {}) {
+  const webhookUrl = options.webhookUrl || buildWebhookUrl();
+  if (!process.env.TELEGRAM_BOT_TOKEN && !options.token) {
+    return { skipped: true, reason: 'missing_token' };
+  }
+  if (!webhookUrl) {
+    return { skipped: true, reason: 'missing_public_url' };
+  }
+
+  const info = await getTelegramWebhookInfo(options);
+  if (info?.url === webhookUrl) {
+    return { changed: false, url: webhookUrl };
+  }
+
+  await setTelegramWebhook({ webhookUrl, secretToken: options.secretToken }, options);
+  return { changed: true, previousUrl: info?.url || '', url: webhookUrl };
+}
+
 export async function answerTelegramGameCallback(callbackQuery, options = {}) {
   const shortName = options.shortName || gameShortName();
   const requestedGame = callbackQuery?.game_short_name;

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { createApp } from './create-app.js';
 import { pruneExpiredAuthRecords } from './auth.js';
+import { ensureTelegramWebhook } from './bot-gateway.js';
 import { pruneOldGhostSnapshots, pruneCompletedRuns } from './services/game-service.js';
 
 const port = Number(process.env.PORT || 3021);
@@ -41,10 +42,28 @@ async function runPrune() {
   }
 }
 
+async function runTelegramWebhookSync() {
+  if (process.env.NODE_ENV !== 'production') return;
+  try {
+    const result = await ensureTelegramWebhook();
+    if (result.skipped) {
+      // eslint-disable-next-line no-console
+      console.warn(`Telegram webhook sync skipped: ${result.reason}`);
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.log(`Telegram webhook ${result.changed ? 'set' : 'already set'}: ${result.url}`);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Telegram webhook sync failed:', err.message);
+  }
+}
+
 app.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`Mushroom Battles server listening on http://localhost:${port}`);
 
+  runTelegramWebhookSync();
   runPrune();
   const pruneTimer = setInterval(runPrune, PRUNE_INTERVAL_MS);
   if (pruneTimer.unref) pruneTimer.unref();

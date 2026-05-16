@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   buildGameLaunchUrl,
   buildTelegramGameScorePayload,
+  buildWebhookUrl,
   createMentionReply,
   createTelegramInlineKeyboard,
+  ensureTelegramWebhook,
   handleTelegramWebhook
 } from '../../app/server/bot-gateway.js';
 
@@ -94,6 +96,71 @@ test('[telegram-game] webhook answers game callbacks through Bot API', async () 
   assert.equal(calls[0].body.callback_query_id, 'cb-1');
   assert.match(calls[0].body.url, /tgGame=mushroom_master/);
   delete process.env.PUBLIC_GAME_URL;
+});
+
+test('[telegram-game] builds production webhook URL from public game URL', () => {
+  assert.equal(
+    buildWebhookUrl('https://mushroombattles.com/'),
+    'https://mushroombattles.com/api/bot/webhook'
+  );
+});
+
+test('[telegram-game] ensureTelegramWebhook sets webhook when missing', async () => {
+  const calls = [];
+  const result = await ensureTelegramWebhook({
+    token: 'bot:test',
+    webhookUrl: 'https://mushroombattles.com/api/bot/webhook',
+    secretToken: 'secret',
+    fetchImpl: async (url, options) => {
+      const method = String(url).split('/').pop();
+      calls.push({ method, body: JSON.parse(options.body) });
+      return {
+        async json() {
+          return method === 'getWebhookInfo'
+            ? { ok: true, result: { url: '' } }
+            : { ok: true, result: true };
+        }
+      };
+    }
+  });
+
+  assert.deepEqual(result, {
+    changed: true,
+    previousUrl: '',
+    url: 'https://mushroombattles.com/api/bot/webhook'
+  });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].method, 'getWebhookInfo');
+  assert.equal(calls[1].method, 'setWebhook');
+  assert.deepEqual(calls[1].body, {
+    url: 'https://mushroombattles.com/api/bot/webhook',
+    secret_token: 'secret',
+    allowed_updates: ['message', 'callback_query']
+  });
+});
+
+test('[telegram-game] ensureTelegramWebhook skips set when URL already matches', async () => {
+  const calls = [];
+  const result = await ensureTelegramWebhook({
+    token: 'bot:test',
+    webhookUrl: 'https://mushroombattles.com/api/bot/webhook',
+    fetchImpl: async (url, options) => {
+      const method = String(url).split('/').pop();
+      calls.push({ method, body: JSON.parse(options.body) });
+      return {
+        async json() {
+          return { ok: true, result: { url: 'https://mushroombattles.com/api/bot/webhook' } };
+        }
+      };
+    }
+  });
+
+  assert.deepEqual(result, {
+    changed: false,
+    url: 'https://mushroombattles.com/api/bot/webhook'
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].method, 'getWebhookInfo');
 });
 
 test('[telegram-game] mention replies include playable Telegram links', () => {
