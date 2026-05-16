@@ -12,7 +12,8 @@ export const AuthScreen = {
   emits: ['login-telegram', 'login-browser', 'login-dev', 'cancel-telegram-code'],
   data() {
     return {
-      authPortraits: AUTH_PORTRAITS
+      authPortraits: AUTH_PORTRAITS,
+      botCommandCopied: false
     };
   },
   computed: {
@@ -23,6 +24,23 @@ export const AuthScreen = {
     authFeature2() {
       const count = this.state.catalogCounts?.artifacts || 0;
       return count > 0 ? this.t.authFeature2.replace('{count}', count) : this.t.authFeature2Fallback;
+    },
+    botStartCommand() {
+      return this.state.authCode?.publicCode ? `/start auth-${this.state.authCode.publicCode}` : '';
+    }
+  },
+  methods: {
+    async copyBotStartCommand() {
+      if (!this.botStartCommand) return;
+      try {
+        await navigator.clipboard?.writeText(this.botStartCommand);
+        this.botCommandCopied = true;
+        setTimeout(() => {
+          this.botCommandCopied = false;
+        }, 1800);
+      } catch {
+        this.botCommandCopied = false;
+      }
     }
   },
   template: `
@@ -53,16 +71,25 @@ export const AuthScreen = {
           <button v-if="isLocalDevAuthEnabled" class="ghost" @click="$emit('login-dev')">{{ t.authDev }}</button>
         </div>
         <p v-if="isLocalDevAuthEnabled" class="auth-browser-note">{{ t.authBrowserNote }}</p>
-        <div v-if="state.authCode" class="note">
-          <p><strong>{{ t.botCodeTitle }}</strong></p>
-          <p>{{ t.botCodeHint }}</p>
-          <a :href="state.authCode.botUrl" target="_blank" rel="noopener noreferrer">{{ t.botCodeOpen }}</a>
-          <p class="muted">{{ t.botCodeWaiting }}</p>
-          <button class="ghost" @click="$emit('cancel-telegram-code')">{{ t.botCodeCancel }}</button>
-        </div>
         <div class="auth-lang-row">
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
           <button class="lang-toggle-btn" :class="{ active: state.lang === 'en' }" @click="state.lang = 'en'">EN</button>
+        </div>
+      </div>
+      <div v-if="state.authCode" class="auth-code-modal" role="dialog" aria-modal="true" :aria-label="t.botCodeTitle">
+        <div class="auth-code-backdrop" @click="$emit('cancel-telegram-code')"></div>
+        <div class="auth-code-sheet panel">
+          <button class="auth-code-close" type="button" :aria-label="t.botCodeCancel" @click="$emit('cancel-telegram-code')">×</button>
+          <p class="eyebrow">{{ t.botCodeTitle }}</p>
+          <p class="auth-code-hint">{{ t.botCodeHint }}</p>
+          <a class="primary auth-code-open" :href="state.authCode.botUrl" target="_blank" rel="noopener noreferrer">{{ t.botCodeOpen }}</a>
+          <div class="auth-code-command">
+            <span>{{ t.botCodeCommandLabel }}</span>
+            <code>{{ botStartCommand }}</code>
+            <button class="ghost" type="button" @click="copyBotStartCommand">{{ botCommandCopied ? t.botCodeCopied : t.botCodeCopy }}</button>
+          </div>
+          <p class="muted">{{ t.botCodeWaiting }}</p>
+          <button class="secondary" type="button" @click="$emit('cancel-telegram-code')">{{ t.botCodeCancel }}</button>
         </div>
       </div>
     </section>

@@ -13,6 +13,7 @@ import {
 } from '../../app/server/auth.js';
 import { freshDb } from './helpers.js';
 import { query } from '../../app/server/db.js';
+import { handleTelegramWebhook } from '../../app/server/bot-gateway.js';
 
 function createInitData(botToken, user) {
   const params = new URLSearchParams();
@@ -117,6 +118,46 @@ test('browser fallback auth code can be confirmed through the bot start flow', a
   const verified = await verifyTelegramAuthCode(authCode.privateCode);
   assert.equal(verified.success, true);
   assert.ok(verified.session.sessionKey);
+});
+
+test('telegram webhook confirms fallback auth code and replies to start command', async () => {
+  await freshDb();
+  const authCode = await createTelegramAuthCode();
+  const calls = [];
+
+  const result = await handleTelegramWebhook({
+    message: {
+      message_id: 1,
+      text: `/start auth-${authCode.publicCode}`,
+      chat: { id: 999, type: 'private' },
+      from: {
+        id: 202,
+        username: 'lomie_en',
+        first_name: 'Lomie',
+        language_code: 'en'
+      }
+    }
+  }, {
+    token: 'bot:test',
+    botUsername: 'MushroomBattlesBot',
+    fetchImpl: async (url, options) => {
+      calls.push({ url, body: JSON.parse(options.body) });
+      return {
+        async json() {
+          return { ok: true, result: true };
+        }
+      };
+    }
+  });
+
+  assert.deepEqual(result, { kind: 'auth_confirmed', answered: true });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /sendMessage$/);
+  assert.equal(calls[0].body.chat_id, 999);
+  assert.match(calls[0].body.text, /Authentication confirmed/);
+
+  const verified = await verifyTelegramAuthCode(authCode.privateCode);
+  assert.equal(verified.success, true);
 });
 
 test('telegram auth rejects stale signed init data', () => {
