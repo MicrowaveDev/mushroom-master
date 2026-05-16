@@ -9,7 +9,7 @@ PULL_CODE=1
 BUILD=1
 FOLLOW_LOGS=0
 CACHE_CLEANUP=1
-AGGRESSIVE_CLEANUP=0
+AGGRESSIVE_CLEANUP=1
 HEALTH_URL=""
 
 MIN_FREE_DISK_KB=$((5 * 1024 * 1024))
@@ -21,14 +21,14 @@ usage() {
   cat <<'EOF'
 Update Mushroom Battles production from git and restart Docker Compose.
 
-The script pulls origin/main, checks disk/cache state, prunes safe Docker build
-cache when needed, rebuilds the app container, waits for the local health route,
-and prints recent logs on failure. Docker volumes are never pruned.
+The script pulls origin/main, aggressively prunes safe Docker/repo build cache,
+rebuilds the app container, waits for the local health route, and prints recent
+logs on failure. Docker volumes are never pruned.
 
 Examples:
   app/scripts/update-production-server.sh
   app/scripts/update-production-server.sh --logs
-  app/scripts/update-production-server.sh --aggressive-cleanup
+  app/scripts/update-production-server.sh --preflight-cleanup
   app/scripts/update-production-server.sh --no-pull --no-build
 
 Options:
@@ -39,8 +39,9 @@ Options:
   --health-url URL         Health URL. Default: http://127.0.0.1:${PORT:-3021}/api/health
   --no-pull                Do not pull from git
   --no-build               Restart without rebuilding the app image
-  --no-cache-cleanup       Skip disk/cache preflight cleanup
-  --aggressive-cleanup     Prune all unused Docker build/image cache before build
+  --no-cache-cleanup       Skip disk/cache cleanup
+  --preflight-cleanup      Only prune cache when disk/cache thresholds are exceeded
+  --aggressive-cleanup     Prune all unused Docker build/image cache before build (default)
   --logs                   Follow app logs after update
   -h, --help               Show this help.
 EOF
@@ -356,6 +357,7 @@ while [[ $# -gt 0 ]]; do
     --no-pull) PULL_CODE=0; shift ;;
     --no-build) BUILD=0; shift ;;
     --no-cache-cleanup) CACHE_CLEANUP=0; shift ;;
+    --preflight-cleanup) AGGRESSIVE_CLEANUP=0; shift ;;
     --aggressive-cleanup) AGGRESSIVE_CLEANUP=1; shift ;;
     --logs) FOLLOW_LOGS=1; shift ;;
     -h|--help) usage; exit 0 ;;
