@@ -83,7 +83,7 @@ Best for: near-term asset because it matches the current character art style.
 
 ## Experiment Prompts
 
-Generated review experiments should stay in `.agent/key-art-experiments/` until a final direction is selected. Once selected, copy the final image into a production asset path such as `web/public/marketing/social-preview-character-key-art.png`, then wire it into SEO/Open Graph metadata.
+Generated review experiments should stay in `.agent/key-art-experiments/` until a final direction is selected. Once selected, copy the final base image into `web/public/marketing/character-key-art-base.png`, then run `npm run game:social-preview` for a temporary check or `npm run game:social-preview -- --production` to write the production Open Graph/Twitter image at `web/public/marketing/social-preview.png`.
 
 ### Prompt A: Premium Hero Splash
 
@@ -136,3 +136,60 @@ Composition/framing: 16:9 wide, overlapping three-quarter/full-body figures, cen
 Lighting/mood: elegant rough concept art, alive and premium, not unfinished placeholder.
 Constraints: original characters only, visible elf ears where ears show, no text, no logo, no watermark.
 Avoid: messy scribble noise, chibi proportions, photorealism, direct copying of current portrait poses.
+
+## Reference-Inspired Prompt Variations
+
+These prompts were written after reviewing event/key-art references where the cast sits around, behind, or above a strong title area. They are kept for reuse even though the current production preview uses Prompt A as its base.
+
+### Prompt E: Emblem Arc Poster
+
+Use case: stylized-concept
+Asset type: raw social preview base art variation
+Primary request: Create wide promotional key art for an original fantasy auto-battler called Mushroom Battles, inspired by game event posters where characters arc around a central emblem/title area. Do not copy any existing game/IP; use only the composition idea.
+Scene/backdrop: bright open Mycelium sky-chamber with a pale circular fungal emblem shape in the center, blue-violet spore mist on one side and amber-gold fungal glow on the other, black mycelium branch silhouettes framing the top.
+Subject: original mushroom-elf heroines arranged in a circular action arc around the center: Thalla gold-white sovereign with glowing mycelium, Lomie green-indigo portal guide with broad mushroom cap, Kirt black-violet-neon toxic archer with Ramaria antlers, Dalamar white-black ash entropy priestess, Axilin amber ginger alchemist with flasks, Morga red-orange flash striker.
+Style/medium: polished stylized game key art, anime-fantasy illustration, dynamic and clean, high readability at thumbnail size.
+Composition/framing: 16:9 wide, characters distributed around the outer thirds and corners, leave a clear central safe area for title overlay, energetic diagonal poses, no text.
+Lighting/mood: bright promotional energy, celebratory, premium, magical spores.
+Constraints: original characters only, visible elf ears where ears show, fungal traits integrated into body/costume/magic, no logos, no text, no watermark.
+Avoid: sci-fi armor, modern guns, direct Overwatch/Fortnite resemblance, generic humans, cluttering the central title-safe area.
+
+### Prompt F: Chapter Poster Flank
+
+Use case: stylized-concept
+Asset type: social preview base key art variation
+Primary request: Create wide promotional key art for an original fantasy auto-battler called Mushroom Battles, inspired by bold chapter/key-art posters where four to five full-height characters flank a central title-safe zone. Do not copy any existing game/IP; use only the composition principle.
+Scene/backdrop: high-contrast abstract fungal stage with warm amber-orange behind the left side and deep violet-blue behind the right side, giant blurred mushroom cap shapes and glowing mycelium strokes behind the cast.
+Subject: four strongest foreground mushroom-elf heroines: Thalla central-left gold-white sovereign with luminous mycelium and sacred fungal regalia; Kirt front-right black-violet-neon archer with green Ramaria antlers and bow; Lomie back-right with broad green-indigo mushroom cap and portal glow; Axilin left with ginger hair, amber alchemist cloak and flasks. Optional Dalamar ghosted in the background as white-black ash silhouette.
+Style/medium: polished stylized game promo art, crisp anime fantasy, bold clean shapes, rich color blocking, premium but not photorealistic.
+Composition/framing: 16:9 wide, large characters from thigh-up, title-safe zone around lower center, characters overlap behind the future logo, strong diagonal poses, no text.
+Lighting/mood: punchy launch-season energy, high contrast, warm vs cool split, magical fungal glow.
+Constraints: original characters only, visible elf ears where ears show, mushroom traits integrated into body/costume/magic, no logos, no text, no watermark.
+Avoid: direct Fortnite resemblance, sci-fi weapons, modern clothing, generic human fashion, clutter over the lower-center title area.
+
+### Prompt G: Roster Showdown
+
+Use case: stylized-concept
+Asset type: social preview base key art variation
+Primary request: Create ultra-wide roster showdown key art for an original fantasy auto-battler called Mushroom Battles, inspired by crossover showdown posters with many characters standing across the horizon and a strong lower-center title-safe zone. Do not copy any existing game/IP; use only the broad lineup/title-zone composition.
+Scene/backdrop: split fungal battlefield background, amber-gold spore storm on the left, deep blue-violet portal mist on the right, black mycelium roots and giant mushrooms behind, subtle central glow for a future title.
+Subject: six original mushroom-elf heroines in a horizontal lineup: Axilin amber alchemist with ginger hair and potion flasks at left; Dalamar severe white-black ash priestess with entropy scepter; Thalla central gold-white sovereign with glowing mycelium; Kirt dynamic toxic archer with purple hair and green Ramaria antlers; Lomie portal guide with broad green-indigo mushroom cap; Morga red-orange flash striker at right. Distinct silhouettes, elf ears visible where possible.
+Style/medium: polished stylized anime-fantasy game key art, cinematic, readable faces, premium social banner.
+Composition/framing: 16:9 wide, characters span the width with central figures larger, lower-center area kept open/darker for title overlay, no text.
+Lighting/mood: energetic versus/showdown energy, collectible roster appeal, bright character contrast.
+Constraints: original characters only, fungal traits integrated into body/costume/magic, no logos, no text, no watermark.
+Avoid: direct Fortnite resemblance, sci-fi guns, cartoon mascots, human-only cast, too much clutter in the lower-center title area.
+
+## Current Production Prompt
+
+The current committed base image at `web/public/marketing/character-key-art-base.png` was generated from Prompt A: Premium Hero Splash. The production social preview at `web/public/marketing/social-preview.png` is generated by compositing the stylized title with:
+
+```bash
+npm run game:social-preview -- --production
+```
+
+For local review without touching the production asset:
+
+```bash
+npm run game:social-preview
+```
