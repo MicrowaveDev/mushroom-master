@@ -197,7 +197,7 @@ npm run game:social-preview
 For title-placement review sheets inspired by event/game-name overlays:
 
 ```bash
-npm run game:social-preview -- --all-layouts --out tmp/social-preview-review.png
+npm run game:social-preview -- --all-layouts --out tmp/social-preview-variations/layout.png
 ```
 
 Supported title layouts: `left`, `center`, `bottom-band`, `bottom-crest`, `middle-bottom`, `top-band`, `top-crest`, and `center-band`.
@@ -206,15 +206,15 @@ Supported title styles: `classic`, `esports`, `engraved`, `arcane`, `telegram`, 
 For the current key art, prefer bottom or lower-middle title placement. The characters' faces fill the upper third, so top overlays are useful as experiments but are more likely to cover the roster. Quick bottom-focused checks:
 
 ```bash
-npm run game:social-preview -- --layout bottom-band --out tmp/social-preview-review-bottom-band.png
-npm run game:social-preview -- --layout bottom-crest --out tmp/social-preview-review-bottom-crest.png
-npm run game:social-preview -- --layout middle-bottom --out tmp/social-preview-review-middle-bottom.png
+npm run game:social-preview -- --layout bottom-band --out tmp/social-preview-variations/bottom-band.png
+npm run game:social-preview -- --layout bottom-crest --out tmp/social-preview-variations/bottom-crest.png
+npm run game:social-preview -- --layout middle-bottom --out tmp/social-preview-variations/middle-bottom.png
 ```
 
 For font/style exploration on a single placement:
 
 ```bash
-npm run game:social-preview -- --layout bottom-band --all-styles --out tmp/social-preview-style.png
-npm run game:social-preview -- --layout bottom-crest --all-styles --out tmp/social-preview-style.png
-npm run game:social-preview -- --layout middle-bottom --all-styles --out tmp/social-preview-style.png
+npm run game:social-preview -- --layout bottom-band --all-styles --out tmp/social-preview-variations/style.png
+npm run game:social-preview -- --layout bottom-crest --all-styles --out tmp/social-preview-variations/style.png
+npm run game:social-preview -- --layout middle-bottom --all-styles --out tmp/social-preview-variations/style.png
 ```

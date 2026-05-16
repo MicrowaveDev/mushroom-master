@@ -8,6 +8,8 @@ test-results/
 tmp/*.sqlite
 tmp/*.sqlite-journal
 tmp/social-preview*.png
+tmp/social-preview-variations/*
+!tmp/social-preview-variations/.gitkeep
 *.log
 .agent/tasks/*/raw/screenshots/
 .agent/artifact-image-archives/
