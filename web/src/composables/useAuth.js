@@ -3,10 +3,32 @@ import { projectLoadoutItems } from './loadout-projection.js';
 import { useTelegramWebApp } from './useTelegramWebApp.js';
 
 const BOOTSTRAP_CACHE_KEY = 'mushroomBootstrapCache';
+const PREFERRED_LANG_KEY = 'mushroomPreferredLang';
 const WEB_CLIENT_ID_KEY = 'mushroomWebClientId';
 const BOOTSTRAP_LOADER_DELAY_MS = 320;
 const TELEGRAM_AUTH_POLL_INTERVAL_MS = 3000;
 const TELEGRAM_AUTH_MAX_POLLS = 200;
+
+export function normalizeLanguagePreference(lang) {
+  return lang === 'en' ? 'en' : 'ru';
+}
+
+export function readPreferredLanguage(storage = globalThis.localStorage) {
+  try {
+    const value = storage?.getItem(PREFERRED_LANG_KEY);
+    return value === 'en' || value === 'ru' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writePreferredLanguage(lang, storage = globalThis.localStorage) {
+  const normalized = normalizeLanguagePreference(lang);
+  try {
+    storage?.setItem(PREFERRED_LANG_KEY, normalized);
+  } catch {}
+  return normalized;
+}
 
 export function extractTelegramInitData({ win = globalThis.window, telegram } = {}) {
   const directInitData = telegram?.getWebApp?.()?.initData || win?.Telegram?.WebApp?.initData;
@@ -108,7 +130,12 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
 
   function applyBootstrapData(bootstrap) {
     state.bootstrap = bootstrap;
-    state.lang = state.bootstrap.settings.lang;
+    const serverLang = normalizeLanguagePreference(state.bootstrap.settings.lang);
+    const preferredLang = readPreferredLanguage();
+    state.lang = preferredLang || serverLang;
+    if (preferredLang && preferredLang !== serverLang && state.sessionKey) {
+      persistPreferredLanguage(state.sessionKey, preferredLang, state.bootstrap.settings).catch(() => {});
+    }
     // bootstrap.loadout / bootstrap.shopState are always null after the
     // 2026-04-13 legacy deletion. The active run's grid is hydrated below
     // from bootstrap.activeGameRun.loadoutItems.
@@ -310,15 +337,16 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     return json;
   }
 
-  async function persistPreferredLanguage(sessionKey) {
-    const preferredLang = state.lang === 'en' ? 'en' : 'ru';
+  async function persistPreferredLanguage(sessionKey = state.sessionKey, lang = state.lang, settings = state.bootstrap?.settings || {}) {
+    if (!sessionKey) return;
+    const preferredLang = writePreferredLanguage(lang);
     await apiJson('/api/settings', {
       method: 'POST',
       body: JSON.stringify({
         lang: preferredLang,
-        reducedMotion: state.bootstrap?.settings?.reducedMotion || false,
-        battleSpeed: state.bootstrap?.settings?.battleSpeed || '1x',
-        replaySpeed: state.bootstrap?.settings?.replaySpeed || 2
+        reducedMotion: settings.reducedMotion || false,
+        battleSpeed: settings.battleSpeed || '1x',
+        replaySpeed: settings.replaySpeed || 2
       })
     }, sessionKey);
     state.lang = preferredLang;
@@ -333,7 +361,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
           state.sessionKey = result.data.sessionKey;
           localStorage.setItem('sessionKey', result.data.sessionKey);
           state.authCode = null;
-          await persistPreferredLanguage(result.data.sessionKey);
+          await persistPreferredLanguage(result.data.sessionKey, state.lang);
           await refreshBootstrap();
           return;
         }
@@ -455,6 +483,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
 
   async function saveSettings() {
     try {
+      writePreferredLanguage(state.lang);
       await apiJson('/api/settings', {
         method: 'POST',
         body: JSON.stringify({
@@ -474,6 +503,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     applyTelegramTheme, refreshBootstrap,
     loginViaTelegram, loginViaBrowserCode, loginViaDevSession,
     cancelTelegramCodeLogin,
+    persistPreferredLanguage,
     logout,
     saveCharacter, saveSettings
   };

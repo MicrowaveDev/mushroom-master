@@ -5,7 +5,7 @@ import { getRunAchievementsByIds } from '../../app/shared/run-achievements.js';
 
 // Composables
 import { useGameState } from './composables/useGameState.js';
-import { useAuth } from './composables/useAuth.js';
+import { readPreferredLanguage, useAuth, writePreferredLanguage } from './composables/useAuth.js';
 import { useShop } from './composables/useShop.js';
 import { useGameRun } from './composables/useGameRun.js';
 import { useReplay } from './composables/useReplay.js';
@@ -79,7 +79,7 @@ const App = {
       error: '',
       screen: startParams.screen || 'auth',
       telegramGameContext,
-      lang: 'ru',
+      lang: readPreferredLanguage() || 'ru',
       builderItems: [],
       containerItems: [],
       activeBags: [],
@@ -340,7 +340,25 @@ const App = {
       if (errorDismissTimer) { clearTimeout(errorDismissTimer); errorDismissTimer = null; }
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
-    watch(() => state.lang, () => { document.documentElement.lang = state.lang; });
+    let languageSaveTimer = null;
+    watch(() => state.lang, (lang, oldLang) => {
+      if (oldLang === undefined) {
+        document.documentElement.lang = lang === 'en' ? 'en' : 'ru';
+        return;
+      }
+      const preferredLang = writePreferredLanguage(lang);
+      if (state.lang !== preferredLang) {
+        state.lang = preferredLang;
+        return;
+      }
+      document.documentElement.lang = preferredLang;
+      if (!state.sessionKey || !state.bootstrap?.settings) return;
+      if (state.bootstrap.settings.lang === preferredLang) return;
+      if (languageSaveTimer) clearTimeout(languageSaveTimer);
+      languageSaveTimer = setTimeout(() => {
+        auth.persistPreferredLanguage(state.sessionKey, preferredLang, state.bootstrap?.settings).catch(() => {});
+      }, 250);
+    }, { immediate: true });
     watch(() => state.mobileHomeActionsMode, (mode) => {
       localStorage.setItem('mobileHomeActionsMode', mode || 'auto');
     });

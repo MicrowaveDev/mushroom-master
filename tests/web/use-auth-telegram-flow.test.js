@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { useAuth } from '../../web/src/composables/useAuth.js';
+import { readPreferredLanguage, useAuth, writePreferredLanguage } from '../../web/src/composables/useAuth.js';
 
 function makeState() {
   return {
@@ -60,6 +60,30 @@ function installBotCodeFetch({ assertPath = true } = {}) {
   };
 }
 
+function createMemoryStorage(seed = {}) {
+  const values = new Map(Object.entries(seed));
+  return {
+    getItem(key) {
+      return values.has(key) ? values.get(key) : null;
+    },
+    setItem(key, value) {
+      values.set(key, String(value));
+    },
+    removeItem(key) {
+      values.delete(key);
+    }
+  };
+}
+
+test('[lang] preferred language storage validates supported locales', () => {
+  const storage = createMemoryStorage();
+  assert.equal(readPreferredLanguage(storage), null);
+  assert.equal(writePreferredLanguage('en', storage), 'en');
+  assert.equal(readPreferredLanguage(storage), 'en');
+  assert.equal(writePreferredLanguage('de', storage), 'ru');
+  assert.equal(readPreferredLanguage(storage), 'ru');
+});
+
 test('[telegram-auth] starts bot-code login and can cancel it', async () => {
   const authHarness = installBotCodeFetch();
 
@@ -103,5 +127,73 @@ test('[telegram-auth] uses bot-code login even when Mini App initData exists', a
     assert.deepEqual(authHarness.opened, ['https://t.me/MushroomBattlesBot?start=auth-public-code']);
   } finally {
     authHarness.restore();
+  }
+});
+
+test('[lang] refreshBootstrap keeps selected local language and persists over stale server setting', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalLocalStorage = globalThis.localStorage;
+  const originalSessionStorage = globalThis.sessionStorage;
+  const localStorage = createMemoryStorage({ sessionKey: 'session-1', mushroomPreferredLang: 'ru' });
+  const sessionStorage = createMemoryStorage();
+  const requests = [];
+
+  globalThis.localStorage = localStorage;
+  globalThis.sessionStorage = sessionStorage;
+  globalThis.fetch = async (path, options = {}) => {
+    requests.push({ path, options });
+    const payloads = {
+      '/api/app-config': { localAiLabEnabled: false, localDevAuthEnabled: false },
+      '/api/characters': { mushrooms: [] },
+      '/api/artifacts': { artifacts: [] },
+      '/api/bootstrap': {
+        player: { id: 'player-1' },
+        settings: { lang: 'en', reducedMotion: true, battleSpeed: '2x', replaySpeed: 4 },
+        activeMushroomId: 'thalla',
+        activeGameRun: null
+      },
+      '/api/friends': [],
+      '/api/leaderboard': [],
+      '/api/wiki/home': {}
+    };
+    if (path === '/api/settings') {
+      return {
+        async json() {
+          return { success: true, data: { ok: true } };
+        }
+      };
+    }
+    return {
+      async json() {
+        return { success: true, data: payloads[path] };
+      }
+    };
+  };
+
+  try {
+    const state = makeState();
+    state.sessionKey = 'session-1';
+    state.lang = 'ru';
+    const auth = useAuth(state, () => {}, {
+      getWebApp: () => null,
+      applyTelegramTheme() {},
+      syncViewportVars() {}
+    });
+
+    await auth.refreshBootstrap();
+
+    assert.equal(state.lang, 'ru');
+    const settingsRequest = requests.find((request) => request.path === '/api/settings');
+    assert.ok(settingsRequest, 'stale server locale should be corrected');
+    assert.deepEqual(JSON.parse(settingsRequest.options.body), {
+      lang: 'ru',
+      reducedMotion: true,
+      battleSpeed: '2x',
+      replaySpeed: 4
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.localStorage = originalLocalStorage;
+    globalThis.sessionStorage = originalSessionStorage;
   }
 });
