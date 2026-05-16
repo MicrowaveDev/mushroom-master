@@ -7,8 +7,8 @@ import { repoRoot } from '../shared/repo-root.js';
 const webDist = path.join(repoRoot, 'web/dist');
 const webPublic = path.join(repoRoot, 'web/public');
 const baseImage = path.join(webPublic, 'marketing/character-key-art-base.png');
-const publicPreview = path.join(webPublic, 'marketing/social-preview.png');
-const cachedPreview = path.join(webDist, 'marketing/social-preview.png');
+const publicPreview = path.join(webPublic, 'marketing/social-preview.jpg');
+const cachedPreview = path.join(webDist, 'marketing/social-preview.jpg');
 
 export async function ensureSocialPreviewCache() {
   fs.mkdirSync(path.dirname(cachedPreview), { recursive: true });

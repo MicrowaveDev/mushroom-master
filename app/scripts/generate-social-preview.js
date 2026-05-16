@@ -11,7 +11,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 
 const DEFAULT_BASE = path.join(repoRoot, 'web/public/marketing/character-key-art-base.png');
 const DEFAULT_TEMP_OUT = path.join(repoRoot, 'tmp/social-preview.png');
-const PRODUCTION_OUT = path.join(repoRoot, 'web/public/marketing/social-preview.png');
+const PRODUCTION_OUT = path.join(repoRoot, 'web/public/marketing/social-preview.jpg');
 const WIDTH = 1200;
 const HEIGHT = 630;
 const DEFAULT_LAYOUT = 'middle-bottom';
@@ -96,7 +96,7 @@ Usage:
 
 Options:
   --out PATH              Output PNG path. Default: tmp/social-preview.png
-  --production            Write web/public/marketing/social-preview.png
+  --production            Write web/public/marketing/social-preview.jpg
   --base PATH             Base key art image. Default: web/public/marketing/character-key-art-base.png
   --title TEXT            Title text. Default: Mushroom Battles
   --subtitle TEXT         Small supporting line. Default: Pack artifacts. Watch the fight.
@@ -551,7 +551,13 @@ export async function renderPreview(args) {
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 1 });
     await page.setContent(buildHtml(args), { waitUntil: 'networkidle0' });
-    await page.screenshot({ path: args.out, type: 'png' });
+    const ext = path.extname(args.out).toLowerCase();
+    const type = ext === '.jpg' || ext === '.jpeg' ? 'jpeg' : 'png';
+    await page.screenshot({
+      path: args.out,
+      type,
+      quality: type === 'jpeg' ? 85 : undefined
+    });
   } finally {
     await browser.close();
   }
