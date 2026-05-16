@@ -14,6 +14,7 @@ const DEFAULT_TEMP_OUT = path.join(repoRoot, 'tmp/social-preview.png');
 const PRODUCTION_OUT = path.join(repoRoot, 'web/public/marketing/social-preview.png');
 const WIDTH = 1200;
 const HEIGHT = 630;
+const LAYOUTS = ['left', 'center', 'top-band', 'top-crest', 'center-band'];
 
 function parseArgs(argv) {
   const args = {
@@ -22,6 +23,7 @@ function parseArgs(argv) {
     title: 'Mushroom Battles',
     subtitle: 'Pack artifacts. Watch the fight.',
     layout: 'left',
+    allLayouts: false,
     production: false
   };
 
@@ -39,6 +41,8 @@ function parseArgs(argv) {
     if (arg === '--production' || arg === '--write-production') {
       args.production = true;
       args.out = PRODUCTION_OUT;
+    } else if (arg === '--all-layouts') {
+      args.allLayouts = true;
     } else if (arg === '--base') {
       args.base = path.resolve(repoRoot, readValue());
     } else if (arg === '--out') {
@@ -71,7 +75,8 @@ Options:
   --base PATH             Base key art image. Default: web/public/marketing/character-key-art-base.png
   --title TEXT            Title text. Default: Mushroom Battles
   --subtitle TEXT         Small supporting line. Default: Pack artifacts. Watch the fight.
-  --layout MODE           Title layout: left or center. Default: left
+  --layout MODE           Title layout: ${LAYOUTS.join(', ')}. Default: left
+  --all-layouts           Render all title layouts beside --out for review
 `;
 }
 
@@ -92,7 +97,7 @@ function imageDataUrl(filePath) {
 
 function buildHtml({ base, title, subtitle, layout }) {
   const baseUrl = imageDataUrl(base);
-  const layoutClass = layout === 'center' ? 'layout-center' : 'layout-left';
+  const layoutClass = `layout-${layout}`;
   return `<!doctype html>
 <html>
 <head>
@@ -131,6 +136,11 @@ function buildHtml({ base, title, subtitle, layout }) {
         linear-gradient(90deg, rgba(13, 9, 14, 0.72) 0%, rgba(20, 13, 18, 0.38) 33%, rgba(20, 13, 18, 0.04) 64%, rgba(13, 9, 14, 0.22) 100%),
         linear-gradient(0deg, rgba(10, 7, 9, 0.36) 0%, transparent 28%, rgba(10, 7, 9, 0.12) 100%);
     }
+    .band {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+    }
     .spore-frame {
       position: absolute;
       inset: 28px;
@@ -165,6 +175,93 @@ function buildHtml({ base, title, subtitle, layout }) {
     .layout-center .subtitle {
       max-width: 720px;
       font-size: 27px;
+    }
+    .layout-top-band .band,
+    .layout-center-band .band {
+      display: block;
+      left: 0;
+      right: 0;
+      height: 150px;
+      background:
+        linear-gradient(90deg, rgba(11, 8, 11, 0.28), rgba(12, 8, 10, 0.74) 24%, rgba(12, 8, 10, 0.82) 50%, rgba(12, 8, 10, 0.74) 76%, rgba(11, 8, 11, 0.28)),
+        linear-gradient(0deg, rgba(255, 222, 145, 0.08), rgba(255, 255, 255, 0.02));
+      border-top: 1px solid rgba(245, 218, 156, 0.22);
+      border-bottom: 1px solid rgba(245, 218, 156, 0.22);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+    }
+    .layout-top-band .band { top: 52px; }
+    .layout-center-band .band { top: 240px; }
+    .layout-top-band .title-block,
+    .layout-center-band .title-block {
+      left: 50%;
+      width: 860px;
+      justify-items: center;
+      text-align: center;
+      transform: translateX(-50%);
+    }
+    .layout-top-band .title-block { top: 62px; bottom: auto; }
+    .layout-center-band .title-block { top: 252px; bottom: auto; }
+    .layout-top-band .title,
+    .layout-center-band .title {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 74px;
+      font-weight: 1000;
+      line-height: 0.9;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: #fffaf1;
+      -webkit-text-stroke: 3px rgba(54, 31, 12, 0.86);
+      text-shadow:
+        0 5px 0 #9c5f22,
+        0 12px 24px rgba(0, 0, 0, 0.72),
+        0 0 28px rgba(255, 200, 80, 0.42);
+    }
+    .layout-top-band .eyebrow,
+    .layout-center-band .eyebrow {
+      order: 2;
+      margin-top: -4px;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      color: #f7dc9b;
+      font-size: 22px;
+      letter-spacing: 0.2em;
+      text-shadow: 0 4px 10px rgba(0, 0, 0, 0.68);
+    }
+    .layout-top-band .subtitle,
+    .layout-center-band .subtitle {
+      display: none;
+    }
+    .layout-top-crest .title-block {
+      top: 34px;
+      bottom: auto;
+      left: 50%;
+      width: 760px;
+      justify-items: center;
+      text-align: center;
+      transform: translateX(-50%);
+      gap: 7px;
+    }
+    .layout-top-crest .title {
+      padding: 14px 32px 18px;
+      border-radius: 22px;
+      border: 2px solid rgba(250, 222, 153, 0.62);
+      background:
+        linear-gradient(180deg, rgba(68, 38, 17, 0.82), rgba(23, 14, 12, 0.72)),
+        radial-gradient(circle at 50% 0%, rgba(255, 218, 117, 0.38), transparent 48%);
+      font-size: 69px;
+      line-height: 0.88;
+      color: #fff4cd;
+      white-space: nowrap;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 18px 36px rgba(0, 0, 0, 0.42);
+    }
+    .layout-top-crest .subtitle {
+      max-width: none;
+      font-size: 22px;
+      padding: 7px 16px;
+      border-radius: 999px;
     }
     .eyebrow {
       width: max-content;
@@ -214,6 +311,7 @@ function buildHtml({ base, title, subtitle, layout }) {
   <main class="preview ${layoutClass}">
     <img class="art" src="${baseUrl}" alt="" />
     <div class="vignette"></div>
+    <div class="band"></div>
     <div class="spore-frame"></div>
     <section class="title-block" aria-label="${escapeHtml(title)}">
       <div class="eyebrow">Auto-Battler</div>
@@ -226,8 +324,8 @@ function buildHtml({ base, title, subtitle, layout }) {
 }
 
 async function renderPreview(args) {
-  if (!['left', 'center'].includes(args.layout)) {
-    throw new Error(`Invalid --layout "${args.layout}". Use left or center.`);
+  if (!LAYOUTS.includes(args.layout)) {
+    throw new Error(`Invalid --layout "${args.layout}". Use one of: ${LAYOUTS.join(', ')}.`);
   }
   if (!fs.existsSync(args.base)) {
     throw new Error(`Base image not found: ${path.relative(repoRoot, args.base)}`);
@@ -250,9 +348,22 @@ async function main() {
     console.log(usage());
     return;
   }
-  await renderPreview(args);
-  const label = args.production ? 'production social preview' : 'temporary social preview';
-  console.log(`generated ${label}: ${path.relative(repoRoot, args.out)}`);
+  if (args.allLayouts) {
+    if (args.production) {
+      throw new Error('--all-layouts cannot be combined with --production');
+    }
+    const ext = path.extname(args.out) || '.png';
+    const stem = path.join(path.dirname(args.out), path.basename(args.out, ext));
+    for (const layout of LAYOUTS) {
+      const out = `${stem}-${layout}${ext}`;
+      await renderPreview({ ...args, layout, out });
+      console.log(`generated review social preview: ${path.relative(repoRoot, out)}`);
+    }
+  } else {
+    await renderPreview(args);
+    const label = args.production ? 'production social preview' : 'temporary social preview';
+    console.log(`generated ${label}: ${path.relative(repoRoot, args.out)}`);
+  }
 }
 
 main().catch((error) => {

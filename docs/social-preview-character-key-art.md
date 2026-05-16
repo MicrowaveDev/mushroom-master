@@ -193,3 +193,11 @@ For local review without touching the production asset:
 ```bash
 npm run game:social-preview
 ```
+
+For title-placement review sheets inspired by event/game-name overlays:
+
+```bash
+npm run game:social-preview -- --all-layouts --out tmp/social-preview-review.png
+```
+
+Supported title layouts: `left`, `center`, `top-band`, `top-crest`, and `center-band`.
