@@ -24,6 +24,14 @@ const LAYOUTS = [
   'top-crest',
   'center-band'
 ];
+const STYLES = [
+  'classic',
+  'esports',
+  'engraved',
+  'arcane',
+  'telegram',
+  'storybook'
+];
 
 function parseArgs(argv) {
   const args = {
@@ -32,7 +40,9 @@ function parseArgs(argv) {
     title: 'Mushroom Battles',
     subtitle: 'Pack artifacts. Watch the fight.',
     layout: 'left',
+    style: 'classic',
     allLayouts: false,
+    allStyles: false,
     production: false
   };
 
@@ -52,6 +62,8 @@ function parseArgs(argv) {
       args.out = PRODUCTION_OUT;
     } else if (arg === '--all-layouts') {
       args.allLayouts = true;
+    } else if (arg === '--all-styles') {
+      args.allStyles = true;
     } else if (arg === '--base') {
       args.base = path.resolve(repoRoot, readValue());
     } else if (arg === '--out') {
@@ -62,6 +74,8 @@ function parseArgs(argv) {
       args.subtitle = readValue();
     } else if (arg === '--layout') {
       args.layout = readValue();
+    } else if (arg === '--style') {
+      args.style = readValue();
     } else if (arg === '--help' || arg === '-h') {
       args.help = true;
     } else {
@@ -85,7 +99,9 @@ Options:
   --title TEXT            Title text. Default: Mushroom Battles
   --subtitle TEXT         Small supporting line. Default: Pack artifacts. Watch the fight.
   --layout MODE           Title layout: ${LAYOUTS.join(', ')}. Default: left
+  --style MODE            Title style: ${STYLES.join(', ')}. Default: classic
   --all-layouts           Render all title layouts beside --out for review
+  --all-styles            Render all title styles beside --out for review
 `;
 }
 
@@ -104,9 +120,10 @@ function imageDataUrl(filePath) {
   return `data:${mime};base64,${fs.readFileSync(filePath).toString('base64')}`;
 }
 
-function buildHtml({ base, title, subtitle, layout }) {
+function buildHtml({ base, title, subtitle, layout, style }) {
   const baseUrl = imageDataUrl(base);
   const layoutClass = `layout-${layout}`;
+  const styleClass = `style-${style}`;
   return `<!doctype html>
 <html>
 <head>
@@ -388,10 +405,120 @@ function buildHtml({ base, title, subtitle, layout }) {
       line-height: 1.12;
       letter-spacing: 0;
     }
+    .style-esports .title {
+      font-family: Impact, Haettenschweiler, "Arial Black", Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      color: #ffffff;
+      -webkit-text-stroke: 3px rgba(26, 13, 8, 0.95);
+      text-shadow:
+        0 6px 0 #c86d19,
+        0 13px 0 rgba(70, 30, 8, 0.78),
+        0 20px 32px rgba(0, 0, 0, 0.82);
+    }
+    .style-esports .eyebrow {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5b335;
+      border-color: rgba(43, 24, 8, 0.88);
+      color: #23140a;
+      letter-spacing: 0.18em;
+      box-shadow: 0 5px 0 rgba(74, 38, 10, 0.72);
+    }
+    .style-engraved .title {
+      font-family: Georgia, "Times New Roman", serif;
+      color: #fff3c0;
+      -webkit-text-stroke: 1px rgba(52, 27, 9, 0.88);
+      text-shadow:
+        0 2px 0 #6f4218,
+        0 -1px 0 rgba(255, 255, 255, 0.58),
+        0 7px 18px rgba(0, 0, 0, 0.78),
+        0 0 28px rgba(238, 176, 66, 0.46);
+    }
+    .style-engraved .title::first-letter {
+      font-size: 1.12em;
+    }
+    .style-engraved .eyebrow {
+      color: #f8df98;
+      border-color: rgba(248, 223, 152, 0.74);
+      background: rgba(39, 24, 12, 0.72);
+    }
+    .style-arcane .title {
+      font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      color: #eafcff;
+      -webkit-text-stroke: 2px rgba(21, 12, 42, 0.92);
+      text-shadow:
+        0 4px 0 rgba(72, 33, 120, 0.9),
+        0 10px 20px rgba(0, 0, 0, 0.78),
+        0 0 30px rgba(129, 76, 255, 0.72),
+        0 0 52px rgba(82, 218, 206, 0.38);
+    }
+    .style-arcane .eyebrow {
+      color: #dcfff4;
+      border-color: rgba(136, 250, 226, 0.65);
+      background: rgba(39, 25, 73, 0.72);
+      box-shadow: 0 0 22px rgba(102, 230, 212, 0.34);
+    }
+    .style-telegram .title {
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 1000;
+      text-transform: none;
+      color: #f7fbff;
+      -webkit-text-stroke: 0;
+      text-shadow:
+        0 3px 0 rgba(44, 110, 170, 0.86),
+        0 12px 28px rgba(0, 0, 0, 0.84);
+    }
+    .style-telegram .title-block {
+      filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.72));
+    }
+    .style-telegram .eyebrow {
+      color: #e9f7ff;
+      border-color: rgba(165, 217, 255, 0.68);
+      background: rgba(27, 95, 148, 0.72);
+    }
+    .style-storybook .title {
+      font-family: Georgia, "Times New Roman", serif;
+      text-transform: none;
+      color: #fff8dc;
+      -webkit-text-stroke: 1px rgba(68, 38, 18, 0.72);
+      text-shadow:
+        0 3px 0 #8c5c2b,
+        0 9px 20px rgba(0, 0, 0, 0.7),
+        0 0 18px rgba(255, 236, 167, 0.42);
+    }
+    .style-storybook .eyebrow {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 24px;
+      letter-spacing: 0.1em;
+      color: #f3dca0;
+      background: rgba(40, 27, 17, 0.72);
+    }
+    .layout-bottom-crest.style-esports .title,
+    .layout-bottom-crest.style-arcane .title,
+    .layout-bottom-crest.style-telegram .title {
+      padding-top: 12px;
+      padding-bottom: 16px;
+    }
+    .layout-bottom-crest.style-telegram .title {
+      background:
+        linear-gradient(180deg, rgba(43, 115, 170, 0.9), rgba(16, 36, 62, 0.82)),
+        radial-gradient(circle at 50% 0%, rgba(173, 226, 255, 0.36), transparent 50%);
+      border-color: rgba(190, 232, 255, 0.7);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+        0 18px 36px rgba(0, 0, 0, 0.48);
+    }
+    .layout-bottom-band.style-telegram .band,
+    .layout-middle-bottom.style-telegram .band {
+      background:
+        linear-gradient(90deg, rgba(14, 49, 82, 0.28), rgba(20, 88, 146, 0.76) 25%, rgba(18, 92, 154, 0.84) 50%, rgba(20, 88, 146, 0.76) 75%, rgba(14, 49, 82, 0.28)),
+        linear-gradient(0deg, rgba(175, 224, 255, 0.12), rgba(255, 255, 255, 0.03));
+    }
   </style>
 </head>
 <body>
-  <main class="preview ${layoutClass}">
+  <main class="preview ${layoutClass} ${styleClass}">
     <img class="art" src="${baseUrl}" alt="" />
     <div class="vignette"></div>
     <div class="band"></div>
@@ -409,6 +536,9 @@ function buildHtml({ base, title, subtitle, layout }) {
 async function renderPreview(args) {
   if (!LAYOUTS.includes(args.layout)) {
     throw new Error(`Invalid --layout "${args.layout}". Use one of: ${LAYOUTS.join(', ')}.`);
+  }
+  if (!STYLES.includes(args.style)) {
+    throw new Error(`Invalid --style "${args.style}". Use one of: ${STYLES.join(', ')}.`);
   }
   if (!fs.existsSync(args.base)) {
     throw new Error(`Base image not found: ${path.relative(repoRoot, args.base)}`);
@@ -435,11 +565,25 @@ async function main() {
     if (args.production) {
       throw new Error('--all-layouts cannot be combined with --production');
     }
+    if (args.allStyles) {
+      throw new Error('--all-layouts cannot be combined with --all-styles');
+    }
     const ext = path.extname(args.out) || '.png';
     const stem = path.join(path.dirname(args.out), path.basename(args.out, ext));
     for (const layout of LAYOUTS) {
       const out = `${stem}-${layout}${ext}`;
       await renderPreview({ ...args, layout, out });
+      console.log(`generated review social preview: ${path.relative(repoRoot, out)}`);
+    }
+  } else if (args.allStyles) {
+    if (args.production) {
+      throw new Error('--all-styles cannot be combined with --production');
+    }
+    const ext = path.extname(args.out) || '.png';
+    const stem = path.join(path.dirname(args.out), path.basename(args.out, ext));
+    for (const style of STYLES) {
+      const out = `${stem}-${args.layout}-${style}${ext}`;
+      await renderPreview({ ...args, style, out });
       console.log(`generated review social preview: ${path.relative(repoRoot, out)}`);
     }
   } else {
