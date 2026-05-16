@@ -61,6 +61,7 @@ import { log, requestLogger } from './lib/obs.js';
 import { idempotency } from './lib/idempotency.js';
 import { rateLimit, clearRateLimitBuckets } from './lib/rate-limit.js';
 import { getWikiEntry, getWikiHome } from './wiki.js';
+import { ensureSocialPreviewCache } from './social-preview-cache.js';
 import { repoRoot } from '../shared/repo-root.js';
 
 const webDist = path.join(repoRoot, 'web/dist');
@@ -257,6 +258,7 @@ export async function createApp() {
   await getDb();
   ensureDistFreshOrRebuild();
   syncPublicPortraitsToDist();
+  await ensureSocialPreviewCache();
   const app = express();
   app.use(express.json({ limit: '2mb' }));
   app.use(securityHeaders());

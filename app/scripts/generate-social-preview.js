@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +14,8 @@ const DEFAULT_TEMP_OUT = path.join(repoRoot, 'tmp/social-preview.png');
 const PRODUCTION_OUT = path.join(repoRoot, 'web/public/marketing/social-preview.png');
 const WIDTH = 1200;
 const HEIGHT = 630;
+const DEFAULT_LAYOUT = 'middle-bottom';
+const DEFAULT_STYLE = 'storybook';
 const LAYOUTS = [
   'left',
   'center',
@@ -39,8 +41,8 @@ function parseArgs(argv) {
     out: DEFAULT_TEMP_OUT,
     title: 'Mushroom Battles',
     subtitle: 'Pack artifacts. Watch the fight.',
-    layout: 'left',
-    style: 'classic',
+    layout: DEFAULT_LAYOUT,
+    style: DEFAULT_STYLE,
     allLayouts: false,
     allStyles: false,
     production: false
@@ -98,8 +100,8 @@ Options:
   --base PATH             Base key art image. Default: web/public/marketing/character-key-art-base.png
   --title TEXT            Title text. Default: Mushroom Battles
   --subtitle TEXT         Small supporting line. Default: Pack artifacts. Watch the fight.
-  --layout MODE           Title layout: ${LAYOUTS.join(', ')}. Default: left
-  --style MODE            Title style: ${STYLES.join(', ')}. Default: classic
+  --layout MODE           Title layout: ${LAYOUTS.join(', ')}. Default: ${DEFAULT_LAYOUT}
+  --style MODE            Title style: ${STYLES.join(', ')}. Default: ${DEFAULT_STYLE}
   --all-layouts           Render all title layouts beside --out for review
   --all-styles            Render all title styles beside --out for review
 `;
@@ -533,7 +535,7 @@ function buildHtml({ base, title, subtitle, layout, style }) {
 </html>`;
 }
 
-async function renderPreview(args) {
+export async function renderPreview(args) {
   if (!LAYOUTS.includes(args.layout)) {
     throw new Error(`Invalid --layout "${args.layout}". Use one of: ${LAYOUTS.join(', ')}.`);
   }
@@ -593,7 +595,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error.message || error);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error.message || error);
+    process.exit(1);
+  });
+}
