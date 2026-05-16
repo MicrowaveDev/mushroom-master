@@ -967,6 +967,13 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
         [createId('shopstate'), gameRunId, grp.player_id, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
       );
+      playerResults[grp.player_id].shopOffer = newOffer;
+      playerResults[grp.player_id].loadoutItems = await readCurrentRoundItems(
+        client,
+        gameRunId,
+        grp.player_id,
+        nextRound
+      );
     }
   }
 
@@ -1185,6 +1192,7 @@ export async function resolveRound(playerId, gameRunId) {
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
         [createId('shopstate'), gameRunId, playerId, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
       );
+      const loadoutItems = await readCurrentRoundItems(client, gameRunId, playerId, nextRound);
 
       return {
         id: gameRunId,
@@ -1198,6 +1206,8 @@ export async function resolveRound(playerId, gameRunId) {
         achievements: [],
         fusions,
         battle: await getBattle(battle.id, playerId, client),
+        shopOffer: newOffer,
+        loadoutItems,
         player: {
           completedRounds,
           wins: newWins,

@@ -3,6 +3,7 @@ import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
 import { calculateSeasonAbandonPenalty, calculateSeasonPoints } from '../../../app/shared/season-levels.js';
+import { projectLoadoutItems } from './loadout-projection.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
   const haptics = {
@@ -153,14 +154,40 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     const fusionReveals = Array.isArray(state.gameRunResult.fusions)
       ? state.gameRunResult.fusions
       : [];
+    const resolvedRun = state.gameRunResult;
     state.gameRunResult = null;
     state.gameRunRefreshCount = 0;
-    // Full re-hydrate from the server — picks up the copy-forward round N+1
-    // loadout rows and the new round's shop offer in one round-trip.
-    // Replaces the old "partial merge + loadRunShopOffer" pattern which
-    // could drift when the server's copy-forward produced a different
-    // layout than the client last sent (§2.5 projection).
-    if (refreshBootstrap) await refreshBootstrap();
+
+    if (Array.isArray(resolvedRun.loadoutItems) && Array.isArray(resolvedRun.shopOffer)) {
+      const allArtifacts = state.bootstrap?.artifacts || [];
+      const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+      const artifactById = new Map(allArtifacts.map((a) => [a.id, a]));
+      const projected = projectLoadoutItems(resolvedRun.loadoutItems, bagsSet, (id) => artifactById.get(id));
+      state.builderItems = projected.builderItems;
+      state.containerItems = projected.containerItems;
+      state.activeBags = projected.activeBags;
+      state.rotatedBags = projected.rotatedBags;
+      state.freshPurchases = projected.freshPurchases;
+      state.gameRunShopOffer = resolvedRun.shopOffer;
+      state.gameRun = {
+        ...state.gameRun,
+        status: resolvedRun.status || state.gameRun.status,
+        currentRound: resolvedRun.currentRound ?? state.gameRun.currentRound,
+        player: resolvedRun.player || state.gameRun.player,
+        shopOffer: resolvedRun.shopOffer,
+        loadoutItems: resolvedRun.loadoutItems
+      };
+      if (state.bootstrap?.activeGameRun?.id === state.gameRun.id) {
+        state.bootstrap.activeGameRun = {
+          ...state.bootstrap.activeGameRun,
+          ...state.gameRun
+        };
+      }
+    } else if (refreshBootstrap) {
+      // Fallback for older server payloads.
+      await refreshBootstrap();
+    }
+
     state.fusionRevealQueue = fusionReveals;
     goTo('prep');
   }
