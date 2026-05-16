@@ -684,7 +684,7 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
   // to match mushroom, since game_run_loadout_items itself doesn't carry mushroom.
   const excludePlaceholders = excludedPlayerIds.map((_, i) => `$${i + 4}`).join(', ');
   const realResult = await client.query(
-    `SELECT DISTINCT grli.game_run_id, grli.player_id
+    `SELECT grli.game_run_id, grli.player_id
      FROM game_run_loadout_items grli
      JOIN player_active_character pac ON pac.player_id = grli.player_id
      WHERE grli.round_number = $1
@@ -692,6 +692,7 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
        AND pac.mushroom_id = $3
        AND grli.player_id NOT IN (${excludePlaceholders})
        AND grli.game_run_id NOT LIKE 'ghost:bot:%'
+     GROUP BY grli.game_run_id, grli.player_id
      ORDER BY RANDOM()
      LIMIT 1`,
     [roundNumber, gameRunId, targetMushroomId, ...excludedPlayerIds]

@@ -310,6 +310,20 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     return json;
   }
 
+  async function persistPreferredLanguage(sessionKey) {
+    const preferredLang = state.lang === 'en' ? 'en' : 'ru';
+    await apiJson('/api/settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        lang: preferredLang,
+        reducedMotion: state.bootstrap?.settings?.reducedMotion || false,
+        battleSpeed: state.bootstrap?.settings?.battleSpeed || '1x',
+        replaySpeed: state.bootstrap?.settings?.replaySpeed || 2
+      })
+    }, sessionKey);
+    state.lang = preferredLang;
+  }
+
   function pollTelegramAuthCode(privateCode, attempt = 0) {
     clearAuthPoll();
     authPollTimer = globalThis.setTimeout(async () => {
@@ -319,6 +333,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
           state.sessionKey = result.data.sessionKey;
           localStorage.setItem('sessionKey', result.data.sessionKey);
           state.authCode = null;
+          await persistPreferredLanguage(result.data.sessionKey);
           await refreshBootstrap();
           return;
         }

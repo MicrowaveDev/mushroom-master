@@ -13,6 +13,7 @@ RUN npm ci
 
 COPY app ./app
 COPY web ./web
+COPY wiki ./wiki
 
 RUN npm run game:build
 
@@ -26,6 +27,7 @@ COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/app ./app
 COPY --from=build /app/web ./web
+COPY --from=build /app/wiki ./wiki
 
 EXPOSE 3021
 
