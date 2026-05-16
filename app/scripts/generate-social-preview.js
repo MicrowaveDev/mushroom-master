@@ -14,7 +14,16 @@ const DEFAULT_TEMP_OUT = path.join(repoRoot, 'tmp/social-preview.png');
 const PRODUCTION_OUT = path.join(repoRoot, 'web/public/marketing/social-preview.png');
 const WIDTH = 1200;
 const HEIGHT = 630;
-const LAYOUTS = ['left', 'center', 'top-band', 'top-crest', 'center-band'];
+const LAYOUTS = [
+  'left',
+  'center',
+  'bottom-band',
+  'bottom-crest',
+  'middle-bottom',
+  'top-band',
+  'top-crest',
+  'center-band'
+];
 
 function parseArgs(argv) {
   const args = {
@@ -176,6 +185,7 @@ function buildHtml({ base, title, subtitle, layout }) {
       max-width: 720px;
       font-size: 27px;
     }
+    .layout-bottom-band .band,
     .layout-top-band .band,
     .layout-center-band .band {
       display: block;
@@ -189,8 +199,13 @@ function buildHtml({ base, title, subtitle, layout }) {
       border-bottom: 1px solid rgba(245, 218, 156, 0.22);
       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
     }
+    .layout-bottom-band .band {
+      bottom: 44px;
+      height: 164px;
+    }
     .layout-top-band .band { top: 52px; }
     .layout-center-band .band { top: 240px; }
+    .layout-bottom-band .title-block,
     .layout-top-band .title-block,
     .layout-center-band .title-block {
       left: 50%;
@@ -199,8 +214,10 @@ function buildHtml({ base, title, subtitle, layout }) {
       text-align: center;
       transform: translateX(-50%);
     }
+    .layout-bottom-band .title-block { bottom: 58px; }
     .layout-top-band .title-block { top: 62px; bottom: auto; }
     .layout-center-band .title-block { top: 252px; bottom: auto; }
+    .layout-bottom-band .title,
     .layout-top-band .title,
     .layout-center-band .title {
       font-family: Arial, Helvetica, sans-serif;
@@ -216,6 +233,7 @@ function buildHtml({ base, title, subtitle, layout }) {
         0 12px 24px rgba(0, 0, 0, 0.72),
         0 0 28px rgba(255, 200, 80, 0.42);
     }
+    .layout-bottom-band .eyebrow,
     .layout-top-band .eyebrow,
     .layout-center-band .eyebrow {
       order: 2;
@@ -228,6 +246,7 @@ function buildHtml({ base, title, subtitle, layout }) {
       letter-spacing: 0.2em;
       text-shadow: 0 4px 10px rgba(0, 0, 0, 0.68);
     }
+    .layout-bottom-band .subtitle,
     .layout-top-band .subtitle,
     .layout-center-band .subtitle {
       display: none;
@@ -262,6 +281,70 @@ function buildHtml({ base, title, subtitle, layout }) {
       font-size: 22px;
       padding: 7px 16px;
       border-radius: 999px;
+    }
+    .layout-bottom-crest .title-block {
+      left: 50%;
+      bottom: 34px;
+      width: 780px;
+      justify-items: center;
+      text-align: center;
+      transform: translateX(-50%);
+      gap: 7px;
+    }
+    .layout-bottom-crest .title {
+      padding: 14px 34px 18px;
+      border-radius: 22px;
+      border: 2px solid rgba(250, 222, 153, 0.62);
+      background:
+        linear-gradient(180deg, rgba(68, 38, 17, 0.86), rgba(23, 14, 12, 0.76)),
+        radial-gradient(circle at 50% 0%, rgba(255, 218, 117, 0.38), transparent 48%);
+      font-size: 70px;
+      line-height: 0.88;
+      color: #fff4cd;
+      white-space: nowrap;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 18px 36px rgba(0, 0, 0, 0.48);
+    }
+    .layout-bottom-crest .subtitle {
+      max-width: none;
+      font-size: 22px;
+      padding: 7px 16px;
+      border-radius: 999px;
+    }
+    .layout-middle-bottom .title-block {
+      left: 50%;
+      bottom: 48px;
+      width: 940px;
+      justify-items: center;
+      text-align: center;
+      transform: translateX(-50%);
+      gap: 10px;
+    }
+    .layout-middle-bottom .title {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 82px;
+      font-weight: 1000;
+      line-height: 0.88;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: #fffaf1;
+      -webkit-text-stroke: 3px rgba(46, 25, 10, 0.9);
+      text-shadow:
+        0 5px 0 #9c5f22,
+        0 14px 28px rgba(0, 0, 0, 0.82),
+        0 0 30px rgba(255, 209, 92, 0.5);
+    }
+    .layout-middle-bottom .eyebrow {
+      order: 2;
+      margin-top: -2px;
+      background: rgba(18, 12, 10, 0.56);
+      color: #ffe29d;
+      font-size: 22px;
+      letter-spacing: 0.2em;
+    }
+    .layout-middle-bottom .subtitle {
+      display: none;
     }
     .eyebrow {
       width: max-content;
