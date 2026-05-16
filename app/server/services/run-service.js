@@ -36,6 +36,7 @@ import { shuffleWithRng, simulateBattle } from './battle-engine.js';
 import {
   getActiveSnapshot,
   getDailyUsage,
+  getBattle,
   recordBattle
 } from './battle-service.js';
 // isBag moved to shop-service.js with sellRunItem
@@ -785,7 +786,7 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
   };
 }
 
-async function resolveChallengeRound(client, run, gameRunId) {
+async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
   const roundNumber = run.current_round;
 
   const grpResult = await client.query(
@@ -980,6 +981,7 @@ async function resolveChallengeRound(client, run, gameRunId) {
     completionBonus: runEnded
       ? Object.fromEntries(Object.entries(playerResults).map(([pid, pr]) => [pid, getCompletionBonus(pr.wins)]))
       : null,
+    battle: await getBattle(battle.id, viewerPlayerId, client),
     playerResults
   };
 }
@@ -996,7 +998,7 @@ export async function resolveRound(playerId, gameRunId) {
     const run = runResult.rows[0];
 
     if (run.mode === 'challenge') {
-      return resolveChallengeRound(client, run, gameRunId);
+      return resolveChallengeRound(client, run, gameRunId, playerId);
     }
 
     const grpResult = await client.query(
@@ -1195,6 +1197,7 @@ export async function resolveRound(playerId, gameRunId) {
         season: null,
         achievements: [],
         fusions,
+        battle: await getBattle(battle.id, playerId, client),
         player: {
           completedRounds,
           wins: newWins,
@@ -1238,6 +1241,7 @@ export async function resolveRound(playerId, gameRunId) {
       completionBonus: runEnded ? getCompletionBonus(newWins) : null,
       season: runEnded ? recap.season : null,
       achievements: runEnded ? recap.achievements : [],
+      battle: await getBattle(battle.id, playerId, client),
       player: {
         completedRounds,
         wins: newWins,

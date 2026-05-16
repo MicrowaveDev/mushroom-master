@@ -107,6 +107,9 @@ test('[Req 1-D, 9-A] resolving a round updates wins or losses and pays rewards',
 
   assert.equal(result.player.completedRounds, 1);
   assert.ok(result.lastRound.outcome === 'win' || result.lastRound.outcome === 'loss');
+  assert.equal(result.battle.id, result.lastRound.battleId);
+  assert.ok(result.battle.events.length > 0, 'ready response should include replay events');
+  assert.equal(result.battle.roundResult.roundNumber, result.lastRound.roundNumber);
 
   if (result.lastRound.outcome === 'win') {
     assert.equal(result.player.wins, 1);

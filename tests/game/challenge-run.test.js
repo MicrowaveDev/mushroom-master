@@ -99,6 +99,9 @@ test('[Req 8-A, 9-A] challenge round resolution gives opposite outcomes', async 
   assert.ok(resultB);
   assert.equal(resultA.completedRounds, 1);
   assert.equal(resultB.completedRounds, 1);
+  assert.equal(result.battle.id, resultA.lastRound.battleId);
+  assert.ok(result.battle.events.length > 0, 'challenge ready response should include replay events');
+  assert.equal(result.battle.viewerPlayerId, playerA);
 
   // Opposite outcomes
   if (resultA.lastRound.outcome === 'win') {

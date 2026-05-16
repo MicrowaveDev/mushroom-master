@@ -120,7 +120,7 @@ export function useReplay(state, goTo, getMushroom) {
 
   async function loadReplay(battleId, options = {}) {
     try {
-      state.currentBattle = await apiJson(`/api/battles/${battleId}`, {}, state.sessionKey);
+      state.currentBattle = options.battle || await apiJson(`/api/battles/${battleId}`, {}, state.sessionKey);
       state.replayIndex = 0;
       state.replaySpeed = preferredReplaySpeed();
       // Allow signalReady() to pre-fetch the replay payload without navigating

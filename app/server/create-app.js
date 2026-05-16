@@ -640,7 +640,9 @@ export async function createApp() {
           readyManager.clearRun(gameRunId);
         }
 
-        return result.playerResults[playerId] || result;
+        return result.playerResults[playerId]
+          ? { ...result.playerResults[playerId], battle: result.battle || null }
+          : result;
       });
 
       res.json({ success: true, data });
