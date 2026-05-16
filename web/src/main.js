@@ -118,6 +118,7 @@ const App = {
       pendingAbandonPenalty: -2,
       pendingAbandonNetPoints: -2,
       startingFirstRun: false,
+      startingRun: false,
       sellDragOver: false,
       actionInFlight: false,
       opponentReady: false,

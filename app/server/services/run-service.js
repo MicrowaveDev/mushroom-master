@@ -184,6 +184,8 @@ export async function startGameRun(playerId, mode = 'solo') {
       });
     }
 
+    const loadoutItems = await readCurrentRoundItems(client, runId, playerId, 1);
+
     return {
       id: runId,
       mode,
@@ -195,6 +197,7 @@ export async function startGameRun(playerId, mode = 'solo') {
       endReason: null,
       shopOffer,
       starterItems,
+      loadoutItems,
       player: {
         id: runPlayerId,
         playerId,

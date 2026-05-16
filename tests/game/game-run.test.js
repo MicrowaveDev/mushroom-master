@@ -32,6 +32,9 @@ test('[Req 1-A, 1-C, 4-A] starting a solo run creates an active game run', async
   assert.equal(run.player.losses, 0);
   assert.equal(run.player.coins, ROUND_INCOME[0]);
   assert.ok(run.shopOffer.length > 0);
+  assert.ok(Array.isArray(run.loadoutItems), 'start response should include current-round loadout rows');
+  assert.equal(run.loadoutItems.length, 3);
+  assert.ok(run.loadoutItems.every((item) => item.id), 'start loadout rows should include stable row ids');
   assert.equal(run.player.completedRounds, 0);
   assert.ok(run.id);
   assert.ok(run.startedAt);

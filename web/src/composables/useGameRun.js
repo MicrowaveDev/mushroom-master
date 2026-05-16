@@ -63,24 +63,59 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     return payload;
   }
 
+  function projectRunLoadout(run) {
+    const allArtifacts = state.bootstrap?.artifacts || [];
+    const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
+    const artifactById = new Map(allArtifacts.map((a) => [a.id, a]));
+    const projected = projectLoadoutItems(run.loadoutItems || [], bagsSet, (id) => artifactById.get(id));
+    state.builderItems = projected.builderItems;
+    state.containerItems = projected.containerItems;
+    state.activeBags = projected.activeBags;
+    state.rotatedBags = projected.rotatedBags;
+    state.freshPurchases = projected.freshPurchases;
+  }
+
+  function attachActiveRunToBootstrap(run) {
+    if (!state.bootstrap) return;
+    const activeGameRuns = Array.isArray(state.bootstrap.activeGameRuns)
+      ? state.bootstrap.activeGameRuns.filter((item) => item.mushroomId !== run.mushroomId)
+      : [];
+    activeGameRuns.push(run);
+    state.bootstrap.activeGameRun = run;
+    state.bootstrap.activeGameRuns = activeGameRuns;
+    if (state.bootstrap.battleLimit) {
+      const currentUsed = Number(state.bootstrap.battleLimit.used || 0) + 1;
+      const limit = Number(state.bootstrap.battleLimit.limit || currentUsed);
+      state.bootstrap.battleLimit = {
+        ...state.bootstrap.battleLimit,
+        used: Math.min(limit, currentUsed)
+      };
+    }
+  }
+
   async function startNewGameRun(mode = 'solo', options = {}) {
+    if (state.startingRun) return;
+    state.startingRun = true;
     try {
       state.error = '';
       const data = await apiJson('/api/game-run/start', { method: 'POST', body: JSON.stringify({ mode }) }, state.sessionKey);
-      state.gameRun = data;
+      const run = {
+        ...data,
+        loadoutItems: data.loadoutItems || []
+      };
+      state.gameRun = run;
       state.gameRunRounds = [];
-      state.gameRunShopOffer = data.shopOffer || [];
+      state.gameRunShopOffer = run.shopOffer || [];
       state.gameRunRefreshCount = 0;
       state.gameRunResult = null;
       state.fusionRevealQueue = [];
-      // Fetch the full run state from the server (the new run-scoped read
-      // path) and let refreshBootstrap project loadoutItems into the UI
-      // buckets. Guarantees starter + any future round-forward rows
-      // reach the prep screen via one source of truth (§2.5 projection).
-      if (refreshBootstrap) await refreshBootstrap();
+      projectRunLoadout(run);
+      attachActiveRunToBootstrap(run);
       goTo('prep', {}, { skipTransition: !!options.skipTransition });
     } catch (error) {
       state.error = error.message || 'Could not start game run';
+    } finally {
+      state.startingRun = false;
     }
   }
 

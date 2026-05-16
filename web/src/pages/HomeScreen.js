@@ -54,6 +54,7 @@ export const HomeScreen = {
       this.$emit('select-mushroom', mushroom.id);
     },
     playSelectedMushroom() {
+      if (this.state.startingRun) return;
       if (this.selectedMushroom?.activeRun) {
         this.state.gameRun = this.selectedMushroom.activeRun;
         this.$emit('resume-run');
@@ -370,15 +371,15 @@ export const HomeScreen = {
         <div v-if="selectedMushroom" class="home-roster-action-panel">
           <div>
             <span>{{ selectedMushroom.name[state.lang] }}</span>
-            <strong>{{ selectedMushroom.activeRun ? t.resumeRun : selectedMushroom.isActive ? t.active : t.pick }}</strong>
+            <strong>{{ state.startingRun ? t.startingRun : selectedMushroom.activeRun ? t.resumeRun : selectedMushroom.isActive ? t.active : t.pick }}</strong>
           </div>
           <div class="home-roster-action-buttons">
             <button
               class="primary"
-              :disabled="!selectedMushroom.isActive || (!selectedMushroom.activeRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit)"
+              :disabled="state.startingRun || !selectedMushroom.isActive || (!selectedMushroom.activeRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit)"
               :title="!selectedMushroom.activeRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''"
               @click="playSelectedMushroom"
-            >{{ selectedMushroom.activeRun ? t.resumeRun : t.startRun }}</button>
+            >{{ state.startingRun ? t.startingRun : selectedMushroom.activeRun ? t.resumeRun : t.startRun }}</button>
             <button
               v-if="selectedMushroom.portraits.length > 1"
               class="secondary home-roster-change-skin"
@@ -481,14 +482,14 @@ export const HomeScreen = {
         <article class="panel home-section">
           <div class="home-section-header">
             <h3>{{ t.gameRuns }}</h3>
-            <button v-if="!state.gameRun && activeMushroom" class="primary home-start-btn" :disabled="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" :title="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''" @click="$emit('start-run', 'solo')">{{ t.startRun }}</button>
+            <button v-if="!state.gameRun && activeMushroom" class="primary home-start-btn" :disabled="state.startingRun || state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" :title="state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit ? t.dailyLimitReached : ''" @click="$emit('start-run', 'solo')">{{ state.startingRun ? t.startingRun : t.startRun }}</button>
             <button v-if="state.bootstrap.gameRunHistory?.length" class="link" @click="$emit('go', 'history')">{{ t.viewAll }}</button>
           </div>
 
           <p v-if="!state.gameRun && state.bootstrap.battleLimit.used >= state.bootstrap.battleLimit.limit" class="home-limit-hint">{{ t.dailyLimitReached }}</p>
 
           <!-- Active run as first item -->
-          <div v-if="state.gameRun && activeMushroom" class="home-run-item home-run-item--active" @click="$emit('resume-run')">
+          <div v-if="state.gameRun && !state.startingRun && activeMushroom" class="home-run-item home-run-item--active" @click="$emit('resume-run')">
             <img :src="activeMushroom.imagePath" :alt="activeMushroom.name[state.lang]" class="home-run-item-portrait" :style="{ objectPosition: portraitPosition(activeMushroom.id) }"/>
             <div class="home-run-item-info">
               <strong>{{ t.round }} {{ state.gameRun.currentRound }}</strong>
@@ -522,7 +523,7 @@ export const HomeScreen = {
           </div>
 
           <!-- Empty state -->
-          <p v-if="!state.gameRun && !state.bootstrap.gameRunHistory?.length" class="home-empty-hint home-empty-hint--center">{{ t.noGameRunsYetCta }}</p>
+          <p v-if="!state.gameRun && !state.startingRun && !state.bootstrap.gameRunHistory?.length" class="home-empty-hint home-empty-hint--center">{{ t.noGameRunsYetCta }}</p>
 
           <!-- Footer stats -->
           <div class="home-run-footer">

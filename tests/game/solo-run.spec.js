@@ -84,8 +84,18 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   await saveShot(page, 'solo-01-home-start-game.png');
 
   // --- Start game run → prep screen ---
+  const startRequests = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith('/api/')) startRequests.push(url.pathname);
+  });
   await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
+  expect(startRequests).toContain('/api/game-run/start');
+  expect(startRequests).not.toContain('/api/bootstrap');
+  expect(startRequests).not.toContain('/api/app-config');
+  expect(startRequests).not.toContain('/api/characters');
+  expect(startRequests).not.toContain('/api/artifacts');
   const hud = page.locator('.run-hud');
   const roundHeading = page.locator('.run-round-heading');
   await expect(roundHeading).toContainText('1');
