@@ -993,6 +993,9 @@ export async function createApp() {
     },
     express.static(path.join(webPublic, 'portraits'))
   );
+  app.get('/marketing/social-preview.png', (_req, res) => {
+    res.redirect(301, '/marketing/social-preview.jpg');
+  });
   app.use(express.static(webDist, {
     setHeaders(res, filePath) {
       if (filePath.endsWith('.html')) {
