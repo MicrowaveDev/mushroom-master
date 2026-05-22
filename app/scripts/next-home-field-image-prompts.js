@@ -11,6 +11,7 @@
  *   --all             emit every missing prompt regardless of limit
  *   --type=<t>        comma-separated filter: terrain|prop|exit|character|effect
  *   --id=<a,b,c>      comma-separated asset id filter
+ *   --batch=<name>    predefined batch (proof-static | proof-animated | proof-character | full)
  *   --include-existing  also emit prompts for assets whose outputPath already exists
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
@@ -31,6 +32,25 @@ const PROMPTS_PATH = path.join(sharedDir, 'home-field-prompts.json');
 const STYLE_ANCHOR_PATH = path.join(sharedDir, 'home-field-style-anchor.json');
 
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
+
+const BATCHES = {
+  'proof-static': [
+    'grass_base_01',
+    'grass_base_02',
+    'path_destination_row',
+    'mushroom_cluster_small_amber',
+    'mycelium_lantern_amber',
+    'arena_mushroom_arch',
+    'journey_gate_under_construction'
+  ],
+  'proof-animated': [
+    'spore_motes_loop',
+    'tap_ripple'
+  ],
+  'proof-character': ['_placeholder'],
+  // 'full' is the union of every queue; treated as no filter at all
+  full: null
+};
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -167,12 +187,26 @@ function characterEntryToAsset(c) {
   };
 }
 
+function parseBatchFlag(argv) {
+  const arg = argv.find((a) => a.startsWith('--batch='));
+  if (!arg) return null;
+  const name = arg.slice('--batch='.length).trim();
+  if (!(name in BATCHES)) {
+    throw new Error(`Unknown --batch="${name}". Valid: ${Object.keys(BATCHES).join(', ')}`);
+  }
+  return { name, ids: BATCHES[name] };
+}
+
 function main() {
   const argv = process.argv.slice(2);
   const limit = parseLimit(argv);
   const all = hasFlag(argv, 'all');
   const typeFilter = parseListFlag(argv, 'type');
-  const idFilter = parseListFlag(argv, 'id');
+  let idFilter = parseListFlag(argv, 'id');
+  const batch = parseBatchFlag(argv);
+  if (batch && batch.ids) {
+    idFilter = (idFilter || []).concat(batch.ids);
+  }
   const includeExisting = hasFlag(argv, 'include-existing');
 
   const assetsDoc = loadJson(ASSETS_PATH);
@@ -198,6 +232,7 @@ function main() {
   console.log('# Home Field — Next Imagegen Batch');
   console.log('');
   console.log(`Workspace root: ${repoRoot}`);
+  if (batch) console.log(`Batch: ${batch.name}`);
   console.log(`Pending assets: ${pending.length}; emitting: ${slice.length}`);
   if (pending.length === 0) {
     console.log('');

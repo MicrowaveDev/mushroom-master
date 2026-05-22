@@ -42,6 +42,7 @@
     "game:home-field:produce": "node app/scripts/produce-home-field-assets.js",
     "game:home-field:validate": "node app/scripts/validate-home-field-assets.js",
     "game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js",
+    "game:home-field:status": "node app/scripts/home-field-status.js",
     "game:fusions:check": "node app/scripts/check-fusion-catalog.js",
     "game:social-preview": "node app/scripts/generate-social-preview.js",
     "game:test": "node --test tests/**/*.test.js",

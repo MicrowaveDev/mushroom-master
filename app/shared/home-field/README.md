@@ -2,6 +2,8 @@
 
 This directory holds the **frozen contracts** for the Home Field hub. Phase 0 of the plan is complete; the next agent (Codex) generates the tiles, props, exits, effects, and chibi spritesheets.
 
+**For the human handing off to Codex**: the ready-to-paste agent prompt is in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). It's self-contained — copy that into your Codex session and it has everything Codex needs.
+
 ## Before You Start (Codex)
 
 1. **`cd` to the `mushroom-master` repo root** (the directory containing `package.json`, not this `app/shared/home-field/` directory).
@@ -52,103 +54,84 @@ npm run game:home-field:next --limit=10
 | Chibi spritesheet | `512 × 256` (8 cols × 4 rows of `64×64`); rows = down, up, left, right; per row: 2 idle + 6 walk |
 | Branch policy | direct-to-main on `mushroom-master` |
 
-## Workflow For Codex
+## Workflow For Codex (compact)
 
-### 1. See what's needed
+Five npm aliases drive the entire pipeline. Run them in order per batch:
 
-```bash
-npm run game:home-field:next
-```
+| Step | Command | What it does |
+|---|---|---|
+| **status** | `npm run game:home-field:status` | Lists every asset, marks `[x]` done / `[ ]` pending. Quick "where am I" check. |
+| **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
+| **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
+| **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
+| **validate** | `npm run game:home-field:validate -- --check-files` | Reruns full schema check **plus** asserts every PNG exists with expected dimensions. Without `--check-files`, validates schema only. |
+| **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 
-Default emits 5 prompts. Use `--all` for the full queue, `--type=terrain|prop|exit|effect|character`, or `--id=a,b,c` to scope. Each prompt block begins with the marker line `Use the imagegen skill to create a production game home-field bitmap.` which is the handshake your imagegen skill recognises.
-
-### 2. Generate
-
-For each asset in the queue:
-
-1. Use the imagegen skill with the prompt block (subject + details + size + transparency + constraints + style anchor) printed by `:next`.
-2. Save the raw output to the exact `sourcePath` printed in the prompt block. This will be a path under `.agent/home-field-workspace/raw/`. Do not save raw output anywhere under `web/public/`.
-
-### 3. Produce
+### Per-batch loop
 
 ```bash
-npm run game:home-field:produce -- <asset_id_a> <asset_id_b> ...
-# or
-npm run game:home-field:produce -- --all-missing
-```
+# 1. See progress
+npm run game:home-field:status
 
-This reads raw PNGs, validates dimensions against the assets manifest, re-encodes deterministically, and writes the final PNG to `web/public/home-field/<type>/<id>.png`. Pass `--chroma-key=#ff00ff` if imagegen returns a flat magenta background instead of transparent.
+# 2. Get the next batch of prompts
+npm run game:home-field:next -- --batch=proof-static --all
 
-### 4. Validate
+# 3. (imagegen) Generate each asset. Save raw to the printed sourcePath.
+#    If imagegen returns a different size than the manifest declares, save anyway —
+#    the `--resize` flag on produce will scale it.
 
-```bash
-npm run game:home-field:validate                # schema only (works even when PNGs missing)
-npm run game:home-field:validate -- --check-files   # also asserts every PNG exists with expected dimensions
-```
+# 4. Produce
+npm run game:home-field:produce -- --all-missing --resize
 
-Validator enforces:
+# 5. Validate (with file check)
+npm run game:home-field:validate -- --check-files
 
-- ID shape (`lower_snake_case`, no locale suffix)
-- type, collision, anchor convention per type
-- animation strip dimensions and `stillFrameIndex` range
-- tile-layer tile alignment to `tileSize`
-- spawn inside world and not inside collision
-- Arena + Journey hotspots fit inside `camera.mobileSafeFrame`
-- character spritesheet locked to `8×4 × 64×64`
-
-### 5. Review the contact sheet
-
-```bash
+# 6. Refresh the contact sheet for human review
 npm run game:home-field:sheet
+
+# 7. Commit on `main` (direct-to-main; see top of this README)
+git add web/public/home-field/ app/shared/home-field/
+git commit -m "Generate home field proof-static batch"
+git push origin main
 ```
 
-Writes `.agent/home-field-workspace/review/contact-sheet.png` plus a manifest with sha256 of every input PNG and the output. Use it to scan for style consistency, seam issues, and silhouette readability.
+### Resize behavior (important — read once)
 
-### 6. Commit
+Imagegen tools typically return `1024×1024` PNGs. The `home-field-assets.json` manifest declares the exact target dimensions (`256×256` for terrain, `512×512` for exits, `64×64` for chibi frames, etc.). The produce script handles the size mismatch:
+
+- `--resize` — box-average downscale (good for terrain, props, exits, effects).
+- `--resize-nearest` — nearest-neighbour downscale (use for the chibi spritesheet frames so edges stay crisp at 64×64).
+- (no flag) — strict mode; rejects size mismatches. Useful when you want to verify imagegen produced exact dimensions.
+
+Recommended default: `npm run game:home-field:produce -- <ids> --resize`, and for chibi placeholder use `--resize-nearest`.
+
+### Commit hygiene
 
 Commit:
 
 - approved app-facing PNGs under `web/public/home-field/`
-- any updates to `home-field-assets.json` (e.g. `status: "missing"` → `"approved"`)
-- the new contact-sheet (if you want to ship it for review)
+- updates to `home-field-assets.json` if you flip `status: "missing"` → `"approved"`
+- the new contact sheet if you want it on-record
 
-Do **not** commit:
+Do **not** commit (already in `.gitignore`):
 
 - `.agent/home-field-workspace/raw/`
 - `.agent/home-field-workspace/processed/`
 - `.agent/home-field-workspace/review/`
 - `.agent/home-field-workspace/manifests/`
 
-These are all in `.gitignore`. The local-only workspace exists so iteration on raw imagegen output stays out of the repo.
+## Batches — recommended order
 
-### 7. Push
+Three predefined batches stage the workload from lowest-risk to highest-risk. **STOP between batches** for human review of the contact sheet before continuing:
 
-```bash
-git checkout main
-git pull
-# ...commit on main per the direct-to-main policy...
-git push origin main
-```
+| Order | Batch | Command | Why first / why later |
+|---|---|---|---|
+| 1 | `proof-static` | `npm run game:home-field:next -- --batch=proof-static --all` | 7 single-image assets (2 grass, 1 destination-row path, 1 mushroom cluster, 1 lantern, Arena arch, Journey gate). Validates style direction with the lowest-risk imagegen path. **STOP and request human review of the contact sheet before continuing.** |
+| 2 | `proof-animated` | `npm run game:home-field:next -- --batch=proof-animated --all` | 2 animated effects (`spore_motes_loop`, `tap_ripple`). Exercises the per-frame imagegen + composition path. **STOP for review.** |
+| 3 | `proof-character` | `npm run game:home-field:next -- --batch=proof-character --all` | The `_placeholder` chibi spritesheet — 12 distinct frames composed into the locked `8×4` grid. **STOP for review.** |
+| 4 | `full` | `npm run game:home-field:next -- --batch=full --all` | Everything still missing after the proof batches. Run only after the proof set is approved. |
 
-## First Recommended Batch
-
-The plan's "Step 8 — Minimum First Agent Batch" calls for this proof set (in order):
-
-1. `grass_base_01` (terrain)
-2. `grass_base_02` (terrain)
-3. `path_destination_row` (terrain)
-4. `mushroom_cluster_small_amber` (prop)
-5. `mycelium_lantern_amber` (prop)
-6. `arena_mushroom_arch` (exit)
-7. `journey_gate_under_construction` (exit)
-8. `spore_motes_loop` (effect, animated proof)
-9. `_placeholder` (chibi placeholder spritesheet)
-
-Run the queue with `npm run game:home-field:next -- --id=grass_base_01,grass_base_02,path_destination_row,mushroom_cluster_small_amber,mycelium_lantern_amber,arena_mushroom_arch,journey_gate_under_construction` and process them through the workflow above. Validate every step; review the contact sheet before continuing.
-
-These 7 are **all static, single-image assets** — safest to ship first because they validate style direction without compounding animation complexity. The animated effects (`spore_motes_loop`, `tap_ripple`, `arena_portal_shimmer`, `mycelium_path_pulse`, `journey_blocked_rustle`) and the `_placeholder` chibi spritesheet require multi-frame generation and are documented in the next section.
-
-After the proof set is reviewed and committed, run `npm run game:home-field:next` with no filters to drive the remaining static assets, then move on to the animated assets stage.
+Each batch ships as one commit (or a small number of related commits) on `main`. The contact sheet (`npm run game:home-field:sheet`) is the artifact reviewers look at between batches.
 
 ## Animated Assets And Chibi Spritesheet
 

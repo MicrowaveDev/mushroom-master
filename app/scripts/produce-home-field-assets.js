@@ -49,12 +49,67 @@ function parseArgs(argv) {
   const ids = [];
   let chromaKey = null;
   let allMissing = false;
+  let resize = null;
   for (const arg of argv) {
     if (arg === '--all-missing') allMissing = true;
+    else if (arg === '--resize') resize = 'lanczos';
+    else if (arg === '--resize-nearest') resize = 'nearest';
     else if (arg.startsWith('--chroma-key=')) chromaKey = arg.slice('--chroma-key='.length);
     else ids.push(arg.replace(/\.png$/, ''));
   }
-  return { ids, chromaKey, allMissing };
+  return { ids, chromaKey, allMissing, resize };
+}
+
+function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
+  const { width: sw, height: sh, rgba: src } = srcImage;
+  const dst = Buffer.alloc(dstWidth * dstHeight * 4);
+  const xRatio = sw / dstWidth;
+  const yRatio = sh / dstHeight;
+  if (mode === 'nearest') {
+    for (let y = 0; y < dstHeight; y += 1) {
+      const sy = Math.min(sh - 1, Math.floor(y * yRatio));
+      for (let x = 0; x < dstWidth; x += 1) {
+        const sx = Math.min(sw - 1, Math.floor(x * xRatio));
+        const si = (sy * sw + sx) * 4;
+        const di = (y * dstWidth + x) * 4;
+        dst[di + 0] = src[si + 0];
+        dst[di + 1] = src[si + 1];
+        dst[di + 2] = src[si + 2];
+        dst[di + 3] = src[si + 3];
+      }
+    }
+    return { width: dstWidth, height: dstHeight, rgba: dst };
+  }
+  // Box-average downscale (cheap "lanczos-like" for downscaling). For upscaling fall
+  // back to nearest to keep this dependency-free; we shouldn't need to upscale.
+  if (sw < dstWidth || sh < dstHeight) {
+    return resizeRgba(srcImage, dstWidth, dstHeight, 'nearest');
+  }
+  for (let y = 0; y < dstHeight; y += 1) {
+    const sy0 = Math.floor(y * yRatio);
+    const sy1 = Math.min(sh, Math.ceil((y + 1) * yRatio));
+    for (let x = 0; x < dstWidth; x += 1) {
+      const sx0 = Math.floor(x * xRatio);
+      const sx1 = Math.min(sw, Math.ceil((x + 1) * xRatio));
+      let r = 0, g = 0, b = 0, a = 0, n = 0;
+      for (let yy = sy0; yy < sy1; yy += 1) {
+        for (let xx = sx0; xx < sx1; xx += 1) {
+          const si = (yy * sw + xx) * 4;
+          r += src[si + 0];
+          g += src[si + 1];
+          b += src[si + 2];
+          a += src[si + 3];
+          n += 1;
+        }
+      }
+      const di = (y * dstWidth + x) * 4;
+      dst[di + 0] = Math.round(r / n);
+      dst[di + 1] = Math.round(g / n);
+      dst[di + 2] = Math.round(b / n);
+      dst[di + 3] = Math.round(a / n);
+    }
+  }
+  return { width: dstWidth, height: dstHeight, rgba: dst };
 }
 
 function chromaKeyScriptPath() {
@@ -115,15 +170,19 @@ function findFrameRaws(sourcePath) {
   return matches;
 }
 
-function composeStrip(frameFiles, frameWidth, frameHeight) {
+function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
   const stripWidth = frameWidth * frameFiles.length;
   const stripHeight = frameHeight;
   const stripRgba = Buffer.alloc(stripWidth * stripHeight * 4);
 
   for (let f = 0; f < frameFiles.length; f += 1) {
-    const frame = readPngRgba(path.join(repoRoot, frameFiles[f].file));
+    let frame = readPngRgba(path.join(repoRoot, frameFiles[f].file));
     if (frame.width !== frameWidth || frame.height !== frameHeight) {
-      throw new Error(`frame ${frameFiles[f].file} is ${frame.width}x${frame.height}, expected ${frameWidth}x${frameHeight}`);
+      if (opts.resize) {
+        frame = resizeRgba(frame, frameWidth, frameHeight, opts.resize);
+      } else {
+        throw new Error(`frame ${frameFiles[f].file} is ${frame.width}x${frame.height}, expected ${frameWidth}x${frameHeight} (pass --resize to scale)`);
+      }
     }
     for (let y = 0; y < frameHeight; y += 1) {
       const srcOff = y * frameWidth * 4;
@@ -152,13 +211,17 @@ function processStaticEntry(entry, opts) {
     fs.copyFileSync(rawAbs, stagedPath);
   }
 
-  const image = readPngRgba(stagedPath);
+  let image = readPngRgba(stagedPath);
   if (image.width !== entry.width || image.height !== entry.height) {
-    return {
-      id: entry.id,
-      ok: false,
-      reason: `dimensions mismatch: file ${image.width}x${image.height}, expected ${entry.width}x${entry.height}`
-    };
+    if (opts.resize) {
+      image = resizeRgba(image, entry.width, entry.height, opts.resize);
+    } else {
+      return {
+        id: entry.id,
+        ok: false,
+        reason: `dimensions mismatch: file ${image.width}x${image.height}, expected ${entry.width}x${entry.height} (pass --resize or --resize-nearest to scale)`
+      };
+    }
   }
 
   const encoded = encodeDeterministicPng({
@@ -209,7 +272,7 @@ function processAnimatedEntry(entry, opts) {
 
   let strip;
   try {
-    strip = composeStrip(frameFiles, a.frameWidth, a.frameHeight);
+    strip = composeStrip(frameFiles, a.frameWidth, a.frameHeight, { resize: opts.resize });
   } catch (err) {
     return { id: entry.id, ok: false, reason: err.message };
   }
@@ -237,7 +300,7 @@ function processAnimatedEntry(entry, opts) {
 }
 
 function processEntry(entry, opts) {
-  if (entry.type === 'character' && entry.spritesheet) return processCharacterPlaceholder(entry);
+  if (entry.type === 'character' && entry.spritesheet) return processCharacterPlaceholder(entry, opts);
   if (entry.animation) return processAnimatedEntry(entry, opts);
   return processStaticEntry(entry, opts);
 }
@@ -262,7 +325,7 @@ function copyFrameInto(targetRgba, targetWidth, frame, dstRow, dstCol, frameWidt
   }
 }
 
-function processCharacterPlaceholder(entry) {
+function processCharacterPlaceholder(entry, opts = {}) {
   const s = entry.spritesheet;
   const baseName = path.basename(entry.sourcePath, '.source.png'); // e.g. _placeholder_chibi
   const dir = path.dirname(entry.sourcePath);
@@ -297,13 +360,17 @@ function processCharacterPlaceholder(entry) {
 
   const sheetRgba = Buffer.alloc(s.width * s.height * 4);
   for (const r of required) {
-    const frame = readPngRgba(path.join(rawDir, r.file));
+    let frame = readPngRgba(path.join(rawDir, r.file));
     if (frame.width !== s.frameWidth || frame.height !== s.frameHeight) {
-      return {
-        id: entry.id,
-        ok: false,
-        reason: `frame ${r.file} is ${frame.width}x${frame.height}, expected ${s.frameWidth}x${s.frameHeight}`
-      };
+      if (opts.resize) {
+        frame = resizeRgba(frame, s.frameWidth, s.frameHeight, opts.resize);
+      } else {
+        return {
+          id: entry.id,
+          ok: false,
+          reason: `frame ${r.file} is ${frame.width}x${frame.height}, expected ${s.frameWidth}x${s.frameHeight} (pass --resize-nearest)`
+        };
+      }
     }
     if (r.col === 'walk') {
       // Replicate the walk frame across columns 2..7 of the row.
@@ -343,9 +410,13 @@ function writeManifest(results, opts) {
 }
 
 function main() {
-  const { ids, chromaKey, allMissing } = parseArgs(process.argv.slice(2));
+  const { ids, chromaKey, allMissing, resize } = parseArgs(process.argv.slice(2));
   if (ids.length === 0 && !allMissing) {
-    console.error('Usage: produce-home-field-assets.js <asset_id...> | --all-missing [--chroma-key=#ff00ff]');
+    console.error('Usage: produce-home-field-assets.js <asset_id...> | --all-missing');
+    console.error('  Options:');
+    console.error('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
+    console.error('    --resize               box-average downscale raw to target dimensions (use for terrain/props/exits)');
+    console.error('    --resize-nearest       nearest-neighbor downscale (use for chibi spritesheet to keep edges crisp)');
     process.exit(1);
   }
 
@@ -385,7 +456,7 @@ function main() {
   console.log(`Producing ${targets.length} asset${targets.length === 1 ? '' : 's'}...`);
   const results = [];
   for (const target of targets) {
-    const r = processEntry(target, { chromaKey });
+    const r = processEntry(target, { chromaKey, resize });
     if (r.ok) {
       console.log(`  ${target.id}: OK [${r.mode || 'static'}] -> ${r.output}${r.alpha ? ` (${r.alpha})` : ''}`);
     } else {
@@ -393,9 +464,15 @@ function main() {
     }
     results.push(r);
   }
-  writeManifest(results, { chromaKey, allMissing });
+  writeManifest(results, { chromaKey, allMissing, resize });
 
   const failed = results.filter((r) => !r.ok);
+  const done = results.length - failed.length;
+  console.log('');
+  console.log(`Summary: ${done} OK, ${failed.length} failed.`);
+  if (done > 0) {
+    console.log('Next: `npm run game:home-field:validate -- --check-files` then `npm run game:home-field:sheet`.');
+  }
   process.exit(failed.length === 0 ? 0 : 1);
 }
 
