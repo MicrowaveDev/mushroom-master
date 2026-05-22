@@ -360,6 +360,37 @@ Within the objects layer:
 
 Assume the future hub should support animation. Even if v1 ships static, assets and metadata should be authored as if animation will arrive.
 
+## Tilemap Composition Requirements
+
+The field must be assembled from **tilemap layers plus object layers**, not generated as a single background picture.
+
+Terrain assets are strict tile cells:
+
+- each terrain PNG is one reusable `256x256` tile cell;
+- grass/path/border tiles must be full-bleed ground cells;
+- terrain tiles must have no horizon, sky, vignette, scene focal point, prop cluster, exit, sign, or character;
+- terrain details are small ground texture details only;
+- every terrain tile must be reviewed as a `3x3` repeated patch in the contact sheet;
+- a terrain tile that looks good alone but creates a visible wallpaper/focal pattern when repeated fails review.
+
+Path and edge tiles need connector rules:
+
+- horizontal path tiles must connect west/east at the same Y position;
+- glow/pulse path variants must align with the base path connector;
+- blocked-edge tiles should be repeatable border cells and not full forest scenes;
+- future corner/T-junction/autotile variants should follow Tiled/Wang-terrain thinking instead of freehand one-off illustrations.
+
+Object-layer assets are separate sprites:
+
+- mushroom clusters, lanterns, branches, signs, Arena arch, Journey gate, effects, and chibi are never baked into terrain;
+- object sprites use transparent backgrounds and bottom-center anchors;
+- collision/hotspots live in `home-field-map.json`, not in the terrain pixels;
+- map preview must place object sprites on top of terrain tiles so scale/composition is reviewed as a field.
+
+Agent review rule:
+
+- Before any asset batch is accepted, the official contact sheet must show terrain repeated as tiles and object sprites separately. The agent must regenerate terrain if it reads as full-screen art.
+
 Animated tilemap candidates:
 
 - grass shimmer / wind sway;

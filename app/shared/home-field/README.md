@@ -67,6 +67,27 @@ Five npm aliases drive the entire pipeline. Run them in order per batch:
 | **validate** | `npm run game:home-field:validate -- --check-files` | Reruns full schema check **plus** asserts every PNG exists with expected dimensions. Without `--check-files`, validates schema only. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 
+## Tilemap Contract
+
+The home field is built from **tilemap layers plus object layers**, not from one large background illustration.
+
+Terrain PNGs under `web/public/home-field/terrain/` are **single reusable tile cells**:
+
+- each terrain image is one `256x256` tile;
+- terrain tiles must be full-bleed ground/border/path cells;
+- terrain tiles must work when repeated edge-to-edge;
+- terrain tiles must not contain a whole field, horizon, sky, vignette, large foreground object, sign, exit, character, or unique center composition;
+- path tiles must expose clean west/east connectors at the same Y position;
+- blocked-edge tiles must be repeatable border cells, not complete forest scenes.
+
+Object PNGs under `props/`, `exits/`, `effects/`, and `characters/` are placed on object/sprite/effect layers:
+
+- mushrooms, lanterns, signposts, gates, and arches are not terrain;
+- exits are separate sprites anchored to map coordinates;
+- collision and hotspots come from `home-field-map.json`, not from pixels baked into terrain art.
+
+The contact sheet is the review gate: terrain must be inspected as repeated patches, not as isolated pretty squares. If a tile looks good alone but reads as wallpaper or full-screen art when repeated, regenerate it.
+
 ### Per-batch loop
 
 ```bash

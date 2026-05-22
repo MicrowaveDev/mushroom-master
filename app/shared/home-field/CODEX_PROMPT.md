@@ -23,6 +23,7 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 - **No new dependencies.** The pipeline runs on the existing `bitmap-image-toolkit.js`. Do not add `pngquant`, `sharp`, `phaser`, or anything else.
 - **No text in any image.** Signposts and banners are art-only — runtime renders localized labels. If an imagegen output contains readable text, regenerate it.
 - **Style anchor is non-negotiable.** Every prompt block emitted by `npm run game:home-field:next` already includes the locked style anchor (palette, lighting, shadows, rejections). Feed it verbatim into your imagegen call alongside the subject/details.
+- **Terrain assets are tilemap cells, not background art.** A terrain prompt must produce one reusable `256×256` tile that can repeat edge-to-edge in a Phaser/Tiled layer. Do not generate a complete field, wallpaper, horizon scene, vignette, prop cluster, sign, entrance, or character inside a terrain tile.
 
 ## Run order (do this exactly)
 
@@ -43,7 +44,7 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
    - If a row prints FAIL, read the reason and regenerate that specific asset (`npm run game:home-field:next -- --id=<that_id>` then redo step 6 + this step for just that ID).
 8. `npm run game:home-field:validate -- --check-files` — must pass for the 7 produced assets. Schema-only checks still pass for the rest.
 9. `npm run game:home-field:sheet` — refreshes the contact sheet PNG + manifest.
-10. Inspect `.agent/home-field-workspace/review/contact-sheet.png` yourself for obvious problems (text in image, wrong palette, hard black outlines, photoreal style). If any asset clearly violates the style anchor, regenerate it before continuing.
+10. Inspect `.agent/home-field-workspace/review/contact-sheet.png` yourself for obvious problems (text in image, wrong palette, hard black outlines, photoreal style). Terrain cells must read as repeated tile patches in the contact sheet, not as miniature full-screen scenes. If any asset clearly violates the style anchor or tilemap contract, regenerate it before continuing.
 11. Commit and push:
     ```
     git add web/public/home-field/ .gitignore

@@ -93,6 +93,18 @@ function styleAnchorBlock(anchor) {
   ].filter(Boolean).join('\n');
 }
 
+function tilemapContractBlock(asset) {
+  if (asset.type !== 'terrain') return '';
+  return [
+    '## Tilemap contract (terrain assets only)',
+    'This image is ONE reusable tile cell from a tilemap tileset, not a full scene, wallpaper, splash image, or complete field illustration.',
+    `It must work when repeated edge-to-edge in a Phaser/Tiled tile layer at ${asset.width}x${asset.height}px.`,
+    'Camera/composition rules: top-down/2.5D ground surface only; no horizon, no sky, no large foreground object, no scene focal point, no full-screen composition.',
+    'Edge rules: north/south/east/west edges must connect cleanly to compatible tiles; avoid unique marks that create visible repetition seams.',
+    'Scale rules: details must be tiny ground texture details only. Props, exits, large mushrooms, signs, lanterns, characters, and blockers belong in object layers, not terrain tiles.'
+  ].join('\n');
+}
+
 function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
   const lines = [];
   lines.push(`\n=== [${idx}/${total}] ${asset.id} (${asset.type}) ===`);
@@ -143,6 +155,11 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
     lines.push('## Constraints');
     lines.push(promptEntry.constraints);
     lines.push('');
+    const tileContract = tilemapContractBlock(asset);
+    if (tileContract) {
+      lines.push(tileContract);
+      lines.push('');
+    }
   } else {
     lines.push(`(!) No prompt entry found in home-field-prompts.json for key "${asset.promptKey}"`);
     lines.push('');

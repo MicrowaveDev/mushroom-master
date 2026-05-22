@@ -3,60 +3,60 @@
   "promptMarker": "Use the imagegen skill to create a production game home-field bitmap.",
   "prompts": {
     "terrain_grass_base_01": {
-      "subject": "seamless 2D game terrain tile of lush green grass for the Mushroom Battles home field",
-      "details": "default grass surface made from chunky mossy patches and simplified graphic clumps, not realistic individual blades. Add a few tiny dew/spore glints as simple dots. Top-down 2.5D camera angle. Seamless edges (tile must repeat without visible seams in a 3x3 grid).",
+      "subject": "one seamless 2D tilemap terrain cell of lush green grass for the Mushroom Battles home field",
+      "details": "This is a single repeatable ground tile cell, not a full scene. Default grass surface made from chunky mossy patches and simplified graphic clumps, not realistic individual blades. Add only a few tiny dew/spore glints as simple dots. Top-down 2.5D ground surface. Seamless edges must repeat without visible seams in a 3x3 grid.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
-      "constraints": "no characters, no props, no text, no UI overlays. Must read as walkable ground."
+      "constraints": "no characters, no props, no large mushrooms, no path, no horizon, no vignette, no text, no UI overlays. Must read as walkable ground tile."
     },
     "terrain_grass_base_02": {
-      "subject": "seamless 2D game terrain tile of lush green grass — secondary variation for natural repetition",
-      "details": "same palette as grass_base_01 but with a different chunky patch pattern: tighter moss islands, occasional small spore-flowers, a faint mycelium thread crossing one corner. Keep the look graphic and storybook-like rather than painterly realistic. Top-down 2.5D camera angle. Seamless edges.",
+      "subject": "one seamless 2D tilemap terrain cell of lush green grass — secondary variation for natural repetition",
+      "details": "This is a single repeatable ground tile cell, not a full scene. Same palette as grass_base_01 but with a different chunky patch pattern: tighter moss islands, occasional tiny spore-flowers, and a faint mycelium thread that stays subtle enough not to create a repeated focal mark. Keep the look graphic and storybook-like rather than painterly realistic. Top-down 2.5D ground surface. Seamless edges.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
-      "constraints": "no characters, no props, no text. Must tile seamlessly with grass_base_01."
+      "constraints": "no characters, no props, no large mushrooms, no path, no horizon, no vignette, no text. Must tile seamlessly with grass_base_01."
     },
     "terrain_grass_flowers_01": {
-      "subject": "seamless 2D game terrain tile of green grass with tiny clover and pale-amber spore flowers",
-      "details": "default chunky grass surface with a small cluster of low-density spore flowers (amber and bone-white), shaped like simple storybook marks. Flowers fade naturally at tile edges so the tile tiles cleanly.",
+      "subject": "one seamless 2D tilemap terrain cell of green grass with tiny clover and pale-amber spore flowers",
+      "details": "This is a repeatable accent ground tile, not a flower-field illustration. Default chunky grass surface with low-density spore flowers (amber and bone-white), shaped like tiny simple storybook marks. Flowers stay small and sparse so repeated tiles do not create a visible pattern. Flowers fade naturally at tile edges so the tile tiles cleanly.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no characters, no props, no text. Flowers must not extend beyond the tile boundary."
+      "constraints": "no characters, no props, no large flowers, no horizon, no vignette, no text. Flowers must not extend beyond the tile boundary."
     },
     "terrain_path_dirt_straight": {
-      "subject": "seamless 2D game terrain tile of a packed earth path segment crossing the tile horizontally",
-      "details": "warm umber dirt path with broad graphic shape edges, small embedded pebbles, and faint mushroom-root traces along the edges. The path crosses the tile horizontally and meets edges at the same Y position so it joins cleanly with adjacent path tiles.",
+      "subject": "one seamless 2D tilemap terrain cell of a packed earth path segment crossing the tile horizontally",
+      "details": "This is a path tile cell, not a complete path scene. Warm umber dirt path with broad graphic shape edges, tiny embedded pebbles, and faint mushroom-root traces along the edges. The path crosses the tile horizontally and meets the west/east edges at the same Y position so it joins cleanly with adjacent path tiles.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no characters, no text. Path must align horizontally for tiling."
+      "constraints": "no characters, no props, no signs, no horizon, no vignette, no text. Path must align horizontally for tiling."
     },
     "terrain_path_spore_glow": {
-      "subject": "seamless 2D game terrain tile of a packed earth path with a soft amber spore glow running along its center",
-      "details": "same dirt path as path_dirt_straight but with a faint amber bioluminescent strip running down the center line, designed as a simple readable graphic pulse lane suggesting the path leads to the Arena.",
+      "subject": "one seamless 2D tilemap terrain cell of a packed earth path with a soft amber spore glow running along its center",
+      "details": "This is a path tile cell, not a complete destination scene. Same dirt path as path_dirt_straight but with a faint amber bioluminescent strip running down the center line, designed as a simple readable graphic pulse lane suggesting the path leads to the Arena. The glow must align on west/east edges.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "Path edges must align with path_dirt_straight for tiling."
+      "constraints": "no props, no signs, no horizon, no text. Path edges must align with path_dirt_straight for tiling."
     },
     "terrain_path_destination_row": {
-      "subject": "seamless 2D game terrain tile of a mycelium-veined path running along the top destination row of the field",
-      "details": "Wider, more decorative path with bold storybook dirt shapes and subtle violet/amber mycelium veins, suggesting the path connects the Arena and Journey entrances at the top of the field. Path crosses horizontally; edges align.",
+      "subject": "one seamless 2D tilemap terrain cell of a mycelium-veined path segment for the top destination row",
+      "details": "This is one path tile cell used repeatedly along the destination row, not the whole top-row scene. Wider, more decorative path with bold storybook dirt shapes and subtle violet/amber mycelium veins. It should imply a special route when repeated. Path crosses horizontally; west/east edges align exactly.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "Path edges must align horizontally."
+      "constraints": "no Arena arch, no Journey gate, no signs, no props, no horizon, no text. Path edges must align horizontally."
     },
     "terrain_edge_roots_01": {
-      "subject": "seamless 2D game terrain tile of dense root growth marking the edge of the walkable field",
-      "details": "Thick mushroom roots and tangled mycelium creating a chunky visual border with cute dark-forest silhouette language. Reads as 'do not pass'.",
+      "subject": "one seamless 2D tilemap terrain cell of dense root growth marking the edge of the walkable field",
+      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Thick mushroom roots and tangled mycelium create a chunky visual border with cute dark-forest silhouette language. Reads as do-not-pass when tiled along an edge.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "Must read clearly as a blocked edge, not as a path."
+      "constraints": "no characters, no signposts, no full forest scene, no horizon, no text. Must read clearly as a blocked edge, not as a path."
     },
     "terrain_edge_moss_rocks_01": {
-      "subject": "seamless 2D game terrain tile of mossy rocks and forest debris marking a blocked field edge",
-      "details": "Cluster of moss-covered stones, fallen leaves, and small mushroom growth with rounded storybook silhouettes. Reads as 'do not pass'.",
+      "subject": "one seamless 2D tilemap terrain cell of mossy rocks and forest debris marking a blocked field edge",
+      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Moss-covered stones, fallen leaves, and very small mushroom growth with rounded storybook silhouettes. Reads as do-not-pass when tiled along an edge.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "Same readability as edge_roots_01."
+      "constraints": "no characters, no signposts, no full forest scene, no horizon, no text. Same readability as edge_roots_01."
     },
     "prop_mushroom_cluster_small_amber": {
       "subject": "transparent-background 2D game prop: small cluster of amber-glowing mushrooms",

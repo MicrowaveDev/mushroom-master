@@ -2,17 +2,15 @@
 /**
  * Contact-sheet generator stub for the Home Field hub pipeline.
  *
- * v1 stub: builds a deterministic grid contact sheet of currently-present app-facing PNGs
- * (everything that exists under web/public/home-field/**) so reviewers can scan style and
- * silhouettes at once.
+ * Builds a deterministic contact sheet of currently-present app-facing PNGs
+ * (everything that exists under web/public/home-field/**) so reviewers can scan style,
+ * silhouettes, and terrain tiling at once.
  *
  * Output:
  *   .agent/home-field-workspace/review/contact-sheet.png
  *   .agent/home-field-workspace/review/contact-sheet.manifest.json
  *
- * The first PR after Phase 0 should expand this to:
- *   - 3x3 repetition for terrain seams
- *   - alpha-checkerboard background for transparent props
+ * The first PR after Phase 0 should expand this further to:
  *   - animation strip preview for effects
  *   - chibi spritesheet preview at 1x and 2x scale
  *   - separate map-preview.png that renders the home-field-map.json layout
@@ -97,17 +95,23 @@ function blitFit(canvas, image, dstX, dstY, dstW, dstH) {
   const sh = Math.max(1, Math.round(image.height * scale));
   const ox = dstX + Math.floor((dstW - sw) / 2);
   const oy = dstY + Math.floor((dstH - sh) / 2);
-  for (let yy = 0; yy < sh; yy += 1) {
-    const sy = Math.floor(yy / scale);
-    for (let xx = 0; xx < sw; xx += 1) {
-      const sx = Math.floor(xx / scale);
+  blitToRect(canvas, image, ox, oy, sw, sh);
+}
+
+function blitToRect(canvas, image, dstX, dstY, dstW, dstH) {
+  const xScale = image.width / dstW;
+  const yScale = image.height / dstH;
+  for (let yy = 0; yy < dstH; yy += 1) {
+    const sy = Math.min(image.height - 1, Math.floor(yy * yScale));
+    for (let xx = 0; xx < dstW; xx += 1) {
+      const sx = Math.min(image.width - 1, Math.floor(xx * xScale));
       const si = (sy * image.width + sx) * 4;
       const sR = image.rgba[si + 0];
       const sG = image.rgba[si + 1];
       const sB = image.rgba[si + 2];
       const sA = image.rgba[si + 3];
       if (sA === 0) continue;
-      const di = ((oy + yy) * canvas.width + (ox + xx)) * 4;
+      const di = ((dstY + yy) * canvas.width + (dstX + xx)) * 4;
       // Alpha composite over existing canvas pixel.
       const da = canvas.rgba[di + 3];
       const a = sA / 255;
@@ -115,6 +119,22 @@ function blitFit(canvas, image, dstX, dstY, dstW, dstH) {
       canvas.rgba[di + 1] = Math.round(sG * a + canvas.rgba[di + 1] * (1 - a));
       canvas.rgba[di + 2] = Math.round(sB * a + canvas.rgba[di + 2] * (1 - a));
       canvas.rgba[di + 3] = Math.max(da, sA);
+    }
+  }
+}
+
+function blitTerrainRepeat(canvas, image, dstX, dstY, dstW, dstH) {
+  const cols = 3;
+  const rows = 3;
+  const tileW = Math.floor(dstW / cols);
+  const tileH = Math.floor(dstH / rows);
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const x = dstX + col * tileW;
+      const y = dstY + row * tileH;
+      const w = col === cols - 1 ? dstW - tileW * (cols - 1) : tileW;
+      const h = row === rows - 1 ? dstH - tileH * (rows - 1) : tileH;
+      blitToRect(canvas, image, x, y, w, h);
     }
   }
 }
@@ -175,7 +195,11 @@ function main() {
     paintCheckerboard(canvas, cellX, cellY, CELL_SIZE, CELL_SIZE);
     try {
       const img = readPngRgba(path.join(repoRoot, e.outputPath));
-      blitFit(canvas, img, cellX, cellY, CELL_SIZE, CELL_SIZE);
+      if (e.type === 'terrain') {
+        blitTerrainRepeat(canvas, img, cellX, cellY, CELL_SIZE, CELL_SIZE);
+      } else {
+        blitFit(canvas, img, cellX, cellY, CELL_SIZE, CELL_SIZE);
+      }
     } catch {
       // skip malformed PNG; cell stays as checkerboard
     }
