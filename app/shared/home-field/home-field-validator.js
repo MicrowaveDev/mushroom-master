@@ -159,6 +159,21 @@ export function validateAssets(assetsDoc) {
         pushErr(errors, 'character.id', `characters[${idx}].id must be a non-empty string`);
         return;
       }
+      // Allow leading underscore for built-in placeholders (e.g. `_placeholder`).
+      if (!/^_?[a-z][a-z0-9_]*$/.test(id) && id !== '_placeholder') {
+        pushErr(errors, 'character.id_shape', `character "${id}" must be lower_snake_case (leading underscore allowed for placeholders)`);
+      }
+      for (const field of ['outputPath', 'publicPath', 'sourcePath', 'promptKey']) {
+        if (typeof c[field] !== 'string' || c[field].length === 0) {
+          pushErr(errors, `character.${field}`, `character "${id}" missing or invalid ${field}`);
+        }
+      }
+      if (typeof c.outputPath === 'string' && !c.outputPath.startsWith('web/public/home-field/characters/')) {
+        pushErr(errors, 'character.outputPath_prefix', `character "${id}" outputPath must start with "web/public/home-field/characters/"`);
+      }
+      if (typeof c.publicPath === 'string' && !c.publicPath.startsWith('/home-field/characters/')) {
+        pushErr(errors, 'character.publicPath_prefix', `character "${id}" publicPath must start with "/home-field/characters/"`);
+      }
       if (!c.spritesheet || typeof c.spritesheet !== 'object') {
         pushErr(errors, 'character.spritesheet', `character "${id}" missing spritesheet block`);
         return;

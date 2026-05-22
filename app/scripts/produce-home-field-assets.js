@@ -98,7 +98,43 @@ function runChromaKey(rawPath, outPath, keyColor) {
   }
 }
 
-function processEntry(entry, opts) {
+function findFrameRaws(sourcePath) {
+  const dir = path.dirname(sourcePath);
+  const baseName = path.basename(sourcePath, '.source.png');
+  const absDir = path.join(repoRoot, dir);
+  if (!fs.existsSync(absDir)) return [];
+  const re = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.frame_(\\d+)\\.source\\.png$`);
+  const matches = fs
+    .readdirSync(absDir)
+    .map((f) => {
+      const m = f.match(re);
+      return m ? { file: path.join(dir, f), index: Number(m[1]) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.index - b.index);
+  return matches;
+}
+
+function composeStrip(frameFiles, frameWidth, frameHeight) {
+  const stripWidth = frameWidth * frameFiles.length;
+  const stripHeight = frameHeight;
+  const stripRgba = Buffer.alloc(stripWidth * stripHeight * 4);
+
+  for (let f = 0; f < frameFiles.length; f += 1) {
+    const frame = readPngRgba(path.join(repoRoot, frameFiles[f].file));
+    if (frame.width !== frameWidth || frame.height !== frameHeight) {
+      throw new Error(`frame ${frameFiles[f].file} is ${frame.width}x${frame.height}, expected ${frameWidth}x${frameHeight}`);
+    }
+    for (let y = 0; y < frameHeight; y += 1) {
+      const srcOff = y * frameWidth * 4;
+      const dstOff = (y * stripWidth + f * frameWidth) * 4;
+      frame.rgba.copy(stripRgba, dstOff, srcOff, srcOff + frameWidth * 4);
+    }
+  }
+  return { width: stripWidth, height: stripHeight, rgba: stripRgba };
+}
+
+function processStaticEntry(entry, opts) {
   const rawAbs = path.join(repoRoot, entry.sourcePath);
   const outAbs = path.join(repoRoot, entry.outputPath);
   ensureDir(path.dirname(outAbs));
@@ -116,18 +152,15 @@ function processEntry(entry, opts) {
     fs.copyFileSync(rawAbs, stagedPath);
   }
 
-  const expectedWidth = entry.width;
-  const expectedHeight = entry.height;
   const image = readPngRgba(stagedPath);
-  if (image.width !== expectedWidth || image.height !== expectedHeight) {
+  if (image.width !== entry.width || image.height !== entry.height) {
     return {
       id: entry.id,
       ok: false,
-      reason: `dimensions mismatch: file ${image.width}x${image.height}, expected ${expectedWidth}x${expectedHeight}`
+      reason: `dimensions mismatch: file ${image.width}x${image.height}, expected ${entry.width}x${entry.height}`
     };
   }
 
-  // Re-encode deterministically (strip metadata, normalize) so commits are reproducible.
   const encoded = encodeDeterministicPng({
     width: image.width,
     height: image.height,
@@ -135,7 +168,6 @@ function processEntry(entry, opts) {
   });
   fs.writeFileSync(outAbs, encoded);
 
-  // Alpha sanity for transparent-required types.
   let alphaSummary = null;
   if (entry.type !== 'terrain') {
     const stats = alphaStats(image, { x: 0, y: 0, w: image.width, h: image.height });
@@ -145,7 +177,69 @@ function processEntry(entry, opts) {
     }
   }
 
-  return { id: entry.id, ok: true, output: entry.outputPath, alpha: alphaSummary };
+  return { id: entry.id, ok: true, output: entry.outputPath, alpha: alphaSummary, mode: 'static' };
+}
+
+function processAnimatedEntry(entry, opts) {
+  const a = entry.animation;
+  if (!a) return processStaticEntry(entry, opts);
+
+  const rawAbs = path.join(repoRoot, entry.sourcePath);
+  const frameFiles = findFrameRaws(entry.sourcePath);
+
+  if (frameFiles.length === 0) {
+    if (fs.existsSync(rawAbs)) {
+      // Raw is a pre-composed strip; treat as static and let dimension check handle it.
+      return processStaticEntry(entry, opts);
+    }
+    return {
+      id: entry.id,
+      ok: false,
+      reason: `no raw frames found at ${path.dirname(entry.sourcePath)}/${path.basename(entry.sourcePath, '.source.png')}.frame_NN.source.png and no pre-composed strip at ${entry.sourcePath}`
+    };
+  }
+
+  if (frameFiles.length !== a.frames) {
+    return {
+      id: entry.id,
+      ok: false,
+      reason: `expected ${a.frames} frame files, found ${frameFiles.length}`
+    };
+  }
+
+  let strip;
+  try {
+    strip = composeStrip(frameFiles, a.frameWidth, a.frameHeight);
+  } catch (err) {
+    return { id: entry.id, ok: false, reason: err.message };
+  }
+
+  if (strip.width !== entry.width || strip.height !== entry.height) {
+    return {
+      id: entry.id,
+      ok: false,
+      reason: `composed strip ${strip.width}x${strip.height} != expected ${entry.width}x${entry.height}`
+    };
+  }
+
+  const outAbs = path.join(repoRoot, entry.outputPath);
+  ensureDir(path.dirname(outAbs));
+  fs.writeFileSync(outAbs, encodeDeterministicPng(strip));
+
+  // Alpha sanity (effects must be transparent).
+  const stats = alphaStats({ width: strip.width, height: strip.height, rgba: strip.rgba }, { x: 0, y: 0, w: strip.width, h: strip.height });
+  const alphaSummary = `coverage=${(stats.coverage * 100).toFixed(1)}%`;
+  if (stats.coverage > 0.985) {
+    return { id: entry.id, ok: false, reason: `composed strip has no transparency; alpha ${alphaSummary}` };
+  }
+
+  return { id: entry.id, ok: true, output: entry.outputPath, alpha: alphaSummary, mode: `frames(${a.frames})` };
+}
+
+function processEntry(entry, opts) {
+  if (entry.type === 'character' && entry.spritesheet) return processCharacterPlaceholder(entry);
+  if (entry.animation) return processAnimatedEntry(entry, opts);
+  return processStaticEntry(entry, opts);
 }
 
 function characterEntryToAsset(c) {
@@ -155,7 +249,83 @@ function characterEntryToAsset(c) {
     sourcePath: c.sourcePath,
     outputPath: c.outputPath,
     width: c.spritesheet.width,
-    height: c.spritesheet.height
+    height: c.spritesheet.height,
+    spritesheet: c.spritesheet
+  };
+}
+
+function copyFrameInto(targetRgba, targetWidth, frame, dstRow, dstCol, frameWidth, frameHeight) {
+  for (let y = 0; y < frameHeight; y += 1) {
+    const srcOff = y * frameWidth * 4;
+    const dstOff = ((dstRow * frameHeight + y) * targetWidth + dstCol * frameWidth) * 4;
+    frame.rgba.copy(targetRgba, dstOff, srcOff, srcOff + frameWidth * 4);
+  }
+}
+
+function processCharacterPlaceholder(entry) {
+  const s = entry.spritesheet;
+  const baseName = path.basename(entry.sourcePath, '.source.png'); // e.g. _placeholder_chibi
+  const dir = path.dirname(entry.sourcePath);
+  const rawDir = path.join(repoRoot, dir);
+  if (!fs.existsSync(rawDir)) {
+    return { id: entry.id, ok: false, reason: `raw dir missing: ${dir}` };
+  }
+
+  const required = [
+    { row: 0, col: 0, file: `${baseName}.frame_idle_down_0.source.png` },
+    { row: 0, col: 1, file: `${baseName}.frame_idle_down_1.source.png` },
+    { row: 0, col: 'walk', file: `${baseName}.frame_walk_down.source.png` },
+    { row: 1, col: 0, file: `${baseName}.frame_idle_up_0.source.png` },
+    { row: 1, col: 1, file: `${baseName}.frame_idle_up_1.source.png` },
+    { row: 1, col: 'walk', file: `${baseName}.frame_walk_up.source.png` },
+    { row: 2, col: 0, file: `${baseName}.frame_idle_left_0.source.png` },
+    { row: 2, col: 1, file: `${baseName}.frame_idle_left_1.source.png` },
+    { row: 2, col: 'walk', file: `${baseName}.frame_walk_left.source.png` },
+    { row: 3, col: 0, file: `${baseName}.frame_idle_right_0.source.png` },
+    { row: 3, col: 1, file: `${baseName}.frame_idle_right_1.source.png` },
+    { row: 3, col: 'walk', file: `${baseName}.frame_walk_right.source.png` }
+  ];
+
+  const missing = required.filter((r) => !fs.existsSync(path.join(rawDir, r.file)));
+  if (missing.length > 0) {
+    return {
+      id: entry.id,
+      ok: false,
+      reason: `missing ${missing.length} placeholder frame(s): ${missing.map((m) => m.file).join(', ')}`
+    };
+  }
+
+  const sheetRgba = Buffer.alloc(s.width * s.height * 4);
+  for (const r of required) {
+    const frame = readPngRgba(path.join(rawDir, r.file));
+    if (frame.width !== s.frameWidth || frame.height !== s.frameHeight) {
+      return {
+        id: entry.id,
+        ok: false,
+        reason: `frame ${r.file} is ${frame.width}x${frame.height}, expected ${s.frameWidth}x${s.frameHeight}`
+      };
+    }
+    if (r.col === 'walk') {
+      // Replicate the walk frame across columns 2..7 of the row.
+      for (let col = 2; col < 8; col += 1) {
+        copyFrameInto(sheetRgba, s.width, frame, r.row, col, s.frameWidth, s.frameHeight);
+      }
+    } else {
+      copyFrameInto(sheetRgba, s.width, frame, r.row, r.col, s.frameWidth, s.frameHeight);
+    }
+  }
+
+  const outAbs = path.join(repoRoot, entry.outputPath);
+  ensureDir(path.dirname(outAbs));
+  fs.writeFileSync(outAbs, encodeDeterministicPng({ width: s.width, height: s.height, rgba: sheetRgba }));
+
+  const stats = alphaStats({ width: s.width, height: s.height, rgba: sheetRgba }, { x: 0, y: 0, w: s.width, h: s.height });
+  return {
+    id: entry.id,
+    ok: true,
+    output: entry.outputPath,
+    alpha: `coverage=${(stats.coverage * 100).toFixed(1)}%`,
+    mode: 'character_placeholder(12+repl)'
   };
 }
 
@@ -217,7 +387,7 @@ function main() {
   for (const target of targets) {
     const r = processEntry(target, { chromaKey });
     if (r.ok) {
-      console.log(`  ${target.id}: OK -> ${r.output}${r.alpha ? ` (${r.alpha})` : ''}`);
+      console.log(`  ${target.id}: OK [${r.mode || 'static'}] -> ${r.output}${r.alpha ? ` (${r.alpha})` : ''}`);
     } else {
       console.error(`  ${target.id}: FAIL — ${r.reason}`);
     }

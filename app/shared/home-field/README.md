@@ -2,6 +2,30 @@
 
 This directory holds the **frozen contracts** for the Home Field hub. Phase 0 of the plan is complete; the next agent (Codex) generates the tiles, props, exits, effects, and chibi spritesheets.
 
+## Before You Start (Codex)
+
+1. **`cd` to the `mushroom-master` repo root** (the directory containing `package.json`, not this `app/shared/home-field/` directory).
+2. Confirm clean state on `main`: `git status` should be empty.
+3. `npm install` if you haven't already (no new deps were added in Phase 0; existing ones are enough).
+4. Run `npm run game:home-field:validate` — should print `home-field validation: PASS`. If it fails, do not proceed; the schema is the gate.
+5. Read the **Workflow For Codex** section below, then the **First Recommended Batch** section. Static assets (terrain, props, exits) come first; animated assets and the chibi spritesheet come in a second stage and have their own composition workflow.
+
+## npm arg passing — important
+
+`npm run <script>` does **not** forward flags by default. Always use `--` to separate npm's args from the script's args:
+
+```bash
+# Correct:
+npm run game:home-field:next -- --limit=10
+npm run game:home-field:next -- --id=grass_base_01,grass_base_02
+npm run game:home-field:produce -- grass_base_01 grass_base_02
+npm run game:home-field:validate -- --check-files
+
+# Wrong (silently drops the flag — script will use its default):
+npm run game:home-field:next --limit=10
+```
+
+
 ## Source Of Truth
 
 - **Plan**: [`docs/home-field-ingame-plan.md`](../../../docs/home-field-ingame-plan.md)
@@ -120,9 +144,64 @@ The plan's "Step 8 — Minimum First Agent Batch" calls for this proof set (in o
 8. `spore_motes_loop` (effect, animated proof)
 9. `_placeholder` (chibi placeholder spritesheet)
 
-Run the queue with `npm run game:home-field:next --id=grass_base_01,grass_base_02,path_destination_row,mushroom_cluster_small_amber,mycelium_lantern_amber,arena_mushroom_arch,journey_gate_under_construction,spore_motes_loop,_placeholder` and process them through the workflow above. Validate every step; review the contact sheet before continuing to the rest of the assets.
+Run the queue with `npm run game:home-field:next -- --id=grass_base_01,grass_base_02,path_destination_row,mushroom_cluster_small_amber,mycelium_lantern_amber,arena_mushroom_arch,journey_gate_under_construction` and process them through the workflow above. Validate every step; review the contact sheet before continuing.
 
-After the proof set is reviewed and committed, run `npm run game:home-field:next` with no filters to drive the remaining assets.
+These 7 are **all static, single-image assets** — safest to ship first because they validate style direction without compounding animation complexity. The animated effects (`spore_motes_loop`, `tap_ripple`, `arena_portal_shimmer`, `mycelium_path_pulse`, `journey_blocked_rustle`) and the `_placeholder` chibi spritesheet require multi-frame generation and are documented in the next section.
+
+After the proof set is reviewed and committed, run `npm run game:home-field:next` with no filters to drive the remaining static assets, then move on to the animated assets stage.
+
+## Animated Assets And Chibi Spritesheet
+
+Imagegen tools typically generate a single image at a standard square size (e.g. `1024×1024`). They are unreliable at producing wide multi-frame strips (`2048×256`, `4096×512`) in one call. For animated effects and the chibi spritesheet, use a **per-frame workflow**:
+
+### Per-frame raw naming
+
+For an animated asset like `spore_motes_loop` (8 frames at 256×256), save **each frame as its own raw PNG**:
+
+```
+.agent/home-field-workspace/raw/spore_motes_loop.frame_00.source.png
+.agent/home-field-workspace/raw/spore_motes_loop.frame_01.source.png
+.agent/home-field-workspace/raw/spore_motes_loop.frame_02.source.png
+...
+.agent/home-field-workspace/raw/spore_motes_loop.frame_07.source.png
+```
+
+Each frame is generated as an individual imagegen call at the frame's `frameWidth × frameHeight` size (or cropped to that size if imagegen returns a larger image). The frames must form a clean loop (frame 0 connects seamlessly to frame 7 → 0).
+
+### Compose
+
+Run produce with the `--compose-frames` flag (or it auto-detects: if `<id>.source.png` doesn't exist but `<id>.frame_NN.source.png` files do, frame-composition mode triggers):
+
+```bash
+npm run game:home-field:produce -- spore_motes_loop
+```
+
+The produce script will:
+
+1. Detect the per-frame raw files.
+2. Verify each frame matches the asset's declared `frameWidth × frameHeight`.
+3. Compose them left-to-right into a `(frames × frameWidth) × frameHeight` horizontal strip.
+4. Write the strip as a deterministic PNG to `outputPath`.
+
+### Chibi spritesheet (the hardest case)
+
+The placeholder chibi is `8 cols × 4 rows × 64×64 = 32 frames`. Recommended generation strategy:
+
+1. **Generate per-pose frames** at 64×64 each:
+   - 4 idle poses (one per direction): `_placeholder.frame_idle_down.source.png`, `…_idle_up.source.png`, `…_idle_left.source.png`, `…_idle_right.source.png`
+   - For the v1 placeholder, use **only one walk frame per direction** (the silhouette is generic; movement readability comes from the chibi pose itself). Save as `_placeholder.frame_walk_down.source.png`, etc.
+2. The produce script for character placeholders will replicate the single walk frame across columns 2–7 of each row (acceptable for a placeholder; specific-character chibis will get full 6-frame walks in a later phase).
+
+Per-character chibis (not the placeholder) require the full `8 × 4` grid; that workstream is out of scope for v1 — only the placeholder is needed to unblock the renderer spike.
+
+### Validate and review
+
+```bash
+npm run game:home-field:validate -- --check-files
+npm run game:home-field:sheet
+```
+
+The validator's animation rules will reject any strip where `width !== frameWidth * frames` or `height !== frameHeight`; the contact sheet's manifest will record the sha256 of every composed strip so reviewers can verify reproducibility.
 
 ## Style Constraints — Do's And Don'ts
 

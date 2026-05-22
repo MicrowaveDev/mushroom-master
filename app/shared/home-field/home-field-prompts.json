@@ -122,46 +122,46 @@
       "constraints": "Anchor at bottom-center. No characters. Sign-boards must be art-only blank surfaces (no text)."
     },
     "effect_spore_motes_loop": {
-      "subject": "transparent-background 2D game effect spritesheet: 8 frames of drifting amber spore motes for an ambient field overlay",
-      "details": "Each frame shows 4-6 small soft amber motes drifting slowly upward against transparent background. Across the 8 frames the motes move incrementally upward, fade in/out, and re-spawn at the bottom — a looping cycle. Each frame is 256x256, all 8 frames laid out in a single 2048x256 horizontal strip.",
-      "size": "2048x256 spritesheet, 8 frames of 256x256",
+      "subject": "transparent-background 2D game effect frame: a single 256x256 frame of drifting amber spore motes for an ambient field overlay",
+      "details": "PER-FRAME GENERATION: generate ONE 256x256 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/spore_motes_loop.frame_NN.source.png (NN = 00..07). Across the 8 frames the motes (4-6 small soft amber motes per frame) drift incrementally upward and fade in/out — a looping cycle. The produce script composes them into a 2048x256 horizontal strip after all 8 are generated.",
+      "size": "256x256 per individual frame (NOT the composed strip)",
       "transparency": "transparent background required (alpha channel must be honored)",
-      "constraints": "No solid background. Motes are diffuse, soft-edged, not hard sprites. Animation loops cleanly from frame 8 back to frame 1."
+      "constraints": "No solid background. Motes are diffuse, soft-edged. Each frame nudges the motes a little; frame 8 must connect cleanly to frame 1 (loop). Per-frame raw filename: spore_motes_loop.frame_NN.source.png."
     },
     "effect_arena_portal_shimmer": {
-      "subject": "transparent-background 2D game effect spritesheet: 8 frames of a warm amber portal shimmer for the Arena arch interior",
-      "details": "Sized to overlay the inside of the Arena arch. Each frame shows a slightly different distortion / wave pattern of amber light, suggesting a magical portal. 512x512 per frame, 8 frames in a 4096x512 horizontal strip.",
-      "size": "4096x512 spritesheet, 8 frames of 512x512",
+      "subject": "transparent-background 2D game effect frame: a single 512x512 frame of a warm amber portal shimmer for the Arena arch interior",
+      "details": "PER-FRAME GENERATION: generate ONE 512x512 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/arena_portal_shimmer.frame_NN.source.png (NN = 00..07). Each frame shows a slightly different distortion / wave pattern of amber light suggesting a magical portal. The produce script composes them into a 4096x512 horizontal strip after all 8 are generated.",
+      "size": "512x512 per individual frame (NOT the composed strip)",
       "transparency": "transparent background required",
-      "constraints": "Animation loops cleanly. No solid background. No hard edges."
+      "constraints": "No solid background. No hard edges. Frame 8 loops cleanly to frame 1. Per-frame raw filename: arena_portal_shimmer.frame_NN.source.png."
     },
     "effect_mycelium_path_pulse": {
-      "subject": "transparent-background 2D game effect spritesheet: 8 frames of a bioluminescent pulse running along the path tile toward the Arena",
-      "details": "Each frame shows a soft pulse of amber-violet light traveling horizontally across a 256x256 area. Frame 1 shows the pulse on the left edge; frame 8 shows it on the right edge. Loop cleanly. Designed to overlay path_spore_glow tiles.",
-      "size": "2048x256 spritesheet, 8 frames of 256x256",
+      "subject": "transparent-background 2D game effect frame: a single 256x256 frame of a bioluminescent pulse running along the path tile",
+      "details": "PER-FRAME GENERATION: generate ONE 256x256 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/mycelium_path_pulse.frame_NN.source.png (NN = 00..07). Frame 0 shows a soft amber-violet pulse on the left edge; frame 7 shows it on the right edge; intermediate frames interpolate horizontally. The produce script composes them into a 2048x256 horizontal strip.",
+      "size": "256x256 per individual frame",
       "transparency": "transparent background required",
-      "constraints": "Pulse is soft, not a hard line. Loops cleanly."
+      "constraints": "Pulse is soft, not a hard line. Loops cleanly. Per-frame raw filename: mycelium_path_pulse.frame_NN.source.png."
     },
     "effect_journey_blocked_rustle": {
-      "subject": "transparent-background 2D game effect spritesheet: 8 frames of vine/rope rustle around the Journey gate's blocking ropes",
-      "details": "Subtle motion of vines and ropes shifting in a gentle breeze. 256x256 per frame, 8 frames in a 2048x256 horizontal strip. Designed to overlay the Journey gate.",
-      "size": "2048x256 spritesheet, 8 frames of 256x256",
+      "subject": "transparent-background 2D game effect frame: a single 256x256 frame of vine/rope rustle around the Journey gate's blocking ropes",
+      "details": "PER-FRAME GENERATION: generate ONE 256x256 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/journey_blocked_rustle.frame_NN.source.png (NN = 00..07). Each frame shows vines and ropes shifting slightly in a gentle breeze. The produce script composes them into a 2048x256 horizontal strip.",
+      "size": "256x256 per individual frame",
       "transparency": "transparent background required",
-      "constraints": "Loops cleanly. Motion is small and ambient."
+      "constraints": "Loops cleanly. Motion is small and ambient. Per-frame raw filename: journey_blocked_rustle.frame_NN.source.png."
     },
     "effect_tap_ripple": {
-      "subject": "transparent-background 2D game effect spritesheet: 4 frames of a tap-to-move ripple at the player's tap point",
-      "details": "Frame 1: small bright amber dot. Frame 2: expanding bright ring with the dot fading. Frame 3: larger softer ring. Frame 4: barely visible faded ring. 128x128 per frame, 4 frames in a 512x128 horizontal strip. Used as one-shot animation (no loop) at the tap position.",
-      "size": "512x128 spritesheet, 4 frames of 128x128",
+      "subject": "transparent-background 2D game effect frame: a single 128x128 frame of a tap-to-move ripple at the player's tap point",
+      "details": "PER-FRAME GENERATION: generate ONE 128x128 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/tap_ripple.frame_NN.source.png (NN = 00..03). Frame 0: small bright amber dot. Frame 1: expanding bright ring with the dot fading. Frame 2: larger softer ring. Frame 3: barely visible faded ring. The produce script composes them into a 512x128 horizontal strip. This is a one-shot animation (no loop).",
+      "size": "128x128 per individual frame",
       "transparency": "transparent background required",
-      "constraints": "Center-anchored. Reads instantly as 'tap acknowledged'."
+      "constraints": "Center-anchored. Reads instantly as 'tap acknowledged'. Per-frame raw filename: tap_ripple.frame_NN.source.png."
     },
     "character_placeholder_silhouette": {
-      "subject": "transparent-background chibi placeholder spritesheet for a mushroom heroine — 8 columns x 4 rows of 64x64 frames",
-      "details": "Generic mushroom-elf chibi silhouette to serve as a fallback when a specific character's chibi hasn't been generated yet. Visible elf ears. Mushroom cap hat (neutral colors, not character-specific). Row order top to bottom: facing down, facing up, facing left, facing right. Each row: 2 idle frames + 6 walk frames = 8 frames. Walk frames show a clear stride cycle. Idle frames show a subtle breathing motion.",
-      "size": "512x256 spritesheet, 8 cols x 4 rows of 64x64 frames",
+      "subject": "transparent-background chibi placeholder — generic mushroom-elf silhouette for an 8 columns x 4 rows of 64x64 spritesheet (placeholder, not a specific character)",
+      "details": "PER-FRAME GENERATION: this character is generated as individual 64x64 frames, NOT as a single composed sheet. The produce script composes them. Generate these frames (save each at the listed path):\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_down_0.source.png    (row 0 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_down_1.source.png    (row 0 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_down.source.png      (row 0 cols 2-7 will be replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_up_0.source.png      (row 1 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_up_1.source.png      (row 1 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_up.source.png        (row 1 cols 2-7 replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_left_0.source.png    (row 2 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_left_1.source.png    (row 2 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_left.source.png      (row 2 cols 2-7 replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_right_0.source.png   (row 3 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_right_1.source.png   (row 3 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_right.source.png     (row 3 cols 2-7 replicated)\nGeneric mushroom-elf silhouette with visible elf ears in every direction. Mushroom cap hat (neutral colors). The two idle frames per direction differ subtly (breathing). The single walk frame per direction shows a clear stride mid-step. The produce-home-field-assets.js character-mode composer reads these 12 raw files and writes the full 512x256 spritesheet, replicating each walk frame across columns 2-7 of its row.",
+      "size": "64x64 per individual frame (12 frames total for the placeholder)",
       "transparency": "transparent background required",
-      "constraints": "Each 64x64 frame is centered; chibi feet near bottom of frame. Walk cycle reads cleanly across the 6 walk frames per direction. Elf ears visible in all 4 directions. Cute chibi proportions: large head, small body, ~3 heads tall."
+      "constraints": "Chibi feet near bottom of each frame. Elf ears visible in all 4 directions. Cute chibi proportions: large head, small body, ~3 heads tall. Per-character chibis (not the placeholder) will use the full 32-frame layout in a later phase — for the placeholder, the walk-frame replication is acceptable."
     }
   }
 }
