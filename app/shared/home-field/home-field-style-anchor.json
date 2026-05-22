@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "description": "Style anchor for Home Field hub art. Every imagegen prompt MUST include this description verbatim under a `Style anchor` block so terrain, props, exits, chibi, and effects read as one cohesive world.",
+  "style": {
+    "world": "Mycelium fungal forest meadow, dark-fairytale fantasy, organic and bioluminescent",
+    "palette": {
+      "primary": "lush deep green grass with mossy variations (#3a6e3a, #4d7d4f, #2b5a3a)",
+      "accents": "amber bioluminescence (#d99a2b, #f0c050), violet spore glow (#7a4cb8, #b07ed8), bone neutrals (#e8dfc8)",
+      "shadows": "warm umber tones, not pure black (#2a1f1a)"
+    },
+    "lighting": "Single top-left key light with warm amber rim. Soft ambient fog. Perpetual dusk; no harsh sun, no hard cast shadows.",
+    "outline": "Clean medium-weight outline, slightly darker than the local fill (not pure black). No outline on terrain tiles; clear outline on props and exits.",
+    "shadowStyle": "Subtle elliptical drop shadow under ground entities (props, chibi, exits) using semi-transparent warm umber. No long cast shadows.",
+    "ambient": "Drifting spores, soft amber motes, gentle violet glow on certain mushroom caps and the Arena arch. Tone is calm, inviting, slightly magical — not menacing.",
+    "scale": "2.5D top-down RPG camera angle, slightly elevated so character heads are visible while feet plant on the ground. Mushrooms taller than the chibi."
+  },
+  "rejections": [
+    "No medieval stone, no sci-fi, no urban props",
+    "No bright cartoon colors, no neon, no rainbow palettes",
+    "No high-contrast pure-black outlines or pure-white highlights",
+    "No realistic photography or photoreal textures",
+    "No text in the images themselves — signposts are art-only; text is rendered at runtime",
+    "No human-only figures with mushroom hats; chibis are mushroom-elf heroines with visible elf ears when ears are shown"
+  ],
+  "sources": [
+    "docs/design-requirements.md",
+    "docs/home-field-ingame-plan.md (Visual Concept and Visual And Scale Lock sections)"
+  ]
+}

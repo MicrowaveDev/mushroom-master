@@ -112,9 +112,46 @@ Step 3: Character Select
 ## Flow B: Solo Game Run (Main Loop)
 
 ```
-Step 1: Home Screen
-  Screen: home → HomeScreen.js
-  Screenshot: screenshots/run/solo-01-home-start-game.png, screenshots/02-home-desktop.png
+Step 1: Home Field Hub (gated by HOME_FIELD_ENABLED)
+  Screen: home → HomeScreen.js → HomeFieldCanvasScene.js (Phaser canvas)
+  Plan: docs/home-field-ingame-plan.md
+  Screenshot: screenshots/run/solo-01-home-hub-mobile.png, screenshots/run/solo-01-home-hub-desktop.png
+  Above the fold (mobile, 390x844):
+    - [Req 15-B] Walkable green field with selected mushroom chibi at lower-middle spawn
+    - [Req 15-B] Arena entrance (top-right of field) with localized signpost text
+    - [Req 15-B] Journey entrance (top-left of field) marked as under construction
+    - Top-left nameplate overlay: active mushroom portrait + name + level + mycelium pill
+    - Top-right HUD: spore count + battle limit pill (X / 10)
+    - Bottom corner: drawer toggle icon (History / Friends / Leaderboard / Stats)
+  Desktop note (1280x800): same composition; drawer becomes a collapsible side panel
+  Sees:
+    - [Req 15-A] Selected mushroom chibi at spawn (idle animation)
+    - [Req 15-B] Both Arena and Journey entrances visible inside mobile safe frame
+    - Arena entrance art reflects state:
+      - active run exists → Arena CTA reads "Continue Arena" / "Продолжить"
+      - no active run → "Enter Arena" / "Войти на арену"
+      - [Req 15-D] daily limit reached → desaturated arch + lock icon + "Daily limit reached"
+      - [Req 15-E] no active mushroom → desaturated + "?" + "Choose a mushroom"
+    - Journey entrance: dim lanterns + vine rope + signpost reading "Journey" / "Путешествие"
+    - Tap ripple sprite on pointerdown anywhere in the field
+    - Recent game-run history (up to 5) accessible via History drawer tab [Req 1-A]
+    - Friends list + Leaderboard accessible via drawer tabs
+  Actions and outcomes:
+    - Tap/click on Arena hotspot button → [Req 15-C] start-run or resume-run emit; debounced via [Req 15-K]
+    - Tap/click anywhere in the field → chibi walks toward the tap point; [Req 15-G] walking into Arena AABB activates the same CTA
+    - Tap/click on Journey hotspot → [Req 15-F] under-construction modal opens (closed by tap-outside or Telegram BackButton [Req 15-M])
+    - Open drawer → chibi continues walking but new field taps are ignored
+    - Switch language → [Req 15-J] all overlays re-render; scene state preserved
+  Expected:
+    - [Req 1-G] Only one active run allowed; Arena CTA toggles between start/resume
+    - [Req 1-H] Rejected if daily limit (10) reached
+    - [Req 15-C] startGameRun('solo') called on activation, navigates to prep screen
+    - [Req 15-N] After a run resolves, the user returns here, not the legacy dashboard
+  Fallback:
+    - [Req 15-L] If HOME_FIELD_FORCE_FALLBACK=true or hub assets fail to load, the legacy dashboard renders on the same route. The legacy composition is described under "Legacy home dashboard (fallback)" below.
+
+Step 1a (fallback): Legacy Home Dashboard
+  Screen: home → HomeScreen.js (legacy path; rendered when HOME_FIELD_ENABLED=false or HOME_FIELD_FORCE_FALLBACK=true or [Req 15-L] hub init failed)
   Above the fold (mobile):
     - Active mushroom portrait + level
     - "Начать Игру" / "Start Game" button (or "Продолжить игру" / resume if active run)

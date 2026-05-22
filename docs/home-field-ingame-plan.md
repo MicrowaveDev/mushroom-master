@@ -146,19 +146,21 @@ The production renderer is **Phaser** (locked above). DOM/Node-canvas is reserve
 
 The runtime scene is never DOM-based; do not build a "DOM prototype" walkable hub.
 
-Production shape:
+Production shape (mirrors the existing `.js` `defineComponent` convention used by `web/src/pages/HomeScreen.js`):
 
 ```text
-HomeScreen.vue
-  └─ HomeFieldCanvasScene.vue          # mounts Phaser inside Vue with <Teleport>'d overlays
-       ├─ renderer/phaser-app.js       # boots the Phaser.Game instance
-       ├─ renderer/home-field-scene.js # HomeFieldPhaserScene (preload/create/update)
-       ├─ renderer/home-field-camera.js
-       ├─ renderer/home-field-input.js
-       ├─ renderer/home-field-effects.js
-       ├─ renderer/home-field-state.js # XState chart (see State Machine below)
-       ├─ home-field-map.json
-       └─ home-field-assets.json
+web/src/pages/HomeScreen.js                  # existing; renders <HomeFieldCanvasScene/> when HOME_FIELD_ENABLED
+web/src/components/HomeFieldCanvasScene.js   # Vue 3 component that mounts Phaser via dynamic import + <Teleport>'d overlays
+web/src/renderer/phaser-app.js               # boots Phaser.Game; lazy-loaded via dynamic import()
+web/src/renderer/home-field-scene.js         # HomeFieldPhaserScene (preload/create/update)
+web/src/renderer/home-field-camera.js
+web/src/renderer/home-field-input.js
+web/src/renderer/home-field-effects.js
+web/src/renderer/home-field-state.js         # XState chart (see State Machine below)
+app/shared/home-field/home-field-map.json
+app/shared/home-field/home-field-assets.json
+app/shared/home-field/home-field-prompts.json
+app/shared/home-field/home-field-validator.js
 ```
 
 Boundaries:
@@ -251,6 +253,15 @@ Why Phaser is locked from Phase 0 (not deferred to a later gate):
 
 This section is the authoritative contract for how the runtime renderer interprets metadata. Any agent implementing scene code, tests, or asset processing must follow it.
 
+### Dependency And Bundle Strategy
+
+- **Phaser version**: pin `phaser@3.88.x` in `package.json` (caret-free). Phaser breaks API on minor bumps; the validator and renderer contract assume 3.88.
+- **Bundle**: Phaser is loaded via a **dynamic `import()`** inside `HomeFieldCanvasScene.js` so it ships in its own code-split chunk. The home-field route is the only entry point that fetches it; other screens are unaffected by the ~700 KB cost.
+- **Import path**: `const Phaser = (await import('phaser')).default;` — uses the ESM entry; bundler should tree-shake unused modules. Confirm Vite/Webpack output has Phaser in a chunk named `home-field-renderer.*.js` after the first build.
+- **Renderer type**: `type: Phaser.AUTO` — Phaser auto-selects WebGL, falls back to Canvas if WebGL init fails. On Canvas fallback, log `home_field_initialized.renderer = "canvas"` so we can monitor WebGL-failure rates per platform.
+- **Atlas packer**: `free-tex-packer-core@0.4.x` (dev dependency); runs via `produce-home-field-atlas.js`. Atlas output (`web/public/home-field/atlases/main.png + .json`) is **committed**, not built at deploy time — mirrors the artifact/season pipelines.
+- **State machine**: `xstate@5.x` (production dependency) for `home-field-state.js`. `@xstate/inspect` for dev only.
+
 ### Coordinate System
 
 - **World units are pixels.** Production JSON stores integer pixel coordinates only.
@@ -268,12 +279,42 @@ This section is the authoritative contract for how the runtime renderer interpre
   - **Terrain tiles**: `{ x: 0, y: 0 }` — anchored at top-left of the tile cell.
 - Anchors are validated by `validate-home-field-assets.js`: each asset's `type` must match an allowed anchor convention; off-convention values fail validation.
 
-### Z-Ordering
+### Z-Ordering And Layer Order
+
+Layer depth (Phaser `setDepth()` values):
+
+| Depth | Layer | Notes |
+|---|---|---|
+| 0 | terrain tile layer | base grass + path tiles |
+| 5 | path overlays | spore glow, mycelium pulse (animated, below objects) |
+| 10 | objects layer | props, exits, chibi (sorted internally by `sortKey`) |
+| 20 | effects layer | spore motes, portal shimmer |
+| 30 | foreground props | overhanging caps, edge mushrooms that should occlude the chibi |
+| 1000 | DOM overlay buttons | not in canvas; outside Phaser via `<Teleport>` |
+
+Within the objects layer:
 
 - Each object's `sortKey = round(y + anchor.y * height)`.
 - Stable sort; ties broken by lexicographic comparison of `id`.
-- Terrain (tile layer) is always behind objects; effects layer is always in front of objects. Within the `objects` layer, sortKey applies.
-- The renderer re-sorts on every chibi movement frame; props, gates, and the chibi compose as expected without per-asset z hints.
+- The renderer re-sorts the objects layer on every chibi movement frame (`scene.children.depthSort` after updating `setDepth(10 + sortKey * 1e-6)`).
+
+### Camera Math
+
+- The camera centers on `cameraCenter` (initialized to `camera.initialTarget` from `home-field-map.json`).
+- **Zoom formula**: `zoom = max(viewport.w / safeFrame.w, viewport.h / safeFrame.h)` clamped to `[0.5, 2.0]`.
+  - `max` (not `min`) ensures the entire `mobileSafeFrame` is always inside the viewport — overflow on the *other* axis is cropped instead of showing empty world edges.
+- **World-to-screen**: `screen = (world - cameraCenter) * zoom + viewportCenter`.
+- **Camera bounds**: `cameraCenter` is clamped so the viewport never shows world edges; min/max derived from `world.width/height` and current zoom.
+- **Camera follow**: when the chibi exits a `200 × 200` deadzone around `initialTarget`, the camera lerps toward the chibi at `lerp = 0.08` per frame; when the chibi returns inside the deadzone, the camera lerps back to `initialTarget`.
+- **Wide desktop** (`viewport.w / viewport.h > 1.75`): world sits centered with empty Mycelium-fog gutters (CSS `background: url(/home-field/edge_fog.png) repeat-x`); world itself is not stretched.
+
+### Tap-To-Move Feedback
+
+- On `pointerdown` inside the field, the renderer immediately plays a single-shot 200ms ripple sprite at the tap world position before the chibi starts moving.
+- Sprite: `effects/tap_ripple.png` (asset id `tap_ripple`, animated 4-frame at 20 fps, no loop, anchor `{0.5, 0.5}`).
+- Ripples are not z-sorted; they render at depth 25 (above objects, below effects).
+- Reduced-motion mode replaces the ripple with a static cross (frame `0` only).
+- This is mandatory — without visual feedback, taps near collision feel broken (the chibi appears to ignore the input).
 
 ### Collision And Pathing
 
@@ -301,13 +342,17 @@ This section is the authoritative contract for how the runtime renderer interpre
 
 ### Memory And Lifecycle
 
-- The Phaser game instance is **created on mount** of `HomeFieldCanvasScene.vue` and **destroyed on unmount**: `scene.shutdown()` → `game.destroy(true /* removeCanvas */)`.
+- The Phaser game instance is **created on mount** of `HomeFieldCanvasScene.js` and **destroyed on unmount**: `scene.shutdown()` → `game.destroy(true /* removeCanvas */)`.
 - Texture cache is flushed on destroy so navigating Home → Arena → Home does not retain home-field textures during a battle.
 - The renderer pauses (`scene.scene.pause()`) when `document.visibilityState === 'hidden'` and resumes on `visible`. Chibi mid-walk preserves its `target` and continues from its current position on resume.
+- **Save-on-exit**: an unload handler (`window.addEventListener('beforeunload', ...)` + Telegram `viewportChanged` going to height 0) flushes the chibi position to localStorage immediately, in addition to the normal save-on-activation/save-on-unmount triggers. Without this, closing Telegram mid-walk drops the position.
+- **localStorage key**: `mb.homeField.position.<playerId>.<mushroomId>` → `{ x, y, facing }`. Quota errors are caught and silently dropped (next session falls back to spawn).
+- **Touch-action**: `touch-action: none` is set on the Phaser `<canvas>` element only, not the parent — this prevents the canvas from triggering page scrolls while keeping drawer scrolling intact.
+- **Vue HMR**: dev builds wrap the dynamic Phaser import in a module-level singleton check; HMR reload tears down the existing `Phaser.Game` instance before re-importing. Otherwise multiple game loops stack on every save.
 
 ### Schema Validation At Boot
 
-- On mount, the renderer validates both JSON files with a Zod schema (or `@sinclair/typebox` if it's already in the repo) before booting Phaser.
+- On mount, the renderer validates both JSON files with `app/shared/home-field/home-field-validator.js` (plain-JS field checks, mirrors the existing artifact pipeline's `checkProvenance` pattern) before booting Phaser.
 - On validation failure, the renderer emits `errorFallback` with the validation error and Vue shows the legacy dashboard start/resume path (`HOME_FIELD_FORCE_FALLBACK` behavior).
 - Validation also runs in CI via `npm run game:home-field:validate`.
 
@@ -410,6 +455,39 @@ The hub must not introduce per-locale baked-art coupling. Any new locale (EN, RU
   - `homeJourneyUnderConstruction` ("Journey is under construction" / "Путешествие в разработке")
   - `homeFieldLoading` ("Preparing the field…" / "Готовим поляну…")
   - `homeFieldFallbackUseClassic` ("Use classic start" / "Использовать классический старт")
+
+## Bootstrap API Contract
+
+The hub needs a small addition to `/api/bootstrap` (defined in `app/server/services/game-service.js:getBootstrap`). No new tables, no new endpoints.
+
+Response gains a single new top-level field:
+
+```json
+{
+  "homeField": {
+    "enabled": true,
+    "renderer": "phaser",
+    "forceFallback": false,
+    "mapVersion": "home_field_v1",
+    "assetVersion": "<8-char sha1 of map+assets json>"
+  }
+}
+```
+
+Source values:
+
+- `enabled` = `process.env.HOME_FIELD_ENABLED === 'true'`
+- `renderer` = `process.env.HOME_FIELD_RENDERER || 'phaser'` (only `phaser` is valid in v1)
+- `forceFallback` = `process.env.HOME_FIELD_FORCE_FALLBACK === 'true'` (kill switch)
+- `mapVersion` = `home-field-map.json` `version` field (currently `1`, prefixed `"home_field_v"`)
+- `assetVersion` = computed at server boot as `sha1(home-field-map.json + home-field-assets.json).slice(0,8)`
+
+Client behavior:
+
+- When `homeField.enabled === false` or `forceFallback === true`: render the legacy dashboard, never mount Phaser.
+- When `enabled === true`: render `<HomeFieldCanvasScene/>` inside `HomeScreen.js`; fetch assets at `/home-field/atlases/main.png?v=<assetVersion>` and `/home-field/characters/<mushroom_id>/spritesheet.png?v=<assetVersion>`.
+
+Per-player override (support tickets, emergency rollback for one user) is **not** in v1. If needed it can be added later as `player_settings.home_field_disabled` without a schema migration.
 
 ## Telegram Mini App Integration
 
@@ -604,8 +682,31 @@ Chibi loading and budget:
 
 - Only the **active mushroom's** chibi spritesheet is fetched on hub load (per the chibi loading rule above).
 - Other mushrooms' chibi assets are fetched lazily: on roster open (preview thumbnail only) or on character switch.
-- One chibi spritesheet (4 directions × 6 walk frames × 2 idle frames = 32 frames at `64x64`) packs to roughly `512x512` PNG, target ≤ 90 KB after pngquant.
-- If a mushroom has no chibi PNG yet, the field uses a placeholder silhouette and logs `home_field_asset_failed` for visibility, but does not error out (chibi is critical → falls through to error fallback unless a placeholder exists; the placeholder is committed as `characters/_placeholder/idle_down.png` and is the only chibi the validator allows as a fallback).
+- If a mushroom has no chibi PNG yet, the field uses a placeholder silhouette and logs `home_field_asset_failed` for visibility, but does not error out (chibi is critical → falls through to error fallback unless a placeholder exists; the placeholder is committed as `characters/_placeholder/spritesheet.png` and is the only chibi the validator allows as a fallback).
+
+Chibi spritesheet layout (locked v1):
+
+- Each character ships **one** spritesheet at `web/public/home-field/characters/<mushroom_id>/spritesheet.png`.
+- Canvas size: `512 × 256` (8 cols × 4 rows of `64×64` frames).
+- Phaser loader: `this.load.spritesheet(chibiKey, url, { frameWidth: 64, frameHeight: 64 })`.
+- Row order (top to bottom): `down`, `up`, `left`, `right`.
+- Column order (left to right) per row: 2 idle frames + 6 walk frames = 8 total.
+- Frame indices map to Phaser animation states:
+
+| Animation | Direction | Phaser key | Frame range | fps |
+|---|---|---|---|---|
+| idle | down | `chibi_idle_down` | `0..1` | 2 |
+| walk | down | `chibi_walk_down` | `2..7` | 10 |
+| idle | up | `chibi_idle_up` | `8..9` | 2 |
+| walk | up | `chibi_walk_up` | `10..15` | 10 |
+| idle | left | `chibi_idle_left` | `16..17` | 2 |
+| walk | left | `chibi_walk_left` | `18..23` | 10 |
+| idle | right | `chibi_idle_right` | `24..25` | 2 |
+| walk | right | `chibi_walk_right` | `26..31` | 10 |
+
+- Diagonal movement uses `atan2(dy, dx)` quantized to the 4 cardinals; ties prefer horizontal (left/right are more visually distinct than up/down at 64×64).
+- Target packed size: ≤ 100 KB per spritesheet after `pngquant --quality=70-85` + `oxipng -o4`.
+- The validator enforces canvas dimensions, frame count, and pngquant freshness.
 
 Terrain tiles for v1:
 
@@ -944,11 +1045,17 @@ Recommended package alias:
 
 Use imagegen for raw bitmap outputs.
 
+Style anchor passing:
+
+- The locked style anchor lives at `.agent/home-field-workspace/style-anchor.png`. Its **description** — palette hex codes, light direction, outline weight, shadow style, ambient mood — is committed to `app/shared/home-field/home-field-style-anchor.json` and templated into every prompt by `next-home-field-image-prompts.js`.
+- If the imagegen tool supports inline reference images, pass the anchor PNG too; otherwise the text description in the prompt carries the constraint.
+- The anchor is regenerated only when the canon direction in `docs/design-requirements.md` changes; otherwise it stays stable for the lifetime of the v1 batch.
+
 Rules:
 
 - Save raw images exactly at the `sourcePath`.
 - Do not save raw images under `web/public`.
-- For transparent assets, request transparent PNG when possible. If the generator returns a flat background, process it locally before app-facing output.
+- For transparent assets, request transparent PNG when possible. If the generator returns a flat background, process it locally with the chroma-key helpers in `app/scripts/lib/bitmap-image-toolkit.js` (same path used by the artifact pipeline; do not reinvent).
 - For terrain tiles, request seamless edges, but still validate tile seams manually on contact sheet.
 - For animated effects, generate either:
   - a spritesheet directly; or
@@ -961,6 +1068,36 @@ Agent raw naming:
 .agent/home-field-workspace/raw/{asset_id}.frame_00.source.png
 .agent/home-field-workspace/raw/{asset_id}.frame_01.source.png
 ```
+
+### Step 3.5 — Record Provenance
+
+Every approved app-facing PNG gets an entry in `app/shared/home-field/home-field-image-metadata.json`. Schema mirrors the artifact and season pipelines (`schemaVersion`, `generatedAt`, `status`, `policy`, `entryCount`, `metadataHash`, `entries[]`):
+
+```json
+{
+  "schemaVersion": 1,
+  "generatedAt": "<ISO date>",
+  "status": "approved-production-baseline",
+  "policy": {
+    "runtimeUsesApprovedOnly": true,
+    "temporaryCandidatesLocation": ".agent/home-field-workspace/",
+    "productionImageLocation": "web/public/home-field/"
+  },
+  "entryCount": <int>,
+  "metadataHash": "<hash>",
+  "entries": [
+    {
+      "id": "grass_base_01",
+      "status": "approved",
+      "outputPath": "web/public/home-field/terrain/grass_base_01.png",
+      "png": { "width": 256, "height": 256, "size": <bytes>, "sha256": "<hash>" },
+      "asset": { "id": "grass_base_01", "type": "terrain", "promptKey": "terrain_grass_base_01" }
+    }
+  ]
+}
+```
+
+Add `npm run game:home-field:provenance:generate` and `:provenance:check` aliases mirroring the artifact pipeline. The deploy gate (`game:home-field:release-check`) fails if any asset declared in `home-field-assets.json` is missing a provenance entry or has a stale sha256.
 
 ### Step 4 — Produce App-Facing Assets
 
@@ -1267,9 +1404,9 @@ Changing the coordinate system mid-implementation is the highest-risk class of m
 
 ### Schema Validation At Boot
 
-- The renderer parses `home-field-map.json` and `home-field-assets.json` through a Zod (or `@sinclair/typebox`) schema on mount, before booting Phaser.
+- The renderer parses `home-field-map.json` and `home-field-assets.json` through the same validator the CLI uses. **No new schema-library dependency** — the existing artifact/season pipelines use direct field checks in plain JS (see `app/scripts/lib/bitmap-image-toolkit.js`'s `checkProvenance` pattern). Mirror that: one shared `app/shared/home-field/home-field-validator.js` exporting `validateMap(map)`, `validateAssets(assets)` returning `{ ok, errors[] }`.
 - Validation failure routes the user to the error fallback and logs `home_field_fallback` with `reason: "schema"`.
-- The same schema is used by `validate-home-field-assets.js` so CLI and runtime cannot diverge.
+- The same validator is used by `validate-home-field-assets.js` (CLI) and the runtime so CLI and runtime cannot diverge.
 - CI runs `npm run game:home-field:validate` on every PR that touches `app/shared/home-field/**` or `web/public/home-field/**`.
 
 ### Asset Budget
@@ -1534,33 +1671,44 @@ HOME_FIELD_FORCE_FALLBACK=false
 
 Production rollout order:
 
-1. deploy assets/metadata/scripts only;
-2. enable static preview for internal testing;
-3. enable Phaser hub for a small production slice;
-4. keep fallback dashboard path for at least one release;
-5. remove old primary home only after home-to-arena telemetry is healthy.
+1. deploy assets/metadata/scripts only (`HOME_FIELD_ENABLED=false`);
+2. enable Phaser hub for the development environment first;
+3. enable for production for internal testers (`HOME_FIELD_ENABLED=true`);
+4. keep `HOME_FIELD_FORCE_FALLBACK=false` set as a kill switch — flipping to `true` rolls everyone back to the legacy dashboard without a deploy;
+5. keep fallback dashboard path for at least one release after general availability.
+
+Kill / removal criteria for the legacy dashboard:
+
+- **Activation parity**: `home_field_arena_activated` rate ≥ 95% of the pre-launch `start_run` rate, measured per active user per day, for **7 consecutive days**.
+- **Fallback rate**: `home_field_fallback` rate < 1% of `home_field_initialized` (sampled) for 7 days.
+- **No active support escalations** mentioning the hub for 7 days.
+
+Only after all three conditions hold is the legacy `HomeScreen.js` dashboard path deleted. Until then it remains wired through the `HOME_FIELD_FORCE_FALLBACK` flag.
 
 ## Game Requirement IDs
 
-Per `mushroom-master/AGENTS.md`, every behavioral test must carry a `[Req X-Y]` prefix tied to a section in `docs/game-requirements.md`. The hub introduces a new section. Add these IDs to `docs/game-requirements.md` in Phase 0 before any test is written:
+Per `mushroom-master/AGENTS.md`, every behavioral test must carry a `[Req X-Y]` prefix tied to a section in `docs/game-requirements.md`. Sections 1–14 are taken; the hub introduces **Section 15 — Home Field Hub**. Add these IDs to `docs/game-requirements.md` in Phase 0 before any test is written:
 
 | ID | Requirement |
 |---|---|
-| `11-A` | Home renders the selected mushroom's chibi at the configured spawn. |
-| `11-B` | Arena entrance and Journey entrance are both visible inside the initial mobile viewport without scrolling. |
-| `11-C` | Tapping/clicking Arena starts a new run if no active run exists; resumes an active run if one exists. |
-| `11-D` | Arena is disabled and shows the `dailyLimitReached` state when `bootstrap.battleLimit.used >= bootstrap.battleLimit.limit`. |
-| `11-E` | Arena routes to the character picker when no active mushroom is selected. |
-| `11-F` | Tapping Journey opens the under-construction modal; no backend call fires. |
-| `11-G` | Walking the chibi into Arena's hotspot AABB surfaces the same Arena CTA as tapping the DOM button. |
-| `11-H` | Chibi cannot pass through collision rectangles declared in `home-field-map.json`. |
-| `11-I` | `prefers-reduced-motion` (or `player_settings.reduced_motion`) freezes ambient loops on their `stillFrameIndex` and replaces chibi walk with instant teleport. |
-| `11-J` | Language switch updates all hub text without reinitializing the Phaser scene. |
-| `11-K` | Duplicate Arena activation within `startingRun` is debounced; only one run is created per activation. |
-| `11-L` | Asset load failure (atlas, chibi, or schema) routes to the legacy dashboard start/resume path with `home_field_fallback` logged. |
-| `11-M` | `Telegram.WebApp.BackButton` closes the Journey modal and open drawers; otherwise it is hidden. |
+| `15-A` | Home renders the selected mushroom's chibi at the configured spawn. |
+| `15-B` | Arena entrance and Journey entrance are both visible inside the initial mobile viewport (`390x844`) without scrolling. |
+| `15-C` | Tapping/clicking Arena starts a new run if no active run exists; resumes an active run if one exists. |
+| `15-D` | Arena is disabled and shows the `dailyLimitReached` state when `bootstrap.battleLimit.used >= bootstrap.battleLimit.limit`. |
+| `15-E` | Arena routes to the character picker when no active mushroom is selected. |
+| `15-F` | Tapping Journey opens the under-construction modal; no backend call fires. |
+| `15-G` | Walking the chibi into Arena's hotspot AABB surfaces the same Arena CTA as tapping the DOM button. |
+| `15-H` | Chibi cannot pass through collision rectangles declared in `home-field-map.json`. |
+| `15-I` | `prefers-reduced-motion` (or `player_settings.reduced_motion`) freezes ambient loops on their `stillFrameIndex` and replaces chibi walk with instant teleport. |
+| `15-J` | Language switch updates all hub text without reinitializing the Phaser scene. |
+| `15-K` | Duplicate Arena activation within `startingRun` is debounced; only one run is created per activation. |
+| `15-L` | Asset load failure (atlas, chibi, or schema) routes to the legacy dashboard start/resume path with `home_field_fallback` logged. |
+| `15-M` | `Telegram.WebApp.BackButton` closes the Journey modal and open drawers; otherwise it is hidden. |
+| `15-N` | After a battle/run completes, the user returns to the hub (not the legacy dashboard) with the chibi at the configured post-battle spawn. |
 
-E2E and screenshot specs covering the hub use these IDs (e.g. `test('[Req 11-B] mobile viewport shows Arena, Journey, and chibi', ...)`). Tests for the hub without `[Req 11-X]` prefix fail review.
+E2E and screenshot specs covering the hub use these IDs (e.g. `test('[Req 15-B] mobile viewport shows Arena, Journey, and chibi', ...)`). Tests for the hub without `[Req 15-X]` prefix fail review.
+
+New spec file: `tests/game/home-field.spec.js`. Reuse helpers from `tests/game/helpers.js` (`bootRun`, `freshDb`, `createPlayer`) and `tests/game/screenshot-capture.js` (`captureScreenshot`, `assertImagesLoaded`). Take dual screenshots by calling `page.setViewportSize({width:375,height:667})` then `captureScreenshot()`, then `page.setViewportSize({width:1280,height:800})` then `captureScreenshot()` again.
 
 `docs/user-flows.md` Flow B Step 1 is rewritten in Phase 0 to describe the field hub: visible elements, user actions, expected assertions. The new step text is reviewed alongside this plan before any UI work begins.
 
@@ -1692,10 +1840,24 @@ Completion condition:
 
 ### Phase 5 — Dashboard Migration
 
-- Move existing roster/run history/leaderboard/friends widgets into:
-  - compact field overlays;
-  - bottom drawer;
-  - side drawer on desktop.
+Existing widgets in `web/src/pages/HomeScreen.js` to migrate (from the current dashboard composition):
+
+- Active mushroom portrait + level + mycelium progress → top-left nameplate overlay (already in hub composition)
+- "Start Game" / "Resume Game" button → folded into Arena hotspot (already in hub composition)
+- Spore count HUD → top-right corner overlay
+- Battle limit `X/10` pill → top-right, beside spore count
+- Recent game run history → bottom drawer ("History" tab), 5 entries
+- Friends list (`HomeSocialSidebar`) → side drawer ("Friends" tab) on mobile, side panel on desktop
+- Leaderboard → side drawer ("Leaderboard" tab) on mobile, side panel on desktop
+- Stats popover → drawer's "Stats" tab
+- Roster (mushroom switcher) → modal opened via Arena's "Choose a mushroom" CTA or a small switcher icon
+- Achievements/season rank section → drawer's "Achievements" tab
+
+Detailed migration steps:
+
+- Lift each widget into a `<Teleport>`'d drawer or overlay component; do not rewrite the widget itself.
+- The drawer container is a new component `HomeFieldDrawer.js` with tabs for History / Friends / Leaderboard / Stats / Achievements.
+- Update emits: the hub forwards `start-run`, `resume-run`, `abandon-run`, `add-friend`, `challenge-friend`, `accept-challenge`, `decline-challenge`, `load-run-summary`, `select-mushroom`, `switch-portrait`, `switch-preset` from the drawer up to the parent — same emits the current `HomeScreen.js` already exposes.
 - Remove duplicated "Start Game" card once Arena interaction is reliable.
 
 Completion condition:
@@ -1783,6 +1945,40 @@ Pixel coordinates against the locked `1792 × 1024` world (`tileSize: 256`). Til
 ```
 
 Aspect-ratio note: the world is `1792 × 1024` (aspect 1.75). Telegram portrait viewports are taller than wide (e.g. `390 × 844`, aspect 0.46). The renderer fits the world to the viewport's *width* by default and crops top/bottom outside the camera's `mobileSafeFrame`. The `mobileSafeFrame` is the rectangle in world space that **must** be on-screen at all times — by construction it contains spawn, both hotspots, and the chibi nameplate.
+
+## Development And Debug Tooling
+
+- **Debug overlay**: when the URL contains `?home-field-debug=1`, the scene draws collision rectangles (red outline), hotspot rectangles (yellow outline + label), camera safe-frame (cyan outline), and a HUD line at the top showing `chibi(x,y) target(x,y) facing zoom fps`. Saves ~3 hours per debugging session vs. inferring from screenshots.
+- **State machine inspector**: when the URL contains `?home-field-inspect=1` and the build is dev-only, `@xstate/inspect` is wired so the state chart can be opened in a separate browser tab.
+- **Dev-only console helpers**: `window.__homeField = { scene, camera, state, teleport(x,y), simulateReducedMotion(bool) }` for fast iteration.
+
+## Concurrency And Edge Cases
+
+The XState chart (`renderer/home-field-state.js`) must cover these explicitly; otherwise edge bugs ship:
+
+- **Tap Arena while chibi mid-walk to Journey**: cancel current movement, transition to `activatingArena`, debounce duplicate activations during `startingRun`.
+- **Telegram BackButton during scene load**: deferred until `readyIdle`; queued back press is dropped if `errorFallback` fires first.
+- **Drawer opens while chibi mid-walk**: chibi continues walking to current target, then idles; `scene.input.enabled = false` while drawer is open so no new taps register.
+- **Locale switch mid-walk**: text overlays re-render in place; chibi position, camera, animation state are preserved.
+- **Reduced-motion toggled at runtime**: ambient loops freeze immediately; chibi mid-walk teleports to current target.
+- **Asset failure after initial render** (e.g. an effect sprite 404 on lazy fetch): scene continues without that effect; `home_field_asset_failed` logged.
+
+## Telegram Mini App Hardening
+
+In addition to the contract section above:
+
+- **`Telegram.WebApp.disableVerticalSwipes()`** is called when any drawer is open so the user can scroll inside the drawer without triggering Telegram's pull-to-close gesture; re-enabled on drawer close.
+- **`Telegram.WebApp.HapticFeedback.impactOccurred('light')`** fires on Arena/Journey hotspot activation (mobile only, gated on `Telegram.WebApp.HapticFeedback` existence).
+- The hub does **not** call `Telegram.WebApp.close()`, `Telegram.WebApp.openTelegramLink()`, or any payment APIs.
+
+## Visual And Scale Lock
+
+- **Lighting**: fixed perpetual dusk in v1. No day/night cycle, no time-of-day variation. One lighting direction across all art (top-left key light, ambient violet/amber rim).
+- **Chibi display height**: ~96 px tall on mobile (with `zoom ≈ 1.0`), scaling with camera zoom. The 64×64 spritesheet frame includes ~16 px of headroom and ~12 px of footroom so the visible silhouette is ~36 px tall in source.
+- **Mushroom prop visible height**: 80–140 px range in source; place small caps in foreground, tall stems near edges. Caps must read as taller than the chibi to make mushrooms feel imposing.
+- **Walk animation**: 10 fps (6 frames over 0.6 s loop), distinct from ambient 8 fps loops.
+- **Spore motes density**: ≤ 12 mote sprites visible at once, drifting upward at 30 px/s, recycled when off-screen.
+- **"Return to entrances" affordance**: visible only when chibi distance from spawn > 400 px; hidden inside the spawn deadzone.
 
 ## Risks
 

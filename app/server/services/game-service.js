@@ -4,6 +4,7 @@ import { dayKey, nextUtcReset } from '../lib/utils.js';
 import { getBattleHistory } from './battle-service.js';
 import { getPlayerState } from './player-service.js';
 import { getActiveGameRun, getActiveGameRuns, getGameRunHistory } from './run-service.js';
+import { getHomeFieldConfig } from './home-field-config.js';
 
 export { validateLoadoutItems } from './loadout-utils.js';
 export { simulateBattle } from './battle-engine.js';
@@ -82,6 +83,7 @@ export async function getBootstrap(playerId) {
       nextResetAt: nextUtcReset(new Date()).toISOString()
     },
     battleHistory: history,
-    gameRunHistory: runHistory
+    gameRunHistory: runHistory,
+    homeField: getHomeFieldConfig()
   };
 }

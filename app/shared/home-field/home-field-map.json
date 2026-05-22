@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "world": { "width": 1792, "height": 1024, "tileSize": 256 },
+  "spawn": { "x": 896, "y": 760, "facing": "up" },
+  "camera": {
+    "initialTarget": { "x": 896, "y": 512 },
+    "mobileSafeFrame": { "x": 72, "y": 80, "w": 1648, "h": 800 },
+    "keepVisible": ["arena", "journey", "player"]
+  },
+  "layers": [
+    {
+      "id": "terrain",
+      "type": "tileLayer",
+      "z": 0,
+      "tiles": [
+        { "assetId": "grass_base_01", "x": 0, "y": 0 },
+        { "assetId": "grass_base_02", "x": 256, "y": 0 },
+        { "assetId": "grass_base_01", "x": 512, "y": 0 },
+        { "assetId": "grass_base_02", "x": 768, "y": 0 },
+        { "assetId": "grass_base_01", "x": 1024, "y": 0 },
+        { "assetId": "grass_base_02", "x": 1280, "y": 0 },
+        { "assetId": "grass_base_01", "x": 1536, "y": 0 },
+        { "assetId": "grass_base_02", "x": 0, "y": 256 },
+        { "assetId": "grass_flowers_01", "x": 256, "y": 256 },
+        { "assetId": "grass_base_02", "x": 512, "y": 256 },
+        { "assetId": "path_destination_row", "x": 768, "y": 256 },
+        { "assetId": "grass_base_01", "x": 1024, "y": 256 },
+        { "assetId": "grass_flowers_01", "x": 1280, "y": 256 },
+        { "assetId": "grass_base_02", "x": 1536, "y": 256 },
+        { "assetId": "grass_base_01", "x": 0, "y": 512 },
+        { "assetId": "grass_base_02", "x": 256, "y": 512 },
+        { "assetId": "path_dirt_straight", "x": 512, "y": 512 },
+        { "assetId": "path_spore_glow", "x": 768, "y": 512 },
+        { "assetId": "path_dirt_straight", "x": 1024, "y": 512 },
+        { "assetId": "grass_base_02", "x": 1280, "y": 512 },
+        { "assetId": "grass_base_01", "x": 1536, "y": 512 },
+        { "assetId": "grass_base_02", "x": 0, "y": 768 },
+        { "assetId": "grass_flowers_01", "x": 256, "y": 768 },
+        { "assetId": "grass_base_01", "x": 512, "y": 768 },
+        { "assetId": "grass_base_02", "x": 768, "y": 768 },
+        { "assetId": "grass_base_01", "x": 1024, "y": 768 },
+        { "assetId": "grass_flowers_01", "x": 1280, "y": 768 },
+        { "assetId": "grass_base_02", "x": 1536, "y": 768 }
+      ]
+    },
+    {
+      "id": "objects",
+      "type": "objectLayer",
+      "z": 10,
+      "objects": [
+        { "id": "arena", "assetId": "arena_mushroom_arch", "x": 1280, "y": 320, "hotspotId": "arena" },
+        { "id": "arena_signpost", "assetId": "arena_signpost_blank", "x": 1100, "y": 380, "labelKey": "homeArenaExit" },
+        { "id": "journey", "assetId": "journey_gate_under_construction", "x": 512, "y": 320, "hotspotId": "journey" },
+        { "id": "journey_signpost", "assetId": "journey_signpost_blank", "x": 692, "y": 380, "labelKey": "homeJourneyExit" },
+        { "id": "lantern_left", "assetId": "mycelium_lantern_amber", "x": 1080, "y": 360 },
+        { "id": "lantern_right", "assetId": "mycelium_lantern_amber", "x": 1480, "y": 360 },
+        { "id": "mushroom_cluster_amber_1", "assetId": "mushroom_cluster_small_amber", "x": 320, "y": 720 },
+        { "id": "mushroom_cluster_violet_1", "assetId": "mushroom_cluster_small_violet", "x": 1600, "y": 720 },
+        { "id": "mushroom_cluster_tall_1", "assetId": "mushroom_cluster_tall_green", "x": 192, "y": 480 },
+        { "id": "mushroom_cluster_tall_2", "assetId": "mushroom_cluster_tall_green", "x": 1600, "y": 480 },
+        { "id": "mushroom_cap_red_1", "assetId": "mushroom_cap_red_spotted", "x": 448, "y": 880 },
+        { "id": "fallen_branch", "assetId": "fallen_branch_mycelium", "x": 1344, "y": 880 }
+      ]
+    },
+    {
+      "id": "effects",
+      "type": "effectLayer",
+      "z": 20,
+      "effects": [
+        { "assetId": "arena_portal_shimmer", "x": 1280, "y": 320, "state": "idle" },
+        { "assetId": "journey_blocked_rustle", "x": 512, "y": 320, "state": "idle" },
+        { "assetId": "spore_motes_loop", "x": 896, "y": 512, "state": "idle" },
+        { "assetId": "mycelium_path_pulse", "x": 768, "y": 512, "state": "idle" }
+      ]
+    }
+  ],
+  "collision": [
+    { "id": "topForest", "x": 0, "y": 0, "w": 1792, "h": 96 },
+    { "id": "leftMushrooms", "x": 0, "y": 192, "w": 224, "h": 768 },
+    { "id": "rightMushrooms", "x": 1568, "y": 192, "w": 224, "h": 768 },
+    { "id": "bottomEdge", "x": 0, "y": 960, "w": 1792, "h": 64 },
+    { "id": "arenaArchBase", "x": 1216, "y": 320, "w": 192, "h": 96 },
+    { "id": "journeyGateBase", "x": 448, "y": 320, "w": 192, "h": 96 }
+  ],
+  "hotspots": [
+    {
+      "id": "arena",
+      "action": "arena",
+      "labelKey": "homeArenaExit",
+      "rect": { "x": 1024, "y": 128, "w": 512, "h": 256 }
+    },
+    {
+      "id": "journey",
+      "action": "journey",
+      "labelKey": "homeJourneyExit",
+      "rect": { "x": 256, "y": 128, "w": 512, "h": 256 }
+    }
+  ]
+}

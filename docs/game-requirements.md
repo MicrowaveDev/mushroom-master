@@ -356,3 +356,35 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **14-G.** Each mushroom has exactly **3 starter preset variants** defined in `STARTER_PRESET_VARIANTS` (in `app/server/game-data.js`). The first is always `id: 'default'` with `requiredLevel: 0`. Variants are unlocked when `computeLevel(mycelium).level >= variant.requiredLevel`. All variants use two price-1 items so the total preset cost stays at 2, satisfying the `[Req 4-N]` budget ceiling. The active preset is stored in `player_mushrooms.active_preset` (default `'default'`). `startGameRun` reads the active preset and seeds its two items at `(0,0)` and `(1,0)` in round 1 instead of the character's signature default. If the stored preset id is unknown it falls back to `default` without error. `getPlayerState` returns `presets[]` per mushroom, each with an `unlocked` boolean and `activePreset`. `PUT /api/mushroom/:id/preset { presetId }` validates the level gate and persists the choice; it returns 403 if level is too low, 400 for an unknown preset id, and 404 for an unknown mushroom. Ghosts always receive the character's default preset regardless of player selection.
 
 - **14-H.** Mycelium accumulation and mushroom level are **progression-only, not stat-scaling**. Earning mycelium and advancing levels must not change: combat stats (health, attack, speed, defense), passive or active ability behavior, shop affinity weights, ghost opponent budget or difficulty, or any direct numerical combat modifier. The exhaustive list of player-facing effects of mycelium accumulation is: level number, tier badge, portrait variant unlocks ([Req 14-F]), starter preset variant unlocks ([Req 14-G]), wiki section unlocks ([Req 14-D]), and character shop-item eligibility ([Req 4-P]–[Req 4-T]). Any future feature that grants a stat bonus, ability change, or other progression effect outside this list must update this requirement first.
+
+## 15. Home Field Hub
+
+The home screen is a walkable in-game field hub (see [`docs/home-field-ingame-plan.md`](home-field-ingame-plan.md) and [`docs/adr/0001-home-field-renderer.md`](adr/0001-home-field-renderer.md)). The hub is gated by the `HOME_FIELD_ENABLED` server flag; when disabled, the legacy dashboard renders instead. Map/asset metadata lives in `app/shared/home-field/`, production art lives under `web/public/home-field/`, and the runtime renderer is Phaser 3.88.x loaded via dynamic import.
+
+- **15-A.** Home renders the **selected mushroom's chibi sprite** at the configured spawn point declared in `home-field-map.json`. If the player has no active mushroom (`player_active_character.mushroom_id` null), the hub still renders but Arena shows the `noActiveMushroom` locked state and routes to the character picker.
+
+- **15-B.** On initial render at the mobile viewport (`390 × 844`), the **Arena entrance, Journey entrance, and selected chibi are all visible inside the declared `camera.mobileSafeFrame` without scrolling**. The same composition holds on desktop (`1440 × 900`).
+
+- **15-C.** Tapping/clicking the Arena entrance (either the DOM hotspot button or walking the chibi into the Arena hotspot AABB) **starts a new run** when no active run exists for the selected mushroom (emit `start-run`, `'solo'`) and **resumes an active run** when one exists (`state.gameRun = activeRun; emit('resume-run')`). The CTA copy reflects the state.
+
+- **15-D.** When `bootstrap.battleLimit.used >= bootstrap.battleLimit.limit`, the Arena entrance renders the **`dailyLimitReached` locked state**: arch desaturated, lock icon overlay, lantern art dimmed; the DOM button label uses `homeArenaDailyLimit` and is disabled. Tapping opens an explanation modal but never fires `start-run`/`resume-run`.
+
+- **15-E.** When the player has no active mushroom, Arena renders the **`noActiveMushroom` locked state**: arch slightly desaturated, "?" silhouette under the arch; the DOM button label uses `homeArenaPickMushroom` and routes to the character picker on activation.
+
+- **15-F.** Tapping the Journey entrance opens the **under-construction modal** with the `homeJourneyUnderConstruction` localized message. No backend call fires. Telegram BackButton closes the modal.
+
+- **15-G.** Walking the chibi into the Arena hotspot AABB declared in `home-field-map.json` surfaces the **same Arena CTA** as tapping the DOM button (idempotent activation through both paths).
+
+- **15-H.** The chibi cannot pass through any **collision AABB** declared in `home-field-map.json`. On a stop-on-collision event the chibi's `target` is cleared and `facing` updates to the closest cardinal direction.
+
+- **15-I.** When `prefers-reduced-motion: reduce` matches or `player_settings.reduced_motion` is true, **all ambient animation loops freeze on their declared `stillFrameIndex`** and the chibi walk animation is replaced by an instant teleport to the target (no walk cycle, no camera lerp).
+
+- **15-J.** Switching language **updates every hub text overlay** (chibi nameplate, hotspot labels, daily-limit pill, drawer tabs, Journey modal) **without reinitializing the Phaser scene**. World sprites, camera position, and chibi position are preserved.
+
+- **15-K.** While the home-hub state machine is in `startingRun`, **duplicate Arena activation is debounced** — repeated taps/keypresses during the same `startingRun` are dropped. Server-side, only one `start-run` request fires per activation.
+
+- **15-L.** When the home-field validator fails, the atlas fetch fails, or `HOME_FIELD_FORCE_FALLBACK=true`, the client renders the **legacy dashboard start/resume path** on the same route and logs `home_field_fallback` with `reason ∈ {schema, atlas, webgl, timeout, forced}`. The legacy path remains a real working code path through at least one release after general availability.
+
+- **15-M.** `Telegram.WebApp.BackButton` is wired to the drawer/modal stack: it closes the Journey modal first, then any open drawer; otherwise it is hidden. `Telegram.WebApp.MainButton` is not used on the hub screen.
+
+- **15-N.** Returning from a battle (run resolution or abandonment) lands the user **back on the hub**, not the legacy dashboard. The chibi spawns at the configured post-battle position (same as initial spawn in v1) and the hub re-fetches bootstrap so the daily-limit pill, mycelium, and roster reflect the run's outcome.

@@ -19,6 +19,10 @@ tmp/social-preview-variations/*
 .agent/season-image-workspace/raw/
 .agent/season-image-workspace/processed/
 .agent/season-image-workspace/review/
+.agent/home-field-workspace/raw/
+.agent/home-field-workspace/processed/
+.agent/home-field-workspace/review/
+.agent/home-field-workspace/manifests/
 .agent/key-art-experiments/
 .agent/tasks/artifact-imagegen-regeneration/raw/
 .agent/tasks/artifact-simple-regeneration/raw/
