@@ -1132,6 +1132,141 @@ Add lightweight client logs/metrics for:
 
 Keep logs privacy-safe. Do not store raw movement paths unless there is a specific product need.
 
+## Database And Persistence Plan
+
+The home field should be **mostly static/versioned content**, not database content. The database should store player-specific state and analytics only.
+
+### Existing Persistence Model
+
+Current relevant tables:
+
+- `players`: identity, Telegram fields, display name, `lang`, resources, rating, total stats.
+- `player_settings`: persistent preferences such as `lang`, `reduced_motion`, battle speed, replay speed.
+- `player_active_character`: selected mushroom/chibi source.
+- `player_mushrooms`: owned/progressed mushrooms, portrait/preset choices, mycelium progression.
+- `game_runs` / `game_run_players` / run tables: active and historical battle state.
+- `client_events`: lightweight telemetry events already supported by `/api/client-events`.
+
+Current `/api/bootstrap` already returns enough to initialize the home field:
+
+- active player;
+- settings and locale;
+- active mushroom;
+- progression and active portrait/preset data;
+- active game run(s);
+- daily battle limit;
+- recent history.
+
+### What Stays Out Of The Database
+
+Do **not** store these in Postgres for v1:
+
+- terrain tiles;
+- prop/exits/effect definitions;
+- map layout;
+- collision rectangles;
+- camera safe frames;
+- animation frame metadata;
+- image generation prompts;
+- Phaser/Tiled object-layer metadata.
+
+These belong in versioned files:
+
+```text
+app/shared/home-field/home-field-assets.json
+app/shared/home-field/home-field-map.json
+app/shared/home-field/home-field-prompts.json
+web/public/home-field/**
+```
+
+Reason: these are build/content assets, not player data. Keeping them in files makes review, caching, rollback, CDN/static serving, and agent-generated contact sheets much simpler.
+
+### What The Database Should Store In V1
+
+V1 does not need a new table if the home field is just a navigation hub.
+
+Use existing tables:
+
+- selected chibi: `player_active_character.mushroom_id`;
+- language: `player_settings.lang` and `players.lang`;
+- reduced motion: `player_settings.reduced_motion`;
+- active run/resume state: existing `game_run*` tables;
+- Journey disabled state: static config/content, not user data;
+- home-field telemetry: `client_events`.
+
+Recommended client events:
+
+| Event | Detail |
+|---|---|
+| `home_field_initialized` | `{ renderer, mapVersion, assetVersion }` |
+| `home_field_fallback` | `{ reason }` |
+| `home_field_asset_failed` | `{ assetId, path }` |
+| `home_field_arena_activated` | `{ method: "hotspot"|"button"|"keyboard", activeRun: boolean }` |
+| `home_field_journey_opened` | `{ method }` |
+| `home_field_duplicate_activation_blocked` | `{ action: "arena" }` |
+
+Do not store raw movement paths or per-frame position data.
+
+### Optional Future Table
+
+Add a table only if the hub gains durable personal state, such as tutorial completion, last hub position, unlocked decorations, Journey unlocks, NPC task state, or player-customized field layout.
+
+Proposed table:
+
+```text
+player_home_state
+  player_id TEXT PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE
+  map_version TEXT NOT NULL DEFAULT 'home_field_v1'
+  last_x INTEGER
+  last_y INTEGER
+  last_facing TEXT NOT NULL DEFAULT 'down'
+  tutorial_flags_json TEXT NOT NULL DEFAULT '{}'
+  unlocked_nodes_json TEXT NOT NULL DEFAULT '{}'
+  decoration_state_json TEXT NOT NULL DEFAULT '{}'
+  updated_at TEXT NOT NULL
+```
+
+Rules:
+
+- Do not create this table just to remember where the chibi stood after a navigation session.
+- Add it when at least one user-visible durable feature requires it.
+- If added, expose it through `/api/bootstrap` as `homeState`.
+- Writes should be debounced and event-like, not per-frame:
+  - save on exit activation;
+  - save on scene unmount;
+  - save on tutorial completion;
+  - save on decoration/Journey unlock change.
+
+### Migration And Production Notes
+
+- The app currently uses Sequelize model definitions plus `sequelize.sync()` and a few `ensureColumnExists()` calls.
+- Production is PostgreSQL via `DATABASE_URL`.
+- Before adding any new home table, prefer a small Sequelize model and an idempotent `ensureColumnExists`/index path that is safe for existing production data.
+- Long-term, `docs/post-review-followups.md` already calls out replacing `sequelize.sync()` with versioned migrations; the home field should not make that harder.
+- If `player_home_state` is added, include an index-free primary-key lookup only. It should be fetched by `player_id` during bootstrap and should not be on hot battle paths.
+
+### Bootstrap Shape If Future State Exists
+
+If `player_home_state` becomes necessary, `/api/bootstrap` should include:
+
+```json
+{
+  "homeField": {
+    "enabled": true,
+    "renderer": "phaser",
+    "mapVersion": "home_field_v1",
+    "assetVersion": "home_assets_v1",
+    "state": {
+      "lastPosition": { "x": 800, "y": 740, "facing": "up" },
+      "tutorialFlags": {},
+      "unlockedNodes": {}
+    }
+  }
+}
+```
+
+For v1 without a new table, return only config/version info or keep it in `/api/app-config`; derive player-specific home state from existing bootstrap fields.
+
 ### Rollout
 
 Ship behind a config flag first:
@@ -1158,6 +1293,7 @@ Production rollout order:
 - Create asset prompt worksheet under the same doc.
 - Decide camera style and map dimensions.
 - Decide renderer, coordinate system, asset budget, and rollout flag names from **Pre-Implementation Decisions**.
+- Confirm v1 uses existing database state only and does not add `player_home_state`.
 - Pick initial art generation batch:
   - 8 terrain tiles
   - 8 props
@@ -1168,6 +1304,7 @@ Completion condition:
 
 - Plan approved and first asset list locked.
 - Renderer and metadata coordinate system are locked before scene code begins.
+- Database scope is locked: static map/assets in files; no new persistence unless durable home state is introduced.
 
 ### Phase 2 — Asset Generation Pipeline
 
@@ -1328,6 +1465,11 @@ Completion condition:
   - forced fallback flag shows the old reliable start/resume path;
   - simulated asset-load failure does not blank the home screen;
   - duplicate Arena activation does not create two runs.
+- Add database/persistence checks:
+  - `/api/bootstrap` contains all data needed to choose the active chibi;
+  - no new write occurs on simple movement/tap-to-move;
+  - `client_events` records home-field telemetry without raw movement paths;
+  - locale and reduced-motion values continue to come from `player_settings`.
 
 Completion condition:
 
