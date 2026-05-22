@@ -52,7 +52,14 @@ Sources reviewed:
 - [MDN Canvas basic animations](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations)
 - [MDN Pointer Events](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events)
 - [Phaser Camera docs](https://docs.phaser.io/phaser/concepts/cameras)
+- [Phaser ObjectLayer docs](https://docs.phaser.io/api-documentation/class/tilemaps-objectlayer)
+- [Phaser Tilemap docs](https://docs.phaser.io/api-documentation/3.88.2/class/tilemaps-tilemap)
+- [Phaser Animation docs](https://docs.phaser.io/phaser/concepts/animations)
 - [PixiJS ResizePlugin docs](https://pixijs.com/8.x/guides/components/application/resize-plugin)
+- [PixiJS Assets docs](https://pixijs.com/8.x/guides/components/assets)
+- [PixiJS performance tips](https://pixijs.com/8.x/guides/concepts/performance-tips)
+- [Tiled custom properties docs](https://doc.mapeditor.org/manual/custom-properties/)
+- [Tiled layers docs](https://doc.mapeditor.org/en/stable/manual/layers/)
 
 Relevant takeaways:
 
@@ -68,10 +75,61 @@ Relevant takeaways:
 - For responsive behavior, treat the field as a fixed **world coordinate system** with a viewport camera, not as arbitrary responsive HTML. Render by converting world coordinates to screen coordinates using scale + camera offset.
 - For mobile, avoid requiring scroll to discover exits. The initial camera must frame the lower chibi and both upper exits.
 - For desktop, do not simply stretch the whole field. Preserve the same composition and reveal extra side scenery or side drawers.
+- Phaser's Tiled object-layer model is a strong fit because Arena/Journey exits, spawn points, collision zones, camera anchors, signs, and effect emitters are naturally object-layer data.
+- Phaser's frame animation model fits chibi idle/walk states and ambient prop loops, as long as generated spritesheets declare exact frame dimensions.
+- Tiled custom properties can later author `action`, `labelKey`, `disabled`, `requires`, `ambient`, and `collision` data directly in the map. Mirror that shape in JSON now.
+- PixiJS is still a good lighter option if the home hub becomes mostly an animated illustration. Phaser is the better default if walking, triggers, collision, camera behavior, and future Journey gameplay matter.
+
+Updated recommendation after research:
+
+- **Use DOM or Node-canvas previews only for contact sheets, map previews, and a small UX proof.**
+- **Use Phaser for the production renderer once animated tilemaps/effects and walkable exits are in scope.**
+- Keep metadata Tiled-compatible from the first agent pass so the project can hand-author JSON now and migrate to Tiled later.
+
+## Game UX Research Conclusions
+
+The home field should optimize for three moments:
+
+1. **First frame clarity**: on load, the player sees their selected chibi, Arena, Journey, and the field identity without scrolling.
+2. **Immediate agency**: the first tap/click either moves the character or activates a clear entrance.
+3. **Fast battle intent**: Arena is the dominant destination. Journey is visible enough to tease expansion, but not equal in interaction weight while it is under construction.
+
+Practical UX rules:
+
+- Use click/tap-to-move as the primary control. It is more Telegram/mobile-friendly than virtual joysticks for this small hub.
+- Support keyboard movement on desktop, but do not design the UX around keyboard.
+- Make Arena reachable in one short move from spawn. The user should not need to wander before battle.
+- Keep Journey slightly secondary: visible on the destination row, visually marked as under construction, and non-blocking.
+- Use in-world labels/signs for Arena/Journey, plus invisible semantic DOM buttons over hotspots for accessibility and reliable tapping.
+- Add a "return to entrances" affordance before expanding the map beyond the initial viewport.
+- Keep home UI overlays minimal. Profile/resources/language/settings can live in compact corners or drawers, not in the walking lane.
+- Animate only what helps the scene feel alive or helps navigation:
+  - Arena portal shimmer;
+  - path pulse toward Arena;
+  - low-density spore motes;
+  - chibi idle/walk;
+  - Journey construction rustle.
+- Avoid high-frequency ambient motion. It will feel noisy in Telegram and can hurt battery/performance.
+- Respect reduced motion by freezing ambient loops and keeping only direct movement feedback.
+
+Efficient production UX target:
+
+```text
+Initial viewport
+  top-left: Journey gate, disabled/under-construction
+  top-right or top-center-right: Arena arch, warm and active
+  lower-middle: selected chibi spawn
+  center path: subtle grass/mycelium route from chibi to Arena
+  corners: compact app buttons, not dashboard cards
+```
+
+The best v1 is not a large explorable map. It is a polished, tiny hub where every pixel supports "this is my character, this is where I battle, more world is coming."
 
 ## Recommended HTML5 Architecture
 
-V1 renderer: DOM/CSS scene with data-driven world coordinates, but with an explicit engine-ready contract.
+V1 review renderer: DOM/CSS or Node-canvas preview with data-driven world coordinates.
+
+Production renderer recommendation: Phaser, unless the first animated prototype proves the hub will stay purely decorative.
 
 Core pieces:
 
@@ -84,7 +142,7 @@ HomeScreen.js
        └─ home-field-assets.json    # asset paths, dimensions, anchors
 ```
 
-Future engine target:
+Recommended production engine target:
 
 ```text
 HomeScreen.js
@@ -98,6 +156,50 @@ HomeScreen.js
 ```
 
 Do not encode scene rules directly in Vue templates. Vue owns app state, overlays, modal actions, and navigation; the field renderer owns world sprites, camera, animation, and collision. This boundary keeps the future engine swap realistic.
+
+Phaser-specific production shape:
+
+```text
+HomeFieldPhaserScene
+  preload()
+    load atlases/spritesheets from home-field-assets.json
+    load map JSON from home-field-map.json or Tiled export
+  create()
+    create tile layers
+    create object layers for exits, signs, collision, spawn, effects
+    create chibi sprite and idle/walk animations
+    create camera bounds, follow target, deadzone/safe-frame rules
+    register DOM overlay buttons for Arena/Journey hotspots
+  update(time, delta)
+    move chibi toward target
+    play/stop walk animation
+    resolve collision
+    update proximity/activation state
+```
+
+Use Phaser object layers for:
+
+- `spawn`;
+- `hotspots`;
+- `collision`;
+- `signs`;
+- `cameraAnchors`;
+- `effectEmitters`.
+
+Use tile layers for:
+
+- base grass;
+- paths;
+- decorative ground variation;
+- optional foreground/edge tiles.
+
+Use sprite/object layers for:
+
+- Arena arch;
+- Journey gate;
+- mushrooms, lanterns, props;
+- chibi;
+- ambient effects.
 
 Rendering model:
 
@@ -382,6 +484,57 @@ metadata/home-field-assets.json
 ## Agent Implementation Flow
 
 This section is written as the executable workflow for future agents. Follow it in order unless the user explicitly narrows the task.
+
+### Efficient Agent Flow Shape
+
+The most efficient flow is a vertical slice, not a broad asset dump. Each agent/task should produce a reviewable artifact that proves the next stage is worth doing.
+
+Recommended sequence:
+
+1. **UX Mapper Agent**
+   - Owns `home-field-map.json` and map preview.
+   - Places spawn, Arena, Journey, path, camera safe frames, collision, and hotspots.
+   - Produces `.agent/home-field-workspace/review/map-preview.png`.
+   - Acceptance gate: first frame shows chibi + Arena + Journey on mobile and desktop.
+
+2. **Asset Metadata Agent**
+   - Owns `home-field-assets.json` and `home-field-prompts.json`.
+   - Defines asset IDs, output paths, dimensions, animation states, prompt keys, and validation requirements.
+   - Produces a missing-asset queue from metadata.
+   - Acceptance gate: validation can fail clearly with actionable missing asset IDs.
+
+3. **Art Generation Agent**
+   - Uses imagegen only after metadata exists.
+   - Generates the minimum proof batch, not the whole scene.
+   - Stores raw outputs in `.agent/home-field-workspace/raw/`.
+   - Acceptance gate: contact sheet proves style, transparency, scale, and tile seams.
+
+4. **Asset Processing Agent**
+   - Crops, pads, optimizes, and spritesheets generated images.
+   - Writes only approved app-facing assets to `web/public/home-field/**`.
+   - Produces processing manifests and animation strip sheets.
+   - Acceptance gate: dimensions, alpha, frame counts, and metadata all validate.
+
+5. **Renderer Spike Agent**
+   - Renders the same map metadata in the target renderer.
+   - If animated effects remain in scope, prefer Phaser for this spike.
+   - Produces mobile and desktop screenshots plus a short note on FPS/responsiveness.
+   - Acceptance gate: user can tap/click to move, activate Arena, and see Journey disabled.
+
+6. **Game UX QA Agent**
+   - Adds focused E2E and screenshot coverage.
+   - Checks no-scroll initial frame, hotspot usability, reduced motion, language persistence, and battle-start compatibility.
+   - Acceptance gate: tests cover home-to-arena and under-construction Journey without relying on visual-only assertions.
+
+Agent batching rule:
+
+- One batch should contain at most one new risk category:
+  - map/layout risk;
+  - art style risk;
+  - animation risk;
+  - renderer/performance risk;
+  - integration/test risk.
+- If a batch mixes all of them, review becomes slow and mistakes hide inside "big progress."
 
 ### Agent Flow Source Of Truth
 
@@ -744,6 +897,8 @@ After the first asset proof passes review, create a minimal renderer spike in on
   - place Arena/Journey/chibi from metadata;
   - play `spore_motes_loop`;
   - keep DOM overlay buttons aligned with canvas hotspots.
+
+Default to Phaser for this spike if the user still wants animated tilemaps/effects. Use PixiJS only if the spike is intentionally focused on painterly sprite composition and ambient effects with very simple movement/collision.
 
 Completion condition:
 
