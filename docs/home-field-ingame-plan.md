@@ -379,6 +379,393 @@ metadata/home-field-assets.json
 - effect emitters
 - fallback labels
 
+## Agent Implementation Flow
+
+This section is written as the executable workflow for future agents. Follow it in order unless the user explicitly narrows the task.
+
+### Agent Flow Source Of Truth
+
+Before editing code or generating images, read:
+
+1. This document.
+2. `docs/design-requirements.md` for Mycelium visual canon and character identity.
+3. `docs/user-flows.md` before adding E2E/screenshot coverage.
+4. `AGENTS.md` for repo workflow and verification rules.
+
+Do not start by editing `HomeScreen.js`. The first implementation stage is the asset/metadata pipeline.
+
+### Agent-Owned File Sets
+
+The home-field work owns these paths:
+
+```text
+docs/home-field-ingame-plan.md
+web/public/home-field/
+app/shared/home-field/
+app/scripts/next-home-field-image-prompts.js
+app/scripts/produce-home-field-assets.js
+app/scripts/generate-home-field-contact-sheet.js
+app/scripts/validate-home-field-assets.js
+.agent/home-field-workspace/              # local ignored workspace
+```
+
+Do not mix home-field generated assets into artifact, season, achievement, or social-preview workspaces.
+
+Recommended production metadata paths:
+
+```text
+app/shared/home-field/home-field-assets.json
+app/shared/home-field/home-field-map.json
+app/shared/home-field/home-field-prompts.json
+```
+
+Recommended public asset paths:
+
+```text
+web/public/home-field/terrain/
+web/public/home-field/props/
+web/public/home-field/exits/
+web/public/home-field/characters/
+web/public/home-field/effects/
+web/public/home-field/atlases/
+```
+
+Recommended local workspace:
+
+```text
+.agent/home-field-workspace/
+  raw/
+  processed/
+  review/
+  manifests/
+```
+
+Add this workspace to `.gitignore` before generating raw images.
+
+### Step 1 — Define Metadata Schema
+
+Create `app/shared/home-field/home-field-assets.json` first. It should be the durable source for every generated asset, prompt, dimensions, collision intent, animation contract, and output path.
+
+Minimum asset schema:
+
+```json
+{
+  "version": 1,
+  "tileSize": 256,
+  "assets": [
+    {
+      "id": "grass_base_01",
+      "type": "terrain",
+      "role": "base_grass",
+      "promptKey": "terrain_grass_base_01",
+      "sourcePath": ".agent/home-field-workspace/raw/grass_base_01.source.png",
+      "outputPath": "web/public/home-field/terrain/grass_base_01.png",
+      "publicPath": "/home-field/terrain/grass_base_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "collision": "walkable",
+      "animation": null,
+      "status": "missing"
+    }
+  ]
+}
+```
+
+For animated assets:
+
+```json
+{
+  "id": "arena_portal_shimmer",
+  "type": "effect",
+  "role": "arena_entrance_shimmer",
+  "outputPath": "web/public/home-field/effects/arena_portal_shimmer.png",
+  "publicPath": "/home-field/effects/arena_portal_shimmer.png",
+  "width": 512,
+  "height": 512,
+  "anchor": { "x": 0.5, "y": 0.75 },
+  "animation": {
+    "frameWidth": 512,
+    "frameHeight": 512,
+    "frames": 8,
+    "fps": 8,
+    "loop": true,
+    "state": "idle"
+  },
+  "status": "missing"
+}
+```
+
+Create `app/shared/home-field/home-field-map.json` second. It should place assets in world coordinates and define layers:
+
+```json
+{
+  "version": 1,
+  "world": { "width": 1600, "height": 1000, "tileSize": 256 },
+  "spawn": { "x": 800, "y": 740, "facing": "up" },
+  "camera": {
+    "initialTarget": { "x": 800, "y": 480 },
+    "keepVisible": ["arena", "journey", "player"],
+    "mobileSafeFrame": { "x": 0.04, "y": 0.08, "w": 0.92, "h": 0.78 }
+  },
+  "layers": [
+    {
+      "id": "terrain",
+      "type": "tileLayer",
+      "z": 0,
+      "tiles": [
+        { "assetId": "grass_base_01", "x": 0, "y": 0 }
+      ]
+    },
+    {
+      "id": "objects",
+      "type": "objectLayer",
+      "z": 10,
+      "objects": [
+        { "id": "arena", "assetId": "arena_mushroom_arch", "x": 1080, "y": 210, "hotspotId": "arena" }
+      ]
+    },
+    {
+      "id": "effects",
+      "type": "effectLayer",
+      "z": 20,
+      "effects": [
+        { "assetId": "arena_portal_shimmer", "x": 1080, "y": 210, "state": "idle" }
+      ]
+    }
+  ],
+  "collision": [
+    { "id": "topForest", "x": 0, "y": 0, "w": 1600, "h": 80 }
+  ],
+  "hotspots": [
+    { "id": "arena", "action": "arena", "x": 900, "y": 120, "w": 360, "h": 230, "labelKey": "homeArenaExit" },
+    { "id": "journey", "action": "journey", "x": 250, "y": 120, "w": 360, "h": 230, "labelKey": "homeJourneyExit" }
+  ]
+}
+```
+
+Keep the map JSON numeric and renderer-agnostic. Do not store CSS class names, Vue component names, or localized strings in map metadata.
+
+### Step 2 — Prompt Queue Script
+
+Add `app/scripts/next-home-field-image-prompts.js`.
+
+Responsibilities:
+
+- Read `app/shared/home-field/home-field-assets.json`.
+- Print the next missing assets whose `outputPath` does not exist or whose `status` is `missing`.
+- Include:
+  - id;
+  - output path;
+  - raw source path;
+  - prompt text;
+  - transparent-background requirement;
+  - animation requirement, if any;
+  - validation expectations.
+- Default batch size: 5.
+- Support `--all`, `--type terrain|prop|exit|character|effect`, and `--id id_a,id_b`.
+
+Expected command:
+
+```bash
+node app/scripts/next-home-field-image-prompts.js --type terrain --limit 5
+```
+
+Recommended package alias:
+
+```json
+"game:home-field:next": "node app/scripts/next-home-field-image-prompts.js"
+```
+
+### Step 3 — Generate Raw Images
+
+Use imagegen for raw bitmap outputs.
+
+Rules:
+
+- Save raw images exactly at the `sourcePath`.
+- Do not save raw images under `web/public`.
+- For transparent assets, request transparent PNG when possible. If the generator returns a flat background, process it locally before app-facing output.
+- For terrain tiles, request seamless edges, but still validate tile seams manually on contact sheet.
+- For animated effects, generate either:
+  - a spritesheet directly; or
+  - 4-8 raw frame candidates named `{asset_id}.frame_00.source.png`, then compose locally.
+
+Agent raw naming:
+
+```text
+.agent/home-field-workspace/raw/{asset_id}.source.png
+.agent/home-field-workspace/raw/{asset_id}.frame_00.source.png
+.agent/home-field-workspace/raw/{asset_id}.frame_01.source.png
+```
+
+### Step 4 — Produce App-Facing Assets
+
+Add `app/scripts/produce-home-field-assets.js`.
+
+Responsibilities:
+
+- Read selected asset IDs from args.
+- Load raw source(s).
+- Crop/pad to required canvas size.
+- Remove chroma-key/background for transparent props/effects if needed.
+- Preserve transparency.
+- Write final PNG to `outputPath`.
+- For animated assets:
+  - compose frames into a horizontal spritesheet or atlas;
+  - verify `width === frameWidth * frames` for strip spritesheets;
+  - update or validate the animation metadata.
+- Write a processing manifest:
+
+```text
+.agent/home-field-workspace/manifests/produce-{timestamp}.json
+```
+
+Recommended package alias:
+
+```json
+"game:home-field:produce": "node app/scripts/produce-home-field-assets.js"
+```
+
+### Step 5 — Validate Assets And Metadata
+
+Add `app/scripts/validate-home-field-assets.js`.
+
+Validation should fail when:
+
+- `outputPath` is missing for any required asset.
+- PNG dimensions do not match metadata.
+- Transparent props/effects have no alpha channel or no transparent padding.
+- Terrain tile dimensions are not exactly `tileSize x tileSize`.
+- Animated spritesheet dimensions do not match `frameWidth * frames` and `frameHeight`.
+- `fps` is missing or outside a sane range (suggested `1..24` for ambient loops).
+- `home-field-map.json` references unknown `assetId`s.
+- Collision/hotspot rectangles are outside the world bounds.
+- Spawn point is inside collision.
+- Arena, Journey, and player spawn cannot all fit inside `camera.mobileSafeFrame` on initial render.
+
+Expected command:
+
+```bash
+node app/scripts/validate-home-field-assets.js
+```
+
+Recommended package alias:
+
+```json
+"game:home-field:validate": "node app/scripts/validate-home-field-assets.js"
+```
+
+### Step 6 — Generate Review Contact Sheets
+
+Add `app/scripts/generate-home-field-contact-sheet.js`.
+
+Review outputs:
+
+```text
+.agent/home-field-workspace/review/contact-sheet.png
+.agent/home-field-workspace/review/contact-sheet.manifest.json
+.agent/home-field-workspace/review/map-preview.png
+.agent/home-field-workspace/review/animation-strip-sheet.png
+```
+
+Contact sheet must show:
+
+- each terrain tile repeated at least `3x3` so seam problems are visible;
+- each prop/exits asset on neutral, grass, and dark backgrounds;
+- each chibi at expected in-game display size and 2x size;
+- each animated asset as frame strip plus first-frame in context;
+- asset ID and dimensions.
+
+Map preview must render:
+
+- proposed full field layout;
+- top-row Arena and Journey entrances;
+- lower-middle chibi spawn;
+- collision rectangles as translucent overlays;
+- hotspot rectangles as labeled overlays;
+- mobile safe frame.
+
+Recommended package alias:
+
+```json
+"game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js"
+```
+
+### Step 7 — Agent Review Loop
+
+For each asset batch:
+
+1. Run `npm run game:home-field:next`.
+2. Generate raw images with imagegen.
+3. Run `npm run game:home-field:produce -- id_a id_b`.
+4. Run `npm run game:home-field:validate`.
+5. Run `npm run game:home-field:sheet`.
+6. Open and inspect:
+   - `.agent/home-field-workspace/review/contact-sheet.png`
+   - `.agent/home-field-workspace/review/map-preview.png`
+   - `.agent/home-field-workspace/review/animation-strip-sheet.png`
+7. If an asset fails visually, regenerate raw source rather than patching with CSS.
+8. Commit only:
+   - scripts;
+   - metadata;
+   - approved `web/public/home-field/**` production assets;
+   - docs.
+9. Do not commit `.agent/home-field-workspace/**`.
+
+### Step 8 — Minimum First Agent Batch
+
+The first implementation agent should produce only this proof set:
+
+| ID | Type | Required |
+|---|---|---|
+| `grass_base_01` | terrain | yes |
+| `grass_base_02` | terrain | yes |
+| `path_destination_row` | terrain | yes |
+| `mushroom_cluster_small_amber` | prop | yes |
+| `mycelium_lantern_amber` | prop | yes |
+| `arena_mushroom_arch` | exit | yes |
+| `journey_gate_under_construction` | exit | yes |
+| `spore_motes_loop` | effect | yes, animated proof |
+| `{active_mushroom}_chibi_idle_up` | character | yes |
+
+Do not generate all character chibis in the first pass. Validate the style with one active/default mushroom first.
+
+### Step 9 — Renderer Spike
+
+After the first asset proof passes review, create a minimal renderer spike in one of two ways:
+
+- DOM prototype:
+  - render map preview in Vue;
+  - play only one animated effect via CSS background-position or JS frame switching;
+  - keep hotspots as DOM buttons.
+- PixiJS/Phaser spike:
+  - render the same `home-field-map.json`;
+  - place Arena/Journey/chibi from metadata;
+  - play `spore_motes_loop`;
+  - keep DOM overlay buttons aligned with canvas hotspots.
+
+Completion condition:
+
+- Screenshot proves Arena, Journey, and chibi are all visible on mobile and desktop.
+- One animated effect plays.
+- No production home dashboard migration yet.
+
+### Step 10 — Agent Final Handoff Checklist
+
+Before handoff, report:
+
+- generated asset IDs;
+- production output paths;
+- raw workspace paths;
+- contact sheet path;
+- map preview path;
+- animation sheet path;
+- validation command results;
+- whether renderer remains DOM prototype or should move to PixiJS/Phaser next.
+
+If anything is not generated, say exactly which asset IDs remain `missing`.
+
 ## Image Generation Prompt Templates
 
 Use imagegen for bitmap art, not SVG, because the home screen should feel like a game scene with painterly assets.
@@ -492,11 +879,20 @@ Completion condition:
 
 ### Phase 2 — Asset Generation Pipeline
 
+Follow **Agent Implementation Flow** Step 1 through Step 8. Do not build the home-field UI until the first contact sheet and map preview exist.
+
 - Add scripts:
   - `app/scripts/next-home-field-image-prompts.js`
+  - `app/scripts/produce-home-field-assets.js`
   - `app/scripts/generate-home-field-contact-sheet.js`
   - `app/scripts/validate-home-field-assets.js`
-- Generate static base assets first, but reserve metadata fields for animation frames and effect emitters.
+- Add package aliases:
+  - `game:home-field:next`
+  - `game:home-field:produce`
+  - `game:home-field:sheet`
+  - `game:home-field:validate`
+- Generate the minimum proof batch first, then expand only after review.
+- Generate static base assets first, but reserve metadata fields for animation frames and effect emitters from the start.
 - For animated assets, produce still preview contact sheets plus an animation manifest; do not rely on GIFs as production runtime assets.
 - Workspace:
   - raw: `.agent/home-field-workspace/raw/`
@@ -508,6 +904,7 @@ Completion condition:
 Completion condition:
 
 - Contact sheet shows all v1 field assets.
+- Map preview shows final intended placement, collisions, hotspots, and mobile safe frame.
 - Animation metadata validates for any asset that declares frames.
 - Assets load as `<img>` without broken image warnings.
 
