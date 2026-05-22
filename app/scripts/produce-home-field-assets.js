@@ -23,6 +23,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   encodeDeterministicPng,
+  readPngAsRgba,
   readPngRgba,
   alphaStats
 } from './lib/bitmap-image-toolkit.js';
@@ -176,7 +177,7 @@ function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
   const stripRgba = Buffer.alloc(stripWidth * stripHeight * 4);
 
   for (let f = 0; f < frameFiles.length; f += 1) {
-    let frame = readPngRgba(path.join(repoRoot, frameFiles[f].file));
+    let frame = readPngAsRgba(path.join(repoRoot, frameFiles[f].file));
     if (frame.width !== frameWidth || frame.height !== frameHeight) {
       if (opts.resize) {
         frame = resizeRgba(frame, frameWidth, frameHeight, opts.resize);
@@ -211,7 +212,7 @@ function processStaticEntry(entry, opts) {
     fs.copyFileSync(rawAbs, stagedPath);
   }
 
-  let image = readPngRgba(stagedPath);
+  let image = readPngAsRgba(stagedPath);
   if (image.width !== entry.width || image.height !== entry.height) {
     if (opts.resize) {
       image = resizeRgba(image, entry.width, entry.height, opts.resize);

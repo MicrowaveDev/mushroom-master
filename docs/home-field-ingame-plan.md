@@ -369,13 +369,16 @@ Terrain assets are strict tile cells:
 - each terrain PNG is one reusable `256x256` tile cell;
 - grass/path/border tiles must be full-bleed ground cells;
 - terrain tiles must have no horizon, sky, vignette, scene focal point, prop cluster, exit, sign, or character;
-- terrain details are small ground texture details only;
+- terrain details are small ground texture details only, and they must be sparse enough to survive repetition;
+- grass tiles must use low-frequency, intentional broad patches; dense AI texture, realistic grass-blade detail, and unique center highlights fail review even if the isolated tile looks attractive;
 - every terrain tile must be reviewed as a `3x3` repeated patch in the contact sheet;
+- every accepted proof tile must also be reviewed inside `/home-field-preview` or the map preview at the mobile and desktop screenshot viewports;
 - a terrain tile that looks good alone but creates a visible wallpaper/focal pattern when repeated fails review.
 
 Path and edge tiles need connector rules:
 
 - horizontal path tiles must connect west/east at the same Y position;
+- connector width and Y position are part of the tile contract, not a visual suggestion;
 - glow/pulse path variants must align with the base path connector;
 - blocked-edge tiles should be repeatable border cells and not full forest scenes;
 - future corner/T-junction/autotile variants should follow Tiled/Wang-terrain thinking instead of freehand one-off illustrations.
@@ -389,7 +392,12 @@ Object-layer assets are separate sprites:
 
 Agent review rule:
 
-- Before any asset batch is accepted, the official contact sheet must show terrain repeated as tiles and object sprites separately. The agent must regenerate terrain if it reads as full-screen art.
+- Before any asset batch is accepted, the official contact sheet must show terrain repeated as tiles and object sprites separately. The agent must regenerate terrain if it reads as full-screen art, dense texture, wallpaper, or a pretty standalone illustration instead of a map cell.
+
+Research anchors:
+
+- [Tiled terrain/Wang workflows](https://docs.mapeditor.org/en/latest/manual/terrain/) model maps as neighbor-compatible terrain cells; Mushroom Battles follows that mental model even before a `.tmx` source exists.
+- [Phaser Tilemap](https://docs.phaser.io/api-documentation/3.88.2/class/tilemaps-tilemap) and [ObjectLayer](https://docs.phaser.io/api-documentation/4.0.0/class/tilemaps-objectlayer) APIs separate tile layers from object layers; Mushroom Battles terrain stays in tile layers, while Arena/Journey/chibi/props/effects stay in object and sprite layers.
 
 Animated tilemap candidates:
 

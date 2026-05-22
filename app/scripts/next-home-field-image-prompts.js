@@ -99,9 +99,12 @@ function tilemapContractBlock(asset) {
     '## Tilemap contract (terrain assets only)',
     'This image is ONE reusable tile cell from a tilemap tileset, not a full scene, wallpaper, splash image, or complete field illustration.',
     `It must work when repeated edge-to-edge in a Phaser/Tiled tile layer at ${asset.width}x${asset.height}px.`,
-    'Camera/composition rules: top-down/2.5D ground surface only; no horizon, no sky, no large foreground object, no scene focal point, no full-screen composition.',
-    'Edge rules: north/south/east/west edges must connect cleanly to compatible tiles; avoid unique marks that create visible repetition seams.',
-    'Scale rules: details must be tiny ground texture details only. Props, exits, large mushrooms, signs, lanterns, characters, and blockers belong in object layers, not terrain tiles.'
+    'Composition rules: top-down/2.5D ground surface only; no horizon, no sky, no large foreground object, no scene focal point, no full-screen composition.',
+    'Pattern rules: prefer a low-frequency, intentional tile pattern with broad readable shapes. Avoid dense random texture, realistic blade detail, unique center marks, or high-detail noise that becomes wallpaper when repeated.',
+    'Edge rules: north/south/east/west edges must connect cleanly to compatible tiles; keep edge values calm and avoid marks cut off at boundaries.',
+    'Connector rules: path tiles expose exact west/east connectors at the same Y position and width; edge tiles read as repeatable border cells, not miniature forest scenes.',
+    'Scale rules: terrain details are ground texture only and should be sparse. Props, exits, large mushrooms, signs, lanterns, characters, and blockers belong in object layers, not terrain tiles.',
+    'Acceptance rule: if the tile looks nice by itself but fails as a repeated 3x3 patch or creates a visible focal pattern in a 7x4 map, reject and regenerate.'
   ].join('\n');
 }
 

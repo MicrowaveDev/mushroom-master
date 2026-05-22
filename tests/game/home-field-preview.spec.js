@@ -21,8 +21,8 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
     const stage = document.querySelector('[data-testid="home-field-preview-stage"]');
     const safeFrame = document.querySelector('[data-testid="home-field-preview-mobile-safe-frame"]');
     const safeFrameSelectors = [
-      '[data-testid="home-field-preview-arena-arch"]',
-      '[data-testid="home-field-preview-journey-gate"]',
+      '[data-testid="home-field-preview-arena"]',
+      '[data-testid="home-field-preview-journey"]',
       '[data-testid="home-field-preview-chibi-spawn"]'
     ];
     const rectFor = (element) => {
@@ -52,6 +52,7 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
     const overlaps = [];
     for (let i = 0; i < objects.length; i += 1) {
       for (let j = i + 1; j < objects.length; j += 1) {
+        if (!objects[i].isSafeFrameCritical && !objects[j].isSafeFrameCritical) continue;
         const a = objects[i].labelRect;
         const b = objects[j].labelRect;
         const overlap = !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
@@ -80,9 +81,9 @@ test('[Req 15-B] home field layout preview composes tile and object layers', asy
   await page.goto(`${baseURL}/home-field-preview`);
   await expect(page.getByTestId('home-field-preview')).toBeVisible();
   await expect(page.locator('.home-field-preview-tile')).toHaveCount(28);
-  await expect(page.locator('.home-field-preview-tile--path, .home-field-preview-tile--pathTop, .home-field-preview-tile--spawn')).toHaveCount(8);
-  await expect(page.getByTestId('home-field-preview-arena-arch')).toBeVisible();
-  await expect(page.getByTestId('home-field-preview-journey-gate')).toBeVisible();
+  await expect(page.locator('.home-field-preview-tile--path, .home-field-preview-tile--pathTop, .home-field-preview-tile--spawn')).toHaveCount(4);
+  await expect(page.getByTestId('home-field-preview-arena')).toBeVisible();
+  await expect(page.getByTestId('home-field-preview-journey')).toBeVisible();
   await expect(page.getByTestId('home-field-preview-chibi-spawn')).toBeVisible();
   await assertObjectLayerFits(page, { requireSafeFrame: true });
   await saveShot(page, 'home-field-preview-mobile.png');

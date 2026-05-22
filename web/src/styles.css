@@ -8622,6 +8622,15 @@ select {
     linear-gradient(135deg, #91c861 0%, #76ad4f 100%);
 }
 
+.home-field-preview-tile-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+
 .home-field-preview-tile::before,
 .home-field-preview-tile::after {
   content: "";
@@ -8743,6 +8752,22 @@ select {
   border-radius: 999px;
   background: rgba(55, 39, 23, 0.72);
   font-size: clamp(12px, 1.6vw, 19px);
+}
+
+.home-field-preview-object-img {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.home-field-preview-object-img + span {
+  transform: translateY(12%);
 }
 
 .home-field-preview-object::before,

@@ -24,6 +24,7 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 - **No text in any image.** Signposts and banners are art-only — runtime renders localized labels. If an imagegen output contains readable text, regenerate it.
 - **Style anchor is non-negotiable.** Every prompt block emitted by `npm run game:home-field:next` already includes the locked style anchor (palette, lighting, shadows, rejections). Feed it verbatim into your imagegen call alongside the subject/details.
 - **Terrain assets are tilemap cells, not background art.** A terrain prompt must produce one reusable `256×256` tile that can repeat edge-to-edge in a Phaser/Tiled layer. Do not generate a complete field, wallpaper, horizon scene, vignette, prop cluster, sign, entrance, or character inside a terrain tile.
+- **Reject dense texture tiles.** Grass/path terrain must be low-frequency map art: broad readable patches, quiet edges, sparse tiny marks only. If a generated tile looks like a detailed texture painting, contains a unique center highlight, or becomes obvious wallpaper in a repeated patch, reject it even if it is visually pretty.
 
 ## Run order (do this exactly)
 
