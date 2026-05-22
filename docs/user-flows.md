@@ -20,6 +20,7 @@ E2E tests must capture screenshots at the **mobile viewport** for each major scr
 | Screen | What to verify on desktop |
 |---|---|
 | `home` | Side columns are present: `.friends-panel` and `.leaderboard-panel` visible without scroll |
+| `home-field-preview` | Tile grid has 28 cells; Arena, Journey, and chibi are inside the stage and inside the mobile safe frame on mobile |
 | `prep` | Cohesive two-column workspace: backpack+inventory column and shop column are side-by-side with aligned top edges; HUD is above both columns; Ready button visible without scroll |
 | `characters` | All roster cards visible in the grid without scroll |
 | `auth` | All login buttons + language toggle visible without scroll (no button cut off below fold) |
@@ -116,6 +117,9 @@ Step 1: Home Field Hub (gated by HOME_FIELD_ENABLED)
   Screen: home → HomeScreen.js → HomeFieldCanvasScene.js (Phaser canvas)
   Plan: docs/home-field-ingame-plan.md
   Screenshot: screenshots/run/solo-01-home-hub-mobile.png, screenshots/run/solo-01-home-hub-desktop.png
+  Layout preview: /home-field-preview → HomeFieldPreviewScreen.js
+  Layout preview screenshot: screenshots/home-field-preview/home-field-preview-mobile.png, screenshots/home-field-preview/home-field-preview-desktop.png
+  Layout preview E2E: home-field-preview.spec.js — asserts 7x4 tile composition, object-layer placement, mobile safe-frame containment, and non-overlap.
   Above the fold (mobile, 390x844):
     - [Req 15-B] Walkable green field with selected mushroom chibi at lower-middle spawn
     - [Req 15-B] Arena entrance (top-right of field) with localized signpost text

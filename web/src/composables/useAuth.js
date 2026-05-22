@@ -8,6 +8,7 @@ const WEB_CLIENT_ID_KEY = 'mushroomWebClientId';
 const BOOTSTRAP_LOADER_DELAY_MS = 320;
 const TELEGRAM_AUTH_POLL_INTERVAL_MS = 3000;
 const TELEGRAM_AUTH_MAX_POLLS = 200;
+const PUBLIC_NO_AUTH_SCREENS = new Set(['home-field-preview']);
 
 export function normalizeLanguagePreference(lang) {
   return lang === 'en' ? 'en' : 'ru';
@@ -202,7 +203,9 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       state.catalogCounts = { mushrooms: 0, artifacts: 0 };
     }
     if (!state.sessionKey) {
-      navigate('auth');
+      if (!PUBLIC_NO_AUTH_SCREENS.has(state.screen)) {
+        navigate('auth');
+      }
       state.loading = false;
       state.showLoading = true;
       return;

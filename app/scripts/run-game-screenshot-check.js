@@ -61,7 +61,14 @@ async function main() {
 
   const child = spawn(
     'npx',
-    ['playwright', 'test', 'tests/game/screenshots.spec.js', '--config=tests/game/playwright.config.js', '--reporter=line'],
+    [
+      'playwright',
+      'test',
+      'tests/game/screenshots.spec.js',
+      'tests/game/home-field-preview.spec.js',
+      '--config=tests/game/playwright.config.js',
+      '--reporter=line'
+    ],
     {
       cwd: repoRoot,
       stdio: 'inherit',

@@ -67,6 +67,34 @@ Five npm aliases drive the entire pipeline. Run them in order per batch:
 | **validate** | `npm run game:home-field:validate -- --check-files` | Reruns full schema check **plus** asserts every PNG exists with expected dimensions. Without `--check-files`, validates schema only. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 
+## Layout Preview Screen
+
+Before production Phaser rendering lands, use the deterministic E2E layout lab at `/home-field-preview`.
+
+It renders the intended 7×4 green field as tile cells, then places the object layer on top:
+
+- Journey gate in the top-left destination area;
+- Arena arch in the top-right destination area;
+- selected chibi spawn in the lower-middle;
+- sign, mushroom clusters, and lantern as repeatable placement examples;
+- a visible mobile safe frame for screenshot review.
+
+The screen is intentionally CSS-only and public so screenshot tests can verify composition without generated home-field PNGs or a logged-in session. Once real tiles are approved, keep this route as a regression harness for tile/object metadata and update it to read from the shared map manifest instead of hardcoded sample placements.
+
+Run it with the screenshot suite:
+
+```bash
+npm run game:test:screens
+```
+
+For a focused local check, use:
+
+```bash
+npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js
+```
+
+Screenshots are written to `.agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/`.
+
 ## Tilemap Contract
 
 The home field is built from **tilemap layers plus object layers**, not from one large background illustration.

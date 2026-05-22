@@ -1739,7 +1739,9 @@ Per `mushroom-master/AGENTS.md`, every behavioral test must carry a `[Req X-Y]` 
 
 E2E and screenshot specs covering the hub use these IDs (e.g. `test('[Req 15-B] mobile viewport shows Arena, Journey, and chibi', ...)`). Tests for the hub without `[Req 15-X]` prefix fail review.
 
-New spec file: `tests/game/home-field.spec.js`. Reuse helpers from `tests/game/helpers.js` (`bootRun`, `freshDb`, `createPlayer`) and `tests/game/screenshot-capture.js` (`captureScreenshot`, `assertImagesLoaded`). Take dual screenshots by calling `page.setViewportSize({width:375,height:667})` then `captureScreenshot()`, then `page.setViewportSize({width:1280,height:800})` then `captureScreenshot()` again.
+Preview spec file: `tests/game/home-field-preview.spec.js`. It exercises `/home-field-preview`, a deterministic CSS layout lab that renders the intended `7 × 4` tile grid and object layer before final Phaser assets exist. It asserts tile count, path-tile count, Arena/Journey/chibi visibility, mobile safe-frame containment, object non-overlap, image loading, and horizontal overflow. The route is public so screenshot checks do not need a logged-in session or generated PNGs.
+
+Future production spec file: `tests/game/home-field.spec.js`. Reuse helpers from `tests/game/helpers.js` (`bootRun`, `freshDb`, `createPlayer`) and `tests/game/screenshot-capture.js` (`captureScreenshot`, `assertImagesLoaded`). Take dual screenshots by calling `page.setViewportSize({width:375,height:667})` then `captureScreenshot()`, then `page.setViewportSize({width:1280,height:800})` then `captureScreenshot()` again.
 
 `docs/user-flows.md` Flow B Step 1 is rewritten in Phase 0 to describe the field hub: visible elements, user actions, expected assertions. The new step text is reviewed alongside this plan before any UI work begins.
 
@@ -1756,6 +1758,7 @@ No scene code, no imagegen. This phase produces only frozen contracts and the sm
 - Add `.gitignore` entry for `.agent/home-field-workspace/**`.
 - Add config flags: `HOME_FIELD_ENABLED`, `HOME_FIELD_RENDERER=phaser`, `HOME_FIELD_FORCE_FALLBACK`.
 - Lock the canon **style anchor**: one reference image (terrain + prop + chibi at correct relative scale) committed to `.agent/home-field-workspace/style-anchor.png` and referenced by every subsequent imagegen prompt.
+- Add `/home-field-preview` as a deterministic screenshot harness for the tile grid, object layer, destination row, chibi spawn, and mobile safe frame. This route validates composition before generated PNGs are ready and remains a regression screen for future map metadata.
 
 Completion condition:
 
@@ -1798,6 +1801,7 @@ Follow **Agent Implementation Flow** Step 1 through Step 8. Do not build the hom
 - Generate the minimum proof batch first, then expand only after review.
 - Generate static base assets first, but reserve metadata fields for animation frames and effect emitters from the start.
 - For animated assets, produce still preview contact sheets plus an animation manifest; do not rely on GIFs as production runtime assets.
+- Use `/home-field-preview` after each map/object metadata change to confirm Arena, Journey, and chibi placement still read correctly at mobile and desktop viewports.
 - Workspace:
   - raw: `.agent/home-field-workspace/raw/`
   - processed: `.agent/home-field-workspace/processed/`
@@ -1843,7 +1847,7 @@ Completion condition:
 - Walking the chibi to Arena's hotspot activates the same DOM button as direct tap.
 - Daily-limit-reached and no-active-mushroom states render correctly.
 - Schema-validation failure routes to the legacy dashboard path.
-- All `[Req 11-A]` … `[Req 11-H]` E2E specs pass.
+- All `[Req 15-A]` … `[Req 15-H]` E2E specs pass.
 
 ### Phase 4 — Animated Tilemap And Effects Pass
 
@@ -1906,6 +1910,7 @@ Completion condition:
   - all animation frame dimensions divide spritesheet dimensions;
   - all collision/hotspot rectangles are inside world bounds.
 - Add E2E coverage:
+  - `/home-field-preview` renders the intended tile/object composition without session state;
   - home field renders selected chibi;
   - Arena exit visible;
   - Journey exit visible and opens under-construction modal;

@@ -34,6 +34,7 @@ import { WikiScreen } from './pages/WikiScreen.js';
 import { WikiDetailScreen } from './pages/WikiDetailScreen.js';
 import { RecipesScreen } from './pages/RecipesScreen.js';
 import { FusionAnimationLabScreen } from './pages/FusionAnimationLabScreen.js';
+import { HomeFieldPreviewScreen } from './pages/HomeFieldPreviewScreen.js';
 import { ProfileScreen } from './pages/ProfileScreen.js';
 import { SettingsScreen } from './pages/SettingsScreen.js';
 
@@ -50,7 +51,7 @@ const App = {
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
     FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
-    FusionAnimationLabScreen, SettingsScreen
+    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen
   },
   setup() {
     const startParams = parseStartParams();
@@ -547,7 +548,9 @@ const App = {
         {{ state.error }}
       </div>
 
-      <section v-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
+      <home-field-preview-screen v-if="state.screen === 'home-field-preview'" />
+
+      <section v-else-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
         <div class="route-loading-card panel">
           <span class="route-loading-spinner" aria-hidden="true"></span>
           <h2>{{ t.title }}</h2>
