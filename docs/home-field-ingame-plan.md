@@ -27,7 +27,7 @@ Success conditions:
 
 Open ambiguity:
 
-- Exact camera style is not final: top-down 2D, 3/4 isometric, or side-view diorama. This plan recommends **2.5D top-down / gentle isometric** because it supports walking, tile maps, and readable exits on mobile.
+- Exact camera style is not final: top-down 2D, 3/4 isometric, or side-view diorama. This plan recommends **2.5D top-down / gentle isometric** because it supports walking, tile maps, readable exits on mobile, and the "home hub with doors" mental model.
 - Chibi art can be derived from current portraits or generated as separate sprites. This plan recommends separate chibi sprites so movement and direction states are clean.
 - Whether existing home dashboard panels remain visible on the same screen or move behind buttons/modals. This plan recommends a minimal overlay plus side/bottom drawer, keeping the field as the primary screen.
 
@@ -35,20 +35,101 @@ Open ambiguity:
 
 The new home should become the player's "camp" in Mycelium: a small mushroom meadow where their active heroine is physically present. The current home screen already contains useful systems (active run, roster, leaderboard, friends, recipes, settings), but it reads like a web dashboard. The field hub should preserve those systems while making the first impression feel like a game.
 
+The target feeling is close to **Cult of the Lamb's home location flow**: the player explores a safe hub space, moves toward distinct destination entrances, and enters battle through a clear doorway. Mushroom Battles should adapt that pattern to a web/Telegram Mini App scale:
+
+- The destination entrances sit at the **top of the field** so they are immediately visible.
+- The selected chibi starts in the **lower-middle** of the field so the player sees both their avatar and the two entrances on page entry.
+- The Arena and Journey entrances remain reachable even if the player wanders around the field.
+- The field is not just a decorative hero; it is the actual home navigation surface.
+
 Recommended screen name stays `home` and component stays `HomeScreen.js` initially. The new implementation can replace the top-level home template with a hub scene while reusing existing computed data and emits. This avoids a route migration and keeps deep links, onboarding, and post-run navigation stable.
+
+## HTML5 Research Findings
+
+Sources reviewed:
+
+- [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)
+- [MDN Canvas basic animations](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations)
+- [MDN Pointer Events](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events)
+- [Phaser Camera docs](https://docs.phaser.io/phaser/concepts/cameras)
+- [PixiJS ResizePlugin docs](https://pixijs.com/8.x/guides/components/application/resize-plugin)
+
+Relevant takeaways:
+
+- Use `requestAnimationFrame` for character movement and camera interpolation. Browser-timed animation is smoother and more battery-friendly than manual timers for moving game objects.
+- Use Pointer Events for click/tap movement. Pointer Events provide one input model for mouse, touch, and pen, which is exactly what desktop + Telegram Mini App needs.
+- Canvas/Pixi/Phaser all work, but the project should pick the lightest viable renderer:
+  - **DOM/CSS scene**: best v1 fit. Easy integration with Vue, accessible buttons over hotspots, simple transforms, no new heavy dependency. Good for one compact field with limited animated props.
+  - **Canvas 2D**: useful if tile count grows or DOM layering gets costly, but every frame must be redrawn and accessibility must be rebuilt around the canvas.
+  - **PixiJS**: best if we need many sprites, particles, lighting, or richer animated tiles; its resize support is built for responsive canvas containers.
+  - **Phaser**: best if this becomes a real mini-game layer with tilemaps, collision, camera follow, transitions, and more map logic. Its camera model maps well to a larger explorable world, but it is likely overkill for v1.
+- For v1, use **DOM/CSS with a tiny game-loop controller**. Keep the map data-driven so we can move to PixiJS or Phaser later without rewriting the layout contract.
+- For responsive behavior, treat the field as a fixed **world coordinate system** with a viewport camera, not as arbitrary responsive HTML. Render by converting world coordinates to screen coordinates using scale + camera offset.
+- For mobile, avoid requiring scroll to discover exits. The initial camera must frame the lower chibi and both upper exits.
+- For desktop, do not simply stretch the whole field. Preserve the same composition and reveal extra side scenery or side drawers.
+
+## Recommended HTML5 Architecture
+
+V1 renderer: DOM/CSS scene with data-driven world coordinates.
+
+Core pieces:
+
+```text
+HomeScreen.js
+  └─ HomeFieldScene.js
+       ├─ HomeFieldRenderer.js      # world-to-screen positioning helpers
+       ├─ HomeFieldController.js    # movement, pointer input, keyboard input
+       ├─ home-field-map.json       # terrain, props, collision, exits
+       └─ home-field-assets.json    # asset paths, dimensions, anchors
+```
+
+Rendering model:
+
+- Scene root uses `position: relative; overflow: hidden;`.
+- Terrain uses repeated tile layers or a precomposed background image for v1.
+- Props/exits/chibi are absolutely positioned with `transform: translate3d(...) scale(...)`.
+- Z-order is computed from world `y` coordinate so foreground mushrooms can overlap the chibi correctly.
+- Exit hotspots are real `<button>` elements positioned over the visual entrance area.
+- UI overlays are outside the world layer, with `pointer-events` controlled carefully so overlays do not block field taps except on controls.
+
+Game loop:
+
+- Store world position in normalized or pixel world coordinates.
+- On pointerdown/tap, convert viewport position to world target.
+- Each animation frame moves the chibi toward target at fixed world speed using delta time.
+- Stop at collision boundaries and near hotspots.
+- Pause or reduce animation when document is hidden.
+
+Input:
+
+- Pointer Events:
+  - `pointerdown` on field for tap/click-to-move.
+  - `touch-action: none` only on the scene area, not globally.
+  - Keep exit buttons tappable; tapping an exit should not also move the player behind it.
+- Keyboard:
+  - WASD / arrow keys for desktop.
+  - Escape closes active modal/drawer.
+  - Enter/Space activates focused Arena/Journey buttons.
+
+Why not start with Phaser:
+
+- Phaser's camera and tilemap systems are a great match if the hub becomes a true explorable area, but adding it now creates a second app runtime inside Vue.
+- The first production risk is visual direction + responsive framing, not pathfinding or physics.
+- A DOM-first implementation can still use the same map JSON, collision rectangles, and asset IDs a future Phaser/Pixi version would use.
 
 ## Visual Concept
 
 Scene:
 
 - Lush green grass clearing inside a fungal forest.
-- Soft circular clearing in the center for walking.
+- Soft clearing in the lower-middle for the selected chibi's spawn.
 - Mushroom clusters and root paths around the edge.
 - Two readable exits:
-  - **Arena / Mushroom Battles**: warm-lit mushroom arch, battle banners, spore lanterns, path to the right or top-right.
-  - **Journey**: mossy path or wooden sign to the left/top-left with construction rope, dim lantern, "soon" marker.
+  - **Arena / Mushroom Battles**: warm-lit mushroom arch, battle banners, spore lanterns, placed at the top-right or top-center-right.
+  - **Journey**: mossy path or wooden sign with construction rope, dim lantern, "soon" marker, placed at the top-left or top-center-left.
 - Title/signage should be in-world: carved mushroom signs, spore-lit plaques, not giant UI cards.
-- Character stands/walks in the center third, never hidden by panels.
+- Character starts below the exits in the lower-middle third, never hidden by panels.
+- The top field line should read as "destination row"; the lower field should read as "player space".
 
 Canon constraints from `docs/design-requirements.md`:
 
@@ -61,9 +142,10 @@ Canon constraints from `docs/design-requirements.md`:
 
 Camera:
 
-- Fixed-size 2.5D field, centered on the character.
-- No free camera for v1.
-- Field can be larger than viewport, but v1 should fit most important exits inside one mobile viewport to avoid navigation confusion.
+- 2.5D field with an initial camera that frames the two top entrances and the lower chibi spawn.
+- No free camera for v1; camera follows the character only when they move far enough from the starting composition.
+- Field can be larger than viewport, but the initial viewport must show both exits and the chibi on mobile.
+- Use a soft vertical camera bias: the chibi is lower than center while both top entrances remain visible. If the user walks upward, the camera can pan slightly upward; if they walk back down, it returns to the default hero framing.
 
 Movement:
 
@@ -71,6 +153,7 @@ Movement:
 - Mobile: tap-to-move as primary. Optional virtual joystick only if tap-to-move feels imprecise.
 - Telegram Mini App: avoid relying on keyboard; tap zones must be enough.
 - Reduced motion: if `prefers-reduced-motion`, use instant character reposition or very short movement transitions.
+- Add a "return to entrances" affordance if the map grows beyond one viewport. This can be a small compass/door icon that moves the character or camera back toward the top destination row.
 
 Interaction:
 
@@ -89,11 +172,14 @@ Client-only v1 state:
 ```js
 homeHub: {
   playerX: 0.5,
-  playerY: 0.62,
+  playerY: 0.72,
+  cameraX: 0.5,
+  cameraY: 0.5,
   facing: 'down',
   targetX: null,
   targetY: null,
   activeHotspot: null,
+  cameraMode: 'home-default',
   introSeen: false
 }
 ```
@@ -143,6 +229,7 @@ Terrain tiles for v1:
 | `terrain/path_dirt_straight.png` | Main path segment | walkable |
 | `terrain/path_dirt_curve.png` | Curved path near exits | walkable |
 | `terrain/path_spore_glow.png` | Highlight path to Arena | walkable |
+| `terrain/path_destination_row.png` | Top entrance row path connecting Arena and Journey | walkable |
 | `terrain/edge_roots_01.png` | Organic border | blocked |
 | `terrain/edge_moss_rocks_01.png` | Border filler | blocked |
 
@@ -158,15 +245,16 @@ Regular mushroom props:
 | `props/spore_puff_idle.png` | Small ambient detail | walkable |
 | `props/fallen_branch_mycelium.png` | Organic obstacle | blocked |
 | `props/signpost_blank.png` | Base sign for localized labels | blocked |
+| `props/return_marker_spore_compass.png` | Optional visual for returning to entrance row | walkable |
 
 Exit objects:
 
 | File | Purpose | Collision / Hotspot |
 |---|---|---|
-| `exits/arena_mushroom_arch.png` | Arena entrance | blocked visual, trigger in front |
+| `exits/arena_mushroom_arch.png` | Top-row Arena entrance | blocked visual, trigger in front |
 | `exits/arena_banner_ru.png` | RU title sign | no collision |
 | `exits/arena_banner_en.png` | EN title sign | no collision |
-| `exits/journey_gate_under_construction.png` | Journey entrance | blocked visual, trigger in front |
+| `exits/journey_gate_under_construction.png` | Top-row Journey entrance | blocked visual, trigger in front |
 | `exits/journey_sign_ru.png` | RU "Journey soon" sign | no collision |
 | `exits/journey_sign_en.png` | EN "Journey soon" sign | no collision |
 
@@ -241,6 +329,10 @@ Important: each character prompt must be built from `docs/design-requirements.md
 Mobile first:
 
 - Full-screen field fills the viewport below existing top nav or replaces nav with minimal overlay.
+- Initial camera shows:
+  - Arena entrance in the top row;
+  - Journey entrance in the top row;
+  - selected chibi below them in the lower-middle field.
 - Bottom compact action area only appears when near hotspot or when tapping a menu icon.
 - Existing social/friends/recipes/settings rail can remain as floating icon buttons, but must not cover the Arena/Journey exits.
 - Active mushroom status appears as a small in-world nameplate or compact top-left pill:
@@ -251,9 +343,10 @@ Mobile first:
 
 Desktop:
 
-- Field can stay centered with side overlays.
+- Field should preserve the same top-entrance / lower-chibi composition instead of recentering the chibi vertically.
 - Existing leaderboard/friends can become collapsible side panels.
 - Do not return to a card dashboard as the primary composition.
+- On wide desktop, reveal extra scenery on left/right rather than enlarging the chibi or pushing entrances too far apart.
 
 Accessibility:
 
@@ -262,6 +355,7 @@ Accessibility:
 - Arena action has text label for screen readers.
 - Journey disabled state explains "under construction".
 - Movement is optional for access; tapping/clicking the exit button must be enough.
+- A keyboard user can activate Arena/Journey without walking the chibi.
 
 ## Functional Integration
 
@@ -326,13 +420,14 @@ Completion condition:
 ### Phase 3 — Static Hub Scene
 
 - Create `HomeFieldScene` component.
-- Render terrain background, props, Arena exit, Journey exit, selected chibi standing.
+- Render terrain background, props, top-row Arena exit, top-row Journey exit, selected chibi standing in lower-middle spawn.
 - No walking yet; just click/tap exits.
 - Keep existing home dashboard below or behind a drawer temporarily.
 
 Completion condition:
 
 - Mobile home above fold shows the field, selected chibi, Arena exit, Journey exit.
+- Initial mobile and desktop screenshots show both top entrances and the chibi at once.
 - Arena click starts/resumes run.
 - Journey click shows under-construction modal.
 
@@ -341,12 +436,15 @@ Completion condition:
 - Add tap-to-move and keyboard movement.
 - Add collision rectangles from `home-field-map.json`.
 - Add hotspot activation when near Arena/Journey.
+- Add camera bias so the top destination row remains discoverable after movement.
+- Add return-to-entrances affordance if the character can wander out of the default framed area.
 - Add reduced-motion fallback.
 
 Completion condition:
 
 - User can walk selected chibi around field on mobile and desktop.
 - User can enter Arena by walking to the Arena trigger.
+- User can return to the top entrance row without guessing or scrolling.
 - Character cannot walk through blocked mushrooms/edges.
 
 ### Phase 5 — Dashboard Migration
@@ -374,6 +472,7 @@ Completion condition:
 - Add image-load assertions for every home-field asset.
 - Add geometry assertions:
   - Arena and Journey hotspots are not overlapped by overlays;
+  - on initial mobile and desktop render, Arena, Journey, and selected chibi are all visible in the viewport;
   - chibi starts inside walkable area;
   - no horizontal overflow on mobile.
 
@@ -389,23 +488,28 @@ Coordinate system: normalized `0..1` for authoring, converted to pixels at rende
 
 ```json
 {
-  "spawn": { "x": 0.5, "y": 0.62, "facing": "down" },
+  "spawn": { "x": 0.5, "y": 0.74, "facing": "up" },
+  "camera": {
+    "initialTarget": { "x": 0.5, "y": 0.48 },
+    "mobileSafeFrame": { "x": 0.04, "y": 0.08, "w": 0.92, "h": 0.78 },
+    "keepVisible": ["arena", "journey", "player"]
+  },
   "hotspots": [
     {
       "id": "arena",
       "labelKey": "homeArenaExit",
-      "rect": { "x": 0.68, "y": 0.28, "w": 0.22, "h": 0.22 },
+      "rect": { "x": 0.57, "y": 0.12, "w": 0.28, "h": 0.22 },
       "action": "arena"
     },
     {
       "id": "journey",
       "labelKey": "homeJourneyExit",
-      "rect": { "x": 0.1, "y": 0.28, "w": 0.22, "h": 0.22 },
+      "rect": { "x": 0.15, "y": 0.12, "w": 0.28, "h": 0.22 },
       "action": "journey"
     }
   ],
   "collision": [
-    { "id": "topForest", "x": 0, "y": 0, "w": 1, "h": 0.16 },
+    { "id": "topForest", "x": 0, "y": 0, "w": 1, "h": 0.08 },
     { "id": "leftMushrooms", "x": 0, "y": 0.18, "w": 0.12, "h": 0.7 },
     { "id": "rightMushrooms", "x": 0.88, "y": 0.18, "w": 0.12, "h": 0.7 }
   ]
@@ -419,6 +523,8 @@ Coordinate system: normalized `0..1` for authoring, converted to pixels at rende
 - Existing home data is dense. Do not cram all current dashboard info over the field; use drawers.
 - Generated chibi sprites must preserve character identity and elf ears. Review against `docs/design-requirements.md`.
 - Telegram mobile viewport is small. Critical exits and action labels must be visible without scrolling.
+- If the map grows, users may lose the Arena entrance. Add a return-to-entrances affordance before expanding beyond one viewport.
+- DOM rendering can get expensive if every grass tile is a DOM node. For v1, use a precomposed/repeating terrain layer and reserve DOM nodes for interactive props, exits, and the chibi.
 
 ## Recommended Next Step
 
