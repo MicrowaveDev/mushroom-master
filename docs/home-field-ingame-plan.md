@@ -1015,6 +1015,141 @@ Character selection:
 - Existing roster picker should remain reachable from a compact "Change mushroom" icon or modal.
 - Switching mushroom updates chibi and spawn position.
 
+## Pre-Implementation Decisions
+
+Set these decisions before writing the scene code. They are small on paper but expensive to change after assets, metadata, and tests exist.
+
+### Renderer Decision
+
+Default to **Phaser** for implementation if any of these remain true:
+
+- chibi has directional idle/walk sprites;
+- Arena/Journey are collision/hotspot objects;
+- ambient effects are animated spritesheets;
+- map can grow later into Journey/home activities.
+
+Use DOM only for contact sheets, map preview, or a very short-lived composition proof. Do not build a large DOM game layer and then migrate it.
+
+### Data Contract Freeze
+
+Freeze these contracts before generating more than the first proof batch:
+
+- asset IDs are stable and lower_snake_case;
+- all public asset paths start with `/home-field/`;
+- map uses pixel world coordinates, not percentages, in production metadata;
+- normalized coordinates are allowed only in docs/proposals;
+- every interactive object has an `id`, `action`, `labelKey`, and rectangle/polygon hotspot;
+- every animated asset has a still fallback frame.
+
+Changing coordinate systems mid-implementation is one of the highest-risk mistakes. Use pixel coordinates in JSON and let the renderer scale camera/viewport.
+
+### Asset Budget
+
+Set budgets so the hub does not become heavy in Telegram:
+
+- Initial required download for home-field art: target under 1.5 MB compressed.
+- Single terrain tile: target under 80 KB.
+- Single prop/exit PNG: target under 250 KB.
+- Animated ambient spritesheet: target under 350 KB each.
+- First production batch: no more than 2 ambient animated loops visible at once.
+- Lazy-load Journey-only detail after the first frame if it is decorative.
+
+If a generated image is beautiful but too large, process it before shipping. Do not hide oversized assets behind cache assumptions.
+
+### Viewport And Safe Areas
+
+Implementation must test these viewport classes:
+
+- Telegram-like mobile portrait: `390x844`;
+- small mobile portrait: `360x740`;
+- mobile landscape or short viewport: `844x390`;
+- desktop: `1440x900`;
+- wide desktop: `1920x1080`.
+
+Initial camera must keep these visible:
+
+- selected chibi body and nameplate;
+- Arena hotspot;
+- Journey hotspot;
+- language/settings/menu controls;
+- no bottom browser/Telegram safe-area overlap with primary action UI.
+
+Use CSS `env(safe-area-inset-*)` for overlay placement. Do not put the Arena/Journey activation affordance behind the iOS/Telegram bottom gesture area.
+
+### State Machine
+
+Before UI work, define the home-field state machine:
+
+```text
+loadingAssets
+  -> readyIdle
+  -> moving
+  -> nearHotspot
+  -> activatingArena
+  -> journeyModal
+  -> drawerOpen
+  -> errorFallback
+```
+
+Rules:
+
+- `activatingArena` reuses existing start/resume guards and must debounce duplicate taps.
+- `drawerOpen` pauses tap-to-move behind the drawer.
+- `journeyModal` does not change game state.
+- `errorFallback` shows the old reliable dashboard start/resume path if Phaser or assets fail.
+
+### Accessibility And Fallback
+
+Canvas cannot be the only interface:
+
+- Arena and Journey must have real DOM buttons aligned to hotspots.
+- Keyboard focus order must reach Arena, Journey, character switcher, menu/settings, and language.
+- Screen-reader labels must use locale strings.
+- Reduced motion must stop ambient effects and camera drift.
+- If WebGL/canvas initialization fails, show a static field preview or old home start card, not a blank page.
+
+### Localization
+
+The hub must not regress the language issues already seen in production:
+
+- locale comes from the same source as the rest of the app;
+- no hardcoded English inside map metadata;
+- map stores only `labelKey`;
+- Journey modal, Arena label, tooltips, and fallback errors are all localized;
+- language switching updates overlay text without recreating the Phaser scene unless required.
+
+### Telemetry And Debugging
+
+Add lightweight client logs/metrics for:
+
+- home field initialized;
+- renderer fallback used;
+- asset load failure;
+- Arena hotspot activated;
+- Journey hotspot activated;
+- time from home visible to Arena activation;
+- duplicate activation blocked.
+
+Keep logs privacy-safe. Do not store raw movement paths unless there is a specific product need.
+
+### Rollout
+
+Ship behind a config flag first:
+
+```text
+HOME_FIELD_ENABLED=true
+HOME_FIELD_RENDERER=phaser
+HOME_FIELD_FORCE_FALLBACK=false
+```
+
+Production rollout order:
+
+1. deploy assets/metadata/scripts only;
+2. enable static preview for internal testing;
+3. enable Phaser hub for a small production slice;
+4. keep fallback dashboard path for at least one release;
+5. remove old primary home only after home-to-arena telemetry is healthy.
+
 ## Implementation Phases
 
 ### Phase 1 — Plan And Asset Direction
@@ -1022,6 +1157,7 @@ Character selection:
 - Add this plan.
 - Create asset prompt worksheet under the same doc.
 - Decide camera style and map dimensions.
+- Decide renderer, coordinate system, asset budget, and rollout flag names from **Pre-Implementation Decisions**.
 - Pick initial art generation batch:
   - 8 terrain tiles
   - 8 props
@@ -1031,6 +1167,7 @@ Character selection:
 Completion condition:
 
 - Plan approved and first asset list locked.
+- Renderer and metadata coordinate system are locked before scene code begins.
 
 ### Phase 2 — Asset Generation Pipeline
 
@@ -1162,6 +1299,13 @@ Completion condition:
 ### Phase 7 — Tests And Production Hardening
 
 - Update `docs/user-flows.md` Flow B Step 1 to describe the field hub.
+- Add metadata validation coverage:
+  - schema/version required;
+  - all asset IDs unique;
+  - all `assetId` references exist;
+  - all hotspots have localized `labelKey`s;
+  - all animation frame dimensions divide spritesheet dimensions;
+  - all collision/hotspot rectangles are inside world bounds.
 - Add E2E coverage:
   - home field renders selected chibi;
   - Arena exit visible;
@@ -1180,6 +1324,10 @@ Completion condition:
   - no duplicate animation loops after route changes;
   - reduced-motion disables ambient effects;
   - canvas/DOM scene does not exceed expected node/sprite count.
+- Add fallback checks:
+  - forced fallback flag shows the old reliable start/resume path;
+  - simulated asset-load failure does not blank the home screen;
+  - duplicate Arena activation does not create two runs.
 
 Completion condition:
 
@@ -1235,14 +1383,19 @@ Coordinate system: normalized `0..1` for authoring, converted to pixels at rende
 
 ## Recommended Next Step
 
-Start with Phase 2 asset proof, while keeping the animation-ready renderer decision close behind:
+Start with a short implementation-prep task before generating art:
 
-1. Generate one grass base tile.
-2. Generate one mushroom cluster prop.
-3. Generate Arena arch.
-4. Generate Journey under-construction gate.
-5. Generate one selected-character chibi idle-down sprite.
-6. Generate one tiny animated-effect proof, preferably Arena shimmer or spore motes.
-7. Build a contact sheet and an animation manifest for review before coding movement.
+1. Add metadata schemas and validation script stubs.
+2. Add `.agent/home-field-workspace/` to `.gitignore`.
+3. Add `HOME_FIELD_ENABLED`, `HOME_FIELD_RENDERER`, and fallback config plumbing.
+4. Create a map preview script that can render rectangles/placeholders before final art exists.
+5. Lock the first map's pixel world size and initial camera safe frame.
+6. Then generate one grass base tile.
+7. Generate one mushroom cluster prop.
+8. Generate Arena arch.
+9. Generate Journey under-construction gate.
+10. Generate one selected-character chibi idle-down sprite.
+11. Generate one tiny animated-effect proof, preferably Arena shimmer or spore motes.
+12. Build a contact sheet and an animation manifest for review before coding movement.
 
 This keeps the riskiest part, visual direction, visible early before we rewrite the home UI.
