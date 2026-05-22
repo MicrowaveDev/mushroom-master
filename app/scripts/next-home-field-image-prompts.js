@@ -82,13 +82,15 @@ function styleAnchorBlock(anchor) {
     `Palette: primary=${s.palette.primary}; accents=${s.palette.accents}; shadows=${s.palette.shadows}`,
     `Lighting: ${s.lighting}`,
     `Outline: ${s.outline}`,
+    s.shapeLanguage ? `Shape language: ${s.shapeLanguage}` : null,
+    s.texture ? `Texture/rendering: ${s.texture}` : null,
     `Shadow style: ${s.shadowStyle}`,
     `Ambient: ${s.ambient}`,
     `Scale and camera: ${s.scale}`,
     '',
     'Hard rejections:',
     rej
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {

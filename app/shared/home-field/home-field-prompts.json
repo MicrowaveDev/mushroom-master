@@ -4,133 +4,133 @@
   "prompts": {
     "terrain_grass_base_01": {
       "subject": "seamless 2D game terrain tile of lush green grass for the Mushroom Battles home field",
-      "details": "default grass surface, varied blades with subtle clumping, faint moss patches, dew or spore-glint sparkles. Top-down 2.5D camera angle. Seamless edges (tile must repeat without visible seams in a 3x3 grid).",
+      "details": "default grass surface made from chunky mossy patches and simplified graphic clumps, not realistic individual blades. Add a few tiny dew/spore glints as simple dots. Top-down 2.5D camera angle. Seamless edges (tile must repeat without visible seams in a 3x3 grid).",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
       "constraints": "no characters, no props, no text, no UI overlays. Must read as walkable ground."
     },
     "terrain_grass_base_02": {
       "subject": "seamless 2D game terrain tile of lush green grass — secondary variation for natural repetition",
-      "details": "same palette as grass_base_01 but with a different blade pattern: tighter clumps, occasional small spore-flowers, a faint mycelium thread crossing one corner. Top-down 2.5D camera angle. Seamless edges.",
+      "details": "same palette as grass_base_01 but with a different chunky patch pattern: tighter moss islands, occasional small spore-flowers, a faint mycelium thread crossing one corner. Keep the look graphic and storybook-like rather than painterly realistic. Top-down 2.5D camera angle. Seamless edges.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
       "constraints": "no characters, no props, no text. Must tile seamlessly with grass_base_01."
     },
     "terrain_grass_flowers_01": {
       "subject": "seamless 2D game terrain tile of green grass with tiny clover and pale-amber spore flowers",
-      "details": "default grass surface with a small cluster of low-density spore flowers (amber and bone-white). Flowers fade naturally at tile edges so the tile tiles cleanly.",
+      "details": "default chunky grass surface with a small cluster of low-density spore flowers (amber and bone-white), shaped like simple storybook marks. Flowers fade naturally at tile edges so the tile tiles cleanly.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no characters, no props, no text. Flowers must not extend beyond the tile boundary."
     },
     "terrain_path_dirt_straight": {
       "subject": "seamless 2D game terrain tile of a packed earth path segment crossing the tile horizontally",
-      "details": "warm umber dirt path with small embedded pebbles and faint mushroom-root traces along the edges. The path crosses the tile horizontally and meets edges at the same Y position so it joins cleanly with adjacent path tiles.",
+      "details": "warm umber dirt path with broad graphic shape edges, small embedded pebbles, and faint mushroom-root traces along the edges. The path crosses the tile horizontally and meets edges at the same Y position so it joins cleanly with adjacent path tiles.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no characters, no text. Path must align horizontally for tiling."
     },
     "terrain_path_spore_glow": {
       "subject": "seamless 2D game terrain tile of a packed earth path with a soft amber spore glow running along its center",
-      "details": "same dirt path as path_dirt_straight but with a faint amber bioluminescent strip running down the center line, suggesting the path leads to the Arena.",
+      "details": "same dirt path as path_dirt_straight but with a faint amber bioluminescent strip running down the center line, designed as a simple readable graphic pulse lane suggesting the path leads to the Arena.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "Path edges must align with path_dirt_straight for tiling."
     },
     "terrain_path_destination_row": {
       "subject": "seamless 2D game terrain tile of a mycelium-veined path running along the top destination row of the field",
-      "details": "Wider, more decorative path with subtle violet and amber mycelium veins, suggesting the path connects the Arena and Journey entrances at the top of the field. Path crosses horizontally; edges align.",
+      "details": "Wider, more decorative path with bold storybook dirt shapes and subtle violet/amber mycelium veins, suggesting the path connects the Arena and Journey entrances at the top of the field. Path crosses horizontally; edges align.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "Path edges must align horizontally."
     },
     "terrain_edge_roots_01": {
       "subject": "seamless 2D game terrain tile of dense root growth marking the edge of the walkable field",
-      "details": "Thick mushroom roots and tangled mycelium creating a visual border. Reads as 'do not pass'.",
+      "details": "Thick mushroom roots and tangled mycelium creating a chunky visual border with cute dark-forest silhouette language. Reads as 'do not pass'.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "Must read clearly as a blocked edge, not as a path."
     },
     "terrain_edge_moss_rocks_01": {
       "subject": "seamless 2D game terrain tile of mossy rocks and forest debris marking a blocked field edge",
-      "details": "Cluster of moss-covered stones, fallen leaves, small mushroom growth. Reads as 'do not pass'.",
+      "details": "Cluster of moss-covered stones, fallen leaves, and small mushroom growth with rounded storybook silhouettes. Reads as 'do not pass'.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "Same readability as edge_roots_01."
     },
     "prop_mushroom_cluster_small_amber": {
       "subject": "transparent-background 2D game prop: small cluster of amber-glowing mushrooms",
-      "details": "3-5 mushrooms with rounded amber-glowing caps and pale stems, gathered as a foreground detail. Lighting matches style anchor. Subtle elliptical shadow under the cluster (semi-transparent warm umber).",
+      "details": "3-5 squat mushrooms with rounded amber-glowing caps and pale stems, gathered as a foreground detail. Big readable silhouette, cute-but-eerie dark fairytale mood. Lighting matches style anchor. Subtle compact blob shadow under the cluster.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Centered cluster; anchor point at bottom-center (visual base). No characters, no text."
     },
     "prop_mushroom_cluster_small_violet": {
       "subject": "transparent-background 2D game prop: small cluster of violet bioluminescent mushrooms",
-      "details": "Similar composition to amber cluster but with cool violet glow. Provides color contrast across the field. Subtle elliptical shadow under the cluster.",
+      "details": "Similar chunky composition to amber cluster but with cool violet glow. Provides color contrast across the field. Subtle compact blob shadow under the cluster.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Centered cluster; anchor point at bottom-center. No characters, no text."
     },
     "prop_mushroom_cluster_tall_green": {
       "subject": "transparent-background 2D game prop: tall cluster of green-capped mushrooms with thick stems",
-      "details": "3-4 mushrooms standing 2x taller than they are wide. Top half is mushroom caps; bottom half is stems and moss. Provides forest depth at field edges.",
+      "details": "3-4 mushrooms standing 2x taller than they are wide, with exaggerated squat-cute caps and slightly eerie curved stems. Top half is mushroom caps; bottom half is stems and moss. Provides forest depth at field edges.",
       "size": "256x512 transparent PNG (taller than wide)",
       "transparency": "transparent background required",
       "constraints": "Anchor point at bottom-center. Caps must read as taller than a chibi (mushrooms feel imposing)."
     },
     "prop_mushroom_cap_red_spotted": {
       "subject": "transparent-background 2D game prop: a single red mushroom with white-spotted cap, the classic fairytale silhouette",
-      "details": "Iconic red-and-white toadstool with a stylized Mycelium twist (organic, slightly bioluminescent rim). Familiar enough to be a landmark.",
+      "details": "Iconic red-and-white toadstool with a stylized Mycelium twist: chunky silhouette, organic cap, slightly bioluminescent rim, cute-goth storybook readability. Familiar enough to be a landmark.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Centered, bottom-anchored. No characters, no text."
     },
     "prop_mycelium_lantern_amber": {
       "subject": "transparent-background 2D game prop: an amber spore lantern shaped like a tall mushroom with a glowing cap",
-      "details": "A mushroom-shaped lantern with a warm amber glow inside the cap, casting a soft halo. Used near the Arena entrance for lighting. Stem and base look hand-carved or organic.",
+      "details": "A mushroom-shaped lantern with a warm amber candle glow inside the cap, casting a soft graphic halo. Used near the Arena entrance for lighting. Stem and base look hand-carved, organic, and slightly ritual-like without readable symbols.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Anchor at bottom-center. Glow must read clearly."
     },
     "prop_fallen_branch_mycelium": {
       "subject": "transparent-background 2D game prop: a fallen branch wrapped in mycelium and small mushroom growth",
-      "details": "Horizontal organic obstacle. Branch is half-claimed by fungus. Reads as 'walkable around, not through'.",
+      "details": "Horizontal organic obstacle with a chunky readable silhouette. Branch is half-claimed by fungus. Reads as 'walkable around, not through'.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Anchor at bottom-center of the branch."
     },
     "prop_signpost_blank": {
       "subject": "transparent-background 2D game prop: an art-only wooden signpost made from organic carved mushroom wood",
-      "details": "Tall signpost with a flat sign-board on top. The board surface is intentionally BLANK (no text, no symbols) because runtime will render localized text overlay on top. Sign material is carved mushroom wood with mycelium veins.",
+      "details": "Tall signpost with a flat sign-board on top, shaped like carved mushroom wood in a cute dark storybook style. The board surface is intentionally BLANK (no text, no symbols) because runtime will render localized text overlay on top. Sign material has mycelium veins and chunky readable edges.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Anchor at bottom-center. CRITICAL: the sign-board MUST be blank — no readable text, no icons, no characters. Just the carved wood/mycelium surface."
     },
     "exit_arena_mushroom_arch": {
       "subject": "transparent-background 2D game entrance prop: an Arena entrance formed by two giant living mushrooms forming an arch",
-      "details": "Two large mushroom trunks lean toward each other forming a doorway arch. Warm amber spore lanterns hang from the underside of the arch. Small battle banners (no text, just abstract heraldic shapes — fungal motifs) drape from the arch. Inside the arch a soft amber glow suggests a portal beyond. Roots and mycelium spread from the base.",
+      "details": "Two large mushroom trunks lean toward each other forming a doorway arch, with a bold cute-goth silhouette and carved organic ritual feel. Warm amber spore lanterns hang from the underside of the arch. Small battle banners (no text, just abstract fungal shapes) drape from the arch. Inside the arch a soft amber glow suggests a portal beyond. Roots and mycelium spread from the base.",
       "size": "512x512 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Anchor at bottom-center (base of the arch). No characters inside the arch. No readable text on the banners. Reads as combat-ready and inviting."
     },
     "exit_journey_gate_under_construction": {
       "subject": "transparent-background 2D game entrance prop: a mossy path into a deeper mushroom forest, blocked by organic vine rope and small construction signs",
-      "details": "Stone-and-mushroom gate posts on either side. Organic vine rope strung between them, blocking entry. Small wooden warning signs hang from the rope (signs are art-only, no readable text). Behind the gate, the path continues into a darker, foggier forest. A dim violet lantern hangs at the side. Mood: whimsical, not modern; clearly reads as 'not available yet'.",
+      "details": "Mushroom-wood gate posts on either side, avoiding realistic medieval stone. Organic vine rope strung between them, blocking entry. Small blank warning boards hang from the rope (art-only, no readable text). Behind the gate, the path continues into a darker, foggier forest. A dim violet lantern hangs at the side. Mood: cute, occult woodland, whimsical, not modern; clearly reads as 'not available yet'.",
       "size": "512x512 transparent PNG",
       "transparency": "transparent background required",
       "constraints": "Anchor at bottom-center. No characters. Sign-boards must be art-only blank surfaces (no text)."
     },
     "effect_spore_motes_loop": {
       "subject": "transparent-background 2D game effect frame: a single 256x256 frame of drifting amber spore motes for an ambient field overlay",
-      "details": "PER-FRAME GENERATION: generate ONE 256x256 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/spore_motes_loop.frame_NN.source.png (NN = 00..07). Across the 8 frames the motes (4-6 small soft amber motes per frame) drift incrementally upward and fade in/out — a looping cycle. The produce script composes them into a 2048x256 horizontal strip after all 8 are generated.",
+      "details": "PER-FRAME GENERATION: generate ONE 256x256 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/spore_motes_loop.frame_NN.source.png (NN = 00..07). Across the 8 frames the motes (4-6 small soft amber motes per frame) drift incrementally upward and fade in/out — a looping cycle. Motes should be simple graphic glowing dots, not realistic dust. The produce script composes them into a 2048x256 horizontal strip after all 8 are generated.",
       "size": "256x256 per individual frame (NOT the composed strip)",
       "transparency": "transparent background required (alpha channel must be honored)",
       "constraints": "No solid background. Motes are diffuse, soft-edged. Each frame nudges the motes a little; frame 8 must connect cleanly to frame 1 (loop). Per-frame raw filename: spore_motes_loop.frame_NN.source.png."
     },
     "effect_arena_portal_shimmer": {
       "subject": "transparent-background 2D game effect frame: a single 512x512 frame of a warm amber portal shimmer for the Arena arch interior",
-      "details": "PER-FRAME GENERATION: generate ONE 512x512 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/arena_portal_shimmer.frame_NN.source.png (NN = 00..07). Each frame shows a slightly different distortion / wave pattern of amber light suggesting a magical portal. The produce script composes them into a 4096x512 horizontal strip after all 8 are generated.",
+      "details": "PER-FRAME GENERATION: generate ONE 512x512 frame per imagegen call. Save each frame as .agent/home-field-workspace/raw/arena_portal_shimmer.frame_NN.source.png (NN = 00..07). Each frame shows a slightly different simple graphic distortion / wave pattern of amber light suggesting a magical portal. The produce script composes them into a 4096x512 horizontal strip after all 8 are generated.",
       "size": "512x512 per individual frame (NOT the composed strip)",
       "transparency": "transparent background required",
       "constraints": "No solid background. No hard edges. Frame 8 loops cleanly to frame 1. Per-frame raw filename: arena_portal_shimmer.frame_NN.source.png."
@@ -158,7 +158,7 @@
     },
     "character_placeholder_silhouette": {
       "subject": "transparent-background chibi placeholder — generic mushroom-elf silhouette for an 8 columns x 4 rows of 64x64 spritesheet (placeholder, not a specific character)",
-      "details": "PER-FRAME GENERATION: this character is generated as individual 64x64 frames, NOT as a single composed sheet. The produce script composes them. Generate these frames (save each at the listed path):\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_down_0.source.png    (row 0 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_down_1.source.png    (row 0 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_down.source.png      (row 0 cols 2-7 will be replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_up_0.source.png      (row 1 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_up_1.source.png      (row 1 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_up.source.png        (row 1 cols 2-7 replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_left_0.source.png    (row 2 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_left_1.source.png    (row 2 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_left.source.png      (row 2 cols 2-7 replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_right_0.source.png   (row 3 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_right_1.source.png   (row 3 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_right.source.png     (row 3 cols 2-7 replicated)\nGeneric mushroom-elf silhouette with visible elf ears in every direction. Mushroom cap hat (neutral colors). The two idle frames per direction differ subtly (breathing). The single walk frame per direction shows a clear stride mid-step. The produce-home-field-assets.js character-mode composer reads these 12 raw files and writes the full 512x256 spritesheet, replicating each walk frame across columns 2-7 of its row.",
+      "details": "PER-FRAME GENERATION: this character is generated as individual 64x64 frames, NOT as a single composed sheet. The produce script composes them. Generate these frames (save each at the listed path):\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_down_0.source.png    (row 0 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_down_1.source.png    (row 0 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_down.source.png      (row 0 cols 2-7 will be replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_up_0.source.png      (row 1 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_up_1.source.png      (row 1 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_up.source.png        (row 1 cols 2-7 replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_left_0.source.png    (row 2 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_left_1.source.png    (row 2 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_left.source.png      (row 2 cols 2-7 replicated)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_right_0.source.png   (row 3 col 0)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_idle_right_1.source.png   (row 3 col 1)\n  - .agent/home-field-workspace/raw/_placeholder_chibi.frame_walk_right.source.png     (row 3 cols 2-7 replicated)\nGeneric mushroom-elf silhouette with visible elf ears in every direction. Mushroom cap hat (neutral colors). Cute-goth chibi proportions: oversized head, tiny body, bold silhouette, simple dark storybook outline. The two idle frames per direction differ subtly (breathing). The single walk frame per direction shows a clear stride mid-step. The produce-home-field-assets.js character-mode composer reads these 12 raw files and writes the full 512x256 spritesheet, replicating each walk frame across columns 2-7 of its row.",
       "size": "64x64 per individual frame (12 frames total for the placeholder)",
       "transparency": "transparent background required",
       "constraints": "Chibi feet near bottom of each frame. Elf ears visible in all 4 directions. Cute chibi proportions: large head, small body, ~3 heads tall. Per-character chibis (not the placeholder) will use the full 32-frame layout in a later phase — for the placeholder, the walk-frame replication is acceptable."

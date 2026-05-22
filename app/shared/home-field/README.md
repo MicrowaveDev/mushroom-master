@@ -192,11 +192,13 @@ From [`home-field-style-anchor.json`](./home-field-style-anchor.json):
 
 **Do**
 
-- Lush deep green grass with mossy variation
+- Cute dark occult storybook mood: cozy, eerie, ritual woodland, playful danger
+- Chunky moss/grass patches instead of realistic blade detail
+- Big readable silhouettes and simplified cut-paper/storybook shapes
 - Amber and violet bioluminescent accents
-- Single top-left warm key light, perpetual dusk
-- Soft elliptical drop shadow under ground entities
-- Clean medium-weight outline (slightly darker than fill)
+- Single top-left warm candle key light, perpetual dusk, soft violet fill
+- Soft compact blob shadow under ground entities
+- Bold clean dark-plum/umber outline on props, exits, effects, and chibi
 - Mushroom-elf chibi with visible elf ears in every facing direction
 
 **Do not**
@@ -205,6 +207,8 @@ From [`home-field-style-anchor.json`](./home-field-style-anchor.json):
 - No bright cartoon palettes, no neon, no rainbow
 - No pure-black outlines or pure-white highlights
 - No photoreal textures
+- No generic soft fantasy painting or over-detailed concept-art rendering
+- No direct copying of Cult of the Lamb characters, icons, cult symbols, UI, logo shapes, or exact compositions
 - **No text in any image** — signposts are art-only blank surfaces; runtime draws localized labels
 - No human-only chibis with mushroom hats; the heroines are mushroom-elves
 - No `*_ru.png` / `*_en.png` baked-text assets (validator rejects them)

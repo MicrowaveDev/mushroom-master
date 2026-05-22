@@ -2,23 +2,27 @@
   "version": 1,
   "description": "Style anchor for Home Field hub art. Every imagegen prompt MUST include this description verbatim under a `Style anchor` block so terrain, props, exits, chibi, and effects read as one cohesive world.",
   "style": {
-    "world": "Mycelium fungal forest meadow, dark-fairytale fantasy, organic and bioluminescent",
+    "world": "Mycelium fungal forest meadow with a cute dark occult storybook mood: cozy, eerie, ritual-woodland, playful danger, organic and bioluminescent. Inspired by modern cute-goth roguelite hub worlds without copying any specific game, character, logo, symbol set, or composition.",
     "palette": {
-      "primary": "lush deep green grass with mossy variations (#3a6e3a, #4d7d4f, #2b5a3a)",
-      "accents": "amber bioluminescence (#d99a2b, #f0c050), violet spore glow (#7a4cb8, #b07ed8), bone neutrals (#e8dfc8)",
-      "shadows": "warm umber tones, not pure black (#2a1f1a)"
+      "primary": "deep moss green and muted fungal teal grass with chunky readable patches (#315f38, #456f3f, #244b35)",
+      "accents": "warm candle-amber bioluminescence (#d9902f, #f0bc54), muted violet ritual glow (#6e4aa5, #9d73c9), bone parchment neutrals (#e6dcc3), small blood-red/toadstool accents only as rare focal marks (#8f2f2a)",
+      "shadows": "soft warm umber and plum-brown shadows, never pure black (#2b201d, #332536)"
     },
-    "lighting": "Single top-left key light with warm amber rim. Soft ambient fog. Perpetual dusk; no harsh sun, no hard cast shadows.",
-    "outline": "Clean medium-weight outline, slightly darker than the local fill (not pure black). No outline on terrain tiles; clear outline on props and exits.",
-    "shadowStyle": "Subtle elliptical drop shadow under ground entities (props, chibi, exits) using semi-transparent warm umber. No long cast shadows.",
-    "ambient": "Drifting spores, soft amber motes, gentle violet glow on certain mushroom caps and the Arena arch. Tone is calm, inviting, slightly magical — not menacing.",
-    "scale": "2.5D top-down RPG camera angle, slightly elevated so character heads are visible while feet plant on the ground. Mushrooms taller than the chibi."
+    "lighting": "Moody dusk with a warm candlelit top-left key and soft violet fill. High readability over realism. Simple graphic light shapes, gentle vignette feeling, no harsh sun, no realistic hard cast shadows.",
+    "outline": "Bold clean storybook outline on props, exits, effects, and chibi: dark plum/umber linework, rounded and slightly irregular, never pure black. Terrain has broad stylized shape boundaries and chunky painted patches rather than fine realistic blades.",
+    "shapeLanguage": "Cute-goth storybook shapes: chunky silhouettes, squat mushrooms, carved organic arches, rounded-but-sinister curves, simplified graphic clusters, clear negative space, sticker-like readability at small size. Avoid delicate high-detail painting.",
+    "texture": "Flat-to-soft shaded 2D game art with cut-paper/storybook layering, chunky brush texture, minimal micro-detail. Surfaces should feel hand-painted and graphic, not photoreal or over-rendered.",
+    "shadowStyle": "Soft compact blob shadows under ground entities using semi-transparent warm umber/plum. Shadows are graphic and readable, not long or physically realistic.",
+    "ambient": "Sparse drifting spores, candle-amber motes, muted violet ritual glow, tiny fungal runes or abstract marks only when they are not readable text. Tone is cozy, eerie, magical, and playful — cute dark fairytale rather than horror.",
+    "scale": "2.5D top-down RPG hub camera, slightly elevated and orthographic-ish. Big readable objects, exaggerated proportions, mushrooms taller than the chibi, chibi feet clearly grounded."
   },
   "rejections": [
     "No medieval stone, no sci-fi, no urban props",
     "No bright cartoon colors, no neon, no rainbow palettes",
     "No high-contrast pure-black outlines or pure-white highlights",
     "No realistic photography or photoreal textures",
+    "No realistic grass-blade detail, no soft generic fantasy painting, no over-detailed concept-art rendering",
+    "No direct copying of Cult of the Lamb characters, icons, cult symbols, UI, logo shapes, or exact art compositions",
     "No text in the images themselves — signposts are art-only; text is rendered at runtime",
     "No human-only figures with mushroom hats; chibis are mushroom-elf heroines with visible elf ears when ears are shown"
   ],

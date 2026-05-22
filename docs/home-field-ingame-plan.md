@@ -1282,31 +1282,31 @@ Use imagegen for bitmap art, not SVG, because the home screen should feel like a
 Terrain prompt:
 
 ```text
-Create a seamless 2D game terrain tile for Mushroom Battles: lush green grass in a dark-fairytale fungal forest, soft moss, tiny glowing spores, subtle violet and amber fungal accents, top-down 2.5D RPG style, hand-painted but clean game-ready readability, no text, no UI, no characters, no hard sci-fi, no medieval stone floor. 256x256 square tile, seamless edges.
+Create a seamless 2D game terrain tile for Mushroom Battles: cute dark occult storybook fungal meadow, chunky moss and grass patches instead of realistic blade detail, tiny amber/violet spore glints, top-down 2.5D RPG hub style, flat-to-soft shaded cut-paper readability, no text, no UI, no characters, no hard sci-fi, no medieval stone floor. 256x256 square tile, seamless edges.
 ```
 
 Mushroom prop prompt:
 
 ```text
-Create a transparent-background 2D game prop for Mushroom Battles: [OBJECT], dark-fairytale fungal fantasy, organic Mycelium world, living mushroom texture, moss, spores, bioluminescent amber/violet accents, readable at small size, 2.5D top-down RPG prop angle, centered object, no text, no character, no UI, transparent PNG.
+Create a transparent-background 2D game prop for Mushroom Battles: [OBJECT], cute dark occult fungal storybook style, organic Mycelium world, chunky readable silhouette, moss, spores, candle-amber/violet bioluminescent accents, bold dark-plum/umber outline, readable at small size, 2.5D top-down RPG prop angle, centered object, no text, no character, no UI, transparent PNG.
 ```
 
 Arena exit prompt:
 
 ```text
-Create a transparent-background 2D game entrance prop for Mushroom Battles: an Arena entrance made from two giant living mushrooms forming an arch, warm amber spore lanterns, small battle banners, fungal roots, dark-fairytale Mycelium style, inviting but combat-ready, 2.5D top-down RPG prop angle, no readable text, no characters, transparent PNG.
+Create a transparent-background 2D game entrance prop for Mushroom Battles: an Arena entrance made from two giant living mushrooms forming an arch, warm amber spore lanterns, small blank battle banners, fungal roots, cute dark occult Mycelium storybook style, bold readable silhouette, inviting but combat-ready, 2.5D top-down RPG prop angle, no readable text, no characters, transparent PNG.
 ```
 
 Journey under construction prompt:
 
 ```text
-Create a transparent-background 2D game entrance prop for Mushroom Battles: a mossy path into a mushroom forest blocked by organic vine rope and small construction signs, whimsical but not modern, dark-fairytale Mycelium style, softly glowing spores, clearly reads as not available yet, 2.5D top-down RPG prop angle, no readable text, no characters, transparent PNG.
+Create a transparent-background 2D game entrance prop for Mushroom Battles: a mossy path into a mushroom forest blocked by organic vine rope and small blank construction boards, whimsical but not modern, cute dark occult Mycelium storybook style, softly glowing spores, clearly reads as not available yet, 2.5D top-down RPG prop angle, no readable text, no characters, transparent PNG.
 ```
 
 Chibi character prompt template:
 
 ```text
-Create a transparent-background chibi game sprite for Mushroom Battles: [CHARACTER CANON SUMMARY], mushroom-elf heroine with visible elf ears if ears are shown, dark-fairytale fungal fantasy, cute chibi proportions but preserving signature silhouette and palette, 2.5D top-down RPG idle pose facing [DIRECTION], readable at 96px, clean outline, no text, no UI, transparent PNG.
+Create a transparent-background chibi game sprite for Mushroom Battles: [CHARACTER CANON SUMMARY], mushroom-elf heroine with visible elf ears if ears are shown, cute dark occult fungal storybook fantasy, oversized head and tiny body, bold readable silhouette, preserving signature silhouette and palette, 2.5D top-down RPG idle pose facing [DIRECTION], readable at 96px, clean dark-plum/umber outline, no text, no UI, transparent PNG.
 ```
 
 Important: each character prompt must be built from `docs/design-requirements.md` and current game canon. Do not make human-only chibis with mushroom hats.
