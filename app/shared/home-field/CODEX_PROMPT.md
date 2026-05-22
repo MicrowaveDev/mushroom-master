@@ -33,23 +33,20 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 3. `npm run game:home-field:validate` — must print `home-field validation: PASS`. If not, stop.
 4. `npm run game:home-field:status` — should show `Progress: 0/24 produced`. If non-zero, some assets already exist; you'll work on whatever's still pending.
 
-### Batch 1 — `proof-static` (7 single-image PNGs)
+### Batch 1 — `proof-tiles` (6 terrain PNGs)
 
-5. `npm run game:home-field:next -- --batch=proof-static --all` — prints 7 prompt blocks (terrain × 3, props × 2, exits × 2).
-6. For each of the 7 prompts:
-   - Read the prompt block in full, including the **Style anchor** section.
-   - Call your imagegen skill with `subject + details + size + transparency + constraints + style anchor` as the prompt. Request a transparent PNG when the block says "transparent background required"; otherwise a solid-background PNG.
-   - Save the raw output to the exact `sourcePath` shown in the block (under `.agent/home-field-workspace/raw/`). Create the directory if needed.
-   - It is fine if imagegen returns at a non-target size (e.g. 1024×1024 instead of 256×256). The next step rescales.
-7. `npm run game:home-field:produce -- --all-missing --resize` — composes / rescales / re-encodes the raws into the final PNGs under `web/public/home-field/`. Inspect the per-asset OK/FAIL summary.
+5. `npm run game:home-field:proof-tiles` — generates the six terrain-layer proof cells used by `home-field-map.json`.
+6. `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row` — composes / re-encodes the terrain raws into the final PNGs under `web/public/home-field/`. Inspect the per-asset OK/FAIL summary.
+7. For later prop/exit/effect/character batches, use `npm run game:home-field:next -- --batch=<batch> --all`, generate each raw with the imagegen skill, then produce only the IDs generated in that batch.
    - If a row prints FAIL, read the reason and regenerate that specific asset (`npm run game:home-field:next -- --id=<that_id>` then redo step 6 + this step for just that ID).
-8. `npm run game:home-field:validate -- --check-files` — must pass for the 7 produced assets. Schema-only checks still pass for the rest.
+   - If terrain imagegen output looks like a miniature painting, dense texture, horizon, or full-screen scene, discard that raw and run `npm run game:home-field:proof-tiles` for the six terrain-layer proof cells before producing them. The proof tiles exist to keep the map contract honest while final illustrated terrain is iterated.
+8. `npm run game:home-field:validate` — must pass for schema and map metadata. Use `npm run game:home-field:status` to confirm the produced batch count. Reserve `--check-files` for the final full asset set because it requires every declared PNG to exist.
 9. `npm run game:home-field:sheet` — refreshes the contact sheet PNG + manifest.
 10. Inspect `.agent/home-field-workspace/review/contact-sheet.png` yourself for obvious problems (text in image, wrong palette, hard black outlines, photoreal style). Terrain cells must read as repeated tile patches in the contact sheet, not as miniature full-screen scenes. If any asset clearly violates the style anchor or tilemap contract, regenerate it before continuing.
 11. Commit and push:
     ```
     git add web/public/home-field/ .gitignore
-    git commit -m "Home field proof-static batch: 7 terrain/prop/exit PNGs"
+    git commit -m "Home field proof terrain batch"
     git push origin main
     ```
 12. **STOP.** Report:

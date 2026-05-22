@@ -1266,15 +1266,12 @@ The first implementation agent should produce only this proof set:
 |---|---|---|
 | `grass_base_01` | terrain | yes |
 | `grass_base_02` | terrain | yes |
+| `grass_flowers_01` | terrain | yes |
+| `path_dirt_straight` | terrain | yes |
+| `path_spore_glow` | terrain | yes |
 | `path_destination_row` | terrain | yes |
-| `mushroom_cluster_small_amber` | prop | yes |
-| `mycelium_lantern_amber` | prop | yes |
-| `arena_mushroom_arch` | exit | yes |
-| `journey_gate_under_construction` | exit | yes |
-| `spore_motes_loop` | effect | yes, animated proof |
-| `{active_mushroom}_chibi_idle_up` | character | yes |
 
-Do not generate all character chibis in the first pass. Validate the style with one active/default mushroom first.
+This first proof set is terrain-only. It exists to prove that the map can be assembled from small repeatable cells before object sprites, exits, animated effects, or chibi frames are generated. Do not generate all character chibis in the first pass; after terrain passes contact-sheet and `/home-field-preview` review, validate the style with one active/default mushroom first.
 
 ### Step 9 — Phaser Scene Spike
 
