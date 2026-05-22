@@ -58,19 +58,20 @@ Relevant takeaways:
 
 - Use `requestAnimationFrame` for character movement and camera interpolation. Browser-timed animation is smoother and more battery-friendly than manual timers for moving game objects.
 - Use Pointer Events for click/tap movement. Pointer Events provide one input model for mouse, touch, and pen, which is exactly what desktop + Telegram Mini App needs.
-- Canvas/Pixi/Phaser all work, but the project should pick the lightest viable renderer:
-  - **DOM/CSS scene**: best v1 fit. Easy integration with Vue, accessible buttons over hotspots, simple transforms, no new heavy dependency. Good for one compact field with limited animated props.
+- Canvas/Pixi/Phaser all work, but the project should pick the lightest viable renderer for the current phase while keeping the map and asset contract engine-ready:
+  - **DOM/CSS scene**: best prototype fit. Easy integration with Vue, accessible buttons over hotspots, simple transforms, no new heavy dependency. Good for proving composition and top-door layout, but not the long-term target if animated tilemaps/effects become core.
   - **Canvas 2D**: useful if tile count grows or DOM layering gets costly, but every frame must be redrawn and accessibility must be rebuilt around the canvas.
   - **PixiJS**: best if we need many sprites, particles, lighting, or richer animated tiles; its resize support is built for responsive canvas containers.
-  - **Phaser**: best if this becomes a real mini-game layer with tilemaps, collision, camera follow, transitions, and more map logic. Its camera model maps well to a larger explorable world, but it is likely overkill for v1.
-- For v1, use **DOM/CSS with a tiny game-loop controller**. Keep the map data-driven so we can move to PixiJS or Phaser later without rewriting the layout contract.
+  - **Phaser**: best if this becomes a real mini-game layer with animated tilemaps, collision, camera follow, transitions, and more map logic. Its camera model maps well to a larger explorable world.
+- For v1, use **DOM/CSS with a tiny game-loop controller only as a proof stage**. Keep the map data-driven so the production renderer can become PixiJS or Phaser without rewriting the layout contract.
+- If animated tilemaps/effects are confirmed as production scope, promote the renderer decision earlier: **Phaser for tilemap/gameplay-heavy hub**, **PixiJS for art/effects-heavy hub with simpler collision**.
 - For responsive behavior, treat the field as a fixed **world coordinate system** with a viewport camera, not as arbitrary responsive HTML. Render by converting world coordinates to screen coordinates using scale + camera offset.
 - For mobile, avoid requiring scroll to discover exits. The initial camera must frame the lower chibi and both upper exits.
 - For desktop, do not simply stretch the whole field. Preserve the same composition and reveal extra side scenery or side drawers.
 
 ## Recommended HTML5 Architecture
 
-V1 renderer: DOM/CSS scene with data-driven world coordinates.
+V1 renderer: DOM/CSS scene with data-driven world coordinates, but with an explicit engine-ready contract.
 
 Core pieces:
 
@@ -83,14 +84,30 @@ HomeScreen.js
        └─ home-field-assets.json    # asset paths, dimensions, anchors
 ```
 
+Future engine target:
+
+```text
+HomeScreen.js
+  └─ HomeFieldCanvasScene.js
+       ├─ renderer/phaser-or-pixi-app.js
+       ├─ renderer/home-field-camera.js
+       ├─ renderer/home-field-input.js
+       ├─ renderer/home-field-effects.js
+       ├─ home-field-map.json
+       └─ home-field-assets.json
+```
+
+Do not encode scene rules directly in Vue templates. Vue owns app state, overlays, modal actions, and navigation; the field renderer owns world sprites, camera, animation, and collision. This boundary keeps the future engine swap realistic.
+
 Rendering model:
 
 - Scene root uses `position: relative; overflow: hidden;`.
-- Terrain uses repeated tile layers or a precomposed background image for v1.
-- Props/exits/chibi are absolutely positioned with `transform: translate3d(...) scale(...)`.
+- Terrain uses a precomposed or repeated visual layer for prototype, but map metadata still describes tile layers.
+- Props/exits/chibi are absolutely positioned with `transform: translate3d(...) scale(...)` in the prototype.
 - Z-order is computed from world `y` coordinate so foreground mushrooms can overlap the chibi correctly.
 - Exit hotspots are real `<button>` elements positioned over the visual entrance area.
 - UI overlays are outside the world layer, with `pointer-events` controlled carefully so overlays do not block field taps except on controls.
+- Animated props must be represented as named animation states in `home-field-assets.json`, even if the first prototype displays only their first frame.
 
 Game loop:
 
@@ -113,9 +130,69 @@ Input:
 
 Why not start with Phaser:
 
-- Phaser's camera and tilemap systems are a great match if the hub becomes a true explorable area, but adding it now creates a second app runtime inside Vue.
-- The first production risk is visual direction + responsive framing, not pathfinding or physics.
-- A DOM-first implementation can still use the same map JSON, collision rectangles, and asset IDs a future Phaser/Pixi version would use.
+- Phaser's camera and tilemap systems are a great match if the hub becomes a true explorable area.
+- The first production risk is visual direction + responsive framing, not pathfinding or physics, so a DOM proof can still be useful.
+- Do not let the DOM proof become permanent if we commit to animated grass, water/spores, particles, multi-frame chibi walking, or larger tilemaps.
+- Decision gate: after the static scene and first asset sheet, choose between:
+  - **DOM prototype only** for a tiny hub with minimal animation;
+  - **PixiJS production renderer** for animated sprites, particles, lighting, and moderate map logic;
+  - **Phaser production renderer** for tilemap-native collision, camera, scene transitions, and future hub gameplay.
+
+## Animated Tilemap And Effects Direction
+
+Assume the future hub should support animation. Even if v1 ships static, assets and metadata should be authored as if animation will arrive.
+
+Animated tilemap candidates:
+
+- grass shimmer / wind sway;
+- spore motes drifting over the field;
+- glowing mycelium veins pulsing along the Arena path;
+- mushroom caps breathing subtly;
+- lantern flicker near Arena;
+- Journey gate construction rope/vines rustling;
+- portal-like shimmer inside the Arena arch;
+- small ambient critter/spore puffs, if they do not distract from navigation.
+
+Animation asset formats:
+
+- Terrain animation: spritesheet strips or atlas frames, not GIF.
+- Effects: transparent PNG spritesheets or atlas frames.
+- Chibi: directional idle + walk spritesheets.
+- Metadata declares `frameWidth`, `frameHeight`, `fps`, `loop`, and named states.
+
+Example asset metadata:
+
+```json
+{
+  "id": "arena_arch",
+  "type": "exit",
+  "src": "/home-field/exits/arena_mushroom_arch.png",
+  "anchor": { "x": 0.5, "y": 0.82 },
+  "animations": {
+    "idle": {
+      "src": "/home-field/exits/arena_mushroom_arch_idle.png",
+      "frameWidth": 512,
+      "frameHeight": 512,
+      "frames": 8,
+      "fps": 8,
+      "loop": true
+    }
+  }
+}
+```
+
+Map metadata should stay close to tilemap conventions:
+
+- tile size;
+- tile layers;
+- object layers;
+- collision layer;
+- hotspot layer;
+- spawn points;
+- effect emitters;
+- camera safe frames.
+
+This shape can be exported from Tiled later or hand-authored at first.
 
 ## Visual Concept
 
@@ -208,6 +285,8 @@ web/public/home-field/
   props/
   exits/
   characters/
+  effects/
+  atlases/
   metadata/
 ```
 
@@ -217,46 +296,47 @@ Tile format:
 - Terrain tiles: `256x256`.
 - Prop tiles: `256x256` or `512x512`, transparent.
 - Chibi sprites: start with `512x512` source poses, then process into app-facing `256x256` or spritesheet frames.
+- Animated tiles/effects: spritesheet strips or packed atlases with metadata; avoid GIF/video for core map animation.
 - Keep source/raw generation under ignored `.agent/home-field-workspace/`.
 
 Terrain tiles for v1:
 
-| File | Purpose | Collision |
-|---|---|---|
-| `terrain/grass_base_01.png` | Default grass tile | walkable |
-| `terrain/grass_base_02.png` | Variation for natural repetition | walkable |
-| `terrain/grass_flowers_01.png` | Clover/spore flower accent | walkable |
-| `terrain/path_dirt_straight.png` | Main path segment | walkable |
-| `terrain/path_dirt_curve.png` | Curved path near exits | walkable |
-| `terrain/path_spore_glow.png` | Highlight path to Arena | walkable |
-| `terrain/path_destination_row.png` | Top entrance row path connecting Arena and Journey | walkable |
-| `terrain/edge_roots_01.png` | Organic border | blocked |
-| `terrain/edge_moss_rocks_01.png` | Border filler | blocked |
+| File | Purpose | Collision | Animation |
+|---|---|---|---|
+| `terrain/grass_base_01.png` | Default grass tile | walkable | optional `grass_base_01_idle.png` |
+| `terrain/grass_base_02.png` | Variation for natural repetition | walkable | optional |
+| `terrain/grass_flowers_01.png` | Clover/spore flower accent | walkable | optional flower sway |
+| `terrain/path_dirt_straight.png` | Main path segment | walkable | static |
+| `terrain/path_dirt_curve.png` | Curved path near exits | walkable | static |
+| `terrain/path_spore_glow.png` | Highlight path to Arena | walkable | pulsing glow |
+| `terrain/path_destination_row.png` | Top entrance row path connecting Arena and Journey | walkable | subtle spore drift |
+| `terrain/edge_roots_01.png` | Organic border | blocked | root pulse optional |
+| `terrain/edge_moss_rocks_01.png` | Border filler | blocked | static |
 
 Regular mushroom props:
 
-| File | Purpose | Collision |
-|---|---|---|
-| `props/mushroom_cluster_small_amber.png` | Foreground detail | blocked or partial |
-| `props/mushroom_cluster_small_violet.png` | Color contrast | blocked or partial |
-| `props/mushroom_cluster_tall_green.png` | Forest depth | blocked |
-| `props/mushroom_cap_red_spotted.png` | Familiar mushroom landmark | blocked |
-| `props/mycelium_lantern_amber.png` | Lighting near Arena | blocked |
-| `props/spore_puff_idle.png` | Small ambient detail | walkable |
-| `props/fallen_branch_mycelium.png` | Organic obstacle | blocked |
-| `props/signpost_blank.png` | Base sign for localized labels | blocked |
-| `props/return_marker_spore_compass.png` | Optional visual for returning to entrance row | walkable |
+| File | Purpose | Collision | Animation |
+|---|---|---|---|
+| `props/mushroom_cluster_small_amber.png` | Foreground detail | blocked or partial | cap breathing optional |
+| `props/mushroom_cluster_small_violet.png` | Color contrast | blocked or partial | spore sparkle optional |
+| `props/mushroom_cluster_tall_green.png` | Forest depth | blocked | sway optional |
+| `props/mushroom_cap_red_spotted.png` | Familiar mushroom landmark | blocked | static |
+| `props/mycelium_lantern_amber.png` | Lighting near Arena | blocked | lantern flicker |
+| `props/spore_puff_idle.png` | Small ambient detail | walkable | looping puff |
+| `props/fallen_branch_mycelium.png` | Organic obstacle | blocked | mycelium pulse optional |
+| `props/signpost_blank.png` | Base sign for localized labels | blocked | static |
+| `props/return_marker_spore_compass.png` | Optional visual for returning to entrance row | walkable | pulse |
 
 Exit objects:
 
-| File | Purpose | Collision / Hotspot |
-|---|---|---|
-| `exits/arena_mushroom_arch.png` | Top-row Arena entrance | blocked visual, trigger in front |
-| `exits/arena_banner_ru.png` | RU title sign | no collision |
-| `exits/arena_banner_en.png` | EN title sign | no collision |
-| `exits/journey_gate_under_construction.png` | Top-row Journey entrance | blocked visual, trigger in front |
-| `exits/journey_sign_ru.png` | RU "Journey soon" sign | no collision |
-| `exits/journey_sign_en.png` | EN "Journey soon" sign | no collision |
+| File | Purpose | Collision / Hotspot | Animation |
+|---|---|---|---|
+| `exits/arena_mushroom_arch.png` | Top-row Arena entrance | blocked visual, trigger in front | portal shimmer / lantern flicker |
+| `exits/arena_banner_ru.png` | RU title sign | no collision | static |
+| `exits/arena_banner_en.png` | EN title sign | no collision | static |
+| `exits/journey_gate_under_construction.png` | Top-row Journey entrance | blocked visual, trigger in front | vine/rope rustle |
+| `exits/journey_sign_ru.png` | RU "Journey soon" sign | no collision | static |
+| `exits/journey_sign_en.png` | EN "Journey soon" sign | no collision | static |
 
 Character sprites:
 
@@ -271,6 +351,15 @@ Character sprites:
 | `characters/{mushroom_id}_chibi_walk_left.png` | Optional spritesheet |
 | `characters/{mushroom_id}_chibi_walk_right.png` | Optional spritesheet |
 
+Effect sprites:
+
+| File | Purpose |
+|---|---|
+| `effects/spore_motes_loop.png` | Transparent looping particle-like overlay |
+| `effects/arena_portal_shimmer.png` | Arena arch shimmer |
+| `effects/mycelium_path_pulse.png` | Path glow pulse toward Arena |
+| `effects/journey_blocked_rustle.png` | Journey under-construction ambient motion |
+
 Metadata:
 
 ```text
@@ -282,10 +371,12 @@ metadata/home-field-assets.json
 
 - map size
 - terrain layer
+- animated tile layer references
 - prop placements
 - collision rectangles
 - hotspot rectangles
 - spawn point
+- effect emitters
 - fallback labels
 
 ## Image Generation Prompt Templates
@@ -405,6 +496,8 @@ Completion condition:
   - `app/scripts/next-home-field-image-prompts.js`
   - `app/scripts/generate-home-field-contact-sheet.js`
   - `app/scripts/validate-home-field-assets.js`
+- Generate static base assets first, but reserve metadata fields for animation frames and effect emitters.
+- For animated assets, produce still preview contact sheets plus an animation manifest; do not rely on GIFs as production runtime assets.
 - Workspace:
   - raw: `.agent/home-field-workspace/raw/`
   - processed: `.agent/home-field-workspace/processed/`
@@ -415,12 +508,14 @@ Completion condition:
 Completion condition:
 
 - Contact sheet shows all v1 field assets.
+- Animation metadata validates for any asset that declares frames.
 - Assets load as `<img>` without broken image warnings.
 
 ### Phase 3 — Static Hub Scene
 
 - Create `HomeFieldScene` component.
 - Render terrain background, props, top-row Arena exit, top-row Journey exit, selected chibi standing in lower-middle spawn.
+- Use the same map/object metadata shape planned for the animated renderer.
 - No walking yet; just click/tap exits.
 - Keep existing home dashboard below or behind a drawer temporarily.
 
@@ -447,7 +542,60 @@ Completion condition:
 - User can return to the top entrance row without guessing or scrolling.
 - Character cannot walk through blocked mushrooms/edges.
 
-### Phase 5 — Dashboard Migration
+### Phase 4.5 — Renderer Decision Gate
+
+Decide whether to keep the DOM renderer or move to PixiJS/Phaser before investing in rich animation.
+
+Choose **PixiJS** if:
+
+- the hub needs animated props, particle-like spores, lighting overlays, and smooth sprite batching;
+- collision remains simple rectangles/polygons;
+- Vue should keep most state and UI ownership.
+
+Choose **Phaser** if:
+
+- the hub needs true animated tilemaps, object layers, collision layers, path/camera tooling, map transitions, or multiple explorable areas;
+- we expect Journey to become a real exploration mode;
+- future field gameplay may include interactable NPCs, pickups, tasks, or scripted events.
+
+Decision inputs:
+
+- first contact sheet quality;
+- number of animated objects visible at once;
+- whether map should be authored in Tiled-style layers;
+- performance on Telegram Mini App mobile viewport;
+- cost of keeping accessible buttons over the canvas.
+
+Completion condition:
+
+- Renderer choice documented in this plan or a follow-up ADR.
+- If PixiJS/Phaser is chosen, add package/dependency and a minimal renderer spike before migrating the whole home screen.
+
+### Phase 5 — Animated Tilemap And Effects Pass
+
+- Add frame-based animation support for:
+  - chibi idle/walk;
+  - Arena shimmer/flicker;
+  - Journey rustle;
+  - path/mycelium pulse;
+  - subtle field spores.
+- Respect reduced motion:
+  - disable background loops;
+  - keep only essential chibi movement feedback;
+  - avoid flashing/pulsing loops.
+- Add performance budget:
+  - target 60fps on desktop;
+  - acceptable 30fps on mid mobile;
+  - no layout thrash in frame loop;
+  - no unbounded particle counts.
+
+Completion condition:
+
+- Animated scene remains responsive on mobile.
+- Reduced-motion mode is calm and still navigable.
+- Initial viewport still shows both top entrances and the selected chibi.
+
+### Phase 6 — Dashboard Migration
 
 - Move existing roster/run history/leaderboard/friends widgets into:
   - compact field overlays;
@@ -459,7 +607,7 @@ Completion condition:
 
 - Home no longer reads as a dashboard, but all old home functions remain reachable.
 
-### Phase 6 — Tests And Production Hardening
+### Phase 7 — Tests And Production Hardening
 
 - Update `docs/user-flows.md` Flow B Step 1 to describe the field hub.
 - Add E2E coverage:
@@ -475,6 +623,11 @@ Completion condition:
   - on initial mobile and desktop render, Arena, Journey, and selected chibi are all visible in the viewport;
   - chibi starts inside walkable area;
   - no horizontal overflow on mobile.
+- Add animation/performance checks:
+  - frame loop pauses when scene unmounts;
+  - no duplicate animation loops after route changes;
+  - reduced-motion disables ambient effects;
+  - canvas/DOM scene does not exceed expected node/sprite count.
 
 Completion condition:
 
@@ -524,17 +677,20 @@ Coordinate system: normalized `0..1` for authoring, converted to pixels at rende
 - Generated chibi sprites must preserve character identity and elf ears. Review against `docs/design-requirements.md`.
 - Telegram mobile viewport is small. Critical exits and action labels must be visible without scrolling.
 - If the map grows, users may lose the Arena entrance. Add a return-to-entrances affordance before expanding beyond one viewport.
-- DOM rendering can get expensive if every grass tile is a DOM node. For v1, use a precomposed/repeating terrain layer and reserve DOM nodes for interactive props, exits, and the chibi.
+- DOM rendering can get expensive if every grass tile is a DOM node. For prototype, use a precomposed/repeating terrain layer and reserve DOM nodes for interactive props, exits, and the chibi.
+- Animated tilemaps/effects can make a DOM prototype feel brittle. Treat DOM as a composition proof, not as the guaranteed production renderer.
+- Canvas/engine accessibility needs extra care: keep real DOM buttons for Arena/Journey and overlays even if the world itself becomes canvas-rendered.
 
 ## Recommended Next Step
 
-Start with Phase 2 asset proof:
+Start with Phase 2 asset proof, while keeping the animation-ready renderer decision close behind:
 
 1. Generate one grass base tile.
 2. Generate one mushroom cluster prop.
 3. Generate Arena arch.
 4. Generate Journey under-construction gate.
 5. Generate one selected-character chibi idle-down sprite.
-6. Build a contact sheet for review before coding movement.
+6. Generate one tiny animated-effect proof, preferably Arena shimmer or spore motes.
+7. Build a contact sheet and an animation manifest for review before coding movement.
 
 This keeps the riskiest part, visual direction, visible early before we rewrite the home UI.
