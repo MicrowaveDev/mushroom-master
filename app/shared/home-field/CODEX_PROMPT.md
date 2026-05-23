@@ -33,10 +33,10 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 3. `npm run game:home-field:validate` — must print `home-field validation: PASS`. If not, stop.
 4. `npm run game:home-field:status` — should show `Progress: 0/24 produced`. If non-zero, some assets already exist; you'll work on whatever's still pending.
 
-### Batch 1 — `proof-tiles` (8 terrain PNGs)
+### Batch 1 — `proof-tiles` (8 quiet terrain PNGs + 3 foliage props)
 
-5. `npm run game:home-field:proof-tiles` — generates the eight terrain-layer proof cells used by `home-field-map.json`.
-6. `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01` — composes / re-encodes the terrain raws into the final PNGs under `web/public/home-field/`. Inspect the per-asset OK/FAIL summary.
+5. `npm run game:home-field:proof-tiles` — generates the quiet terrain proof cells plus separate top-down bush/sprout props used by `home-field-map.json`.
+6. `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01` — composes / re-encodes the terrain and prop raws into the final PNGs under `web/public/home-field/`. Inspect the per-asset OK/FAIL summary.
 7. For later prop/exit/effect/character batches, use `npm run game:home-field:next -- --batch=<batch> --all`, generate each raw with the imagegen skill, then produce only the IDs generated in that batch.
    - If a row prints FAIL, read the reason and regenerate that specific asset (`npm run game:home-field:next -- --id=<that_id>` then redo step 6 + this step for just that ID).
    - If terrain imagegen output looks like a miniature painting, dense texture, horizon, or full-screen scene, discard that raw and run `npm run game:home-field:proof-tiles` for the terrain-layer proof cells before producing them. The proof tiles exist to keep the map contract honest while final illustrated terrain is iterated.

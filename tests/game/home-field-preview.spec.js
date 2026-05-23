@@ -40,6 +40,7 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
     const safeRect = rectFor(safeFrame);
     const objects = Array.from(document.querySelectorAll('.home-field-preview-object')).map((element) => ({
       selector: `[data-testid="${element.getAttribute('data-testid')}"]`,
+      decorative: element.getAttribute('data-decorative') === 'true',
       isSafeFrameCritical: safeFrameSelectors.includes(`[data-testid="${element.getAttribute('data-testid')}"]`),
       rect: rectFor(element),
       labelRect: rectFor(element.querySelector('span') || element)
@@ -53,6 +54,7 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
     for (let i = 0; i < objects.length; i += 1) {
       for (let j = i + 1; j < objects.length; j += 1) {
         if (!objects[i].isSafeFrameCritical && !objects[j].isSafeFrameCritical) continue;
+        if (objects[i].decorative || objects[j].decorative) continue;
         const a = objects[i].labelRect;
         const b = objects[j].labelRect;
         const overlap = !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
@@ -63,7 +65,7 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
       stage: stageRect,
       safeFrame: safeRect,
       objects,
-      outsideStage: objects.filter((object) => !inside(object.rect, stageRect, 1)).map((object) => object.selector),
+      outsideStage: objects.filter((object) => !object.decorative && !inside(object.rect, stageRect, 1)).map((object) => object.selector),
       outsideSafeFrame: requireSafeFrame
         ? objects.filter((object) => object.isSafeFrameCritical && !inside(object.rect, safeRect, 1)).map((object) => object.selector)
         : [],

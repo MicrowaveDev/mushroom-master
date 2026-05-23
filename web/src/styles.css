@@ -8865,6 +8865,23 @@ select {
   height: clamp(52px, 7vw, 90px);
 }
 
+.home-field-preview-object--bush {
+  z-index: 5;
+  width: clamp(84px, 13vw, 196px);
+  height: clamp(68px, 10vw, 156px);
+}
+
+.home-field-preview-object--bush-light {
+  width: clamp(92px, 14vw, 210px);
+  height: clamp(72px, 11vw, 164px);
+}
+
+.home-field-preview-object--sprout {
+  z-index: 6;
+  width: clamp(34px, 5vw, 62px);
+  height: clamp(34px, 5vw, 62px);
+}
+
 .home-field-preview-object--cluster-a::before,
 .home-field-preview-object--cluster-b::before {
   inset: 20% 10% 26%;

@@ -234,7 +234,7 @@ function processStaticEntry(entry, opts) {
 
   let alphaSummary = null;
   if (entry.type !== 'terrain') {
-    const stats = alphaStats(image, { x: 0, y: 0, w: image.width, h: image.height });
+    const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
     alphaSummary = `coverage=${(stats.coverage * 100).toFixed(1)}%`;
     if (stats.coverage > 0.985) {
       return { id: entry.id, ok: false, reason: `no transparency detected; alpha coverage ${alphaSummary}` };
@@ -291,7 +291,7 @@ function processAnimatedEntry(entry, opts) {
   fs.writeFileSync(outAbs, encodeDeterministicPng(strip));
 
   // Alpha sanity (effects must be transparent).
-  const stats = alphaStats({ width: strip.width, height: strip.height, rgba: strip.rgba }, { x: 0, y: 0, w: strip.width, h: strip.height });
+  const stats = alphaStats({ width: strip.width, height: strip.height, rgba: strip.rgba }, { x: 0, y: 0, width: strip.width, height: strip.height });
   const alphaSummary = `coverage=${(stats.coverage * 100).toFixed(1)}%`;
   if (stats.coverage > 0.985) {
     return { id: entry.id, ok: false, reason: `composed strip has no transparency; alpha ${alphaSummary}` };
@@ -387,7 +387,7 @@ function processCharacterPlaceholder(entry, opts = {}) {
   ensureDir(path.dirname(outAbs));
   fs.writeFileSync(outAbs, encodeDeterministicPng({ width: s.width, height: s.height, rgba: sheetRgba }));
 
-  const stats = alphaStats({ width: s.width, height: s.height, rgba: sheetRgba }, { x: 0, y: 0, w: s.width, h: s.height });
+  const stats = alphaStats({ width: s.width, height: s.height, rgba: sheetRgba }, { x: 0, y: 0, width: s.width, height: s.height });
   return {
     id: entry.id,
     ok: true,

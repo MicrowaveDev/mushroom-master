@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Generate deterministic proof terrain cells for the home-field tilemap.
+ * Generate deterministic proof terrain cells and top-down object props for the
+ * home-field tilemap.
  *
- * These are intentionally tile-first: one 256x256 orthographic cell per PNG,
- * with wrapped edge painting so review can judge actual repetition before
- * commissioning or accepting final illustrated art.
+ * Terrain is intentionally quiet and tile-first. Bush masses and sprouts are
+ * transparent object-layer props so the field can keep painterly foliage without
+ * stamping obvious shapes into every repeated grass tile.
  */
 
 import fs from 'node:fs';
@@ -17,7 +18,7 @@ const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const outputDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'raw');
 const TILE = 256;
 
-const TERRAIN_IDS = [
+const PROOF_IDS = [
   'grass_base_01',
   'grass_base_02',
   'grass_flowers_01',
@@ -25,7 +26,10 @@ const TERRAIN_IDS = [
   'path_spore_glow',
   'path_destination_row',
   'edge_roots_01',
-  'edge_moss_rocks_01'
+  'edge_moss_rocks_01',
+  'bush_cluster_dark_01',
+  'bush_cluster_light_01',
+  'leaf_sprout_01'
 ];
 
 function clamp(value, min, max) {
@@ -48,12 +52,14 @@ function colorMix(a, b, t) {
 function setPixel(rgba, x, y, color, alpha = 1) {
   if (x < 0 || y < 0 || x >= TILE || y >= TILE) return;
   const i = (y * TILE + x) * 4;
-  const a = clamp(alpha * ((color[3] ?? 255) / 255), 0, 1);
-  const inv = 1 - a;
-  rgba[i] = Math.round(rgba[i] * inv + color[0] * a);
-  rgba[i + 1] = Math.round(rgba[i + 1] * inv + color[1] * a);
-  rgba[i + 2] = Math.round(rgba[i + 2] * inv + color[2] * a);
-  rgba[i + 3] = 255;
+  const srcA = clamp(alpha * ((color[3] ?? 255) / 255), 0, 1);
+  const dstA = rgba[i + 3] / 255;
+  const outA = srcA + dstA * (1 - srcA);
+  if (outA <= 0) return;
+  rgba[i] = Math.round((color[0] * srcA + rgba[i] * dstA * (1 - srcA)) / outA);
+  rgba[i + 1] = Math.round((color[1] * srcA + rgba[i + 1] * dstA * (1 - srcA)) / outA);
+  rgba[i + 2] = Math.round((color[2] * srcA + rgba[i + 2] * dstA * (1 - srcA)) / outA);
+  rgba[i + 3] = Math.round(outA * 255);
 }
 
 function fill(rgba, color) {
@@ -126,43 +132,41 @@ function paintBrushStroke(rgba, x0, y0, x1, y1, radius, color, alpha = 1) {
 
 function makeGrass({ variant = 0, flowers = false } = {}) {
   const rgba = Buffer.alloc(TILE * TILE * 4);
-  const base = variant === 0 ? [84, 131, 73, 255] : [76, 124, 81, 255];
+  const base = variant === 0 ? [64, 111, 58, 255] : [58, 105, 61, 255];
   fill(rgba, base);
-  addBaseNoise(rgba, [57, 102, 64, 255], [139, 171, 105, 255], 8 + variant);
+  addBaseNoise(rgba, [48, 88, 54, 255], [94, 130, 70, 255], 8 + variant);
 
   const patches = variant === 0
     ? [
-        [32, 44, 72, 44, [133, 160, 91, 255], 0.38],
-        [208, 220, 86, 42, [56, 102, 71, 255], 0.28],
-        [236, 52, 48, 64, [158, 176, 107, 255], 0.22],
-        [112, 158, 100, 54, [70, 116, 64, 255], 0.24]
+        [28, 42, 86, 58, [82, 126, 68, 255], 0.12],
+        [220, 222, 102, 62, [42, 83, 54, 255], 0.12],
+        [236, 52, 68, 78, [88, 128, 72, 255], 0.08],
+        [112, 158, 120, 68, [48, 91, 56, 255], 0.1]
       ]
     : [
-        [12, 116, 78, 50, [141, 166, 99, 255], 0.32],
-        [184, 22, 98, 48, [62, 105, 76, 255], 0.26],
-        [224, 164, 72, 64, [151, 171, 106, 255], 0.24],
-        [86, 226, 96, 42, [61, 107, 65, 255], 0.2]
+        [12, 116, 92, 64, [91, 131, 73, 255], 0.1],
+        [184, 22, 116, 58, [45, 86, 57, 255], 0.1],
+        [224, 164, 92, 78, [93, 132, 73, 255], 0.08],
+        [86, 226, 108, 54, [45, 88, 54, 255], 0.08]
       ];
 
   for (const [x, y, rx, ry, color, alpha] of patches) {
     paintWrappedEllipse(rgba, x, y, rx, ry, color, alpha, 0.42);
   }
 
-  paintBrushStroke(rgba, -24, 180, 88, 146, 10, [168, 184, 116, 255], 0.045);
-  paintBrushStroke(rgba, 164, 280, 294, 224, 9, [43, 92, 64, 255], 0.045);
+  paintBrushStroke(rgba, -24, 180, 88, 146, 12, [120, 153, 84, 255], 0.028);
+  paintBrushStroke(rgba, 164, 280, 294, 224, 11, [38, 78, 52, 255], 0.03);
 
   if (flowers) {
     const flowerDots = [
-      [40, 72, [226, 190, 88, 255]],
-      [54, 78, [244, 218, 126, 255]],
-      [204, 48, [173, 126, 216, 255]],
-      [218, 58, [211, 178, 91, 255]],
-      [154, 214, [232, 206, 120, 255]],
-      [164, 224, [177, 130, 214, 255]]
+      [42, 76, [153, 181, 80, 255]],
+      [204, 48, [123, 156, 78, 255]],
+      [218, 58, [154, 176, 82, 255]],
+      [154, 214, [158, 182, 86, 255]]
     ];
     for (const [x, y, color] of flowerDots) {
-      paintWrappedEllipse(rgba, x, y, 4.5, 3.5, color, 0.78, 0.5);
-      paintWrappedEllipse(rgba, x + 1, y + 1, 1.6, 1.2, [250, 240, 190, 255], 0.7, 0.5);
+      paintWrappedEllipse(rgba, x, y, 4.5, 3.5, color, 0.36, 0.5);
+      paintWrappedEllipse(rgba, x + 1, y + 1, 1.5, 1.2, [201, 209, 119, 255], 0.22, 0.5);
     }
   }
   return rgba;
@@ -215,10 +219,10 @@ function makeDestinationPath() {
 
 function makeEdgeRoots() {
   const rgba = makeGrass({ variant: 1 });
-  paintWrappedEllipse(rgba, 22, 128, 88, 184, [38, 71, 45, 255], 0.46, 0.58);
-  paintWrappedEllipse(rgba, 232, 128, 82, 184, [39, 72, 46, 255], 0.4, 0.58);
-  paintWrappedEllipse(rgba, 126, 18, 164, 48, [47, 80, 50, 255], 0.24, 0.62);
-  paintWrappedEllipse(rgba, 128, 238, 164, 54, [50, 84, 52, 255], 0.2, 0.62);
+  paintWrappedEllipse(rgba, 22, 128, 88, 184, [37, 70, 45, 255], 0.2, 0.62);
+  paintWrappedEllipse(rgba, 232, 128, 82, 184, [39, 72, 46, 255], 0.17, 0.62);
+  paintWrappedEllipse(rgba, 126, 18, 164, 48, [47, 80, 50, 255], 0.12, 0.68);
+  paintWrappedEllipse(rgba, 128, 238, 164, 54, [50, 84, 52, 255], 0.1, 0.68);
 
   const rootColor = [91, 64, 45, 255];
   const rootLight = [137, 96, 56, 255];
@@ -230,8 +234,8 @@ function makeEdgeRoots() {
     [70, 132, 188, 172, 4]
   ];
   for (const [x0, y0, x1, y1, radius] of strokes) {
-    paintBrushStroke(rgba, x0, y0, x1, y1, radius, rootColor, 0.3);
-    paintBrushStroke(rgba, x0 + 3, y0 + 2, x1 + 3, y1 + 2, Math.max(2, radius * 0.34), rootLight, 0.16);
+    paintBrushStroke(rgba, x0, y0, x1, y1, radius, rootColor, 0.16);
+    paintBrushStroke(rgba, x0 + 3, y0 + 2, x1 + 3, y1 + 2, Math.max(2, radius * 0.34), rootLight, 0.08);
   }
 
   const leafClumps = [
@@ -239,17 +243,17 @@ function makeEdgeRoots() {
     [216, 190, 30, 16], [124, 46, 38, 14], [132, 218, 42, 16]
   ];
   for (const [x, y, rx, ry] of leafClumps) {
-    paintWrappedEllipse(rgba, x, y, rx, ry, [127, 153, 86, 255], 0.18, 0.6);
+    paintWrappedEllipse(rgba, x, y, rx, ry, [111, 143, 78, 255], 0.1, 0.64);
   }
   return rgba;
 }
 
 function makeEdgeMossRocks() {
   const rgba = makeGrass({ variant: 0 });
-  paintWrappedEllipse(rgba, 28, 126, 90, 176, [48, 84, 58, 255], 0.3, 0.58);
-  paintWrappedEllipse(rgba, 226, 132, 88, 176, [48, 84, 58, 255], 0.28, 0.58);
-  paintWrappedEllipse(rgba, 128, 8, 158, 42, [55, 91, 59, 255], 0.22, 0.6);
-  paintWrappedEllipse(rgba, 128, 248, 150, 40, [54, 90, 58, 255], 0.2, 0.6);
+  paintWrappedEllipse(rgba, 28, 126, 90, 176, [48, 84, 58, 255], 0.18, 0.64);
+  paintWrappedEllipse(rgba, 226, 132, 88, 176, [48, 84, 58, 255], 0.16, 0.64);
+  paintWrappedEllipse(rgba, 128, 8, 158, 42, [55, 91, 59, 255], 0.12, 0.66);
+  paintWrappedEllipse(rgba, 128, 248, 150, 40, [54, 90, 58, 255], 0.11, 0.66);
 
   const rocks = [
     [34, 54, 22, 13],
@@ -260,16 +264,110 @@ function makeEdgeMossRocks() {
     [132, 226, 36, 13]
   ];
   for (const [x, y, rx, ry] of rocks) {
-    paintWrappedEllipse(rgba, x, y, rx, ry, [91, 98, 78, 255], 0.34, 0.48);
-    paintWrappedEllipse(rgba, x - 4, y - 3, rx * 0.58, ry * 0.46, [143, 149, 112, 255], 0.2, 0.55);
-    paintWrappedEllipse(rgba, x + 6, y + 4, rx * 0.62, ry * 0.42, [55, 68, 57, 255], 0.14, 0.58);
+    paintWrappedEllipse(rgba, x, y, rx, ry, [82, 93, 74, 255], 0.18, 0.54);
+    paintWrappedEllipse(rgba, x - 4, y - 3, rx * 0.58, ry * 0.46, [127, 140, 100, 255], 0.1, 0.58);
+    paintWrappedEllipse(rgba, x + 6, y + 4, rx * 0.62, ry * 0.42, [50, 64, 53, 255], 0.08, 0.62);
   }
 
   const moss = [
     [64, 92], [92, 178], [196, 98], [184, 190], [130, 202]
   ];
   for (const [x, y] of moss) {
-    paintWrappedEllipse(rgba, x, y, 22, 10, [151, 174, 96, 255], 0.18, 0.6);
+    paintWrappedEllipse(rgba, x, y, 22, 10, [132, 160, 88, 255], 0.1, 0.64);
+  }
+  return rgba;
+}
+
+function paintLeaf(rgba, cx, cy, angle, length, width, color, alpha = 1) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const rx = length / 2;
+  const ry = width / 2;
+  const minX = Math.floor(cx - length - 2);
+  const maxX = Math.ceil(cx + length + 2);
+  const minY = Math.floor(cy - length - 2);
+  const maxY = Math.ceil(cy + length + 2);
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const lx = dx * cos + dy * sin;
+      const ly = -dx * sin + dy * cos;
+      const d = Math.sqrt((lx * lx) / (rx * rx) + (ly * ly) / (ry * ry));
+      if (d > 1) continue;
+      const tipFade = clamp(1 - Math.abs(lx / rx) * 0.28, 0, 1);
+      const edge = clamp((1 - d) / 0.22, 0, 1) * tipFade;
+      setPixel(rgba, x, y, color, alpha * edge);
+    }
+  }
+}
+
+function paintBushCluster(rgba, cx, cy, scale, palette) {
+  const shadow = palette.shadow;
+  const mid = palette.mid;
+  const light = palette.light;
+  const lobes = [
+    [-52, 16, 50, 38, shadow, 0.88],
+    [-22, -18, 58, 44, mid, 0.9],
+    [26, -14, 54, 42, shadow, 0.82],
+    [56, 18, 46, 36, mid, 0.86],
+    [8, 30, 62, 42, shadow, 0.84],
+    [-68, -12, 34, 30, mid, 0.72],
+    [72, -10, 32, 28, shadow, 0.7]
+  ];
+  for (const [x, y, rx, ry, color, alpha] of lobes) {
+    paintEllipse(rgba, cx + x * scale, cy + y * scale, rx * scale, ry * scale, color, alpha, 0.42);
+  }
+
+  const rim = [
+    [-78, 6], [-62, -24], [-34, -48], [4, -54], [42, -44],
+    [78, -18], [82, 22], [48, 52], [10, 66], [-34, 56], [-70, 34]
+  ];
+  for (const [x, y] of rim) {
+    paintEllipse(rgba, cx + x * scale, cy + y * scale, 15 * scale, 12 * scale, light, 0.32, 0.5);
+  }
+
+  const innerMarks = [
+    [-30, 2], [18, -18], [42, 14], [-4, 24], [-58, 20], [22, 40]
+  ];
+  for (const [x, y] of innerMarks) {
+    paintEllipse(rgba, cx + x * scale, cy + y * scale, 18 * scale, 8 * scale, light, 0.14, 0.55);
+  }
+}
+
+function makeBushCluster(kind) {
+  const rgba = Buffer.alloc(TILE * TILE * 4);
+  const palettes = {
+    dark: {
+      shadow: [28, 67, 43, 238],
+      mid: [43, 88, 50, 236],
+      light: [92, 128, 65, 210]
+    },
+    light: {
+      shadow: [52, 91, 47, 230],
+      mid: [78, 121, 55, 232],
+      light: [136, 163, 78, 210]
+    }
+  };
+  paintBushCluster(rgba, 128, 126, kind === 'light' ? 1.02 : 1.08, palettes[kind]);
+  return rgba;
+}
+
+function makeLeafSprout() {
+  const rgba = Buffer.alloc(TILE * TILE * 4);
+  const cx = 128;
+  const cy = 158;
+  paintEllipse(rgba, cx, cy + 8, 18, 8, [42, 77, 38, 120], 0.35, 0.6);
+  const leaves = [
+    [-0.92, 34, 15, [94, 145, 55, 230]],
+    [-0.42, 42, 16, [111, 157, 63, 236]],
+    [0.0, 38, 14, [135, 171, 76, 232]],
+    [0.42, 42, 16, [105, 151, 62, 236]],
+    [0.92, 34, 15, [85, 136, 55, 230]]
+  ];
+  for (const [angle, length, width, color] of leaves) {
+    paintLeaf(rgba, cx, cy, -Math.PI / 2 + angle, length, width, color, 0.9);
+    paintLeaf(rgba, cx + Math.cos(-Math.PI / 2 + angle) * length * 0.15, cy + Math.sin(-Math.PI / 2 + angle) * length * 0.15, -Math.PI / 2 + angle, length * 0.54, width * 0.24, [183, 198, 98, 180], 0.36);
   }
   return rgba;
 }
@@ -283,7 +381,7 @@ function writeTile(id, rgba) {
 
 function main() {
   const wanted = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
-  const ids = wanted.length > 0 ? wanted : TERRAIN_IDS;
+  const ids = wanted.length > 0 ? wanted : PROOF_IDS;
   for (const id of ids) {
     if (id === 'grass_base_01') writeTile(id, makeGrass({ variant: 0 }));
     else if (id === 'grass_base_02') writeTile(id, makeGrass({ variant: 1 }));
@@ -293,7 +391,10 @@ function main() {
     else if (id === 'path_destination_row') writeTile(id, makeDestinationPath());
     else if (id === 'edge_roots_01') writeTile(id, makeEdgeRoots());
     else if (id === 'edge_moss_rocks_01') writeTile(id, makeEdgeMossRocks());
-    else throw new Error(`Unknown proof tile id "${id}". Supported: ${TERRAIN_IDS.join(', ')}`);
+    else if (id === 'bush_cluster_dark_01') writeTile(id, makeBushCluster('dark'));
+    else if (id === 'bush_cluster_light_01') writeTile(id, makeBushCluster('light'));
+    else if (id === 'leaf_sprout_01') writeTile(id, makeLeafSprout());
+    else throw new Error(`Unknown proof tile id "${id}". Supported: ${PROOF_IDS.join(', ')}`);
   }
 }
 

@@ -19,6 +19,15 @@ const fallbackObjectClass = {
   journey_signpost: 'home-field-preview-object--sign',
   lantern_left: 'home-field-preview-object--lantern',
   lantern_right: 'home-field-preview-object--lantern',
+  bush_dark_top_left: 'home-field-preview-object--bush',
+  bush_light_top_center: 'home-field-preview-object--bush home-field-preview-object--bush-light',
+  bush_dark_top_right: 'home-field-preview-object--bush',
+  bush_dark_bottom_left: 'home-field-preview-object--bush',
+  bush_light_bottom_center: 'home-field-preview-object--bush home-field-preview-object--bush-light',
+  bush_dark_bottom_right: 'home-field-preview-object--bush',
+  sprout_left_mid: 'home-field-preview-object--sprout',
+  sprout_right_mid: 'home-field-preview-object--sprout',
+  sprout_spawn: 'home-field-preview-object--sprout',
   mushroom_cluster_amber_1: 'home-field-preview-object--cluster-a',
   mushroom_cluster_violet_1: 'home-field-preview-object--cluster-b',
   mushroom_cluster_tall_1: 'home-field-preview-object--cluster-a',
@@ -35,6 +44,15 @@ const fallbackObjectLabel = {
   journey_signpost: 'Sign',
   lantern_left: 'Lantern',
   lantern_right: 'Lantern',
+  bush_dark_top_left: 'Bush',
+  bush_light_top_center: 'Bush',
+  bush_dark_top_right: 'Bush',
+  bush_dark_bottom_left: 'Bush',
+  bush_light_bottom_center: 'Bush',
+  bush_dark_bottom_right: 'Bush',
+  sprout_left_mid: 'Sprout',
+  sprout_right_mid: 'Sprout',
+  sprout_spawn: 'Sprout',
   mushroom_cluster_amber_1: 'Cluster',
   mushroom_cluster_violet_1: 'Cluster',
   mushroom_cluster_tall_1: 'Cluster',
@@ -43,6 +61,18 @@ const fallbackObjectLabel = {
   fallen_branch: 'Branch',
   chibi_spawn: 'Chibi'
 };
+
+const decorativeObjectIds = new Set([
+  'bush_dark_top_left',
+  'bush_light_top_center',
+  'bush_dark_top_right',
+  'bush_dark_bottom_left',
+  'bush_light_bottom_center',
+  'bush_dark_bottom_right',
+  'sprout_left_mid',
+  'sprout_right_mid',
+  'sprout_spawn'
+]);
 
 function percent(value, total) {
   return `${((value / total) * 100).toFixed(3)}%`;
@@ -82,11 +112,14 @@ export const HomeFieldPreviewScreen = {
       const world = homeFieldMap.world;
       const mapObjects = (this.objectLayer?.objects || []).map((object) => {
         const asset = this.assetById[object.assetId] || null;
+        const src = asset && asset.status !== 'missing' ? asset.publicPath : '';
         return {
           id: object.id,
           label: fallbackObjectLabel[object.id] || object.id,
           className: fallbackObjectClass[object.id] || 'home-field-preview-object--cluster-a',
-          src: asset && asset.status !== 'missing' ? asset.publicPath : '',
+          src,
+          showLabel: !src || object.hotspotId || object.labelKey,
+          decorative: decorativeObjectIds.has(object.id),
           style: `left: ${percent(object.x, world.width)}; top: ${percent(object.y, world.height)};`
         };
       });
@@ -97,6 +130,8 @@ export const HomeFieldPreviewScreen = {
           label: 'Chibi',
           className: fallbackObjectClass.chibi_spawn,
           src: '',
+          showLabel: true,
+          decorative: false,
           style: `left: ${percent(homeFieldMap.spawn.x, world.width)}; top: ${percent(homeFieldMap.spawn.y, world.height)};`
         }
       ];
@@ -143,6 +178,7 @@ export const HomeFieldPreviewScreen = {
           :class="object.className"
           :style="object.style"
           :data-testid="'home-field-preview-' + object.id"
+          :data-decorative="object.decorative ? 'true' : 'false'"
           type="button"
           :aria-label="object.label"
         >
@@ -153,7 +189,7 @@ export const HomeFieldPreviewScreen = {
             :alt="object.label"
             loading="eager"
           />
-          <span>{{ object.label }}</span>
+          <span v-if="object.showLabel">{{ object.label }}</span>
         </button>
       </div>
     </section>

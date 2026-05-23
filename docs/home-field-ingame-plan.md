@@ -1272,8 +1272,11 @@ The first implementation agent should produce only this proof set:
 | `path_destination_row` | terrain | yes |
 | `edge_roots_01` | terrain | yes |
 | `edge_moss_rocks_01` | terrain | yes |
+| `bush_cluster_dark_01` | prop | yes |
+| `bush_cluster_light_01` | prop | yes |
+| `leaf_sprout_01` | prop | yes |
 
-This first proof set is terrain-only. It exists to prove that the map can be assembled from small repeatable cells before object sprites, exits, animated effects, or chibi frames are generated. Do not generate all character chibis in the first pass; after terrain passes contact-sheet and `/home-field-preview` review, validate the style with one active/default mushroom first.
+This first proof set keeps grass terrain quiet and moves the readable bush/sprout shapes into the object layer. It exists to prove that the map can be assembled from small repeatable cells without losing the painterly forest mood. Do not generate all character chibis in the first pass; after terrain and foliage props pass contact-sheet and `/home-field-preview` review, validate the style with one active/default mushroom first.
 
 ### Step 9 — Phaser Scene Spike
 

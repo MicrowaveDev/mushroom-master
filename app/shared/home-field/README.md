@@ -62,7 +62,7 @@ Six npm aliases drive the pipeline. Run them in order per batch:
 |---|---|---|
 | **status** | `npm run game:home-field:status` | Lists every asset, marks `[x]` done / `[ ]` pending. Quick "where am I" check. |
 | **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
-| **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic terrain-cell proofs for the map's tile-layer IDs. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
+| **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, so use it only once the full 24-asset set has been produced. |
@@ -136,14 +136,14 @@ The contact sheet is the first review gate: terrain must be inspected as repeate
 # 1. See progress
 npm run game:home-field:status
 
-# 2. Generate the terrain-cell proof batch
+# 2. Generate the terrain-cell + foliage-prop proof batch
 npm run game:home-field:proof-tiles
 
 # For later prop/exit/effect/character batches, get prompts with:
 # npm run game:home-field:next -- --batch=proof-static --all
 
 # 4. Produce the raw files generated in this batch
-npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01
+npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01
 
 # 5. Validate schema and confirm produced count
 npm run game:home-field:validate
@@ -189,7 +189,7 @@ Three predefined batches stage the workload from lowest-risk to highest-risk. **
 
 | Order | Batch | Command | Why first / why later |
 |---|---|---|---|
-| 1 | `proof-tiles` | `npm run game:home-field:proof-tiles` then `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01` | 8 terrain cells used by the current map tile layer, including blocked edge fillers. Validates actual repeatability before props/exits can hide weak terrain. **STOP and review the contact sheet plus `/home-field-preview` screenshots before continuing.** |
+| 1 | `proof-tiles` | `npm run game:home-field:proof-tiles` then `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01` | 8 quiet terrain cells plus 3 foliage props. Validates actual repeatability and proves that bush masses live on the object layer instead of being stamped into grass tiles. **STOP and review the contact sheet plus `/home-field-preview` screenshots before continuing.** |
 | 2 | `proof-static` | `npm run game:home-field:next -- --batch=proof-static --all` | First prop/exit proof assets after the terrain contract is working. **STOP and request human review of the contact sheet before continuing.** |
 | 3 | `proof-animated` | `npm run game:home-field:next -- --batch=proof-animated --all` | 2 animated effects (`spore_motes_loop`, `tap_ripple`). Exercises the per-frame imagegen + composition path. **STOP for review.** |
 | 4 | `proof-character` | `npm run game:home-field:next -- --batch=proof-character --all` | The `_placeholder` chibi spritesheet — 12 distinct frames composed into the locked `8×4` grid. **STOP for review.** |
