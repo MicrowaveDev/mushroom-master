@@ -65,6 +65,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **status** | `npm run game:home-field:status` | Lists every asset, marks `[x]` done / `[ ]` pending. Quick "where am I" check. |
 | **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
 | **next-tiles** | `npm run game:home-field:next-tiles` | Prints only the first grass-family regeneration batch (`grass_base_01`, `grass_base_02`, `grass_flowers_01`). Stop after these three and review before generating path or edge tiles. |
+| **rerun-grass** | `npm run game:home-field:rerun-grass` | Intentional grass-family rerun command. Emits grass rows with `needs_review` or `needs_regen` and uses the review-gate bypass explicitly, so agents do not improvise flags. |
 | **next-tiles-all** | `npm run game:home-field:next-tiles-all` | Prints the full 12-tile terrain regeneration queue. Use only after the grass family is approved for the next family pass. |
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
@@ -199,8 +200,8 @@ npm run game:home-field:proof-tiles
 # For later prop/exit/effect/character batches, get prompts with:
 # npm run game:home-field:next -- --batch=proof-static --all
 
-# For the next production terrain regeneration pass, use:
-npm run game:home-field:next-tiles
+# For intentional grass reruns after review rows exist, use:
+npm run game:home-field:rerun-grass
 
 # 4. Produce the raw files generated in this batch
 npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01

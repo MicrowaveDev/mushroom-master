@@ -129,12 +129,29 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
   }
 });
 
-test('[home-field] next-tiles emits only the grass family before stopping', () => {
+test('[home-field] next-tiles blocks while existing candidates still need review', () => {
   const result = spawnSync(process.execPath, [
     nextScriptPath,
     '--batch=terrain-grass',
     '--review-verdict=needs_regen',
     '--all'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stderr, /Review Gate Blocked/);
+  assert.match(result.stderr, /Existing generated candidates still need a checked-in visual verdict/);
+});
+
+test('[home-field] rerun grass queue emits needs_review and needs_regen grass tiles', () => {
+  const result = spawnSync(process.execPath, [
+    nextScriptPath,
+    '--batch=terrain-grass',
+    '--review-verdict=needs_review,needs_regen',
+    '--all',
+    '--ignore-review-gate'
   ], {
     cwd: repoRoot,
     encoding: 'utf8'

@@ -15,7 +15,7 @@ If the environment supports sub-agents, assign the roles below as separate agent
 | Role | May read | May write | Must not do |
 | --- | --- | --- | --- |
 | Orchestrator | Workflow docs, command output, final reports | Commit and push approved candidate-batch changes | Generate images, approve art by itself, skip stop gates |
-| Prompt/Contract Reviewer | Assets, prompts, style anchor, tileset contract, next-tiles output | Nothing | Generate images, edit manifests, approve art |
+| Prompt/Contract Reviewer | Assets, prompts, style anchor, tileset contract, rerun-grass output | Nothing | Generate images, edit manifests, approve art |
 | Imagegen Worker | Prompt blocks and style anchor | Raw PNGs under `.agent/home-field-workspace/raw/` | Edit app PNGs directly, edit JSON/docs, approve art |
 | Producer/Validation Worker | Raw files, manifest, command output | App-facing PNGs produced through `game:home-field:produce`; generated local review sheets | Hand-edit PNGs, change contracts, approve art |
 | Visual Critic | Contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Set `approved` or `accepted: true` without explicit human approval |
@@ -28,7 +28,15 @@ The next tile generation run is limited to:
 - `grass_base_02`
 - `grass_flowers_01`
 
-`npm run game:home-field:next-tiles` emits only these three prompts. The run must stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
+`npm run game:home-field:next-tiles` is the gated first-pass queue. Once a grass candidate is marked `needs_review`, that command can block to prevent accidental continuation.
+
+For intentional grass-family reruns, use:
+
+```bash
+npm run game:home-field:rerun-grass
+```
+
+That command emits grass rows with `needs_review` or `needs_regen` and uses the review-gate bypass explicitly. The run must still stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
 
 ## Required Evidence
 

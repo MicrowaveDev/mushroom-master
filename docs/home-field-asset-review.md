@@ -23,7 +23,13 @@ Start with terrain only. Do not generate props, exits, effects, or chibi until t
 npm run game:home-field:next-tiles
 ```
 
-That command intentionally emits only the first grass-family terrain batch:
+That command is the gated first-pass queue. If any existing candidate is still `needs_review`, it blocks until the review manifest is resolved. For an intentional grass-family rerun, use:
+
+```bash
+npm run game:home-field:rerun-grass
+```
+
+The rerun command emits the current grass-family candidates whose review verdict is `needs_review` or `needs_regen`:
 
 - `grass_base_01`
 - `grass_base_02`
