@@ -2,7 +2,7 @@
 
 This directory holds the **frozen contracts** for the Home Field hub. Phase 0 of the plan is complete; the next agent (Codex) generates the tiles, props, exits, effects, and chibi spritesheets.
 
-**For the human handing off to Codex**: the ready-to-paste agent prompt is in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). It's self-contained — copy that into your Codex session and it has everything Codex needs. The role split for sub-agent runs is documented in [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md).
+**For the human handing off to Codex**: use the short ready-to-paste grass prompt in [`RUN_GRASS_PROMPT.md`](./RUN_GRASS_PROMPT.md). It intentionally points the next agent to checked-in instructions instead of carrying the whole workflow in the chat prompt. The longer self-contained fallback remains in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). The role split for sub-agent runs is documented in [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md).
 
 ## Before You Start (Codex)
 
