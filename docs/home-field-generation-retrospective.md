@@ -4,6 +4,45 @@ Date: 2026-05-23
 
 This document is a handoff for the next agent. The current Home Field asset pass is useful as a pipeline proof, but it is **not production-ready art**. Do not treat the committed PNG set as approved. It exists to expose the problems in the generation flow, tile requirements, and preview/rendering logic.
 
+## Update: Guardrails Added
+
+After this retrospective was written, the workflow was hardened in two follow-up commits:
+
+- `cebff25 Gate home field production art approval`
+- `63bcd6e Add home field tile regeneration queue`
+
+These commits did **not** make the current art production-ready. They changed the process so future agents cannot accidentally treat the current PNG set as approved.
+
+Handled:
+
+- Added checked-in visual review records:
+  - `docs/home-field-asset-review.md`
+  - `docs/home-field-asset-review.json`
+- Replaced ambiguous `draft` status with explicit manifest states: `missing`, `generated`, `needs_review`, `rejected`, `approved`, `placeholder`.
+- Marked current terrain/prop/exit assets as `needs_review`.
+- Marked technical effect strips and `_placeholder` chibi as `placeholder`.
+- Added `npm run game:home-field:validate -- --production`, which intentionally fails while any asset is unapproved or placeholder.
+- Added `npm run game:home-field:next-tiles`, which emits the 12 terrain assets whose review verdict is `needs_regen`, even though old PNG files already exist.
+- Added `/home-field-preview?debug=0` clean visual review mode.
+- Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
+- Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
+- Updated Home Field README / Codex prompt / tileset contract with the review-gate and clean-preview workflow.
+
+Current status after the guardrail pass:
+
+```text
+npm run game:home-field:validate -- --check-files --check-connectors --check-review
+# PASS
+
+npm run game:home-field:validate -- --production
+# FAIL intentionally: 0/31 assets approved, 6 placeholders remain
+
+npm run game:home-field:next-tiles
+# emits 12 terrain prompts for the next generation run
+```
+
+Do not "fix" the production gate by changing statuses. It should pass only after real art is regenerated, reviewed, and explicitly accepted.
+
 ## Current State
 
 The committed asset set has these strengths:
@@ -56,7 +95,7 @@ The next flow should enforce alpha quality and scale consistency before acceptin
 
 The effect strips and `_placeholder` chibi were created deterministically to satisfy the full file gate. They are not art direction candidates.
 
-This is acceptable for testing `--check-files`, but the manifest status should remain `draft`. A future pass must replace them with real per-frame art.
+This is acceptable for testing `--check-files`, but their manifest status is now `placeholder`. A future pass must replace them with real per-frame art.
 
 ### 5. Preview Screen Is A Layout Lab, Not A Real Scene
 
@@ -114,11 +153,18 @@ Recommendation:
 
 The original prompt says to stop after batches and report the contact sheet. In practice the flow continued because the user kept asking "continue", and the task moved toward "make all checks pass" rather than "stop and reject weak art".
 
-Recommendation:
+Handled:
 
-- make the batch gate mechanical: after `game:home-field:sheet`, require a checked-in review record with `accepted: true` before the next batch can proceed;
-- add `status: "rejected"` or `status: "needs_regen"` to the manifest so weak outputs are not silently promoted to `draft`;
-- never mark an imagegen candidate as anything beyond `draft` without explicit human approval.
+- `docs/home-field-asset-review.json` now records per-asset visual verdicts.
+- Current weak candidates are `needs_review` + `needs_regen`, not silently approved.
+- Placeholder effects/chibi are represented separately from generated art.
+- `npm run game:home-field:validate -- --production` fails until all assets are `approved` and accepted by review.
+
+Remaining recommendation:
+
+- after `game:home-field:sheet`, update the review manifest before proceeding;
+- never mark an imagegen candidate as `approved` without explicit human approval;
+- use `npm run game:home-field:validate -- --production` before any production-ready claim.
 
 ### Prompts Were Too Broad For Terrain Tiles
 
@@ -191,7 +237,11 @@ missing -> generated -> needs_review -> rejected | approved
 placeholder should be separate from generated art
 ```
 
-If the manifest remains simple, add a separate review manifest in `.agent` or `docs/` listing each asset's current visual verdict.
+Handled:
+
+- `docs/home-field-asset-review.json` is now the review manifest.
+- `docs/home-field-asset-review.md` gives the readable summary.
+- `placeholder` is a separate production-blocking status.
 
 ## Rendering Logic Issues To Analyze
 
@@ -218,51 +268,75 @@ Recommendation:
 
 Grid lines and dashed safe frames are useful for tests, but they make it hard to judge final feeling.
 
-Recommendation:
+Handled:
 
-- support `/home-field-preview?debug=0` for clean screenshots;
-- e2e should capture both debug and clean modes;
-- production art approval should use clean mode.
+- `/home-field-preview?debug=0` exists.
+- E2E captures debug and clean mobile/desktop screenshots.
+- Production art approval should use the clean screenshots, not the debug lab.
 
 ## Recommended Next Agent Flow
 
-1. Do not generate more assets immediately.
-2. Open the current contact sheet:
+1. Start with terrain only:
+
+   ```bash
+   npm run game:home-field:next-tiles
+   ```
+
+2. Generate and produce only the emitted terrain assets. Use the producer command printed in each prompt block.
+3. Run:
+
+   ```bash
+   npm run game:home-field:validate -- --check-files --check-connectors --check-review
+   npm run game:home-field:sheet
+   npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line
+   ```
+
+4. Open the current contact sheet:
 
    ```text
    .agent/home-field-workspace/review/contact-sheet.png
    ```
 
-3. Open current screenshots:
+5. Open current clean screenshots:
 
    ```text
-   .agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/home-field-preview-mobile.png
-   .agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/home-field-preview-desktop.png
+   .agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/home-field-preview-mobile-clean.png
+   .agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/home-field-preview-desktop-clean.png
    ```
 
-4. Write an asset-by-asset verdict table:
+6. Update the review manifest:
 
    ```text
-   assetId | approve/reject | reason | next action
+   docs/home-field-asset-review.json
    ```
 
-5. Adjust requirements and prompts before regeneration.
-6. Add clean preview mode and an alpha/background quality gate.
-7. Regenerate only one family at a time, starting with terrain.
-8. Stop after the terrain family and require human review before props/exits.
+7. Stop after terrain and require human review before props/exits/effects/chibi.
 
 ## Suggested Concrete Tasks
 
-- Add `docs/home-field-asset-review.md` with per-asset visual verdicts.
-- Add `/home-field-preview?debug=0` clean screenshot mode.
-- Add e2e screenshots for both debug and clean mode.
-- Add chroma-key fixture test for `produce-home-field-assets.js`.
-- Add an alpha halo/checkerboard detector for props/exits.
+- Add `docs/home-field-asset-review.md` with per-asset visual verdicts. **Done.**
+- Add `/home-field-preview?debug=0` clean screenshot mode. **Done.**
+- Add e2e screenshots for both debug and clean mode. **Done.**
+- Add chroma-key fixture test for `produce-home-field-assets.js`. **Done.**
+- Add an alpha halo/checkerboard detector for props/exits. **Partly done: opaque checkerboard-like matte detection exists; halo/edge-quality visual sheet is still missing.**
+- Add `npm run game:home-field:next-tiles` regeneration queue for current rejected terrain. **Done.**
 - Add adjacency proof sheet for terrain connector pairs.
 - Replace current procedural grass/path tiles with a more coherent low-detail hand-authored style.
 - Replace checkerboard-cleaned props with chroma-keyed or true-alpha versions.
 - Replace placeholder effects and chibi with real generated or hand-authored spritesheets.
 
+## Known Issues Remaining
+
+- Current terrain still needs regeneration. Start with `npm run game:home-field:next-tiles`.
+- The contact sheet shows 3x3 repeated terrain patches, but there is no dedicated adjacency proof sheet yet.
+- Connector validation checks metadata adjacency, not visual path-band alignment or edge color continuity.
+- `pathCenterY`, `pathWidth`, `pathCenterX`, and edge color-profile heuristics are still not implemented.
+- Clean preview exists, but the final Home Field renderer is still DOM/CSS preview, not the eventual Phaser/canvas scene.
+- Mobile preview still uses CSS camera/object overrides; the map JSON is not yet the sole source of placement truth.
+- Effects and `_placeholder` chibi remain technical placeholders.
+- Props/exits still need a light/dark alpha review sheet and scale-consistency pass after terrain is approved.
+- Production validation is expected to fail until all assets are regenerated and approved.
+
 ## Bottom Line
 
-The pipeline now proves that the app can load a complete Home Field asset set, but the art process is not yet capable of reliably producing production-ready tilemap art. The next improvement should be to harden the review gates and rendering proof before another image generation pass. Otherwise the system will continue producing valid PNGs that look like placeholders.
+The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is no longer "add gates"; it is to regenerate terrain through `npm run game:home-field:next-tiles`, review the clean screenshots, and only then decide whether any terrain asset can move from `needs_review` to `approved`.
