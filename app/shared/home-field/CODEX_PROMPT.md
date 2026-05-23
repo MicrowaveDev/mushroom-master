@@ -1,130 +1,163 @@
-# Codex Prompt — Home Field tile generation
+# Codex Prompt — Home Field Grass Tile Generation
 
-Copy the block below into Codex. It's self-contained: it tells Codex where to look, what to do, when to stop, and what to commit. No prior conversation context needed.
+Copy the block below into a fresh Codex session. It is self-contained and intentionally narrow: generate only the first grass-family terrain batch, validate it, produce review evidence, update review verdicts, commit, push, and stop.
 
 ---
 
-You are picking up the imagegen workstream for the **Mushroom Master Home Field hub**. Phase 0 contracts (validator, prompts, scripts, ADR, requirement IDs) have already shipped on `main`. Your job is to generate the production bitmap art that the renderer (Phase 3) will load.
+You are picking up the imagegen workstream for the **Mushroom Master Home Field hub** in `mushroom-master`.
 
-## Environment
+Your goal is to regenerate only the first grass-family terrain tiles:
 
-- Repo: `mushroom-master` (`cd` into it before running anything; the shared metadata and scripts live there).
-- Branch policy: **direct-to-main**. Commit completed batches on `main` and push. Do not open feature branches unless explicitly asked.
-- Authoritative handoff doc: `app/shared/home-field/README.md`. Read it once at the start — it has the full workflow, batch list, resize flags, and commit rules. Anything below this prompt that conflicts with the README, the README wins.
+- `grass_base_01`
+- `grass_base_02`
+- `grass_flowers_01`
 
-## Goal
+Do not generate path tiles, edge tiles, props, exits, effects, or chibi sprites. Stop after the grass-family review evidence is ready.
 
-Generate the v1 home-field bitmap assets through three staged batches, with a human-review stop between each batch. The contracts are frozen — do not modify `home-field-assets.json` (asset list), `home-field-map.json`, or `home-field-validator.js`. Only **add PNGs** under `web/public/home-field/`.
+## Required Agent Flow
 
-## Strict guardrails
+Use sub-agents only when your Codex environment supports them. If sub-agents are unavailable, perform these stages yourself, but keep the roles separate in your notes and do not let a generation stage approve its own output.
 
-- **One batch at a time.** After completing a batch, push, then **stop and report the contact sheet** at `.agent/home-field-workspace/review/contact-sheet.png` and terrain adjacency sheet at `.agent/home-field-workspace/review/adjacency-sheet.png`. Do not start the next batch until the human approves.
-- **Never modify** the schema, validator, map JSON, or asset manifest. If validation fails because of a schema concern, surface the error and stop; do not "fix" it by editing the contract.
-- **No new dependencies.** The pipeline runs on the existing `bitmap-image-toolkit.js`. Do not add `pngquant`, `sharp`, `phaser`, or anything else.
-- **No text in any image.** Signposts and banners are art-only — runtime renders localized labels. If an imagegen output contains readable text, regenerate it.
-- **Style anchor is non-negotiable.** Every prompt block emitted by `npm run game:home-field:next` already includes the locked style anchor (palette, lighting, shadows, rejections). Feed it verbatim into your imagegen call alongside the subject/details.
-- **Terrain assets are tilemap cells, not background art.** A terrain prompt must produce one reusable `256×256` tile that can repeat edge-to-edge in a Phaser/Tiled layer. Do not generate a complete field, wallpaper, horizon scene, vignette, prop cluster, sign, entrance, or character inside a terrain tile.
-- **Terrain connectivity is explicit.** Before generating terrain, read `docs/home-field-tileset-contract.md`. Every terrain prompt emitted by `npm run game:home-field:next` includes `terrainSet`, `placement`, and `n/e/s/w` connector tokens from `home-field-assets.json`. The image must obey those edge tokens. If the prompt says west/east are `path_h`, the path must exit both sides at the same Y-band. If all edges are `grass`, the tile must not contain a path, blocker, or hard edge.
-- **Grass comes first.** `npm run game:home-field:next-tiles` emits only `grass_base_01`, `grass_base_02`, and `grass_flowers_01`. Generate those three, update the review manifest, refresh review sheets, then stop. Use `npm run game:home-field:next-tiles-all` only after the grass-family stop gate is accepted.
-- **Transitions are separate tiles.** Do not force a path to fade into grass inside a mid-connector tile. Use or request explicit path-end / transition tiles (`path_h_end_w`, `path_h_end_e`, `path_v_end_n`, `path_v_end_s`, etc.) when the map needs an unlike neighbor.
-- **Reject dense texture tiles.** Grass/path terrain must be low-frequency map art: broad readable patches, quiet edges, sparse tiny marks only. If a generated tile looks like a detailed texture painting, contains a unique center highlight, or becomes obvious wallpaper in a repeated patch, reject it even if it is visually pretty.
-- **Generated is not approved.** The deterministic `game:home-field:proof-tiles` output exists to test placement, PNG loading, and repeatability. Keep proof assets at `status: "needs_review"` or `status: "placeholder"` unless a human explicitly approves replacing them with production-grade painterly art. Production art must look hand-authored, not procedural.
-- **Review manifest is mandatory.** Before starting a later batch, update `docs/home-field-asset-review.json` with a verdict for the current candidates. `accepted: true` is allowed only for human-approved production art. `npm run game:home-field:next` blocks unresolved generated candidates by default.
+### 1. Orchestrator
 
-## Run order (do this exactly)
+Owns the run. It may edit only after a validation or review stage says what needs changing. It must:
 
-1. `cd` into `mushroom-master`. Confirm clean tree on `main` (`git status --short`). If not clean, stop and ask.
-2. `npm install` if you haven't already in this environment.
-3. `npm run game:home-field:validate` — must print `home-field validation: PASS`. If not, stop.
-4. `npm run game:home-field:status` — should show `Progress: 0/24 produced`. If non-zero, some assets already exist; you'll work on whatever's still pending.
+- confirm the repo is `mushroom-master` on clean `main`;
+- run `npm run game:home-field:validate`;
+- run `npm run game:home-field:next-tiles`;
+- assign or perform the stages below;
+- stop after the grass batch is committed and pushed.
 
-### Batch 1 — `proof-tiles` (8 quiet terrain PNGs + 3 foliage props)
+### 2. Prompt/Contract Reviewer
 
-5. `npm run game:home-field:proof-tiles` — generates the quiet terrain proof cells plus separate top-down bush/sprout props used by `home-field-map.json`.
-6. `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01` — composes / re-encodes the terrain and prop raws into the final PNGs under `web/public/home-field/`. Inspect the per-asset OK/FAIL summary.
-7. For later prop/exit/effect/character batches, use `npm run game:home-field:next -- --batch=<batch> --all`, generate each raw with the imagegen skill, then produce only the IDs generated in that batch.
-   - If a row prints FAIL, read the reason and regenerate that specific asset (`npm run game:home-field:next -- --id=<that_id>` then redo step 6 + this step for just that ID).
-   - If terrain imagegen output looks like a miniature painting, dense texture, horizon, or full-screen scene, discard that raw and run `npm run game:home-field:proof-tiles` for the terrain-layer proof cells before producing them. The proof tiles exist to keep the map contract honest while final illustrated terrain is iterated.
-   - If terrain output does not match its connector metadata, discard it. Do not "fix" a horizontal path tile by painting a path end into it; add/generate the correct transition tile instead.
-8. `npm run game:home-field:validate` — must pass for schema and map metadata. Use `npm run game:home-field:status` to confirm the produced batch count. Reserve `--check-files` for the final full asset set because it requires every declared PNG to exist.
-9. `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` — refresh the contact sheet, terrain connector sheet, and manifests.
-10. Inspect `.agent/home-field-workspace/review/contact-sheet.png` and `.agent/home-field-workspace/review/adjacency-sheet.png` yourself for obvious problems (text in image, wrong palette, hard black outlines, photoreal style, disconnected path bands, bad edge stacks). Terrain cells must read as repeated tile patches in the contact sheet, not as miniature full-screen scenes. If any asset clearly violates the style anchor or tilemap contract, regenerate it before continuing.
-11. Do not promote any asset to `approved` unless the contact sheet and `/home-field-preview?debug=0` screenshots look production-quality. Current deterministic proof assets are acceptable as `needs_review` or `placeholder` only.
-12. Commit and push:
-    ```
-    git add web/public/home-field/ .gitignore
-    git commit -m "Home field proof terrain batch"
-    git push origin main
-    ```
-12. **STOP.** Report:
-    - the contact-sheet path,
-    - the 7 asset IDs you committed,
-    - any FAILs you had to retry and the reason,
-    - the `home-field-status` output.
-    Wait for human approval before continuing to Batch 2.
+Read-only role. It may read:
 
-### Batch 2 — `proof-animated` (2 animated effects, per-frame composition)
+- `app/shared/home-field/README.md`
+- `docs/home-field-agent-flow.md`
+- `docs/home-field-tileset-contract.md`
+- `app/shared/home-field/home-field-assets.json`
+- `app/shared/home-field/home-field-prompts.json`
+- `app/shared/home-field/home-field-style-anchor.json`
+- output from `npm run game:home-field:next-tiles`
 
-Only proceed after the human approves Batch 1.
+It must confirm:
 
-13. `npm run game:home-field:next -- --batch=proof-animated --all` — prints prompts for `spore_motes_loop` (8 frames at 256×256) and `tap_ripple` (4 frames at 128×128).
-14. For each animated asset:
-    - The prompt explicitly says **PER-FRAME GENERATION**: do not try to produce a single wide strip. Call imagegen once per frame.
-    - Save each frame at the printed per-frame path: `.agent/home-field-workspace/raw/<id>.frame_NN.source.png` (NN = 00, 01, ...).
-    - Frames must form a clean loop (last frame must transition smoothly to first).
-15. `npm run game:home-field:produce -- spore_motes_loop tap_ripple --resize`. The produce script auto-detects per-frame raws and composes them into the horizontal strip declared in the manifest (`2048×256` and `512×128` respectively).
-16. `npm run game:home-field:validate -- --check-files` and `npm run game:home-field:sheet`.
-17. Commit, push, **STOP**, report.
+- each requested asset is one reusable `256x256` tile cell, not a scene;
+- every grass edge remains `grass`;
+- no tile contains path, blocker, prop, sign, exit, character, horizon, text, vignette, or focal object;
+- style is dark-green, cute-goth, broad, low-frequency, and game-readable.
 
-### Batch 3 — `proof-character` (the placeholder chibi spritesheet)
+It must not generate images, edit files, or approve art.
 
-Only proceed after the human approves Batch 2.
+### 3. Imagegen Worker
 
-18. `npm run game:home-field:next -- --batch=proof-character --all` — prints the prompt for `_placeholder`.
-19. Generate the 12 named raw frames listed in the prompt body (2 idle frames + 1 walk frame per direction × 4 directions). Save each at the exact path printed. Each frame is 64×64. The placeholder is a generic mushroom-elf silhouette with visible elf ears.
-20. `npm run game:home-field:produce -- _placeholder --resize-nearest`. The producer assembles the full `8×4 × 64×64` spritesheet, replicating each walk frame across columns 2–7 of its row.
-21. `npm run game:home-field:validate -- --check-files` and `npm run game:home-field:sheet`.
-22. Commit, push, **STOP**, report.
+Generation-only role. It may write only raw files under `.agent/home-field-workspace/raw/`.
 
-### Batch 4 — `full` (remaining static assets)
+For each prompt emitted by `npm run game:home-field:next-tiles`, use the imagegen skill and save the raw PNG exactly to the printed `sourcePath`.
 
-Only proceed after the human approves Batch 3.
+It must reject and regenerate any raw output that:
 
-23. `npm run game:home-field:next -- --batch=full --all` — emits whatever's still pending (the rest of the terrain/prop set plus the remaining 3 animated effects).
-24. Same loop: generate → produce (`--resize` for static, per-frame for animated) → validate → sheet → commit → push → report.
+- looks like a complete illustration, wallpaper, photo, or dense texture;
+- contains text, UI, horizon, props, mushrooms, path, blockers, or a unique center focal mark;
+- visibly clashes with the style anchor;
+- cannot plausibly repeat edge-to-edge as grass.
 
-## How to report between batches
+It must not edit manifests, app PNGs, review JSON, statuses, docs, or tests.
 
-After every batch, post a short report:
+### 4. Producer/Validation Worker
 
+Mechanical role. It runs exactly the producer commands printed in the prompt blocks, then:
+
+```bash
+npm run game:home-field:validate -- --check-files --check-connectors --check-review
+npm run game:home-field:sheet
+npm run game:home-field:adjacency
+npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line
 ```
-Batch <name> complete.
-  Committed: <comma-separated asset IDs>
+
+It may fix mechanical produce issues by rerunning produce with the printed flags. It must not mark assets approved.
+
+### 5. Visual Critic
+
+Review-only role. It reviews:
+
+- `.agent/home-field-workspace/review/contact-sheet.png`
+- `.agent/home-field-workspace/review/adjacency-sheet.png`
+- clean `/home-field-preview?debug=0` screenshots from the Playwright run
+
+It updates `docs/home-field-asset-review.json` for only these three grass assets with:
+
+- `repeatCheck`
+- `connectorCheck`
+- `cleanPreviewCheck`
+- `styleCohesionCheck`
+- `alphaCheck`
+- `scaleCheck`
+- `verdict`
+- `accepted`
+- `reason`
+
+Allowed verdicts without human approval: `needs_review`, `needs_regen`, or `rejected`.
+
+Do not set `"verdict": "approved"` or `"accepted": true` unless the human explicitly approves in this conversation.
+
+## Strict Guardrails
+
+- Direct-to-main workflow: commit completed work on `main` and push to `origin/main`.
+- Do not create a feature branch.
+- Do not edit `home-field-assets.json`, `home-field-map.json`, validator code, producer code, or prompt scripts during this generation run.
+- Do not commit `.agent/home-field-workspace/`; it is local evidence only.
+- Do not continue to path or edge tiles.
+- Do not claim production-ready art. This run can produce candidates only.
+- Production validation is expected to fail until human-approved assets exist.
+
+## Run Order
+
+1. `cd /Users/microwavedev/workspace/microwave-hub/mushroom-master`
+2. `git status --short --branch`
+3. If the tree is not clean on `main`, stop and report.
+4. `npm run game:home-field:validate`
+5. `npm run game:home-field:next-tiles`
+6. Generate only the three raw PNGs printed by that command.
+7. Run the printed `npm run game:home-field:produce -- <id> ...` command for each generated asset.
+8. Run the validation and review commands from the Producer/Validation Worker section.
+9. Update `docs/home-field-asset-review.json` for only the three grass rows.
+10. Run:
+
+```bash
+npm run game:home-field:validate -- --check-files --check-connectors --check-review
+node --test tests/game/home-field-pipeline.test.js
+git diff --check
+```
+
+11. Commit and push:
+
+```bash
+git add web/public/home-field/terrain/grass_base_01.png \
+  web/public/home-field/terrain/grass_base_02.png \
+  web/public/home-field/terrain/grass_flowers_01.png \
+  docs/home-field-asset-review.json
+git commit -m "Regenerate home field grass tile candidates"
+git push origin main
+```
+
+12. Stop and report:
+
+```text
+Grass tile candidate batch complete.
+Committed assets: grass_base_01, grass_base_02, grass_flowers_01
+Review evidence:
   Contact sheet: .agent/home-field-workspace/review/contact-sheet.png
-  Status: <output of `npm run game:home-field:status`>
-  Notes: <any FAIL/retry, anything you regenerated and why, anything I should look at>
+  Adjacency sheet: .agent/home-field-workspace/review/adjacency-sheet.png
+  Clean preview screenshots: .agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/
+Review verdicts:
+  grass_base_01: <verdict + check summary>
+  grass_base_02: <verdict + check summary>
+  grass_flowers_01: <verdict + check summary>
+Notes:
+  <what was regenerated, rejected, retried, or still visually weak>
 ```
 
-Then stop. Do not start the next batch.
-
-## When something goes wrong
-
-- **Validator fails after produce**: read the `[scope.code] message` line. The code points at the contract field that was violated. Regenerate the specific asset; do not edit the validator.
-- **Produce FAILs with dimensions mismatch and `--resize` is already passed**: the imagegen output is corrupt or the wrong shape (e.g. portrait instead of square). Re-run imagegen with the same prompt.
-- **`no transparency detected; alpha coverage 100%`**: imagegen returned a solid background instead of transparent. Re-prompt with explicit `transparent background required` emphasis, or pass `--chroma-key=#ff00ff` to produce if imagegen returned magenta-keyed.
-- **Frame composition fails for an animated asset** (`missing N frame(s)`): you saved frames with the wrong filename. The exact names are printed in the prompt body — match them character-for-character.
-- **`home_field_asset_failed` style style drift in the contact sheet** (one tile reads totally differently from its siblings): regenerate that one tile only via `--id=<id>`; do not regenerate the whole batch.
-- Anything else: stop, report, ask.
-
-## What you must not do
-
-- Don't open a feature branch. Direct-to-main on `mushroom-master`.
-- Don't edit any `.json` / `.js` under `app/shared/home-field/` or the validator/produce/next scripts. They are the contract.
-- Don't commit anything under `.agent/home-field-workspace/`. It's gitignored.
-- Don't continue past a STOP point. The contact sheet is the gate.
-- Don't generate per-character chibis (only the `_placeholder`). Specific-character chibis come in a later phase.
-- Don't write text into images. Localized text is rendered at runtime over art-only signposts.
-
-That's it. Start at step 1.
+Then wait for human approval before generating any path or edge terrain.
 
 ---

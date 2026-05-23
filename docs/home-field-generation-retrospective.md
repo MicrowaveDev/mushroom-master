@@ -29,6 +29,7 @@ Handled:
 - Added `npm run game:home-field:adjacency`, which writes `.agent/home-field-workspace/review/adjacency-sheet.png` and a manifest for the path run, side-edge stacks, map rows, and unique neighbor pairs.
 - Added path-band metadata for horizontal path tiles (`pathCenterY`, `pathWidth`) and validator checks that touching `path_h` connectors share the same band.
 - Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
+- Added `docs/home-field-agent-flow.md` and rewrote the ready-to-paste Codex prompt around separated sub-agent roles: orchestrator, prompt/contract reviewer, imagegen worker, producer/validator, and visual critic.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.

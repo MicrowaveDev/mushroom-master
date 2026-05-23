@@ -2,7 +2,7 @@
 
 This directory holds the **frozen contracts** for the Home Field hub. Phase 0 of the plan is complete; the next agent (Codex) generates the tiles, props, exits, effects, and chibi spritesheets.
 
-**For the human handing off to Codex**: the ready-to-paste agent prompt is in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). It's self-contained — copy that into your Codex session and it has everything Codex needs.
+**For the human handing off to Codex**: the ready-to-paste agent prompt is in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). It's self-contained — copy that into your Codex session and it has everything Codex needs. The role split for sub-agent runs is documented in [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md).
 
 ## Before You Start (Codex)
 
@@ -73,6 +73,18 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 | **adjacency** | `npm run game:home-field:adjacency` | Composites terrain connector proof at `.agent/home-field-workspace/review/adjacency-sheet.png`, including the grass-path run and left/right edge stacks. |
+
+## Agent Flow
+
+Use [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md) for generation runs. The important split is:
+
+- Orchestrator owns commands, commit, push, and stop gates.
+- Prompt/Contract Reviewer checks prompts and contracts before imagegen.
+- Imagegen Worker writes only raw PNGs.
+- Producer/Validation Worker creates app-facing PNGs and review sheets through scripts.
+- Visual Critic updates review JSON but cannot approve art without explicit human approval.
+
+No role may both generate and approve its own image.
 
 ## Layout Preview Screen
 
