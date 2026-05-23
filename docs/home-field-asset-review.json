@@ -8,37 +8,37 @@
       "id": "grass_base_01",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "quiet base grass has soft texture and no obvious internal repeat; preview still needs human judgment for value blocking against neighboring variants",
+      "reason": "soft base grass is the strongest rerun candidate: the 3x3 repeat is low-contrast and it reads cleanly under props, but adjacency still shows rectangular value shifts against the darker grass variants, so it needs human review rather than approval",
       "repeatCheck": "pass",
-      "connectorCheck": "not_applicable",
+      "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
       "styleCohesionCheck": "pass",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "pass"
     },
     {
       "id": "grass_base_02",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "darker blue-green tile forms visible rectangular bands in adjacency and clean previews, breaking the field into grid blocks",
-      "repeatCheck": "pass",
-      "connectorCheck": "not_applicable",
+      "reason": "dark grass variant still tiles as visible square blocks: the yellow-green and smoky patches repeat in the 3x3 sheet, and the clean previews expose hard column and row boundaries against neighboring grass",
+      "repeatCheck": "fail",
+      "connectorCheck": "fail",
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "pass"
     },
     {
       "id": "grass_flowers_01",
-      "verdict": "needs_review",
+      "verdict": "needs_regen",
       "accepted": false,
-      "reason": "small flower flecks read as subtle field detail without alpha or scale issues; worth human review despite visible tile-grid value shifts nearby",
-      "repeatCheck": "pass",
-      "connectorCheck": "not_applicable",
-      "cleanPreviewCheck": "pass",
-      "styleCohesionCheck": "pass",
+      "reason": "flower flecks are appropriately subtle, but the underlying terrain has a repeated diagonal mottling pattern and the clean previews show it as darker rectangular patches, so the tile should be regenerated before human approval",
+      "repeatCheck": "fail",
+      "connectorCheck": "fail",
+      "cleanPreviewCheck": "fail",
+      "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "pass"
     },
     {
       "id": "path_dirt_straight",
