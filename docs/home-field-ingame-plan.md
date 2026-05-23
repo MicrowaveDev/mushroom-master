@@ -464,7 +464,7 @@ The strict tile adjacency gate is:
 npm run game:home-field:validate -- --check-connectors
 ```
 
-This currently exposes known proof-map gaps (path endings and grass-to-blocked-edge transitions). Treat those failures as the next terrain-family design task, not as a reason to hide transitions inside mid-path or base-grass tiles.
+The current proof map is wired with explicit path-end and side-border transition assets so this gate should pass. Treat any future failure as a terrain-family design task, not as a reason to hide transitions inside mid-path or base-grass tiles.
 
 ## Visual Concept
 

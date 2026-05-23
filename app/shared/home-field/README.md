@@ -68,7 +68,7 @@ Six npm aliases drive the pipeline. Run them in order per batch:
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, so use it only once the full 24-asset set has been produced. |
-| **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. It currently exposes known missing transition/end tile work. |
+| **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 
 ## Layout Preview Screen
@@ -125,11 +125,7 @@ Run the connector gate while editing the map:
 npm run game:home-field:validate -- --check-connectors
 ```
 
-The current proof map is expected to fail this strict gate until transition/end tiles are added for:
-
-- horizontal path ends (`path_h_end_w`, `path_h_end_e`);
-- destination-row path ends (`path_destination_end_w`, `path_destination_end_e`);
-- grass-to-blocked-edge transitions or a revised border layout.
+The current proof map is wired to pass this strict gate with explicit horizontal path-end tiles (`path_h_end_w`, `path_h_end_e`) and left/right forest-border tiles (`edge_left_forest_01`, `edge_right_forest_01`). If future map edits fail this gate, add transition/end tiles instead of hiding neighbor changes inside base grass or mid-path art.
 
 Terrain acceptance is stricter than "looks pretty":
 

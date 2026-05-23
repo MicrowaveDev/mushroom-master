@@ -16,15 +16,31 @@
       "publicPath": "/home-field/terrain/grass_base_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "walkable",
       "tile": {
         "terrainSet": "meadow_grass",
         "placement": "free",
-        "connectors": { "n": "grass", "e": "grass", "s": "grass", "w": "grass" },
-        "canTouch": ["grass_base_01", "grass_base_02", "grass_flowers_01"],
+        "connectors": {
+          "n": "grass",
+          "e": "grass",
+          "s": "grass",
+          "w": "grass"
+        },
+        "canTouch": [
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01"
+        ],
         "repeatMode": "low_frequency",
-        "needsTransitionFor": ["path_h", "path_v", "edge_blocked"]
+        "needsTransitionFor": [
+          "path_h",
+          "path_v",
+          "edge_blocked"
+        ]
       },
       "animation": null,
       "status": "draft",
@@ -40,15 +56,31 @@
       "publicPath": "/home-field/terrain/grass_base_02.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "walkable",
       "tile": {
         "terrainSet": "meadow_grass",
         "placement": "free",
-        "connectors": { "n": "grass", "e": "grass", "s": "grass", "w": "grass" },
-        "canTouch": ["grass_base_01", "grass_base_02", "grass_flowers_01"],
+        "connectors": {
+          "n": "grass",
+          "e": "grass",
+          "s": "grass",
+          "w": "grass"
+        },
+        "canTouch": [
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01"
+        ],
         "repeatMode": "low_frequency",
-        "needsTransitionFor": ["path_h", "path_v", "edge_blocked"]
+        "needsTransitionFor": [
+          "path_h",
+          "path_v",
+          "edge_blocked"
+        ]
       },
       "animation": null,
       "status": "draft",
@@ -64,16 +96,31 @@
       "publicPath": "/home-field/terrain/grass_flowers_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "walkable",
       "tile": {
         "terrainSet": "meadow_grass",
         "placement": "accent",
-        "connectors": { "n": "grass", "e": "grass", "s": "grass", "w": "grass" },
-        "canTouch": ["grass_base_01", "grass_base_02"],
+        "connectors": {
+          "n": "grass",
+          "e": "grass",
+          "s": "grass",
+          "w": "grass"
+        },
+        "canTouch": [
+          "grass_base_01",
+          "grass_base_02"
+        ],
         "repeatMode": "sparse",
         "maxPerViewport": 3,
-        "needsTransitionFor": ["path_h", "path_v", "edge_blocked"]
+        "needsTransitionFor": [
+          "path_h",
+          "path_v",
+          "edge_blocked"
+        ]
       },
       "animation": null,
       "status": "draft",
@@ -89,13 +136,27 @@
       "publicPath": "/home-field/terrain/path_dirt_straight.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "walkable",
       "tile": {
         "terrainSet": "meadow_path",
         "placement": "horizontal_connector",
-        "connectors": { "n": "grass", "e": "path_h", "s": "grass", "w": "path_h" },
-        "canTouch": ["path_dirt_straight", "path_spore_glow", "path_h_end_w", "path_h_end_e", "path_cross_grass_h"],
+        "connectors": {
+          "n": "grass",
+          "e": "path_h",
+          "s": "grass",
+          "w": "path_h"
+        },
+        "canTouch": [
+          "path_dirt_straight",
+          "path_spore_glow",
+          "path_h_end_w",
+          "path_h_end_e",
+          "path_cross_grass_h"
+        ],
         "repeatMode": "connector",
         "requiresTransitionsAtEnds": true
       },
@@ -113,13 +174,27 @@
       "publicPath": "/home-field/terrain/path_spore_glow.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "walkable",
       "tile": {
         "terrainSet": "meadow_path",
         "placement": "horizontal_connector_accent",
-        "connectors": { "n": "grass", "e": "path_h", "s": "grass", "w": "path_h" },
-        "canTouch": ["path_dirt_straight", "path_spore_glow", "path_h_end_w", "path_h_end_e", "path_cross_grass_h"],
+        "connectors": {
+          "n": "grass",
+          "e": "path_h",
+          "s": "grass",
+          "w": "path_h"
+        },
+        "canTouch": [
+          "path_dirt_straight",
+          "path_spore_glow",
+          "path_h_end_w",
+          "path_h_end_e",
+          "path_cross_grass_h"
+        ],
         "repeatMode": "connector_accent",
         "maxPerViewport": 1,
         "requiresTransitionsAtEnds": true
@@ -131,22 +206,34 @@
     {
       "id": "path_destination_row",
       "type": "terrain",
-      "role": "path_top_row",
+      "role": "destination_landing",
       "promptKey": "terrain_path_destination_row",
       "sourcePath": ".agent/home-field-workspace/raw/path_destination_row.source.png",
       "outputPath": "web/public/home-field/terrain/path_destination_row.png",
       "publicPath": "/home-field/terrain/path_destination_row.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "walkable",
       "tile": {
         "terrainSet": "meadow_path",
-        "placement": "destination_row_connector",
-        "connectors": { "n": "grass", "e": "path_h_wide", "s": "grass", "w": "path_h_wide" },
-        "canTouch": ["path_destination_row"],
-        "repeatMode": "connector",
-        "requiresTransitionsAtEnds": true
+        "placement": "isolated",
+        "connectors": {
+          "n": "grass",
+          "e": "grass",
+          "s": "grass",
+          "w": "grass"
+        },
+        "canTouch": [
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01"
+        ],
+        "repeatMode": "single_landing",
+        "maxPerViewport": 1
       },
       "animation": null,
       "status": "draft",
@@ -162,15 +249,30 @@
       "publicPath": "/home-field/terrain/edge_roots_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "blocked",
       "tile": {
         "terrainSet": "meadow_edge",
         "placement": "blocked_edge",
-        "connectors": { "n": "edge_blocked", "e": "edge_blocked", "s": "edge_blocked", "w": "edge_blocked" },
-        "canTouch": ["edge_roots_01", "edge_moss_rocks_01"],
+        "connectors": {
+          "n": "edge_blocked",
+          "e": "edge_blocked",
+          "s": "edge_blocked",
+          "w": "edge_blocked"
+        },
+        "canTouch": [
+          "edge_roots_01",
+          "edge_moss_rocks_01"
+        ],
         "repeatMode": "edge",
-        "needsTransitionFor": ["grass", "path_h", "path_v"]
+        "needsTransitionFor": [
+          "grass",
+          "path_h",
+          "path_v"
+        ]
       },
       "animation": null,
       "status": "draft",
@@ -186,19 +288,180 @@
       "publicPath": "/home-field/terrain/edge_moss_rocks_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0, "y": 0 },
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
       "collision": "blocked",
       "tile": {
         "terrainSet": "meadow_edge",
         "placement": "blocked_edge",
-        "connectors": { "n": "edge_blocked", "e": "edge_blocked", "s": "edge_blocked", "w": "edge_blocked" },
-        "canTouch": ["edge_roots_01", "edge_moss_rocks_01"],
+        "connectors": {
+          "n": "edge_blocked",
+          "e": "edge_blocked",
+          "s": "edge_blocked",
+          "w": "edge_blocked"
+        },
+        "canTouch": [
+          "edge_roots_01",
+          "edge_moss_rocks_01"
+        ],
         "repeatMode": "edge",
-        "needsTransitionFor": ["grass", "path_h", "path_v"]
+        "needsTransitionFor": [
+          "grass",
+          "path_h",
+          "path_v"
+        ]
       },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "edge_moss_rocks_01"
+    },
+    {
+      "id": "path_h_end_w",
+      "type": "terrain",
+      "role": "path_horizontal_west_end",
+      "promptKey": "terrain_path_h_end_w",
+      "sourcePath": ".agent/home-field-workspace/raw/path_h_end_w.source.png",
+      "outputPath": "web/public/home-field/terrain/path_h_end_w.png",
+      "publicPath": "/home-field/terrain/path_h_end_w.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
+      "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_path",
+        "placement": "transition",
+        "connectors": {
+          "n": "grass",
+          "e": "path_h",
+          "s": "grass",
+          "w": "grass"
+        },
+        "canTouch": [
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01",
+          "path_dirt_straight",
+          "path_spore_glow"
+        ],
+        "repeatMode": "transition"
+      },
+      "animation": null,
+      "status": "missing",
+      "atlasFrameKey": "path_h_end_w"
+    },
+    {
+      "id": "path_h_end_e",
+      "type": "terrain",
+      "role": "path_horizontal_east_end",
+      "promptKey": "terrain_path_h_end_e",
+      "sourcePath": ".agent/home-field-workspace/raw/path_h_end_e.source.png",
+      "outputPath": "web/public/home-field/terrain/path_h_end_e.png",
+      "publicPath": "/home-field/terrain/path_h_end_e.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
+      "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_path",
+        "placement": "transition",
+        "connectors": {
+          "n": "grass",
+          "e": "grass",
+          "s": "grass",
+          "w": "path_h"
+        },
+        "canTouch": [
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01",
+          "path_dirt_straight",
+          "path_spore_glow"
+        ],
+        "repeatMode": "transition"
+      },
+      "animation": null,
+      "status": "missing",
+      "atlasFrameKey": "path_h_end_e"
+    },
+    {
+      "id": "edge_left_forest_01",
+      "type": "terrain",
+      "role": "left_forest_border",
+      "promptKey": "terrain_edge_left_forest_01",
+      "sourcePath": ".agent/home-field-workspace/raw/edge_left_forest_01.source.png",
+      "outputPath": "web/public/home-field/terrain/edge_left_forest_01.png",
+      "publicPath": "/home-field/terrain/edge_left_forest_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
+      "collision": "blocked",
+      "tile": {
+        "terrainSet": "meadow_edge",
+        "placement": "blocked_edge",
+        "connectors": {
+          "n": "edge_v_left",
+          "e": "grass",
+          "s": "edge_v_left",
+          "w": "edge_blocked"
+        },
+        "canTouch": [
+          "edge_left_forest_01",
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01"
+        ],
+        "repeatMode": "edge"
+      },
+      "animation": null,
+      "status": "missing",
+      "atlasFrameKey": "edge_left_forest_01"
+    },
+    {
+      "id": "edge_right_forest_01",
+      "type": "terrain",
+      "role": "right_forest_border",
+      "promptKey": "terrain_edge_right_forest_01",
+      "sourcePath": ".agent/home-field-workspace/raw/edge_right_forest_01.source.png",
+      "outputPath": "web/public/home-field/terrain/edge_right_forest_01.png",
+      "publicPath": "/home-field/terrain/edge_right_forest_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0,
+        "y": 0
+      },
+      "collision": "blocked",
+      "tile": {
+        "terrainSet": "meadow_edge",
+        "placement": "blocked_edge",
+        "connectors": {
+          "n": "edge_v_right",
+          "e": "edge_blocked",
+          "s": "edge_v_right",
+          "w": "grass"
+        },
+        "canTouch": [
+          "edge_right_forest_01",
+          "grass_base_01",
+          "grass_base_02",
+          "grass_flowers_01"
+        ],
+        "repeatMode": "edge"
+      },
+      "animation": null,
+      "status": "missing",
+      "atlasFrameKey": "edge_right_forest_01"
     },
     {
       "id": "bush_cluster_dark_01",
@@ -210,7 +473,10 @@
       "publicPath": "/home-field/props/bush_cluster_dark_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "draft",
@@ -226,7 +492,10 @@
       "publicPath": "/home-field/props/bush_cluster_light_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "draft",
@@ -242,7 +511,10 @@
       "publicPath": "/home-field/props/leaf_sprout_01.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "walkable",
       "animation": null,
       "status": "draft",
@@ -258,7 +530,10 @@
       "publicPath": "/home-field/props/mushroom_cluster_small_amber.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -274,7 +549,10 @@
       "publicPath": "/home-field/props/mushroom_cluster_small_violet.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -290,7 +568,10 @@
       "publicPath": "/home-field/props/mushroom_cluster_tall_green.png",
       "width": 256,
       "height": 512,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -306,7 +587,10 @@
       "publicPath": "/home-field/props/mushroom_cap_red_spotted.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -322,7 +606,10 @@
       "publicPath": "/home-field/props/mycelium_lantern_amber.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -338,7 +625,10 @@
       "publicPath": "/home-field/props/fallen_branch_mycelium.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -354,7 +644,10 @@
       "publicPath": "/home-field/props/arena_signpost_blank.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -370,7 +663,10 @@
       "publicPath": "/home-field/props/journey_signpost_blank.png",
       "width": 256,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -386,7 +682,10 @@
       "publicPath": "/home-field/exits/arena_mushroom_arch.png",
       "width": 512,
       "height": 512,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -402,7 +701,10 @@
       "publicPath": "/home-field/exits/journey_gate_under_construction.png",
       "width": 512,
       "height": 512,
-      "anchor": { "x": 0.5, "y": 0.95 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
       "collision": "blocked",
       "animation": null,
       "status": "missing",
@@ -418,7 +720,10 @@
       "publicPath": "/home-field/effects/spore_motes_loop.png",
       "width": 2048,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.5 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "collision": "walkable",
       "animation": {
         "frameWidth": 256,
@@ -441,7 +746,10 @@
       "publicPath": "/home-field/effects/arena_portal_shimmer.png",
       "width": 4096,
       "height": 512,
-      "anchor": { "x": 0.5, "y": 0.5 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "collision": "walkable",
       "animation": {
         "frameWidth": 512,
@@ -464,7 +772,10 @@
       "publicPath": "/home-field/effects/mycelium_path_pulse.png",
       "width": 2048,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.5 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "collision": "walkable",
       "animation": {
         "frameWidth": 256,
@@ -487,7 +798,10 @@
       "publicPath": "/home-field/effects/journey_blocked_rustle.png",
       "width": 2048,
       "height": 256,
-      "anchor": { "x": 0.5, "y": 0.5 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "collision": "walkable",
       "animation": {
         "frameWidth": 256,
@@ -510,7 +824,10 @@
       "publicPath": "/home-field/effects/tap_ripple.png",
       "width": 512,
       "height": 128,
-      "anchor": { "x": 0.5, "y": 0.5 },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "collision": "walkable",
       "animation": {
         "frameWidth": 128,
@@ -538,10 +855,25 @@
         "frameHeight": 64,
         "cols": 8,
         "rows": 4,
-        "rowOrder": ["down", "up", "left", "right"],
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
         "framesPerRow": {
-          "idle": [0, 1],
-          "walk": [2, 3, 4, 5, 6, 7]
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
         }
       },
       "status": "missing"

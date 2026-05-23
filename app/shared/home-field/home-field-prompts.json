@@ -39,10 +39,10 @@
     },
     "terrain_path_destination_row": {
       "subject": "one reusable 2D tilemap cell: horizontal destination-row path connector with mycelium veins",
-      "details": "Simple top destination-row connector tile. Use a broad flat dirt landing/path band crossing west-to-east, blended into muted green grass. Add 1-2 simple mycelium vein strokes only. It must remain a reusable terrain connector, not a full entrance illustration.",
+      "details": "Simple isolated top destination landing tile for the current proof map. Use a broad flat dirt or moss landing patch blended into muted green grass on all four edges. It sits under/near entrance props but contains no arch, gate, sign, or text. Keep it reusable as a single landing accent, not a connector row.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no Arena arch, no Journey gate, no signs, no props, no horizon, no text, no full-scene lighting, no unique focal symbol. Path edges must align horizontally."
+      "constraints": "no Arena arch, no Journey gate, no signs, no props, no horizon, no text, no full-scene lighting, no unique focal symbol. All four edges must be grass-compatible."
     },
     "terrain_edge_roots_01": {
       "subject": "one seamless 2D tilemap terrain cell of dense root growth marking the edge of the walkable field",
@@ -183,6 +183,34 @@
       "size": "64x64 per individual frame (12 frames total for the placeholder)",
       "transparency": "transparent background required",
       "constraints": "Chibi feet near bottom of each frame. Elf ears visible in all 4 directions. Cute chibi proportions: large head, small body, ~3 heads tall. Per-character chibis (not the placeholder) will use the full 32-frame layout in a later phase — for the placeholder, the walk-frame replication is acceptable."
+    },
+    "terrain_path_h_end_w": {
+      "subject": "one reusable 2D tilemap cell: west end of a horizontal packed-earth path fading into grass",
+      "details": "Simple storybook terrain transition tile. The dirt path enters from the east edge at the same Y-band and width as path_dirt_straight, then softly fades into open muted green grass before reaching the west edge. West, north, and south edges are pure grass-compatible. Keep it flat, broad, and hand-drawn with only a few tiny strokes.",
+      "size": "256x256 square tile",
+      "transparency": "no transparency",
+      "constraints": "no characters, no props, no signs, no horizon, no vignette, no text, no realistic dirt, no dense pebble texture. East edge must align exactly with path_h; west edge must be grass."
+    },
+    "terrain_path_h_end_e": {
+      "subject": "one reusable 2D tilemap cell: east end of a horizontal packed-earth path fading into grass",
+      "details": "Simple storybook terrain transition tile. The dirt path enters from the west edge at the same Y-band and width as path_dirt_straight, then softly fades into open muted green grass before reaching the east edge. East, north, and south edges are pure grass-compatible. Keep it flat, broad, and hand-drawn with only a few tiny strokes.",
+      "size": "256x256 square tile",
+      "transparency": "no transparency",
+      "constraints": "no characters, no props, no signs, no horizon, no vignette, no text, no realistic dirt, no dense pebble texture. West edge must align exactly with path_h; east edge must be grass."
+    },
+    "terrain_edge_left_forest_01": {
+      "subject": "one reusable 2D tilemap cell: left-side forest border transitioning into grass on the right",
+      "details": "Simple top-down storybook left border tile. The west edge is blocked dark fungal forest/undergrowth, while the east edge opens into muted green grass. North and south edges continue the same vertical left-border motif so copies stack cleanly. Use chunky hand-drawn leaves/roots as low-detail silhouettes, not a dense texture.",
+      "size": "256x256 square tile",
+      "transparency": "no transparency",
+      "constraints": "no characters, no signs, no horizon, no text, no full forest scene, no dense root web. West edge reads blocked; east edge must be grass-compatible."
+    },
+    "terrain_edge_right_forest_01": {
+      "subject": "one reusable 2D tilemap cell: right-side forest border transitioning into grass on the left",
+      "details": "Simple top-down storybook right border tile. The east edge is blocked dark fungal forest/undergrowth, while the west edge opens into muted green grass. North and south edges continue the same vertical right-border motif so copies stack cleanly. Use chunky hand-drawn leaves/roots as low-detail silhouettes, not a dense texture.",
+      "size": "256x256 square tile",
+      "transparency": "no transparency",
+      "constraints": "no characters, no signs, no horizon, no text, no full forest scene, no dense root web. East edge reads blocked; west edge must be grass-compatible."
     }
   }
 }

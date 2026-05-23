@@ -42,12 +42,12 @@ Grass style target: simple top-down storybook meadow, broad muted green fields, 
 
 Horizontal path tiles connect left-to-right:
 
-- `path_h_mid`: `w/e = path_h`, `n/s = grass`.
-- `path_h_glow`: same connectors as `path_h_mid`, but limited by `maxPerViewport`.
+- `path_dirt_straight`: `w/e = path_h`, `n/s = grass`.
+- `path_spore_glow`: same connectors as `path_dirt_straight`, but limited by `maxPerViewport`.
 - `path_h_end_w`: `e = path_h`, other sides `grass`; the west end fades into grass.
 - `path_h_end_e`: `w = path_h`, other sides `grass`; the east end fades into grass.
 
-The current map needs `path_h_end_w` and `path_h_end_e` before production art is final, because a horizontal path cannot sit directly beside free grass at its open ends.
+The current map uses `path_h_end_w` and `path_h_end_e`; a horizontal path cannot sit directly beside free grass at its open ends.
 
 ### Vertical Path
 
@@ -75,6 +75,8 @@ Blocked edge tiles need their own transitions:
 
 - `edge_roots_*`: usually `edge_blocked` on all sides; safe only beside other edge tiles unless a border layout guarantees it is outside the playable lane.
 - `edge_moss_rocks_*`: same as above.
+- `edge_left_forest_01`: `w = edge_blocked`, `e = grass`, `n/s = edge_v_left`; stacks along the left side of the map.
+- `edge_right_forest_01`: `e = edge_blocked`, `w = grass`, `n/s = edge_v_right`; stacks along the right side of the map.
 - `edge_to_grass_*`: future transition pieces when blocked terrain needs to touch grass inside the visible viewport.
 
 For v1, most blocked personality should come from object-layer bushes, tall mushrooms, vines, and gates. Terrain blockers stay simple.
@@ -104,7 +106,7 @@ The strict adjacency check now exists as an explicit development gate:
 npm run game:home-field:validate -- --check-connectors
 ```
 
-Normal `npm run game:home-field:validate` remains schema-only because the current proof map is allowed to exist before the full transition set is generated. Production approval requires the strict connector gate to pass.
+Normal `npm run game:home-field:validate` remains schema-only so metadata work can land before every PNG exists. The current proof map has explicit path-end and left/right border transition assets, so `--check-connectors` should pass unless the map or connector metadata regresses. Production approval requires the strict connector gate to pass.
 
 ## Agent Generation Flow
 
