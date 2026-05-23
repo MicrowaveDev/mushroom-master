@@ -64,6 +64,7 @@ Six npm aliases drive the pipeline. Run them in order per batch:
 |---|---|---|
 | **status** | `npm run game:home-field:status` | Lists every asset, marks `[x]` done / `[ ]` pending. Quick "where am I" check. |
 | **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
+| **next-tiles** | `npm run game:home-field:next-tiles` | Prints the current production terrain regeneration queue from `docs/home-field-asset-review.json` (`verdict=needs_regen`) even though old PNGs already exist. Use this for the next tiles run. |
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
@@ -183,11 +184,14 @@ npm run game:home-field:proof-tiles
 # For later prop/exit/effect/character batches, get prompts with:
 # npm run game:home-field:next -- --batch=proof-static --all
 
+# For the next production terrain regeneration pass, use:
+npm run game:home-field:next-tiles
+
 # 4. Produce the raw files generated in this batch
 npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01
 
 # 5. Validate schema and confirm produced count
-npm run game:home-field:validate
+npm run game:home-field:validate -- --check-files --check-connectors --check-review
 npm run game:home-field:status
 
 # 6. Refresh the contact sheet for human review

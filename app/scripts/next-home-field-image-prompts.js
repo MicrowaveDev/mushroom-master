@@ -13,6 +13,8 @@
  *   --id=<a,b,c>      comma-separated asset id filter
  *   --batch=<name>    predefined batch (proof-static | proof-animated | proof-character | full)
  *   --include-existing  also emit prompts for assets whose outputPath already exists
+ *   --review-verdict=<v>  filter by docs/home-field-asset-review.json verdict
+ *   --status=<s>      filter by manifest status
  *   --ignore-review-gate  print prompts even when existing candidates still need review
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
@@ -36,6 +38,20 @@ const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
 
 const BATCHES = {
+  'terrain-production': [
+    'grass_base_01',
+    'grass_base_02',
+    'grass_flowers_01',
+    'path_dirt_straight',
+    'path_spore_glow',
+    'path_destination_row',
+    'edge_roots_01',
+    'edge_moss_rocks_01',
+    'path_h_end_w',
+    'path_h_end_e',
+    'edge_left_forest_01',
+    'edge_right_forest_01'
+  ],
   'proof-static': [
     'grass_base_01',
     'grass_base_02',
@@ -190,11 +206,36 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
   lines.push('');
   lines.push('## Save and report');
   lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);
+  lines.push('Then run the recommended producer command:');
+  lines.push(`  ${recommendedProduceCommand(asset)}`);
   lines.push('Then run:');
-  lines.push(`  npm run game:home-field:produce -- ${asset.id}`);
-  lines.push('  npm run game:home-field:validate');
-  lines.push('Until both pass, do not commit the image; rerun imagegen with adjusted constraints.');
+  lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
+  lines.push('  npm run game:home-field:sheet');
+  lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
+  lines.push('Until those pass and the contact sheet plus clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
   return lines.join('\n');
+}
+
+function recommendedProduceCommand(asset) {
+  const base = `npm run game:home-field:produce -- ${asset.id}`;
+  if (asset.type === 'terrain') {
+    const placement = asset.tile?.placement || '';
+    const canUseSeamless = ['free', 'accent'].includes(placement);
+    const flags = canUseSeamless
+      ? '--resize --crop-center --seamless-terrain --quiet-terrain'
+      : '--resize --crop-center';
+    return `${base} ${flags}`;
+  }
+  if (asset.type === 'prop' || asset.type === 'exit') {
+    return `${base} --resize --chroma-key=#ff00ff`;
+  }
+  if (asset.type === 'effect') {
+    return `${base} --resize --chroma-key=#ff00ff`;
+  }
+  if (asset.type === 'character') {
+    return `${base} --resize-nearest --chroma-key=#ff00ff`;
+  }
+  return base;
 }
 
 function anchorLabel(asset) {
@@ -256,6 +297,8 @@ function main() {
   const limit = parseLimit(argv);
   const all = hasFlag(argv, 'all');
   const typeFilter = parseListFlag(argv, 'type');
+  const statusFilter = parseListFlag(argv, 'status');
+  const reviewFilter = parseListFlag(argv, 'review-verdict');
   let idFilter = parseListFlag(argv, 'id');
   const batch = parseBatchFlag(argv);
   if (batch && batch.ids) {
@@ -274,6 +317,7 @@ function main() {
   ];
 
   const reviewDoc = loadReviewDoc();
+  const reviewById = new Map((reviewDoc?.assets || []).map((entry) => [entry.id, entry]));
   const reviewBlockers = findReviewGateBlockers(allAssets, reviewDoc);
   if (reviewBlockers.length > 0 && !ignoreReviewGate) {
     console.error('# Home Field — Review Gate Blocked');
@@ -293,6 +337,10 @@ function main() {
   const pending = allAssets.filter((a) => {
     if (typeFilter && !typeFilter.includes(a.type)) return false;
     if (idFilter && !idFilter.includes(a.id)) return false;
+    if (statusFilter && !statusFilter.includes(a.status)) return false;
+    const review = reviewById.get(a.id);
+    if (reviewFilter && !reviewFilter.includes(review?.verdict || 'unreviewed')) return false;
+    if (statusFilter || reviewFilter) return true;
     if (includeExisting) return true;
     const outputAbs = path.join(repoRoot, a.outputPath);
     if (fs.existsSync(outputAbs)) return false;
@@ -309,6 +357,8 @@ function main() {
   if (pending.length === 0) {
     console.log('');
     console.log('All home-field assets are present. Nothing to generate.');
+    console.log('For the next production terrain pass, use:');
+    console.log('  npm run game:home-field:next -- --batch=terrain-production --review-verdict=needs_regen --all');
     return;
   }
   console.log('');
@@ -317,7 +367,7 @@ function main() {
   console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
   console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
-  console.log('  5. Run `npm run game:home-field:validate` to check schema, dimensions, alpha, animation strips.');
+  console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
   console.log('  6. Run `npm run game:home-field:sheet` to refresh the contact sheet for review.');
   console.log('  7. Commit only after validate + sheet pass.');
 

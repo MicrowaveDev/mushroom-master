@@ -27,6 +27,7 @@ const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const MAP_PATH = path.join(sharedDir, 'home-field-map.json');
 const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
+const REVIEW_VERDICTS = new Set(['pending', 'needs_review', 'needs_regen', 'rejected', 'approved', 'placeholder']);
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -103,7 +104,39 @@ function checkReview(assetsDoc, errors, { production = false } = {}) {
   const reviewDoc = loadReviewDoc(errors);
   if (!reviewDoc) return;
   const reviews = new Map((reviewDoc.assets || []).map((entry) => [entry.id, entry]));
+  const knownIds = new Set(allEntries(assetsDoc).map((asset) => asset.id));
   const approvedIds = [];
+
+  for (const review of reviewDoc.assets || []) {
+    if (!knownIds.has(review.id)) {
+      errors.push({
+        scope: 'review',
+        code: 'unknown_asset_review',
+        message: `review row references unknown asset "${review.id}"`
+      });
+    }
+    if (!REVIEW_VERDICTS.has(review.verdict)) {
+      errors.push({
+        scope: 'review',
+        code: 'invalid_verdict',
+        message: `asset "${review.id}" review verdict must be one of ${[...REVIEW_VERDICTS].join('|')}, got "${review.verdict}"`
+      });
+    }
+    if (typeof review.accepted !== 'boolean') {
+      errors.push({
+        scope: 'review',
+        code: 'invalid_accepted',
+        message: `asset "${review.id}" review accepted must be boolean`
+      });
+    }
+    if (typeof review.reason !== 'string' || review.reason.length === 0) {
+      errors.push({
+        scope: 'review',
+        code: 'missing_reason',
+        message: `asset "${review.id}" review reason must be a non-empty string`
+      });
+    }
+  }
 
   for (const asset of allEntries(assetsDoc)) {
     const review = reviews.get(asset.id);

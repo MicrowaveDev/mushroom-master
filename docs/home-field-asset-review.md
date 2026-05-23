@@ -15,6 +15,22 @@ Machine-readable verdicts live in [home-field-asset-review.json](home-field-asse
 | Effects | placeholder | Current strips exist only to satisfy file and animation gates. | Replace with authored/generated production animation frames. |
 | Chibi | placeholder | `_placeholder` is a technical spritesheet, not a character asset. | Replace with production chibi spritesheet before launch. |
 
+## Next Generation Run
+
+Start with terrain only. Do not generate props, exits, effects, or chibi until the green field reads as a cohesive production scene in the clean preview.
+
+```bash
+npm run game:home-field:next-tiles
+```
+
+That command emits only terrain assets whose review verdict is `needs_regen`, even though the old PNGs already exist. For each generated tile, use the producer command printed in its prompt block, then run:
+
+```bash
+npm run game:home-field:validate -- --check-files --check-connectors --check-review
+npm run game:home-field:sheet
+npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line
+```
+
 ## Approval Rules
 
 - `missing`: no app-facing PNG exists yet.

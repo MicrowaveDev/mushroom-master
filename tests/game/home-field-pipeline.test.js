@@ -7,6 +7,7 @@ import { repoRoot } from '../../app/shared/repo-root.js';
 import { encodeDeterministicPng, readPngRgba, alphaStats } from '../../app/scripts/lib/bitmap-image-toolkit.js';
 
 const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js');
+const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -126,4 +127,23 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
     fs.rmSync(path.dirname(rawPath), { recursive: true, force: true });
     fs.rmSync(path.dirname(outputAbs), { recursive: true, force: true });
   }
+});
+
+test('[home-field] next-tiles emits terrain assets marked needs_regen even when PNGs exist', () => {
+  const result = spawnSync(process.execPath, [
+    nextScriptPath,
+    '--batch=terrain-production',
+    '--review-verdict=needs_regen',
+    '--all'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Batch: terrain-production/);
+  assert.match(result.stdout, /grass_base_01 \(terrain\)/);
+  assert.match(result.stdout, /edge_right_forest_01 \(terrain\)/);
+  assert.doesNotMatch(result.stdout, /mushroom_cluster_small_amber \(prop\)/);
+  assert.match(result.stdout, /--check-files --check-connectors --check-review/);
 });
