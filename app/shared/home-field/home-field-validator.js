@@ -394,6 +394,58 @@ export function validateMap(mapDoc, knownAssetIds) {
   return { ok: errors.length === 0, errors };
 }
 
+const OPPOSITE = { n: 's', e: 'w', s: 'n', w: 'e' };
+
+export function validateTileConnectors(assetsDoc, mapDoc) {
+  const errors = [];
+  const tileSize = mapDoc?.world?.tileSize;
+  if (!isPositiveInt(tileSize) || !Array.isArray(mapDoc?.layers) || !Array.isArray(assetsDoc?.assets)) {
+    return { ok: true, errors };
+  }
+
+  const assetById = new Map(assetsDoc.assets.map((asset) => [asset.id, asset]));
+  for (const layer of mapDoc.layers) {
+    if (layer.type !== 'tileLayer' || !Array.isArray(layer.tiles)) continue;
+    const byCell = new Map();
+    for (const tile of layer.tiles) {
+      if (!isNonNegInt(tile.x) || !isNonNegInt(tile.y)) continue;
+      byCell.set(`${tile.x / tileSize},${tile.y / tileSize}`, tile);
+    }
+
+    for (const tile of layer.tiles) {
+      if (!isNonNegInt(tile.x) || !isNonNegInt(tile.y)) continue;
+      const asset = assetById.get(tile.assetId);
+      const connectors = asset?.tile?.connectors;
+      if (!connectors) continue;
+      const cx = tile.x / tileSize;
+      const cy = tile.y / tileSize;
+      const neighbors = [
+        ['n', cx, cy - 1],
+        ['e', cx + 1, cy],
+        ['s', cx, cy + 1],
+        ['w', cx - 1, cy]
+      ];
+      for (const [dir, nx, ny] of neighbors) {
+        const neighbor = byCell.get(`${nx},${ny}`);
+        if (!neighbor) continue;
+        const neighborAsset = assetById.get(neighbor.assetId);
+        const neighborConnectors = neighborAsset?.tile?.connectors;
+        if (!neighborConnectors) continue;
+        const a = connectors[dir];
+        const b = neighborConnectors[OPPOSITE[dir]];
+        if (a !== b) {
+          pushErr(
+            errors,
+            'tile.connector_mismatch',
+            `layer "${layer.id}" tile "${tile.assetId}" at (${tile.x},${tile.y}) ${dir}=${a} touches "${neighbor.assetId}" ${OPPOSITE[dir]}=${b} at (${neighbor.x},${neighbor.y}); add a transition/end tile or change placement`
+          );
+        }
+      }
+    }
+  }
+  return { ok: errors.length === 0, errors };
+}
+
 export function validateAll(assetsDoc, mapDoc) {
   const a = validateAssets(assetsDoc);
   const knownAssetIds = new Set((assetsDoc && assetsDoc.assets) ? assetsDoc.assets.map((x) => x.id) : []);

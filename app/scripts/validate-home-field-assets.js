@@ -5,16 +5,18 @@
  * Run:
  *   npm run game:home-field:validate
  *   npm run game:home-field:validate -- --check-files
+ *   npm run game:home-field:validate -- --check-connectors
  *
  * Default behavior validates schema only (does not require any PNGs to exist yet),
  * so Phase 0 can land before imagegen runs. Pass --check-files to also assert that
- * each asset's outputPath exists with the expected dimensions.
+ * each asset's outputPath exists with the expected dimensions. Pass --check-connectors
+ * to assert that neighboring tile-layer edge connector tokens match.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateAll } from '../shared/home-field/home-field-validator.js';
+import { validateAll, validateTileConnectors } from '../shared/home-field/home-field-validator.js';
 import { readPngHeader } from './lib/bitmap-image-toolkit.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -66,6 +68,7 @@ function checkFiles(assetsDoc, errors) {
 function main() {
   const argv = process.argv.slice(2);
   const wantFileCheck = hasFlag(argv, 'check-files');
+  const wantConnectorCheck = hasFlag(argv, 'check-connectors');
 
   if (!fs.existsSync(ASSETS_PATH)) {
     console.error(`home-field-assets.json not found at ${ASSETS_PATH}`);
@@ -85,11 +88,20 @@ function main() {
   if (wantFileCheck) {
     checkFiles(assetsDoc, errors);
   }
+  if (wantConnectorCheck) {
+    const connectorResult = validateTileConnectors(assetsDoc, mapDoc);
+    errors.push(...connectorResult.errors.map((e) => ({ scope: 'connectors', ...e })));
+  }
 
   if (errors.length === 0) {
     console.log('home-field validation: PASS');
-    const fileMode = wantFileCheck ? ' + file existence/dimensions' : ' (schema only; pass --check-files to verify PNGs)';
-    console.log(`  schema for ${assetsDoc.assets.length} assets + ${(assetsDoc.characters || []).length} characters + ${(mapDoc.layers || []).length} map layers${fileMode}`);
+    const modes = [];
+    if (wantFileCheck) modes.push('file existence/dimensions');
+    if (wantConnectorCheck) modes.push('tile connectors');
+    const modeText = modes.length > 0
+      ? ` + ${modes.join(' + ')}`
+      : ' (schema only; pass --check-files to verify PNGs; pass --check-connectors to validate tile adjacency)';
+    console.log(`  schema for ${assetsDoc.assets.length} assets + ${(assetsDoc.characters || []).length} characters + ${(mapDoc.layers || []).length} map layers${modeText}`);
     process.exit(0);
   }
 

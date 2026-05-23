@@ -397,6 +397,8 @@ The home screen is a walkable in-game field hub (see [`docs/home-field-ingame-pl
 
 - **15-Q2.** Terrain compatibility must be modeled as explicit tile metadata before production art is generated. Every terrain asset declares a `tile` block with `terrainSet`, `placement`, and `connectors.{n,e,s,w}`. Adjacent map tiles are production-valid only when touching connector tokens match or an explicit transition/end tile bridges the mismatch. Mid-path tiles must not visually terminate into grass; grass tiles must not secretly contain path/blocker edges.
 
+- **15-Q3.** Production terrain approval requires the strict connector gate to pass: `npm run game:home-field:validate -- --check-connectors`. This gate may fail during proof-map iteration while transition assets are missing, but it must pass before any terrain batch can be marked `approved` or used as the production home-field map.
+
 - **15-R.** The painterly forest style is achieved through **quiet repeatable terrain plus separate object-layer foliage**, not by baking large bush silhouettes into grass tiles. Grass terrain may include low-contrast color variation, tiny sprouts, and soft texture only; large bush masses, readable leaf clusters, glowing spores, mushrooms, gates, and collision landmarks must be authored as prop/exit/effect assets placed by `home-field-map.json`.
 
 - **15-S.** A `draft` home-field asset is a layout/technical proof only. It may be generated deterministically or by tooling, but it is **not production-ready art** and must never be treated as final. Moving an asset to `approved` requires human visual review against the locked style anchor: it must look like hand-authored game art, not a procedural placeholder, developer sketch, visible math pattern, or generic AI texture.

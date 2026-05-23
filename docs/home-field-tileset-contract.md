@@ -98,6 +98,14 @@ Every terrain asset in `app/shared/home-field/home-field-assets.json` must inclu
 
 The validator enforces the shape of this metadata. A later stricter validator should also verify every `home-field-map.json` tile adjacency by comparing touching connector tokens.
 
+The strict adjacency check now exists as an explicit development gate:
+
+```bash
+npm run game:home-field:validate -- --check-connectors
+```
+
+Normal `npm run game:home-field:validate` remains schema-only because the current proof map is allowed to exist before the full transition set is generated. Production approval requires the strict connector gate to pass.
+
 ## Agent Generation Flow
 
 1. Read `home-field-assets.json`, `home-field-prompts.json`, `home-field-style-anchor.json`, and this contract.
@@ -116,9 +124,9 @@ The validator enforces the shape of this metadata. A later stricter validator sh
 A terrain set is production-ready only when:
 
 - the connector set includes all needed transitions for the current map;
+- `npm run game:home-field:validate -- --check-connectors` passes;
 - no path/edge tile is placed directly beside an incompatible tile;
 - repeated grass reads as a simple field, not wallpaper;
 - path ends fade through explicit end/transition tiles;
 - object-layer props provide most visual richness;
 - mobile and desktop screenshots look like one cohesive scene after debug grid/labels are ignored.
-

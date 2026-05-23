@@ -22,6 +22,7 @@ npm run game:home-field:next -- --limit=10
 npm run game:home-field:next -- --id=grass_base_01,grass_base_02
 npm run game:home-field:produce -- grass_base_01 grass_base_02
 npm run game:home-field:validate -- --check-files
+npm run game:home-field:validate -- --check-connectors
 
 # Wrong (silently drops the flag — script will use its default):
 npm run game:home-field:next --limit=10
@@ -67,6 +68,7 @@ Six npm aliases drive the pipeline. Run them in order per batch:
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, so use it only once the full 24-asset set has been produced. |
+| **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. It currently exposes known missing transition/end tile work. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 
 ## Layout Preview Screen
@@ -116,6 +118,18 @@ Terrain PNGs under `web/public/home-field/terrain/` are **single reusable tile c
 - blocked-edge tiles must be repeatable border cells, not complete forest scenes, and must not touch grass inside the visible field without a transition.
 
 See [`docs/home-field-tileset-contract.md`](../../../docs/home-field-tileset-contract.md) for the current connector vocabulary and required grass/path/edge families.
+
+Run the connector gate while editing the map:
+
+```bash
+npm run game:home-field:validate -- --check-connectors
+```
+
+The current proof map is expected to fail this strict gate until transition/end tiles are added for:
+
+- horizontal path ends (`path_h_end_w`, `path_h_end_e`);
+- destination-row path ends (`path_destination_end_w`, `path_destination_end_e`);
+- grass-to-blocked-edge transitions or a revised border layout.
 
 Terrain acceptance is stricter than "looks pretty":
 
