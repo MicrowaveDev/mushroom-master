@@ -456,6 +456,8 @@ Map metadata should stay close to tilemap conventions:
 
 This shape can be exported from Tiled later or hand-authored at first.
 
+Terrain compatibility is now explicit, not implied by the asset name. The live connector vocabulary and required tile families live in [`docs/home-field-tileset-contract.md`](./home-field-tileset-contract.md). Every terrain asset in `home-field-assets.json` declares `tile.connectors.n/e/s/w`; generation prompts must obey those tokens before a PNG can be accepted.
+
 ## Visual Concept
 
 Scene:
@@ -845,13 +847,16 @@ Recommended sequence:
 
 2. **Asset Metadata Agent**
    - Owns `home-field-assets.json` and `home-field-prompts.json`.
-   - Defines asset IDs, output paths, dimensions, animation states, prompt keys, and validation requirements.
+   - Defines asset IDs, output paths, dimensions, animation states, prompt keys, tile connector metadata, and validation requirements.
+   - Must read [`docs/home-field-tileset-contract.md`](./home-field-tileset-contract.md) before changing or generating terrain.
    - Produces a missing-asset queue from metadata.
    - Acceptance gate: validation can fail clearly with actionable missing asset IDs.
 
 3. **Art Generation Agent**
    - Uses imagegen only after metadata exists.
    - Generates the minimum proof batch, not the whole scene.
+   - Generates one terrain family at a time: base grass, accent grass, horizontal path, vertical path, path ends/transitions, blocked edges, then object-layer props.
+   - Rejects any terrain output whose visible edges do not match `tile.connectors`.
    - Stores raw outputs in `.agent/home-field-workspace/raw/`.
    - Acceptance gate: contact sheet proves style, transparency, scale, and tile seams.
 

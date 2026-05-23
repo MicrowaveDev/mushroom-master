@@ -51,14 +51,28 @@ function parseArgs(argv) {
   let chromaKey = null;
   let allMissing = false;
   let resize = null;
+  let seamlessTerrain = false;
+  let cropCenter = null;
+  let quietTerrain = null;
   for (const arg of argv) {
     if (arg === '--all-missing') allMissing = true;
     else if (arg === '--resize') resize = 'lanczos';
     else if (arg === '--resize-nearest') resize = 'nearest';
+    else if (arg === '--seamless-terrain') seamlessTerrain = true;
+    else if (arg === '--crop-center') cropCenter = 0.82;
+    else if (arg.startsWith('--crop-center=')) cropCenter = Number(arg.slice('--crop-center='.length));
+    else if (arg === '--quiet-terrain') quietTerrain = 0.35;
+    else if (arg.startsWith('--quiet-terrain=')) quietTerrain = Number(arg.slice('--quiet-terrain='.length));
     else if (arg.startsWith('--chroma-key=')) chromaKey = arg.slice('--chroma-key='.length);
     else ids.push(arg.replace(/\.png$/, ''));
   }
-  return { ids, chromaKey, allMissing, resize };
+  if (cropCenter !== null && (!Number.isFinite(cropCenter) || cropCenter <= 0 || cropCenter > 1)) {
+    throw new Error('--crop-center must be a number in the range (0, 1]');
+  }
+  if (quietTerrain !== null && (!Number.isFinite(quietTerrain) || quietTerrain < 0 || quietTerrain > 1)) {
+    throw new Error('--quiet-terrain must be a number in the range [0, 1]');
+  }
+  return { ids, chromaKey, allMissing, resize, seamlessTerrain, cropCenter, quietTerrain };
 }
 
 function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
@@ -111,6 +125,80 @@ function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
     }
   }
   return { width: dstWidth, height: dstHeight, rgba: dst };
+}
+
+function cropCenterRgba(srcImage, ratio) {
+  if (!ratio || ratio >= 1) return srcImage;
+  const cropSize = Math.max(1, Math.floor(Math.min(srcImage.width, srcImage.height) * ratio));
+  const startX = Math.floor((srcImage.width - cropSize) / 2);
+  const startY = Math.floor((srcImage.height - cropSize) / 2);
+  const rgba = Buffer.alloc(cropSize * cropSize * 4);
+  for (let y = 0; y < cropSize; y += 1) {
+    const srcOff = ((startY + y) * srcImage.width + startX) * 4;
+    const dstOff = y * cropSize * 4;
+    srcImage.rgba.copy(rgba, dstOff, srcOff, srcOff + cropSize * 4);
+  }
+  return { width: cropSize, height: cropSize, rgba };
+}
+
+function smootherstep(t) {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * x * (x * (x * 6 - 15) + 10);
+}
+
+function blendPixelPair(rgba, width, leftIndex, rightIndex, edgeWeight) {
+  for (let c = 0; c < 4; c += 1) {
+    const avg = Math.round((rgba[leftIndex + c] + rgba[rightIndex + c]) / 2);
+    rgba[leftIndex + c] = Math.round(rgba[leftIndex + c] * (1 - edgeWeight) + avg * edgeWeight);
+    rgba[rightIndex + c] = Math.round(rgba[rightIndex + c] * (1 - edgeWeight) + avg * edgeWeight);
+  }
+}
+
+function makeTerrainSeamless(image, margin = 48) {
+  const { width, height } = image;
+  const rgba = Buffer.from(image.rgba);
+  const edge = Math.max(1, Math.min(margin, Math.floor(Math.min(width, height) / 3)));
+
+  for (let y = 0; y < height; y += 1) {
+    for (let d = 0; d < edge; d += 1) {
+      const edgeWeight = 1 - smootherstep(d / edge);
+      const leftIndex = (y * width + d) * 4;
+      const rightIndex = (y * width + (width - 1 - d)) * 4;
+      blendPixelPair(rgba, width, leftIndex, rightIndex, edgeWeight);
+    }
+  }
+
+  for (let x = 0; x < width; x += 1) {
+    for (let d = 0; d < edge; d += 1) {
+      const edgeWeight = 1 - smootherstep(d / edge);
+      const topIndex = (d * width + x) * 4;
+      const bottomIndex = ((height - 1 - d) * width + x) * 4;
+      blendPixelPair(rgba, width, topIndex, bottomIndex, edgeWeight);
+    }
+  }
+
+  return { width, height, rgba };
+}
+
+function quietTerrainContrast(image, amount) {
+  if (!amount) return image;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  const count = image.width * image.height;
+  for (let i = 0; i < image.rgba.length; i += 4) {
+    r += image.rgba[i + 0];
+    g += image.rgba[i + 1];
+    b += image.rgba[i + 2];
+  }
+  const avg = [r / count, g / count, b / count];
+  const rgba = Buffer.from(image.rgba);
+  for (let i = 0; i < rgba.length; i += 4) {
+    for (let c = 0; c < 3; c += 1) {
+      rgba[i + c] = Math.round(rgba[i + c] * (1 - amount) + avg[c] * amount);
+    }
+  }
+  return { width: image.width, height: image.height, rgba };
 }
 
 function chromaKeyScriptPath() {
@@ -213,6 +301,9 @@ function processStaticEntry(entry, opts) {
   }
 
   let image = readPngAsRgba(stagedPath);
+  if (opts.cropCenter && entry.type === 'terrain') {
+    image = cropCenterRgba(image, opts.cropCenter);
+  }
   if (image.width !== entry.width || image.height !== entry.height) {
     if (opts.resize) {
       image = resizeRgba(image, entry.width, entry.height, opts.resize);
@@ -223,6 +314,12 @@ function processStaticEntry(entry, opts) {
         reason: `dimensions mismatch: file ${image.width}x${image.height}, expected ${entry.width}x${entry.height} (pass --resize or --resize-nearest to scale)`
       };
     }
+  }
+  if (opts.seamlessTerrain && entry.type === 'terrain') {
+    image = makeTerrainSeamless(image);
+  }
+  if (opts.quietTerrain && entry.type === 'terrain') {
+    image = quietTerrainContrast(image, opts.quietTerrain);
   }
 
   const encoded = encodeDeterministicPng({
@@ -418,6 +515,9 @@ function main() {
     console.error('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
     console.error('    --resize               box-average downscale raw to target dimensions (use for terrain/props/exits)');
     console.error('    --resize-nearest       nearest-neighbor downscale (use for chibi spritesheet to keep edges crisp)');
+    console.error('    --seamless-terrain     softly harmonize opposite terrain edges for repeatable ground tiles');
+    console.error('    --crop-center[=0.82]   crop terrain raw around center before resize to remove imagegen edge vignettes');
+    console.error('    --quiet-terrain[=0.35] reduce broad generated lighting variation so repeats are less obvious');
     process.exit(1);
   }
 

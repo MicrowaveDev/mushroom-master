@@ -11,6 +11,20 @@
 export const ASSET_TYPES = new Set(['terrain', 'prop', 'exit', 'character', 'effect']);
 export const COLLISION_KINDS = new Set(['walkable', 'blocked', 'partial']);
 const FACING = new Set(['up', 'down', 'left', 'right']);
+const TILE_DIRECTIONS = ['n', 'e', 's', 'w'];
+const TILE_PLACEMENTS = new Set([
+  'free',
+  'accent',
+  'horizontal_connector',
+  'horizontal_connector_accent',
+  'vertical_connector',
+  'vertical_connector_accent',
+  'destination_row_connector',
+  'transition',
+  'blocked_edge',
+  'corner',
+  'isolated'
+]);
 
 export const ANCHOR_RULES = {
   terrain: { x: 0, y: 0, label: '{0, 0}' },
@@ -85,6 +99,44 @@ function validateAnimation(asset) {
   return null;
 }
 
+function validateTerrainTileContract(asset) {
+  if (asset.type !== 'terrain') return [];
+  const errors = [];
+  const tile = asset.tile;
+  if (!tile || typeof tile !== 'object') {
+    pushErr(errors, 'asset.tile', `terrain asset "${asset.id}" missing tile connectivity contract`);
+    return errors;
+  }
+  if (typeof tile.terrainSet !== 'string' || tile.terrainSet.length === 0) {
+    pushErr(errors, 'asset.tile.terrainSet', `terrain asset "${asset.id}" tile.terrainSet must be a non-empty string`);
+  }
+  if (!TILE_PLACEMENTS.has(tile.placement)) {
+    pushErr(errors, 'asset.tile.placement', `terrain asset "${asset.id}" tile.placement must be one of ${[...TILE_PLACEMENTS].join('|')}`);
+  }
+  if (!tile.connectors || typeof tile.connectors !== 'object') {
+    pushErr(errors, 'asset.tile.connectors', `terrain asset "${asset.id}" missing tile.connectors`);
+  } else {
+    for (const dir of TILE_DIRECTIONS) {
+      if (typeof tile.connectors[dir] !== 'string' || tile.connectors[dir].length === 0) {
+        pushErr(errors, 'asset.tile.connectors', `terrain asset "${asset.id}" connector "${dir}" must be a non-empty string`);
+      }
+    }
+  }
+  if (tile.canTouch !== undefined && (!Array.isArray(tile.canTouch) || !tile.canTouch.every((v) => typeof v === 'string'))) {
+    pushErr(errors, 'asset.tile.canTouch', `terrain asset "${asset.id}" tile.canTouch must be an array of asset ids`);
+  }
+  if (tile.needsTransitionFor !== undefined && (!Array.isArray(tile.needsTransitionFor) || !tile.needsTransitionFor.every((v) => typeof v === 'string'))) {
+    pushErr(errors, 'asset.tile.needsTransitionFor', `terrain asset "${asset.id}" tile.needsTransitionFor must be an array of connector tokens`);
+  }
+  if (tile.maxPerViewport !== undefined && !isPositiveInt(tile.maxPerViewport)) {
+    pushErr(errors, 'asset.tile.maxPerViewport', `terrain asset "${asset.id}" tile.maxPerViewport must be a positive integer`);
+  }
+  if (tile.requiresTransitionsAtEnds !== undefined && typeof tile.requiresTransitionsAtEnds !== 'boolean') {
+    pushErr(errors, 'asset.tile.requiresTransitionsAtEnds', `terrain asset "${asset.id}" tile.requiresTransitionsAtEnds must be boolean`);
+  }
+  return errors;
+}
+
 function validateAssetEntry(asset, idx, knownIds) {
   const errors = [];
   const id = asset && asset.id;
@@ -117,6 +169,7 @@ function validateAssetEntry(asset, idx, knownIds) {
 
   const animErr = validateAnimation(asset);
   if (animErr) pushErr(errors, 'asset.animation', `asset "${id}": ${animErr}`);
+  errors.push(...validateTerrainTileContract(asset));
 
   for (const field of ['outputPath', 'publicPath', 'promptKey']) {
     if (typeof asset[field] !== 'string' || asset[field].length === 0) {

@@ -95,14 +95,30 @@ function styleAnchorBlock(anchor) {
 
 function tilemapContractBlock(asset) {
   if (asset.type !== 'terrain') return '';
+  const tile = asset.tile || null;
+  const connectivityLines = tile
+    ? [
+      `Declared terrain set: ${tile.terrainSet}`,
+      `Declared placement: ${tile.placement}`,
+      `Declared edge connectors: north=${tile.connectors?.n}; east=${tile.connectors?.e}; south=${tile.connectors?.s}; west=${tile.connectors?.w}`,
+      tile.canTouch?.length ? `Allowed direct neighbor asset ids: ${tile.canTouch.join(', ')}` : null,
+      tile.needsTransitionFor?.length ? `Requires transition tile before touching connector tokens: ${tile.needsTransitionFor.join(', ')}` : null,
+      tile.requiresTransitionsAtEnds ? 'This connector tile must not sit directly beside grass at its open path ends; use explicit end/transition tiles.' : null,
+      tile.maxPerViewport ? `Max visual density: no more than ${tile.maxPerViewport} copy/copies per initial viewport.` : null
+    ].filter(Boolean)
+    : ['(!) Missing tile connectivity metadata; do not generate until the manifest declares terrainSet, placement, and NESW connectors.'];
   return [
     '## Tilemap contract (terrain assets only)',
     'This image is ONE reusable tile cell from a tilemap tileset, not a full scene, wallpaper, splash image, or complete field illustration.',
     `It must work when repeated edge-to-edge in a Phaser/Tiled tile layer at ${asset.width}x${asset.height}px.`,
+    '',
+    'Connectivity metadata to obey:',
+    ...connectivityLines,
+    '',
     'Composition rules: top-down/2.5D ground surface only; no horizon, no sky, no large foreground object, no scene focal point, no full-screen composition.',
     'Pattern rules: prefer a low-frequency, intentional tile pattern with broad readable shapes. Avoid dense random texture, realistic blade detail, unique center marks, or high-detail noise that becomes wallpaper when repeated.',
     'Edge rules: north/south/east/west edges must connect cleanly to compatible tiles; keep edge values calm and avoid marks cut off at boundaries.',
-    'Connector rules: path tiles expose exact west/east connectors at the same Y position and width; edge tiles read as repeatable border cells, not miniature forest scenes.',
+    'Connector rules: the art on each edge must visually match its declared connector token. Horizontal path tiles expose exact west/east path connectors at the same Y position and width; vertical path tiles expose exact north/south path connectors at the same X position and width; free grass exposes grass on every edge; transition tiles explicitly bridge unlike tokens.',
     'Scale rules: terrain details are ground texture only and should be sparse. Props, exits, large mushrooms, signs, lanterns, characters, and blockers belong in object layers, not terrain tiles.',
     'Acceptance rule: if the tile looks nice by itself but fails as a repeated 3x3 patch or creates a visible focal pattern in a 7x4 map, reject and regenerate.'
   ].join('\n');

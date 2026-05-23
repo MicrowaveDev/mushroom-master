@@ -31,6 +31,7 @@ npm run game:home-field:next --limit=10
 ## Source Of Truth
 
 - **Plan**: [`docs/home-field-ingame-plan.md`](../../../docs/home-field-ingame-plan.md)
+- **Tileset connector contract**: [`docs/home-field-tileset-contract.md`](../../../docs/home-field-tileset-contract.md)
 - **ADR**: [`docs/adr/0001-home-field-renderer.md`](../../../docs/adr/0001-home-field-renderer.md)
 - **Requirements**: [`docs/game-requirements.md`](../../../docs/game-requirements.md) Section 15.
 - **User flows**: [`docs/user-flows.md`](../../../docs/user-flows.md) Flow B Step 1.
@@ -104,17 +105,23 @@ Terrain PNGs under `web/public/home-field/terrain/` are **single reusable tile c
 
 - each terrain image is one `256x256` tile;
 - terrain tiles must be full-bleed ground/border/path cells;
-- terrain tiles must work when repeated edge-to-edge;
+- terrain tiles must work when repeated edge-to-edge with compatible neighbors;
+- every terrain tile declares `tile.connectors.n/e/s/w` in `home-field-assets.json`; those connector tokens are part of the art brief, not optional metadata;
 - terrain tiles must not contain a whole field, horizon, sky, vignette, large foreground object, sign, exit, character, or unique center composition;
 - grass tiles must be low-frequency map cells with broad readable patches, not dense texture paintings;
 - tiny details are limited: a few spore dots, clover marks, pebble/root marks, or mycelium strokes only when they stay quiet in a repeated patch;
-- path tiles must expose clean west/east connectors at the same Y position;
-- blocked-edge tiles must be repeatable border cells, not complete forest scenes.
+- horizontal path tiles must expose clean west/east connectors at the same Y position;
+- vertical path tiles must expose clean north/south connectors at the same X position;
+- path end/transition tiles are required before a path can visually terminate into grass;
+- blocked-edge tiles must be repeatable border cells, not complete forest scenes, and must not touch grass inside the visible field without a transition.
+
+See [`docs/home-field-tileset-contract.md`](../../../docs/home-field-tileset-contract.md) for the current connector vocabulary and required grass/path/edge families.
 
 Terrain acceptance is stricter than "looks pretty":
 
 - inspect every terrain tile as a `3x3` repeated patch in the contact sheet;
 - inspect the same tile inside a `7x4` map preview before accepting it as production-ready;
+- reject any map placement where touching connector tokens do not match and no explicit transition tile bridges them;
 - reject dense AI texture, unique center highlights, tiny realistic grass blades, obvious wallpaper, cut-off edge marks, and any tile that would have been better as an object-layer prop.
 
 Reference model:
@@ -177,6 +184,9 @@ Imagegen tools typically return `1024×1024` PNGs. The `home-field-assets.json` 
 
 - `--resize` — box-average downscale (good for terrain, props, exits, effects).
 - `--resize-nearest` — nearest-neighbour downscale (use for the chibi spritesheet frames so edges stay crisp at 64×64).
+- `--crop-center[=0.82]` — terrain-only center crop before resize, useful when imagegen adds unwanted edge vignette.
+- `--seamless-terrain` — terrain-only soft opposite-edge harmonization for generated sources that are close but not edge-compatible.
+- `--quiet-terrain[=0.35]` — terrain-only contrast reduction for generated sources with too much broad lighting variation.
 - (no flag) — strict mode; rejects size mismatches. Useful when you want to verify imagegen produced exact dimensions.
 
 Recommended default: `npm run game:home-field:produce -- <ids> --resize`, and for chibi placeholder use `--resize-nearest`.

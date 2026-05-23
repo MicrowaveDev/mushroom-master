@@ -3,6 +3,8 @@
   "tileSize": 256,
   "atlasOutput": "web/public/home-field/atlases/main.png",
   "atlasJsonOutput": "web/public/home-field/atlases/main.json",
+  "tileConnectorVersion": 1,
+  "tileConnectorNotes": "Terrain generation uses explicit NESW connector metadata. Adjacent terrain edges are compatible only when their connector tokens match or a transition tile explicitly bridges them. This follows Tiled/Wang-tile-style terrain thinking while staying lightweight for the current JSON pipeline.",
   "assets": [
     {
       "id": "grass_base_01",
@@ -16,6 +18,14 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_grass",
+        "placement": "free",
+        "connectors": { "n": "grass", "e": "grass", "s": "grass", "w": "grass" },
+        "canTouch": ["grass_base_01", "grass_base_02", "grass_flowers_01"],
+        "repeatMode": "low_frequency",
+        "needsTransitionFor": ["path_h", "path_v", "edge_blocked"]
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "grass_base_01"
@@ -32,6 +42,14 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_grass",
+        "placement": "free",
+        "connectors": { "n": "grass", "e": "grass", "s": "grass", "w": "grass" },
+        "canTouch": ["grass_base_01", "grass_base_02", "grass_flowers_01"],
+        "repeatMode": "low_frequency",
+        "needsTransitionFor": ["path_h", "path_v", "edge_blocked"]
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "grass_base_02"
@@ -48,6 +66,15 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_grass",
+        "placement": "accent",
+        "connectors": { "n": "grass", "e": "grass", "s": "grass", "w": "grass" },
+        "canTouch": ["grass_base_01", "grass_base_02"],
+        "repeatMode": "sparse",
+        "maxPerViewport": 3,
+        "needsTransitionFor": ["path_h", "path_v", "edge_blocked"]
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "grass_flowers_01"
@@ -64,6 +91,14 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_path",
+        "placement": "horizontal_connector",
+        "connectors": { "n": "grass", "e": "path_h", "s": "grass", "w": "path_h" },
+        "canTouch": ["path_dirt_straight", "path_spore_glow", "path_h_end_w", "path_h_end_e", "path_cross_grass_h"],
+        "repeatMode": "connector",
+        "requiresTransitionsAtEnds": true
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "path_dirt_straight"
@@ -80,6 +115,15 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_path",
+        "placement": "horizontal_connector_accent",
+        "connectors": { "n": "grass", "e": "path_h", "s": "grass", "w": "path_h" },
+        "canTouch": ["path_dirt_straight", "path_spore_glow", "path_h_end_w", "path_h_end_e", "path_cross_grass_h"],
+        "repeatMode": "connector_accent",
+        "maxPerViewport": 1,
+        "requiresTransitionsAtEnds": true
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "path_spore_glow"
@@ -96,6 +140,14 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "walkable",
+      "tile": {
+        "terrainSet": "meadow_path",
+        "placement": "destination_row_connector",
+        "connectors": { "n": "grass", "e": "path_h_wide", "s": "grass", "w": "path_h_wide" },
+        "canTouch": ["path_destination_row"],
+        "repeatMode": "connector",
+        "requiresTransitionsAtEnds": true
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "path_destination_row"
@@ -112,6 +164,14 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "blocked",
+      "tile": {
+        "terrainSet": "meadow_edge",
+        "placement": "blocked_edge",
+        "connectors": { "n": "edge_blocked", "e": "edge_blocked", "s": "edge_blocked", "w": "edge_blocked" },
+        "canTouch": ["edge_roots_01", "edge_moss_rocks_01"],
+        "repeatMode": "edge",
+        "needsTransitionFor": ["grass", "path_h", "path_v"]
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "edge_roots_01"
@@ -128,6 +188,14 @@
       "height": 256,
       "anchor": { "x": 0, "y": 0 },
       "collision": "blocked",
+      "tile": {
+        "terrainSet": "meadow_edge",
+        "placement": "blocked_edge",
+        "connectors": { "n": "edge_blocked", "e": "edge_blocked", "s": "edge_blocked", "w": "edge_blocked" },
+        "canTouch": ["edge_roots_01", "edge_moss_rocks_01"],
+        "repeatMode": "edge",
+        "needsTransitionFor": ["grass", "path_h", "path_v"]
+      },
       "animation": null,
       "status": "draft",
       "atlasFrameKey": "edge_moss_rocks_01"

@@ -4,59 +4,59 @@
   "prompts": {
     "terrain_grass_base_01": {
       "subject": "one production-quality 2D top-down grass tile cell for a reusable dark forest RPG meadow tileset",
-      "details": "This is a quiet reusable ground tile, not a texture painting and not a full scene. Match the liked reference mood: muted deep green top-down forest floor, soft painterly tonal variation, organic hand-authored patches, no visible procedural/math pattern. Use broad low-contrast grass/moss value shifts and large walkable areas. Bush masses, readable leaf clusters, mushrooms, glowing motes, and landmarks are separate props, not part of this terrain. Edges must be calm and compatible so the tile can repeat in a 3x3 and 7x4 map without visible seams.",
+      "details": "Simple production terrain tile in the cute dark storybook hub style: broad muted green ground, soft flat mossy shadows, only 3-6 tiny hand-drawn grass strokes or yellow-green flecks. Most of the tile must remain open walkable space. Do not make a realistic texture painting, clover field, or detailed wallpaper. Edges must be calm and compatible so it repeats without visible boxes.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
-      "constraints": "no characters, no props, no mushrooms, no path, no horizon, no vignette, no text, no UI overlays, no dense detailed grass texture, no obvious center highlight. Must read as a simple walkable ground tile first."
+      "constraints": "no characters, no props, no mushrooms, no path, no horizon, no vignette, no text, no UI overlays, no dense detailed grass texture, no obvious center highlight, no photoreal detail. Must read as simple walkable ground first."
     },
     "terrain_grass_base_02": {
       "subject": "one production-quality 2D top-down grass variation tile for a reusable dark forest RPG meadow tileset",
-      "details": "This is a second quiet grass tile that must sit beside grass_base_01 without looking like a separate illustration. Use soft painterly dark-green value variation, organic low-contrast moss patches, and large quiet walkable regions. Keep detail sparse and hand-authored; no visible procedural pattern. A faint mycelium thread is allowed only if it enters/exits softly and does not become a repeated focal mark. Edge values and patch scale must be compatible with grass_base_01.",
+      "details": "Second simple grass tile that sits beside grass_base_01. Use the same broad muted green field, slightly different soft moss shadow patches, and only a few sparse dark grass strokes. Keep it flatter and calmer than a painted RPG texture. No readable plant clusters; object-layer props provide foliage personality.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
-      "constraints": "no characters, no props, no mushrooms, no path, no horizon, no vignette, no text, no dense micro-detail, no unique center feature. Must tile calmly with grass_base_01."
+      "constraints": "no characters, no props, no mushrooms, no path, no horizon, no vignette, no text, no dense micro-detail, no clover field, no unique center feature. Must tile calmly with grass_base_01."
     },
     "terrain_grass_flowers_01": {
       "subject": "one sparse accent 2D tilemap grass cell with tiny clover and spore flowers",
-      "details": "This is a repeatable accent tile, not a flower-field illustration. Start with the same soft painterly quiet grass language as the base tiles. Add only 3-5 tiny clover/sprout marks total, clustered away from the exact center and away from tile edges. Flowers/sprouts must be small enough that repetition does not create rows or obvious wallpaper. Most of the tile remains quiet walkable dark-green ground.",
+      "details": "Sparse simple accent terrain tile: same broad muted green ground as the base tiles, with 2-4 tiny simple flower/sprout marks and a few short hand-drawn grass strokes. The accent must feel like a small hand-placed detail, not a flower field. Most of the tile remains empty walkable ground.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no characters, no props, no large flowers, no horizon, no vignette, no text, no dense scatter, no repeated dot field. Flowers must not extend beyond the tile boundary."
+      "constraints": "no characters, no props, no large flowers, no clover carpet, no horizon, no vignette, no text, no dense scatter, no repeated dot field. Flowers must not extend beyond the tile boundary."
     },
     "terrain_path_dirt_straight": {
       "subject": "one reusable 2D tilemap cell: horizontal packed-earth path connector",
-      "details": "This is a connector tile, not a complete path scene. The path is a broad simple band crossing west-to-east through the middle third of the tile. Both west and east edges must expose the same path width and Y position. Use flat warm umber dirt with 2-5 chunky pebble/root marks only; keep grass margins simple and compatible with the base grass tiles. Do not create a unique center composition.",
+      "details": "Simple connector tile: a broad soft dirt path crosses west-to-east through the middle third of the tile, with muted green grass above and below. Path shape is hand-drawn and slightly wavy, with 2-4 small simple stroke marks. Flat storybook colors, not realistic soil texture. West/east edges must expose the same path width and Y position.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no characters, no props, no signs, no horizon, no vignette, no text, no dense pebble texture. Path must align horizontally for tiling."
+      "constraints": "no characters, no props, no signs, no horizon, no vignette, no text, no dense pebble texture, no realistic dirt. Path must align horizontally for tiling."
     },
     "terrain_path_spore_glow": {
       "subject": "one reusable 2D tilemap cell: horizontal packed-earth path connector with soft amber guide glow",
-      "details": "This is a connector variant of path_dirt_straight. Use the same broad west-to-east path band and compatible grass margins. Add a very simple low-contrast amber bioluminescent guide glow along the center of the path, aligned exactly at the west/east edges. The glow should read as a reusable lane, not a spotlight or portal.",
+      "details": "Simple connector variant of path_dirt_straight. Same broad west-to-east path band and compatible grass margins. Add a very restrained warm amber mycelium guide line or tiny dots along the path center, like a graphic storybook hint, not a detailed glowing texture.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no props, no signs, no horizon, no text, no spotlight, no destination marker. Path edges must align with path_dirt_straight for tiling."
+      "constraints": "no props, no signs, no horizon, no text, no spotlight, no dense glowing particles, no destination marker. Path edges must align with path_dirt_straight for tiling."
     },
     "terrain_path_destination_row": {
       "subject": "one reusable 2D tilemap cell: horizontal destination-row path connector with mycelium veins",
-      "details": "This is one connector tile used repeatedly along the top destination row. It must not contain a gate, arch, sign, or whole row composition. Use a wider west-to-east path band with simple flat dirt shapes and 2-4 subtle amber/violet mycelium vein strokes that continue cleanly across west/east edges. Keep the vein pattern quiet enough that repeated copies do not form a distracting stripe.",
+      "details": "Simple top destination-row connector tile. Use a broad flat dirt landing/path band crossing west-to-east, blended into muted green grass. Add 1-2 simple mycelium vein strokes only. It must remain a reusable terrain connector, not a full entrance illustration.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no Arena arch, no Journey gate, no signs, no props, no horizon, no text, no full-scene lighting, no unique focal symbol. Path edges must align horizontally."
     },
     "terrain_edge_roots_01": {
       "subject": "one seamless 2D tilemap terrain cell of dense root growth marking the edge of the walkable field",
-      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Use soft painterly dark undergrowth and a few broad low-contrast root/mycelium shapes, leaving connector edges calm enough to repeat. It should read as do-not-pass when tiled along an edge, but must not become a miniature forest scene or visible repeated lattice.",
+      "details": "Simple blocked-edge terrain tile: muted dark green ground with a few chunky hand-drawn root or vine strokes along the blocked side/outer feeling. It should be graphic and readable, not a dense root texture or lattice. Works as an edge tile when repeated.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no characters, no signposts, no full forest scene, no horizon, no text. Must read clearly as a blocked edge, not as a path."
+      "constraints": "no characters, no signposts, no full forest scene, no horizon, no text, no detailed root web, no schematic red lines. Must read clearly as a blocked edge, not as a path."
     },
     "terrain_edge_moss_rocks_01": {
       "subject": "one seamless 2D tilemap terrain cell of mossy rocks and forest debris marking a blocked field edge",
-      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Use a few broad, soft mossy stones/debris shapes embedded into dark green painterly ground with quiet connector edges. Reads as do-not-pass when tiled along an edge, but avoids dense detail, repeated dot grids, and unique center landmarks.",
+      "details": "Simple blocked-edge terrain tile: muted dark green ground with a few broad mossy rock/debris shapes and short grass strokes. Keep shapes chunky and low-count, like object silhouettes baked into a simple edge tile, not a noisy texture.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
-      "constraints": "no characters, no signposts, no full forest scene, no horizon, no text. Same readability as edge_roots_01."
+      "constraints": "no characters, no signposts, no full forest scene, no horizon, no text, no many repeated circles. Same readability as edge_roots_01."
     },
     "prop_bush_cluster_dark_01": {
       "subject": "transparent-background 2D top-down forest prop: dark rounded bush mass for a game hub object layer",
