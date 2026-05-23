@@ -37,7 +37,7 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
       };
     };
     const stageRect = rectFor(stage);
-    const safeRect = rectFor(safeFrame);
+    const safeRect = safeFrame ? rectFor(safeFrame) : null;
     const objects = Array.from(document.querySelectorAll('.home-field-preview-object')).map((element) => ({
       selector: `[data-testid="${element.getAttribute('data-testid')}"]`,
       decorative: element.getAttribute('data-decorative') === 'true',
@@ -66,7 +66,7 @@ async function assertObjectLayerFits(page, { requireSafeFrame = false } = {}) {
       safeFrame: safeRect,
       objects,
       outsideStage: objects.filter((object) => !object.decorative && !inside(object.rect, stageRect, 1)).map((object) => object.selector),
-      outsideSafeFrame: requireSafeFrame
+      outsideSafeFrame: requireSafeFrame && safeRect
         ? objects.filter((object) => object.isSafeFrameCritical && !inside(object.rect, safeRect, 1)).map((object) => object.selector)
         : [],
       overlaps
@@ -90,10 +90,24 @@ test('[Req 15-B] home field layout preview composes tile and object layers', asy
   await assertObjectLayerFits(page, { requireSafeFrame: true });
   await saveShot(page, 'home-field-preview-mobile.png');
 
+  await page.goto(`${baseURL}/home-field-preview?debug=0`);
+  await expect(page.getByTestId('home-field-preview')).toHaveAttribute('data-debug', '0');
+  await expect(page.locator('.home-field-preview-safe-frame')).toHaveCount(0);
+  await expect(page.locator('.home-field-preview-object span')).toHaveCount(0);
+  await assertObjectLayerFits(page);
+  await saveShot(page, 'home-field-preview-mobile-clean.png');
+
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.goto(`${baseURL}/home-field-preview`);
   await expect(page.getByTestId('home-field-preview')).toBeVisible();
   await expect(page.locator('.home-field-preview-tile')).toHaveCount(28);
   await assertObjectLayerFits(page);
   await saveShot(page, 'home-field-preview-desktop.png');
+
+  await page.goto(`${baseURL}/home-field-preview?debug=0`);
+  await expect(page.getByTestId('home-field-preview')).toHaveAttribute('data-debug', '0');
+  await expect(page.locator('.home-field-preview-safe-frame')).toHaveCount(0);
+  await expect(page.locator('.home-field-preview-object span')).toHaveCount(0);
+  await assertObjectLayerFits(page);
+  await saveShot(page, 'home-field-preview-desktop-clean.png');
 });

@@ -10,6 +10,7 @@
 
 export const ASSET_TYPES = new Set(['terrain', 'prop', 'exit', 'character', 'effect']);
 export const COLLISION_KINDS = new Set(['walkable', 'blocked', 'partial']);
+export const ASSET_STATUSES = new Set(['missing', 'generated', 'needs_review', 'rejected', 'approved', 'placeholder']);
 const FACING = new Set(['up', 'down', 'left', 'right']);
 const TILE_DIRECTIONS = ['n', 'e', 's', 'w'];
 const TILE_PLACEMENTS = new Set([
@@ -161,6 +162,9 @@ function validateAssetEntry(asset, idx, knownIds) {
   if (!COLLISION_KINDS.has(asset.collision)) {
     pushErr(errors, 'asset.collision', `asset "${id}" collision must be one of ${[...COLLISION_KINDS].join('|')}, got "${asset.collision}"`);
   }
+  if (!ASSET_STATUSES.has(asset.status)) {
+    pushErr(errors, 'asset.status', `asset "${id}" status must be one of ${[...ASSET_STATUSES].join('|')}, got "${asset.status}"`);
+  }
   if (!isPositiveInt(asset.width) || !isPositiveInt(asset.height)) {
     pushErr(errors, 'asset.size', `asset "${id}" width/height must be positive integers`);
   }
@@ -226,6 +230,9 @@ export function validateAssets(assetsDoc) {
       }
       if (typeof c.publicPath === 'string' && !c.publicPath.startsWith('/home-field/characters/')) {
         pushErr(errors, 'character.publicPath_prefix', `character "${id}" publicPath must start with "/home-field/characters/"`);
+      }
+      if (!ASSET_STATUSES.has(c.status)) {
+        pushErr(errors, 'character.status', `character "${id}" status must be one of ${[...ASSET_STATUSES].join('|')}, got "${c.status}"`);
       }
       if (!c.spritesheet || typeof c.spritesheet !== 'object') {
         pushErr(errors, 'character.spritesheet', `character "${id}" missing spritesheet block`);

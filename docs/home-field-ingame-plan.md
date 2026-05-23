@@ -393,7 +393,7 @@ Object-layer assets are separate sprites:
 Agent review rule:
 
 - Before any asset batch is accepted, the official contact sheet must show terrain repeated as tiles and object sprites separately. The agent must regenerate terrain if it reads as full-screen art, dense texture, wallpaper, or a pretty standalone illustration instead of a map cell.
-- Deterministic proof assets are allowed only as `draft` scaffolding for layout, repeatability, and screenshot tests. Production approval requires painterly game-art quality: organic hand-authored shapes, no visible procedural/math patterns, no developer-placeholder geometry, and no generic AI texture.
+- Deterministic proof assets are allowed only as `needs_review` or `placeholder` scaffolding for layout, repeatability, and screenshot tests. Production approval requires painterly game-art quality, `status: "approved"`, and a checked-in review row with `accepted: true`: organic hand-authored shapes, no visible procedural/math patterns, no developer-placeholder geometry, and no generic AI texture.
 - The liked forest-floor direction is: dark muted green top-down ground, soft painterly tonal variation, separate rounded bush masses, tiny sprouts, and sparse warm motes. Terrain captures only the quiet walkable ground; bush masses and readable foliage stay as transparent object-layer props.
 
 Research anchors:

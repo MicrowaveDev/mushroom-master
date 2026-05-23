@@ -43,7 +43,7 @@
         ]
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "grass_base_01"
     },
     {
@@ -83,7 +83,7 @@
         ]
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "grass_base_02"
     },
     {
@@ -123,7 +123,7 @@
         ]
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "grass_flowers_01"
     },
     {
@@ -161,7 +161,7 @@
         "requiresTransitionsAtEnds": true
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "path_dirt_straight"
     },
     {
@@ -200,7 +200,7 @@
         "requiresTransitionsAtEnds": true
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "path_spore_glow"
     },
     {
@@ -236,7 +236,7 @@
         "maxPerViewport": 1
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "path_destination_row"
     },
     {
@@ -275,7 +275,7 @@
         ]
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "edge_roots_01"
     },
     {
@@ -314,7 +314,7 @@
         ]
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "edge_moss_rocks_01"
     },
     {
@@ -351,7 +351,7 @@
         "repeatMode": "transition"
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "path_h_end_w"
     },
     {
@@ -388,7 +388,7 @@
         "repeatMode": "transition"
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "path_h_end_e"
     },
     {
@@ -424,7 +424,7 @@
         "repeatMode": "edge"
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "edge_left_forest_01"
     },
     {
@@ -460,7 +460,7 @@
         "repeatMode": "edge"
       },
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "edge_right_forest_01"
     },
     {
@@ -479,7 +479,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "bush_cluster_dark_01"
     },
     {
@@ -498,7 +498,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "bush_cluster_light_01"
     },
     {
@@ -517,7 +517,7 @@
       },
       "collision": "walkable",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "leaf_sprout_01"
     },
     {
@@ -536,7 +536,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "mushroom_cluster_small_amber"
     },
     {
@@ -555,7 +555,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "mushroom_cluster_small_violet"
     },
     {
@@ -574,7 +574,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "mushroom_cluster_tall_green"
     },
     {
@@ -593,7 +593,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "mushroom_cap_red_spotted"
     },
     {
@@ -612,7 +612,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "mycelium_lantern_amber"
     },
     {
@@ -631,7 +631,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "fallen_branch_mycelium"
     },
     {
@@ -650,7 +650,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "arena_signpost_blank"
     },
     {
@@ -669,7 +669,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "journey_signpost_blank"
     },
     {
@@ -688,7 +688,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "arena_mushroom_arch"
     },
     {
@@ -707,7 +707,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "draft",
+      "status": "needs_review",
       "atlasFrameKey": "journey_gate_under_construction"
     },
     {
@@ -733,7 +733,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "draft",
+      "status": "placeholder",
       "atlasFrameKey": "spore_motes_loop"
     },
     {
@@ -759,7 +759,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "draft",
+      "status": "placeholder",
       "atlasFrameKey": "arena_portal_shimmer"
     },
     {
@@ -785,7 +785,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "draft",
+      "status": "placeholder",
       "atlasFrameKey": "mycelium_path_pulse"
     },
     {
@@ -811,7 +811,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "draft",
+      "status": "placeholder",
       "atlasFrameKey": "journey_blocked_rustle"
     },
     {
@@ -837,7 +837,7 @@
         "loop": false,
         "stillFrameIndex": 0
       },
-      "status": "draft",
+      "status": "placeholder",
       "atlasFrameKey": "tap_ripple"
     }
   ],
@@ -876,7 +876,7 @@
           ]
         }
       },
-      "status": "draft"
+      "status": "placeholder"
     }
   ]
 }

@@ -23,6 +23,7 @@ const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const MAP_PATH = path.join(sharedDir, 'home-field-map.json');
+const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -32,16 +33,20 @@ function hasFlag(argv, name) {
   return argv.includes(`--${name}`);
 }
 
-function summarize(allEntries) {
+function summarize(allEntries, reviewById) {
   return allEntries.map((e) => {
     const outAbs = path.join(repoRoot, e.outputPath);
     const exists = fs.existsSync(outAbs);
+    const review = reviewById.get(e.id);
     return {
       id: e.id,
       type: e.type,
       kind: e.animation ? 'animated' : (e.type === 'character' ? 'spritesheet' : 'static'),
       outputPath: e.outputPath,
-      status: exists ? 'done' : 'pending'
+      fileStatus: exists ? 'done' : 'pending',
+      manifestStatus: e.status,
+      reviewVerdict: review?.verdict || 'unreviewed',
+      accepted: review?.accepted === true
     };
   });
 }
@@ -54,28 +59,33 @@ function main() {
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const mapDoc = loadJson(MAP_PATH);
+  const reviewDoc = fs.existsSync(REVIEW_PATH) ? loadJson(REVIEW_PATH) : { assets: [] };
+  const reviewById = new Map((reviewDoc.assets || []).map((entry) => [entry.id, entry]));
   const allEntries = [
     ...assetsDoc.assets,
     ...(assetsDoc.characters || []).map((c) => ({
       id: c.id,
       type: 'character',
       outputPath: c.outputPath,
-      animation: null
+      animation: null,
+      status: c.status
     }))
   ];
 
-  const rows = summarize(allEntries);
+  const rows = summarize(allEntries, reviewById);
   const total = rows.length;
-  const done = rows.filter((r) => r.status === 'done').length;
+  const done = rows.filter((r) => r.fileStatus === 'done').length;
   const pending = total - done;
+  const approved = rows.filter((r) => r.manifestStatus === 'approved' && r.accepted).length;
+  const placeholders = rows.filter((r) => r.manifestStatus === 'placeholder').length;
 
   const schema = validateAll(assetsDoc, mapDoc);
 
   if (asJson) {
     const filtered = onlyPending
-      ? rows.filter((r) => r.status === 'pending')
+      ? rows.filter((r) => r.fileStatus === 'pending')
       : onlyDone
-        ? rows.filter((r) => r.status === 'done')
+        ? rows.filter((r) => r.fileStatus === 'done')
         : rows;
     console.log(JSON.stringify({
       total,
@@ -91,6 +101,7 @@ function main() {
   console.log('# Home Field — pipeline status');
   console.log('');
   console.log(`Progress: ${done}/${total} produced (${pending} pending)`);
+  console.log(`Approved: ${approved}/${total} accepted (${placeholders} placeholder)`);
   console.log(`Schema:   ${schema.ok ? 'PASS' : `FAIL (${schema.errors.length} error${schema.errors.length === 1 ? '' : 's'})`}`);
   if (!schema.ok) {
     for (const err of schema.errors.slice(0, 5)) {
@@ -108,13 +119,13 @@ function main() {
 
   for (const [kind, list] of Object.entries(byKind)) {
     if (list.length === 0) continue;
-    const kDone = list.filter((r) => r.status === 'done').length;
+    const kDone = list.filter((r) => r.fileStatus === 'done').length;
     console.log(`## ${kind}  ${kDone}/${list.length}`);
     for (const r of list) {
-      if (onlyPending && r.status !== 'pending') continue;
-      if (onlyDone && r.status !== 'done') continue;
-      const mark = r.status === 'done' ? '[x]' : '[ ]';
-      console.log(`  ${mark} ${r.id.padEnd(36)} (${r.type})`);
+      if (onlyPending && r.fileStatus !== 'pending') continue;
+      if (onlyDone && r.fileStatus !== 'done') continue;
+      const mark = r.fileStatus === 'done' ? '[x]' : '[ ]';
+      console.log(`  ${mark} ${r.id.padEnd(36)} (${r.type}; ${r.manifestStatus}; review=${r.reviewVerdict}${r.accepted ? ', accepted' : ''})`);
     }
     console.log('');
   }

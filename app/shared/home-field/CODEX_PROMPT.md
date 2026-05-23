@@ -27,7 +27,8 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 - **Terrain connectivity is explicit.** Before generating terrain, read `docs/home-field-tileset-contract.md`. Every terrain prompt emitted by `npm run game:home-field:next` includes `terrainSet`, `placement`, and `n/e/s/w` connector tokens from `home-field-assets.json`. The image must obey those edge tokens. If the prompt says west/east are `path_h`, the path must exit both sides at the same Y-band. If all edges are `grass`, the tile must not contain a path, blocker, or hard edge.
 - **Transitions are separate tiles.** Do not force a path to fade into grass inside a mid-connector tile. Use or request explicit path-end / transition tiles (`path_h_end_w`, `path_h_end_e`, `path_v_end_n`, `path_v_end_s`, etc.) when the map needs an unlike neighbor.
 - **Reject dense texture tiles.** Grass/path terrain must be low-frequency map art: broad readable patches, quiet edges, sparse tiny marks only. If a generated tile looks like a detailed texture painting, contains a unique center highlight, or becomes obvious wallpaper in a repeated patch, reject it even if it is visually pretty.
-- **Draft is not approved.** The deterministic `game:home-field:proof-tiles` output exists to test placement, PNG loading, and repeatability. Keep it at `status: "draft"` unless a human explicitly approves replacing it with production-grade painterly art. Production art must look hand-authored, not procedural.
+- **Generated is not approved.** The deterministic `game:home-field:proof-tiles` output exists to test placement, PNG loading, and repeatability. Keep proof assets at `status: "needs_review"` or `status: "placeholder"` unless a human explicitly approves replacing them with production-grade painterly art. Production art must look hand-authored, not procedural.
+- **Review manifest is mandatory.** Before starting a later batch, update `docs/home-field-asset-review.json` with a verdict for the current candidates. `accepted: true` is allowed only for human-approved production art. `npm run game:home-field:next` blocks unresolved generated candidates by default.
 
 ## Run order (do this exactly)
 
@@ -47,7 +48,7 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 8. `npm run game:home-field:validate` — must pass for schema and map metadata. Use `npm run game:home-field:status` to confirm the produced batch count. Reserve `--check-files` for the final full asset set because it requires every declared PNG to exist.
 9. `npm run game:home-field:sheet` — refreshes the contact sheet PNG + manifest.
 10. Inspect `.agent/home-field-workspace/review/contact-sheet.png` yourself for obvious problems (text in image, wrong palette, hard black outlines, photoreal style). Terrain cells must read as repeated tile patches in the contact sheet, not as miniature full-screen scenes. If any asset clearly violates the style anchor or tilemap contract, regenerate it before continuing.
-11. Do not promote any asset to `approved` unless the contact sheet and `/home-field-preview` screenshots look production-quality after ignoring debug labels/grid. Current deterministic proof assets are acceptable as `draft` only.
+11. Do not promote any asset to `approved` unless the contact sheet and `/home-field-preview?debug=0` screenshots look production-quality. Current deterministic proof assets are acceptable as `needs_review` or `placeholder` only.
 12. Commit and push:
     ```
     git add web/public/home-field/ .gitignore

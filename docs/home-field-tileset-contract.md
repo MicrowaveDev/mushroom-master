@@ -131,4 +131,10 @@ A terrain set is production-ready only when:
 - repeated grass reads as a simple field, not wallpaper;
 - path ends fade through explicit end/transition tiles;
 - object-layer props provide most visual richness;
-- mobile and desktop screenshots look like one cohesive scene after debug grid/labels are ignored.
+- mobile and desktop `/home-field-preview?debug=0` screenshots look like one cohesive scene;
+- every terrain asset has a checked-in review row in `docs/home-field-asset-review.json`;
+- production validation passes:
+
+```bash
+npm run game:home-field:validate -- --production
+```

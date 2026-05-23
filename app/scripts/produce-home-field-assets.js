@@ -32,7 +32,9 @@ import { validateAssets } from '../shared/home-field/home-field-validator.js';
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
-const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
+const ASSETS_PATH = process.env.HOME_FIELD_ASSETS_PATH
+  ? path.resolve(process.env.HOME_FIELD_ASSETS_PATH)
+  : path.join(sharedDir, 'home-field-assets.json');
 const workspace = process.env.HOME_FIELD_WORKSPACE
   ? path.resolve(process.env.HOME_FIELD_WORKSPACE)
   : path.join(repoRoot, '.agent', 'home-field-workspace');
@@ -201,6 +203,60 @@ function quietTerrainContrast(image, amount) {
   return { width: image.width, height: image.height, rgba };
 }
 
+function sampleAverageRgb(image, x0, y0, w, h) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+  for (let y = y0; y < y0 + h; y += 1) {
+    if (y < 0 || y >= image.height) continue;
+    for (let x = x0; x < x0 + w; x += 1) {
+      if (x < 0 || x >= image.width) continue;
+      const i = (y * image.width + x) * 4;
+      r += image.rgba[i + 0];
+      g += image.rgba[i + 1];
+      b += image.rgba[i + 2];
+      count += 1;
+    }
+  }
+  return count > 0 ? [r / count, g / count, b / count] : [0, 0, 0];
+}
+
+function rgbDistance(a, b) {
+  return Math.sqrt(
+    ((a[0] - b[0]) ** 2)
+    + ((a[1] - b[1]) ** 2)
+    + ((a[2] - b[2]) ** 2)
+  );
+}
+
+function detectOpaqueCheckerboardMatte(image) {
+  const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
+  if (stats.coverage < 0.985) return null;
+
+  const s = Math.max(4, Math.floor(Math.min(image.width, image.height) * 0.08));
+  const corners = [
+    sampleAverageRgb(image, 0, 0, s, s),
+    sampleAverageRgb(image, image.width - s, 0, s, s),
+    sampleAverageRgb(image, 0, image.height - s, s, s),
+    sampleAverageRgb(image, image.width - s, image.height - s, s, s)
+  ];
+  const distances = [
+    rgbDistance(corners[0], corners[1]),
+    rgbDistance(corners[0], corners[2]),
+    rgbDistance(corners[1], corners[3]),
+    rgbDistance(corners[2], corners[3])
+  ];
+  const maxDistance = Math.max(...distances);
+  const avgBrightness = corners
+    .map((c) => (c[0] + c[1] + c[2]) / 3)
+    .reduce((sum, v) => sum + v, 0) / corners.length;
+  if (maxDistance >= 10 && maxDistance <= 70 && avgBrightness >= 70 && avgBrightness <= 210) {
+    return `opaque checkerboard-like matte detected in corners (max RGB distance ${maxDistance.toFixed(1)}); regenerate on a flat chroma-key background or pass --chroma-key`;
+  }
+  return null;
+}
+
 function chromaKeyScriptPath() {
   const candidate = path.join(
     process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
@@ -335,21 +391,22 @@ function processStaticEntry(entry, opts) {
     image = quietTerrainContrast(image, opts.quietTerrain);
   }
 
+  let alphaSummary = null;
+  if (entry.type !== 'terrain') {
+    const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
+    alphaSummary = `coverage=${(stats.coverage * 100).toFixed(1)}%`;
+    if (stats.coverage > 0.985) {
+      const matteReason = detectOpaqueCheckerboardMatte(image);
+      return { id: entry.id, ok: false, reason: matteReason || `no transparency detected; alpha coverage ${alphaSummary}` };
+    }
+  }
+
   const encoded = encodeDeterministicPng({
     width: image.width,
     height: image.height,
     rgba: image.rgba
   });
   fs.writeFileSync(outAbs, encoded);
-
-  let alphaSummary = null;
-  if (entry.type !== 'terrain') {
-    const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
-    alphaSummary = `coverage=${(stats.coverage * 100).toFixed(1)}%`;
-    if (stats.coverage > 0.985) {
-      return { id: entry.id, ok: false, reason: `no transparency detected; alpha coverage ${alphaSummary}` };
-    }
-  }
 
   return { id: entry.id, ok: true, output: entry.outputPath, alpha: alphaSummary, mode: 'static' };
 }
@@ -521,7 +578,7 @@ function writeManifest(results, opts) {
 }
 
 function main() {
-  const { ids, chromaKey, allMissing, resize } = parseArgs(process.argv.slice(2));
+  const { ids, chromaKey, allMissing, resize, seamlessTerrain, cropCenter, quietTerrain } = parseArgs(process.argv.slice(2));
   if (ids.length === 0 && !allMissing) {
     console.error('Usage: produce-home-field-assets.js <asset_id...> | --all-missing');
     console.error('  Options:');
@@ -570,7 +627,7 @@ function main() {
   console.log(`Producing ${targets.length} asset${targets.length === 1 ? '' : 's'}...`);
   const results = [];
   for (const target of targets) {
-    const r = processEntry(target, { chromaKey, resize });
+    const r = processEntry(target, { chromaKey, resize, seamlessTerrain, cropCenter, quietTerrain });
     if (r.ok) {
       console.log(`  ${target.id}: OK [${r.mode || 'static'}] -> ${r.output}${r.alpha ? ` (${r.alpha})` : ''}`);
     } else {
@@ -578,7 +635,7 @@ function main() {
     }
     results.push(r);
   }
-  writeManifest(results, { chromaKey, allMissing, resize });
+  writeManifest(results, { chromaKey, allMissing, resize, seamlessTerrain, cropCenter, quietTerrain });
 
   const failed = results.filter((r) => !r.ok);
   const done = results.length - failed.length;

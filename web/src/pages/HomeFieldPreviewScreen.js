@@ -87,6 +87,10 @@ function percent(value, total) {
 export const HomeFieldPreviewScreen = {
   name: 'HomeFieldPreviewScreen',
   computed: {
+    cleanMode() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('debug') === '0' || params.get('clean') === '1';
+    },
     assetById() {
       return Object.fromEntries(homeFieldAssets.assets.map((asset) => [asset.id, asset]));
     },
@@ -124,7 +128,7 @@ export const HomeFieldPreviewScreen = {
           label: fallbackObjectLabel[object.id] || object.id,
           className: fallbackObjectClass[object.id] || 'home-field-preview-object--cluster-a',
           src,
-          showLabel: !src || object.hotspotId || (object.labelKey && !object.id.endsWith('_signpost')),
+          showLabel: !this.cleanMode && (!src || object.hotspotId || (object.labelKey && !object.id.endsWith('_signpost'))),
           decorative: decorativeObjectIds.has(object.id),
           style: `left: ${percent(object.x, world.width)}; top: ${percent(object.y, world.height)};`
         };
@@ -136,7 +140,7 @@ export const HomeFieldPreviewScreen = {
           label: 'Chibi',
           className: fallbackObjectClass.chibi_spawn,
           src: '',
-          showLabel: true,
+          showLabel: !this.cleanMode,
           decorative: false,
           style: `left: ${percent(homeFieldMap.spawn.x, world.width)}; top: ${percent(homeFieldMap.spawn.y, world.height)};`
         }
@@ -144,8 +148,13 @@ export const HomeFieldPreviewScreen = {
     }
   },
   template: `
-    <section class="home-field-preview-screen" data-testid="home-field-preview">
-      <header class="home-field-preview-header">
+    <section
+      class="home-field-preview-screen"
+      :class="{ 'home-field-preview-screen--clean': cleanMode }"
+      :data-debug="cleanMode ? '0' : '1'"
+      data-testid="home-field-preview"
+    >
+      <header v-if="!cleanMode" class="home-field-preview-header">
         <div>
           <p class="eyebrow">Home Field Layout Lab</p>
           <h1>Tile Placement Preview</h1>
@@ -154,7 +163,7 @@ export const HomeFieldPreviewScreen = {
       </header>
 
       <div class="home-field-preview-stage" data-testid="home-field-preview-stage">
-        <div class="home-field-preview-safe-frame" data-testid="home-field-preview-mobile-safe-frame"></div>
+        <div v-if="!cleanMode" class="home-field-preview-safe-frame" data-testid="home-field-preview-mobile-safe-frame"></div>
         <div class="home-field-preview-grid" data-testid="home-field-preview-tile-grid">
           <div
             v-for="tile in tiles"
@@ -176,7 +185,7 @@ export const HomeFieldPreviewScreen = {
             />
           </div>
         </div>
-        <div class="home-field-preview-path-glow" aria-hidden="true"></div>
+        <div v-if="!cleanMode" class="home-field-preview-path-glow" aria-hidden="true"></div>
         <button
           v-for="object in objects"
           :key="object.id"

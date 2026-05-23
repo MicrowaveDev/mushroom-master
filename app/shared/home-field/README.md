@@ -67,7 +67,7 @@ Six npm aliases drive the pipeline. Run them in order per batch:
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
-| **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, so use it only once the full 24-asset set has been produced. |
+| **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, and `--production` requires files, connectors, review acceptance, and `status: "approved"` for every asset. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 
@@ -83,7 +83,10 @@ It renders the intended 7×4 green field as tile cells, then places the object l
 - sign, mushroom clusters, and lantern as repeatable placement examples;
 - a visible mobile safe frame for screenshot review.
 
-The screen is intentionally CSS-only and public so screenshot tests can verify composition without generated home-field PNGs or a logged-in session. Once real tiles are approved, keep this route as a regression harness for tile/object metadata and update it to read from the shared map manifest instead of hardcoded sample placements.
+The screen is intentionally public so screenshot tests can verify composition without a logged-in session. It has two review modes:
+
+- `/home-field-preview` shows the debug grid, labels, path glow, and mobile safe frame for layout checks.
+- `/home-field-preview?debug=0` hides debug overlays for production-style art review.
 
 Run it with the screenshot suite:
 
@@ -149,7 +152,7 @@ The contact sheet is the first review gate: terrain must be inspected as repeate
 
 ## Production Art Bar
 
-The deterministic `game:home-field:proof-tiles` output is a **draft layout proof**, not final production art. It may be committed with `status: "draft"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
+The deterministic `game:home-field:proof-tiles` output is a **layout proof**, not final production art. It may be committed with `status: "needs_review"` or `status: "placeholder"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
 
 To mark a home-field asset `approved`, all of the following must be true:
 
@@ -159,6 +162,14 @@ To mark a home-field asset `approved`, all of the following must be true:
 - the `3x3` repeated contact-sheet patch has no obvious stamp, row, diagonal, edge seam, center target, or wallpaper rhythm;
 - `/home-field-preview` screenshots show a believable game field after ignoring debug grid/labels;
 - non-terrain assets have transparent alpha, readable silhouettes, consistent top-down lighting, and scale correctly next to the chibi/exits.
+
+The checked-in review source is [`docs/home-field-asset-review.json`](../../../docs/home-field-asset-review.json), with a readable companion at [`docs/home-field-asset-review.md`](../../../docs/home-field-asset-review.md). An asset can be marked `approved` only when its review row has `"verdict": "approved"` and `"accepted": true`. `placeholder` is a separate status and never passes production validation.
+
+Use this command before any production-ready claim:
+
+```bash
+npm run game:home-field:validate -- --production
+```
 
 ### Per-batch loop
 
@@ -206,8 +217,8 @@ Recommended default: `npm run game:home-field:produce -- <ids> --resize`, and fo
 Commit:
 
 - approved app-facing PNGs under `web/public/home-field/`
-- updates to `home-field-assets.json` if you flip `status: "missing"` to `"draft"` or `"approved"`
-- the new contact sheet if you want it on-record
+- updates to `home-field-assets.json` if you change `status`
+- updates to `docs/home-field-asset-review.json` when a visual verdict changes
 
 Do **not** commit (already in `.gitignore`):
 
@@ -228,7 +239,7 @@ Three predefined batches stage the workload from lowest-risk to highest-risk. **
 | 4 | `proof-character` | `npm run game:home-field:next -- --batch=proof-character --all` | The `_placeholder` chibi spritesheet — 12 distinct frames composed into the locked `8×4` grid. **STOP for review.** |
 | 5 | `full` | `npm run game:home-field:next -- --batch=full --all` | Everything still missing after the proof batches. Run only after the proof set is approved. |
 
-Each batch ships as one commit (or a small number of related commits) on `main`. The contact sheet (`npm run game:home-field:sheet`) is the artifact reviewers look at between batches.
+Each batch ships as one commit (or a small number of related commits) on `main`. The contact sheet (`npm run game:home-field:sheet`) and clean preview screenshots are the artifacts reviewers look at between batches. The prompt queue blocks if existing generated candidates still need a checked-in visual verdict; use `--ignore-review-gate` only when intentionally regenerating the blocked assets.
 
 ## Animated Assets And Chibi Spritesheet
 

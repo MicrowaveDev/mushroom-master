@@ -13,6 +13,7 @@
  *   --id=<a,b,c>      comma-separated asset id filter
  *   --batch=<name>    predefined batch (proof-static | proof-animated | proof-character | full)
  *   --include-existing  also emit prompts for assets whose outputPath already exists
+ *   --ignore-review-gate  print prompts even when existing candidates still need review
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
  * next-season-image-prompts.js). The PROMPT_MARKER line is the recognised handshake
@@ -30,6 +31,7 @@ const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const PROMPTS_PATH = path.join(sharedDir, 'home-field-prompts.json');
 const STYLE_ANCHOR_PATH = path.join(sharedDir, 'home-field-style-anchor.json');
+const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
 
@@ -225,6 +227,20 @@ function characterEntryToAsset(c) {
   };
 }
 
+function loadReviewDoc() {
+  if (!fs.existsSync(REVIEW_PATH)) return null;
+  return loadJson(REVIEW_PATH);
+}
+
+function findReviewGateBlockers(allAssets, reviewDoc) {
+  const reviewById = new Map((reviewDoc?.assets || []).map((entry) => [entry.id, entry]));
+  return allAssets.filter((asset) => {
+    if (!['generated', 'needs_review'].includes(asset.status)) return false;
+    const review = reviewById.get(asset.id);
+    return !review || review.verdict === 'pending' || review.verdict === 'needs_review';
+  });
+}
+
 function parseBatchFlag(argv) {
   const arg = argv.find((a) => a.startsWith('--batch='));
   if (!arg) return null;
@@ -246,6 +262,7 @@ function main() {
     idFilter = (idFilter || []).concat(batch.ids);
   }
   const includeExisting = hasFlag(argv, 'include-existing');
+  const ignoreReviewGate = hasFlag(argv, 'ignore-review-gate');
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const promptsDoc = loadJson(PROMPTS_PATH);
@@ -255,6 +272,23 @@ function main() {
     ...assetsDoc.assets,
     ...(assetsDoc.characters || []).map(characterEntryToAsset)
   ];
+
+  const reviewDoc = loadReviewDoc();
+  const reviewBlockers = findReviewGateBlockers(allAssets, reviewDoc);
+  if (reviewBlockers.length > 0 && !ignoreReviewGate) {
+    console.error('# Home Field — Review Gate Blocked');
+    console.error('');
+    console.error('Existing generated candidates still need a checked-in visual verdict before the next batch can proceed.');
+    console.error(`Review manifest: ${path.relative(repoRoot, REVIEW_PATH)}`);
+    console.error('');
+    for (const asset of reviewBlockers) {
+      console.error(`- ${asset.id} (${asset.type}, status=${asset.status})`);
+    }
+    console.error('');
+    console.error('Update the review manifest with verdict=approved|needs_regen|rejected and accepted=true only for human-approved production assets.');
+    console.error('Use --ignore-review-gate only for an intentional regeneration pass on the blocked assets.');
+    process.exit(1);
+  }
 
   const pending = allAssets.filter((a) => {
     if (typeFilter && !typeFilter.includes(a.type)) return false;

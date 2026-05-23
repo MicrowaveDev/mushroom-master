@@ -8604,6 +8604,22 @@ select {
   isolation: isolate;
 }
 
+.home-field-preview-screen--clean {
+  display: grid;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 0;
+  place-items: center;
+  background: #8fbd63;
+}
+
+.home-field-preview-screen--clean .home-field-preview-stage {
+  width: min(100vw, calc(100vh * 7 / 4));
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .home-field-preview-grid {
   position: absolute;
   inset: 0;
@@ -8620,6 +8636,15 @@ select {
     radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.18) 0 4%, transparent 4.6%),
     radial-gradient(circle at 72% 74%, rgba(35, 77, 32, 0.16) 0 5%, transparent 5.8%),
     linear-gradient(135deg, #91c861 0%, #76ad4f 100%);
+}
+
+.home-field-preview-screen--clean .home-field-preview-tile {
+  border: 0;
+}
+
+.home-field-preview-screen--clean .home-field-preview-tile::before,
+.home-field-preview-screen--clean .home-field-preview-tile::after {
+  display: none;
 }
 
 .home-field-preview-tile-img {

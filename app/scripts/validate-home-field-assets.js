@@ -6,6 +6,8 @@
  *   npm run game:home-field:validate
  *   npm run game:home-field:validate -- --check-files
  *   npm run game:home-field:validate -- --check-connectors
+ *   npm run game:home-field:validate -- --check-review
+ *   npm run game:home-field:validate -- --production
  *
  * Default behavior validates schema only (does not require any PNGs to exist yet),
  * so Phase 0 can land before imagegen runs. Pass --check-files to also assert that
@@ -24,6 +26,7 @@ const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const MAP_PATH = path.join(sharedDir, 'home-field-map.json');
+const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -65,10 +68,101 @@ function checkFiles(assetsDoc, errors) {
   }
 }
 
+function loadReviewDoc(errors) {
+  if (!fs.existsSync(REVIEW_PATH)) {
+    errors.push({
+      scope: 'review',
+      code: 'missing_review_doc',
+      message: `review manifest missing: ${path.relative(repoRoot, REVIEW_PATH)}`
+    });
+    return null;
+  }
+  try {
+    return loadJson(REVIEW_PATH);
+  } catch (err) {
+    errors.push({
+      scope: 'review',
+      code: 'invalid_json',
+      message: `review manifest is not valid JSON: ${err.message}`
+    });
+    return null;
+  }
+}
+
+function allEntries(assetsDoc) {
+  return [
+    ...assetsDoc.assets,
+    ...(assetsDoc.characters || []).map((c) => ({
+      ...c,
+      type: 'character'
+    }))
+  ];
+}
+
+function checkReview(assetsDoc, errors, { production = false } = {}) {
+  const reviewDoc = loadReviewDoc(errors);
+  if (!reviewDoc) return;
+  const reviews = new Map((reviewDoc.assets || []).map((entry) => [entry.id, entry]));
+  const approvedIds = [];
+
+  for (const asset of allEntries(assetsDoc)) {
+    const review = reviews.get(asset.id);
+    if (!review) {
+      errors.push({
+        scope: 'review',
+        code: 'missing_asset_review',
+        message: `asset "${asset.id}" has no row in docs/home-field-asset-review.json`
+      });
+      continue;
+    }
+    if (asset.status === 'approved') {
+      approvedIds.push(asset.id);
+      if (review.verdict !== 'approved' || review.accepted !== true) {
+        errors.push({
+          scope: 'review',
+          code: 'approved_without_acceptance',
+          message: `asset "${asset.id}" is status=approved but review verdict is "${review.verdict}" accepted=${review.accepted}`
+        });
+      }
+    }
+    if (review.verdict === 'approved' && review.accepted !== true) {
+      errors.push({
+        scope: 'review',
+        code: 'approved_review_not_accepted',
+        message: `asset "${asset.id}" review verdict is approved but accepted is not true`
+      });
+    }
+    if (asset.status === 'placeholder' && production) {
+      errors.push({
+        scope: 'review',
+        code: 'placeholder_in_production',
+        message: `asset "${asset.id}" is a placeholder and cannot pass production validation`
+      });
+    }
+    if (production && asset.status !== 'approved') {
+      errors.push({
+        scope: 'review',
+        code: 'not_approved_for_production',
+        message: `asset "${asset.id}" status=${asset.status}; production requires status=approved`
+      });
+    }
+  }
+
+  if (production && approvedIds.length === 0) {
+    errors.push({
+      scope: 'review',
+      code: 'no_approved_assets',
+      message: 'production validation requires at least one explicitly approved home-field asset'
+    });
+  }
+}
+
 function main() {
   const argv = process.argv.slice(2);
   const wantFileCheck = hasFlag(argv, 'check-files');
   const wantConnectorCheck = hasFlag(argv, 'check-connectors');
+  const wantReviewCheck = hasFlag(argv, 'check-review');
+  const wantProduction = hasFlag(argv, 'production');
 
   if (!fs.existsSync(ASSETS_PATH)) {
     console.error(`home-field-assets.json not found at ${ASSETS_PATH}`);
@@ -85,19 +179,24 @@ function main() {
   const result = validateAll(assetsDoc, mapDoc);
   const errors = [...result.errors];
 
-  if (wantFileCheck) {
+  if (wantFileCheck || wantProduction) {
     checkFiles(assetsDoc, errors);
   }
-  if (wantConnectorCheck) {
+  if (wantConnectorCheck || wantProduction) {
     const connectorResult = validateTileConnectors(assetsDoc, mapDoc);
     errors.push(...connectorResult.errors.map((e) => ({ scope: 'connectors', ...e })));
+  }
+  if (wantReviewCheck || wantProduction) {
+    checkReview(assetsDoc, errors, { production: wantProduction });
   }
 
   if (errors.length === 0) {
     console.log('home-field validation: PASS');
     const modes = [];
-    if (wantFileCheck) modes.push('file existence/dimensions');
-    if (wantConnectorCheck) modes.push('tile connectors');
+    if (wantFileCheck || wantProduction) modes.push('file existence/dimensions');
+    if (wantConnectorCheck || wantProduction) modes.push('tile connectors');
+    if (wantReviewCheck || wantProduction) modes.push('review manifest');
+    if (wantProduction) modes.push('production approval');
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`
       : ' (schema only; pass --check-files to verify PNGs; pass --check-connectors to validate tile adjacency)';
