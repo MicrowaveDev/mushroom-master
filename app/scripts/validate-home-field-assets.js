@@ -28,6 +28,15 @@ const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const MAP_PATH = path.join(sharedDir, 'home-field-map.json');
 const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 const REVIEW_VERDICTS = new Set(['pending', 'needs_review', 'needs_regen', 'rejected', 'approved', 'placeholder']);
+const REVIEW_CHECKS = [
+  'repeatCheck',
+  'connectorCheck',
+  'cleanPreviewCheck',
+  'styleCohesionCheck',
+  'alphaCheck',
+  'scaleCheck'
+];
+const REVIEW_CHECK_VALUES = new Set(['pass', 'fail', 'pending', 'placeholder', 'not_applicable']);
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -135,6 +144,25 @@ function checkReview(assetsDoc, errors, { production = false } = {}) {
         code: 'missing_reason',
         message: `asset "${review.id}" review reason must be a non-empty string`
       });
+    }
+    for (const check of REVIEW_CHECKS) {
+      if (!REVIEW_CHECK_VALUES.has(review[check])) {
+        errors.push({
+          scope: 'review',
+          code: 'invalid_check',
+          message: `asset "${review.id}" ${check} must be one of ${[...REVIEW_CHECK_VALUES].join('|')}, got "${review[check]}"`
+        });
+      }
+    }
+    if (review.verdict === 'approved') {
+      const failed = REVIEW_CHECKS.filter((check) => !['pass', 'not_applicable'].includes(review[check]));
+      if (failed.length > 0) {
+        errors.push({
+          scope: 'review',
+          code: 'approved_with_failed_checks',
+          message: `asset "${review.id}" is approved but has non-passing checks: ${failed.join(', ')}`
+        });
+      }
     }
   }
 

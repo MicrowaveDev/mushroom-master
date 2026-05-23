@@ -11,7 +11,7 @@
  *   --all             emit every missing prompt regardless of limit
  *   --type=<t>        comma-separated filter: terrain|prop|exit|character|effect
  *   --id=<a,b,c>      comma-separated asset id filter
- *   --batch=<name>    predefined batch (proof-static | proof-animated | proof-character | full)
+ *   --batch=<name>    predefined batch (terrain-grass | terrain-path | terrain-edge | terrain-production | proof-static | proof-animated | proof-character | full)
  *   --include-existing  also emit prompts for assets whose outputPath already exists
  *   --review-verdict=<v>  filter by docs/home-field-asset-review.json verdict
  *   --status=<s>      filter by manifest status
@@ -38,6 +38,24 @@ const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
 
 const BATCHES = {
+  'terrain-grass': [
+    'grass_base_01',
+    'grass_base_02',
+    'grass_flowers_01'
+  ],
+  'terrain-path': [
+    'path_h_end_w',
+    'path_dirt_straight',
+    'path_spore_glow',
+    'path_h_end_e',
+    'path_destination_row'
+  ],
+  'terrain-edge': [
+    'edge_roots_01',
+    'edge_moss_rocks_01',
+    'edge_left_forest_01',
+    'edge_right_forest_01'
+  ],
   'terrain-production': [
     'grass_base_01',
     'grass_base_02',
@@ -119,6 +137,7 @@ function tilemapContractBlock(asset) {
       `Declared terrain set: ${tile.terrainSet}`,
       `Declared placement: ${tile.placement}`,
       `Declared edge connectors: north=${tile.connectors?.n}; east=${tile.connectors?.e}; south=${tile.connectors?.s}; west=${tile.connectors?.w}`,
+      tile.pathBand ? `Declared path band: ${tile.pathBand.axis}; pathCenterY=${tile.pathBand.pathCenterY ?? 'n/a'}; pathCenterX=${tile.pathBand.pathCenterX ?? 'n/a'}; pathWidth=${tile.pathBand.pathWidth}` : null,
       tile.canTouch?.length ? `Allowed direct neighbor asset ids: ${tile.canTouch.join(', ')}` : null,
       tile.needsTransitionFor?.length ? `Requires transition tile before touching connector tokens: ${tile.needsTransitionFor.join(', ')}` : null,
       tile.requiresTransitionsAtEnds ? 'This connector tile must not sit directly beside grass at its open path ends; use explicit end/transition tiles.' : null,
@@ -211,8 +230,9 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
   lines.push('Then run:');
   lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
   lines.push('  npm run game:home-field:sheet');
+  lines.push('  npm run game:home-field:adjacency');
   lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
-  lines.push('Until those pass and the contact sheet plus clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
+  lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
   return lines.join('\n');
 }
 
@@ -368,8 +388,15 @@ function main() {
   console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
   console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
-  console.log('  6. Run `npm run game:home-field:sheet` to refresh the contact sheet for review.');
-  console.log('  7. Commit only after validate + sheet pass.');
+  console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
+  if (batch?.name === 'terrain-grass') {
+    console.log('  7. Stop after these 3 grass tiles. Update review JSON before generating path or edge families.');
+  } else if (batch?.name?.startsWith('terrain-')) {
+    console.log('  7. Stop after this terrain family. Update review JSON before generating another family.');
+  } else {
+    console.log('  7. Stop after this batch. Update review JSON before generating another batch.');
+  }
+  console.log('  8. Commit only after validate + sheets pass.');
 
   slice.forEach((asset, idx) => {
     const promptEntry = promptsDoc.prompts[asset.promptKey];

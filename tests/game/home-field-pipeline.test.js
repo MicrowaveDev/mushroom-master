@@ -129,10 +129,10 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
   }
 });
 
-test('[home-field] next-tiles emits terrain assets marked needs_regen even when PNGs exist', () => {
+test('[home-field] next-tiles emits only the grass family before stopping', () => {
   const result = spawnSync(process.execPath, [
     nextScriptPath,
-    '--batch=terrain-production',
+    '--batch=terrain-grass',
     '--review-verdict=needs_regen',
     '--all'
   ], {
@@ -141,9 +141,13 @@ test('[home-field] next-tiles emits terrain assets marked needs_regen even when 
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Batch: terrain-production/);
+  assert.match(result.stdout, /Batch: terrain-grass/);
   assert.match(result.stdout, /grass_base_01 \(terrain\)/);
-  assert.match(result.stdout, /edge_right_forest_01 \(terrain\)/);
+  assert.match(result.stdout, /grass_base_02 \(terrain\)/);
+  assert.match(result.stdout, /grass_flowers_01 \(terrain\)/);
+  assert.doesNotMatch(result.stdout, /path_dirt_straight \(terrain\)/);
+  assert.doesNotMatch(result.stdout, /edge_right_forest_01 \(terrain\)/);
   assert.doesNotMatch(result.stdout, /mushroom_cluster_small_amber \(prop\)/);
   assert.match(result.stdout, /--check-files --check-connectors --check-review/);
+  assert.match(result.stdout, /stop after these 3 grass tiles/i);
 });

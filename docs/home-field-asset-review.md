@@ -23,13 +23,22 @@ Start with terrain only. Do not generate props, exits, effects, or chibi until t
 npm run game:home-field:next-tiles
 ```
 
-That command emits only terrain assets whose review verdict is `needs_regen`, even though the old PNGs already exist. For each generated tile, use the producer command printed in its prompt block, then run:
+That command intentionally emits only the first grass-family terrain batch:
+
+- `grass_base_01`
+- `grass_base_02`
+- `grass_flowers_01`
+
+Stop after those three tiles. Do not generate path or edge tiles until the grass family passes review. For each generated tile, use the producer command printed in its prompt block, then run:
 
 ```bash
 npm run game:home-field:validate -- --check-files --check-connectors --check-review
 npm run game:home-field:sheet
+npm run game:home-field:adjacency
 npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line
 ```
+
+Use `npm run game:home-field:next-tiles-all` only after the grass-family stop gate is accepted.
 
 ## Approval Rules
 
@@ -49,3 +58,5 @@ npm run game:home-field:validate -- --production
 ```
 
 That gate intentionally fails while any asset is not approved or is still a placeholder.
+
+Each machine-readable review row also carries `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`. An `approved` verdict requires those fields to be `pass` or `not_applicable`; prose alone is not enough.

@@ -135,6 +135,38 @@ function validateTerrainTileContract(asset) {
   if (tile.requiresTransitionsAtEnds !== undefined && typeof tile.requiresTransitionsAtEnds !== 'boolean') {
     pushErr(errors, 'asset.tile.requiresTransitionsAtEnds', `terrain asset "${asset.id}" tile.requiresTransitionsAtEnds must be boolean`);
   }
+  if (tile.connectors && Object.values(tile.connectors).includes('path_h')) {
+    const band = tile.pathBand;
+    if (!band || typeof band !== 'object') {
+      pushErr(errors, 'asset.tile.pathBand', `terrain asset "${asset.id}" uses path_h connector but is missing tile.pathBand`);
+    } else {
+      if (band.axis !== 'horizontal') {
+        pushErr(errors, 'asset.tile.pathBand.axis', `terrain asset "${asset.id}" pathBand.axis must be "horizontal" for path_h connectors`);
+      }
+      if (!isPositiveInt(band.pathCenterY) || band.pathCenterY > asset.height) {
+        pushErr(errors, 'asset.tile.pathBand.pathCenterY', `terrain asset "${asset.id}" pathBand.pathCenterY must be a positive integer within tile height`);
+      }
+      if (!isPositiveInt(band.pathWidth) || band.pathWidth > asset.height) {
+        pushErr(errors, 'asset.tile.pathBand.pathWidth', `terrain asset "${asset.id}" pathBand.pathWidth must be a positive integer within tile height`);
+      }
+    }
+  }
+  if (tile.connectors && Object.values(tile.connectors).includes('path_v')) {
+    const band = tile.pathBand;
+    if (!band || typeof band !== 'object') {
+      pushErr(errors, 'asset.tile.pathBand', `terrain asset "${asset.id}" uses path_v connector but is missing tile.pathBand`);
+    } else {
+      if (band.axis !== 'vertical') {
+        pushErr(errors, 'asset.tile.pathBand.axis', `terrain asset "${asset.id}" pathBand.axis must be "vertical" for path_v connectors`);
+      }
+      if (!isPositiveInt(band.pathCenterX) || band.pathCenterX > asset.width) {
+        pushErr(errors, 'asset.tile.pathBand.pathCenterX', `terrain asset "${asset.id}" pathBand.pathCenterX must be a positive integer within tile width`);
+      }
+      if (!isPositiveInt(band.pathWidth) || band.pathWidth > asset.width) {
+        pushErr(errors, 'asset.tile.pathBand.pathWidth', `terrain asset "${asset.id}" pathBand.pathWidth must be a positive integer within tile width`);
+      }
+    }
+  }
   return errors;
 }
 
@@ -403,6 +435,38 @@ export function validateMap(mapDoc, knownAssetIds) {
 
 const OPPOSITE = { n: 's', e: 'w', s: 'n', w: 'e' };
 
+function validatePathBandAlignment(errors, layer, tile, asset, dir, neighbor, neighborAsset) {
+  const connector = asset?.tile?.connectors?.[dir];
+  if (connector !== 'path_h' && connector !== 'path_v') return;
+  const neighborConnector = neighborAsset?.tile?.connectors?.[OPPOSITE[dir]];
+  if (connector !== neighborConnector) return;
+  const band = asset.tile.pathBand;
+  const neighborBand = neighborAsset.tile.pathBand;
+  if (!band || !neighborBand) return;
+
+  if (connector === 'path_h') {
+    if (band.axis !== 'horizontal' || neighborBand.axis !== 'horizontal') return;
+    if (band.pathCenterY !== neighborBand.pathCenterY || band.pathWidth !== neighborBand.pathWidth) {
+      pushErr(
+        errors,
+        'tile.path_band_mismatch',
+        `layer "${layer.id}" horizontal path band mismatch: "${tile.assetId}" centerY=${band.pathCenterY} width=${band.pathWidth} touches "${neighbor.assetId}" centerY=${neighborBand.pathCenterY} width=${neighborBand.pathWidth}`
+      );
+    }
+  }
+
+  if (connector === 'path_v') {
+    if (band.axis !== 'vertical' || neighborBand.axis !== 'vertical') return;
+    if (band.pathCenterX !== neighborBand.pathCenterX || band.pathWidth !== neighborBand.pathWidth) {
+      pushErr(
+        errors,
+        'tile.path_band_mismatch',
+        `layer "${layer.id}" vertical path band mismatch: "${tile.assetId}" centerX=${band.pathCenterX} width=${band.pathWidth} touches "${neighbor.assetId}" centerX=${neighborBand.pathCenterX} width=${neighborBand.pathWidth}`
+      );
+    }
+  }
+}
+
 export function validateTileConnectors(assetsDoc, mapDoc) {
   const errors = [];
   const tileSize = mapDoc?.world?.tileSize;
@@ -447,6 +511,7 @@ export function validateTileConnectors(assetsDoc, mapDoc) {
             `layer "${layer.id}" tile "${tile.assetId}" at (${tile.x},${tile.y}) ${dir}=${a} touches "${neighbor.assetId}" ${OPPOSITE[dir]}=${b} at (${neighbor.x},${neighbor.y}); add a transition/end tile or change placement`
           );
         }
+        validatePathBandAlignment(errors, layer, tile, asset, dir, neighbor, neighborAsset);
       }
     }
   }

@@ -158,7 +158,12 @@
           "path_cross_grass_h"
         ],
         "repeatMode": "connector",
-        "requiresTransitionsAtEnds": true
+        "requiresTransitionsAtEnds": true,
+        "pathBand": {
+          "axis": "horizontal",
+          "pathCenterY": 128,
+          "pathWidth": 72
+        }
       },
       "animation": null,
       "status": "needs_review",
@@ -197,7 +202,12 @@
         ],
         "repeatMode": "connector_accent",
         "maxPerViewport": 1,
-        "requiresTransitionsAtEnds": true
+        "requiresTransitionsAtEnds": true,
+        "pathBand": {
+          "axis": "horizontal",
+          "pathCenterY": 128,
+          "pathWidth": 72
+        }
       },
       "animation": null,
       "status": "needs_review",
@@ -348,7 +358,12 @@
           "path_dirt_straight",
           "path_spore_glow"
         ],
-        "repeatMode": "transition"
+        "repeatMode": "transition",
+        "pathBand": {
+          "axis": "horizontal",
+          "pathCenterY": 128,
+          "pathWidth": 72
+        }
       },
       "animation": null,
       "status": "needs_review",
@@ -385,7 +400,12 @@
           "path_dirt_straight",
           "path_spore_glow"
         ],
-        "repeatMode": "transition"
+        "repeatMode": "transition",
+        "pathBand": {
+          "axis": "horizontal",
+          "pathCenterY": 128,
+          "pathWidth": 72
+        }
       },
       "animation": null,
       "status": "needs_review",

@@ -100,6 +100,18 @@ Every terrain asset in `app/shared/home-field/home-field-assets.json` must inclu
 
 The validator enforces the shape of this metadata. A later stricter validator should also verify every `home-field-map.json` tile adjacency by comparing touching connector tokens.
 
+Horizontal path tiles also declare a visual path band:
+
+```json
+"pathBand": {
+  "axis": "horizontal",
+  "pathCenterY": 128,
+  "pathWidth": 72
+}
+```
+
+Any tile with a `path_h` connector must include this metadata. The validator fails if touching horizontal path connectors disagree on `pathCenterY` or `pathWidth`. Future vertical path tiles should use the same shape with `axis: "vertical"` and `pathCenterX`.
+
 The strict adjacency check now exists as an explicit development gate:
 
 ```bash
@@ -118,6 +130,7 @@ Normal `npm run game:home-field:validate` remains schema-only so metadata work c
 6. Review three scales:
    - isolated `256x256` tile;
    - `3x3` repeated patch;
+   - adjacency sheet for neighbor pairs and path bands;
    - composed `/home-field-preview` screenshot.
 7. Do not continue to props/exits until the terrain family has a coherent connector set.
 

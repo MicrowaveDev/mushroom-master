@@ -6,12 +6,14 @@ This document is a handoff for the next agent. The current Home Field asset pass
 
 ## Update: Guardrails Added
 
-After this retrospective was written, the workflow was hardened in two follow-up commits:
+After this retrospective was written, the workflow was hardened in follow-up commits:
 
 - `cebff25 Gate home field production art approval`
 - `63bcd6e Add home field tile regeneration queue`
+- `fe0d88a Update home field retrospective status`
+- current pass: add pre-generation terrain gates for adjacency proof, path-band metadata, structured review checks, and grass-first queueing
 
-These commits did **not** make the current art production-ready. They changed the process so future agents cannot accidentally treat the current PNG set as approved.
+These changes did **not** make the current art production-ready. They changed the process so future agents cannot accidentally treat the current PNG set as approved.
 
 Handled:
 
@@ -22,7 +24,11 @@ Handled:
 - Marked current terrain/prop/exit assets as `needs_review`.
 - Marked technical effect strips and `_placeholder` chibi as `placeholder`.
 - Added `npm run game:home-field:validate -- --production`, which intentionally fails while any asset is unapproved or placeholder.
-- Added `npm run game:home-field:next-tiles`, which emits the 12 terrain assets whose review verdict is `needs_regen`, even though old PNG files already exist.
+- Added `npm run game:home-field:next-tiles`, now narrowed to the first grass-family batch only: `grass_base_01`, `grass_base_02`, `grass_flowers_01`.
+- Added `npm run game:home-field:next-tiles-all` for the full 12-tile terrain queue after the grass-family stop gate is accepted.
+- Added `npm run game:home-field:adjacency`, which writes `.agent/home-field-workspace/review/adjacency-sheet.png` and a manifest for the path run, side-edge stacks, map rows, and unique neighbor pairs.
+- Added path-band metadata for horizontal path tiles (`pathCenterY`, `pathWidth`) and validator checks that touching `path_h` connectors share the same band.
+- Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -38,7 +44,10 @@ npm run game:home-field:validate -- --production
 # FAIL intentionally: 0/31 assets approved, 6 placeholders remain
 
 npm run game:home-field:next-tiles
-# emits 12 terrain prompts for the next generation run
+# emits 3 grass-family terrain prompts, then the agent must stop
+
+npm run game:home-field:adjacency
+# writes the terrain connector proof sheet
 ```
 
 Do not "fix" the production gate by changing statuses. It should pass only after real art is regenerated, reviewed, and explicitly accepted.
@@ -319,8 +328,10 @@ Handled:
 - Add e2e screenshots for both debug and clean mode. **Done.**
 - Add chroma-key fixture test for `produce-home-field-assets.js`. **Done.**
 - Add an alpha halo/checkerboard detector for props/exits. **Partly done: opaque checkerboard-like matte detection exists; halo/edge-quality visual sheet is still missing.**
-- Add `npm run game:home-field:next-tiles` regeneration queue for current rejected terrain. **Done.**
-- Add adjacency proof sheet for terrain connector pairs.
+- Add `npm run game:home-field:next-tiles` regeneration queue for current rejected terrain. **Done, and narrowed to grass-first stop rule.**
+- Add adjacency proof sheet for terrain connector pairs. **Done.**
+- Add path-band metadata checks for path connector alignment. **Done for horizontal path connectors.**
+- Add structured clean-preview/style/alpha/scale checks to the review JSON. **Done.**
 - Replace current procedural grass/path tiles with a more coherent low-detail hand-authored style.
 - Replace checkerboard-cleaned props with chroma-keyed or true-alpha versions.
 - Replace placeholder effects and chibi with real generated or hand-authored spritesheets.
@@ -328,9 +339,10 @@ Handled:
 ## Known Issues Remaining
 
 - Current terrain still needs regeneration. Start with `npm run game:home-field:next-tiles`.
-- The contact sheet shows 3x3 repeated terrain patches, but there is no dedicated adjacency proof sheet yet.
-- Connector validation checks metadata adjacency, not visual path-band alignment or edge color continuity.
-- `pathCenterY`, `pathWidth`, `pathCenterX`, and edge color-profile heuristics are still not implemented.
+- The next run must stop after the grass family. Do not run the full 12-tile terrain queue until the grass sheet/preview is accepted.
+- The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
+- Connector validation now checks horizontal path-band metadata, but edge color-profile heuristics are still not implemented.
+- Vertical path-band metadata (`pathCenterX`) is reserved for future vertical path tiles.
 - Clean preview exists, but the final Home Field renderer is still DOM/CSS preview, not the eventual Phaser/canvas scene.
 - Mobile preview still uses CSS camera/object overrides; the map JSON is not yet the sole source of placement truth.
 - Effects and `_placeholder` chibi remain technical placeholders.
@@ -339,4 +351,4 @@ Handled:
 
 ## Bottom Line
 
-The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is no longer "add gates"; it is to regenerate terrain through `npm run game:home-field:next-tiles`, review the clean screenshots, and only then decide whether any terrain asset can move from `needs_review` to `approved`.
+The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is no longer "add gates"; it is to regenerate only the grass family through `npm run game:home-field:next-tiles`, review the contact sheet, adjacency sheet, and clean screenshots, then stop for human approval before path or edge tiles.

@@ -58,19 +58,21 @@ npm run game:home-field:next --limit=10
 
 ## Workflow For Codex (compact)
 
-Six npm aliases drive the pipeline. Run them in order per batch:
+The npm aliases below drive the pipeline. Run them in order per batch:
 
 | Step | Command | What it does |
 |---|---|---|
 | **status** | `npm run game:home-field:status` | Lists every asset, marks `[x]` done / `[ ]` pending. Quick "where am I" check. |
 | **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
-| **next-tiles** | `npm run game:home-field:next-tiles` | Prints the current production terrain regeneration queue from `docs/home-field-asset-review.json` (`verdict=needs_regen`) even though old PNGs already exist. Use this for the next tiles run. |
+| **next-tiles** | `npm run game:home-field:next-tiles` | Prints only the first grass-family regeneration batch (`grass_base_01`, `grass_base_02`, `grass_flowers_01`). Stop after these three and review before generating path or edge tiles. |
+| **next-tiles-all** | `npm run game:home-field:next-tiles-all` | Prints the full 12-tile terrain regeneration queue. Use only after the grass family is approved for the next family pass. |
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, and `--production` requires files, connectors, review acceptance, and `status: "approved"` for every asset. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
+| **adjacency** | `npm run game:home-field:adjacency` | Composites terrain connector proof at `.agent/home-field-workspace/review/adjacency-sheet.png`, including the grass-path run and left/right edge stacks. |
 
 ## Layout Preview Screen
 
@@ -134,6 +136,7 @@ The current proof map is wired to pass this strict gate with explicit horizontal
 Terrain acceptance is stricter than "looks pretty":
 
 - inspect every terrain tile as a `3x3` repeated patch in the contact sheet;
+- inspect terrain connector pairs in `npm run game:home-field:adjacency`, especially grass-path ends and left/right edge stacks;
 - inspect the same tile inside a `7x4` map preview before accepting it as production-ready;
 - reject any map placement where touching connector tokens do not match and no explicit transition tile bridges them;
 - reject dense AI texture, unique center highlights, tiny realistic grass blades, obvious wallpaper, cut-off edge marks, and any tile that would have been better as an object-layer prop.
@@ -149,7 +152,7 @@ Object PNGs under `props/`, `exits/`, `effects/`, and `characters/` are placed o
 - exits are separate sprites anchored to map coordinates;
 - collision and hotspots come from `home-field-map.json`, not from pixels baked into terrain art.
 
-The contact sheet is the first review gate: terrain must be inspected as repeated patches, not as isolated pretty squares. The `/home-field-preview` screen is the second gate: once real PNGs exist, it must render those assets in-map so composition can be reviewed in mobile/desktop screenshots. If a tile looks good alone but reads as wallpaper, dense noise, or full-screen art when repeated, regenerate it.
+The contact sheet is the first review gate: terrain must be inspected as repeated patches, not as isolated pretty squares. The adjacency sheet is the second terrain gate: path bands and side-edge stacks must visually connect before any path/edge family is approved. The `/home-field-preview` screen is the composed-scene gate: once real PNGs exist, it must render those assets in-map so composition can be reviewed in mobile/desktop screenshots. If a tile looks good alone but reads as wallpaper, dense noise, disconnected path, or full-screen art when repeated, regenerate it.
 
 ## Production Art Bar
 
@@ -194,8 +197,9 @@ npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 
 npm run game:home-field:validate -- --check-files --check-connectors --check-review
 npm run game:home-field:status
 
-# 6. Refresh the contact sheet for human review
+# 6. Refresh review sheets for human review
 npm run game:home-field:sheet
+npm run game:home-field:adjacency
 
 # 7. Commit on `main` (direct-to-main; see top of this README)
 git add web/public/home-field/ app/shared/home-field/
