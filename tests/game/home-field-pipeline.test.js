@@ -168,3 +168,23 @@ test('[home-field] rerun grass queue emits needs_review and needs_regen grass ti
   assert.match(result.stdout, /--check-files --check-connectors --check-review/);
   assert.match(result.stdout, /stop after these 3 grass tiles/i);
 });
+
+test('[home-field] field-context grass queue asks for larger meadow context and center crop', () => {
+  const result = spawnSync(process.execPath, [
+    nextScriptPath,
+    '--batch=terrain-grass',
+    '--review-verdict=needs_review,needs_regen',
+    '--all',
+    '--ignore-review-gate',
+    '--field-context'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Generation mode: field-context center crop/);
+  assert.match(result.stdout, /Field-context generation mode \(grass terrain\)/);
+  assert.match(result.stdout, /larger continuous 3x3 or 4x4 meadow patch/);
+  assert.match(result.stdout, /--crop-center=0\.34 --seamless-terrain --quiet-terrain=0\.45/);
+});

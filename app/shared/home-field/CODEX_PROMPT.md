@@ -24,7 +24,7 @@ Owns the run. It may edit only after a validation or review stage says what need
 
 - confirm the repo is `mushroom-master` on clean `main`;
 - run `npm run game:home-field:validate`;
-- run `npm run game:home-field:rerun-grass`;
+- run `npm run game:home-field:rerun-grass-field`;
 - assign or perform the stages below;
 - stop after the grass batch is committed and pushed.
 
@@ -38,7 +38,7 @@ Read-only role. It may read:
 - `app/shared/home-field/home-field-assets.json`
 - `app/shared/home-field/home-field-prompts.json`
 - `app/shared/home-field/home-field-style-anchor.json`
-- output from `npm run game:home-field:rerun-grass`
+- output from `npm run game:home-field:rerun-grass-field`
 
 It must confirm:
 
@@ -53,7 +53,9 @@ It must not generate images, edit files, or approve art.
 
 Generation-only role. It may write only raw files under `.agent/home-field-workspace/raw/`.
 
-For each prompt emitted by `npm run game:home-field:rerun-grass`, use the imagegen skill and save the raw PNG exactly to the printed `sourcePath`.
+For each prompt emitted by `npm run game:home-field:rerun-grass-field`, use the imagegen skill and save the raw PNG exactly to the printed `sourcePath`.
+
+This run uses field-context generation. Do not ask for an isolated square texture. Generate or imagine a larger continuous 3x3 or 4x4 meadow patch first, then save a quiet center crop as the raw source. Reject candidates with columns, rows, diagonal mottling, repeated stamp clusters, hard value bands, edge lighting, or visible square blocks.
 
 It must reject and regenerate any raw output that:
 
@@ -117,7 +119,7 @@ Do not set `"verdict": "approved"` or `"accepted": true` unless the human explic
 2. `git status --short --branch`
 3. If the tree is not clean on `main`, stop and report.
 4. `npm run game:home-field:validate`
-5. `npm run game:home-field:rerun-grass`
+5. `npm run game:home-field:rerun-grass-field`
 6. Generate only the three raw PNGs printed by that command.
 7. Run the printed `npm run game:home-field:produce -- <id> ...` command for each generated asset.
 8. Run the validation and review commands from the Producer/Validation Worker section.

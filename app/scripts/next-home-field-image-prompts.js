@@ -16,6 +16,7 @@
  *   --review-verdict=<v>  filter by docs/home-field-asset-review.json verdict
  *   --status=<s>      filter by manifest status
  *   --ignore-review-gate  print prompts even when existing candidates still need review
+ *   --field-context   for grass terrain, ask imagegen for a larger field context and crop the center tile
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
  * next-season-image-prompts.js). The PROMPT_MARKER line is the recognised handshake
@@ -161,7 +162,19 @@ function tilemapContractBlock(asset) {
   ].join('\n');
 }
 
-function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
+function fieldContextBlock(asset, { fieldContext = false } = {}) {
+  if (!fieldContext || asset.type !== 'terrain' || asset.tile?.terrainSet !== 'meadow_grass') return '';
+  return [
+    '## Field-context generation mode (grass terrain)',
+    'Do not compose this as an isolated square texture. First imagine or generate a larger continuous 3x3 or 4x4 meadow patch in the same style, then save a quiet center crop as the raw source for this tile.',
+    'The raw source may be larger than 256x256. The producer command below intentionally center-crops and resizes it.',
+    'The selected center crop must have no unique focal mark, no vignette, no strong diagonal band, no obvious corner lighting, and no edge-darkening. It should look boring in isolation but cohesive when repeated.',
+    'For base grass, prefer broad low-contrast color fields with only a few tiny strokes. For the flower accent, keep flowers extremely sparse and avoid repeated dot grids.',
+    'Reject any candidate where the larger field context reveals columns, rows, diagonal mottling, repeated stamp clusters, or visible square blocks.'
+  ].join('\n');
+}
+
+function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false }) {
   const lines = [];
   lines.push(`\n=== [${idx}/${total}] ${asset.id} (${asset.type}) ===`);
   lines.push(PROMPT_MARKER);
@@ -216,6 +229,11 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
       lines.push(tileContract);
       lines.push('');
     }
+    const contextBlock = fieldContextBlock(asset, { fieldContext });
+    if (contextBlock) {
+      lines.push(contextBlock);
+      lines.push('');
+    }
   } else {
     lines.push(`(!) No prompt entry found in home-field-prompts.json for key "${asset.promptKey}"`);
     lines.push('');
@@ -226,7 +244,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
   lines.push('## Save and report');
   lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);
   lines.push('Then run the recommended producer command:');
-  lines.push(`  ${recommendedProduceCommand(asset)}`);
+  lines.push(`  ${recommendedProduceCommand(asset, { fieldContext })}`);
   lines.push('Then run:');
   lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
   lines.push('  npm run game:home-field:sheet');
@@ -236,11 +254,14 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total }) {
   return lines.join('\n');
 }
 
-function recommendedProduceCommand(asset) {
+function recommendedProduceCommand(asset, { fieldContext = false } = {}) {
   const base = `npm run game:home-field:produce -- ${asset.id}`;
   if (asset.type === 'terrain') {
     const placement = asset.tile?.placement || '';
     const canUseSeamless = ['free', 'accent'].includes(placement);
+    if (fieldContext && canUseSeamless && asset.tile?.terrainSet === 'meadow_grass') {
+      return `${base} --resize --crop-center=0.34 --seamless-terrain --quiet-terrain=0.45`;
+    }
     const flags = canUseSeamless
       ? '--resize --crop-center --seamless-terrain --quiet-terrain'
       : '--resize --crop-center';
@@ -326,6 +347,7 @@ function main() {
   }
   const includeExisting = hasFlag(argv, 'include-existing');
   const ignoreReviewGate = hasFlag(argv, 'ignore-review-gate');
+  const fieldContext = hasFlag(argv, 'field-context');
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const promptsDoc = loadJson(PROMPTS_PATH);
@@ -373,6 +395,7 @@ function main() {
   console.log('');
   console.log(`Workspace root: ${repoRoot}`);
   if (batch) console.log(`Batch: ${batch.name}`);
+  if (fieldContext) console.log('Generation mode: field-context center crop');
   console.log(`Pending assets: ${pending.length}; emitting: ${slice.length}`);
   if (pending.length === 0) {
     console.log('');
@@ -400,7 +423,7 @@ function main() {
 
   slice.forEach((asset, idx) => {
     const promptEntry = promptsDoc.prompts[asset.promptKey];
-    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length }));
+    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext }));
   });
 
   console.log('');

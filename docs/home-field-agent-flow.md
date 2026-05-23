@@ -30,13 +30,15 @@ The next tile generation run is limited to:
 
 `npm run game:home-field:next-tiles` is the gated first-pass queue. Once a grass candidate is marked `needs_review`, that command can block to prevent accidental continuation.
 
-For intentional grass-family reruns, use:
+For intentional grass-family reruns, use the field-context queue:
 
 ```bash
-npm run game:home-field:rerun-grass
+npm run game:home-field:rerun-grass-field
 ```
 
-That command emits grass rows with `needs_review` or `needs_regen` and uses the review-gate bypass explicitly. The run must still stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
+That command emits grass rows with `needs_review` or `needs_regen`, uses the review-gate bypass explicitly, and adds field-context instructions. The Imagegen Worker should generate a larger continuous meadow/pattern context, then save a quiet center crop to the printed source path. The producer command uses a tighter center crop and stronger terrain quieting so the app-facing tile is less likely to preserve border lighting or single-square texture artifacts.
+
+The run must still stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
 
 ## Required Evidence
 
@@ -87,6 +89,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 ## Failure Handling
 
 - If imagegen returns a full scene, dense texture, path, prop, text, horizon, or focal object inside a grass tile, discard the raw and regenerate.
+- If the field-context output still shows repeated square blocks, diagonal mottling, columns, rows, or hard value bands in the contact sheet or clean preview, mark it `needs_regen`. Passing file and connector validation is not enough.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, commit the review manifest if it changed, and stop.

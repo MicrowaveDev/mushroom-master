@@ -30,6 +30,7 @@ Handled:
 - Added path-band metadata for horizontal path tiles (`pathCenterY`, `pathWidth`) and validator checks that touching `path_h` connectors share the same band.
 - Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
 - Added `docs/home-field-agent-flow.md` and rewrote the ready-to-paste Codex prompt around separated sub-agent roles: orchestrator, prompt/contract reviewer, imagegen worker, producer/validator, and visual critic.
+- Added `npm run game:home-field:rerun-grass-field`, a field-context grass rerun queue that tells imagegen to generate a larger meadow/pattern context and save a quiet center crop instead of making isolated square textures.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -45,7 +46,10 @@ npm run game:home-field:validate -- --production
 # FAIL intentionally: 0/31 assets approved, 6 placeholders remain
 
 npm run game:home-field:next-tiles
-# emits 3 grass-family terrain prompts, then the agent must stop
+# gated first-pass queue; can block while existing candidates are needs_review
+
+npm run game:home-field:rerun-grass-field
+# preferred next grass rerun: field-context prompts for the 3 grass-family tiles
 
 npm run game:home-field:adjacency
 # writes the terrain connector proof sheet
@@ -339,8 +343,9 @@ Handled:
 
 ## Known Issues Remaining
 
-- Current terrain still needs regeneration. Start with `npm run game:home-field:next-tiles`.
+- Current terrain still needs regeneration. Start with `npm run game:home-field:rerun-grass-field`, not the older isolated-tile rerun.
 - The next run must stop after the grass family. Do not run the full 12-tile terrain queue until the grass sheet/preview is accepted.
+- Recent grass reruns proved the isolated `256x256` prompt still creates visible square seams; the next run must use field-context generation and reject candidates with columns, rows, diagonal mottling, value bands, or repeated stamp clusters.
 - The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
 - Connector validation now checks horizontal path-band metadata, but edge color-profile heuristics are still not implemented.
 - Vertical path-band metadata (`pathCenterX`) is reserved for future vertical path tiles.
@@ -352,4 +357,4 @@ Handled:
 
 ## Bottom Line
 
-The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is no longer "add gates"; it is to regenerate only the grass family through `npm run game:home-field:next-tiles`, review the contact sheet, adjacency sheet, and clean screenshots, then stop for human approval before path or edge tiles.
+The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is to regenerate only the grass family through `npm run game:home-field:rerun-grass-field`, review the contact sheet, adjacency sheet, and clean screenshots, then stop for human approval before path or edge tiles.

@@ -41,6 +41,7 @@
     "game:home-field:next": "node app/scripts/next-home-field-image-prompts.js",
     "game:home-field:next-tiles": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_regen --all",
     "game:home-field:rerun-grass": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_review,needs_regen --all --ignore-review-gate",
+    "game:home-field:rerun-grass-field": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_review,needs_regen --all --ignore-review-gate --field-context",
     "game:home-field:next-tiles-all": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-production --review-verdict=needs_regen --all",
     "game:home-field:proof-tiles": "node app/scripts/generate-home-field-proof-tiles.js",
     "game:home-field:produce": "node app/scripts/produce-home-field-assets.js",
