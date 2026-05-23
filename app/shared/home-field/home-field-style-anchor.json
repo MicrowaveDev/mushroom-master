@@ -12,6 +12,8 @@
     "outline": "Bold clean storybook outline on props, exits, effects, and chibi: dark plum/umber linework, rounded and slightly irregular, never pure black. Terrain has broad stylized shape boundaries and chunky painted patches rather than fine realistic blades.",
     "shapeLanguage": "Cute-goth storybook shapes: chunky silhouettes, squat mushrooms, carved organic arches, rounded-but-sinister curves, simplified graphic clusters, clear negative space, sticker-like readability at small size. Avoid delicate high-detail painting.",
     "texture": "Flat-to-soft shaded 2D game art with cut-paper/storybook layering, chunky brush texture, minimal micro-detail. Surfaces should feel hand-painted and graphic, not photoreal or over-rendered.",
+    "terrainReference": "For the home field floor, target a production top-down forest-floor look: muted deep green ground, soft painterly tonal variation, broad low-contrast leaf/bush shadows, occasional tiny sprout shapes, and no grid-like procedural marks. The liked reference is a dark green top-down meadow with separate rounded bush masses and small sprouts; keep that mood, but split it into quiet repeatable ground tiles plus separate transparent bush/sprout props.",
+    "productionBar": "Production assets must look like hand-authored game art, not script-generated placeholders. Terrain may be quiet, but it still needs painterly edges, organic asymmetry, controlled color harmony, and no obvious generated/math pattern. Props need readable silhouettes, transparent alpha, soft blob shadows where appropriate, and consistent scale against the chibi.",
     "shadowStyle": "Soft compact blob shadows under ground entities using semi-transparent warm umber/plum. Shadows are graphic and readable, not long or physically realistic.",
     "ambient": "Sparse drifting spores, candle-amber motes, muted violet ritual glow, tiny fungal runes or abstract marks only when they are not readable text. Tone is cozy, eerie, magical, and playful — cute dark fairytale rather than horror.",
     "scale": "2.5D top-down RPG hub camera, slightly elevated and orthographic-ish. Big readable objects, exaggerated proportions, mushrooms taller than the chibi, chibi feet clearly grounded."
@@ -22,6 +24,7 @@
     "No high-contrast pure-black outlines or pure-white highlights",
     "No realistic photography or photoreal textures",
     "No realistic grass-blade detail, no soft generic fantasy painting, no over-detailed concept-art rendering",
+    "No visible procedural/math pattern, repeated brush stamp, checkerboard-like distribution, or developer-placeholder geometry in production assets",
     "No direct copying of Cult of the Lamb characters, icons, cult symbols, UI, logo shapes, or exact art compositions",
     "No text in the images themselves — signposts are art-only; text is rendered at runtime",
     "No human-only figures with mushroom hats; chibis are mushroom-elf heroines with visible elf ears when ears are shown"

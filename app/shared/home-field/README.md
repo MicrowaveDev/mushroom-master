@@ -130,6 +130,19 @@ Object PNGs under `props/`, `exits/`, `effects/`, and `characters/` are placed o
 
 The contact sheet is the first review gate: terrain must be inspected as repeated patches, not as isolated pretty squares. The `/home-field-preview` screen is the second gate: once real PNGs exist, it must render those assets in-map so composition can be reviewed in mobile/desktop screenshots. If a tile looks good alone but reads as wallpaper, dense noise, or full-screen art when repeated, regenerate it.
 
+## Production Art Bar
+
+The deterministic `game:home-field:proof-tiles` output is a **draft layout proof**, not final production art. It may be committed with `status: "draft"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
+
+To mark a home-field asset `approved`, all of the following must be true:
+
+- it matches the locked style anchor in `home-field-style-anchor.json`, especially the painterly dark-green forest-floor reference;
+- terrain looks hand-authored and organic, not generated from visible math/procedural strokes;
+- bush silhouettes and readable sprout clusters live in `props/`, not baked into repeated grass terrain;
+- the `3x3` repeated contact-sheet patch has no obvious stamp, row, diagonal, edge seam, center target, or wallpaper rhythm;
+- `/home-field-preview` screenshots show a believable game field after ignoring debug grid/labels;
+- non-terrain assets have transparent alpha, readable silhouettes, consistent top-down lighting, and scale correctly next to the chibi/exits.
+
 ### Per-batch loop
 
 ```bash

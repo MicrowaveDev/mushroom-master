@@ -3,22 +3,22 @@
   "promptMarker": "Use the imagegen skill to create a production game home-field bitmap.",
   "prompts": {
     "terrain_grass_base_01": {
-      "subject": "one production 2D tilemap grass cell for a reusable RPG meadow tileset",
-      "details": "This is a low-frequency reusable tile cell, not a texture painting and not a full scene. Build it from 4-7 broad, simple moss/grass islands with flat storybook shading and large quiet walkable areas. Use an intentional tile pattern that still reads after repetition: no unique center mark, no dense random speckles, no realistic blade texture. Tiny spore dots are allowed only as 2-4 low-contrast marks. Edges must be calm and compatible so the tile can repeat in a 3x3 and 7x4 map without visible seams.",
+      "subject": "one production-quality 2D top-down grass tile cell for a reusable dark forest RPG meadow tileset",
+      "details": "This is a quiet reusable ground tile, not a texture painting and not a full scene. Match the liked reference mood: muted deep green top-down forest floor, soft painterly tonal variation, organic hand-authored patches, no visible procedural/math pattern. Use broad low-contrast grass/moss value shifts and large walkable areas. Bush masses, readable leaf clusters, mushrooms, glowing motes, and landmarks are separate props, not part of this terrain. Edges must be calm and compatible so the tile can repeat in a 3x3 and 7x4 map without visible seams.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
       "constraints": "no characters, no props, no mushrooms, no path, no horizon, no vignette, no text, no UI overlays, no dense detailed grass texture, no obvious center highlight. Must read as a simple walkable ground tile first."
     },
     "terrain_grass_base_02": {
-      "subject": "one production 2D tilemap grass variation cell for a reusable RPG meadow tileset",
-      "details": "This is a second low-frequency grass tile that must sit beside grass_base_01 without looking like a separate illustration. Use 3-6 broad moss islands, slightly different silhouettes, and large quiet walkable green regions. Keep detail sparse and graphic. A faint mycelium thread is allowed only if it enters/exits softly and does not become a repeated focal mark. Edge values and patch scale must be compatible with grass_base_01.",
+      "subject": "one production-quality 2D top-down grass variation tile for a reusable dark forest RPG meadow tileset",
+      "details": "This is a second quiet grass tile that must sit beside grass_base_01 without looking like a separate illustration. Use soft painterly dark-green value variation, organic low-contrast moss patches, and large quiet walkable regions. Keep detail sparse and hand-authored; no visible procedural pattern. A faint mycelium thread is allowed only if it enters/exits softly and does not become a repeated focal mark. Edge values and patch scale must be compatible with grass_base_01.",
       "size": "256x256 square tile",
       "transparency": "no transparency; solid grass terrain",
       "constraints": "no characters, no props, no mushrooms, no path, no horizon, no vignette, no text, no dense micro-detail, no unique center feature. Must tile calmly with grass_base_01."
     },
     "terrain_grass_flowers_01": {
       "subject": "one sparse accent 2D tilemap grass cell with tiny clover and spore flowers",
-      "details": "This is a repeatable accent tile, not a flower-field illustration. Start with the same broad low-frequency grass language as the base tiles. Add only 3-6 tiny clover/spore flower marks total, clustered away from the exact center and away from tile edges. Flowers must be small enough that repetition does not create rows or obvious wallpaper. Most of the tile remains quiet walkable grass.",
+      "details": "This is a repeatable accent tile, not a flower-field illustration. Start with the same soft painterly quiet grass language as the base tiles. Add only 3-5 tiny clover/sprout marks total, clustered away from the exact center and away from tile edges. Flowers/sprouts must be small enough that repetition does not create rows or obvious wallpaper. Most of the tile remains quiet walkable dark-green ground.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no characters, no props, no large flowers, no horizon, no vignette, no text, no dense scatter, no repeated dot field. Flowers must not extend beyond the tile boundary."
@@ -46,17 +46,38 @@
     },
     "terrain_edge_roots_01": {
       "subject": "one seamless 2D tilemap terrain cell of dense root growth marking the edge of the walkable field",
-      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Use 2-4 broad root masses and tangled mycelium shapes, leaving the edge connector calm enough to repeat. It should read as do-not-pass when tiled along an edge, but must not become a miniature forest scene.",
+      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Use soft painterly dark undergrowth and a few broad low-contrast root/mycelium shapes, leaving connector edges calm enough to repeat. It should read as do-not-pass when tiled along an edge, but must not become a miniature forest scene or visible repeated lattice.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no characters, no signposts, no full forest scene, no horizon, no text. Must read clearly as a blocked edge, not as a path."
     },
     "terrain_edge_moss_rocks_01": {
       "subject": "one seamless 2D tilemap terrain cell of mossy rocks and forest debris marking a blocked field edge",
-      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Use a few broad mossy stones and simple debris silhouettes with quiet connector edges. Reads as do-not-pass when tiled along an edge, but avoids dense detail and avoids a unique center landmark.",
+      "details": "This is one blocked-edge terrain cell for repeated map borders, not a full forest illustration. Use a few broad, soft mossy stones/debris shapes embedded into dark green painterly ground with quiet connector edges. Reads as do-not-pass when tiled along an edge, but avoids dense detail, repeated dot grids, and unique center landmarks.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no characters, no signposts, no full forest scene, no horizon, no text. Same readability as edge_roots_01."
+    },
+    "prop_bush_cluster_dark_01": {
+      "subject": "transparent-background 2D top-down forest prop: dark rounded bush mass for a game hub object layer",
+      "details": "A soft painterly rounded bush cluster matching the liked dark-green forest-floor reference. Broad organic silhouette with scalloped leafy edges, muted deep moss colors, subtle internal leaf forms, and a compact transparent shadow. It should be a separate object-layer foliage mass, not a terrain tile. Reads clearly at mobile scale without hard black outlines.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms, no obvious procedural circles or repeated stamp marks."
+    },
+    "prop_bush_cluster_light_01": {
+      "subject": "transparent-background 2D top-down forest prop: lighter rounded bush mass for a game hub object layer",
+      "details": "A lighter moss-green companion to bush_cluster_dark_01. Same soft painterly style, rounded/scalloped silhouette, organic asymmetric shape, and subtle leaf texture. It should layer over quiet terrain to create the reference-like forest floor without baking bushes into repeated tiles.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms, no obvious procedural geometry."
+    },
+    "prop_leaf_sprout_01": {
+      "subject": "transparent-background 2D top-down forest prop: small leafy sprout cluster",
+      "details": "A tiny readable sprout like the small leaf clusters in the liked reference: 3-5 simple leaves, muted moss green, soft painterly shading, transparent background, and a faint compact shadow. Used as a walkable decorative object-layer accent over quiet grass tiles.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "Small centered sprout with bottom-center anchor. No tile background, no flowers field, no text, no characters, no over-detailed botanical rendering."
     },
     "prop_mushroom_cluster_small_amber": {
       "subject": "transparent-background 2D game prop: small cluster of amber-glowing mushrooms",

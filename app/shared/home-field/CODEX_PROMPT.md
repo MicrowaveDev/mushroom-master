@@ -25,6 +25,7 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 - **Style anchor is non-negotiable.** Every prompt block emitted by `npm run game:home-field:next` already includes the locked style anchor (palette, lighting, shadows, rejections). Feed it verbatim into your imagegen call alongside the subject/details.
 - **Terrain assets are tilemap cells, not background art.** A terrain prompt must produce one reusable `256×256` tile that can repeat edge-to-edge in a Phaser/Tiled layer. Do not generate a complete field, wallpaper, horizon scene, vignette, prop cluster, sign, entrance, or character inside a terrain tile.
 - **Reject dense texture tiles.** Grass/path terrain must be low-frequency map art: broad readable patches, quiet edges, sparse tiny marks only. If a generated tile looks like a detailed texture painting, contains a unique center highlight, or becomes obvious wallpaper in a repeated patch, reject it even if it is visually pretty.
+- **Draft is not approved.** The deterministic `game:home-field:proof-tiles` output exists to test placement, PNG loading, and repeatability. Keep it at `status: "draft"` unless a human explicitly approves replacing it with production-grade painterly art. Production art must look hand-authored, not procedural.
 
 ## Run order (do this exactly)
 
@@ -43,7 +44,8 @@ Generate the v1 home-field bitmap assets through three staged batches, with a hu
 8. `npm run game:home-field:validate` — must pass for schema and map metadata. Use `npm run game:home-field:status` to confirm the produced batch count. Reserve `--check-files` for the final full asset set because it requires every declared PNG to exist.
 9. `npm run game:home-field:sheet` — refreshes the contact sheet PNG + manifest.
 10. Inspect `.agent/home-field-workspace/review/contact-sheet.png` yourself for obvious problems (text in image, wrong palette, hard black outlines, photoreal style). Terrain cells must read as repeated tile patches in the contact sheet, not as miniature full-screen scenes. If any asset clearly violates the style anchor or tilemap contract, regenerate it before continuing.
-11. Commit and push:
+11. Do not promote any asset to `approved` unless the contact sheet and `/home-field-preview` screenshots look production-quality after ignoring debug labels/grid. Current deterministic proof assets are acceptable as `draft` only.
+12. Commit and push:
     ```
     git add web/public/home-field/ .gitignore
     git commit -m "Home field proof terrain batch"
