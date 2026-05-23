@@ -28,9 +28,10 @@ Handled:
 - Added `npm run game:home-field:next-tiles-all` for the full 12-tile terrain queue after the grass-family stop gate is accepted.
 - Added `npm run game:home-field:adjacency`, which writes `.agent/home-field-workspace/review/adjacency-sheet.png` and a manifest for the path run, side-edge stacks, map rows, and unique neighbor pairs.
 - Added path-band metadata for horizontal path tiles (`pathCenterY`, `pathWidth`) and validator checks that touching `path_h` connectors share the same band.
-- Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
+- Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `sceneFitCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
 - Added `docs/home-field-agent-flow.md` and rewrote the ready-to-paste Codex prompt around separated sub-agent roles: orchestrator, prompt/contract reviewer, imagegen worker, producer/validator, and visual critic.
 - Added `npm run game:home-field:rerun-grass-field`, a field-context grass rerun queue that tells imagegen to generate a larger meadow/pattern context and save a quiet center crop instead of making isolated square textures.
+- Added scene-fit language to the style anchor and prompt flow so grass is judged as the quiet stage for chibi mushroom-elf avatars, with foliage/props carrying most of the personality on object layers.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.

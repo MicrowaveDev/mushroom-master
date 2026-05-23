@@ -40,6 +40,17 @@ That command emits grass rows with `needs_review` or `needs_regen`, uses the rev
 
 The run must still stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
 
+## Scene Target Gate
+
+The target is not an isolated grass texture. The final composed field should read like a polished game-hub screenshot: chibi mushroom-elf avatars standing on a soft green meadow, with chunky dark-ink foliage, vines, flowers, mushrooms, exits, and props framing the walkable area on object layers.
+
+For the grass batch, this means:
+
+- grass must be quiet enough that 64px chibi feet and shadows stay readable;
+- tiny grass strokes and yellow-green marks are accents only, not a texture carpet;
+- flowers and strong foliage shapes belong mostly on object-layer props, not base terrain;
+- the clean preview must feel like a usable stage for characters, even before the real chibi sprites are replaced.
+
 ## Required Evidence
 
 Before any grass candidate can be considered for human approval, the run must produce:
@@ -66,6 +77,7 @@ Required fields:
 - `repeatCheck`
 - `connectorCheck`
 - `cleanPreviewCheck`
+- `sceneFitCheck`
 - `styleCohesionCheck`
 - `alphaCheck`
 - `scaleCheck`
@@ -90,6 +102,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 
 - If imagegen returns a full scene, dense texture, path, prop, text, horizon, or focal object inside a grass tile, discard the raw and regenerate.
 - If the field-context output still shows repeated square blocks, diagonal mottling, columns, rows, or hard value bands in the contact sheet or clean preview, mark it `needs_regen`. Passing file and connector validation is not enough.
+- If the clean preview does not look like a calm stage where chibi avatars and object-layer foliage can sit naturally, set `sceneFitCheck` to `fail` even if the tile is technically seamless.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, commit the review manifest if it changed, and stop.

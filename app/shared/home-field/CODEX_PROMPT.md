@@ -45,7 +45,8 @@ It must confirm:
 - each requested asset is one reusable `256x256` tile cell, not a scene;
 - every grass edge remains `grass`;
 - no tile contains path, blocker, prop, sign, exit, character, horizon, text, vignette, or focal object;
-- style is dark-green, cute-goth, broad, low-frequency, and game-readable.
+- style is dark-green, cute-goth, broad, low-frequency, and game-readable;
+- the grass will work as a quiet stage under chibi mushroom-elf avatars, with enough rest around character feet.
 
 It must not generate images, edit files, or approve art.
 
@@ -56,6 +57,8 @@ Generation-only role. It may write only raw files under `.agent/home-field-works
 For each prompt emitted by `npm run game:home-field:rerun-grass-field`, use the imagegen skill and save the raw PNG exactly to the printed `sourcePath`.
 
 This run uses field-context generation. Do not ask for an isolated square texture. Generate or imagine a larger continuous 3x3 or 4x4 meadow patch first, then save a quiet center crop as the raw source. Reject candidates with columns, rows, diagonal mottling, repeated stamp clusters, hard value bands, edge lighting, or visible square blocks.
+
+Scene target: the final field should feel like a polished in-game hub screenshot with chibi mushroom-elf avatars on a soft green meadow, framed by chunky inked foliage, flowers, vines, mushrooms, gates, and props on object layers. For this grass-only run, do not draw those objects into the tile. Make the ground calm enough that later chibis and props will read clearly on top.
 
 It must reject and regenerate any raw output that:
 
@@ -92,6 +95,7 @@ It updates `docs/home-field-asset-review.json` for only these three grass assets
 - `repeatCheck`
 - `connectorCheck`
 - `cleanPreviewCheck`
+- `sceneFitCheck`
 - `styleCohesionCheck`
 - `alphaCheck`
 - `scaleCheck`

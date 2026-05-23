@@ -65,4 +65,4 @@ npm run game:home-field:validate -- --production
 
 That gate intentionally fails while any asset is not approved or is still a placeholder.
 
-Each machine-readable review row also carries `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`. An `approved` verdict requires those fields to be `pass` or `not_applicable`; prose alone is not enough.
+Each machine-readable review row also carries `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `sceneFitCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`. An `approved` verdict requires those fields to be `pass` or `not_applicable`; prose alone is not enough.

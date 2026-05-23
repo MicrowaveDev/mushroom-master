@@ -32,6 +32,7 @@ const REVIEW_CHECKS = [
   'repeatCheck',
   'connectorCheck',
   'cleanPreviewCheck',
+  'sceneFitCheck',
   'styleCohesionCheck',
   'alphaCheck',
   'scaleCheck'

@@ -14,7 +14,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "pass",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "pass"
+      "scaleCheck": "pass",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "grass_base_02",
@@ -26,7 +27,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "pass",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "pass"
+      "scaleCheck": "pass",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "grass_flowers_01",
@@ -38,7 +40,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "pass"
+      "scaleCheck": "pass",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "path_dirt_straight",
@@ -50,7 +53,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "path_spore_glow",
@@ -62,7 +66,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "path_destination_row",
@@ -74,7 +79,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "edge_roots_01",
@@ -86,7 +92,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "edge_moss_rocks_01",
@@ -98,7 +105,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "path_h_end_w",
@@ -110,7 +118,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "path_h_end_e",
@@ -122,7 +131,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "edge_left_forest_01",
@@ -134,7 +144,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "edge_right_forest_01",
@@ -146,7 +157,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "not_applicable",
-      "scaleCheck": "not_applicable"
+      "scaleCheck": "not_applicable",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "bush_cluster_dark_01",
@@ -158,7 +170,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "bush_cluster_light_01",
@@ -170,7 +183,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "leaf_sprout_01",
@@ -182,7 +196,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "mushroom_cluster_small_amber",
@@ -194,7 +209,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "mushroom_cluster_small_violet",
@@ -206,7 +222,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "mushroom_cluster_tall_green",
@@ -218,7 +235,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "mushroom_cap_red_spotted",
@@ -230,7 +248,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "mycelium_lantern_amber",
@@ -242,7 +261,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "fallen_branch_mycelium",
@@ -254,7 +274,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "arena_signpost_blank",
@@ -266,7 +287,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "journey_signpost_blank",
@@ -278,7 +300,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "arena_mushroom_arch",
@@ -290,7 +313,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "journey_gate_under_construction",
@@ -302,7 +326,8 @@
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
       "alphaCheck": "pending",
-      "scaleCheck": "fail"
+      "scaleCheck": "fail",
+      "sceneFitCheck": "fail"
     },
     {
       "id": "spore_motes_loop",
@@ -314,7 +339,8 @@
       "cleanPreviewCheck": "placeholder",
       "styleCohesionCheck": "placeholder",
       "alphaCheck": "placeholder",
-      "scaleCheck": "placeholder"
+      "scaleCheck": "placeholder",
+      "sceneFitCheck": "placeholder"
     },
     {
       "id": "arena_portal_shimmer",
@@ -326,7 +352,8 @@
       "cleanPreviewCheck": "placeholder",
       "styleCohesionCheck": "placeholder",
       "alphaCheck": "placeholder",
-      "scaleCheck": "placeholder"
+      "scaleCheck": "placeholder",
+      "sceneFitCheck": "placeholder"
     },
     {
       "id": "mycelium_path_pulse",
@@ -338,7 +365,8 @@
       "cleanPreviewCheck": "placeholder",
       "styleCohesionCheck": "placeholder",
       "alphaCheck": "placeholder",
-      "scaleCheck": "placeholder"
+      "scaleCheck": "placeholder",
+      "sceneFitCheck": "placeholder"
     },
     {
       "id": "journey_blocked_rustle",
@@ -350,7 +378,8 @@
       "cleanPreviewCheck": "placeholder",
       "styleCohesionCheck": "placeholder",
       "alphaCheck": "placeholder",
-      "scaleCheck": "placeholder"
+      "scaleCheck": "placeholder",
+      "sceneFitCheck": "placeholder"
     },
     {
       "id": "tap_ripple",
@@ -362,7 +391,8 @@
       "cleanPreviewCheck": "placeholder",
       "styleCohesionCheck": "placeholder",
       "alphaCheck": "placeholder",
-      "scaleCheck": "placeholder"
+      "scaleCheck": "placeholder",
+      "sceneFitCheck": "placeholder"
     },
     {
       "id": "_placeholder",
@@ -374,7 +404,8 @@
       "cleanPreviewCheck": "placeholder",
       "styleCohesionCheck": "placeholder",
       "alphaCheck": "placeholder",
-      "scaleCheck": "placeholder"
+      "scaleCheck": "placeholder",
+      "sceneFitCheck": "placeholder"
     }
   ]
 }

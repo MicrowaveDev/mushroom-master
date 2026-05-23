@@ -186,5 +186,7 @@ test('[home-field] field-context grass queue asks for larger meadow context and 
   assert.match(result.stdout, /Generation mode: field-context center crop/);
   assert.match(result.stdout, /Field-context generation mode \(grass terrain\)/);
   assert.match(result.stdout, /larger continuous 3x3 or 4x4 meadow patch/);
+  assert.match(result.stdout, /Scene fit: The composed screen should read like a real in-game hub screenshot/);
+  assert.match(result.stdout, /Chibi fit: Chibi avatars are small, squat, expressive mushroom-elf heroines/);
   assert.match(result.stdout, /--crop-center=0\.34 --seamless-terrain --quiet-terrain=0\.45/);
 });

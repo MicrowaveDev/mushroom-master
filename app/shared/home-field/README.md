@@ -172,6 +172,8 @@ The contact sheet is the first review gate: terrain must be inspected as repeate
 
 The deterministic `game:home-field:proof-tiles` output is a **layout proof**, not final production art. It may be committed with `status: "needs_review"` or `status: "placeholder"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
 
+The target scene is a composed in-game hub, not a texture pack: chibi mushroom-elf avatars should stand clearly on a soft green field, with chunky inked foliage, flowers, vines, mushrooms, exits, and props placed around them on object layers. The grass tiles are the readable stage. If grass texture competes with character feet, hides blob shadows, or makes the viewport feel like wallpaper, reject it even when the file and connector checks pass.
+
 To mark a home-field asset `approved`, all of the following must be true:
 
 - it matches the locked style anchor in `home-field-style-anchor.json`, especially the painterly dark-green forest-floor reference;
@@ -179,7 +181,8 @@ To mark a home-field asset `approved`, all of the following must be true:
 - bush silhouettes and readable sprout clusters live in `props/`, not baked into repeated grass terrain;
 - the `3x3` repeated contact-sheet patch has no obvious stamp, row, diagonal, edge seam, center target, or wallpaper rhythm;
 - `/home-field-preview` screenshots show a believable game field after ignoring debug grid/labels;
-- non-terrain assets have transparent alpha, readable silhouettes, consistent top-down lighting, and scale correctly next to the chibi/exits.
+- non-terrain assets have transparent alpha, readable silhouettes, consistent top-down lighting, and scale correctly next to the chibi/exits;
+- the clean preview passes the scene-fit test: terrain, props, exits, and chibi placeholders feel like they belong to one authored screenshot.
 
 The checked-in review source is [`docs/home-field-asset-review.json`](../../../docs/home-field-asset-review.json), with a readable companion at [`docs/home-field-asset-review.md`](../../../docs/home-field-asset-review.md). An asset can be marked `approved` only when its review row has `"verdict": "approved"` and `"accepted": true`. `placeholder` is a separate status and never passes production validation.
 
