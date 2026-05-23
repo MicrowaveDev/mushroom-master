@@ -234,9 +234,22 @@ function runChromaKey(rawPath, outPath, keyColor) {
     fs.copyFileSync(rawPath, outPath);
     return;
   }
-  const result = spawnSync(pythonBin(), [script, rawPath, outPath, '--key', keyColor], {
-    stdio: 'inherit'
-  });
+  const result = spawnSync(
+    pythonBin(),
+    [
+      script,
+      '--input',
+      rawPath,
+      '--out',
+      outPath,
+      '--key-color',
+      keyColor,
+      '--soft-matte',
+      '--despill',
+      '--force'
+    ],
+    { stdio: 'inherit' }
+  );
   if (result.status !== 0) {
     throw new Error(`chroma-key script exited with status ${result.status}`);
   }

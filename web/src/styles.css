@@ -8947,9 +8947,14 @@ select {
     bottom: 14% !important;
   }
 
-  .home-field-preview-object--sign {
-    left: 39% !important;
-    top: 27% !important;
+  .home-field-preview-object--sign-journey {
+    left: 31% !important;
+    top: 33% !important;
+  }
+
+  .home-field-preview-object--sign-arena {
+    left: 69% !important;
+    top: 33% !important;
   }
 
   .home-field-preview-object--cluster-a {

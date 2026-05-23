@@ -7,16 +7,20 @@ const fallbackTileTypes = {
   grass_flowers_01: 'mushroomPatch',
   path_dirt_straight: 'path',
   path_spore_glow: 'spawn',
+  path_h_end_w: 'path',
+  path_h_end_e: 'path',
   path_destination_row: 'pathTop',
   edge_roots_01: 'forest',
-  edge_moss_rocks_01: 'edge'
+  edge_moss_rocks_01: 'edge',
+  edge_left_forest_01: 'forest',
+  edge_right_forest_01: 'forest'
 };
 
 const fallbackObjectClass = {
   arena: 'home-field-preview-object--arena',
   journey: 'home-field-preview-object--journey',
-  arena_signpost: 'home-field-preview-object--sign',
-  journey_signpost: 'home-field-preview-object--sign',
+  arena_signpost: 'home-field-preview-object--sign home-field-preview-object--sign-arena',
+  journey_signpost: 'home-field-preview-object--sign home-field-preview-object--sign-journey',
   lantern_left: 'home-field-preview-object--lantern',
   lantern_right: 'home-field-preview-object--lantern',
   bush_dark_top_left: 'home-field-preview-object--bush',
@@ -63,6 +67,8 @@ const fallbackObjectLabel = {
 };
 
 const decorativeObjectIds = new Set([
+  'arena_signpost',
+  'journey_signpost',
   'bush_dark_top_left',
   'bush_light_top_center',
   'bush_dark_top_right',
@@ -118,7 +124,7 @@ export const HomeFieldPreviewScreen = {
           label: fallbackObjectLabel[object.id] || object.id,
           className: fallbackObjectClass[object.id] || 'home-field-preview-object--cluster-a',
           src,
-          showLabel: !src || object.hotspotId || object.labelKey,
+          showLabel: !src || object.hotspotId || (object.labelKey && !object.id.endsWith('_signpost')),
           decorative: decorativeObjectIds.has(object.id),
           style: `left: ${percent(object.x, world.width)}; top: ${percent(object.y, world.height)};`
         };

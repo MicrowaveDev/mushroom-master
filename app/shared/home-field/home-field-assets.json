@@ -351,7 +351,7 @@
         "repeatMode": "transition"
       },
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "path_h_end_w"
     },
     {
@@ -388,7 +388,7 @@
         "repeatMode": "transition"
       },
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "path_h_end_e"
     },
     {
@@ -424,7 +424,7 @@
         "repeatMode": "edge"
       },
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "edge_left_forest_01"
     },
     {
@@ -460,7 +460,7 @@
         "repeatMode": "edge"
       },
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "edge_right_forest_01"
     },
     {
@@ -536,7 +536,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "mushroom_cluster_small_amber"
     },
     {
@@ -555,7 +555,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "mushroom_cluster_small_violet"
     },
     {
@@ -574,7 +574,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "mushroom_cluster_tall_green"
     },
     {
@@ -593,7 +593,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "mushroom_cap_red_spotted"
     },
     {
@@ -612,7 +612,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "mycelium_lantern_amber"
     },
     {
@@ -631,7 +631,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "fallen_branch_mycelium"
     },
     {
@@ -650,7 +650,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "arena_signpost_blank"
     },
     {
@@ -669,7 +669,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "journey_signpost_blank"
     },
     {
@@ -688,7 +688,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "arena_mushroom_arch"
     },
     {
@@ -707,7 +707,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "journey_gate_under_construction"
     },
     {
@@ -733,7 +733,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "spore_motes_loop"
     },
     {
@@ -759,7 +759,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "arena_portal_shimmer"
     },
     {
@@ -785,7 +785,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "mycelium_path_pulse"
     },
     {
@@ -811,7 +811,7 @@
         "loop": true,
         "stillFrameIndex": 0
       },
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "journey_blocked_rustle"
     },
     {
@@ -837,7 +837,7 @@
         "loop": false,
         "stillFrameIndex": 0
       },
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "tap_ripple"
     }
   ],
@@ -876,7 +876,7 @@
           ]
         }
       },
-      "status": "missing"
+      "status": "draft"
     }
   ]
 }
