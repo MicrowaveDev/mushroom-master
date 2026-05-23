@@ -113,7 +113,7 @@
       "anchor": { "x": 0, "y": 0 },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "edge_roots_01"
     },
     {
@@ -129,7 +129,7 @@
       "anchor": { "x": 0, "y": 0 },
       "collision": "blocked",
       "animation": null,
-      "status": "missing",
+      "status": "draft",
       "atlasFrameKey": "edge_moss_rocks_01"
     },
     {

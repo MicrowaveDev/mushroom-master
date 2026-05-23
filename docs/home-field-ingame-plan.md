@@ -1270,6 +1270,8 @@ The first implementation agent should produce only this proof set:
 | `path_dirt_straight` | terrain | yes |
 | `path_spore_glow` | terrain | yes |
 | `path_destination_row` | terrain | yes |
+| `edge_roots_01` | terrain | yes |
+| `edge_moss_rocks_01` | terrain | yes |
 
 This first proof set is terrain-only. It exists to prove that the map can be assembled from small repeatable cells before object sprites, exits, animated effects, or chibi frames are generated. Do not generate all character chibis in the first pass; after terrain passes contact-sheet and `/home-field-preview` review, validate the style with one active/default mushroom first.
 
