@@ -56,7 +56,7 @@
     "game:home-field:grass-family-sheet": "node app/scripts/generate-home-field-grass-family-sheet.js",
     "game:home-field:adjacency": "node app/scripts/generate-home-field-adjacency-sheet.js",
     "game:home-field:candidate-preview": "HOME_FIELD_CANDIDATE_PREVIEW=1 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-candidate-preview.spec.js --reporter=line",
-    "game:home-field:object-candidate-preview": "HOME_FIELD_CANDIDATE_PREVIEW=1 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-candidate-preview.spec.js --reporter=line",
+    "game:home-field:object-candidate-preview": "HOME_FIELD_CANDIDATE_PREVIEW=1 HOME_FIELD_CANDIDATE_ROOT=${HOME_FIELD_CANDIDATE_ROOT:-.agent/home-field-workspace/candidates/object-layer/latest} HOME_FIELD_CANDIDATE_IDS=${HOME_FIELD_CANDIDATE_IDS:-bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01} npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-candidate-preview.spec.js --reporter=line",
     "game:home-field:status": "node app/scripts/home-field-status.js",
     "game:fusions:check": "node app/scripts/check-fusion-catalog.js",
     "game:social-preview": "node app/scripts/generate-social-preview.js",

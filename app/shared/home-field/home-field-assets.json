@@ -497,6 +497,10 @@
         "x": 0.5,
         "y": 0.95
       },
+      "readability": {
+        "minBboxWidth": 120,
+        "minBboxHeight": 64
+      },
       "collision": "blocked",
       "animation": null,
       "status": "needs_review",
@@ -516,6 +520,10 @@
         "x": 0.5,
         "y": 0.95
       },
+      "readability": {
+        "minBboxWidth": 120,
+        "minBboxHeight": 64
+      },
       "collision": "blocked",
       "animation": null,
       "status": "needs_review",
@@ -534,6 +542,10 @@
       "anchor": {
         "x": 0.5,
         "y": 0.95
+      },
+      "readability": {
+        "minBboxWidth": 48,
+        "minBboxHeight": 48
       },
       "collision": "walkable",
       "animation": null,

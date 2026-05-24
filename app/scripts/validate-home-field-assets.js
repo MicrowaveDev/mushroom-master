@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateAll, validateTileConnectors } from '../shared/home-field/home-field-validator.js';
-import { readPngHeader, readPngRgba } from './lib/bitmap-image-toolkit.js';
+import { alphaStats, readPngHeader, readPngRgba } from './lib/bitmap-image-toolkit.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
@@ -138,6 +138,42 @@ function checkAlphaHalo(assetsDoc, errors, { ids = null, threshold = DEFAULT_ALP
         scope: 'alpha_halo',
         code: 'visible_chroma_fringe',
         message: `asset "${asset.id}" has ${fringePixels} visible magenta/pink fringe pixel${fringePixels === 1 ? '' : 's'} after alpha processing; rerun chroma-key cleanup or regenerate with cleaner transparency`
+      });
+    }
+  }
+}
+
+function checkObjectReadabilityBounds(assetsDoc, errors, { ids = null } = {}) {
+  for (const asset of scopedEntries(allEntries(assetsDoc), ids)) {
+    const rule = asset.readability;
+    if (!rule || asset.type === 'terrain') continue;
+    const abs = path.join(ASSET_ROOT, asset.outputPath);
+    if (!fs.existsSync(abs)) {
+      errors.push({ scope: 'readability', code: 'missing', message: `asset "${asset.id}" output missing: ${asset.outputPath}` });
+      continue;
+    }
+
+    let image;
+    try {
+      image = readPngRgba(abs);
+    } catch (err) {
+      errors.push({ scope: 'readability', code: 'png_read', message: `asset "${asset.id}" cannot read PNG pixels: ${err.message}` });
+      continue;
+    }
+
+    const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
+    if (rule.minBboxWidth && stats.bboxWidth < rule.minBboxWidth) {
+      errors.push({
+        scope: 'readability',
+        code: 'bbox_too_narrow',
+        message: `asset "${asset.id}" visible bbox width ${stats.bboxWidth}px is below readability.minBboxWidth ${rule.minBboxWidth}px; regenerate larger or crop/fit the object inside the canvas`
+      });
+    }
+    if (rule.minBboxHeight && stats.bboxHeight < rule.minBboxHeight) {
+      errors.push({
+        scope: 'readability',
+        code: 'bbox_too_short',
+        message: `asset "${asset.id}" visible bbox height ${stats.bboxHeight}px is below readability.minBboxHeight ${rule.minBboxHeight}px; regenerate larger or crop/fit the object inside the canvas`
       });
     }
   }
@@ -290,6 +326,7 @@ function main() {
   const wantConnectorCheck = hasFlag(argv, 'check-connectors');
   const wantReviewCheck = hasFlag(argv, 'check-review');
   const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
+  const wantReadabilityCheck = hasFlag(argv, 'check-readability');
   const wantProduction = hasFlag(argv, 'production');
   const ids = parseIds(argv);
 
@@ -321,6 +358,9 @@ function main() {
   if (wantAlphaHaloCheck || wantProduction) {
     checkAlphaHalo(assetsDoc, errors, { ids });
   }
+  if (wantReadabilityCheck || wantProduction) {
+    checkObjectReadabilityBounds(assetsDoc, errors, { ids });
+  }
 
   if (errors.length === 0) {
     console.log('home-field validation: PASS');
@@ -329,6 +369,7 @@ function main() {
     if (wantConnectorCheck || wantProduction) modes.push('tile connectors');
     if (wantReviewCheck || wantProduction) modes.push('review manifest');
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
+    if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
     if (wantProduction) modes.push('production approval');
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`
