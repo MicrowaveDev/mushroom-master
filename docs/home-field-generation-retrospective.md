@@ -33,6 +33,7 @@ Handled:
 - Added `npm run game:home-field:rerun-grass-field`, a field-context grass rerun queue that tells imagegen to generate a larger meadow/pattern context and save a quiet center crop instead of making isolated square textures.
 - Added scene-fit language to the style anchor and prompt flow so grass is judged as the quiet stage for chibi mushroom-elf avatars, with foliage/props carrying most of the personality on object layers.
 - Added `npm run game:home-field:rerun-grass-family` and `npm run game:home-field:produce-grass-family`, which replace independent grass tile generation with one shared meadow source cropped into the three grass family outputs.
+- After rollout `d96d18f`, tightened the grass-family crop plan to nearby central crops, added `--plan=lower-band|upper-band` fallbacks for the same raw source, and added `npm run game:home-field:grass-family-sheet` so blocky family transitions are visible before commit.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -55,6 +56,9 @@ npm run game:home-field:rerun-grass-family
 
 npm run game:home-field:adjacency
 # writes the terrain connector proof sheet
+
+npm run game:home-field:grass-family-sheet
+# writes the focused grass-family repeat/mix proof sheet
 ```
 
 Do not "fix" the production gate by changing statuses. It should pass only after real art is regenerated, reviewed, and explicitly accepted.
@@ -348,6 +352,7 @@ Handled:
 - Current terrain still needs regeneration. Start with `npm run game:home-field:rerun-grass-family`, not the older isolated-tile or independent field-context reruns.
 - The next run must stop after the grass family. Do not run the full 12-tile terrain queue until the grass sheet/preview is accepted.
 - Recent grass reruns proved the isolated `256x256` prompt still creates visible square seams; the next run must use field-context generation and reject candidates with columns, rows, diagonal mottling, value bands, or repeated stamp clusters.
+- Regression case: rollout `d96d18f` used the shared meadow source correctly, but the first crop plan sampled regions too far apart, so the clean preview still showed rectangular value boundaries. The fix is not a new independent tile run; it is a tighter same-source crop plan plus focused grass-family proof review.
 - The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
 - Connector validation now checks horizontal path-band metadata, but edge color-profile heuristics are still not implemented.
 - Vertical path-band metadata (`pathCenterX`) is reserved for future vertical path tiles.

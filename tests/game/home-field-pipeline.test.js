@@ -8,6 +8,7 @@ import { encodeDeterministicPng, readPngRgba, alphaStats } from '../../app/scrip
 
 const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js');
 const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
+const grassFamilySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-grass-family-sheet.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const chromaKeyScript = path.join(
@@ -208,6 +209,7 @@ test('[home-field] grass-family producer crops three tiles from one shared meado
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /Producing grass family from/);
+    assert.match(result.stdout, /with plan "tight-center"/);
     assert.match(result.stdout, /grass_base_01: OK/);
     assert.match(result.stdout, /grass_base_02: OK/);
     assert.match(result.stdout, /grass_flowers_01: OK/);
@@ -219,10 +221,60 @@ test('[home-field] grass-family producer crops three tiles from one shared meado
     }
     const manifests = fs.readdirSync(path.join(workspacePath, 'manifests'));
     assert.ok(manifests.some((name) => name.startsWith('produce-grass-family-')));
+    const manifestName = manifests.find((name) => name.startsWith('produce-grass-family-'));
+    const manifest = JSON.parse(fs.readFileSync(path.join(workspacePath, 'manifests', manifestName), 'utf8'));
+    assert.equal(manifest.policy.cropPlanName, 'tight-center');
+    assert.ok(manifest.outputs.every((entry) => entry.crop.rect.width < 300), 'default plan should use tight nearby crops');
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
     fs.rmSync(outputAbs, { recursive: true, force: true });
   }
+});
+
+test('[home-field] grass-family producer supports alternate crop plans', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-grass-family-plan-test');
+  const outputDir = 'web/public/home-field/__test__/grass-family-plan';
+  const outputAbs = path.join(repoRoot, outputDir);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const workspacePath = path.join(fixtureDir, 'workspace');
+  const sourcePath = path.join(fixtureDir, 'grass_family_meadow.source.png');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(outputAbs, { recursive: true, force: true });
+  writeGrassFamilyFixture(assetsPath, outputDir);
+  writeMeadowFixture(sourcePath);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      grassFamilyScriptPath,
+      `--source=${sourcePath}`,
+      '--plan=lower-band'
+    ], {
+      cwd: repoRoot,
+      env: { ...process.env, HOME_FIELD_ASSETS_PATH: assetsPath, HOME_FIELD_WORKSPACE: workspacePath },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /with plan "lower-band"/);
+    const manifestName = fs.readdirSync(path.join(workspacePath, 'manifests')).find((name) => name.startsWith('produce-grass-family-'));
+    const manifest = JSON.parse(fs.readFileSync(path.join(workspacePath, 'manifests', manifestName), 'utf8'));
+    assert.equal(manifest.policy.cropPlanName, 'lower-band');
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(outputAbs, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] grass-family sheet renders focused repeat and mix proof', () => {
+  const result = spawnSync(process.execPath, [grassFamilySheetScriptPath], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /grass-family-sheet\.png/);
+  assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/grass-family-sheet.png')), true);
+  assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/grass-family-sheet.manifest.json')), true);
 });
 
 test('[home-field] next-tiles blocks while existing candidates still need review', () => {
@@ -297,5 +349,7 @@ test('[home-field] grass-family queue emits one shared-source prompt and produce
   assert.match(result.stdout, /Generation mode: shared grass-family meadow source/);
   assert.match(result.stdout, /grass_family_meadow\.source\.png/);
   assert.match(result.stdout, /npm run game:home-field:produce-grass-family/);
+  assert.match(result.stdout, /--plan=lower-band/);
+  assert.match(result.stdout, /game:home-field:grass-family-sheet/);
   assert.match(result.stdout, /Do not save separate per-tile raw PNGs/);
 });

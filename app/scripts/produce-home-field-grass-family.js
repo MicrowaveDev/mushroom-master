@@ -30,24 +30,76 @@ const manifestDir = path.join(workspace, 'manifests');
 const DEFAULT_SOURCE = '.agent/home-field-workspace/raw/grass_family_meadow.source.png';
 
 const FAMILY_IDS = ['grass_base_01', 'grass_base_02', 'grass_flowers_01'];
-const CROP_PLAN = {
-  grass_base_01: {
-    label: 'quiet lower-left meadow crop',
-    center: { x: 0.34, y: 0.58 },
-    ratio: 0.28,
-    quiet: 0.48
+const DEFAULT_PLAN = 'tight-center';
+const CROP_PLANS = {
+  'tight-center': {
+    description: 'Preferred default: nearby central crops to reduce family value jumps.',
+    crops: {
+      grass_base_01: {
+        label: 'quiet center-left crop',
+        center: { x: 0.46, y: 0.50 },
+        ratio: 0.24,
+        quiet: 0.56
+      },
+      grass_base_02: {
+        label: 'quiet center-right crop',
+        center: { x: 0.54, y: 0.50 },
+        ratio: 0.24,
+        quiet: 0.56
+      },
+      grass_flowers_01: {
+        label: 'nearby sparse accent crop',
+        center: { x: 0.50, y: 0.58 },
+        ratio: 0.24,
+        quiet: 0.50
+      }
+    }
   },
-  grass_base_02: {
-    label: 'quiet upper-right meadow crop with related value range',
-    center: { x: 0.66, y: 0.40 },
-    ratio: 0.28,
-    quiet: 0.48
+  'lower-band': {
+    description: 'Fallback when the central source has focal marks; crops a tighter lower band.',
+    crops: {
+      grass_base_01: {
+        label: 'quiet lower-left band crop',
+        center: { x: 0.44, y: 0.62 },
+        ratio: 0.24,
+        quiet: 0.56
+      },
+      grass_base_02: {
+        label: 'quiet lower-right band crop',
+        center: { x: 0.56, y: 0.62 },
+        ratio: 0.24,
+        quiet: 0.56
+      },
+      grass_flowers_01: {
+        label: 'nearby lower accent crop',
+        center: { x: 0.50, y: 0.70 },
+        ratio: 0.24,
+        quiet: 0.50
+      }
+    }
   },
-  grass_flowers_01: {
-    label: 'sparse accent crop from the same meadow',
-    center: { x: 0.55, y: 0.66 },
-    ratio: 0.28,
-    quiet: 0.42
+  'upper-band': {
+    description: 'Fallback when the lower source has focal marks; crops a tighter upper band.',
+    crops: {
+      grass_base_01: {
+        label: 'quiet upper-left band crop',
+        center: { x: 0.44, y: 0.38 },
+        ratio: 0.24,
+        quiet: 0.56
+      },
+      grass_base_02: {
+        label: 'quiet upper-right band crop',
+        center: { x: 0.56, y: 0.38 },
+        ratio: 0.24,
+        quiet: 0.56
+      },
+      grass_flowers_01: {
+        label: 'nearby upper accent crop',
+        center: { x: 0.50, y: 0.46 },
+        ratio: 0.24,
+        quiet: 0.50
+      }
+    }
   }
 };
 
@@ -62,14 +114,23 @@ function ensureDir(p) {
 function parseArgs(argv) {
   const args = {
     source: DEFAULT_SOURCE,
+    plan: DEFAULT_PLAN,
     noSeamless: false
   };
   for (const arg of argv) {
     if (arg.startsWith('--source=')) args.source = arg.slice('--source='.length);
+    else if (arg.startsWith('--plan=')) args.plan = arg.slice('--plan='.length);
+    else if (arg === '--list-plans') {
+      console.log(Object.entries(CROP_PLANS).map(([name, plan]) => `${name}: ${plan.description}`).join('\n'));
+      process.exit(0);
+    }
     else if (arg === '--no-seamless') args.noSeamless = true;
     else {
       throw new Error(`Unknown argument: ${arg}`);
     }
+  }
+  if (!CROP_PLANS[args.plan]) {
+    throw new Error(`Unknown --plan="${args.plan}". Valid plans: ${Object.keys(CROP_PLANS).join(', ')}`);
   }
   return args;
 }
@@ -208,7 +269,7 @@ function main() {
     args = parseArgs(process.argv.slice(2));
   } catch (err) {
     console.error(err.message);
-    console.error('Usage: produce-home-field-grass-family.js [--source=.agent/home-field-workspace/raw/grass_family_meadow.source.png] [--no-seamless]');
+    console.error('Usage: produce-home-field-grass-family.js [--source=.agent/home-field-workspace/raw/grass_family_meadow.source.png] [--plan=tight-center|lower-band|upper-band] [--no-seamless]');
     process.exit(1);
   }
 
@@ -238,10 +299,11 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Producing grass family from ${path.relative(repoRoot, sourceAbs)} (${source.width}x${source.height})...`);
+  const cropPlan = CROP_PLANS[args.plan];
+  console.log(`Producing grass family from ${path.relative(repoRoot, sourceAbs)} (${source.width}x${source.height}) with plan "${args.plan}"...`);
   const outputs = [];
   for (const target of targets) {
-    const plan = CROP_PLAN[target.id];
+    const plan = cropPlan.crops[target.id];
     const { image: cropped, rect } = cropNormalizedSquare(source, plan);
     let image = resizeRgba(cropped, target.width, target.height);
     if (!args.noSeamless) image = makeTerrainSeamless(image);
@@ -273,7 +335,9 @@ function main() {
     policy: {
       oneSharedSourceForGrassFamily: true,
       independentPerTileImagegenForbidden: true,
-      seamlessTerrain: !args.noSeamless
+      seamlessTerrain: !args.noSeamless,
+      cropPlanName: args.plan,
+      cropPlanDescription: cropPlan.description
     },
     outputs
   }, null, 2)}\n`);

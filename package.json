@@ -49,6 +49,7 @@
     "game:home-field:produce-grass-family": "node app/scripts/produce-home-field-grass-family.js",
     "game:home-field:validate": "node app/scripts/validate-home-field-assets.js",
     "game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js",
+    "game:home-field:grass-family-sheet": "node app/scripts/generate-home-field-grass-family-sheet.js",
     "game:home-field:adjacency": "node app/scripts/generate-home-field-adjacency-sheet.js",
     "game:home-field:status": "node app/scripts/home-field-status.js",
     "game:fusions:check": "node app/scripts/check-fusion-catalog.js",

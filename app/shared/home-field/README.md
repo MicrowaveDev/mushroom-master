@@ -72,10 +72,11 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
-| **produce-grass-family** | `npm run game:home-field:produce-grass-family` | Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and crops `grass_base_01`, `grass_base_02`, and `grass_flowers_01` from coordinated regions. |
+| **produce-grass-family** | `npm run game:home-field:produce-grass-family` | Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and crops `grass_base_01`, `grass_base_02`, and `grass_flowers_01` from nearby coordinated regions. Supports `--plan=lower-band` and `--plan=upper-band` fallbacks. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, and `--production` requires files, connectors, review acceptance, and `status: "approved"` for every asset. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
+| **grass-family-sheet** | `npm run game:home-field:grass-family-sheet` | Composites focused grass-only repeat and mixed-pattern proof at `.agent/home-field-workspace/review/grass-family-sheet.png`. |
 | **adjacency** | `npm run game:home-field:adjacency` | Composites terrain connector proof at `.agent/home-field-workspace/review/adjacency-sheet.png`, including the grass-path run and left/right edge stacks. |
 
 ## Agent Flow
@@ -213,6 +214,10 @@ npm run game:home-field:rerun-grass-family
 # After imagegen saves the one shared meadow source, produce the three crops:
 npm run game:home-field:produce-grass-family
 
+# Optional fallback from the same raw source if the default crop plan is blocky:
+npm run game:home-field:produce-grass-family -- --plan=lower-band
+npm run game:home-field:produce-grass-family -- --plan=upper-band
+
 # For later non-grass terrain/props, produce the raw files generated in that batch:
 npm run game:home-field:produce -- path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01
 
@@ -222,6 +227,7 @@ npm run game:home-field:status
 
 # 6. Refresh review sheets for human review
 npm run game:home-field:sheet
+npm run game:home-field:grass-family-sheet
 npm run game:home-field:adjacency
 
 # 7. Commit on `main` (direct-to-main; see top of this README)

@@ -58,10 +58,14 @@ function main() {
   console.log('');
   console.log('After saving the raw source, run:');
   console.log('  npm run game:home-field:produce-grass-family');
+  console.log('If the focused sheet or clean preview still shows blocky value transitions, rerun the same raw source with at most these fallbacks before review:');
+  console.log('  npm run game:home-field:produce-grass-family -- --plan=lower-band');
+  console.log('  npm run game:home-field:produce-grass-family -- --plan=upper-band');
   console.log('');
   console.log('Then run:');
   console.log('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
   console.log('  npm run game:home-field:sheet');
+  console.log('  npm run game:home-field:grass-family-sheet');
   console.log('  npm run game:home-field:adjacency');
   console.log('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
   console.log('');
@@ -78,9 +82,9 @@ function main() {
   console.log('The whole image should be a quiet walkable ground plane: broad muted moss-green and fungal-teal color fields, soft low-contrast moss shadows, sparse hand-drawn grass strokes, and a few tiny yellow-green flecks. Keep most of the field open so 64px chibi feet and compact blob shadows stay readable.');
   console.log('');
   console.log('## Crop zones the producer will use');
-  console.log('- Lower-left/center-left quiet area -> grass_base_01');
-  console.log('- Upper-right/center-right quiet area with the same value range -> grass_base_02');
-  console.log('- Lower-middle sparse accent area -> grass_flowers_01');
+  console.log('- Center-left quiet area -> grass_base_01');
+  console.log('- Center-right quiet area with the same value range -> grass_base_02');
+  console.log('- Nearby lower-center sparse accent area -> grass_flowers_01');
   console.log('');
   console.log('Make these regions feel like parts of the same meadow. Do not create separate lighting pools, borders, columns, square cells, diagonal bands, or different texture styles in each region.');
   console.log('');

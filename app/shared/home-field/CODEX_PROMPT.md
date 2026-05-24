@@ -77,6 +77,7 @@ Mechanical role. It runs exactly the producer commands printed in the prompt blo
 ```bash
 npm run game:home-field:validate -- --check-files --check-connectors --check-review
 npm run game:home-field:sheet
+npm run game:home-field:grass-family-sheet
 npm run game:home-field:adjacency
 npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line
 ```
@@ -88,6 +89,7 @@ It may fix mechanical produce issues by rerunning produce with the printed flags
 Review-only role. It reviews:
 
 - `.agent/home-field-workspace/review/contact-sheet.png`
+- `.agent/home-field-workspace/review/grass-family-sheet.png`
 - `.agent/home-field-workspace/review/adjacency-sheet.png`
 - clean `/home-field-preview?debug=0` screenshots from the Playwright run
 
@@ -128,6 +130,7 @@ Do not set `"verdict": "approved"` or `"accepted": true` unless the human explic
 5. `npm run game:home-field:rerun-grass-family`
 6. Generate only the one shared meadow raw PNG printed by that command.
 7. Run `npm run game:home-field:produce-grass-family`.
+   If the default crop plan still creates blocky value transitions, try only `--plan=lower-band` and `--plan=upper-band` from the same raw source before visual review.
 8. Run the validation and review commands from the Producer/Validation Worker section.
 9. Update `docs/home-field-asset-review.json` for only the three grass rows.
 10. Run:
