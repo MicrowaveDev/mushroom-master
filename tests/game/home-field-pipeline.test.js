@@ -9,6 +9,7 @@ import { encodeDeterministicPng, readPngRgba, alphaStats } from '../../app/scrip
 const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js');
 const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
 const grassFamilySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-grass-family-sheet.js');
+const alphaSheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-alpha-sheet.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const chromaKeyScript = path.join(
@@ -182,6 +183,79 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
     fs.rmSync(fixtureDir, { recursive: true, force: true });
     fs.rmSync(path.dirname(rawPath), { recursive: true, force: true });
     fs.rmSync(path.dirname(outputAbs), { recursive: true, force: true });
+  }
+});
+
+test('[home-field] produce supports object-layer candidate root', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-candidate-prop-test');
+  const rawPath = path.join(repoRoot, '.agent/home-field-test-workspace/raw/chroma_fixture.source.png');
+  const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
+  const appOutputAbs = path.join(repoRoot, outputPath);
+  const candidateRoot = path.join(repoRoot, '.agent/home-field-workspace/candidates/object-layer/latest');
+  const candidateOutputAbs = path.join(candidateRoot, outputPath);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(path.dirname(rawPath), { recursive: true, force: true });
+  fs.rmSync(path.dirname(appOutputAbs), { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeAssetsFixture(assetsPath, outputPath);
+  writeFixturePng(rawPath);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      scriptPath,
+      'chroma_fixture',
+      '--candidate',
+      `--candidate-root=${candidateRoot}`,
+      '--chroma-key=#ff00ff'
+    ], {
+      cwd: repoRoot,
+      env: { ...process.env, HOME_FIELD_ASSETS_PATH: assetsPath },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(fs.existsSync(candidateOutputAbs), true, 'candidate output should be written');
+    assert.equal(fs.existsSync(appOutputAbs), false, 'candidate mode must not write app-facing output');
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(path.dirname(rawPath), { recursive: true, force: true });
+    fs.rmSync(path.dirname(appOutputAbs), { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] alpha sheet renders transparent candidate props', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-alpha-sheet-test');
+  const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
+  const candidateRoot = path.join(repoRoot, '.agent/home-field-workspace/candidates/object-layer/latest');
+  const candidateOutputAbs = path.join(candidateRoot, outputPath);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeAssetsFixture(assetsPath, outputPath);
+  writeFixturePng(candidateOutputAbs);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      alphaSheetScriptPath,
+      '--ids=chroma_fixture'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_ASSET_ROOT: path.relative(repoRoot, candidateRoot)
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/alpha-halo-sheet.png')), true);
+    assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/alpha-halo-sheet.manifest.json')), true);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
   }
 });
 

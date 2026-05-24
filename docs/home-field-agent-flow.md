@@ -48,6 +48,20 @@ The default crop plan is `tight-center`. If visual review still shows square val
 
 The run must still stop after these three candidates are produced and reviewed. Path and edge tiles require a separate later run after the grass family is accepted.
 
+## Object-Layer Candidate Gate
+
+For prop-only review runs, use the generic candidate producer instead of the promotion producer:
+
+```bash
+npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 --check-files --check-review
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:sheet
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01
+npm run game:home-field:object-candidate-preview
+```
+
+This writes candidate PNGs under `.agent/home-field-workspace/candidates/object-layer/latest/web/public/home-field/props/` and uses route interception for `/home-field-preview?debug=0`, so app-facing PNGs remain untouched before human approval. If a run covers a different prop set, pass `--candidate-root=<dir>` to `game:home-field:produce` and set `HOME_FIELD_CANDIDATE_IDS` / `HOME_FIELD_CANDIDATE_ROOT` when running the candidate preview spec.
+
 ## Scene Target Gate
 
 The target is not an isolated grass texture. The final composed field should read like a polished game-hub screenshot: chibi mushroom-elf avatars standing on a soft green meadow, with chunky dark-ink foliage, vines, flowers, mushrooms, exits, and props framing the walkable area on object layers.
@@ -83,6 +97,8 @@ Review evidence lives locally under:
 Do not commit `.agent` review artifacts.
 
 Run `game:home-field:candidate-preview` before visual review. It uses Playwright route interception to render `/home-field-preview?debug=0` with the candidate grass PNGs from `.agent/home-field-workspace/candidates/grass-family/latest/`, without promoting or overwriting app-facing PNGs. The app-facing clean preview screenshots under `.agent/tasks/...` remain post-promotion proof.
+
+Run `game:home-field:object-candidate-preview` for the foliage micro-batch. It uses the same clean preview screenshot paths, but routes `bush_cluster_dark_01`, `bush_cluster_light_01`, and `leaf_sprout_01` from `.agent/home-field-workspace/candidates/object-layer/latest/`.
 
 ## Review JSON Rules
 

@@ -5,13 +5,15 @@
  * Usage:
  *   npm run game:home-field:produce -- grass_base_01 grass_base_02
  *   npm run game:home-field:produce -- --all-missing
+ *   npm run game:home-field:produce -- bush_cluster_dark_01 --candidate
  *
  * Behavior per asset:
  *   1. Read .agent/home-field-workspace/raw/<id>.source.png.
  *   2. Optionally remove a chroma-key background (default: no chroma-key; imagegen
  *      should return transparent PNG. Pass --chroma-key=#ff00ff to force removal).
  *   3. Validate dimensions match home-field-assets.json.
- *   4. Write the deterministic PNG to the asset's outputPath (under web/public/home-field/).
+ *   4. Write the deterministic PNG to the asset's outputPath (under web/public/home-field/)
+ *      or, with --candidate, under .agent/home-field-workspace/candidates/object-layer/latest.
  *
  * This script does NOT call imagegen. It assumes imagegen output already exists at the
  * raw source path.
@@ -52,12 +54,19 @@ function parseArgs(argv) {
   const ids = [];
   let chromaKey = null;
   let allMissing = false;
+  let candidate = false;
+  let candidateRoot = path.join(workspace, 'candidates', 'object-layer', 'latest');
   let resize = null;
   let seamlessTerrain = false;
   let cropCenter = null;
   let quietTerrain = null;
   for (const arg of argv) {
     if (arg === '--all-missing') allMissing = true;
+    else if (arg === '--candidate') candidate = true;
+    else if (arg.startsWith('--candidate-root=')) {
+      candidate = true;
+      candidateRoot = path.resolve(repoRoot, arg.slice('--candidate-root='.length));
+    }
     else if (arg === '--resize') resize = 'lanczos';
     else if (arg === '--resize-nearest') resize = 'nearest';
     else if (arg === '--seamless-terrain') seamlessTerrain = true;
@@ -74,7 +83,7 @@ function parseArgs(argv) {
   if (quietTerrain !== null && (!Number.isFinite(quietTerrain) || quietTerrain < 0 || quietTerrain > 1)) {
     throw new Error('--quiet-terrain must be a number in the range [0, 1]');
   }
-  return { ids, chromaKey, allMissing, resize, seamlessTerrain, cropCenter, quietTerrain };
+  return { ids, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain };
 }
 
 function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
@@ -351,9 +360,21 @@ function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
   return { width: stripWidth, height: stripHeight, rgba: stripRgba };
 }
 
+function outputAbsFor(entry, opts) {
+  return opts.candidate
+    ? path.join(opts.candidateRoot, entry.outputPath)
+    : path.join(repoRoot, entry.outputPath);
+}
+
+function outputLabelFor(entry, opts) {
+  return opts.candidate
+    ? path.relative(repoRoot, path.join(opts.candidateRoot, entry.outputPath))
+    : entry.outputPath;
+}
+
 function processStaticEntry(entry, opts) {
   const rawAbs = path.join(repoRoot, entry.sourcePath);
-  const outAbs = path.join(repoRoot, entry.outputPath);
+  const outAbs = outputAbsFor(entry, opts);
   ensureDir(path.dirname(outAbs));
 
   if (!fs.existsSync(rawAbs)) {
@@ -408,7 +429,7 @@ function processStaticEntry(entry, opts) {
   });
   fs.writeFileSync(outAbs, encoded);
 
-  return { id: entry.id, ok: true, output: entry.outputPath, alpha: alphaSummary, mode: 'static' };
+  return { id: entry.id, ok: true, output: outputLabelFor(entry, opts), alpha: alphaSummary, mode: 'static' };
 }
 
 function processAnimatedEntry(entry, opts) {
@@ -453,7 +474,7 @@ function processAnimatedEntry(entry, opts) {
     };
   }
 
-  const outAbs = path.join(repoRoot, entry.outputPath);
+  const outAbs = outputAbsFor(entry, opts);
   ensureDir(path.dirname(outAbs));
   fs.writeFileSync(outAbs, encodeDeterministicPng(strip));
 
@@ -464,7 +485,7 @@ function processAnimatedEntry(entry, opts) {
     return { id: entry.id, ok: false, reason: `composed strip has no transparency; alpha ${alphaSummary}` };
   }
 
-  return { id: entry.id, ok: true, output: entry.outputPath, alpha: alphaSummary, mode: `frames(${a.frames})` };
+  return { id: entry.id, ok: true, output: outputLabelFor(entry, opts), alpha: alphaSummary, mode: `frames(${a.frames})` };
 }
 
 function processEntry(entry, opts) {
@@ -550,7 +571,7 @@ function processCharacterPlaceholder(entry, opts = {}) {
     }
   }
 
-  const outAbs = path.join(repoRoot, entry.outputPath);
+  const outAbs = outputAbsFor(entry, opts);
   ensureDir(path.dirname(outAbs));
   fs.writeFileSync(outAbs, encodeDeterministicPng({ width: s.width, height: s.height, rgba: sheetRgba }));
 
@@ -558,7 +579,7 @@ function processCharacterPlaceholder(entry, opts = {}) {
   return {
     id: entry.id,
     ok: true,
-    output: entry.outputPath,
+    output: outputLabelFor(entry, opts),
     alpha: `coverage=${(stats.coverage * 100).toFixed(1)}%`,
     mode: 'character_placeholder(12+repl)'
   };
@@ -578,11 +599,13 @@ function writeManifest(results, opts) {
 }
 
 function main() {
-  const { ids, chromaKey, allMissing, resize, seamlessTerrain, cropCenter, quietTerrain } = parseArgs(process.argv.slice(2));
+  const { ids, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain } = parseArgs(process.argv.slice(2));
   if (ids.length === 0 && !allMissing) {
     console.error('Usage: produce-home-field-assets.js <asset_id...> | --all-missing');
     console.error('  Options:');
     console.error('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
+    console.error('    --candidate             write under .agent/home-field-workspace/candidates/object-layer/latest instead of web/public');
+    console.error('    --candidate-root=<dir>  write candidate outputs under a custom root');
     console.error('    --resize               box-average downscale raw to target dimensions (use for terrain/props/exits)');
     console.error('    --resize-nearest       nearest-neighbor downscale (use for chibi spritesheet to keep edges crisp)');
     console.error('    --seamless-terrain     softly harmonize opposite terrain edges for repeatable ground tiles');
@@ -627,7 +650,7 @@ function main() {
   console.log(`Producing ${targets.length} asset${targets.length === 1 ? '' : 's'}...`);
   const results = [];
   for (const target of targets) {
-    const r = processEntry(target, { chromaKey, resize, seamlessTerrain, cropCenter, quietTerrain });
+    const r = processEntry(target, { chromaKey, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain });
     if (r.ok) {
       console.log(`  ${target.id}: OK [${r.mode || 'static'}] -> ${r.output}${r.alpha ? ` (${r.alpha})` : ''}`);
     } else {
@@ -635,14 +658,28 @@ function main() {
     }
     results.push(r);
   }
-  writeManifest(results, { chromaKey, allMissing, resize, seamlessTerrain, cropCenter, quietTerrain });
+  writeManifest(results, {
+    chromaKey,
+    allMissing,
+    candidate,
+    candidateRoot: candidate ? path.relative(repoRoot, candidateRoot) : null,
+    resize,
+    seamlessTerrain,
+    cropCenter,
+    quietTerrain
+  });
 
   const failed = results.filter((r) => !r.ok);
   const done = results.length - failed.length;
   console.log('');
   console.log(`Summary: ${done} OK, ${failed.length} failed.`);
   if (done > 0) {
-    console.log('Next: `npm run game:home-field:validate -- --check-files` then `npm run game:home-field:sheet`.');
+    if (candidate) {
+      const env = `HOME_FIELD_ASSET_ROOT=${path.relative(repoRoot, candidateRoot)}`;
+      console.log(`Next: \`${env} npm run game:home-field:validate -- --check-files\` then \`${env} npm run game:home-field:sheet\`.`);
+    } else {
+      console.log('Next: `npm run game:home-field:validate -- --check-files` then `npm run game:home-field:sheet`.');
+    }
   }
   process.exit(failed.length === 0 ? 0 : 1);
 }
