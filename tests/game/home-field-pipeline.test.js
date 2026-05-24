@@ -10,6 +10,7 @@ const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js
 const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
 const grassFamilySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-grass-family-sheet.js');
 const alphaSheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-alpha-sheet.js');
+const mobileReadabilitySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-mobile-readability-sheet.js');
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
@@ -291,6 +292,40 @@ test('[home-field] alpha sheet renders transparent candidate props', () => {
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/alpha-halo-sheet.png')), true);
     assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/alpha-halo-sheet.manifest.json')), true);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] mobile readability sheet renders small prop proofs', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-mobile-readability-test');
+  const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
+  const candidateRoot = path.join(repoRoot, 'tmp/home-field-mobile-readability-candidates');
+  const candidateOutputAbs = path.join(candidateRoot, outputPath);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeAssetsFixture(assetsPath, outputPath);
+  writeFixturePng(candidateOutputAbs);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      mobileReadabilitySheetScriptPath,
+      '--ids=chroma_fixture'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_ASSET_ROOT: path.relative(repoRoot, candidateRoot)
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/mobile-readability-sheet.png')), true);
+    assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/mobile-readability-sheet.manifest.json')), true);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
     fs.rmSync(candidateRoot, { recursive: true, force: true });

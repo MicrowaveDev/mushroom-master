@@ -347,6 +347,7 @@ Handled:
 - Add adjacency proof sheet for terrain connector pairs. **Done.**
 - Add path-band metadata checks for path connector alignment. **Done for horizontal path connectors.**
 - Add structured clean-preview/style/alpha/scale checks to the review JSON. **Done.**
+- Add mobile-size object readability sheet for props/exits. **Done for static object candidates via `npm run game:home-field:mobile-readability-sheet`.**
 - Replace current procedural grass/path tiles with a more coherent low-detail hand-authored style.
 - Replace checkerboard-cleaned props with chroma-keyed or true-alpha versions.
 - Replace placeholder effects and chibi with real generated or hand-authored spritesheets.
@@ -360,6 +361,7 @@ Handled:
 - Regression case: rollout `7aa2fdd` followed the shared-source flow and correctly rejected all three tiles, but still committed app-facing PNGs that were marked `needs_regen`. The fix is candidate-root production: review `.agent/home-field-workspace/candidates/grass-family/latest/` first, then promote to `web/public/home-field/terrain/` only after explicit human approval.
 - Regression case: rollout `f0d5ab2` included the candidate folder as a backticked absolute path, not a clickable folder link. The fix is to require the final response line `Candidate folder: [open in Finder](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest)` in the run prompt, flow template, and producer output.
 - Regression case: rollout `019e5bfb-a59f` produced candidate sheets but no composed field screenshot. The fix is `npm run game:home-field:candidate-preview`, which renders `/home-field-preview?debug=0` through Playwright with candidate grass PNGs route-intercepted from `.agent/home-field-workspace/candidates/grass-family/latest/` and writes mobile/desktop clean field screenshots to `.agent/home-field-workspace/review/`.
+- Regression case: rollout `019e5c3e-454b` followed the object-candidate flow and correctly left the bushes unapproved, but the standalone 256px contact sheet made them look more readable than they were in the mobile field. The fix is `npm run game:home-field:mobile-readability-sheet`, plus prompt language that rejects tiny leaf noise and requires object props to read at 48-64px.
 - Grass flowers remain the easiest repeat marker. Keep base terrain mostly quiet; move stronger flowers, vines, foliage, and personality to object-layer transparent props rather than stamping them into repeatable grass cells.
 - The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
 - Connector validation now checks horizontal path-band metadata, but edge color-profile heuristics are still not implemented.

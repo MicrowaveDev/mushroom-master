@@ -60,45 +60,45 @@
     },
     "prop_bush_cluster_dark_01": {
       "subject": "transparent-background 2D top-down forest prop: dark organic bush mass for a game hub object layer",
-      "details": "A soft painterly dark-green bush that reads as one continuous natural shrub mass, not a pile of separate round crowns. Use an asymmetric footprint, uneven scalloped outer edge, a few larger leaf masses blended into smaller leaf clusters, subtle shadow pockets, and small negative notches so the silhouette feels hand-shaped and natural. Muted deep moss colors, compact transparent shadow, and mobile-scale readability.",
+      "details": "A soft painterly dark-green bush that reads as one continuous natural shrub mass, not a pile of separate round crowns. Use an asymmetric footprint, uneven scalloped outer edge, 3-5 larger blended leaf masses, subtle shadow pockets, and small negative notches so the silhouette feels hand-shaped and natural. Keep internal texture very simple: broad value shapes, no tiny leaf noise. It must be recognizable at 48-64px on a mobile field screenshot.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, or a mound made from many same-size round bushes."
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, many tiny leaves, or a mound made from many same-size round bushes."
     },
     "prop_bush_cluster_light_01": {
       "subject": "transparent-background 2D top-down forest prop: lighter organic bush mass for a game hub object layer",
-      "details": "A lighter moss-green companion to bush_cluster_dark_01. It should feel like one irregular natural shrub with blended lobes, uneven leafy edge, offset highlights, and varied leaf-cluster sizes. Keep the form low, broad, asymmetric, and hand-painted, with a compact transparent shadow. It should layer over quiet terrain without looking like repeated circular stamps.",
+      "details": "A lighter moss-green companion to bush_cluster_dark_01. It should feel like one irregular natural shrub with 3-5 blended lobes, uneven leafy edge, offset highlights, and broad simple value shapes. Keep the form low, broad, asymmetric, and hand-painted, with a compact transparent shadow. It should layer over quiet terrain without looking like repeated circular stamps, and it must remain readable at 48-64px.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, or an obvious procedural mound."
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, tiny texture noise, or an obvious procedural mound."
     },
     "prop_leaf_sprout_01": {
       "subject": "transparent-background 2D top-down forest prop: small leafy sprout cluster",
-      "details": "A tiny readable sprout like the small leaf clusters in the liked reference: 3-5 simple leaves, muted moss green, soft painterly shading, transparent background, and a faint compact shadow. Used as a walkable decorative object-layer accent over quiet grass tiles.",
+      "details": "A small readable sprout like the simple leaf clusters in the liked reference: 3-5 broad leaves, muted moss green, soft painterly shading, transparent background, and a faint compact shadow. Use bold leaf shapes and minimal veins so it reads beside chibi feet at mobile scale.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Small centered sprout with bottom-center anchor. No tile background, no flowers field, no text, no characters, no over-detailed botanical rendering."
+      "constraints": "Small centered sprout with bottom-center anchor. No tile background, no flowers field, no text, no characters, no over-detailed botanical rendering, no tiny leaf texture."
     },
     "prop_mutant_broccoli_bush_01": {
       "subject": "transparent-background 2D game prop: intentionally funny mutated broccoli bush",
-      "details": "A cute weird vegetable-foliage prop that clearly references a little broccoli crown while still belonging to the dark storybook mushroom meadow. Make it intentional and entertaining: asymmetric clustered crown, tiny twisted stem base, subtle fungal speckles, dark warm outline, compact blob shadow, and one or two odd mutated details such as curled leaves or tiny amber spore bumps. It must read as a joke prop, not an accidental normal bush.",
+      "details": "A cute weird vegetable-foliage prop that clearly references a little broccoli crown while still belonging to the dark storybook mushroom meadow. Make it intentional and entertaining with a bold asymmetric crown, one chunky twisted stem base, dark warm outline, compact blob shadow, and at most one simple mutated accent. It must read as a joke prop at 48-64px, not as an accidental normal bush.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Object-layer prop only. No terrain background, no text, no characters, no photoreal vegetable, no grocery-store broccoli photo. Keep silhouette readable and cute at mobile scale."
+      "constraints": "Object-layer prop only. No terrain background, no text, no characters, no photoreal vegetable, no grocery-store broccoli photo, no tiny speckles, no many small florets. Keep silhouette readable and cute at mobile scale."
     },
     "prop_cabbage_rose_bush_01": {
       "subject": "transparent-background 2D game prop: strange cabbage rose bush",
-      "details": "A playful hybrid of cabbage and rose: broad cabbage-like leafy cup shapes arranged like an oversized dark fairytale flower bush. Use muted moss, teal, and yellow-green leaves with a few violet shadow pockets. The silhouette should be chunky, asymmetrical, and charmingly strange, with a compact transparent shadow.",
+      "details": "A playful hybrid of cabbage and rose: 4-6 broad cabbage-like leafy cup shapes arranged like one oversized dark fairytale flower bush. Use muted moss, teal, and yellow-green leaves with simple violet shadow pockets. The silhouette should be chunky, asymmetrical, and recognizable at 48-64px, with a compact transparent shadow.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Object-layer prop only. No normal flower bouquet, no realistic cabbage, no terrain tile, no text, no characters. Must feel intentional and cohesive with the Home Field style."
+      "constraints": "Object-layer prop only. No normal flower bouquet, no realistic cabbage, no terrain tile, no text, no characters, no dense leaf veins. Must feel intentional and cohesive with the Home Field style."
     },
     "prop_carrot_sprout_cluster_01": {
       "subject": "transparent-background 2D game prop: funny carrot sprout cluster",
-      "details": "A small cluster of 3-5 squat carrot tops poking from the moss like mischievous garden props. Orange roots are partly visible, with leafy green tops exaggerated into cute-goth shapes. Add tiny dirt crumbs, a warm dark outline, and a compact shadow. Reads as a small walkable decorative accent.",
+      "details": "A small cluster of 3 squat carrot tops poking from the moss like mischievous garden props. Orange roots are partly visible, with big leafy green tops exaggerated into cute-goth shapes. Use a warm dark outline, a compact shadow, and minimal dirt marks. Reads as a small walkable decorative accent at mobile scale.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "No full vegetable basket, no realistic carrots, no text, no characters, no terrain background. Keep it low and readable beside chibi feet."
+      "constraints": "No full vegetable basket, no realistic carrots, no text, no characters, no terrain background, no tiny crumbs/noise. Keep it low and readable beside chibi feet."
     },
     "prop_onion_flower_01": {
       "subject": "transparent-background 2D game prop: odd onion flower",
@@ -109,10 +109,10 @@
     },
     "prop_turnip_mushroom_01": {
       "subject": "transparent-background 2D game prop: turnip crossed with a mushroom",
-      "details": "A funny root-vegetable mushroom hybrid: round turnip body, stubby root feet, mushroom-cap top, and tiny mycelium tendrils. Use muted cream, moss green, violet shadows, and one small red or amber accent. Cute, odd, readable, and slightly magical.",
+      "details": "A funny root-vegetable mushroom hybrid: one round turnip body, two stubby root feet, and a simple mushroom-cap top. Use muted cream, moss green, violet shadows, and one small red or amber accent. Cute, odd, readable, and slightly magical at mobile scale.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "No face unless extremely subtle and non-character-like, no text, no realistic vegetable rendering, no terrain background. Must remain a prop, not a chibi character."
+      "constraints": "No face unless extremely subtle and non-character-like, no text, no realistic vegetable rendering, no terrain background, no tiny tendrils. Must remain a prop, not a chibi character."
     },
     "prop_tomato_eye_flower_01": {
       "subject": "transparent-background 2D game prop: tiny strange tomato-eye flower",
@@ -123,10 +123,10 @@
     },
     "prop_pepper_pod_bush_01": {
       "subject": "transparent-background 2D game prop: pepper pod bush with strange curled leaves",
-      "details": "A small dark leafy bush with 3-4 dangling pepper-like pods in muted red, amber, and violet. Leaves curl in odd cute-goth shapes, with a chunky readable silhouette and compact shadow. It should feel like a decorative weird garden prop for field edges.",
+      "details": "A small dark leafy bush with 2-3 large dangling pepper-like pods in muted red, amber, and violet. Leaves curl in simple cute-goth shapes, with a chunky readable silhouette and compact shadow. It should feel like a decorative weird garden prop for field edges and still read at 48-64px.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "No realistic pepper plant, no repeated circular bush stamps, no text, no characters, no terrain background. Keep pods sparse and readable."
+      "constraints": "No realistic pepper plant, no repeated circular bush stamps, no text, no characters, no terrain background, no many tiny pods. Keep pods sparse and readable."
     },
     "prop_beetroot_heart_plant_01": {
       "subject": "transparent-background 2D game prop: beetroot heart plant",

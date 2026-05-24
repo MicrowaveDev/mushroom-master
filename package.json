@@ -52,6 +52,7 @@
     "game:home-field:validate": "node app/scripts/validate-home-field-assets.js",
     "game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js",
     "game:home-field:alpha-sheet": "node app/scripts/generate-home-field-alpha-sheet.js",
+    "game:home-field:mobile-readability-sheet": "node app/scripts/generate-home-field-mobile-readability-sheet.js",
     "game:home-field:grass-family-sheet": "node app/scripts/generate-home-field-grass-family-sheet.js",
     "game:home-field:adjacency": "node app/scripts/generate-home-field-adjacency-sheet.js",
     "game:home-field:candidate-preview": "HOME_FIELD_CANDIDATE_PREVIEW=1 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-candidate-preview.spec.js --reporter=line",
