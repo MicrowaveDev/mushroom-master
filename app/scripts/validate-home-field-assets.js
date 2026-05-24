@@ -27,6 +27,9 @@ const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const MAP_PATH = path.join(sharedDir, 'home-field-map.json');
 const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
+const ASSET_ROOT = process.env.HOME_FIELD_ASSET_ROOT
+  ? path.resolve(repoRoot, process.env.HOME_FIELD_ASSET_ROOT)
+  : repoRoot;
 const REVIEW_VERDICTS = new Set(['pending', 'needs_review', 'needs_regen', 'rejected', 'approved', 'placeholder']);
 const REVIEW_CHECKS = [
   'repeatCheck',
@@ -48,8 +51,18 @@ function hasFlag(argv, name) {
   return argv.includes(`--${name}`);
 }
 
-function checkFiles(assetsDoc, errors) {
-  const allEntries = [
+function parseIds(argv) {
+  const arg = argv.find((item) => item.startsWith('--ids='));
+  if (!arg) return null;
+  return new Set(arg.slice('--ids='.length).split(',').map((id) => id.trim()).filter(Boolean));
+}
+
+function scopedEntries(entries, ids) {
+  return ids ? entries.filter((entry) => ids.has(entry.id)) : entries;
+}
+
+function checkFiles(assetsDoc, errors, { ids = null } = {}) {
+  const allEntries = scopedEntries([
     ...assetsDoc.assets,
     ...(assetsDoc.characters || []).map((c) => ({
       id: c.id,
@@ -58,9 +71,9 @@ function checkFiles(assetsDoc, errors) {
       height: c.spritesheet.height,
       isCharacter: true
     }))
-  ];
+  ], ids);
   for (const a of allEntries) {
-    const abs = path.join(repoRoot, a.outputPath);
+    const abs = path.join(ASSET_ROOT, a.outputPath);
     if (!fs.existsSync(abs)) {
       errors.push({ scope: 'files', code: 'missing', message: `asset "${a.id}" output missing: ${a.outputPath}` });
       continue;
@@ -111,7 +124,7 @@ function allEntries(assetsDoc) {
   ];
 }
 
-function checkReview(assetsDoc, errors, { production = false } = {}) {
+function checkReview(assetsDoc, errors, { production = false, ids = null } = {}) {
   const reviewDoc = loadReviewDoc(errors);
   if (!reviewDoc) return;
   const reviews = new Map((reviewDoc.assets || []).map((entry) => [entry.id, entry]));
@@ -119,6 +132,7 @@ function checkReview(assetsDoc, errors, { production = false } = {}) {
   const approvedIds = [];
 
   for (const review of reviewDoc.assets || []) {
+    if (ids && !ids.has(review.id)) continue;
     if (!knownIds.has(review.id)) {
       errors.push({
         scope: 'review',
@@ -168,7 +182,7 @@ function checkReview(assetsDoc, errors, { production = false } = {}) {
     }
   }
 
-  for (const asset of allEntries(assetsDoc)) {
+  for (const asset of scopedEntries(allEntries(assetsDoc), ids)) {
     const review = reviews.get(asset.id);
     if (!review) {
       errors.push({
@@ -226,6 +240,7 @@ function main() {
   const wantConnectorCheck = hasFlag(argv, 'check-connectors');
   const wantReviewCheck = hasFlag(argv, 'check-review');
   const wantProduction = hasFlag(argv, 'production');
+  const ids = parseIds(argv);
 
   if (!fs.existsSync(ASSETS_PATH)) {
     console.error(`home-field-assets.json not found at ${ASSETS_PATH}`);
@@ -243,14 +258,14 @@ function main() {
   const errors = [...result.errors];
 
   if (wantFileCheck || wantProduction) {
-    checkFiles(assetsDoc, errors);
+    checkFiles(assetsDoc, errors, { ids });
   }
   if (wantConnectorCheck || wantProduction) {
     const connectorResult = validateTileConnectors(assetsDoc, mapDoc);
     errors.push(...connectorResult.errors.map((e) => ({ scope: 'connectors', ...e })));
   }
   if (wantReviewCheck || wantProduction) {
-    checkReview(assetsDoc, errors, { production: wantProduction });
+    checkReview(assetsDoc, errors, { production: wantProduction, ids });
   }
 
   if (errors.length === 0) {
@@ -263,7 +278,8 @@ function main() {
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`
       : ' (schema only; pass --check-files to verify PNGs; pass --check-connectors to validate tile adjacency)';
-    console.log(`  schema for ${assetsDoc.assets.length} assets + ${(assetsDoc.characters || []).length} characters + ${(mapDoc.layers || []).length} map layers${modeText}`);
+    const scopeText = ids ? ` scope=${[...ids].join(',')}` : '';
+    console.log(`  schema for ${assetsDoc.assets.length} assets + ${(assetsDoc.characters || []).length} characters + ${(mapDoc.layers || []).length} map layers${modeText}${scopeText}`);
     process.exit(0);
   }
 

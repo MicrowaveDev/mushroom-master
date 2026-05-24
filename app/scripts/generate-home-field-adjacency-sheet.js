@@ -26,6 +26,9 @@ const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const assetsPath = path.join(sharedDir, 'home-field-assets.json');
 const mapPath = path.join(sharedDir, 'home-field-map.json');
+const assetRoot = process.env.HOME_FIELD_ASSET_ROOT
+  ? path.resolve(repoRoot, process.env.HOME_FIELD_ASSET_ROOT)
+  : repoRoot;
 const reviewDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'review');
 const outPng = path.join(reviewDir, 'adjacency-sheet.png');
 const outManifest = path.join(reviewDir, 'adjacency-sheet.manifest.json');
@@ -143,7 +146,7 @@ function collectUniquePairs(layer, tileSize) {
 function loadImages(assetById) {
   const images = new Map();
   for (const asset of assetById.values()) {
-    const abs = path.join(repoRoot, asset.outputPath);
+    const abs = path.join(assetRoot, asset.outputPath);
     if (!fs.existsSync(abs)) continue;
     try {
       images.set(asset.id, readPngRgba(abs));
@@ -244,6 +247,7 @@ function main() {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     status: 'preview',
+    sourceRoot: path.relative(repoRoot, assetRoot) || '.',
     outputHash: bufferSha256(buf),
     tileSize: TILE,
     proofs: {
@@ -255,7 +259,7 @@ function main() {
     },
     entries: [...usedIds].sort().map((id) => {
       const asset = assetById.get(id);
-      const abs = asset ? path.join(repoRoot, asset.outputPath) : null;
+      const abs = asset ? path.join(assetRoot, asset.outputPath) : null;
       return {
         id,
         outputPath: asset?.outputPath || null,

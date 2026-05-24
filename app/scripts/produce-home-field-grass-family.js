@@ -27,6 +27,7 @@ const workspace = process.env.HOME_FIELD_WORKSPACE
   ? path.resolve(process.env.HOME_FIELD_WORKSPACE)
   : path.join(repoRoot, '.agent', 'home-field-workspace');
 const manifestDir = path.join(workspace, 'manifests');
+const candidateDir = path.join(workspace, 'candidates', 'grass-family', 'latest');
 const DEFAULT_SOURCE = '.agent/home-field-workspace/raw/grass_family_meadow.source.png';
 
 const FAMILY_IDS = ['grass_base_01', 'grass_base_02', 'grass_flowers_01'];
@@ -115,6 +116,7 @@ function parseArgs(argv) {
   const args = {
     source: DEFAULT_SOURCE,
     plan: DEFAULT_PLAN,
+    candidate: false,
     noSeamless: false
   };
   for (const arg of argv) {
@@ -124,6 +126,7 @@ function parseArgs(argv) {
       console.log(Object.entries(CROP_PLANS).map(([name, plan]) => `${name}: ${plan.description}`).join('\n'));
       process.exit(0);
     }
+    else if (arg === '--candidate') args.candidate = true;
     else if (arg === '--no-seamless') args.noSeamless = true;
     else {
       throw new Error(`Unknown argument: ${arg}`);
@@ -269,7 +272,7 @@ function main() {
     args = parseArgs(process.argv.slice(2));
   } catch (err) {
     console.error(err.message);
-    console.error('Usage: produce-home-field-grass-family.js [--source=.agent/home-field-workspace/raw/grass_family_meadow.source.png] [--plan=tight-center|lower-band|upper-band] [--no-seamless]');
+    console.error('Usage: produce-home-field-grass-family.js [--source=.agent/home-field-workspace/raw/grass_family_meadow.source.png] [--plan=tight-center|lower-band|upper-band] [--candidate] [--no-seamless]');
     process.exit(1);
   }
 
@@ -300,7 +303,15 @@ function main() {
   }
 
   const cropPlan = CROP_PLANS[args.plan];
+  const outputRoot = args.candidate ? candidateDir : repoRoot;
+  if (args.candidate) {
+    fs.rmSync(candidateDir, { recursive: true, force: true });
+    ensureDir(candidateDir);
+  }
   console.log(`Producing grass family from ${path.relative(repoRoot, sourceAbs)} (${source.width}x${source.height}) with plan "${args.plan}"...`);
+  if (args.candidate) {
+    console.log(`  candidate root: ${path.relative(repoRoot, candidateDir)}`);
+  }
   const outputs = [];
   for (const target of targets) {
     const plan = cropPlan.crops[target.id];
@@ -308,16 +319,17 @@ function main() {
     let image = resizeRgba(cropped, target.width, target.height);
     if (!args.noSeamless) image = makeTerrainSeamless(image);
     image = quietTerrainContrast(image, plan.quiet);
-    const outAbs = path.join(repoRoot, target.outputPath);
+    const outAbs = path.join(outputRoot, target.outputPath);
     ensureDir(path.dirname(outAbs));
     fs.writeFileSync(outAbs, encodeDeterministicPng(image));
     outputs.push({
       id: target.id,
       outputPath: target.outputPath,
+      writtenPath: path.relative(repoRoot, outAbs),
       crop: { ...plan, rect },
       sha256: fileSha256(outAbs)
     });
-    console.log(`  ${target.id}: OK (${plan.label}) -> ${target.outputPath}`);
+    console.log(`  ${target.id}: OK (${plan.label}) -> ${path.relative(repoRoot, outAbs)}`);
   }
 
   ensureDir(manifestDir);
@@ -335,6 +347,8 @@ function main() {
     policy: {
       oneSharedSourceForGrassFamily: true,
       independentPerTileImagegenForbidden: true,
+      candidateMode: args.candidate,
+      outputRoot: path.relative(repoRoot, outputRoot),
       seamlessTerrain: !args.noSeamless,
       cropPlanName: args.plan,
       cropPlanDescription: cropPlan.description
@@ -343,7 +357,13 @@ function main() {
   }, null, 2)}\n`);
   console.log(`  manifest: ${path.relative(repoRoot, manifestPath)}`);
   console.log('');
-  console.log('Next: `npm run game:home-field:validate -- --check-files --check-connectors --check-review`, `npm run game:home-field:sheet`, and `npm run game:home-field:adjacency`.');
+  if (args.candidate) {
+    const env = `HOME_FIELD_ASSET_ROOT=${path.relative(repoRoot, candidateDir)}`;
+    console.log(`Next: review the candidate with \`${env} npm run game:home-field:validate -- --ids=${FAMILY_IDS.join(',')} --check-files --check-connectors --check-review\`, \`${env} npm run game:home-field:sheet\`, \`${env} npm run game:home-field:grass-family-sheet\`, and \`${env} npm run game:home-field:adjacency\`.`);
+    console.log(`Finder folder: ${candidateDir}`);
+  } else {
+    console.log('Next: `npm run game:home-field:validate -- --check-files --check-connectors --check-review`, `npm run game:home-field:sheet`, and `npm run game:home-field:adjacency`.');
+  }
 }
 
 main();

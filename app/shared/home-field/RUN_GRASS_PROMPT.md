@@ -10,5 +10,5 @@ Read and follow:
 - docs/home-field-agent-flow.md
 - app/shared/home-field/README.md
 
-Use separate sub-agents if available. Generate only the shared grass-family source via `npm run game:home-field:rerun-grass-family`, produce/review only the three grass tiles, never approve without explicit human approval, then commit/push candidates plus review JSON and stop.
+Use separate sub-agents if available. Generate only the shared grass-family source via `npm run game:home-field:rerun-grass-family`, produce/review only the three grass tiles as a candidate folder, never approve or overwrite app PNGs without explicit human approval, then commit/push review JSON/docs only if changed and stop. Final response must include the absolute candidate folder path for Finder.
 ```

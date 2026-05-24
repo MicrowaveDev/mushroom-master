@@ -47,6 +47,7 @@
     "game:home-field:proof-tiles": "node app/scripts/generate-home-field-proof-tiles.js",
     "game:home-field:produce": "node app/scripts/produce-home-field-assets.js",
     "game:home-field:produce-grass-family": "node app/scripts/produce-home-field-grass-family.js",
+    "game:home-field:produce-grass-family-candidate": "node app/scripts/produce-home-field-grass-family.js --candidate",
     "game:home-field:validate": "node app/scripts/validate-home-field-assets.js",
     "game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js",
     "game:home-field:grass-family-sheet": "node app/scripts/generate-home-field-grass-family-sheet.js",

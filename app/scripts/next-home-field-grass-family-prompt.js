@@ -57,17 +57,17 @@ function main() {
   console.log('  .agent/home-field-workspace/raw/grass_family_meadow.source.png');
   console.log('');
   console.log('After saving the raw source, run:');
-  console.log('  npm run game:home-field:produce-grass-family');
-  console.log('If the focused sheet or clean preview still shows blocky value transitions, rerun the same raw source with at most these fallbacks before review:');
-  console.log('  npm run game:home-field:produce-grass-family -- --plan=lower-band');
-  console.log('  npm run game:home-field:produce-grass-family -- --plan=upper-band');
+  console.log('  npm run game:home-field:produce-grass-family-candidate');
+  console.log('If the focused sheet still shows blocky value transitions, rerun the same raw source with at most these fallbacks before review:');
+  console.log('  npm run game:home-field:produce-grass-family-candidate -- --plan=lower-band');
+  console.log('  npm run game:home-field:produce-grass-family-candidate -- --plan=upper-band');
   console.log('');
   console.log('Then run:');
-  console.log('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
-  console.log('  npm run game:home-field:sheet');
-  console.log('  npm run game:home-field:grass-family-sheet');
-  console.log('  npm run game:home-field:adjacency');
-  console.log('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
+  console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:validate -- --ids=grass_base_01,grass_base_02,grass_flowers_01 --check-files --check-connectors --check-review');
+  console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet');
+  console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet');
+  console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency');
+  console.log('Do not run the app-facing Playwright preview or overwrite web/public/home-field/terrain/ until explicit human approval.');
   console.log('');
   console.log('---');
   console.log(PROMPT_MARKER);
@@ -97,7 +97,7 @@ function main() {
   console.log(styleAnchorBlock(anchor));
   console.log('');
   console.log('## Save and report');
-  console.log('Save only one raw PNG to .agent/home-field-workspace/raw/grass_family_meadow.source.png. Do not save separate per-tile raw PNGs for this grass run.');
+  console.log('Save only one raw PNG to .agent/home-field-workspace/raw/grass_family_meadow.source.png. Do not save separate per-tile raw PNGs for this grass run. Final response must include the absolute candidate folder path: .agent/home-field-workspace/candidates/grass-family/latest.');
 }
 
 main();

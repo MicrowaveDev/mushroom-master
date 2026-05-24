@@ -20,6 +20,7 @@ tmp/social-preview-variations/*
 .agent/season-image-workspace/processed/
 .agent/season-image-workspace/review/
 .agent/home-field-workspace/raw/
+.agent/home-field-workspace/candidates/
 .agent/home-field-workspace/processed/
 .agent/home-field-workspace/review/
 .agent/home-field-workspace/manifests/

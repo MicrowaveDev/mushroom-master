@@ -34,7 +34,9 @@ const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
 const PROMPTS_PATH = path.join(sharedDir, 'home-field-prompts.json');
 const STYLE_ANCHOR_PATH = path.join(sharedDir, 'home-field-style-anchor.json');
-const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
+const REVIEW_PATH = process.env.HOME_FIELD_REVIEW_PATH
+  ? path.resolve(repoRoot, process.env.HOME_FIELD_REVIEW_PATH)
+  : path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
 

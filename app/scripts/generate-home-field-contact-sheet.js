@@ -34,6 +34,9 @@ const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
+const assetRoot = process.env.HOME_FIELD_ASSET_ROOT
+  ? path.resolve(repoRoot, process.env.HOME_FIELD_ASSET_ROOT)
+  : repoRoot;
 const reviewDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'review');
 const outPng = path.join(reviewDir, 'contact-sheet.png');
 const outManifest = path.join(reviewDir, 'contact-sheet.manifest.json');
@@ -152,7 +155,7 @@ function main() {
   ];
 
   const presentEntries = allEntries.filter((e) =>
-    fs.existsSync(path.join(repoRoot, e.outputPath))
+    fs.existsSync(path.join(assetRoot, e.outputPath))
   );
 
   if (presentEntries.length === 0) {
@@ -194,7 +197,7 @@ function main() {
 
     paintCheckerboard(canvas, cellX, cellY, CELL_SIZE, CELL_SIZE);
     try {
-      const img = readPngRgba(path.join(repoRoot, e.outputPath));
+      const img = readPngRgba(path.join(assetRoot, e.outputPath));
       if (e.type === 'terrain') {
         blitTerrainRepeat(canvas, img, cellX, cellY, CELL_SIZE, CELL_SIZE);
       } else {
@@ -212,12 +215,14 @@ function main() {
     id: e.id,
     type: e.type,
     outputPath: e.outputPath,
-    sha256: fileSha256(path.join(repoRoot, e.outputPath))
+    sourceRoot: path.relative(repoRoot, assetRoot) || '.',
+    sha256: fileSha256(path.join(assetRoot, e.outputPath))
   }));
   fs.writeFileSync(outManifest, JSON.stringify({
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     status: 'preview',
+    sourceRoot: path.relative(repoRoot, assetRoot) || '.',
     cellCount: presentEntries.length,
     outputHash: bufferSha256(buf),
     entries

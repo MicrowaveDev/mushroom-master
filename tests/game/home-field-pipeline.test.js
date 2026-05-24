@@ -278,19 +278,30 @@ test('[home-field] grass-family sheet renders focused repeat and mix proof', () 
 });
 
 test('[home-field] next-tiles blocks while existing candidates still need review', () => {
-  const result = spawnSync(process.execPath, [
-    nextScriptPath,
-    '--batch=terrain-grass',
-    '--review-verdict=needs_regen',
-    '--all'
-  ], {
-    cwd: repoRoot,
-    encoding: 'utf8'
-  });
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-review-gate-test');
+  const reviewPath = path.join(fixtureDir, 'home-field-asset-review.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.mkdirSync(fixtureDir, { recursive: true });
+  fs.writeFileSync(reviewPath, JSON.stringify({ schemaVersion: 1, assets: [] }, null, 2));
 
-  assert.equal(result.status, 1, result.stderr || result.stdout);
-  assert.match(result.stderr, /Review Gate Blocked/);
-  assert.match(result.stderr, /Existing generated candidates still need a checked-in visual verdict/);
+  try {
+    const result = spawnSync(process.execPath, [
+      nextScriptPath,
+      '--batch=terrain-grass',
+      '--review-verdict=needs_regen',
+      '--all'
+    ], {
+      cwd: repoRoot,
+      env: { ...process.env, HOME_FIELD_REVIEW_PATH: reviewPath },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    assert.match(result.stderr, /Review Gate Blocked/);
+    assert.match(result.stderr, /Existing generated candidates still need a checked-in visual verdict/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
 });
 
 test('[home-field] rerun grass queue emits needs_review and needs_regen grass tiles', () => {

@@ -17,7 +17,7 @@ If the environment supports sub-agents, assign Prompt/Contract Reviewer, Imagege
 | Orchestrator | Workflow docs, command output, final reports | Commit and push approved candidate-batch changes | Generate images, approve art by itself, skip stop gates |
 | Prompt/Contract Reviewer | Assets, prompts, style anchor, tileset contract, rerun-grass output | Nothing | Generate images, edit manifests, approve art |
 | Imagegen Worker | Prompt blocks and style anchor | Raw PNGs under `.agent/home-field-workspace/raw/` | Edit app PNGs directly, edit JSON/docs, approve art |
-| Producer/Validation Worker | Raw files, manifest, command output | App-facing PNGs produced through `game:home-field:produce`; generated local review sheets | Hand-edit PNGs, change contracts, approve art |
+| Producer/Validation Worker | Raw files, manifest, command output | Candidate PNGs under `.agent/home-field-workspace/candidates/`; generated local review sheets | Hand-edit PNGs, change contracts, overwrite app-facing PNGs before human approval, approve art |
 | Visual Critic | Contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Set `approved` or `accepted: true` without explicit human approval |
 
 ## Grass-First Stop Gate
@@ -39,14 +39,14 @@ npm run game:home-field:rerun-grass-family
 That command emits one shared meadow-source prompt for the three grass rows. The Imagegen Worker must generate a larger continuous meadow/pattern context and save only `.agent/home-field-workspace/raw/grass_family_meadow.source.png`. The Producer/Validation Worker then runs:
 
 ```bash
-npm run game:home-field:produce-grass-family
+npm run game:home-field:produce-grass-family-candidate
 ```
 
-Do not generate or save separate per-tile raw PNGs for this grass batch. The family producer crops coordinated nearby regions from the same source so `grass_base_01`, `grass_base_02`, and `grass_flowers_01` share lighting, brushwork, and value range.
+Do not generate or save separate per-tile raw PNGs for this grass batch. The family producer crops coordinated nearby regions from the same source so `grass_base_01`, `grass_base_02`, and `grass_flowers_01` share lighting, brushwork, and value range. Candidate mode writes to `.agent/home-field-workspace/candidates/grass-family/latest/`; it must not overwrite `web/public/home-field/terrain/` before explicit human approval.
 
 The default crop plan is `tight-center`. If visual review still shows square value boundaries, the Producer/Validation Worker may rerun the same raw source with `--plan=lower-band` or `--plan=upper-band`, regenerate evidence, and let the Visual Critic choose the best non-approved candidate before commit. Do not commit multiple crop-plan attempts.
 
-The run must still stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
+The run must still stop after these three candidates are produced and reviewed. Path and edge tiles require a separate later run after the grass family is accepted.
 
 ## Scene Target Gate
 
@@ -64,20 +64,22 @@ For the grass batch, this means:
 
 Before any grass candidate can be considered for human approval, the run must produce:
 
-- `npm run game:home-field:validate -- --check-files --check-connectors --check-review`
-- `npm run game:home-field:sheet`
-- `npm run game:home-field:grass-family-sheet`
-- `npm run game:home-field:adjacency`
-- `npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line`
+- `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:validate -- --ids=grass_base_01,grass_base_02,grass_flowers_01 --check-files --check-connectors --check-review`
+- `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet`
+- `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet`
+- `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency`
 
 Review evidence lives locally under:
 
+- `.agent/home-field-workspace/candidates/grass-family/latest/`
 - `.agent/home-field-workspace/review/contact-sheet.png`
 - `.agent/home-field-workspace/review/grass-family-sheet.png`
 - `.agent/home-field-workspace/review/adjacency-sheet.png`
-- `.agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/`
+- `.agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/` after human-approved promotion
 
 Do not commit `.agent` review artifacts.
+
+Run the Playwright clean preview only after human approval promotes the candidate into `web/public/home-field/terrain/`. Candidate sheets are the pre-approval proof; app-facing preview screenshots are post-promotion proof.
 
 ## Review JSON Rules
 
@@ -119,7 +121,8 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If `tight-center` produces blocky family transitions, try at most the two documented alternate crop plans from the same raw source, refresh `grass-family-sheet`, and commit only the best candidate set.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
-- If visual review fails, set the active rows to `needs_regen` or `rejected`, commit the review manifest if it changed, and stop.
+- If visual review fails, set the active rows to `needs_regen` or `rejected`, leave app-facing PNGs untouched, commit the review manifest if it changed, and stop.
+- If visual review passes as `needs_review`, stop and ask for human approval before promoting candidate PNGs to app-facing paths.
 
 ## Handoff Report
 
@@ -127,11 +130,14 @@ Every generation run ends with:
 
 ```text
 Grass tile candidate batch complete.
-Committed assets: grass_base_01, grass_base_02, grass_flowers_01
+Candidate folder: /Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest
+Committed assets: <none unless human approval promoted the candidate>
 Review evidence:
+  Candidate folder: /Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest
   Contact sheet: .agent/home-field-workspace/review/contact-sheet.png
+  Grass family sheet: .agent/home-field-workspace/review/grass-family-sheet.png
   Adjacency sheet: .agent/home-field-workspace/review/adjacency-sheet.png
-  Clean preview screenshots: .agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/
+  Clean preview screenshots: <only after human-approved promotion>
 Review verdicts:
   grass_base_01: <verdict + check summary>
   grass_base_02: <verdict + check summary>

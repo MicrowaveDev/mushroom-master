@@ -18,6 +18,9 @@ import {
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
+const assetRoot = process.env.HOME_FIELD_ASSET_ROOT
+  ? path.resolve(repoRoot, process.env.HOME_FIELD_ASSET_ROOT)
+  : repoRoot;
 const reviewDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'review');
 const outPng = path.join(reviewDir, 'grass-family-sheet.png');
 const outManifest = path.join(reviewDir, 'grass-family-sheet.manifest.json');
@@ -116,7 +119,7 @@ function main() {
   const entries = [];
   for (const id of IDS) {
     const rel = `web/public/home-field/terrain/${id}.png`;
-    const abs = path.join(repoRoot, rel);
+    const abs = path.join(assetRoot, rel);
     if (!fs.existsSync(abs)) {
       throw new Error(`Missing grass tile: ${rel}`);
     }
@@ -145,6 +148,7 @@ function main() {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     status: 'preview',
+    sourceRoot: path.relative(repoRoot, assetRoot) || '.',
     output: path.relative(repoRoot, outPng),
     outputHash: bufferSha256(buf),
     proof: {

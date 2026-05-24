@@ -34,6 +34,7 @@ Handled:
 - Added scene-fit language to the style anchor and prompt flow so grass is judged as the quiet stage for chibi mushroom-elf avatars, with foliage/props carrying most of the personality on object layers.
 - Added `npm run game:home-field:rerun-grass-family` and `npm run game:home-field:produce-grass-family`, which replace independent grass tile generation with one shared meadow source cropped into the three grass family outputs.
 - After rollout `d96d18f`, tightened the grass-family crop plan to nearby central crops, added `--plan=lower-band|upper-band` fallbacks for the same raw source, and added `npm run game:home-field:grass-family-sheet` so blocky family transitions are visible before commit.
+- After rollout `7aa2fdd`, added `npm run game:home-field:produce-grass-family-candidate` and `HOME_FIELD_ASSET_ROOT` review support so failed grass candidates stay under `.agent/home-field-workspace/candidates/grass-family/latest/` instead of overwriting app-facing terrain PNGs on `main`.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -53,6 +54,9 @@ npm run game:home-field:next-tiles
 
 npm run game:home-field:rerun-grass-family
 # preferred next grass rerun: one shared meadow-source prompt for the 3 grass-family tiles
+
+npm run game:home-field:produce-grass-family-candidate
+# preferred producer for review runs; writes to .agent/home-field-workspace/candidates/grass-family/latest/
 
 npm run game:home-field:adjacency
 # writes the terrain connector proof sheet
@@ -353,6 +357,8 @@ Handled:
 - The next run must stop after the grass family. Do not run the full 12-tile terrain queue until the grass sheet/preview is accepted.
 - Recent grass reruns proved the isolated `256x256` prompt still creates visible square seams; the next run must use field-context generation and reject candidates with columns, rows, diagonal mottling, value bands, or repeated stamp clusters.
 - Regression case: rollout `d96d18f` used the shared meadow source correctly, but the first crop plan sampled regions too far apart, so the clean preview still showed rectangular value boundaries. The fix is not a new independent tile run; it is a tighter same-source crop plan plus focused grass-family proof review.
+- Regression case: rollout `7aa2fdd` followed the shared-source flow and correctly rejected all three tiles, but still committed app-facing PNGs that were marked `needs_regen`. The fix is candidate-root production: review `.agent/home-field-workspace/candidates/grass-family/latest/` first, then promote to `web/public/home-field/terrain/` only after explicit human approval.
+- Grass flowers remain the easiest repeat marker. Keep base terrain mostly quiet; move stronger flowers, vines, foliage, and personality to object-layer transparent props rather than stamping them into repeatable grass cells.
 - The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
 - Connector validation now checks horizontal path-band metadata, but edge color-profile heuristics are still not implemented.
 - Vertical path-band metadata (`pathCenterX`) is reserved for future vertical path tiles.
@@ -364,4 +370,4 @@ Handled:
 
 ## Bottom Line
 
-The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is to regenerate only the grass family through `npm run game:home-field:rerun-grass-family`, produce via `npm run game:home-field:produce-grass-family`, review the contact sheet, adjacency sheet, and clean screenshots, then stop for human approval before path or edge tiles.
+The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is to regenerate only the grass family through `npm run game:home-field:rerun-grass-family`, produce via `npm run game:home-field:produce-grass-family-candidate`, review the candidate folder plus contact/grass-family/adjacency sheets, then stop for human approval before promotion or path/edge tiles.
