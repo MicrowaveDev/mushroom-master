@@ -210,11 +210,21 @@ cleanup_docker_space() {
 
   if [[ "$mode" == "aggressive" ]]; then
     docker builder prune -af >/dev/null || true
+    if docker buildx version >/dev/null 2>&1; then
+      docker buildx prune -af >/dev/null || true
+    fi
+    docker system prune -af >/dev/null || true
     docker image prune -af >/dev/null || true
   else
     docker builder prune -f --filter until=24h >/dev/null || true
+    if docker buildx version >/dev/null 2>&1; then
+      docker buildx prune -f --filter until=24h >/dev/null || true
+    fi
     docker image prune -f >/dev/null || true
   fi
+
+  docker network prune -f >/dev/null || true
+  docker system df || true
 }
 
 maybe_cleanup_docker_space() {
