@@ -290,7 +290,7 @@ Three predefined batches stage the workload from lowest-risk to highest-risk. **
 
 Each batch ships as one commit (or a small number of related commits) on `main`. The contact sheet (`npm run game:home-field:sheet`) and clean preview screenshots are the artifacts reviewers look at between batches. The prompt queue blocks if existing generated candidates still need a checked-in visual verdict; use `--ignore-review-gate` only when intentionally regenerating the blocked assets.
 
-Current next candidate recommendation: rerun the object-layer foliage cleanup before widening the set. Keep `bush_cluster_dark_01`, `bush_cluster_light_01`, and `leaf_sprout_01` together, but optimize for clean alpha and a bolder readable sprout. Do not start chibi or exits until this micro-batch has clean candidate evidence.
+Current next candidate recommendation: rerun the object-layer foliage cleanup before widening the set. Keep `bush_cluster_dark_01`, `bush_cluster_light_01`, and `leaf_sprout_01` together, but optimize for clean alpha, natural asymmetric bush silhouettes, and a bolder readable sprout. Reject bushes that look like repeated circular stamps, broccoli/cauliflower crowns, flower rosettes, or many same-size round clumps. Do not start chibi or exits until this micro-batch has clean candidate evidence.
 
 ## Animated Assets And Chibi Spritesheet
 

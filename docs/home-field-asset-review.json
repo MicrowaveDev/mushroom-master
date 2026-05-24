@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-05-24",
-  "reviewMode": "object-layer foliage cleanup candidate gate",
-  "summary": "Object-layer foliage cleanup candidates were regenerated for bush_cluster_dark_01, bush_cluster_light_01, and leaf_sprout_01. They are candidate evidence only; no asset is production-approved.",
+  "reviewedAt": "2026-05-25",
+  "reviewMode": "object-layer foliage natural-shape review",
+  "summary": "Object-layer foliage cleanup candidates remain candidate evidence only. Bush candidates need regeneration because their silhouettes still read as repeated round clumps rather than natural shrub masses; no asset is production-approved.",
   "assets": [
     {
       "id": "grass_base_01",
@@ -174,31 +174,31 @@
     },
     {
       "id": "bush_cluster_dark_01",
-      "verdict": "needs_review",
+      "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Object-layer foliage cleanup candidate review: strong dark top-down storybook bush with chunky silhouette, good field placement, correct scale, and alpha-halo validation passing with no magenta/pink fringe detected. It remains unapproved and needs human visual review because it is a new candidate and reads quite dark against the current field.",
+      "reason": "Human visual review after the cleanup rerun: alpha, scale, and field placement are useful, but the bush shape reads as many repeated round clumps with a broccoli/cauliflower-like crown pattern. Regenerate with one more natural asymmetric shrub mass, uneven scalloped edges, varied leaf-cluster sizes, small negative notches, and fewer obvious repeated circular crowns.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
-      "styleCohesionCheck": "pass",
+      "styleCohesionCheck": "fail",
       "alphaCheck": "pass",
       "scaleCheck": "pass",
-      "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "sceneFitCheck": "fail",
+      "familyCohesionCheck": "fail"
     },
     {
       "id": "bush_cluster_light_01",
-      "verdict": "needs_review",
+      "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Object-layer foliage cleanup candidate review: readable lighter companion bush with clean candidate alpha, no magenta/pink alpha-halo failure, strong mobile/desktop placement, and cohesive rounded foliage shape. It remains unapproved and needs human review because the highlight value is bright and should be judged in context.",
+      "reason": "Human visual review after the cleanup rerun: alpha and readability improved, but the light bush still looks built from repeated round flower-like clumps and bright circular crowns. Regenerate with an irregular natural shrub silhouette, blended lobes, offset highlights, varied leaf-cluster scale, and fewer radial rosette shapes.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
-      "styleCohesionCheck": "pass",
+      "styleCohesionCheck": "fail",
       "alphaCheck": "pass",
       "scaleCheck": "pass",
-      "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "sceneFitCheck": "fail",
+      "familyCohesionCheck": "fail"
     },
     {
       "id": "leaf_sprout_01",
