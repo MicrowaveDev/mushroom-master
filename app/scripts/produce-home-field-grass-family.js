@@ -359,9 +359,11 @@ function main() {
   console.log('');
   if (args.candidate) {
     const env = `HOME_FIELD_ASSET_ROOT=${path.relative(repoRoot, candidateDir)}`;
-    console.log(`Next: review the candidate with \`${env} npm run game:home-field:validate -- --ids=${FAMILY_IDS.join(',')} --check-files --check-connectors --check-review\`, \`${env} npm run game:home-field:sheet\`, \`${env} npm run game:home-field:grass-family-sheet\`, and \`${env} npm run game:home-field:adjacency\`.`);
+    console.log(`Next: review the candidate with \`${env} npm run game:home-field:validate -- --ids=${FAMILY_IDS.join(',')} --check-files --check-connectors --check-review\`, \`${env} npm run game:home-field:sheet\`, \`${env} npm run game:home-field:grass-family-sheet\`, \`${env} npm run game:home-field:adjacency\`, and \`npm run game:home-field:candidate-preview\`.`);
     console.log(`Finder folder: ${candidateDir}`);
     console.log(`Final-response link: Candidate folder: [open in Finder](${candidateDir})`);
+    console.log(`Final-response link: Candidate field mobile: [mobile field screenshot](${path.join(workspace, 'review', 'home-field-candidate-mobile-clean.png')})`);
+    console.log(`Final-response link: Candidate field desktop: [desktop field screenshot](${path.join(workspace, 'review', 'home-field-candidate-desktop-clean.png')})`);
   } else {
     console.log('Next: `npm run game:home-field:validate -- --check-files --check-connectors --check-review`, `npm run game:home-field:sheet`, and `npm run game:home-field:adjacency`.');
   }

@@ -68,6 +68,7 @@ Before any grass candidate can be considered for human approval, the run must pr
 - `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet`
 - `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet`
 - `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency`
+- `npm run game:home-field:candidate-preview`
 
 Review evidence lives locally under:
 
@@ -75,11 +76,13 @@ Review evidence lives locally under:
 - `.agent/home-field-workspace/review/contact-sheet.png`
 - `.agent/home-field-workspace/review/grass-family-sheet.png`
 - `.agent/home-field-workspace/review/adjacency-sheet.png`
+- `.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png`
+- `.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png`
 - `.agent/tasks/telegram-autobattler-v1/raw/screenshots/home-field-preview/` after human-approved promotion
 
 Do not commit `.agent` review artifacts.
 
-Run the Playwright clean preview only after human approval promotes the candidate into `web/public/home-field/terrain/`. Candidate sheets are the pre-approval proof; app-facing preview screenshots are post-promotion proof.
+Run `game:home-field:candidate-preview` before visual review. It uses Playwright route interception to render `/home-field-preview?debug=0` with the candidate grass PNGs from `.agent/home-field-workspace/candidates/grass-family/latest/`, without promoting or overwriting app-facing PNGs. The app-facing clean preview screenshots under `.agent/tasks/...` remain post-promotion proof.
 
 ## Review JSON Rules
 
@@ -137,6 +140,8 @@ Review evidence:
   Contact sheet: .agent/home-field-workspace/review/contact-sheet.png
   Grass family sheet: .agent/home-field-workspace/review/grass-family-sheet.png
   Adjacency sheet: .agent/home-field-workspace/review/adjacency-sheet.png
+  Candidate field mobile: [mobile field screenshot](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png)
+  Candidate field desktop: [desktop field screenshot](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)
   Clean preview screenshots: <only after human-approved promotion>
 Review verdicts:
   grass_base_01: <verdict + check summary>
@@ -146,4 +151,4 @@ Notes:
   <retry/rejection/remaining issue summary>
 ```
 
-Do not wrap the candidate folder path in backticks in the final response. It must be a Markdown link so the reviewer can open it from Codex Desktop.
+Do not wrap the candidate folder or candidate field screenshot paths in backticks in the final response. They must be Markdown links so the reviewer can open them from Codex Desktop.

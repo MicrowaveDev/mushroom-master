@@ -67,7 +67,8 @@ function main() {
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency');
-  console.log('Do not run the app-facing Playwright preview or overwrite web/public/home-field/terrain/ until explicit human approval.');
+  console.log('  npm run game:home-field:candidate-preview');
+  console.log('Do not overwrite web/public/home-field/terrain/ until explicit human approval. Candidate preview screenshots use Playwright route interception and are safe before promotion.');
   console.log('');
   console.log('---');
   console.log(PROMPT_MARKER);
@@ -100,6 +101,8 @@ function main() {
   console.log('Save only one raw PNG to .agent/home-field-workspace/raw/grass_family_meadow.source.png. Do not save separate per-tile raw PNGs for this grass run.');
   console.log('Final response must include this clickable Markdown folder link, not a backticked path:');
   console.log(`Candidate folder: [open in Finder](${repoRoot}/.agent/home-field-workspace/candidates/grass-family/latest)`);
+  console.log(`Candidate field mobile: [mobile field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png)`);
+  console.log(`Candidate field desktop: [desktop field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)`);
 }
 
 main();

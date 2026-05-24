@@ -79,6 +79,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 | **grass-family-sheet** | `npm run game:home-field:grass-family-sheet` | Composites focused grass-only repeat and mixed-pattern proof at `.agent/home-field-workspace/review/grass-family-sheet.png`. |
 | **adjacency** | `npm run game:home-field:adjacency` | Composites terrain connector proof at `.agent/home-field-workspace/review/adjacency-sheet.png`, including the grass-path run and left/right edge stacks. |
+| **candidate-preview** | `npm run game:home-field:candidate-preview` | Uses Playwright route interception to render `/home-field-preview?debug=0` with the latest candidate grass PNGs, writing `.agent/home-field-workspace/review/home-field-candidate-{mobile,desktop}-clean.png` without promoting app-facing assets. |
 
 ## Agent Flow
 
@@ -230,6 +231,7 @@ npm run game:home-field:status
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency
+npm run game:home-field:candidate-preview
 
 # 7. Stop for human approval. Do not commit app-facing PNGs unless approved.
 ```
@@ -238,6 +240,8 @@ Final handoff must include the candidate folder as a clickable Markdown link, no
 
 ```md
 Candidate folder: [open in Finder](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest)
+Candidate field mobile: [mobile field screenshot](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png)
+Candidate field desktop: [desktop field screenshot](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)
 ```
 
 ### Resize behavior (important — read once)
