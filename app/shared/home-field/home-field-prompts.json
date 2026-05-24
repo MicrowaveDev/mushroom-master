@@ -79,6 +79,62 @@
       "transparency": "transparent background required",
       "constraints": "Small centered sprout with bottom-center anchor. No tile background, no flowers field, no text, no characters, no over-detailed botanical rendering."
     },
+    "prop_mutant_broccoli_bush_01": {
+      "subject": "transparent-background 2D game prop: intentionally funny mutated broccoli bush",
+      "details": "A cute weird vegetable-foliage prop that clearly references a little broccoli crown while still belonging to the dark storybook mushroom meadow. Make it intentional and entertaining: asymmetric clustered crown, tiny twisted stem base, subtle fungal speckles, dark warm outline, compact blob shadow, and one or two odd mutated details such as curled leaves or tiny amber spore bumps. It must read as a joke prop, not an accidental normal bush.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "Object-layer prop only. No terrain background, no text, no characters, no photoreal vegetable, no grocery-store broccoli photo. Keep silhouette readable and cute at mobile scale."
+    },
+    "prop_cabbage_rose_bush_01": {
+      "subject": "transparent-background 2D game prop: strange cabbage rose bush",
+      "details": "A playful hybrid of cabbage and rose: broad cabbage-like leafy cup shapes arranged like an oversized dark fairytale flower bush. Use muted moss, teal, and yellow-green leaves with a few violet shadow pockets. The silhouette should be chunky, asymmetrical, and charmingly strange, with a compact transparent shadow.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "Object-layer prop only. No normal flower bouquet, no realistic cabbage, no terrain tile, no text, no characters. Must feel intentional and cohesive with the Home Field style."
+    },
+    "prop_carrot_sprout_cluster_01": {
+      "subject": "transparent-background 2D game prop: funny carrot sprout cluster",
+      "details": "A small cluster of 3-5 squat carrot tops poking from the moss like mischievous garden props. Orange roots are partly visible, with leafy green tops exaggerated into cute-goth shapes. Add tiny dirt crumbs, a warm dark outline, and a compact shadow. Reads as a small walkable decorative accent.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "No full vegetable basket, no realistic carrots, no text, no characters, no terrain background. Keep it low and readable beside chibi feet."
+    },
+    "prop_onion_flower_01": {
+      "subject": "transparent-background 2D game prop: odd onion flower",
+      "details": "A single weird onion-like bulb sprouting a whimsical flower stem. The bulb is squat and pale bone-green with purple shadow, the flower is simple and graphic, and the whole prop has a dark storybook outline. It should feel like a strange garden discovery rather than a normal botanical illustration.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "No photoreal onion, no text, no characters, no terrain background. Keep silhouette clear, friendly, and compact."
+    },
+    "prop_turnip_mushroom_01": {
+      "subject": "transparent-background 2D game prop: turnip crossed with a mushroom",
+      "details": "A funny root-vegetable mushroom hybrid: round turnip body, stubby root feet, mushroom-cap top, and tiny mycelium tendrils. Use muted cream, moss green, violet shadows, and one small red or amber accent. Cute, odd, readable, and slightly magical.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "No face unless extremely subtle and non-character-like, no text, no realistic vegetable rendering, no terrain background. Must remain a prop, not a chibi character."
+    },
+    "prop_tomato_eye_flower_01": {
+      "subject": "transparent-background 2D game prop: tiny strange tomato-eye flower",
+      "details": "A rare funny flower prop with a small red tomato-like bulb at the center that vaguely resembles a single occult eye, surrounded by simple leafy petals. Keep it cute and playful, not scary. Use the Home Field muted palette, dark warm outline, and compact blob shadow.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "No gore, no realistic eyeball, no horror, no text, no characters, no terrain background. It should read as a vegetable-flower joke at small size."
+    },
+    "prop_pepper_pod_bush_01": {
+      "subject": "transparent-background 2D game prop: pepper pod bush with strange curled leaves",
+      "details": "A small dark leafy bush with 3-4 dangling pepper-like pods in muted red, amber, and violet. Leaves curl in odd cute-goth shapes, with a chunky readable silhouette and compact shadow. It should feel like a decorative weird garden prop for field edges.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "No realistic pepper plant, no repeated circular bush stamps, no text, no characters, no terrain background. Keep pods sparse and readable."
+    },
+    "prop_beetroot_heart_plant_01": {
+      "subject": "transparent-background 2D game prop: beetroot heart plant",
+      "details": "A cute odd beetroot-like plant where the root forms a subtle heart shape under dark leafy sprouts. Use muted beet red, moss green, violet shadows, and warm dark outline. It should be playful and affectionate without becoming a UI icon.",
+      "size": "256x256 transparent PNG",
+      "transparency": "transparent background required",
+      "constraints": "No literal heart symbol, no text, no characters, no photoreal beet, no terrain background. Keep it organic and field-safe."
+    },
     "prop_mushroom_cluster_small_amber": {
       "subject": "transparent-background 2D game prop: small cluster of amber-glowing mushrooms",
       "details": "3-5 squat mushrooms with rounded amber-glowing caps and pale stems, gathered as a foreground detail. Big readable silhouette, cute-but-eerie dark fairytale mood. Lighting matches style anchor. Subtle compact blob shadow under the cluster.",

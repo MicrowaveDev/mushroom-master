@@ -151,6 +151,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
 - If `--check-alpha-halo` reports visible chroma fringe, reprocess with stricter chroma-key cleanup or regenerate the affected raw PNG. Do not leave `alphaCheck: pending` on a candidate whose halo validator fails.
 - If a bush candidate looks like many repeated round clumps, broccoli/cauliflower crowns, flower rosettes, or obvious brush stamps instead of one irregular natural shrub mass, set it to `needs_regen` even if alpha, scale, and field screenshots pass.
+- Intentional vegetable or strange-flower references are allowed only for assets with `role: "funny_foliage_prop"` such as `mutant_broccoli_bush_01`; do not use that allowance to approve accidental broccoli shapes in natural `bush_cluster_*` assets.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, leave app-facing PNGs untouched, commit the review manifest if it changed, and stop.
 - If visual review passes as `needs_review`, stop and ask for human approval before promoting candidate PNGs to app-facing paths.
 

@@ -541,6 +541,158 @@
       "atlasFrameKey": "leaf_sprout_01"
     },
     {
+      "id": "mutant_broccoli_bush_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_mutant_broccoli_bush_01",
+      "sourcePath": ".agent/home-field-workspace/raw/mutant_broccoli_bush_01.source.png",
+      "outputPath": "web/public/home-field/props/mutant_broccoli_bush_01.png",
+      "publicPath": "/home-field/props/mutant_broccoli_bush_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "blocked",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "mutant_broccoli_bush_01"
+    },
+    {
+      "id": "cabbage_rose_bush_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_cabbage_rose_bush_01",
+      "sourcePath": ".agent/home-field-workspace/raw/cabbage_rose_bush_01.source.png",
+      "outputPath": "web/public/home-field/props/cabbage_rose_bush_01.png",
+      "publicPath": "/home-field/props/cabbage_rose_bush_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "blocked",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "cabbage_rose_bush_01"
+    },
+    {
+      "id": "carrot_sprout_cluster_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_carrot_sprout_cluster_01",
+      "sourcePath": ".agent/home-field-workspace/raw/carrot_sprout_cluster_01.source.png",
+      "outputPath": "web/public/home-field/props/carrot_sprout_cluster_01.png",
+      "publicPath": "/home-field/props/carrot_sprout_cluster_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "walkable",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "carrot_sprout_cluster_01"
+    },
+    {
+      "id": "onion_flower_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_onion_flower_01",
+      "sourcePath": ".agent/home-field-workspace/raw/onion_flower_01.source.png",
+      "outputPath": "web/public/home-field/props/onion_flower_01.png",
+      "publicPath": "/home-field/props/onion_flower_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "walkable",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "onion_flower_01"
+    },
+    {
+      "id": "turnip_mushroom_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_turnip_mushroom_01",
+      "sourcePath": ".agent/home-field-workspace/raw/turnip_mushroom_01.source.png",
+      "outputPath": "web/public/home-field/props/turnip_mushroom_01.png",
+      "publicPath": "/home-field/props/turnip_mushroom_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "blocked",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "turnip_mushroom_01"
+    },
+    {
+      "id": "tomato_eye_flower_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_tomato_eye_flower_01",
+      "sourcePath": ".agent/home-field-workspace/raw/tomato_eye_flower_01.source.png",
+      "outputPath": "web/public/home-field/props/tomato_eye_flower_01.png",
+      "publicPath": "/home-field/props/tomato_eye_flower_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "walkable",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "tomato_eye_flower_01"
+    },
+    {
+      "id": "pepper_pod_bush_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_pepper_pod_bush_01",
+      "sourcePath": ".agent/home-field-workspace/raw/pepper_pod_bush_01.source.png",
+      "outputPath": "web/public/home-field/props/pepper_pod_bush_01.png",
+      "publicPath": "/home-field/props/pepper_pod_bush_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "blocked",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "pepper_pod_bush_01"
+    },
+    {
+      "id": "beetroot_heart_plant_01",
+      "type": "prop",
+      "role": "funny_foliage_prop",
+      "promptKey": "prop_beetroot_heart_plant_01",
+      "sourcePath": ".agent/home-field-workspace/raw/beetroot_heart_plant_01.source.png",
+      "outputPath": "web/public/home-field/props/beetroot_heart_plant_01.png",
+      "publicPath": "/home-field/props/beetroot_heart_plant_01.png",
+      "width": 256,
+      "height": 256,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "collision": "walkable",
+      "animation": null,
+      "status": "needs_review",
+      "atlasFrameKey": "beetroot_heart_plant_01"
+    },
+    {
       "id": "mushroom_cluster_small_amber",
       "type": "prop",
       "role": "foreground_cluster",

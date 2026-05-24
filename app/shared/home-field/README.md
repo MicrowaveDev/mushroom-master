@@ -292,6 +292,8 @@ Each batch ships as one commit (or a small number of related commits) on `main`.
 
 Current next candidate recommendation: rerun the object-layer foliage cleanup before widening the set. Keep `bush_cluster_dark_01`, `bush_cluster_light_01`, and `leaf_sprout_01` together, but optimize for clean alpha, natural asymmetric bush silhouettes, and a bolder readable sprout. Reject bushes that look like repeated circular stamps, broccoli/cauliflower crowns, flower rosettes, or many same-size round clumps. Do not start chibi or exits until this micro-batch has clean candidate evidence.
 
+Future funny foliage source entries are available for later object-layer generation: `mutant_broccoli_bush_01`, `cabbage_rose_bush_01`, `carrot_sprout_cluster_01`, `onion_flower_01`, `turnip_mushroom_01`, `tomato_eye_flower_01`, `pepper_pod_bush_01`, and `beetroot_heart_plant_01`. These are intentional entertainment props, not replacements for the natural `bush_cluster_*` assets. Vegetable shapes are allowed only in this funny prop family, and still need candidate screenshots, alpha/halo proof, and human review before placement or promotion.
+
 ## Animated Assets And Chibi Spritesheet
 
 Imagegen tools typically generate a single image at a standard square size (e.g. `1024×1024`). They are unreliable at producing wide multi-frame strips (`2048×256`, `4096×512`) in one call. For animated effects and the chibi spritesheet, use a **per-frame workflow**:
