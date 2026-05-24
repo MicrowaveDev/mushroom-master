@@ -6,9 +6,9 @@
   "assets": [
     {
       "id": "grass_base_01",
-      "verdict": "needs_review",
+      "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Visual-critic pass: quiet terrain tile reads well under props and the placeholder, with acceptable scale and no alpha concern, but clean desktop/mobile previews still expose square value boundaries when this is mixed with the current grass family; keep as needs_review only because no human approval was given.",
+      "reason": "Visual-critic lower-band review: this is the quietest grass cell and its connectors, style, alpha handling, and scale are acceptable, but the 3x3 proof and clean desktop/mobile previews still show faint square value patches and a visible tile grid. Regenerate or recrop before human approval.",
       "repeatCheck": "fail",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -16,13 +16,13 @@
       "alphaCheck": "not_applicable",
       "scaleCheck": "pass",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "fail"
+      "familyCohesionCheck": "pass"
     },
     {
       "id": "grass_base_02",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Visual-critic pass: connector edges are usable and the tile is appropriately quiet at scale, but the repeat proof and clean previews show rectangular value bands and smoky dark patches that make the board read as obvious tile blocks.",
+      "reason": "Visual-critic lower-band review: the tile shares the family lighting and remains quiet enough for character scale, with usable connector edges and no alpha concern, but repeated darker value patches create a rectangular wallpaper rhythm in the grass-family sheet and clean previews.",
       "repeatCheck": "fail",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -30,21 +30,21 @@
       "alphaCheck": "not_applicable",
       "scaleCheck": "pass",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "fail"
+      "familyCohesionCheck": "pass"
     },
     {
       "id": "grass_flowers_01",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Visual-critic pass: accent scale is safe, but the flower detail is weak in the placed scene and the repeated yellow-green/teal mottling forms visible square tiling in the contact sheet, adjacency sheet, and clean previews.",
+      "reason": "Visual-critic lower-band review: flower accents are small enough and technically compatible with the shared grass family, but their repeated yellow-green clusters make the tiling structure easiest to see in the contact sheet, adjacency sheet, and clean desktop/mobile previews.",
       "repeatCheck": "fail",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
-      "styleCohesionCheck": "fail",
+      "styleCohesionCheck": "pass",
       "alphaCheck": "not_applicable",
       "scaleCheck": "pass",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "fail"
+      "familyCohesionCheck": "pass"
     },
     {
       "id": "path_dirt_straight",
