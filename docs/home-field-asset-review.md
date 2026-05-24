@@ -23,13 +23,19 @@ Start with terrain only. Do not generate props, exits, effects, or chibi until t
 npm run game:home-field:next-tiles
 ```
 
-That command is the gated first-pass queue. If any existing candidate is still `needs_review`, it blocks until the review manifest is resolved. For the next intentional grass-family rerun, use the field-context queue:
+That command is the gated first-pass queue. If any existing candidate is still `needs_review`, it blocks until the review manifest is resolved. For the next intentional grass-family rerun, use the shared-source queue:
 
 ```bash
-npm run game:home-field:rerun-grass-field
+npm run game:home-field:rerun-grass-family
 ```
 
-The field-context rerun command emits the current grass-family candidates whose review verdict is `needs_review` or `needs_regen`:
+The shared-source rerun command emits one prompt for a single meadow source. Save it to `.agent/home-field-workspace/raw/grass_family_meadow.source.png`, then run:
+
+```bash
+npm run game:home-field:produce-grass-family
+```
+
+This produces the current grass-family candidates whose review verdict is `needs_review` or `needs_regen`:
 
 - `grass_base_01`
 - `grass_base_02`
@@ -65,4 +71,4 @@ npm run game:home-field:validate -- --production
 
 That gate intentionally fails while any asset is not approved or is still a placeholder.
 
-Each machine-readable review row also carries `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `sceneFitCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`. An `approved` verdict requires those fields to be `pass` or `not_applicable`; prose alone is not enough.
+Each machine-readable review row also carries `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `sceneFitCheck`, `familyCohesionCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`. An `approved` verdict requires those fields to be `pass` or `not_applicable`; prose alone is not enough.

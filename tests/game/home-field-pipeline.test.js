@@ -7,7 +7,9 @@ import { repoRoot } from '../../app/shared/repo-root.js';
 import { encodeDeterministicPng, readPngRgba, alphaStats } from '../../app/scripts/lib/bitmap-image-toolkit.js';
 
 const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js');
+const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
+const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -64,6 +66,59 @@ function writeAssetsFixture(filePath, outputPath) {
     ],
     characters: []
   }, null, 2));
+}
+
+function writeGrassFamilyFixture(filePath, outputDir) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify({
+    version: 1,
+    tileSize: 256,
+    assets: ['grass_base_01', 'grass_base_02', 'grass_flowers_01'].map((id) => ({
+      id,
+      type: 'terrain',
+      role: id,
+      promptKey: id,
+      sourcePath: `.agent/home-field-test-workspace/raw/${id}.source.png`,
+      outputPath: `${outputDir}/${id}.png`,
+      publicPath: `/home-field/__test__/${id}.png`,
+      width: 256,
+      height: 256,
+      anchor: { x: 0, y: 0 },
+      collision: 'walkable',
+      animation: null,
+      status: 'needs_review',
+      tile: {
+        terrainSet: 'meadow_grass',
+        placement: id === 'grass_flowers_01' ? 'accent' : 'free',
+        connectors: { n: 'grass', e: 'grass', s: 'grass', w: 'grass' },
+        canTouch: ['grass_base_01', 'grass_base_02', 'grass_flowers_01']
+      }
+    })),
+    characters: []
+  }, null, 2));
+}
+
+function writeMeadowFixture(filePath) {
+  const width = 1024;
+  const height = 768;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const wave = Math.sin(x / 70) * 8 + Math.cos(y / 90) * 6;
+      rgba[i + 0] = Math.round(54 + wave + (x / width) * 8);
+      rgba[i + 1] = Math.round(88 + wave + (y / height) * 10);
+      rgba[i + 2] = Math.round(48 + wave / 2);
+      rgba[i + 3] = 255;
+      if (x > 480 && x < 620 && y > 430 && y < 610 && (x + y) % 67 < 4) {
+        rgba[i + 0] = 142;
+        rgba[i + 1] = 162;
+        rgba[i + 2] = 76;
+      }
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
 test('[home-field] produce supports chroma-keyed prop cutouts', { skip: !fs.existsSync(chromaKeyScript) }, () => {
@@ -129,6 +184,47 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
   }
 });
 
+test('[home-field] grass-family producer crops three tiles from one shared meadow source', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-grass-family-test');
+  const outputDir = 'web/public/home-field/__test__/grass-family';
+  const outputAbs = path.join(repoRoot, outputDir);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const workspacePath = path.join(fixtureDir, 'workspace');
+  const sourcePath = path.join(fixtureDir, 'grass_family_meadow.source.png');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(outputAbs, { recursive: true, force: true });
+  writeGrassFamilyFixture(assetsPath, outputDir);
+  writeMeadowFixture(sourcePath);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      grassFamilyScriptPath,
+      `--source=${sourcePath}`
+    ], {
+      cwd: repoRoot,
+      env: { ...process.env, HOME_FIELD_ASSETS_PATH: assetsPath, HOME_FIELD_WORKSPACE: workspacePath },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Producing grass family from/);
+    assert.match(result.stdout, /grass_base_01: OK/);
+    assert.match(result.stdout, /grass_base_02: OK/);
+    assert.match(result.stdout, /grass_flowers_01: OK/);
+
+    for (const id of ['grass_base_01', 'grass_base_02', 'grass_flowers_01']) {
+      const image = readPngRgba(path.join(outputAbs, `${id}.png`));
+      assert.equal(image.width, 256);
+      assert.equal(image.height, 256);
+    }
+    const manifests = fs.readdirSync(path.join(workspacePath, 'manifests'));
+    assert.ok(manifests.some((name) => name.startsWith('produce-grass-family-')));
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(outputAbs, { recursive: true, force: true });
+  }
+});
+
 test('[home-field] next-tiles blocks while existing candidates still need review', () => {
   const result = spawnSync(process.execPath, [
     nextScriptPath,
@@ -189,4 +285,17 @@ test('[home-field] field-context grass queue asks for larger meadow context and 
   assert.match(result.stdout, /Scene fit: The composed screen should read like a real in-game hub screenshot/);
   assert.match(result.stdout, /Chibi fit: Chibi avatars are small, squat, expressive mushroom-elf heroines/);
   assert.match(result.stdout, /--crop-center=0\.34 --seamless-terrain --quiet-terrain=0\.45/);
+});
+
+test('[home-field] grass-family queue emits one shared-source prompt and producer command', () => {
+  const result = spawnSync(process.execPath, [nextGrassFamilyScriptPath], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Generation mode: shared grass-family meadow source/);
+  assert.match(result.stdout, /grass_family_meadow\.source\.png/);
+  assert.match(result.stdout, /npm run game:home-field:produce-grass-family/);
+  assert.match(result.stdout, /Do not save separate per-tile raw PNGs/);
 });

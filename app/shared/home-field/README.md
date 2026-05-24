@@ -66,11 +66,13 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
 | **next-tiles** | `npm run game:home-field:next-tiles` | Prints only the first grass-family regeneration batch (`grass_base_01`, `grass_base_02`, `grass_flowers_01`). Stop after these three and review before generating path or edge tiles. |
 | **rerun-grass** | `npm run game:home-field:rerun-grass` | Intentional grass-family rerun command. Emits grass rows with `needs_review` or `needs_regen` and uses the review-gate bypass explicitly, so agents do not improvise flags. |
-| **rerun-grass-field** | `npm run game:home-field:rerun-grass-field` | Preferred next grass rerun. Adds field-context instructions: generate a larger meadow/pattern context, save a quiet center crop, and produce with tighter center-crop/quieting flags. |
+| **rerun-grass-field** | `npm run game:home-field:rerun-grass-field` | Legacy intentional grass-family rerun command. Emits three independent per-tile prompts; keep only for comparison/debugging. |
+| **rerun-grass-family** | `npm run game:home-field:rerun-grass-family` | Preferred grass rerun. Emits one shared meadow-source prompt so the family shares lighting, brushwork, and value range. |
 | **next-tiles-all** | `npm run game:home-field:next-tiles-all` | Prints the full 12-tile terrain regeneration queue. Use only after the grass family is approved for the next family pass. |
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
+| **produce-grass-family** | `npm run game:home-field:produce-grass-family` | Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and crops `grass_base_01`, `grass_base_02`, and `grass_flowers_01` from coordinated regions. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, and `--production` requires files, connectors, review acceptance, and `status: "approved"` for every asset. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
@@ -154,6 +156,7 @@ Terrain acceptance is stricter than "looks pretty":
 - inspect the same tile inside a `7x4` map preview before accepting it as production-ready;
 - reject any map placement where touching connector tokens do not match and no explicit transition tile bridges them;
 - reject dense AI texture, unique center highlights, tiny realistic grass blades, obvious wallpaper, cut-off edge marks, and any tile that would have been better as an object-layer prop.
+- for the first grass family, reject independent per-tile generation. Use one shared meadow source and crop the base/accent tiles from it so lighting, brushwork, and value range match.
 
 Reference model:
 
@@ -204,11 +207,14 @@ npm run game:home-field:proof-tiles
 # For later prop/exit/effect/character batches, get prompts with:
 # npm run game:home-field:next -- --batch=proof-static --all
 
-# For intentional grass reruns after review rows exist, use the field-context queue:
-npm run game:home-field:rerun-grass-field
+# For intentional grass reruns after review rows exist, use the shared-source queue:
+npm run game:home-field:rerun-grass-family
 
-# 4. Produce the raw files generated in this batch
-npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01
+# After imagegen saves the one shared meadow source, produce the three crops:
+npm run game:home-field:produce-grass-family
+
+# For later non-grass terrain/props, produce the raw files generated in that batch:
+npm run game:home-field:produce -- path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01
 
 # 5. Validate schema and confirm produced count
 npm run game:home-field:validate -- --check-files --check-connectors --check-review

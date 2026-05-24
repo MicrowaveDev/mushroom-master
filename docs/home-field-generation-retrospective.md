@@ -28,10 +28,11 @@ Handled:
 - Added `npm run game:home-field:next-tiles-all` for the full 12-tile terrain queue after the grass-family stop gate is accepted.
 - Added `npm run game:home-field:adjacency`, which writes `.agent/home-field-workspace/review/adjacency-sheet.png` and a manifest for the path run, side-edge stacks, map rows, and unique neighbor pairs.
 - Added path-band metadata for horizontal path tiles (`pathCenterY`, `pathWidth`) and validator checks that touching `path_h` connectors share the same band.
-- Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `sceneFitCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
+- Added structured review checks in `docs/home-field-asset-review.json`: `repeatCheck`, `connectorCheck`, `cleanPreviewCheck`, `sceneFitCheck`, `familyCohesionCheck`, `styleCohesionCheck`, `alphaCheck`, and `scaleCheck`.
 - Added `docs/home-field-agent-flow.md` and rewrote the ready-to-paste Codex prompt around separated sub-agent roles: orchestrator, prompt/contract reviewer, imagegen worker, producer/validator, and visual critic.
 - Added `npm run game:home-field:rerun-grass-field`, a field-context grass rerun queue that tells imagegen to generate a larger meadow/pattern context and save a quiet center crop instead of making isolated square textures.
 - Added scene-fit language to the style anchor and prompt flow so grass is judged as the quiet stage for chibi mushroom-elf avatars, with foliage/props carrying most of the personality on object layers.
+- Added `npm run game:home-field:rerun-grass-family` and `npm run game:home-field:produce-grass-family`, which replace independent grass tile generation with one shared meadow source cropped into the three grass family outputs.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -49,8 +50,8 @@ npm run game:home-field:validate -- --production
 npm run game:home-field:next-tiles
 # gated first-pass queue; can block while existing candidates are needs_review
 
-npm run game:home-field:rerun-grass-field
-# preferred next grass rerun: field-context prompts for the 3 grass-family tiles
+npm run game:home-field:rerun-grass-family
+# preferred next grass rerun: one shared meadow-source prompt for the 3 grass-family tiles
 
 npm run game:home-field:adjacency
 # writes the terrain connector proof sheet
@@ -344,7 +345,7 @@ Handled:
 
 ## Known Issues Remaining
 
-- Current terrain still needs regeneration. Start with `npm run game:home-field:rerun-grass-field`, not the older isolated-tile rerun.
+- Current terrain still needs regeneration. Start with `npm run game:home-field:rerun-grass-family`, not the older isolated-tile or independent field-context reruns.
 - The next run must stop after the grass family. Do not run the full 12-tile terrain queue until the grass sheet/preview is accepted.
 - Recent grass reruns proved the isolated `256x256` prompt still creates visible square seams; the next run must use field-context generation and reject candidates with columns, rows, diagonal mottling, value bands, or repeated stamp clusters.
 - The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
@@ -358,4 +359,4 @@ Handled:
 
 ## Bottom Line
 
-The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is to regenerate only the grass family through `npm run game:home-field:rerun-grass-field`, review the contact sheet, adjacency sheet, and clean screenshots, then stop for human approval before path or edge tiles.
+The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is to regenerate only the grass family through `npm run game:home-field:rerun-grass-family`, produce via `npm run game:home-field:produce-grass-family`, review the contact sheet, adjacency sheet, and clean screenshots, then stop for human approval before path or edge tiles.

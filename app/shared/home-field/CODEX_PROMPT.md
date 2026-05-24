@@ -24,7 +24,8 @@ Owns the run. It may edit only after a validation or review stage says what need
 
 - confirm the repo is `mushroom-master` on clean `main`;
 - run `npm run game:home-field:validate`;
-- run `npm run game:home-field:rerun-grass-field`;
+- run `npm run game:home-field:rerun-grass-family`;
+- after imagegen saves the one shared meadow source, run `npm run game:home-field:produce-grass-family`;
 - assign or perform the stages below;
 - stop after the grass batch is committed and pushed.
 
@@ -38,7 +39,7 @@ Read-only role. It may read:
 - `app/shared/home-field/home-field-assets.json`
 - `app/shared/home-field/home-field-prompts.json`
 - `app/shared/home-field/home-field-style-anchor.json`
-- output from `npm run game:home-field:rerun-grass-field`
+- output from `npm run game:home-field:rerun-grass-family`
 
 It must confirm:
 
@@ -54,9 +55,9 @@ It must not generate images, edit files, or approve art.
 
 Generation-only role. It may write only raw files under `.agent/home-field-workspace/raw/`.
 
-For each prompt emitted by `npm run game:home-field:rerun-grass-field`, use the imagegen skill and save the raw PNG exactly to the printed `sourcePath`.
+Use the single prompt emitted by `npm run game:home-field:rerun-grass-family`, then save the raw PNG exactly to `.agent/home-field-workspace/raw/grass_family_meadow.source.png`.
 
-This run uses field-context generation. Do not ask for an isolated square texture. Generate or imagine a larger continuous 3x3 or 4x4 meadow patch first, then save a quiet center crop as the raw source. Reject candidates with columns, rows, diagonal mottling, repeated stamp clusters, hard value bands, edge lighting, or visible square blocks.
+This run uses shared grass-family generation. Do not ask for isolated square textures or separate per-tile raw PNGs. Generate one larger continuous 3x2 or 4x3 meadow patch whose crop regions can become `grass_base_01`, `grass_base_02`, and `grass_flowers_01` with matching lighting, brushwork, and value range. Reject candidates with columns, rows, diagonal mottling, repeated stamp clusters, hard value bands, edge lighting, visible square blocks, or visibly different zones.
 
 Scene target: the final field should feel like a polished in-game hub screenshot with chibi mushroom-elf avatars on a soft green meadow, framed by chunky inked foliage, flowers, vines, mushrooms, gates, and props on object layers. For this grass-only run, do not draw those objects into the tile. Make the ground calm enough that later chibis and props will read clearly on top.
 
@@ -96,6 +97,7 @@ It updates `docs/home-field-asset-review.json` for only these three grass assets
 - `connectorCheck`
 - `cleanPreviewCheck`
 - `sceneFitCheck`
+- `familyCohesionCheck`
 - `styleCohesionCheck`
 - `alphaCheck`
 - `scaleCheck`
@@ -123,9 +125,9 @@ Do not set `"verdict": "approved"` or `"accepted": true` unless the human explic
 2. `git status --short --branch`
 3. If the tree is not clean on `main`, stop and report.
 4. `npm run game:home-field:validate`
-5. `npm run game:home-field:rerun-grass-field`
-6. Generate only the three raw PNGs printed by that command.
-7. Run the printed `npm run game:home-field:produce -- <id> ...` command for each generated asset.
+5. `npm run game:home-field:rerun-grass-family`
+6. Generate only the one shared meadow raw PNG printed by that command.
+7. Run `npm run game:home-field:produce-grass-family`.
 8. Run the validation and review commands from the Producer/Validation Worker section.
 9. Update `docs/home-field-asset-review.json` for only the three grass rows.
 10. Run:

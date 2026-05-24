@@ -8,7 +8,7 @@ This workflow prevents one agent from generating, validating, and approving its 
 
 No single role may both create an image and approve it. Generation, mechanical validation, and visual review are separate stages.
 
-If the environment supports sub-agents, assign the roles below as separate agents. If it does not, the active agent must still execute the stages separately and name which role it is acting as in its notes.
+If the environment supports sub-agents, assign Prompt/Contract Reviewer, Imagegen Worker, Producer/Validation Worker, and Visual Critic as separate agents. A single read-only sidecar is not enough for a generation run. If sub-agents are unavailable, the active agent must still execute the stages separately and name which role it is acting as in its notes.
 
 ## Roles
 
@@ -30,13 +30,19 @@ The next tile generation run is limited to:
 
 `npm run game:home-field:next-tiles` is the gated first-pass queue. Once a grass candidate is marked `needs_review`, that command can block to prevent accidental continuation.
 
-For intentional grass-family reruns, use the field-context queue:
+For intentional grass-family reruns, use the shared-source queue:
 
 ```bash
-npm run game:home-field:rerun-grass-field
+npm run game:home-field:rerun-grass-family
 ```
 
-That command emits grass rows with `needs_review` or `needs_regen`, uses the review-gate bypass explicitly, and adds field-context instructions. The Imagegen Worker should generate a larger continuous meadow/pattern context, then save a quiet center crop to the printed source path. The producer command uses a tighter center crop and stronger terrain quieting so the app-facing tile is less likely to preserve border lighting or single-square texture artifacts.
+That command emits one shared meadow-source prompt for the three grass rows. The Imagegen Worker must generate a larger continuous meadow/pattern context and save only `.agent/home-field-workspace/raw/grass_family_meadow.source.png`. The Producer/Validation Worker then runs:
+
+```bash
+npm run game:home-field:produce-grass-family
+```
+
+Do not generate or save separate per-tile raw PNGs for this grass batch. The family producer crops coordinated regions from the same source so `grass_base_01`, `grass_base_02`, and `grass_flowers_01` share lighting, brushwork, and value range.
 
 The run must still stop after these three candidates are produced, reviewed, committed, and pushed. Path and edge tiles require a separate later run after the grass family is accepted.
 
@@ -49,6 +55,7 @@ For the grass batch, this means:
 - grass must be quiet enough that 64px chibi feet and shadows stay readable;
 - tiny grass strokes and yellow-green marks are accents only, not a texture carpet;
 - flowers and strong foliage shapes belong mostly on object-layer props, not base terrain;
+- the three grass tiles must look like crops from the same meadow source, not unrelated imagegen outputs;
 - the clean preview must feel like a usable stage for characters, even before the real chibi sprites are replaced.
 
 ## Required Evidence
@@ -78,6 +85,7 @@ Required fields:
 - `connectorCheck`
 - `cleanPreviewCheck`
 - `sceneFitCheck`
+- `familyCohesionCheck`
 - `styleCohesionCheck`
 - `alphaCheck`
 - `scaleCheck`
@@ -101,8 +109,9 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 ## Failure Handling
 
 - If imagegen returns a full scene, dense texture, path, prop, text, horizon, or focal object inside a grass tile, discard the raw and regenerate.
-- If the field-context output still shows repeated square blocks, diagonal mottling, columns, rows, or hard value bands in the contact sheet or clean preview, mark it `needs_regen`. Passing file and connector validation is not enough.
+- If the shared meadow output still shows repeated square blocks, diagonal mottling, columns, rows, hard value bands, or visibly different zones in the contact sheet or clean preview, mark it `needs_regen`. Passing file and connector validation is not enough.
 - If the clean preview does not look like a calm stage where chibi avatars and object-layer foliage can sit naturally, set `sceneFitCheck` to `fail` even if the tile is technically seamless.
+- If the grass variants do not share lighting, brushwork, and value range, set `familyCohesionCheck` to `fail`.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, commit the review manifest if it changed, and stop.
