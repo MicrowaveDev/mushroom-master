@@ -97,7 +97,9 @@ function main() {
   console.log(styleAnchorBlock(anchor));
   console.log('');
   console.log('## Save and report');
-  console.log('Save only one raw PNG to .agent/home-field-workspace/raw/grass_family_meadow.source.png. Do not save separate per-tile raw PNGs for this grass run. Final response must include the absolute candidate folder path: .agent/home-field-workspace/candidates/grass-family/latest.');
+  console.log('Save only one raw PNG to .agent/home-field-workspace/raw/grass_family_meadow.source.png. Do not save separate per-tile raw PNGs for this grass run.');
+  console.log('Final response must include this clickable Markdown folder link, not a backticked path:');
+  console.log(`Candidate folder: [open in Finder](${repoRoot}/.agent/home-field-workspace/candidates/grass-family/latest)`);
 }
 
 main();

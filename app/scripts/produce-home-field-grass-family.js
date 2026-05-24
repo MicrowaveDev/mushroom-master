@@ -361,6 +361,7 @@ function main() {
     const env = `HOME_FIELD_ASSET_ROOT=${path.relative(repoRoot, candidateDir)}`;
     console.log(`Next: review the candidate with \`${env} npm run game:home-field:validate -- --ids=${FAMILY_IDS.join(',')} --check-files --check-connectors --check-review\`, \`${env} npm run game:home-field:sheet\`, \`${env} npm run game:home-field:grass-family-sheet\`, and \`${env} npm run game:home-field:adjacency\`.`);
     console.log(`Finder folder: ${candidateDir}`);
+    console.log(`Final-response link: Candidate folder: [open in Finder](${candidateDir})`);
   } else {
     console.log('Next: `npm run game:home-field:validate -- --check-files --check-connectors --check-review`, `npm run game:home-field:sheet`, and `npm run game:home-field:adjacency`.');
   }

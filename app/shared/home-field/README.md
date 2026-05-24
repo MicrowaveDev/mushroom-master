@@ -234,6 +234,12 @@ HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest
 # 7. Stop for human approval. Do not commit app-facing PNGs unless approved.
 ```
 
+Final handoff must include the candidate folder as a clickable Markdown link, not a backticked path:
+
+```md
+Candidate folder: [open in Finder](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest)
+```
+
 ### Resize behavior (important — read once)
 
 Imagegen tools typically return `1024×1024` PNGs. The `home-field-assets.json` manifest declares the exact target dimensions (`256×256` for terrain, `512×512` for exits, `64×64` for chibi frames, etc.). The produce script handles the size mismatch:

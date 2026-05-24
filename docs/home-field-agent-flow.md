@@ -130,10 +130,10 @@ Every generation run ends with:
 
 ```text
 Grass tile candidate batch complete.
-Candidate folder: /Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest
+Candidate folder: [open in Finder](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest)
 Committed assets: <none unless human approval promoted the candidate>
 Review evidence:
-  Candidate folder: /Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest
+  Candidate folder: [open in Finder](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/grass-family/latest)
   Contact sheet: .agent/home-field-workspace/review/contact-sheet.png
   Grass family sheet: .agent/home-field-workspace/review/grass-family-sheet.png
   Adjacency sheet: .agent/home-field-workspace/review/adjacency-sheet.png
@@ -145,3 +145,5 @@ Review verdicts:
 Notes:
   <retry/rejection/remaining issue summary>
 ```
+
+Do not wrap the candidate folder path in backticks in the final response. It must be a Markdown link so the reviewer can open it from Codex Desktop.
