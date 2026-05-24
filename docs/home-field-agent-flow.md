@@ -10,6 +10,14 @@ No single role may both create an image and approve it. Generation, mechanical v
 
 If the environment supports sub-agents, assign Prompt/Contract Reviewer, Imagegen Worker, Producer/Validation Worker, and Visual Critic as separate agents. A single read-only sidecar is not enough for a generation run. If sub-agents are unavailable, the active agent must still execute the stages separately and name which role it is acting as in its notes.
 
+When using the multi-agent tool, use the known-good call shape only:
+
+```json
+{"agent_type":"explorer","message":"<bounded role, read/write scope, exact completion condition>"}
+```
+
+Do not pass `fork_context` or mixed `message`/`items` payloads; those have caused avoidable retries in prior Home Field runs.
+
 ## Roles
 
 | Role | May read | May write | Must not do |
@@ -55,6 +63,7 @@ For prop-only review runs, use the generic candidate producer instead of the pro
 ```bash
 npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 --check-files --check-review
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 --check-files --check-alpha-halo
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01
 npm run game:home-field:object-candidate-preview
@@ -140,6 +149,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If `tight-center` produces blocky family transitions, try at most the two documented alternate crop plans from the same raw source, refresh `grass-family-sheet`, and commit only the best candidate set.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
+- If `--check-alpha-halo` reports visible chroma fringe, reprocess with stricter chroma-key cleanup or regenerate the affected raw PNG. Do not leave `alphaCheck: pending` on a candidate whose halo validator fails.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, leave app-facing PNGs untouched, commit the review manifest if it changed, and stop.
 - If visual review passes as `needs_review`, stop and ask for human approval before promoting candidate PNGs to app-facing paths.
 

@@ -19,13 +19,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateAll, validateTileConnectors } from '../shared/home-field/home-field-validator.js';
-import { readPngHeader } from './lib/bitmap-image-toolkit.js';
+import { readPngHeader, readPngRgba } from './lib/bitmap-image-toolkit.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
-const ASSETS_PATH = path.join(sharedDir, 'home-field-assets.json');
-const MAP_PATH = path.join(sharedDir, 'home-field-map.json');
+const ASSETS_PATH = process.env.HOME_FIELD_ASSETS_PATH
+  ? path.resolve(process.env.HOME_FIELD_ASSETS_PATH)
+  : path.join(sharedDir, 'home-field-assets.json');
+const MAP_PATH = process.env.HOME_FIELD_MAP_PATH
+  ? path.resolve(process.env.HOME_FIELD_MAP_PATH)
+  : path.join(sharedDir, 'home-field-map.json');
 const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 const ASSET_ROOT = process.env.HOME_FIELD_ASSET_ROOT
   ? path.resolve(repoRoot, process.env.HOME_FIELD_ASSET_ROOT)
@@ -42,6 +46,7 @@ const REVIEW_CHECKS = [
   'scaleCheck'
 ];
 const REVIEW_CHECK_VALUES = new Set(['pass', 'fail', 'pending', 'placeholder', 'not_applicable']);
+const DEFAULT_ALPHA_HALO_THRESHOLD = 0;
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -89,6 +94,51 @@ function checkFiles(assetsDoc, errors, { ids = null } = {}) {
       }
     } catch (err) {
       errors.push({ scope: 'files', code: 'png_header', message: `asset "${a.id}" cannot read PNG header: ${err.message}` });
+    }
+  }
+}
+
+function isVisibleChromaFringe(r, g, b, a) {
+  if (a <= 16) return false;
+  const magentaKey = r > 180 && b > 140 && g < 100;
+  const saturatedPink = r > 150 && b > 110 && r - g > 80 && b - g > 55;
+  return magentaKey || saturatedPink;
+}
+
+function checkAlphaHalo(assetsDoc, errors, { ids = null, threshold = DEFAULT_ALPHA_HALO_THRESHOLD } = {}) {
+  for (const asset of scopedEntries(allEntries(assetsDoc), ids)) {
+    if (asset.type === 'terrain') continue;
+    const abs = path.join(ASSET_ROOT, asset.outputPath);
+    if (!fs.existsSync(abs)) {
+      errors.push({ scope: 'alpha_halo', code: 'missing', message: `asset "${asset.id}" output missing: ${asset.outputPath}` });
+      continue;
+    }
+    let image;
+    try {
+      image = readPngRgba(abs);
+    } catch (err) {
+      errors.push({ scope: 'alpha_halo', code: 'png_read', message: `asset "${asset.id}" cannot read PNG pixels: ${err.message}` });
+      continue;
+    }
+
+    let fringePixels = 0;
+    for (let offset = 0; offset < image.rgba.length; offset += 4) {
+      if (isVisibleChromaFringe(
+        image.rgba[offset + 0],
+        image.rgba[offset + 1],
+        image.rgba[offset + 2],
+        image.rgba[offset + 3]
+      )) {
+        fringePixels += 1;
+      }
+    }
+
+    if (fringePixels > threshold) {
+      errors.push({
+        scope: 'alpha_halo',
+        code: 'visible_chroma_fringe',
+        message: `asset "${asset.id}" has ${fringePixels} visible magenta/pink fringe pixel${fringePixels === 1 ? '' : 's'} after alpha processing; rerun chroma-key cleanup or regenerate with cleaner transparency`
+      });
     }
   }
 }
@@ -239,6 +289,7 @@ function main() {
   const wantFileCheck = hasFlag(argv, 'check-files');
   const wantConnectorCheck = hasFlag(argv, 'check-connectors');
   const wantReviewCheck = hasFlag(argv, 'check-review');
+  const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
   const wantProduction = hasFlag(argv, 'production');
   const ids = parseIds(argv);
 
@@ -267,6 +318,9 @@ function main() {
   if (wantReviewCheck || wantProduction) {
     checkReview(assetsDoc, errors, { production: wantProduction, ids });
   }
+  if (wantAlphaHaloCheck || wantProduction) {
+    checkAlphaHalo(assetsDoc, errors, { ids });
+  }
 
   if (errors.length === 0) {
     console.log('home-field validation: PASS');
@@ -274,6 +328,7 @@ function main() {
     if (wantFileCheck || wantProduction) modes.push('file existence/dimensions');
     if (wantConnectorCheck || wantProduction) modes.push('tile connectors');
     if (wantReviewCheck || wantProduction) modes.push('review manifest');
+    if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantProduction) modes.push('production approval');
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`

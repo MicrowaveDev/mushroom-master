@@ -75,7 +75,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **produce-object-candidate** | `npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize` | Candidate-safe prop producer. Writes outputs under `.agent/home-field-workspace/candidates/object-layer/latest/` with the same internal `web/public/home-field/...` layout instead of overwriting app-facing PNGs. |
 | **produce-grass-family-candidate** | `npm run game:home-field:produce-grass-family-candidate` | Preferred grass producer for review runs. Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and writes the three grass outputs under `.agent/home-field-workspace/candidates/grass-family/latest/` instead of overwriting app-facing PNGs. Supports `-- --plan=lower-band` and `-- --plan=upper-band` fallbacks. |
 | **produce-grass-family** | `npm run game:home-field:produce-grass-family` | Promotion-only grass producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
-| **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, and `--production` requires files, connectors, review acceptance, and `status: "approved"` for every asset. |
+| **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, `--check-alpha-halo` fails visible chroma-key magenta/pink fringe on transparent non-terrain assets, and `--production` requires files, connectors, review acceptance, alpha-halo checks, and `status: "approved"` for every asset. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 | **alpha-sheet** | `npm run game:home-field:alpha-sheet -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01` | Composites transparent-object alpha/halo proof at `.agent/home-field-workspace/review/alpha-halo-sheet.png`. Use `HOME_FIELD_ASSET_ROOT` for candidate roots. |
@@ -289,6 +289,8 @@ Three predefined batches stage the workload from lowest-risk to highest-risk. **
 | 5 | `full` | `npm run game:home-field:next -- --batch=full --all` | Everything still missing after the proof batches. Run only after the proof set is approved. |
 
 Each batch ships as one commit (or a small number of related commits) on `main`. The contact sheet (`npm run game:home-field:sheet`) and clean preview screenshots are the artifacts reviewers look at between batches. The prompt queue blocks if existing generated candidates still need a checked-in visual verdict; use `--ignore-review-gate` only when intentionally regenerating the blocked assets.
+
+Current next candidate recommendation: rerun the object-layer foliage cleanup before widening the set. Keep `bush_cluster_dark_01`, `bush_cluster_light_01`, and `leaf_sprout_01` together, but optimize for clean alpha and a bolder readable sprout. Do not start chibi or exits until this micro-batch has clean candidate evidence.
 
 ## Animated Assets And Chibi Spritesheet
 

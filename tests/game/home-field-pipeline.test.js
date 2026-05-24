@@ -10,6 +10,7 @@ const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js
 const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
 const grassFamilySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-grass-family-sheet.js');
 const alphaSheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-alpha-sheet.js');
+const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const chromaKeyScript = path.join(
@@ -44,6 +45,34 @@ function writeFixturePng(filePath, { checkerboard = false } = {}) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeMagentaFringeFixture(filePath) {
+  const width = 32;
+  const height = 32;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const inner = x >= 11 && x < 21 && y >= 9 && y < 23;
+      const fringe = x >= 9 && x < 23 && y >= 7 && y < 25;
+      if (inner) {
+        rgba[i + 0] = 44;
+        rgba[i + 1] = 116;
+        rgba[i + 2] = 62;
+        rgba[i + 3] = 255;
+      } else if (fringe) {
+        rgba[i + 0] = 235;
+        rgba[i + 1] = 24;
+        rgba[i + 2] = 210;
+        rgba[i + 3] = 96;
+      } else {
+        rgba[i + 3] = 0;
+      }
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
 function writeAssetsFixture(filePath, outputPath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify({
@@ -67,6 +96,15 @@ function writeAssetsFixture(filePath, outputPath) {
       }
     ],
     characters: []
+  }, null, 2));
+}
+
+function writeMapFixture(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify({
+    version: 1,
+    tileSize: 256,
+    layers: []
   }, null, 2));
 }
 
@@ -253,6 +291,44 @@ test('[home-field] alpha sheet renders transparent candidate props', () => {
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/alpha-halo-sheet.png')), true);
     assert.equal(fs.existsSync(path.join(repoRoot, '.agent/home-field-workspace/review/alpha-halo-sheet.manifest.json')), true);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] validation catches visible magenta alpha fringe', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-alpha-fringe-test');
+  const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
+  const candidateRoot = path.join(repoRoot, '.agent/home-field-workspace/candidates/object-layer/latest');
+  const candidateOutputAbs = path.join(candidateRoot, outputPath);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const mapPath = path.join(fixtureDir, 'home-field-map.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeAssetsFixture(assetsPath, outputPath);
+  writeMapFixture(mapPath);
+  writeMagentaFringeFixture(candidateOutputAbs);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=chroma_fixture',
+      '--check-files',
+      '--check-alpha-halo'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: path.relative(repoRoot, candidateRoot)
+      },
+      encoding: 'utf8'
+    });
+
+    assert.notEqual(result.status, 0, 'visible magenta fringe should fail alpha halo validation');
+    assert.match(result.stderr, /visible_chroma_fringe/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
     fs.rmSync(candidateRoot, { recursive: true, force: true });
