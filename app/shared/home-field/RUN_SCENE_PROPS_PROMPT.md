@@ -3,7 +3,7 @@
 Paste this launcher prompt into a fresh Codex session:
 
 ```text
-In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Field scene props candidate batch exactly as documented in app/shared/home-field/RUN_SCENE_PROPS_PROMPT.md. Candidate-only, no app overwrite, validation/screenshots/final links required.
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Field scene props candidate batch with sub-agents, exactly as documented in app/shared/home-field/RUN_SCENE_PROPS_PROMPT.md. Candidate-only, no app overwrite, validation/screenshots/final links required.
 ```
 
 The canonical run instructions are below. The launcher prompt should stay short and point here instead of repeating the details.
