@@ -161,6 +161,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - Intentional vegetable or strange-flower references are allowed only for assets with `role: "funny_foliage_prop"` such as `mutant_broccoli_bush_01`; do not use that allowance to approve accidental broccoli shapes in natural `bush_cluster_*` assets.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, leave app-facing PNGs untouched, commit the review manifest if it changed, and stop.
 - If visual review passes as `needs_review`, stop and ask for human approval before promoting candidate PNGs to app-facing paths.
+- Every candidate run must update `docs/home-field-asset-review.json` with a per-asset visual verdict for the generated IDs. Do this even when the verdict remains `needs_regen`; fresh evidence with stale reasons/checks is a failed handoff.
 
 ## Handoff Report
 
@@ -180,9 +181,9 @@ Review evidence:
   Candidate field desktop: [desktop field screenshot](/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)
   Clean preview screenshots: <only after human-approved promotion>
 Review verdicts:
-  grass_base_01: <verdict + check summary>
-  grass_base_02: <verdict + check summary>
-  grass_flowers_01: <verdict + check summary>
+  <asset_id>: <needs_review|needs_regen|rejected> — <short visual reason + check summary>
+  <asset_id>: <needs_review|needs_regen|rejected> — <short visual reason + check summary>
+  <asset_id>: <needs_review|needs_regen|rejected> — <short visual reason + check summary>
 Notes:
   <retry/rejection/remaining issue summary>
 ```

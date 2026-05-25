@@ -17,6 +17,7 @@
  *   --status=<s>      filter by manifest status
  *   --ignore-review-gate  print prompts even when existing candidates still need review
  *   --field-context   for grass terrain, ask imagegen for a larger field context and crop the center tile
+ *   --object-candidate  print object-layer candidate producer guidance instead of app-facing producer guidance
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
  * next-season-image-prompts.js). The PROMPT_MARKER line is the recognised handshake
@@ -180,7 +181,7 @@ function fieldContextBlock(asset, { fieldContext = false } = {}) {
   ].join('\n');
 }
 
-function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false }) {
+function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false, objectCandidate = false }) {
   const lines = [];
   lines.push(`\n=== [${idx}/${total}] ${asset.id} (${asset.type}) ===`);
   lines.push(PROMPT_MARKER);
@@ -190,7 +191,10 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push(`Asset role: ${asset.role || '(none)'}`);
   lines.push(`Prompt key: ${asset.promptKey}`);
   lines.push(`Raw source path (save imagegen output HERE, with PNG extension): ${asset.sourcePath}`);
-  lines.push(`Final approved path (will be written by produce step, do NOT save imagegen output here): ${asset.outputPath}`);
+  lines.push(`Final approved path (do NOT save imagegen output here): ${asset.outputPath}`);
+  if (objectCandidate) {
+    lines.push(`Candidate output path (written by candidate producer): .agent/home-field-workspace/candidates/object-layer/latest/${asset.outputPath}`);
+  }
   lines.push(`Public URL (runtime): ${asset.publicPath}`);
   lines.push(`Canvas size: ${asset.width}x${asset.height} px`);
   lines.push(`Anchor convention: ${JSON.stringify(asset.anchor)} (${anchorLabel(asset)})`);
@@ -250,18 +254,31 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push('## Save and report');
   lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);
   lines.push('Then run the recommended producer command:');
-  lines.push(`  ${recommendedProduceCommand(asset, { fieldContext })}`);
+  lines.push(`  ${recommendedProduceCommand(asset, { fieldContext, objectCandidate })}`);
   lines.push('Then run:');
-  lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
-  lines.push('  npm run game:home-field:sheet');
-  lines.push('  npm run game:home-field:adjacency');
-  lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
+  if (objectCandidate) {
+    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-review`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-alpha-halo`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
+    lines.push('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:sheet');
+    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=${asset.id}`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=${asset.id}`);
+    lines.push(`  HOME_FIELD_CANDIDATE_IDS=${asset.id} HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:object-candidate-preview`);
+  } else {
+    lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
+    lines.push('  npm run game:home-field:sheet');
+    lines.push('  npm run game:home-field:adjacency');
+    lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
+  }
   lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
   return lines.join('\n');
 }
 
-function recommendedProduceCommand(asset, { fieldContext = false } = {}) {
-  const base = `npm run game:home-field:produce -- ${asset.id}`;
+function recommendedProduceCommand(asset, { fieldContext = false, objectCandidate = false } = {}) {
+  const canUseObjectCandidate = objectCandidate && (asset.type === 'prop' || asset.type === 'exit');
+  const base = canUseObjectCandidate
+    ? `npm run game:home-field:produce-object-candidate -- ${asset.id}`
+    : `npm run game:home-field:produce -- ${asset.id}`;
   if (asset.type === 'terrain') {
     const placement = asset.tile?.placement || '';
     const canUseSeamless = ['free', 'accent'].includes(placement);
@@ -354,6 +371,7 @@ function main() {
   const includeExisting = hasFlag(argv, 'include-existing');
   const ignoreReviewGate = hasFlag(argv, 'ignore-review-gate');
   const fieldContext = hasFlag(argv, 'field-context');
+  const objectCandidate = hasFlag(argv, 'object-candidate');
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const promptsDoc = loadJson(PROMPTS_PATH);
@@ -402,10 +420,14 @@ function main() {
   console.log(`Workspace root: ${repoRoot}`);
   if (batch) console.log(`Batch: ${batch.name}`);
   if (fieldContext) console.log('Generation mode: field-context center crop');
+  if (objectCandidate) console.log('Generation mode: object-layer candidate root');
   console.log(`Pending assets: ${pending.length}; emitting: ${slice.length}`);
   if (pending.length === 0) {
     console.log('');
     console.log('All home-field assets are present. Nothing to generate.');
+    if (idFilter) {
+      console.log('If this is an intentional candidate rerun for existing app-facing assets, add --include-existing --ignore-review-gate, or use the documented rerun npm alias for that batch.');
+    }
     console.log('For the next production terrain pass, use:');
     console.log('  npm run game:home-field:next -- --batch=terrain-production --review-verdict=needs_regen --all');
     return;
@@ -415,9 +437,18 @@ function main() {
   console.log('  1. Read the prompt block below.');
   console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
   console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
-  console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
-  console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
-  console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
+  if (objectCandidate) {
+    console.log('  4. Run `npm run game:home-field:produce-object-candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
+  } else {
+    console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
+  }
+  if (objectCandidate) {
+    console.log('  5. Run the scoped candidate-root validation commands printed below.');
+    console.log('  6. Refresh contact, mobile-readability, alpha/halo, and object candidate preview proof.');
+  } else {
+    console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
+    console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
+  }
   if (batch?.name === 'terrain-grass') {
     console.log('  7. Stop after these 3 grass tiles. Update review JSON before generating path or edge families.');
   } else if (batch?.name?.startsWith('terrain-')) {
@@ -429,7 +460,7 @@ function main() {
 
   slice.forEach((asset, idx) => {
     const promptEntry = promptsDoc.prompts[asset.promptKey];
-    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext }));
+    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext, objectCandidate }));
   });
 
   console.log('');

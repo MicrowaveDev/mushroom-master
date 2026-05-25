@@ -579,6 +579,29 @@ test('[home-field] rerun grass queue emits needs_review and needs_regen grass ti
   assert.match(result.stdout, /stop after these 3 grass tiles/i);
 });
 
+test('[home-field] object candidate rerun emits candidate-root producer and evidence commands', () => {
+  const result = spawnSync(process.execPath, [
+    nextScriptPath,
+    '--id=mushroom_cluster_small_violet',
+    '--include-existing',
+    '--all',
+    '--ignore-review-gate',
+    '--object-candidate'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Generation mode: object-layer candidate root/);
+  assert.match(result.stdout, /mushroom_cluster_small_violet \(prop\)/);
+  assert.match(result.stdout, /Candidate output path .*candidates\/object-layer\/latest/);
+  assert.match(result.stdout, /npm run game:home-field:produce-object-candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff/);
+  assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-alpha-halo/);
+  assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet .*object-candidate-preview/);
+  assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- mushroom_cluster_small_violet/);
+});
+
 test('[home-field] field-context grass queue asks for larger meadow context and center crop', () => {
   const result = spawnSync(process.execPath, [
     nextScriptPath,

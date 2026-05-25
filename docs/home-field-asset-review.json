@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "reviewedAt": "2026-05-25",
-  "reviewMode": "object-layer foliage mobile scene balance review",
-  "summary": "Object-layer foliage candidates remain candidate evidence only. The dark bush and leaf sprout are viable needs_review candidates; the light bush shape is readable but needs regeneration because its yellow value pulls too much attention in the mobile field.",
+  "reviewMode": "object-layer foliage and scene prop mobile review",
+  "summary": "Object-layer candidates remain candidate evidence only. The dark bush, leaf sprout, amber mushroom cluster, red spotted mushroom, and fallen branch are viable needs_review candidates. The light bush still needs a darker moss-green pass, and the violet mushroom cluster needs regeneration because it reads gray/low-identity at mobile scale.",
   "assets": [
     {
       "id": "grass_base_01",
@@ -328,31 +328,31 @@
     },
     {
       "id": "mushroom_cluster_small_amber",
-      "verdict": "needs_regen",
+      "verdict": "needs_review",
       "accepted": false,
-      "reason": "better than terrain, but scale and edge cleanup need production review",
+      "reason": "Scene prop candidate review from rollout 019e6111: amber cluster reads clearly as a small field-edge mushroom token at mobile and desktop scale, with simple 2-3 cap silhouette, clean alpha evidence, and acceptable scene fit. It remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
-      "cleanPreviewCheck": "fail",
-      "styleCohesionCheck": "fail",
-      "alphaCheck": "pending",
-      "scaleCheck": "fail",
-      "sceneFitCheck": "fail",
-      "familyCohesionCheck": "not_applicable"
+      "cleanPreviewCheck": "pass",
+      "styleCohesionCheck": "pass",
+      "alphaCheck": "pass",
+      "scaleCheck": "pass",
+      "sceneFitCheck": "pass",
+      "familyCohesionCheck": "pass"
     },
     {
       "id": "mushroom_cluster_small_violet",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "better than terrain, but scale and edge cleanup need production review",
+      "reason": "Scene prop candidate review from rollout 019e6111: silhouette is compact and alpha evidence passes, but the caps read gray/low-identity instead of violet in the mobile-readability sheet and clean field screenshots. Regenerate only this asset with a stronger muted violet cap read, still simple and non-neon.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
-      "alphaCheck": "pending",
+      "alphaCheck": "pass",
       "scaleCheck": "fail",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "not_applicable"
+      "familyCohesionCheck": "fail"
     },
     {
       "id": "mushroom_cluster_tall_green",
@@ -370,17 +370,17 @@
     },
     {
       "id": "mushroom_cap_red_spotted",
-      "verdict": "needs_regen",
+      "verdict": "needs_review",
       "accepted": false,
-      "reason": "prop reads separately from terrain family; needs cohesive redraw",
+      "reason": "Scene prop candidate review from rollout 019e6111: red spotted mushroom reads clearly at mobile scale with one strong cap, large cream spots, clean alpha evidence, and good field-edge placement. It remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
-      "cleanPreviewCheck": "fail",
-      "styleCohesionCheck": "fail",
-      "alphaCheck": "pending",
-      "scaleCheck": "fail",
-      "sceneFitCheck": "fail",
-      "familyCohesionCheck": "not_applicable"
+      "cleanPreviewCheck": "pass",
+      "styleCohesionCheck": "pass",
+      "alphaCheck": "pass",
+      "scaleCheck": "pass",
+      "sceneFitCheck": "pass",
+      "familyCohesionCheck": "pass"
     },
     {
       "id": "mycelium_lantern_amber",
@@ -398,17 +398,17 @@
     },
     {
       "id": "fallen_branch_mycelium",
-      "verdict": "needs_regen",
+      "verdict": "needs_review",
       "accepted": false,
-      "reason": "cleanup and scene scale not production-approved",
+      "reason": "Scene prop candidate review from rollout 019e6111: fallen branch is somewhat subtle on mobile but still reads as a low horizontal field obstacle, has clean alpha evidence, and fits the edge/foreground prop role. It remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
-      "cleanPreviewCheck": "fail",
-      "styleCohesionCheck": "fail",
-      "alphaCheck": "pending",
-      "scaleCheck": "fail",
-      "sceneFitCheck": "fail",
-      "familyCohesionCheck": "not_applicable"
+      "cleanPreviewCheck": "pass",
+      "styleCohesionCheck": "pass",
+      "alphaCheck": "pass",
+      "scaleCheck": "pass",
+      "sceneFitCheck": "pass",
+      "familyCohesionCheck": "pass"
     },
     {
       "id": "arena_signpost_blank",

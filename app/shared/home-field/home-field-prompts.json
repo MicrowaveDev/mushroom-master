@@ -144,10 +144,10 @@
     },
     "prop_mushroom_cluster_small_violet": {
       "subject": "transparent-background 2D game prop: small cluster of violet bioluminescent mushrooms",
-      "details": "A tiny field-token mushroom cluster designed to read inside a 52x52 mobile CSS box. Similar chunky composition to amber cluster but with cool muted violet caps, 2-3 caps total, a merged simple base, one bold outside silhouette, 2-3 main color regions, and at most 1-2 large glow accents. Provides quiet color contrast across the field. Subtle compact blob shadow under the cluster.",
+      "details": "A tiny field-token mushroom cluster designed to read inside a 52x52 mobile CSS box. Similar chunky composition to amber cluster but with clearly violet caps, 2-3 caps total, a merged simple base, one bold outside silhouette, 2-3 main color regions, and at most 1-2 large muted violet glow accents. The cap color must still read violet at 32-48px on dark green grass, not gray or charcoal. Provides quiet color contrast across the field. Subtle compact blob shadow under the cluster.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered cluster; anchor point at bottom-center. No characters, no text, no more than 3 caps, no tiny cap field, no gills, no dense speckles, no saturated neon glow."
+      "constraints": "Centered cluster; anchor point at bottom-center. No characters, no text, no more than 3 caps, no tiny cap field, no gills, no dense speckles, no gray-only caps, no saturated neon glow."
     },
     "prop_mushroom_cluster_tall_green": {
       "subject": "transparent-background 2D game prop: tall cluster of green-capped mushrooms with thick stems",
