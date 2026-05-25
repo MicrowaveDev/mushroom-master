@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "reviewedAt": "2026-05-25",
-  "reviewMode": "object-layer foliage large-mass readability review",
-  "summary": "Object-layer foliage cleanup candidates remain candidate evidence only. The latest dark bush, light bush, and leaf sprout candidates pass scoped file, alpha-halo, readability, contact-sheet, and clean-preview review, but remain unapproved pending human approval.",
+  "reviewMode": "object-layer foliage mobile scene balance review",
+  "summary": "Object-layer foliage candidates remain candidate evidence only. The dark bush and leaf sprout are viable needs_review candidates; the light bush shape is readable but needs regeneration because its yellow value pulls too much attention in the mobile field.",
   "assets": [
     {
       "id": "grass_base_01",
@@ -176,7 +176,7 @@
       "id": "bush_cluster_dark_01",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Object-layer foliage cleanup candidate review: regenerated as one asymmetric dark shrub mass with a bold irregular silhouette, uneven scalloped edges, varied large foliage planes, small negative notches, offset highlights, clean alpha-halo validation, and mobile/desktop readability. It remains unapproved and needs human visual review before any app-facing promotion.",
+      "reason": "Mobile scene review: dark bush reads well as a few large natural shrub masses, sits quietly on dark grass, passes alpha/readability/screenshot evidence, and remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -188,23 +188,23 @@
     },
     {
       "id": "bush_cluster_light_01",
-      "verdict": "needs_review",
+      "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Object-layer foliage cleanup candidate review: regenerated as one lighter asymmetric shrub mass with a low broad footprint, uneven scalloped outline, a few large blended foliage planes, small contour notches, offset highlights, clean alpha-halo validation, and mobile/desktop readability. It remains unapproved and needs human visual review before any app-facing promotion.",
+      "reason": "Mobile scene review: the light bush shape is finally readable and uses a few large masses, but the yellow/highlight value is too bright and pulls focus from the chibi/path area. Regenerate with a darker, cooler moss-green palette, flatter highlights, and less saturated yellow while keeping the same 2-4 large-mass silhouette.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
-      "cleanPreviewCheck": "pass",
-      "styleCohesionCheck": "pass",
+      "cleanPreviewCheck": "fail",
+      "styleCohesionCheck": "fail",
       "alphaCheck": "pass",
       "scaleCheck": "pass",
-      "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "sceneFitCheck": "fail",
+      "familyCohesionCheck": "fail"
     },
     {
       "id": "leaf_sprout_01",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Object-layer foliage cleanup candidate review: regenerated as a chunky sprout with 3-5 broad leaves, warm dark outline, compact shadow, readable leaf mass, clean alpha-halo validation, and clear mobile/desktop scene readability. It remains unapproved and needs human visual review before any app-facing promotion.",
+      "reason": "Mobile scene review: chunky sprout reads clearly beside chibi feet with broad leaves, clean alpha/readability evidence, and appropriate scale; remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",

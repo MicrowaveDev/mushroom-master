@@ -67,10 +67,10 @@
     },
     "prop_bush_cluster_light_01": {
       "subject": "transparent-background 2D top-down forest prop: lighter organic bush mass for a game hub object layer",
-      "details": "A lighter moss-green companion to bush_cluster_dark_01. It should feel like one irregular natural shrub with only 2-4 large blended lobes, uneven leafy edge, offset highlights, and broad simple value shapes. Keep the form low, broad, asymmetric, and hand-painted, with a compact transparent shadow. The bush should be made from a few big readable masses, not many small segments. It should layer over quiet terrain without looking like repeated circular stamps, and it must remain readable at 48-64px.",
+      "details": "A lighter moss-green companion to bush_cluster_dark_01, but still quiet enough for the mobile field. It should feel like one irregular natural shrub with only 2-4 large blended lobes, uneven leafy edge, offset highlights, and broad simple value shapes. Use darker, cooler moss greens with restrained yellow-green highlights; avoid a bright lemon/yellow mound that steals focus from chibis. Keep the form low, broad, asymmetric, and hand-painted, with a compact transparent shadow. The bush should be made from a few big readable masses, not many small segments. It should layer over quiet terrain without looking like repeated circular stamps, and it must remain readable at 48-64px.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, tiny texture noise, many small leafy segments, or an obvious procedural mound."
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, tiny texture noise, many small leafy segments, bright yellow/lemon dominance, or an obvious procedural mound."
     },
     "prop_leaf_sprout_01": {
       "subject": "transparent-background 2D top-down forest prop: small leafy sprout cluster",
