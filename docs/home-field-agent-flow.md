@@ -73,6 +73,31 @@ npm run game:home-field:object-candidate-preview
 
 This writes candidate PNGs under `.agent/home-field-workspace/candidates/object-layer/latest/web/public/home-field/props/` and uses route interception for `/home-field-preview?debug=0`, so app-facing PNGs remain untouched before human approval. If a run covers a different prop set, pass `--candidate-root=<dir>` to `game:home-field:produce` and set `HOME_FIELD_CANDIDATE_IDS` / `HOME_FIELD_CANDIDATE_ROOT` when running the candidate preview spec.
 
+## Active-Roster Chibi Candidate Gate
+
+For active-roster chibi runs, follow [`docs/home-field-chibi-candidate-contract.md`](home-field-chibi-candidate-contract.md). The scoped ids are:
+
+- `thalla`
+- `lomie`
+- `axilin`
+- `kirt`
+- `morga`
+- `dalamar`
+
+This batch is candidate-only. Do not overwrite `web/public/home-field/characters/*/spritesheet.png`, do not mark rows approved, and do not set `accepted: true`.
+
+Production character chibis require the full `8 x 4` sheet: two idle frames and six walk frames for each facing direction. The placeholder-only 12-frame replicated-walk composer is not sufficient for these six candidates. If the producer still only supports placeholder-style replicated walk frames, stop before imagegen and add full-frame candidate composition support first.
+
+Review evidence for this batch should live under:
+
+- `.agent/home-field-workspace/candidates/chibi-active-roster/latest/`
+- `.agent/home-field-workspace/review/contact-sheet.png`
+- `.agent/home-field-workspace/review/mobile-readability-sheet.png`
+- `.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png`
+- `.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png`
+
+The Visual Critic updates only the six active character rows in `docs/home-field-asset-review.json`.
+
 ## Scene Target Gate
 
 The target is not an isolated grass texture. The final composed field should read like a polished game-hub screenshot: chibi mushroom-elf avatars standing on a soft green meadow, with chunky dark-ink foliage, vines, flowers, mushrooms, exits, and props framing the walkable area on object layers.

@@ -1061,6 +1061,222 @@
         }
       },
       "status": "placeholder"
+    },
+    {
+      "id": "thalla",
+      "promptKey": "character_thalla_chibi",
+      "sourcePath": ".agent/home-field-workspace/raw/thalla_chibi.source.png",
+      "outputPath": "web/public/home-field/characters/thalla/spritesheet.png",
+      "publicPath": "/home-field/characters/thalla/spritesheet.png",
+      "spritesheet": {
+        "width": 512,
+        "height": 256,
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "cols": 8,
+        "rows": 4,
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
+        "framesPerRow": {
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "status": "missing"
+    },
+    {
+      "id": "lomie",
+      "promptKey": "character_lomie_chibi",
+      "sourcePath": ".agent/home-field-workspace/raw/lomie_chibi.source.png",
+      "outputPath": "web/public/home-field/characters/lomie/spritesheet.png",
+      "publicPath": "/home-field/characters/lomie/spritesheet.png",
+      "spritesheet": {
+        "width": 512,
+        "height": 256,
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "cols": 8,
+        "rows": 4,
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
+        "framesPerRow": {
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "status": "missing"
+    },
+    {
+      "id": "axilin",
+      "promptKey": "character_axilin_chibi",
+      "sourcePath": ".agent/home-field-workspace/raw/axilin_chibi.source.png",
+      "outputPath": "web/public/home-field/characters/axilin/spritesheet.png",
+      "publicPath": "/home-field/characters/axilin/spritesheet.png",
+      "spritesheet": {
+        "width": 512,
+        "height": 256,
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "cols": 8,
+        "rows": 4,
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
+        "framesPerRow": {
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "status": "missing"
+    },
+    {
+      "id": "kirt",
+      "promptKey": "character_kirt_chibi",
+      "sourcePath": ".agent/home-field-workspace/raw/kirt_chibi.source.png",
+      "outputPath": "web/public/home-field/characters/kirt/spritesheet.png",
+      "publicPath": "/home-field/characters/kirt/spritesheet.png",
+      "spritesheet": {
+        "width": 512,
+        "height": 256,
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "cols": 8,
+        "rows": 4,
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
+        "framesPerRow": {
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "status": "missing"
+    },
+    {
+      "id": "morga",
+      "promptKey": "character_morga_chibi",
+      "sourcePath": ".agent/home-field-workspace/raw/morga_chibi.source.png",
+      "outputPath": "web/public/home-field/characters/morga/spritesheet.png",
+      "publicPath": "/home-field/characters/morga/spritesheet.png",
+      "spritesheet": {
+        "width": 512,
+        "height": 256,
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "cols": 8,
+        "rows": 4,
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
+        "framesPerRow": {
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "status": "missing"
+    },
+    {
+      "id": "dalamar",
+      "promptKey": "character_dalamar_chibi",
+      "sourcePath": ".agent/home-field-workspace/raw/dalamar_chibi.source.png",
+      "outputPath": "web/public/home-field/characters/dalamar/spritesheet.png",
+      "publicPath": "/home-field/characters/dalamar/spritesheet.png",
+      "spritesheet": {
+        "width": 512,
+        "height": 256,
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "cols": 8,
+        "rows": 4,
+        "rowOrder": [
+          "down",
+          "up",
+          "left",
+          "right"
+        ],
+        "framesPerRow": {
+          "idle": [
+            0,
+            1
+          ],
+          "walk": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      },
+      "status": "missing"
     }
   ]
 }
