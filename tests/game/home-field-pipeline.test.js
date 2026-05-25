@@ -602,6 +602,30 @@ test('[home-field] object candidate rerun emits candidate-root producer and evid
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- mushroom_cluster_small_violet/);
 });
 
+test('[home-field] chibi proof emits chibi candidate producer and scoped evidence commands', () => {
+  const result = spawnSync(process.execPath, [
+    nextScriptPath,
+    '--type=character',
+    '--id=thalla',
+    '--include-existing',
+    '--all',
+    '--ignore-review-gate',
+    '--chibi-candidate'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Generation mode: chibi active-roster candidate root/);
+  assert.match(result.stdout, /thalla \(character\)/);
+  assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
+  assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize-nearest --chroma-key=#ff00ff/);
+  assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-readability/);
+  assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=thalla .*chibi-candidate-preview/);
+  assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
+});
+
 test('[home-field] field-context grass queue asks for larger meadow context and center crop', () => {
   const result = spawnSync(process.execPath, [
     nextScriptPath,

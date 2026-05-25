@@ -18,6 +18,7 @@
  *   --ignore-review-gate  print prompts even when existing candidates still need review
  *   --field-context   for grass terrain, ask imagegen for a larger field context and crop the center tile
  *   --object-candidate  print object-layer candidate producer guidance instead of app-facing producer guidance
+ *   --chibi-candidate   print chibi candidate producer guidance instead of app-facing producer guidance
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
  * next-season-image-prompts.js). The PROMPT_MARKER line is the recognised handshake
@@ -181,7 +182,10 @@ function fieldContextBlock(asset, { fieldContext = false } = {}) {
   ].join('\n');
 }
 
-function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false, objectCandidate = false }) {
+function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false, objectCandidate = false, chibiCandidate = false }) {
+  const candidateRoot = chibiCandidate
+    ? '.agent/home-field-workspace/candidates/chibi-active-roster/latest'
+    : '.agent/home-field-workspace/candidates/object-layer/latest';
   const lines = [];
   lines.push(`\n=== [${idx}/${total}] ${asset.id} (${asset.type}) ===`);
   lines.push(PROMPT_MARKER);
@@ -190,10 +194,15 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push(`Asset type: ${asset.type}`);
   lines.push(`Asset role: ${asset.role || '(none)'}`);
   lines.push(`Prompt key: ${asset.promptKey}`);
-  lines.push(`Raw source path (save imagegen output HERE, with PNG extension): ${asset.sourcePath}`);
+  if (chibiCandidate && asset.type === 'character') {
+    lines.push(`Raw source manifest path: ${asset.sourcePath}`);
+    lines.push('Raw frame save paths: use the per-frame thalla_chibi.frame_*.source.png paths listed in the prompt details and chibi candidate contract.');
+  } else {
+    lines.push(`Raw source path (save imagegen output HERE, with PNG extension): ${asset.sourcePath}`);
+  }
   lines.push(`Final approved path (do NOT save imagegen output here): ${asset.outputPath}`);
-  if (objectCandidate) {
-    lines.push(`Candidate output path (written by candidate producer): .agent/home-field-workspace/candidates/object-layer/latest/${asset.outputPath}`);
+  if (objectCandidate || chibiCandidate) {
+    lines.push(`Candidate output path (written by candidate producer): ${candidateRoot}/${asset.outputPath}`);
   }
   lines.push(`Public URL (runtime): ${asset.publicPath}`);
   lines.push(`Canvas size: ${asset.width}x${asset.height} px`);
@@ -252,32 +261,46 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push(styleAnchorBlock(anchor));
   lines.push('');
   lines.push('## Save and report');
-  lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);
+  if (chibiCandidate && asset.type === 'character') {
+    lines.push('After generation, save the individual raw imagegen frames to the per-frame paths listed above, not to the single manifest sourcePath.');
+  } else {
+    lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);
+  }
   lines.push('Then run the recommended producer command:');
-  lines.push(`  ${recommendedProduceCommand(asset, { fieldContext, objectCandidate })}`);
+  lines.push(`  ${recommendedProduceCommand(asset, { fieldContext, objectCandidate, chibiCandidate })}`);
   lines.push('Then run:');
-  if (objectCandidate) {
-    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-review`);
-    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-alpha-halo`);
-    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
-    lines.push('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:sheet');
-    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=${asset.id}`);
-    lines.push(`  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=${asset.id}`);
-    lines.push(`  HOME_FIELD_CANDIDATE_IDS=${asset.id} HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:object-candidate-preview`);
+  if (objectCandidate || chibiCandidate) {
+    lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-review`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-alpha-halo`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:sheet`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:mobile-readability-sheet -- --ids=${asset.id}`);
+    lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:alpha-sheet -- --ids=${asset.id}`);
+    const previewCommand = chibiCandidate
+      ? 'game:home-field:chibi-candidate-preview'
+      : 'game:home-field:object-candidate-preview';
+    lines.push(`  HOME_FIELD_CANDIDATE_IDS=${asset.id} HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} npm run ${previewCommand}`);
   } else {
     lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
     lines.push('  npm run game:home-field:sheet');
     lines.push('  npm run game:home-field:adjacency');
     lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
   }
-  lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
+  if (objectCandidate || chibiCandidate) {
+    lines.push('Until those pass and the contact sheet, alpha/readability sheets, and candidate preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
+  } else {
+    lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
+  }
   return lines.join('\n');
 }
 
-function recommendedProduceCommand(asset, { fieldContext = false, objectCandidate = false } = {}) {
+function recommendedProduceCommand(asset, { fieldContext = false, objectCandidate = false, chibiCandidate = false } = {}) {
   const canUseObjectCandidate = objectCandidate && (asset.type === 'prop' || asset.type === 'exit');
+  const canUseChibiCandidate = chibiCandidate && asset.type === 'character';
   const base = canUseObjectCandidate
     ? `npm run game:home-field:produce-object-candidate -- ${asset.id}`
+    : canUseChibiCandidate
+      ? `npm run game:home-field:produce-chibi-candidate -- ${asset.id}`
     : `npm run game:home-field:produce -- ${asset.id}`;
   if (asset.type === 'terrain') {
     const placement = asset.tile?.placement || '';
@@ -372,6 +395,7 @@ function main() {
   const ignoreReviewGate = hasFlag(argv, 'ignore-review-gate');
   const fieldContext = hasFlag(argv, 'field-context');
   const objectCandidate = hasFlag(argv, 'object-candidate');
+  const chibiCandidate = hasFlag(argv, 'chibi-candidate');
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const promptsDoc = loadJson(PROMPTS_PATH);
@@ -421,6 +445,7 @@ function main() {
   if (batch) console.log(`Batch: ${batch.name}`);
   if (fieldContext) console.log('Generation mode: field-context center crop');
   if (objectCandidate) console.log('Generation mode: object-layer candidate root');
+  if (chibiCandidate) console.log('Generation mode: chibi active-roster candidate root');
   console.log(`Pending assets: ${pending.length}; emitting: ${slice.length}`);
   if (pending.length === 0) {
     console.log('');
@@ -436,15 +461,21 @@ function main() {
   console.log('Workflow per asset:');
   console.log('  1. Read the prompt block below.');
   console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
-  console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
+  if (chibiCandidate) {
+    console.log('  3. Save raw frame outputs to the per-frame paths listed in the prompt details under .agent/home-field-workspace/raw/.');
+  } else {
+    console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
+  }
   if (objectCandidate) {
     console.log('  4. Run `npm run game:home-field:produce-object-candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
+  } else if (chibiCandidate) {
+    console.log('  4. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
   } else {
     console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
   }
-  if (objectCandidate) {
+  if (objectCandidate || chibiCandidate) {
     console.log('  5. Run the scoped candidate-root validation commands printed below.');
-    console.log('  6. Refresh contact, mobile-readability, alpha/halo, and object candidate preview proof.');
+    console.log('  6. Refresh contact, mobile-readability, alpha/halo, and candidate preview proof.');
   } else {
     console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
     console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
@@ -460,7 +491,7 @@ function main() {
 
   slice.forEach((asset, idx) => {
     const promptEntry = promptsDoc.prompts[asset.promptKey];
-    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext, objectCandidate }));
+    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext, objectCandidate, chibiCandidate }));
   });
 
   console.log('');

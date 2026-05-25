@@ -75,18 +75,15 @@ This writes candidate PNGs under `.agent/home-field-workspace/candidates/object-
 
 ## Active-Roster Chibi Candidate Gate
 
-For active-roster chibi runs, follow [`docs/home-field-chibi-candidate-contract.md`](home-field-chibi-candidate-contract.md). The scoped ids are:
+For active-roster chibi runs, follow [`docs/home-field-chibi-candidate-contract.md`](home-field-chibi-candidate-contract.md). The first scoped proof id is:
 
 - `thalla`
-- `lomie`
-- `axilin`
-- `kirt`
-- `morga`
-- `dalamar`
 
 This batch is candidate-only. Do not overwrite `web/public/home-field/characters/*/spritesheet.png`, do not mark rows approved, and do not set `accepted: true`.
 
-Production character chibis require the full `8 x 4` sheet: two idle frames and six walk frames for each facing direction. The placeholder-only 12-frame replicated-walk composer is not sufficient for these six candidates. If the producer still only supports placeholder-style replicated walk frames, stop before imagegen and add full-frame candidate composition support first.
+Stage 1 is not a full-animation run. It proves Thalla's identity, silhouette, alpha, and mobile readability first. Use the compact Stage 1 frame contract: 8 unique poses minimum, written into the current 12 raw frame slots, then composed into the locked `512 x 256` runtime sheet by replicating one walk pose across columns `2-7` per direction. Do not require 32 unique frames until the base chibi design passes review.
+
+After Thalla passes review, expand to `lomie`, `axilin`, `kirt`, and `dalamar` as a second stage. Keep `morga` deferred until her design contract is explicit enough for production chibi generation.
 
 Review evidence for this batch should live under:
 
@@ -96,7 +93,7 @@ Review evidence for this batch should live under:
 - `.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png`
 - `.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png`
 
-The Visual Critic updates only the six active character rows in `docs/home-field-asset-review.json`.
+The Visual Critic updates only the scoped character rows in `docs/home-field-asset-review.json`; for Stage 1, that means `thalla` only.
 
 ## Scene Target Gate
 
