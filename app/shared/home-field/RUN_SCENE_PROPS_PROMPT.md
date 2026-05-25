@@ -10,7 +10,11 @@ Read and follow:
 - app/shared/home-field/README.md
 - app/shared/home-field/home-field-prompts.json
 
-Generate only `mushroom_cluster_small_amber`, `mushroom_cluster_small_violet`, `mushroom_cap_red_spotted`, and `fallen_branch_mycelium` as candidate assets. Goal: make the field feel production-ready with readable edge/foreground personality, not clutter. Use bold simple silhouettes, compact blob shadows, true alpha or flat `#ff00ff` chroma key, and mobile-readable shapes. Avoid tiny detail, busy textures, bright attention-grabbing blobs near the walkable center, text, characters, exits, effects, and terrain.
+Generate only `mushroom_cluster_small_amber`, `mushroom_cluster_small_violet`, `mushroom_cap_red_spotted`, and `fallen_branch_mycelium` as candidate assets. Goal: make the field feel production-ready with readable edge/foreground personality, not clutter.
+
+Pixel budget: these props render in about a 52x52 CSS box on the 375x667 mobile preview and about a 90x90 CSS box on desktop. The visible alpha silhouette may be only 30-48px wide on mobile, so design them as tiny field tokens, not hero illustrations. Each prop needs one bold outside silhouette, 2-3 main color regions, 0-3 large accent marks, and a compact shadow. Avoid gills, many spots, many tiny caps, root tangles, bark chips, fine veins, realistic texture, glossy highlights, bright glow blobs, or any detail that only works at 256px.
+
+Asset shape targets: small mushroom clusters should be 2-3 squat caps total, not 5+ caps; the red spotted cap should use 3-5 large cream spots, no gill forest; the fallen branch should be a simple low log silhouette with one chunky mycelium wrap and maybe 1-2 tiny mushrooms, not a nest of roots. Use true alpha or flat `#ff00ff` chroma key. Avoid bright attention-grabbing blobs near the walkable center, text, characters, exits, effects, and terrain.
 
 Produce only to `.agent/home-field-workspace/candidates/object-layer/latest`, run scoped file/review validation, `--check-alpha-halo`, contact sheet, mobile-readability sheet, alpha/halo sheet, and mobile/desktop object candidate preview screenshots. Use `HOME_FIELD_CANDIDATE_IDS` for this exact four-asset batch when running preview. Never approve, never overwrite app-facing PNGs, then commit/push review JSON/docs only if changed and stop.
 

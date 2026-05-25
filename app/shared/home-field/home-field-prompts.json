@@ -137,17 +137,17 @@
     },
     "prop_mushroom_cluster_small_amber": {
       "subject": "transparent-background 2D game prop: small cluster of amber-glowing mushrooms",
-      "details": "3-5 squat mushrooms with rounded amber-glowing caps and pale stems, gathered as a foreground detail. Big readable silhouette, cute-but-eerie dark fairytale mood. Lighting matches style anchor. Subtle compact blob shadow under the cluster.",
+      "details": "A tiny field-token mushroom cluster designed to read inside a 52x52 mobile CSS box. Use 2-3 squat amber caps total, pale stems merged into one simple base, one bold outside silhouette, 2-3 main color regions, and at most 1-2 large highlight blobs. Cute-but-eerie dark fairytale mood. Lighting matches style anchor. Subtle compact blob shadow under the cluster.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered cluster; anchor point at bottom-center (visual base). No characters, no text."
+      "constraints": "Centered cluster; anchor point at bottom-center (visual base). No characters, no text, no more than 3 caps, no tiny cap field, no gills, no dense speckles, no glossy hero-object rendering."
     },
     "prop_mushroom_cluster_small_violet": {
       "subject": "transparent-background 2D game prop: small cluster of violet bioluminescent mushrooms",
-      "details": "Similar chunky composition to amber cluster but with cool violet glow. Provides color contrast across the field. Subtle compact blob shadow under the cluster.",
+      "details": "A tiny field-token mushroom cluster designed to read inside a 52x52 mobile CSS box. Similar chunky composition to amber cluster but with cool muted violet caps, 2-3 caps total, a merged simple base, one bold outside silhouette, 2-3 main color regions, and at most 1-2 large glow accents. Provides quiet color contrast across the field. Subtle compact blob shadow under the cluster.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered cluster; anchor point at bottom-center. No characters, no text."
+      "constraints": "Centered cluster; anchor point at bottom-center. No characters, no text, no more than 3 caps, no tiny cap field, no gills, no dense speckles, no saturated neon glow."
     },
     "prop_mushroom_cluster_tall_green": {
       "subject": "transparent-background 2D game prop: tall cluster of green-capped mushrooms with thick stems",
@@ -158,10 +158,10 @@
     },
     "prop_mushroom_cap_red_spotted": {
       "subject": "transparent-background 2D game prop: a single red mushroom with white-spotted cap, the classic fairytale silhouette",
-      "details": "Iconic red-and-white toadstool with a stylized Mycelium twist: chunky silhouette, organic cap, slightly bioluminescent rim, cute-goth storybook readability. Familiar enough to be a landmark.",
+      "details": "A small field-token red-and-white toadstool designed to read inside a 52x52 mobile CSS box. Use one chunky cap, one simple stem, 3-5 large cream spots, one dark outline, and broad flat color blocks. Familiar enough to be a landmark, but quiet enough to sit at the field edge without stealing focus from chibis.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered, bottom-anchored. No characters, no text."
+      "constraints": "Centered, bottom-anchored. No characters, no text, no dense spot pattern, no visible gill forest, no bumpy stem texture, no glossy hero-object rendering."
     },
     "prop_mycelium_lantern_amber": {
       "subject": "transparent-background 2D game prop: an amber spore lantern shaped like a tall mushroom with a glowing cap",
@@ -172,10 +172,10 @@
     },
     "prop_fallen_branch_mycelium": {
       "subject": "transparent-background 2D game prop: a fallen branch wrapped in mycelium and small mushroom growth",
-      "details": "Horizontal organic obstacle with a chunky readable silhouette. Branch is half-claimed by fungus. Reads as 'walkable around, not through'.",
+      "details": "A low field-token obstacle designed to read inside a 52x52 mobile CSS box. Use one simple horizontal log silhouette, 2-3 bark color blocks, one chunky pale mycelium wrap, and maybe 1-2 tiny mushrooms at one end. Reads as 'walkable around, not through' without becoming a detailed root nest.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Anchor at bottom-center of the branch."
+      "constraints": "Anchor at bottom-center of the branch. No root tangles, no many thin strands, no bark chips, no tiny mushroom colony, no realistic texture, no high-contrast clutter."
     },
     "prop_signpost_blank": {
       "subject": "transparent-background 2D game prop: an art-only wooden signpost made from organic carved mushroom wood",
