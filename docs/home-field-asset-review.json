@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "reviewedAt": "2026-05-25",
-  "reviewMode": "object-layer foliage mobile-readability review",
-  "summary": "Object-layer foliage cleanup candidates remain candidate evidence only. Bush candidates need regeneration because they still lose readability at mobile scale: too much fine clustered leaf detail collapses into noisy blobs, even though alpha and field screenshots were produced.",
+  "reviewMode": "object-layer foliage large-mass readability review",
+  "summary": "Object-layer foliage cleanup candidates remain candidate evidence only. Bush candidates need regeneration because they are still constructed from too many visible leafy segments; the next run should use only a few large overlapping foliage masses with minimal internal detail.",
   "assets": [
     {
       "id": "grass_base_01",
@@ -176,7 +176,7 @@
       "id": "bush_cluster_dark_01",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Human visual review after the latest candidate run: alpha and placement evidence exist, but the bush is still too detailed for mobile. Fine clustered leaf texture collapses into a noisy low shrub at field scale. Regenerate as one simpler asymmetric shrub with a bold silhouette, 3-5 major blended lobes, minimal internal texture, and clear readability at 48-64px.",
+      "reason": "Human visual review after the latest bush attempt: the silhouette is closer to natural, but it is still made from many visible leafy segments/mini-crowns. Regenerate as one simpler asymmetric shrub built from only 2-4 large overlapping foliage masses, with broad value shapes, minimal internal texture, and no individual mini bush pieces.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
@@ -190,7 +190,7 @@
       "id": "bush_cluster_light_01",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Human visual review after the latest candidate run: alpha and placement evidence exist, but the light bush has too many small bright leaf clusters and loses its main shape on the mobile field. Regenerate with fewer larger lobes, broader value shapes, fewer highlights, and clear readability at 48-64px.",
+      "reason": "Human visual review after the latest bush attempt: the light bush still has too many separate leafy segments and small crown shapes. Regenerate with only 2-4 large blended lobes, broader flatter highlights, minimal internal texture, and no collection of mini shrub pieces.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",

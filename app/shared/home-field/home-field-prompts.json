@@ -60,17 +60,17 @@
     },
     "prop_bush_cluster_dark_01": {
       "subject": "transparent-background 2D top-down forest prop: dark organic bush mass for a game hub object layer",
-      "details": "A soft painterly dark-green bush that reads as one continuous natural shrub mass, not a pile of separate round crowns. Use an asymmetric footprint, uneven scalloped outer edge, 3-5 larger blended leaf masses, subtle shadow pockets, and small negative notches so the silhouette feels hand-shaped and natural. Keep internal texture very simple: broad value shapes, no tiny leaf noise. It must be recognizable at 48-64px on a mobile field screenshot.",
+      "details": "A soft painterly dark-green bush that reads as one continuous natural shrub mass, not a pile of separate round crowns. Use an asymmetric footprint, uneven scalloped outer edge, and only 2-4 large overlapping foliage masses. Each mass should be broad and simple, like a soft painted blob with a few edge cuts, not a cluster of many small leafy segments. Use subtle shadow pockets and small negative notches so the silhouette feels hand-shaped and natural. Keep internal texture extremely simple: broad value shapes only, no individual leaf clusters. It must be recognizable at 48-64px on a mobile field screenshot.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, many tiny leaves, or a mound made from many same-size round bushes."
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, many tiny leaves, many small rounded segments, or a mound made from many same-size mini bushes."
     },
     "prop_bush_cluster_light_01": {
       "subject": "transparent-background 2D top-down forest prop: lighter organic bush mass for a game hub object layer",
-      "details": "A lighter moss-green companion to bush_cluster_dark_01. It should feel like one irregular natural shrub with 3-5 blended lobes, uneven leafy edge, offset highlights, and broad simple value shapes. Keep the form low, broad, asymmetric, and hand-painted, with a compact transparent shadow. It should layer over quiet terrain without looking like repeated circular stamps, and it must remain readable at 48-64px.",
+      "details": "A lighter moss-green companion to bush_cluster_dark_01. It should feel like one irregular natural shrub with only 2-4 large blended lobes, uneven leafy edge, offset highlights, and broad simple value shapes. Keep the form low, broad, asymmetric, and hand-painted, with a compact transparent shadow. The bush should be made from a few big readable masses, not many small segments. It should layer over quiet terrain without looking like repeated circular stamps, and it must remain readable at 48-64px.",
       "size": "256x256 transparent PNG",
       "transparency": "transparent background required",
-      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, tiny texture noise, or an obvious procedural mound."
+      "constraints": "Centered, bottom-anchored. No grass tile background, no text, no characters, no mushrooms. Avoid broccoli/cauliflower blobs, flower rosettes, evenly spaced circular clumps, repeated stamp marks, tiny texture noise, many small leafy segments, or an obvious procedural mound."
     },
     "prop_leaf_sprout_01": {
       "subject": "transparent-background 2D top-down forest prop: small leafy sprout cluster",
