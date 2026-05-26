@@ -57,6 +57,7 @@
     "game:home-field:produce-grass-family-candidate": "node app/scripts/produce-home-field-grass-family.js --candidate",
     "game:home-field:produce-path-family": "node app/scripts/produce-home-field-path-family.js",
     "game:home-field:produce-path-family-candidate": "node app/scripts/produce-home-field-path-family.js --candidate",
+    "game:home-field:polish-minimal-candidate": "node app/scripts/polish-home-field-minimal-candidate.js",
     "game:home-field:validate": "node app/scripts/validate-home-field-assets.js",
     "game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js",
     "game:home-field:alpha-sheet": "node app/scripts/generate-home-field-alpha-sheet.js",

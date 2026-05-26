@@ -18,6 +18,19 @@ Deliver a candidate scene that can become the final Home Field baseline after hu
 
 The primary proof is the composed field screenshot, not isolated asset beauty.
 
+## Current Completion State
+
+As of 2026-05-27, the minimal grass-first candidate scene is complete for human review:
+
+- grass uses the `flat-minimal` fallback as a stable simple field baseline;
+- scoped props/exits are produced under `.agent/home-field-workspace/candidates/object-layer/latest` and polished by `npm run game:home-field:polish-minimal-candidate`;
+- `thalla` Stage 1 is produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest`;
+- composed screenshots are generated with `HOME_FIELD_DEFER_PATH=1 npm run game:home-field:combined-candidate-preview`;
+- path remains deferred as `needs_regen` because prior path-family candidates looked pasted onto grass;
+- no app-facing `web/public/home-field` assets are approved or overwritten by this plan.
+
+The candidate is ready for human review, not automatic production approval.
+
 ## Minimal Asset Scope
 
 Use this scope for the first production-looking candidate. Do not expand it during the run.
@@ -232,6 +245,12 @@ HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:alpha-sheet -- --ids=thalla
 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence
 npm run game:home-field:chibi-candidate-preview
+```
+
+For the completed minimal scene candidate, run the polish pass after producing object/chibi candidates:
+
+```bash
+npm run game:home-field:polish-minimal-candidate
 ```
 
 For the full composed scene, the default `npm run game:home-field:combined-candidate-preview` already routes the default latest grass, terrain, object-layer, and chibi candidate roots. If any worker uses non-default candidate folders, set `HOME_FIELD_CANDIDATE_ROOTS` and `HOME_FIELD_CANDIDATE_IDS` explicitly before running the combined preview.
