@@ -15,7 +15,7 @@ const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const STYLE_ANCHOR_PATH = path.join(sharedDir, 'home-field-style-anchor.json');
-const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
+const PROMPT_MARKER = 'Use the imagegen skill to create a candidate game home-field bitmap; do not approve or overwrite app assets.';
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -74,7 +74,7 @@ function main() {
   console.log(PROMPT_MARKER);
   console.log('');
   console.log('## Subject');
-  console.log('One large production-quality 2D top-down meadow source image for a reusable game-hub grass tile family.');
+  console.log('One large production-quality candidate 2D top-down meadow source image for a reusable game-hub grass tile family.');
   console.log('');
   console.log('## Required output');
   console.log('Create one continuous 3x2 or 4x3 dark-green meadow patch, at least 1024x768 if the tool allows. This is NOT a final map screenshot and NOT three separate tiles. It is one shared source used to crop three coordinated 256x256 grass tiles. Use the same elevated top-down 2.5D camera, lighting, palette, brush scale, and texture density across the whole source.');

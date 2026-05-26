@@ -11,6 +11,7 @@ const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-fiel
 const grassFamilySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-grass-family-sheet.js');
 const alphaSheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-alpha-sheet.js');
 const mobileReadabilitySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-mobile-readability-sheet.js');
+const candidateEvidenceScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-candidate-evidence.js');
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
@@ -91,6 +92,20 @@ function writeTinyTransparentFixture(filePath) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeSolidTerrainFixture(filePath, rgb) {
+  const width = 32;
+  const height = 32;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let i = 0; i < width * height; i += 1) {
+    rgba[i * 4 + 0] = rgb[0];
+    rgba[i * 4 + 1] = rgb[1];
+    rgba[i * 4 + 2] = rgb[2];
+    rgba[i * 4 + 3] = 255;
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
 function writeAssetsFixture(filePath, outputPath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify({
@@ -130,6 +145,51 @@ function writeMapFixture(filePath) {
       mobileSafeFrame: { x: 0, y: 0, w: 256, h: 256 }
     },
     layers: []
+  }, null, 2));
+}
+
+function writeTerrainPairFixture(assetsPath, mapPath, outputDir) {
+  fs.mkdirSync(path.dirname(assetsPath), { recursive: true });
+  const terrain = ['terrain_a', 'terrain_b'].map((id) => ({
+    id,
+    type: 'terrain',
+    role: 'test_terrain',
+    promptKey: 'test_terrain',
+    sourcePath: `.agent/home-field-test-workspace/raw/${id}.source.png`,
+    outputPath: `${outputDir}/${id}.png`,
+    publicPath: `/home-field/__test__/${id}.png`,
+    width: 32,
+    height: 32,
+    anchor: { x: 0, y: 0 },
+    collision: 'walkable',
+    animation: null,
+    status: 'generated',
+    tile: {
+      terrainSet: 'test_grass',
+      placement: 'free',
+      connectors: { n: 'grass', e: 'grass', s: 'grass', w: 'grass' },
+      canTouch: ['terrain_a', 'terrain_b']
+    }
+  }));
+  fs.writeFileSync(assetsPath, JSON.stringify({ version: 1, tileSize: 32, assets: terrain, characters: [] }, null, 2));
+  fs.mkdirSync(path.dirname(mapPath), { recursive: true });
+  fs.writeFileSync(mapPath, JSON.stringify({
+    version: 1,
+    tileSize: 32,
+    world: { width: 64, height: 32, tileSize: 32 },
+    spawn: { x: 16, y: 16, facing: 'down' },
+    camera: {
+      initialTarget: { x: 16, y: 16 },
+      mobileSafeFrame: { x: 0, y: 0, w: 64, h: 32 }
+    },
+    layers: [{
+      id: 'terrain',
+      type: 'tileLayer',
+      tiles: [
+        { x: 0, y: 0, assetId: 'terrain_a' },
+        { x: 32, y: 0, assetId: 'terrain_b' }
+      ]
+    }]
   }, null, 2));
 }
 
@@ -356,6 +416,45 @@ test('[home-field] mobile readability sheet renders small prop proofs', () => {
   }
 });
 
+test('[home-field] candidate evidence manifest binds candidate output hashes', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-candidate-evidence-test');
+  const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
+  const candidateRoot = path.join(repoRoot, 'tmp/home-field-candidate-evidence-candidates');
+  const candidateOutputAbs = path.join(candidateRoot, outputPath);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeAssetsFixture(assetsPath, outputPath);
+  writeFixturePng(candidateOutputAbs);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      candidateEvidenceScriptPath,
+      '--ids=chroma_fixture'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_CANDIDATE_ROOT: path.relative(repoRoot, candidateRoot)
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const manifestPath = path.join(repoRoot, '.agent/home-field-workspace/review/candidate-evidence.manifest.json');
+    assert.equal(fs.existsSync(manifestPath), true);
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    assert.equal(manifest.candidateRoot, path.relative(repoRoot, candidateRoot));
+    assert.equal(manifest.entries[0].id, 'chroma_fixture');
+    assert.match(manifest.entries[0].candidateOutput.sha256, /^[a-f0-9]{64}$/);
+    assert.match(manifest.manifestSha256, /^[a-f0-9]{64}$/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+  }
+});
+
 test('[home-field] validation catches visible magenta alpha fringe', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-alpha-fringe-test');
   const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
@@ -430,6 +529,43 @@ test('[home-field] validation catches too-small visible prop bounds', () => {
 
     assert.notEqual(result.status, 0, 'too-small visible bounds should fail readability validation');
     assert.match(result.stderr, /bbox_too_/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] validation catches obvious terrain edge profile mismatch', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-edge-profile-test');
+  const outputDir = 'web/public/home-field/__test__/edge-profile';
+  const candidateRoot = path.join(repoRoot, 'tmp/home-field-edge-profile-candidates');
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const mapPath = path.join(fixtureDir, 'home-field-map.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeTerrainPairFixture(assetsPath, mapPath, outputDir);
+  writeSolidTerrainFixture(path.join(candidateRoot, outputDir, 'terrain_a.png'), [40, 90, 45]);
+  writeSolidTerrainFixture(path.join(candidateRoot, outputDir, 'terrain_b.png'), [160, 70, 55]);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=terrain_a,terrain_b',
+      '--check-files',
+      '--check-edge-profiles'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: path.relative(repoRoot, candidateRoot)
+      },
+      encoding: 'utf8'
+    });
+
+    assert.notEqual(result.status, 0, 'mismatched terrain edge profiles should fail validation');
+    assert.match(result.stderr, /edge_profile_mismatch/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
     fs.rmSync(candidateRoot, { recursive: true, force: true });
@@ -601,8 +737,37 @@ test('[home-field] object candidate rerun emits candidate-root producer and evid
   assert.match(result.stdout, /Runtime canvas: 256x256px/);
   assert.match(result.stdout, /Visual footprint target: small field token/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-alpha-halo/);
+  assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet .*object-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- mushroom_cluster_small_violet/);
+});
+
+test('[home-field] path family rerun emits terrain candidate producer and adjacency evidence', () => {
+  const result = spawnSync(process.execPath, [
+    nextScriptPath,
+    '--batch=terrain-path',
+    '--review-verdict=needs_review,needs_regen',
+    '--include-existing',
+    '--all',
+    '--ignore-review-gate',
+    '--terrain-candidate'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Generation mode: terrain-family candidate root/);
+  assert.match(result.stdout, /path_h_end_w \(terrain\)/);
+  assert.match(result.stdout, /path_dirt_straight \(terrain\)/);
+  assert.match(result.stdout, /Candidate output path .*candidates\/terrain-family\/latest/);
+  assert.match(result.stdout, /npm run game:home-field:produce-terrain-candidate -- path_dirt_straight --resize --crop-center/);
+  assert.match(result.stdout, /--check-files --check-connectors --check-review/);
+  assert.match(result.stdout, /--check-files --check-edge-profiles/);
+  assert.match(result.stdout, /game:home-field:adjacency/);
+  assert.match(result.stdout, /game:home-field:candidate-evidence/);
+  assert.match(result.stdout, /terrain-candidate-preview/);
+  assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- path_dirt_straight/);
 });
 
 test('[home-field] chibi proof emits chibi candidate producer and scoped evidence commands', () => {
@@ -628,6 +793,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final raw frames/);
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize-nearest --chroma-key=#ff00ff/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-readability/);
+  assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=thalla .*chibi-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
 });
@@ -665,7 +831,8 @@ test('[home-field] grass-family queue emits one shared-source prompt and produce
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Generation mode: shared grass-family meadow source/);
   assert.match(result.stdout, /grass_family_meadow\.source\.png/);
-  assert.match(result.stdout, /npm run game:home-field:produce-grass-family/);
+  assert.match(result.stdout, /npm run game:home-field:produce-grass-family-candidate/);
+  assert.match(result.stdout, /candidate game home-field bitmap/);
   assert.match(result.stdout, /--plan=lower-band/);
   assert.match(result.stdout, /Home Field scale contract/);
   assert.match(result.stdout, /Do not change zoom level between crop zones/);

@@ -47,6 +47,7 @@ Handled:
 - Added `app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md` and `docs/home-field-chibi-candidate-contract.md` for Stage 1 chibi proofing. Thalla is the only Stage 1 target, with one non-production turnaround reference sheet followed by isolated per-frame raw PNGs.
 - Added candidate preview screenshot flows for object-layer and chibi runs, using route interception so app-facing PNGs are not overwritten before approval.
 - Tightened final handoff requirements so every generation run must include clickable Markdown links to the candidate folder and mobile/desktop clean field screenshots.
+- Added candidate-safe path/edge family queues, terrain candidate producer alias, combined candidate preview routing, candidate evidence hash manifests, and `--check-edge-profiles` for obvious terrain seam detection.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -54,10 +55,10 @@ Handled:
 
 Still open before production approval:
 
-- Path and edge families still need the same shared-source/candidate-family treatment as grass. Independent path/edge imagegen runs can still create nice isolated squares that fail as a coherent map.
-- Candidate review rows are not yet bound to exact PNG and screenshot hashes. Add candidate provenance fields before approving production art: raw source sha256, candidate output sha256, review evidence directory, mobile/desktop screenshot sha256, and reviewed candidate root.
-- The preview can route one candidate root at a time, but there is no combined candidate scene preview that renders latest candidate grass, props, and chibi together. Production approval should require that composed proof.
-- Connector metadata is stricter now, but visual connector fit is still mostly manual. Add pixel-level edge-profile heuristics for path-band alignment, grass-edge calmness, and blocked-edge stack continuity.
+- Path and edge families now have candidate-safe queues, but they still need actual imagegen reruns and visual review before promotion.
+- Candidate evidence manifests now bind output hashes, but approved review rows still need to copy/reference those hashes before any human-approved production promotion.
+- Combined candidate preview routing now exists; it still needs real current candidate folders for grass, path/edge, props, and chibi before it can serve as final scene proof.
+- `--check-edge-profiles` catches obvious terrain seams, but it remains a heuristic. Manual adjacency-sheet review is still the authority for subtle art-direction seams.
 - `/home-field-preview` remains a DOM/CSS layout lab. Before final approval, either Phaser rendering must exist or the preview must be proven equivalent in scale, anchors, camera, and layering.
 
 Current status after the guardrail pass:

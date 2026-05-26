@@ -7,6 +7,7 @@
  *   npm run game:home-field:validate -- --check-files
  *   npm run game:home-field:validate -- --check-connectors
  *   npm run game:home-field:validate -- --check-review
+ *   npm run game:home-field:validate -- --check-edge-profiles
  *   npm run game:home-field:validate -- --production
  *
  * Default behavior validates schema only (does not require any PNGs to exist yet),
@@ -179,6 +180,116 @@ function checkObjectReadabilityBounds(assetsDoc, errors, { ids = null } = {}) {
   }
 }
 
+function terrainLayer(mapDoc) {
+  return (mapDoc.layers || []).find((layer) => layer.type === 'tileLayer' && layer.id === 'terrain');
+}
+
+function averageEdgeRgb(image, side, band = null, thickness = 6) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+  const xRange = side === 'w'
+    ? [0, thickness]
+    : side === 'e'
+      ? [image.width - thickness, image.width]
+      : [band?.start ?? 0, band?.end ?? image.width];
+  const yRange = side === 'n'
+    ? [0, thickness]
+    : side === 's'
+      ? [image.height - thickness, image.height]
+      : [band?.start ?? 0, band?.end ?? image.height];
+  for (let y = Math.max(0, yRange[0]); y < Math.min(image.height, yRange[1]); y += 1) {
+    for (let x = Math.max(0, xRange[0]); x < Math.min(image.width, xRange[1]); x += 1) {
+      const i = (y * image.width + x) * 4;
+      r += image.rgba[i + 0];
+      g += image.rgba[i + 1];
+      b += image.rgba[i + 2];
+      count += 1;
+    }
+  }
+  return count ? [r / count, g / count, b / count] : [0, 0, 0];
+}
+
+function rgbDistance(a, b) {
+  return Math.sqrt(((a[0] - b[0]) ** 2) + ((a[1] - b[1]) ** 2) + ((a[2] - b[2]) ** 2));
+}
+
+function pathBandFor(asset, side) {
+  const band = asset.tile?.pathBand;
+  if (!band) return null;
+  if (band.axis === 'horizontal' && ['w', 'e'].includes(side)) {
+    const half = band.pathWidth / 2;
+    return {
+      start: Math.round(band.pathCenterY - half),
+      end: Math.round(band.pathCenterY + half)
+    };
+  }
+  if (band.axis === 'vertical' && ['n', 's'].includes(side)) {
+    const half = band.pathWidth / 2;
+    return {
+      start: Math.round(band.pathCenterX - half),
+      end: Math.round(band.pathCenterX + half)
+    };
+  }
+  return null;
+}
+
+function checkTerrainEdgeProfiles(assetsDoc, mapDoc, errors, { ids = null } = {}) {
+  const layer = terrainLayer(mapDoc);
+  if (!layer) return;
+  const terrainById = new Map((assetsDoc.assets || []).filter((asset) => asset.type === 'terrain').map((asset) => [asset.id, asset]));
+  const tileSize = mapDoc.world?.tileSize || mapDoc.tileSize || 256;
+  const byCell = new Map();
+  for (const tile of layer.tiles || []) {
+    byCell.set(`${tile.x / tileSize},${tile.y / tileSize}`, tile.assetId);
+  }
+  const imageCache = new Map();
+  const imageFor = (asset) => {
+    if (imageCache.has(asset.id)) return imageCache.get(asset.id);
+    const abs = path.join(ASSET_ROOT, asset.outputPath);
+    if (!fs.existsSync(abs)) return null;
+    const image = readPngRgba(abs);
+    imageCache.set(asset.id, image);
+    return image;
+  };
+  const checks = [
+    { dx: 1, dy: 0, aSide: 'e', bSide: 'w', dir: 'horizontal' },
+    { dx: 0, dy: 1, aSide: 's', bSide: 'n', dir: 'vertical' }
+  ];
+  for (const tile of layer.tiles || []) {
+    const cx = tile.x / tileSize;
+    const cy = tile.y / tileSize;
+    for (const check of checks) {
+      const neighborId = byCell.get(`${cx + check.dx},${cy + check.dy}`);
+      if (!neighborId) continue;
+      if (ids && !ids.has(tile.assetId) && !ids.has(neighborId)) continue;
+      const asset = terrainById.get(tile.assetId);
+      const neighbor = terrainById.get(neighborId);
+      if (!asset || !neighbor) continue;
+      const connector = asset.tile?.connectors?.[check.aSide];
+      const neighborConnector = neighbor.tile?.connectors?.[check.bSide];
+      if (!connector || connector !== neighborConnector) continue;
+      const image = imageFor(asset);
+      const neighborImage = imageFor(neighbor);
+      if (!image || !neighborImage) continue;
+      const band = pathBandFor(asset, check.aSide) || pathBandFor(neighbor, check.bSide);
+      const distance = rgbDistance(
+        averageEdgeRgb(image, check.aSide, band),
+        averageEdgeRgb(neighborImage, check.bSide, band)
+      );
+      const threshold = connector.startsWith('path') ? 52 : connector.startsWith('edge') ? 62 : 48;
+      if (distance > threshold) {
+        errors.push({
+          scope: 'edge_profiles',
+          code: 'edge_profile_mismatch',
+          message: `${check.dir} neighbor "${asset.id}" ${check.aSide} -> "${neighbor.id}" ${check.bSide} share connector "${connector}" but edge RGB distance is ${distance.toFixed(1)} > ${threshold}; inspect adjacency sheet and regenerate if the seam is visible`
+        });
+      }
+    }
+  }
+}
+
 function loadReviewDoc(errors) {
   if (!fs.existsSync(REVIEW_PATH)) {
     errors.push({
@@ -327,6 +438,7 @@ function main() {
   const wantReviewCheck = hasFlag(argv, 'check-review');
   const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
   const wantReadabilityCheck = hasFlag(argv, 'check-readability');
+  const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
   const wantProduction = hasFlag(argv, 'production');
   const ids = parseIds(argv);
 
@@ -361,6 +473,9 @@ function main() {
   if (wantReadabilityCheck || wantProduction) {
     checkObjectReadabilityBounds(assetsDoc, errors, { ids });
   }
+  if (wantEdgeProfileCheck || wantProduction) {
+    checkTerrainEdgeProfiles(assetsDoc, mapDoc, errors, { ids });
+  }
 
   if (errors.length === 0) {
     console.log('home-field validation: PASS');
@@ -370,6 +485,7 @@ function main() {
     if (wantReviewCheck || wantProduction) modes.push('review manifest');
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
+    if (wantEdgeProfileCheck || wantProduction) modes.push('terrain edge profiles');
     if (wantProduction) modes.push('production approval');
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`

@@ -13,6 +13,12 @@ const candidateRoot = path.resolve(
   repoRoot,
   process.env.HOME_FIELD_CANDIDATE_ROOT || '.agent/home-field-workspace/candidates/grass-family/latest'
 );
+const candidateRoots = (process.env.HOME_FIELD_CANDIDATE_ROOTS || '')
+  .split(',')
+  .map((entry) => entry.trim())
+  .filter(Boolean)
+  .map((entry) => path.resolve(repoRoot, entry));
+if (candidateRoots.length === 0) candidateRoots.push(candidateRoot);
 const screenshotDir = path.join(repoRoot, '.agent/home-field-workspace/review');
 const candidateIds = (process.env.HOME_FIELD_CANDIDATE_IDS || 'grass_base_01,grass_base_02,grass_flowers_01')
   .split(',')
@@ -35,7 +41,11 @@ test.skip(
 );
 
 function candidatePathFor(asset) {
-  return path.join(candidateRoot, asset.outputPath);
+  for (const root of candidateRoots) {
+    const filePath = path.join(root, asset.outputPath);
+    if (fs.existsSync(filePath)) return filePath;
+  }
+  return path.join(candidateRoots[0], asset.outputPath);
 }
 
 async function routeCandidateAssets(page) {

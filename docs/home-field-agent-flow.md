@@ -56,6 +56,55 @@ The default crop plan is `tight-center`. If visual review still shows square val
 
 The run must still stop after these three candidates are produced and reviewed. Path and edge tiles require a separate later run after the grass family is accepted.
 
+## Path And Edge Family Gate
+
+After the grass family is human-approved or explicitly selected as the active candidate baseline, path and edge terrain must be generated as terrain-family candidates, not app-facing PNGs.
+
+Use the family queues:
+
+```bash
+npm run game:home-field:rerun-path-family
+npm run game:home-field:rerun-edge-family
+```
+
+These commands print candidate-safe prompts and producer commands that write under `.agent/home-field-workspace/candidates/terrain-family/latest/`. Do not use plain `game:home-field:produce` for path or edge reruns before human approval.
+
+Required path-family scope:
+
+- `path_h_end_w`
+- `path_dirt_straight`
+- `path_spore_glow`
+- `path_h_end_e`
+- `path_destination_row`
+
+Required edge-family scope:
+
+- `edge_roots_01`
+- `edge_moss_rocks_01`
+- `edge_left_forest_01`
+- `edge_right_forest_01`
+
+The Visual Critic must review each family as one set. A path family fails if the dirt band, glow band, end fades, or destination landing use different camera, palette, edge values, or Y-band reads. An edge family fails if side stacks feel like unrelated forest strips, cropped full scenes, or a different zoom level from the grass/path baseline.
+
+Minimum evidence:
+
+```bash
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:validate -- --ids=<family_ids> --check-files --check-connectors --check-review
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:validate -- --ids=<family_ids> --check-files --check-edge-profiles
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:sheet
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:adjacency
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest HOME_FIELD_CANDIDATE_IDS=<family_ids> npm run game:home-field:candidate-evidence
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest HOME_FIELD_CANDIDATE_IDS=<family_ids> npm run game:home-field:terrain-candidate-preview
+```
+
+Before any production approval, run the combined scene proof:
+
+```bash
+npm run game:home-field:combined-candidate-preview
+```
+
+Use `HOME_FIELD_CANDIDATE_ROOTS` and `HOME_FIELD_CANDIDATE_IDS` if the latest accepted candidate folders differ from the defaults.
+
 ## Object-Layer Candidate Gate
 
 For prop-only review runs, use the generic candidate producer instead of the promotion producer:
@@ -123,6 +172,7 @@ Before any grass candidate can be considered for human approval, the run must pr
 - `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet`
 - `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet`
 - `HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency`
+- `HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/grass-family/latest HOME_FIELD_CANDIDATE_IDS=grass_base_01,grass_base_02,grass_flowers_01 npm run game:home-field:candidate-evidence`
 - `npm run game:home-field:candidate-preview`
 
 Review evidence lives locally under:
@@ -159,6 +209,15 @@ Required fields:
 - `accepted`
 - `reason`
 
+Recommended evidence fields before any human approval:
+
+- `candidateRoot`
+- `candidateEvidenceManifest`
+- `candidateSha256`
+- `rawSourceSha256`
+- `mobileScreenshotSha256`
+- `desktopScreenshotSha256`
+
 Allowed non-human verdicts:
 
 - `needs_review`
@@ -181,6 +240,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If `tight-center` produces blocky family transitions, try at most the two documented alternate crop plans from the same raw source, refresh `grass-family-sheet`, and commit only the best candidate set.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
+- If `--check-edge-profiles` fails, inspect the adjacency sheet before retrying. The heuristic is allowed to be conservative, but visible path-band, grass-edge, or edge-stack seams must be regenerated rather than papered over with metadata.
 - If `--check-alpha-halo` reports visible chroma fringe, reprocess with stricter chroma-key cleanup or regenerate the affected raw PNG. Do not leave `alphaCheck: pending` on a candidate whose halo validator fails.
 - If `--check-readability` fails, regenerate or reprocess the candidate so the visible alpha bounding box meets the asset's `readability` minimums. Do not compensate by scaling objects with CSS in the preview.
 - If a bush candidate looks like many repeated round clumps, broccoli/cauliflower crowns, flower rosettes, or obvious brush stamps instead of one irregular natural shrub mass, set it to `needs_regen` even if alpha, scale, and field screenshots pass.
