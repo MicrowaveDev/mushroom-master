@@ -67,6 +67,34 @@ Required visual bar:
 
 If validators pass but the clean preview looks patched together, the candidate fails.
 
+## Short Implementation Steps
+
+Use this as the operator checklist. The orchestrator owns sequencing and may run the read-only review prompts in parallel with generation work, but promotion stays blocked until human approval.
+
+1. Preflight.
+   - Confirm `main`, clean tracked state, and `npm run game:home-field:validate`.
+   - Start Prompt/Contract Reviewer before imagegen.
+2. Generate the terrain baseline.
+   - Grass/Path Worker generates grass first with `npm run game:home-field:rerun-grass-family`.
+   - Produce the grass candidate with `npm run game:home-field:produce-grass-family-candidate`.
+   - Run a clean candidate preview. If grass shows square cells, fix grass before starting props/chibi.
+3. Decide whether path helps.
+   - Generate path only after grass is usable.
+   - If path looks pasted after two attempts, defer path and continue with grass plus destination/entrance placement.
+4. Run parallel asset workers.
+   - Props/Entrances Worker generates only the scoped object-layer assets.
+   - Chibi Worker generates only Thalla Stage 1.
+   - These may run in parallel after the grass baseline exists.
+5. Produce and validate candidates.
+   - Producer/Validation Worker writes candidate PNGs, proof sheets, evidence manifests, and clean screenshots.
+   - Use `npm run game:home-field:combined-candidate-preview` as the primary scene proof.
+6. Visual review and stop.
+   - Visual Critic reviews the composed mobile/desktop screenshots first.
+   - Mark rows `needs_review`, `needs_regen`, or deferred only. Never approve or set `accepted: true`.
+   - Final handoff must include clickable links to the candidate folder, evidence manifest, review sheets, and clean screenshots.
+
+Fastest viable target: grass + Arena/Journey entrances + three foliage props + two mushroom props + Thalla. Path and optional `lomie` are stretch items, not blockers for a coherent v1 candidate.
+
 ## Subagent Roles
 
 Use subagents when available. No single role may generate and approve its own image.
@@ -215,6 +243,70 @@ Must never set:
 8. Stop for human approval.
 
 Do not promote app-facing assets during this plan.
+
+## Ready-To-Run Delegation Prompts
+
+Use these when the orchestrator can spawn subagents. Each prompt is bounded so workers do not expand scope.
+
+### Prompt/Contract Reviewer
+
+```text
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as read-only Prompt/Contract Reviewer for the minimal Home Field production-candidate run.
+
+Read docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, app/shared/home-field/home-field-assets.json, app/shared/home-field/home-field-prompts.json, and docs/home-field-chibi-candidate-contract.md.
+
+Report contradictions or missing instructions only. Check candidate-only paths, minimal scope, shared-source grass/path rules, prop scale/readability rules, Thalla Stage 1 rules, subagent separation, and required final evidence. Do not edit files, generate images, approve assets, or run producers.
+```
+
+### Grass/Path Worker
+
+```text
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Grass/Path Worker for the minimal Home Field production-candidate run.
+
+Follow docs/home-field-minimal-production-plan.md and docs/home-field-agent-flow.md. Generate terrain candidates only under .agent/home-field-workspace. Start with grass only: run npm run game:home-field:rerun-grass-family, use imagegen for one shared meadow source, then run npm run game:home-field:produce-grass-family-candidate.
+
+After grass preview evidence exists, generate the shared-source path family only if it improves the composed field. If path looks pasted after two attempts, defer path. Do not touch web/public/home-field, do not approve assets, and include links to raw source, candidate folder, and clean preview screenshots in your handoff.
+```
+
+### Props/Entrances Worker
+
+```text
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Props/Entrances Worker for the minimal Home Field production-candidate run.
+
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, and docs/home-field-scale-contract.md. Generate only these object-layer candidates: bush_cluster_dark_01, bush_cluster_light_01, leaf_sprout_01, mushroom_cluster_small_amber, mushroom_cluster_small_violet, mushroom_cap_red_spotted, fallen_branch_mycelium, arena_mushroom_arch, journey_gate_under_construction.
+
+Use broad mobile-readable silhouettes, fewer segments, top-down 2.5D camera, muted shared palette, compact shadows, and transparent backgrounds. Produce only candidate outputs under .agent/home-field-workspace/candidates/object-layer/latest. Run alpha/halo and mobile-readability proof sheets. Do not edit web/public/home-field or approve assets.
+```
+
+### Chibi Worker
+
+```text
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Chibi Worker for the minimal Home Field production-candidate run.
+
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D field sprite, simple 64px runtime read, 8 unique poses minimum in the compact 12-slot contract, no 32-frame full animation.
+
+Create a non-production turnaround reference first, then isolated transparent raw frames. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
+```
+
+### Producer/Validation Worker
+
+```text
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Producer/Validation Worker for the minimal Home Field production-candidate run.
+
+Follow docs/home-field-minimal-production-plan.md and docs/home-field-agent-flow.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:combined-candidate-preview.
+
+Do not hand-edit PNGs, change contracts, overwrite web/public/home-field, or approve art. Final handoff must list candidate folder, evidence manifest, contact sheet, adjacency sheet, alpha/halo sheet, mobile-readability sheet, and mobile/desktop clean screenshots as clickable links.
+```
+
+### Visual Critic
+
+```text
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Visual Critic for the minimal Home Field production-candidate run.
+
+Review the composed mobile and desktop clean screenshots first, then supporting contact/adjacency/alpha/readability sheets and evidence manifests. Fail visible square terrain cells, pasted path bands, noisy grass, wrong chibi camera/scale, over-detailed mobile props, mismatched entrances, or mixed renderer styles.
+
+Update only docs/home-field-asset-review.json rows for the active batch with needs_review, needs_regen, or deferred-style notes. Never set verdict approved or accepted=true without explicit human approval.
+```
 
 ## Decision Rules
 
