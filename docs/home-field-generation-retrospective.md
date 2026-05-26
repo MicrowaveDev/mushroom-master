@@ -12,6 +12,7 @@ After this retrospective was written, the workflow was hardened in follow-up com
 - `63bcd6e Add home field tile regeneration queue`
 - `fe0d88a Update home field retrospective status`
 - current pass: add pre-generation terrain gates for adjacency proof, path-band metadata, structured review checks, and grass-first queueing
+- later passes: add candidate-only roots, mobile readability/alpha proof sheets, scene-prop scale constraints, and staged active-roster chibi proof flow
 
 These changes did **not** make the current art production-ready. They changed the process so future agents cannot accidentally treat the current PNG set as approved.
 
@@ -35,10 +36,29 @@ Handled:
 - Added `npm run game:home-field:rerun-grass-family` and `npm run game:home-field:produce-grass-family`, which replace independent grass tile generation with one shared meadow source cropped into the three grass family outputs.
 - After rollout `d96d18f`, tightened the grass-family crop plan to nearby central crops, added `--plan=lower-band|upper-band` fallbacks for the same raw source, and added `npm run game:home-field:grass-family-sheet` so blocky family transitions are visible before commit.
 - After rollout `7aa2fdd`, added `npm run game:home-field:produce-grass-family-candidate` and `HOME_FIELD_ASSET_ROOT` review support so failed grass candidates stay under `.agent/home-field-workspace/candidates/grass-family/latest/` instead of overwriting app-facing terrain PNGs on `main`.
+- Added candidate-only object-layer and chibi producers:
+  - `npm run game:home-field:produce-object-candidate`
+  - `npm run game:home-field:produce-chibi-candidate`
+  These route generated art through `.agent/home-field-workspace/candidates/.../latest/` until a human explicitly approves promotion.
+- Added `npm run game:home-field:mobile-readability-sheet` so props/chibis are reviewed at small field sizes, not only as large contact-sheet illustrations.
+- Added `npm run game:home-field:alpha-sheet` and `--check-alpha-halo` so transparent PNGs are inspected on light, dark, green, and checkerboard-style proof backgrounds.
+- Added `docs/home-field-scale-contract.md`, and wired the prompt printer to include the shared top-down camera, mobile footprint, detail-budget, and consistent scale rules.
+- Added `app/shared/home-field/RUN_SCENE_PROPS_PROMPT.md` for short launcher prompts that point to checked-in instructions instead of carrying fragile long chat prompts.
+- Added `app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md` and `docs/home-field-chibi-candidate-contract.md` for Stage 1 chibi proofing. Thalla is the only Stage 1 target, with one non-production turnaround reference sheet followed by isolated per-frame raw PNGs.
+- Added candidate preview screenshot flows for object-layer and chibi runs, using route interception so app-facing PNGs are not overwritten before approval.
+- Tightened final handoff requirements so every generation run must include clickable Markdown links to the candidate folder and mobile/desktop clean field screenshots.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
 - Updated Home Field README / Codex prompt / tileset contract with the review-gate and clean-preview workflow.
+
+Still open before production approval:
+
+- Path and edge families still need the same shared-source/candidate-family treatment as grass. Independent path/edge imagegen runs can still create nice isolated squares that fail as a coherent map.
+- Candidate review rows are not yet bound to exact PNG and screenshot hashes. Add candidate provenance fields before approving production art: raw source sha256, candidate output sha256, review evidence directory, mobile/desktop screenshot sha256, and reviewed candidate root.
+- The preview can route one candidate root at a time, but there is no combined candidate scene preview that renders latest candidate grass, props, and chibi together. Production approval should require that composed proof.
+- Connector metadata is stricter now, but visual connector fit is still mostly manual. Add pixel-level edge-profile heuristics for path-band alignment, grass-edge calmness, and blocked-edge stack continuity.
+- `/home-field-preview` remains a DOM/CSS layout lab. Before final approval, either Phaser rendering must exist or the preview must be proven equivalent in scale, anchors, camera, and layering.
 
 Current status after the guardrail pass:
 
@@ -63,6 +83,12 @@ npm run game:home-field:adjacency
 
 npm run game:home-field:grass-family-sheet
 # writes the focused grass-family repeat/mix proof sheet
+
+npm run game:home-field:mobile-readability-sheet
+# writes small-size readability proof for selected object/chibi candidates
+
+npm run game:home-field:alpha-sheet
+# writes transparent-asset alpha/halo proof for selected object/chibi candidates
 ```
 
 Do not "fix" the production gate by changing statuses. It should pass only after real art is regenerated, reviewed, and explicitly accepted.
@@ -247,18 +273,18 @@ The current `edge_left_forest_01` and `edge_right_forest_01` stack, but there ar
 
 ### Status Semantics
 
-`draft` currently means too many things:
+The old `draft` state was ambiguous. It used to cover too many different meanings:
 
-- technically generated;
-- visually plausible but not approved;
+- technically generated but not visually reviewed;
+- visually plausible but not human-approved;
 - placeholder but gate-satisfying;
 - final candidate pending review.
 
-Recommendation:
+Handled status model:
 
 ```text
 missing -> generated -> needs_review -> rejected | approved
-placeholder should be separate from generated art
+placeholder is separate from generated art and blocks production validation
 ```
 
 Handled:
