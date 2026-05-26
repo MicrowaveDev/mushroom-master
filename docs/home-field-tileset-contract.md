@@ -21,7 +21,7 @@ Use connector tokens as art contracts, not only as code metadata.
 | `grass` | Open meadow grass | Broad muted green reaches the edge with no hard feature cut off. |
 | `path_h` | Horizontal path lane | Dirt/path band exits west/east at the same Y and width. |
 | `path_v` | Vertical path lane | Dirt/path band exits north/south at the same X and width. |
-| `path_h_wide` | Destination-row path | Wider horizontal landing/path exits west/east consistently. |
+| `path_h_wide` | Future destination-row connector | Wider horizontal landing/path exits west/east consistently when a connected destination row is introduced. |
 | `edge_blocked` | Blocked forest/undergrowth | Dense edge/roots/rocks read as non-walkable; do not touch `grass` without a transition. |
 
 Direct neighbors are production-safe only when touching connector tokens match, or a declared transition tile bridges the two tokens.
@@ -59,13 +59,17 @@ Vertical path tiles connect top-to-bottom:
 
 Use these if the home field adds a route from spawn upward toward Arena/Journey instead of only a horizontal lane.
 
-### Destination Row
+### Destination Landing
 
-Destination-row tiles are wider landing/path pieces near exits:
+The current proof map uses one isolated landing tile near exits:
 
-- `path_destination_row`: `w/e = path_h_wide`, `n/s = grass`.
-- `path_destination_end_w`: `e = path_h_wide`, other sides `grass`.
-- `path_destination_end_e`: `w = path_h_wide`, other sides `grass`.
+- `path_destination_row`: all sides `grass`; reads as a quiet dirt/moss landing pad under/near destination props, not as a horizontal connector row.
+
+Future destination-row connector pieces, if needed, should use new asset IDs rather than changing the current isolated landing contract:
+
+- `path_destination_connector_mid`: `w/e = path_h_wide`, `n/s = grass`.
+- `path_destination_connector_end_w`: `e = path_h_wide`, other sides `grass`.
+- `path_destination_connector_end_e`: `w = path_h_wide`, other sides `grass`.
 
 Do not bake an Arena arch, Journey gate, sign, lantern, or text into any destination-row terrain tile.
 

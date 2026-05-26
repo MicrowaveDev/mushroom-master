@@ -69,6 +69,7 @@ function main() {
   console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:adjacency`);
   console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${IDS} npm run game:home-field:candidate-evidence`);
   console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${IDS} npm run game:home-field:terrain-candidate-preview`);
+  console.log('  npm run game:home-field:combined-candidate-preview');
   console.log('Do not overwrite web/public/home-field/terrain/ until explicit human approval. Candidate preview screenshots use Playwright route interception and are safe before promotion.');
   console.log('');
   console.log('---');
@@ -99,6 +100,7 @@ function main() {
   console.log('- No five independent square tiles, no visible panel borders, no pasted strips, no different renderers between sections, no strong center symbols, no realistic soil texture, no dense pebbles, no spotlight glow.');
   console.log('- The path band must align visually across west-end, straight, glow, and east-end crops. If one crop has a different dirt color, brush density, Y position, width, camera, or lighting, regenerate the shared source.');
   console.log('- The destination landing must share the same grass/dirt palette but remain grass-compatible on every edge.');
+  console.log('- The cropped tiles must blend with the current Home Field grass in mobile and desktop clean previews. If the candidate appears as visible square patches pasted onto the field, it fails even when validators pass.');
   console.log('');
   console.log(styleAnchorBlock(anchor));
   console.log('');
@@ -110,6 +112,7 @@ function main() {
   console.log(`Adjacency sheet: [adjacency sheet](${repoRoot}/.agent/home-field-workspace/review/adjacency-sheet.png)`);
   console.log(`Candidate field mobile: [mobile field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png)`);
   console.log(`Candidate field desktop: [desktop field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)`);
+  console.log('Visual Critic must wait for final evidence for the latest raw hash before editing review rows. Do not mark cleanPreviewCheck pass if square tile boundaries are visible.');
 }
 
 main();

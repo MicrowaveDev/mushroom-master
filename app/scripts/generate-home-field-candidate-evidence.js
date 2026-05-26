@@ -23,6 +23,7 @@ const candidateRoot = process.env.HOME_FIELD_CANDIDATE_ROOT
   : path.join(repoRoot, '.agent', 'home-field-workspace', 'candidates', 'terrain-family', 'latest');
 const reviewDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'review');
 const outPath = path.join(reviewDir, 'candidate-evidence.manifest.json');
+const manifestDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'manifests');
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -66,6 +67,39 @@ function hashIfExists(filePath) {
   };
 }
 
+function latestSharedSourceFor(ids) {
+  if (!fs.existsSync(manifestDir)) return null;
+  const required = new Set(ids);
+  const candidates = fs.readdirSync(manifestDir)
+    .filter((name) => /^produce-(grass|path)-family-.*\.json$/.test(name))
+    .map((name) => {
+      const filePath = path.join(manifestDir, name);
+      return { filePath, mtimeMs: fs.statSync(filePath).mtimeMs };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  for (const candidate of candidates) {
+    let doc;
+    try {
+      doc = loadJson(candidate.filePath);
+    } catch {
+      continue;
+    }
+    const outputIds = new Set((doc.outputs || []).map((entry) => entry.id));
+    const coversAll = [...required].every((id) => outputIds.has(id));
+    const isSharedFamily = doc.policy?.oneSharedSourceForGrassFamily || doc.policy?.oneSharedSourceForPathFamily;
+    if (!coversAll || !isSharedFamily || !doc.source?.path) continue;
+    const abs = path.resolve(repoRoot, doc.source.path);
+    const hashed = hashIfExists(abs);
+    if (!hashed) continue;
+    return {
+      ...hashed,
+      producerManifest: path.relative(repoRoot, candidate.filePath)
+    };
+  }
+  return null;
+}
+
 function screenshotEvidence() {
   const names = [
     'home-field-candidate-mobile-clean.png',
@@ -93,6 +127,7 @@ function main() {
   const assetsDoc = loadJson(assetsPath);
   const byId = new Map(allAssets(assetsDoc).map((asset) => [asset.id, asset]));
   const missing = [];
+  const sharedRawSource = latestSharedSourceFor(ids);
   const entries = ids.map((id) => {
     const asset = byId.get(id);
     if (!asset) {
@@ -107,7 +142,7 @@ function main() {
       id,
       type: asset.type,
       candidateOutput: output,
-      rawSource: rawSource ? hashIfExists(rawSource) : null
+      rawSource: sharedRawSource || (rawSource ? hashIfExists(rawSource) : null)
     };
   }).filter(Boolean);
 
@@ -123,7 +158,8 @@ function main() {
     candidateRoot: path.relative(repoRoot, candidateRoot),
     ids,
     entries,
-    reviewEvidence: screenshotEvidence()
+    reviewEvidence: screenshotEvidence(),
+    ...(sharedRawSource ? { sharedRawSource } : {})
   };
   const encoded = Buffer.from(JSON.stringify(manifest, null, 2));
   manifest.manifestSha256 = bufferSha256(encoded);

@@ -92,7 +92,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **candidate-preview** | `npm run game:home-field:candidate-preview` | Uses Playwright route interception to render `/home-field-preview?debug=0` with the latest candidate grass PNGs, writing `.agent/home-field-workspace/review/home-field-candidate-{mobile,desktop}-clean.png` without promoting app-facing assets. |
 | **terrain-candidate-preview** | `npm run game:home-field:terrain-candidate-preview` | Same clean preview screenshot flow, but routes terrain-family candidates from `.agent/home-field-workspace/candidates/terrain-family/latest/`. |
 | **object-candidate-preview** | `npm run game:home-field:object-candidate-preview` | Same clean preview screenshot flow, but routes foliage props from `.agent/home-field-workspace/candidates/object-layer/latest/`. |
-| **combined-candidate-preview** | `npm run game:home-field:combined-candidate-preview` | Routes grass, terrain-family, object-layer, and chibi candidate roots together for final scene-level proof before production sign-off. |
+| **combined-candidate-preview** | `npm run game:home-field:combined-candidate-preview` | Routes grass, terrain-family, object-layer, and chibi candidate roots together for final scene-level proof before production sign-off. Required before path promotion because path tiles can be internally coherent while still looking pasted onto the grass baseline. |
 
 ## Agent Flow
 
@@ -174,6 +174,7 @@ Terrain acceptance is stricter than "looks pretty":
 - reject dense AI texture, unique center highlights, tiny realistic grass blades, obvious wallpaper, cut-off edge marks, and any tile that would have been better as an object-layer prop.
 - for the first grass family, reject independent per-tile generation. Use one shared meadow source and crop the base/accent tiles from it so lighting, brushwork, and value range match.
 - for the path family, reject independent per-tile generation. Use one shared path source and crop the west end, straight path, glow path, east end, and destination landing from it so dirt-band Y position, width, palette, and brushwork match.
+- reject a path candidate if the mobile or desktop clean preview exposes visible square tile blocks, even when `--check-edge-profiles` and `--check-family-cohesion` pass.
 
 Reference model:
 

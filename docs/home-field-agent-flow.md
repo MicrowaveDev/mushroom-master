@@ -26,7 +26,7 @@ Do not pass `fork_context` or mixed `message`/`items` payloads; those have cause
 | Prompt/Contract Reviewer | Assets, prompts, style anchor, tileset contract, rerun-grass output | Nothing | Generate images, edit manifests, approve art |
 | Imagegen Worker | Prompt blocks and style anchor | Raw PNGs under `.agent/home-field-workspace/raw/` | Edit app PNGs directly, edit JSON/docs, approve art |
 | Producer/Validation Worker | Raw files, manifest, command output | Candidate PNGs under `.agent/home-field-workspace/candidates/`; generated local review sheets | Hand-edit PNGs, change contracts, overwrite app-facing PNGs before human approval, approve art |
-| Visual Critic | Contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Set `approved` or `accepted: true` without explicit human approval |
+| Visual Critic | Final candidate evidence manifest, contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Start before final evidence exists, set `approved` or `accepted: true` without explicit human approval |
 
 ## Grass-First Stop Gate
 
@@ -94,6 +94,8 @@ Required edge-family scope:
 
 The Visual Critic must review each family as one set. A path family fails if the dirt band, glow band, end fades, or destination landing use different camera, palette, edge values, or Y-band reads. An edge family fails if side stacks feel like unrelated forest strips, cropped full scenes, or a different zoom level from the grass/path baseline.
 
+The Visual Critic must wait until the Producer/Validation Worker has passed every required command for the current raw source hash and has regenerated the candidate evidence manifest. If the producer regenerates the shared source after a failed check, any earlier visual verdict is stale and must be redone from the latest contact sheet, adjacency sheet, evidence manifest, and mobile/desktop clean previews.
+
 Minimum evidence:
 
 ```bash
@@ -112,6 +114,8 @@ npm run game:home-field:combined-candidate-preview
 ```
 
 Use `HOME_FIELD_CANDIDATE_ROOTS` and `HOME_FIELD_CANDIDATE_IDS` if the latest accepted candidate folders differ from the defaults.
+
+Before path promotion specifically, inspect the path candidate together with the current grass candidate/baseline in `game:home-field:combined-candidate-preview`. A path family can be internally coherent and still fail production if the path tiles look pasted onto the grass field.
 
 ## Object-Layer Candidate Gate
 
@@ -244,6 +248,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If imagegen returns a full scene, dense texture, path, prop, text, horizon, or focal object inside a grass tile, discard the raw and regenerate.
 - If the shared meadow output still shows repeated square blocks, diagonal mottling, columns, rows, hard value bands, or visibly different zones in the contact sheet or clean preview, mark it `needs_regen`. Passing file and connector validation is not enough.
 - If the clean preview does not look like a calm stage where chibi avatars and object-layer foliage can sit naturally, set `sceneFitCheck` to `fail` even if the tile is technically seamless.
+- If the mobile or desktop clean preview shows visible square tile boundaries, pasted candidate blocks, or a path/destination patch that does not blend into the surrounding grass, set `cleanPreviewCheck` to `fail`. Do not mark it `pass` just because connector, edge-profile, or family-cohesion validation passed.
 - If the grass variants do not share lighting, brushwork, and value range, set `familyCohesionCheck` to `fail`.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If `tight-center` produces blocky family transitions, try at most the two documented alternate crop plans from the same raw source, refresh `grass-family-sheet`, and commit only the best candidate set.
@@ -260,6 +265,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - Intentional vegetable or strange-flower references are allowed only for assets with `role: "funny_foliage_prop"` such as `mutant_broccoli_bush_01`; do not use that allowance to approve accidental broccoli shapes in natural `bush_cluster_*` assets.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, leave app-facing PNGs untouched, commit the review manifest if it changed, and stop.
 - If visual review passes as `needs_review`, stop and ask for human approval before promoting candidate PNGs to app-facing paths.
+- If visual review is waiting for human approval but has any remaining visual caveat, prefer `needs_review` with the affected check left `pending` or `fail`; reserve all-pass rows for candidates the Visual Critic would be comfortable promoting after explicit human approval.
 - Every candidate run must update `docs/home-field-asset-review.json` with a per-asset visual verdict for the generated IDs. Do this even when the verdict remains `needs_regen`; fresh evidence with stale reasons/checks is a failed handoff.
 
 ## Handoff Report
