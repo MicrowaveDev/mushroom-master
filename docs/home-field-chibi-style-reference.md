@@ -2,7 +2,17 @@
 
 Date: 2026-05-26
 
-This is the checked-in text reference for the chibi screenshot discussed in the agent run logs and current review thread. The screenshot is a non-owned external style reference, so do not copy characters, costumes, symbols, props, composition, or exact facial designs from it. Use it only to calibrate Home Field chibi proportions and field readability.
+This is the checked-in reference for the chibi screenshot discussed in the agent run logs and current review thread. The bitmap was extracted from:
+
+`/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019e28e1-1f3a-76b1-bc82-fe49df517631-rollout-2026-05-15T00-45-02-019e28e1-1f3a-76b1-bc82-fe49df517631.jsonl`
+
+Source line: `7731`, user note: "i think it should be simpler like here".
+
+Local reference image:
+
+![Agent-log chibi style reference](reference/home-field/chibi-style-agent-log-reference.png)
+
+The screenshot is a non-owned external style reference, so do not copy characters, costumes, symbols, props, composition, or exact facial designs from it. Use it only to calibrate Home Field chibi proportions, top-down field readability, outline weight, and scene-scale simplicity.
 
 ## Target Read
 
@@ -20,7 +30,7 @@ Home Field chibis should feel close to the reference in these ways:
 
 Do not copy the reference directly. For Mushroom Battles:
 
-- reduce eye size: eyes must not dominate the head or become huge white portrait eyes;
+- reduce eye size versus the reference: eyes must not dominate the head or become huge white portrait eyes;
 - keep Thalla's canon identity: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, visible elf ears when shown, restrained bone/gold/white/brown palette;
 - use mushroom-elf biology, not animal/mascot/cult-character biology;
 - avoid the reference's exact crown/horn/mask shapes, symbols, costumes, flowers, and UI/composition;

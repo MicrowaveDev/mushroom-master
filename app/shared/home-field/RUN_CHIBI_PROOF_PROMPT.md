@@ -11,7 +11,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Fie
 ## Required Flow
 
 1. Use sub-agents for separate roles: Producer, Validator, Visual Critic, and Handoff.
-2. Read `docs/home-field-chibi-candidate-contract.md`, `docs/home-field-chibi-style-reference.md`, `docs/home-field-agent-flow.md`, `app/shared/home-field/home-field-prompts.json`, and `docs/design-requirements.md`.
+2. Read `docs/home-field-chibi-candidate-contract.md`, `docs/home-field-chibi-style-reference.md`, the embedded bitmap reference at `docs/reference/home-field/chibi-style-agent-log-reference.png`, `docs/home-field-agent-flow.md`, `app/shared/home-field/home-field-prompts.json`, and `docs/design-requirements.md`.
 3. Generate only `thalla`. Do not generate Lomie, Axilin, Kirt, Morga, or Dalamar in Stage 1.
 4. Use `npm run game:home-field:next-chibi-proof` to print the current prompt and commands.
 5. Generate one non-production reference turnaround sheet first and save it to `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`. It should show Thalla in `down`, `up`, `left`, and `right` directions with the same proportions, top-down 2.5D camera, palette, and detail budget. This reference is for consistency only; do not slice it into final frames.

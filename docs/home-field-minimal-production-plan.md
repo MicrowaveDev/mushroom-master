@@ -53,6 +53,7 @@ Character:
 Chibi style reference:
 
 - Before regenerating Thalla, read [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md).
+- The style reference now includes the extracted agent-log bitmap at [`docs/reference/home-field/chibi-style-agent-log-reference.png`](reference/home-field/chibi-style-agent-log-reference.png).
 - Target the same kind of squat, bold, map-readable field-sprite proportions as the agent-log reference screenshot, but do not copy its characters or symbols.
 - Avoid huge white portrait eyes; Thalla's face should be expressive but smaller-eyed, with canon black/fire-gold eye identity and stronger mushroom-elf sovereign silhouette.
 
