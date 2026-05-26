@@ -52,6 +52,8 @@ Handled:
 - Added `--check-family-cohesion` to flag terrain-family palette/value outliers that edge-profile checks can miss.
 - Fixed the `terrain_path_destination_row` prompt so it is no longer described as a horizontal path connector; it is an isolated grass-compatible destination landing.
 - After rollout `019e6613`, made candidate evidence shared-source aware, reconciled the destination landing tileset contract, and tightened Visual Critic sequencing/check rules so a path candidate cannot get all-pass review rows while the clean preview still shows square pasted tiles.
+- Added `docs/home-field-minimal-production-plan.md` and `app/shared/home-field/RUN_MINIMAL_HOME_FIELD_PROMPT.md` for the fastest integrated scene pass: quiet grass, entrances, a small prop set, and Thalla reviewed together from composed mobile/desktop screenshots.
+- Updated combined candidate preview defaults so the minimal scene proof includes Arena and Journey entrances, not just terrain, props, and Thalla.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.

@@ -10,7 +10,7 @@ Deliver a candidate scene that can become the final Home Field baseline after hu
 
 - simple green field with natural-looking repeat pattern;
 - no obvious square tile pattern in mobile or desktop clean preview;
-- `thalla` chibi present at correct top-down field scale;
+- `thalla` chibi present at correct top-down field scale, with one optional second chibi only after Thalla passes scene review;
 - Arena and Journey entrances present;
 - a small set of bushes, mushrooms, and foliage props present;
 - all visible assets share camera, palette, outline weight, detail budget, and scale;
@@ -47,7 +47,8 @@ Props and exits:
 
 Character:
 
-- `thalla`
+- `thalla` required
+- optional second chibi: `lomie`, only after Thalla passes scene review and the run still has budget
 
 Optional defer rule: if a scoped asset fails twice and is not required for scene readability, defer it instead of extending the run.
 
@@ -153,7 +154,7 @@ Rules:
 - no 32-frame full animation requirement yet;
 - no roster expansion until Thalla passes scene review.
 
-If Thalla fails twice, simplify Thalla and stop. Do not generate the rest of the roster.
+If Thalla fails twice, simplify Thalla and stop. Do not generate the rest of the roster. If Thalla passes and a second chibi is still needed for the scene, generate `lomie` only; keep the rest of the roster deferred.
 
 ### 6. Producer/Validation Worker
 
@@ -164,7 +165,7 @@ Required evidence:
 ```bash
 npm run game:home-field:candidate-preview
 npm run game:home-field:terrain-candidate-preview
-npm run game:home-field:object-candidate-preview
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction npm run game:home-field:object-candidate-preview
 npm run game:home-field:chibi-candidate-preview
 npm run game:home-field:combined-candidate-preview
 ```
@@ -224,6 +225,7 @@ Use these rules to keep the run short.
 - Prop fails twice: defer that prop unless it is an entrance.
 - Entrance fails twice: keep the best candidate as `needs_review` only if scale/style are acceptable; otherwise mark `needs_regen`.
 - Thalla fails twice: simplify the chibi; do not expand the roster.
+- Thalla passes and a second chibi is needed: generate `lomie` only, then stop.
 - Any visible square tile boundary in clean preview: fail `cleanPreviewCheck`.
 - Any candidate that needs explanation to look correct on mobile: fail.
 
@@ -253,7 +255,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the minimal 
 
 Goal: one coherent candidate scene, not perfect isolated tiles. Candidate-only: do not overwrite web/public/home-field, do not approve assets, do not set accepted=true.
 
-Use minimal scope only: grass_base_01, grass_base_02, grass_flowers_01, optional path family, bush_cluster_dark_01, bush_cluster_light_01, leaf_sprout_01, mushroom_cluster_small_amber, mushroom_cluster_small_violet, mushroom_cap_red_spotted, fallen_branch_mycelium, arena_mushroom_arch, journey_gate_under_construction, thalla.
+Use minimal scope only: grass_base_01, grass_base_02, grass_flowers_01, optional path family, bush_cluster_dark_01, bush_cluster_light_01, leaf_sprout_01, mushroom_cluster_small_amber, mushroom_cluster_small_violet, mushroom_cap_red_spotted, fallen_branch_mycelium, arena_mushroom_arch, journey_gate_under_construction, thalla. Generate optional lomie only after Thalla passes scene review.
 
 Prioritize clean mobile/desktop composed field screenshots. If path looks pasted after two attempts, defer path and proceed with grass-first scene. Visual Critic must review final combined evidence and fail visible tile squares.
 

@@ -28,6 +28,20 @@ Do not pass `fork_context` or mixed `message`/`items` payloads; those have cause
 | Producer/Validation Worker | Raw files, manifest, command output | Candidate PNGs under `.agent/home-field-workspace/candidates/`; generated local review sheets | Hand-edit PNGs, change contracts, overwrite app-facing PNGs before human approval, approve art |
 | Visual Critic | Final candidate evidence manifest, contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Start before final evidence exists, set `approved` or `accepted: true` without explicit human approval |
 
+## Minimal Production Scene Gate
+
+When the goal is a production-looking Home Field v1, use [`docs/home-field-minimal-production-plan.md`](home-field-minimal-production-plan.md) instead of running isolated asset-family polishing. The run target is one coherent composed field candidate with quiet grass, entrances, a few props, and Thalla at correct field scale.
+
+The primary acceptance evidence is the clean composed scene:
+
+```bash
+npm run game:home-field:combined-candidate-preview
+```
+
+The Visual Critic must review `.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png` and `.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png` before treating contact sheets as supporting evidence. If those screenshots show visible square terrain cells, pasted path bands, mismatched prop scale, wrong chibi camera, or mixed renderer styles, the candidate fails even when mechanical validators pass.
+
+Path is optional for this v1 gate. If the shared-source path family fails to blend into the grass baseline twice, defer path and continue with a grass-first scene plus destination/entrance placement rather than extending the run.
+
 ## Grass-First Stop Gate
 
 The next tile generation run is limited to:

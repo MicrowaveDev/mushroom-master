@@ -2,7 +2,7 @@
 
 This directory holds the **frozen contracts** for the Home Field hub. Phase 0 of the plan is complete; the next agent (Codex) generates the tiles, props, exits, effects, and chibi spritesheets.
 
-**For the human handing off to Codex**: use the short ready-to-paste grass prompt in [`RUN_GRASS_PROMPT.md`](./RUN_GRASS_PROMPT.md). It intentionally points the next agent to checked-in instructions instead of carrying the whole workflow in the chat prompt. The longer self-contained fallback remains in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). The role split for sub-agent runs is documented in [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md).
+**For the human handing off to Codex**: if the goal is the fastest production-looking scene, use [`RUN_MINIMAL_HOME_FIELD_PROMPT.md`](./RUN_MINIMAL_HOME_FIELD_PROMPT.md). It points the next agent to the integrated scene plan in [`docs/home-field-minimal-production-plan.md`](../../../docs/home-field-minimal-production-plan.md), where grass, props, entrances, and Thalla are reviewed together in the composed field. Use [`RUN_GRASS_PROMPT.md`](./RUN_GRASS_PROMPT.md) only for a grass-only rerun. The longer self-contained fallback remains in [`CODEX_PROMPT.md`](./CODEX_PROMPT.md). The role split for sub-agent runs is documented in [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md).
 
 ## Before You Start (Codex)
 
@@ -32,6 +32,7 @@ npm run game:home-field:next --limit=10
 ## Source Of Truth
 
 - **Plan**: [`docs/home-field-ingame-plan.md`](../../../docs/home-field-ingame-plan.md)
+- **Minimal production candidate plan**: [`docs/home-field-minimal-production-plan.md`](../../../docs/home-field-minimal-production-plan.md)
 - **Tileset connector contract**: [`docs/home-field-tileset-contract.md`](../../../docs/home-field-tileset-contract.md)
 - **ADR**: [`docs/adr/0001-home-field-renderer.md`](../../../docs/adr/0001-home-field-renderer.md)
 - **Requirements**: [`docs/game-requirements.md`](../../../docs/game-requirements.md) Section 15.
