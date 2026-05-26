@@ -33,6 +33,8 @@ Each character still uses the locked Home Field runtime sheet shape:
 
 Stage 1 proves identity and mobile readability before full animation polish. Do not require 32 unique frames for the first run.
 
+Generate each raw file as its own isolated `64x64` transparent frame. Do not generate a larger contact sheet, grid sheet, character lineup, or full scene and crop it afterward. If imagegen returns multiple frames in one image, miniature sprites, a field background, or a bordered sheet, discard that raw output and regenerate the affected frame.
+
 The minimum accepted Stage 1 input is 8 unique poses:
 
 - idle down, walk down
@@ -69,11 +71,22 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - visible elf ears whenever ears are visible
 - strong silhouette readable without labels
 - simple readable costume, not portrait-level detail
+- elevated top-down 2.5D map-sprite camera, with the top of the mushroom cap/head visible
+- compact standing pose seen from above like a small hub character, not a front-facing portrait sticker
 - clear feet/base grounding
 - warm dark outline and quiet Home Field palette fit
 - no text, UI, frame borders, floor plane, or baked background
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`.
+
+Stage 1 detail budget:
+
+- `2-3` main body/costume color regions, not layered regalia filigree
+- `1` bold cap/head silhouette and `1` simple robe/body silhouette
+- `1-2` gold mycelium/spore marks total per frame
+- tiny face features only; eyes/mouth must not become portrait focal points
+- no jewelry clusters, tiny chains, lace, runic micro-marks, particle halos, or hairlike strands
+- no tall full-body fashion-pose proportions; keep the sprite squat and grounded
 
 ## Candidate Workflow
 

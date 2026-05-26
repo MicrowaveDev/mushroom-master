@@ -19,10 +19,15 @@ const candidateIds = (process.env.HOME_FIELD_CANDIDATE_IDS || 'grass_base_01,gra
   .map((id) => id.trim())
   .filter(Boolean);
 const assetById = new Map(
-  JSON.parse(fs.readFileSync(path.join(repoRoot, 'app/shared/home-field/home-field-assets.json'), 'utf8'))
-    .assets
-    .map((asset) => [asset.id, asset])
+  (() => {
+    const doc = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app/shared/home-field/home-field-assets.json'), 'utf8'));
+    return [
+      ...doc.assets,
+      ...(doc.characters || [])
+    ].map((asset) => [asset.id, asset]);
+  })()
 );
+const characterCandidateId = candidateIds.find((id) => assetById.get(id)?.spritesheet);
 
 test.skip(
   process.env.HOME_FIELD_CANDIDATE_PREVIEW !== '1',
@@ -55,7 +60,8 @@ async function routeCandidateAssets(page) {
 async function captureCandidateField(page, baseURL, viewport, name) {
   await page.setViewportSize(viewport);
   await routeCandidateAssets(page);
-  await page.goto(`${baseURL}/home-field-preview?debug=0&candidate=local`);
+  const characterParam = characterCandidateId ? `&character=${encodeURIComponent(characterCandidateId)}` : '';
+  await page.goto(`${baseURL}/home-field-preview?debug=0&candidate=local${characterParam}`);
   await expect(page.getByTestId('home-field-preview')).toHaveAttribute('data-debug', '0');
   await expect(page.locator('.home-field-preview-safe-frame')).toHaveCount(0);
   await expect(page.locator('.home-field-preview-object span')).toHaveCount(0);

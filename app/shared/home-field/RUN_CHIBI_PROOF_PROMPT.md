@@ -14,7 +14,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Fie
 2. Read `docs/home-field-chibi-candidate-contract.md`, `docs/home-field-agent-flow.md`, `app/shared/home-field/home-field-prompts.json`, and `docs/design-requirements.md`.
 3. Generate only `thalla`. Do not generate Lomie, Axilin, Kirt, Morga, or Dalamar in Stage 1.
 4. Use `npm run game:home-field:next-chibi-proof` to print the current prompt and commands.
-5. Generate per-frame transparent PNGs into the exact `thalla_chibi.frame_*.source.png` raw paths from the contract.
+5. Generate each raw frame as a separate isolated transparent `64x64` PNG into the exact `thalla_chibi.frame_*.source.png` raw paths from the contract. Do not generate a sheet, lineup, grid, scene, or larger image and crop it.
 6. Produce with `npm run game:home-field:produce-chibi-candidate -- thalla --resize-nearest --chroma-key=#ff00ff`.
 7. Validate and build evidence using the candidate root:
 
@@ -32,7 +32,11 @@ npm run game:home-field:chibi-candidate-preview
 
 Stage 1 proves the character design, not animation polish. Use 8 unique poses minimum: idle and walk for down, up, left, and right. Fill the current 12 composer slots by duplicating or subtly varying the idle pose for each direction.
 
-Thalla must read at `64px` on mobile as an ancient gold-white mushroom-elf sovereign with visible mushroom-elf biology, strong simple silhouette, grounded feet/base, compact shadow, dark warm outline, and restrained bone/gold/white/brown palette. Avoid portrait detail, human-with-hat reads, baked backgrounds, text, UI, floor planes, and loose glow effects that hide the body.
+Thalla must read at `64px` on mobile as an ancient gold-white mushroom-elf sovereign with visible mushroom-elf biology, strong simple silhouette, grounded feet/base, compact shadow, dark warm outline, and restrained bone/gold/white/brown palette.
+
+Use an elevated top-down 2.5D hub-sprite view: the top of the mushroom cap/head should be visible, the body should feel planted on the map, and the pose should feel like a small walkable-field character rather than a front-facing portrait sticker. Keep the design less detailed than character art: broad shapes first, `2-3` main color regions, `1-2` gold mycelium/spore marks, tiny face features only, and no ornate filigree, particle halo, jewelry clusters, or lace-like micro-detail. Avoid human-with-hat reads, baked backgrounds, text, UI, floor planes, and loose glow effects that hide the body.
+
+If any raw frame contains multiple sprites, a mini spritesheet, a border, a background, or detail that disappears into noise at mobile scale, regenerate before producing the candidate sheet.
 
 ## Final Response Requirement
 

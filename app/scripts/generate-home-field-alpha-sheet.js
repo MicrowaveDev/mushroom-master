@@ -118,10 +118,34 @@ function blit(canvas, image, dstX, dstY, mode) {
   }
 }
 
+function cropImage(image, rect) {
+  const rgba = Buffer.alloc(rect.width * rect.height * 4);
+  for (let y = 0; y < rect.height; y += 1) {
+    const srcStart = ((rect.y + y) * image.width + rect.x) * 4;
+    const dstStart = y * rect.width * 4;
+    image.rgba.copy(rgba, dstStart, srcStart, srcStart + rect.width * 4);
+  }
+  return { width: rect.width, height: rect.height, rgba };
+}
+
+function reviewImageForAsset(asset, image) {
+  if (asset.type !== 'character' || !asset.spritesheet) return image;
+  return cropImage(image, {
+    x: 0,
+    y: 0,
+    width: asset.spritesheet.frameWidth,
+    height: asset.spritesheet.frameHeight
+  });
+}
+
 function main() {
   ensureDir(reviewDir);
   const ids = parseIds(process.argv.slice(2));
-  const assets = loadJson(assetsPath).assets
+  const assetsDoc = loadJson(assetsPath);
+  const assets = [
+    ...assetsDoc.assets,
+    ...(assetsDoc.characters || []).map((character) => ({ ...character, type: 'character' }))
+  ]
     .filter((asset) => asset.type !== 'terrain')
     .filter((asset) => !ids || ids.has(asset.id))
     .filter((asset) => fs.existsSync(path.join(assetRoot, asset.outputPath)));
@@ -138,7 +162,7 @@ function main() {
 
   assets.forEach((asset, index) => {
     const imagePath = path.join(assetRoot, asset.outputPath);
-    const image = readPngRgba(imagePath);
+    const image = reviewImageForAsset(asset, readPngRgba(imagePath));
     const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
     const col = index % COLS;
     const row = Math.floor(index / COLS);

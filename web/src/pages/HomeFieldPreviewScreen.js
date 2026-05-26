@@ -92,7 +92,14 @@ export const HomeFieldPreviewScreen = {
       return params.get('debug') === '0' || params.get('clean') === '1';
     },
     assetById() {
-      return Object.fromEntries(homeFieldAssets.assets.map((asset) => [asset.id, asset]));
+      return Object.fromEntries([
+        ...homeFieldAssets.assets,
+        ...(homeFieldAssets.characters || [])
+      ].map((asset) => [asset.id, asset]));
+    },
+    candidateCharacterId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('character') || '';
     },
     terrainLayer() {
       return homeFieldMap.layers.find((layer) => layer.id === 'terrain');
@@ -139,7 +146,9 @@ export const HomeFieldPreviewScreen = {
           id: 'chibi-spawn',
           label: 'Chibi',
           className: fallbackObjectClass.chibi_spawn,
-          src: '',
+          src: this.candidateCharacterId && this.assetById[this.candidateCharacterId]?.publicPath
+            ? this.assetById[this.candidateCharacterId].publicPath
+            : '',
           showLabel: !this.cleanMode,
           decorative: false,
           style: `left: ${percent(homeFieldMap.spawn.x, world.width)}; top: ${percent(homeFieldMap.spawn.y, world.height)};`
@@ -190,7 +199,7 @@ export const HomeFieldPreviewScreen = {
           v-for="object in objects"
           :key="object.id"
           class="home-field-preview-object"
-          :class="object.className"
+          :class="[object.className, { 'home-field-preview-object--has-image': !!object.src }]"
           :style="object.style"
           :data-testid="'home-field-preview-' + object.id"
           :data-decorative="object.decorative ? 'true' : 'false'"

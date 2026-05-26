@@ -108,12 +108,35 @@ function blitToRect(canvas, image, dstX, dstY, dstW, dstH) {
   }
 }
 
+function cropImage(image, rect) {
+  const rgba = Buffer.alloc(rect.width * rect.height * 4);
+  for (let y = 0; y < rect.height; y += 1) {
+    const srcStart = ((rect.y + y) * image.width + rect.x) * 4;
+    const dstStart = y * rect.width * 4;
+    image.rgba.copy(rgba, dstStart, srcStart, srcStart + rect.width * 4);
+  }
+  return { width: rect.width, height: rect.height, rgba };
+}
+
+function reviewImageForAsset(entry, image) {
+  if (entry.type !== 'character' || !entry.spritesheet) return image;
+  return cropImage(image, {
+    x: 0,
+    y: 0,
+    width: entry.spritesheet.frameWidth,
+    height: entry.spritesheet.frameHeight
+  });
+}
+
 function main() {
   ensureDir(reviewDir);
   const ids = parseIds(process.argv.slice(2));
   const assetsDoc = loadJson(ASSETS_PATH);
-  const entries = assetsDoc.assets
-    .filter((entry) => entry.type === 'prop' || entry.type === 'exit')
+  const entries = [
+    ...assetsDoc.assets,
+    ...(assetsDoc.characters || []).map((character) => ({ ...character, type: 'character' }))
+  ]
+    .filter((entry) => entry.type === 'prop' || entry.type === 'exit' || entry.type === 'character')
     .filter((entry) => !ids || ids.has(entry.id))
     .filter((entry) => fs.existsSync(path.join(assetRoot, entry.outputPath)))
     .sort((a, b) => a.id.localeCompare(b.id));
@@ -124,7 +147,7 @@ function main() {
 
   for (let row = 0; row < entries.length; row += 1) {
     const entry = entries[row];
-    const image = readPngRgba(path.join(assetRoot, entry.outputPath));
+    const image = reviewImageForAsset(entry, readPngRgba(path.join(assetRoot, entry.outputPath)));
     for (let col = 0; col < SIZES.length; col += 1) {
       const cellX = PAD + col * (CELL + PAD);
       const cellY = PAD + row * (CELL + PAD);

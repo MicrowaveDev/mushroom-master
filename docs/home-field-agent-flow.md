@@ -83,6 +83,10 @@ This batch is candidate-only. Do not overwrite `web/public/home-field/characters
 
 Stage 1 is not a full-animation run. It proves Thalla's identity, silhouette, alpha, and mobile readability first. Use the compact Stage 1 frame contract: 8 unique poses minimum, written into the current 12 raw frame slots, then composed into the locked `512 x 256` runtime sheet by replicating one walk pose across columns `2-7` per direction. Do not require 32 unique frames until the base chibi design passes review.
 
+Each raw frame must be generated as a separate isolated `64x64` transparent image. Do not accept a larger spritesheet/source grid that has to be cropped into frames; that failure mode produced wrong-facing walk rows and miniature repeated fragments. The Visual Critic must fail `sourceFrameIsolationCheck`, `sheetMappingCheck`, and `stageContractCheck` if any source image contains multiple sprites, borders, a background, or cropped sheet artifacts.
+
+The Stage 1 camera target is an elevated top-down 2.5D hub sprite: show some top of the mushroom cap/head, keep feet/base planted on the map, and avoid straight-on portrait-sticker or fashion-pose reads. Detail must be aggressively budgeted for mobile: broad shapes, `2-3` main color regions, `1-2` gold mycelium/spore marks, tiny facial features only, and no ornate filigree or particle halo.
+
 After Thalla passes review, expand to `lomie`, `axilin`, `kirt`, and `dalamar` as a second stage. Keep `morga` deferred until her design contract is explicit enough for production chibi generation.
 
 Review evidence for this batch should live under:

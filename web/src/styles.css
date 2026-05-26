@@ -8845,6 +8845,30 @@ select {
   height: clamp(82px, 12vw, 136px);
   color: #2e2418;
   text-shadow: 0 1px 0 rgba(255, 250, 225, 0.7);
+  overflow: hidden;
+}
+
+.home-field-preview-object--chibi.home-field-preview-object--has-image {
+  aspect-ratio: 1;
+  height: clamp(66px, 9vw, 112px);
+}
+
+.home-field-preview-object--chibi.home-field-preview-object--has-image .home-field-preview-object-img {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  width: 800%;
+  height: 400%;
+  max-width: none;
+  object-fit: fill;
+  object-position: 0 0;
+  transform: none;
+  image-rendering: pixelated;
+}
+
+.home-field-preview-object--chibi.home-field-preview-object--has-image::before,
+.home-field-preview-object--chibi.home-field-preview-object--has-image::after {
+  content: none;
 }
 
 .home-field-preview-object--chibi::before {
