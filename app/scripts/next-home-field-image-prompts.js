@@ -303,6 +303,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push('');
   lines.push('## Save and report');
   if (chibiCandidate && asset.type === 'character') {
+    lines.push('Save the non-production turnaround reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
     lines.push('After generation, save the individual raw imagegen frames to the per-frame paths listed above, not to the single manifest sourcePath.');
   } else {
     lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);

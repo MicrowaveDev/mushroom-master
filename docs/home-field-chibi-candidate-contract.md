@@ -33,7 +33,20 @@ Each character still uses the locked Home Field runtime sheet shape:
 
 Stage 1 proves identity and mobile readability before full animation polish. Do not require 32 unique frames for the first run.
 
-Generate each raw file as its own isolated `64x64` transparent frame. Do not generate a larger contact sheet, grid sheet, character lineup, or full scene and crop it afterward. If imagegen returns multiple frames in one image, miniature sprites, a field background, or a bordered sheet, discard that raw output and regenerate the affected frame.
+Use a two-step visual workflow:
+
+1. Generate one non-production reference turnaround sheet for consistency.
+2. Generate the final raw frame files as isolated per-frame PNGs.
+
+The reference turnaround sheet is allowed only as visual guidance. Save it under:
+
+```text
+.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png
+```
+
+The reference sheet should show the same Thalla design in the four facing directions `down`, `up`, `left`, and `right`, with the same proportions, camera angle, palette, and detail budget. It may include labels outside the art if useful for human review, but it is not a production raw source, not a runtime spritesheet, and must not be sliced into final frames.
+
+Generate each final raw file as its own isolated `64x64` or documented `128x128` transparent frame. Do not generate the final raw frames by cropping a larger contact sheet, grid sheet, character lineup, or full scene. If any final raw frame contains multiple sprites, miniature sprites, a field background, a border, or cropped sheet artifacts, discard that raw output and regenerate the affected frame.
 
 The minimum accepted Stage 1 input is 8 unique poses:
 
@@ -43,6 +56,8 @@ The minimum accepted Stage 1 input is 8 unique poses:
 - idle right, walk right
 
 The current composer consumes 12 raw frame slots. Fill those slots by using the same idle pose for `idle_*_0` and `idle_*_1`, or by making a very subtle breathing variant. The single walk pose for each direction is replicated across columns `2-7` of that row.
+
+For retina/source quality, the raw isolated frames may be generated at `128x128` if the run prompt requests it. They must still be simple map sprites and must downscale cleanly to the current `64x64` runtime frames. Larger source pixels are for cleaner alpha and shape control, not for extra detail.
 
 Raw frame names for Stage 1:
 
