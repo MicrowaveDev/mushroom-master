@@ -103,6 +103,8 @@ The Visual Critic updates only the scoped character rows in `docs/home-field-ass
 
 The target is not an isolated grass texture. The final composed field should read like a polished game-hub screenshot: chibi mushroom-elf avatars standing on a soft green meadow, with chunky dark-ink foliage, vines, flowers, mushrooms, exits, and props framing the walkable area on object layers.
 
+Before any terrain, prop, or exit generation, follow [`docs/home-field-scale-contract.md`](home-field-scale-contract.md). The source canvas size is not the visual footprint: `256x256` props should not fill the whole source canvas unless they are terrain, and larger source sizes are for cleaner alpha/cropping rather than extra tiny detail. Reject any batch where assets look like different zoom levels, camera angles, renderers, or lighting setups in the same Home Field preview.
+
 For the grass batch, this means:
 
 - grass must be quiet enough that 64px chibi feet and shadows stay readable;

@@ -597,6 +597,9 @@ test('[home-field] object candidate rerun emits candidate-root producer and evid
   assert.match(result.stdout, /mushroom_cluster_small_violet \(prop\)/);
   assert.match(result.stdout, /Candidate output path .*candidates\/object-layer\/latest/);
   assert.match(result.stdout, /npm run game:home-field:produce-object-candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff/);
+  assert.match(result.stdout, /Home Field scale contract/);
+  assert.match(result.stdout, /Runtime canvas: 256x256px/);
+  assert.match(result.stdout, /Visual footprint target: small field token/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-alpha-halo/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet .*object-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- mushroom_cluster_small_violet/);
@@ -643,6 +646,8 @@ test('[home-field] field-context grass queue asks for larger meadow context and 
   assert.match(result.stdout, /Generation mode: field-context center crop/);
   assert.match(result.stdout, /Field-context generation mode \(grass terrain\)/);
   assert.match(result.stdout, /larger continuous 3x3 or 4x4 meadow patch/);
+  assert.match(result.stdout, /Home Field scale contract/);
+  assert.match(result.stdout, /terrain texture must stay quieter than chibis and object-layer props/);
   assert.match(result.stdout, /Scene fit: The composed screen should read like a real in-game hub screenshot/);
   assert.match(result.stdout, /Chibi fit: Chibi avatars are small, squat, expressive mushroom-elf heroines/);
   assert.match(result.stdout, /--crop-center=0\.34 --seamless-terrain --quiet-terrain=0\.45/);
@@ -659,6 +664,8 @@ test('[home-field] grass-family queue emits one shared-source prompt and produce
   assert.match(result.stdout, /grass_family_meadow\.source\.png/);
   assert.match(result.stdout, /npm run game:home-field:produce-grass-family/);
   assert.match(result.stdout, /--plan=lower-band/);
+  assert.match(result.stdout, /Home Field scale contract/);
+  assert.match(result.stdout, /Do not change zoom level between crop zones/);
   assert.match(result.stdout, /game:home-field:grass-family-sheet/);
   assert.match(result.stdout, /Do not save separate per-tile raw PNGs/);
 });

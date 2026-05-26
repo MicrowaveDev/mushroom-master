@@ -138,6 +138,42 @@ function styleAnchorBlock(anchor) {
   ].filter(Boolean).join('\n');
 }
 
+function scaleContractBlock(asset) {
+  if (!['terrain', 'prop', 'exit'].includes(asset.type)) return '';
+  const visualFootprint = (() => {
+    if (asset.type === 'terrain') {
+      return 'fills the full 256x256 terrain cell as ground only; terrain texture must stay quieter than chibis and object-layer props.';
+    }
+    if (asset.type === 'exit') {
+      return 'landmark-sized object-layer prop; taller than a chibi but still authored for the same elevated top-down field camera, with bottom-center anchor.';
+    }
+    const id = asset.id;
+    if (id.includes('bush') || id.includes('broccoli') || id.includes('cabbage') || id.includes('pepper') || id.includes('beetroot')) {
+      return 'medium field prop; should read at roughly 48-80px in mobile preview, using a few broad masses rather than many tiny segments.';
+    }
+    if (id.includes('sprout') || id.includes('mushroom_cluster_small') || id.includes('mushroom_cap') || id.includes('branch') || id.includes('turnip') || id.includes('onion') || id.includes('tomato')) {
+      return 'small field token; should read at roughly 32-52px in mobile preview, compact and low-detail with a clear bottom anchor.';
+    }
+    if (id.includes('lantern') || id.includes('signpost')) {
+      return 'small-to-medium vertical prop; should read at roughly 56-96px in mobile preview, with one clear silhouette and bottom-center anchor.';
+    }
+    if (id.includes('tall')) {
+      return 'tall field-edge prop; taller than a chibi but not a full-scene illustration, with breathing room inside the transparent source canvas.';
+    }
+    return 'object-layer prop; preserve the manifest canvas size but keep the in-scene footprint consistent with neighboring Home Field props.';
+  })();
+
+  return [
+    '## Home Field scale contract',
+    'Use the same elevated top-down 2.5D game-hub camera as the rest of Home Field. Do not mix in portrait, side-view, icon, card-art, realistic product-render, or full-scene illustration angles.',
+    `Runtime canvas: ${asset.width}x${asset.height}px. This is the source/output canvas, not permission to fill the whole canvas with visual mass.`,
+    `Visual footprint target: ${visualFootprint}`,
+    'Style/scale consistency: match the shared moss/teal/amber/violet palette, warm dark outline treatment for object-layer assets, soft compact shadows, and low mobile-detail budget.',
+    'Retina/source-size rule: larger source pixels may be used only when the workflow says so; they are for cleaner alpha and shape control, not for adding micro-detail or changing in-scene scale.',
+    'Reject if the candidate looks like a different zoom level, camera angle, lighting setup, renderer, or asset class when placed next to the current Home Field terrain, props, and chibis.'
+  ].join('\n');
+}
+
 function tilemapContractBlock(asset) {
   if (asset.type !== 'terrain') return '';
   const tile = asset.tile || null;
@@ -243,6 +279,11 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push('## Constraints');
     lines.push(promptEntry.constraints);
     lines.push('');
+    const scaleContract = scaleContractBlock(asset);
+    if (scaleContract) {
+      lines.push(scaleContract);
+      lines.push('');
+    }
     const tileContract = tilemapContractBlock(asset);
     if (tileContract) {
       lines.push(tileContract);

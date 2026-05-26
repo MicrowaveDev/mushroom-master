@@ -77,7 +77,10 @@ function main() {
   console.log('One large production-quality 2D top-down meadow source image for a reusable game-hub grass tile family.');
   console.log('');
   console.log('## Required output');
-  console.log('Create one continuous 3x2 or 4x3 dark-green meadow patch, at least 1024x768 if the tool allows. This is NOT a final map screenshot and NOT three separate tiles. It is one shared source used to crop three coordinated 256x256 grass tiles.');
+  console.log('Create one continuous 3x2 or 4x3 dark-green meadow patch, at least 1024x768 if the tool allows. This is NOT a final map screenshot and NOT three separate tiles. It is one shared source used to crop three coordinated 256x256 grass tiles. Use the same elevated top-down 2.5D camera, lighting, palette, brush scale, and texture density across the whole source.');
+  console.log('');
+  console.log('## Home Field scale contract');
+  console.log('Runtime terrain tiles are 256x256 cells in a 1792x1024 map. Grass is the stage for 64px chibis and 32-96px object-layer props, so terrain marks must stay small, sparse, and lower-contrast than characters and props. Do not change zoom level between crop zones. Do not make one region look like a different brush, camera angle, lighting pool, or asset scale.');
   console.log('');
   console.log('## Composition');
   console.log('The whole image should be a quiet walkable ground plane: broad muted moss-green and fungal-teal color fields, soft low-contrast moss shadows, sparse hand-drawn grass strokes, and a few tiny yellow-green flecks. Keep most of the field open so 64px chibi feet and compact blob shadows stay readable.');
