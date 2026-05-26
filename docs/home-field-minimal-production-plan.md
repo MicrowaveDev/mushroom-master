@@ -50,6 +50,12 @@ Character:
 - `thalla` required
 - optional second chibi: `lomie`, only after Thalla passes scene review and the run still has budget
 
+Chibi style reference:
+
+- Before regenerating Thalla, read [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md).
+- Target the same kind of squat, bold, map-readable field-sprite proportions as the agent-log reference screenshot, but do not copy its characters or symbols.
+- Avoid huge white portrait eyes; Thalla's face should be expressive but smaller-eyed, with canon black/fire-gold eye identity and stronger mushroom-elf sovereign silhouette.
+
 Optional defer rule: if a scoped asset fails twice and is not required for scene readability, defer it instead of extending the run.
 
 ## Success Criteria
@@ -81,9 +87,11 @@ Use this as the operator checklist. The orchestrator owns sequencing and may run
 3. Decide whether path helps.
    - Generate path only after grass is usable.
    - If path looks pasted after two attempts, defer path and continue with grass plus destination/entrance placement.
+   - If path is deferred, keep `path_destination_row` only when it reads as a subtle grass-compatible landing; otherwise mark all path-family IDs deferred/`needs_regen`.
+   - For grass-first preview evidence after deferring path, run composed screenshots with `HOME_FIELD_DEFER_PATH=1`; this hides path only in local candidate preview routing.
 4. Run parallel asset workers.
    - Props/Entrances Worker generates only the scoped object-layer assets.
-   - Chibi Worker generates only Thalla Stage 1.
+   - Chibi Worker generates only Thalla Stage 1 and must use `docs/home-field-chibi-style-reference.md`.
    - These may run in parallel after the grass baseline exists.
 5. Produce and validate candidates.
    - Producer/Validation Worker writes candidate PNGs, proof sheets, evidence manifests, and clean screenshots.
@@ -197,6 +205,19 @@ HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/la
 npm run game:home-field:chibi-candidate-preview
 npm run game:home-field:combined-candidate-preview
 ```
+
+For the full object/exit scope, use:
+
+```bash
+OBJECT_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction
+npm run game:home-field:produce-object-candidate -- ${OBJECT_IDS//,/ } --resize --chroma-key=#ff00ff
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=$OBJECT_IDS --check-files --check-alpha-halo --check-readability
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=$OBJECT_IDS
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=$OBJECT_IDS
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=$OBJECT_IDS npm run game:home-field:candidate-evidence
+```
+
+For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the isolated raw frame files from `docs/home-field-chibi-candidate-contract.md`, then produce and validate the `thalla` candidate through the chibi candidate workflow before running `npm run game:home-field:chibi-candidate-preview`.
 
 Also run the relevant scoped validation commands:
 

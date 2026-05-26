@@ -42,7 +42,7 @@ The Visual Critic must review `.agent/home-field-workspace/review/home-field-can
 
 Path is optional for this v1 gate. If the shared-source path family fails to blend into the grass baseline twice, defer path and continue with a grass-first scene plus destination/entrance placement rather than extending the run.
 
-## Grass-First Stop Gate
+## Grass-First Gate
 
 The next tile generation run is limited to:
 
@@ -50,7 +50,7 @@ The next tile generation run is limited to:
 - `grass_base_02`
 - `grass_flowers_01`
 
-`npm run game:home-field:next-tiles` is the gated first-pass queue. Once a grass candidate is marked `needs_review`, that command can block to prevent accidental continuation.
+`npm run game:home-field:next-tiles` is the gated first-pass queue. Once a grass candidate is marked `needs_review`, that command can block to prevent accidental continuation for grass-only terrain runs. For the minimal production scene plan, grass is a checkpoint rather than a final stop: continue into path, object-layer, and Thalla work only after the clean grass preview is usable.
 
 For intentional grass-family reruns, use the shared-source queue:
 
@@ -64,15 +64,15 @@ That command emits one shared meadow-source prompt for the three grass rows. The
 npm run game:home-field:produce-grass-family-candidate
 ```
 
-Do not generate or save separate per-tile raw PNGs for this grass batch. The family producer crops coordinated nearby regions from the same source so `grass_base_01`, `grass_base_02`, and `grass_flowers_01` share lighting, brushwork, and value range. Candidate mode writes to `.agent/home-field-workspace/candidates/grass-family/latest/`; it must not overwrite `web/public/home-field/terrain/` before explicit human approval.
+Do not generate or save separate per-tile raw PNGs for this grass batch. The family producer crops coordinated nearby regions from the same source and normalizes crop average color/value so `grass_base_01`, `grass_base_02`, and `grass_flowers_01` share lighting, brushwork, and value range. Candidate mode writes to `.agent/home-field-workspace/candidates/grass-family/latest/`; it must not overwrite `web/public/home-field/terrain/` before explicit human approval.
 
 The default crop plan is `tight-center`. If visual review still shows square value boundaries, the Producer/Validation Worker may rerun the same raw source with `--plan=lower-band` or `--plan=upper-band`, regenerate evidence, and let the Visual Critic choose the best non-approved candidate before commit. Do not commit multiple crop-plan attempts.
 
-The run must still stop after these three candidates are produced and reviewed. Path and edge tiles require a separate later run after the grass family is accepted.
+Grass-only terrain runs must stop after these three candidates are produced and reviewed. Minimal production scene runs may proceed into path/landing, props, entrances, and Thalla after the grass baseline is selected as usable for the current candidate.
 
 ## Path And Edge Family Gate
 
-After the grass family is human-approved or explicitly selected as the active candidate baseline, path and edge terrain must be generated as terrain-family candidates, not app-facing PNGs.
+After the grass family is human-approved or explicitly selected as the active candidate baseline, path and edge terrain must be generated as terrain-family candidates, not app-facing PNGs. For the minimal production scene plan, "selected" can mean selected as the temporary candidate baseline for this run; it does not mean production approval.
 
 Use the family queues:
 
@@ -98,6 +98,10 @@ Required path-family scope:
 - `path_spore_glow`
 - `path_h_end_e`
 - `path_destination_row`
+
+If the path family is deferred after two failed blend attempts, mark `path_h_end_w`, `path_dirt_straight`, `path_spore_glow`, and `path_h_end_e` as deferred or `needs_regen` in review notes. `path_destination_row` may remain in scope as a subtle destination landing only if it blends into the grass and entrance placement; otherwise defer it with the rest of the path family. When path is deferred, run terrain evidence only for the grass IDs plus any retained `path_destination_row` candidate.
+
+For grass-first scene proof with path deferred, run the clean preview with `HOME_FIELD_DEFER_PATH=1`. This routes the path public URLs to the current grass-family candidate only inside the Playwright candidate preview; it does not change the map or app-facing assets.
 
 Required edge-family scope:
 
@@ -133,20 +137,21 @@ Before path promotion specifically, inspect the path candidate together with the
 
 ## Object-Layer Candidate Gate
 
-For prop-only review runs, use the generic candidate producer instead of the promotion producer:
+For prop/exit review runs, use the generic candidate producer instead of the promotion producer. The same object-layer candidate root may contain both `props/` and `exits/` app-path subfolders, matching each asset's manifest output path.
 
 ```bash
-npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize
-HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 --check-files --check-review
-HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 --check-files --check-alpha-halo
-HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01 --check-files --check-readability
+OBJECT_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction
+npm run game:home-field:produce-object-candidate -- ${OBJECT_IDS//,/ } --resize --chroma-key=#ff00ff
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=$OBJECT_IDS --check-files --check-review
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=$OBJECT_IDS --check-files --check-alpha-halo
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=$OBJECT_IDS --check-files --check-readability
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:sheet
-HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01
-HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01
-npm run game:home-field:object-candidate-preview
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=$OBJECT_IDS
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=$OBJECT_IDS
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=$OBJECT_IDS npm run game:home-field:object-candidate-preview
 ```
 
-This writes candidate PNGs under `.agent/home-field-workspace/candidates/object-layer/latest/web/public/home-field/props/` and uses route interception for `/home-field-preview?debug=0`, so app-facing PNGs remain untouched before human approval. If a run covers a different prop set, pass `--candidate-root=<dir>` to `game:home-field:produce` and set `HOME_FIELD_CANDIDATE_IDS` / `HOME_FIELD_CANDIDATE_ROOT` when running the candidate preview spec.
+This writes candidate PNGs under `.agent/home-field-workspace/candidates/object-layer/latest/web/public/home-field/` using each asset's normal app-facing subfolder (`props/`, `exits/`, and so on), and uses route interception for `/home-field-preview?debug=0`, so app-facing PNGs remain untouched before human approval. If a run covers a different prop/exit set, pass `--candidate-root=<dir>` to `game:home-field:produce` and set `HOME_FIELD_CANDIDATE_IDS` / `HOME_FIELD_CANDIDATE_ROOT` when running the candidate preview spec.
 
 ## Active-Roster Chibi Candidate Gate
 
@@ -159,6 +164,8 @@ This batch is candidate-only. Do not overwrite `web/public/home-field/characters
 Stage 1 is not a full-animation run. It proves Thalla's identity, silhouette, alpha, and mobile readability first. Use the compact Stage 1 frame contract: 8 unique poses minimum, written into the current 12 raw frame slots, then composed into the locked `512 x 256` runtime sheet by replicating one walk pose across columns `2-7` per direction. Do not require 32 unique frames until the base chibi design passes review.
 
 Use a two-step character consistency flow. First generate a non-production turnaround reference sheet under `.agent/home-field-workspace/reference/` that shows Thalla in `down`, `up`, `left`, and `right` with one consistent design. Then generate the final raw frames as separate isolated transparent images. The reference sheet is allowed for visual consistency only; do not slice it into production raw frames.
+
+For Stage 1, ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) as a production raw input. It is not sufficient for this contract. The producer must consume the isolated raw frame files named in `docs/home-field-chibi-candidate-contract.md`.
 
 Each final raw frame must be generated as a separate isolated transparent image, normally `64x64` or `128x128` when the run explicitly asks for source-quality downscaling. Do not accept a larger spritesheet/source grid that has to be cropped into final frames; that failure mode produced wrong-facing walk rows and miniature repeated fragments. The Visual Critic must fail `sourceFrameIsolationCheck`, `sheetMappingCheck`, and `stageContractCheck` if any final raw image contains multiple sprites, borders, a background, or cropped sheet artifacts. A reference turnaround sheet must not be treated as that failure mode unless it is used as the production source.
 

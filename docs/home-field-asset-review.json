@@ -584,7 +584,7 @@
       "id": "thalla",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Stage 1 proof rerun 2026-05-26: candidate-only Thalla sheet was composed from isolated transparent 128x128 source frames and downscaled cleanly to the current 64x64 runtime sheet. Mechanical validation, alpha halo, readability sheets, and routed mobile/desktop previews pass; the sprite reads as a small gold-white mushroom-elf sovereign with elf ears, simple silhouette, compact shadow, and usable Home Field scale. However the Producer reported the accepted raw source frames were deterministic simplified renders, not imagegen outputs, so the run does not satisfy the documented imagegen production requirement. Regenerate Thalla only with compliant isolated transparent imagegen source frames before human review or roster expansion.",
+      "reason": "Stage 1 proof rerun 2026-05-26: candidate-only Thalla sheet was composed from isolated transparent 128x128 source frames and downscaled cleanly to the current 64x64 runtime sheet. Mechanical validation, alpha halo, readability sheets, and routed mobile/desktop previews pass, but this candidate is not approved. It reads as a tiny generic beige sprite rather than the intended squat, bold, storybook field-sprite style captured in docs/home-field-chibi-style-reference.md. Regenerate Thalla with compliant isolated transparent imagegen frames, stronger mushroom-elf sovereign silhouette, less generic body/head shape, and smaller non-dominant eyes; avoid huge white portrait eyes and do not expand the roster before Thalla passes.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",

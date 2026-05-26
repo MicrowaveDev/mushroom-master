@@ -24,6 +24,14 @@ const candidateIds = (process.env.HOME_FIELD_CANDIDATE_IDS || 'grass_base_01,gra
   .split(',')
   .map((id) => id.trim())
   .filter(Boolean);
+const deferPath = process.env.HOME_FIELD_DEFER_PATH === '1';
+const grassFallbackByPathId = new Map([
+  ['path_h_end_w', 'grass_base_01'],
+  ['path_dirt_straight', 'grass_base_02'],
+  ['path_spore_glow', 'grass_flowers_01'],
+  ['path_h_end_e', 'grass_base_01'],
+  ['path_destination_row', 'grass_flowers_01']
+]);
 const assetById = new Map(
   (() => {
     const doc = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app/shared/home-field/home-field-assets.json'), 'utf8'));
@@ -64,6 +72,23 @@ async function routeCandidateAssets(page) {
         contentType: 'image/png'
       });
     });
+  }
+  if (deferPath) {
+    for (const [pathId, grassId] of grassFallbackByPathId.entries()) {
+      const pathAsset = assetById.get(pathId);
+      const grassAsset = assetById.get(grassId);
+      if (!pathAsset || !grassAsset) throw new Error(`Missing path defer mapping asset: ${pathId} -> ${grassId}`);
+      const grassFilePath = candidatePathFor(grassAsset);
+      if (!fs.existsSync(grassFilePath)) {
+        throw new Error(`Missing grass fallback PNG for deferred path preview: ${path.relative(repoRoot, grassFilePath)}`);
+      }
+      await page.route(`**${pathAsset.publicPath}`, async (route) => {
+        await route.fulfill({
+          path: grassFilePath,
+          contentType: 'image/png'
+        });
+      });
+    }
   }
 }
 

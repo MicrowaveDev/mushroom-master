@@ -48,6 +48,8 @@ The reference sheet should show the same Thalla design in the four facing direct
 
 Generate each final raw file as its own isolated `64x64` or documented `128x128` transparent frame. Do not generate the final raw frames by cropping a larger contact sheet, grid sheet, character lineup, or full scene. If any final raw frame contains multiple sprites, miniature sprites, a field background, a border, or cropped sheet artifacts, discard that raw output and regenerate the affected frame.
 
+Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) for Stage 1 production. It may exist for older prompt printers, but it is not a valid input for the compact frame contract. Stage 1 producers must use the isolated raw frame files below.
+
 The minimum accepted Stage 1 input is 8 unique poses:
 
 - idle down, walk down
@@ -82,6 +84,7 @@ Full 32-frame walk coverage is an optional later animation stage, not the gate f
 
 The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
+- follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base, compact shadow, and elevated 2.5D map read;
 - mushroom-elf biology first, not a human wearing a mushroom hat
 - visible elf ears whenever ears are visible
 - strong silhouette readable without labels
@@ -91,6 +94,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - clear feet/base grounding
 - warm dark outline and quiet Home Field palette fit
 - no text, UI, frame borders, floor plane, or baked background
+- no huge white portrait eyes; eyes must be much smaller than the reference screenshot's biggest facial read and should not dominate the head
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`.
 
@@ -99,7 +103,7 @@ Stage 1 detail budget:
 - `2-3` main body/costume color regions, not layered regalia filigree
 - `1` bold cap/head silhouette and `1` simple robe/body silhouette
 - `1-2` gold mycelium/spore marks total per frame
-- tiny face features only; eyes/mouth must not become portrait focal points
+- tiny face features only; eyes/mouth must not become portrait focal points or oversized white-eye stickers
 - no jewelry clusters, tiny chains, lace, runic micro-marks, particle halos, or hairlike strands
 - no tall full-body fashion-pose proportions; keep the sprite squat and grounded
 

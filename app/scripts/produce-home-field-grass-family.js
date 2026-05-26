@@ -254,6 +254,52 @@ function quietTerrainContrast(image, amount) {
   return { width: image.width, height: image.height, rgba };
 }
 
+function averageRgb(image) {
+  let r = 0, g = 0, b = 0;
+  const count = image.width * image.height;
+  for (let i = 0; i < image.rgba.length; i += 4) {
+    r += image.rgba[i + 0];
+    g += image.rgba[i + 1];
+    b += image.rgba[i + 2];
+  }
+  return [r / count, g / count, b / count];
+}
+
+function clampByte(n) {
+  return Math.max(0, Math.min(255, Math.round(n)));
+}
+
+function matchAverageRgb(image, targetAvg, strength = 0.82) {
+  const avg = averageRgb(image);
+  const delta = targetAvg.map((value, index) => (value - avg[index]) * strength);
+  const rgba = Buffer.from(image.rgba);
+  for (let i = 0; i < rgba.length; i += 4) {
+    rgba[i + 0] = clampByte(rgba[i + 0] + delta[0]);
+    rgba[i + 1] = clampByte(rgba[i + 1] + delta[1]);
+    rgba[i + 2] = clampByte(rgba[i + 2] + delta[2]);
+  }
+  return { width: image.width, height: image.height, rgba };
+}
+
+function normalizeFamilyAverages(items) {
+  const avgs = items.map((item) => averageRgb(item.image));
+  const targetAvg = [0, 1, 2].map((channel) => (
+    avgs.reduce((sum, avg) => sum + avg[channel], 0) / avgs.length
+  ));
+  return items.map((item, index) => {
+    const normalized = matchAverageRgb(item.image, targetAvg);
+    return {
+      ...item,
+      image: normalized,
+      colorNormalization: {
+        beforeAverageRgb: avgs[index].map((value) => Number(value.toFixed(2))),
+        targetAverageRgb: targetAvg.map((value) => Number(value.toFixed(2))),
+        afterAverageRgb: averageRgb(normalized).map((value) => Number(value.toFixed(2)))
+      }
+    };
+  });
+}
+
 function allEntries(assetsDoc) {
   return [
     ...assetsDoc.assets,
@@ -312,13 +358,19 @@ function main() {
   if (args.candidate) {
     console.log(`  candidate root: ${path.relative(repoRoot, candidateDir)}`);
   }
-  const outputs = [];
+  const prepared = [];
   for (const target of targets) {
     const plan = cropPlan.crops[target.id];
     const { image: cropped, rect } = cropNormalizedSquare(source, plan);
     let image = resizeRgba(cropped, target.width, target.height);
     if (!args.noSeamless) image = makeTerrainSeamless(image);
     image = quietTerrainContrast(image, plan.quiet);
+    prepared.push({ target, plan, image, rect });
+  }
+
+  const outputs = [];
+  for (const item of normalizeFamilyAverages(prepared)) {
+    const { target, plan, rect, image, colorNormalization } = item;
     const outAbs = path.join(outputRoot, target.outputPath);
     ensureDir(path.dirname(outAbs));
     fs.writeFileSync(outAbs, encodeDeterministicPng(image));
@@ -327,6 +379,7 @@ function main() {
       outputPath: target.outputPath,
       writtenPath: path.relative(repoRoot, outAbs),
       crop: { ...plan, rect },
+      colorNormalization,
       sha256: fileSha256(outAbs)
     });
     console.log(`  ${target.id}: OK (${plan.label}) -> ${path.relative(repoRoot, outAbs)}`);
