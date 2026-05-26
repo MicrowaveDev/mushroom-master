@@ -66,7 +66,7 @@ npm run game:home-field:produce-grass-family-candidate
 
 Do not generate or save separate per-tile raw PNGs for this grass batch. The family producer crops coordinated nearby regions from the same source and normalizes crop average color/value so `grass_base_01`, `grass_base_02`, and `grass_flowers_01` share lighting, brushwork, and value range. Candidate mode writes to `.agent/home-field-workspace/candidates/grass-family/latest/`; it must not overwrite `web/public/home-field/terrain/` before explicit human approval.
 
-The default crop plan is `tight-center`. If visual review still shows square value boundaries, the Producer/Validation Worker may rerun the same raw source with `--plan=lower-band` or `--plan=upper-band`, regenerate evidence, and let the Visual Critic choose the best non-approved candidate before commit. Do not commit multiple crop-plan attempts.
+The default crop plan is `tight-center`. If visual review still shows square value boundaries, the Producer/Validation Worker may rerun the same raw source with `--plan=lower-band` or `--plan=upper-band`. If those still show visible columns, use `--plan=unified-base`; that fallback keeps all tile edges from one quiet crop and blends variations only inside the tile. If the source itself has broad bands or noisy tile edges, use `--plan=flat-minimal` for the fastest production-safe grass baseline: source-paletted simple grass with uniform edges and tiny interior marks. Regenerate evidence and let the Visual Critic choose the best non-approved candidate before commit. Do not commit multiple crop-plan attempts.
 
 Grass-only terrain runs must stop after these three candidates are produced and reviewed. Minimal production scene runs may proceed into path/landing, props, entrances, and Thalla after the grass baseline is selected as usable for the current candidate.
 
@@ -171,7 +171,7 @@ Each final raw frame must be generated as a separate isolated transparent image,
 
 The Stage 1 camera target is an elevated top-down 2.5D hub sprite: show some top of the mushroom cap/head, keep feet/base planted on the map, and avoid straight-on portrait-sticker or fashion-pose reads. Detail must be aggressively budgeted for mobile: broad shapes, `2-3` main color regions, `1-2` gold mycelium/spore marks, tiny facial features only, and no ornate filigree or particle halo.
 
-After Thalla passes review, expand to `lomie`, `axilin`, `kirt`, and `dalamar` as a second stage. Keep `morga` deferred until her design contract is explicit enough for production chibi generation.
+For the minimal production-candidate plan, after Thalla passes review, expand only to `lomie` if the composed scene still needs a second chibi; stop there. Full-roster expansion to `lomie`, `axilin`, `kirt`, and `dalamar` belongs to a later non-minimal stage. Keep `morga` deferred until her design contract is explicit enough for production chibi generation.
 
 Review evidence for this batch should live under:
 

@@ -8640,6 +8640,7 @@ select {
 
 .home-field-preview-screen--clean .home-field-preview-tile {
   border: 0;
+  overflow: visible;
 }
 
 .home-field-preview-screen--clean .home-field-preview-tile::before,
@@ -8654,6 +8655,12 @@ select {
   height: 100%;
   object-fit: cover;
   image-rendering: auto;
+}
+
+.home-field-preview-screen--clean .home-field-preview-tile-img {
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
 }
 
 .home-field-preview-tile::before,

@@ -101,6 +101,64 @@ const CROP_PLANS = {
         quiet: 0.50
       }
     }
+  },
+  'unified-base': {
+    description: 'Production fallback: one quiet base crop owns all tile edges; variants blend only inside the tile to avoid visible columns.',
+    unifiedBase: true,
+    crops: {
+      grass_base_01: {
+        label: 'quiet unified base crop',
+        center: { x: 0.50, y: 0.58 },
+        ratio: 0.24,
+        quiet: 0.88,
+        overlayStrength: 0
+      },
+      grass_base_02: {
+        label: 'subtle unified base variant',
+        center: { x: 0.54, y: 0.58 },
+        ratio: 0.24,
+        quiet: 0.88,
+        overlayStrength: 0.04
+      },
+      grass_flowers_01: {
+        label: 'unified base with sparse interior accents',
+        center: { x: 0.50, y: 0.70 },
+        ratio: 0.24,
+        quiet: 0.84,
+        overlayStrength: 0.07
+      }
+    }
+  },
+  'flat-minimal': {
+    description: 'Fast production fallback: source-paletted simple grass with uniform edges and tiny interior-only marks.',
+    flatMinimal: true,
+    crops: {
+      grass_base_01: {
+        label: 'flat minimal grass base',
+        center: { x: 0.50, y: 0.58 },
+        ratio: 0.24,
+        quiet: 1,
+        seed: 11,
+        markCount: 3
+      },
+      grass_base_02: {
+        label: 'flat minimal grass variant',
+        center: { x: 0.50, y: 0.58 },
+        ratio: 0.24,
+        quiet: 1,
+        seed: 11,
+        markCount: 3
+      },
+      grass_flowers_01: {
+        label: 'flat minimal sparse flower variant',
+        center: { x: 0.50, y: 0.58 },
+        ratio: 0.24,
+        quiet: 1,
+        seed: 11,
+        markCount: 3,
+        flowerCount: 2
+      }
+    }
   }
 };
 
@@ -281,6 +339,119 @@ function matchAverageRgb(image, targetAvg, strength = 0.82) {
   return { width: image.width, height: image.height, rgba };
 }
 
+function blendInteriorVariant(base, overlay, strength) {
+  if (!strength) return base;
+  const rgba = Buffer.from(base.rgba);
+  const margin = Math.max(32, Math.floor(Math.min(base.width, base.height) * 0.28));
+  for (let y = 0; y < base.height; y += 1) {
+    const dy = Math.min(y, base.height - 1 - y);
+    for (let x = 0; x < base.width; x += 1) {
+      const dx = Math.min(x, base.width - 1 - x);
+      const edgeDistance = Math.min(dx, dy);
+      const edgeFade = smootherstep(edgeDistance / margin);
+      const weight = strength * edgeFade;
+      if (weight <= 0) continue;
+      const i = (y * base.width + x) * 4;
+      rgba[i + 0] = clampByte(base.rgba[i + 0] * (1 - weight) + overlay.rgba[i + 0] * weight);
+      rgba[i + 1] = clampByte(base.rgba[i + 1] * (1 - weight) + overlay.rgba[i + 1] * weight);
+      rgba[i + 2] = clampByte(base.rgba[i + 2] * (1 - weight) + overlay.rgba[i + 2] * weight);
+      rgba[i + 3] = clampByte(base.rgba[i + 3] * (1 - weight) + overlay.rgba[i + 3] * weight);
+    }
+  }
+  return { width: base.width, height: base.height, rgba };
+}
+
+function neutralizeEdges(image, margin = 72, strength = 0.9) {
+  const avg = averageRgb(image);
+  const rgba = Buffer.from(image.rgba);
+  const edge = Math.max(1, Math.min(margin, Math.floor(Math.min(image.width, image.height) / 2)));
+  for (let y = 0; y < image.height; y += 1) {
+    const dy = Math.min(y, image.height - 1 - y);
+    for (let x = 0; x < image.width; x += 1) {
+      const dx = Math.min(x, image.width - 1 - x);
+      const distance = Math.min(dx, dy);
+      const edgeWeight = (1 - smootherstep(distance / edge)) * strength;
+      if (edgeWeight <= 0) continue;
+      const i = (y * image.width + x) * 4;
+      rgba[i + 0] = clampByte(rgba[i + 0] * (1 - edgeWeight) + avg[0] * edgeWeight);
+      rgba[i + 1] = clampByte(rgba[i + 1] * (1 - edgeWeight) + avg[1] * edgeWeight);
+      rgba[i + 2] = clampByte(rgba[i + 2] * (1 - edgeWeight) + avg[2] * edgeWeight);
+    }
+  }
+  return { width: image.width, height: image.height, rgba };
+}
+
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+}
+
+function blendAt(rgba, width, x, y, color, alpha) {
+  if (x < 0 || y < 0 || x >= width) return;
+  const i = (y * width + x) * 4;
+  if (i < 0 || i >= rgba.length) return;
+  rgba[i + 0] = clampByte(rgba[i + 0] * (1 - alpha) + color[0] * alpha);
+  rgba[i + 1] = clampByte(rgba[i + 1] * (1 - alpha) + color[1] * alpha);
+  rgba[i + 2] = clampByte(rgba[i + 2] * (1 - alpha) + color[2] * alpha);
+  rgba[i + 3] = 255;
+}
+
+function drawSoftMark(rgba, width, height, cx, cy, rx, ry, color, alpha) {
+  const x0 = Math.max(0, Math.floor(cx - rx));
+  const x1 = Math.min(width - 1, Math.ceil(cx + rx));
+  const y0 = Math.max(0, Math.floor(cy - ry));
+  const y1 = Math.min(height - 1, Math.ceil(cy + ry));
+  for (let y = y0; y <= y1; y += 1) {
+    for (let x = x0; x <= x1; x += 1) {
+      const dx = (x - cx) / rx;
+      const dy = (y - cy) / ry;
+      const d = dx * dx + dy * dy;
+      if (d > 1) continue;
+      blendAt(rgba, width, x, y, color, alpha * (1 - d));
+    }
+  }
+}
+
+function makeFlatMinimalGrass(target, plan, baseAvg) {
+  const width = target.width;
+  const height = target.height;
+  const rand = seededRandom(plan.seed || 1);
+  const base = [
+    clampByte(baseAvg[0] * 0.92),
+    clampByte(baseAvg[1] * 1.02),
+    clampByte(baseAvg[2] * 0.94)
+  ];
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      rgba[i + 0] = base[0];
+      rgba[i + 1] = base[1];
+      rgba[i + 2] = base[2];
+      rgba[i + 3] = 255;
+    }
+  }
+  const margin = 34;
+  for (let n = 0; n < (plan.markCount || 0); n += 1) {
+    const cx = margin + rand() * (width - margin * 2);
+    const cy = margin + rand() * (height - margin * 2);
+    const dark = rand() > 0.45;
+    const color = dark
+      ? [base[0] - 16, base[1] - 10, base[2] - 8]
+      : [base[0] + 18, base[1] + 22, base[2] + 8];
+    drawSoftMark(rgba, width, height, cx, cy, 3 + rand() * 4, 10 + rand() * 10, color, 0.18);
+  }
+  for (let n = 0; n < (plan.flowerCount || 0); n += 1) {
+    const cx = margin + rand() * (width - margin * 2);
+    const cy = margin + rand() * (height - margin * 2);
+    drawSoftMark(rgba, width, height, cx, cy, 2.2, 2.2, [base[0] + 38, base[1] + 44, base[2] + 8], 0.24);
+  }
+  return { width, height, rgba };
+}
+
 function normalizeFamilyAverages(items) {
   const avgs = items.map((item) => averageRgb(item.image));
   const targetAvg = [0, 1, 2].map((channel) => (
@@ -359,13 +530,23 @@ function main() {
     console.log(`  candidate root: ${path.relative(repoRoot, candidateDir)}`);
   }
   const prepared = [];
+  let flatMinimalBaseAvg = null;
   for (const target of targets) {
     const plan = cropPlan.crops[target.id];
     const { image: cropped, rect } = cropNormalizedSquare(source, plan);
+    if (cropPlan.flatMinimal && !flatMinimalBaseAvg) flatMinimalBaseAvg = averageRgb(cropped);
     let image = resizeRgba(cropped, target.width, target.height);
     if (!args.noSeamless) image = makeTerrainSeamless(image);
     image = quietTerrainContrast(image, plan.quiet);
+    if (cropPlan.flatMinimal) image = makeFlatMinimalGrass(target, plan, flatMinimalBaseAvg);
     prepared.push({ target, plan, image, rect });
+  }
+
+  if (cropPlan.unifiedBase && !cropPlan.flatMinimal) {
+    const base = prepared[0]?.image;
+    for (const item of prepared) {
+      item.image = neutralizeEdges(blendInteriorVariant(base, item.image, item.plan.overlayStrength || 0));
+    }
   }
 
   const outputs = [];

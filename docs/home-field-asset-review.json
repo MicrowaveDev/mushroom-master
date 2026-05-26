@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-05-26",
-  "reviewMode": "object-layer foliage, scene prop mobile review, and staged active-roster chibi proof",
-  "summary": "Object-layer candidates remain candidate evidence only. The dark bush, leaf sprout, amber mushroom cluster, red spotted mushroom, and fallen branch are viable needs_review candidates. The light bush still needs a darker moss-green pass, and the violet mushroom cluster needs regeneration because it reads gray/low-identity at mobile scale. Active-roster chibi work is now staged: Thalla is the only Stage 1 generation target, using the compact proof sheet before any full-roster or 32-frame animation work.",
+  "reviewedAt": "2026-05-27",
+  "reviewMode": "minimal production-candidate composed scene continuation",
+  "summary": "Minimal production-candidate continuation produced a candidate-only grass-first scene with flat-minimal grass, scoped props/exits, and Thalla routed into mobile/desktop clean previews. Grass is now needs_review as a simple v1 field baseline; paths are deferred via needs_regen because prior path previews looked pasted. Several props remain needs_review, but light bush, leaf sprout, violet mushroom, entrances, and Thalla still need regeneration before the scene can be considered production-ready.",
   "assets": [
     {
       "id": "grass_base_01",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Active grass-family candidate review: usable subtle base grass with connected edges, clean opacity, correct scale, and good scene fit in mobile and desktop previews. Repetition is visible only as a low-contrast tuft cadence, so it should wait for human approval rather than regeneration.",
+      "reason": "Minimal production-candidate continuation 2026-05-27: flat-minimal grass fallback produces a calm source-paletted field with no obvious square tile pattern in the composed mobile/desktop clean screenshots. It is intentionally simple and less textured than the imagegen crop attempts, but it works as a readable v1 stage for props and chibis pending human approval.",
       "repeatCheck": "pass",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
@@ -16,13 +16,14 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest"
     },
     {
       "id": "grass_base_02",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Active grass-family candidate review: usable darker alternate grass with connected edges, clean opacity, correct scale, and compatible painterly texture. Its larger shade masses are more noticeable than grass_base_01 in repeat proofs, but they do not block the clean scene previews; awaiting human approval.",
+      "reason": "Minimal production-candidate continuation 2026-05-27: flat-minimal grass fallback produces a calm source-paletted field with no obvious square tile pattern in the composed mobile/desktop clean screenshots. It is intentionally simple and less textured than the imagegen crop attempts, but it works as a readable v1 stage for props and chibis pending human approval.",
       "repeatCheck": "pass",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
@@ -30,13 +31,14 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest"
     },
     {
       "id": "grass_flowers_01",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Active grass-family candidate review: usable flower accent grass with connected edges, clean opacity, correct scale, and strong family cohesion. Flower clusters create the most recognizable repeat of the batch, but the clean previews still read as acceptable variation pending human approval.",
+      "reason": "Minimal production-candidate continuation 2026-05-27: flat-minimal grass fallback produces a calm source-paletted field with no obvious square tile pattern in the composed mobile/desktop clean screenshots. It is intentionally simple and less textured than the imagegen crop attempts, but it works as a readable v1 stage for props and chibis pending human approval.",
       "repeatCheck": "pass",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
@@ -44,13 +46,14 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest"
     },
     {
       "id": "path_dirt_straight",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Current path-family candidate review after rollout 019e6613: the straight dirt band now matches the family internally and passes connector/edge/family-cohesion checks, but the clean preview still exposes a pasted rectangular path block versus the surrounding field grass. Not production-ready without better grass/path blending.",
+      "reason": "Deferred: path family remains out of the minimal v1 candidate because prior clean previews showed pasted square path blocks. Current combined proof was rendered with HOME_FIELD_DEFER_PATH=1 so the grass-first scene can be reviewed without path artifacts.",
       "repeatCheck": "pending",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -70,7 +73,7 @@
       "id": "path_spore_glow",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Current path-family candidate review after rollout 019e6613: the glow path is internally aligned and mechanically valid, but it remains attention-grabbing and the clean preview reveals the same square patch boundary as the rest of the path family. Keep as candidate evidence only.",
+      "reason": "Deferred: path family remains out of the minimal v1 candidate because prior clean previews showed pasted square path blocks. Current combined proof was rendered with HOME_FIELD_DEFER_PATH=1 so the grass-first scene can be reviewed without path artifacts.",
       "repeatCheck": "pending",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -90,7 +93,7 @@
       "id": "path_destination_row",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Current path-family candidate review after rollout 019e6613: the isolated destination landing is more coherent and family-cohesion validation passes, but in desktop/mobile preview it still reads as a square placed tile rather than naturally blended field terrain. Keep candidate-only and regenerate or blend with the grass baseline before approval.",
+      "reason": "Deferred: path family remains out of the minimal v1 candidate because prior clean previews showed pasted square path blocks. Current combined proof was rendered with HOME_FIELD_DEFER_PATH=1 so the grass-first scene can be reviewed without path artifacts.",
       "repeatCheck": "pending",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -138,7 +141,7 @@
       "id": "path_h_end_w",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Current path-family candidate review after rollout 019e6613: shared-source generation improved the west end and mechanical checks pass, but the mobile/desktop clean previews still show the path family as visible square candidate patches against the existing grass baseline. Keep candidate-only and regenerate or reprocess with grass/path scene blending before approval.",
+      "reason": "Deferred: path family remains out of the minimal v1 candidate because prior clean previews showed pasted square path blocks. Current combined proof was rendered with HOME_FIELD_DEFER_PATH=1 so the grass-first scene can be reviewed without path artifacts.",
       "repeatCheck": "pending",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -158,7 +161,7 @@
       "id": "path_h_end_e",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Current path-family candidate review after rollout 019e6613: the east end is coherent with the shared-source path family and passes mechanical gates, but the clean preview still shows visible candidate block edges against the grass baseline. Needs another pass before human approval.",
+      "reason": "Deferred: path family remains out of the minimal v1 candidate because prior clean previews showed pasted square path blocks. Current combined proof was rendered with HOME_FIELD_DEFER_PATH=1 so the grass-first scene can be reviewed without path artifacts.",
       "repeatCheck": "pending",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "fail",
@@ -206,7 +209,7 @@
       "id": "bush_cluster_dark_01",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Mobile scene review: dark bush reads well as a few large natural shrub masses, sits quietly on dark grass, passes alpha/readability/screenshot evidence, and remains candidate-only pending human approval.",
+      "reason": "Minimal composed-scene review 2026-05-27: dark bush reads well at mobile scale, has a broad natural silhouette, and fits the grass-first scene. Candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -214,13 +217,14 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "bush_cluster_light_01",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Mobile scene review: the light bush shape is finally readable and uses a few large masses, but the yellow/highlight value is too bright and pulls focus from the chibi/path area. Regenerate with a darker, cooler moss-green palette, flatter highlights, and less saturated yellow while keeping the same 2-4 large-mass silhouette.",
+      "reason": "Minimal composed-scene review 2026-05-27: silhouette is readable, but the light yellow-green bush is too saturated and pulls focus from the chibi/entrance area. Regenerate darker and cooler, or defer for v1.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
@@ -228,21 +232,23 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "fail"
+      "familyCohesionCheck": "fail",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "leaf_sprout_01",
-      "verdict": "needs_review",
+      "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Mobile scene review: chunky sprout reads clearly beside chibi feet with broad leaves, clean alpha/readability evidence, and appropriate scale; remains candidate-only pending human approval.",
+      "reason": "Minimal composed-scene review 2026-05-27: sprout scale is useful, but the clean desktop/mobile preview exposes a square matte/block around the prop. Mechanical alpha checks pass, but visual alpha quality fails; regenerate or reprocess transparency before approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
-      "cleanPreviewCheck": "pass",
+      "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "pass",
-      "alphaCheck": "pass",
+      "alphaCheck": "fail",
       "scaleCheck": "pass",
-      "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "sceneFitCheck": "fail",
+      "familyCohesionCheck": "fail",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "mutant_broccoli_bush_01",
@@ -360,7 +366,7 @@
       "id": "mushroom_cluster_small_amber",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Scene prop candidate review from rollout 019e6111: amber cluster reads clearly as a small field-edge mushroom token at mobile and desktop scale, with simple 2-3 cap silhouette, clean alpha evidence, and acceptable scene fit. It remains candidate-only pending human approval.",
+      "reason": "Minimal composed-scene review 2026-05-27: prop reads clearly at field scale, matches the cute dark storybook object layer well enough for the candidate scene, and remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -368,13 +374,14 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "mushroom_cluster_small_violet",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Scene prop candidate review from rollout 019e6111: silhouette is compact and alpha evidence passes, but the caps read gray/low-identity instead of violet in the mobile-readability sheet and clean field screenshots. Regenerate only this asset with a stronger muted violet cap read, still simple and non-neon.",
+      "reason": "Minimal composed-scene review 2026-05-27: compact shape is usable, but the violet mushroom remains low-identity/gray at mobile size. Regenerate with a clearer muted violet cap read and the same simple scale.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
@@ -382,7 +389,8 @@
       "alphaCheck": "pass",
       "scaleCheck": "fail",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "fail"
+      "familyCohesionCheck": "fail",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "mushroom_cluster_tall_green",
@@ -402,7 +410,7 @@
       "id": "mushroom_cap_red_spotted",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Scene prop candidate review from rollout 019e6111: red spotted mushroom reads clearly at mobile scale with one strong cap, large cream spots, clean alpha evidence, and good field-edge placement. It remains candidate-only pending human approval.",
+      "reason": "Minimal composed-scene review 2026-05-27: prop reads clearly at field scale, matches the cute dark storybook object layer well enough for the candidate scene, and remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -410,7 +418,8 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "mycelium_lantern_amber",
@@ -430,7 +439,7 @@
       "id": "fallen_branch_mycelium",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "Scene prop candidate review from rollout 019e6111: fallen branch is somewhat subtle on mobile but still reads as a low horizontal field obstacle, has clean alpha evidence, and fits the edge/foreground prop role. It remains candidate-only pending human approval.",
+      "reason": "Minimal composed-scene review 2026-05-27: prop reads clearly at field scale, matches the cute dark storybook object layer well enough for the candidate scene, and remains candidate-only pending human approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -438,7 +447,8 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "pass"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "arena_signpost_blank",
@@ -472,29 +482,31 @@
       "id": "arena_mushroom_arch",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "exit dominates the scene and uses a different detail level",
+      "reason": "Minimal composed-scene review 2026-05-27: entrance is functional in the candidate scene but still too detailed/bright relative to the flat v1 grass and small chibi. Keep candidate-only; simplify silhouette, reduce interior detail, and tune scale before approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
-      "alphaCheck": "pending",
+      "alphaCheck": "pass",
       "scaleCheck": "fail",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "not_applicable"
+      "familyCohesionCheck": "not_applicable",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "journey_gate_under_construction",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "exit dominates the scene and uses a different detail level",
+      "reason": "Minimal composed-scene review 2026-05-27: entrance is functional in the candidate scene but still too detailed/bright relative to the flat v1 grass and small chibi. Keep candidate-only; simplify silhouette, reduce interior detail, and tune scale before approval.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
       "styleCohesionCheck": "fail",
-      "alphaCheck": "pending",
+      "alphaCheck": "pass",
       "scaleCheck": "fail",
       "sceneFitCheck": "fail",
-      "familyCohesionCheck": "not_applicable"
+      "familyCohesionCheck": "not_applicable",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
     },
     {
       "id": "spore_motes_loop",
@@ -584,23 +596,24 @@
       "id": "thalla",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Stage 1 proof rerun 2026-05-26: candidate-only Thalla sheet was composed from isolated transparent 128x128 source frames and downscaled cleanly to the current 64x64 runtime sheet. Mechanical validation, alpha halo, readability sheets, and routed mobile/desktop previews pass, but this candidate is not approved. It reads as a tiny generic beige sprite rather than the intended squat, bold, storybook field-sprite style captured in docs/home-field-chibi-style-reference.md. Regenerate Thalla with compliant isolated transparent imagegen frames, stronger mushroom-elf sovereign silhouette, less generic body/head shape, and smaller non-dominant eyes; avoid huge white portrait eyes and do not expand the roster before Thalla passes.",
+      "reason": "Minimal composed-scene review 2026-05-27: candidate spritesheet is mechanically valid and readable on the field, but it is still not the approved chibi style. It reads like a tiny beige placeholder rather than the extracted storybook field-sprite reference: regenerate Thalla with stronger mushroom-elf sovereign silhouette, top-down 2.5D read, smaller non-dominant eyes, and bolder simple costume blocks before any roster expansion.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
-      "styleCohesionCheck": "pass",
+      "styleCohesionCheck": "fail",
       "alphaCheck": "pass",
       "scaleCheck": "pass",
-      "sceneFitCheck": "pass",
+      "sceneFitCheck": "fail",
       "familyCohesionCheck": "not_applicable",
       "stageContractCheck": "fail",
-      "identityCheck": "pass",
+      "identityCheck": "fail",
       "mobileReadabilityCheck": "pass",
       "sheetMappingCheck": "pass",
       "alphaHaloCheck": "pass",
       "cameraAngleCheck": "pass",
       "detailBudgetCheck": "pass",
-      "sourceFrameIsolationCheck": "pass"
+      "sourceFrameIsolationCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest"
     },
     {
       "id": "lomie",

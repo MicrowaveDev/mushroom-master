@@ -84,6 +84,8 @@ Use this as the operator checklist. The orchestrator owns sequencing and may run
 2. Generate the terrain baseline.
    - Grass/Path Worker generates grass first with `npm run game:home-field:rerun-grass-family`.
    - Produce the grass candidate with `npm run game:home-field:produce-grass-family-candidate`.
+   - If `tight-center`, `lower-band`, and `upper-band` still show visible tile columns, use `npm run game:home-field:produce-grass-family-candidate -- --plan=unified-base`.
+   - If the shared source itself still creates broad bands or edge columns, use `npm run game:home-field:produce-grass-family-candidate -- --plan=flat-minimal` for a simpler production-safe field baseline before regenerating the raw source.
    - Run a clean candidate preview. If grass shows square cells, fix grass before starting props/chibi.
 3. Decide whether path helps.
    - Generate path only after grass is usable.
@@ -99,10 +101,10 @@ Use this as the operator checklist. The orchestrator owns sequencing and may run
    - Use `npm run game:home-field:combined-candidate-preview` as the primary scene proof.
 6. Visual review and stop.
    - Visual Critic reviews the composed mobile/desktop screenshots first.
-   - Mark rows `needs_review`, `needs_regen`, or deferred only. Never approve or set `accepted: true`.
+   - Mark rows `needs_review` or `needs_regen` only. For deferred assets, keep `verdict: "needs_regen"`, `accepted: false`, and start `reason` with `Deferred:`. Never approve or set `accepted: true`.
    - Final handoff must include clickable links to the candidate folder, evidence manifest, review sheets, and clean screenshots.
 
-Fastest viable target: grass + Arena/Journey entrances + three foliage props + two mushroom props + Thalla. Path and optional `lomie` are stretch items, not blockers for a coherent v1 candidate.
+Fastest viable target: grass + Arena/Journey entrances + `bush_cluster_dark_01`, `bush_cluster_light_01`, `leaf_sprout_01`, `mushroom_cluster_small_amber`, `mushroom_cluster_small_violet`, `mushroom_cap_red_spotted`, `fallen_branch_mycelium`, and Thalla. Path and optional `lomie` are stretch items, not blockers for a coherent v1 candidate.
 
 ## Subagent Roles
 
@@ -211,14 +213,28 @@ For the full object/exit scope, use:
 
 ```bash
 OBJECT_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction
-npm run game:home-field:produce-object-candidate -- ${OBJECT_IDS//,/ } --resize --chroma-key=#ff00ff
+npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 mushroom_cluster_small_amber mushroom_cluster_small_violet mushroom_cap_red_spotted fallen_branch_mycelium arena_mushroom_arch journey_gate_under_construction --resize --chroma-key=#ff00ff
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=$OBJECT_IDS --check-files --check-alpha-halo --check-readability
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=$OBJECT_IDS
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=$OBJECT_IDS
 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=$OBJECT_IDS npm run game:home-field:candidate-evidence
 ```
 
-For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the isolated raw frame files from `docs/home-field-chibi-candidate-contract.md`, then produce and validate the `thalla` candidate through the chibi candidate workflow before running `npm run game:home-field:chibi-candidate-preview`.
+For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the isolated raw frame files from `docs/home-field-chibi-candidate-contract.md`, then run:
+
+```bash
+npm run game:home-field:produce-chibi-candidate -- thalla --resize-nearest --chroma-key=#ff00ff
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-review
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-readability
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:sheet
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:mobile-readability-sheet -- --ids=thalla
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:alpha-sheet -- --ids=thalla
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence
+npm run game:home-field:chibi-candidate-preview
+```
+
+For the full composed scene, the default `npm run game:home-field:combined-candidate-preview` already routes the default latest grass, terrain, object-layer, and chibi candidate roots. If any worker uses non-default candidate folders, set `HOME_FIELD_CANDIDATE_ROOTS` and `HOME_FIELD_CANDIDATE_IDS` explicitly before running the combined preview.
 
 Also run the relevant scoped validation commands:
 
@@ -260,7 +276,7 @@ Must never set:
 3. Path candidate only if it improves the field.
 4. Props and entrances micro-batch.
 5. Thalla Stage 1 chibi.
-6. Combined candidate preview with all accepted candidates routed.
+6. Combined candidate preview with all selected candidate roots routed.
 7. Visual Critic updates `docs/home-field-asset-review.json`.
 8. Stop for human approval.
 
@@ -287,7 +303,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Grass/Pat
 
 Follow docs/home-field-minimal-production-plan.md and docs/home-field-agent-flow.md. Generate terrain candidates only under .agent/home-field-workspace. Start with grass only: run npm run game:home-field:rerun-grass-family, use imagegen for one shared meadow source, then run npm run game:home-field:produce-grass-family-candidate.
 
-After grass preview evidence exists, generate the shared-source path family only if it improves the composed field. If path looks pasted after two attempts, defer path. Do not touch web/public/home-field, do not approve assets, and include links to raw source, candidate folder, and clean preview screenshots in your handoff.
+After grass preview evidence exists, generate the shared-source path family only if it improves the composed field. If path looks pasted after two attempts, defer path by keeping path rows at verdict needs_regen, accepted false, with reason beginning Deferred:. Do not touch web/public/home-field, do not approve assets, and include links to raw source, candidate folder, and clean preview screenshots in your handoff.
 ```
 
 ### Props/Entrances Worker
@@ -327,7 +343,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Visual Cr
 
 Review the composed mobile and desktop clean screenshots first, then supporting contact/adjacency/alpha/readability sheets and evidence manifests. Fail visible square terrain cells, pasted path bands, noisy grass, wrong chibi camera/scale, over-detailed mobile props, mismatched entrances, or mixed renderer styles.
 
-Update only docs/home-field-asset-review.json rows for the active batch with needs_review, needs_regen, or deferred-style notes. Never set verdict approved or accepted=true without explicit human approval.
+Update only docs/home-field-asset-review.json rows for the active batch with needs_review or needs_regen. Encode deferral as verdict needs_regen, accepted false, and reason beginning Deferred:. Never set verdict approved or accepted=true without explicit human approval.
 ```
 
 ## Decision Rules
@@ -359,7 +375,7 @@ The final response from the run must include clickable Markdown links to:
 It must also state:
 
 - app-facing `web/public/home-field` was or was not changed;
-- which assets are `needs_review`, `needs_regen`, or deferred;
+- which assets are `needs_review`, `needs_regen`, or deferred via a `Deferred:` reason;
 - whether the scene is ready for human approval.
 
 ## Recommended Short Run Prompt
