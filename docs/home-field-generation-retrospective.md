@@ -12,7 +12,7 @@ After this retrospective was written, the workflow was hardened in follow-up com
 - `63bcd6e Add home field tile regeneration queue`
 - `fe0d88a Update home field retrospective status`
 - current pass: add pre-generation terrain gates for adjacency proof, path-band metadata, structured review checks, and grass-first queueing
-- later passes: add candidate-only roots, mobile readability/alpha proof sheets, scene-prop scale constraints, and staged active-roster chibi proof flow
+- later passes: add candidate-only roots, mobile readability/alpha proof sheets, scene-prop scale constraints, staged active-roster chibi proof flow, and shared-source path-family generation
 
 These changes did **not** make the current art production-ready. They changed the process so future agents cannot accidentally treat the current PNG set as approved.
 
@@ -48,6 +48,9 @@ Handled:
 - Added candidate preview screenshot flows for object-layer and chibi runs, using route interception so app-facing PNGs are not overwritten before approval.
 - Tightened final handoff requirements so every generation run must include clickable Markdown links to the candidate folder and mobile/desktop clean field screenshots.
 - Added candidate-safe path/edge family queues, terrain candidate producer alias, combined candidate preview routing, candidate evidence hash manifests, and `--check-edge-profiles` for obvious terrain seam detection.
+- After rollout `019e65f0`, replaced independent path-family prompting with `npm run game:home-field:rerun-path-family`, a shared-source path prompt, plus `npm run game:home-field:produce-path-family-candidate`. The path family now crops `path_h_end_w`, `path_dirt_straight`, `path_spore_glow`, `path_h_end_e`, and `path_destination_row` from one raw `.agent/home-field-workspace/raw/path_family_strip.source.png`.
+- Added `--check-family-cohesion` to flag terrain-family palette/value outliers that edge-profile checks can miss.
+- Fixed the `terrain_path_destination_row` prompt so it is no longer described as a horizontal path connector; it is an isolated grass-compatible destination landing.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
@@ -55,10 +58,10 @@ Handled:
 
 Still open before production approval:
 
-- Path and edge families now have candidate-safe queues, but they still need actual imagegen reruns and visual review before promotion.
+- Path and edge families now have candidate-safe queues, but they still need successful imagegen reruns and visual review before promotion. Path reruns must use the shared-source path flow, not independent per-tile path prompts.
 - Candidate evidence manifests now bind output hashes, but approved review rows still need to copy/reference those hashes before any human-approved production promotion.
 - Combined candidate preview routing now exists; it still needs real current candidate folders for grass, path/edge, props, and chibi before it can serve as final scene proof.
-- `--check-edge-profiles` catches obvious terrain seams, but it remains a heuristic. Manual adjacency-sheet review is still the authority for subtle art-direction seams.
+- `--check-edge-profiles` and `--check-family-cohesion` catch obvious terrain seams and palette/value outliers, but they remain heuristics. Manual adjacency-sheet and clean-preview review are still the authority for subtle art-direction seams.
 - `/home-field-preview` remains a DOM/CSS layout lab. Before final approval, either Phaser rendering must exist or the preview must be proven equivalent in scale, anchors, camera, and layering.
 
 Current status after the guardrail pass:
@@ -78,6 +81,12 @@ npm run game:home-field:rerun-grass-family
 
 npm run game:home-field:produce-grass-family-candidate
 # preferred producer for review runs; writes to .agent/home-field-workspace/candidates/grass-family/latest/
+
+npm run game:home-field:rerun-path-family
+# preferred path rerun: one shared path-family source prompt for the 5 path-family tiles
+
+npm run game:home-field:produce-path-family-candidate
+# preferred path producer for review runs; writes to .agent/home-field-workspace/candidates/terrain-family/latest/
 
 npm run game:home-field:adjacency
 # writes the terrain connector proof sheet
@@ -393,9 +402,10 @@ Handled:
 - Regression case: rollout `019e5c66-22e1` improved alpha/candidate discipline but the bush art still used too many visible leafy segments. The fix is stronger bush prompt/review language: only 2-4 large overlapping foliage masses, no many small mini-crowns or segmented shrub pieces.
 - Regression case: rollout `019e5c77-bc0a` produced much better large-mass bush shapes, but `bush_cluster_light_01` was too bright/yellow in the mobile scene. Shape/readability can pass while scene attention still fails; light foliage needs a specific value/saturation gate.
 - Regression case: rollout `019e6111-3714` correctly used sub-agents, candidate roots, screenshots, and final links, but it reported validation success without updating `docs/home-field-asset-review.json` with fresh per-asset visual verdicts. It also hit "nothing to generate" for existing app-facing props before manually discovering the rerun path, and the first producer pass missed `--chroma-key=#ff00ff`. The fix is `npm run game:home-field:rerun-scene-props`, a chroma-keyed candidate producer command in the prompt, and a hard requirement that final handoff includes per-asset verdicts.
+- Regression case: rollout `019e65f0` followed the candidate-only path workflow correctly and did not approve bad art, but the path tiles still failed visually because each source was generated independently. Validation/edge profiles passed while palette, texture, camera, and path-band style drifted. The fix is the shared-source path flow: `npm run game:home-field:rerun-path-family` -> one `.agent/home-field-workspace/raw/path_family_strip.source.png` -> `npm run game:home-field:produce-path-family-candidate` -> family-level validation with `--check-edge-profiles --check-family-cohesion`.
 - Grass flowers remain the easiest repeat marker. Keep base terrain mostly quiet; move stronger flowers, vines, foliage, and personality to object-layer transparent props rather than stamping them into repeatable grass cells.
 - The adjacency proof sheet exists, but it is still a visual-review artifact; it does not algorithmically score edge beauty.
-- Connector validation now checks horizontal path-band metadata, but edge color-profile heuristics are still not implemented.
+- Connector validation checks horizontal path-band metadata, edge color-profile checks exist, and family-cohesion checks flag obvious value/palette outliers. These are still heuristics, not substitutes for visual review.
 - Vertical path-band metadata (`pathCenterX`) is reserved for future vertical path tiles.
 - Clean preview exists, but the final Home Field renderer is still DOM/CSS preview, not the eventual Phaser/canvas scene.
 - Mobile preview still uses CSS camera/object overrides; the map JSON is not yet the sole source of placement truth.
@@ -405,4 +415,4 @@ Handled:
 
 ## Bottom Line
 
-The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. The next improvement is to regenerate only the grass family through `npm run game:home-field:rerun-grass-family`, produce via `npm run game:home-field:produce-grass-family-candidate`, review the candidate folder plus contact/grass-family/adjacency sheets, then stop for human approval before promotion or path/edge tiles.
+The pipeline now proves that the app can load a complete Home Field asset set, and the approval workflow now blocks false production sign-off. Grass and path families both have shared-source candidate workflows; use them before any promotion. The next path pass should run `npm run game:home-field:rerun-path-family`, produce via `npm run game:home-field:produce-path-family-candidate`, review the candidate folder plus contact/adjacency/clean-preview evidence, then stop for human approval before promotion.

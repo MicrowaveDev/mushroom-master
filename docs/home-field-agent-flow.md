@@ -67,7 +67,15 @@ npm run game:home-field:rerun-path-family
 npm run game:home-field:rerun-edge-family
 ```
 
-These commands print candidate-safe prompts and producer commands that write under `.agent/home-field-workspace/candidates/terrain-family/latest/`. Do not use plain `game:home-field:produce` for path or edge reruns before human approval.
+`rerun-path-family` emits one shared-source prompt for the path family. The Imagegen Worker must generate only `.agent/home-field-workspace/raw/path_family_strip.source.png`, not separate per-tile raw PNGs. The Producer/Validation Worker then runs:
+
+```bash
+npm run game:home-field:produce-path-family-candidate
+```
+
+The path producer crops the west end, straight path, glow path, east end, and destination landing from the same source so camera, dirt band, palette, and brushwork stay locked. Do not use independent per-tile path imagegen unless this shared-source path fails technically and the user explicitly asks for diagnostics.
+
+`rerun-edge-family` still prints candidate-safe per-tile prompts and producer commands that write under `.agent/home-field-workspace/candidates/terrain-family/latest/`. Do not use plain `game:home-field:produce` for path or edge reruns before human approval.
 
 Required path-family scope:
 
@@ -90,7 +98,7 @@ Minimum evidence:
 
 ```bash
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:validate -- --ids=<family_ids> --check-files --check-connectors --check-review
-HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:validate -- --ids=<family_ids> --check-files --check-edge-profiles
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:validate -- --ids=<family_ids> --check-files --check-edge-profiles --check-family-cohesion
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest npm run game:home-field:adjacency
 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/terrain-family/latest HOME_FIELD_CANDIDATE_IDS=<family_ids> npm run game:home-field:candidate-evidence
@@ -241,6 +249,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If `tight-center` produces blocky family transitions, try at most the two documented alternate crop plans from the same raw source, refresh `grass-family-sheet`, and commit only the best candidate set.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
 - If `--check-edge-profiles` fails, inspect the adjacency sheet before retrying. The heuristic is allowed to be conservative, but visible path-band, grass-edge, or edge-stack seams must be regenerated rather than papered over with metadata.
+- If `--check-family-cohesion` fails, treat it as a warning that the tiles may be separate-looking paintings even when edge profiles pass. Inspect the contact, adjacency, and mobile/desktop clean previews; regenerate from one shared source if the family drift is visible.
 - If `--check-alpha-halo` reports visible chroma fringe, reprocess with stricter chroma-key cleanup or regenerate the affected raw PNG. Do not leave `alphaCheck: pending` on a candidate whose halo validator fails.
 - If `--check-readability` fails, regenerate or reprocess the candidate so the visible alpha bounding box meets the asset's `readability` minimums. Do not compensate by scaling objects with CSS in the preview.
 - If a bush candidate looks like many repeated round clumps, broccoli/cauliflower crowns, flower rosettes, or obvious brush stamps instead of one irregular natural shrub mass, set it to `needs_regen` even if alpha, scale, and field screenshots pass.

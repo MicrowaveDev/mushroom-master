@@ -8,6 +8,7 @@
  *   npm run game:home-field:validate -- --check-connectors
  *   npm run game:home-field:validate -- --check-review
  *   npm run game:home-field:validate -- --check-edge-profiles
+ *   npm run game:home-field:validate -- --check-family-cohesion
  *   npm run game:home-field:validate -- --production
  *
  * Default behavior validates schema only (does not require any PNGs to exist yet),
@@ -213,6 +214,105 @@ function averageEdgeRgb(image, side, band = null, thickness = 6) {
 
 function rgbDistance(a, b) {
   return Math.sqrt(((a[0] - b[0]) ** 2) + ((a[1] - b[1]) ** 2) + ((a[2] - b[2]) ** 2));
+}
+
+function averageRgb(image, region = null) {
+  const x0 = region?.x ?? 0;
+  const y0 = region?.y ?? 0;
+  const x1 = Math.min(image.width, x0 + (region?.width ?? image.width));
+  const y1 = Math.min(image.height, y0 + (region?.height ?? image.height));
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+  for (let y = Math.max(0, y0); y < y1; y += 1) {
+    for (let x = Math.max(0, x0); x < x1; x += 1) {
+      const i = (y * image.width + x) * 4;
+      r += image.rgba[i + 0];
+      g += image.rgba[i + 1];
+      b += image.rgba[i + 2];
+      count += 1;
+    }
+  }
+  return count ? [r / count, g / count, b / count] : [0, 0, 0];
+}
+
+function luminance(rgb) {
+  return (rgb[0] * 0.2126) + (rgb[1] * 0.7152) + (rgb[2] * 0.0722);
+}
+
+function checkTerrainFamilyCohesion(assetsDoc, errors, { ids = null } = {}) {
+  if (!ids) return;
+  const terrain = (assetsDoc.assets || []).filter((asset) => asset.type === 'terrain' && ids.has(asset.id));
+  if (terrain.length < 2) return;
+  const imageCache = new Map();
+  const imageFor = (asset) => {
+    if (imageCache.has(asset.id)) return imageCache.get(asset.id);
+    const abs = path.join(ASSET_ROOT, asset.outputPath);
+    if (!fs.existsSync(abs)) return null;
+    const image = readPngRgba(abs);
+    imageCache.set(asset.id, image);
+    return image;
+  };
+
+  const grassEdgeSamples = [];
+  const pathBandSamples = [];
+  for (const asset of terrain) {
+    const image = imageFor(asset);
+    if (!image) continue;
+    const edgeThickness = Math.max(8, Math.round(Math.min(image.width, image.height) * 0.08));
+    const connectors = asset.tile?.connectors || {};
+    for (const side of ['n', 'e', 's', 'w']) {
+      if (connectors[side] !== 'grass') continue;
+      const region = side === 'n'
+        ? { x: 0, y: 0, width: image.width, height: edgeThickness }
+        : side === 's'
+          ? { x: 0, y: image.height - edgeThickness, width: image.width, height: edgeThickness }
+          : side === 'w'
+            ? { x: 0, y: 0, width: edgeThickness, height: image.height }
+            : { x: image.width - edgeThickness, y: 0, width: edgeThickness, height: image.height };
+      grassEdgeSamples.push({ id: asset.id, side, rgb: averageRgb(image, region) });
+    }
+    if (asset.tile?.pathBand?.axis === 'horizontal') {
+      const half = asset.tile.pathBand.pathWidth / 2;
+      const y = Math.max(0, Math.round(asset.tile.pathBand.pathCenterY - half));
+      const height = Math.min(image.height - y, Math.round(asset.tile.pathBand.pathWidth));
+      pathBandSamples.push({ id: asset.id, rgb: averageRgb(image, { x: 0, y, width: image.width, height }) });
+    }
+  }
+
+  if (grassEdgeSamples.length >= 2) {
+    const avg = grassEdgeSamples.reduce((sum, sample) => {
+      sum[0] += sample.rgb[0];
+      sum[1] += sample.rgb[1];
+      sum[2] += sample.rgb[2];
+      return sum;
+    }, [0, 0, 0]).map((v) => v / grassEdgeSamples.length);
+    for (const sample of grassEdgeSamples) {
+      const distance = rgbDistance(sample.rgb, avg);
+      if (distance > 34) {
+        errors.push({
+          scope: 'family_cohesion',
+          code: 'grass_edge_outlier',
+          message: `terrain "${sample.id}" ${sample.side} grass edge RGB distance from family average is ${distance.toFixed(1)} > 34; likely palette/value drift even if connector metadata passes`
+        });
+      }
+    }
+  }
+
+  if (pathBandSamples.length >= 2) {
+    const avgLum = pathBandSamples.reduce((sum, sample) => sum + luminance(sample.rgb), 0) / pathBandSamples.length;
+    for (const sample of pathBandSamples) {
+      const delta = Math.abs(luminance(sample.rgb) - avgLum);
+      if (delta > 24) {
+        errors.push({
+          scope: 'family_cohesion',
+          code: 'path_band_value_outlier',
+          message: `terrain "${sample.id}" path-band luminance differs from family average by ${delta.toFixed(1)} > 24; likely dirt/glow band mismatch`
+        });
+      }
+    }
+  }
 }
 
 function pathBandFor(asset, side) {
@@ -439,6 +539,7 @@ function main() {
   const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
   const wantReadabilityCheck = hasFlag(argv, 'check-readability');
   const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
+  const wantFamilyCohesionCheck = hasFlag(argv, 'check-family-cohesion');
   const wantProduction = hasFlag(argv, 'production');
   const ids = parseIds(argv);
 
@@ -476,6 +577,9 @@ function main() {
   if (wantEdgeProfileCheck || wantProduction) {
     checkTerrainEdgeProfiles(assetsDoc, mapDoc, errors, { ids });
   }
+  if (wantFamilyCohesionCheck || wantProduction) {
+    checkTerrainFamilyCohesion(assetsDoc, errors, { ids });
+  }
 
   if (errors.length === 0) {
     console.log('home-field validation: PASS');
@@ -486,6 +590,7 @@ function main() {
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
     if (wantEdgeProfileCheck || wantProduction) modes.push('terrain edge profiles');
+    if (wantFamilyCohesionCheck || wantProduction) modes.push('terrain family cohesion');
     if (wantProduction) modes.push('production approval');
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`

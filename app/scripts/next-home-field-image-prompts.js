@@ -322,7 +322,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
     } else {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-connectors --check-review`);
-      lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-edge-profiles`);
+      lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-edge-profiles --check-family-cohesion`);
     }
     lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:sheet`);
     if (terrainCandidate) {
@@ -555,6 +555,21 @@ function main() {
     console.log('  7. Stop after this batch. Update review JSON before generating another batch.');
   }
   console.log('  8. Commit only after validate + sheets pass.');
+
+  if (terrainCandidate && slice.length > 1) {
+    const familyIds = slice.map((asset) => asset.id).join(',');
+    const candidateRoot = '.agent/home-field-workspace/candidates/terrain-family/latest';
+    console.log('');
+    console.log('Family-level proof commands for this terrain batch:');
+    console.log(`  npm run game:home-field:produce-terrain-candidate -- ${slice.map((asset) => asset.id).join(' ')} --resize --crop-center`);
+    console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${familyIds} --check-files --check-connectors --check-review`);
+    console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${familyIds} --check-files --check-edge-profiles --check-family-cohesion`);
+    console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:sheet`);
+    console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:adjacency`);
+    console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${familyIds} npm run game:home-field:candidate-evidence`);
+    console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${familyIds} npm run game:home-field:terrain-candidate-preview`);
+    console.log('Per-asset commands below are fallback diagnostics; use the family-level commands for batch review.');
+  }
 
   slice.forEach((asset, idx) => {
     const promptEntry = promptsDoc.prompts[asset.promptKey];

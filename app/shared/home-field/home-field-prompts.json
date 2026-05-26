@@ -38,8 +38,8 @@
       "constraints": "no props, no signs, no horizon, no text, no spotlight, no dense glowing particles, no destination marker. Path edges must align with path_dirt_straight for tiling."
     },
     "terrain_path_destination_row": {
-      "subject": "one reusable 2D tilemap cell: horizontal destination-row path connector with mycelium veins",
-      "details": "Simple isolated top destination landing tile for the current proof map. Use a broad flat dirt or moss landing patch blended into muted green grass on all four edges. It sits under/near entrance props but contains no arch, gate, sign, or text. Keep it reusable as a single landing accent, not a connector row.",
+      "subject": "one reusable 2D tilemap cell: isolated grass-compatible destination landing tile",
+      "details": "Simple isolated top destination landing tile for the current proof map. Use a broad flat dirt or moss landing patch blended into muted green grass on all four edges. It sits under/near entrance props but contains no arch, gate, sign, or text. Keep it reusable as a single landing accent, not a horizontal path connector row.",
       "size": "256x256 square tile",
       "transparency": "no transparency",
       "constraints": "no Arena arch, no Journey gate, no signs, no props, no horizon, no text, no full-scene lighting, no unique focal symbol. All four edges must be grass-compatible."
