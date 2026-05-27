@@ -2,7 +2,7 @@
 
 Date: 2026-05-23
 
-This document is a handoff for the next agent. The current Home Field asset pass is useful as a pipeline proof, but it is **not production-ready art**. Do not treat the committed PNG set as approved. It exists to expose the problems in the generation flow, tile requirements, and preview/rendering logic.
+This document is a handoff for the next agent. It started as a retrospective on an unapproved proof pass; since then, a minimal Home Field v1 active scene has been promoted after operator approval. Treat only the approved active-scene subset as production-ready. The broader future registry remains incomplete and should not be treated as approved.
 
 ## Update: Guardrails Added
 

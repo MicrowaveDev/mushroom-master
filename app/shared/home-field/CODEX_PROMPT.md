@@ -118,8 +118,8 @@ Do not set `"verdict": "approved"` or `"accepted": true` unless the human explic
 - Do not edit `home-field-assets.json`, `home-field-map.json`, validator code, producer code, or prompt scripts during this generation run.
 - Do not commit `.agent/home-field-workspace/`; it is local evidence only.
 - Do not continue to path or edge tiles.
-- Do not claim production-ready art. This run can produce candidates only.
-- Production validation is expected to fail until human-approved assets exist.
+- Do not claim newly generated art is production-ready. This grass-regeneration prompt can produce candidates only unless the human explicitly approves the new candidate in the same conversation.
+- Active-scene production validation should pass for the already promoted minimal v1 scene. Full-registry validation is expected to fail until deferred future assets are approved.
 
 ## Run Order
 
