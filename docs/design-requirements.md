@@ -122,3 +122,13 @@ Last verified against source materials: 2026-04-13.
 - **10-B.** Shared motifs across the cast should include fungal biology, black-tree world logic, spores, symbiosis, and organic magic.
 - **10-C.** Individual differentiation should come from **role, silhouette, material palette, and magical function**, not from abandoning the shared mushroom-elf identity.
 - **10-D.** Any new depiction, prompt, render, UI portrait, or dossier image that contradicts these design rules is a **canon bug** unless the requirements doc is updated in the same change.
+
+---
+
+## 11. Home Field Chibi Requirements
+
+- **11-A.** Home Field chibis are **hand-drawn elevated 2.5D field sprites**, not pixel-art miniatures, portrait stickers, fashion dolls, or generic RPG sprites. The camera must show enough cap/head top for the character to belong on the map while keeping the feet/base planted.
+- **11-B.** At runtime scale (`64px` frames, reviewed in mobile and desktop composed screenshots), each chibi must preserve a **squat, bold, readable silhouette**: oversized but not eye-dominated head, tiny grounded body, compact blob shadow, simple costume blocks, and warm dark irregular outline.
+- **11-C.** Chibi simplification must preserve canon identity from sections 2-9. For Thalla specifically, the sprite must still read as an ancient gold-white mushroom-elf sovereign with black/fire-gold eyes, bone/gold/white/brown palette, gold mycelium/spore marks, and sacred fungal regalia. A beige generic elf with weak mushroom biology is a canon failure.
+- **11-D.** Chibi faces must stay simple and small at field scale. Do not use huge white portrait eyes, eye-dominated faces, or high-detail portrait rendering. Facial features support the silhouette; they are not the main read.
+- **11-E.** A chibi candidate is not approvable from the spritesheet alone. It must pass a composed Home Field screenshot review next to approved grass, props, and entrances. If the sprite looks like a different renderer, a pixel-art asset, a tiny doll, or a human with a mushroom hat, it must remain `rejected` or `needs_review` and must not ship as production art.
