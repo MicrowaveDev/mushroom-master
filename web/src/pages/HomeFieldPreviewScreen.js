@@ -100,9 +100,12 @@ export const HomeFieldPreviewScreen = {
     candidateCharacterId() {
       const params = new URLSearchParams(window.location.search);
       const requested = params.get('character');
-      if (requested) return requested;
+      if (requested) {
+        const asset = this.assetById[requested];
+        return asset && asset.status !== 'missing' ? requested : '';
+      }
       const thalla = this.assetById.thalla;
-      return thalla && thalla.status !== 'missing' ? 'thalla' : '';
+      return thalla && thalla.status === 'approved' ? 'thalla' : '';
     },
     terrainLayer() {
       return homeFieldMap.layers.find((layer) => layer.id === 'terrain');
@@ -143,20 +146,21 @@ export const HomeFieldPreviewScreen = {
           style: `left: ${percent(object.x, world.width)}; top: ${percent(object.y, world.height)};`
         };
       });
+      const chibiSrc = this.candidateCharacterId && this.assetById[this.candidateCharacterId]?.publicPath
+        ? this.assetById[this.candidateCharacterId].publicPath
+        : '';
       return [
         ...mapObjects,
         {
           id: 'chibi-spawn',
           label: 'Chibi',
           className: fallbackObjectClass.chibi_spawn,
-          src: this.candidateCharacterId && this.assetById[this.candidateCharacterId]?.publicPath
-            ? this.assetById[this.candidateCharacterId].publicPath
-            : '',
+          src: chibiSrc,
           showLabel: !this.cleanMode,
           decorative: false,
           style: `left: ${percent(homeFieldMap.spawn.x, world.width)}; top: ${percent(homeFieldMap.spawn.y, world.height)};`
         }
-      ];
+      ].filter((object) => !this.cleanMode || object.id !== 'chibi-spawn' || object.src);
     }
   },
   template: `

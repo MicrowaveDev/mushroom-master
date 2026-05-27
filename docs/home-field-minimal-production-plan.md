@@ -20,16 +20,18 @@ The primary proof is the composed field screenshot, not isolated asset beauty.
 
 ## Current Completion State
 
-As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field v1 after operator approval to continue the plan:
+As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field v1 after operator approval to continue the plan, with the character layer rolled back from approval:
 
 - grass uses the `flat-minimal` fallback as a stable simple field baseline;
 - scoped props/exits were produced under `.agent/home-field-workspace/candidates/object-layer/latest`, polished by `npm run game:home-field:polish-minimal-candidate`, and copied to `web/public/home-field`;
-- `thalla` Stage 1 was produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest` and copied to `web/public/home-field/characters/thalla/spritesheet.png`;
-- the runtime map now uses only approved grass/props/exits and removes path, edge, signpost, lantern, tall-mushroom, and effect references from the v1 composed scene;
+- `thalla` Stage 1 was produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest`, but the current tiny beige/pixel-sprite result is rejected by composed screenshot review because it does not match the agreed hand-drawn 2.5D chibi reference;
+- the runtime map now uses only approved grass/props/exits and removes path, edge, signpost, lantern, tall-mushroom, effect, and unapproved chibi references from the v1 composed scene;
 - path remains deferred as `needs_regen` because prior path-family candidates looked pasted onto grass;
-- `npm run game:home-field:validate -- --production` is now the active-scene production gate for the promoted minimal scene.
+- `npm run game:home-field:validate -- --production` is now the active-scene production gate for the promoted minimal non-character scene.
 
-Full-registry `npm run game:home-field:validate-full-registry-production` is still expected to fail until the deferred path/edge/effect/funny-foliage/full-roster assets are generated and explicitly approved.
+Thalla remains required for the final character-complete Home Field, but it is no longer approved for the current promoted active-scene scope. Do not use the current `web/public/home-field/characters/thalla/spritesheet.png` as a style reference except as a negative example.
+
+Full-registry `npm run game:home-field:validate-full-registry-production` is still expected to fail until Thalla, the remaining roster, and the deferred path/edge/effect/funny-foliage assets are generated and explicitly approved.
 
 ## Minimal Asset Scope
 
@@ -340,9 +342,9 @@ Use broad mobile-readable silhouettes, fewer segments, top-down 2.5D camera, mut
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Chibi Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D field sprite, simple 64px runtime read, 8 unique poses minimum in the compact 12-slot contract, no 32-frame full animation.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, 8 unique poses minimum in the compact 12-slot contract, no 32-frame full animation.
 
-Create a non-production turnaround reference first, then isolated transparent raw frames. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
+Create a non-production turnaround reference first, then isolated transparent raw frames. Reject pixel-art, tiny doll-sprite, beige generic elf, straight portrait, or human-with-mushroom-hat results. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
 ```
 
 ### Producer/Validation Worker

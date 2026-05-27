@@ -584,7 +584,7 @@ test('[home-field] production validation scopes to active shipped scene by defau
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /production approval/);
   assert.match(result.stdout, /scope=.*grass_base_01/);
-  assert.match(result.stdout, /scope=.*thalla/);
+  assert.doesNotMatch(result.stdout, /scope=.*thalla/);
   assert.doesNotMatch(result.stdout, /mutant_broccoli_bush_01/);
 });
 

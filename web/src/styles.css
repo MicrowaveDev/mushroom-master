@@ -8870,7 +8870,11 @@ select {
   object-fit: fill;
   object-position: 0 0;
   transform: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
+}
+
+.home-field-preview-screen--clean .home-field-preview-object--chibi:not(.home-field-preview-object--has-image) {
+  display: none;
 }
 
 .home-field-preview-object--chibi.home-field-preview-object--has-image::before,
