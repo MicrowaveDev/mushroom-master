@@ -99,7 +99,10 @@ export const HomeFieldPreviewScreen = {
     },
     candidateCharacterId() {
       const params = new URLSearchParams(window.location.search);
-      return params.get('character') || '';
+      const requested = params.get('character');
+      if (requested) return requested;
+      const thalla = this.assetById.thalla;
+      return thalla && thalla.status !== 'missing' ? 'thalla' : '';
     },
     terrainLayer() {
       return homeFieldMap.layers.find((layer) => layer.id === 'terrain');

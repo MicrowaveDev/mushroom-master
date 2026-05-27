@@ -14,7 +14,7 @@ After this retrospective was written, the workflow was hardened in follow-up com
 - current pass: add pre-generation terrain gates for adjacency proof, path-band metadata, structured review checks, and grass-first queueing
 - later passes: add candidate-only roots, mobile readability/alpha proof sheets, scene-prop scale constraints, staged active-roster chibi proof flow, and shared-source path-family generation
 
-These changes did **not** make the current art production-ready. They changed the process so future agents cannot accidentally treat the current PNG set as approved.
+These changes initially did **not** make the current art production-ready. A later minimal-v1 pass promoted only the reviewed grass-first subset after operator approval; the broader registry is still not complete.
 
 Handled:
 
@@ -53,19 +53,21 @@ Handled:
 - Fixed the `terrain_path_destination_row` prompt so it is no longer described as a horizontal path connector; it is an isolated grass-compatible destination landing.
 - After rollout `019e6613`, made candidate evidence shared-source aware, reconciled the destination landing tileset contract, and tightened Visual Critic sequencing/check rules so a path candidate cannot get all-pass review rows while the clean preview still shows square pasted tiles.
 - Added `docs/home-field-minimal-production-plan.md` and `app/shared/home-field/RUN_MINIMAL_HOME_FIELD_PROMPT.md` for the fastest integrated scene pass: quiet grass, entrances, a small prop set, and Thalla reviewed together from composed mobile/desktop screenshots.
+- Promoted the minimal v1 subset after approval: `grass_base_01`, `grass_base_02`, `grass_flowers_01`, `bush_cluster_dark_01`, `bush_cluster_light_01`, `leaf_sprout_01`, `mushroom_cluster_small_amber`, `mushroom_cluster_small_violet`, `mushroom_cap_red_spotted`, `fallen_branch_mycelium`, `arena_mushroom_arch`, `journey_gate_under_construction`, and `thalla`.
+- Added `npm run game:home-field:validate-minimal-production` as the scoped production gate for the promoted v1 scene. The full-registry `--production` gate remains stricter and should continue failing until all deferred families are done.
+- Updated `home-field-map.json` for the promoted v1 scene so the runtime no longer references deferred path, edge, signpost, lantern, tall-mushroom, or effect assets.
 - Updated combined candidate preview defaults so the minimal scene proof includes Arena and Journey entrances, not just terrain, props, and Thalla.
 - Added `/home-field-preview?debug=0` clean visual review mode.
 - Updated the Playwright preview spec to capture both debug and clean mobile/desktop screenshots.
 - Added chroma-key and opaque checkerboard-matte tests for `produce-home-field-assets.js`.
 - Updated Home Field README / Codex prompt / tileset contract with the review-gate and clean-preview workflow.
 
-Still open before production approval:
+Still open after minimal v1 promotion:
 
 - Path and edge families now have candidate-safe queues, but they still need successful imagegen reruns and visual review before promotion. Path reruns must use the shared-source path flow, not independent per-tile path prompts.
-- Candidate evidence manifests now bind output hashes, but approved review rows still need to copy/reference those hashes before any human-approved production promotion.
-- Combined candidate preview routing now exists; it still needs real current candidate folders for grass, path/edge, props, and chibi before it can serve as final scene proof.
+- Candidate evidence manifests now bind output hashes, but broader future approved rows should continue copying/reference those hashes before promotion.
 - `--check-edge-profiles` and `--check-family-cohesion` catch obvious terrain seams and palette/value outliers, but they remain heuristics. Manual adjacency-sheet, combined-candidate, and clean-preview review are still the authority for subtle art-direction seams.
-- `/home-field-preview` remains a DOM/CSS layout lab. Before final approval, either Phaser rendering must exist or the preview must be proven equivalent in scale, anchors, camera, and layering.
+- `/home-field-preview` remains a DOM/CSS layout lab. Before treating the scene as final renderer parity, either Phaser rendering must exist or the preview must be proven equivalent in scale, anchors, camera, and layering.
 
 Current status after the guardrail pass:
 
@@ -73,8 +75,11 @@ Current status after the guardrail pass:
 npm run game:home-field:validate -- --check-files --check-connectors --check-review
 # PASS
 
+npm run game:home-field:validate-minimal-production
+# PASS for the promoted minimal v1 scene subset
+
 npm run game:home-field:validate -- --production
-# FAIL intentionally: 0/31 assets approved, 6 placeholders remain
+# FAIL intentionally for the full long-term registry until deferred path/edge/effect/funny-foliage/full-roster assets are approved
 
 npm run game:home-field:next-tiles
 # gated first-pass queue; can block while existing candidates are needs_review

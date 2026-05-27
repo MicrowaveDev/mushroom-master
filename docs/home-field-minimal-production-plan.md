@@ -20,16 +20,16 @@ The primary proof is the composed field screenshot, not isolated asset beauty.
 
 ## Current Completion State
 
-As of 2026-05-27, the minimal grass-first candidate scene is complete for human review:
+As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field v1 after operator approval to continue the plan:
 
 - grass uses the `flat-minimal` fallback as a stable simple field baseline;
-- scoped props/exits are produced under `.agent/home-field-workspace/candidates/object-layer/latest` and polished by `npm run game:home-field:polish-minimal-candidate`;
-- `thalla` Stage 1 is produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest`;
-- composed screenshots are generated with `HOME_FIELD_DEFER_PATH=1 npm run game:home-field:combined-candidate-preview`;
+- scoped props/exits were produced under `.agent/home-field-workspace/candidates/object-layer/latest`, polished by `npm run game:home-field:polish-minimal-candidate`, and copied to `web/public/home-field`;
+- `thalla` Stage 1 was produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest` and copied to `web/public/home-field/characters/thalla/spritesheet.png`;
+- the runtime map now uses only approved grass/props/exits and removes path, edge, signpost, lantern, tall-mushroom, and effect references from the v1 composed scene;
 - path remains deferred as `needs_regen` because prior path-family candidates looked pasted onto grass;
-- no app-facing `web/public/home-field` assets are approved or overwritten by this plan.
+- `npm run game:home-field:validate-minimal-production` is the scoped v1 production gate for the promoted minimal scene.
 
-The candidate is ready for human review, not automatic production approval.
+Full-registry `npm run game:home-field:validate -- --production` is still expected to fail until the deferred path/edge/effect/funny-foliage/full-roster assets are generated and explicitly approved.
 
 ## Minimal Asset Scope
 

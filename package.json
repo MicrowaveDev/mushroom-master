@@ -77,7 +77,8 @@
     "game:test:e2e": "node app/scripts/run-game-e2e.js",
     "game:test:screens": "node app/scripts/run-game-screenshot-check.js",
     "game:test:screens:debug": "node app/scripts/run-game-screenshot-check.js --debug",
-    "test": "node --test"
+    "test": "node --test",
+    "game:home-field:validate-minimal-production": "node app/scripts/validate-home-field-assets.js --production --ids=grass_base_01,grass_base_02,grass_flowers_01,bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction,thalla"
   },
   "dependencies": {
     "@playwright/test": "^1.58.2",
@@ -86,11 +87,9 @@
     "marked": "^15.0.6",
     "openai": "^4.104.0",
     "pg": "^8.20.0",
-    "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7",
-    "puppeteer": "^24.7.1",
     "sequelize": "^6.37.8",
     "sqlite3": "^6.0.1",
+    "puppeteer": "^24.7.1",
     "supertest": "^7.2.2",
     "telegram": "^2.26.22",
     "vite": "^8.0.3",

@@ -43,7 +43,7 @@
         ]
       },
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "grass_base_01"
     },
     {
@@ -83,7 +83,7 @@
         ]
       },
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "grass_base_02"
     },
     {
@@ -123,7 +123,7 @@
         ]
       },
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "grass_flowers_01"
     },
     {
@@ -503,7 +503,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "bush_cluster_dark_01"
     },
     {
@@ -526,7 +526,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "bush_cluster_light_01"
     },
     {
@@ -549,7 +549,7 @@
       },
       "collision": "walkable",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "leaf_sprout_01"
     },
     {
@@ -720,7 +720,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "mushroom_cluster_small_amber"
     },
     {
@@ -739,7 +739,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "mushroom_cluster_small_violet"
     },
     {
@@ -777,7 +777,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "mushroom_cap_red_spotted"
     },
     {
@@ -815,7 +815,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "fallen_branch_mycelium"
     },
     {
@@ -872,7 +872,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "arena_mushroom_arch"
     },
     {
@@ -891,7 +891,7 @@
       },
       "collision": "blocked",
       "animation": null,
-      "status": "needs_review",
+      "status": "approved",
       "atlasFrameKey": "journey_gate_under_construction"
     },
     {
@@ -1096,7 +1096,7 @@
           ]
         }
       },
-      "status": "missing"
+      "status": "approved"
     },
     {
       "id": "lomie",

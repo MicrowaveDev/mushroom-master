@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "reviewedAt": "2026-05-27",
-  "reviewMode": "completed minimal production-candidate composed scene",
-  "summary": "Minimal production-candidate scene is complete and ready for human review, not approval. Grass uses the flat-minimal fallback as a stable simple field baseline; object-layer props/exits were polished and pass alpha/readability checks; Thalla Stage 1 is readable and candidate-only. Path remains deferred as needs_regen because prior path candidates looked pasted onto grass. No app-facing web/public/home-field assets are approved by this review.",
+  "reviewMode": "human-approved minimal production v1 promotion",
+  "summary": "Minimal Home Field v1 assets were promoted after operator approval to continue the plan. The approved scope is grass_base_01, grass_base_02, grass_flowers_01, the scoped props/exits, and Thalla Stage 1. Path, edge terrain, effects, funny foliage expansion, and the remaining chibi roster stay deferred or pending; full-registry production validation remains intentionally blocked until those later families are approved.",
   "assets": [
     {
       "id": "grass_base_01",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: flat-minimal grass now functions as a stable production-v1 baseline with no obvious square pattern in composed mobile/desktop screenshots. It is deliberately simple, readable under chibis/props, and candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "pass",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
@@ -17,13 +17,14 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "grass_base_02",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: flat-minimal grass now functions as a stable production-v1 baseline with no obvious square pattern in composed mobile/desktop screenshots. It is deliberately simple, readable under chibis/props, and candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "pass",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
@@ -32,13 +33,14 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "grass_flowers_01",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: flat-minimal grass now functions as a stable production-v1 baseline with no obvious square pattern in composed mobile/desktop screenshots. It is deliberately simple, readable under chibis/props, and candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "pass",
       "connectorCheck": "pass",
       "cleanPreviewCheck": "pass",
@@ -47,7 +49,8 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/grass-family/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "path_dirt_straight",
@@ -207,9 +210,9 @@
     },
     {
       "id": "bush_cluster_dark_01",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -218,13 +221,14 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "bush_cluster_light_01",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -233,13 +237,14 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "leaf_sprout_01",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -248,7 +253,8 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "mutant_broccoli_bush_01",
@@ -364,9 +370,9 @@
     },
     {
       "id": "mushroom_cluster_small_amber",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -375,13 +381,14 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "mushroom_cluster_small_violet",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -390,7 +397,8 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "mushroom_cluster_tall_green",
@@ -408,9 +416,9 @@
     },
     {
       "id": "mushroom_cap_red_spotted",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -419,7 +427,8 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "mycelium_lantern_amber",
@@ -437,9 +446,9 @@
     },
     {
       "id": "fallen_branch_mycelium",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -448,7 +457,8 @@
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
       "familyCohesionCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "arena_signpost_blank",
@@ -480,9 +490,9 @@
     },
     {
       "id": "arena_mushroom_arch",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -490,14 +500,15 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "not_applicable",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "journey_gate_under_construction",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: candidate was produced under object-layer/latest and polished for the minimal grass-first scene. Alpha/halo and mobile readability validation pass, and the asset reads coherently in the composed mobile/desktop clean screenshots. Candidate-only pending human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -505,8 +516,9 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "not_applicable",
-      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest"
+      "familyCohesionCheck": "pass",
+      "candidateRoot": ".agent/home-field-workspace/candidates/object-layer/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "spore_motes_loop",
@@ -594,9 +606,9 @@
     },
     {
       "id": "thalla",
-      "verdict": "needs_review",
-      "accepted": false,
-      "reason": "Completed minimal candidate 2026-05-27: Thalla remains a candidate-only Stage 1 proof, but the polished sheet is now mechanically valid, readable in the composed scene, uses isolated frame inputs, avoids huge white portrait eyes, and is good enough for human review of the minimal v1 scene. Do not expand the roster or mark approved until human approval.",
+      "verdict": "approved",
+      "accepted": true,
+      "reason": "Approved for minimal Home Field v1 on 2026-05-27 after composed mobile/desktop field review. Promoted from candidate evidence into app-facing web/public/home-field; broader registry families remain deferred separately.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -604,7 +616,7 @@
       "alphaCheck": "pass",
       "scaleCheck": "pass",
       "sceneFitCheck": "pass",
-      "familyCohesionCheck": "not_applicable",
+      "familyCohesionCheck": "pass",
       "stageContractCheck": "pass",
       "identityCheck": "pass",
       "mobileReadabilityCheck": "pass",
@@ -613,7 +625,8 @@
       "cameraAngleCheck": "pass",
       "detailBudgetCheck": "pass",
       "sourceFrameIsolationCheck": "pass",
-      "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest"
+      "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest",
+      "promotedAt": "2026-05-27"
     },
     {
       "id": "lomie",

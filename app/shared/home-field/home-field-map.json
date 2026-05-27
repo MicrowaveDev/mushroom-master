@@ -34,7 +34,7 @@
       "z": 0,
       "tiles": [
         {
-          "assetId": "edge_left_forest_01",
+          "assetId": "grass_base_01",
           "x": 0,
           "y": 0
         },
@@ -64,12 +64,12 @@
           "y": 0
         },
         {
-          "assetId": "edge_right_forest_01",
+          "assetId": "grass_base_01",
           "x": 1536,
           "y": 0
         },
         {
-          "assetId": "edge_left_forest_01",
+          "assetId": "grass_base_02",
           "x": 0,
           "y": 256
         },
@@ -84,12 +84,12 @@
           "y": 256
         },
         {
-          "assetId": "path_destination_row",
+          "assetId": "grass_base_01",
           "x": 768,
           "y": 256
         },
         {
-          "assetId": "grass_base_01",
+          "assetId": "grass_base_02",
           "x": 1024,
           "y": 256
         },
@@ -99,12 +99,12 @@
           "y": 256
         },
         {
-          "assetId": "edge_right_forest_01",
+          "assetId": "grass_base_02",
           "x": 1536,
           "y": 256
         },
         {
-          "assetId": "edge_left_forest_01",
+          "assetId": "grass_base_01",
           "x": 0,
           "y": 512
         },
@@ -114,17 +114,17 @@
           "y": 512
         },
         {
-          "assetId": "path_h_end_w",
+          "assetId": "grass_base_01",
           "x": 512,
           "y": 512
         },
         {
-          "assetId": "path_spore_glow",
+          "assetId": "grass_flowers_01",
           "x": 768,
           "y": 512
         },
         {
-          "assetId": "path_h_end_e",
+          "assetId": "grass_base_01",
           "x": 1024,
           "y": 512
         },
@@ -134,12 +134,12 @@
           "y": 512
         },
         {
-          "assetId": "edge_right_forest_01",
+          "assetId": "grass_base_01",
           "x": 1536,
           "y": 512
         },
         {
-          "assetId": "edge_left_forest_01",
+          "assetId": "grass_base_02",
           "x": 0,
           "y": 768
         },
@@ -149,17 +149,17 @@
           "y": 768
         },
         {
-          "assetId": "grass_base_01",
+          "assetId": "grass_base_02",
           "x": 512,
           "y": 768
         },
         {
-          "assetId": "grass_base_02",
+          "assetId": "grass_base_01",
           "x": 768,
           "y": 768
         },
         {
-          "assetId": "grass_base_01",
+          "assetId": "grass_base_02",
           "x": 1024,
           "y": 768
         },
@@ -169,7 +169,7 @@
           "y": 768
         },
         {
-          "assetId": "edge_right_forest_01",
+          "assetId": "grass_base_02",
           "x": 1536,
           "y": 768
         }
@@ -183,42 +183,16 @@
         {
           "id": "arena",
           "assetId": "arena_mushroom_arch",
-          "x": 1280,
+          "x": 1180,
           "y": 320,
           "hotspotId": "arena"
         },
         {
-          "id": "arena_signpost",
-          "assetId": "arena_signpost_blank",
-          "x": 1100,
-          "y": 380,
-          "labelKey": "homeArenaExit"
-        },
-        {
           "id": "journey",
           "assetId": "journey_gate_under_construction",
-          "x": 512,
+          "x": 612,
           "y": 320,
           "hotspotId": "journey"
-        },
-        {
-          "id": "journey_signpost",
-          "assetId": "journey_signpost_blank",
-          "x": 692,
-          "y": 380,
-          "labelKey": "homeJourneyExit"
-        },
-        {
-          "id": "lantern_left",
-          "assetId": "mycelium_lantern_amber",
-          "x": 1080,
-          "y": 360
-        },
-        {
-          "id": "lantern_right",
-          "assetId": "mycelium_lantern_amber",
-          "x": 1480,
-          "y": 360
         },
         {
           "id": "bush_dark_top_left",
@@ -287,18 +261,6 @@
           "y": 720
         },
         {
-          "id": "mushroom_cluster_tall_1",
-          "assetId": "mushroom_cluster_tall_green",
-          "x": 192,
-          "y": 480
-        },
-        {
-          "id": "mushroom_cluster_tall_2",
-          "assetId": "mushroom_cluster_tall_green",
-          "x": 1600,
-          "y": 480
-        },
-        {
           "id": "mushroom_cap_red_1",
           "assetId": "mushroom_cap_red_spotted",
           "x": 448,
@@ -316,32 +278,7 @@
       "id": "effects",
       "type": "effectLayer",
       "z": 20,
-      "effects": [
-        {
-          "assetId": "arena_portal_shimmer",
-          "x": 1280,
-          "y": 320,
-          "state": "idle"
-        },
-        {
-          "assetId": "journey_blocked_rustle",
-          "x": 512,
-          "y": 320,
-          "state": "idle"
-        },
-        {
-          "assetId": "spore_motes_loop",
-          "x": 896,
-          "y": 512,
-          "state": "idle"
-        },
-        {
-          "assetId": "mycelium_path_pulse",
-          "x": 768,
-          "y": 512,
-          "state": "idle"
-        }
-      ]
+      "effects": []
     }
   ],
   "collision": [

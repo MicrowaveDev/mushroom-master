@@ -691,11 +691,12 @@ test('[home-field] next-tiles blocks while existing candidates still need review
   }
 });
 
-test('[home-field] rerun grass queue emits needs_review and needs_regen grass tiles', () => {
+test('[home-field] rerun grass queue can re-emit approved/needs_review/needs_regen grass tiles', () => {
   const result = spawnSync(process.execPath, [
     nextScriptPath,
     '--batch=terrain-grass',
-    '--review-verdict=needs_review,needs_regen',
+    '--review-verdict=approved,needs_review,needs_regen',
+    '--include-existing',
     '--all',
     '--ignore-review-gate'
   ], {
@@ -746,7 +747,7 @@ test('[home-field] path family rerun emits terrain candidate producer and adjace
   const result = spawnSync(process.execPath, [
     nextScriptPath,
     '--batch=terrain-path',
-    '--review-verdict=needs_review,needs_regen',
+    '--review-verdict=approved,needs_review,needs_regen',
     '--include-existing',
     '--all',
     '--ignore-review-gate',
@@ -802,7 +803,8 @@ test('[home-field] field-context grass queue asks for larger meadow context and 
   const result = spawnSync(process.execPath, [
     nextScriptPath,
     '--batch=terrain-grass',
-    '--review-verdict=needs_review,needs_regen',
+    '--review-verdict=approved,needs_review,needs_regen',
+    '--include-existing',
     '--all',
     '--ignore-review-gate',
     '--field-context'

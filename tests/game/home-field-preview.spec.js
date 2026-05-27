@@ -83,7 +83,7 @@ test('[Req 15-B] home field layout preview composes tile and object layers', asy
   await page.goto(`${baseURL}/home-field-preview`);
   await expect(page.getByTestId('home-field-preview')).toBeVisible();
   await expect(page.locator('.home-field-preview-tile')).toHaveCount(28);
-  await expect(page.locator('.home-field-preview-tile--path, .home-field-preview-tile--pathTop, .home-field-preview-tile--spawn')).toHaveCount(4);
+  await expect(page.locator('.home-field-preview-tile--path, .home-field-preview-tile--pathTop, .home-field-preview-tile--spawn')).toHaveCount(0);
   await expect(page.getByTestId('home-field-preview-arena')).toBeVisible();
   await expect(page.getByTestId('home-field-preview-journey')).toBeVisible();
   await expect(page.getByTestId('home-field-preview-chibi-spawn')).toBeVisible();
