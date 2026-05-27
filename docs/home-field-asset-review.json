@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reviewedAt": "2026-05-27",
   "reviewMode": "human-approved minimal production v1 promotion",
-  "summary": "Minimal Home Field v1 assets were promoted after operator approval to continue the plan. The approved scope is grass_base_01, grass_base_02, grass_flowers_01, the scoped props/exits, and Thalla Stage 1. Path, edge terrain, effects, funny foliage expansion, and the remaining chibi roster stay deferred or pending; full-registry production validation remains intentionally blocked until those later families are approved.",
+  "summary": "Minimal Home Field v1 assets were promoted after operator approval to continue the plan. The approved active-scene scope is grass_base_01, grass_base_02, grass_flowers_01, the scoped props/exits, and Thalla Stage 1. Path, edge terrain, effects, funny foliage expansion, and the remaining chibi roster stay deferred or pending for full-registry completion; active-scene production validation is expected to pass while full-registry production validation remains intentionally blocked until those later families are approved.",
   "assets": [
     {
       "id": "grass_base_01",

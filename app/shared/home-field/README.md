@@ -82,7 +82,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **produce-grass-family** | `npm run game:home-field:produce-grass-family` | Promotion-only grass producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
 | **produce-path-family-candidate** | `npm run game:home-field:produce-path-family-candidate` | Preferred path producer for review runs. Reads one shared `.agent/home-field-workspace/raw/path_family_strip.source.png` and writes the five path-family outputs under `.agent/home-field-workspace/candidates/terrain-family/latest/` instead of overwriting app-facing PNGs. |
 | **produce-path-family** | `npm run game:home-field:produce-path-family` | Promotion-only path producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
-| **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts every declared PNG exists, `--check-review` requires checked-in visual verdicts, `--check-alpha-halo` fails visible chroma-key magenta/pink fringe on transparent non-terrain assets, `--check-readability` checks configured visible-object bounding boxes, `--check-edge-profiles` compares adjacent terrain edge color profiles for obvious seams, `--check-family-cohesion` flags terrain-family palette/value outliers, and `--production` requires files, connectors, review acceptance, alpha-halo/readability/edge-profile/family-cohesion checks, and `status: "approved"` for every asset. |
+| **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts PNG existence for the selected scope, `--check-review` requires checked-in visual verdicts, `--check-alpha-halo` fails visible chroma-key magenta/pink fringe on transparent non-terrain assets, `--check-readability` checks configured visible-object bounding boxes, `--check-edge-profiles` compares adjacent terrain edge color profiles for obvious seams, `--check-family-cohesion` flags terrain-family palette/value outliers, and `--production` requires files, connectors, review acceptance, alpha/readability/terrain checks, and `status: "approved"` for the active shipped scene. Use `--full-registry-production` only when intentionally requiring every future/deferred registry row to be complete. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
 | **alpha-sheet** | `npm run game:home-field:alpha-sheet -- --ids=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01` | Composites transparent-object alpha/halo proof at `.agent/home-field-workspace/review/alpha-halo-sheet.png`. Use `HOME_FIELD_ASSET_ROOT` for candidate roots. |
@@ -212,6 +212,12 @@ Use this command before any production-ready claim:
 
 ```bash
 npm run game:home-field:validate -- --production
+```
+
+Use the stricter full-registry command only when finishing every declared future asset:
+
+```bash
+npm run game:home-field:validate-full-registry-production
 ```
 
 ### Per-batch loop

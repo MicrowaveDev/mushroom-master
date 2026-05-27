@@ -572,6 +572,37 @@ test('[home-field] validation catches obvious terrain edge profile mismatch', ()
   }
 });
 
+test('[home-field] production validation scopes to active shipped scene by default', () => {
+  const result = spawnSync(process.execPath, [
+    validateScriptPath,
+    '--production'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /production approval/);
+  assert.match(result.stdout, /scope=.*grass_base_01/);
+  assert.match(result.stdout, /scope=.*thalla/);
+  assert.doesNotMatch(result.stdout, /mutant_broccoli_bush_01/);
+});
+
+test('[home-field] full-registry production validation still blocks deferred assets', () => {
+  const result = spawnSync(process.execPath, [
+    validateScriptPath,
+    '--production',
+    '--full-registry-production'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.notEqual(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stderr, /mutant_broccoli_bush_01/);
+  assert.match(result.stderr, /not_approved_for_production/);
+});
+
 test('[home-field] grass-family producer crops three tiles from one shared meadow source', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-grass-family-test');
   const outputDir = 'web/public/home-field/__test__/grass-family';

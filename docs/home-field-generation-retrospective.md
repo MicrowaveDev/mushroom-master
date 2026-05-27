@@ -24,7 +24,7 @@ Handled:
 - Replaced ambiguous `draft` status with explicit manifest states: `missing`, `generated`, `needs_review`, `rejected`, `approved`, `placeholder`.
 - Marked current terrain/prop/exit assets as `needs_review`.
 - Marked technical effect strips and `_placeholder` chibi as `placeholder`.
-- Added `npm run game:home-field:validate -- --production`, which intentionally fails while any asset is unapproved or placeholder.
+- Added `npm run game:home-field:validate -- --production`; it originally blocked on every unapproved/placeholder registry row and now validates the active shipped scene by default.
 - Added `npm run game:home-field:next-tiles`, now narrowed to the first grass-family batch only: `grass_base_01`, `grass_base_02`, `grass_flowers_01`.
 - Added `npm run game:home-field:next-tiles-all` for the full 12-tile terrain queue after the grass-family stop gate is accepted.
 - Added `npm run game:home-field:adjacency`, which writes `.agent/home-field-workspace/review/adjacency-sheet.png` and a manifest for the path run, side-edge stacks, map rows, and unique neighbor pairs.
@@ -54,7 +54,7 @@ Handled:
 - After rollout `019e6613`, made candidate evidence shared-source aware, reconciled the destination landing tileset contract, and tightened Visual Critic sequencing/check rules so a path candidate cannot get all-pass review rows while the clean preview still shows square pasted tiles.
 - Added `docs/home-field-minimal-production-plan.md` and `app/shared/home-field/RUN_MINIMAL_HOME_FIELD_PROMPT.md` for the fastest integrated scene pass: quiet grass, entrances, a small prop set, and Thalla reviewed together from composed mobile/desktop screenshots.
 - Promoted the minimal v1 subset after approval: `grass_base_01`, `grass_base_02`, `grass_flowers_01`, `bush_cluster_dark_01`, `bush_cluster_light_01`, `leaf_sprout_01`, `mushroom_cluster_small_amber`, `mushroom_cluster_small_violet`, `mushroom_cap_red_spotted`, `fallen_branch_mycelium`, `arena_mushroom_arch`, `journey_gate_under_construction`, and `thalla`.
-- Added `npm run game:home-field:validate-minimal-production` as the scoped production gate for the promoted v1 scene. The full-registry `--production` gate remains stricter and should continue failing until all deferred families are done.
+- Changed `npm run game:home-field:validate -- --production` to validate the active shipped Home Field scene by default. Added `npm run game:home-field:validate-full-registry-production` for the stricter future-registry check.
 - Updated `home-field-map.json` for the promoted v1 scene so the runtime no longer references deferred path, edge, signpost, lantern, tall-mushroom, or effect assets.
 - Updated combined candidate preview defaults so the minimal scene proof includes Arena and Journey entrances, not just terrain, props, and Thalla.
 - Added `/home-field-preview?debug=0` clean visual review mode.
@@ -79,6 +79,9 @@ npm run game:home-field:validate-minimal-production
 # PASS for the promoted minimal v1 scene subset
 
 npm run game:home-field:validate -- --production
+# PASS for the promoted active scene
+
+npm run game:home-field:validate-full-registry-production
 # FAIL intentionally for the full long-term registry until deferred path/edge/effect/funny-foliage/full-roster assets are approved
 
 npm run game:home-field:next-tiles
@@ -226,13 +229,13 @@ Handled:
 - `docs/home-field-asset-review.json` now records per-asset visual verdicts.
 - Current weak candidates are `needs_review` + `needs_regen`, not silently approved.
 - Placeholder effects/chibi are represented separately from generated art.
-- `npm run game:home-field:validate -- --production` fails until all assets are `approved` and accepted by review.
+- `npm run game:home-field:validate -- --production` passes only for the active shipped scene; `npm run game:home-field:validate-full-registry-production` fails until all deferred registry assets are `approved` and accepted by review.
 
 Remaining recommendation:
 
 - after `game:home-field:sheet`, update the review manifest before proceeding;
 - never mark an imagegen candidate as `approved` without explicit human approval;
-- use `npm run game:home-field:validate -- --production` before any production-ready claim.
+- use `npm run game:home-field:validate -- --production` before any active-scene production-ready claim, and `npm run game:home-field:validate-full-registry-production` before claiming the whole future registry is complete.
 
 ### Prompts Were Too Broad For Terrain Tiles
 
@@ -420,7 +423,7 @@ Handled:
 - Mobile preview still uses CSS camera/object overrides; the map JSON is not yet the sole source of placement truth.
 - Effects and `_placeholder` chibi remain technical placeholders.
 - Props/exits still need a light/dark alpha review sheet and scale-consistency pass after terrain is approved.
-- Production validation is expected to fail until all assets are regenerated and approved.
+- Full-registry production validation is expected to fail until all deferred assets are regenerated and approved; active-scene production validation now passes for the promoted minimal v1 scene.
 
 ## Bottom Line
 

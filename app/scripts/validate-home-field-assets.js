@@ -10,6 +10,7 @@
  *   npm run game:home-field:validate -- --check-edge-profiles
  *   npm run game:home-field:validate -- --check-family-cohesion
  *   npm run game:home-field:validate -- --production
+ *   npm run game:home-field:validate -- --production --full-registry-production
  *
  * Default behavior validates schema only (does not require any PNGs to exist yet),
  * so Phase 0 can land before imagegen runs. Pass --check-files to also assert that
@@ -62,6 +63,28 @@ function parseIds(argv) {
   const arg = argv.find((item) => item.startsWith('--ids='));
   if (!arg) return null;
   return new Set(arg.slice('--ids='.length).split(',').map((id) => id.trim()).filter(Boolean));
+}
+
+function activeProductionIds(assetsDoc, mapDoc) {
+  const ids = new Set();
+  for (const layer of mapDoc.layers || []) {
+    const items = layer.type === 'tileLayer'
+      ? layer.tiles || []
+      : layer.type === 'objectLayer'
+        ? layer.objects || []
+        : layer.type === 'effectLayer'
+          ? layer.effects || []
+          : [];
+    for (const item of items) {
+      if (item.assetId) ids.add(item.assetId);
+    }
+  }
+  for (const character of assetsDoc.characters || []) {
+    if (character.status === 'approved' && !character.id.startsWith('_')) {
+      ids.add(character.id);
+    }
+  }
+  return ids;
 }
 
 function scopedEntries(entries, ids) {
@@ -541,7 +564,8 @@ function main() {
   const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
   const wantFamilyCohesionCheck = hasFlag(argv, 'check-family-cohesion');
   const wantProduction = hasFlag(argv, 'production');
-  const ids = parseIds(argv);
+  const wantFullRegistryProduction = hasFlag(argv, 'full-registry-production');
+  let ids = parseIds(argv);
 
   if (!fs.existsSync(ASSETS_PATH)) {
     console.error(`home-field-assets.json not found at ${ASSETS_PATH}`);
@@ -554,6 +578,9 @@ function main() {
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const mapDoc = loadJson(MAP_PATH);
+  if (wantProduction && !ids && !wantFullRegistryProduction) {
+    ids = activeProductionIds(assetsDoc, mapDoc);
+  }
 
   const result = validateAll(assetsDoc, mapDoc);
   const errors = [...result.errors];
@@ -595,7 +622,10 @@ function main() {
     const modeText = modes.length > 0
       ? ` + ${modes.join(' + ')}`
       : ' (schema only; pass --check-files to verify PNGs; pass --check-connectors to validate tile adjacency)';
-    const scopeText = ids ? ` scope=${[...ids].join(',')}` : '';
+    const productionScopeText = wantProduction && !wantFullRegistryProduction
+      ? ' active production scene'
+      : '';
+    const scopeText = ids ? ` scope=${[...ids].join(',')}` : productionScopeText;
     console.log(`  schema for ${assetsDoc.assets.length} assets + ${(assetsDoc.characters || []).length} characters + ${(mapDoc.layers || []).length} map layers${modeText}${scopeText}`);
     process.exit(0);
   }

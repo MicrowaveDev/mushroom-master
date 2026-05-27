@@ -27,9 +27,9 @@ As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field 
 - `thalla` Stage 1 was produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest` and copied to `web/public/home-field/characters/thalla/spritesheet.png`;
 - the runtime map now uses only approved grass/props/exits and removes path, edge, signpost, lantern, tall-mushroom, and effect references from the v1 composed scene;
 - path remains deferred as `needs_regen` because prior path-family candidates looked pasted onto grass;
-- `npm run game:home-field:validate-minimal-production` is the scoped v1 production gate for the promoted minimal scene.
+- `npm run game:home-field:validate -- --production` is now the active-scene production gate for the promoted minimal scene.
 
-Full-registry `npm run game:home-field:validate -- --production` is still expected to fail until the deferred path/edge/effect/funny-foliage/full-roster assets are generated and explicitly approved.
+Full-registry `npm run game:home-field:validate-full-registry-production` is still expected to fail until the deferred path/edge/effect/funny-foliage/full-roster assets are generated and explicitly approved.
 
 ## Minimal Asset Scope
 
