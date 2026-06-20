@@ -557,7 +557,7 @@ function processCharacterPlaceholder(entry, opts = {}) {
         return {
           id: entry.id,
           ok: false,
-          reason: `frame ${r.file} is ${frame.width}x${frame.height}, expected ${s.frameWidth}x${s.frameHeight} (pass --resize-nearest)`
+          reason: `frame ${r.file} is ${frame.width}x${frame.height}, expected ${s.frameWidth}x${s.frameHeight} (pass --resize)`
         };
       }
     }
@@ -606,8 +606,8 @@ function main() {
     console.error('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
     console.error('    --candidate             write under .agent/home-field-workspace/candidates/object-layer/latest instead of web/public');
     console.error('    --candidate-root=<dir>  write candidate outputs under a custom root');
-    console.error('    --resize               box-average downscale raw to target dimensions (use for terrain/props/exits)');
-    console.error('    --resize-nearest       nearest-neighbor downscale (use for chibi spritesheet to keep edges crisp)');
+    console.error('    --resize               Lanczos downscale raw to target dimensions (use for terrain/props/exits/chibi candidates)');
+    console.error('    --resize-nearest       nearest-neighbor downscale (diagnostic only; do not use for Home Field chibi production candidates)');
     console.error('    --seamless-terrain     softly harmonize opposite terrain edges for repeatable ground tiles');
     console.error('    --crop-center[=0.82]   crop terrain raw around center before resize to remove imagegen edge vignettes');
     console.error('    --quiet-terrain[=0.35] reduce broad generated lighting variation so repeats are less obvious');

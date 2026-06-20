@@ -35,8 +35,12 @@ Stage 1 proves identity and mobile readability before full animation polish. Do 
 
 Use a two-step visual workflow:
 
+0. Clear stale rejected Thalla raw/candidate outputs from the previous failed run.
 1. Generate one non-production reference turnaround sheet for consistency.
-2. Generate the final raw frame files as isolated per-frame PNGs.
+2. Review that reference sheet against the style reference and Thalla identity gate.
+3. Generate the final raw frame files as isolated per-frame PNGs only after the reference sheet passes.
+
+The cleanup step is mandatory for regeneration runs after a rejection. The previous rejected raw frames may remain on disk under `.agent/home-field-workspace/raw/`, but they are negative examples only. Do not let `test -f` or producer success on existing raw files count as generation work.
 
 The reference turnaround sheet is allowed only as visual guidance. Save it under:
 
@@ -47,6 +51,8 @@ The reference turnaround sheet is allowed only as visual guidance. Save it under
 The reference sheet should show the same Thalla design in the four facing directions `down`, `up`, `left`, and `right`, with the same proportions, camera angle, palette, and detail budget. It may include labels outside the art if useful for human review, but it is not a production raw source, not a runtime spritesheet, and must not be sliced into final frames.
 
 Generate each final raw file as its own isolated `64x64` or documented `128x128` transparent frame. Do not generate the final raw frames by cropping a larger contact sheet, grid sheet, character lineup, or full scene. If any final raw frame contains multiple sprites, miniature sprites, a field background, a border, or cropped sheet artifacts, discard that raw output and regenerate the affected frame.
+
+Use smooth resizing (`--resize`) when composing higher-resolution isolated source frames into the `64x64` runtime sheet. Do not use nearest-neighbor resizing for production candidates; hard pixel stair-steps are a rejection signal for this hand-drawn field-sprite style.
 
 Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) for Stage 1 production. It may exist for older prompt printers, but it is not a valid input for the compact frame contract. Stage 1 producers must use the isolated raw frame files below.
 
@@ -97,6 +103,8 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - no huge white portrait eyes; eyes must be much smaller than the reference screenshot's biggest facial read and should not dominate the head
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`.
+
+Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige doll, a generic elf, a straight portrait sticker, a human with a mushroom hat, or a different renderer from the Home Field reference.
 
 Stage 1 detail budget:
 

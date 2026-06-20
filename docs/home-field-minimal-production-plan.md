@@ -202,10 +202,14 @@ Generates only `thalla` for Stage 1.
 
 Rules:
 
+- clear stale rejected `thalla_chibi.frame_*.source.png` raw files and stale chibi candidate output before regenerating;
+- generate and visually check the non-production turnaround reference before final frames;
 - top-down 2.5D field sprite, not portrait;
 - simple mobile-readable silhouette;
 - 8 unique poses minimum in the current compact 12-slot contract;
 - no 32-frame full animation requirement yet;
+- use `--resize`, not `--resize-nearest`, when producing the candidate sheet from larger isolated raw frames;
+- mechanical alpha/readability success does not override style failure;
 - no roster expansion until Thalla passes scene review.
 
 If Thalla fails twice, simplify Thalla and stop. Do not generate the rest of the roster. If Thalla passes and a second chibi is still needed for the scene, generate `lomie` only; keep the rest of the roster deferred.
@@ -238,7 +242,7 @@ HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/la
 For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the isolated raw frame files from `docs/home-field-chibi-candidate-contract.md`, then run:
 
 ```bash
-npm run game:home-field:produce-chibi-candidate -- thalla --resize-nearest --chroma-key=#ff00ff
+npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-review
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-readability

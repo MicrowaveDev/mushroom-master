@@ -165,9 +165,13 @@ Stage 1 is not a full-animation run. It proves Thalla's identity, silhouette, al
 
 Use a two-step character consistency flow. First generate a non-production turnaround reference sheet under `.agent/home-field-workspace/reference/` that shows Thalla in `down`, `up`, `left`, and `right` with one consistent design. Then generate the final raw frames as separate isolated transparent images. The reference sheet is allowed for visual consistency only; do not slice it into production raw frames.
 
+Before regenerating after a rejected chibi run, clear stale `thalla_chibi.frame_*.source.png` raw files and stale `.agent/home-field-workspace/candidates/chibi-active-roster/latest/` output. Existing rejected raw frames are negative examples, not reusable generation inputs. Stop after the reference turnaround sheet and inspect it before creating final raw frames; if the reference already misses the style, regenerate the reference first.
+
 For Stage 1, ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) as a production raw input. It is not sufficient for this contract. The producer must consume the isolated raw frame files named in `docs/home-field-chibi-candidate-contract.md`.
 
 Each final raw frame must be generated as a separate isolated transparent image, normally `64x64` or `128x128` when the run explicitly asks for source-quality downscaling. Do not accept a larger spritesheet/source grid that has to be cropped into final frames; that failure mode produced wrong-facing walk rows and miniature repeated fragments. The Visual Critic must fail `sourceFrameIsolationCheck`, `sheetMappingCheck`, and `stageContractCheck` if any final raw image contains multiple sprites, borders, a background, or cropped sheet artifacts. A reference turnaround sheet must not be treated as that failure mode unless it is used as the production source.
+
+Use smooth `--resize` for production chibi candidates generated from larger isolated frames. Do not use `--resize-nearest`; hard pixel stair-steps and crisp pixel-sprite edges are style failures for the hand-drawn Home Field chibi target.
 
 The Stage 1 camera target is an elevated top-down 2.5D hub sprite: show some top of the mushroom cap/head, keep feet/base planted on the map, and avoid straight-on portrait-sticker or fashion-pose reads. Detail must be aggressively budgeted for mobile: broad shapes, `2-3` main color regions, `1-2` gold mycelium/spore marks, tiny facial features only, and no ornate filigree or particle halo.
 

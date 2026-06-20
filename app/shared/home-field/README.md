@@ -75,7 +75,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **next-tiles-all** | `npm run game:home-field:next-tiles-all` | Prints the full 12-tile terrain regeneration queue. Use only after the grass family is approved for the next family pass. |
 | **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
-| **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for static/effect, `--resize-nearest` for the chibi spritesheet), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. |
+| **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for terrain/props/exits/effects/chibi candidates), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. `--resize-nearest` is diagnostic only and should not be used for Home Field chibi production candidates. |
 | **produce-object-candidate** | `npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize --chroma-key=#ff00ff` | Candidate-safe prop producer. Writes outputs under `.agent/home-field-workspace/candidates/object-layer/latest/` with the same internal `web/public/home-field/...` layout instead of overwriting app-facing PNGs. Use `--chroma-key=#ff00ff` for built-in imagegen raws on flat magenta backgrounds. |
 | **produce-terrain-candidate** | `npm run game:home-field:produce-terrain-candidate -- path_h_end_w path_dirt_straight --resize --crop-center` | Candidate-safe terrain producer for path/edge families. Writes outputs under `.agent/home-field-workspace/candidates/terrain-family/latest/` instead of overwriting app-facing terrain. |
 | **produce-grass-family-candidate** | `npm run game:home-field:produce-grass-family-candidate` | Preferred grass producer for review runs. Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and writes the three grass outputs under `.agent/home-field-workspace/candidates/grass-family/latest/` instead of overwriting app-facing PNGs. Supports `-- --plan=lower-band` and `-- --plan=upper-band` fallbacks. |
@@ -271,13 +271,13 @@ Candidate field desktop: [desktop field screenshot](/Users/microwavedev/workspac
 Imagegen tools typically return `1024×1024` PNGs. The `home-field-assets.json` manifest declares the exact target dimensions (`256×256` for terrain, `512×512` for exits, `64×64` for chibi frames, etc.). The produce script handles the size mismatch:
 
 - `--resize` — box-average downscale (good for terrain, props, exits, effects).
-- `--resize-nearest` — nearest-neighbour downscale (use for the chibi spritesheet frames so edges stay crisp at 64×64).
+- `--resize-nearest` — nearest-neighbour downscale for diagnostics only. Do not use it for Home Field chibi production candidates; it preserves hard pixel stair-steps and repeats the rejected tiny sprite failure.
 - `--crop-center[=0.82]` — terrain-only center crop before resize, useful when imagegen adds unwanted edge vignette.
 - `--seamless-terrain` — terrain-only soft opposite-edge harmonization for generated sources that are close but not edge-compatible.
 - `--quiet-terrain[=0.35]` — terrain-only contrast reduction for generated sources with too much broad lighting variation.
 - (no flag) — strict mode; rejects size mismatches. Useful when you want to verify imagegen produced exact dimensions.
 
-Recommended default: `npm run game:home-field:produce -- <ids> --resize`, and for chibi placeholder use `--resize-nearest`.
+Recommended default: `npm run game:home-field:produce -- <ids> --resize`, including chibi candidates generated from larger isolated source frames.
 
 ### Commit hygiene
 

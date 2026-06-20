@@ -381,7 +381,7 @@ function recommendedProduceCommand(asset, { fieldContext = false, objectCandidat
     return `${base} --resize --chroma-key=#ff00ff`;
   }
   if (asset.type === 'character') {
-    return `${base} --resize-nearest --chroma-key=#ff00ff`;
+    return `${base} --resize --chroma-key=#ff00ff`;
   }
   return base;
 }
