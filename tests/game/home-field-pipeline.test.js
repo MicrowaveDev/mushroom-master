@@ -824,6 +824,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /reference turnaround sheet/i);
   assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final raw frames/);
+  assert.match(result.stdout, /BJD-inspired doll simplicity/);
+  assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
   assert.match(result.stdout, /Mechanical sheet success, alpha success, and mobile readability do not count as style approval/);
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff/);
   assert.doesNotMatch(result.stdout, /produce-chibi-candidate -- thalla --resize-nearest/);
