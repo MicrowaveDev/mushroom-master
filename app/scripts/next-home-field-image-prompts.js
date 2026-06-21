@@ -522,8 +522,14 @@ function main() {
   }
   console.log('');
   console.log('Workflow per asset:');
-  console.log('  1. Read the prompt block below.');
-  console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
+  if (chibiCandidate) {
+    console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and stop before cleanup if it fails.');
+    console.log('  1. Read the prompt block below.');
+    console.log('  2. Use an imagegen path that can save real PNG files to the required repo paths; do not rely on inline-only generated images.');
+  } else {
+    console.log('  1. Read the prompt block below.');
+    console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
+  }
   if (chibiCandidate) {
     console.log('  3. Save raw frame outputs to the per-frame paths listed in the prompt details under .agent/home-field-workspace/raw/.');
   } else {

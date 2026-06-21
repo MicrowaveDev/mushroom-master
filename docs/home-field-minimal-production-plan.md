@@ -202,7 +202,8 @@ Generates only `thalla` for Stage 1.
 
 Rules:
 
-- clear stale rejected `thalla_chibi.frame_*.source.png` raw files and stale chibi candidate output before regenerating;
+- run `npm run game:home-field:preflight-chibi-proof` before moving or deleting stale rejected `thalla_chibi.frame_*.source.png` raw files or stale chibi candidate output;
+- stop without cleanup if preflight cannot prove a real PNG output path for the current imagegen method;
 - generate and visually check the non-production turnaround reference before final frames;
 - top-down 2.5D field sprite, not portrait;
 - simple mobile-readable silhouette with BJD-inspired chibi doll appeal;
@@ -347,7 +348,7 @@ Use broad mobile-readable silhouettes, fewer segments, top-down 2.5D camera, mut
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Chibi Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, 8 unique poses minimum in the compact 12-slot contract, no 32-frame full animation.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, 8 unique poses minimum in the compact 12-slot contract, no 32-frame full animation. Run npm run game:home-field:preflight-chibi-proof before cleanup and stop if it cannot prove a real PNG output path.
 
 Create a non-production turnaround reference first, then isolated transparent raw frames. Target a simple BJD-inspired chibi doll illustration: smooth doll-like face, tiny planted body, broad costume block, and very few large Thalla marks. Reject pixel-art, tiny featureless doll-sprite, beige generic elf, busy ornate fantasy sprite, straight portrait, realistic doll-photo/toy-render, or human-with-mushroom-hat results. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
 ```

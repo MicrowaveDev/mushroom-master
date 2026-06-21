@@ -35,12 +35,15 @@ Stage 1 proves identity and mobile readability before full animation polish. Do 
 
 Use a two-step visual workflow:
 
-0. Clear stale rejected Thalla raw/candidate outputs from the previous failed run.
-1. Generate one non-production reference turnaround sheet for consistency.
-2. Review that reference sheet against the style reference and Thalla identity gate.
-3. Generate the final raw frame files as isolated per-frame PNGs only after the reference sheet passes.
+0. Run `npm run game:home-field:preflight-chibi-proof` and stop if it fails.
+1. Clear stale rejected Thalla raw/candidate outputs from the previous failed run.
+2. Generate one non-production reference turnaround sheet for consistency.
+3. Review that reference sheet against the style reference and Thalla identity gate.
+4. Generate the final raw frame files as isolated per-frame PNGs only after the reference sheet passes.
 
-The cleanup step is mandatory for regeneration runs after a rejection. The previous rejected raw frames may remain on disk under `.agent/home-field-workspace/raw/`, but they are negative examples only. Do not let `test -f` or producer success on existing raw files count as generation work.
+The preflight step is mandatory before any destructive or moving cleanup. It must prove that the current run can write actual PNG files to the required repo paths through the imagegen CLI fallback, a confirmed built-in imagegen disk-save path, or supplied local source images. Do not rely on inline-only generated images for this proof, and do not archive/delete the stale latest candidate until preflight passes.
+
+The cleanup step is mandatory for regeneration runs after a rejection only after preflight passes. The previous rejected raw frames may remain on disk under `.agent/home-field-workspace/raw/`, but they are negative examples only. Do not let `test -f` or producer success on existing raw files count as generation work.
 
 The reference turnaround sheet is allowed only as visual guidance. Save it under:
 

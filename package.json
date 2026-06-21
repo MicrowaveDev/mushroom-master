@@ -46,6 +46,7 @@
     "game:home-field:rerun-path-family": "node app/scripts/next-home-field-path-family-prompt.js",
     "game:home-field:rerun-edge-family": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-edge --review-verdict=needs_review,needs_regen --include-existing --ignore-review-gate --all --terrain-candidate",
     "game:home-field:rerun-scene-props": "node app/scripts/next-home-field-image-prompts.js --id=mushroom_cluster_small_violet --include-existing --ignore-review-gate --all --object-candidate",
+    "game:home-field:preflight-chibi-proof": "node app/scripts/preflight-home-field-chibi-proof.js",
     "game:home-field:next-chibi-proof": "node app/scripts/next-home-field-image-prompts.js --type=character --id=thalla --include-existing --ignore-review-gate --all --chibi-candidate",
     "game:home-field:next-tiles-all": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-production --review-verdict=needs_regen --all",
     "game:home-field:proof-tiles": "node app/scripts/generate-home-field-proof-tiles.js",

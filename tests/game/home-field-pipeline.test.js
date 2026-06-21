@@ -15,6 +15,7 @@ const candidateEvidenceScriptPath = path.join(repoRoot, 'app/scripts/generate-ho
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
+const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home-field-chibi-proof.js');
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -819,6 +820,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Generation mode: chibi active-roster candidate root/);
   assert.match(result.stdout, /thalla \(character\)/);
+  assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof/);
+  assert.match(result.stdout, /stop before cleanup if it fails/);
+  assert.match(result.stdout, /do not rely on inline-only generated images/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
   assert.match(result.stdout, /clear stale rejected Thalla raw frames/);
   assert.match(result.stdout, /reference turnaround sheet/i);
@@ -833,6 +837,50 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=thalla .*chibi-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
+});
+
+test('[home-field] chibi proof preflight blocks cleanup without a disk output path', () => {
+  const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: ''
+    },
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /Home Field Chibi Proof Preflight/);
+  assert.match(result.stderr, /Preflight failed/);
+  assert.match(result.stderr, /Before moving or deleting stale Thalla raw\/candidate files/);
+});
+
+test('[home-field] chibi proof preflight accepts supplied local image inputs', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-preflight-test');
+  const localInput = path.join(fixtureDir, 'thalla-reference.png');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  writeTinyTransparentFixture(localInput);
+
+  try {
+    const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        OPENAI_API_KEY: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Preflight passed/);
+    assert.match(result.stdout, /local image inputs supplied: 1/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
 });
 
 test('[home-field] field-context grass queue asks for larger meadow context and center crop', () => {
