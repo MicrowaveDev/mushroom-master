@@ -71,12 +71,14 @@ simple direct skin buying available when gacha mode is off.
 
 ### Open ambiguity
 
-- Decide whether the existing profile-level `players.spore` balance becomes the
-  new spendable profile coin balance, or whether a new wallet currency starts
-  from zero.
+- **Recommendation after current-code review:** use the existing profile-level
+  `players.spore` balance as the initial wallet balance, but make
+  `player_wallet_balances` the new source of truth for future writes. Keep
+  `players.spore` as a compatibility mirror/read alias for one release so the
+  current home/profile UI and tests can migrate gradually.
 - Decide the player-facing name for the new persistent wallet in Mushroom
-  Battles. The code should use neutral names such as `soft_currency`,
-  `wallet_balance`, and `character_xp`; the UI may still localize that as coins,
+  Battles. The code should use neutral names such as `wallet_balance`,
+  `soft_currency`, and `character_xp`; the UI may still localize that as coins,
   spores, or another thematic term.
 - Decide the payment provider for coin purchases. Telegram Stars / Mini App
   invoices are the likely product fit, but the backend should keep provider
@@ -102,6 +104,65 @@ simple direct skin buying available when gacha mode is off.
 - Requirements currently state that mycelium is per-mushroom and that portrait
   variants are cumulative gates, not purchases: see `docs/game-requirements.md`
   Req 14-F.
+- The backend uses Sequelize model registration plus `sequelize.sync()` and a
+  small `ensureColumnExists` helper. New tables should be added as models under
+  `app/server/models/` and registered in `app/server/models/index.js`; raw SQL
+  sketches in this plan are contracts, not the literal implementation path.
+- `run-service.js` currently writes `players.spore` directly from solo rewards,
+  challenge rewards, completion bonuses, challenge winner bonuses, and season
+  archive rewards. Wallet migration must centralize all of these writes or the
+  profile balance will drift.
+- `switchPortrait` currently updates `player_mushrooms.active_portrait`, and
+  `battle-service.getActiveSnapshot()` reads that value into battle snapshots so
+  replays preserve the portrait variant. Asset ownership migration must keep a
+  compatibility read path for replay snapshots and historical battle rendering.
+- The frontend currently has no standalone store. Portrait selection lives in
+  the home roster skin picker and expects `progression[mushroomId].portraits[]`
+  with `unlocked`, `cost`, `path`, and `activePortrait` semantics.
+- Existing mutating run-shop routes use `rateLimit()` and `idempotency()`, but
+  portrait switching does not. Wallet spends, direct asset purchases, and gacha
+  rolls must use mutation guards and a persistent idempotency key.
+
+## Implementation Review Adjustments
+
+This section records the sharper plan changes from reviewing the current code
+on 2026-06-22.
+
+1. **Wallet first, but as a compatibility migration.** Do not introduce a fresh
+   zero-balance wallet unless product explicitly wants to wipe existing earned
+   `spore`. Backfill `players.spore` into `player_wallet_balances`, then route
+   every future profile-currency grant through `wallet-service.js`.
+2. **Add a wallet grant adapter before purchases.** Replace direct
+   `UPDATE players SET spore = spore + ...` calls with `grantCurrency(...)` in
+   one controlled pass. Keep `players.spore` updated from the wallet service
+   during the compatibility window.
+3. **Do not model future trading with ownership-only rows.** A single
+   `(player_id, asset_id)` ownership table is fine for today's portraits but too
+   narrow for future duplicates, burning, selling, and trading. Use asset
+   instances or inventory quantities as the canonical inventory model, with a
+   derived "owned" boolean for the simple skin picker.
+4. **Keep catalog definitions static at first.** Current product catalogs live in
+   code/JSON (`game-data.js`, shared JSON files). For the MVP, put asset and
+   pack definitions in a versioned static module/JSON file, then persist only
+   player inventory, purchases, rolls, and transactions. Database-managed
+   seasons/collections can come later when there is an admin workflow.
+5. **Wire Telegram payments through existing bot infrastructure.** The app
+   already exposes `/api/bot/webhook` and `callTelegramBotApi`. For Telegram
+   Stars, extend that gateway to handle `pre_checkout_query` and
+   `successful_payment` updates instead of assuming all providers post to
+   `/api/wallet/purchase-webhook/:provider`.
+6. **Use cryptographic randomness for gacha.** Do not reuse game `createRng`
+   seeds for paid rolls. Use server-side cryptographic randomness, record the
+   chosen candidate pool and result, and keep enough metadata to investigate
+   support claims.
+7. **Expose acquisition policy in bootstrap/app config.** The client needs to
+   know whether direct buy or roll is available for each asset. Keep the old
+   portrait array shape for compatibility, but add fields like `owned`,
+   `price`, `currencyCode`, `acquisitionMode`, `purchaseAvailable`, and
+   `rollAvailable`.
+8. **Add odds, terms, and support hooks before paid gacha.** If real-money
+   currency buys rolls, the backend should expose pack odds and the UI should
+   link terms/support. This is a launch gate, not polish.
 
 ## Vocabulary Target
 
@@ -113,7 +174,7 @@ Use this vocabulary before and during the core extraction:
 | Persistent spendable wallet | `spore` or none | `wallet_balance`, `soft_currency`, `currency_code` | User profile |
 | Coin purchase order | none | `wallet_purchase_intents`, `provider`, `status` | User profile |
 | Character progression XP | `mycelium` | `character_xp`, `mastery_xp` | Player + character |
-| Cosmetic asset ownership | `active_portrait` gate only | `player_assets`, `player_asset_unlocks`, `player_equipped_assets` | User profile |
+| Cosmetic asset inventory | `active_portrait` gate only | `player_asset_instances`, `player_equipped_assets`, derived `owned` state | User profile |
 | Portrait / skin catalog price | `PORTRAIT_VARIANTS[].cost` | `price`, `currencyCode`, `assetId`, `slot` | Catalog item |
 | Gacha pool / pack | none | `asset_packs`, `asset_pack_items`, `rarity`, `drop_weight` | Season / collection |
 
@@ -174,13 +235,19 @@ Implementation notes:
 
 - Add a wallet service with `grantCurrency`, `spendCurrency`, `getBalance`, and
   `listTransactions`.
+- Add Sequelize models for wallet balances and wallet transactions. Register
+  them in `initModels`; rely on `sequelize.sync()` for new tables in the current
+  migration style, and use explicit backfill code for existing `players.spore`.
 - Enforce no-negative balances inside one database transaction.
-- Use idempotency keys for run rewards and purchases.
-- If `players.spore` becomes the new wallet, backfill it into
-  `player_wallet_balances` and then either keep `players.spore` as a read-only
-  compatibility alias for one release or remove it in a later migration.
-- If a fresh wallet starts at zero, leave `players.spore` as legacy profile
-  points until a separate cleanup.
+- Use persistent idempotency keys for run rewards, season archive rewards,
+  purchases, and gacha rolls. The existing in-memory HTTP idempotency middleware
+  is useful for retries, but it is not sufficient as a financial ledger.
+- Backfill `players.spore` into `player_wallet_balances` with
+  `currency_code = 'soft_coin'` (or the chosen code). During the compatibility
+  window, `grantCurrency` and `spendCurrency` should update both the wallet row
+  and `players.spore`.
+- Add a consistency test that `getPlayerState().player.spore` equals the wallet
+  balance while the compatibility mirror exists.
 
 ## Phase 3 - Backend Coin Purchases
 
@@ -210,17 +277,33 @@ wallet_purchase_intents(
 
 Backend contract:
 
+- `GET /api/wallet/bundles` returns configured coin bundles.
 - `POST /api/wallet/purchase-intents` creates an order for a configured coin
   bundle and returns provider checkout data.
-- `POST /api/wallet/purchase-webhook/:provider` verifies provider-signed
-  completion and grants wallet currency through `grantCurrency`.
+- For Telegram Mini Apps, the provider adapter should create an invoice usable
+  by `Telegram.WebApp.openInvoice(...)`. Official Telegram docs say digital
+  goods/services use Stars with currency `XTR`, then the bot receives
+  `pre_checkout_query` and `successful_payment` updates before goods are
+  delivered:
+  - <https://core.telegram.org/bots/payments-stars>
+  - <https://core.telegram.org/bots/webapps#initializing-mini-apps>
+- Extend `/api/bot/webhook` handling for Telegram Stars:
+  - Add `pre_checkout_query` to the webhook `allowed_updates`.
+  - Validate the invoice payload against `wallet_purchase_intents`.
+  - Answer the pre-checkout query within Telegram's deadline.
+  - On `successful_payment`, match by provider payment id / invoice payload and
+    grant wallet currency through `grantCurrency`.
 - `GET /api/wallet` returns balances and optional recent transactions.
 - Never trust the client to mark a purchase as paid.
 - Purchase completion must be idempotent: the same provider payment cannot grant
   coins twice.
-- Keep provider integration behind an adapter, for example
-  `createPaymentIntent`, `verifyWebhook`, and `extractPaymentId`, so Telegram
-  Stars or another provider can be swapped without touching wallet logic.
+- Store Telegram's charge id / provider charge id when present so refunds or
+  support investigations have the necessary identifiers.
+- Keep provider integration behind an adapter, for example `createInvoice`,
+  `validatePreCheckout`, `completePayment`, and `extractPaymentId`, so Telegram
+  Stars or another provider can be swapped without touching wallet accounting.
+- Add `/terms` and `/support` bot handling or equivalent in-app links before
+  enabling real-money purchases in production.
 
 MVP bundles can live in config first:
 
@@ -245,24 +328,41 @@ MVP bundles can live in config first:
    - `packId`: nullable; set for gacha/season assets.
    - `rarity`: nullable initially; future values `common`, `rare`, `epic`,
      `legendary`, `secret`.
-2. Add profile-scoped ownership:
-   - `player_assets(player_id, asset_id, acquired_at, source, metadata_json)`.
-   - A player either owns an asset or does not; ownership is not stored on
-     `player_mushrooms`.
+   - `maxCopiesPerPlayer`: `1` for current direct-buy portrait skins; higher or
+     `null` later for duplicate gacha items.
+2. Add profile-scoped inventory:
+   - Canonical table:
+     `player_asset_instances(id, player_id, asset_id, acquisition_source,
+     acquisition_source_id, status, acquired_at, metadata_json)`.
+   - MVP uniqueness: enforce at most one active instance per
+     `(player_id, asset_id)` for `maxCopiesPerPlayer = 1` assets.
+   - Derived ownership: `owned = active instance exists`. A summary table or
+     query helper can expose the simple ownership boolean expected by the
+     current portrait UI.
+   - Ownership/inventory is not stored on `player_mushrooms`.
 3. Add equipment state:
-   - `player_equipped_assets(player_id, slot, target_type, target_id, asset_id)`.
+   - `player_equipped_assets(player_id, slot, target_type, target_id,
+     asset_instance_id, asset_id)`.
+   - `asset_id` keeps default/free compatibility simple; `asset_instance_id`
+     becomes important when tradeable duplicates ship.
    - Current portrait selection moves out of `player_mushrooms.active_portrait`
      once the compatibility path is no longer needed.
 4. Replace `switchPortrait` with separate operations:
    - `purchaseAsset(playerId, assetId)` spends wallet currency and writes
-     ownership.
-   - `equipAsset(playerId, assetId)` validates ownership and target
-     compatibility, then updates equipped state.
+     an inventory instance.
+   - `equipAsset(playerId, assetId | assetInstanceId)` validates ownership and
+     target compatibility, then updates equipped state.
 5. Preserve compatibility temporarily:
    - `GET /api/bootstrap` can still expose `progression[mushroomId].portraits`
-     while sourcing `owned`, `price`, and `active` from the new asset tables.
+     while sourcing `owned`, `price`, acquisition fields, and `active` from the
+     new asset tables.
    - `PUT /api/mushroom/:id/portrait` can become an equip-only compatibility
      route for one release, or be replaced by `/api/assets/:assetId/equip`.
+   - `getActiveSnapshot()` should resolve the equipped portrait through an
+     asset/equipment helper and still write `portraitId`, `imagePath`, and
+     `activePortrait` into battle snapshots for replay compatibility.
+   - Historical snapshots that already contain `portraitId` / `imagePath` must
+     keep rendering without querying current ownership.
 
 ## Phase 5 - Env-Gated Gacha MVP
 
@@ -274,6 +374,8 @@ Environment flags:
 - `ASSET_GACHA_ENABLED=false` by default.
 - `ASSET_GACHA_DIRECT_BUY_POLICY=allow|block_gacha_assets`, default `allow`.
 - Optional `ASSET_GACHA_ACTIVE_PACK_IDS=season_1_pack_a,season_1_pack_b`.
+- Optional `ASSET_GACHA_ALLOW_DUPLICATES=false` for the MVP. Keep it false
+  until duplicate inventory, burn, and trade flows are implemented.
 
 Direct purchase behavior:
 
@@ -286,6 +388,11 @@ Direct purchase behavior:
   This keeps simple Mushroom Battles skin buying available for non-gacha skins.
 
 Initial pack schema:
+
+For the MVP, prefer static versioned pack definitions in
+`app/shared/asset-packs.json` or `app/server/asset-catalog.js`; add database
+pack tables only when operators need runtime/admin changes. The schema below is
+the future DB shape, not a requirement for the first commit.
 
 ```sql
 asset_packs(
@@ -335,8 +442,13 @@ MVP roll contract:
 - If no unowned candidate exists, reject the roll without spending currency.
 - Use weighted random selection from `drop_weight`; do not hardcode rarity math
   in route handlers.
-- Record the roll result in `asset_rolls` and the ownership source as `gacha`.
-- Keep RNG server-side and auditable enough to debug support claims.
+- Use cryptographic server randomness, not the deterministic game RNG helper.
+- Record the candidate pool hash, selected asset id, result instance id, price,
+  and env policy in `asset_rolls`; write the inventory source as `gacha`.
+- Route must be protected by `rateLimit()`, HTTP `idempotency()`, and persistent
+  roll idempotency so retries do not spend twice.
+- Expose a read endpoint for pack odds before paid gacha is enabled:
+  `GET /api/assets/packs/:packId/odds`.
 
 Future seasonal pack target:
 
@@ -350,6 +462,9 @@ Future seasonal pack target:
   and optional separate pity/guarantee policy.
 - Duplicate handling should move from ownership rows to inventory instances or
   quantities before duplicate packs ship.
+- Direct-trade and sales flows should lock instances in escrow before they are
+  listed, traded, burned, or sold. Equipped instances must either be rejected
+  for transfer or automatically unequipped in the same transaction.
 
 Deferred mechanics, with schema direction:
 
@@ -391,12 +506,19 @@ Do this after the wallet is real, so the rename has a stable destination.
 Backend tests:
 
 - Profile wallet balance is shared across active characters.
+- All current `players.spore` reward sources grant through wallet service:
+  solo round rewards, challenge round rewards, completion bonuses, challenge
+  winner bonuses, and season archive rewards.
+- `players.spore` compatibility mirror matches `player_wallet_balances` after
+  grants and spends.
 - Coin purchase completion grants wallet currency exactly once.
-- Forged or duplicate payment completion does not grant wallet currency.
+- Telegram pre-checkout accepts only known pending purchase intents with exact
+  amount/currency; unknown, stale, or mismatched payloads are rejected.
+- Forged or duplicate successful-payment updates do not grant wallet currency.
 - Coins earned while playing Thalla can buy an Axilin skin or another eligible
   asset.
 - Purchasing an asset debits the wallet exactly once and creates one ownership
-  row.
+  instance.
 - Repeated purchase of an already owned asset is idempotent or rejected without
   double debit, depending on the chosen contract.
 - Wallet spend cannot make the balance negative under concurrent requests.
@@ -405,11 +527,15 @@ Backend tests:
   configured gacha-pack skins.
 - A gacha roll spends wallet currency and grants one unowned skin from the pack.
 - A gacha roll with no unowned candidates rejects without spending currency.
+- Gacha rolls use a deterministic fake RNG in tests through dependency
+  injection, while production uses cryptographic randomness.
 - Pack sale windows prevent rolling expired / inactive packs.
 - Run-shop purchases still debit only run currency.
 - Selling run artifacts still refunds only run currency.
 - Character XP still advances only the played character.
 - Portrait ownership no longer depends on character XP.
+- Battle snapshots keep the equipped portrait id/path after the asset migration,
+  and old snapshots still replay without current ownership rows.
 
 Frontend / E2E tests:
 
@@ -417,10 +543,13 @@ Frontend / E2E tests:
   affordability state, purchase, and equip.
 - Buying a skin on one character and switching active character does not change
   wallet ownership.
-- Coin purchase UI creates a purchase intent and reflects the updated wallet
-  after completion.
+- Coin purchase UI creates a purchase intent, opens the provider invoice from a
+  user action, and reflects the updated wallet after verified completion.
 - If gacha is enabled, gacha-pack skins show roll acquisition instead of direct
   buy, while direct-only skins still show direct buy.
+- Home roster portrait swatches keep working with the compatibility
+  `progression[mushroomId].portraits[]` payload until a dedicated store screen
+  replaces them.
 - Existing run prep HUD still shows run currency and does not confuse it with
   wallet currency.
 - Screens touched by the wallet / skin UI need fresh mobile and desktop
@@ -530,14 +659,19 @@ Recommended initial choices:
 ## Proposed Implementation Order
 
 1. Requirements update for profile wallet, asset ownership, and neutral names.
-2. Wallet schema + wallet service + backend tests.
-3. Coin purchase intents + provider adapter + idempotent wallet grant.
-4. Cosmetic catalog + ownership/equip schema + direct purchase/equip services.
-5. Env-gated gacha MVP: packs, weighted unowned roll, direct-buy policy.
-6. Bootstrap/API/UI updates for profile wallet, direct skins, and optional
+2. Wallet models + backfill from `players.spore` + wallet service + backend
+   tests.
+3. Replace current profile-currency reward writes with wallet grants while
+   maintaining the `players.spore` mirror.
+4. Coin purchase intents + Telegram/provider adapter + idempotent wallet grant.
+5. Static asset catalog + inventory instances + equipment schema + direct
+   purchase/equip services.
+6. Env-gated gacha MVP: static packs, weighted unowned roll, direct-buy policy,
+   cryptographic RNG, and odds endpoint.
+7. Bootstrap/API/UI updates for profile wallet, direct skins, and optional
    gacha packs.
-7. Rename character XP and run currency internals, keeping compatibility where
+8. Rename character XP and run currency internals, keeping compatibility where
    needed.
-8. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
-9. Adapterize and optionally extract battle simulation.
-10. Add hub/submodule metadata and final cross-repo verification.
+9. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
+10. Adapterize and optionally extract battle simulation.
+11. Add hub/submodule metadata and final cross-repo verification.
