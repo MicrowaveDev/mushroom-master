@@ -18,7 +18,7 @@ export const HomeScreen = {
     'add-friend', 'challenge-friend',
     'accept-challenge', 'decline-challenge',
     'select-mushroom',
-    'switch-portrait', 'switch-preset'
+    'switch-portrait', 'purchase-portrait', 'switch-preset'
   ],
   data() {
     return {
@@ -156,6 +156,9 @@ export const HomeScreen = {
       if (!id || !this.state.leaderboard?.length) return null;
       const entry = this.state.leaderboard.find(e => e.id === id);
       return entry?.rank || null;
+    },
+    walletBalance() {
+      return this.state.bootstrap?.wallet?.balances?.soft_coin ?? this.state.bootstrap?.player?.spore ?? 0;
     },
     roster() {
       const mushrooms = this.state.bootstrap?.mushrooms || [];
@@ -395,9 +398,9 @@ export const HomeScreen = {
               <button
                 v-for="p in selectedMushroom.portraits" :key="p.id"
                 class="home-portrait-swatch"
-                :class="{ 'home-portrait-swatch--active': selectedMushroom.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked }"
-                :title="p.unlocked ? p.name[state.lang] : t.portraitLocked.replace('{n}', p.cost)"
-                @click.stop="p.unlocked && $emit('switch-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id })"
+                :class="{ 'home-portrait-swatch--active': selectedMushroom.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked, 'home-portrait-swatch--buyable': !p.unlocked && p.purchaseAvailable }"
+                :title="p.unlocked ? p.name[state.lang] : p.purchaseAvailable ? t.portraitBuy.replace('{n}', p.price || p.cost) : t.portraitLocked.replace('{n}', p.price || p.cost)"
+                @click.stop="p.unlocked ? $emit('switch-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id }) : (p.purchaseAvailable && $emit('purchase-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id, assetId: p.assetId }))"
               >
                 <img
                   :src="p.path"
@@ -405,9 +408,9 @@ export const HomeScreen = {
                   :style="{ objectPosition: portraitPositionFor(selectedMushroom.id, p.id) }"
                 />
                 <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
-                  <span class="home-swatch-price-icon">🍄</span>
+                  <span class="home-swatch-price-icon">🪙</span>
                   <span class="home-swatch-price-value">
-                    <span class="home-swatch-price-have">{{ selectedMushroom.mycelium }}</span><span class="home-swatch-price-sep">/</span>{{ p.cost }}
+                    <span class="home-swatch-price-have">{{ walletBalance }}</span><span class="home-swatch-price-sep">/</span>{{ p.price || p.cost }}
                   </span>
                 </span>
               </button>

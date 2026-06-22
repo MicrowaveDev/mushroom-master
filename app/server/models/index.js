@@ -31,6 +31,12 @@ import definePlayerSeasonRun from './PlayerSeasonRun.js';
 import definePlayerAchievement from './PlayerAchievement.js';
 import defineClientEvent from './ClientEvent.js';
 import definePlayerSeasonArchive from './PlayerSeasonArchive.js';
+import definePlayerWalletBalance from './PlayerWalletBalance.js';
+import definePlayerWalletTransaction from './PlayerWalletTransaction.js';
+import defineWalletPurchaseIntent from './WalletPurchaseIntent.js';
+import definePlayerAssetInstance from './PlayerAssetInstance.js';
+import definePlayerEquippedAsset from './PlayerEquippedAsset.js';
+import defineAssetRoll from './AssetRoll.js';
 
 export function initModels(sequelize) {
   const Player = definePlayer(sequelize);
@@ -60,6 +66,12 @@ export function initModels(sequelize) {
   const PlayerAchievement = definePlayerAchievement(sequelize);
   const ClientEvent = defineClientEvent(sequelize);
   const PlayerSeasonArchive = definePlayerSeasonArchive(sequelize);
+  const PlayerWalletBalance = definePlayerWalletBalance(sequelize);
+  const PlayerWalletTransaction = definePlayerWalletTransaction(sequelize);
+  const WalletPurchaseIntent = defineWalletPurchaseIntent(sequelize);
+  const PlayerAssetInstance = definePlayerAssetInstance(sequelize);
+  const PlayerEquippedAsset = definePlayerEquippedAsset(sequelize);
+  const AssetRoll = defineAssetRoll(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
   Player.hasMany(Session, { foreignKey: 'player_id' });
@@ -73,6 +85,12 @@ export function initModels(sequelize) {
   Player.hasMany(PlayerAchievement, { foreignKey: 'player_id' });
   Player.hasMany(ClientEvent, { foreignKey: 'player_id' });
   Player.hasMany(PlayerSeasonArchive, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerWalletBalance, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerWalletTransaction, { foreignKey: 'player_id' });
+  Player.hasMany(WalletPurchaseIntent, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerAssetInstance, { foreignKey: 'player_id' });
+  Player.hasMany(PlayerEquippedAsset, { foreignKey: 'player_id' });
+  Player.hasMany(AssetRoll, { foreignKey: 'player_id' });
 
   Battle.hasMany(BattleSnapshot, { foreignKey: 'battle_id' });
   Battle.hasMany(BattleEvent, { foreignKey: 'battle_id' });
@@ -117,6 +135,12 @@ export function initModels(sequelize) {
     PlayerSeasonRun,
     PlayerAchievement,
     ClientEvent,
-    PlayerSeasonArchive
+    PlayerSeasonArchive,
+    PlayerWalletBalance,
+    PlayerWalletTransaction,
+    WalletPurchaseIntent,
+    PlayerAssetInstance,
+    PlayerEquippedAsset,
+    AssetRoll
   };
 }

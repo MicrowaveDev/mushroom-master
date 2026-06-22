@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { spawnSync } from 'child_process';
 import express from 'express';
 import OpenAI from 'openai';
@@ -53,7 +54,16 @@ import {
   getGameRunHistory,
   updateSettings,
   switchPortrait,
-  switchPreset
+  switchPreset,
+  completeProviderWebhook,
+  createPurchaseIntent,
+  equipAsset,
+  getAssetCatalog,
+  getPackOdds,
+  getWalletBundles,
+  getWalletState,
+  purchaseAsset,
+  rollAssetPack
 } from './services/game-service.js';
 import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
@@ -177,6 +187,32 @@ function clientIp(req) {
   return forwardedFor || req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
+function timingSafeEqualText(left, right) {
+  const leftBuffer = Buffer.from(String(left || ''), 'utf8');
+  const rightBuffer = Buffer.from(String(right || ''), 'utf8');
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function hmacDigest(secret, payload, algorithm) {
+  return crypto.createHmac(algorithm, secret).update(payload || '').digest('hex');
+}
+
+function verifyPaymentWebhookSignature(req, provider) {
+  if (provider === 'btcpay') {
+    const secret = process.env.BTCPAY_WEBHOOK_SECRET;
+    if (!secret) return process.env.NODE_ENV !== 'production';
+    const header = String(req.header('btcpay-sig') || '').replace(/^sha256=/i, '');
+    return timingSafeEqualText(header, hmacDigest(secret, req.rawBody || '', 'sha256'));
+  }
+  if (provider === 'nowpayments') {
+    const secret = process.env.NOWPAYMENTS_IPN_SECRET;
+    if (!secret) return process.env.NODE_ENV !== 'production';
+    const header = String(req.header('x-nowpayments-sig') || '');
+    return timingSafeEqualText(header, hmacDigest(secret, req.rawBody || '', 'sha512'));
+  }
+  return false;
+}
+
 function securityHeaders() {
   return function securityHeadersMiddleware(_req, res, next) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -231,6 +267,8 @@ const ERROR_STATUS_MAP = [
   ['already', 409],
   ['limit reached', 429],
   ['not enough', 400],
+  ['unavailable', 403],
+  ['disabled', 403],
   ['expired', 410],
   ['no longer pending', 409],
   ['invalid', 400],
@@ -260,12 +298,18 @@ export async function createApp() {
   syncPublicPortraitsToDist();
   await ensureSocialPreviewCache();
   const app = express();
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.json({
+    limit: '2mb',
+    verify: (req, _res, buf) => {
+      req.rawBody = buf.toString('utf8');
+    }
+  }));
   app.use(securityHeaders());
   app.use(requestLogger());
   app.use(authenticateRequest);
 
   const runMutationGuards = [rateLimit(), idempotency()];
+  const profileMutationGuards = [rateLimit(), idempotency()];
   const publicAuthRateLimit = rateLimit({
     capacity: 8,
     refillPerSec: 1 / 30,
@@ -416,6 +460,99 @@ export async function createApp() {
     requireAuth,
     asyncRoute(async (req, res) => {
       res.json({ success: true, data: await getPlayerState(req.user.id) });
+    })
+  );
+
+  app.get(
+    '/api/wallet',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      res.json({ success: true, data: await getWalletState(req.user.id) });
+    })
+  );
+
+  app.get(
+    '/api/wallet/bundles',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      res.json({ success: true, data: getWalletBundles(req.query.provider || null) });
+    })
+  );
+
+  app.post(
+    '/api/wallet/purchase-intents',
+    requireAuth,
+    ...profileMutationGuards,
+    asyncRoute(async (req, res) => {
+      const data = await createPurchaseIntent(req.user.id, {
+        bundleId: req.body.bundleId,
+        provider: req.body.provider || 'telegram_stars',
+        idempotencyKey: req.header('idempotency-key') || null
+      });
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/wallet/purchase-webhook/:provider',
+    asyncRoute(async (req, res) => {
+      const provider = req.params.provider;
+      if (!verifyPaymentWebhookSignature(req, provider)) {
+        res.status(403).json({ success: false, error: 'Invalid payment webhook signature' });
+        return;
+      }
+      const data = await completeProviderWebhook(provider, req.body || {});
+      res.json({ success: true, data });
+    })
+  );
+
+  app.get(
+    '/api/assets/catalog',
+    requireAuth,
+    asyncRoute(async (_req, res) => {
+      res.json({ success: true, data: getAssetCatalog() });
+    })
+  );
+
+  app.get(
+    '/api/assets/packs/:packId/odds',
+    requireAuth,
+    asyncRoute(async (req, res) => {
+      res.json({ success: true, data: getPackOdds(req.params.packId) });
+    })
+  );
+
+  app.post(
+    '/api/assets/packs/:packId/roll',
+    requireAuth,
+    ...profileMutationGuards,
+    asyncRoute(async (req, res) => {
+      const data = await rollAssetPack(req.user.id, req.params.packId, {
+        idempotencyKey: req.header('idempotency-key') || null
+      });
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/assets/:assetId/purchase',
+    requireAuth,
+    ...profileMutationGuards,
+    asyncRoute(async (req, res) => {
+      const purchase = await purchaseAsset(req.user.id, req.params.assetId, {
+        idempotencyKey: req.header('idempotency-key') || null
+      });
+      const equip = req.body?.equip ? await equipAsset(req.user.id, req.params.assetId) : null;
+      res.json({ success: true, data: { purchase, equip } });
+    })
+  );
+
+  app.post(
+    '/api/assets/:assetId/equip',
+    requireAuth,
+    ...profileMutationGuards,
+    asyncRoute(async (req, res) => {
+      res.json({ success: true, data: await equipAsset(req.user.id, req.params.assetId) });
     })
   );
 
@@ -794,7 +931,8 @@ export async function createApp() {
     );
   }
 
-  // Switch active portrait for a mushroom (unlocked by mycelium threshold).
+  // Equip an owned portrait for a mushroom. Kept as a compatibility route
+  // while the client migrates to asset-specific purchase/equip endpoints.
   app.put(
     '/api/mushroom/:id/portrait',
     requireAuth,
@@ -1015,7 +1153,7 @@ export async function createApp() {
   });
 
   app.use((error, _req, res, _next) => {
-    const status = mapErrorToStatus(error.message);
+    const status = error.statusCode || mapErrorToStatus(error.message);
     // Only expose message for known application errors; hide internals for 500s
     const isAppError = status !== 500;
     if (!isAppError) {

@@ -43,6 +43,8 @@ import {
   bootRun
 } from './helpers.js';
 import { query } from '../../app/server/db.js';
+import { grantCurrencyForPlayer } from '../../app/server/services/wallet-service.js';
+import { portraitAssetId, purchaseAsset } from '../../app/server/services/asset-service.js';
 
 const loadout = [
   { artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 },
@@ -491,9 +493,14 @@ test('[Req 14-H] player battle snapshot preserves active portrait variant for re
   const playerId = session.player.id;
 
   await selectActiveMushroom(playerId, 'thalla');
-  const unlockRun = await startGameRun(playerId, 'solo');
-  await earnMycelium(playerId, unlockRun.id, 100);
-  await abandonGameRun(playerId, unlockRun.id);
+  await grantCurrencyForPlayer({
+    playerId,
+    amount: 500,
+    reason: 'test_wallet_grant',
+    sourceType: 'test',
+    sourceId: 'portrait-snapshot'
+  });
+  await purchaseAsset(playerId, portraitAssetId('thalla', '1'));
   await switchPortrait(playerId, 'thalla', '1');
 
   const run = await startGameRun(playerId, 'solo');

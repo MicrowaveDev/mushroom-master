@@ -97,6 +97,8 @@ export const MYCELIUM_LEVEL_CURVE = [
   4000                                    // level 20    (Eternal)
 ];
 
+export const CHARACTER_XP_LEVEL_CURVE = MYCELIUM_LEVEL_CURVE;
+
 export function computeLevel(mycelium) {
   let level = 1;
   for (let i = 0; i < MYCELIUM_LEVEL_CURVE.length; i++) {
@@ -116,4 +118,8 @@ export function computeLevel(mycelium) {
     current: mycelium - currentThreshold,
     next: nextThreshold - currentThreshold
   };
+}
+
+export function computeCharacterLevel(characterXp) {
+  return computeLevel(characterXp);
 }

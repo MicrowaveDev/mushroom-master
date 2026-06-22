@@ -1,4 +1,8 @@
 import { createTelegramAuthCode, confirmTelegramAuthCode } from './auth.js';
+import {
+  completeTelegramSuccessfulPayment,
+  validateTelegramPreCheckout
+} from './services/wallet-service.js';
 
 export function normalizeBotUsername(botUsername) {
   return String(botUsername || '').trim().replace(/^@+/, '');
@@ -131,7 +135,7 @@ export async function setTelegramWebhook({ webhookUrl = buildWebhookUrl(), secre
   return callTelegramBotApi('setWebhook', {
     url: webhookUrl,
     secret_token: secretToken || undefined,
-    allowed_updates: ['message', 'callback_query']
+    allowed_updates: ['message', 'callback_query', 'pre_checkout_query']
   }, options);
 }
 
@@ -180,6 +184,15 @@ export async function reportTelegramGameScore(scoreInput, options = {}) {
   return callTelegramBotApi('setGameScore', buildTelegramGameScorePayload(scoreInput), options);
 }
 
+export async function answerTelegramPreCheckoutQuery(preCheckoutQueryId, ok, errorMessage = '', options = {}) {
+  if (!preCheckoutQueryId) throw new Error('Pre-checkout query id is required');
+  return callTelegramBotApi('answerPreCheckoutQuery', {
+    pre_checkout_query_id: preCheckoutQueryId,
+    ok: Boolean(ok),
+    error_message: ok ? undefined : errorMessage || 'Payment cannot be processed'
+  }, options);
+}
+
 export async function sendTelegramMessage(chatId, text, options = {}) {
   return callTelegramBotApi('sendMessage', {
     chat_id: chatId,
@@ -215,6 +228,22 @@ export async function handleBotStartParam(startParam, telegramUser) {
 }
 
 export async function handleTelegramWebhook(update, options = {}) {
+  const preCheckoutQuery = update?.pre_checkout_query;
+  if (preCheckoutQuery?.id) {
+    const validation = await validateTelegramPreCheckout(preCheckoutQuery);
+    await answerTelegramPreCheckoutQuery(
+      preCheckoutQuery.id,
+      validation.ok,
+      validation.errorMessage,
+      options
+    );
+    return {
+      kind: 'wallet_pre_checkout',
+      answered: true,
+      ok: validation.ok
+    };
+  }
+
   const callbackQuery = update?.callback_query;
   if (callbackQuery?.game_short_name) {
     await answerTelegramGameCallback(callbackQuery, options);
@@ -222,6 +251,16 @@ export async function handleTelegramWebhook(update, options = {}) {
   }
 
   const message = update?.message;
+  if (message?.successful_payment) {
+    const result = await completeTelegramSuccessfulPayment(message.successful_payment);
+    return {
+      kind: 'wallet_payment',
+      answered: true,
+      intentId: result.intent.id,
+      alreadyCompleted: result.alreadyCompleted
+    };
+  }
+
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const startMatch = text.match(/^\/start(?:@\w+)?(?:\s+(.+))?$/);
   if (startMatch && message?.chat?.id) {

@@ -1,6 +1,6 @@
 # Profile Currency And Core Extraction Plan
 
-**Status:** Planning only. No implementation has started.
+**Status:** Phases 1-7 implemented in `mushroom-master` on 2026-06-22.
 **Created:** 2026-06-22
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
@@ -8,6 +8,30 @@
 `git ls-remote` returned no refs for the target repo on 2026-06-22, so
 this plan treats `backpack-game-core` as a new or empty package until proven
 otherwise.
+
+## Implementation Status
+
+Phases 1-7 are complete for the Mushroom Battles compatibility milestone:
+
+- Requirements now define three separate ledgers: temporary run coins,
+  profile wallet currency, and character XP / mastery.
+- Profile wallet tables and `wallet-service.js` are the source of truth for
+  persistent soft currency, with `players.spore` kept as a compatibility mirror.
+- Coin purchase intents are provider-neutral, with Telegram Stars handling and
+  BTCPay / NOWPayments webhook adapter hooks.
+- Profile-scoped asset instances and equipped assets now own and equip portrait
+  skins without binding purchase ownership to a character.
+- The backend supports direct asset purchases when gacha is off and an
+  environment-gated gacha MVP that rolls an unowned asset from configured packs.
+- Naming now exposes wallet, asset, and `characterXp` fields while preserving
+  legacy response aliases during migration.
+- Backend and UI tests cover wallet earns/spends, provider completion,
+  direct purchase, gacha policy, portrait equipment, and Telegram webhook
+  allowed updates.
+
+Deferred beyond phase 7: physical removal of legacy compatibility fields,
+multi-item pack guarantees, duplicate burning, marketplace trading, database
+managed pack catalogs, and reusable-core extraction into `backpack-game-core`.
 
 ## Source Of Truth
 

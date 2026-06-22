@@ -56,6 +56,8 @@ import { applyRoundStartFusions, readFusionReveals } from './artifact-fusion-ser
 import { awardRunSeasonProgress } from './season-service.js';
 import { getEarnedRunAchievements } from '../../shared/run-achievements.js';
 import { getSeasonLevel, getSeasonPointsBreakdown, seasonLevelRank } from '../../shared/season-levels.js';
+import { grantCurrency } from './wallet-service.js';
+import { resolveEquippedPortraitId } from './asset-service.js';
 
 // In test environments, set REWARD_MULTIPLIER=N to scale spore+mycelium rewards
 // so unlocks can be reached after a handful of rounds instead of hundreds.
@@ -317,13 +319,18 @@ export async function getActiveGameRuns(playerId) {
   return Promise.all(result.rows.map((row) => shapeActiveGameRun(row, playerId)));
 }
 
-async function payCompletionBonus(client, playerId, mushroomId, wins) {
+async function payCompletionBonus(client, playerId, mushroomId, wins, gameRunId = null) {
   const bonus = getCompletionBonus(wins);
   if (bonus.spore > 0) {
-    await client.query(
-      `UPDATE players SET spore = spore + $2, updated_at = $3 WHERE id = $1`,
-      [playerId, bonus.spore, nowIso()]
-    );
+    await grantCurrency(client, {
+      playerId,
+      amount: bonus.spore,
+      reason: 'run_completion_bonus',
+      sourceType: 'game_run',
+      sourceId: gameRunId,
+      idempotencyKey: gameRunId ? `run_completion:${gameRunId}:${playerId}:spore` : null,
+      metadata: { wins }
+    });
   }
   if (bonus.mycelium > 0 && mushroomId) {
     await client.query(
@@ -404,7 +411,7 @@ export async function abandonGameRun(playerId, gameRunId) {
         [grp.player_id]
       );
       const mushroomId = activeChar.rowCount ? activeChar.rows[0].mushroom_id : null;
-      await payCompletionBonus(client, grp.player_id, mushroomId, grp.wins);
+      await payCompletionBonus(client, grp.player_id, mushroomId, grp.wins, gameRunId);
       seasonResults[grp.player_id] = await awardCompletedRunRecap(client, {
         playerId: grp.player_id,
         gameRunId,
@@ -706,11 +713,7 @@ async function getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, gho
     const { game_run_id: ghostRunId, player_id: ghostPlayerId } = realResult.rows[0];
     const items = await readCurrentRoundItems(client, ghostRunId, ghostPlayerId, roundNumber);
     if (items.length > 0) {
-      const portraitResult = await client.query(
-        `SELECT active_portrait FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
-        [ghostPlayerId, targetMushroomId]
-      );
-      const portraitId = portraitResult.rows[0]?.active_portrait || 'default';
+      const portraitId = await resolveEquippedPortraitId(client, ghostPlayerId, targetMushroomId);
       return {
         playerId: ghostPlayerId,
         mushroomId: targetMushroomId,
@@ -856,10 +859,15 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
       [grp.id, completedRounds, newWins, newLosses, newLives, newCoins]
     );
 
-    await client.query(
-      `UPDATE players SET spore = spore + $2, updated_at = $3 WHERE id = $1`,
-      [grp.player_id, sporeAwarded, nowIso()]
-    );
+    await grantCurrency(client, {
+      playerId: grp.player_id,
+      amount: sporeAwarded,
+      reason: 'run_round_reward',
+      sourceType: 'game_round',
+      sourceId: `${gameRunId}:${roundNumber}:${grp.player_id}`,
+      idempotencyKey: `run_round:${gameRunId}:${roundNumber}:${grp.player_id}:spore`,
+      metadata: { mode: 'challenge', outcome }
+    });
 
     const activeChar = await client.query(
       `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`, [grp.player_id]
@@ -900,7 +908,7 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
     const winnerPlayerId = pA.losses < pB.losses ? grpA.player_id : pB.losses < pA.losses ? grpB.player_id : null;
 
     for (const [grp, pr] of [[grpA, pA], [grpB, pB]]) {
-      await payCompletionBonus(client, grp.player_id, pr.mushroomId, pr.wins);
+      await payCompletionBonus(client, grp.player_id, pr.mushroomId, pr.wins, gameRunId);
       const recap = await awardCompletedRunRecap(client, {
         playerId: grp.player_id,
         gameRunId,
@@ -920,10 +928,15 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
       await applyBatchElo(client, grp.player_id, opponentRating, pr.wins, pr.losses);
 
       if (winnerPlayerId === grp.player_id) {
-        await client.query(
-          `UPDATE players SET spore = spore + $2, updated_at = $3 WHERE id = $1`,
-          [grp.player_id, CHALLENGE_WINNER_BONUS.spore, nowIso()]
-        );
+        await grantCurrency(client, {
+          playerId: grp.player_id,
+          amount: CHALLENGE_WINNER_BONUS.spore,
+          reason: 'challenge_winner_bonus',
+          sourceType: 'game_run',
+          sourceId: gameRunId,
+          idempotencyKey: `challenge_winner:${gameRunId}:${grp.player_id}:spore`,
+          metadata: { bonus: 'challenge_winner' }
+        });
         await client.query(
           `UPDATE player_mushrooms SET mycelium = mycelium + $3 WHERE player_id = $1 AND mushroom_id = $2`,
           [grp.player_id, pr.mushroomId, CHALLENGE_WINNER_BONUS.mycelium]
@@ -1106,9 +1119,18 @@ export async function resolveRound(playerId, gameRunId) {
     );
 
     await client.query(
-      `UPDATE players SET spore = spore + $2, rating = $3, rated_battle_count = rated_battle_count + 1, updated_at = $4 WHERE id = $1`,
-      [playerId, sporeAwarded, ratingAfter, nowIso()]
+      `UPDATE players SET rating = $2, rated_battle_count = rated_battle_count + 1, updated_at = $3 WHERE id = $1`,
+      [playerId, ratingAfter, nowIso()]
     );
+    await grantCurrency(client, {
+      playerId,
+      amount: sporeAwarded,
+      reason: 'run_round_reward',
+      sourceType: 'game_round',
+      sourceId: `${gameRunId}:${roundNumber}:${playerId}`,
+      idempotencyKey: `run_round:${gameRunId}:${roundNumber}:${playerId}:spore`,
+      metadata: { mode: 'solo', outcome }
+    });
 
     const activeChar = await client.query(
       `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`, [playerId]
@@ -1148,7 +1170,7 @@ export async function resolveRound(playerId, gameRunId) {
 
     let recap = null;
     if (runEnded) {
-      await payCompletionBonus(client, playerId, mushroomId, newWins);
+      await payCompletionBonus(client, playerId, mushroomId, newWins, gameRunId);
       recap = await awardCompletedRunRecap(client, {
         playerId,
         gameRunId,

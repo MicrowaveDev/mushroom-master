@@ -3,7 +3,6 @@ import {
   getMushroomById,
   getTier,
   mushrooms,
-  PORTRAIT_VARIANTS,
   portraitVariantsForResponse,
   STARTER_PRESET_VARIANTS
 } from '../game-data.js';
@@ -14,6 +13,13 @@ import {
 } from '../lib/utils.js';
 import { getSeasonLevel } from '../../shared/season-levels.js';
 import { createBotGhostSnapshot } from './bot-loadout.js';
+import {
+  equipPortrait,
+  getPlayerCosmeticState,
+  parsePortraitAssetId,
+  shapePortraitVariant
+} from './asset-service.js';
+import { getWalletState } from './wallet-service.js';
 
 function rowToPlayerProfile(row) {
   return {
@@ -55,6 +61,11 @@ export async function getPlayerState(playerId) {
   }
 
   const player = rowToPlayerProfile(playerResult.rows[0]);
+  const [wallet, cosmeticState] = await Promise.all([
+    getWalletState(playerId),
+    getPlayerCosmeticState(playerId)
+  ]);
+  player.spore = wallet.balance;
   const settings = settingsResult.rowCount
     ? {
         lang: settingsResult.rows[0].lang,
@@ -88,7 +99,11 @@ export async function getPlayerState(playerId) {
       const level = levelInfo.level;
 
       const portraitVariants = freshPortraitVariants[row.mushroom_id] || [];
-      const activePortraitId = row.active_portrait || 'default';
+      const equipped = cosmeticState.equippedByTarget.get(`portrait:character:${row.mushroom_id}`);
+      const equippedPortrait = equipped ? parsePortraitAssetId(equipped.assetId) : null;
+      const activePortraitId = equippedPortrait?.mushroomId === row.mushroom_id
+        ? equippedPortrait.portraitId
+        : row.active_portrait || 'default';
       const activePortraitDef = portraitVariants.find(v => v.id === activePortraitId) || portraitVariants[0];
 
       const presetVariants = STARTER_PRESET_VARIANTS[row.mushroom_id] || [];
@@ -112,7 +127,15 @@ export async function getPlayerState(playerId) {
           draws: row.draws,
           activePortrait: activePortraitId,
           activePortraitUrl: activePortraitDef?.path || '',
-          portraits: portraitVariants.map(v => ({ ...v, unlocked: row.mycelium >= v.cost })),
+          characterXp: row.mycelium,
+          currentLevelCharacterXp: levelInfo.current,
+          nextLevelCharacterXp: levelInfo.next,
+          portraits: portraitVariants.map(v => shapePortraitVariant({
+            mushroomId: row.mushroom_id,
+            variant: v,
+            cosmeticState,
+            activePortraitId
+          })),
           activePreset: activePresetId,
           presets: presetVariants.map(v => ({ ...v, unlocked: level >= v.requiredLevel }))
         }
@@ -175,6 +198,7 @@ export async function getPlayerState(playerId) {
 
   return {
     player,
+    wallet,
     settings,
     activeMushroomId,
     loadout,
@@ -416,21 +440,7 @@ function httpError(message, statusCode) {
 }
 
 export async function switchPortrait(playerId, mushroomId, portraitId) {
-  const variants = PORTRAIT_VARIANTS[mushroomId];
-  if (!variants) throw httpError('Unknown mushroom', 404);
-  const variant = variants.find(v => v.id === portraitId);
-  if (!variant) throw httpError('Unknown portrait', 400);
-  const row = await query(
-    `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
-    [playerId, mushroomId]
-  );
-  const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
-  if (mycelium < variant.cost) throw httpError('Not enough mycelium', 403);
-  await query(
-    `UPDATE player_mushrooms SET active_portrait = $1 WHERE player_id = $2 AND mushroom_id = $3`,
-    [portraitId, playerId, mushroomId]
-  );
-  return { portraitId, path: variant.path };
+  return equipPortrait(playerId, mushroomId, portraitId);
 }
 
 export async function switchPreset(playerId, mushroomId, presetId) {

@@ -2608,8 +2608,9 @@ export const STARTER_PRESET_VARIANTS = {
   ]
 };
 
-// Portrait variants per mushroom, unlocked by mycelium threshold.
-// 'default' is always free (cost: 0). Alternate ids match the filenames
+// Portrait variants per mushroom. The legacy `cost` field is now interpreted
+// by the asset catalog as profile-wallet price; mycelium no longer unlocks
+// portrait variants after the wallet migration. Alternate ids match filenames
 // under /portraits/<mushroomId>/.
 export const PORTRAIT_VARIANTS = {
   thalla: [

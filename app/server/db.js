@@ -3,6 +3,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { repoRoot } from '../shared/repo-root.js';
+import { PORTRAIT_VARIANTS } from './game-data.js';
+import { createId, nowIso } from './lib/utils.js';
 import { initModels } from './models/index.js';
 
 let state;
@@ -80,6 +82,9 @@ async function initSchema(sequelize) {
 
   initModels(sequelize);
   await sequelize.sync();
+  await ensurePostSyncIndexes(sequelize);
+  await backfillLegacyWalletBalances(sequelize);
+  await backfillLegacyPortraitAssets(sequelize);
   await ensureColumnExists(sequelize, 'player_settings', 'replay_speed', 'INTEGER NOT NULL DEFAULT 2');
   await ensureColumnExists(sequelize, 'game_run_players', 'mushroom_id', 'TEXT');
   await ensureColumnExists(sequelize, 'player_season_progress', 'peak_points', 'INTEGER NOT NULL DEFAULT 0');
@@ -91,6 +96,136 @@ async function initSchema(sequelize) {
      ON game_run_players(player_id, mushroom_id)
      WHERE is_active = 1 AND mushroom_id IS NOT NULL`
   );
+}
+
+async function ensurePostSyncIndexes(sequelize) {
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_wallet_tx_idempotency
+     ON player_wallet_transactions(player_id, currency_code, idempotency_key)
+     WHERE idempotency_key IS NOT NULL`
+  );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_wallet_purchase_intents_idempotency
+     ON wallet_purchase_intents(player_id, provider, idempotency_key)
+     WHERE idempotency_key IS NOT NULL`
+  );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_wallet_purchase_provider_payment
+     ON wallet_purchase_intents(provider, provider_payment_id)
+     WHERE provider_payment_id IS NOT NULL`
+  );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_player_asset_active_once
+     ON player_asset_instances(player_id, asset_id)
+     WHERE status = 'active'`
+  );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_player_equipped_assets_one_target
+     ON player_equipped_assets(player_id, slot, target_type, COALESCE(target_id, ''))`
+  );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_asset_rolls_idempotency
+     ON asset_rolls(player_id, pack_id, idempotency_key)
+     WHERE idempotency_key IS NOT NULL`
+  );
+}
+
+async function backfillLegacyWalletBalances(sequelize) {
+  const now = nowIso();
+  const rows = await sequelize.query(
+    `SELECT id, COALESCE(spore, 0) AS spore
+     FROM players
+     WHERE NOT EXISTS (
+       SELECT 1 FROM player_wallet_balances
+       WHERE player_wallet_balances.player_id = players.id
+         AND player_wallet_balances.currency_code = 'soft_coin'
+     )`,
+    { type: QueryTypes.SELECT }
+  );
+  for (const row of rows) {
+    await sequelize.query(
+      `INSERT INTO player_wallet_balances (player_id, currency_code, balance, created_at, updated_at)
+       VALUES (?, 'soft_coin', ?, ?, ?)`,
+      { replacements: [row.id, Number(row.spore || 0), now, now] }
+    );
+  }
+}
+
+async function backfillLegacyPortraitAssets(sequelize) {
+  const rows = await sequelize.query(
+    `SELECT player_id, mushroom_id, COALESCE(mycelium, 0) AS mycelium, COALESCE(active_portrait, 'default') AS active_portrait
+     FROM player_mushrooms`,
+    { type: QueryTypes.SELECT }
+  );
+  const now = nowIso();
+  for (const row of rows) {
+    const variants = PORTRAIT_VARIANTS[row.mushroom_id] || [];
+    const mycelium = Number(row.mycelium || 0);
+    let equippedInstanceId = null;
+
+    for (const variant of variants) {
+      const shouldBackfillOwnership = variant.id !== 'default' &&
+        (mycelium >= Number(variant.cost || 0) || row.active_portrait === variant.id);
+      if (!shouldBackfillOwnership) continue;
+
+      const assetId = `portrait.${row.mushroom_id}.${variant.id}`;
+      const existing = await sequelize.query(
+        `SELECT id FROM player_asset_instances
+         WHERE player_id = ? AND asset_id = ? AND status = 'active'
+         LIMIT 1`,
+        { replacements: [row.player_id, assetId], type: QueryTypes.SELECT }
+      );
+      let instanceId = existing[0]?.id || null;
+      if (!instanceId) {
+        instanceId = createId('asset');
+        await sequelize.query(
+          `INSERT INTO player_asset_instances
+           (id, player_id, asset_id, acquisition_source, acquisition_source_id, status, acquired_at, metadata_json)
+           VALUES (?, ?, ?, 'legacy_mycelium_gate', ?, 'active', ?, ?)`,
+          {
+            replacements: [
+              instanceId,
+              row.player_id,
+              assetId,
+              row.mushroom_id,
+              now,
+              JSON.stringify({ legacyCost: variant.cost || 0, legacyMycelium: mycelium })
+            ]
+          }
+        );
+      }
+      if (row.active_portrait === variant.id) {
+        equippedInstanceId = instanceId;
+      }
+    }
+
+    const activeVariant = variants.find((variant) => variant.id === row.active_portrait) || variants[0];
+    if (!activeVariant) continue;
+    const activeAssetId = `portrait.${row.mushroom_id}.${activeVariant.id}`;
+    const existingEquip = await sequelize.query(
+      `SELECT id FROM player_equipped_assets
+       WHERE player_id = ? AND slot = 'portrait' AND target_type = 'character'
+         AND target_id = ?
+       LIMIT 1`,
+      { replacements: [row.player_id, row.mushroom_id], type: QueryTypes.SELECT }
+    );
+    if (existingEquip.length) continue;
+    await sequelize.query(
+      `INSERT INTO player_equipped_assets
+       (id, player_id, slot, target_type, target_id, asset_instance_id, asset_id, equipped_at)
+       VALUES (?, ?, 'portrait', 'character', ?, ?, ?, ?)`,
+      {
+        replacements: [
+          createId('equip'),
+          row.player_id,
+          row.mushroom_id,
+          equippedInstanceId,
+          activeAssetId,
+          now
+        ]
+      }
+    );
+  }
 }
 
 async function backfillActiveRunMushrooms(sequelize) {

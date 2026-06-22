@@ -1943,7 +1943,8 @@ select {
   background: none;
   transition: border-color 0.15s, transform 0.15s;
 }
-.home-portrait-swatch:hover:not(.home-portrait-swatch--locked) {
+.home-portrait-swatch:hover:not(.home-portrait-swatch--locked),
+.home-portrait-swatch--buyable:hover {
   transform: translateY(-1px);
 }
 .home-portrait-swatch img {
@@ -1963,6 +1964,9 @@ select {
 .home-portrait-swatch--locked {
   cursor: default;
   border-color: rgba(138, 97, 53, 0.2);
+}
+.home-portrait-swatch--buyable {
+  cursor: pointer;
 }
 .home-portrait-swatch--locked img {
   filter: grayscale(0.55) brightness(0.85);

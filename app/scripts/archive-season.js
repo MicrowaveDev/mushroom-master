@@ -1,5 +1,6 @@
 import { query } from '../server/db.js';
 import { createId, nowIso } from '../server/lib/utils.js';
+import { grantCurrencyForPlayer } from '../server/services/wallet-service.js';
 import { getSeasonEndReward, getSeasonLevel } from '../shared/season-levels.js';
 
 const write = process.argv.includes('--write');
@@ -59,12 +60,17 @@ if (write) {
         archivedAt
       ]
     );
-    await query(
-      `UPDATE players
-       SET spore = spore + $2, updated_at = $3
-       WHERE id = $1`,
-      [row.playerId, row.reward.spore, archivedAt]
-    );
+    if (row.reward.spore) {
+      await grantCurrencyForPlayer({
+        playerId: row.playerId,
+        amount: row.reward.spore,
+        reason: 'season_archive_reward',
+        sourceType: 'player_season_archive',
+        sourceId: `${row.playerId}:${row.seasonId}`,
+        idempotencyKey: `season_archive:${row.playerId}:${row.seasonId}:spore`,
+        metadata: { seasonId: row.seasonId, peakLevelId: row.peakLevelId }
+      });
+    }
     if (row.reward.mycelium) {
       const active = await query(
         `SELECT mushroom_id FROM player_active_character WHERE player_id = $1`,

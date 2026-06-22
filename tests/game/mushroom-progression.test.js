@@ -18,6 +18,8 @@ import {
   switchPortrait,
   switchPreset
 } from '../../app/server/services/game-service.js';
+import { grantCurrencyForPlayer } from '../../app/server/services/wallet-service.js';
+import { purchaseAsset, portraitAssetId } from '../../app/server/services/asset-service.js';
 import { query } from '../../app/server/db.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -179,36 +181,52 @@ test('[Req 14-B] getPlayerState progression includes tier field', async () => {
 
 // --- Portrait variants (Option 6) ---
 
-test('[Req 14-F] P1 PORTRAIT_VARIANTS: every mushroom has an entry; first variant is always default with cost 0', () => {
+test('[Req 14-F] P1 PORTRAIT_VARIANTS: every mushroom has an entry; first variant is always default with wallet price 0', () => {
   const mushroomIds = ['thalla', 'lomie', 'axilin', 'kirt', 'morga', 'dalamar'];
   for (const id of mushroomIds) {
     const variants = PORTRAIT_VARIANTS[id];
     assert.ok(variants && variants.length >= 1, `${id} must have at least one portrait variant`);
     assert.equal(variants[0].id, 'default', `${id} first variant must be 'default'`);
-    assert.equal(variants[0].cost, 0, `${id} default variant must cost 0 mycelium`);
+    assert.equal(variants[0].cost, 0, `${id} default variant must cost 0 wallet coins`);
   }
 });
 
-test('[Req 14-F] P2 getPlayerState portraits[].unlocked reflects mycelium threshold', async () => {
+test('[Req 14-F] P2 getPlayerState portraits[].owned reflects profile asset ownership, not mycelium threshold', async () => {
   await freshDb();
   const { playerId, run } = await bootRun({ telegramId: 910 });
-  // At 0 mycelium: variant 1 (cost 500) is locked.
   const stateLocked = await getPlayerState(playerId);
   const portraitsLocked = stateLocked.progression['thalla'].portraits;
   assert.equal(portraitsLocked[0].unlocked, true, 'default (cost 0) always unlocked');
-  assert.equal(portraitsLocked[1].unlocked, false, 'variant 1 locked at 0 mycelium');
+  assert.equal(portraitsLocked[1].owned, false, 'variant 1 is not owned by a fresh profile');
 
-  // REWARD_MULTIPLIER=100: loss gives 5×100=500 (exactly at threshold), win gives 1500.
   await earnMycelium(playerId, run.id, 100);
-  const stateUnlocked = await getPlayerState(playerId);
-  assert.equal(stateUnlocked.progression['thalla'].portraits[1].unlocked, true, 'variant 1 unlocked at ≥500 mycelium');
+  const stateAfterXp = await getPlayerState(playerId);
+  assert.equal(stateAfterXp.progression['thalla'].portraits[1].owned, false, 'mycelium no longer unlocks portrait ownership');
+
+  await grantCurrencyForPlayer({
+    playerId,
+    amount: 500,
+    reason: 'test_wallet_grant',
+    sourceType: 'test',
+    sourceId: 'portrait-ownership'
+  });
+  await purchaseAsset(playerId, portraitAssetId('thalla', '1'));
+  const stateOwned = await getPlayerState(playerId);
+  assert.equal(stateOwned.progression['thalla'].portraits[1].owned, true, 'wallet purchase owns variant 1');
+  assert.equal(stateOwned.progression['thalla'].portraits[1].unlocked, true, 'unlocked remains an owned alias for compatibility');
 });
 
-test('[Req 14-F] P3 getPlayerState activePortraitUrl reflects active_portrait column', async () => {
+test('[Req 14-F] P3 getPlayerState activePortraitUrl reflects equipped portrait asset', async () => {
   await freshDb();
-  const { playerId, run } = await bootRun({ telegramId: 911 });
-  // Earn ≥500 mycelium then switch to variant 1 via service call.
-  await earnMycelium(playerId, run.id, 100);
+  const { playerId } = await bootRun({ telegramId: 911 });
+  await grantCurrencyForPlayer({
+    playerId,
+    amount: 500,
+    reason: 'test_wallet_grant',
+    sourceType: 'test',
+    sourceId: 'portrait-equip'
+  });
+  await purchaseAsset(playerId, portraitAssetId('thalla', '1'));
   await switchPortrait(playerId, 'thalla', '1');
   const state = await getPlayerState(playerId);
   const prog = state.progression['thalla'];
@@ -219,11 +237,17 @@ test('[Req 14-F] P3 getPlayerState activePortraitUrl reflects active_portrait co
   );
 });
 
-test('[Req 14-F] P4 switchPortrait happy path: mycelium threshold met → persisted in DB', async () => {
+test('[Req 14-F] P4 switchPortrait happy path: owned portrait asset → persisted in equipment and compatibility DB', async () => {
   await freshDb();
-  const { playerId, run } = await bootRun({ telegramId: 912 });
-  // Earn ≥500 mycelium (variant 1 costs 500).
-  await earnMycelium(playerId, run.id, 100);
+  const { playerId } = await bootRun({ telegramId: 912 });
+  await grantCurrencyForPlayer({
+    playerId,
+    amount: 500,
+    reason: 'test_wallet_grant',
+    sourceType: 'test',
+    sourceId: 'portrait-switch'
+  });
+  await purchaseAsset(playerId, portraitAssetId('thalla', '1'));
   const result = await switchPortrait(playerId, 'thalla', '1');
   assert.equal(result.portraitId, '1');
   assert.ok(result.path.includes('thalla/1'), `path should reference thalla/1, got: ${result.path}`);
@@ -232,11 +256,16 @@ test('[Req 14-F] P4 switchPortrait happy path: mycelium threshold met → persis
     [playerId]
   );
   assert.equal(row.rows[0].active_portrait, '1', 'DB must reflect the new active portrait');
+  const equipped = await query(
+    `SELECT asset_id FROM player_equipped_assets
+     WHERE player_id = $1 AND slot = 'portrait' AND target_type = 'character' AND target_id = 'thalla'`,
+    [playerId]
+  );
+  assert.equal(equipped.rows[0].asset_id, portraitAssetId('thalla', '1'), 'equipment table must point at the portrait asset');
 });
 
-test('[Req 14-F] P5 switchPortrait gate: mycelium below threshold → 403, no DB change', async () => {
+test('[Req 14-F] P5 switchPortrait gate: paid portrait not owned → 403, no DB change', async () => {
   await freshDb();
-  // Fresh player starts at 0 mycelium — already below the 500-mycelium threshold for variant 1.
   const { player } = await createPlayer({ telegramId: 913 });
   await assert.rejects(
     () => switchPortrait(player.id, 'thalla', '1'),
@@ -414,8 +443,8 @@ test('[Req 14-C] mycelium is per-mushroom: playing thalla does not advance axili
 // Negative invariant: earning mycelium and advancing mushroom level must not
 // change combat stats, ability behavior, shop affinity weights, or ghost
 // opponent budget/difficulty. The authoritative whitelist of what mycelium
-// may affect is in [Req 14-H] itself: level number, tier badge, portrait
-// unlocks, preset unlocks, wiki unlocks, and character shop-item eligibility.
+// may affect is in [Req 14-H] itself: level number, tier badge, preset unlocks,
+// wiki unlocks, and character shop-item eligibility.
 //
 // This test enforces the invariant as a source-level guard — the combat
 // engine must not import or reference any level/mycelium tokens. Adding a

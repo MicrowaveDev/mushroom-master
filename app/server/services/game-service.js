@@ -5,6 +5,13 @@ import { getBattleHistory } from './battle-service.js';
 import { getPlayerState } from './player-service.js';
 import { getActiveGameRun, getActiveGameRuns, getGameRunHistory } from './run-service.js';
 import { getHomeFieldConfig } from './home-field-config.js';
+import {
+  activeGachaPackIds,
+  directBuyPolicy,
+  getAssetCatalog,
+  getAssetPacks,
+  isAssetGachaEnabled
+} from './asset-service.js';
 
 export { validateLoadoutItems } from './loadout-utils.js';
 export { simulateBattle } from './battle-engine.js';
@@ -46,6 +53,24 @@ export {
   sellRunItem,
   startGameRun
 } from './run-service.js';
+export {
+  equipAsset,
+  equipPortrait,
+  getAssetCatalog,
+  getPackOdds,
+  purchaseAsset,
+  rollAssetPack
+} from './asset-service.js';
+export {
+  completeProviderWebhook,
+  completePurchaseIntent,
+  createPurchaseIntent,
+  getWalletBundles,
+  getWalletState,
+  grantCurrencyForPlayer,
+  spendCurrencyForPlayer,
+  validateTelegramPreCheckout
+} from './wallet-service.js';
 
 export async function getBootstrap(playerId) {
   const state = await getPlayerState(playerId);
@@ -84,6 +109,13 @@ export async function getBootstrap(playerId) {
     },
     battleHistory: history,
     gameRunHistory: runHistory,
-    homeField: getHomeFieldConfig()
+    homeField: getHomeFieldConfig(),
+    assetCatalog: getAssetCatalog(),
+    assetPacks: getAssetPacks(),
+    assetAcquisition: {
+      gachaEnabled: isAssetGachaEnabled(),
+      directBuyPolicy: directBuyPolicy(),
+      activePackIds: activeGachaPackIds()
+    }
   };
 }

@@ -135,7 +135,7 @@ test('[telegram-game] ensureTelegramWebhook sets webhook when missing', async ()
   assert.deepEqual(calls[1].body, {
     url: 'https://mushroombattles.com/api/bot/webhook',
     secret_token: 'secret',
-    allowed_updates: ['message', 'callback_query']
+    allowed_updates: ['message', 'callback_query', 'pre_checkout_query']
   });
 });
 

@@ -120,6 +120,24 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **4-N.** The budget ceiling for validation is `cumulative_round_income + preset_cost`.
 - **4-O.** This applies to both player loadouts (at ready/resolve time) and ghost loadouts.
 
+### Profile Wallet
+
+- **4-X.** Temporary run-shop coins and persistent profile wallet currency are
+  separate ledgers. `game_run_players.coins` can buy run artifacts, refresh the
+  run shop, and receive run-item refunds only. Profile wallet currency cannot
+  buy run artifacts.
+- **4-Y.** Persistent profile wallet currency is profile-scoped, not
+  mushroom-scoped. Currency earned while playing one mushroom can buy any
+  eligible profile asset for another mushroom. During the compatibility
+  migration, `players.spore` mirrors the default wallet balance, but wallet
+  writes are recorded through `player_wallet_balances` and
+  `player_wallet_transactions`.
+- **4-Z.** Real-money wallet purchases are created as purchase intents and grant
+  wallet currency only after server-side provider verification. Supported
+  provider adapters are provider-neutral and may include Telegram Stars,
+  BTCPay, NOWPayments, or later payment rails. Client requests cannot mark an
+  intent as paid.
+
 ---
 
 ## 5. Bags
@@ -262,7 +280,7 @@ Membership is not stored. It is derived from overlap between item cells and acti
   The prep HUD shows projected season-rank stakes for the current run and the abandon outcome before the player commits to Ready or Abandon.
   The home screen also shows current persisted season rank, peak rank, total points, next-rank progress, season identity, the "first 7 wins count" rule hint, and recent achievement unlocks from `getPlayerState`. If there are no recent unlocks, it should show a small next-achievement hint instead of leaving the season panel feeling empty.
   The season progress bar should animate into place. Run completion visually emphasizes a season rank-up when `leveledUp` is true, and applies a subdued penalty state when `leveledDown` is true. The client also emits `mushroom:season-tier-up` and triggers Telegram haptics for rank-ups when available.
-  Season-end archival uses `peak_level_id`, not current `level_id`, when assigning rewards. `npm run game:season:archive` previews the archive and `npm run game:season:archive -- --write` writes one archive row per player-season and grants the peak-rank reward once. Current reward tuning is defined in `seasonEndRewards`: Bronze `50 spore`, Silver `150 spore + 5 mycelium`, Gold `350 spore + 15 mycelium`, Diamond `800 spore + 40 mycelium`.
+  Season-end archival uses `peak_level_id`, not current `level_id`, when assigning rewards. `npm run game:season:archive` previews the archive and `npm run game:season:archive -- --write` writes one archive row per player-season and grants the peak-rank reward once. Current reward tuning is defined in `seasonEndRewards`: Bronze `50 spore`, Silver `150 spore + 5 mycelium`, Gold `350 spore + 15 mycelium`, Diamond `800 spore + 40 mycelium`. Spore rewards are persistent wallet grants; mycelium rewards remain character XP for the selected mushroom.
 
 - **9-G.** Lore achievements are defined in `app/shared/run-achievements.json`, split into `general` and `characters.<mushroomId>` lists. Earned achievements are persisted in `player_achievements` with a unique `(player_id, achievement_id)` constraint, so the same achievement is not re-awarded every run. A completed run may display newly earned general, season, and character-specific achievements on the run-complete screen. Achievement criteria may reference wins, losses, rounds completed, end reason, last-round outcome, win rate, season points, and season level.
   Newly earned achievements should render as compact achievement cards and reveal with a short staggered animation unless reduced motion is requested. The cards should not stretch into full-width rows when only one achievement appears. To avoid drowning out the recap, persistence awards at most 3 new achievements per completed run, prioritized as first-run milestone → season tier → run-ending feat → character/general follow-ups; matching achievements beyond that cap remain locked and can be awarded by a later run. Medium achievements such as deep-run, three-win, and second character lore badges require at least 25 total season points so a first full clear cannot unlock the whole early catalogue at once. If a run matches no achievements, the recap should show a quiet empty state that still acknowledges the run. Achievements already earned in an older run may still appear when criteria match, but must be marked as already earned rather than `New`. The client emits `mushroom:achievement-unlock` and triggers a light haptic hook when new achievements exist.
@@ -293,7 +311,8 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **11-A.** At the end of each round, all loadout items from round N are copied to round N+1:
   - `fresh_purchase` is reset to `0` (for refund calculation — items bought in round N are no longer "fresh" in N+1).
   - `purchased_round` is **preserved** (tracks original purchase round for graduated refunds).
-- **11-B.** New coins are added: `coins += ROUND_INCOME[roundNumber]`.
+- **11-B.** New run coins are added:
+  `game_run_players.coins += ROUND_INCOME[roundNumber]`.
 - **11-C.** A new 5-item shop offer is generated.
 - **11-D.** Shop `refresh_count` resets to 0.
 - **11-E.** After round N is copied to round N+1 and before the round N+1 shop is shown, eligible artifact fusion recipes consume their ingredient rows and insert the result row into the container. Ingredients are eligible only when they are placed in the grid and their occupied cells touch by an edge; backpack/container rows and non-adjacent grid rows do not fuse. The battle for round N always uses the pre-fusion loadout. The prep UI highlights rows that will fuse, and the next prep entry plays a fusion reveal animation before the player edits the new shop state. Fusion reveal events persist with the run transition so challenge reconnect can still show the reveal after the missed replay.
@@ -351,11 +370,38 @@ Membership is not stored. It is derived from overlap between item cells and acti
 
 - **14-E.** The solo round-result response includes `lastRound.levelBefore`, `lastRound.levelAfter`, `lastRound.mushroomId`, and the per-mushroom rank-progress payload `lastRound.progressBefore` and `lastRound.progressAfter`. Each progress object has the shape `{ level, tier, current, next }`, where `tier` is `getTier(level)` and `(current, next)` come from `computeLevel(mycelium)` (`next` is `null` at the level cap). The replay screen renders the post-battle rewards card inline (Flow B Step 3) with a sequenced reveal: round outcome banner, reward stats (spore / mycelium / rating), then a rank progress block whose bar animates from `progressBefore.current` toward `progressAfter.current`. When `levelAfter > levelBefore` the bar fills to `progressBefore.next`, plays a level-up flash, then refills toward the new level's `current`. When `progressBefore.tier !== progressAfter.tier` an additional tier-change toast renders the new tier badge. Both the JS reveal timing and the CSS keyframes must be suppressed when the in-app `reducedMotion` setting is on or when `prefers-reduced-motion: reduce` is set.
 
-- **14-F.** Each mushroom may have one or more **portrait variants** defined in `PORTRAIT_VARIANTS` (in `app/server/game-data.js`). The first variant is always `id: 'default'` with `cost: 0`. Additional variants are unlocked when `player_mushrooms.mycelium >= variant.cost` — the threshold is a **cumulative gate, not a purchase**: mycelium is never deducted. The active portrait is stored in `player_mushrooms.active_portrait` (default `'default'`). `getPlayerState` returns `portraits[]` per mushroom, each with an `unlocked` boolean and `activePortraitUrl`. `PUT /api/mushroom/:id/portrait { portraitId }` validates the threshold and persists the choice; it returns 403 if mycelium is below threshold, 400 for an unknown portrait id, and 404 for an unknown mushroom. Mushrooms with only one variant (e.g. Morga) do not expose the portrait picker. Ghosts always use the default portrait regardless of player selection.
+- **14-F.** Each mushroom may have one or more profile-owned **portrait
+  assets** derived from `PORTRAIT_VARIANTS` (in `app/server/game-data.js`). The
+  first variant is always `id: 'default'` with wallet price `0` and is always
+  usable. Additional variants are persistent profile assets: ownership is stored
+  in `player_asset_instances`, equipment is stored in `player_equipped_assets`,
+  and wallet spends are profile-scoped. `player_mushrooms.active_portrait`
+  remains a compatibility mirror while older clients and battle snapshots
+  migrate. `getPlayerState` returns `portraits[]` per mushroom with `owned`,
+  `unlocked` (compatibility alias for owned), `price`, `currencyCode`,
+  `assetId`, `acquisitionMode`, `purchaseAvailable`, `rollAvailable`, and
+  `activePortraitUrl`. `PUT /api/mushroom/:id/portrait { portraitId }` is an
+  equip-only compatibility route: it validates ownership, persists equipment,
+  and returns 403 when the profile does not own the requested paid portrait.
+  `POST /api/assets/:assetId/purchase` spends wallet currency for direct-buy
+  assets, and `POST /api/assets/packs/:packId/roll` can grant a random unowned
+  skin when env-gated gacha is enabled. Ghosts always use the default portrait
+  regardless of player selection.
 
 - **14-G.** Each mushroom has exactly **3 starter preset variants** defined in `STARTER_PRESET_VARIANTS` (in `app/server/game-data.js`). The first is always `id: 'default'` with `requiredLevel: 0`. Variants are unlocked when `computeLevel(mycelium).level >= variant.requiredLevel`. All variants use two price-1 items so the total preset cost stays at 2, satisfying the `[Req 4-N]` budget ceiling. The active preset is stored in `player_mushrooms.active_preset` (default `'default'`). `startGameRun` reads the active preset and seeds its two items at `(0,0)` and `(1,0)` in round 1 instead of the character's signature default. If the stored preset id is unknown it falls back to `default` without error. `getPlayerState` returns `presets[]` per mushroom, each with an `unlocked` boolean and `activePreset`. `PUT /api/mushroom/:id/preset { presetId }` validates the level gate and persists the choice; it returns 403 if level is too low, 400 for an unknown preset id, and 404 for an unknown mushroom. Ghosts always receive the character's default preset regardless of player selection.
 
-- **14-H.** Mycelium accumulation and mushroom level are **progression-only, not stat-scaling**. Earning mycelium and advancing levels must not change: combat stats (health, attack, speed, defense), passive or active ability behavior, shop affinity weights, ghost opponent budget or difficulty, or any direct numerical combat modifier. The exhaustive list of player-facing effects of mycelium accumulation is: level number, tier badge, portrait variant unlocks ([Req 14-F]), starter preset variant unlocks ([Req 14-G]), wiki section unlocks ([Req 14-D]), and character shop-item eligibility ([Req 4-P]–[Req 4-T]). Any future feature that grants a stat bonus, ability change, or other progression effect outside this list must update this requirement first.
+- **14-H.** Mycelium accumulation (also exposed in newer code as
+  `characterXp`) and mushroom level are **progression-only, not stat-scaling**.
+  Earning mycelium and advancing levels must not change: combat stats (health,
+  attack, speed, defense), passive or active ability behavior, shop affinity
+  weights, ghost opponent budget or difficulty, profile wallet balance, profile
+  asset ownership, or any direct numerical combat modifier. The exhaustive list
+  of player-facing effects of mycelium accumulation is: level number, tier
+  badge, starter preset variant unlocks ([Req 14-G]), wiki section unlocks
+  ([Req 14-D]), and character shop-item eligibility ([Req 4-P]–[Req 4-T]).
+  Any future feature that grants a stat bonus, ability change, profile wallet
+  grant, asset unlock, or other progression effect outside this list must update
+  this requirement first.
 
 ## 15. Home Field Hub
 
