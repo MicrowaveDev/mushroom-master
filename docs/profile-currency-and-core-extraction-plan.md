@@ -18,6 +18,20 @@ Before extracting the core, adjust the coin / skin economy so skin-buying
 currency is bound to the user profile, not to a character, and make code
 variables plus database fields more general for reuse.
 
+### Follow-up request
+
+Add a backend feature for buying profile coins. Add an environment-controlled
+gacha mode: when the toggle is enabled, some skins cannot be bought directly;
+players roll a random unowned skin instead. The backend should stay flexible
+enough for future seasonal NFT-style packs: one season can include multiple
+collections, each collection can contain 50-100 images with rarities (common,
+rare, epic, legendary, secret), old season packs can stop being purchasable,
+packs can roll 5-10 images with configured drop rates and guarantees, duplicate
+commons can later be burned into a random rare, and player-to-player exchange or
+sales should remain possible in a later phase. The first implementation can be
+simpler, but it must not block that direction, and Mushroom Battles must keep
+simple direct skin buying available when gacha mode is off.
+
 ### Stated criteria and constraints
 
 - Write a markdown plan first.
@@ -25,6 +39,12 @@ variables plus database fields more general for reuse.
 - First implementation priority is the coins / skin ownership adjustment.
 - Skin-buying currency must be user-profile scoped, so a player can earn coins
   and spend them on any skin or future in-game asset.
+- Users must be able to buy profile coins through a backend purchase flow.
+- Gacha mode must be controlled by environment configuration, not by a hard fork
+  of the codebase.
+- Gacha mode should apply to selected skins / collections, not necessarily every
+  asset in the game.
+- When direct Mushroom Battles skin buying is desired, it must remain available.
 - Naming in code and database should become less Mushroom-specific and more
   reusable by another game.
 - Reusable core should live in `git@github.com:MicrowaveDev/backpack-game-core.git`.
@@ -39,6 +59,12 @@ variables plus database fields more general for reuse.
   mastery, not as the spendable coin wallet.
 - Temporary run-shop currency is clearly separated from persistent profile
   currency in database names, service names, API payloads, tests, and UI copy.
+- Backend coin purchases are recorded as purchase intents/orders and only grant
+  wallet currency after verified payment completion.
+- Asset acquisition supports both direct purchase and gacha roll paths from the
+  same catalog/ownership model.
+- With gacha enabled, configured gacha-only skins cannot be bought directly and
+  rolls return an eligible unowned skin when one exists.
 - The backpack/autobattler core can be imported by `mushroom-master` and another
   game without importing Telegram auth, Mushroom lore, portraits, wiki,
   achievements, home-field code, or Sequelize models.
@@ -52,9 +78,15 @@ variables plus database fields more general for reuse.
   Battles. The code should use neutral names such as `soft_currency`,
   `wallet_balance`, and `character_xp`; the UI may still localize that as coins,
   spores, or another thematic term.
+- Decide the payment provider for coin purchases. Telegram Stars / Mini App
+  invoices are the likely product fit, but the backend should keep provider
+  details behind a purchase-provider adapter.
 - Decide whether existing portrait variants become one-time purchases at their
   current `cost` values, or whether those values need a balance pass before the
   purchase model ships.
+- Decide what happens when a gacha pool has no unowned skins left: reject the
+  roll, grant duplicate dust/shards, or allow duplicate instances. The MVP below
+  recommends rejecting until duplicate mechanics are implemented.
 
 ## Current State Snapshot
 
@@ -79,9 +111,11 @@ Use this vocabulary before and during the core extraction:
 |---|---|---|---|
 | Temporary run-shop money | `coins`, `game_run_players.coins` | `run_currency`, `run_coins`, or `shop_currency` | One active run player |
 | Persistent spendable wallet | `spore` or none | `wallet_balance`, `soft_currency`, `currency_code` | User profile |
+| Coin purchase order | none | `wallet_purchase_intents`, `provider`, `status` | User profile |
 | Character progression XP | `mycelium` | `character_xp`, `mastery_xp` | Player + character |
 | Cosmetic asset ownership | `active_portrait` gate only | `player_assets`, `player_asset_unlocks`, `player_equipped_assets` | User profile |
 | Portrait / skin catalog price | `PORTRAIT_VARIANTS[].cost` | `price`, `currencyCode`, `assetId`, `slot` | Catalog item |
+| Gacha pool / pack | none | `asset_packs`, `asset_pack_items`, `rarity`, `drop_weight` | Season / collection |
 
 Implementation should avoid using bare `coins` in shared core APIs because it
 will mean different things in different products. Product adapters can still
@@ -148,7 +182,57 @@ Implementation notes:
 - If a fresh wallet starts at zero, leave `players.spore` as legacy profile
   points until a separate cleanup.
 
-## Phase 3 - Cosmetic Asset Ownership
+## Phase 3 - Backend Coin Purchases
+
+Add coin purchases before skin purchasing or gacha spends depend on the wallet.
+
+Recommended schema:
+
+```sql
+wallet_purchase_intents(
+  id TEXT PRIMARY KEY,
+  player_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  provider_invoice_id TEXT,
+  provider_payment_id TEXT,
+  currency_code TEXT NOT NULL,
+  wallet_amount INTEGER NOT NULL,
+  price_amount INTEGER NOT NULL,
+  price_currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  idempotency_key TEXT,
+  metadata_json TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  completed_at TEXT
+)
+```
+
+Backend contract:
+
+- `POST /api/wallet/purchase-intents` creates an order for a configured coin
+  bundle and returns provider checkout data.
+- `POST /api/wallet/purchase-webhook/:provider` verifies provider-signed
+  completion and grants wallet currency through `grantCurrency`.
+- `GET /api/wallet` returns balances and optional recent transactions.
+- Never trust the client to mark a purchase as paid.
+- Purchase completion must be idempotent: the same provider payment cannot grant
+  coins twice.
+- Keep provider integration behind an adapter, for example
+  `createPaymentIntent`, `verifyWebhook`, and `extractPaymentId`, so Telegram
+  Stars or another provider can be swapped without touching wallet logic.
+
+MVP bundles can live in config first:
+
+```js
+[
+  { id: 'coins_small', walletAmount: 100, priceAmount: 1, priceCurrency: 'XTR' },
+  { id: 'coins_medium', walletAmount: 550, priceAmount: 5, priceCurrency: 'XTR' },
+  { id: 'coins_large', walletAmount: 1200, priceAmount: 10, priceCurrency: 'XTR' }
+]
+```
+
+## Phase 4 - Cosmetic Asset Ownership
 
 1. Replace portrait-threshold semantics with catalog asset semantics:
    - `assetId`: stable globally unique id, for example `portrait.thalla.1`.
@@ -157,6 +241,10 @@ Implementation notes:
    - `targetId`: nullable; `thalla` for a Thalla-only portrait.
    - `price`: integer wallet price.
    - `currencyCode`: initially one code, for example `soft_coin`.
+   - `acquisitionMode`: `direct`, `gacha`, or `both`.
+   - `packId`: nullable; set for gacha/season assets.
+   - `rarity`: nullable initially; future values `common`, `rare`, `epic`,
+     `legendary`, `secret`.
 2. Add profile-scoped ownership:
    - `player_assets(player_id, asset_id, acquired_at, source, metadata_json)`.
    - A player either owns an asset or does not; ownership is not stored on
@@ -176,7 +264,105 @@ Implementation notes:
    - `PUT /api/mushroom/:id/portrait` can become an equip-only compatibility
      route for one release, or be replaced by `/api/assets/:assetId/equip`.
 
-## Phase 4 - Generalize Reward And Progression Names
+## Phase 5 - Env-Gated Gacha MVP
+
+The MVP should make the backend flexible without forcing Mushroom Battles to use
+gacha immediately.
+
+Environment flags:
+
+- `ASSET_GACHA_ENABLED=false` by default.
+- `ASSET_GACHA_DIRECT_BUY_POLICY=allow|block_gacha_assets`, default `allow`.
+- Optional `ASSET_GACHA_ACTIVE_PACK_IDS=season_1_pack_a,season_1_pack_b`.
+
+Direct purchase behavior:
+
+- If `ASSET_GACHA_ENABLED=false`, direct purchase remains available for assets
+  with `acquisitionMode: direct` or `both`.
+- If `ASSET_GACHA_ENABLED=true` and policy is `block_gacha_assets`, direct
+  purchase rejects assets whose catalog says `acquisitionMode: gacha` or `both`
+  and whose `packId` is active for gacha.
+- Assets with `acquisitionMode: direct` remain buyable even when gacha is on.
+  This keeps simple Mushroom Battles skin buying available for non-gacha skins.
+
+Initial pack schema:
+
+```sql
+asset_packs(
+  id TEXT PRIMARY KEY,
+  season_id TEXT NOT NULL,
+  collection_id TEXT,
+  name_json TEXT NOT NULL,
+  status TEXT NOT NULL,
+  starts_at TEXT,
+  ends_at TEXT,
+  roll_price_currency_code TEXT NOT NULL,
+  roll_price_amount INTEGER NOT NULL,
+  roll_size INTEGER NOT NULL DEFAULT 1,
+  metadata_json TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+
+asset_pack_items(
+  pack_id TEXT NOT NULL,
+  asset_id TEXT NOT NULL,
+  rarity TEXT NOT NULL,
+  drop_weight INTEGER NOT NULL,
+  guarantee_group TEXT,
+  PRIMARY KEY (pack_id, asset_id)
+)
+
+asset_rolls(
+  id TEXT PRIMARY KEY,
+  player_id TEXT NOT NULL,
+  pack_id TEXT NOT NULL,
+  currency_code TEXT NOT NULL,
+  price_amount INTEGER NOT NULL,
+  result_asset_ids_json TEXT NOT NULL,
+  guarantee_state_json TEXT,
+  created_at TEXT NOT NULL
+)
+```
+
+MVP roll contract:
+
+- `POST /api/assets/packs/:packId/roll` spends wallet currency once and grants
+  one random unowned asset from that pack.
+- The first MVP can use `roll_size = 1` even though the schema allows future
+  packs with 5-10 results.
+- The roll candidate pool excludes already owned assets.
+- If no unowned candidate exists, reject the roll without spending currency.
+- Use weighted random selection from `drop_weight`; do not hardcode rarity math
+  in route handlers.
+- Record the roll result in `asset_rolls` and the ownership source as `gacha`.
+- Keep RNG server-side and auditable enough to debug support claims.
+
+Future seasonal pack target:
+
+- A season can have multiple collections and packs.
+- Packs have sale windows; old packs become unavailable for purchase/roll when
+  `status != active` or outside `starts_at`/`ends_at`.
+- Packs can return 5-10 assets per roll.
+- Rarity groups support configured drop rates and guarantees, such as at least
+  two rare-or-better cards in a 10-pull.
+- One secret asset can exist per collection/season with an explicit low weight
+  and optional separate pity/guarantee policy.
+- Duplicate handling should move from ownership rows to inventory instances or
+  quantities before duplicate packs ship.
+
+Deferred mechanics, with schema direction:
+
+- Duplicate burn/exchange: add `asset_duplicate_balances` or
+  `player_asset_instances`, then `burnAssets(playerId, assetIds)` can exchange
+  five common duplicates for one random rare from an eligible pool.
+- Trading: add listing/escrow tables (`asset_trade_listings`,
+  `asset_trade_offers`, `asset_trade_escrows`) so sales and swaps are atomic and
+  assets cannot be equipped/transferred twice.
+- Player sales: reuse wallet transactions for buyer debit and seller credit,
+  with platform fee metadata if needed.
+
+## Phase 6 - Generalize Reward And Progression Names
 
 Do this after the wallet is real, so the rename has a stable destination.
 
@@ -200,11 +386,13 @@ Do this after the wallet is real, so the rename has a stable destination.
 5. Update docs, tests, and i18n after each rename batch so requirement IDs keep
    matching executable coverage.
 
-## Phase 5 - Currency And Asset Tests
+## Phase 7 - Currency, Purchase, And Asset Tests
 
 Backend tests:
 
 - Profile wallet balance is shared across active characters.
+- Coin purchase completion grants wallet currency exactly once.
+- Forged or duplicate payment completion does not grant wallet currency.
 - Coins earned while playing Thalla can buy an Axilin skin or another eligible
   asset.
 - Purchasing an asset debits the wallet exactly once and creates one ownership
@@ -212,6 +400,12 @@ Backend tests:
 - Repeated purchase of an already owned asset is idempotent or rejected without
   double debit, depending on the chosen contract.
 - Wallet spend cannot make the balance negative under concurrent requests.
+- With `ASSET_GACHA_ENABLED=false`, direct skin purchase remains available.
+- With gacha enabled and policy blocking gacha assets, direct purchase rejects
+  configured gacha-pack skins.
+- A gacha roll spends wallet currency and grants one unowned skin from the pack.
+- A gacha roll with no unowned candidates rejects without spending currency.
+- Pack sale windows prevent rolling expired / inactive packs.
 - Run-shop purchases still debit only run currency.
 - Selling run artifacts still refunds only run currency.
 - Character XP still advances only the played character.
@@ -223,12 +417,16 @@ Frontend / E2E tests:
   affordability state, purchase, and equip.
 - Buying a skin on one character and switching active character does not change
   wallet ownership.
+- Coin purchase UI creates a purchase intent and reflects the updated wallet
+  after completion.
+- If gacha is enabled, gacha-pack skins show roll acquisition instead of direct
+  buy, while direct-only skins still show direct buy.
 - Existing run prep HUD still shows run currency and does not confuse it with
   wallet currency.
 - Screens touched by the wallet / skin UI need fresh mobile and desktop
   screenshots plus layout assertions per repo UI rules.
 
-## Phase 6 - Prepare Core Extraction Boundary
+## Phase 8 - Prepare Core Extraction Boundary
 
 Only start extracting after the currency names above are clean enough that the
 core package does not inherit Mushroom-specific vocabulary.
@@ -257,7 +455,7 @@ Keep these in `mushroom-master`:
 - Any code that references `player_mushrooms`, `PORTRAIT_VARIANTS`, wiki
   thresholds, or Mushroom lore directly.
 
-## Phase 7 - Create `backpack-game-core`
+## Phase 9 - Create `backpack-game-core`
 
 Initial package shape:
 
@@ -289,7 +487,7 @@ Recommended initial choices:
 - Publish or consume via a pinned git dependency first; add it as a hub submodule
   only after the first useful commit exists.
 
-## Phase 8 - Integrate Core Back Into `mushroom-master`
+## Phase 10 - Integrate Core Back Into `mushroom-master`
 
 1. Add `backpack-game-core` as a dependency.
 2. Replace local imports in `mushroom-master` one cluster at a time:
@@ -322,15 +520,24 @@ Recommended initial choices:
 - Do not let "profile wallet coins" and "run shop coins" share one field or
   service method. They have different lifetimes, spend targets, and refund
   rules.
+- Do not wire gacha to a product-specific route shape. Keep it as an asset
+  acquisition service that Mushroom Battles can use or disable.
+- Keep payment-provider code out of wallet accounting. Provider callbacks prove
+  payment; wallet services grant/spend balances.
+- Do not allow direct client-supplied rarity, result asset id, or payment status
+  to affect gacha outcomes or coin grants.
 
 ## Proposed Implementation Order
 
 1. Requirements update for profile wallet, asset ownership, and neutral names.
 2. Wallet schema + wallet service + backend tests.
-3. Cosmetic catalog + ownership/equip schema + purchase/equip services.
-4. Bootstrap/API/UI updates for profile wallet and skins.
-5. Rename character XP and run currency internals, keeping compatibility where
+3. Coin purchase intents + provider adapter + idempotent wallet grant.
+4. Cosmetic catalog + ownership/equip schema + direct purchase/equip services.
+5. Env-gated gacha MVP: packs, weighted unowned roll, direct-buy policy.
+6. Bootstrap/API/UI updates for profile wallet, direct skins, and optional
+   gacha packs.
+7. Rename character XP and run currency internals, keeping compatibility where
    needed.
-6. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
-7. Adapterize and optionally extract battle simulation.
-8. Add hub/submodule metadata and final cross-repo verification.
+8. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
+9. Adapterize and optionally extract battle simulation.
+10. Add hub/submodule metadata and final cross-repo verification.
