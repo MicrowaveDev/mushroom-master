@@ -822,7 +822,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /thalla \(character\)/);
   assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof/);
   assert.match(result.stdout, /stop before cleanup if it fails/);
-  assert.match(result.stdout, /do not rely on inline-only generated images/);
+  assert.match(result.stdout, /Codex Desktop built-in imagegen by default/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
   assert.match(result.stdout, /clear stale rejected Thalla raw frames/);
   assert.match(result.stdout, /reference turnaround sheet/i);
@@ -839,20 +839,43 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
 });
 
-test('[home-field] chibi proof preflight blocks cleanup without a disk output path', () => {
+test('[home-field] chibi proof preflight accepts Codex Desktop built-in imagegen by default', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
-      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: ''
+      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
+      HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
+      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
+    },
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /OPENAI_API_KEY: missing/);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen allowed: yes/);
+  assert.match(result.stdout, /OPENAI_API_KEY is not required/);
+});
+
+test('[home-field] chibi proof preflight blocks cleanup in strict shell mode without an output path', () => {
+  const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
+      HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
+      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
     },
     encoding: 'utf8'
   });
 
   assert.equal(result.status, 1, result.stderr || result.stdout);
   assert.match(result.stdout, /Home Field Chibi Proof Preflight/);
+  assert.match(result.stdout, /strict explicit-output mode: yes/);
   assert.match(result.stderr, /Preflight failed/);
   assert.match(result.stderr, /Before moving or deleting stale Thalla raw\/candidate files/);
 });
@@ -870,7 +893,9 @@ test('[home-field] chibi proof preflight accepts supplied local image inputs', (
         ...process.env,
         OPENAI_API_KEY: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
-        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput
+        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput,
+        HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
+        HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
       },
       encoding: 'utf8'
     });

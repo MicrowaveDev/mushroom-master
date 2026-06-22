@@ -525,7 +525,7 @@ function main() {
   if (chibiCandidate) {
     console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and stop before cleanup if it fails.');
     console.log('  1. Read the prompt block below.');
-    console.log('  2. Use an imagegen path that can save real PNG files to the required repo paths; do not rely on inline-only generated images.');
+    console.log('  2. Use Codex Desktop built-in imagegen by default, or CLI fallback only when configured; save each generated PNG to the required repo path.');
   } else {
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use the imagegen skill with the subject + details + style anchor.');

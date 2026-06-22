@@ -41,7 +41,7 @@ Use a two-step visual workflow:
 3. Review that reference sheet against the style reference and Thalla identity gate.
 4. Generate the final raw frame files as isolated per-frame PNGs only after the reference sheet passes.
 
-The preflight step is mandatory before any destructive or moving cleanup. It must prove that the current run can write actual PNG files to the required repo paths through the imagegen CLI fallback, a confirmed built-in imagegen disk-save path, or supplied local source images. Do not rely on inline-only generated images for this proof, and do not archive/delete the stale latest candidate until preflight passes.
+The preflight step is mandatory before any destructive or moving cleanup. Codex Desktop's built-in `image_gen` tool is the default valid path and does not require `OPENAI_API_KEY`; the key is only required for CLI fallback runs. In strict shell/CI environments, set `HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT=1` and provide either CLI credentials, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`, or supplied local source images. Do not archive/delete the stale latest candidate until preflight passes.
 
 The cleanup step is mandatory for regeneration runs after a rejection only after preflight passes. The previous rejected raw frames may remain on disk under `.agent/home-field-workspace/raw/`, but they are negative examples only. Do not let `test -f` or producer success on existing raw files count as generation work.
 
