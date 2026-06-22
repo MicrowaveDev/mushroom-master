@@ -194,7 +194,7 @@ The contact sheet is the first review gate: terrain must be inspected as repeate
 
 The deterministic `game:home-field:proof-tiles` output is a **layout proof**, not final production art. It may be committed with `status: "needs_review"` or `status: "placeholder"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
 
-The target scene is a composed in-game hub, not a texture pack: chibi mushroom-elf avatars should stand clearly on a soft green field, with chunky inked foliage, flowers, vines, mushrooms, exits, and props placed around them on object layers. The grass tiles are the readable stage. If grass texture competes with character feet, hides blob shadows, or makes the viewport feel like wallpaper, reject it even when the file and connector checks pass.
+The target scene is a composed in-game hub, not a texture pack: chibi mushroom-elf avatars should stand clearly on a soft green field, with chunky inked foliage, flowers, vines, mushrooms, exits, and props placed around them on object layers. The grass tiles are the readable stage. If grass texture competes with character feet, hides the separate chibi shadow layer, or makes the viewport feel like wallpaper, reject it even when the file and connector checks pass.
 
 To mark a home-field asset `approved`, all of the following must be true:
 
@@ -357,7 +357,7 @@ The placeholder chibi is `8 cols × 4 rows × 64×64 = 32 frames`. Recommended g
    - For the v1 placeholder, use **only one walk frame per direction** (the silhouette is generic; movement readability comes from the chibi pose itself). Save as `_placeholder.frame_walk_down.source.png`, etc.
 2. The produce script for character placeholders will replicate the single walk frame across columns 2–7 of each row (acceptable for a placeholder; specific-character chibis will get full 6-frame walks in a later phase).
 
-Per-character chibis (not the placeholder) require the full `8 × 4` grid; that workstream is out of scope for v1 — only the placeholder is needed to unblock the renderer spike.
+Per-character chibis (not the placeholder) require the full `8 × 4` grid: `2` idle frames plus `6` simple walk frames for each of `down`, `up`, `left`, and `right`. Runtime chibi frames are character-only transparent sprites; ground shadows are supplied by the separate shared `chibi_shadow` layer. For the current Thalla proof, use `npm run game:home-field:chibi-proof-context` and `npm run game:home-field:verify-chibi-proof-files` before producing a candidate sheet.
 
 ### Validate and review
 

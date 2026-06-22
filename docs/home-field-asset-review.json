@@ -591,6 +591,20 @@
       "familyCohesionCheck": "not_applicable"
     },
     {
+      "id": "chibi_shadow",
+      "verdict": "pending",
+      "accepted": false,
+      "reason": "Shared chibi ground shadow is planned as a separate renderer/asset layer so chibi frames remain character-only; generate/review before promotion if using PNG shadow instead of CSS fallback.",
+      "repeatCheck": "not_applicable",
+      "connectorCheck": "not_applicable",
+      "cleanPreviewCheck": "pending",
+      "styleCohesionCheck": "pending",
+      "alphaCheck": "pending",
+      "scaleCheck": "pending",
+      "sceneFitCheck": "pending",
+      "familyCohesionCheck": "not_applicable"
+    },
+    {
       "id": "_placeholder",
       "verdict": "placeholder",
       "accepted": false,

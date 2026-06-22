@@ -9,6 +9,7 @@
  *   npm run game:home-field:validate -- --check-review
  *   npm run game:home-field:validate -- --check-edge-profiles
  *   npm run game:home-field:validate -- --check-family-cohesion
+ *   npm run game:home-field:validate -- --check-chibi-animation
  *   npm run game:home-field:validate -- --production
  *   npm run game:home-field:validate -- --production --full-registry-production
  *
@@ -20,6 +21,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { validateAll, validateTileConnectors } from '../shared/home-field/home-field-validator.js';
 import { alphaStats, readPngHeader, readPngRgba } from './lib/bitmap-image-toolkit.js';
@@ -200,6 +202,48 @@ function checkObjectReadabilityBounds(assetsDoc, errors, { ids = null } = {}) {
         code: 'bbox_too_short',
         message: `asset "${asset.id}" visible bbox height ${stats.bboxHeight}px is below readability.minBboxHeight ${rule.minBboxHeight}px; regenerate larger or crop/fit the object inside the canvas`
       });
+    }
+  }
+}
+
+function frameHash(image, frameWidth, frameHeight, row, col) {
+  const hash = crypto.createHash('sha256');
+  for (let y = 0; y < frameHeight; y += 1) {
+    const start = ((row * frameHeight + y) * image.width + (col * frameWidth)) * 4;
+    hash.update(image.rgba.subarray(start, start + (frameWidth * 4)));
+  }
+  return hash.digest('hex');
+}
+
+function checkChibiWalkAnimation(assetsDoc, errors, { ids = null, minUniqueWalkFrames = 3 } = {}) {
+  for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
+    if (!character.spritesheet) continue;
+    if (character.status === 'missing') continue;
+    const s = character.spritesheet;
+    const walkCols = s.framesPerRow?.walk || [];
+    if (walkCols.length === 0) continue;
+    const abs = path.join(ASSET_ROOT, character.outputPath);
+    if (!fs.existsSync(abs)) {
+      errors.push({ scope: 'chibi_animation', code: 'missing', message: `character "${character.id}" output missing: ${character.outputPath}` });
+      continue;
+    }
+    let image;
+    try {
+      image = readPngRgba(abs);
+    } catch (err) {
+      errors.push({ scope: 'chibi_animation', code: 'png_read', message: `character "${character.id}" cannot read PNG pixels: ${err.message}` });
+      continue;
+    }
+    for (let row = 0; row < (s.rowOrder || []).length; row += 1) {
+      const facing = s.rowOrder[row];
+      const unique = new Set(walkCols.map((col) => frameHash(image, s.frameWidth, s.frameHeight, row, col)));
+      if (unique.size < Math.min(minUniqueWalkFrames, walkCols.length)) {
+        errors.push({
+          scope: 'chibi_animation',
+          code: 'walk_frames_too_static',
+          message: `character "${character.id}" ${facing} walk row has ${unique.size} unique walk frame${unique.size === 1 ? '' : 's'} across ${walkCols.length} columns; Stage 1 requires at least ${minUniqueWalkFrames} unique walk frames per direction`
+        });
+      }
     }
   }
 }
@@ -561,6 +605,7 @@ function main() {
   const wantReviewCheck = hasFlag(argv, 'check-review');
   const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
   const wantReadabilityCheck = hasFlag(argv, 'check-readability');
+  const wantChibiAnimationCheck = hasFlag(argv, 'check-chibi-animation');
   const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
   const wantFamilyCohesionCheck = hasFlag(argv, 'check-family-cohesion');
   const wantProduction = hasFlag(argv, 'production');
@@ -601,6 +646,9 @@ function main() {
   if (wantReadabilityCheck || wantProduction) {
     checkObjectReadabilityBounds(assetsDoc, errors, { ids });
   }
+  if (wantChibiAnimationCheck) {
+    checkChibiWalkAnimation(assetsDoc, errors, { ids });
+  }
   if (wantEdgeProfileCheck || wantProduction) {
     checkTerrainEdgeProfiles(assetsDoc, mapDoc, errors, { ids });
   }
@@ -616,6 +664,7 @@ function main() {
     if (wantReviewCheck || wantProduction) modes.push('review manifest');
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
+    if (wantChibiAnimationCheck) modes.push('chibi walk animation');
     if (wantEdgeProfileCheck || wantProduction) modes.push('terrain edge profiles');
     if (wantFamilyCohesionCheck || wantProduction) modes.push('terrain family cohesion');
     if (wantProduction) modes.push('production approval');

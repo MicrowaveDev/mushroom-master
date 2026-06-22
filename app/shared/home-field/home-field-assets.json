@@ -1023,6 +1023,29 @@
       },
       "status": "placeholder",
       "atlasFrameKey": "tap_ripple"
+    },
+    {
+      "id": "chibi_shadow",
+      "type": "prop",
+      "role": "shared_chibi_ground_shadow",
+      "promptKey": "chibi_shadow",
+      "sourcePath": ".agent/home-field-workspace/raw/chibi_shadow.source.png",
+      "outputPath": "web/public/home-field/characters/_shared/chibi_shadow.png",
+      "publicPath": "/home-field/characters/_shared/chibi_shadow.png",
+      "width": 64,
+      "height": 32,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9
+      },
+      "readability": {
+        "minBboxWidth": 34,
+        "minBboxHeight": 8
+      },
+      "collision": "walkable",
+      "animation": null,
+      "status": "placeholder",
+      "atlasFrameKey": "chibi_shadow"
     }
   ],
   "characters": [

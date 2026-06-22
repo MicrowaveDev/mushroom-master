@@ -27,7 +27,7 @@ Each character still uses the locked Home Field runtime sheet shape:
 - Columns per row: `0-1` idle frames, `2-7` walk frames
 - Transparent background
 - Character feet/base grounded near the bottom of each frame
-- Compact blob shadow under the feet/base
+- No baked ground shadow in frames; the renderer supplies the shared separate `chibi_shadow` layer under the feet/base
 
 ## Stage 1 Frame Contract
 
@@ -55,18 +55,18 @@ The reference sheet should show the same Thalla design in the four facing direct
 
 Generate each final raw file as its own isolated `64x64` or documented `128x128` transparent frame. Do not generate the final raw frames by cropping a larger contact sheet, grid sheet, character lineup, or full scene. If any final raw frame contains multiple sprites, miniature sprites, a field background, a border, or cropped sheet artifacts, discard that raw output and regenerate the affected frame.
 
+After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
+
 Use smooth resizing (`--resize`) when composing higher-resolution isolated source frames into the `64x64` runtime sheet. Do not use nearest-neighbor resizing for production candidates; hard pixel stair-steps are a rejection signal for this hand-drawn field-sprite style.
 
 Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) for Stage 1 production. It may exist for older prompt printers, but it is not a valid input for the compact frame contract. Stage 1 producers must use the isolated raw frame files below.
 
-The minimum accepted Stage 1 input is 8 unique poses:
+The minimum accepted Stage 1 input is 32 isolated character-only frames:
 
-- idle down, walk down
-- idle up, walk up
-- idle left, walk left
-- idle right, walk right
+- `2` idle/breathing frames per direction
+- `6` simple walk-loop frames per direction
 
-The current composer consumes 12 raw frame slots. Fill those slots by using the same idle pose for `idle_*_0` and `idle_*_1`, or by making a very subtle breathing variant. The single walk pose for each direction is replicated across columns `2-7` of that row.
+The walk loop may be simple, but it must not be static. Use a low-detail cycle such as `contact`, `passing`, `opposite contact`, `passing`, `settle`, `recover`. At least `3` unique walk frames per direction must survive into the composed candidate sheet.
 
 For retina/source quality, the raw isolated frames may be generated at `128x128` if the run prompt requests it. They must still be simple map sprites and must downscale cleanly to the current `64x64` runtime frames. Larger source pixels are for cleaner alpha and shape control, not for extra detail.
 
@@ -75,25 +75,45 @@ Raw frame names for Stage 1:
 ```text
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_down_0.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_down_1.source.png
-.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down_0.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down_1.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down_2.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down_3.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down_4.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down_5.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_up_0.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_up_1.source.png
-.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up_0.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up_1.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up_2.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up_3.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up_4.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up_5.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_left_0.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_left_1.source.png
-.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left_0.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left_1.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left_2.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left_3.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left_4.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left_5.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_right_0.source.png
 .agent/home-field-workspace/raw/thalla_chibi.frame_idle_right_1.source.png
-.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right_0.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right_1.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right_2.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right_3.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right_4.source.png
+.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right_5.source.png
 ```
 
-Full 32-frame walk coverage is an optional later animation stage, not the gate for the first visual proof.
+Run `npm run game:home-field:verify-chibi-proof-files -- --frames` after frame generation and before candidate production.
 
 ## Visual Contract
 
 The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
-- follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base, compact shadow, and elevated 2.5D map read;
+- follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base over the shared chibi shadow layer, and elevated 2.5D map read;
 - use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, small calm face features, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
 - mushroom-elf biology first, not a human wearing a mushroom hat
 - visible elf ears whenever ears are visible
@@ -102,11 +122,12 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - elevated top-down 2.5D map-sprite camera, with the top of the mushroom cap/head visible
 - compact standing pose seen from above like a small hub character, not a front-facing portrait sticker
 - clear feet/base grounding
+- no baked ground shadow in any chibi frame; use the separate shared `chibi_shadow` renderer/asset layer under the character
 - warm dark outline and quiet Home Field palette fit
 - no text, UI, frame borders, floor plane, or baked background
 - no huge white portrait eyes; eyes must be much smaller than the reference screenshot's biggest facial read and should not dominate the head
 - no realistic doll-photo rendering, glossy plastic toy rendering, fashion-doll proportions, or porcelain figurine material study
-- no dense cap spots, scattered gold freckles, robe filigree, or many tear/drop marks; if a detail does not read as one of the few large identity marks at `64px`, remove it
+- no dense cap spots, scattered gold freckles, robe filigree, many tear/drop marks, or baked blob/cast shadows; if a detail does not read as one of the few large identity marks at `64px`, remove it
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`.
 
@@ -125,7 +146,7 @@ Stage 1 detail budget:
 
 1. Generate only the Stage 1 raw Thalla frames under `.agent/home-field-workspace/raw/`.
 2. Produce the candidate sheet under `.agent/home-field-workspace/candidates/chibi-active-roster/latest/`.
-3. Validate only `thalla`.
+3. Validate only `thalla`, including `--check-chibi-animation`.
 4. Build contact/readability/alpha evidence and mobile+desktop Home Field previews using candidate routing.
 5. Update `docs/home-field-asset-review.json` for `thalla` only.
 

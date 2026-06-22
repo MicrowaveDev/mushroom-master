@@ -308,18 +308,27 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push('## Save and report');
   if (chibiCandidate && asset.type === 'character') {
     lines.push('Save the non-production turnaround reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+    lines.push('Immediately verify the saved reference with: npm run game:home-field:verify-chibi-proof-files -- --reference');
     lines.push('After generation, save the individual raw imagegen frames to the per-frame paths listed above, not to the single manifest sourcePath.');
+    lines.push('Immediately verify all saved raw frames with: npm run game:home-field:verify-chibi-proof-files -- --frames');
   } else {
     lines.push(`After generation, save the raw imagegen output to: ${asset.sourcePath}`);
   }
   lines.push('Then run the recommended producer command:');
   lines.push(`  ${recommendedProduceCommand(asset, { fieldContext, objectCandidate, chibiCandidate, terrainCandidate })}`);
+  if (chibiCandidate && asset.type === 'character') {
+    lines.push('Then verify the composed candidate spritesheet:');
+    lines.push('  npm run game:home-field:verify-chibi-proof-files -- --candidate');
+  }
   lines.push('Then run:');
   if (objectCandidate || chibiCandidate || terrainCandidate) {
     lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-review`);
     if (!terrainCandidate) {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-alpha-halo`);
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
+      if (chibiCandidate) {
+        lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-animation`);
+      }
     } else {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-connectors --check-review`);
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-edge-profiles --check-family-cohesion`);
@@ -523,7 +532,7 @@ function main() {
   console.log('');
   console.log('Workflow per asset:');
   if (chibiCandidate) {
-    console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and stop before cleanup if it fails.');
+    console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and `npm run game:home-field:chibi-proof-context`; stop before cleanup if it fails.');
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use Codex Desktop built-in imagegen by default, or CLI fallback only when configured; save each generated PNG to the required repo path.');
   } else {

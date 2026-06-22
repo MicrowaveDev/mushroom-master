@@ -12,20 +12,11 @@ import path from 'node:path';
 import { repoRoot } from '../shared/repo-root.js';
 
 const requiredReferencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
-const requiredFramePaths = [
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_down_0.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_down_1.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_walk_down.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_up_0.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_up_1.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_walk_up.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_left_0.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_left_1.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_walk_left.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_right_0.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_idle_right_1.source.png',
-  '.agent/home-field-workspace/raw/thalla_chibi.frame_walk_right.source.png'
-];
+const requiredFramePaths = ['down', 'up', 'left', 'right'].flatMap((dir) => [
+  `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_0.source.png`,
+  `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_1.source.png`,
+  ...Array.from({ length: 6 }, (_, idx) => `.agent/home-field-workspace/raw/thalla_chibi.frame_walk_${dir}_${idx}.source.png`)
+]);
 
 function fileExists(filePath) {
   try {

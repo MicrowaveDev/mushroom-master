@@ -523,20 +523,34 @@ function processCharacterPlaceholder(entry, opts = {}) {
     return { id: entry.id, ok: false, reason: `raw dir missing: ${dir}` };
   }
 
+  const directions = [
+    { row: 0, key: 'down' },
+    { row: 1, key: 'up' },
+    { row: 2, key: 'left' },
+    { row: 3, key: 'right' }
+  ];
+  const walkCols = s.framesPerRow?.walk || [2, 3, 4, 5, 6, 7];
   const required = [
     { row: 0, col: 0, file: `${baseName}.frame_idle_down_0.source.png` },
     { row: 0, col: 1, file: `${baseName}.frame_idle_down_1.source.png` },
-    { row: 0, col: 'walk', file: `${baseName}.frame_walk_down.source.png` },
     { row: 1, col: 0, file: `${baseName}.frame_idle_up_0.source.png` },
     { row: 1, col: 1, file: `${baseName}.frame_idle_up_1.source.png` },
-    { row: 1, col: 'walk', file: `${baseName}.frame_walk_up.source.png` },
     { row: 2, col: 0, file: `${baseName}.frame_idle_left_0.source.png` },
     { row: 2, col: 1, file: `${baseName}.frame_idle_left_1.source.png` },
-    { row: 2, col: 'walk', file: `${baseName}.frame_walk_left.source.png` },
     { row: 3, col: 0, file: `${baseName}.frame_idle_right_0.source.png` },
-    { row: 3, col: 1, file: `${baseName}.frame_idle_right_1.source.png` },
-    { row: 3, col: 'walk', file: `${baseName}.frame_walk_right.source.png` }
+    { row: 3, col: 1, file: `${baseName}.frame_idle_right_1.source.png` }
   ];
+  for (const direction of directions) {
+    const explicitWalkFiles = walkCols.map((_, idx) => `${baseName}.frame_walk_${direction.key}_${idx}.source.png`);
+    const hasExplicitWalkSet = explicitWalkFiles.every((file) => fs.existsSync(path.join(rawDir, file)));
+    if (hasExplicitWalkSet) {
+      explicitWalkFiles.forEach((file, idx) => {
+        required.push({ row: direction.row, col: walkCols[idx], file });
+      });
+    } else {
+      required.push({ row: direction.row, col: 'walk', file: `${baseName}.frame_walk_${direction.key}.source.png` });
+    }
+  }
 
   const missing = required.filter((r) => !fs.existsSync(path.join(rawDir, r.file)));
   if (missing.length > 0) {
@@ -562,8 +576,8 @@ function processCharacterPlaceholder(entry, opts = {}) {
       }
     }
     if (r.col === 'walk') {
-      // Replicate the walk frame across columns 2..7 of the row.
-      for (let col = 2; col < 8; col += 1) {
+      // Legacy placeholder fallback: replicate the single walk frame across the row.
+      for (const col of walkCols) {
         copyFrameInto(sheetRgba, s.width, frame, r.row, col, s.frameWidth, s.frameHeight);
       }
     } else {
@@ -581,7 +595,7 @@ function processCharacterPlaceholder(entry, opts = {}) {
     ok: true,
     output: outputLabelFor(entry, opts),
     alpha: `coverage=${(stats.coverage * 100).toFixed(1)}%`,
-    mode: 'character_placeholder(12+repl)'
+    mode: 'character_spritesheet(compact)'
   };
 }
 

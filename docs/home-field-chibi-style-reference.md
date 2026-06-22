@@ -21,7 +21,7 @@ Home Field chibis should feel close to the reference in these ways:
 - squat field-sprite proportions with an oversized head and tiny grounded body;
 - simple costume blocks that read immediately at mobile size;
 - warm dark irregular outline, not clean vector icon edges;
-- visible planted feet/base and compact blob shadow;
+- visible planted feet/base over the shared separate chibi shadow layer;
 - expressive face that remains simple at `64px`;
 - slightly elevated 2.5D field camera, with enough top/head/cap visible to belong on the map;
 - cozy dark storybook mood, readable over muted green grass.
