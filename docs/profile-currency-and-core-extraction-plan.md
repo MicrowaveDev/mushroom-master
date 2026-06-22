@@ -1,6 +1,8 @@
 # Profile Currency And Core Extraction Plan
 
-**Status:** Phases 1-7 implemented in `mushroom-master` on 2026-06-22.
+**Status:** Phases 1-7 implemented as the Mushroom Battles compatibility
+foundation on 2026-06-22. Phase 7A hardening is required before enabling paid
+wallet purchases, paid gacha, or treating the extraction boundary as ready.
 **Created:** 2026-06-22
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
@@ -29,7 +31,13 @@ Phases 1-7 are complete for the Mushroom Battles compatibility milestone:
   direct purchase, gacha policy, portrait equipment, and Telegram webhook
   allowed updates.
 
-Deferred beyond phase 7: physical removal of legacy compatibility fields,
+Post-implementation review on 2026-06-23 found that this is not yet a paid
+production rollout. The remaining required bridge is **Phase 7A** below:
+atomic wallet debits, real provider invoice creation, correct webhook
+verification, Telegram-vs-external crypto policy, support/compliance hooks,
+selective gacha catalog configuration, and missing frontend/e2e coverage.
+
+Deferred beyond phase 7A: physical removal of legacy compatibility fields,
 multi-item pack guarantees, duplicate burning, marketplace trading, database
 managed pack catalogs, and reusable-core extraction into `backpack-game-core`.
 
@@ -656,6 +664,95 @@ Frontend / E2E tests:
 - Screens touched by the wallet / skin UI need fresh mobile and desktop
   screenshots plus layout assertions per repo UI rules.
 
+## Phase 7A - Post-Implementation Hardening Before Paid Rollout
+
+Added after post-implementation review on 2026-06-23. Treat this phase as
+required before enabling real-money wallet purchases, paid gacha, or signing off
+the reusable-core extraction boundary. Phases 1-7 created the compatibility
+foundation; this phase closes the money, policy, and coverage gaps that remain.
+
+### Must fix
+
+1. Make wallet debits atomic under concurrency.
+   - Replace read-compute-write balance updates with an atomic debit, for
+     example `UPDATE player_wallet_balances SET balance = balance + $delta
+     WHERE player_id = $playerId AND currency_code = $currencyCode AND balance
+     + $delta >= 0 RETURNING balance`, or a dialect-aware row lock in
+     PostgreSQL.
+   - Keep transaction rows and the `players.spore` compatibility mirror in the
+     same transaction as the atomic balance update.
+   - Add tests where concurrent direct purchases / gacha rolls cannot
+     overdraw the wallet or create duplicate owned assets.
+2. Implement real provider invoice creation, not only purchase intents.
+   - Telegram Stars: create a payable invoice via Bot API `sendInvoice` or
+     `createInvoiceLink`, return an invoice link usable by
+     `Telegram.WebApp.openInvoice(...)`, and refresh wallet state only after
+     the `successful_payment` webhook.
+   - BTCPay: call the Greenfield invoice API, store the returned invoice id,
+     checkout link, payment URI, and order metadata, then complete only on
+     settled invoices.
+   - NOWPayments: create a payment with `ipn_callback_url`, store payment id /
+     invoice URL, and complete only after a verified finished/confirmed IPN.
+   - Keep the rule that client requests can create intents but can never mark
+     them as paid.
+3. Fix and test payment webhook verification.
+   - BTCPay verification must compare `BTCPAY-Sig` against HMAC-SHA256 of the
+     raw request body and the webhook secret.
+   - NOWPayments verification must sort the parsed callback body by key before
+     HMAC-SHA512 comparison with `x-nowpayments-sig`; signing the raw JSON body
+     is not enough for real NOWPayments callbacks.
+   - Add positive and negative signature tests for both providers, plus ignored
+     status tests for incomplete payments.
+4. Decide and encode the payment-surface policy.
+   - Inside Telegram bots / Mini Apps, digital goods should use Telegram Stars.
+     Telegram's current Stars docs say bots and Mini Apps selling digital goods
+     must use Stars inside Telegram apps, not crypto or third-party providers.
+   - Crypto purchases should therefore be an external web checkout rail unless
+     product/legal review explicitly chooses a different surface and accepts the
+     platform risk.
+   - Add provider availability config by surface, for example
+     `wallet.paymentProviders.telegramMiniApp = ['telegram_stars']` and
+     `wallet.paymentProviders.web = ['btcpay', 'nowpayments']`.
+5. Add support, terms, refund, age, and content-compliance gates.
+   - Add `/paysupport` bot handling or equivalent in-app support links before
+     Stars purchases go live.
+   - Add terms, refund/support contact, and payment-dispute copy reachable from
+     the purchase UI.
+   - Add adult-content/age/compliance gates before enabling crypto providers:
+     prohibit unlawful sexual content, minors/CSAM, non-consensual material,
+     and anything forbidden in the merchant's jurisdictions or provider terms.
+6. Make gacha catalog configuration selective.
+   - Do not infer `acquisitionMode: 'both'` for every paid portrait forever.
+     Move the MVP catalog policy into a static config / JSON module where each
+     asset or collection can be `direct`, `gacha`, or `both`.
+   - Keep Mushroom Battles direct-buy skins available when gacha mode is off,
+     and keep direct-only skins buyable even when `ASSET_GACHA_ENABLED=true`.
+   - Add a test where one paid skin is direct-only while another paid skin is
+     gacha-pack-only under `block_gacha_assets`.
+7. Resolve the ghost portrait contract.
+   - `docs/game-requirements.md` currently says ghosts always use the default
+     portrait, while the implementation resolves equipped portraits for real
+     player ghost snapshots.
+   - Choose the desired behavior, then align requirements, code, and tests in
+     the same commit.
+
+### Should fix
+
+- Add pack sale-window tests for inactive, future, and expired packs.
+- Add frontend/e2e coverage for wallet bundles, purchase intent creation,
+  Telegram invoice opening, wallet refresh after verified payment, and failure
+  states.
+- Add gacha UI coverage where pack skins show roll acquisition instead of
+  direct buy, while direct-only skins still show direct buy.
+- Add frontend/e2e coverage that buying a skin while one mushroom is active
+  makes it owned/equippable for the target mushroom without changing character
+  XP.
+- Add a wallet consistency audit helper that can report rows where
+  `players.spore` and `player_wallet_balances('soft_coin')` drift during the
+  compatibility window.
+- Add provider-specific operational notes for refunds, partial/late crypto
+  payments, overpayments, and support investigations.
+
 ## Phase 8 - Prepare Core Extraction Boundary
 
 Only start extracting after the currency names above are clean enough that the
@@ -771,8 +868,11 @@ Recommended initial choices:
    cryptographic RNG, and odds endpoint.
 7. Bootstrap/API/UI updates for profile wallet, direct skins, and optional
    gacha packs.
-8. Rename character XP and run currency internals, keeping compatibility where
+8. Phase 7A hardening: atomic wallet debits, real provider invoices, payment
+   webhook verification, payment-surface policy, support/compliance gates,
+   selective gacha catalog config, and missing frontend/e2e coverage.
+9. Rename character XP and run currency internals, keeping compatibility where
    needed.
-9. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
-10. Adapterize and optionally extract battle simulation.
-11. Add hub/submodule metadata and final cross-repo verification.
+10. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
+11. Adapterize and optionally extract battle simulation.
+12. Add hub/submodule metadata and final cross-repo verification.
