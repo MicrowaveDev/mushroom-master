@@ -80,9 +80,14 @@ simple direct skin buying available when gacha mode is off.
   Battles. The code should use neutral names such as `wallet_balance`,
   `soft_currency`, and `character_xp`; the UI may still localize that as coins,
   spores, or another thematic term.
-- Decide the payment provider for coin purchases. Telegram Stars / Mini App
-  invoices are the likely product fit, but the backend should keep provider
-  details behind a purchase-provider adapter.
+- **Recommendation after payment-provider review:** do not choose a single
+  payment provider. Use a provider-neutral purchase-intent layer with three
+  adapters:
+  1. `telegram_stars` for frictionless Telegram-native wallet purchases.
+  2. `btcpay` for self-custodial crypto payments with the lowest platform-fee
+     and shutdown risk.
+  3. `nowpayments` as the hosted crypto fallback for better multi-coin UX and
+     conversion tools when self-hosted crypto is too much operational overhead.
 - Decide whether existing portrait variants become one-time purchases at their
   current `cost` values, or whether those values need a balance pass before the
   purchase model ships.
@@ -151,18 +156,29 @@ on 2026-06-22.
    Stars, extend that gateway to handle `pre_checkout_query` and
    `successful_payment` updates instead of assuming all providers post to
    `/api/wallet/purchase-webhook/:provider`.
-6. **Use cryptographic randomness for gacha.** Do not reuse game `createRng`
+6. **Add a censorship-resistant crypto rail.** Hosted crypto gateways still have
+   terms, KYB, sanctions screening, and shutdown risk. For legal adult-oriented
+   game content, the most robust crypto option is a self-hosted BTCPay Server
+   adapter because it has no processor account to terminate; payments go direct
+   to the merchant wallet. Keep hosted gateways as convenience adapters, not the
+   only crypto path.
+7. **Use cryptographic randomness for gacha.** Do not reuse game `createRng`
    seeds for paid rolls. Use server-side cryptographic randomness, record the
    chosen candidate pool and result, and keep enough metadata to investigate
    support claims.
-7. **Expose acquisition policy in bootstrap/app config.** The client needs to
+8. **Expose acquisition policy in bootstrap/app config.** The client needs to
    know whether direct buy or roll is available for each asset. Keep the old
    portrait array shape for compatibility, but add fields like `owned`,
    `price`, `currencyCode`, `acquisitionMode`, `purchaseAvailable`, and
    `rollAvailable`.
-8. **Add odds, terms, and support hooks before paid gacha.** If real-money
+9. **Add odds, terms, and support hooks before paid gacha.** If real-money
    currency buys rolls, the backend should expose pack odds and the UI should
    link terms/support. This is a launch gate, not polish.
+10. **Add adult-content compliance gates before enabling processors.** Payment
+    stability requires more than choosing a tolerant processor. Add clear
+    content rules, age gates where needed, terms, support/contact pages, and a
+    hard prohibition on unlawful sexual content, minors/CSAM, non-consensual
+    material, or anything forbidden in the merchant's jurisdictions.
 
 ## Vocabulary Target
 
@@ -304,6 +320,67 @@ Backend contract:
   Stars or another provider can be swapped without touching wallet accounting.
 - Add `/terms` and `/support` bot handling or equivalent in-app links before
   enabling real-money purchases in production.
+
+### Crypto provider recommendation
+
+Use provider adapters in this order:
+
+1. **BTCPay Server (`btcpay`) — primary censorship-resistant crypto rail.**
+   - Best fit when the project may include legal adult-oriented in-game content
+     and the team wants the lowest shutdown risk.
+   - BTCPay is self-hosted/open-source. Its docs describe direct peer-to-peer
+     Bitcoin payments, no processor/middleman, no processing fees, and merchant
+     control of funds:
+     - <https://btcpayserver.org/>
+     - <https://docs.btcpayserver.org/Guide/>
+   - Tradeoff: worse mainstream UX than a hosted gateway unless the user already
+     has Bitcoin/Lightning; no built-in fiat settlement; team owns server,
+     wallet, backups, monitoring, legal/tax handling, and refund/support ops.
+   - MVP scope: Bitcoin + Lightning invoices only; add altcoins later only if
+     there is actual demand.
+2. **NOWPayments (`nowpayments`) — hosted multi-coin convenience fallback.**
+   - Best fit when the team wants good UX across many coins, hosted invoices,
+     conversion options, and less ops work than BTCPay.
+   - Current public pages advertise 0.5% for monocurrency payments and 1% with
+     conversion, 350+ coins, and adult-business solutions:
+     - <https://nowpayments.io/>
+     - <https://nowpayments.io/all-solutions/adult>
+   - Tradeoff: hosted provider, so there is still account, KYB/AML, third-party,
+     jurisdiction, and policy risk. Do not make it the only crypto path.
+3. **CoinGate (`coingate`) — optional backup if legal/compliance review fits.**
+   - Public pricing is 1% payment processing, no monthly fees:
+     <https://coingate.com/pricing>
+   - Its general terms prohibit adult content only when there is no age
+     verification or when content breaches applicable laws/content rules:
+     <https://coingate.com/policy/general-terms-and-conditions>
+   - Tradeoff: more expensive than NOWPayments/BTCPay and likely heavier
+     compliance review.
+
+Avoid for this use case:
+
+- **Coinbase Commerce / Coinbase Payments**: Coinbase policies restrict adult
+  content/services, and it is not a good fit for adult-adjacent risk.
+- **Stripe/PayPal/card processors** for this specific rail: many prohibit or
+  heavily restrict adult/mature-audience content and have higher shutdown risk.
+- **BitPay** as first choice: current pricing is materially higher for low
+  volume (`2% + 25c` under $500k/month, with high-risk fees possible), and adult
+  suitability is less clear than the options above.
+- **High-risk/opaque crypto processors** with weak compliance posture: they can
+  create regulatory and reputation risk even if onboarding is easy.
+
+Implementation consequence:
+
+- `wallet_purchase_intents.provider` must be an enum-like string, not a table
+  hardcoded around Telegram.
+- Store provider-specific invoice/payment fields in `metadata_json`, but always
+  normalize core fields: `provider`, `provider_invoice_id`,
+  `provider_payment_id`, `price_currency`, `price_amount`, `wallet_amount`,
+  `status`, and `completed_at`.
+- Add provider-specific status handlers:
+  - Telegram: bot webhook `pre_checkout_query` / `successful_payment`.
+  - BTCPay: invoice webhook with HMAC/secret verification.
+  - NOWPayments: IPN webhook with signature verification.
+- The wallet service must not care which provider completed the purchase.
 
 MVP bundles can live in config first:
 
