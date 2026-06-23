@@ -1,10 +1,24 @@
 # Profile Currency And Core Extraction Plan
 
-**Status:** Phases 1-7 implemented as the Mushroom Battles compatibility
-foundation on 2026-06-22. Phase 7A code hardening was implemented on
-2026-06-23, but real-money rollout still requires provider sandbox/live
-validation and final product/legal support, terms, refund, age, and content
-compliance gates.
+> **Reading guide (added 2026-06-23 post-implementation review).** This document
+> is a historical ship record plus forward plan, not a live status board. The
+> shipped, test-backed foundation is Phases **1-5, 7, and 7A**. Phase **6** (the
+> `mycelium`→`character_xp` / `coins`→`run_currency` rename) is **deferred**:
+> only a thin `characterXp` read-alias over the unchanged `mycelium` column
+> exists today — see the Deferred list below and the note in Phase 6. The
+> authoritative current backlog is the **Remaining launch gates** under Phase 7A
+> plus the Deferred list. Phases **8-13** (extraction into `backpack-game-core`)
+> are not started, by design. Shipped runtime contracts (wallet ledger, purchase
+> intents, asset ownership, gacha) should be read from the code and
+> `tests/game/wallet-assets.test.js`, and ideally lifted into a dedicated
+> `docs/` reference doc rather than re-derived from this plan's phase sections.
+> See the **Post-Implementation Review** section for the verified state.
+
+**Status:** Phases 1-5, 7, and 7A implemented as the Mushroom Battles
+compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
+2026-06-23). Phase 6 (currency / XP rename) is deferred to a read-alias layer
+only. Real-money rollout still requires provider sandbox/live validation and
+final product/legal support, terms, refund, age, and content compliance gates.
 **Created:** 2026-06-22
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
@@ -15,7 +29,8 @@ otherwise.
 
 ## Implementation Status
 
-Phases 1-7 are complete for the Mushroom Battles compatibility milestone:
+Phases 1-5, 7, and 7A are complete for the Mushroom Battles compatibility
+milestone (Phase 6 is deferred — see the naming bullet and Deferred list below):
 
 - Requirements now define three separate ledgers: temporary run coins,
   profile wallet currency, and character XP / mastery.
@@ -27,8 +42,13 @@ Phases 1-7 are complete for the Mushroom Battles compatibility milestone:
   skins without binding purchase ownership to a character.
 - The backend supports direct asset purchases when gacha is off and an
   environment-gated gacha MVP that rolls an unowned asset from configured packs.
-- Naming now exposes wallet, asset, and `characterXp` fields while preserving
-  legacy response aliases during migration.
+- API responses now expose `wallet`, `asset`, and a `characterXp` **read alias**
+  (a thin wrapper over the unchanged `mycelium` column via
+  `computeCharacterLevel` and `characterXp: row.mycelium`), while preserving
+  legacy response aliases. The underlying Phase 6 database/code rename
+  (`mycelium`→`character_xp`, `coins`→`run_currency`) has **not** been
+  performed; the columns, models, and `MYCELIUM_LEVEL_CURVE` still use the
+  legacy names.
 - Backend and UI tests cover wallet earns/spends, atomic spend rejection,
   provider checkout creation, provider completion, direct purchase, gacha
   policy, portrait equipment, payment webhook signatures, and Telegram webhook
@@ -48,9 +68,70 @@ testing, purchase UI terms/refund/support presentation, age/content-compliance
 gating for adult or sexual content, and operational runbooks for refunds,
 late crypto payments, overpayments, and support investigations.
 
-Deferred beyond phase 7A: physical removal of legacy compatibility fields,
-multi-item pack guarantees, duplicate burning, marketplace trading, database
-managed pack catalogs, and reusable-core extraction into `backpack-game-core`.
+Deferred beyond phase 7A: the Phase 6 currency / XP rename
+(`mycelium`→`character_xp`, `coins`→`run_currency`) beyond the read-alias layer,
+physical removal of legacy compatibility fields, multi-item pack guarantees,
+duplicate burning, marketplace trading, database managed pack catalogs, an
+eager `players.spore`→wallet backfill plus a drift-audit helper, the
+gacha-roll / multi-bundle / terms-and-support frontend, and reusable-core
+extraction into `backpack-game-core`.
+
+## Post-Implementation Review
+
+Recorded 2026-06-23 from a verification pass against the current `main` working
+tree (not the plan's self-reported status). `tests/game/wallet-assets.test.js`
+passes `11/11`.
+
+### Verified as shipped
+
+- Wallet ledger (`player_wallet_balances`, `player_wallet_transactions`),
+  `grantCurrency` / `spendCurrency` / `getWalletState`, per-player in-process
+  mutation lock, and atomic debit via `UPDATE ... WHERE balance + $delta >= 0
+  RETURNING balance` in `app/server/services/wallet-service.js`.
+- Provider-neutral purchase intents with `telegram_stars`, `btcpay`, and
+  `nowpayments` adapters, surface policy (`WALLET_PAYMENT_SURFACES`), and
+  idempotent completion keyed by `wallet_purchase:${id}`.
+- Provider webhook signatures match the plan: BTCPay HMAC-SHA256 over the raw
+  body; NOWPayments HMAC-SHA512 over key-sorted JSON
+  (`nowPaymentsSignaturePayload` in `app/server/create-app.js`).
+- Asset ownership/equipment (`player_asset_instances`,
+  `player_equipped_assets`), `purchaseAsset` / `equipAsset`, env-gated gacha
+  with crypto RNG (`crypto.randomInt`), candidate-pool hashing, and odds
+  endpoint in `app/server/services/asset-service.js`.
+- All `players.spore` reward writes routed through `grantCurrency` with
+  persistent idempotency keys in `app/server/services/run-service.js`.
+- Requirements 4-X / 4-Y / 4-Z and the portrait-purchase model in
+  `docs/game-requirements.md`; ghost-portrait contract aligned with
+  `resolveEquippedPortraitId`.
+
+### Gaps and corrections (now reflected above)
+
+1. **Phase 6 rename is not done** beyond the `characterXp` read alias — moved
+   into the Deferred list and the status header.
+2. **Frontend is a single hardcoded entry point.** `HomeScreen.js` emits
+   `purchase-wallet` with a fixed `{ bundleId: 'coins_small', provider:
+   'telegram_stars' }`; there is no gacha-roll UI (no consumer of the backend
+   `rollAvailable` flag in `web/src/`), no bundle picker, and no
+   terms/refund/support surface. Tracked as a remaining launch gate.
+3. **`players.spore`→wallet backfill is lazy**, seeded on first wallet touch by
+   `ensureWalletBalanceRow`; there is no eager backfill migration and no bulk
+   drift-audit helper yet. Both added to the Deferred list / launch gates.
+4. **Webhook signature verification fails open outside production.** When the
+   provider secret env var is unset, `verifyPaymentWebhookSignature` returns
+   `true` for any non-production `NODE_ENV`. Intentional for local dev, but a
+   staging environment that mirrors production payments would accept forged
+   callbacks until secrets are set. See the new launch gate in Phase 7A.
+
+### Recommended follow-ups
+
+- Keep this plan as a historical ship record; treat the Deferred list and the
+  Phase 7A **Remaining launch gates** as the live backlog.
+- Before any paid pilot, the true blockers are the purchase/gacha frontend
+  (bundle picker, roll UI, terms/support copy) and the wallet drift-audit
+  helper — not additional backend plumbing.
+- Extract the shipped wallet / asset / gacha runtime contracts into a dedicated
+  `docs/` reference doc (the `docs/infra-hardening.md` pattern) so future agents
+  read current behavior from a reference, not from this plan's phase sections.
 
 ## Source Of Truth
 
@@ -599,6 +680,13 @@ Deferred mechanics, with schema direction:
 
 ## Phase 6 - Generalize Reward And Progression Names
 
+> **Status (2026-06-23): deferred.** Only the `characterXp` read alias shipped
+> (`computeCharacterLevel`, `characterXp: row.mycelium`). The database/code
+> rename below — `mycelium`→`character_xp`, `coins`→`run_currency`, and the
+> config/helper renames — has not been performed. Columns, models, and
+> `MYCELIUM_LEVEL_CURVE` still use legacy names. The steps below remain the
+> intended rename design when this phase is picked up.
+
 Do this after the wallet is real, so the rename has a stable destination.
 
 1. Rename character-bound `mycelium` concepts in code to `characterXp` /
@@ -746,6 +834,12 @@ policy, and coverage gaps in code.
 
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
+- Set provider webhook secrets in every non-local environment.
+  `verifyPaymentWebhookSignature` fails **open** (returns `true`) when the
+  secret env var is unset and `NODE_ENV !== 'production'`, so a staging
+  environment that mirrors production payments would accept forged callbacks
+  until `BTCPAY_WEBHOOK_SECRET` / `NOWPAYMENTS_IPN_SECRET` are configured.
+  Consider failing closed once a payment-capable staging surface exists.
 - Add terms, refund/support contact, and payment-dispute copy reachable from
   the purchase UI.
 - Add adult-content/age/compliance gates before enabling crypto providers:
