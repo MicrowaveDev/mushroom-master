@@ -18,6 +18,8 @@ Deliver a candidate scene that can become the final Home Field baseline after hu
 
 The primary proof is the composed field screenshot, not isolated asset beauty.
 
+Use [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md) as the implementation plan for turning generated images into runtime-ready assets. The run should judge raw-source completeness, alpha/edge safety, anchor stability, mobile-scale readability, and composed-scene fit before treating any asset as ready for human approval.
+
 ## Current Completion State
 
 As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field v1 after operator approval to continue the plan, with the character layer rolled back from approval:
@@ -329,9 +331,9 @@ Use these when the orchestrator can spawn subagents. Each prompt is bounded so w
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as read-only Prompt/Contract Reviewer for the minimal Home Field production-candidate run.
 
-Read docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, app/shared/home-field/home-field-assets.json, app/shared/home-field/home-field-prompts.json, and docs/home-field-chibi-candidate-contract.md.
+Read docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-runtime-asset-contract-plan.md, app/shared/home-field/home-field-assets.json, app/shared/home-field/home-field-prompts.json, and docs/home-field-chibi-candidate-contract.md.
 
-Report contradictions or missing instructions only. Check candidate-only paths, minimal scope, shared-source grass/path rules, prop scale/readability rules, Thalla Stage 1 rules, subagent separation, and required final evidence. Do not edit files, generate images, approve assets, or run producers.
+Report contradictions or missing instructions only. Check candidate-only paths, minimal scope, shared-source grass/path rules, runtime asset readiness, prop scale/readability rules, Thalla Stage 1 rules, subagent separation, and required final evidence. Do not edit files, generate images, approve assets, or run producers.
 ```
 
 ### Grass/Path Worker
@@ -369,7 +371,7 @@ Create a non-production turnaround reference first, then one final grouped 8x4 s
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Producer/Validation Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md and docs/home-field-agent-flow.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:combined-candidate-preview.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:combined-candidate-preview.
 
 Do not hand-edit PNGs, change contracts, overwrite web/public/home-field, or approve art. Final handoff must list candidate folder, evidence manifest, contact sheet, adjacency sheet, alpha/halo sheet, mobile-readability sheet, and mobile/desktop clean screenshots as clickable links.
 ```
@@ -379,7 +381,7 @@ Do not hand-edit PNGs, change contracts, overwrite web/public/home-field, or app
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Visual Critic for the minimal Home Field production-candidate run.
 
-Review the composed mobile and desktop clean screenshots first, then supporting contact/adjacency/alpha/readability sheets and evidence manifests. Fail visible square terrain cells, pasted path bands, noisy grass, wrong chibi camera/scale, over-detailed mobile props, mismatched entrances, or mixed renderer styles.
+Review the composed mobile and desktop clean screenshots first, then supporting contact/adjacency/alpha/readability sheets and evidence manifests. Fail visible square terrain cells, pasted path bands, noisy grass, wrong chibi camera/scale, over-detailed mobile props, mismatched entrances, mixed renderer styles, clipped sources, unsafe alpha edges, unstable anchors, baked shadows that should be runtime shadows, or assets that only look good in isolation.
 
 Update only docs/home-field-asset-review.json rows for the active batch with needs_review or needs_regen. Encode deferral as verdict needs_regen, accepted false, and reason beginning Deferred:. Never set verdict approved or accepted=true without explicit human approval.
 ```

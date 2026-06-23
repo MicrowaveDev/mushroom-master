@@ -13,6 +13,7 @@ The canonical run instructions are below. The launcher prompt should stay short 
 Read and follow:
 
 - docs/home-field-agent-flow.md
+- docs/home-field-runtime-asset-contract-plan.md
 - app/shared/home-field/README.md
 - app/shared/home-field/home-field-prompts.json
 
@@ -22,7 +23,7 @@ Use sub-agents if available, with narrow scopes: one generation agent for the fo
 
 Generate only `mushroom_cluster_small_violet` as a candidate asset. Do not regenerate `mushroom_cluster_small_amber`, `mushroom_cap_red_spotted`, or `fallen_branch_mycelium`; the latest review marks them `needs_review` pending human approval. Goal: fix the violet cluster's weak gray/low-identity read while keeping it production-ready as quiet edge/foreground personality, not clutter.
 
-Pixel budget: these props render in about a 52x52 CSS box on the 375x667 mobile preview and about a 90x90 CSS box on desktop. The visible alpha silhouette may be only 30-48px wide on mobile, so design them as tiny field tokens, not hero illustrations. Each prop needs one bold outside silhouette, 2-3 main color regions, 0-3 large accent marks, and a compact shadow. Avoid gills, many spots, many tiny caps, root tangles, bark chips, fine veins, realistic texture, glossy highlights, bright glow blobs, or any detail that only works at 256px.
+Pixel budget: these props render in about a 52x52 CSS box on the 375x667 mobile preview and about a 90x90 CSS box on desktop. The visible alpha silhouette may be only 30-48px wide on mobile, so design them as tiny field tokens, not hero illustrations. Each prop needs one bold outside silhouette, 2-3 main color regions, 0-3 large accent marks, safe transparent padding, a stable bottom-center anchor, and a compact shadow only when the asset contract allows it. Avoid gills, many spots, many tiny caps, root tangles, bark chips, fine veins, realistic texture, glossy highlights, bright glow blobs, clipped source edges, or any detail that only works at 256px.
 
 Asset shape target: the violet cluster should have 2-3 squat caps total, a clear muted violet cap read at 32-48px, a merged simple base, no gray-only caps, no saturated neon glow, no tiny cap field, and no gills. Use true alpha or flat `#ff00ff` chroma key. Avoid bright attention-grabbing blobs near the walkable center, text, characters, exits, effects, and terrain.
 

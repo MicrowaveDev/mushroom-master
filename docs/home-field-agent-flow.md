@@ -2,7 +2,7 @@
 
 Date: 2026-05-23
 
-This workflow prevents one agent from generating, validating, and approving its own Home Field art. Use it for terrain generation runs, starting with the grass-family batch.
+This workflow prevents one agent from generating, validating, and approving its own Home Field art. Use it for terrain generation runs, starting with the grass-family batch. For the broader runtime-readiness plan, follow [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md) alongside this flow.
 
 ## Core Rule
 
@@ -23,7 +23,7 @@ Do not pass `fork_context` or mixed `message`/`items` payloads; those have cause
 | Role | May read | May write | Must not do |
 | --- | --- | --- | --- |
 | Orchestrator | Workflow docs, command output, final reports | Commit and push approved candidate-batch changes | Generate images, approve art by itself, skip stop gates |
-| Prompt/Contract Reviewer | Assets, prompts, style anchor, tileset contract, rerun-grass output | Nothing | Generate images, edit manifests, approve art |
+| Prompt/Contract Reviewer | Assets, prompts, style anchor, tileset contract, runtime asset contract, rerun output | Nothing | Generate images, edit manifests, approve art |
 | Imagegen Worker | Prompt blocks and style anchor | Raw PNGs under `.agent/home-field-workspace/raw/` | Edit app PNGs directly, edit JSON/docs, approve art |
 | Producer/Validation Worker | Raw files, manifest, command output | Candidate PNGs under `.agent/home-field-workspace/candidates/`; generated local review sheets | Hand-edit PNGs, change contracts, overwrite app-facing PNGs before human approval, approve art |
 | Visual Critic | Final candidate evidence manifest, contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Start before final evidence exists, set `approved` or `accepted: true` without explicit human approval |
@@ -191,7 +191,7 @@ The Visual Critic updates only the scoped character rows in `docs/home-field-ass
 
 The target is not an isolated grass texture. The final composed field should read like a polished game-hub screenshot: chibi mushroom-elf avatars standing on a soft green meadow, with chunky dark-ink foliage, vines, flowers, mushrooms, exits, and props framing the walkable area on object layers.
 
-Before any terrain, prop, or exit generation, follow [`docs/home-field-scale-contract.md`](home-field-scale-contract.md). The source canvas size is not the visual footprint: `256x256` props should not fill the whole source canvas unless they are terrain, and larger source sizes are for cleaner alpha/cropping rather than extra tiny detail. Reject any batch where assets look like different zoom levels, camera angles, renderers, or lighting setups in the same Home Field preview.
+Before any terrain, prop, exit, effect, or chibi generation, follow [`docs/home-field-scale-contract.md`](home-field-scale-contract.md) and the implementation plan in [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md). The source canvas size is not the visual footprint: `256x256` props should not fill the whole source canvas unless they are terrain, and larger source sizes are for cleaner alpha/cropping rather than extra tiny detail. Reject any batch where assets look like different zoom levels, camera angles, renderers, or lighting setups in the same Home Field preview.
 
 For the grass batch, this means:
 
