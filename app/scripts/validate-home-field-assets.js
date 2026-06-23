@@ -10,6 +10,7 @@
  *   npm run game:home-field:validate -- --check-edge-profiles
  *   npm run game:home-field:validate -- --check-family-cohesion
  *   npm run game:home-field:validate -- --check-chibi-animation
+ *   npm run game:home-field:validate -- --check-chibi-quality
  *   npm run game:home-field:validate -- --production
  *   npm run game:home-field:validate -- --production --full-registry-production
  *
@@ -213,6 +214,96 @@ function frameHash(image, frameWidth, frameHeight, row, col) {
     hash.update(image.rgba.subarray(start, start + (frameWidth * 4)));
   }
   return hash.digest('hex');
+}
+
+function frameStats(image, frameWidth, frameHeight, row, col) {
+  let minLum = Infinity;
+  let maxLum = -Infinity;
+  let visiblePixels = 0;
+  let silhouetteEdgePixels = 0;
+  let darkSilhouetteEdgePixels = 0;
+  const alphaAt = (x, y) => {
+    if (x < 0 || y < 0 || x >= frameWidth || y >= frameHeight) return 0;
+    const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
+    return image.rgba[offset + 3];
+  };
+
+  for (let y = 0; y < frameHeight; y += 1) {
+    for (let x = 0; x < frameWidth; x += 1) {
+      const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
+      const a = image.rgba[offset + 3];
+      if (a <= 32) continue;
+      visiblePixels += 1;
+      const lum = luminance([image.rgba[offset + 0], image.rgba[offset + 1], image.rgba[offset + 2]]);
+      minLum = Math.min(minLum, lum);
+      maxLum = Math.max(maxLum, lum);
+      const touchesTransparent = (
+        alphaAt(x - 1, y) <= 32 ||
+        alphaAt(x + 1, y) <= 32 ||
+        alphaAt(x, y - 1) <= 32 ||
+        alphaAt(x, y + 1) <= 32
+      );
+      if (touchesTransparent) {
+        silhouetteEdgePixels += 1;
+        if (lum <= 120) darkSilhouetteEdgePixels += 1;
+      }
+    }
+  }
+
+  return {
+    visiblePixels,
+    valueRange: Number.isFinite(minLum) ? maxLum - minLum : 0,
+    darkEdgeRatio: silhouetteEdgePixels > 0 ? darkSilhouetteEdgePixels / silhouetteEdgePixels : 0
+  };
+}
+
+function checkChibiQuality(assetsDoc, errors, {
+  ids = null,
+  minValueRange = 42,
+  minDarkEdgeRatio = 0.26
+} = {}) {
+  for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
+    if (!character.spritesheet) continue;
+    if (character.status === 'missing') continue;
+    const s = character.spritesheet;
+    const abs = path.join(ASSET_ROOT, character.outputPath);
+    if (!fs.existsSync(abs)) {
+      errors.push({ scope: 'chibi_quality', code: 'missing', message: `character "${character.id}" output missing: ${character.outputPath}` });
+      continue;
+    }
+    let image;
+    try {
+      image = readPngRgba(abs);
+    } catch (err) {
+      errors.push({ scope: 'chibi_quality', code: 'png_read', message: `character "${character.id}" cannot read PNG pixels: ${err.message}` });
+      continue;
+    }
+
+    const cols = [...(s.framesPerRow?.idle || []), ...(s.framesPerRow?.walk || [])];
+    const stats = [];
+    for (let row = 0; row < (s.rowOrder || []).length; row += 1) {
+      for (const col of cols) {
+        stats.push(frameStats(image, s.frameWidth, s.frameHeight, row, col));
+      }
+    }
+    if (stats.length === 0) continue;
+    const avgValueRange = stats.reduce((sum, item) => sum + item.valueRange, 0) / stats.length;
+    const avgDarkEdgeRatio = stats.reduce((sum, item) => sum + item.darkEdgeRatio, 0) / stats.length;
+    if (avgValueRange < minValueRange) {
+      errors.push({
+        scope: 'chibi_quality',
+        code: 'low_value_range',
+        message: `character "${character.id}" average visible value range ${avgValueRange.toFixed(1)} < ${minValueRange}; chibi likely reads soft/flat next to approved props and needs stronger face/cap/robe contrast`
+      });
+    }
+    if (avgDarkEdgeRatio < minDarkEdgeRatio) {
+      errors.push({
+        scope: 'chibi_quality',
+        code: 'weak_dark_outline',
+        message: `character "${character.id}" dark silhouette-edge ratio ${avgDarkEdgeRatio.toFixed(2)} < ${minDarkEdgeRatio}; chibi needs a thicker warm dark outline to match approved Home Field props`
+      });
+    }
+  }
 }
 
 function checkChibiIdleAnimation(assetsDoc, errors, { ids = null, minUniqueIdleFrames = 2 } = {}) {
@@ -639,6 +730,7 @@ function main() {
   const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
   const wantReadabilityCheck = hasFlag(argv, 'check-readability');
   const wantChibiAnimationCheck = hasFlag(argv, 'check-chibi-animation');
+  const wantChibiQualityCheck = hasFlag(argv, 'check-chibi-quality');
   const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
   const wantFamilyCohesionCheck = hasFlag(argv, 'check-family-cohesion');
   const wantProduction = hasFlag(argv, 'production');
@@ -683,6 +775,9 @@ function main() {
     checkChibiIdleAnimation(assetsDoc, errors, { ids });
     checkChibiWalkAnimation(assetsDoc, errors, { ids });
   }
+  if (wantChibiQualityCheck) {
+    checkChibiQuality(assetsDoc, errors, { ids });
+  }
   if (wantEdgeProfileCheck || wantProduction) {
     checkTerrainEdgeProfiles(assetsDoc, mapDoc, errors, { ids });
   }
@@ -699,6 +794,7 @@ function main() {
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
     if (wantChibiAnimationCheck) modes.push('chibi idle/walk animation');
+    if (wantChibiQualityCheck) modes.push('chibi crispness/contrast quality');
     if (wantEdgeProfileCheck || wantProduction) modes.push('terrain edge profiles');
     if (wantFamilyCohesionCheck || wantProduction) modes.push('terrain family cohesion');
     if (wantProduction) modes.push('production approval');

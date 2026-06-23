@@ -333,6 +333,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
       if (chibiCandidate) {
         lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-animation`);
+        lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-quality`);
       }
     } else {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-connectors --check-review`);
@@ -359,7 +360,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
   }
   if (objectCandidate || chibiCandidate) {
-    lines.push('Until those pass and the contact sheet, alpha/readability sheets, and candidate preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
+    lines.push('Until those pass and the contact sheet, alpha/readability sheets, and candidate preview look at least as crisp and finished as the approved props, do not commit the image; rerun imagegen with adjusted constraints.');
   } else {
     lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
   }

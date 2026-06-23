@@ -209,9 +209,11 @@ Rules:
 - verify saved reference/state-sheet/raw/candidate files with `npm run game:home-field:verify-chibi-proof-files` instead of searching image caches manually;
 - top-down 2.5D field sprite, not portrait;
 - simple mobile-readable silhouette with BJD-inspired chibi doll appeal;
-- 32 isolated character-only frames derived from the grouped state sheet: 2 idle plus 6 simple walk-loop frames per direction;
+- 32 isolated character-only frames derived from the grouped state sheet: 2 idle plus 6 walk-lane frames per direction;
 - the 2 idle frames are a tiny `normal -> squat/squish -> normal` loop, not duplicates;
+- the 6 walk-lane slots target 4 meaningful walk poses plus optional holds/in-betweens, not six important poses;
 - at least 3 unique walk frames per direction in the composed sheet;
+- the chibi must match approved props in crisp outline, contrast, silhouette, and finished hand-drawn polish at scene scale;
 - no baked ground shadow in chibi frames; use the separate `chibi_shadow` renderer/asset layer;
 - use `--resize`, not `--resize-nearest`, when producing the candidate sheet from larger isolated raw frames;
 - mechanical alpha/readability success does not override style failure;
@@ -256,6 +258,7 @@ HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-readability
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-chibi-animation
+HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-chibi-quality
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:mobile-readability-sheet -- --ids=thalla
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:alpha-sheet -- --ids=thalla
@@ -358,7 +361,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Chibi Wor
 
 Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, one coherent grouped 8x4 state sheet split into 32 character-only frames, no baked shadow. Run npm run game:home-field:preflight-chibi-proof before cleanup; Codex Desktop built-in imagegen is allowed by default and does not require OPENAI_API_KEY.
 
-Create a non-production turnaround reference first, then one final grouped 8x4 state sheet at .agent/home-field-workspace/raw/thalla_chibi.states.source.png and split it into transparent raw frames. Target a simple BJD-inspired chibi doll illustration: smooth doll-like face, tiny planted body, broad costume block, and very few large Thalla marks. Make a cute two-frame idle per direction: normal planted pose, then a tiny squat/squish pose that loops back to normal. Make a simple real walk loop: 6 walk columns per direction with at least 3 unique poses, not one replicated walk pose. Reject pixel-art, tiny featureless doll-sprite, beige generic elf, busy ornate fantasy sprite, straight portrait, realistic doll-photo/toy-render, baked shadow, human-with-mushroom-hat results, or separately generated state tiles that drift in face/cap/robe details. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
+Create a non-production turnaround reference first, then one final grouped 8x4 state sheet at .agent/home-field-workspace/raw/thalla_chibi.states.source.png and split it into transparent raw frames. Target a simple BJD-inspired chibi doll illustration: smooth doll-like face, tiny planted body, broad costume block, and very few large Thalla marks. Make a cute two-frame idle per direction: normal planted pose, then a tiny squat/squish pose that loops back to normal. Use the six walk columns as a walk lane: aim for 4 meaningful poses plus subtle holds/in-betweens, with at least 3 unique poses per direction, not one replicated walk pose. Quality bar: the composed chibi must look at least as crisp, contrasted, and finished as the approved bushes, mushrooms, and gates. Reject pixel-art, tiny featureless doll-sprite, beige generic elf, blurry/downscaled sticker quality, weak outline, low-contrast robe/cap/face separation, busy ornate fantasy sprite, straight portrait, realistic doll-photo/toy-render, baked shadow, human-with-mushroom-hat results, or separately generated state tiles that drift in face/cap/robe details. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
 ```
 
 ### Producer/Validation Worker

@@ -138,6 +138,43 @@ function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = fals
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeCrispChibiSpritesheet(filePath, { lowQuality = false } = {}) {
+  const width = 512;
+  const height = 256;
+  const frameWidth = 64;
+  const frameHeight = 64;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 8; col += 1) {
+      const variant = col < 2 ? col : col;
+      const cx = col * frameWidth;
+      const cy = row * frameHeight;
+      for (let y = 12; y < 56; y += 1) {
+        for (let x = 16; x < 48; x += 1) {
+          const i = ((cy + y) * width + (cx + x)) * 4;
+          const edge = x < 20 || x >= 44 || y < 16 || y >= 52;
+          if (lowQuality) {
+            rgba[i + 0] = 178 + variant;
+            rgba[i + 1] = 165 + variant;
+            rgba[i + 2] = 132 + variant;
+          } else if (edge) {
+            rgba[i + 0] = 54;
+            rgba[i + 1] = 35;
+            rgba[i + 2] = 24;
+          } else {
+            rgba[i + 0] = 238;
+            rgba[i + 1] = 215 - (row * 8);
+            rgba[i + 2] = 148 + (variant * 3);
+          }
+          rgba[i + 3] = 255;
+        }
+      }
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
 function writeOddProportionalChibiStateSheet(filePath) {
   const width = 1774;
   const height = 887;
@@ -912,12 +949,15 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Do not generate the final idle\/walk states as separate imagegen calls/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
   assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
-  assert.match(result.stdout, /Mechanical sheet success, alpha success, and mobile readability do not count as style approval/);
+  assert.match(result.stdout, /Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval/);
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --candidate/);
   assert.doesNotMatch(result.stdout, /produce-chibi-candidate -- thalla --resize-nearest/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-readability/);
   assert.match(result.stdout, /--check-chibi-animation/);
+  assert.match(result.stdout, /--check-chibi-quality/);
+  assert.match(result.stdout, /at least as crisp, contrasted, and finished as approved Home Field props/);
+  assert.match(result.stdout, /4 meaningful walk poses distributed across 6 slots/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=thalla .*chibi-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
@@ -1111,6 +1151,83 @@ test('[home-field] chibi animation validator rejects static replicated walk fram
     });
     assert.equal(passed.status, 0, passed.stderr || passed.stdout);
     assert.match(passed.stdout, /chibi idle\/walk animation/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] chibi quality validator rejects soft low-contrast sheets', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-quality-test');
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const mapPath = path.join(fixtureDir, 'home-field-map.fixture.json');
+  const candidateRoot = path.join(fixtureDir, 'candidate-root');
+  const outputPath = 'web/public/home-field/characters/thalla/spritesheet.png';
+  const outputAbs = path.join(candidateRoot, outputPath);
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(assetsPath), { recursive: true });
+  fs.writeFileSync(assetsPath, JSON.stringify({
+    version: 1,
+    tileSize: 256,
+    assets: [],
+    characters: [{
+      id: 'thalla',
+      promptKey: 'character_thalla_chibi',
+      sourcePath: '.agent/home-field-workspace/raw/thalla_chibi.source.png',
+      outputPath,
+      publicPath: '/home-field/characters/thalla/spritesheet.png',
+      spritesheet: {
+        width: 512,
+        height: 256,
+        frameWidth: 64,
+        frameHeight: 64,
+        cols: 8,
+        rows: 4,
+        rowOrder: ['down', 'up', 'left', 'right'],
+        framesPerRow: { idle: [0, 1], walk: [2, 3, 4, 5, 6, 7] }
+      },
+      status: 'needs_review'
+    }]
+  }, null, 2));
+  writeMapFixture(mapPath);
+
+  try {
+    writeCrispChibiSpritesheet(outputAbs, { lowQuality: true });
+    const failed = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=thalla',
+      '--check-files',
+      '--check-chibi-quality'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: candidateRoot
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(failed.status, 1, failed.stderr || failed.stdout);
+    assert.match(failed.stderr, /low_value_range|weak_dark_outline/);
+
+    writeCrispChibiSpritesheet(outputAbs, { lowQuality: false });
+    const passed = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=thalla',
+      '--check-files',
+      '--check-chibi-quality'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: candidateRoot
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(passed.status, 0, passed.stderr || passed.stdout);
+    assert.match(passed.stdout, /chibi crispness\/contrast quality/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }
