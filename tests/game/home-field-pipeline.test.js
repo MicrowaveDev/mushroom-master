@@ -167,7 +167,23 @@ function writeChibiAssetsFixture(filePath, outputPath, {
   fs.writeFileSync(filePath, JSON.stringify({
     version: 1,
     tileSize: 256,
-    assets: [],
+    assets: [{
+      id: 'chibi_shadow',
+      type: 'prop',
+      role: 'shared_chibi_ground_shadow',
+      promptKey: 'chibi_shadow',
+      sourcePath: '.agent/home-field-workspace/raw/chibi_shadow.source.png',
+      outputPath: 'web/public/home-field/characters/_shared/chibi_shadow.png',
+      publicPath: '/home-field/characters/_shared/chibi_shadow.png',
+      width: 64,
+      height: 32,
+      anchor: { x: 0.5, y: 0.9 },
+      readability: { minBboxWidth: 34, minBboxHeight: 8 },
+      collision: 'walkable',
+      animation: null,
+      status: 'placeholder',
+      atlasFrameKey: 'chibi_shadow'
+    }],
     characters: [{
       id: 'thalla',
       promptKey: 'character_thalla_chibi',
@@ -690,6 +706,13 @@ test('[home-field] chibi candidate evidence binds reference, grouped source, and
       assert.deepEqual(entry.chibiSources.splitFrames.missing, []);
       assert.equal(entry.chibiSources.splitFrames.frames.length, 32);
       assert.match(entry.chibiSources.splitFrames.frameSetSha256, /^[a-f0-9]{64}$/);
+      assert.ok(Array.isArray(manifest.previews));
+      assert.ok(manifest.recoveredFailureNotes);
+      assert.ok(['none', 'present', 'parse_error'].includes(manifest.recoveredFailureNotes.status));
+      assert.equal(
+        manifest.separateShadowTile?.policy,
+        'separate renderer/asset layer; not baked into chibi frames'
+      );
     } finally {
       fs.rmSync(fixtureDir, { recursive: true, force: true });
       fs.rmSync(candidateRoot, { recursive: true, force: true });

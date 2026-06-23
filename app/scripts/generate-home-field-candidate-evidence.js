@@ -24,6 +24,7 @@ const candidateRoot = process.env.HOME_FIELD_CANDIDATE_ROOT
 const reviewDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'review');
 const outPath = path.join(reviewDir, 'candidate-evidence.manifest.json');
 const manifestDir = path.join(repoRoot, '.agent', 'home-field-workspace', 'manifests');
+const recoveredFailureNotesPath = path.join(reviewDir, 'recovered-failure-notes.json');
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -173,6 +174,52 @@ function screenshotEvidence() {
     .filter(Boolean);
 }
 
+function previewEvidence() {
+  const names = [
+    'home-field-candidate-mobile-clean.png',
+    'home-field-candidate-mobile-clean.json',
+    'home-field-candidate-desktop-clean.png',
+    'home-field-candidate-desktop-clean.json'
+  ];
+  return names
+    .map((name) => hashIfExists(path.join(reviewDir, name)))
+    .filter(Boolean);
+}
+
+function recoveredFailureNotes() {
+  const fallback = {
+    status: 'none',
+    notes: []
+  };
+  if (!fs.existsSync(recoveredFailureNotesPath)) return fallback;
+  try {
+    const parsed = loadJson(recoveredFailureNotesPath);
+    return {
+      path: path.relative(repoRoot, recoveredFailureNotesPath),
+      ...parsed
+    };
+  } catch (err) {
+    return {
+      path: path.relative(repoRoot, recoveredFailureNotesPath),
+      status: 'parse_error',
+      error: err.message,
+      raw: fs.readFileSync(recoveredFailureNotesPath, 'utf8')
+    };
+  }
+}
+
+function separateShadowTileEvidence(byId) {
+  const shadow = byId.get('chibi_shadow');
+  if (!shadow) return null;
+  return {
+    id: shadow.id,
+    role: shadow.role || 'shared_chibi_ground_shadow',
+    policy: 'separate renderer/asset layer; not baked into chibi frames',
+    rawSource: shadow.sourcePath ? hashIfExists(path.join(repoRoot, shadow.sourcePath)) : null,
+    candidateOutput: hashIfExists(path.join(candidateRoot, shadow.outputPath))
+  };
+}
+
 function main() {
   const argv = process.argv.slice(2);
   const ids = candidateIds(argv);
@@ -218,7 +265,10 @@ function main() {
     candidateRoot: path.relative(repoRoot, candidateRoot),
     ids,
     entries,
+    previews: previewEvidence(),
     reviewEvidence: screenshotEvidence(),
+    separateShadowTile: separateShadowTileEvidence(byId),
+    recoveredFailureNotes: recoveredFailureNotes(),
     ...(sharedRawSource ? { sharedRawSource } : {})
   };
   const encoded = Buffer.from(JSON.stringify(manifest, null, 2));
