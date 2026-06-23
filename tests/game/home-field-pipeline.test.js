@@ -96,6 +96,27 @@ function writeTinyTransparentFixture(filePath) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeRuntimeReadinessFixture(filePath, { edgeClipped = false, floating = false } = {}) {
+  const width = 32;
+  const height = 32;
+  const rgba = Buffer.alloc(width * height * 4);
+  const x0 = edgeClipped ? 0 : 9;
+  const x1 = edgeClipped ? 14 : 23;
+  const y0 = floating ? 3 : 10;
+  const y1 = floating ? 11 : 30;
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      const i = (y * width + x) * 4;
+      rgba[i + 0] = 48;
+      rgba[i + 1] = 120;
+      rgba[i + 2] = 64;
+      rgba[i + 3] = 255;
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
 function writeSizedTransparentFixture(filePath, width, height) {
   const rgba = Buffer.alloc(width * height * 4);
   for (let y = Math.round(height * 0.25); y < Math.round(height * 0.75); y += 1) {
@@ -648,6 +669,55 @@ test('[home-field] validation catches too-small visible prop bounds', () => {
   }
 });
 
+test('[home-field] runtime readiness rejects clipped edges and floating anchors', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-runtime-readiness-test');
+  const outputPath = 'web/public/home-field/__test__/chroma_fixture.png';
+  const candidateRoot = path.join(repoRoot, 'tmp/home-field-runtime-readiness-candidates');
+  const candidateOutputAbs = path.join(candidateRoot, outputPath);
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const mapPath = path.join(fixtureDir, 'home-field-map.fixture.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.rmSync(candidateRoot, { recursive: true, force: true });
+  writeAssetsFixture(assetsPath, outputPath);
+  writeMapFixture(mapPath);
+
+  const runValidation = () => spawnSync(process.execPath, [
+    validateScriptPath,
+    '--ids=chroma_fixture',
+    '--check-files',
+    '--check-runtime-readiness'
+  ], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HOME_FIELD_ASSETS_PATH: assetsPath,
+      HOME_FIELD_MAP_PATH: mapPath,
+      HOME_FIELD_ASSET_ROOT: path.relative(repoRoot, candidateRoot)
+    },
+    encoding: 'utf8'
+  });
+
+  try {
+    writeRuntimeReadinessFixture(candidateOutputAbs, { edgeClipped: true });
+    const clipped = runValidation();
+    assert.equal(clipped.status, 1, clipped.stderr || clipped.stdout);
+    assert.match(clipped.stderr, /unsafe_edge_padding/);
+
+    writeRuntimeReadinessFixture(candidateOutputAbs, { floating: true });
+    const floating = runValidation();
+    assert.equal(floating.status, 1, floating.stderr || floating.stdout);
+    assert.match(floating.stderr, /floating_anchor_gap/);
+
+    writeRuntimeReadinessFixture(candidateOutputAbs);
+    const passed = runValidation();
+    assert.equal(passed.status, 0, passed.stderr || passed.stdout);
+    assert.match(passed.stdout, /runtime asset readiness/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+  }
+});
+
 test('[home-field] validation catches obvious terrain edge profile mismatch', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-edge-profile-test');
   const outputDir = 'web/public/home-field/__test__/edge-profile';
@@ -879,9 +949,13 @@ test('[home-field] object candidate rerun emits candidate-root producer and evid
   assert.match(result.stdout, /Candidate output path .*candidates\/object-layer\/latest/);
   assert.match(result.stdout, /npm run game:home-field:produce-object-candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff/);
   assert.match(result.stdout, /Home Field scale contract/);
+  assert.match(result.stdout, /Runtime asset contract/);
+  assert.match(result.stdout, /Generate for the final in-game footprint, not contact-sheet beauty/);
+  assert.match(result.stdout, /safe transparent padding/);
   assert.match(result.stdout, /Runtime canvas: 256x256px/);
   assert.match(result.stdout, /Visual footprint target: small field token/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-alpha-halo/);
+  assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet .*object-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- mushroom_cluster_small_violet/);
@@ -906,6 +980,9 @@ test('[home-field] path family rerun emits terrain candidate producer and adjace
   assert.match(result.stdout, /path_h_end_w \(terrain\)/);
   assert.match(result.stdout, /path_dirt_straight \(terrain\)/);
   assert.match(result.stdout, /Candidate output path .*candidates\/terrain-family\/latest/);
+  assert.match(result.stdout, /Runtime asset contract/);
+  assert.match(result.stdout, /Terrain runtime role: this is walkable or blocking ground inside a tilemap/);
+  assert.match(result.stdout, /composed mobile and desktop clean field screenshots/);
   assert.match(result.stdout, /npm run game:home-field:produce-terrain-candidate -- path_dirt_straight --resize --crop-center/);
   assert.match(result.stdout, /--check-files --check-connectors --check-review/);
   assert.match(result.stdout, /--check-files --check-edge-profiles/);
@@ -942,6 +1019,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff --resize/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --frames/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
+  assert.match(result.stdout, /Runtime asset contract/);
+  assert.match(result.stdout, /raw source completeness/i);
+  assert.match(result.stdout, /separate chibi shadow layer/);
   assert.match(result.stdout, /Animation: spritesheet-driven idle\/walk frames/);
   assert.doesNotMatch(result.stdout, /Animation: none \(single static PNG\)/);
   assert.match(result.stdout, /clear stale rejected Thalla state sheets, raw frames/);
@@ -960,6 +1040,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /verify-chibi-proof-files -- --candidate/);
   assert.doesNotMatch(result.stdout, /produce-chibi-candidate -- thalla --resize-nearest/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-readability/);
+  assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-runtime-readiness/);
   assert.match(result.stdout, /--check-chibi-animation/);
   assert.match(result.stdout, /--check-chibi-quality/);
   assert.match(result.stdout, /at least as crisp, contrasted, and finished as approved Home Field props/);
@@ -980,6 +1061,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
+  assert.match(result.stdout, /--check-runtime-readiness/);
+  assert.match(result.stdout, /Runtime contract: raw source must be unclipped/);
   assert.match(result.stdout, /Post-split processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /Shadow contract: no baked shadow/);
 });

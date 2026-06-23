@@ -7,6 +7,9 @@
  *   npm run game:home-field:validate -- --check-files
  *   npm run game:home-field:validate -- --check-connectors
  *   npm run game:home-field:validate -- --check-review
+ *   npm run game:home-field:validate -- --check-alpha-halo
+ *   npm run game:home-field:validate -- --check-readability
+ *   npm run game:home-field:validate -- --check-runtime-readiness
  *   npm run game:home-field:validate -- --check-edge-profiles
  *   npm run game:home-field:validate -- --check-family-cohesion
  *   npm run game:home-field:validate -- --check-chibi-animation
@@ -203,6 +206,68 @@ function checkObjectReadabilityBounds(assetsDoc, errors, { ids = null } = {}) {
         code: 'bbox_too_short',
         message: `asset "${asset.id}" visible bbox height ${stats.bboxHeight}px is below readability.minBboxHeight ${rule.minBboxHeight}px; regenerate larger or crop/fit the object inside the canvas`
       });
+    }
+  }
+}
+
+function checkRuntimeReadiness(assetsDoc, errors, {
+  ids = null,
+  minEdgePadding = 2,
+  maxBottomAnchorGapRatio = 0.35
+} = {}) {
+  for (const asset of scopedEntries(allEntries(assetsDoc), ids)) {
+    if (asset.type === 'terrain') continue;
+    if (asset.status === 'missing') continue;
+    const abs = path.join(ASSET_ROOT, asset.outputPath);
+    if (!fs.existsSync(abs)) {
+      errors.push({ scope: 'runtime_readiness', code: 'missing', message: `asset "${asset.id}" output missing: ${asset.outputPath}` });
+      continue;
+    }
+
+    let image;
+    try {
+      image = readPngRgba(abs);
+    } catch (err) {
+      errors.push({ scope: 'runtime_readiness', code: 'png_read', message: `asset "${asset.id}" cannot read PNG pixels: ${err.message}` });
+      continue;
+    }
+
+    const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
+    if (stats.bboxWidth === 0 || stats.bboxHeight === 0) {
+      errors.push({
+        scope: 'runtime_readiness',
+        code: 'empty_alpha',
+        message: `asset "${asset.id}" has no visible alpha; runtime asset cannot be placed or reviewed`
+      });
+      continue;
+    }
+
+    const minMargin = Math.min(stats.marginLeft, stats.marginRight, stats.marginTop, stats.marginBottom);
+    if (minMargin < minEdgePadding) {
+      errors.push({
+        scope: 'runtime_readiness',
+        code: 'unsafe_edge_padding',
+        message: `asset "${asset.id}" visible alpha margin is too small for runtime filtering: left=${stats.marginLeft}px right=${stats.marginRight}px top=${stats.marginTop}px bottom=${stats.marginBottom}px, required >= ${minEdgePadding}px; regenerate or refit from an unclipped source`
+      });
+    }
+
+    if (['prop', 'exit', 'character'].includes(asset.type) && asset.anchor?.y != null) {
+      const anchorY = Math.round(asset.anchor.y * image.height);
+      const bottomGap = anchorY - stats.maxY;
+      const maxBottomGap = Math.max(12, Math.round(image.height * maxBottomAnchorGapRatio));
+      if (bottomGap < -minEdgePadding) {
+        errors.push({
+          scope: 'runtime_readiness',
+          code: 'anchor_below_visible_asset',
+          message: `asset "${asset.id}" visible alpha extends ${Math.abs(bottomGap)}px below its y=${asset.anchor.y} anchor; refit so the feet/base sit on the declared bottom anchor`
+        });
+      } else if (bottomGap > maxBottomGap) {
+        errors.push({
+          scope: 'runtime_readiness',
+          code: 'floating_anchor_gap',
+          message: `asset "${asset.id}" visible bottom is ${bottomGap}px above its y=${asset.anchor.y} anchor, max ${maxBottomGap}px; likely floats or has excessive bottom padding for in-game placement`
+        });
+      }
     }
   }
 }
@@ -786,6 +851,7 @@ function main() {
   const wantReviewCheck = hasFlag(argv, 'check-review');
   const wantAlphaHaloCheck = hasFlag(argv, 'check-alpha-halo');
   const wantReadabilityCheck = hasFlag(argv, 'check-readability');
+  const wantRuntimeReadinessCheck = hasFlag(argv, 'check-runtime-readiness');
   const wantChibiAnimationCheck = hasFlag(argv, 'check-chibi-animation');
   const wantChibiQualityCheck = hasFlag(argv, 'check-chibi-quality');
   const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
@@ -828,6 +894,9 @@ function main() {
   if (wantReadabilityCheck || wantProduction) {
     checkObjectReadabilityBounds(assetsDoc, errors, { ids });
   }
+  if (wantRuntimeReadinessCheck) {
+    checkRuntimeReadiness(assetsDoc, errors, { ids });
+  }
   if (wantChibiAnimationCheck) {
     checkChibiIdleAnimation(assetsDoc, errors, { ids });
     checkChibiWalkAnimation(assetsDoc, errors, { ids });
@@ -850,6 +919,7 @@ function main() {
     if (wantReviewCheck || wantProduction) modes.push('review manifest');
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
+    if (wantRuntimeReadinessCheck) modes.push('runtime asset readiness');
     if (wantChibiAnimationCheck) modes.push('chibi idle/walk animation');
     if (wantChibiQualityCheck) modes.push('chibi crispness/contrast quality');
     if (wantEdgeProfileCheck || wantProduction) modes.push('terrain edge profiles');

@@ -176,6 +176,33 @@ function scaleContractBlock(asset) {
   ].join('\n');
 }
 
+function runtimeAssetContractBlock(asset) {
+  if (!['terrain', 'prop', 'exit', 'character', 'effect'].includes(asset.type)) return '';
+  if (asset.type === 'terrain') {
+    return [
+      '## Runtime asset contract',
+      'Generate for the final in-game footprint, not contact-sheet beauty. The processed PNG plus metadata, validation, review evidence, and composed scene proof are the asset; the raw image alone is not enough.',
+      'Terrain runtime role: this is walkable or blocking ground inside a tilemap, not a full illustration. It must repeat or connect according to its metadata without becoming the visual star of the scene.',
+      'Source completeness: the source must include enough surrounding pattern context for the producer crop plan. Reject sources with clipped focal marks, hard bands, scene objects, horizon, or edge lighting that will become tile seams.',
+      'Allowed deterministic post-processing: crop/family crop, edge/value normalization, resize, and terrain-specific seamless cleanup only. Do not add props, paths, objects, or focal marks after generation.',
+      'Approval evidence: judge the candidate first in composed mobile and desktop clean field screenshots; contact, adjacency, grass-family, and edge-profile sheets are supporting evidence.'
+    ].join('\n');
+  }
+  const shadowPolicy = asset.type === 'character'
+    ? 'Do not bake a ground shadow into the frame; the renderer supplies the shared separate chibi shadow layer.'
+    : 'Bake only the compact prop shadow expected by the asset contract; do not include floor planes, terrain patches, or long scene shadows.';
+  return [
+    '## Runtime asset contract',
+    'Generate for the final in-game footprint, not contact-sheet beauty. The processed PNG plus metadata, validation, review evidence, and composed scene proof are the asset; the raw image alone is not enough.',
+    'Raw source completeness: the source must contain the whole silhouette with breathing room. Do not accept clipped cap tips, feet, roots, ears, robes, props, or shadow edges.',
+    `Anchor/pivot: use the declared anchor ${JSON.stringify(asset.anchor)}. Keep the visible base/feet close to that bottom anchor so runtime placement and animation do not float or jitter.`,
+    'Alpha/edge safety: use true transparency or flat #ff00ff chroma key, leave safe transparent padding around the visible alpha, and avoid colored fringe that would bleed during browser/canvas filtering.',
+    shadowPolicy,
+    'Allowed deterministic post-processing: alpha/chroma cleanup, crop/fit, and resize only. Do not change identity, silhouette, pose, lighting, style, or animation after generation.',
+    'Approval evidence: judge the candidate first in composed mobile and desktop clean field screenshots; contact, alpha/halo, and mobile-readability sheets are supporting evidence.'
+  ].join('\n');
+}
+
 function tilemapContractBlock(asset) {
   if (asset.type !== 'terrain') return '';
   const tile = asset.tile || null;
@@ -292,6 +319,11 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(scaleContract);
       lines.push('');
     }
+    const runtimeContract = runtimeAssetContractBlock(asset);
+    if (runtimeContract) {
+      lines.push(runtimeContract);
+      lines.push('');
+    }
     const tileContract = tilemapContractBlock(asset);
     if (tileContract) {
       lines.push(tileContract);
@@ -335,6 +367,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     if (!terrainCandidate) {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-alpha-halo`);
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-readability`);
+      lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-runtime-readiness`);
       if (chibiCandidate) {
         lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-animation`);
         lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-quality`);

@@ -4,6 +4,8 @@ Date: 2026-06-23
 
 This plan upgrades Home Field image generation from "make a nice picture" to "make a runtime-ready game asset." A candidate is not ready because it looks good in isolation. It is ready only when the generated source, processed PNG, metadata, review evidence, and composed scene prove that the asset works inside the game.
 
+Implementation status: the shared generated prompts now include the runtime asset contract, candidate object/chibi prompts include `--check-runtime-readiness`, and the validator has an objective `--check-runtime-readiness` mode for transparent runtime assets. Source completeness and composed scene fit remain visual-review requirements because they cannot be proven from PNG geometry alone.
+
 ## Goal
 
 Every Home Field generation run should produce assets that are:
@@ -191,6 +193,14 @@ Add only objective checks:
 
 Keep style failures in visual review. A validator should catch "this cannot work as a file"; the Visual Critic catches "this does not look like the game."
 
+Current implementation command:
+
+```bash
+npm run game:home-field:validate -- --ids=<asset_ids> --check-files --check-runtime-readiness
+```
+
+This check currently applies to non-terrain assets. It fails empty-alpha assets, visible alpha that touches or nearly touches the canvas edge, and obvious bottom-anchor gaps that would make object-layer props or chibi frames float/jitter in the field.
+
 ### Phase 5: Regression Tests
 
 Add tests that prove:
@@ -227,4 +237,3 @@ The plan is implemented when:
 - a candidate cannot be presented as ready without composed mobile/desktop scene evidence;
 - docs distinguish mechanical validation from visual approval;
 - app-facing assets remain untouched until explicit human approval.
-
