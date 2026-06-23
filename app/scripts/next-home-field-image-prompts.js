@@ -250,7 +250,9 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push(`Anchor convention: ${JSON.stringify(asset.anchor)} (${anchorLabel(asset)})`);
   lines.push(`Collision: ${asset.collision}`);
 
-  if (asset.animation) {
+  if (asset.type === 'character' || asset.spritesheet) {
+    lines.push('Animation: spritesheet-driven idle/walk frames; see layout below.');
+  } else if (asset.animation) {
     const a = asset.animation;
     lines.push(`Animation: ${a.frames} frames at ${a.fps} fps (loop=${a.loop}), each frame ${a.frameWidth}x${a.frameHeight}, strip ${a.frameWidth * a.frames}x${a.frameHeight}, stillFrameIndex=${a.stillFrameIndex}`);
   } else {

@@ -942,6 +942,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff --resize/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --frames/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
+  assert.match(result.stdout, /Animation: spritesheet-driven idle\/walk frames/);
+  assert.doesNotMatch(result.stdout, /Animation: none \(single static PNG\)/);
   assert.match(result.stdout, /clear stale rejected Thalla state sheets, raw frames/);
   assert.match(result.stdout, /reference turnaround sheet/i);
   assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
