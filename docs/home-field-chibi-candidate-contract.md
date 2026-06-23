@@ -33,13 +33,14 @@ Each character still uses the locked Home Field runtime sheet shape:
 
 Stage 1 proves identity and mobile readability before full animation polish. Do not require 32 unique frames for the first run.
 
-Use a two-step visual workflow:
+Use a grouped-state visual workflow:
 
 0. Run `npm run game:home-field:preflight-chibi-proof` and stop if it fails.
 1. Clear stale rejected Thalla raw/candidate outputs from the previous failed run.
 2. Generate one non-production reference turnaround sheet for consistency.
 3. Review that reference sheet against the style reference and Thalla identity gate.
-4. Generate the final raw frame files as isolated per-frame PNGs only after the reference sheet passes.
+4. Generate one final grouped state sheet only after the reference sheet passes.
+5. Split the grouped state sheet into the canonical raw frame PNGs.
 
 The preflight step is mandatory before any destructive or moving cleanup. Codex Desktop's built-in `image_gen` tool is the default valid path and does not require `OPENAI_API_KEY`; the key is only required for CLI fallback runs. In strict shell/CI environments, set `HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT=1` and provide either CLI credentials, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`, or supplied local source images. Do not archive/delete the stale latest candidate until preflight passes.
 
@@ -53,15 +54,28 @@ The reference turnaround sheet is allowed only as visual guidance. Save it under
 
 The reference sheet should show the same Thalla design in the four facing directions `down`, `up`, `left`, and `right`, with the same proportions, camera angle, palette, and detail budget. It may include labels outside the art if useful for human review, but it is not a production raw source, not a runtime spritesheet, and must not be sliced into final frames.
 
-Generate each final raw file as its own isolated `64x64` or documented `128x128` transparent frame. Do not generate the final raw frames by cropping a larger contact sheet, grid sheet, character lineup, or full scene. If any final raw frame contains multiple sprites, miniature sprites, a field background, a border, or cropped sheet artifacts, discard that raw output and regenerate the affected frame.
+Generate final idle/walk states as one coherent `8x4` state sheet for the same character, saved under:
+
+```text
+.agent/home-field-workspace/raw/thalla_chibi.states.source.png
+```
+
+This grouped state sheet is the required source for all final state tiles so face, cap, robe, outline, palette, and detail level stay consistent across idle and walk frames. Row order is `down`, `up`, `left`, `right`; columns `0-1` are idle; columns `2-7` are walk. The source may be exactly `512x256` or a larger proportional `8x4` sheet for cleaner downscaling. It may use true transparency or flat `#ff00ff` chroma key. Do not generate final idle/walk states as 32 separate imagegen calls; that was the main style-drift failure in the 2026-06-22 rerun. Single-cell regeneration is allowed only as a targeted, human-approved repair after a grouped sheet mostly passes but one cell is defective.
 
 After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
 
+After generating the grouped state sheet, run:
+
+```bash
+npm run game:home-field:verify-chibi-proof-files -- --state-sheet
+npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff
+```
+
 Use smooth resizing (`--resize`) when composing higher-resolution isolated source frames into the `64x64` runtime sheet. Do not use nearest-neighbor resizing for production candidates; hard pixel stair-steps are a rejection signal for this hand-drawn field-sprite style.
 
-Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) for Stage 1 production. It may exist for older prompt printers, but it is not a valid input for the compact frame contract. Stage 1 producers must use the isolated raw frame files below.
+Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) for Stage 1 production. It may exist for older prompt printers, but it is not a valid input for the compact frame contract. Stage 1 producers must use the split raw frame files below.
 
-The minimum accepted Stage 1 input is 32 isolated character-only frames:
+The minimum accepted Stage 1 producer input is 32 isolated character-only frames derived from the grouped state sheet:
 
 - `2` idle/breathing frames per direction
 - `6` simple walk-loop frames per direction
@@ -144,10 +158,11 @@ Stage 1 detail budget:
 
 ## Candidate Workflow
 
-1. Generate only the Stage 1 raw Thalla frames under `.agent/home-field-workspace/raw/`.
-2. Produce the candidate sheet under `.agent/home-field-workspace/candidates/chibi-active-roster/latest/`.
-3. Validate only `thalla`, including `--check-chibi-animation`.
-4. Build contact/readability/alpha evidence and mobile+desktop Home Field previews using candidate routing.
-5. Update `docs/home-field-asset-review.json` for `thalla` only.
+1. Generate only the Stage 1 grouped Thalla state sheet under `.agent/home-field-workspace/raw/thalla_chibi.states.source.png`.
+2. Split that sheet into the 32 raw Thalla frame files under `.agent/home-field-workspace/raw/`.
+3. Produce the candidate sheet under `.agent/home-field-workspace/candidates/chibi-active-roster/latest/`.
+4. Validate only `thalla`, including `--check-chibi-animation`.
+5. Build contact/readability/alpha evidence and mobile+desktop Home Field previews using candidate routing.
+6. Update `docs/home-field-asset-review.json` for `thalla` only.
 
 The Stage 1 batch may end with `needs_review`, `needs_regen`, or `rejected`. Human approval is required before promotion to app-facing PNGs or expansion to the next roster stage.

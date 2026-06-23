@@ -204,11 +204,12 @@ Rules:
 
 - run `npm run game:home-field:preflight-chibi-proof` before moving or deleting stale rejected `thalla_chibi.frame_*.source.png` raw files or stale chibi candidate output;
 - stop without cleanup if preflight cannot find an allowed image generation path; Codex Desktop built-in `image_gen` is valid by default and does not require `OPENAI_API_KEY`;
-- generate and visually check the non-production turnaround reference before final frames;
-- verify saved reference/raw/candidate files with `npm run game:home-field:verify-chibi-proof-files` instead of searching image caches manually;
+- generate and visually check the non-production turnaround reference before final states;
+- generate final idle/walk states as one grouped `8x4` state sheet, then split it into raw frame chunks;
+- verify saved reference/state-sheet/raw/candidate files with `npm run game:home-field:verify-chibi-proof-files` instead of searching image caches manually;
 - top-down 2.5D field sprite, not portrait;
 - simple mobile-readable silhouette with BJD-inspired chibi doll appeal;
-- 32 isolated character-only frames: 2 idle plus 6 simple walk-loop frames per direction;
+- 32 isolated character-only frames derived from the grouped state sheet: 2 idle plus 6 simple walk-loop frames per direction;
 - at least 3 unique walk frames per direction in the composed sheet;
 - no baked ground shadow in chibi frames; use the separate `chibi_shadow` renderer/asset layer;
 - use `--resize`, not `--resize-nearest`, when producing the candidate sheet from larger isolated raw frames;
@@ -243,9 +244,12 @@ HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest
 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=$OBJECT_IDS npm run game:home-field:candidate-evidence
 ```
 
-For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the isolated raw frame files from `docs/home-field-chibi-candidate-contract.md`, then run:
+For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the grouped state sheet and split raw frame files from `docs/home-field-chibi-candidate-contract.md`, then run:
 
 ```bash
+npm run game:home-field:verify-chibi-proof-files -- --state-sheet
+npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff
+npm run game:home-field:verify-chibi-proof-files -- --frames
 npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-review
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo
@@ -351,9 +355,9 @@ Use broad mobile-readable silhouettes, fewer segments, top-down 2.5D camera, mut
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Chibi Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, 32 isolated character-only frames in the compact sheet contract, no baked shadow. Run npm run game:home-field:preflight-chibi-proof before cleanup; Codex Desktop built-in imagegen is allowed by default and does not require OPENAI_API_KEY.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, one coherent grouped 8x4 state sheet split into 32 character-only frames, no baked shadow. Run npm run game:home-field:preflight-chibi-proof before cleanup; Codex Desktop built-in imagegen is allowed by default and does not require OPENAI_API_KEY.
 
-Create a non-production turnaround reference first, then isolated transparent raw frames. Target a simple BJD-inspired chibi doll illustration: smooth doll-like face, tiny planted body, broad costume block, and very few large Thalla marks. Make a simple real walk loop: 6 walk columns per direction with at least 3 unique poses, not one replicated walk pose. Reject pixel-art, tiny featureless doll-sprite, beige generic elf, busy ornate fantasy sprite, straight portrait, realistic doll-photo/toy-render, baked shadow, or human-with-mushroom-hat results. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
+Create a non-production turnaround reference first, then one final grouped 8x4 state sheet at .agent/home-field-workspace/raw/thalla_chibi.states.source.png and split it into transparent raw frames. Target a simple BJD-inspired chibi doll illustration: smooth doll-like face, tiny planted body, broad costume block, and very few large Thalla marks. Make a simple real walk loop: 6 walk columns per direction with at least 3 unique poses, not one replicated walk pose. Reject pixel-art, tiny featureless doll-sprite, beige generic elf, busy ornate fantasy sprite, straight portrait, realistic doll-photo/toy-render, baked shadow, human-with-mushroom-hat results, or separately generated state tiles that drift in face/cap/robe details. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
 ```
 
 ### Producer/Validation Worker

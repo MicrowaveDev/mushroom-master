@@ -9,6 +9,7 @@ import { repoRoot } from '../shared/repo-root.js';
 import { readPngHeader } from './lib/bitmap-image-toolkit.js';
 
 const referencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
+const stateSheetPath = '.agent/home-field-workspace/raw/thalla_chibi.states.source.png';
 const directions = ['down', 'up', 'left', 'right'];
 const framePaths = directions.flatMap((dir) => [
   `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_0.source.png`,
@@ -52,8 +53,9 @@ function main() {
   if (explicitPath) {
     verifyPng(explicitPath, errors);
   } else {
-    const checkAll = hasFlag('all') || (!hasFlag('reference') && !hasFlag('frames') && !hasFlag('candidate'));
+    const checkAll = hasFlag('all') || (!hasFlag('reference') && !hasFlag('state-sheet') && !hasFlag('frames') && !hasFlag('candidate'));
     if (checkAll || hasFlag('reference')) verifyPng(referencePath, errors);
+    if (checkAll || hasFlag('state-sheet')) verifyPng(stateSheetPath, errors);
     if (checkAll || hasFlag('frames')) {
       framePaths.forEach((framePath) => verifyPng(framePath, errors, { expectedWidth: 64, expectedHeight: 64 }));
     }

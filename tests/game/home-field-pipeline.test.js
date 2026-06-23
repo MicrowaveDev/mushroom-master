@@ -18,6 +18,7 @@ const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-fie
 const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home-field-chibi-proof.js');
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
 const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
+const chibiSplitScriptPath = path.join(repoRoot, 'app/scripts/split-home-field-chibi-state-sheet.js');
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -869,12 +870,17 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Codex Desktop built-in imagegen by default/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
+  assert.match(result.stdout, /thalla_chibi\.states\.source\.png/);
+  assert.match(result.stdout, /verify-chibi-proof-files -- --state-sheet/);
+  assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --frames/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
-  assert.match(result.stdout, /clear stale rejected Thalla raw frames/);
+  assert.match(result.stdout, /clear stale rejected Thalla state sheets, raw frames/);
   assert.match(result.stdout, /reference turnaround sheet/i);
   assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
-  assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final raw frames/);
+  assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final frames/);
+  assert.match(result.stdout, /one coherent 8x4 state sheet/i);
+  assert.match(result.stdout, /Do not generate the final idle\/walk states as separate imagegen calls/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
   assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
   assert.match(result.stdout, /Mechanical sheet success, alpha success, and mobile readability do not count as style approval/);
@@ -897,6 +903,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Thalla Home Field Chibi Proof Context/);
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
+  assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Shadow contract: no baked shadow/);
 });
 
@@ -914,6 +921,37 @@ test('[home-field] chibi proof file verifier checks generated PNG paths', () => 
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /home-field chibi proof file verification: PASS/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] chibi state sheet splitter writes canonical raw frame chunks', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-state-sheet-test');
+  const sourcePath = path.join(fixtureDir, 'raw/thalla_chibi.states.source.png');
+  const outputDir = path.join(fixtureDir, 'raw');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  writeChibiSpritesheet(sourcePath, { staticWalk: false });
+
+  try {
+    const result = spawnSync(process.execPath, [
+      chibiSplitScriptPath,
+      `--source=${path.relative(repoRoot, sourcePath)}`,
+      `--output-dir=${path.relative(repoRoot, outputDir)}`,
+      '--prefix=thalla_chibi'
+    ], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /32 frame/);
+    const idlePath = path.join(outputDir, 'thalla_chibi.frame_idle_down_0.source.png');
+    const walkPath = path.join(outputDir, 'thalla_chibi.frame_walk_right_5.source.png');
+    assert.equal(readPngRgba(idlePath).width, 64);
+    assert.equal(readPngRgba(idlePath).height, 64);
+    assert.equal(readPngRgba(walkPath).width, 64);
+    assert.equal(readPngRgba(walkPath).height, 64);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }
@@ -1014,6 +1052,7 @@ test('[home-field] chibi proof preflight accepts Codex Desktop built-in imagegen
   assert.match(result.stdout, /OPENAI_API_KEY: missing/);
   assert.match(result.stdout, /built-in Codex Desktop imagegen allowed: yes/);
   assert.match(result.stdout, /OPENAI_API_KEY is not required/);
+  assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
 });
 

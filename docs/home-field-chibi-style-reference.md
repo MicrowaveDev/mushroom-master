@@ -12,6 +12,10 @@ Local reference image:
 
 ![Agent-log chibi style reference](reference/home-field/chibi-style-agent-log-reference.png)
 
+Additional liked Thalla direction from the 2026-06-22 Stage 1 rerun review:
+
+![Liked Thalla chibi direction](reference/home-field/chibi-thalla-liked-2026-06-23.png)
+
 The screenshot is a non-owned external style reference, so do not copy characters, costumes, symbols, props, composition, or exact facial designs from it. Use it only to calibrate Home Field chibi proportions, top-down field readability, outline weight, BJD-inspired doll simplicity, and scene-scale simplicity.
 
 ## Target Read
@@ -27,6 +31,7 @@ Home Field chibis should feel close to the reference in these ways:
 - cozy dark storybook mood, readable over muted green grass.
 - BJD-inspired chibi doll appeal: smooth porcelain/resin-like face planes, small calm face features, rounded cheeks, simple mitten hands, tiny planted feet, and a quiet collectible-doll posture translated into hand-drawn game art.
 - extremely low ornament count: one readable cap silhouette, one robe/body block, and only a few large gold identity marks.
+- the 2026-06-23 liked Thalla image is a positive direction for the warmer face/cap/robe appeal, but it must be simplified and shifted to an elevated map-sprite read before runtime use.
 
 ## Important Differences
 
@@ -46,3 +51,4 @@ Rejected examples:
 
 - The old tiny beige Thalla candidate is not approved. It is mechanically readable, but it is too generic and lacks the stronger field-sprite personality, head/body silhouette, and Thalla-specific mushroom-elf sovereignty required by this reference.
 - The 2026-06-20 Stage 1 candidate improved the silhouette and identity, but it is still too ornate: cap spots, gold markings, and costume detail make it read more like a busy fantasy sprite than a simple chibi BJD-style field doll. Regenerate with fewer marks and stronger doll-like simplicity.
+- The 2026-06-22 grouped candidate passed mechanical checks, but its separately generated idle/walk cells drifted in style and details. Future state tiles for one character must come from one grouped source sheet and be split into chunks.

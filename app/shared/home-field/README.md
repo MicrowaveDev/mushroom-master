@@ -350,7 +350,7 @@ The produce script will:
 
 ### Chibi spritesheet (the hardest case)
 
-The placeholder chibi is `8 cols × 4 rows × 64×64 = 32 frames`. Recommended generation strategy:
+The placeholder chibi is `8 cols × 4 rows × 64×64 = 32 frames`. Legacy placeholder generation strategy:
 
 1. **Generate per-pose frames** at 64×64 each:
    - 4 idle poses (one per direction): `_placeholder.frame_idle_down.source.png`, `…_idle_up.source.png`, `…_idle_left.source.png`, `…_idle_right.source.png`
@@ -358,6 +358,8 @@ The placeholder chibi is `8 cols × 4 rows × 64×64 = 32 frames`. Recommended g
 2. The produce script for character placeholders will replicate the single walk frame across columns 2–7 of each row (acceptable for a placeholder; specific-character chibis will get full 6-frame walks in a later phase).
 
 Per-character chibis (not the placeholder) require the full `8 × 4` grid: `2` idle frames plus `6` simple walk frames for each of `down`, `up`, `left`, and `right`. Runtime chibi frames are character-only transparent sprites; ground shadows are supplied by the separate shared `chibi_shadow` layer. For the current Thalla proof, use `npm run game:home-field:chibi-proof-context` and `npm run game:home-field:verify-chibi-proof-files` before producing a candidate sheet.
+
+For any production or candidate asset where several tiles are different states of the same subject, prefer one grouped source image over separate imagegen calls. Same-character chibi idle/walk states are the strict case: generate one coherent `8x4` state sheet at `.agent/home-field-workspace/raw/thalla_chibi.states.source.png`, then run `npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff` to create the 32 canonical raw frame chunks. This keeps face, silhouette, palette, line weight, and detail consistent across states. Separate per-state generation is a fallback only for explicitly approved single-cell repair.
 
 ### Validate and review
 

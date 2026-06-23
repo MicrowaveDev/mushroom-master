@@ -49,6 +49,7 @@
     "game:home-field:preflight-chibi-proof": "node app/scripts/preflight-home-field-chibi-proof.js",
     "game:home-field:chibi-proof-context": "node app/scripts/home-field-chibi-proof-context.js",
     "game:home-field:verify-chibi-proof-files": "node app/scripts/verify-home-field-chibi-proof-files.js",
+    "game:home-field:split-chibi-state-sheet": "node app/scripts/split-home-field-chibi-state-sheet.js",
     "game:home-field:next-chibi-proof": "node app/scripts/next-home-field-image-prompts.js --type=character --id=thalla --include-existing --ignore-review-gate --all --chibi-candidate",
     "game:home-field:next-tiles-all": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-production --review-verdict=needs_regen --all",
     "game:home-field:proof-tiles": "node app/scripts/generate-home-field-proof-tiles.js",

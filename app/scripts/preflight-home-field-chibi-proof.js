@@ -12,6 +12,7 @@ import path from 'node:path';
 import { repoRoot } from '../shared/repo-root.js';
 
 const requiredReferencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
+const requiredStateSheetPath = '.agent/home-field-workspace/raw/thalla_chibi.states.source.png';
 const requiredFramePaths = ['down', 'up', 'left', 'right'].flatMap((dir) => [
   `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_0.source.png`,
   `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_1.source.png`,
@@ -53,6 +54,7 @@ function main() {
   console.log('');
   console.log(`Repository: ${repoRoot}`);
   console.log(`Reference output path: ${requiredReferencePath}`);
+  console.log(`State sheet output path: ${requiredStateSheetPath}`);
   console.log(`Raw frame output slots: ${requiredFramePaths.length}`);
   console.log('');
   console.log('Output capability:');
