@@ -4,6 +4,10 @@
 
 Thalla Stage 1 was rerun as a candidate-only chibi proof. The final candidate comes from one generated grouped state sheet, split into 32 frames, with a deterministic 1px idle bob applied only to idle column `1` frames after split. No app-facing Home Field spritesheet was modified.
 
+## Post-Review Status
+
+This evidence is now historical. A later review tightened the Stage 1 chibi contract: idle bob and walk poses must exist in the grouped state sheet itself, and post-split deterministic processing may not synthesize motion or alter pose/silhouette. Because this candidate used a deterministic post-split idle bob, it should stay candidate evidence only and must not be promoted without a grouped-sheet regeneration.
+
 ## Outputs
 
 - Reference sheet: `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`

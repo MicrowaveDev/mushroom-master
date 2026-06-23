@@ -11,7 +11,7 @@ Generate only this candidate scope: grass_base_01, grass_base_02, grass_flowers_
 
 Candidate-only: do not overwrite web/public/home-field, do not approve assets, and do not set accepted=true.
 
-For Thalla, clear stale rejected raw/candidate files first, generate a non-production turnaround reference, visually reject the reference if it misses the style, then generate isolated final frames. Use smooth `--resize`, not `--resize-nearest`, when producing the candidate. Mechanical readability does not count as style approval.
+For Thalla, clear stale rejected raw/candidate files first, generate a non-production turnaround reference, visually reject the reference if it misses the style, then generate one coherent grouped `8x4` state sheet and split it into final raw frames. Idle bob and walk poses must be in the grouped sheet itself, not synthesized after split. Use smooth `--resize`, not `--resize-nearest`, when producing the candidate. Mechanical readability does not count as style approval.
 
 Use separate subagents for contract review, terrain, props/entrances, chibi, producer/validation, and visual criticism. Judge success from the composed mobile/desktop clean field screenshots. Final response must include clickable links to the candidate folder, evidence manifest, review sheets, and mobile/desktop clean screenshots.
 ```

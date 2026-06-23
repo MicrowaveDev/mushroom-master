@@ -46,6 +46,8 @@ function main() {
   console.log(`  candidate: ${candidatePath} (${exists(candidatePath) ? 'exists' : 'missing'})`);
   console.log('');
   console.log('Frame contract: generate one coherent 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
+  console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');
+  console.log('Post-split processing may clean alpha/chroma fringe, crop, and resize only; it must not alter pose, motion, silhouette, style, or identity.');
   console.log('Shadow contract: no baked shadow in chibi frames; use the separate chibi_shadow renderer/asset layer.');
 }
 

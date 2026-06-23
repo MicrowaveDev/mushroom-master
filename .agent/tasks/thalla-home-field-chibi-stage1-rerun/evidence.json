@@ -36,7 +36,7 @@
     {
       "id": "AC7",
       "status": "PASS",
-      "proof": "docs/home-field-asset-review.json keeps thalla accepted=false and verdict=needs_review."
+      "proof": "At the time of the original rerun, docs/home-field-asset-review.json kept thalla accepted=false and verdict=needs_review; the later postReview block records that this candidate now needs regeneration under the tightened no post-split motion-edit contract."
     }
   ],
   "candidate": {
@@ -47,5 +47,9 @@
     "mobilePreview": ".agent/home-field-workspace/review/home-field-candidate-mobile-clean.png",
     "desktopPreview": ".agent/home-field-workspace/review/home-field-candidate-desktop-clean.png",
     "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json"
+  },
+  "postReview": {
+    "status": "needs_regen",
+    "reason": "Later contract review disallows deterministic post-split motion edits. This candidate used a deterministic 1px idle bob after split, so it remains candidate evidence only and must not be promoted without grouped-sheet regeneration."
   }
 }

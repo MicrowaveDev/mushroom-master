@@ -161,7 +161,7 @@ For active-roster chibi runs, follow [`docs/home-field-chibi-candidate-contract.
 
 This batch is candidate-only. Do not overwrite `web/public/home-field/characters/*/spritesheet.png`, do not mark rows approved, and do not set `accepted: true`.
 
-Stage 1 is not a full-animation run. It proves Thalla's identity, silhouette, alpha, and mobile readability first. Use the compact Stage 1 frame contract: 8 unique poses minimum, written into the current 12 raw frame slots, then composed into the locked `512 x 256` runtime sheet by replicating one walk pose across columns `2-7` per direction. Do not require 32 unique frames until the base chibi design passes review.
+Stage 1 is not a full-animation polish run, but it now uses the full runtime sheet shape so the proof can catch style drift across real idle/walk states. Generate one coherent `8x4` grouped state sheet, split it into `32` canonical raw frame slots, and compose the locked `512 x 256` runtime sheet from those chunks. Idle columns `0-1` must be a real normal-to-little-bob pair in the grouped sheet itself. Walk columns `2-7` should target `4` meaningful poses with optional holds/in-betweens, and at least `3` unique walk frames per direction must survive validation.
 
 Use a two-step character consistency flow. First generate a non-production turnaround reference sheet under `.agent/home-field-workspace/reference/` that shows Thalla in `down`, `up`, `left`, and `right` with one consistent design. Then generate the final states as one coherent grouped `8x4` source sheet and split it into isolated transparent raw frames with the checked-in splitter. The reference sheet is allowed for visual consistency only; do not slice it into production raw frames.
 

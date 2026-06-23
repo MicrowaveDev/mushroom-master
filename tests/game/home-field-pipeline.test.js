@@ -979,6 +979,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Thalla Home Field Chibi Proof Context/);
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
+  assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
+  assert.match(result.stdout, /Post-split processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /Shadow contract: no baked shadow/);
 });
 

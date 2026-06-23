@@ -32,7 +32,7 @@ Each character still uses the locked Home Field runtime sheet shape:
 
 ## Stage 1 Frame Contract
 
-Stage 1 proves identity and mobile readability before full animation polish. Do not require 32 unique frames for the first run.
+Stage 1 proves identity and mobile readability before full animation polish. It still uses all 32 runtime slots, but it does not require all 32 frames to be unique; simple holds/in-betweens are acceptable when the grouped sheet preserves consistency.
 
 Use a grouped-state visual workflow:
 
