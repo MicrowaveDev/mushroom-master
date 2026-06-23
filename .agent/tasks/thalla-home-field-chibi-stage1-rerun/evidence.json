@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "taskId": "thalla-home-field-chibi-stage1-rerun",
+  "generatedAt": "2026-06-23T12:16:00Z",
+  "criteria": [
+    {
+      "id": "AC1",
+      "status": "PASS",
+      "proof": "npm run game:home-field:preflight-chibi-proof passed before cleanup."
+    },
+    {
+      "id": "AC2",
+      "status": "PASS",
+      "proof": "State sheet exists and verified at .agent/home-field-workspace/raw/thalla_chibi.states.source.png."
+    },
+    {
+      "id": "AC3",
+      "status": "PASS",
+      "proof": "Split command wrote 32 canonical 64x64 frame files; verify --frames passed."
+    },
+    {
+      "id": "AC4",
+      "status": "PASS",
+      "proof": "Candidate output is under .agent/home-field-workspace/candidates/chibi-active-roster/latest; git diff shows no app-facing spritesheet change."
+    },
+    {
+      "id": "AC5",
+      "status": "PASS",
+      "proof": "Scoped HOME_FIELD_ASSET_ROOT validation passed with files, review, alpha halo, readability, chibi animation, and chibi quality checks."
+    },
+    {
+      "id": "AC6",
+      "status": "PASS",
+      "proof": "Contact, alpha/halo, mobile readability, candidate evidence, and Playwright mobile/desktop clean previews were refreshed."
+    },
+    {
+      "id": "AC7",
+      "status": "PASS",
+      "proof": "docs/home-field-asset-review.json keeps thalla accepted=false and verdict=needs_review."
+    }
+  ],
+  "candidate": {
+    "path": ".agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png",
+    "sha256": "e32e7b45c239261c35c851c11b976580027bee44a9f917d32f572c6a1d78f813"
+  },
+  "review": {
+    "mobilePreview": ".agent/home-field-workspace/review/home-field-candidate-mobile-clean.png",
+    "desktopPreview": ".agent/home-field-workspace/review/home-field-candidate-desktop-clean.png",
+    "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json"
+  }
+}
