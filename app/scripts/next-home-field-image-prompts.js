@@ -264,7 +264,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(`Spritesheet layout: ${s.cols} cols x ${s.rows} rows of ${s.frameWidth}x${s.frameHeight} frames (total canvas ${s.width}x${s.height}).`);
       lines.push(`Row order top-to-bottom: ${s.rowOrder.join(', ')}.`);
       lines.push(`Frames per row: ${s.framesPerRow.idle.length} idle (cols ${s.framesPerRow.idle.join(',')}) + ${s.framesPerRow.walk.length} walk (cols ${s.framesPerRow.walk.join(',')}).`);
-      lines.push('Idle action: col 0 normal planted pose, col 1 tiny cute squat/squish pose that loops back to normal.');
+      lines.push('Idle action: col 0 normal planted pose, col 1 little 1-3px bob/squish that loops back to normal; keep it standing, not a crouch or deep squat.');
       lines.push('');
     }
   }

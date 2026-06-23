@@ -25,7 +25,7 @@ Each character still uses the locked Home Field runtime sheet shape:
 - Grid: `8` columns x `4` rows
 - Row order: `down`, `up`, `left`, `right`
 - Columns per row: `0-1` idle frames, `2-7` walk frames
-- Idle action: column `0` is the normal planted pose; column `1` is a tiny cute squat/squish pose that can loop back to normal
+- Idle action: column `0` is the normal planted pose; column `1` is a little `1-3px` bob/squish that can loop back to normal, not a crouch, seated pose, or deep squat
 - Transparent background
 - Character feet/base grounded near the bottom of each frame
 - No baked ground shadow in frames; the renderer supplies the shared separate `chibi_shadow` layer under the feet/base
@@ -61,7 +61,7 @@ Generate final idle/walk states as one coherent `8x4` state sheet for the same c
 .agent/home-field-workspace/raw/thalla_chibi.states.source.png
 ```
 
-This grouped state sheet is the required source for all final state tiles so face, cap, robe, outline, palette, and detail level stay consistent across idle and walk frames. Row order is `down`, `up`, `left`, `right`; columns `0-1` are idle; columns `2-7` are the walk lane. Idle column `0` is the normal planted pose, and idle column `1` is a tiny squat/squish pose with the body compressed slightly downward so the idle loop feels funny and cute when it returns to normal. The source may be exactly `512x256` or a larger proportional `8x4` sheet for cleaner downscaling. It may use true transparency or flat `#ff00ff` chroma key. Do not generate final idle/walk states as 32 separate imagegen calls; that was the main style-drift failure in the 2026-06-22 rerun. Single-cell regeneration is allowed only as a targeted, human-approved repair after a grouped sheet mostly passes but one cell is defective.
+This grouped state sheet is the required source for all final state tiles so face, cap, robe, outline, palette, and detail level stay consistent across idle and walk frames. Row order is `down`, `up`, `left`, `right`; columns `0-1` are idle; columns `2-7` are the walk lane. Idle column `0` is the normal planted pose, and idle column `1` is only a little `1-3px` bob/squish: the cap/head top may dip a few pixels and the body may compress slightly, but the character must remain standing with nearly the same alpha height. Do not bend the knees into a crouch, make the body sit low, or shorten the visible silhouette dramatically. The source may be exactly `512x256` or a larger proportional `8x4` sheet for cleaner downscaling. It may use true transparency or flat `#ff00ff` chroma key. Do not generate final idle/walk states as 32 separate imagegen calls; that was the main style-drift failure in the 2026-06-22 rerun. Single-cell regeneration is allowed only as a targeted, human-approved repair after a grouped sheet mostly passes but one cell is defective.
 
 Quality bar: the composed chibi must look at least as crisp, contrasted, and finished as the approved Home Field props at scene scale. Avoid blurry/downscaled sticker results. Require a chunky readable silhouette, thicker warm dark outline, clear face/cap/robe value separation, and finished hand-drawn polish comparable to the bushes, mushrooms, and gates in the clean preview.
 
@@ -80,10 +80,10 @@ Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw
 
 The minimum accepted Stage 1 producer input is 32 isolated character-only frames derived from the grouped state sheet:
 
-- `2` idle frames per direction: normal planted pose, then tiny squat/squish pose
+- `2` idle frames per direction: normal planted pose, then a little `1-3px` bob/squish pose
 - `6` walk-lane frames per direction
 
-The idle loop and walk lane may be simple, but neither may be static. Idle should be a two-frame `normal -> tiny squat -> normal` loop, with only a subtle vertical compression so it stays readable at 64px. Aim for a simple `4`-pose walk cycle distributed across the `6` walk-lane slots; the extra two slots may be subtle holds, settles, or in-betweens, not six important poses. At least `3` unique walk frames per direction must survive into the composed candidate sheet.
+The idle loop and walk lane may be simple, but neither may be static. Idle should be a two-frame `normal -> little bob/squish -> normal` loop, with only `1-3px` of vertical motion/compression so it stays readable at `64px`. The validator rejects deep idle squats when frame `1` loses too much visible height, shifts its alpha center too far, or drops the cap/body too low. Aim for a simple `4`-pose walk cycle distributed across the `6` walk-lane slots; the extra two slots may be subtle holds, settles, or in-betweens, not six important poses. At least `3` unique walk frames per direction must survive into the composed candidate sheet.
 
 For retina/source quality, the raw isolated frames may be generated at `128x128` if the run prompt requests it. They must still be simple map sprites and must downscale cleanly to the current `64x64` runtime frames. Larger source pixels are for cleaner alpha and shape control, not for extra detail.
 

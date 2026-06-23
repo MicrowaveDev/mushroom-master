@@ -257,6 +257,39 @@ function frameStats(image, frameWidth, frameHeight, row, col) {
   };
 }
 
+function frameAlphaBounds(image, frameWidth, frameHeight, row, col) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let visiblePixels = 0;
+
+  for (let y = 0; y < frameHeight; y += 1) {
+    for (let x = 0; x < frameWidth; x += 1) {
+      const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
+      if (image.rgba[offset + 3] <= 32) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+      visiblePixels += 1;
+    }
+  }
+
+  if (visiblePixels === 0) {
+    return { visiblePixels: 0, width: 0, height: 0, centerY: 0, minY: 0, maxY: 0 };
+  }
+
+  return {
+    visiblePixels,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    centerY: (minY + maxY) / 2,
+    minY,
+    maxY
+  };
+}
+
 function checkChibiQuality(assetsDoc, errors, {
   ids = null,
   minValueRange = 42,
@@ -306,7 +339,13 @@ function checkChibiQuality(assetsDoc, errors, {
   }
 }
 
-function checkChibiIdleAnimation(assetsDoc, errors, { ids = null, minUniqueIdleFrames = 2 } = {}) {
+function checkChibiIdleAnimation(assetsDoc, errors, {
+  ids = null,
+  minUniqueIdleFrames = 2,
+  maxIdleHeightLoss = 4,
+  maxIdleCenterShift = 3,
+  maxIdleTopDrop = 4
+} = {}) {
   for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
     if (!character.spritesheet) continue;
     if (character.status === 'missing') continue;
@@ -332,8 +371,26 @@ function checkChibiIdleAnimation(assetsDoc, errors, { ids = null, minUniqueIdleF
         errors.push({
           scope: 'chibi_animation',
           code: 'idle_frames_too_static',
-          message: `character "${character.id}" ${facing} idle row has ${unique.size} unique idle frame${unique.size === 1 ? '' : 's'} across ${idleCols.length} columns; Stage 1 requires a subtle two-frame idle, normal then tiny squat`
+          message: `character "${character.id}" ${facing} idle row has ${unique.size} unique idle frame${unique.size === 1 ? '' : 's'} across ${idleCols.length} columns; Stage 1 requires a subtle two-frame idle, normal then little 1-3px bob/squish`
         });
+      }
+      const normalBounds = frameAlphaBounds(image, s.frameWidth, s.frameHeight, row, idleCols[0]);
+      const squatBounds = frameAlphaBounds(image, s.frameWidth, s.frameHeight, row, idleCols[1]);
+      if (normalBounds.visiblePixels > 0 && squatBounds.visiblePixels > 0) {
+        const heightLoss = normalBounds.height - squatBounds.height;
+        const centerShift = squatBounds.centerY - normalBounds.centerY;
+        const topDrop = squatBounds.minY - normalBounds.minY;
+        if (
+          heightLoss > maxIdleHeightLoss ||
+          Math.abs(centerShift) > maxIdleCenterShift ||
+          topDrop > maxIdleTopDrop
+        ) {
+          errors.push({
+            scope: 'chibi_animation',
+            code: 'idle_squat_too_deep',
+            message: `character "${character.id}" ${facing} idle frame 1 squats too deeply: height loss ${heightLoss}px, center shift ${centerShift.toFixed(1)}px, top drop ${topDrop}px. Idle should be a little 1-3px bob/squish, not a crouch or seated pose`
+          });
+        }
       }
     }
   }

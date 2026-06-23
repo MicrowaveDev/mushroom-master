@@ -111,7 +111,7 @@ function writeSizedTransparentFixture(filePath, width, height) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
-function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = false } = {}) {
+function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = false, deepIdle = false } = {}) {
   const width = 512;
   const height = 256;
   const frameWidth = 64;
@@ -123,7 +123,8 @@ function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = fals
       const r = 40 + (row * 30);
       const g = 90 + (variant * 12);
       const b = 70 + (variant * 3);
-      for (let y = 14; y < 54; y += 1) {
+      const yStart = deepIdle && col === 1 ? 24 : 14;
+      for (let y = yStart; y < 54; y += 1) {
         for (let x = 18; x < 46; x += 1) {
           const i = ((row * frameHeight + y) * width + (col * frameWidth + x)) * 4;
           rgba[i + 0] = r;
@@ -1132,6 +1133,25 @@ test('[home-field] chibi animation validator rejects static replicated walk fram
     });
     assert.equal(failedIdle.status, 1, failedIdle.stderr || failedIdle.stdout);
     assert.match(failedIdle.stderr, /idle_frames_too_static/);
+
+    writeChibiSpritesheet(outputAbs, { deepIdle: true, staticWalk: false });
+    const failedDeepIdle = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=thalla',
+      '--check-files',
+      '--check-chibi-animation'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: candidateRoot
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(failedDeepIdle.status, 1, failedDeepIdle.stderr || failedDeepIdle.stdout);
+    assert.match(failedDeepIdle.stderr, /idle_squat_too_deep/);
 
     writeChibiSpritesheet(outputAbs, { staticWalk: false });
     const passed = spawnSync(process.execPath, [
