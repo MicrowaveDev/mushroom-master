@@ -47,5 +47,36 @@ export function useCustomization(state, refreshBootstrap) {
     }
   }
 
-  return { switchPortrait, switchPreset, purchasePortrait };
+  async function purchaseWalletCoins({
+    bundleId = 'coins_small',
+    provider = 'telegram_stars',
+    surface = 'telegram_mini_app'
+  } = {}) {
+    try {
+      const result = await apiJson('/api/wallet/purchase-intents', {
+        method: 'POST',
+        headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
+        body: JSON.stringify({ bundleId, provider, surface })
+      }, state.sessionKey);
+      const checkout = result?.checkout || {};
+      const telegramInvoice = checkout.invoiceLink && globalThis.Telegram?.WebApp?.openInvoice;
+      if (telegramInvoice) {
+        globalThis.Telegram.WebApp.openInvoice(checkout.invoiceLink, async (status) => {
+          if (status === 'paid') await refreshBootstrap();
+        });
+        return;
+      }
+      if (checkout.checkoutUrl && typeof window !== 'undefined') {
+        window.open(checkout.checkoutUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      state.error = checkout.setupRequired
+        ? 'Wallet purchases are not configured yet'
+        : 'Payment checkout is not available';
+    } catch (error) {
+      state.error = error.message || 'Failed to start wallet purchase';
+    }
+  }
+
+  return { switchPortrait, switchPreset, purchasePortrait, purchaseWalletCoins };
 }

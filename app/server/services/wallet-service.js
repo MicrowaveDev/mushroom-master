@@ -9,6 +9,11 @@ export const WALLET_PURCHASE_PROVIDERS = new Set([
   'nowpayments'
 ]);
 
+export const WALLET_PAYMENT_SURFACES = {
+  telegram_mini_app: ['telegram_stars'],
+  web: ['telegram_stars', 'btcpay', 'nowpayments']
+};
+
 const PROVIDER_PRICE_CONFIG = {
   telegram_stars: { priceCurrency: 'XTR', unitScale: 1 },
   btcpay: { priceCurrency: 'USD', unitScale: 100 },
@@ -21,10 +26,29 @@ const BASE_WALLET_BUNDLES = [
   { id: 'coins_large', walletAmount: 1200, priceUnits: 10 }
 ];
 
+const walletMutationLocks = new Map();
+
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
   err.statusCode = statusCode;
   return err;
+}
+
+export async function withWalletMutationLock(playerId, work) {
+  const lockKey = String(playerId || '');
+  let releaseLock;
+  const lockPromise = new Promise((resolve) => { releaseLock = resolve; });
+  const previousLock = walletMutationLocks.get(lockKey) || Promise.resolve();
+  walletMutationLocks.set(lockKey, lockPromise);
+  await previousLock;
+  try {
+    return await work();
+  } finally {
+    if (walletMutationLocks.get(lockKey) === lockPromise) {
+      walletMutationLocks.delete(lockKey);
+    }
+    releaseLock();
+  }
 }
 
 function normalizeCurrencyCode(currencyCode = WALLET_CURRENCY_CODE) {
@@ -39,6 +63,23 @@ function providerConfig(provider) {
   return { provider: normalized, ...PROVIDER_PRICE_CONFIG[normalized] };
 }
 
+export function normalizePaymentSurface(surface = 'web') {
+  const normalized = String(surface || 'web').trim();
+  return Object.hasOwn(WALLET_PAYMENT_SURFACES, normalized) ? normalized : 'web';
+}
+
+export function getWalletPurchaseProviders(surface = 'web') {
+  return [...WALLET_PAYMENT_SURFACES[normalizePaymentSurface(surface)]];
+}
+
+function assertProviderAllowedOnSurface(provider, surface = 'web') {
+  const normalizedSurface = normalizePaymentSurface(surface);
+  if (!getWalletPurchaseProviders(normalizedSurface).includes(provider)) {
+    throw httpError('Wallet purchase provider is not available on this payment surface', 403);
+  }
+  return normalizedSurface;
+}
+
 function bundleForProvider(bundle, provider) {
   const config = providerConfig(provider);
   return {
@@ -51,11 +92,14 @@ function bundleForProvider(bundle, provider) {
   };
 }
 
-export function getWalletBundles(provider = null) {
+export function getWalletBundles(provider = null, { surface = 'web' } = {}) {
+  const normalizedSurface = normalizePaymentSurface(surface);
   if (provider) {
+    const normalizedProvider = providerConfig(provider).provider;
+    assertProviderAllowedOnSurface(normalizedProvider, normalizedSurface);
     return BASE_WALLET_BUNDLES.map((bundle) => bundleForProvider(bundle, provider));
   }
-  return [...WALLET_PURCHASE_PROVIDERS].flatMap((purchaseProvider) =>
+  return getWalletPurchaseProviders(normalizedSurface).flatMap((purchaseProvider) =>
     BASE_WALLET_BUNDLES.map((bundle) => bundleForProvider(bundle, purchaseProvider))
   );
 }
@@ -68,6 +112,10 @@ function findWalletBundle(bundleId, provider) {
 
 function metadataJson(metadata) {
   return JSON.stringify(metadata && typeof metadata === 'object' ? metadata : {});
+}
+
+function centsToDecimalUnits(amount) {
+  return Number((Number(amount || 0) / 100).toFixed(2));
 }
 
 function rowToTransaction(row) {
@@ -87,6 +135,9 @@ function rowToTransaction(row) {
 }
 
 function checkoutDataForIntent(intent) {
+  const storedCheckout = intent.metadata?.checkout && typeof intent.metadata.checkout === 'object'
+    ? intent.metadata.checkout
+    : {};
   if (intent.provider === 'telegram_stars') {
     return {
       type: 'telegram_invoice',
@@ -97,7 +148,8 @@ function checkoutDataForIntent(intent) {
       currency: intent.priceCurrency,
       prices: [
         { label: `${intent.walletAmount} wallet coins`, amount: intent.priceAmount }
-      ]
+      ],
+      ...storedCheckout
     };
   }
   return {
@@ -107,7 +159,8 @@ function checkoutDataForIntent(intent) {
     checkoutUrl: null,
     paymentUri: null,
     priceAmount: intent.priceAmount,
-    priceCurrency: intent.priceCurrency
+    priceCurrency: intent.priceCurrency,
+    ...storedCheckout
   };
 }
 
@@ -193,27 +246,20 @@ async function applyCurrencyDelta(client, {
 
   await ensureWalletBalanceRow(client, playerId, normalizedCurrency);
 
-  const current = await client.query(
-    `SELECT balance FROM player_wallet_balances WHERE player_id = $1 AND currency_code = $2`,
-    [playerId, normalizedCurrency]
+  const updatedAt = nowIso();
+  const balanceResult = await client.query(
+    `UPDATE player_wallet_balances
+     SET balance = balance + $3, updated_at = $4
+     WHERE player_id = $1
+       AND currency_code = $2
+       AND balance + $3 >= 0
+     RETURNING balance`,
+    [playerId, normalizedCurrency, amount, updatedAt]
   );
-  const currentBalance = Number(current.rows[0]?.balance || 0);
-  const nextBalance = currentBalance + amount;
-  if (nextBalance < 0) {
+  if (!balanceResult.rowCount) {
     throw httpError('Not enough wallet balance', 400);
   }
-  await client.query(
-    `UPDATE player_wallet_balances
-     SET balance = $3, updated_at = $4
-     WHERE player_id = $1 AND currency_code = $2`,
-    [playerId, normalizedCurrency, nextBalance, nowIso()]
-  );
-
-  const balanceRow = await client.query(
-    `SELECT balance FROM player_wallet_balances WHERE player_id = $1 AND currency_code = $2`,
-    [playerId, normalizedCurrency]
-  );
-  const balanceAfter = Number(balanceRow.rows[0]?.balance || 0);
+  const balanceAfter = Number(balanceResult.rows[0]?.balance || 0);
   const transaction = {
     id: createId('wtx'),
     playerId,
@@ -250,11 +296,143 @@ async function applyCurrencyDelta(client, {
   if (normalizedCurrency === WALLET_CURRENCY_CODE) {
     await client.query(
       `UPDATE players SET spore = $2, updated_at = $3 WHERE id = $1`,
-      [playerId, balanceAfter, nowIso()]
+      [playerId, balanceAfter, updatedAt]
     );
   }
 
   return transaction;
+}
+
+async function postJson(url, payload, { fetchImpl = globalThis.fetch, headers = {} } = {}) {
+  if (typeof fetchImpl !== 'function') {
+    throw httpError('Payment provider fetch is unavailable', 503);
+  }
+  const response = await fetchImpl(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    },
+    body: JSON.stringify(payload)
+  });
+  const json = await response.json();
+  if (!response.ok || json?.ok === false) {
+    throw httpError(`Payment provider invoice creation failed: ${json?.description || json?.message || response.status}`, 502);
+  }
+  return json;
+}
+
+function checkoutSetupRequired(provider, missing) {
+  return {
+    provider,
+    setupRequired: missing,
+    invoiceReady: false
+  };
+}
+
+function testModeWithoutInjectedFetch(fetchImpl) {
+  return process.env.NODE_ENV === 'test' && fetchImpl === globalThis.fetch;
+}
+
+async function createTelegramStarsCheckout(intent, { fetchImpl = globalThis.fetch } = {}) {
+  if (testModeWithoutInjectedFetch(fetchImpl)) return checkoutSetupRequired('telegram_stars', ['test_fetchImpl']);
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return checkoutSetupRequired('telegram_stars', ['TELEGRAM_BOT_TOKEN']);
+  const invoice = checkoutDataForIntent(intent);
+  const result = await postJson(`https://api.telegram.org/bot${token}/createInvoiceLink`, {
+    title: invoice.title,
+    description: invoice.description,
+    payload: intent.id,
+    provider_token: '',
+    currency: intent.priceCurrency,
+    prices: invoice.prices
+  }, { fetchImpl });
+  return {
+    type: 'telegram_invoice',
+    provider: 'telegram_stars',
+    invoiceLink: result.result,
+    invoiceReady: true
+  };
+}
+
+async function createBtcpayCheckout(intent, { fetchImpl = globalThis.fetch } = {}) {
+  if (testModeWithoutInjectedFetch(fetchImpl)) return checkoutSetupRequired('btcpay', ['test_fetchImpl']);
+  const serverUrl = String(process.env.BTCPAY_SERVER_URL || '').replace(/\/+$/, '');
+  const storeId = process.env.BTCPAY_STORE_ID;
+  const apiKey = process.env.BTCPAY_API_KEY;
+  const missing = [
+    !serverUrl && 'BTCPAY_SERVER_URL',
+    !storeId && 'BTCPAY_STORE_ID',
+    !apiKey && 'BTCPAY_API_KEY'
+  ].filter(Boolean);
+  if (missing.length) return checkoutSetupRequired('btcpay', missing);
+
+  const json = await postJson(`${serverUrl}/api/v1/stores/${storeId}/invoices`, {
+    amount: centsToDecimalUnits(intent.priceAmount),
+    currency: intent.priceCurrency,
+    metadata: {
+      orderId: intent.id,
+      walletPurchaseIntentId: intent.id,
+      playerId: intent.playerId,
+      bundleId: intent.metadata?.bundleId || null
+    },
+    checkout: {
+      redirectURL: process.env.PUBLIC_GAME_URL || process.env.TELEGRAM_GAME_URL || undefined
+    }
+  }, {
+    fetchImpl,
+    headers: { Authorization: `token ${apiKey}` }
+  });
+
+  return {
+    type: 'crypto_invoice',
+    provider: 'btcpay',
+    providerInvoiceId: json.id || json.invoiceId || intent.providerInvoiceId,
+    checkoutUrl: json.checkoutLink || json.checkoutUrl || null,
+    paymentUri: json.paymentUri || null,
+    invoiceReady: true
+  };
+}
+
+async function createNowPaymentsCheckout(intent, { fetchImpl = globalThis.fetch } = {}) {
+  if (testModeWithoutInjectedFetch(fetchImpl)) return checkoutSetupRequired('nowpayments', ['test_fetchImpl']);
+  const apiKey = process.env.NOWPAYMENTS_API_KEY;
+  const missing = [!apiKey && 'NOWPAYMENTS_API_KEY'].filter(Boolean);
+  if (missing.length) return checkoutSetupRequired('nowpayments', missing);
+  const baseUrl = process.env.NOWPAYMENTS_API_URL || 'https://api.nowpayments.io';
+  const publicUrl = process.env.PUBLIC_GAME_URL || process.env.TELEGRAM_GAME_URL || '';
+  const ipnCallbackUrl = publicUrl ? new URL('/api/wallet/purchase-webhook/nowpayments', publicUrl).toString() : undefined;
+
+  const json = await postJson(`${baseUrl.replace(/\/+$/, '')}/v1/payment`, {
+    price_amount: centsToDecimalUnits(intent.priceAmount),
+    price_currency: String(intent.priceCurrency || 'USD').toLowerCase(),
+    pay_currency: process.env.NOWPAYMENTS_DEFAULT_PAY_CURRENCY || 'btc',
+    order_id: intent.id,
+    order_description: `${intent.walletAmount} wallet coins`,
+    ipn_callback_url: ipnCallbackUrl
+  }, {
+    fetchImpl,
+    headers: { 'x-api-key': apiKey }
+  });
+
+  return {
+    type: 'crypto_invoice',
+    provider: 'nowpayments',
+    providerInvoiceId: json.payment_id || json.invoice_id || json.id || intent.providerInvoiceId,
+    checkoutUrl: json.invoice_url || json.payment_url || null,
+    paymentUri: json.pay_address ? `${json.pay_currency || 'crypto'}:${json.pay_address}` : null,
+    payAddress: json.pay_address || null,
+    payAmount: json.pay_amount || null,
+    payCurrency: json.pay_currency || null,
+    invoiceReady: true
+  };
+}
+
+async function createProviderCheckout(intent, options = {}) {
+  if (intent.provider === 'telegram_stars') return createTelegramStarsCheckout(intent, options);
+  if (intent.provider === 'btcpay') return createBtcpayCheckout(intent, options);
+  if (intent.provider === 'nowpayments') return createNowPaymentsCheckout(intent, options);
+  throw httpError('Unknown wallet purchase provider', 400);
 }
 
 export async function grantCurrency(client, {
@@ -310,11 +488,15 @@ export async function spendCurrency(client, {
 }
 
 export async function grantCurrencyForPlayer(params) {
-  return withTransaction((client) => grantCurrency(client, params));
+  return withWalletMutationLock(params.playerId, () =>
+    withTransaction((client) => grantCurrency(client, params))
+  );
 }
 
 export async function spendCurrencyForPlayer(params) {
-  return withTransaction((client) => spendCurrency(client, params));
+  return withWalletMutationLock(params.playerId, () =>
+    withTransaction((client) => spendCurrency(client, params))
+  );
 }
 
 export async function getWalletState(playerId, { limit = 10 } = {}) {
@@ -341,10 +523,15 @@ export async function getWalletState(playerId, { limit = 10 } = {}) {
 export async function createPurchaseIntent(playerId, {
   bundleId,
   provider = 'telegram_stars',
-  idempotencyKey = null
+  idempotencyKey = null,
+  surface = 'web',
+  fetchImpl = globalThis.fetch
 } = {}) {
+  const normalizedSurface = normalizePaymentSurface(surface);
+  const normalizedProvider = providerConfig(provider).provider;
+  assertProviderAllowedOnSurface(normalizedProvider, normalizedSurface);
   const bundle = findWalletBundle(bundleId, provider);
-  return withTransaction(async (client) => {
+  const intent = await withTransaction(async (client) => {
     if (idempotencyKey) {
       const existing = await client.query(
         `SELECT * FROM wallet_purchase_intents
@@ -360,7 +547,8 @@ export async function createPurchaseIntent(playerId, {
     const providerInvoiceId = createId(`invoice_${bundle.provider}`);
     const metadata = {
       bundleId: bundle.id,
-      checkoutProvider: bundle.provider
+      checkoutProvider: bundle.provider,
+      paymentSurface: normalizedSurface
     };
 
     await client.query(
@@ -386,6 +574,25 @@ export async function createPurchaseIntent(playerId, {
     const row = await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [id]);
     return rowToPurchaseIntent(row.rows[0]);
   });
+
+  if (intent.checkout?.invoiceReady || intent.checkout?.setupRequired) return intent;
+
+  const checkout = await createProviderCheckout(intent, { fetchImpl });
+  const nextMetadata = {
+    ...intent.metadata,
+    checkout
+  };
+  const providerInvoiceId = checkout.providerInvoiceId || intent.providerInvoiceId;
+  await query(
+    `UPDATE wallet_purchase_intents
+     SET provider_invoice_id = $2,
+         metadata_json = $3,
+         updated_at = $4
+     WHERE id = $1`,
+    [intent.id, providerInvoiceId, metadataJson(nextMetadata), nowIso()]
+  );
+  const updated = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
+  return rowToPurchaseIntent(updated.rows[0]);
 }
 
 export async function completePurchaseIntent({
@@ -398,7 +605,18 @@ export async function completePurchaseIntent({
   metadata = {}
 } = {}) {
   const normalizedProvider = providerConfig(provider).provider;
-  return withTransaction(async (client) => {
+  const initialLookup = intentId
+    ? await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intentId])
+    : await query(
+      `SELECT * FROM wallet_purchase_intents WHERE provider = $1 AND provider_invoice_id = $2`,
+      [normalizedProvider, providerInvoiceId]
+    );
+  if (!initialLookup.rowCount) throw httpError('Unknown wallet purchase intent', 404);
+  if (initialLookup.rows[0].provider !== normalizedProvider) {
+    throw httpError('Invalid wallet purchase provider', 400);
+  }
+
+  return withWalletMutationLock(initialLookup.rows[0].player_id, () => withTransaction(async (client) => {
     const lookup = intentId
       ? await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intentId])
       : await client.query(
@@ -427,14 +645,15 @@ export async function completePurchaseIntent({
 
     const paymentId = providerPaymentId || createId(`payment_${normalizedProvider}`);
     const completedAt = nowIso();
-    await client.query(
+    const updatedIntent = await client.query(
       `UPDATE wallet_purchase_intents
        SET status = 'completed',
            provider_payment_id = $2,
            completed_at = $3,
            updated_at = $3,
            metadata_json = $4
-       WHERE id = $1`,
+       WHERE id = $1 AND status = 'pending'
+       RETURNING *`,
       [
         row.id,
         paymentId,
@@ -442,29 +661,40 @@ export async function completePurchaseIntent({
         metadataJson({ ...parseJson(row.metadata_json, {}), completion: metadata })
       ]
     );
+    if (!updatedIntent.rowCount) {
+      const current = await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [row.id]);
+      if (current.rows[0]?.status === 'completed') {
+        return {
+          intent: rowToPurchaseIntent(current.rows[0]),
+          transaction: null,
+          alreadyCompleted: true
+        };
+      }
+      throw httpError('Wallet purchase is not pending', 409);
+    }
+    const completedRow = updatedIntent.rows[0];
 
     const transaction = await grantCurrency(client, {
-      playerId: row.player_id,
-      currencyCode: row.currency_code,
-      amount: Number(row.wallet_amount || 0),
+      playerId: completedRow.player_id,
+      currencyCode: completedRow.currency_code,
+      amount: Number(completedRow.wallet_amount || 0),
       reason: 'wallet_purchase',
       sourceType: 'wallet_purchase_intent',
-      sourceId: row.id,
-      idempotencyKey: `wallet_purchase:${row.id}`,
+      sourceId: completedRow.id,
+      idempotencyKey: `wallet_purchase:${completedRow.id}`,
       metadata: {
         provider: normalizedProvider,
-        providerInvoiceId: row.provider_invoice_id,
+        providerInvoiceId: completedRow.provider_invoice_id,
         providerPaymentId: paymentId
       }
     });
 
-    const completed = await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [row.id]);
     return {
-      intent: rowToPurchaseIntent(completed.rows[0]),
+      intent: rowToPurchaseIntent(completedRow),
       transaction,
       alreadyCompleted: false
     };
-  });
+  }));
 }
 
 export async function validateTelegramPreCheckout(preCheckoutQuery) {

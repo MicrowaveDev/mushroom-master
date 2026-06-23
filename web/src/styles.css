@@ -1534,6 +1534,16 @@ select {
   color: rgba(47, 36, 25, 0.58);
   margin-top: auto;
 }
+.home-wallet-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.home-wallet-buy {
+  font-size: 0.95em;
+  white-space: nowrap;
+}
 .home-run-footer strong {
   margin-left: 4px;
   color: rgba(47, 36, 25, 0.85);

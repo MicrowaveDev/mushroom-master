@@ -7,7 +7,8 @@ import {
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 import {
   spendCurrency,
-  WALLET_CURRENCY_CODE
+  WALLET_CURRENCY_CODE,
+  withWalletMutationLock
 } from './wallet-service.js';
 
 const PORTRAIT_PACK_ID = 'season_1_portraits';
@@ -23,6 +24,17 @@ function parseCsvEnv(value) {
     .split(',')
     .map((part) => part.trim())
     .filter(Boolean);
+}
+
+function parseJsonEnv(name, fallback = {}) {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function isAssetGachaEnabled() {
@@ -45,6 +57,22 @@ function rarityForPortraitVariant(variant) {
   return { rarity: 'common', dropWeight: 100 };
 }
 
+function acquisitionPolicyForAsset(assetId, price) {
+  const overrides = parseJsonEnv('ASSET_CATALOG_POLICY_JSON', {});
+  const override = overrides[assetId] && typeof overrides[assetId] === 'object' ? overrides[assetId] : {};
+  const configuredDefault = process.env.ASSET_CATALOG_DEFAULT_PAID_MODE;
+  const defaultMode = price > 0 && ['direct', 'gacha', 'both'].includes(configuredDefault)
+    ? configuredDefault
+    : price > 0 ? 'both' : 'direct';
+  const acquisitionMode = ['direct', 'gacha', 'both'].includes(override.acquisitionMode)
+    ? override.acquisitionMode
+    : defaultMode;
+  const packId = Object.hasOwn(override, 'packId')
+    ? override.packId
+    : (price > 0 && acquisitionMode !== 'direct' ? PORTRAIT_PACK_ID : null);
+  return { acquisitionMode, packId };
+}
+
 export function portraitAssetId(mushroomId, portraitId = 'default') {
   return `portrait.${mushroomId}.${portraitId}`;
 }
@@ -61,8 +89,10 @@ export function getAssetCatalog() {
     for (const variant of variants) {
       const price = Number(variant.cost || 0);
       const rarity = rarityForPortraitVariant(variant);
+      const assetId = portraitAssetId(mushroomId, variant.id);
+      const acquisition = acquisitionPolicyForAsset(assetId, price);
       assets.push({
-        assetId: portraitAssetId(mushroomId, variant.id),
+        assetId,
         slot: 'portrait',
         targetType: 'character',
         targetId: mushroomId,
@@ -71,8 +101,8 @@ export function getAssetCatalog() {
         path: portraitUrl(mushroomId, variant.id),
         price,
         currencyCode: WALLET_CURRENCY_CODE,
-        acquisitionMode: price > 0 ? 'both' : 'direct',
-        packId: price > 0 ? PORTRAIT_PACK_ID : null,
+        acquisitionMode: acquisition.acquisitionMode,
+        packId: acquisition.packId,
         rarity: price > 0 ? rarity.rarity : null,
         dropWeight: price > 0 ? rarity.dropWeight : 0,
         maxCopiesPerPlayer: 1
@@ -93,8 +123,8 @@ function configuredRollPriceAmount() {
 
 export function getAssetPacks() {
   const assets = getAssetCatalog().filter((asset) => asset.packId === PORTRAIT_PACK_ID);
-  return [
-    {
+  const packOverrides = parseJsonEnv('ASSET_GACHA_PACK_OVERRIDES_JSON', {});
+  const pack = {
       id: PORTRAIT_PACK_ID,
       seasonId: 'season_1',
       collectionId: 'portraits',
@@ -110,6 +140,15 @@ export function getAssetPacks() {
         rarity: asset.rarity || 'common',
         dropWeight: asset.dropWeight || 1
       }))
+  };
+  const override = packOverrides[PORTRAIT_PACK_ID] && typeof packOverrides[PORTRAIT_PACK_ID] === 'object'
+    ? packOverrides[PORTRAIT_PACK_ID]
+    : {};
+  return [
+    {
+      ...pack,
+      ...override,
+      items: Array.isArray(override.items) ? override.items : pack.items
     }
   ];
 }
@@ -299,7 +338,7 @@ export async function purchaseAsset(playerId, assetId, {
     throw httpError('Direct purchase is unavailable for this asset', 403);
   }
 
-  return withTransaction(async (client) => {
+  return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
     const existing = await activeAssetInstance(client, playerId, asset.assetId);
     if (existing) {
       return {
@@ -347,7 +386,7 @@ export async function purchaseAsset(playerId, assetId, {
       alreadyOwned: inserted.alreadyOwned,
       transaction
     };
-  });
+  }));
 }
 
 export async function equipAsset(playerId, assetId) {
@@ -357,7 +396,7 @@ export async function equipAsset(playerId, assetId) {
     throw httpError('Unsupported asset equipment slot', 400);
   }
 
-  return withTransaction(async (client) => {
+  return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
     let instance = null;
     if (asset.price > 0) {
       instance = await activeAssetInstance(client, playerId, asset.assetId);
@@ -407,7 +446,7 @@ export async function equipAsset(playerId, assetId) {
       path: asset.path,
       targetId: asset.targetId
     };
-  });
+  }));
 }
 
 export async function equipPortrait(playerId, mushroomId, portraitId) {
@@ -469,7 +508,7 @@ export async function rollAssetPack(playerId, packId, {
   if (!pack) throw httpError('Unknown asset pack', 404);
   if (!packIsActive(pack)) throw httpError('Asset pack is not active', 403);
 
-  return withTransaction(async (client) => {
+  return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
     if (idempotencyKey) {
       const existing = await client.query(
         `SELECT * FROM asset_rolls
@@ -564,7 +603,7 @@ export async function rollAssetPack(playerId, packId, {
       transaction,
       alreadyProcessed: false
     };
-  });
+  }));
 }
 
 export function getPackOdds(packId) {

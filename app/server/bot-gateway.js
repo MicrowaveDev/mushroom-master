@@ -42,6 +42,22 @@ export function createTelegramInlineKeyboard(reply) {
   return buttons.length ? { inline_keyboard: buttons } : undefined;
 }
 
+export function createPaymentSupportReply() {
+  const supportUrl = process.env.PAYMENT_SUPPORT_URL || process.env.PUBLIC_SUPPORT_URL || process.env.PUBLIC_GAME_URL || '';
+  const termsUrl = process.env.PAYMENT_TERMS_URL || process.env.PUBLIC_TERMS_URL || process.env.PUBLIC_GAME_URL || '';
+  return {
+    text: [
+      'Payment support: contact the Mushroom Battles team before opening a dispute.',
+      'Wallet purchases are granted only after verified provider payment callbacks.',
+      'Refunds and failed/late crypto payments are handled by support review.'
+    ].join('\n'),
+    ctas: [
+      supportUrl ? { label: 'Support', url: supportUrl } : null,
+      termsUrl ? { label: 'Terms', url: termsUrl } : null
+    ].filter(Boolean)
+  };
+}
+
 function appendQuery(url, params) {
   const target = new URL(url);
   for (const [key, value] of Object.entries(params)) {
@@ -262,6 +278,24 @@ export async function handleTelegramWebhook(update, options = {}) {
   }
 
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
+  if (/^\/paysupport(?:@\w+)?(?:\s|$)/.test(text) && message?.chat?.id) {
+    const reply = createPaymentSupportReply();
+    await sendTelegramMessage(message.chat.id, reply.text, {
+      ...options,
+      replyMarkup: createTelegramInlineKeyboard(reply)
+    });
+    return { kind: 'payment_support', answered: true };
+  }
+
+  if (/^\/terms(?:@\w+)?(?:\s|$)/.test(text) && message?.chat?.id) {
+    const reply = createPaymentSupportReply();
+    await sendTelegramMessage(message.chat.id, reply.text, {
+      ...options,
+      replyMarkup: createTelegramInlineKeyboard(reply)
+    });
+    return { kind: 'payment_terms', answered: true };
+  }
+
   const startMatch = text.match(/^\/start(?:@\w+)?(?:\s+(.+))?$/);
   if (startMatch && message?.chat?.id) {
     const startParam = startMatch[1] || 'play';

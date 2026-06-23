@@ -385,8 +385,9 @@ Membership is not stored. It is derived from overlap between item cells and acti
   and returns 403 when the profile does not own the requested paid portrait.
   `POST /api/assets/:assetId/purchase` spends wallet currency for direct-buy
   assets, and `POST /api/assets/packs/:packId/roll` can grant a random unowned
-  skin when env-gated gacha is enabled. Ghosts always use the default portrait
-  regardless of player selection.
+  skin when env-gated gacha is enabled. Real-player ghost snapshots preserve
+  the equipped portrait id/path from the sampled player; synthetic bot ghosts
+  use the default portrait.
 
 - **14-G.** Each mushroom has exactly **3 starter preset variants** defined in `STARTER_PRESET_VARIANTS` (in `app/server/game-data.js`). The first is always `id: 'default'` with `requiredLevel: 0`. Variants are unlocked when `computeLevel(mycelium).level >= variant.requiredLevel`. All variants use two price-1 items so the total preset cost stays at 2, satisfying the `[Req 4-N]` budget ceiling. The active preset is stored in `player_mushrooms.active_preset` (default `'default'`). `startGameRun` reads the active preset and seeds its two items at `(0,0)` and `(1,0)` in round 1 instead of the character's signature default. If the stored preset id is unknown it falls back to `default` without error. `getPlayerState` returns `presets[]` per mushroom, each with an `unlocked` boolean and `activePreset`. `PUT /api/mushroom/:id/preset { presetId }` validates the level gate and persists the choice; it returns 403 if level is too low, 400 for an unknown preset id, and 404 for an unknown mushroom. Ghosts always receive the character's default preset regardless of player selection.
 

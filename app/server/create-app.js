@@ -197,7 +197,20 @@ function hmacDigest(secret, payload, algorithm) {
   return crypto.createHmac(algorithm, secret).update(payload || '').digest('hex');
 }
 
-function verifyPaymentWebhookSignature(req, provider) {
+function sortJsonValue(value) {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value).sort().reduce((acc, key) => {
+    acc[key] = sortJsonValue(value[key]);
+    return acc;
+  }, {});
+}
+
+export function nowPaymentsSignaturePayload(body) {
+  return JSON.stringify(sortJsonValue(body || {}));
+}
+
+export function verifyPaymentWebhookSignature(req, provider) {
   if (provider === 'btcpay') {
     const secret = process.env.BTCPAY_WEBHOOK_SECRET;
     if (!secret) return process.env.NODE_ENV !== 'production';
@@ -208,7 +221,7 @@ function verifyPaymentWebhookSignature(req, provider) {
     const secret = process.env.NOWPAYMENTS_IPN_SECRET;
     if (!secret) return process.env.NODE_ENV !== 'production';
     const header = String(req.header('x-nowpayments-sig') || '');
-    return timingSafeEqualText(header, hmacDigest(secret, req.rawBody || '', 'sha512'));
+    return timingSafeEqualText(header, hmacDigest(secret, nowPaymentsSignaturePayload(req.body || {}), 'sha512'));
   }
   return false;
 }
@@ -475,7 +488,12 @@ export async function createApp() {
     '/api/wallet/bundles',
     requireAuth,
     asyncRoute(async (req, res) => {
-      res.json({ success: true, data: getWalletBundles(req.query.provider || null) });
+      res.json({
+        success: true,
+        data: getWalletBundles(req.query.provider || null, {
+          surface: req.query.surface || 'web'
+        })
+      });
     })
   );
 
@@ -487,7 +505,9 @@ export async function createApp() {
       const data = await createPurchaseIntent(req.user.id, {
         bundleId: req.body.bundleId,
         provider: req.body.provider || 'telegram_stars',
-        idempotencyKey: req.header('idempotency-key') || null
+        idempotencyKey: req.header('idempotency-key') || null,
+        surface: req.body.surface || req.query.surface || 'web',
+        fetchImpl: globalThis.fetch
       });
       res.json({ success: true, data });
     })

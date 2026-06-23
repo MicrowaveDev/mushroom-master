@@ -18,7 +18,8 @@ export const HomeScreen = {
     'add-friend', 'challenge-friend',
     'accept-challenge', 'decline-challenge',
     'select-mushroom',
-    'switch-portrait', 'purchase-portrait', 'switch-preset'
+    'switch-portrait', 'purchase-portrait', 'switch-preset',
+    'purchase-wallet'
   ],
   data() {
     return {
@@ -530,7 +531,10 @@ export const HomeScreen = {
 
           <!-- Footer stats -->
           <div class="home-run-footer">
-            <span>{{ t.spore }} <strong>{{ state.bootstrap.player.spore }}</strong></span>
+            <span class="home-wallet-footer">
+              <span>{{ t.spore }} <strong>{{ walletBalance }}</strong></span>
+              <button class="link home-wallet-buy" @click="$emit('purchase-wallet', { bundleId: 'coins_small', provider: 'telegram_stars', surface: 'telegram_mini_app' })">{{ t.walletBuy }}</button>
+            </span>
             <span>{{ t.battleLimit }} <strong>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</strong></span>
           </div>
         </article>

@@ -161,6 +161,7 @@ test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ pag
   await page.keyboard.press('Escape').catch(() => {});
   await page.locator('.home-social-backdrop').click();
   await expect(page.locator('.leaderboard-panel')).toBeVisible();
+  await expect(page.locator('.home-wallet-buy')).toBeVisible();
   await saveShot(page, '02-home-desktop.png');
 
   // Skin picker coverage: use the roster action panel to expand the active
