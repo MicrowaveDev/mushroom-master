@@ -56,7 +56,9 @@ The final response must include:
 
 - verdict for `thalla`
 - exact validation commands run and pass/fail
+- any recovered validator failure, including failed command, recovery action, and final passing command/log
 - reference turnaround sheet path
+- grouped state sheet and split-frame evidence from `candidate-evidence.manifest.json`
 - screenshot/evidence paths
 - candidate folder link: `/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/candidates/chibi-active-roster/latest`
 - note that no app-facing PNG was overwritten

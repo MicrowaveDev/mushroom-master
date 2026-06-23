@@ -67,6 +67,64 @@ function hashIfExists(filePath) {
   };
 }
 
+function characterSourceBase(asset) {
+  if (!asset.sourcePath) return asset.id;
+  const name = path.basename(asset.sourcePath);
+  for (const suffix of ['.states.source.png', '.source.png']) {
+    if (name.endsWith(suffix)) return name.slice(0, -suffix.length);
+  }
+  return path.parse(name).name;
+}
+
+function chibiFramePaths(asset) {
+  const base = characterSourceBase(asset);
+  const sourceDir = asset.sourcePath
+    ? path.dirname(path.join(repoRoot, asset.sourcePath))
+    : path.join(repoRoot, '.agent', 'home-field-workspace', 'raw');
+  const directions = asset.spritesheet?.rowOrder || ['down', 'up', 'left', 'right'];
+  const idleCols = asset.spritesheet?.framesPerRow?.idle || [0, 1];
+  const walkCols = asset.spritesheet?.framesPerRow?.walk || [2, 3, 4, 5, 6, 7];
+  return directions.flatMap((dir) => [
+    ...idleCols.map((_, idx) => path.join(sourceDir, `${base}.frame_idle_${dir}_${idx}.source.png`)),
+    ...walkCols.map((_, idx) => path.join(sourceDir, `${base}.frame_walk_${dir}_${idx}.source.png`))
+  ]);
+}
+
+function chibiSourceEvidence(asset, missing) {
+  if (asset.type !== 'character' || !asset.spritesheet) return null;
+  const base = characterSourceBase(asset);
+  const rawDir = asset.sourcePath
+    ? path.dirname(path.join(repoRoot, asset.sourcePath))
+    : path.join(repoRoot, '.agent', 'home-field-workspace', 'raw');
+  const referencePath = path.join(repoRoot, '.agent', 'home-field-workspace', 'reference', `${base}_turnaround.reference.png`);
+  const stateSheetPath = path.join(rawDir, `${base}.states.source.png`);
+  const framePaths = chibiFramePaths(asset);
+  const frameHashes = framePaths.map((framePath) => hashIfExists(framePath));
+  const missingFrames = framePaths
+    .filter((framePath, idx) => !frameHashes[idx])
+    .map((framePath) => path.relative(repoRoot, framePath));
+  const reference = hashIfExists(referencePath);
+  const groupedStateSheet = hashIfExists(stateSheetPath);
+  if (!reference) missing.push(`missing chibi reference sheet: ${path.relative(repoRoot, referencePath)}`);
+  if (!groupedStateSheet) missing.push(`missing chibi grouped state sheet: ${path.relative(repoRoot, stateSheetPath)}`);
+  if (missingFrames.length > 0) {
+    missing.push(`missing chibi split frames for "${asset.id}": ${missingFrames.slice(0, 4).join(', ')}${missingFrames.length > 4 ? ` (+${missingFrames.length - 4} more)` : ''}`);
+  }
+  const presentFrameHashes = frameHashes.filter(Boolean);
+  const frameSetSha256 = bufferSha256(Buffer.from(JSON.stringify(presentFrameHashes, null, 2)));
+  return {
+    reference,
+    groupedStateSheet,
+    splitFrames: {
+      expected: framePaths.length,
+      present: presentFrameHashes.length,
+      missing: missingFrames,
+      frameSetSha256,
+      frames: presentFrameHashes
+    }
+  };
+}
+
 function latestSharedSourceFor(ids) {
   if (!fs.existsSync(manifestDir)) return null;
   const required = new Set(ids);
@@ -137,12 +195,14 @@ function main() {
     const candidateOutput = path.join(candidateRoot, asset.outputPath);
     const rawSource = asset.sourcePath ? path.join(repoRoot, asset.sourcePath) : null;
     const output = hashIfExists(candidateOutput);
+    const chibiSources = chibiSourceEvidence(asset, missing);
     if (!output) missing.push(`missing candidate output: ${path.relative(repoRoot, candidateOutput)}`);
     return {
       id,
       type: asset.type,
       candidateOutput: output,
-      rawSource: sharedRawSource || (rawSource ? hashIfExists(rawSource) : null)
+      rawSource: chibiSources?.groupedStateSheet || sharedRawSource || (rawSource ? hashIfExists(rawSource) : null),
+      ...(chibiSources ? { chibiSources } : {})
     };
   }).filter(Boolean);
 

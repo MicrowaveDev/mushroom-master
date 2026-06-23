@@ -256,6 +256,8 @@ Recommended evidence fields before any human approval:
 - `mobileScreenshotSha256`
 - `desktopScreenshotSha256`
 
+For chibi Stage 1 candidates, `candidateEvidenceManifest` must bind more than the composed candidate sheet. It must include the non-production turnaround reference, the grouped `8x4` state sheet as `rawSource`, and the 32 split frame files with a frame-set hash. A chibi manifest with `rawSource: null` is incomplete evidence and must be regenerated before visual review.
+
 Allowed non-human verdicts:
 
 - `needs_review`
@@ -279,6 +281,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If produce fails, rerun only the affected asset with the printed producer command.
 - If `tight-center` produces blocky family transitions, try at most the two documented alternate crop plans from the same raw source, refresh `grass-family-sheet`, and commit only the best candidate set.
 - If validation fails because a contract changed, stop and report. Do not edit validators or manifests during a generation run.
+- If any validator or proof command fails and the run later recovers, the final handoff must explicitly name the first failed command, the failure summary, the recovery action, and the final passing command/log. Do not collapse a recovered failure into a simple all-pass summary.
 - If `--check-edge-profiles` fails, inspect the adjacency sheet before retrying. The heuristic is allowed to be conservative, but visible path-band, grass-edge, or edge-stack seams must be regenerated rather than papered over with metadata.
 - If `--check-family-cohesion` fails, treat it as a warning that the tiles may be separate-looking paintings even when edge profiles pass. Inspect the contact, adjacency, and mobile/desktop clean previews; regenerate from one shared source if the family drift is visible.
 - If `--check-alpha-halo` reports visible chroma fringe, reprocess with stricter chroma-key cleanup or regenerate the affected raw PNG. Do not leave `alphaCheck: pending` on a candidate whose halo validator fails.
@@ -317,6 +320,7 @@ Review verdicts:
   <asset_id>: <needs_review|needs_regen|rejected> — <short visual reason + check summary>
 Notes:
   <retry/rejection/remaining issue summary>
+  Recovered validation failures: <none | failed command -> recovery action -> final passing command/log>
 ```
 
 Do not wrap the candidate folder or candidate field screenshot paths in backticks in the final response. They must be Markdown links so the reviewer can open them from Codex Desktop.

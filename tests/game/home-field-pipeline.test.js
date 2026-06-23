@@ -160,6 +160,63 @@ function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = fals
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeChibiAssetsFixture(filePath, outputPath, {
+  sourcePath = '.agent/home-field-workspace/raw/thalla_chibi.source.png'
+} = {}) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify({
+    version: 1,
+    tileSize: 256,
+    assets: [],
+    characters: [{
+      id: 'thalla',
+      promptKey: 'character_thalla_chibi',
+      sourcePath,
+      outputPath,
+      publicPath: '/home-field/characters/thalla/spritesheet.png',
+      spritesheet: {
+        width: 512,
+        height: 256,
+        frameWidth: 64,
+        frameHeight: 64,
+        cols: 8,
+        rows: 4,
+        rowOrder: ['down', 'up', 'left', 'right'],
+        framesPerRow: { idle: [0, 1], walk: [2, 3, 4, 5, 6, 7] }
+      },
+      status: 'needs_review'
+    }]
+  }, null, 2));
+}
+
+function writeChibiEvidenceSources(rawDir) {
+  writeSizedTransparentFixture(path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png'), 512, 256);
+  writeChibiSpritesheet(path.join(rawDir, 'thalla_chibi.states.source.png'));
+  for (const dir of ['down', 'up', 'left', 'right']) {
+    for (const kind of ['idle', 'walk']) {
+      const count = kind === 'idle' ? 2 : 6;
+      for (let idx = 0; idx < count; idx += 1) {
+        writeSizedTransparentFixture(path.join(rawDir, `thalla_chibi.frame_${kind}_${dir}_${idx}.source.png`), 64, 64);
+      }
+    }
+  }
+}
+
+function withPreservedFile(filePath, callback) {
+  const existed = fs.existsSync(filePath);
+  const backup = existed ? fs.readFileSync(filePath) : null;
+  try {
+    return callback();
+  } finally {
+    if (existed) {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, backup);
+    } else {
+      fs.rmSync(filePath, { force: true });
+    }
+  }
+}
+
 function writeCrispChibiSpritesheet(filePath, { lowQuality = false } = {}) {
   const width = 512;
   const height = 256;
@@ -587,6 +644,97 @@ test('[home-field] candidate evidence manifest binds candidate output hashes', (
     fs.rmSync(fixtureDir, { recursive: true, force: true });
     fs.rmSync(candidateRoot, { recursive: true, force: true });
   }
+});
+
+test('[home-field] chibi candidate evidence binds reference, grouped source, and split frames', () => {
+  const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+  return withPreservedFile(referencePath, () => {
+    const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-candidate-evidence-test');
+    const outputPath = 'web/public/home-field/characters/thalla/spritesheet.png';
+    const candidateRoot = path.join(repoRoot, 'tmp/home-field-chibi-candidate-evidence-candidates');
+    const candidateOutputAbs = path.join(candidateRoot, outputPath);
+    const rawDir = path.join(fixtureDir, 'raw');
+    const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+    writeChibiAssetsFixture(assetsPath, outputPath, {
+      sourcePath: path.relative(repoRoot, path.join(rawDir, 'thalla_chibi.states.source.png'))
+    });
+    writeChibiSpritesheet(candidateOutputAbs);
+    writeChibiEvidenceSources(rawDir);
+
+    try {
+      const result = spawnSync(process.execPath, [
+        candidateEvidenceScriptPath,
+        '--ids=thalla'
+      ], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          HOME_FIELD_ASSETS_PATH: assetsPath,
+          HOME_FIELD_CANDIDATE_ROOT: path.relative(repoRoot, candidateRoot)
+        },
+        encoding: 'utf8'
+      });
+
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, '.agent/home-field-workspace/review/candidate-evidence.manifest.json'), 'utf8'));
+      const entry = manifest.entries[0];
+      assert.equal(entry.id, 'thalla');
+      assert.match(entry.candidateOutput.sha256, /^[a-f0-9]{64}$/);
+      assert.equal(entry.rawSource.path, path.relative(repoRoot, path.join(rawDir, 'thalla_chibi.states.source.png')));
+      assert.equal(entry.chibiSources.groupedStateSheet.path, entry.rawSource.path);
+      assert.match(entry.chibiSources.reference.sha256, /^[a-f0-9]{64}$/);
+      assert.equal(entry.chibiSources.splitFrames.expected, 32);
+      assert.equal(entry.chibiSources.splitFrames.present, 32);
+      assert.deepEqual(entry.chibiSources.splitFrames.missing, []);
+      assert.equal(entry.chibiSources.splitFrames.frames.length, 32);
+      assert.match(entry.chibiSources.splitFrames.frameSetSha256, /^[a-f0-9]{64}$/);
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+      fs.rmSync(candidateRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+test('[home-field] chibi candidate evidence fails without grouped state source', () => {
+  const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+  return withPreservedFile(referencePath, () => {
+    const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-candidate-evidence-missing-test');
+    const outputPath = 'web/public/home-field/characters/thalla/spritesheet.png';
+    const candidateRoot = path.join(repoRoot, 'tmp/home-field-chibi-candidate-evidence-missing-candidates');
+    const candidateOutputAbs = path.join(candidateRoot, outputPath);
+    const rawDir = path.join(fixtureDir, 'raw');
+    const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+    writeChibiAssetsFixture(assetsPath, outputPath, {
+      sourcePath: path.relative(repoRoot, path.join(rawDir, 'thalla_chibi.source.png'))
+    });
+    writeChibiSpritesheet(candidateOutputAbs);
+
+    try {
+      const result = spawnSync(process.execPath, [
+        candidateEvidenceScriptPath,
+        '--ids=thalla'
+      ], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          HOME_FIELD_ASSETS_PATH: assetsPath,
+          HOME_FIELD_CANDIDATE_ROOT: path.relative(repoRoot, candidateRoot)
+        },
+        encoding: 'utf8'
+      });
+
+      assert.equal(result.status, 1, result.stderr || result.stdout);
+      assert.match(result.stderr, /missing chibi grouped state sheet/);
+      assert.match(result.stderr, /missing chibi split frames/);
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+      fs.rmSync(candidateRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 test('[home-field] validation catches visible magenta alpha fringe', () => {
