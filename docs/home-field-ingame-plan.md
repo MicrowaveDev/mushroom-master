@@ -742,7 +742,7 @@ Chibi spritesheet layout (locked v1):
 - Canvas size: `512 × 256` (8 cols × 4 rows of `64×64` frames).
 - Phaser loader: `this.load.spritesheet(chibiKey, url, { frameWidth: 64, frameHeight: 64 })`.
 - Row order (top to bottom): `down`, `up`, `left`, `right`.
-- Column order (left to right) per row: 2 idle frames + 6 walk frames = 8 total.
+- Column order (left to right) per row: 2 idle frames + 6 walk frames = 8 total. Idle column 0 is normal planted pose; idle column 1 is a tiny squat/squish pose that loops back to normal.
 - Frame indices map to Phaser animation states:
 
 | Animation | Direction | Phaser key | Frame range | fps |

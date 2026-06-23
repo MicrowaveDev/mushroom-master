@@ -111,7 +111,7 @@ function writeSizedTransparentFixture(filePath, width, height) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
-function writeChibiSpritesheet(filePath, { staticWalk = false } = {}) {
+function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = false } = {}) {
   const width = 512;
   const height = 256;
   const frameWidth = 64;
@@ -119,7 +119,7 @@ function writeChibiSpritesheet(filePath, { staticWalk = false } = {}) {
   const rgba = Buffer.alloc(width * height * 4);
   for (let row = 0; row < 4; row += 1) {
     for (let col = 0; col < 8; col += 1) {
-      const variant = col < 2 ? col : staticWalk ? 2 : col;
+      const variant = col < 2 ? (staticIdle ? 0 : col) : staticWalk ? 2 : col;
       const r = 40 + (row * 30);
       const g = 90 + (variant * 12);
       const b = 70 + (variant * 3);
@@ -1074,6 +1074,25 @@ test('[home-field] chibi animation validator rejects static replicated walk fram
     assert.equal(failed.status, 1, failed.stderr || failed.stdout);
     assert.match(failed.stderr, /walk_frames_too_static/);
 
+    writeChibiSpritesheet(outputAbs, { staticIdle: true, staticWalk: false });
+    const failedIdle = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=thalla',
+      '--check-files',
+      '--check-chibi-animation'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: candidateRoot
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(failedIdle.status, 1, failedIdle.stderr || failedIdle.stdout);
+    assert.match(failedIdle.stderr, /idle_frames_too_static/);
+
     writeChibiSpritesheet(outputAbs, { staticWalk: false });
     const passed = spawnSync(process.execPath, [
       validateScriptPath,
@@ -1091,7 +1110,7 @@ test('[home-field] chibi animation validator rejects static replicated walk fram
       encoding: 'utf8'
     });
     assert.equal(passed.status, 0, passed.stderr || passed.stdout);
-    assert.match(passed.stdout, /chibi walk animation/);
+    assert.match(passed.stdout, /chibi idle\/walk animation/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }

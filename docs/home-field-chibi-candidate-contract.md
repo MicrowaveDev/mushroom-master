@@ -25,6 +25,7 @@ Each character still uses the locked Home Field runtime sheet shape:
 - Grid: `8` columns x `4` rows
 - Row order: `down`, `up`, `left`, `right`
 - Columns per row: `0-1` idle frames, `2-7` walk frames
+- Idle action: column `0` is the normal planted pose; column `1` is a tiny cute squat/squish pose that can loop back to normal
 - Transparent background
 - Character feet/base grounded near the bottom of each frame
 - No baked ground shadow in frames; the renderer supplies the shared separate `chibi_shadow` layer under the feet/base
@@ -60,7 +61,7 @@ Generate final idle/walk states as one coherent `8x4` state sheet for the same c
 .agent/home-field-workspace/raw/thalla_chibi.states.source.png
 ```
 
-This grouped state sheet is the required source for all final state tiles so face, cap, robe, outline, palette, and detail level stay consistent across idle and walk frames. Row order is `down`, `up`, `left`, `right`; columns `0-1` are idle; columns `2-7` are walk. The source may be exactly `512x256` or a larger proportional `8x4` sheet for cleaner downscaling. It may use true transparency or flat `#ff00ff` chroma key. Do not generate final idle/walk states as 32 separate imagegen calls; that was the main style-drift failure in the 2026-06-22 rerun. Single-cell regeneration is allowed only as a targeted, human-approved repair after a grouped sheet mostly passes but one cell is defective.
+This grouped state sheet is the required source for all final state tiles so face, cap, robe, outline, palette, and detail level stay consistent across idle and walk frames. Row order is `down`, `up`, `left`, `right`; columns `0-1` are idle; columns `2-7` are walk. Idle column `0` is the normal planted pose, and idle column `1` is a tiny squat/squish pose with the body compressed slightly downward so the idle loop feels funny and cute when it returns to normal. The source may be exactly `512x256` or a larger proportional `8x4` sheet for cleaner downscaling. It may use true transparency or flat `#ff00ff` chroma key. Do not generate final idle/walk states as 32 separate imagegen calls; that was the main style-drift failure in the 2026-06-22 rerun. Single-cell regeneration is allowed only as a targeted, human-approved repair after a grouped sheet mostly passes but one cell is defective.
 
 After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
 
@@ -77,10 +78,10 @@ Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw
 
 The minimum accepted Stage 1 producer input is 32 isolated character-only frames derived from the grouped state sheet:
 
-- `2` idle/breathing frames per direction
+- `2` idle frames per direction: normal planted pose, then tiny squat/squish pose
 - `6` simple walk-loop frames per direction
 
-The walk loop may be simple, but it must not be static. Use a low-detail cycle such as `contact`, `passing`, `opposite contact`, `passing`, `settle`, `recover`. At least `3` unique walk frames per direction must survive into the composed candidate sheet.
+The idle loop and walk loop may be simple, but neither may be static. Idle should be a two-frame `normal -> tiny squat -> normal` loop, with only a subtle vertical compression so it stays readable at 64px. Walk can use a low-detail cycle such as `contact`, `passing`, `opposite contact`, `passing`, `settle`, `recover`. At least `3` unique walk frames per direction must survive into the composed candidate sheet.
 
 For retina/source quality, the raw isolated frames may be generated at `128x128` if the run prompt requests it. They must still be simple map sprites and must downscale cleanly to the current `64x64` runtime frames. Larger source pixels are for cleaner alpha and shape control, not for extra detail.
 

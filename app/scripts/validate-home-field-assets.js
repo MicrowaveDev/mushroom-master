@@ -215,6 +215,39 @@ function frameHash(image, frameWidth, frameHeight, row, col) {
   return hash.digest('hex');
 }
 
+function checkChibiIdleAnimation(assetsDoc, errors, { ids = null, minUniqueIdleFrames = 2 } = {}) {
+  for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
+    if (!character.spritesheet) continue;
+    if (character.status === 'missing') continue;
+    const s = character.spritesheet;
+    const idleCols = s.framesPerRow?.idle || [];
+    if (idleCols.length < 2) continue;
+    const abs = path.join(ASSET_ROOT, character.outputPath);
+    if (!fs.existsSync(abs)) {
+      errors.push({ scope: 'chibi_animation', code: 'missing', message: `character "${character.id}" output missing: ${character.outputPath}` });
+      continue;
+    }
+    let image;
+    try {
+      image = readPngRgba(abs);
+    } catch (err) {
+      errors.push({ scope: 'chibi_animation', code: 'png_read', message: `character "${character.id}" cannot read PNG pixels: ${err.message}` });
+      continue;
+    }
+    for (let row = 0; row < (s.rowOrder || []).length; row += 1) {
+      const facing = s.rowOrder[row];
+      const unique = new Set(idleCols.map((col) => frameHash(image, s.frameWidth, s.frameHeight, row, col)));
+      if (unique.size < Math.min(minUniqueIdleFrames, idleCols.length)) {
+        errors.push({
+          scope: 'chibi_animation',
+          code: 'idle_frames_too_static',
+          message: `character "${character.id}" ${facing} idle row has ${unique.size} unique idle frame${unique.size === 1 ? '' : 's'} across ${idleCols.length} columns; Stage 1 requires a subtle two-frame idle, normal then tiny squat`
+        });
+      }
+    }
+  }
+}
+
 function checkChibiWalkAnimation(assetsDoc, errors, { ids = null, minUniqueWalkFrames = 3 } = {}) {
   for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
     if (!character.spritesheet) continue;
@@ -647,6 +680,7 @@ function main() {
     checkObjectReadabilityBounds(assetsDoc, errors, { ids });
   }
   if (wantChibiAnimationCheck) {
+    checkChibiIdleAnimation(assetsDoc, errors, { ids });
     checkChibiWalkAnimation(assetsDoc, errors, { ids });
   }
   if (wantEdgeProfileCheck || wantProduction) {
@@ -664,7 +698,7 @@ function main() {
     if (wantReviewCheck || wantProduction) modes.push('review manifest');
     if (wantAlphaHaloCheck || wantProduction) modes.push('alpha halo/fringe');
     if (wantReadabilityCheck || wantProduction) modes.push('object readability bounds');
-    if (wantChibiAnimationCheck) modes.push('chibi walk animation');
+    if (wantChibiAnimationCheck) modes.push('chibi idle/walk animation');
     if (wantEdgeProfileCheck || wantProduction) modes.push('terrain edge profiles');
     if (wantFamilyCohesionCheck || wantProduction) modes.push('terrain family cohesion');
     if (wantProduction) modes.push('production approval');
