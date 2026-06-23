@@ -68,7 +68,7 @@ After generating the grouped state sheet, run:
 
 ```bash
 npm run game:home-field:verify-chibi-proof-files -- --state-sheet
-npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff
+npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize
 ```
 
 Use smooth resizing (`--resize`) when composing higher-resolution isolated source frames into the `64x64` runtime sheet. Do not use nearest-neighbor resizing for production candidates; hard pixel stair-steps are a rejection signal for this hand-drawn field-sprite style.

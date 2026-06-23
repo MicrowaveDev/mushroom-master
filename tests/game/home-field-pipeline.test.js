@@ -138,6 +138,35 @@ function writeChibiSpritesheet(filePath, { staticWalk = false } = {}) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeOddProportionalChibiStateSheet(filePath) {
+  const width = 1774;
+  const height = 887;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    const row = Math.min(3, Math.floor(y / (height / 4)));
+    for (let x = 0; x < width; x += 1) {
+      const col = Math.min(7, Math.floor(x / (width / 8)));
+      const cellX = Math.floor(x - (col * width / 8));
+      const cellY = Math.floor(y - (row * height / 4));
+      const inSprite = cellX > 64 && cellX < 158 && cellY > 48 && cellY < 174;
+      const i = (y * width + x) * 4;
+      if (inSprite) {
+        rgba[i + 0] = 44 + (row * 32);
+        rgba[i + 1] = 96 + (col * 10);
+        rgba[i + 2] = 80 + (col * 4);
+        rgba[i + 3] = 255;
+      } else {
+        rgba[i + 0] = 255;
+        rgba[i + 1] = 0;
+        rgba[i + 2] = 255;
+        rgba[i + 3] = 255;
+      }
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
 function writeSolidTerrainFixture(filePath, rgb) {
   const width = 32;
   const height = 32;
@@ -872,7 +901,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
   assert.match(result.stdout, /thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --state-sheet/);
-  assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff/);
+  assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff --resize/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --frames/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
   assert.match(result.stdout, /clear stale rejected Thalla state sheets, raw frames/);
@@ -946,6 +975,40 @@ test('[home-field] chibi state sheet splitter writes canonical raw frame chunks'
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /32 frame/);
+    const idlePath = path.join(outputDir, 'thalla_chibi.frame_idle_down_0.source.png');
+    const walkPath = path.join(outputDir, 'thalla_chibi.frame_walk_right_5.source.png');
+    assert.equal(readPngRgba(idlePath).width, 64);
+    assert.equal(readPngRgba(idlePath).height, 64);
+    assert.equal(readPngRgba(walkPath).width, 64);
+    assert.equal(readPngRgba(walkPath).height, 64);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] chibi state sheet splitter resizes odd proportional source sheets before slicing', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-state-sheet-resize-test');
+  const sourcePath = path.join(fixtureDir, 'raw/thalla_chibi.states.source.png');
+  const outputDir = path.join(fixtureDir, 'raw');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  writeOddProportionalChibiStateSheet(sourcePath);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      chibiSplitScriptPath,
+      `--source=${path.relative(repoRoot, sourcePath)}`,
+      `--output-dir=${path.relative(repoRoot, outputDir)}`,
+      '--prefix=thalla_chibi',
+      '--chroma-key=#ff00ff',
+      '--resize'
+    ], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /source: 1774x887/);
+    assert.match(result.stdout, /working cell: 64x64/);
     const idlePath = path.join(outputDir, 'thalla_chibi.frame_idle_down_0.source.png');
     const walkPath = path.join(outputDir, 'thalla_chibi.frame_walk_right_5.source.png');
     assert.equal(readPngRgba(idlePath).width, 64);

@@ -32,7 +32,7 @@ function main() {
   console.log('  npm run game:home-field:next-chibi-proof');
   console.log('  npm run game:home-field:verify-chibi-proof-files -- --reference');
   console.log('  npm run game:home-field:verify-chibi-proof-files -- --state-sheet');
-  console.log('  npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff');
+  console.log('  npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize');
   console.log('  npm run game:home-field:verify-chibi-proof-files -- --frames');
   console.log('  npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo --check-readability --check-chibi-animation');

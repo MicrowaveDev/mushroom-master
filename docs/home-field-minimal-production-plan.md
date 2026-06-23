@@ -248,7 +248,7 @@ For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the grou
 
 ```bash
 npm run game:home-field:verify-chibi-proof-files -- --state-sheet
-npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff
+npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize
 npm run game:home-field:verify-chibi-proof-files -- --frames
 npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-review

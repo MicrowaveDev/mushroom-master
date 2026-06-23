@@ -140,9 +140,13 @@ function main() {
     process.exit(1);
   }
 
-  const sheet = readPngAsRgba(sourceAbs);
+  let sheet = readPngAsRgba(sourceAbs);
+  const sourceSize = `${sheet.width}x${sheet.height}`;
+  if ((sheet.width % COLS !== 0 || sheet.height % ROWS !== 0) && hasFlag('resize')) {
+    sheet = resizeFrame(sheet, COLS * FRAME_WIDTH, ROWS * FRAME_HEIGHT);
+  }
   if (sheet.width % COLS !== 0 || sheet.height % ROWS !== 0) {
-    console.error(`state sheet must divide into ${COLS}x${ROWS} cells, got ${sheet.width}x${sheet.height}`);
+    console.error(`state sheet must divide into ${COLS}x${ROWS} cells, got ${sourceSize}; pass --resize for larger proportional source sheets`);
     process.exit(1);
   }
 
@@ -169,7 +173,7 @@ function main() {
 
   console.log(`home-field chibi state sheet split: ${written.length} frame(s)`);
   console.log(`  source: ${source}`);
-  console.log(`  grid: ${COLS}x${ROWS}, source cell: ${cellWidth}x${cellHeight}, output frame: ${FRAME_WIDTH}x${FRAME_HEIGHT}`);
+  console.log(`  grid: ${COLS}x${ROWS}, source: ${sourceSize}, working cell: ${cellWidth}x${cellHeight}, output frame: ${FRAME_WIDTH}x${FRAME_HEIGHT}`);
   console.log(`  output-dir: ${outputDir}`);
   if (keyRgb) console.log(`  chroma-key: ${chromaKey}, tolerance=${tolerance}`);
   for (const file of written) console.log(`  OK ${file}`);

@@ -312,7 +312,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push('Immediately verify the saved reference with: npm run game:home-field:verify-chibi-proof-files -- --reference');
     lines.push('Save the final 8x4 state sheet to: .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
     lines.push('Immediately verify the saved state sheet with: npm run game:home-field:verify-chibi-proof-files -- --state-sheet');
-    lines.push('Then split the state sheet into raw frames with: npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff');
+    lines.push('Then split the state sheet into raw frames with: npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize');
     lines.push('After splitting, the individual raw frame files must exist at the per-frame paths listed above, not at the single manifest sourcePath.');
     lines.push('Immediately verify all saved raw frames with: npm run game:home-field:verify-chibi-proof-files -- --frames');
   } else {
