@@ -950,6 +950,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final frames/);
   assert.match(result.stdout, /one coherent 8x4 state sheet/i);
   assert.match(result.stdout, /Do not generate the final idle\/walk states as separate imagegen calls/);
+  assert.match(result.stdout, /grouped state sheet itself must contain the idle bob and walk poses/);
+  assert.match(result.stdout, /do not synthesize motion after split/i);
+  assert.match(result.stdout, /Post-split deterministic processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
   assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
   assert.match(result.stdout, /Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval/);
