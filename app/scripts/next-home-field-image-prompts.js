@@ -575,7 +575,7 @@ function main() {
   console.log('');
   console.log('Workflow per asset:');
   if (chibiCandidate) {
-    console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and `npm run game:home-field:chibi-proof-context`; stop before cleanup if it fails.');
+    console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and `npm run game:home-field:chibi-proof-context`; stop before stale-file archive if it fails.');
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use Codex Desktop built-in imagegen by default, or CLI fallback only when configured; save each generated PNG to the required repo path.');
   } else {

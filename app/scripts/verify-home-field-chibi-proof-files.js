@@ -67,6 +67,7 @@ function main() {
     errors.forEach((err) => console.error(`  - ${err}`));
     process.exit(1);
   }
+  console.log('Freshness warning: this check proves files exist and have expected dimensions only; it does not prove they were generated in the current run. Do not use stale rejected .agent files as generation evidence.');
   console.log('home-field chibi proof file verification: PASS');
 }
 

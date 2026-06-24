@@ -204,8 +204,9 @@ Generates only `thalla` for Stage 1.
 
 Rules:
 
-- run `npm run game:home-field:preflight-chibi-proof` before moving or deleting stale rejected `thalla_chibi.frame_*.source.png` raw files or stale chibi candidate output;
-- stop without cleanup if preflight cannot find an allowed image generation path; chat-visible built-in `image_gen` output is not enough for this file pipeline, so built-in imagegen requires confirmed discoverable disk output via `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`;
+- run `npm run game:home-field:preflight-chibi-proof` before archiving stale rejected `thalla_chibi*.source.png` raw files, stale reference sheets, or stale chibi candidate output;
+- stop without archiving stale files if preflight cannot find an allowed image generation path; chat-visible built-in `image_gen` output is not enough for this file pipeline, so built-in imagegen requires confirmed discoverable disk output via `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`;
+- archive rejected evidence under `.agent/home-field-workspace/rejected/`; do not delete it and do not let archived or stale live files count as fresh generation;
 - generate and visually check the non-production turnaround reference before final states;
 - generate final idle/walk states as one grouped `8x4` state sheet, then split it into raw frame chunks;
 - verify saved reference/state-sheet/raw/candidate files with `npm run game:home-field:verify-chibi-proof-files` instead of searching image caches manually;

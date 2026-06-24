@@ -37,6 +37,7 @@ function main() {
   console.log('  npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo --check-readability --check-runtime-readiness --check-chibi-animation');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-chibi-quality');
+  console.log('  HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence');
   console.log('  npm run game:home-field:chibi-candidate-preview');
   console.log('');
   console.log('Required paths:');
@@ -45,6 +46,7 @@ function main() {
   console.log(`  raw frames: ${existingFrameCount}/${framePaths.length} present`);
   console.log(`  candidate: ${candidatePath} (${exists(candidatePath) ? 'exists' : 'missing'})`);
   console.log('');
+  console.log('Freshness warning: existing .agent files are not proof of a fresh run. After rejection, archive stale Thalla reference/state/raw/candidate files only after preflight passes, then regenerate and bind the new source chain in candidate-evidence.manifest.json.');
   console.log('Frame contract: generate one coherent 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
   console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');
   console.log('Runtime contract: raw source must be unclipped; alpha edges, anchor/footing, separate shadow, and runtime-scale read must pass before style review.');

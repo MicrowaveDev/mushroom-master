@@ -179,11 +179,11 @@ The active Stage 1 contract is:
 
 **Why it regressed:** `.agent` workspace state is local scratch, not proof of a fresh imagegen run. Rejected raws can satisfy producer input checks and make the agent skip the actual regeneration work.
 
-**Evidence:** In the current chat rollout, the readiness review found old Thalla raw frames/candidate state before the next run, and the final handoff notes that stale rejected raw/candidate files had to be cleared before generation. The same rollout also shows manual archive commands around the cleanup step, including shell-specific friction.
+**Evidence:** In the current chat rollout, task-complete line `92` says the agent reused existing Thalla raw frame files and let mechanical validity blur into acceptance. Task-complete line `263` then confirms the stale raw/candidate state had to be archived before the next run. The same rollout also shows manual archive commands around the cleanup step, including shell-specific friction.
 
 **Guardrails added / remaining work:**
 
-- prompts now say to clear stale rejected Thalla raw/candidate outputs only after preflight passes;
+- prompts now say to archive stale rejected Thalla raw/candidate outputs only after preflight passes;
 - producer success on existing raw files must not count as fresh generation work;
 - a future helper should archive rejected chibi raws/candidates with shell-portable behavior and print a single PASS/FAIL readiness verdict.
 
@@ -259,7 +259,7 @@ The active Stage 1 contract is:
 
 **Why it regressed:** Reference images influence future imagegen prompts. Without provenance and intent notes, later agents cannot tell whether a bitmap is a canonical target, a user preference snapshot, a non-owned style calibration image, or a negative example.
 
-**Evidence:** The current chat rollout includes the user request to save the liked image from the chat logs, and the local reference file exists at `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`.
+**Evidence:** The current chat rollout includes the user request to save the liked image from the chat logs at line `1080`, and task-complete line `1334` records that it was checked in as `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`.
 
 **Guardrails added / remaining work:**
 
@@ -274,7 +274,7 @@ The active Stage 1 contract is:
 
 **Why it regressed:** Moving or deleting local candidate evidence is a state-changing operation. If the generation path then blocks, the workflow has made the workspace less useful while still producing no new art.
 
-**Evidence:** In the current chat rollout, task-complete line `451` diagnoses a run that produced no usable PNG and archived the existing Thalla candidate before replacement. Task-complete line `573` then adds the chibi output preflight so future runs stop before cleanup when no file-output path is proven.
+**Evidence:** In the current chat rollout, task-complete line `451` diagnoses a run that produced no usable PNG and archived the existing Thalla candidate before replacement. Task-complete line `573` then adds the chibi output preflight so future runs stop before archiving stale files when no file-output path is proven.
 
 **Guardrails added:**
 
@@ -348,6 +348,38 @@ The active Stage 1 contract is:
 - do not set `accepted: true` or `approved` without explicit human approval;
 - unapproved chibis stay out of production-looking clean previews and active-scene production validation.
 
+### 22. Static Walk Replication Passed As Animation
+
+**Symptom:** The sheet shape had walk columns `2-7`, but the producer could replicate one walk pose across those columns. The candidate could satisfy the expected layout while visually staying static.
+
+**Decision that led there:** Earlier character placeholder handling used one walk frame per direction and repeated it across the row. That was acceptable for a technical placeholder, but the same mental model leaked into a production-candidate chibi proof.
+
+**Why it regressed:** Sheet dimensions and frame slots are not animation. A static replicated row can pass file and mapping checks while failing the user-facing requirement that the Home Field chibi has simple real walk motion.
+
+**Evidence:** In the current chat rollout, the user raised the shadow/walk gap at line `709`. Task-complete line `747` identifies the replicated walk-pose problem, and task-complete line `1076` records the fix: explicit 32 raw frame slots plus `--check-chibi-animation`.
+
+**Guardrails added:**
+
+- Thalla Stage 1 requires explicit `frame_walk_<direction>_0..5` source files;
+- validators reject static replicated walk rows;
+- placeholder replication remains placeholder-only and must not be treated as production chibi animation.
+
+### 23. Recovered Validation Failures Disappeared From Handoff Context
+
+**Symptom:** A run could recover from a real validator failure, then the final passing logs made the earlier failure easy to miss. In one run a subagent reported thousands of magenta fringe pixels, but the final state passed after cleanup.
+
+**Decision that led there:** Handoffs focused on final pass/fail status and evidence links. That is usually concise, but it hid whether the candidate had required repair, which repair was applied, and whether the final evidence corresponded to the recovered state.
+
+**Why it regressed:** Recovered failures are part of provenance. Without them, future reviewers cannot tell whether a candidate was clean from the source image, fixed by allowed alpha/chroma cleanup, or quietly repaired in a way that should influence visual review.
+
+**Evidence:** In the current chat rollout, task-complete line `2715` notes a recovered alpha story: a subagent reported `5144` magenta fringe pixels before final logs passed. Task-complete line `2913` records the follow-up change requiring recovered validation failures in handoff reports and evidence.
+
+**Guardrails added:**
+
+- final responses must list recovered validator failures, recovery actions, and final passing command/log;
+- `candidate-evidence.manifest.json` includes recovered failure notes;
+- validators passing at the end does not erase the need to document a repaired intermediate failure.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -364,3 +396,5 @@ The active Stage 1 contract is:
 12. Do not treat runtime walk slots as a demand for six major poses.
 13. Do not approve from standalone sheets; judge the composed runtime scene.
 14. Do not let candidate-only chibi proof state mutate app-facing or approved production state.
+15. Do not treat replicated placeholder walk frames as real animation.
+16. Do not omit recovered validation failures from handoff or evidence manifests.

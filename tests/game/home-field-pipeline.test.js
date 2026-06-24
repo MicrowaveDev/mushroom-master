@@ -1215,7 +1215,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Generation mode: chibi active-roster candidate root/);
   assert.match(result.stdout, /thalla \(character\)/);
   assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof/);
-  assert.match(result.stdout, /stop before cleanup if it fails/);
+  assert.match(result.stdout, /stop before stale-file archive if it fails/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stdout, /game:home-field:find-imagegen-output/);
@@ -1231,7 +1231,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /separate chibi shadow layer/);
   assert.match(result.stdout, /Animation: spritesheet-driven idle\/walk frames/);
   assert.doesNotMatch(result.stdout, /Animation: none \(single static PNG\)/);
-  assert.match(result.stdout, /clear stale rejected Thalla state sheets, raw frames/);
+  assert.match(result.stdout, /archive stale rejected Thalla state sheets, raw frames, reference sheets/);
   assert.match(result.stdout, /reference turnaround sheet/i);
   assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final frames/);
@@ -1269,6 +1269,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
   assert.match(result.stdout, /--check-runtime-readiness/);
+  assert.match(result.stdout, /game:home-field:candidate-evidence/);
+  assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
   assert.match(result.stdout, /Runtime contract: raw source must be unclipped/);
   assert.match(result.stdout, /Post-split processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /Shadow contract: no baked shadow/);
@@ -1287,6 +1289,7 @@ test('[home-field] chibi proof file verifier checks generated PNG paths', () => 
     });
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Freshness warning: this check proves files exist and have expected dimensions only/);
     assert.match(result.stdout, /home-field chibi proof file verification: PASS/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });

@@ -71,7 +71,7 @@ function main() {
     console.error('');
     console.error('Preflight failed: no allowed way to produce image PNGs for the required repo paths.');
     console.error('');
-    console.error('Before moving or deleting stale Thalla raw/candidate files, provide one of:');
+    console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
     console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 after confirming built-in image_gen writes discoverable PNG files');
     console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, after the user explicitly requests CLI fallback');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing source PNG paths separated by ${JSON.stringify(path.delimiter)}`);
@@ -79,7 +79,7 @@ function main() {
   }
 
   console.log('');
-  console.log('Preflight passed: an image output path is available. It is safe to start the documented cleanup/regeneration flow.');
+  console.log('Preflight passed: an image output path is available. It is safe to archive stale rejected Thalla files and start the documented regeneration flow.');
   if (builtinReady) {
     console.log('Note: using Codex Desktop built-in image_gen only because disk save was explicitly confirmed; save and verify each generated PNG at the documented repo path before producer/validation steps.');
   }
