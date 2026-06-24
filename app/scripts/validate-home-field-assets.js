@@ -281,12 +281,50 @@ function frameHash(image, frameWidth, frameHeight, row, col) {
   return hash.digest('hex');
 }
 
+function frameDifferencePixels(image, frameWidth, frameHeight, rowA, colA, rowB, colB) {
+  let changed = 0;
+  for (let y = 0; y < frameHeight; y += 1) {
+    for (let x = 0; x < frameWidth; x += 1) {
+      const a = ((rowA * frameHeight + y) * image.width + (colA * frameWidth + x)) * 4;
+      const b = ((rowB * frameHeight + y) * image.width + (colB * frameWidth + x)) * 4;
+      const alphaDelta = Math.abs(image.rgba[a + 3] - image.rgba[b + 3]);
+      const colorDelta = (
+        Math.abs(image.rgba[a + 0] - image.rgba[b + 0]) +
+        Math.abs(image.rgba[a + 1] - image.rgba[b + 1]) +
+        Math.abs(image.rgba[a + 2] - image.rgba[b + 2])
+      );
+      if (alphaDelta > 24 || (image.rgba[a + 3] > 32 && image.rgba[b + 3] > 32 && colorDelta > 48)) {
+        changed += 1;
+      }
+    }
+  }
+  return changed;
+}
+
+function meaningfullyUniqueFrameCount(image, frameWidth, frameHeight, frames, minDifferentPixels = 28) {
+  const groups = [];
+  for (const frame of frames) {
+    const matchesExisting = groups.some((group) => frameDifferencePixels(
+      image,
+      frameWidth,
+      frameHeight,
+      frame.row,
+      frame.col,
+      group.row,
+      group.col
+    ) < minDifferentPixels);
+    if (!matchesExisting) groups.push(frame);
+  }
+  return groups.length;
+}
+
 function frameStats(image, frameWidth, frameHeight, row, col) {
   let minLum = Infinity;
   let maxLum = -Infinity;
   let visiblePixels = 0;
   let silhouetteEdgePixels = 0;
   let darkSilhouetteEdgePixels = 0;
+  const bounds = frameAlphaBounds(image, frameWidth, frameHeight, row, col);
   const alphaAt = (x, y) => {
     if (x < 0 || y < 0 || x >= frameWidth || y >= frameHeight) return 0;
     const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
@@ -317,6 +355,8 @@ function frameStats(image, frameWidth, frameHeight, row, col) {
 
   return {
     visiblePixels,
+    bboxWidth: bounds.width,
+    bboxHeight: bounds.height,
     valueRange: Number.isFinite(minLum) ? maxLum - minLum : 0,
     darkEdgeRatio: silhouetteEdgePixels > 0 ? darkSilhouetteEdgePixels / silhouetteEdgePixels : 0
   };
@@ -358,7 +398,11 @@ function frameAlphaBounds(image, frameWidth, frameHeight, row, col) {
 function checkChibiQuality(assetsDoc, errors, {
   ids = null,
   minValueRange = 42,
-  minDarkEdgeRatio = 0.26
+  minDarkEdgeRatio = 0.26,
+  minFrameBboxWidth = 22,
+  minFrameBboxHeight = 28,
+  minAverageVisiblePixels = 520,
+  minUniqueDirectionRows = 3
 } = {}) {
   for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
     if (!character.spritesheet) continue;
@@ -387,6 +431,9 @@ function checkChibiQuality(assetsDoc, errors, {
     if (stats.length === 0) continue;
     const avgValueRange = stats.reduce((sum, item) => sum + item.valueRange, 0) / stats.length;
     const avgDarkEdgeRatio = stats.reduce((sum, item) => sum + item.darkEdgeRatio, 0) / stats.length;
+    const avgVisiblePixels = stats.reduce((sum, item) => sum + item.visiblePixels, 0) / stats.length;
+    const minBboxWidth = Math.min(...stats.map((item) => item.bboxWidth));
+    const minBboxHeight = Math.min(...stats.map((item) => item.bboxHeight));
     if (avgValueRange < minValueRange) {
       errors.push({
         scope: 'chibi_quality',
@@ -401,12 +448,38 @@ function checkChibiQuality(assetsDoc, errors, {
         message: `character "${character.id}" dark silhouette-edge ratio ${avgDarkEdgeRatio.toFixed(2)} < ${minDarkEdgeRatio}; chibi needs a thicker warm dark outline to match approved Home Field props`
       });
     }
+    if (avgVisiblePixels < minAverageVisiblePixels || minBboxWidth < minFrameBboxWidth || minBboxHeight < minFrameBboxHeight) {
+      errors.push({
+        scope: 'chibi_quality',
+        code: 'chibi_footprint_too_small',
+        message: `character "${character.id}" visible footprint is too small for scene-scale review: average visible pixels ${avgVisiblePixels.toFixed(0)} < ${minAverageVisiblePixels} or minimum bbox ${minBboxWidth}x${minBboxHeight}px below ${minFrameBboxWidth}x${minFrameBboxHeight}px; regenerate larger, chunkier chibi frames`
+      });
+    }
+
+    const baseIdleCol = s.framesPerRow?.idle?.[0];
+    if (baseIdleCol != null && (s.rowOrder || []).length > 1) {
+      const uniqueDirectionRows = meaningfullyUniqueFrameCount(
+        image,
+        s.frameWidth,
+        s.frameHeight,
+        (s.rowOrder || []).map((_, row) => ({ row, col: baseIdleCol })),
+        48
+      );
+      if (uniqueDirectionRows < Math.min(minUniqueDirectionRows, (s.rowOrder || []).length)) {
+        errors.push({
+          scope: 'chibi_quality',
+          code: 'direction_rows_too_similar',
+          message: `character "${character.id}" has only ${uniqueDirectionRows} meaningfully different base direction row${uniqueDirectionRows === 1 ? '' : 's'}; down/up/side views must not be the same tiny sprite repeated`
+        });
+      }
+    }
   }
 }
 
 function checkChibiIdleAnimation(assetsDoc, errors, {
   ids = null,
   minUniqueIdleFrames = 2,
+  minMeaningfulIdleDeltaPixels = 18,
   maxIdleHeightLoss = 4,
   maxIdleCenterShift = 3,
   maxIdleTopDrop = 4
@@ -431,12 +504,18 @@ function checkChibiIdleAnimation(assetsDoc, errors, {
     }
     for (let row = 0; row < (s.rowOrder || []).length; row += 1) {
       const facing = s.rowOrder[row];
-      const unique = new Set(idleCols.map((col) => frameHash(image, s.frameWidth, s.frameHeight, row, col)));
-      if (unique.size < Math.min(minUniqueIdleFrames, idleCols.length)) {
+      const unique = meaningfullyUniqueFrameCount(
+        image,
+        s.frameWidth,
+        s.frameHeight,
+        idleCols.map((col) => ({ row, col })),
+        minMeaningfulIdleDeltaPixels
+      );
+      if (unique < Math.min(minUniqueIdleFrames, idleCols.length)) {
         errors.push({
           scope: 'chibi_animation',
           code: 'idle_frames_too_static',
-          message: `character "${character.id}" ${facing} idle row has ${unique.size} unique idle frame${unique.size === 1 ? '' : 's'} across ${idleCols.length} columns; Stage 1 requires a subtle two-frame idle, normal then little 1-3px bob/squish`
+          message: `character "${character.id}" ${facing} idle row has ${unique} meaningfully unique idle frame${unique === 1 ? '' : 's'} across ${idleCols.length} columns; Stage 1 requires a subtle two-frame idle, normal then little 1-3px bob/squish`
         });
       }
       const normalBounds = frameAlphaBounds(image, s.frameWidth, s.frameHeight, row, idleCols[0]);
@@ -461,7 +540,11 @@ function checkChibiIdleAnimation(assetsDoc, errors, {
   }
 }
 
-function checkChibiWalkAnimation(assetsDoc, errors, { ids = null, minUniqueWalkFrames = 3 } = {}) {
+function checkChibiWalkAnimation(assetsDoc, errors, {
+  ids = null,
+  minUniqueWalkFrames = 3,
+  minMeaningfulWalkDeltaPixels = 30
+} = {}) {
   for (const character of scopedEntries(assetsDoc.characters || [], ids)) {
     if (!character.spritesheet) continue;
     if (character.status === 'missing') continue;
@@ -482,12 +565,18 @@ function checkChibiWalkAnimation(assetsDoc, errors, { ids = null, minUniqueWalkF
     }
     for (let row = 0; row < (s.rowOrder || []).length; row += 1) {
       const facing = s.rowOrder[row];
-      const unique = new Set(walkCols.map((col) => frameHash(image, s.frameWidth, s.frameHeight, row, col)));
-      if (unique.size < Math.min(minUniqueWalkFrames, walkCols.length)) {
+      const unique = meaningfullyUniqueFrameCount(
+        image,
+        s.frameWidth,
+        s.frameHeight,
+        walkCols.map((col) => ({ row, col })),
+        minMeaningfulWalkDeltaPixels
+      );
+      if (unique < Math.min(minUniqueWalkFrames, walkCols.length)) {
         errors.push({
           scope: 'chibi_animation',
           code: 'walk_frames_too_static',
-          message: `character "${character.id}" ${facing} walk row has ${unique.size} unique walk frame${unique.size === 1 ? '' : 's'} across ${walkCols.length} columns; Stage 1 requires at least ${minUniqueWalkFrames} unique walk frames per direction`
+          message: `character "${character.id}" ${facing} walk row has ${unique} meaningfully unique walk frame${unique === 1 ? '' : 's'} across ${walkCols.length} columns; Stage 1 requires at least ${minUniqueWalkFrames} unique walk frames per direction`
         });
       }
     }

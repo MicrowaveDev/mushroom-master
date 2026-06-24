@@ -144,9 +144,12 @@ function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = fals
       const r = 40 + (row * 30);
       const g = 90 + (variant * 12);
       const b = 70 + (variant * 3);
-      const yStart = deepIdle && col === 1 ? 24 : 14;
-      for (let y = yStart; y < 54; y += 1) {
-        for (let x = 18; x < 46; x += 1) {
+      const idleBob = col === 1 && !staticIdle;
+      const yStart = deepIdle && col === 1 ? 24 : idleBob ? 15 : 14;
+      const yEnd = deepIdle && col === 1 ? 54 : idleBob ? 55 : 54;
+      const xShift = col >= 2 && !staticWalk ? ((col % 3) - 1) : 0;
+      for (let y = yStart; y < yEnd; y += 1) {
+        for (let x = 18 + xShift; x < 46 + xShift; x += 1) {
           const i = ((row * frameHeight + y) * width + (col * frameWidth + x)) * 4;
           rgba[i + 0] = r;
           rgba[i + 1] = g;
@@ -244,10 +247,14 @@ function writeCrispChibiSpritesheet(filePath, { lowQuality = false } = {}) {
       const variant = col < 2 ? col : col;
       const cx = col * frameWidth;
       const cy = row * frameHeight;
+      const rowXStart = [16, 18, 14, 18][row];
+      const rowXEnd = [48, 46, 46, 50][row];
+      const rowYStart = [12, 14, 13, 13][row];
       for (let y = 12; y < 56; y += 1) {
-        for (let x = 16; x < 48; x += 1) {
+        for (let x = rowXStart; x < rowXEnd; x += 1) {
+          if (y < rowYStart) continue;
           const i = ((cy + y) * width + (cx + x)) * 4;
-          const edge = x < 20 || x >= 44 || y < 16 || y >= 52;
+          const edge = x < rowXStart + 4 || x >= rowXEnd - 4 || y < rowYStart + 4 || y >= 52;
           if (lowQuality) {
             rgba[i + 0] = 178 + variant;
             rgba[i + 1] = 165 + variant;
@@ -261,6 +268,33 @@ function writeCrispChibiSpritesheet(filePath, { lowQuality = false } = {}) {
             rgba[i + 1] = 215 - (row * 8);
             rgba[i + 2] = 148 + (variant * 3);
           }
+          rgba[i + 3] = 255;
+        }
+      }
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
+function writeTinyRepeatedChibiSpritesheet(filePath) {
+  const width = 512;
+  const height = 256;
+  const frameWidth = 64;
+  const frameHeight = 64;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 8; col += 1) {
+      const cx = col * frameWidth;
+      const cy = row * frameHeight;
+      const yOffset = col % 2;
+      for (let y = 24 + yOffset; y < 43 + yOffset; y += 1) {
+        for (let x = 25; x < 39; x += 1) {
+          const i = ((cy + y) * width + (cx + x)) * 4;
+          const edge = x < 27 || x >= 37 || y < 27 + yOffset || y >= 41 + yOffset;
+          rgba[i + 0] = edge ? 55 : 236;
+          rgba[i + 1] = edge ? 35 : 213;
+          rgba[i + 2] = edge ? 24 : 154;
           rgba[i + 3] = 255;
         }
       }
@@ -1182,7 +1216,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /thalla \(character\)/);
   assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof/);
   assert.match(result.stdout, /stop before cleanup if it fails/);
-  assert.match(result.stdout, /Codex Desktop built-in imagegen by default/);
+  assert.match(result.stdout, /real PNG file at a known filesystem path/);
+  assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(result.stdout, /game:home-field:find-imagegen-output/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
   assert.match(result.stdout, /thalla_chibi\.states\.source\.png/);
@@ -1491,6 +1527,26 @@ test('[home-field] chibi quality validator rejects soft low-contrast sheets', ()
     assert.equal(failed.status, 1, failed.stderr || failed.stdout);
     assert.match(failed.stderr, /low_value_range|weak_dark_outline/);
 
+    writeTinyRepeatedChibiSpritesheet(outputAbs);
+    const failedTiny = spawnSync(process.execPath, [
+      validateScriptPath,
+      '--ids=thalla',
+      '--check-files',
+      '--check-chibi-quality'
+    ], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME_FIELD_ASSETS_PATH: assetsPath,
+        HOME_FIELD_MAP_PATH: mapPath,
+        HOME_FIELD_ASSET_ROOT: candidateRoot
+      },
+      encoding: 'utf8'
+    });
+    assert.equal(failedTiny.status, 1, failedTiny.stderr || failedTiny.stdout);
+    assert.match(failedTiny.stderr, /chibi_footprint_too_small/);
+    assert.match(failedTiny.stderr, /direction_rows_too_similar/);
+
     writeCrispChibiSpritesheet(outputAbs, { lowQuality: false });
     const passed = spawnSync(process.execPath, [
       validateScriptPath,
@@ -1514,7 +1570,7 @@ test('[home-field] chibi quality validator rejects soft low-contrast sheets', ()
   }
 });
 
-test('[home-field] chibi proof preflight accepts Codex Desktop built-in imagegen by default', () => {
+test('[home-field] chibi proof preflight blocks unconfirmed built-in imagegen disk output', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
@@ -1528,33 +1584,33 @@ test('[home-field] chibi proof preflight accepts Codex Desktop built-in imagegen
     encoding: 'utf8'
   });
 
-  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(result.status, 1, result.stderr || result.stdout);
   assert.match(result.stdout, /OPENAI_API_KEY: missing/);
-  assert.match(result.stdout, /built-in Codex Desktop imagegen allowed: yes/);
-  assert.match(result.stdout, /OPENAI_API_KEY is not required/);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen file-output ready: no/);
+  assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
+  assert.match(result.stderr, /Preflight failed/);
+  assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
 });
 
-test('[home-field] chibi proof preflight blocks cleanup in strict shell mode without an output path', () => {
+test('[home-field] chibi proof preflight accepts confirmed built-in imagegen disk output', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
-      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
-      HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
-      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
+      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
     },
     encoding: 'utf8'
   });
 
-  assert.equal(result.status, 1, result.stderr || result.stdout);
-  assert.match(result.stdout, /Home Field Chibi Proof Preflight/);
-  assert.match(result.stdout, /strict explicit-output mode: yes/);
-  assert.match(result.stderr, /Preflight failed/);
-  assert.match(result.stderr, /Before moving or deleting stale Thalla raw\/candidate files/);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen file-output ready: yes/);
+  assert.match(result.stdout, /Preflight passed/);
+  assert.match(result.stdout, /disk save was explicitly confirmed/);
 });
 
 test('[home-field] chibi proof preflight accepts supplied local image inputs', () => {

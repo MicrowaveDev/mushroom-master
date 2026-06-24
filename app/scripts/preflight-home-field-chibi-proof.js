@@ -3,8 +3,8 @@
  * Read-only preflight for the Thalla Home Field chibi proof.
  *
  * The proof pipeline must produce real PNG files under .agent/home-field-workspace.
- * Codex Desktop's built-in image_gen tool is the preferred generation path and
- * does not require OPENAI_API_KEY. The CLI key is only needed for CLI fallback.
+ * The proof cannot continue from chat-visible images alone. It needs a real
+ * PNG that the filesystem pipeline can hash, split, validate, and preview.
  */
 
 import fs from 'node:fs';
@@ -41,10 +41,9 @@ function main() {
   const hasCli = fileExists(cliPath);
   const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
   const cliReady = hasCli && hasApiKey;
-  const strictExplicitOutput = process.env.HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT === '1';
   const builtinDisabled = process.env.HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN === '1';
   const builtinDiskConfirmed = process.env.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE === '1';
-  const builtinReady = builtinDiskConfirmed || (!strictExplicitOutput && !builtinDisabled);
+  const builtinReady = builtinDiskConfirmed && !builtinDisabled;
   const localInputs = parseLocalInputs(process.env.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS);
   const missingLocalInputs = localInputs.filter((inputPath) => !fileExists(path.resolve(repoRoot, inputPath)));
   const localInputsReady = localInputs.length > 0 && missingLocalInputs.length === 0;
@@ -61,9 +60,8 @@ function main() {
   console.log(`- imagegen CLI helper: ${hasCli ? cliPath : 'missing'}`);
   console.log(`- OPENAI_API_KEY: ${hasApiKey ? 'set' : 'missing'}`);
   console.log(`- CLI fallback ready: ${cliReady ? 'yes' : 'no'}`);
-  console.log(`- built-in Codex Desktop imagegen allowed: ${builtinReady ? 'yes' : 'no'}`);
+  console.log(`- built-in Codex Desktop imagegen file-output ready: ${builtinReady ? 'yes' : 'no'}`);
   console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
-  console.log(`- strict explicit-output mode: ${strictExplicitOutput ? 'yes' : 'no'}`);
   console.log(`- local image inputs supplied: ${localInputs.length}`);
   if (missingLocalInputs.length > 0) {
     console.log(`- missing local image inputs: ${missingLocalInputs.join(', ')}`);
@@ -74,17 +72,16 @@ function main() {
     console.error('Preflight failed: no allowed way to produce image PNGs for the required repo paths.');
     console.error('');
     console.error('Before moving or deleting stale Thalla raw/candidate files, provide one of:');
-    console.error('- Codex Desktop built-in image_gen enabled (default; do not set HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN=1)');
-    console.error('- OPENAI_API_KEY with the installed imagegen CLI helper for CLI fallback');
-    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 for strict explicit-output environments');
+    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 after confirming built-in image_gen writes discoverable PNG files');
+    console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, after the user explicitly requests CLI fallback');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing source PNG paths separated by ${JSON.stringify(path.delimiter)}`);
     process.exit(1);
   }
 
   console.log('');
   console.log('Preflight passed: an image output path is available. It is safe to start the documented cleanup/regeneration flow.');
-  if (builtinReady && !builtinDiskConfirmed && !cliReady && !localInputsReady) {
-    console.log('Note: using Codex Desktop built-in image_gen path. OPENAI_API_KEY is not required; save and verify each generated PNG at the documented repo path before producer/validation steps.');
+  if (builtinReady) {
+    console.log('Note: using Codex Desktop built-in image_gen only because disk save was explicitly confirmed; save and verify each generated PNG at the documented repo path before producer/validation steps.');
   }
 }
 

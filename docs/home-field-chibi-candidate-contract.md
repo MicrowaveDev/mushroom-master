@@ -43,7 +43,7 @@ Use a grouped-state visual workflow:
 4. Generate one final grouped state sheet only after the reference sheet passes.
 5. Split the grouped state sheet into the canonical raw frame PNGs.
 
-The preflight step is mandatory before any destructive or moving cleanup. Codex Desktop's built-in `image_gen` tool is the default valid path and does not require `OPENAI_API_KEY`; the key is only required for CLI fallback runs. In strict shell/CI environments, set `HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT=1` and provide either CLI credentials, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`, or supplied local source images. Do not archive/delete the stale latest candidate until preflight passes.
+The preflight step is mandatory before any destructive or moving cleanup. This proof requires a real PNG file at a known filesystem path. A built-in `image_gen` render that is only visible in chat is not a valid source for the pipeline. Preflight passes only when one of these is true: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` after confirming built-in imagegen writes discoverable PNG files, supplied local source images exist via `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS`, or the user explicitly requested CLI fallback and `OPENAI_API_KEY` is configured. Do not archive/delete the stale latest candidate until preflight passes.
 
 The cleanup step is mandatory for regeneration runs after a rejection only after preflight passes. The previous rejected raw frames may remain on disk under `.agent/home-field-workspace/raw/`, but they are negative examples only. Do not let `test -f` or producer success on existing raw files count as generation work.
 
@@ -65,7 +65,11 @@ This grouped state sheet is the required source for all final state tiles so fac
 
 Quality bar: the composed chibi must look at least as crisp, contrasted, and finished as the approved Home Field props at scene scale. Avoid blurry/downscaled sticker results. Require a chunky readable silhouette, thicker warm dark outline, clear face/cap/robe value separation, and finished hand-drawn polish comparable to the bushes, mushrooms, and gates in the clean preview.
 
+Deterministic/mechanical fallback drawings are allowed only as explicitly requested diagnostics. They must not be committed or reported as a fresh imagegen art candidate, even if they pass dimensions, alpha, frame-count, and manifest checks.
+
 After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
+
+If built-in imagegen renders in chat but the file path is unknown, run `npm run game:home-field:find-imagegen-output -- --since-minutes=30` once. Use `--include-temp` only for one bounded retry. If no file is found, stop and report the image-output blocker instead of running broad filesystem searches or creating deterministic fallback art.
 
 After generating the grouped state sheet, run:
 
