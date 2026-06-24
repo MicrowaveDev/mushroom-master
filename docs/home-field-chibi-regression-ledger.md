@@ -266,6 +266,88 @@ The active Stage 1 contract is:
 - each checked-in chibi reference image should record source rollout path, source line or attachment path, user note, local file path, and whether it is positive direction, negative example, or non-owned style calibration;
 - reference images are guidance for proportions, simplicity, outline, and appeal, not permission to copy exact characters, costumes, symbols, or compositions.
 
+### 17. Cleanup Ran Before A Replacement Source Was Proven
+
+**Symptom:** A rerun archived the previous `chibi-active-roster/latest` candidate before it had a replacement PNG from imagegen. When built-in imagegen did not leave a recoverable file, the run ended without a current latest candidate.
+
+**Decision that led there:** After stale raws caused reuse, cleanup was moved near the start of the rerun flow. That looked sensible because old rejected frames were dangerous, but it made "remove stale state" happen before "prove this run can create a new source file."
+
+**Why it regressed:** Moving or deleting local candidate evidence is a state-changing operation. If the generation path then blocks, the workflow has made the workspace less useful while still producing no new art.
+
+**Evidence:** In the current chat rollout, task-complete line `451` diagnoses a run that produced no usable PNG and archived the existing Thalla candidate before replacement. Task-complete line `573` then adds the chibi output preflight so future runs stop before cleanup when no file-output path is proven.
+
+**Guardrails added:**
+
+- preflight must pass before stale raw/candidate cleanup;
+- cleanup should archive, not delete, rejected evidence;
+- readiness checks must verify both "no live stale inputs" and "this run has an allowed output path."
+
+### 18. Exact-Size Split Assumptions Broke Larger State Sheets
+
+**Symptom:** A grouped state-sheet run produced a larger proportional image (`1774x887`, normalized to `1776x888`) instead of an exact `512x256` sheet. The documented split command did not include `--resize`, and the first splitter logic resized too late, after slicing assumptions had already been applied.
+
+**Decision that led there:** The contract described the runtime sheet shape (`8x4`, `512x256`, `64x64` frames) so strongly that helper behavior initially assumed imagegen would provide exact grid dimensions.
+
+**Why it regressed:** Imagegen commonly returns larger or slightly odd proportional outputs. Exact-dimension assumptions turn a visually promising source sheet into a tooling blocker and encourage ad hoc image normalization outside the documented pipeline.
+
+**Evidence:** In the current chat rollout, task-complete line `1457` records the `1774x887` grouped-sheet case and the fix. The follow-up commit `b2fc97a` updated `split-home-field-chibi-state-sheet.js`, docs, prompts, and tests so `--resize` normalizes proportional sheets before slicing.
+
+**Guardrails added:**
+
+- the split command is `npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize`;
+- the splitter normalizes larger proportional sheets before slicing;
+- docs allow exact `512x256` or larger proportional `8x4` sources, but no ad hoc resizing outside the helper.
+
+### 19. Six Walk Slots Became Pose-Count Pressure
+
+**Symptom:** A grouped sheet could provide six technically unique walk frames per direction while still feeling overcomplicated, soft, or drift-prone at `64px`.
+
+**Decision that led there:** The runtime sheet has six walk columns per direction, and that was initially read as "generate six important walk poses" instead of "fill a six-slot lane with a simple readable cycle."
+
+**Why it regressed:** Every extra imagegen pose is another chance for the face, cap, robe, silhouette, or detail budget to drift. Mechanical uniqueness proves "not static," but it does not prove the motion is useful at map scale.
+
+**Evidence:** In the current chat rollout, task-complete line `1589` notes that six walk columns were probably too much pressure for the proof, and task-complete line `1720` records the follow-up change: target four meaningful poses across the six slots, with optional holds/in-betweens.
+
+**Guardrails added:**
+
+- six slots remain the runtime lane, not a demand for six major poses;
+- the target is about `4` meaningful walk poses, with optional holds or in-betweens;
+- validators still require enough frame diversity, but visual review decides whether the motion reads well.
+
+### 20. Standalone Sheet Quality Did Not Equal Runtime Readiness
+
+**Symptom:** Chibi sources and sheets could look acceptable in isolation, while the composed mobile field still showed Thalla as too small, too soft, or less finished than nearby approved props. A reference sheet could also look stronger than the final downscaled sheet.
+
+**Decision that led there:** Reviews leaned on contact sheets, source PNGs, and mechanical validators. Larger source images were treated as a quality upgrade, even when the extra pixels invited details that disappeared after downscale.
+
+**Why it regressed:** The player sees a small anchored runtime object on grass, not a standalone illustration. Visible footprint, alpha padding, bottom anchor, shadow compatibility, and composed-scene scale can fail even when dimensions, transparency, and contrast checks pass.
+
+**Evidence:** In the current chat rollout, task-complete line `1597` flags that chibi quality was weaker than other items; line `2332` reframes Home Field assets as runtime objects; line `2606` records the new runtime-readiness validator; and line `2715` still cautions that an improved candidate reads slightly small/soft in the composed field.
+
+**Guardrails added:**
+
+- `docs/home-field-runtime-asset-contract-plan.md` defines the runtime asset contract;
+- generated prompts include final footprint, anchor, alpha/background, shadow policy, and composed-scene requirements;
+- `--check-runtime-readiness` catches objective alpha edge and anchor/footing failures;
+- composed mobile/desktop clean previews remain the decisive review surface.
+
+### 21. Candidate Approval Leaked Into Production-Looking State
+
+**Symptom:** The minimal-v1 flow briefly treated the current Thalla chibi as approved or production-ready, even though composed screenshot review showed a tiny beige/pixel-art doll sprite that did not match the agreed style.
+
+**Decision that led there:** The minimal scene promotion bundled many asset classes together. Because terrain/props/exits were moving toward production, the chibi candidate's mechanical pass and scene presence were allowed to look like approval.
+
+**Why it regressed:** Candidate evidence, app-facing assets, review verdicts, and production validation are separate states. When they blur together, an unapproved chibi can appear in production-looking previews and future agents may inherit that as accepted art.
+
+**Evidence:** In the current chat rollout, task-complete line `92` notes that Thalla was briefly promoted as approved before rollback in commit `2461d76`. `docs/home-field-generation-retrospective.md` also records the minimal-v1 chibi rollback as a regression case.
+
+**Guardrails added:**
+
+- Stage 1 chibi work is candidate-only;
+- do not overwrite `web/public/home-field/characters/*/spritesheet.png`;
+- do not set `accepted: true` or `approved` without explicit human approval;
+- unapproved chibis stay out of production-looking clean previews and active-scene production validation.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -277,3 +359,8 @@ The active Stage 1 contract is:
 7. Do not call a chibi workflow ready until runnable helper output, generated prompt text, validators, and docs agree.
 8. Do not let stale `.agent` files prove generation freshness.
 9. Do not use post-split deterministic edits to create animation that imagegen did not author.
+10. Do not move old candidate evidence until preflight proves a real output path for the new run.
+11. Do not hand-normalize grouped state sheets; use the checked-in splitter with `--resize`.
+12. Do not treat runtime walk slots as a demand for six major poses.
+13. Do not approve from standalone sheets; judge the composed runtime scene.
+14. Do not let candidate-only chibi proof state mutate app-facing or approved production state.
