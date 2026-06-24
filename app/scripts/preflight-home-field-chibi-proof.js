@@ -72,7 +72,7 @@ function main() {
     console.error('Preflight failed: no allowed way to produce image PNGs for the required repo paths.');
     console.error('');
     console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
-    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 after confirming built-in image_gen writes discoverable PNG files');
+    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 after confirming built-in image_gen writes discoverable PNG files from the same agent context that will run imagegen');
     console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, after the user explicitly requests CLI fallback');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing source PNG paths separated by ${JSON.stringify(path.delimiter)}`);
     process.exit(1);

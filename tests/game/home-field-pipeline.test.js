@@ -1218,6 +1218,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /stop before stale-file archive if it fails/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(result.stdout, /same-agent file output is confirmed/);
+  assert.match(result.stdout, /same agent context that will run imagegen/);
   assert.match(result.stdout, /game:home-field:find-imagegen-output/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
@@ -1593,6 +1595,7 @@ test('[home-field] chibi proof preflight blocks unconfirmed built-in imagegen di
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
   assert.match(result.stderr, /Preflight failed/);
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(result.stderr, /same agent context that will run imagegen/);
   assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
 });

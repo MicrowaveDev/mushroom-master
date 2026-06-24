@@ -141,7 +141,7 @@ The active Stage 1 contract is:
 **Guardrails added:**
 
 - `npm run game:home-field:find-imagegen-output` searches bounded Codex/app/temp locations;
-- `npm run game:home-field:preflight-chibi-proof` now fails unless built-in disk output is explicitly confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`, local image inputs exist, or explicit CLI fallback is configured.
+- `npm run game:home-field:preflight-chibi-proof` now fails unless built-in disk output is explicitly confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` from the same agent context that will run imagegen, local image inputs exist, or explicit CLI fallback is configured.
 
 ### 9. Mechanical Fallback Proof Looked Like Progress
 
@@ -169,6 +169,7 @@ The active Stage 1 contract is:
 
 - this ledger documents the distinction;
 - future prompts should say whether the goal is to test built-in imagegen UI generation separately from the chibi pipeline;
+- do not assume a sub-agent can run or recover built-in imagegen output unless that exact agent context has confirmed discoverable PNG output;
 - if the operator confirms a discoverable built-in output path, set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only for that run.
 
 ### 11. Stale Rejected Raw Files Masqueraded As Fresh Generation
@@ -231,7 +232,7 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- built-in imagegen is valid for this proof only after a discoverable file-output path is confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`;
+- built-in imagegen is valid for this proof only after a discoverable file-output path is confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` from the same agent context that will run imagegen;
 - local source image inputs and explicit CLI fallback remain separate allowed paths;
 - final reports should say "blocked by file-output gate" when preflight stops before imagegen, not "imagegen failed."
 
