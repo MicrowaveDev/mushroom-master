@@ -4,7 +4,7 @@ Date: 2026-05-26
 
 This contract is the stop-gate for active-roster Home Field chibi candidate generation. It keeps the first production pass small enough to review honestly before expanding to the whole roster.
 
-For the causal history behind these rules, read [`docs/home-field-chibi-regression-ledger.md`](home-field-chibi-regression-ledger.md). Do not remove or weaken a rule until you understand which regression it was added to prevent.
+For shared imagegen requirements, read [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md). For the causal history behind these rules, read [`docs/home-field-chibi-regression-ledger.md`](home-field-chibi-regression-ledger.md). Do not remove or weaken a rule until you understand which regression it was added to prevent.
 
 ## Staged Scope
 

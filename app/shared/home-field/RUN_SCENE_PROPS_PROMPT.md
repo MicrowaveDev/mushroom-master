@@ -12,6 +12,7 @@ The canonical run instructions are below. The launcher prompt should stay short 
 
 Read and follow:
 
+- docs/home-field-imagegen-requirements.md
 - docs/home-field-agent-flow.md
 - docs/home-field-runtime-asset-contract-plan.md
 - app/shared/home-field/README.md

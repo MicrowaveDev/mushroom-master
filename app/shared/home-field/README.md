@@ -33,6 +33,7 @@ npm run game:home-field:next --limit=10
 
 - **Plan**: [`docs/home-field-ingame-plan.md`](../../../docs/home-field-ingame-plan.md)
 - **Minimal production candidate plan**: [`docs/home-field-minimal-production-plan.md`](../../../docs/home-field-minimal-production-plan.md)
+- **Imagegen requirements**: [`docs/home-field-imagegen-requirements.md`](../../../docs/home-field-imagegen-requirements.md)
 - **Tileset connector contract**: [`docs/home-field-tileset-contract.md`](../../../docs/home-field-tileset-contract.md)
 - **ADR**: [`docs/adr/0001-home-field-renderer.md`](../../../docs/adr/0001-home-field-renderer.md)
 - **Requirements**: [`docs/game-requirements.md`](../../../docs/game-requirements.md) Section 15.
@@ -97,7 +98,7 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 
 ## Agent Flow
 
-Use [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md) for generation runs. The important split is:
+Use [`docs/home-field-imagegen-requirements.md`](../../../docs/home-field-imagegen-requirements.md) and [`docs/home-field-agent-flow.md`](../../../docs/home-field-agent-flow.md) for generation runs. The important split is:
 
 - Orchestrator owns commands, commit, push, and stop gates.
 - Prompt/Contract Reviewer checks prompts and contracts before imagegen.

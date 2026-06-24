@@ -327,7 +327,7 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- `docs/home-field-runtime-asset-contract-plan.md` defines the runtime asset contract;
+- `docs/home-field-imagegen-requirements.md` defines the shared imagegen contract, and `docs/home-field-runtime-asset-contract-plan.md` defines the runtime asset contract;
 - generated prompts include final footprint, anchor, alpha/background, shadow policy, and composed-scene requirements;
 - `--check-runtime-readiness` catches objective alpha edge and anchor/footing failures;
 - composed mobile/desktop clean previews remain the decisive review surface.

@@ -5,7 +5,7 @@ Use this short prompt when the goal is the fastest production-looking Home Field
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the minimal Home Field production-candidate plan with subagents.
 
-Follow app/shared/home-field/RUN_MINIMAL_HOME_FIELD_PROMPT.md, docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md exactly.
+Follow app/shared/home-field/RUN_MINIMAL_HOME_FIELD_PROMPT.md, docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md exactly.
 
 Generate only this candidate scope: grass_base_01, grass_base_02, grass_flowers_01, path_h_end_w, path_dirt_straight, path_spore_glow, path_h_end_e, path_destination_row, bush_cluster_dark_01, bush_cluster_light_01, leaf_sprout_01, mushroom_cluster_small_amber, mushroom_cluster_small_violet, mushroom_cap_red_spotted, fallen_branch_mycelium, arena_mushroom_arch, journey_gate_under_construction, thalla. Optional second chibi only after Thalla passes scene review.
 

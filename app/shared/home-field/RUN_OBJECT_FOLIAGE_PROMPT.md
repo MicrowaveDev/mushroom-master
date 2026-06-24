@@ -7,6 +7,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, rerun the Home F
 
 Read and follow:
 - app/shared/home-field/RUN_OBJECT_FOLIAGE_PROMPT.md
+- docs/home-field-imagegen-requirements.md
 - docs/home-field-agent-flow.md
 - docs/home-field-runtime-asset-contract-plan.md
 - app/shared/home-field/README.md

@@ -18,7 +18,7 @@ Deliver a candidate scene that can become the final Home Field baseline after hu
 
 The primary proof is the composed field screenshot, not isolated asset beauty.
 
-Use [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md) as the implementation plan for turning generated images into runtime-ready assets. The run should judge raw-source completeness, alpha/edge safety, anchor stability, mobile-scale readability, and composed-scene fit before treating any asset as ready for human approval.
+Use [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md) as the shared imagegen requirements document and [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md) as the implementation plan for turning generated images into runtime-ready assets. The run should judge raw-source completeness, alpha/edge safety, anchor stability, mobile-scale readability, and composed-scene fit before treating any asset as ready for human approval.
 
 ## Current Completion State
 
@@ -333,7 +333,7 @@ Use these when the orchestrator can spawn subagents. Each prompt is bounded so w
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as read-only Prompt/Contract Reviewer for the minimal Home Field production-candidate run.
 
-Read docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-runtime-asset-contract-plan.md, app/shared/home-field/home-field-assets.json, app/shared/home-field/home-field-prompts.json, and docs/home-field-chibi-candidate-contract.md.
+Read docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, docs/home-field-runtime-asset-contract-plan.md, app/shared/home-field/home-field-assets.json, app/shared/home-field/home-field-prompts.json, and docs/home-field-chibi-candidate-contract.md.
 
 Report contradictions or missing instructions only. Check candidate-only paths, minimal scope, shared-source grass/path rules, runtime asset readiness, prop scale/readability rules, Thalla Stage 1 rules, subagent separation, and required final evidence. Do not edit files, generate images, approve assets, or run producers.
 ```
@@ -343,7 +343,7 @@ Report contradictions or missing instructions only. Check candidate-only paths, 
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Grass/Path Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md and docs/home-field-agent-flow.md. Generate terrain candidates only under .agent/home-field-workspace. Start with grass only: run npm run game:home-field:rerun-grass-family, use imagegen for one shared meadow source, then run npm run game:home-field:produce-grass-family-candidate.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, and docs/home-field-agent-flow.md. Generate terrain candidates only under .agent/home-field-workspace. Start with grass only: run npm run game:home-field:rerun-grass-family, use imagegen for one shared meadow source, then run npm run game:home-field:produce-grass-family-candidate.
 
 After grass preview evidence exists, generate the shared-source path family only if it improves the composed field. If path looks pasted after two attempts, defer path by keeping path rows at verdict needs_regen, accepted false, with reason beginning Deferred:. Do not touch web/public/home-field, do not approve assets, and include links to raw source, candidate folder, and clean preview screenshots in your handoff.
 ```
@@ -353,7 +353,7 @@ After grass preview evidence exists, generate the shared-source path family only
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Props/Entrances Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, and docs/home-field-scale-contract.md. Generate only these object-layer candidates: bush_cluster_dark_01, bush_cluster_light_01, leaf_sprout_01, mushroom_cluster_small_amber, mushroom_cluster_small_violet, mushroom_cap_red_spotted, fallen_branch_mycelium, arena_mushroom_arch, journey_gate_under_construction.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, and docs/home-field-scale-contract.md. Generate only these object-layer candidates: bush_cluster_dark_01, bush_cluster_light_01, leaf_sprout_01, mushroom_cluster_small_amber, mushroom_cluster_small_violet, mushroom_cap_red_spotted, fallen_branch_mycelium, arena_mushroom_arch, journey_gate_under_construction.
 
 Use broad mobile-readable silhouettes, fewer segments, top-down 2.5D camera, muted shared palette, compact shadows, and transparent backgrounds. Produce only candidate outputs under .agent/home-field-workspace/candidates/object-layer/latest. Run alpha/halo and mobile-readability proof sheets. Do not edit web/public/home-field or approve assets.
 ```
@@ -363,7 +363,7 @@ Use broad mobile-readable silhouettes, fewer segments, top-down 2.5D camera, mut
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Chibi Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-regression-ledger.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, one coherent grouped 8x4 state sheet split into 32 character-only frames, no baked shadow. Run npm run game:home-field:preflight-chibi-proof before stale-file archive; chat-visible built-in imagegen output is not enough, so continue only if preflight confirms discoverable PNG output, supplied local source images, or explicit CLI fallback credentials.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, docs/home-field-chibi-candidate-contract.md, docs/home-field-chibi-regression-ledger.md, docs/home-field-chibi-style-reference.md, and docs/design-requirements.md. Generate Thalla Stage 1 only: elevated top-down 2.5D hand-drawn field sprite, simple 64px runtime read, one coherent grouped 8x4 state sheet split into 32 character-only frames, no baked shadow. Run npm run game:home-field:preflight-chibi-proof before stale-file archive; chat-visible built-in imagegen output is not enough, so continue only if preflight confirms discoverable PNG output, supplied local source images, or explicit CLI fallback credentials.
 
 Create a non-production turnaround reference first, then one final grouped 8x4 state sheet at .agent/home-field-workspace/raw/thalla_chibi.states.source.png and split it into transparent raw frames. Target a simple BJD-inspired chibi doll illustration: smooth doll-like face, tiny planted body, broad costume block, and very few large Thalla marks. Make a cute two-frame idle per direction in the grouped state sheet itself: normal planted pose, then a little 1-3px bob/squish pose that loops back to normal while staying upright; do not make a crouch, seated pose, or deep squat. Do not synthesize idle motion after split by shifting, squashing, stretching, repainting, or otherwise changing frame pose/silhouette. Use the six walk columns as a walk lane: aim for 4 meaningful poses plus subtle holds/in-betweens, with at least 3 unique poses per direction, not one replicated walk pose. Quality bar: the composed chibi must look at least as crisp, contrasted, and finished as the approved bushes, mushrooms, and gates. Reject pixel-art, tiny featureless doll-sprite, beige generic elf, blurry/downscaled sticker quality, weak outline, low-contrast robe/cap/face separation, busy ornate fantasy sprite, straight portrait, realistic doll-photo/toy-render, baked shadow, human-with-mushroom-hat results, or separately generated state tiles that drift in face/cap/robe details. Produce only candidate outputs under .agent/home-field-workspace/candidates/chibi-active-roster/latest. Do not generate the roster or optional lomie unless Thalla passes scene review and the orchestrator explicitly asks.
 ```
@@ -373,7 +373,7 @@ Create a non-production turnaround reference first, then one final grouped 8x4 s
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Producer/Validation Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:combined-candidate-preview.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:combined-candidate-preview.
 
 Do not hand-edit PNGs, change contracts, overwrite web/public/home-field, or approve art. Final handoff must list candidate folder, evidence manifest, contact sheet, adjacency sheet, alpha/halo sheet, mobile-readability sheet, and mobile/desktop clean screenshots as clickable links.
 ```

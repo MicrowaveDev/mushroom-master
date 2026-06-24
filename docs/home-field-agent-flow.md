@@ -8,6 +8,8 @@ This workflow prevents one agent from generating, validating, and approving its 
 
 No single role may both create an image and approve it. Generation, mechanical validation, and visual review are separate stages.
 
+Before any Home Field imagegen run, read [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md). It is the shared imagegen contract for file-output gating, candidate isolation, provenance, prompt content, runtime-readiness evidence, and handoff shape. Family-specific docs add stricter rules.
+
 If the environment supports sub-agents, assign Prompt/Contract Reviewer, Imagegen Worker, Producer/Validation Worker, and Visual Critic as separate agents. A single read-only sidecar is not enough for a generation run. The Imagegen Worker may run imagegen only when that exact agent context has confirmed discoverable PNG output; otherwise keep imagegen in the context that can save/recover files and use sub-agents for contract review, validation, and visual criticism. If sub-agents are unavailable, the active agent must still execute the stages separately and name which role it is acting as in its notes.
 
 When using the multi-agent tool, use the known-good call shape only:
@@ -192,7 +194,7 @@ The Visual Critic updates only the scoped character rows in `docs/home-field-ass
 
 The target is not an isolated grass texture. The final composed field should read like a polished game-hub screenshot: chibi mushroom-elf avatars standing on a soft green meadow, with chunky dark-ink foliage, vines, flowers, mushrooms, exits, and props framing the walkable area on object layers.
 
-Before any terrain, prop, exit, effect, or chibi generation, follow [`docs/home-field-scale-contract.md`](home-field-scale-contract.md) and the implementation plan in [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md). The source canvas size is not the visual footprint: `256x256` props should not fill the whole source canvas unless they are terrain, and larger source sizes are for cleaner alpha/cropping rather than extra tiny detail. Reject any batch where assets look like different zoom levels, camera angles, renderers, or lighting setups in the same Home Field preview.
+Before any terrain, prop, exit, effect, or chibi generation, follow [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md), [`docs/home-field-scale-contract.md`](home-field-scale-contract.md), and the implementation plan in [`docs/home-field-runtime-asset-contract-plan.md`](home-field-runtime-asset-contract-plan.md). The source canvas size is not the visual footprint: `256x256` props should not fill the whole source canvas unless they are terrain, and larger source sizes are for cleaner alpha/cropping rather than extra tiny detail. Reject any batch where assets look like different zoom levels, camera angles, renderers, or lighting setups in the same Home Field preview.
 
 For the grass batch, this means:
 

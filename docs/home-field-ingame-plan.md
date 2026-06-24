@@ -2,7 +2,7 @@
 
 > **Reading guide.** This is the planning document for the Home Field hub. It records the locked decisions and the implementation path. When in doubt:
 > - **What the system must do**: see the **Renderer Contract**, **Locked Decisions**, **Telegram Integration**, **Loading And State UX**, and **Locale Strategy** sections below — those are the authoritative contracts.
-> - **Current asset-generation contract**: see `app/shared/home-field/README.md`, `docs/home-field-agent-flow.md`, `docs/home-field-scale-contract.md`, `docs/home-field-tileset-contract.md`, and `docs/home-field-chibi-candidate-contract.md`. Those newer files supersede older prompt-flow details in this plan.
+> - **Current asset-generation contract**: see `app/shared/home-field/README.md`, `docs/home-field-imagegen-requirements.md`, `docs/home-field-agent-flow.md`, `docs/home-field-scale-contract.md`, `docs/home-field-tileset-contract.md`, and `docs/home-field-chibi-candidate-contract.md`. Those newer files supersede older prompt-flow details in this plan.
 > - **How we got here**: the **Research Findings**, **Game UX Research Conclusions**, and **Visual Concept** sections are background; treat them as design rationale, not as live contracts.
 > - **What to build next**: the **Implementation Phases** and **Agent Implementation Flow** sections drive sequencing.
 >

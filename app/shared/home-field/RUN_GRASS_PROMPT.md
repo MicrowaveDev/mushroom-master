@@ -7,6 +7,7 @@ In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Fie
 
 Read and follow:
 - app/shared/home-field/RUN_GRASS_PROMPT.md
+- docs/home-field-imagegen-requirements.md
 - docs/home-field-agent-flow.md
 - docs/home-field-scale-contract.md
 - app/shared/home-field/README.md

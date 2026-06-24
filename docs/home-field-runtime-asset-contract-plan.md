@@ -4,6 +4,8 @@ Date: 2026-06-23
 
 This plan upgrades Home Field image generation from "make a nice picture" to "make a runtime-ready game asset." A candidate is not ready because it looks good in isolation. It is ready only when the generated source, processed PNG, metadata, review evidence, and composed scene prove that the asset works inside the game.
 
+Current shared imagegen requirements live in [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md). Use this plan for runtime-readiness rationale and implementation backlog; use the requirements doc as the active cross-family imagegen contract.
+
 Implementation status: the shared generated prompts now include the runtime asset contract, candidate object/chibi prompts include `--check-runtime-readiness`, and the validator has an objective `--check-runtime-readiness` mode for transparent runtime assets. Source completeness and composed scene fit remain visual-review requirements because they cannot be proven from PNG geometry alone.
 
 ## Goal
