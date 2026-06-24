@@ -8,7 +8,7 @@ This workflow prevents one agent from generating, validating, and approving its 
 
 No single role may both create an image and approve it. Generation, mechanical validation, and visual review are separate stages.
 
-Before any Home Field imagegen run, read [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md). It is the shared imagegen contract for file-output gating, candidate isolation, provenance, prompt content, runtime-readiness evidence, and handoff shape. Family-specific docs add stricter rules.
+Before any Home Field imagegen run, read [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md). It is the shared imagegen contract for file-output gating, candidate isolation, provenance, prompt content, runtime-readiness evidence, and handoff shape. Family-specific docs add stricter rules. If the target family has a preflight command, run it before spawning generation/review sub-agents or reading the full reference stack; a failed preflight is a clean stop.
 
 If the environment supports sub-agents, assign Prompt/Contract Reviewer, Imagegen Worker, Producer/Validation Worker, and Visual Critic as separate agents. A single read-only sidecar is not enough for a generation run. The Imagegen Worker may run imagegen only when that exact agent context has confirmed discoverable PNG output; otherwise keep imagegen in the context that can save/recover files and use sub-agents for contract review, validation, and visual criticism. If sub-agents are unavailable, the active agent must still execute the stages separately and name which role it is acting as in its notes.
 

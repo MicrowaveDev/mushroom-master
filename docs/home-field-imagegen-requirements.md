@@ -44,9 +44,9 @@ Allowed source paths are:
 
 Do not report a generated asset as complete until the PNG exists at the documented repo path and the stage-specific verifier has passed.
 
-### IG-3. Preflight Must Pass Before State Mutation
+### IG-3. Preflight Must Be The First Expensive Gate
 
-Before archiving stale files, replacing candidate folders, or starting a regeneration flow that depends on fresh source files, run the family-specific preflight.
+When a family-specific preflight exists, run it immediately after the launcher/context command and before expensive setup. Do not spawn generation/review sub-agents, read the full reference stack, archive stale files, replace candidate folders, or start a regeneration flow until preflight says a real source PNG path is available.
 
 For chibi:
 
@@ -54,7 +54,7 @@ For chibi:
 npm run game:home-field:preflight-chibi-proof
 ```
 
-If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run.
+If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
 ### IG-4. Candidate Work Stays Out Of App-Facing Paths
 

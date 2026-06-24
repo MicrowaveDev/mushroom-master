@@ -381,6 +381,22 @@ The active Stage 1 contract is:
 - `candidate-evidence.manifest.json` includes recovered failure notes;
 - validators passing at the end does not erase the need to document a repaired intermediate failure.
 
+### 24. Preflight Ran After Expensive Setup
+
+**Symptom:** A run correctly stopped when `preflight-chibi-proof` failed, but only after spawning multiple subagents, reading the full chibi/reference/runtime doc stack, viewing reference images, and printing the full prompt. No imagegen ran and no files changed, yet the clean block still took minutes.
+
+**Decision that led there:** The run prompt listed subagent setup and full source-doc reads before the preflight gate. That ordering made sense when preflight was treated as a stale-file cleanup guard, but it was wasteful once preflight also became the output-capability gate.
+
+**Why it regressed:** If the environment cannot produce a real PNG at a known path, no downstream producer, validator, visual critic, or handoff work can produce fresh evidence. Late preflight turns a cheap capability check into a full blocked run.
+
+**Evidence:** In the 2026-06-24 pre-requirements rollout `codex-019efaae-8345-75e0-9f3f-e7d5387808f3`, the user explicitly said to stop if preflight fails at line `7`. The run spawned four subagents at lines `24`, `26`, `28`, and `30`, read the full doc stack at lines `54`-`60`, and viewed reference images at lines `80`-`81` before running preflight at line `93`. Task-complete line `111` then reported the intended blocker: no allowed PNG output path and no fresh candidate generated.
+
+**Guardrails added:**
+
+- `docs/home-field-imagegen-requirements.md` now says family preflight is the first expensive gate;
+- `RUN_CHIBI_PROOF_PROMPT.md` runs `chibi-proof-context` and `preflight-chibi-proof` before spawning subagents or reading the full reference stack;
+- `docs/home-field-agent-flow.md` treats a failed preflight as a clean stop, not work for generation/review sidecars.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -399,3 +415,4 @@ The active Stage 1 contract is:
 14. Do not let candidate-only chibi proof state mutate app-facing or approved production state.
 15. Do not treat replicated placeholder walk frames as real animation.
 16. Do not omit recovered validation failures from handoff or evidence manifests.
+17. Do not spend generation/review setup before the image-output preflight proves a real PNG path is available.
