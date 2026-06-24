@@ -26,7 +26,7 @@ The active Stage 1 contract is:
 - split into 32 character-only frames;
 - separate shared `chibi_shadow`, no baked frame shadow;
 - no deterministic/mechanical fallback art unless the user explicitly asks for diagnostics;
-- no cleanup or generation unless `npm run game:home-field:preflight-chibi-proof` passes;
+- no stale-file archive or generation unless `npm run game:home-field:preflight-chibi-proof` passes;
 - a chat-visible imagegen render is not enough; the pipeline needs real PNG files on disk.
 
 ## Regression Timeline
@@ -179,7 +179,7 @@ The active Stage 1 contract is:
 
 **Why it regressed:** `.agent` workspace state is local scratch, not proof of a fresh imagegen run. Rejected raws can satisfy producer input checks and make the agent skip the actual regeneration work.
 
-**Evidence:** In the current chat rollout, task-complete line `92` says the agent reused existing Thalla raw frame files and let mechanical validity blur into acceptance. Task-complete line `263` then confirms the stale raw/candidate state had to be archived before the next run. The same rollout also shows manual archive commands around the cleanup step, including shell-specific friction.
+**Evidence:** In the current chat rollout, task-complete line `92` says the agent reused existing Thalla raw frame files and let mechanical validity blur into acceptance. Task-complete line `263` then confirms the stale raw/candidate state had to be archived before the next run. The same rollout also shows manual archive commands around stale-file handling, including shell-specific friction.
 
 **Guardrails added / remaining work:**
 
@@ -278,8 +278,8 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- preflight must pass before stale raw/candidate cleanup;
-- cleanup should archive, not delete, rejected evidence;
+- preflight must pass before stale raw/candidate archive;
+- stale-file handling should archive, not delete, rejected evidence;
 - readiness checks must verify both "no live stale inputs" and "this run has an allowed output path."
 
 ### 18. Exact-Size Split Assumptions Broke Larger State Sheets

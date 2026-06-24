@@ -39,15 +39,15 @@ Stage 1 proves identity and mobile readability before full animation polish. It 
 Use a grouped-state visual workflow:
 
 0. Run `npm run game:home-field:preflight-chibi-proof` and stop if it fails.
-1. Clear stale rejected Thalla raw/candidate outputs from the previous failed run.
+1. Archive stale rejected Thalla state sheets, raw frames, reference sheets, and candidate outputs from the previous failed run under `.agent/home-field-workspace/rejected/`.
 2. Generate one non-production reference turnaround sheet for consistency.
 3. Review that reference sheet against the style reference and Thalla identity gate.
 4. Generate one final grouped state sheet only after the reference sheet passes.
 5. Split the grouped state sheet into the canonical raw frame PNGs.
 
-The preflight step is mandatory before any destructive or moving cleanup. This proof requires a real PNG file at a known filesystem path. A built-in `image_gen` render that is only visible in chat is not a valid source for the pipeline. Preflight passes only when one of these is true: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` after confirming built-in imagegen writes discoverable PNG files, supplied local source images exist via `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS`, or the user explicitly requested CLI fallback and `OPENAI_API_KEY` is configured. Do not archive/delete the stale latest candidate until preflight passes.
+The preflight step is mandatory before any stale-file archive. This proof requires a real PNG file at a known filesystem path. A built-in `image_gen` render that is only visible in chat is not a valid source for the pipeline. Preflight passes only when one of these is true: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` after confirming built-in imagegen writes discoverable PNG files, supplied local source images exist via `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS`, or the user explicitly requested CLI fallback and `OPENAI_API_KEY` is configured. Do not archive or otherwise move the stale latest candidate until preflight passes.
 
-The cleanup step is mandatory for regeneration runs after a rejection only after preflight passes. The previous rejected raw frames may remain on disk under `.agent/home-field-workspace/raw/`, but they are negative examples only. Do not let `test -f` or producer success on existing raw files count as generation work.
+The archive step is mandatory for regeneration runs after a rejection only after preflight passes. Previous rejected state sheets, raw frames, reference sheets, and candidate outputs are negative examples only. Do not let `test -f` or producer success on existing files count as generation work.
 
 The reference turnaround sheet is allowed only as visual guidance. Save it under:
 
