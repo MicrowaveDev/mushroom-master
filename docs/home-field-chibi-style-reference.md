@@ -16,6 +16,14 @@ Additional liked Thalla direction from the 2026-06-22 Stage 1 rerun review:
 
 ![Liked Thalla chibi direction](reference/home-field/chibi-thalla-liked-2026-06-23.png)
 
+Liked Thalla reference provenance:
+
+- Source rollout: `/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019e69b6-1972-7462-a5ee-da953cc7723b-rollout-2026-05-27T14-53-22-019e69b6-1972-7462-a5ee-da953cc7723b.jsonl`
+- Source event: user asked to save the liked image from the chat logs in the 2026-06-22 Stage 1 rerun review.
+- Original attachment path in chat context: `/var/folders/3j/mvvy2gqj3d544j9n9pn0mxkc0000gn/T/codex-clipboard-8c17e4ed-b6cf-4cf7-8405-1c3afe8329b9.png`
+- Local checked-in path: `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`
+- Intent: positive user-preference snapshot for Thalla's face/cap/robe appeal and simple BJD-inspired chibi direction; not a runtime-ready sprite, not a canonical exact costume, and not permission to copy exact composition.
+
 The screenshot is a non-owned external style reference, so do not copy characters, costumes, symbols, props, composition, or exact facial designs from it. Use it only to calibrate Home Field chibi proportions, top-down field readability, outline weight, BJD-inspired doll simplicity, and scene-scale simplicity.
 
 ## Target Read

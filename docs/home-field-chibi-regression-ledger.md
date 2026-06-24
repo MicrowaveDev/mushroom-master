@@ -6,6 +6,16 @@ This is the causal history for the Thalla Home Field chibi proof regressions. Re
 
 The goal is not to blame one run. The goal is to preserve the decisions that looked reasonable in the moment, the regressions they created, and the guardrails added afterward.
 
+## Evidence Sources
+
+This ledger was expanded from the current chat rollout:
+
+```text
+/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019e69b6-1972-7462-a5ee-da953cc7723b-rollout-2026-05-27T14-53-22-019e69b6-1972-7462-a5ee-da953cc7723b.jsonl
+```
+
+When adding new causal claims, keep at least one source pointer: rollout path, log line or task-complete event, affected artifact path, and the decision/failure observed. If the evidence comes from a meta-analysis rollout, record both the meta-rollout line and the original referenced rollout when available. Do not add new regression history from memory alone.
+
 ## Current Boundary
 
 The active Stage 1 contract is:
@@ -161,6 +171,101 @@ The active Stage 1 contract is:
 - future prompts should say whether the goal is to test built-in imagegen UI generation separately from the chibi pipeline;
 - if the operator confirms a discoverable built-in output path, set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only for that run.
 
+### 11. Stale Rejected Raw Files Masqueraded As Fresh Generation
+
+**Symptom:** A run could appear ready or mechanically complete because old `thalla_chibi.frame_*.source.png` files and a stale candidate folder still existed under `.agent/home-field-workspace/`.
+
+**Decision that led there:** The first hardening pass treated "required files exist" as close to "new generation is ready." It also relied on manual shell cleanup of stale local workspace files.
+
+**Why it regressed:** `.agent` workspace state is local scratch, not proof of a fresh imagegen run. Rejected raws can satisfy producer input checks and make the agent skip the actual regeneration work.
+
+**Evidence:** In the current chat rollout, the readiness review found old Thalla raw frames/candidate state before the next run, and the final handoff notes that stale rejected raw/candidate files had to be cleared before generation. The same rollout also shows manual archive commands around the cleanup step, including shell-specific friction.
+
+**Guardrails added / remaining work:**
+
+- prompts now say to clear stale rejected Thalla raw/candidate outputs only after preflight passes;
+- producer success on existing raw files must not count as fresh generation work;
+- a future helper should archive rejected chibi raws/candidates with shell-portable behavior and print a single PASS/FAIL readiness verdict.
+
+### 12. Nearest-Neighbor Resize Preserved The Pixel-Sprite Failure
+
+**Symptom:** The rejected tiny beige Thalla candidate had hard pixel stair-steps and a low-resolution sprite feel. Early helper output and tests still allowed or taught `--resize-nearest` for chibi candidate production.
+
+**Decision that led there:** Nearest-neighbor resizing is useful for exact pixel art and deterministic fixtures, so it looked like a safe way to preserve sprite edges during compose.
+
+**Why it regressed:** The target style is hand-drawn elevated 2.5D chibi, not pixel art. Nearest-neighbor scaling reinforced the rejected renderer instead of smoothing higher-resolution source frames into a finished field sprite.
+
+**Evidence:** The current chat rollout's first pushed hardening explicitly changed the generated producer command from `--resize-nearest` to smooth `--resize` and locked that behavior with the Home Field pipeline test.
+
+**Guardrails added:**
+
+- chibi proof docs require smooth `--resize` for larger source frames;
+- `--resize-nearest` is called out as a rejection signal for production chibi candidates;
+- tests assert the generated chibi prompt/producer guidance keeps smooth resizing.
+
+### 13. Runnable Helpers Drifted From The Chibi Contract
+
+**Symptom:** After docs changed, runnable helper output still printed stale chibi instructions such as `Animation: none`, legacy per-frame generation guidance, or `Raw frame output slots: 12` after the contract had moved to a grouped `8x4` sheet and 32 split frames.
+
+**Decision that led there:** The docs and prompts were patched incrementally, while helper scripts, generated prompt JSON, preflight/context output, verifier output, and tests were updated in later passes.
+
+**Why it regressed:** Agents follow executable command output under pressure. If `RUN_CHIBI_PROOF_PROMPT.md` says one thing but `next-chibi-proof` or preflight prints another, the stale helper becomes the de facto instruction source for the next run.
+
+**Evidence:** The current chat rollout shows a readiness check catching generated output that still referenced 12 slots and stale animation wording after earlier docs had been tightened. Later fixes updated preflight/context/verifier output and tests.
+
+**Guardrails added / remaining work:**
+
+- generated prompt output is part of the contract, not secondary prose;
+- any chibi rule change must update `RUN_CHIBI_PROOF_PROMPT.md`, `home-field-prompts.json`, `next-chibi-proof`, preflight, verifier, context printer, split/composer expectations, and tests in the same pass;
+- a future `game:home-field:chibi-proof-readiness` helper should check doc/helper drift before commit/push.
+
+### 14. Preflight Overcorrected From CLI-Biased To Too Trusting
+
+**Symptom:** After fixing the false impression that `OPENAI_API_KEY` was required, preflight allowed Codex Desktop built-in imagegen by default even when disk output was explicitly unconfirmed.
+
+**Decision that led there:** The API-key blocker looked too strict, so the guardrail was relaxed to keep built-in chat imagegen usable without requiring CLI credentials.
+
+**Why it regressed:** The chibi pipeline does not need "an image was visible in chat"; it needs a discoverable PNG file for hashing, splitting, validation, and provenance. Trusting built-in imagegen without proving disk output let a run proceed into fallback evidence.
+
+**Evidence:** The current chat rollout includes the "why is it requiring OpenAI API?" turn, then the "adjust the preflight/docs" fix that relaxed built-in imagegen handling, then the later run where preflight passed without confirmed built-in disk save and no usable image file appeared.
+
+**Guardrails added:**
+
+- built-in imagegen is valid for this proof only after a discoverable file-output path is confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`;
+- local source image inputs and explicit CLI fallback remain separate allowed paths;
+- final reports should say "blocked by file-output gate" when preflight stops before imagegen, not "imagegen failed."
+
+### 15. Synthetic Post-Split Motion Violated Grouped-Sheet Authorship
+
+**Symptom:** A candidate could pass animation checks after deterministic post-split edits created a tiny idle bob or shifted frames, even though the grouped state sheet itself did not author that motion.
+
+**Decision that led there:** After a mostly good grouped candidate, a tiny deterministic movement seemed like an acceptable repair because it made the validation metrics pass and kept the candidate moving.
+
+**Why it regressed:** The grouped state sheet is the identity/style source of truth. Synthetic pose, squash, stretch, shift, or repaint edits after splitting can make the proof look more complete while hiding that imagegen did not produce coherent animation frames.
+
+**Evidence:** The current chat rollout shows a candidate accepted for review with deterministic post-split idle motion, then a later hardening pass marking that candidate `needs_regen` because motion must come from the grouped source sheet itself.
+
+**Guardrails added:**
+
+- post-split processing may clean alpha/chroma fringe, crop, and resize only;
+- no shifting, squashing, stretching, repainting, or pose/silhouette edits after split;
+- validation and evidence now require the grouped source chain so reviewers can inspect where motion came from.
+
+### 16. Reference Images Lacked Complete Provenance
+
+**Symptom:** The liked Thalla image became a positive direction reference without the same source-path and line metadata as the first checked-in chibi style reference.
+
+**Decision that led there:** The image was visually useful, so it was copied into `docs/reference/home-field/` and linked from prompt docs quickly.
+
+**Why it regressed:** Reference images influence future imagegen prompts. Without provenance and intent notes, later agents cannot tell whether a bitmap is a canonical target, a user preference snapshot, a non-owned style calibration image, or a negative example.
+
+**Evidence:** The current chat rollout includes the user request to save the liked image from the chat logs, and the local reference file exists at `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`.
+
+**Guardrails added / remaining work:**
+
+- each checked-in chibi reference image should record source rollout path, source line or attachment path, user note, local file path, and whether it is positive direction, negative example, or non-owned style calibration;
+- reference images are guidance for proportions, simplicity, outline, and appeal, not permission to copy exact characters, costumes, symbols, or compositions.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -169,4 +274,6 @@ The active Stage 1 contract is:
 4. Do not treat validator pass as art approval. The composed field preview remains decisive.
 5. Do not expand to the roster until Thalla passes as a scene-scale candidate.
 6. If a new rule blocks a run, record whether it is an intentional gate or an unintended regression before changing it.
-
+7. Do not call a chibi workflow ready until runnable helper output, generated prompt text, validators, and docs agree.
+8. Do not let stale `.agent` files prove generation freshness.
+9. Do not use post-split deterministic edits to create animation that imagegen did not author.
