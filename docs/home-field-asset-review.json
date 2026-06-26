@@ -622,7 +622,7 @@
       "id": "thalla",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "Stage 1 candidate-only proof rerun on 2026-06-23 produced a fresh reference sheet, one grouped 8x4 state sheet, 32 split frames, and a separate shared shadow tile under the local candidate root. Mechanical validation passes files, review, alpha/halo, readability, runtime readiness, chibi animation, and chibi quality, but Visual Critic marks this needs_regen: built-in imagegen rendered in chat without a verifiable saved PNG, so the local fallback proof is not an approval-quality imagegen art source, and the composed preview reads too tiny/simple next to approved props. No app-facing PNG was overwritten.",
+      "reason": "Stage 1 candidate-only proof rerun on 2026-06-26 produced a fresh reference sheet, one grouped 8x4 state sheet, 32 split frames, candidate evidence, and mobile/desktop clean previews under the local candidate root. Mechanical validation passes files, review, alpha/halo, readability, runtime readiness, chibi animation, and chibi quality after documented chroma cleanup recovery. Visual Critic still marks this needs_regen: it is readable, but it reads too bright/downsampled-sticker-like beside the darker Home Field props, and Thalla identity collapses toward a generic pale mushroom-elf doll at runtime scale. No app-facing PNG was overwritten.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
@@ -641,12 +641,12 @@
       "sourceFrameIsolationCheck": "pass",
       "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest",
       "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json",
-      "candidateEvidenceSha256": "49bea0c19ddc66cc918cdba9ff9c827397d9d10feb9a15591297758b491953cc",
-      "candidateSha256": "5adad9f49a3a29a7afe1dabb1aa045234b5e06acd9d42656ea2b32c7ead0cb08",
-      "referenceSha256": "c5b1c14f2fff879350721b7415d1423730e678d045e4fdebe8f84142d1e1a389",
-      "rawSourceSha256": "5adad9f49a3a29a7afe1dabb1aa045234b5e06acd9d42656ea2b32c7ead0cb08",
-      "mobileScreenshotSha256": "747486c61e4b073412bc49a0948807de7bb9c09f27ed63e74ed066a1c27e2999",
-      "desktopScreenshotSha256": "60b22d8bfd301ba64b8f1e694e9882160f79477e5378060f927cdc45d4e9bee5"
+      "candidateEvidenceSha256": "ee212bf8a2f91269ed953eff285e78f77cd9c234f72f60da4433538cf9fa2cc4",
+      "candidateSha256": "3b24dc52126c81867f22b3f65100fe336633cc4e75c7a1c67c14516241a858ee",
+      "referenceSha256": "70cbc59de86376052e0b280a20e2133a7e7de79b1db850b7a60a5238eef28de5",
+      "rawSourceSha256": "63e370c4d81fb273e09956b10a309a64dfffc1cd465f729eef95a223ffe49ffd",
+      "mobileScreenshotSha256": "c53e1503ecc56f19718673e8029dd67629182bac0022eecaf25ef615d535c744",
+      "desktopScreenshotSha256": "4e1410e100a43ce211ea7f1a2fab38ace4da14a00989a9ca9e05f6d30807b926"
     },
     {
       "id": "lomie",
