@@ -344,8 +344,10 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   lines.push('## Save and report');
   if (chibiCandidate && asset.type === 'character') {
     lines.push('Save the non-production turnaround reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+    lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
     lines.push('Immediately verify the saved reference with: npm run game:home-field:verify-chibi-proof-files -- --reference');
     lines.push('Save the final 8x4 state sheet to: .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
+    lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/raw/thalla_chibi.states.source.png --verify=state-sheet');
     lines.push('Immediately verify the saved state sheet with: npm run game:home-field:verify-chibi-proof-files -- --state-sheet');
     lines.push('Then split the state sheet into raw frames with: npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize');
     lines.push('The grouped state sheet itself must contain the idle bob and walk poses; do not synthesize motion after split by shifting, squashing, stretching, repainting, or otherwise changing frame pose/silhouette.');
@@ -371,6 +373,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       if (chibiCandidate) {
         lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-animation`);
         lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-chibi-quality`);
+        lines.push(`  npm run game:home-field:recover-chibi-alpha -- ${asset.id}  # only if alpha/halo validation fails from recoverable chroma fringe`);
       }
     } else {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${asset.id} --check-files --check-connectors --check-review`);
@@ -384,6 +387,9 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:alpha-sheet -- --ids=${asset.id}`);
     }
     lines.push(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${asset.id} npm run game:home-field:candidate-evidence`);
+    if (chibiCandidate) {
+      lines.push(`  npm run game:home-field:record-chibi-verdict -- ${asset.id} --verdict=needs_regen --reason-file=<visual-critic-reason.txt>`);
+    }
     const previewCommand = chibiCandidate
       ? 'game:home-field:chibi-candidate-preview'
       : terrainCandidate
@@ -578,13 +584,14 @@ function main() {
     console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
     console.log('  1. Read the prompt block below.');
     console.log('  2. If preflight fails only because built-in output is unconfirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 only if a newer file is found.');
-    console.log('  3. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path.');
+    console.log('  3. Run `npm run game:home-field:archive-stale-chibi-proof -- thalla` with the same preflight-passing environment.');
+    console.log('  4. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path or claim it with `npm run game:home-field:claim-imagegen-output`.');
   } else {
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
   }
   if (chibiCandidate) {
-    console.log('  4. Save one coherent 8x4 state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames.');
+    console.log('  5. Save one coherent 8x4 state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames.');
   } else {
     console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   }
@@ -593,24 +600,24 @@ function main() {
   } else if (objectCandidate) {
     console.log('  4. Run `npm run game:home-field:produce-object-candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
   } else if (chibiCandidate) {
-    console.log('  5. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
+    console.log('  6. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
   } else {
     console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
   }
   if (objectCandidate || chibiCandidate || terrainCandidate) {
     console.log(chibiCandidate
-      ? '  6. Run the scoped candidate-root validation commands printed below.'
+      ? '  7. Run the scoped candidate-root validation commands printed below.'
       : '  5. Run the scoped candidate-root validation commands printed below.');
     console.log(terrainCandidate
       ? '  6. Refresh contact, adjacency, candidate evidence, and candidate preview proof.'
       : chibiCandidate
-        ? '  7. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.'
+        ? '  8. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof; use recover-chibi-alpha only for recoverable chroma fringe.'
         : '  6. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.');
   } else {
     console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
     console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
   }
-  const stopStep = chibiCandidate ? 8 : 7;
+  const stopStep = chibiCandidate ? 9 : 7;
   if (batch?.name === 'terrain-grass') {
     console.log(`  ${stopStep}. Stop after these 3 grass tiles. Update review JSON before generating path or edge families.`);
   } else if (batch?.name?.startsWith('terrain-')) {

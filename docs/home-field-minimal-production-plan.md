@@ -207,10 +207,10 @@ Rules:
 - run `npm run game:home-field:preflight-chibi-proof` before archiving stale rejected `thalla_chibi*.source.png` raw files, stale reference sheets, or stale chibi candidate output;
 - stop without archiving stale files if preflight cannot find an allowed image generation path; chat-visible built-in `image_gen` output is not enough for this file pipeline, so built-in imagegen requires confirmed discoverable disk output via `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`;
 - if built-in imagegen is the intended path and only disk capture is unconfirmed, run the one diagnostic non-candidate output probe from `docs/home-field-imagegen-requirements.md`, then rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only if `npm run game:home-field:find-imagegen-output -- --since-minutes=5` finds a newer file;
-- archive rejected evidence under `.agent/home-field-workspace/rejected/`; do not delete it and do not let archived or stale live files count as fresh generation;
+- archive rejected evidence with `npm run game:home-field:archive-stale-chibi-proof -- thalla`; do not delete it and do not let archived or stale live files count as fresh generation;
 - generate and visually check the non-production turnaround reference before final states;
 - generate final idle/walk states as one grouped `8x4` state sheet, then split it into raw frame chunks;
-- verify saved reference/state-sheet/raw/candidate files with `npm run game:home-field:verify-chibi-proof-files` instead of searching image caches manually;
+- verify saved reference/state-sheet/raw/candidate files with `npm run game:home-field:verify-chibi-proof-files` or claim built-in outputs with `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>` instead of searching image caches manually;
 - top-down 2.5D field sprite, not portrait;
 - simple mobile-readable silhouette with BJD-inspired chibi doll appeal;
 - 32 isolated character-only frames derived from the grouped state sheet: 2 idle plus 6 walk-lane frames per direction;

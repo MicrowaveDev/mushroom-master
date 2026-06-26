@@ -66,6 +66,14 @@ npm run game:home-field:find-imagegen-output -- --since-minutes=5
 
 Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and continue only if preflight passes. If no file is found, stop and ask for local PNG inputs or explicit CLI fallback; do not run broad filesystem searches, create fallback art, or move stale evidence.
 
+For actual proof art after preflight passes, do not repeat the manual finder/copy/hash/verifier loop. If built-in imagegen writes a discoverable file outside the repo, claim it into the documented proof path:
+
+```bash
+npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>
+```
+
+The claim helper considers only files newer than `--since`, copies the newest bounded result, records source/destination hashes, and runs the matching chibi file verifier. Keep `game:home-field:find-imagegen-output` for the one diagnostic preflight probe only.
+
 ### IG-4. Candidate Work Stays Out Of App-Facing Paths
 
 Generated candidates belong under `.agent/home-field-workspace/` until explicit human approval promotes them.
@@ -91,6 +99,8 @@ Every run must preserve enough evidence to explain where the asset came from:
 - recovered validation failures and recovery actions.
 
 Rejected source images and candidates are negative examples. Archive them under `.agent/home-field-workspace/rejected/` when the workflow says to clear the live workspace; do not delete them as a way to make the evidence simpler.
+
+For Thalla chibi proof reruns, use `npm run game:home-field:archive-stale-chibi-proof -- thalla` instead of ad hoc `rg`, `find`, or shell moves. The helper reruns preflight with the current environment and moves only the documented live reference, raw, and candidate paths after preflight passes.
 
 ### IG-6. Prompt For Runtime Assets, Not Pretty Standalone Pictures
 

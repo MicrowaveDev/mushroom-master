@@ -186,7 +186,25 @@ function previewEvidence() {
     .filter(Boolean);
 }
 
-function recoveredFailureNotes() {
+function candidateEvidenceKey(entries) {
+  return bufferSha256(Buffer.from(JSON.stringify(entries.map((entry) => ({
+    id: entry.id,
+    candidateOutputSha256: entry.candidateOutput?.sha256 || null,
+    rawSourceSha256: entry.rawSource?.sha256 || null,
+    referenceSha256: entry.chibiSources?.reference?.sha256 || null
+  })), null, 2)));
+}
+
+function noteCandidateHashes(parsed) {
+  return [
+    parsed.candidateOutputSha256,
+    parsed.candidateSha256,
+    parsed.currentCandidateSha256,
+    ...(Array.isArray(parsed.candidateOutputHashes) ? parsed.candidateOutputHashes : [])
+  ].filter(Boolean);
+}
+
+function recoveredFailureNotes({ entries, evidenceKey }) {
   const fallback = {
     status: 'none',
     notes: []
@@ -194,6 +212,22 @@ function recoveredFailureNotes() {
   if (!fs.existsSync(recoveredFailureNotesPath)) return fallback;
   try {
     const parsed = loadJson(recoveredFailureNotesPath);
+    const currentHashes = new Set(entries.map((entry) => entry.candidateOutput?.sha256).filter(Boolean));
+    const matchingHash = noteCandidateHashes(parsed).find((hash) => currentHashes.has(hash));
+    const matchingEvidenceKey = parsed.candidateEvidenceKey && parsed.candidateEvidenceKey === evidenceKey;
+    if (!matchingHash && !matchingEvidenceKey) {
+      return {
+        path: path.relative(repoRoot, recoveredFailureNotesPath),
+        status: 'stale_ignored',
+        generatedAt: parsed.generatedAt || null,
+        reason: 'recovered-failure-notes.json did not match the current candidate output hash or evidence key',
+        expectedCandidateOutputSha256: [...currentHashes],
+        foundCandidateOutputSha256: noteCandidateHashes(parsed),
+        candidateEvidenceKey: parsed.candidateEvidenceKey || null,
+        expectedCandidateEvidenceKey: evidenceKey,
+        notes: []
+      };
+    }
     return {
       path: path.relative(repoRoot, recoveredFailureNotesPath),
       ...parsed
@@ -265,12 +299,16 @@ function main() {
     candidateRoot: path.relative(repoRoot, candidateRoot),
     ids,
     entries,
+    candidateEvidenceKey: candidateEvidenceKey(entries),
     previews: previewEvidence(),
     reviewEvidence: screenshotEvidence(),
     separateShadowTile: separateShadowTileEvidence(byId),
-    recoveredFailureNotes: recoveredFailureNotes(),
     ...(sharedRawSource ? { sharedRawSource } : {})
   };
+  manifest.recoveredFailureNotes = recoveredFailureNotes({
+    entries,
+    evidenceKey: manifest.candidateEvidenceKey
+  });
   const encoded = Buffer.from(JSON.stringify(manifest, null, 2));
   manifest.manifestSha256 = bufferSha256(encoded);
   fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));

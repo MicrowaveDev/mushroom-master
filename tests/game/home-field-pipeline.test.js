@@ -15,6 +15,10 @@ const candidateEvidenceScriptPath = path.join(repoRoot, 'app/scripts/generate-ho
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
+const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
+const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
+const recoverChibiAlphaScriptPath = path.join(repoRoot, 'app/scripts/recover-home-field-chibi-alpha.js');
+const recordChibiVerdictScriptPath = path.join(repoRoot, 'app/scripts/record-home-field-chibi-verdict.js');
 const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home-field-chibi-proof.js');
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
 const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
@@ -741,8 +745,9 @@ test('[home-field] chibi candidate evidence binds reference, grouped source, and
       assert.equal(entry.chibiSources.splitFrames.frames.length, 32);
       assert.match(entry.chibiSources.splitFrames.frameSetSha256, /^[a-f0-9]{64}$/);
       assert.ok(Array.isArray(manifest.previews));
+      assert.match(manifest.candidateEvidenceKey, /^[a-f0-9]{64}$/);
       assert.ok(manifest.recoveredFailureNotes);
-      assert.ok(['none', 'present', 'parse_error'].includes(manifest.recoveredFailureNotes.status));
+      assert.ok(['none', 'present', 'parse_error', 'stale_ignored'].includes(manifest.recoveredFailureNotes.status));
       assert.equal(
         manifest.separateShadowTile?.policy,
         'separate renderer/asset layer; not baked into chibi frames'
@@ -752,6 +757,58 @@ test('[home-field] chibi candidate evidence binds reference, grouped source, and
       fs.rmSync(candidateRoot, { recursive: true, force: true });
     }
   });
+});
+
+test('[home-field] candidate evidence ignores stale recovered failure notes', () => {
+  const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+  const notesPath = path.join(repoRoot, '.agent/home-field-workspace/review/recovered-failure-notes.json');
+  return withPreservedFile(referencePath, () => withPreservedFile(notesPath, () => {
+    const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-stale-notes-test');
+    const outputPath = 'web/public/home-field/characters/thalla/spritesheet.png';
+    const candidateRoot = path.join(repoRoot, 'tmp/home-field-chibi-stale-notes-candidates');
+    const candidateOutputAbs = path.join(candidateRoot, outputPath);
+    const rawDir = path.join(fixtureDir, 'raw');
+    const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.rmSync(candidateRoot, { recursive: true, force: true });
+    writeChibiAssetsFixture(assetsPath, outputPath, {
+      sourcePath: path.relative(repoRoot, path.join(rawDir, 'thalla_chibi.states.source.png'))
+    });
+    writeChibiSpritesheet(candidateOutputAbs);
+    writeChibiEvidenceSources(rawDir);
+    fs.mkdirSync(path.dirname(notesPath), { recursive: true });
+    fs.writeFileSync(notesPath, JSON.stringify({
+      status: 'present',
+      generatedAt: '2026-06-23T00:00:00.000Z',
+      candidateOutputSha256: '0'.repeat(64),
+      notes: ['stale failure note from an older proof run']
+    }, null, 2));
+
+    try {
+      const result = spawnSync(process.execPath, [
+        candidateEvidenceScriptPath,
+        '--ids=thalla'
+      ], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          HOME_FIELD_ASSETS_PATH: assetsPath,
+          HOME_FIELD_CANDIDATE_ROOT: path.relative(repoRoot, candidateRoot)
+        },
+        encoding: 'utf8'
+      });
+
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, '.agent/home-field-workspace/review/candidate-evidence.manifest.json'), 'utf8'));
+      assert.equal(manifest.recoveredFailureNotes.status, 'stale_ignored');
+      assert.deepEqual(manifest.recoveredFailureNotes.notes, []);
+      assert.match(manifest.recoveredFailureNotes.expectedCandidateEvidenceKey, /^[a-f0-9]{64}$/);
+      assert.equal(manifest.recoveredFailureNotes.foundCandidateOutputSha256[0], '0'.repeat(64));
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+      fs.rmSync(candidateRoot, { recursive: true, force: true });
+    }
+  }));
 });
 
 test('[home-field] chibi candidate evidence fails without grouped state source', () => {
@@ -1223,6 +1280,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /same-agent file output is confirmed/);
   assert.match(result.stdout, /same agent context that will run imagegen/);
   assert.match(result.stdout, /game:home-field:find-imagegen-output/);
+  assert.match(result.stdout, /game:home-field:archive-stale-chibi-proof -- thalla/);
+  assert.match(result.stdout, /game:home-field:claim-imagegen-output/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
   assert.match(result.stdout, /thalla_chibi\.states\.source\.png/);
@@ -1235,7 +1294,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /separate chibi shadow layer/);
   assert.match(result.stdout, /Animation: spritesheet-driven idle\/walk frames/);
   assert.doesNotMatch(result.stdout, /Animation: none \(single static PNG\)/);
-  assert.match(result.stdout, /archive stale rejected Thalla state sheets, raw frames, reference sheets/);
+  assert.match(result.stdout, /claim-imagegen-output -- --since=<render-start-iso>/);
+  assert.match(result.stdout, /recover-chibi-alpha -- thalla/);
+  assert.match(result.stdout, /record-chibi-verdict -- thalla --verdict=needs_regen/);
   assert.match(result.stdout, /reference turnaround sheet/i);
   assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final frames/);
@@ -1275,6 +1336,10 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
+  assert.match(result.stdout, /archive-stale-chibi-proof/);
+  assert.match(result.stdout, /claim-imagegen-output/);
+  assert.match(result.stdout, /recover-chibi-alpha/);
+  assert.match(result.stdout, /record-chibi-verdict/);
   assert.match(result.stdout, /Runtime contract: raw source must be unclipped/);
   assert.match(result.stdout, /Post-split processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /Shadow contract: no baked shadow/);
@@ -1298,6 +1363,133 @@ test('[home-field] chibi proof file verifier checks generated PNG paths', () => 
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }
+});
+
+test('[home-field] imagegen output claim copies only newer bounded files', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-imagegen-claim-test');
+  const generatedRoot = path.join(fixtureDir, 'generated');
+  const oldSource = path.join(generatedRoot, 'old.png');
+  const newSource = path.join(generatedRoot, 'new.png');
+  const dest = path.join(fixtureDir, 'claimed/reference.png');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  writeSizedTransparentFixture(oldSource, 16, 16);
+  writeSizedTransparentFixture(newSource, 32, 32);
+  const cutoff = new Date(Date.now() - 60_000).toISOString();
+  const oldTime = new Date(Date.now() - 120_000);
+  fs.utimesSync(oldSource, oldTime, oldTime);
+
+  try {
+    const result = spawnSync(process.execPath, [
+      claimImagegenOutputScriptPath,
+      `--since=${cutoff}`,
+      `--dest=${path.relative(repoRoot, dest)}`,
+      `--root=${generatedRoot}`
+    ], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(fs.existsSync(dest), true);
+    assert.equal(readPngRgba(dest).width, 32);
+    assert.match(result.stdout, /home-field imagegen claim: copied/);
+    assert.match(result.stdout, /dest sha256: [a-f0-9]{64}/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] chibi proof helper commands expose documented help', () => {
+  for (const script of [
+    archiveChibiProofScriptPath,
+    recoverChibiAlphaScriptPath,
+    recordChibiVerdictScriptPath,
+    claimImagegenOutputScriptPath
+  ]) {
+    const result = spawnSync(process.execPath, [script, '--help'], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+    assert.equal(result.status, 0, `${script}\n${result.stderr || result.stdout}`);
+    assert.match(result.stdout, /Usage:/);
+  }
+});
+
+test('[home-field] package exposes chibi proof helper aliases', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts['game:home-field:claim-imagegen-output'], 'node app/scripts/claim-home-field-imagegen-output.js');
+  assert.equal(pkg.scripts['game:home-field:archive-stale-chibi-proof'], 'node app/scripts/archive-home-field-chibi-proof.js');
+  assert.equal(pkg.scripts['game:home-field:recover-chibi-alpha'], 'node app/scripts/recover-home-field-chibi-alpha.js');
+  assert.equal(pkg.scripts['game:home-field:record-chibi-verdict'], 'node app/scripts/record-home-field-chibi-verdict.js');
+  assert.equal(pkg.scripts['shrink:screenshots'], 'bash ../bash/shrink-screenshots.sh');
+});
+
+test('[home-field] produce assets --help exits before asset lookup', () => {
+  const result = spawnSync(process.execPath, [scriptPath, '--help'], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Usage: produce-home-field-assets\.js/);
+  assert.doesNotMatch(result.stderr, /Unknown asset id/);
+});
+
+test('[home-field] record chibi verdict copies hashes from candidate evidence', () => {
+  const reviewPath = path.join(repoRoot, 'docs/home-field-asset-review.json');
+  return withPreservedFile(reviewPath, () => {
+    const fixtureDir = path.join(repoRoot, 'tmp/home-field-record-chibi-verdict-test');
+    const manifestPath = path.join(fixtureDir, 'candidate-evidence.manifest.json');
+    const reasonPath = path.join(fixtureDir, 'reason.txt');
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.mkdirSync(fixtureDir, { recursive: true });
+    fs.writeFileSync(reasonPath, 'Visual critic: readable but still too soft beside approved props.');
+    fs.writeFileSync(manifestPath, JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: '2026-06-26T00:00:00.000Z',
+      candidateRoot: '.agent/home-field-workspace/candidates/chibi-active-roster/latest',
+      ids: ['thalla'],
+      entries: [{
+        id: 'thalla',
+        candidateOutput: { path: 'candidate/spritesheet.png', sha256: '1'.repeat(64) },
+        rawSource: { path: 'raw/thalla_chibi.states.source.png', sha256: '2'.repeat(64) },
+        chibiSources: {
+          reference: { path: 'reference/thalla_chibi_turnaround.reference.png', sha256: '3'.repeat(64) }
+        }
+      }],
+      previews: [
+        { path: '.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png', sha256: '4'.repeat(64) },
+        { path: '.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png', sha256: '5'.repeat(64) }
+      ],
+      manifestSha256: '6'.repeat(64)
+    }, null, 2));
+
+    try {
+      const result = spawnSync(process.execPath, [
+        recordChibiVerdictScriptPath,
+        'thalla',
+        '--verdict=needs_regen',
+        `--reason-file=${path.relative(repoRoot, reasonPath)}`,
+        `--manifest=${path.relative(repoRoot, manifestPath)}`
+      ], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const review = JSON.parse(fs.readFileSync(reviewPath, 'utf8')).assets.find((entry) => entry.id === 'thalla');
+      assert.equal(review.verdict, 'needs_regen');
+      assert.equal(review.accepted, false);
+      assert.equal(review.candidateSha256, '1'.repeat(64));
+      assert.equal(review.rawSourceSha256, '2'.repeat(64));
+      assert.equal(review.referenceSha256, '3'.repeat(64));
+      assert.equal(review.mobileScreenshotSha256, '4'.repeat(64));
+      assert.equal(review.desktopScreenshotSha256, '5'.repeat(64));
+      assert.equal(review.candidateEvidenceSha256, '6'.repeat(64));
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
 });
 
 test('[home-field] chibi state sheet splitter writes canonical raw frame chunks', () => {

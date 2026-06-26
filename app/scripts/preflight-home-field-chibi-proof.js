@@ -82,7 +82,7 @@ function main() {
   }
 
   console.log('');
-  console.log('Preflight passed: an image output path is available. It is safe to archive stale rejected Thalla files and start the documented regeneration flow.');
+  console.log('Preflight passed: an image output path is available. It is safe to run `npm run game:home-field:archive-stale-chibi-proof -- thalla` and start the documented regeneration flow.');
   if (builtinReady) {
     console.log('Note: using Codex Desktop built-in image_gen only because disk save was explicitly confirmed; save and verify each generated PNG at the documented repo path before producer/validation steps.');
   }

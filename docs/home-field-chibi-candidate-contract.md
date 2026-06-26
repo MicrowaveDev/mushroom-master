@@ -39,7 +39,7 @@ Stage 1 proves identity and mobile readability before full animation polish. It 
 Use a grouped-state visual workflow:
 
 0. Run `npm run game:home-field:preflight-chibi-proof` and stop if it fails, except for the one diagnostic built-in output probe allowed by `docs/home-field-imagegen-requirements.md`.
-1. Archive stale rejected Thalla state sheets, raw frames, reference sheets, and candidate outputs from the previous failed run under `.agent/home-field-workspace/rejected/`.
+1. Archive stale rejected Thalla state sheets, raw frames, reference sheets, and candidate outputs from the previous failed run with `npm run game:home-field:archive-stale-chibi-proof -- thalla`.
 2. Generate one non-production reference turnaround sheet for consistency.
 3. Review that reference sheet against the style reference and Thalla identity gate.
 4. Generate one final grouped state sheet only after the reference sheet passes.
@@ -47,7 +47,7 @@ Use a grouped-state visual workflow:
 
 The preflight step is mandatory before any stale-file archive. This proof requires a real PNG file at a known filesystem path. A built-in `image_gen` render that is only visible in chat is not a valid source for the pipeline. Preflight passes only when one of these is true: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` after confirming built-in imagegen writes discoverable PNG files from the same agent context that will run imagegen, supplied local source images exist via `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS`, or the user explicitly requested CLI fallback and `OPENAI_API_KEY` is configured. If built-in imagegen is the intended path and preflight fails only because disk output is unconfirmed, run exactly one tiny non-candidate built-in output probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; use `--include-temp` for only one bounded retry, count only a file newer than the probe start, and rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only if a file is found. Do not archive or otherwise move the stale latest candidate until preflight passes.
 
-The archive step is mandatory for regeneration runs after a rejection only after preflight passes. Previous rejected state sheets, raw frames, reference sheets, and candidate outputs are negative examples only. Do not let `test -f` or producer success on existing files count as generation work.
+The archive step is mandatory for regeneration runs after a rejection only after preflight passes. Previous rejected state sheets, raw frames, reference sheets, and candidate outputs are negative examples only. Do not let `test -f` or producer success on existing files count as generation work. Use the archive helper instead of broad `rg`, `find`, or custom shell moves; it reruns preflight with the current environment and prints the moved-file manifest.
 
 The reference turnaround sheet is allowed only as visual guidance. Save it under:
 
@@ -69,9 +69,9 @@ Quality bar: the composed chibi must look at least as crisp, contrasted, and fin
 
 Deterministic/mechanical fallback drawings are allowed only as explicitly requested diagnostics. They must not be committed or reported as a fresh imagegen art candidate, even if they pass dimensions, alpha, frame-count, and manifest checks.
 
-After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
+After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. If built-in imagegen writes outside the repo, claim the file into the documented path with `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>` instead of manually copying and hashing it. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
 
-If built-in imagegen renders in chat during reference or state-sheet generation but the file path is unknown, immediately run `npm run game:home-field:find-imagegen-output -- --since-minutes=5` once. Use `--include-temp` only for one bounded retry. Count only a file newer than that render. If no file is found, stop and report the image-output blocker instead of running broad filesystem searches or creating deterministic fallback art.
+If built-in imagegen renders in chat during reference or state-sheet generation but the file path is unknown, immediately run `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>`. Use `--include-temp` only for one bounded retry. Count only a file newer than that render. If no file is found, stop and report the image-output blocker instead of running broad filesystem searches or creating deterministic fallback art. Keep `npm run game:home-field:find-imagegen-output` only for the preflight diagnostic probe, where there is intentionally no proof destination.
 
 After generating the grouped state sheet, run:
 
@@ -81,6 +81,8 @@ npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize
 ```
 
 Use smooth resizing (`--resize`) when composing higher-resolution isolated source frames into the `64x64` runtime sheet. Do not use nearest-neighbor resizing for production candidates; hard pixel stair-steps are a rejection signal for this hand-drawn field-sprite style.
+
+If alpha/halo validation fails because chroma-key tolerance needs recovery, run `npm run game:home-field:recover-chibi-alpha -- thalla`. The helper iterates bounded safe tolerances, reruns split/produce/file verification, and stops only when alpha/halo validation passes. Do not hand-try tolerance values, and do not use alpha recovery to mask style, pose, identity, baked-shadow, or animation failures.
 
 Ignore the legacy single manifest `sourcePath` (`.agent/home-field-workspace/raw/thalla_chibi.source.png`) for Stage 1 production. It may exist for older prompt printers, but it is not a valid input for the compact frame contract. Stage 1 producers must use the split raw frame files below.
 

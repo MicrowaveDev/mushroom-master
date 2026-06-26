@@ -52,6 +52,7 @@ function ensureDir(p) {
 
 function parseArgs(argv) {
   const ids = [];
+  let help = false;
   let chromaKey = null;
   let allMissing = false;
   let candidate = false;
@@ -61,7 +62,8 @@ function parseArgs(argv) {
   let cropCenter = null;
   let quietTerrain = null;
   for (const arg of argv) {
-    if (arg === '--all-missing') allMissing = true;
+    if (arg === '--help' || arg === '-h') help = true;
+    else if (arg === '--all-missing') allMissing = true;
     else if (arg === '--candidate') candidate = true;
     else if (arg.startsWith('--candidate-root=')) {
       candidate = true;
@@ -83,7 +85,21 @@ function parseArgs(argv) {
   if (quietTerrain !== null && (!Number.isFinite(quietTerrain) || quietTerrain < 0 || quietTerrain > 1)) {
     throw new Error('--quiet-terrain must be a number in the range [0, 1]');
   }
-  return { ids, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain };
+  return { ids, help, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain };
+}
+
+function printUsage(stream = console.error) {
+  stream('Usage: produce-home-field-assets.js <asset_id...> | --all-missing');
+  stream('  Options:');
+  stream('    --help                 print this help and exit');
+  stream('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
+  stream('    --candidate             write under .agent/home-field-workspace/candidates/object-layer/latest instead of web/public');
+  stream('    --candidate-root=<dir>  write candidate outputs under a custom root');
+  stream('    --resize               Lanczos downscale raw to target dimensions (use for terrain/props/exits/chibi candidates)');
+  stream('    --resize-nearest       nearest-neighbor downscale (diagnostic only; do not use for Home Field chibi production candidates)');
+  stream('    --seamless-terrain     softly harmonize opposite terrain edges for repeatable ground tiles');
+  stream('    --crop-center[=0.82]   crop terrain raw around center before resize to remove imagegen edge vignettes');
+  stream('    --quiet-terrain[=0.35] reduce broad generated lighting variation so repeats are less obvious');
 }
 
 function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
@@ -613,18 +629,13 @@ function writeManifest(results, opts) {
 }
 
 function main() {
-  const { ids, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain } = parseArgs(process.argv.slice(2));
+  const { ids, help, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain } = parseArgs(process.argv.slice(2));
+  if (help) {
+    printUsage(console.log);
+    return;
+  }
   if (ids.length === 0 && !allMissing) {
-    console.error('Usage: produce-home-field-assets.js <asset_id...> | --all-missing');
-    console.error('  Options:');
-    console.error('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
-    console.error('    --candidate             write under .agent/home-field-workspace/candidates/object-layer/latest instead of web/public');
-    console.error('    --candidate-root=<dir>  write candidate outputs under a custom root');
-    console.error('    --resize               Lanczos downscale raw to target dimensions (use for terrain/props/exits/chibi candidates)');
-    console.error('    --resize-nearest       nearest-neighbor downscale (diagnostic only; do not use for Home Field chibi production candidates)');
-    console.error('    --seamless-terrain     softly harmonize opposite terrain edges for repeatable ground tiles');
-    console.error('    --crop-center[=0.82]   crop terrain raw around center before resize to remove imagegen edge vignettes');
-    console.error('    --quiet-terrain[=0.35] reduce broad generated lighting variation so repeats are less obvious');
+    printUsage();
     process.exit(1);
   }
 
