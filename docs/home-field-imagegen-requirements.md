@@ -56,6 +56,16 @@ npm run game:home-field:preflight-chibi-proof
 
 If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
+If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files.
+
+After that diagnostic render, run:
+
+```bash
+npm run game:home-field:find-imagegen-output -- --since-minutes=5
+```
+
+Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and continue only if preflight passes. If no file is found, stop and ask for local PNG inputs or explicit CLI fallback; do not run broad filesystem searches, create fallback art, or move stale evidence.
+
 ### IG-4. Candidate Work Stays Out Of App-Facing Paths
 
 Generated candidates belong under `.agent/home-field-workspace/` until explicit human approval promotes them.

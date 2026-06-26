@@ -397,6 +397,23 @@ The active Stage 1 contract is:
 - `RUN_CHIBI_PROOF_PROMPT.md` runs `chibi-proof-context` and `preflight-chibi-proof` before spawning subagents or reading the full reference stack;
 - `docs/home-field-agent-flow.md` treats a failed preflight as a clean stop, not work for generation/review sidecars.
 
+### 25. Clean Preflight Block Had No Built-In Output Probe
+
+**Symptom:** After moving preflight to the front, the next run stopped correctly but had no bounded way to answer the real operational question: whether Codex Desktop built-in imagegen could leave a discoverable PNG in that same agent context.
+
+**Decision that led there:** The stricter workflow treated any failed preflight as a final clean stop. That protected stale candidates, but it also prevented the only cheap proof that could confirm `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` without starting Thalla candidate work.
+
+**Why it regressed:** "Do not attempt imagegen before preflight" was too broad. Candidate/reference imagegen must wait, but a tiny diagnostic non-candidate built-in output probe is the least expensive way to prove or disprove the built-in output path. Without that exception, every built-in-only environment dead-ends until the operator manually supplies local PNGs or CLI credentials.
+
+**Evidence:** In the 2026-06-26 rollout `codex-019f05aa-2eb3-7511-9515-7425f3540e7f`, the agent stated it would run only the proof context and preflight at line `19`, ran preflight at line `24`, got the unconfirmed-output failure at line `26`, and finaled at line `28` with no imagegen, no stale-file archive, and no mutation. That was correct by the prompt, but incomplete as an agent workflow.
+
+**Guardrails added:**
+
+- `docs/home-field-imagegen-requirements.md` allows exactly one same-context diagnostic built-in output probe when the only blocker is unconfirmed built-in disk output;
+- the probe must be tiny, non-candidate, not Thalla/reference/state-sheet art, and must not mutate `.agent` candidate evidence;
+- agents must immediately run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`, count only files newer than the probe start, and use `--include-temp` only once;
+- agents may rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only after the bounded locator finds a file.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -416,3 +433,4 @@ The active Stage 1 contract is:
 15. Do not treat replicated placeholder walk frames as real animation.
 16. Do not omit recovered validation failures from handoff or evidence manifests.
 17. Do not spend generation/review setup before the image-output preflight proves a real PNG path is available.
+18. Do not confuse the one-shot built-in output probe with candidate generation; it proves file capture only.

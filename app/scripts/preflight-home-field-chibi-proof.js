@@ -75,6 +75,9 @@ function main() {
     console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 after confirming built-in image_gen writes discoverable PNG files from the same agent context that will run imagegen');
     console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, after the user explicitly requests CLI fallback');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing source PNG paths separated by ${JSON.stringify(path.delimiter)}`);
+    console.error('');
+    console.error('If built-in imagegen is the intended path, run one tiny diagnostic non-candidate image_gen probe in this same agent context, then run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`.');
+    console.error('Count only a file newer than the probe start; use `--include-temp` for one bounded retry. If a file is found, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1. Do not archive stale files before that passes.');
     process.exit(1);
   }
 

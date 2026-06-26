@@ -575,15 +575,16 @@ function main() {
   console.log('');
   console.log('Workflow per asset:');
   if (chibiCandidate) {
-    console.log('  0. Run `npm run game:home-field:preflight-chibi-proof` and `npm run game:home-field:chibi-proof-context`; stop before stale-file archive if it fails.');
+    console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
     console.log('  1. Read the prompt block below.');
-    console.log('  2. Use built-in imagegen only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path.');
+    console.log('  2. If preflight fails only because built-in output is unconfirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 only if a newer file is found.');
+    console.log('  3. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path.');
   } else {
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
   }
   if (chibiCandidate) {
-    console.log('  3. Save one coherent 8x4 state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames.');
+    console.log('  4. Save one coherent 8x4 state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames.');
   } else {
     console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   }
@@ -592,27 +593,32 @@ function main() {
   } else if (objectCandidate) {
     console.log('  4. Run `npm run game:home-field:produce-object-candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
   } else if (chibiCandidate) {
-    console.log('  4. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
+    console.log('  5. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
   } else {
     console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
   }
   if (objectCandidate || chibiCandidate || terrainCandidate) {
-    console.log('  5. Run the scoped candidate-root validation commands printed below.');
+    console.log(chibiCandidate
+      ? '  6. Run the scoped candidate-root validation commands printed below.'
+      : '  5. Run the scoped candidate-root validation commands printed below.');
     console.log(terrainCandidate
       ? '  6. Refresh contact, adjacency, candidate evidence, and candidate preview proof.'
-      : '  6. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.');
+      : chibiCandidate
+        ? '  7. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.'
+        : '  6. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.');
   } else {
     console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
     console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
   }
+  const stopStep = chibiCandidate ? 8 : 7;
   if (batch?.name === 'terrain-grass') {
-    console.log('  7. Stop after these 3 grass tiles. Update review JSON before generating path or edge families.');
+    console.log(`  ${stopStep}. Stop after these 3 grass tiles. Update review JSON before generating path or edge families.`);
   } else if (batch?.name?.startsWith('terrain-')) {
-    console.log('  7. Stop after this terrain family. Update review JSON before generating another family.');
+    console.log(`  ${stopStep}. Stop after this terrain family. Update review JSON before generating another family.`);
   } else {
-    console.log('  7. Stop after this batch. Update review JSON before generating another batch.');
+    console.log(`  ${stopStep}. Stop after this batch. Update review JSON before generating another batch.`);
   }
-  console.log('  8. Commit only after validate + sheets pass.');
+  console.log(`  ${stopStep + 1}. Commit only after validate + sheets pass.`);
 
   if (terrainCandidate && slice.length > 1) {
     const familyIds = slice.map((asset) => asset.id).join(',');
