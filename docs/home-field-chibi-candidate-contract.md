@@ -79,7 +79,7 @@ For Stage 1 chibis, generate with a deliberately small sprite palette:
 - use shared ramps: one warm dark outline/shadow, one shared deep umber/plum, one or two bone highlights, `2-3` cap tones, `2-3` robe/body tones, `2` gold identity tones, and `2-3` face/skin tones;
 - reuse colors between cap, robe, skin, and gold marks whenever possible instead of introducing new local shades for tiny details;
 - use broad flat clusters and one-step shadows/highlights, not painterly gradients, soft blush fields, many cap spots, scattered gold freckles, or separate tones for each facial/robe detail.
-- represent Thalla's authority through the cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only; do not spend palette or detail on royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, ornamental robe borders, decorative trim clusters, clasps, collar jewels, or repeated gold badges.
+- represent Thalla's authority through the cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only; do not spend palette or detail on royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, or repeated gold badges.
 
 This is not permission to switch to hard pixel art, clean vector/cel icon art, or a generic flat anime turnaround. The desired result is still a hand-drawn 2D field sprite with smooth-enough silhouettes after `--resize`, but its source art must be designed like an indexed small-palette sprite. Do not use "exactly 16 swatches", "hard-edged cel shading", or similar prompt overcorrections if they destroy the warmer BJD-inspired field-sprite charm. If the composed preview looks like it uses a soft illustration palette with more than roughly `20` visible colors, mark it `needs_regen` even when mechanical validators pass.
 
@@ -156,8 +156,8 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
 - follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base over the shared chibi shadow layer, and elevated 2.5D map read;
 - use `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` as a positive direction for compact grouped-sheet proportions and charm, while fixing its palette bloat, ornament, and sticker softness;
-- use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, small calm face features, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
-- mushroom-elf biology first, not a human wearing a mushroom hat
+- use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, small calm face features, small dark seed/dot eyes, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
+- mushroom-elf biology first, not a human wearing a mushroom hat and not hair/wig under a mushroom cap
 - visible elf ears whenever ears are visible
 - strong silhouette readable without labels
 - simple readable costume, not portrait-level detail
@@ -168,14 +168,14 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - warm dark outline and quiet Home Field palette fit
 - limited source palette: `12-18` visible swatches, fewer than `20` total design colors, with shared ramps instead of many near-duplicate highlights and shadows
 - no text, UI, frame borders, floor plane, or baked background
-- no huge white portrait eyes; eyes must be much smaller than the reference screenshot's biggest facial read and should not dominate the head
+- no glossy anime eyes, eyelashes, or huge white portrait eyes; eyes must be small dark seed/dot features, much smaller than the reference screenshot's biggest facial read, and should not dominate the head
 - no realistic doll-photo rendering, glossy plastic toy rendering, fashion-doll proportions, or porcelain figurine material study
 - no dense cap spots, scattered gold freckles, robe filigree, many tear/drop marks, or baked blob/cast shadows; if a detail does not read as one of the few large identity marks at `64px`, remove it
-- no earrings, fashion jewelry, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, ornamental robe borders, decorative trim clusters, clasps, collar jewels, repeated gold badges, large standalone character-turnaround proportions, or over-flat cel/vector/pixel style introduced only to satisfy the palette budget
+- no earrings, fashion jewelry, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, repeated gold badges, large standalone character-turnaround proportions, quadrant-filling reference art, or over-flat cel/vector/pixel style introduced only to satisfy the palette budget
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`. Imagegen prompts may translate that canon into "field-sprite leader" / "calm biostasis stillness" language when "sovereign", "regal", or "sacred regalia" repeatedly pulls in jewelry-like ornament.
 
-Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige featureless doll, a busy ornate fantasy sprite, a generic elf, a straight portrait sticker, a human with a mushroom hat, or a different renderer from the Home Field reference.
+Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige featureless doll, a busy ornate fantasy sprite, a generic elf, a straight portrait sticker, a human with a mushroom hat or hair under a mushroom cap, glossy anime-eyed turnaround art, quadrant-filling character art, or a different renderer from the Home Field reference.
 
 Stage 1 detail budget:
 
@@ -183,8 +183,8 @@ Stage 1 detail budget:
 - fewer than `20` artist-visible colors across the source sheet; prefer `12-18`
 - `1` bold cap/head silhouette and `1` simple robe/body silhouette
 - `1-2` large gold mycelium/spore marks total per frame; no scattered small cap freckles or many gold droplets
-- tiny face features only; eyes/mouth must not become portrait focal points or oversized white-eye stickers
-- no jewelry clusters, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, ornamental robe borders, decorative trim clusters, clasps, collar jewels, repeated gold badges, tiny chains, lace, runic micro-marks, particle halos, or hairlike strands
+- tiny face features only; eyes/mouth must not become portrait focal points, glossy anime eyes, eyelashes, or oversized white-eye stickers
+- no jewelry clusters, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, repeated gold badges, tiny chains, lace, runic micro-marks, particle halos, visible hair bangs, wig fringe, or hairlike strands
 - no tall full-body fashion-pose proportions; keep the sprite squat and grounded
 
 ## Candidate Workflow

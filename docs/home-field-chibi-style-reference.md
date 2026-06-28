@@ -69,18 +69,18 @@ For Home Field, the rule is therefore: generate the reference and grouped state 
 
 Do not copy the reference directly. For Mushroom Battles:
 
-- reduce eye size versus the reference: eyes must not dominate the head or become huge white portrait eyes;
+- reduce eye size versus the reference: eyes must be small dark seed/dot features and must not dominate the head, become glossy anime eyes, eyelashes, or huge white portrait eyes;
 - keep Thalla's canon identity: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, visible elf ears when shown, restrained bone/gold/white/brown palette;
-- show authority through cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only; do not translate "sovereign", "regal", or "sacred regalia" into royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, ornamental robe borders, decorative trim clusters, clasps, collar jewels, or repeated gold badges;
-- use mushroom-elf biology, not animal/mascot/cult-character biology;
+- show authority through cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only; do not translate "sovereign", "regal", or "sacred regalia" into royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, or repeated gold badges;
+- use mushroom-elf biology, not animal/mascot/cult-character biology, not human hair or wig fringe under a mushroom hat;
 - avoid the reference's exact crown/horn/mask shapes, symbols, costumes, flowers, and UI/composition;
 - keep final frames isolated on transparent backgrounds; no scene crops.
 - do not become a realistic doll photo, glossy plastic toy render, fashion doll, or porcelain figurine render. The target is an illustration informed by BJD photos, not a photo-real object.
 - do not add dense cap spotting, many gold droplets, lace-like robe marks, or facial micro-detail. At runtime scale, Thalla should read simpler and more doll-like than the current ornate candidate.
 - do not use a large soft illustration palette. More than roughly `20` visible design colors is a style failure for this chibi surface.
-- do not overcorrect the palette rule into hard pixel art, clean vector/cel icon art, a large standalone anime turnaround sheet, or a cold "exactly 16 swatches" exercise that loses the warmer hand-drawn field-sprite charm.
+- do not overcorrect the palette rule into hard pixel art, clean vector/cel icon art, a large standalone anime turnaround sheet, quadrant-filling character art, or a cold "exactly 16 swatches" exercise that loses the warmer hand-drawn field-sprite charm.
 - do not add earrings, jewelry clusters, fashion-doll styling, or baked foot/ground ovals like the stopped 2026-06-28 rerun; those are regressions from the previous better direction.
-- do not add royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, ornamental robe borders, decorative trim clusters, clasps, collar jewels, or repeated gold badges like the later stopped 2026-06-28 reference-gate reruns; those turn the field sprite back into a soft ornate showcase turnaround.
+- do not add royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, or repeated gold badges like the later stopped 2026-06-28 reference-gate reruns; those turn the field sprite back into a soft ornate showcase turnaround.
 
 ## Current Rejection Note
 
@@ -91,4 +91,5 @@ Rejected examples:
 - The 2026-06-22 grouped candidate passed mechanical checks, but its separately generated idle/walk cells drifted in style and details. Future state tiles for one character must come from one grouped source sheet and be split into chunks.
 - The 2026-06-26 candidate passed mechanical checks after alpha recovery, but its palette remained too broad: too many pale/soft near-neighbor face, cap, robe, and gold tones made it feel like a sticker illustration rather than a compact field sprite. Future prompts must require fewer than `20` visible design colors.
 - The stopped 2026-06-28 rerun overcorrected the palette feedback: the reference became a large flat anime/fashion turnaround with earrings, and the grouped state sheet baked dark foot ovals into every frame. Future prompts must preserve the 2026-06-26 previous-best sheet's compact sprite charm while reducing palette/ornament; do not replace it with hard cel/vector/pixel-flat art.
-- The later stopped 2026-06-28 reference-gate reruns avoided the hard pixel/cel overcorrection and restored some compact charm, but still failed because "sovereign/regal/sacred" wording kept pulling crown-like gems, medallions, ornamental trim, painterly cap texture, and broad soft palettes. Future imagegen prompts should prefer field-sprite/status language, require miniature sprite-reference views, and say authority is silhouette/posture/flat mycelium marks only.
+- The later stopped 2026-06-28 reference-gate reruns avoided the hard pixel/cel overcorrection and restored some compact charm, but still failed because "sovereign/regal/sacred" wording kept pulling crown-like gems, medallions, ornamental trim, painterly cap texture, and broad soft palettes. Future imagegen prompts should prefer field-sprite/status language, require tiny source-sprite views, and say authority is silhouette/posture/flat mycelium marks only.
+- The 2026-06-28 run `codex-019f1042-1bb8-7831-8a2b-0e5b4c746c02` obeyed the two-attempt stop rule and improved layout, but text-only imagegen still produced glossy anime eyes, hair/hat reads, robe/collar trim, repeated gold marks, and quadrant-filling character art. Future prompts must constrain face budget, cap-as-biology, and figure occupancy before another retry.

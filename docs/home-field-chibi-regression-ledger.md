@@ -471,6 +471,21 @@ The active Stage 1 contract is:
 - status markers are expanded to reject royal regalia, robe borders, clasps, collar jewels, and repeated gold badges;
 - after two exact-prompt reference attempts fail the same palette/style/status gate, the run must stop and report instead of burning more blind retries.
 
+### 30. Miniature Prompt Still Drew Anime Reference Art
+
+**Symptom:** The 2026-06-28 run from rollout `codex-019f1042-1bb8-7831-8a2b-0e5b4c746c02` followed the tightened exact prompt, used the new two-attempt stop rule, and did not create final frames or app-facing output. Both reference attempts improved over the previous showcase sheets, but still failed the reference gate: glossy anime/chibi eyes, visible hair or wig under a mushroom cap, quadrant-filling character art, soft cream/gold palette bloat, scalloped collar/robe trim, sleeve/cuff trim, and repeated gold status marks.
+
+**Decision that led there:** The previous fix removed royal/regalia wording and asked for miniature sprite-reference views, but the prompt still let the model draw polished character-turnaround art inside a high-resolution canvas. "BJD-inspired chibi" and "turnaround sheet" still invited anime face polish and costume detailing unless the face, biology, scale, and costume-detail budgets are spelled out.
+
+**Why it regressed:** Text-only imagegen tends to spend unused canvas/detail budget on attractive character-sheet features. Negative lists reduced the worst regalia, but did not explicitly say that each view should behave like a tiny `96x96` source-sprite box, that the cap is biology rather than a hair-covered hat, or that eyes must be small seed/dot features rather than glossy anime eyes.
+
+**Guardrails added:**
+
+- the copyable reference prompt now asks for tiny source-sprite views with most of the sheet left as empty `#ff00ff`, not quadrant-filling character art;
+- face budget now says small dark seed/dot eyes with only a tiny gold life glint, no glossy anime eyes or eyelashes;
+- biology language now rejects hair/wig under a mushroom cap and says the cap is part of the character, not a removable hat;
+- costume/detail budget now rejects scalloped collars, sleeve cuff trim, and repeated status marks in addition to earlier regalia bans.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -495,3 +510,4 @@ The active Stage 1 contract is:
 20. Do not fix palette bloat by changing the renderer into hard pixel art, flat vector/cel/anime art, or a large fashion turnaround. Preserve the previous-best compact field-sprite charm while reducing palette and detail.
 21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.
 22. Do not keep retrying the exact same reference prompt after repeated same-cause reference-gate failures. Fix the persisted prompt/helper or stop for review.
+23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, small seed/dot eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.

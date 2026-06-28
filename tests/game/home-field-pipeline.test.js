@@ -1307,12 +1307,15 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /do not synthesize motion after split/i);
   assert.match(result.stdout, /Post-split deterministic processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
-  assert.match(result.stdout, /state the chibi palette, style-preservation, and status-simplification plans before imagegen/);
+  assert.match(result.stdout, /state the chibi palette, style-preservation, scale\/face\/biology, and status-simplification plans before imagegen/);
   assert.match(result.stdout, /Copyable Reference Turnaround Prompt/);
   assert.match(result.stdout, /Paste this exact prompt into imagegen/);
   assert.match(result.stdout, /miniature sprite-reference turnaround sheet/);
-  assert.match(result.stdout, /small sprite-reference views/);
+  assert.match(result.stdout, /tiny sprite-source views/);
+  assert.match(result.stdout, /96x96 source-sprite box/);
   assert.match(result.stdout, /field-sprite leader/);
+  assert.match(result.stdout, /small dark seed\/dot eyes/);
+  assert.match(result.stdout, /no visible hair bangs or wig fringe/);
   assert.match(result.stdout, /limited sprite palette/i);
   assert.match(result.stdout, /12-18 artist-visible colors/);
   assert.match(result.stdout, /fewer than 20 total design colors/);
@@ -1320,6 +1323,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /preserve its squat proportions, cap\/body\/face charm/);
   assert.match(result.stdout, /represent authority through cap silhouette/);
   assert.match(result.stdout, /No royal regalia, crown jewel, forehead gem, brooch, chest medallion, pendant/);
+  assert.match(result.stdout, /scalloped collar/);
+  assert.match(result.stdout, /sleeve cuff trim/);
   assert.match(result.stdout, /no royal regalia, no crown jewels, no forehead gems, no brooches, no chest medallions/);
   assert.match(result.stdout, /If two exact-prompt reference attempts fail the same visual gate/);
   assert.match(result.stdout, /Do not overcorrect the palette rule into hard pixel art, clean vector\/cel icon art/);
