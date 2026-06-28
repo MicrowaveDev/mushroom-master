@@ -486,6 +486,21 @@ The active Stage 1 contract is:
 - biology language now rejects hair/wig under a mushroom cap and says the cap is part of the character, not a removable hat;
 - costume/detail budget now rejects scalloped collars, sleeve cuff trim, and repeated status marks in addition to earlier regalia bans.
 
+### 31. Tightened Text-Only Prompt Still Failed
+
+**Symptom:** The 2026-06-28 run from rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999` followed the fully tightened exact prompt, stated the palette/style/scale-face-biology/status plans, made two exact-prompt attempts, and stopped correctly at the reference gate. Both attempts still failed: figures were roughly `250-296px` wide by `337-358px` tall inside a `1536x1024` sheet, read as oversized character-turnaround art, used soft cream/gold palette bloat, had anime/portrait eyes, hair or wig under the cap, repeated cap/robe gold marks, and robe/collar/cuff trim.
+
+**Decision that led there:** We kept trying to solve a visual-generation mode problem with more text-only negative prompting. The prompt now named the right constraints, but the model still spent the available high-resolution reference canvas on polished chibi illustration defaults.
+
+**Why it regressed:** A standalone text-only turnaround sheet is a bad affordance for this target. The model treats it as a character design sheet even when told "source sprite", while the desired output is a small runtime sprite anchored by already checked-in positive images. The checked-in 2026-06-26 previous-best sheet carries the useful proportions better than prose does.
+
+**Guardrails added:**
+
+- current Thalla reference generation must be image-guided from checked-in PNG references, not another text-only attempt;
+- the helper now tells agents to load `chibi-thalla-previous-best-2026-06-26-state-sheet.png`, `chibi-thalla-liked-2026-06-23.png`, and `chibi-style-agent-log-reference.png` as visible image references before imagegen;
+- if the active imagegen path cannot use visible/local reference images, the run must stop and report that image-guided generation is required;
+- repeated same-gate failures after image-guided attempts still stop after two tries.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -511,3 +526,4 @@ The active Stage 1 contract is:
 21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.
 22. Do not keep retrying the exact same reference prompt after repeated same-cause reference-gate failures. Fix the persisted prompt/helper or stop for review.
 23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, small seed/dot eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.
+24. Do not run more text-only Thalla reference-turnaround attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as visible image inputs, or stop and ask for an image-guided/local-reference generation path.

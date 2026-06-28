@@ -57,6 +57,14 @@ The reference turnaround sheet is allowed only as visual guidance. Save it under
 
 The reference sheet should show the same Thalla design in the four facing directions `down`, `up`, `left`, and `right`, with the same proportions, camera angle, palette, and detail budget. It may include labels outside the art if useful for human review, but it is not a production raw source, not a runtime spritesheet, and must not be sliced into final frames.
 
+For current Thalla runs, create this reference with image-guided generation from the checked-in PNG references, not another text-only prompt-only attempt. Load these images into the generation context and state their roles before imagegen:
+
+- `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png`: primary positive compact grouped-sheet proportions and charm; fix palette bloat/ornament.
+- `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`: positive Thalla face/cap/robe appeal only; simplify heavily.
+- `docs/reference/home-field/chibi-style-agent-log-reference.png`: target scale, outline weight, and scene-scale simplicity only; do not copy symbols/costumes.
+
+If the active imagegen path cannot use visible/local reference images, stop and report that image-guided generation is required. Do not keep retrying text-only reference sheets; rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999` proved they still drift into oversized anime/turnaround art even with the tightened prompt.
+
 Generate final idle/walk states as one coherent `8x4` state sheet for the same character, saved under:
 
 ```text

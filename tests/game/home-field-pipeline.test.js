@@ -1309,8 +1309,11 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
   assert.match(result.stdout, /state the chibi palette, style-preservation, scale\/face\/biology, and status-simplification plans before imagegen/);
   assert.match(result.stdout, /Copyable Reference Turnaround Prompt/);
-  assert.match(result.stdout, /Paste this exact prompt into imagegen/);
+  assert.match(result.stdout, /load these checked-in PNGs as visible reference images/);
+  assert.match(result.stdout, /using those visible images as references/);
+  assert.match(result.stdout, /Do not run this as another text-only generation/);
   assert.match(result.stdout, /miniature sprite-reference turnaround sheet/);
+  assert.match(result.stdout, /Input images: use the visible checked-in reference images as guidance/);
   assert.match(result.stdout, /tiny sprite-source views/);
   assert.match(result.stdout, /96x96 source-sprite box/);
   assert.match(result.stdout, /field-sprite leader/);
@@ -1326,7 +1329,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /scalloped collar/);
   assert.match(result.stdout, /sleeve cuff trim/);
   assert.match(result.stdout, /no royal regalia, no crown jewels, no forehead gems, no brooches, no chest medallions/);
-  assert.match(result.stdout, /If two exact-prompt reference attempts fail the same visual gate/);
+  assert.match(result.stdout, /If two exact-prompt image-guided reference attempts fail the same visual gate/);
+  assert.match(result.stdout, /Do not fall back to text-only reference attempts/);
   assert.match(result.stdout, /Do not overcorrect the palette rule into hard pixel art, clean vector\/cel icon art/);
   assert.match(result.stdout, /no overcorrected flat\/vector\/cel\/pixel style/);
   assert.match(result.stdout, /no baked foot ovals/);
