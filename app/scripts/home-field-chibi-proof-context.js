@@ -56,6 +56,7 @@ function main() {
   console.log('Output probe warning: the only imagegen allowed before preflight passes is one tiny non-candidate built-in output probe from the same agent context, followed by the bounded locator command above.');
   console.log('Frame contract: generate one coherent 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
   console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');
+  console.log('Palette contract: state the plan before imagegen, target 12-18 artist-visible colors, stay under 20 visible design colors excluding transparency/#ff00ff, and fail palette bloat through styleCohesionCheck/stageContractCheck.');
   console.log('Runtime contract: raw source must be unclipped; alpha edges, anchor/footing, separate shadow, and runtime-scale read must pass before style review.');
   console.log('Post-split processing may clean alpha/chroma fringe, crop, and resize only; it must not alter pose, motion, silhouette, style, or identity.');
   console.log('Shadow contract: no baked shadow in chibi frames; use the separate chibi_shadow renderer/asset layer.');

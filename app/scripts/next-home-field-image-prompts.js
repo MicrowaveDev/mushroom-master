@@ -582,7 +582,7 @@ function main() {
   console.log('Workflow per asset:');
   if (chibiCandidate) {
     console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
-    console.log('  1. Read the prompt block below.');
+    console.log('  1. Read the prompt block below and state the chibi palette plan before imagegen: 12-18 artist-visible colors, fewer than 20 visible design colors excluding transparency/#ff00ff, shared cap/robe/skin/gold ramps.');
     console.log('  2. If preflight fails only because built-in output is unconfirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 only if a newer file is found.');
     console.log('  3. Run `npm run game:home-field:archive-stale-chibi-proof -- thalla` with the same preflight-passing environment.');
     console.log('  4. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path or claim it with `npm run game:home-field:claim-imagegen-output`.');
@@ -611,7 +611,7 @@ function main() {
     console.log(terrainCandidate
       ? '  6. Refresh contact, adjacency, candidate evidence, and candidate preview proof.'
       : chibiCandidate
-        ? '  8. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof; use recover-chibi-alpha only for recoverable chroma fringe.'
+        ? '  8. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof; Visual Critic must fail visible palette bloat through styleCohesionCheck/stageContractCheck; use recover-chibi-alpha only for recoverable chroma fringe.'
         : '  6. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.');
   } else {
     console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');

@@ -1306,9 +1306,11 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /do not synthesize motion after split/i);
   assert.match(result.stdout, /Post-split deterministic processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
+  assert.match(result.stdout, /state the chibi palette plan before imagegen/);
   assert.match(result.stdout, /limited sprite palette/i);
   assert.match(result.stdout, /12-18 artist-visible colors/);
   assert.match(result.stdout, /fewer than 20 total design colors/);
+  assert.match(result.stdout, /fail visible palette bloat through styleCohesionCheck\/stageContractCheck/);
   assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
   assert.match(result.stdout, /Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval/);
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff/);
@@ -1336,6 +1338,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
+  assert.match(result.stdout, /Palette contract: state the plan before imagegen/);
+  assert.match(result.stdout, /styleCohesionCheck\/stageContractCheck/);
   assert.match(result.stdout, /--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);

@@ -384,7 +384,7 @@ Do not hand-edit PNGs, change contracts, overwrite web/public/home-field, or app
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Visual Critic for the minimal Home Field production-candidate run.
 
-Review the composed mobile and desktop clean screenshots first, then supporting contact/adjacency/alpha/readability sheets and evidence manifests. Fail visible square terrain cells, pasted path bands, noisy grass, wrong chibi camera/scale, over-detailed mobile props, mismatched entrances, mixed renderer styles, clipped sources, unsafe alpha edges, unstable anchors, baked shadows that should be runtime shadows, or assets that only look good in isolation.
+Review the composed mobile and desktop clean screenshots first, then supporting contact/adjacency/alpha/readability sheets and evidence manifests. Fail visible square terrain cells, pasted path bands, noisy grass, wrong chibi camera/scale, over-detailed mobile props, mismatched entrances, mixed renderer styles, clipped sources, unsafe alpha edges, unstable anchors, baked shadows that should be runtime shadows, or assets that only look good in isolation. For Thalla, fail palette bloat too: more than roughly `20` visible design colors, many near-duplicate beige/cream/blush/gold tones, or a large soft illustration palette means `styleCohesionCheck` and `stageContractCheck` should fail even if validators pass.
 
 Update only docs/home-field-asset-review.json rows for the active batch with needs_review or needs_regen. Encode deferral as verdict needs_regen, accepted false, and reason beginning Deferred:. Never set verdict approved or accepted=true without explicit human approval.
 ```

@@ -30,6 +30,8 @@ Do not pass `fork_context` or mixed `message`/`items` payloads; those have cause
 | Producer/Validation Worker | Raw files, manifest, command output | Candidate PNGs under `.agent/home-field-workspace/candidates/`; generated local review sheets | Hand-edit PNGs, change contracts, overwrite app-facing PNGs before human approval, approve art |
 | Visual Critic | Final candidate evidence manifest, contact sheet, adjacency sheet, clean preview screenshots | `docs/home-field-asset-review.json` verdict/check rows for the active batch only | Start before final evidence exists, set `approved` or `accepted: true` without explicit human approval |
 
+For chibi runs, the Prompt/Contract Reviewer must state a palette plan before the Imagegen Worker starts: `12-18` artist-visible colors, fewer than `20` total design colors, transparency and `#ff00ff` excluded, and shared cap/robe/skin/gold ramps instead of many near-duplicate local shades. This is a run note/checkpoint, not a new PNG artifact.
+
 ## Minimal Production Scene Gate
 
 When the goal is a production-looking Home Field v1, use [`docs/home-field-minimal-production-plan.md`](home-field-minimal-production-plan.md) instead of running isolated asset-family polishing. The run target is one coherent composed field candidate with quiet grass, entrances, a few props, and Thalla at correct field scale.
@@ -178,6 +180,8 @@ Use smooth `--resize` for production chibi candidates generated from larger isol
 
 The Stage 1 camera target is an elevated top-down 2.5D hub sprite: show some top of the mushroom cap/head, keep feet/base planted on the map, and avoid straight-on portrait-sticker or fashion-pose reads. Detail must be aggressively budgeted for mobile: broad shapes, `2-3` main color regions, `1-2` gold mycelium/spore marks, tiny facial features only, and no ornate filigree or particle halo.
 
+Palette checkpoint: before generating the reference sheet, the Imagegen Worker should be operating from the explicit palette plan above. Stop at the reference gate if the turnaround already looks like a soft illustration palette, uses many cream/beige/blush/gold micro-tones, or appears to exceed roughly `20` visible design colors. Review the final grouped state sheet and composed candidate the same way. Use visual design swatches for this decision, not a raw unique-RGBA count after antialiasing or resize. If palette bloat is visible, the Visual Critic must fail `styleCohesionCheck` and `stageContractCheck`, set `verdict: "needs_regen"`, and name the palette failure in `reason`.
+
 For the minimal production-candidate plan, after Thalla passes review, expand only to `lomie` if the composed scene still needs a second chibi; stop there. Full-roster expansion to `lomie`, `axilin`, `kirt`, and `dalamar` belongs to a later non-minimal stage. Keep `morga` deferred until her design contract is explicit enough for production chibi generation.
 
 Review evidence for this batch should live under:
@@ -260,6 +264,8 @@ Recommended evidence fields before any human approval:
 
 For chibi Stage 1 candidates, `candidateEvidenceManifest` must bind more than the composed candidate sheet. It must include the non-production turnaround reference, the grouped `8x4` state sheet as `rawSource`, and the 32 split frame files with a frame-set hash. A chibi manifest with `rawSource: null` is incomplete evidence and must be regenerated before visual review.
 
+For chibi palette failures, do not add a separate review field. Record the failure through existing checks: `styleCohesionCheck: "fail"` for soft/illustration-palette drift and `stageContractCheck: "fail"` when the candidate misses the documented `<20` visible design-color contract. The `reason` must say whether the palette problem was already present in the reference, emerged in the grouped state sheet, or only became obvious in the composed mobile/desktop preview.
+
 Allowed non-human verdicts:
 
 - `needs_review`
@@ -293,6 +299,7 @@ An approved row must have all checks set to `pass` or `not_applicable`.
 - If a light foliage candidate reads bright yellow/lemon and pulls attention from the chibi/path area in the mobile clean preview, set `sceneFitCheck` and `styleCohesionCheck` to `fail` even if shape/readability pass.
 - If an object-layer prop loses its main identity at 48-64px in `mobile-readability-sheet.png` or in the mobile clean field screenshot, set `scaleCheck` or `cleanPreviewCheck` to `fail`. Passing the 256px contact sheet is not enough.
 - If a field prop only looks good as a large 256px contact-sheet illustration, set `scaleCheck` to `fail`. In the current DOM preview, small scene props render at roughly 52x52 CSS pixels on the 375x667 mobile viewport and roughly 90x90 CSS pixels on desktop, with the visible alpha shape often only 30-48px wide on mobile. Dense gills, many spots, tiny caps, root tangles, bark chips, fine veins, and glossy hero-object rendering are review failures for these props.
+- If a chibi reference, grouped state sheet, or composed candidate looks like it uses more than roughly `20` visible design colors, or solves softness with many near-duplicate beige, cream, blush, glow, or gold tones, regenerate from the palette plan. Do not try to make a bloated chibi compliant by post-split quantization or palette crushing; that is a diagnostic experiment only and not a production candidate.
 - Intentional vegetable or strange-flower references are allowed only for assets with `role: "funny_foliage_prop"` such as `mutant_broccoli_bush_01`; do not use that allowance to approve accidental broccoli shapes in natural `bush_cluster_*` assets.
 - If visual review fails, set the active rows to `needs_regen` or `rejected`, leave app-facing PNGs untouched, commit the review manifest if it changed, and stop.
 - If visual review passes as `needs_review`, stop and ask for human approval before promoting candidate PNGs to app-facing paths.
