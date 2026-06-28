@@ -456,6 +456,21 @@ The active Stage 1 contract is:
 - Thalla's prompt, contract, style reference, and run prompt now say to represent sovereignty through cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only;
 - crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, ornamental regalia, and decorative trim clusters are explicit rejection signals.
 
+### 29. Exact Prompt Still Produced Showcase References
+
+**Symptom:** The 2026-06-28 run from rollout `codex-019f1023-2a48-76f2-847d-bc0f96aaf5f0` followed the exact copyable reference prompt and stopped safely at the reference gate, but all three reference attempts still failed. They restored some compact chibi direction, yet remained large showcase turnarounds with painterly beige/gold palettes, cap/body texture, medallion/brooch-like details, robe trim, and repeated gold badges.
+
+**Decision that led there:** After the previous run, the prompt added stronger bans and made agents use the exact helper-printed prompt. That fixed prompt paraphrase drift, but the helper prompt still used loaded words such as "sovereign", "sacred", "regal", and "turnaround sheet" without forcing a miniature source-sprite scale.
+
+**Why it regressed:** Imagegen obeyed the broad concept more than the negative list. Royal/regalia words and large turnaround composition cues pulled the image toward character-design showcase art; once the figure is large, the model fills it with painterly texture and ornament even while nominally avoiding some named jewelry items.
+
+**Guardrails added:**
+
+- the copyable reference prompt now asks for a miniature sprite-reference turnaround, generous empty magenta space, and `64px` readability first;
+- imagegen-facing wording uses "field-sprite leader" / "calm biostasis stillness" instead of repeating royal/regalia triggers;
+- status markers are expanded to reject royal regalia, robe borders, clasps, collar jewels, and repeated gold badges;
+- after two exact-prompt reference attempts fail the same palette/style/status gate, the run must stop and report instead of burning more blind retries.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -479,3 +494,4 @@ The active Stage 1 contract is:
 19. Do not accept a chibi that looks like it uses more than `20` visible design colors; palette bloat is a style failure even if mechanical validators pass.
 20. Do not fix palette bloat by changing the renderer into hard pixel art, flat vector/cel/anime art, or a large fashion turnaround. Preserve the previous-best compact field-sprite charm while reducing palette and detail.
 21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.
+22. Do not keep retrying the exact same reference prompt after repeated same-cause reference-gate failures. Fix the persisted prompt/helper or stop for review.

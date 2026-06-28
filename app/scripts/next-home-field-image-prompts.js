@@ -422,23 +422,23 @@ function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } =
     'Paste this exact prompt into imagegen for the non-production reference sheet. Do not hand-compose or add extra style terms:',
     '',
     '```text',
-    'Create one non-production reference turnaround sheet for Thalla only, for the Mushroom Battles Home Field chibi proof.',
+    'Create one non-production miniature sprite-reference turnaround sheet for Thalla only, for the Mushroom Battles Home Field chibi proof.',
     '',
-    'Purpose: consistency reference only; do not make final runtime frames and do not make a full character illustration.',
+    'Purpose: consistency reference only; do not make final runtime frames, a full character illustration, a character-design showcase, or enlarged hero turnaround art.',
     '',
-    'Layout: show the same Thalla chibi in four directions in one sheet: down, up, left, right. Keep the same proportions, top-down 2.5D camera, palette, and detail budget in every view. Use a flat #ff00ff chroma-key background. No grass, no floor plane, no text, no UI, no borders.',
+    'Layout: show the same Thalla chibi in four small sprite-reference views in one sheet: down, up, left, right. Keep the same proportions, top-down 2.5D camera, palette, and detail budget in every view. Leave generous empty #ff00ff space around the views; each figure must feel like source sprite art that will downscale to 64px, not a large showcase drawing. Use a flat #ff00ff chroma-key background. No grass, no floor plane, no text, no UI, no borders.',
     '',
-    'Style target: hand-drawn elevated 2.5D field sprite with BJD-inspired chibi doll simplicity. Squat field-sprite proportions, oversized but not eye-dominated head, tiny grounded body, simple costume blocks, warm dark irregular outline, rounded cheeks, tiny mouth/nose, mitten-like hands, tiny planted feet, visible elf ears when ears are shown, and enough top of the mushroom cap/head visible to belong on the map.',
+    'Style target: hand-drawn elevated 2.5D field sprite with BJD-inspired chibi doll simplicity. Squat field-sprite proportions, oversized but not eye-dominated head, tiny grounded body, simple costume blocks, warm dark irregular outline, rounded cheeks, tiny mouth/nose, mitten-like hands, tiny planted feet, visible elf ears when ears are shown, and enough top of the mushroom cap/head visible to belong on the map. Design for 64px readability first: broad shape clusters, no painterly surface texture, no enlarged illustration detail.',
     '',
-    'Thalla identity: ancient gold-white mushroom-elf sovereign; mushroom-elf biology, not a human with a mushroom hat; black eyes with fiery-gold life; 1-2 large flat gold mycelium/spore marks total; sacred fungal robe/cap silhouette; warm bone/gold/white/brown palette; calm regal biostasis authority.',
+    'Thalla identity: ancient gold-white mushroom-elf field-sprite leader; mushroom-elf biology, not a human with a mushroom hat; black eyes with fiery-gold life; 1-2 large flat gold mycelium/spore marks total; simple fungal robe/cap silhouette; warm bone/gold/white/brown palette; calm biostasis stillness. Avoid visual royalty language in the art.',
     '',
-    'Sovereign simplification: represent sovereign status through cap silhouette, robe blocks, posture, and 1-2 flat mycelium/spore marks only. No crown jewel, forehead gem, brooch, chest medallion, pendant, jewelry-like cap crest, gold filigree, ornamental regalia, or decorative trim clusters.',
+    'Status simplification: represent authority through cap silhouette, robe blocks, posture, and 1-2 flat mycelium/spore marks only. No royal regalia, crown jewel, forehead gem, brooch, chest medallion, pendant, jewelry-like cap crest, gold filigree, ornamental robe border, decorative trim cluster, clasp, collar jewel, or repeated gold badge.',
     '',
-    'Palette plan: 12-18 artist-visible colors, fewer than 20 total design colors excluding transparency and #ff00ff. Use shared cap/robe/skin/gold ramps instead of many local beige, cream, blush, glow, or gold shades. Use broad shapes and one-step shadows/highlights, not painterly gradients, airbrushed blush, soft glow, or many near-duplicate tones.',
+    'Palette plan: 12-18 artist-visible colors, fewer than 20 total design colors excluding transparency and #ff00ff. Use shared cap/robe/skin/gold ramps instead of many local beige, cream, blush, glow, or gold shades. Use broad flat clusters and one-step shadows/highlights, not watercolor texture, painterly gradients, airbrushed blush, soft glow, or many near-duplicate tones.',
     '',
     'Preserve direction: use the checked-in 2026-06-26 previous-best Thalla state sheet as the positive compact grouped-sheet direction: keep its squat proportions, cap/body/face charm, and coherent state-sheet feel while fixing palette bloat, ornament, and sticker softness. Use the 2026-06-23 liked Thalla image only as positive face/cap/robe appeal, simplified into the field-sprite read. Use the chibi style reference only for proportions, outline weight, BJD-inspired simplicity, and scene-scale simplicity; do not copy characters, costumes, symbols, or composition.',
     '',
-    'Hard avoids: no pixel art, no tiny beige doll sprite, no generic elf, no straight portrait sticker, no human with mushroom hat, no large anime/fashion turnaround, no earrings, no jewelry, no crown jewel, no forehead gem, no brooch, no chest medallion, no pendant, no jewelry-like cap crest, no ornamental regalia, no hard flat cel/vector icon art, no cold exactly-16-swatches exercise, no dense cap spots, no scattered gold freckles, no many gold droplets, no ornate filigree, no decorative trim clusters, no particle halo, no huge white portrait eyes, no eye-dominated face, no realistic doll photo, no glossy toy render, no baked blob/cast shadow, no foot oval, no floor contact patch.',
+    'Hard avoids: no pixel art, no tiny beige doll sprite, no generic elf, no straight portrait sticker, no human with mushroom hat, no large anime/fashion turnaround, no enlarged showcase turnaround, no earrings, no jewelry, no royal regalia, no crown jewel, no forehead gem, no brooch, no chest medallion, no pendant, no jewelry-like cap crest, no ornamental robe border, no decorative trim clusters, no repeated gold badges, no hard flat cel/vector icon art, no cold exactly-16-swatches exercise, no dense cap spots, no scattered gold freckles, no many gold droplets, no ornate filigree, no watercolor/painterly cap texture, no particle halo, no huge white portrait eyes, no eye-dominated face, no realistic doll photo, no glossy toy render, no baked blob/cast shadow, no foot oval, no floor contact patch.',
     '```'
   ].join('\n');
 }
@@ -615,10 +615,10 @@ function main() {
   console.log('Workflow per asset:');
   if (chibiCandidate) {
     console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
-    console.log('  1. Read the prompt block and copyable Reference Turnaround Prompt below; state the chibi palette, style-preservation, and sovereign-simplification plans before imagegen.');
+    console.log('  1. Read the prompt block and copyable Reference Turnaround Prompt below; state the chibi palette, style-preservation, and status-simplification plans before imagegen.');
     console.log('  2. If preflight fails only because built-in output is unconfirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 only if a newer file is found.');
     console.log('  3. Run `npm run game:home-field:archive-stale-chibi-proof -- thalla` with the same preflight-passing environment.');
-    console.log('  4. Use the exact copyable Reference Turnaround Prompt for the reference sheet; save/claim it and stop at the visual reference gate if palette, style, or sovereign-ornament drift appears.');
+    console.log('  4. Use the exact copyable Reference Turnaround Prompt for the reference sheet; save/claim it and stop at the visual reference gate if palette, style, or status-ornament drift appears. If two exact-prompt reference attempts fail the same visual gate, stop and report instead of burning more blind retries.');
     console.log('  5. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path or claim it with `npm run game:home-field:claim-imagegen-output`.');
   } else {
     console.log('  1. Read the prompt block below.');
