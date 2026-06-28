@@ -197,7 +197,7 @@ Object-layer assets need transparent backgrounds, broad silhouettes, safe visibl
 
 ### Chibi
 
-Active-roster chibi candidates must follow `docs/home-field-chibi-candidate-contract.md`. The current proof is `thalla` only, candidate-only, with one non-production reference sheet followed by one coherent grouped `8x4` state sheet split into 32 character-only frames. The grouped sheet must author idle bob and walk motion; post-split processing may not synthesize animation.
+Active-roster chibi candidates must follow `docs/home-field-chibi-candidate-contract.md`. The current proof is `thalla` only, candidate-only, with one non-production reference sheet followed by one coherent grouped `8x4` state sheet split into 32 character-only frames. The grouped sheet must author idle bob and walk motion; post-split processing may not synthesize animation. Generate chibis with a deliberately small sprite palette: prefer `12-18` artist-visible colors and stay under `20`, excluding transparency and chroma-key.
 
 ## Update Rule
 

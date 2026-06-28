@@ -1306,6 +1306,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /do not synthesize motion after split/i);
   assert.match(result.stdout, /Post-split deterministic processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
+  assert.match(result.stdout, /limited sprite palette/i);
+  assert.match(result.stdout, /12-18 artist-visible colors/);
+  assert.match(result.stdout, /fewer than 20 total design colors/);
   assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
   assert.match(result.stdout, /Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval/);
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff/);

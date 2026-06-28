@@ -414,6 +414,20 @@ The active Stage 1 contract is:
 - agents must immediately run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`, count only files newer than the probe start, and use `--include-temp` only once;
 - agents may rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only after the bounded locator finds a file.
 
+### 26. Palette Bloat Kept The Sprite In Sticker Territory
+
+**Symptom:** A mechanically valid 2026-06-26 Thalla candidate still did not feel production-ready. Developer feedback was blunt: "Palette is too large. It needs fewer than 20 colors."
+
+**Decision that led there:** Prompts asked for restrained palette, simple silhouette, and BJD-inspired chibi appeal, but they did not give a hard color-count budget. Imagegen filled softness and identity with many near-neighbor cream, beige, blush, gold, and shadow tones.
+
+**Why it regressed:** The chibi validator can catch weak contrast and alpha problems, but it does not know the difference between a compact sprite palette and a soft illustration palette. At `64px`, extra colors reduce shape clarity and make the character feel like a sticker pasted among chunkier Home Field props.
+
+**Guardrails added:**
+
+- `docs/home-field-chibi-candidate-contract.md` now requires `12-18` artist-visible colors and fewer than `20` total design colors, excluding transparency and chroma-key;
+- `docs/home-field-chibi-style-reference.md` records the palette research and the 2026-06-26 palette-bloat rejection;
+- the run prompt and generated Thalla prompt now tell imagegen to use shared cap/robe/skin/gold ramps instead of many near-duplicate tones.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -434,3 +448,4 @@ The active Stage 1 contract is:
 16. Do not omit recovered validation failures from handoff or evidence manifests.
 17. Do not spend generation/review setup before the image-output preflight proves a real PNG path is available.
 18. Do not confuse the one-shot built-in output probe with candidate generation; it proves file capture only.
+19. Do not accept a chibi that looks like it uses more than `20` visible design colors; palette bloat is a style failure even if mechanical validators pass.

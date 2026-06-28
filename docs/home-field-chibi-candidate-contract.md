@@ -67,6 +67,21 @@ This grouped state sheet is the required source for all final state tiles so fac
 
 Quality bar: the composed chibi must look at least as crisp, contrasted, and finished as the approved Home Field props at scene scale. Avoid blurry/downscaled sticker results. Require a chunky readable silhouette, thicker warm dark outline, clear face/cap/robe value separation, and finished hand-drawn polish comparable to the bushes, mushrooms, and gates in the clean preview.
 
+### Limited Sprite Palette
+
+Developer feedback on the 2026-06-26 candidate: "Palette is too large. It needs fewer than 20 colors." Treat this as a production art-direction gate.
+
+For Stage 1 chibis, generate with a deliberately small sprite palette:
+
+- target `12-18` artist-visible colors across the whole character sheet, and stay under `20`;
+- exclude transparency and the flat `#ff00ff` chroma-key background from that count;
+- do not count unavoidable single-pixel edge interpolation from resize/alpha cleanup as new design colors, but visible clusters, gradients, airbrush shading, soft glow, or many near-duplicate beige/gold tones do count as palette bloat;
+- use shared ramps: one warm dark outline/shadow, one shared deep umber/plum, one or two bone highlights, `2-3` cap tones, `2-3` robe/body tones, `2` gold identity tones, and `2-3` face/skin tones;
+- reuse colors between cap, robe, skin, and gold marks whenever possible instead of introducing new local shades for tiny details;
+- use broad flat clusters and one-step shadows/highlights, not painterly gradients, soft blush fields, many cap spots, scattered gold freckles, or separate tones for each facial/robe detail.
+
+This is not permission to switch to hard pixel art. The desired result is still a hand-drawn 2D field sprite with smooth-enough silhouettes after `--resize`, but its source art must be designed like an indexed small-palette sprite. If the composed preview looks like it uses a soft illustration palette with more than roughly `20` visible colors, mark it `needs_regen` even when mechanical validators pass.
+
 Deterministic/mechanical fallback drawings are allowed only as explicitly requested diagnostics. They must not be committed or reported as a fresh imagegen art candidate, even if they pass dimensions, alpha, frame-count, and manifest checks.
 
 After every image generation step, immediately run `npm run game:home-field:verify-chibi-proof-files -- --path=<generated_png_path>` or the stage-specific verifier below. If built-in imagegen writes outside the repo, claim the file into the documented path with `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>` instead of manually copying and hashing it. A chat-visible image, rollout record, or cache search is not enough; the PNG must exist at the documented repo path before continuing.
@@ -149,6 +164,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - clear feet/base grounding
 - no baked ground shadow in any chibi frame; use the separate shared `chibi_shadow` renderer/asset layer under the character
 - warm dark outline and quiet Home Field palette fit
+- limited source palette: `12-18` visible swatches, fewer than `20` total design colors, with shared ramps instead of many near-duplicate highlights and shadows
 - no text, UI, frame borders, floor plane, or baked background
 - no huge white portrait eyes; eyes must be much smaller than the reference screenshot's biggest facial read and should not dominate the head
 - no realistic doll-photo rendering, glossy plastic toy rendering, fashion-doll proportions, or porcelain figurine material study
@@ -161,6 +177,7 @@ Mechanical checks are necessary but not sufficient. A candidate that passes dime
 Stage 1 detail budget:
 
 - `2-3` main body/costume color regions, not layered regalia filigree
+- fewer than `20` artist-visible colors across the source sheet; prefer `12-18`
 - `1` bold cap/head silhouette and `1` simple robe/body silhouette
 - `1-2` large gold mycelium/spore marks total per frame; no scattered small cap freckles or many gold droplets
 - tiny face features only; eyes/mouth must not become portrait focal points or oversized white-eye stickers
