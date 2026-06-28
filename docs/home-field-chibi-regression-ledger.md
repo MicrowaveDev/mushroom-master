@@ -428,6 +428,20 @@ The active Stage 1 contract is:
 - `docs/home-field-chibi-style-reference.md` records the palette research and the 2026-06-26 palette-bloat rejection;
 - the run prompt and generated Thalla prompt now tell imagegen to use shared cap/robe/skin/gold ramps instead of many near-duplicate tones.
 
+### 27. Palette Overcorrection Lost The Previous Better Direction
+
+**Symptom:** The stopped 2026-06-28 rerun was visibly worse than the previous 2026-06-26 run. The first new reference was rejected for palette bloat, but the second reference overcorrected into a large flat anime/fashion turnaround with earrings and less field-sprite charm. The first grouped state sheet then baked dark foot ovals into every frame.
+
+**Decision that led there:** The agent correctly treated the `<20` visible-color rule as a hard gate, but improvised prompt language such as "flat limited-palette game sprite art", "hard-edged cel shading", and "exactly 16 visible swatches" without anchoring strongly enough to the previous better sheet.
+
+**Why it regressed:** The prompt optimized the easiest measurable requirement, palette reduction, while weakening the more subjective requirement: preserve compact Thalla charm from the previous better state sheet. A limited palette should constrain color choices, not change the renderer into hard pixel art, vector/cel icon art, or a large standalone character-design turnaround.
+
+**Guardrails added:**
+
+- `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` now stores the previous better grouped sheet as a checked-in positive direction, with caveats;
+- `docs/home-field-chibi-style-reference.md` names the 2026-06-28 overcorrection as a negative example and says to preserve the 2026-06-26 compact charm while fixing palette/ornament;
+- the contract, run prompt, and generated Thalla prompt now reject hard pixel/vector/cel overcorrection, earrings/jewelry/fashion-turnaround drift, and baked foot ovals.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -449,3 +463,4 @@ The active Stage 1 contract is:
 17. Do not spend generation/review setup before the image-output preflight proves a real PNG path is available.
 18. Do not confuse the one-shot built-in output probe with candidate generation; it proves file capture only.
 19. Do not accept a chibi that looks like it uses more than `20` visible design colors; palette bloat is a style failure even if mechanical validators pass.
+20. Do not fix palette bloat by changing the renderer into hard pixel art, flat vector/cel/anime art, or a large fashion turnaround. Preserve the previous-best compact field-sprite charm while reducing palette and detail.

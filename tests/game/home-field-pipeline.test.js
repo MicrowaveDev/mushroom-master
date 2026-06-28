@@ -1310,6 +1310,11 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /limited sprite palette/i);
   assert.match(result.stdout, /12-18 artist-visible colors/);
   assert.match(result.stdout, /fewer than 20 total design colors/);
+  assert.match(result.stdout, /chibi-thalla-previous-best-2026-06-26-state-sheet/);
+  assert.match(result.stdout, /preserve its squat proportions, cap\/body\/face charm/);
+  assert.match(result.stdout, /Do not overcorrect the palette rule into hard pixel art, clean vector\/cel icon art/);
+  assert.match(result.stdout, /no overcorrected flat\/vector\/cel\/pixel style/);
+  assert.match(result.stdout, /no baked foot ovals/);
   assert.match(result.stdout, /fail visible palette bloat through styleCohesionCheck\/stageContractCheck/);
   assert.match(result.stdout, /simpler than the 2026-06-20 candidate/);
   assert.match(result.stdout, /Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval/);

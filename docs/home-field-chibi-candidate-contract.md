@@ -80,7 +80,7 @@ For Stage 1 chibis, generate with a deliberately small sprite palette:
 - reuse colors between cap, robe, skin, and gold marks whenever possible instead of introducing new local shades for tiny details;
 - use broad flat clusters and one-step shadows/highlights, not painterly gradients, soft blush fields, many cap spots, scattered gold freckles, or separate tones for each facial/robe detail.
 
-This is not permission to switch to hard pixel art. The desired result is still a hand-drawn 2D field sprite with smooth-enough silhouettes after `--resize`, but its source art must be designed like an indexed small-palette sprite. If the composed preview looks like it uses a soft illustration palette with more than roughly `20` visible colors, mark it `needs_regen` even when mechanical validators pass.
+This is not permission to switch to hard pixel art, clean vector/cel icon art, or a generic flat anime turnaround. The desired result is still a hand-drawn 2D field sprite with smooth-enough silhouettes after `--resize`, but its source art must be designed like an indexed small-palette sprite. Do not use "exactly 16 swatches", "hard-edged cel shading", or similar prompt overcorrections if they destroy the warmer BJD-inspired field-sprite charm. If the composed preview looks like it uses a soft illustration palette with more than roughly `20` visible colors, mark it `needs_regen` even when mechanical validators pass.
 
 Deterministic/mechanical fallback drawings are allowed only as explicitly requested diagnostics. They must not be committed or reported as a fresh imagegen art candidate, even if they pass dimensions, alpha, frame-count, and manifest checks.
 
@@ -154,6 +154,7 @@ Run `npm run game:home-field:verify-chibi-proof-files -- --frames` after frame g
 The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
 - follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base over the shared chibi shadow layer, and elevated 2.5D map read;
+- use `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` as a positive direction for compact grouped-sheet proportions and charm, while fixing its palette bloat, ornament, and sticker softness;
 - use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, small calm face features, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
 - mushroom-elf biology first, not a human wearing a mushroom hat
 - visible elf ears whenever ears are visible
@@ -169,6 +170,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - no huge white portrait eyes; eyes must be much smaller than the reference screenshot's biggest facial read and should not dominate the head
 - no realistic doll-photo rendering, glossy plastic toy rendering, fashion-doll proportions, or porcelain figurine material study
 - no dense cap spots, scattered gold freckles, robe filigree, many tear/drop marks, or baked blob/cast shadows; if a detail does not read as one of the few large identity marks at `64px`, remove it
+- no earrings, fashion jewelry, large standalone character-turnaround proportions, or over-flat cel/vector/pixel style introduced only to satisfy the palette budget
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`.
 
