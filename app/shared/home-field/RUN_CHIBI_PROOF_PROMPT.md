@@ -4,9 +4,13 @@ Use this file as the canonical instruction set for the next chibi generation run
 
 ## Short Launcher Prompt
 
+Paste this launcher prompt into a fresh Codex session:
+
 ```text
-In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Field chibi Stage 1 proof with sub-agents, exactly as documented in app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md. Generate only thalla. Fix the rejected tiny pixel/doll-sprite/sticker style with a limited sprite palette under 20 visible design colors. Candidate-only, no app overwrite, validation/screenshots/final links required.
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Field chibi Stage 1 proof exactly as documented in app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md.
 ```
+
+The launcher prompt should stay this short. Do not put evolving art-direction or workflow requirements only in the pasted prompt; persist them below, in `app/shared/home-field/home-field-prompts.json`, and in any helper/test surface required by `docs/home-field-imagegen-requirements.md`.
 
 ## Required Flow
 
