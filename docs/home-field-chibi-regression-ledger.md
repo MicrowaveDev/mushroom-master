@@ -442,6 +442,20 @@ The active Stage 1 contract is:
 - `docs/home-field-chibi-style-reference.md` names the 2026-06-28 overcorrection as a negative example and says to preserve the 2026-06-26 compact charm while fixing palette/ornament;
 - the contract, run prompt, and generated Thalla prompt now reject hard pixel/vector/cel overcorrection, earrings/jewelry/fashion-turnaround drift, and baked foot ovals.
 
+### 28. Regal Language Reintroduced Ornament Drift
+
+**Symptom:** The 2026-06-28 reference-gate rerun after the previous-best prompt tightening stopped correctly at the reference gate, but the generated reference still failed. It restored some compact chibi charm and avoided hard pixel/cel overcorrection, yet "sovereign/regal" drifted into a crown-like forehead gem, chest medallion, ornate trim, painterly cap/body texture, and too many visible beige/gold tones.
+
+**Decision that led there:** The reference prompt banned earrings, jewelry clusters, and ornate filigree, but still described Thalla as a sovereign with regal biostasis authority. That gave imagegen a loophole to express status with jewelry-like regalia instead of simple field-sprite silhouette.
+
+**Why it regressed:** For a `64px` map chibi, status markers must be large silhouette and posture cues. Even a single central gem or medallion pulls the design toward a soft showcase turnaround and spends the tiny palette budget on extra gold/blush/brown ramps.
+
+**Guardrails added:**
+
+- `npm run game:home-field:next-chibi-proof` now prints a copyable reference-turnaround prompt so agents do not hand-compose this fragile prompt;
+- Thalla's prompt, contract, style reference, and run prompt now say to represent sovereignty through cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only;
+- crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, ornamental regalia, and decorative trim clusters are explicit rejection signals.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -464,3 +478,4 @@ The active Stage 1 contract is:
 18. Do not confuse the one-shot built-in output probe with candidate generation; it proves file capture only.
 19. Do not accept a chibi that looks like it uses more than `20` visible design colors; palette bloat is a style failure even if mechanical validators pass.
 20. Do not fix palette bloat by changing the renderer into hard pixel art, flat vector/cel/anime art, or a large fashion turnaround. Preserve the previous-best compact field-sprite charm while reducing palette and detail.
+21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.

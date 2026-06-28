@@ -341,6 +341,11 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
 
   lines.push(styleAnchorBlock(anchor));
   lines.push('');
+  const referencePrompt = chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate });
+  if (referencePrompt) {
+    lines.push(referencePrompt);
+    lines.push('');
+  }
   lines.push('## Save and report');
   if (chibiCandidate && asset.type === 'character') {
     lines.push('Save the non-production turnaround reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
@@ -408,6 +413,34 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
   }
   return lines.join('\n');
+}
+
+function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } = {}) {
+  if (!chibiCandidate || asset.type !== 'character' || asset.id !== 'thalla') return '';
+  return [
+    '## Copyable Reference Turnaround Prompt',
+    'Paste this exact prompt into imagegen for the non-production reference sheet. Do not hand-compose or add extra style terms:',
+    '',
+    '```text',
+    'Create one non-production reference turnaround sheet for Thalla only, for the Mushroom Battles Home Field chibi proof.',
+    '',
+    'Purpose: consistency reference only; do not make final runtime frames and do not make a full character illustration.',
+    '',
+    'Layout: show the same Thalla chibi in four directions in one sheet: down, up, left, right. Keep the same proportions, top-down 2.5D camera, palette, and detail budget in every view. Use a flat #ff00ff chroma-key background. No grass, no floor plane, no text, no UI, no borders.',
+    '',
+    'Style target: hand-drawn elevated 2.5D field sprite with BJD-inspired chibi doll simplicity. Squat field-sprite proportions, oversized but not eye-dominated head, tiny grounded body, simple costume blocks, warm dark irregular outline, rounded cheeks, tiny mouth/nose, mitten-like hands, tiny planted feet, visible elf ears when ears are shown, and enough top of the mushroom cap/head visible to belong on the map.',
+    '',
+    'Thalla identity: ancient gold-white mushroom-elf sovereign; mushroom-elf biology, not a human with a mushroom hat; black eyes with fiery-gold life; 1-2 large flat gold mycelium/spore marks total; sacred fungal robe/cap silhouette; warm bone/gold/white/brown palette; calm regal biostasis authority.',
+    '',
+    'Sovereign simplification: represent sovereign status through cap silhouette, robe blocks, posture, and 1-2 flat mycelium/spore marks only. No crown jewel, forehead gem, brooch, chest medallion, pendant, jewelry-like cap crest, gold filigree, ornamental regalia, or decorative trim clusters.',
+    '',
+    'Palette plan: 12-18 artist-visible colors, fewer than 20 total design colors excluding transparency and #ff00ff. Use shared cap/robe/skin/gold ramps instead of many local beige, cream, blush, glow, or gold shades. Use broad shapes and one-step shadows/highlights, not painterly gradients, airbrushed blush, soft glow, or many near-duplicate tones.',
+    '',
+    'Preserve direction: use the checked-in 2026-06-26 previous-best Thalla state sheet as the positive compact grouped-sheet direction: keep its squat proportions, cap/body/face charm, and coherent state-sheet feel while fixing palette bloat, ornament, and sticker softness. Use the 2026-06-23 liked Thalla image only as positive face/cap/robe appeal, simplified into the field-sprite read. Use the chibi style reference only for proportions, outline weight, BJD-inspired simplicity, and scene-scale simplicity; do not copy characters, costumes, symbols, or composition.',
+    '',
+    'Hard avoids: no pixel art, no tiny beige doll sprite, no generic elf, no straight portrait sticker, no human with mushroom hat, no large anime/fashion turnaround, no earrings, no jewelry, no crown jewel, no forehead gem, no brooch, no chest medallion, no pendant, no jewelry-like cap crest, no ornamental regalia, no hard flat cel/vector icon art, no cold exactly-16-swatches exercise, no dense cap spots, no scattered gold freckles, no many gold droplets, no ornate filigree, no decorative trim clusters, no particle halo, no huge white portrait eyes, no eye-dominated face, no realistic doll photo, no glossy toy render, no baked blob/cast shadow, no foot oval, no floor contact patch.',
+    '```'
+  ].join('\n');
 }
 
 function recommendedProduceCommand(asset, { fieldContext = false, objectCandidate = false, chibiCandidate = false, terrainCandidate = false } = {}) {
@@ -582,16 +615,17 @@ function main() {
   console.log('Workflow per asset:');
   if (chibiCandidate) {
     console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
-    console.log('  1. Read the prompt block below and state the chibi palette plan before imagegen: 12-18 artist-visible colors, fewer than 20 visible design colors excluding transparency/#ff00ff, shared cap/robe/skin/gold ramps.');
+    console.log('  1. Read the prompt block and copyable Reference Turnaround Prompt below; state the chibi palette, style-preservation, and sovereign-simplification plans before imagegen.');
     console.log('  2. If preflight fails only because built-in output is unconfirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 only if a newer file is found.');
     console.log('  3. Run `npm run game:home-field:archive-stale-chibi-proof -- thalla` with the same preflight-passing environment.');
-    console.log('  4. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path or claim it with `npm run game:home-field:claim-imagegen-output`.');
+    console.log('  4. Use the exact copyable Reference Turnaround Prompt for the reference sheet; save/claim it and stop at the visual reference gate if palette, style, or sovereign-ornament drift appears.');
+    console.log('  5. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path or claim it with `npm run game:home-field:claim-imagegen-output`.');
   } else {
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
   }
   if (chibiCandidate) {
-    console.log('  5. Save one coherent 8x4 state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames.');
+    console.log('  6. Only after the reference gate passes, save one coherent 8x4 state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames.');
   } else {
     console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   }
@@ -600,24 +634,24 @@ function main() {
   } else if (objectCandidate) {
     console.log('  4. Run `npm run game:home-field:produce-object-candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
   } else if (chibiCandidate) {
-    console.log('  6. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
+    console.log('  7. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
   } else {
     console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
   }
   if (objectCandidate || chibiCandidate || terrainCandidate) {
     console.log(chibiCandidate
-      ? '  7. Run the scoped candidate-root validation commands printed below.'
+      ? '  8. Run the scoped candidate-root validation commands printed below.'
       : '  5. Run the scoped candidate-root validation commands printed below.');
     console.log(terrainCandidate
       ? '  6. Refresh contact, adjacency, candidate evidence, and candidate preview proof.'
       : chibiCandidate
-        ? '  8. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof; Visual Critic must fail visible palette bloat through styleCohesionCheck/stageContractCheck; use recover-chibi-alpha only for recoverable chroma fringe.'
+        ? '  9. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof; Visual Critic must fail visible palette bloat through styleCohesionCheck/stageContractCheck; use recover-chibi-alpha only for recoverable chroma fringe.'
         : '  6. Refresh contact, mobile-readability, alpha/halo, candidate evidence, and candidate preview proof.');
   } else {
     console.log('  5. Run `npm run game:home-field:validate -- --check-files --check-connectors --check-review` to check schema, files, review rows, and adjacency.');
     console.log('  6. Run `npm run game:home-field:sheet` and `npm run game:home-field:adjacency` to refresh review proof.');
   }
-  const stopStep = chibiCandidate ? 9 : 7;
+  const stopStep = chibiCandidate ? 10 : 7;
   if (batch?.name === 'terrain-grass') {
     console.log(`  ${stopStep}. Stop after these 3 grass tiles. Update review JSON before generating path or edge families.`);
   } else if (batch?.name?.startsWith('terrain-')) {

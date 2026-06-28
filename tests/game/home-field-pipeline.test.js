@@ -14,6 +14,7 @@ const mobileReadabilitySheetScriptPath = path.join(repoRoot, 'app/scripts/genera
 const candidateEvidenceScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-candidate-evidence.js');
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
+const homeFieldPromptsPath = path.join(repoRoot, 'app/shared/home-field/home-field-prompts.json');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
 const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
@@ -1306,12 +1307,17 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /do not synthesize motion after split/i);
   assert.match(result.stdout, /Post-split deterministic processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
-  assert.match(result.stdout, /state the chibi palette plan before imagegen/);
+  assert.match(result.stdout, /state the chibi palette, style-preservation, and sovereign-simplification plans before imagegen/);
+  assert.match(result.stdout, /Copyable Reference Turnaround Prompt/);
+  assert.match(result.stdout, /Paste this exact prompt into imagegen/);
   assert.match(result.stdout, /limited sprite palette/i);
   assert.match(result.stdout, /12-18 artist-visible colors/);
   assert.match(result.stdout, /fewer than 20 total design colors/);
   assert.match(result.stdout, /chibi-thalla-previous-best-2026-06-26-state-sheet/);
   assert.match(result.stdout, /preserve its squat proportions, cap\/body\/face charm/);
+  assert.match(result.stdout, /Represent sovereign status through cap silhouette/);
+  assert.match(result.stdout, /No crown jewel, forehead gem, brooch, chest medallion, pendant/);
+  assert.match(result.stdout, /no crown jewels, no forehead gems, no brooches, no chest medallions/);
   assert.match(result.stdout, /Do not overcorrect the palette rule into hard pixel art, clean vector\/cel icon art/);
   assert.match(result.stdout, /no overcorrected flat\/vector\/cel\/pixel style/);
   assert.match(result.stdout, /no baked foot ovals/);
@@ -1330,6 +1336,15 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=thalla .*chibi-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
+});
+
+test('[home-field] placeholder chibi prompt stays legacy-only', () => {
+  const prompts = JSON.parse(fs.readFileSync(homeFieldPromptsPath, 'utf8'));
+  const placeholder = prompts.prompts.character_placeholder_silhouette;
+
+  assert.match(placeholder.details, /PLACEHOLDER-ONLY LEGACY PER-FRAME GENERATION/);
+  assert.match(placeholder.constraints, /Current Stage 1 Thalla proof candidates must follow the grouped 8x4 source-sheet and 32 split-frame contract/);
+  assert.doesNotMatch(placeholder.constraints, /full 32-frame animation is a later optional polish stage/);
 });
 
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
