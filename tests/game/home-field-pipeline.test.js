@@ -1276,9 +1276,10 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /stop before stale-file archive if it fails/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(result.stdout, /reference-image input binding/);
   assert.match(result.stdout, /diagnostic non-candidate built-in imagegen probe/);
   assert.match(result.stdout, /--since-minutes=5/);
-  assert.match(result.stdout, /same-agent file output is confirmed/);
+  assert.match(result.stdout, /same-agent file output and reference-image input binding are confirmed/);
   assert.match(result.stdout, /same agent context that will run imagegen/);
   assert.match(result.stdout, /game:home-field:find-imagegen-output/);
   assert.match(result.stdout, /game:home-field:archive-stale-chibi-proof -- thalla/);
@@ -1309,11 +1310,12 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
   assert.match(result.stdout, /state the chibi palette, style-preservation, scale\/face\/biology, and status-simplification plans before imagegen/);
   assert.match(result.stdout, /Copyable Sprite-Box Reference Prompt/);
-  assert.match(result.stdout, /load these checked-in PNGs as visible reference images/);
-  assert.match(result.stdout, /using those visible images as references/);
+  assert.match(result.stdout, /attach these checked-in PNGs as actual image inputs/);
+  assert.match(result.stdout, /with those local PNGs attached as actual image inputs/);
+  assert.match(result.stdout, /Viewing the PNGs in chat is not enough/i);
   assert.match(result.stdout, /Do not run this as another text-only generation/);
   assert.match(result.stdout, /sprite-box reference sheet/);
-  assert.match(result.stdout, /Input images: use the visible checked-in reference images as guidance/);
+  assert.match(result.stdout, /Input images: use the attached checked-in reference images as guidance/);
   assert.match(result.stdout, /tiny .*source-sprite views/);
   assert.match(result.stdout, /invisible 96x96 source-sprite boxes/);
   assert.match(result.stdout, /at least 70% of the sheet empty #ff00ff/);
@@ -1378,6 +1380,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
+  assert.match(result.stdout, /Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs/);
   assert.match(result.stdout, /archive-stale-chibi-proof/);
   assert.match(result.stdout, /claim-imagegen-output/);
   assert.match(result.stdout, /recover-chibi-alpha/);
@@ -1818,6 +1821,7 @@ test('[home-field] chibi proof preflight blocks unconfirmed built-in imagegen di
       ...process.env,
       OPENAI_API_KEY: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
       HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
@@ -1827,25 +1831,49 @@ test('[home-field] chibi proof preflight blocks unconfirmed built-in imagegen di
 
   assert.equal(result.status, 1, result.stderr || result.stdout);
   assert.match(result.stdout, /OPENAI_API_KEY: missing/);
-  assert.match(result.stdout, /built-in Codex Desktop imagegen file-output ready: no/);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no/);
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
+  assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: no/);
   assert.match(result.stderr, /Preflight failed/);
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stderr, /same agent context that will run imagegen/);
+  assert.match(result.stderr, /Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding/);
   assert.match(result.stderr, /diagnostic non-candidate image_gen probe/);
   assert.match(result.stderr, /find-imagegen-output -- --since-minutes=5/);
-  assert.match(result.stderr, /Do not archive stale files before that passes/);
+  assert.match(result.stderr, /Do not archive stale files before preflight passes/);
   assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
 });
 
-test('[home-field] chibi proof preflight accepts confirmed built-in imagegen disk output', () => {
+test('[home-field] chibi proof preflight blocks built-in imagegen without confirmed reference inputs', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
+      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
+      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
+    },
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: yes/);
+  assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: no/);
+  assert.match(result.stderr, /reference-image input binding/);
+});
+
+test('[home-field] chibi proof preflight accepts confirmed built-in disk output and reference inputs', () => {
+  const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '1',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
     },
@@ -1853,9 +1881,10 @@ test('[home-field] chibi proof preflight accepts confirmed built-in imagegen dis
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /built-in Codex Desktop imagegen file-output ready: yes/);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: yes/);
+  assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: yes/);
   assert.match(result.stdout, /Preflight passed/);
-  assert.match(result.stdout, /disk save was explicitly confirmed/);
+  assert.match(result.stdout, /disk save and reference-image input binding were explicitly confirmed/);
 });
 
 test('[home-field] chibi proof preflight accepts supplied local image inputs', () => {
@@ -1871,6 +1900,7 @@ test('[home-field] chibi proof preflight accepts supplied local image inputs', (
         ...process.env,
         OPENAI_API_KEY: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
         HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput,
         HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
         HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'

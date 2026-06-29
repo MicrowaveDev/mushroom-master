@@ -54,6 +54,7 @@ function main() {
   console.log('');
   console.log('Freshness warning: existing .agent files are not proof of a fresh run. After rejection, run archive-stale-chibi-proof only after preflight passes, then regenerate and bind the new source chain in candidate-evidence.manifest.json.');
   console.log('Output probe warning: the only imagegen allowed before preflight passes is one tiny non-candidate built-in output probe from the same agent context, followed by the bounded locator command above.');
+  console.log('Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs. Viewing them in chat or naming them in text is not image-guided generation.');
   console.log('Frame contract: generate one coherent 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
   console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');
   console.log('Palette contract: state the plan before imagegen, target 12-18 artist-visible colors, stay under 20 visible design colors excluding transparency/#ff00ff, and fail palette bloat through styleCohesionCheck/stageContractCheck.');

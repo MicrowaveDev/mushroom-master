@@ -170,7 +170,7 @@ The active Stage 1 contract is:
 - this ledger documents the distinction;
 - future prompts should say whether the goal is to test built-in imagegen UI generation separately from the chibi pipeline;
 - do not assume a sub-agent can run or recover built-in imagegen output unless that exact agent context has confirmed discoverable PNG output;
-- if the operator confirms a discoverable built-in output path, set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only for that run.
+- if the operator confirms a discoverable built-in output path, set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` for that run only; for current Thalla proof art, also require `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the generation call can attach the checked-in PNGs as image inputs.
 
 ### 11. Stale Rejected Raw Files Masqueraded As Fresh Generation
 
@@ -412,7 +412,7 @@ The active Stage 1 contract is:
 - `docs/home-field-imagegen-requirements.md` allows exactly one same-context diagnostic built-in output probe when the only blocker is unconfirmed built-in disk output;
 - the probe must be tiny, non-candidate, not Thalla/reference/state-sheet art, and must not mutate `.agent` candidate evidence;
 - agents must immediately run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`, count only files newer than the probe start, and use `--include-temp` only once;
-- agents may rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` only after the bounded locator finds a file.
+- agents may rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` after the bounded locator finds a file; for current Thalla proof art, preflight must still stop unless `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` is also truthfully confirmed.
 
 ### 26. Palette Bloat Kept The Sprite In Sticker Territory
 
@@ -497,8 +497,8 @@ The active Stage 1 contract is:
 **Guardrails added:**
 
 - current Thalla reference generation must be image-guided from checked-in PNG references, not another text-only attempt;
-- the helper now tells agents to load `chibi-thalla-previous-best-2026-06-26-state-sheet.png`, `chibi-thalla-liked-2026-06-23.png`, and `chibi-style-agent-log-reference.png` as visible image references before imagegen;
-- if the active imagegen path cannot use visible/local reference images, the run must stop and report that image-guided generation is required;
+- the helper now tells agents to attach `chibi-thalla-previous-best-2026-06-26-state-sheet.png`, `chibi-thalla-liked-2026-06-23.png`, and `chibi-style-agent-log-reference.png` as actual image inputs before imagegen;
+- if the active imagegen path cannot attach those PNGs to the generation call, the run must stop and report that image-guided generation is required;
 - repeated same-gate failures after image-guided attempts still stop after two tries.
 
 ### 32. Image-Guided Prompt Still Produced Oversized Turnaround Art
@@ -507,7 +507,7 @@ The active Stage 1 contract is:
 
 **Decision that led there:** We treated "visible reference images loaded before imagegen" plus the tightened exact prompt as enough to change the model's output mode. The prompt still called the result a turnaround sheet and left enough canvas/detail ambiguity for the model to create attractive high-resolution character-sheet art.
 
-**Why it regressed:** The active built-in imagegen path may have seen the references, but the output still optimized for a polished character turnaround rather than a sprite extraction guide. This proves that visible references alone are not a durable control unless the prompt also pins figure occupancy and sheet layout to small sprite boxes.
+**Why it regressed:** The active built-in imagegen path may have seen the references, but the output still optimized for a polished character turnaround rather than a sprite extraction guide. This proves that even viewed references are not a durable control unless the actual generation call binds the inputs and the prompt also pins figure occupancy and sheet layout to small sprite boxes.
 
 **Evidence:** Rollout `/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019f140b-07a4-7e10-85e1-f64c9d8a0bdb-rollout-2026-06-29T16-41-35-019f140b-07a4-7e10-85e1-f64c9d8a0bdb.jsonl` loaded the three reference images at lines `83`-`85`, generated the first and second references at lines `115` and `131`, claimed the second reference at line `135`, and received a visual-critic failure at line `170`. The saved reference was `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`, `1774x887`, sha256 `0c1d8d4993b270040a2802b737ac211b7e67b9d3eca37bb51d46a90b7204a9b6`.
 
@@ -517,6 +517,24 @@ The active Stage 1 contract is:
 - layout now requires four tiny invisible `96x96` source-sprite boxes, each character staying inside its box, with at least `70%` empty `#ff00ff` sheet space;
 - the 2026-06-29 image-guided attempts are a negative example for large painterly turnaround figures;
 - another run should not repeat the old image-guided turnaround prompt unchanged; if the sprite-box prompt still fails twice, stop and change generation method or ask for explicit user direction instead of continuing blind retries.
+
+### 33. Viewed Reference Images Were Not Bound Imagegen Inputs
+
+**Symptom:** The later 2026-06-29 run from rollout `codex-019f1482-8954-7b52-9f75-b377cf957645` used the new sprite-box wording and again followed the stop rule. The output improved its empty magenta space, but both reference attempts still failed the same gate: figures were about `149-166px` wide by `207-222px` tall in a `1254x1254` sheet, not tiny `96x96` source-sprite boxes; the background was not clean flat `#ff00ff`; palette/style remained soft and over-toned; hair/wig reads and cap/robe status ornament remained.
+
+**Decision that led there:** The workflow treated `view_image` calls plus prompt text saying "use the visible checked-in reference images" as image-guided generation. The imagegen call itself did not prove that the PNGs were attached as actual image inputs.
+
+**Why it regressed:** "Visible to the agent" and "bound to the imagegen request" are different capabilities. The active built-in path had confirmed file output, but not confirmed reference-image input binding. More prompt wording could not reliably fix a tool-capability gap.
+
+**Evidence:** Rollout `/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019f1482-8954-7b52-9f75-b377cf957645-rollout-2026-06-29T18-52-07-019f1482-8954-7b52-9f75-b377cf957645.jsonl` generated attempt 1 at line `116` and attempt 2 at line `171`. The Visual Critic at line `211` failed the live reference for sprite-box occupancy, palette/style, hair/cap biology, and status ornament. The live reference path was `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`, `1254x1254`, sha256 `f848fe4d01ff7d43bd7c4caa8e7c2a8ebc90206bbcbed1b596e41e50dc0d1c06`.
+
+**Guardrails added:**
+
+- preflight now treats built-in imagegen as ready only when both disk output and reference-image input binding are explicitly confirmed;
+- `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` proves file capture only, not image guidance;
+- `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` may be set only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context;
+- docs and generated helper output now say `view_image` plus text prompt references is not image-guided generation;
+- future runs should stop at preflight unless they have a real reference-capable imagegen path, supplied local source PNG inputs, or explicit reference-capable CLI fallback.
 
 ## Decision Rules Going Forward
 
@@ -543,5 +561,6 @@ The active Stage 1 contract is:
 21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.
 22. Do not keep retrying the exact same reference prompt after repeated same-cause reference-gate failures. Fix the persisted prompt/helper or stop for review.
 23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, small seed/dot eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.
-24. Do not run more text-only Thalla reference attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as visible image inputs, or stop and ask for an image-guided/local-reference generation path.
+24. Do not run more text-only Thalla reference attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as actual image inputs to imagegen, or stop and ask for a reference-capable generation path.
 25. Do not repeat the pre-2026-06-29 image-guided turnaround prompt unchanged. The reference prompt must behave like a sprite-box extraction guide with tiny `96x96` occupancy and mostly empty magenta space; if that still fails twice, change the generation method or ask for explicit user direction.
+26. Do not call a Thalla run image-guided unless the actual imagegen request can attach the checked-in PNGs as image inputs. `view_image` and prompt text are not enough.

@@ -38,7 +38,7 @@ The pipeline requires a real PNG at a known filesystem path. A generated image t
 
 Allowed source paths are:
 
-- confirmed built-in imagegen output that the same agent context can save or recover as a file;
+- confirmed built-in imagegen output that the same agent context can save or recover as a file, and for image-guided Thalla proof art can attach the checked-in reference PNGs as actual image inputs;
 - supplied local PNG inputs named by the run;
 - explicit CLI imagegen fallback when the user requested it and credentials are configured.
 
@@ -64,7 +64,7 @@ After that diagnostic render, run:
 npm run game:home-field:find-imagegen-output -- --since-minutes=5
 ```
 
-Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and continue only if preflight passes. If no file is found, stop and ask for local PNG inputs or explicit CLI fallback; do not run broad filesystem searches, create fallback art, or move stale evidence.
+Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only after confirming reference-image input binding. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image` or mentioning them in the text prompt is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for local PNG inputs or explicit reference-capable CLI fallback; do not run broad filesystem searches, create fallback art, or move stale evidence.
 
 For actual proof art after preflight passes, do not repeat the manual finder/copy/hash/verifier loop. If built-in imagegen writes a discoverable file outside the repo, claim it into the documented proof path:
 
