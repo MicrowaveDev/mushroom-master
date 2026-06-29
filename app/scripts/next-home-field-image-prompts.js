@@ -348,7 +348,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   }
   lines.push('## Save and report');
   if (chibiCandidate && asset.type === 'character') {
-    lines.push('Save the non-production turnaround reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+    lines.push('Save the non-production sprite-box reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
     lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
     lines.push('Immediately verify the saved reference with: npm run game:home-field:verify-chibi-proof-files -- --reference');
     lines.push('Save the final 8x4 state sheet to: .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
@@ -418,7 +418,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
 function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } = {}) {
   if (!chibiCandidate || asset.type !== 'character' || asset.id !== 'thalla') return '';
   return [
-    '## Copyable Reference Turnaround Prompt',
+    '## Copyable Sprite-Box Reference Prompt',
     'Before imagegen, load these checked-in PNGs as visible reference images and label their roles:',
     '- `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` — positive compact grouped-sheet proportions and charm; fix palette bloat/ornament.',
     '- `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png` — positive Thalla face/cap/robe appeal only; simplify heavily.',
@@ -427,13 +427,13 @@ function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } =
     'Paste this exact prompt into imagegen for the non-production reference sheet, using those visible images as references. Do not hand-compose or add extra style terms. Do not run this as another text-only generation; if the imagegen path cannot use visible/local reference images, stop and report that image-guided generation is required.',
     '',
     '```text',
-    'Create one non-production miniature sprite-reference turnaround sheet for Thalla only, for the Mushroom Battles Home Field chibi proof.',
+    'Create one non-production sprite-box reference sheet for Thalla only, for the Mushroom Battles Home Field chibi proof.',
     '',
-    'Input images: use the visible checked-in reference images as guidance. Preserve the compact sprite proportions and charm of the previous-best state sheet, use the liked Thalla image only for simplified face/cap/robe appeal, and use the chibi style reference only for field-sprite scale/outline simplicity.',
+    'Input images: use the visible checked-in reference images as guidance. Preserve the compact sprite proportions and charm of the previous-best state sheet as the primary layout/scale authority, use the liked Thalla image only for simplified face/cap/robe appeal, and use the chibi style reference only for field-sprite scale/outline simplicity.',
     '',
-    'Purpose: consistency reference only; do not make final runtime frames, a full character illustration, a character-design showcase, or enlarged hero turnaround art.',
+    'Purpose: consistency reference only; do not make final runtime frames, a full character illustration, a character-design showcase, or enlarged hero turnaround art. The 2026-06-29 image-guided attempts already failed by producing large painterly turnaround figures; avoid that exact failure.',
     '',
-    'Layout: show the same Thalla chibi in four tiny sprite-source views in one sheet: down, up, left, right. Keep the same proportions, top-down 2.5D camera, palette, and detail budget in every view. Leave most of the canvas as empty #ff00ff space; each view should read like it came from a 96x96 source-sprite box and will downscale to 64px, not like a character-sheet illustration filling its quadrant. Use a flat #ff00ff chroma-key background. No grass, no floor plane, no text, no UI, no borders.',
+    'Layout: create a sprite extraction guide, not a conventional turnaround sheet. Place the same Thalla chibi in four tiny invisible 96x96 source-sprite boxes on one flat #ff00ff sheet: down, up, left, right. Each visible character must stay inside its own 96x96 box with generous magenta around it, like the compact checked-in state sheet, and should be designed to downscale to 64px. Leave at least 70% of the sheet empty #ff00ff space. Do not fill quadrants, do not enlarge the figures to showcase-art size, and do not use borders, labels, grass, floor plane, text, or UI.',
     '',
     'Style target: hand-drawn elevated 2.5D field sprite with BJD-inspired chibi doll simplicity. Squat field-sprite proportions, oversized but not eye-dominated head, tiny grounded body, simple costume blocks, warm dark irregular outline, rounded cheeks, tiny mouth/nose, mitten-like hands, tiny planted feet, visible elf ears when ears are shown, and enough top of the mushroom cap/head visible to belong on the map. Design for 64px readability first: broad shape clusters, small dark seed/dot eyes with only a tiny gold life glint, no eyelashes or glossy anime eye shine, no painterly surface texture, no enlarged illustration detail.',
     '',
@@ -445,7 +445,7 @@ function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } =
     '',
     'Preserve direction: prioritize the checked-in 2026-06-26 previous-best Thalla state sheet over generic chibi/anime defaults: keep its squat proportions, cap/body/face charm, and coherent state-sheet feel while fixing palette bloat, ornament, and sticker softness. Use the 2026-06-23 liked Thalla image only as positive face/cap/robe appeal, simplified into the field-sprite read. Use the chibi style reference only for proportions, outline weight, BJD-inspired simplicity, and scene-scale simplicity; do not copy characters, costumes, symbols, or composition.',
     '',
-    'Hard avoids: no pixel art, no tiny beige doll sprite, no generic elf, no straight portrait sticker, no human with mushroom hat, no visible hair bangs or wig fringe, no large anime/fashion turnaround, no enlarged showcase turnaround, no quadrant-filling character art, no earrings, no jewelry, no royal regalia, no crown jewel, no forehead gem, no brooch, no chest medallion, no pendant, no jewelry-like cap crest, no scalloped collar, no ornamental robe border, no decorative trim clusters, no sleeve cuff trim, no repeated gold badges, no hard flat cel/vector icon art, no cold exactly-16-swatches exercise, no dense cap spots, no scattered gold freckles, no many gold droplets, no ornate filigree, no watercolor/painterly cap texture, no particle halo, no huge white portrait eyes, no glossy anime eyes, no eyelashes, no eye-dominated face, no realistic doll photo, no glossy toy render, no baked blob/cast shadow, no foot oval, no floor contact patch.',
+    'Hard avoids: no pixel art, no tiny beige doll sprite, no generic elf, no straight portrait sticker, no human with mushroom hat, no visible hair bangs or wig fringe, no large anime/fashion turnaround, no enlarged showcase turnaround, no quadrant-filling character art, no full-height polished character-design figures, no soft painterly turnaround sheet, no earrings, no jewelry, no royal regalia, no crown jewel, no forehead gem, no brooch, no chest medallion, no pendant, no jewelry-like cap crest, no scalloped collar, no ornamental robe border, no decorative trim clusters, no sleeve cuff trim, no repeated gold badges, no hard flat cel/vector icon art, no cold exactly-16-swatches exercise, no dense cap spots, no scattered gold freckles, no many gold droplets, no ornate filigree, no watercolor/painterly cap texture, no particle halo, no huge white portrait eyes, no glossy anime eyes, no eyelashes, no eye-dominated face, no realistic doll photo, no glossy toy render, no baked blob/cast shadow, no foot oval, no floor contact patch.',
     '```'
   ].join('\n');
 }
@@ -622,10 +622,10 @@ function main() {
   console.log('Workflow per asset:');
   if (chibiCandidate) {
     console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
-    console.log('  1. Read the prompt block and copyable Reference Turnaround Prompt below; state the chibi palette, style-preservation, scale/face/biology, and status-simplification plans before imagegen.');
+    console.log('  1. Read the prompt block and copyable Sprite-Box Reference Prompt below; state the chibi palette, style-preservation, scale/face/biology, and status-simplification plans before imagegen.');
     console.log('  2. If preflight fails only because built-in output is unconfirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 only if a newer file is found.');
     console.log('  3. Run `npm run game:home-field:archive-stale-chibi-proof -- thalla` with the same preflight-passing environment.');
-    console.log('  4. Load the checked-in Thalla reference PNGs as visible image references, then use the exact copyable Reference Turnaround Prompt for the reference sheet; save/claim it and stop at the visual reference gate if palette, style, or status-ornament drift appears. Do not run another text-only reference attempt. If two exact-prompt image-guided reference attempts fail the same visual gate, stop and report instead of burning more blind retries.');
+    console.log('  4. Load the checked-in Thalla reference PNGs as visible image references, then use the exact copyable Sprite-Box Reference Prompt for the reference sheet; save/claim it and stop at the visual reference gate if palette, style, or status-ornament drift appears. Do not run another text-only reference attempt. If two exact-prompt image-guided reference attempts fail the same visual gate, stop and report instead of burning more blind retries.');
     console.log('  5. Use built-in imagegen for proof art only after same-agent file output is confirmed, or use supplied local inputs / explicit CLI fallback; save each generated PNG to the required repo path or claim it with `npm run game:home-field:claim-imagegen-output`.');
   } else {
     console.log('  1. Read the prompt block below.');

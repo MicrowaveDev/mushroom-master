@@ -231,7 +231,7 @@ Recovered validation failures:
 
 The handoff must link the candidate folder, evidence manifest, contact sheet, alpha/halo sheet, mobile-readability sheet, and composed mobile/desktop clean screenshots.
 
-For chibi candidates, the evidence manifest must bind the full source chain: non-production turnaround reference, grouped `8x4` state sheet, all 32 split frames, the composed candidate sheet, validation logs, and preview screenshot hashes. If the grouped state sheet or split frames are missing from the manifest, the candidate is not ready for visual review even when the composed PNG exists.
+For chibi candidates, the evidence manifest must bind the full source chain: non-production sprite-box reference, grouped `8x4` state sheet, all 32 split frames, the composed candidate sheet, validation logs, and preview screenshot hashes. If the grouped state sheet or split frames are missing from the manifest, the candidate is not ready for visual review even when the composed PNG exists.
 
 ## Acceptance Criteria
 

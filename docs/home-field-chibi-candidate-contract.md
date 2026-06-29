@@ -40,7 +40,7 @@ Use a grouped-state visual workflow:
 
 0. Run `npm run game:home-field:preflight-chibi-proof` and stop if it fails, except for the one diagnostic built-in output probe allowed by `docs/home-field-imagegen-requirements.md`.
 1. Archive stale rejected Thalla state sheets, raw frames, reference sheets, and candidate outputs from the previous failed run with `npm run game:home-field:archive-stale-chibi-proof -- thalla`.
-2. Generate one non-production reference turnaround sheet for consistency.
+2. Generate one non-production sprite-box reference sheet for consistency.
 3. Review that reference sheet against the style reference and Thalla identity gate.
 4. Generate one final grouped state sheet only after the reference sheet passes.
 5. Split the grouped state sheet into the canonical raw frame PNGs.
@@ -49,13 +49,13 @@ The preflight step is mandatory before any stale-file archive. This proof requir
 
 The archive step is mandatory for regeneration runs after a rejection only after preflight passes. Previous rejected state sheets, raw frames, reference sheets, and candidate outputs are negative examples only. Do not let `test -f` or producer success on existing files count as generation work. Use the archive helper instead of broad `rg`, `find`, or custom shell moves; it reruns preflight with the current environment and prints the moved-file manifest.
 
-The reference turnaround sheet is allowed only as visual guidance. Save it under:
+The sprite-box reference sheet is allowed only as visual guidance. Save it under:
 
 ```text
 .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png
 ```
 
-The reference sheet should show the same Thalla design in the four facing directions `down`, `up`, `left`, and `right`, with the same proportions, camera angle, palette, and detail budget. It may include labels outside the art if useful for human review, but it is not a production raw source, not a runtime spritesheet, and must not be sliced into final frames.
+The reference sheet should show the same Thalla design in the four facing directions `down`, `up`, `left`, and `right`, with the same proportions, camera angle, palette, and detail budget. It must behave like a sprite extraction guide: four tiny source-sprite views inside invisible `96x96` boxes with most of the sheet left as empty `#ff00ff`, not a conventional large character-turnaround sheet. It may include labels outside the art if useful for human review, but it is not a production raw source, not a runtime spritesheet, and must not be sliced into final frames.
 
 For current Thalla runs, create this reference with image-guided generation from the checked-in PNG references, not another text-only prompt-only attempt. Load these images into the generation context and state their roles before imagegen:
 
@@ -63,7 +63,7 @@ For current Thalla runs, create this reference with image-guided generation from
 - `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`: positive Thalla face/cap/robe appeal only; simplify heavily.
 - `docs/reference/home-field/chibi-style-agent-log-reference.png`: target scale, outline weight, and scene-scale simplicity only; do not copy symbols/costumes.
 
-If the active imagegen path cannot use visible/local reference images, stop and report that image-guided generation is required. Do not keep retrying text-only reference sheets; rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999` proved they still drift into oversized anime/turnaround art even with the tightened prompt.
+If the active imagegen path cannot use visible/local reference images, stop and report that image-guided generation is required. Do not keep retrying text-only reference sheets; rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999` proved they still drift into oversized anime/turnaround art even with the tightened prompt. Do not retry the old image-guided turnaround wording unchanged either; rollout `codex-019f140b-07a4-7e10-85e1-f64c9d8a0bdb` loaded the visible references and still produced large painterly turnaround figures instead of tiny sprite-box views.
 
 Generate final idle/walk states as one coherent `8x4` state sheet for the same character, saved under:
 
@@ -179,7 +179,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - no glossy anime eyes, eyelashes, or huge white portrait eyes; eyes must be small dark seed/dot features, much smaller than the reference screenshot's biggest facial read, and should not dominate the head
 - no realistic doll-photo rendering, glossy plastic toy rendering, fashion-doll proportions, or porcelain figurine material study
 - no dense cap spots, scattered gold freckles, robe filigree, many tear/drop marks, or baked blob/cast shadows; if a detail does not read as one of the few large identity marks at `64px`, remove it
-- no earrings, fashion jewelry, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, repeated gold badges, large standalone character-turnaround proportions, quadrant-filling reference art, or over-flat cel/vector/pixel style introduced only to satisfy the palette budget
+- no earrings, fashion jewelry, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, repeated gold badges, large standalone character-turnaround proportions, soft painterly turnaround figures, quadrant-filling reference art, or over-flat cel/vector/pixel style introduced only to satisfy the palette budget
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`. Imagegen prompts may translate that canon into "field-sprite leader" / "calm biostasis stillness" language when "sovereign", "regal", or "sacred regalia" repeatedly pulls in jewelry-like ornament.
 

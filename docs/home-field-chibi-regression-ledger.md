@@ -452,7 +452,7 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- `npm run game:home-field:next-chibi-proof` now prints a copyable reference-turnaround prompt so agents do not hand-compose this fragile prompt;
+- `npm run game:home-field:next-chibi-proof` now prints a copyable reference prompt so agents do not hand-compose this fragile prompt;
 - Thalla's prompt, contract, style reference, and run prompt now say to represent sovereignty through cap silhouette, robe blocks, posture, and `1-2` flat mycelium/spore marks only;
 - crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, ornamental regalia, and decorative trim clusters are explicit rejection signals.
 
@@ -466,7 +466,7 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- the copyable reference prompt now asks for a miniature sprite-reference turnaround, generous empty magenta space, and `64px` readability first;
+- the copyable reference prompt now asks for a tiny sprite-scale reference sheet, generous empty magenta space, and `64px` readability first;
 - imagegen-facing wording uses "field-sprite leader" / "calm biostasis stillness" instead of repeating royal/regalia triggers;
 - status markers are expanded to reject royal regalia, robe borders, clasps, collar jewels, and repeated gold badges;
 - after two exact-prompt reference attempts fail the same palette/style/status gate, the run must stop and report instead of burning more blind retries.
@@ -501,6 +501,23 @@ The active Stage 1 contract is:
 - if the active imagegen path cannot use visible/local reference images, the run must stop and report that image-guided generation is required;
 - repeated same-gate failures after image-guided attempts still stop after two tries.
 
+### 32. Image-Guided Prompt Still Produced Oversized Turnaround Art
+
+**Symptom:** The 2026-06-29 run from rollout `codex-019f140b-07a4-7e10-85e1-f64c9d8a0bdb` followed the image-guided workflow: it loaded the checked-in previous-best, liked Thalla, and style-reference PNGs; made two exact-prompt built-in imagegen attempts; claimed the generated PNGs; mechanically verified the saved reference; and stopped correctly at the reference gate. Both generated references still failed: the figures were large polished turnaround characters instead of tiny `96x96` source-sprite views, the palette stayed bloated with many cream/beige/gold/blush tones, cap and robe shading stayed painterly, side shapes still risked hair/wig reads, and repeated gold cap/robe marks returned.
+
+**Decision that led there:** We treated "visible reference images loaded before imagegen" plus the tightened exact prompt as enough to change the model's output mode. The prompt still called the result a turnaround sheet and left enough canvas/detail ambiguity for the model to create attractive high-resolution character-sheet art.
+
+**Why it regressed:** The active built-in imagegen path may have seen the references, but the output still optimized for a polished character turnaround rather than a sprite extraction guide. This proves that visible references alone are not a durable control unless the prompt also pins figure occupancy and sheet layout to small sprite boxes.
+
+**Evidence:** Rollout `/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019f140b-07a4-7e10-85e1-f64c9d8a0bdb-rollout-2026-06-29T16-41-35-019f140b-07a4-7e10-85e1-f64c9d8a0bdb.jsonl` loaded the three reference images at lines `83`-`85`, generated the first and second references at lines `115` and `131`, claimed the second reference at line `135`, and received a visual-critic failure at line `170`. The saved reference was `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`, `1774x887`, sha256 `0c1d8d4993b270040a2802b737ac211b7e67b9d3eca37bb51d46a90b7204a9b6`.
+
+**Guardrails added:**
+
+- the copyable reference prompt now calls the output a sprite-box reference sheet rather than a conventional turnaround sheet;
+- layout now requires four tiny invisible `96x96` source-sprite boxes, each character staying inside its box, with at least `70%` empty `#ff00ff` sheet space;
+- the 2026-06-29 image-guided attempts are a negative example for large painterly turnaround figures;
+- another run should not repeat the old image-guided turnaround prompt unchanged; if the sprite-box prompt still fails twice, stop and change generation method or ask for explicit user direction instead of continuing blind retries.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -526,4 +543,5 @@ The active Stage 1 contract is:
 21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.
 22. Do not keep retrying the exact same reference prompt after repeated same-cause reference-gate failures. Fix the persisted prompt/helper or stop for review.
 23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, small seed/dot eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.
-24. Do not run more text-only Thalla reference-turnaround attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as visible image inputs, or stop and ask for an image-guided/local-reference generation path.
+24. Do not run more text-only Thalla reference attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as visible image inputs, or stop and ask for an image-guided/local-reference generation path.
+25. Do not repeat the pre-2026-06-29 image-guided turnaround prompt unchanged. The reference prompt must behave like a sprite-box extraction guide with tiny `96x96` occupancy and mostly empty magenta space; if that still fails twice, change the generation method or ask for explicit user direction.
