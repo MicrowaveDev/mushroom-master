@@ -40,10 +40,10 @@ The pipeline requires a real PNG at a known filesystem path. A generated image t
 Allowed source paths are:
 
 - confirmed built-in imagegen output that the same agent context can save or recover as a file, and for image-guided Thalla proof art can attach the checked-in reference PNGs as actual image inputs;
-- supplied local PNG inputs named by the run;
+- supplied local proof-source PNG inputs named by the run, not checked-in style/reference PNGs;
 - explicit CLI imagegen fallback when the user requested it and credentials are configured.
 
-Do not report a generated asset as complete until the PNG exists at the documented repo path and the stage-specific verifier has passed.
+Do not report a generated asset as complete until the PNG exists at the documented repo path and the stage-specific verifier has passed. A filesystem path to a PNG under `docs/reference/home-field/` is reference material only. It is not a source-input method, not a proof source PNG, and not a substitute for actual reference-image binding in the generation call.
 
 ### IG-3. Preflight Must Be The First Expensive Gate
 
@@ -71,7 +71,7 @@ After that diagnostic render, run:
 npm run game:home-field:find-imagegen-output -- --since-minutes=5
 ```
 
-Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image` or mentioning them in the text prompt is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for local PNG inputs or explicit reference-capable CLI fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
+Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image`, mentioning them in the text prompt, or listing repository paths to them is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for fresh proof source PNG inputs or explicit reference-capable CLI fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
 
 For actual proof art after preflight passes, do not repeat the manual finder/copy/hash/verifier loop. If built-in imagegen writes a discoverable file outside the repo, claim it into the documented proof path:
 

@@ -37,6 +37,11 @@ function parseLocalInputs(value) {
     .filter(Boolean);
 }
 
+function normalizeRepoRelative(inputPath) {
+  const resolved = path.resolve(repoRoot, inputPath);
+  return path.relative(repoRoot, resolved).split(path.sep).join('/');
+}
+
 function main() {
   const codexHome = process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex');
   const cliPath = path.join(codexHome, 'skills/.system/imagegen/scripts/image_gen.py');
@@ -49,7 +54,8 @@ function main() {
   const builtinReady = builtinDiskConfirmed && builtinReferencesConfirmed && !builtinDisabled;
   const localInputs = parseLocalInputs(process.env.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS);
   const missingLocalInputs = localInputs.filter((inputPath) => !fileExists(path.resolve(repoRoot, inputPath)));
-  const localInputsReady = localInputs.length > 0 && missingLocalInputs.length === 0;
+  const rejectedLocalInputs = localInputs.filter((inputPath) => normalizeRepoRelative(inputPath).startsWith('docs/reference/home-field/'));
+  const localInputsReady = localInputs.length > 0 && missingLocalInputs.length === 0 && rejectedLocalInputs.length === 0;
   const ok = cliReady || builtinReady || localInputsReady;
 
   console.log('# Home Field Chibi Proof Preflight');
@@ -70,6 +76,9 @@ function main() {
   if (missingLocalInputs.length > 0) {
     console.log(`- missing local image inputs: ${missingLocalInputs.join(', ')}`);
   }
+  if (rejectedLocalInputs.length > 0) {
+    console.log(`- rejected local image inputs: ${rejectedLocalInputs.join(', ')}`);
+  }
 
   if (!ok) {
     console.error('');
@@ -78,11 +87,14 @@ function main() {
     console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
     console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
     console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, after the user explicitly requests CLI fallback and the path can use the required local/reference image inputs');
-    console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing source PNG paths separated by ${JSON.stringify(path.delimiter)}`);
+    console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing proof source PNG paths separated by ${JSON.stringify(path.delimiter)}, not checked-in docs/reference style images`);
     console.error('');
     console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
     console.error('');
     console.error('Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding.');
+    if (rejectedLocalInputs.length > 0) {
+      console.error('The checked-in docs/reference PNGs are style/reference material only. They are not supplied proof source PNGs and must not be used to bypass reference-capable imagegen.');
+    }
     console.error('');
     if (!builtinDisabled && !builtinReferencesConfirmed) {
       console.error('Do not run the built-in output diagnostic yet: it proves disk capture only and cannot unblock this Thalla proof until reference-image input binding is confirmed.');

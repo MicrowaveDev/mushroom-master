@@ -1509,10 +1509,13 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Copyable Sprite-Box Reference Prompt/);
   assert.match(result.stdout, /attach these checked-in PNGs as actual image inputs/);
   assert.match(result.stdout, /with those local PNGs attached as actual image inputs/);
+  assert.match(result.stdout, /listing their filesystem paths is not enough/);
+  assert.match(result.stdout, /only exposes a prompt field/);
   assert.match(result.stdout, /Method gate after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070/);
   assert.match(result.stdout, /do not run this unchanged through the same built-in sprite-box imagegen path again/);
   assert.match(result.stdout, /concrete method change/);
-  assert.match(result.stdout, /Viewing the PNGs in chat is not enough/i);
+  assert.match(result.stdout, /checked-in docs\/reference PNGs are style references, not supplied proof source PNGs/);
+  assert.match(result.stdout, /viewing the PNGs in chat or listing their filesystem paths is not enough/i);
   assert.match(result.stdout, /Do not run this as another text-only generation/);
   assert.match(result.stdout, /sprite-box reference sheet/);
   assert.match(result.stdout, /Input images: use the attached checked-in reference images as guidance/);
@@ -1578,6 +1581,8 @@ test('[home-field] chibi proof launcher carries built-in imagegen capability con
   assert.match(prompt, /If using Codex Desktop built-in imagegen after that separate method change/);
   assert.match(prompt, /I confirm it can save discoverable PNGs and use the checked-in reference PNGs as actual image inputs/);
   assert.match(prompt, /Capability flags are not the method change/);
+  assert.match(prompt, /listing docs\/reference PNG paths is not image attachment/);
+  assert.match(prompt, /Do not set `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` to the checked-in PNGs under `docs\/reference\/home-field\/`/);
   assert.match(prompt, /stop after chibi-proof-context, preflight, and next-chibi-proof/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
@@ -1609,6 +1614,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
   assert.match(result.stdout, /Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs/);
+  assert.match(result.stdout, /Local-input warning: docs\/reference PNGs are style references only/);
+  assert.match(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs/);
   assert.match(result.stdout, /do not run the probe when reference binding is unavailable/);
   assert.match(result.stdout, /Blocker reporting warning: if preflight or the method gate blocks the run/);
   assert.match(result.stdout, /no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred/);
@@ -2113,6 +2120,30 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stderr, /Do not archive stale files before preflight passes/);
   assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
+});
+
+test('[home-field] chibi proof preflight rejects checked-in style references as local source inputs', () => {
+  const checkedInReference = 'docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png';
+  const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
+      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: checkedInReference,
+      HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
+      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
+    },
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /local image inputs supplied: 1/);
+  assert.match(result.stdout, /rejected local image inputs: docs\/reference\/home-field\/chibi-thalla-previous-best-2026-06-26-state-sheet\.png/);
+  assert.match(result.stderr, /checked-in docs\/reference style images/);
+  assert.match(result.stderr, /style\/reference material only/);
+  assert.match(result.stderr, /must not be used to bypass reference-capable imagegen/);
 });
 
 test('[home-field] chibi proof preflight allows output probe only after reference binding is confirmed', () => {

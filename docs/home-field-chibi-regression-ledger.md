@@ -633,6 +633,20 @@ The active Stage 1 contract is:
 - `RUN_CHIBI_PROOF_PROMPT.md`, `docs/home-field-agent-flow.md`, and `home-field-chibi-proof-context.js` now state that `next-chibi-proof` is read-only and still required before a blocked handoff;
 - the generated `next-chibi-proof` workflow text now says a preflight or method-gate failure stops before archive/imagegen but must include the helper output in the blocker report.
 
+### 40. Filesystem Paths To Reference PNGs Still Are Not Image Inputs
+
+**Symptom:** Rollout `codex-019f1a98-49a9-7980-822b-35bf3d66b44f` used a launcher that named the three checked-in PNG references as the concrete method/source-input change. The agent correctly inspected the available built-in `image_gen` surface, found that it exposed only a `prompt` field, and stopped before imagegen. It ran `chibi-proof-context`, `preflight-chibi-proof`, and `next-chibi-proof`, left `mushroom-master` clean, and did not archive stale files or overwrite app-facing PNGs.
+
+**What was correct:** The run did not falsely set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`, did not run the disk-output probe, and did not treat viewed or path-named PNGs as actual image inputs.
+
+**What was missing in the flow:** The previous short prompt could still make a human or agent think "use these checked-in PNG paths" was a concrete method change. It is not. A list of repository paths is still text-only unless the imagegen call can bind those files as images. The existing `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` preflight branch also accepted any existing file path, which meant someone could accidentally point it at `docs/reference/home-field/*.png` and make preflight pass without a real proof source.
+
+**Guardrails added:**
+
+- the launcher, imagegen requirements, candidate contract, agent flow, and generated prompt output now say that listing filesystem paths to checked-in reference PNGs is not image attachment;
+- `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` now rejects `docs/reference/home-field/` paths, because those are style references rather than proof source PNGs;
+- the next production-ready run must either use a reference-capable image/editing tool surface that truly attaches the PNGs, explicit CLI/API credentials, or fresh proof source PNGs that are not the checked-in style references.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -667,3 +681,4 @@ The active Stage 1 contract is:
 30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.
 31. Do not start another unchanged built-in sprite-box reference attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. First change the generation method/tool/source-input path, or stop and report that the current built-in prompt path is exhausted.
 32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
+33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable CLI/API support, or separate fresh proof source PNGs.
