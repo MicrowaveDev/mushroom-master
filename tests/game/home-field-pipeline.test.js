@@ -1278,6 +1278,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stdout, /reference-image input binding/);
   assert.match(result.stdout, /diagnostic non-candidate built-in imagegen probe/);
+  assert.match(result.stdout, /reference-image input binding is already confirmed/);
   assert.match(result.stdout, /--since-minutes=5/);
   assert.match(result.stdout, /same-agent file output and reference-image input binding are confirmed/);
   assert.match(result.stdout, /same agent context that will run imagegen/);
@@ -1381,6 +1382,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
   assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
   assert.match(result.stdout, /Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs/);
+  assert.match(result.stdout, /do not run the probe when reference binding is unavailable/);
   assert.match(result.stdout, /archive-stale-chibi-proof/);
   assert.match(result.stdout, /claim-imagegen-output/);
   assert.match(result.stdout, /recover-chibi-alpha/);
@@ -1814,7 +1816,7 @@ test('[home-field] chibi quality validator rejects soft low-contrast sheets', ()
   }
 });
 
-test('[home-field] chibi proof preflight blocks unconfirmed built-in imagegen disk output', () => {
+test('[home-field] chibi proof preflight blocks missing built-in reference binding before output probe', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
@@ -1839,11 +1841,35 @@ test('[home-field] chibi proof preflight blocks unconfirmed built-in imagegen di
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stderr, /same agent context that will run imagegen/);
   assert.match(result.stderr, /Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding/);
-  assert.match(result.stderr, /diagnostic non-candidate image_gen probe/);
-  assert.match(result.stderr, /find-imagegen-output -- --since-minutes=5/);
+  assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
+  assert.match(result.stderr, /cannot unblock this Thalla proof until reference-image input binding is confirmed/);
+  assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
+  assert.doesNotMatch(result.stderr, /find-imagegen-output -- --since-minutes=5/);
   assert.match(result.stderr, /Do not archive stale files before preflight passes/);
   assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
+});
+
+test('[home-field] chibi proof preflight allows output probe only after reference binding is confirmed', () => {
+  const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+      HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '1',
+      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
+      HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
+    },
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
+  assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: yes/);
+  assert.match(result.stderr, /reference-image input binding is already confirmed/);
+  assert.match(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
+  assert.match(result.stderr, /find-imagegen-output -- --since-minutes=5/);
 });
 
 test('[home-field] chibi proof preflight blocks built-in imagegen without confirmed reference inputs', () => {
@@ -1864,6 +1890,8 @@ test('[home-field] chibi proof preflight blocks built-in imagegen without confir
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: yes/);
   assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: no/);
   assert.match(result.stderr, /reference-image input binding/);
+  assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
+  assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
 });
 
 test('[home-field] chibi proof preflight accepts confirmed built-in disk output and reference inputs', () => {

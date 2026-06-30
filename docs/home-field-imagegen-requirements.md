@@ -56,7 +56,7 @@ npm run game:home-field:preflight-chibi-proof
 
 If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
-If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files.
+If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed while reference-image input binding is already confirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files. Do not run this probe when reference-image input binding is unavailable; it proves file capture only and cannot unblock current Thalla proof art by itself.
 
 After that diagnostic render, run:
 
@@ -64,7 +64,7 @@ After that diagnostic render, run:
 npm run game:home-field:find-imagegen-output -- --since-minutes=5
 ```
 
-Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only after confirming reference-image input binding. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image` or mentioning them in the text prompt is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for local PNG inputs or explicit reference-capable CLI fallback; do not run broad filesystem searches, create fallback art, or move stale evidence.
+Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image` or mentioning them in the text prompt is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for local PNG inputs or explicit reference-capable CLI fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
 
 For actual proof art after preflight passes, do not repeat the manual finder/copy/hash/verifier loop. If built-in imagegen writes a discoverable file outside the repo, claim it into the documented proof path:
 

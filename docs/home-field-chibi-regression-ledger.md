@@ -536,6 +536,22 @@ The active Stage 1 contract is:
 - docs and generated helper output now say `view_image` plus text prompt references is not image-guided generation;
 - future runs should stop at preflight unless they have a real reference-capable imagegen path, supplied local source PNG inputs, or explicit reference-capable CLI fallback.
 
+### 34. Disk-Output Probe Ran Without Reference Binding
+
+**Symptom:** The 2026-06-30 run from rollout `codex-019f161e-558d-73c3-ac5f-20f094622363` followed the early preflight gate and correctly produced no Thalla candidate, but it still ran one built-in diagnostic blue-square imagegen probe after preflight reported both built-in disk output and built-in reference-input binding were unconfirmed.
+
+**Decision that led there:** The executable preflight failure text still said "If built-in imagegen is the intended path, run one tiny diagnostic" even when the missing blocker was reference-image input binding. The agent reasonably followed that helper output and spent one imagegen call proving disk capture.
+
+**Why it regressed:** The disk probe proves only `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`. It cannot prove `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` and cannot make current Thalla proof art legal by itself. After regression 33, reference binding is the higher-priority gate.
+
+**Evidence:** Rollout `/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019f161e-558d-73c3-ac5f-20f094622363-rollout-2026-06-30T02-21-54-019f161e-558d-73c3-ac5f-20f094622363.jsonl` failed preflight at line `29` with both built-in confirmations missing, generated the diagnostic blue square at lines `35`-`36`, located it at line `39`, and stopped cleanly at line `45`.
+
+**Guardrails added:**
+
+- the built-in output probe is now allowed only when reference-image input binding is already confirmed and disk output is the remaining blocker;
+- preflight now says not to run the diagnostic when reference binding is unavailable because it proves file capture only;
+- context/helper output and docs now repeat that a missing reference-capable path is a clean stop before any imagegen call.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -564,3 +580,4 @@ The active Stage 1 contract is:
 24. Do not run more text-only Thalla reference attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as actual image inputs to imagegen, or stop and ask for a reference-capable generation path.
 25. Do not repeat the pre-2026-06-29 image-guided turnaround prompt unchanged. The reference prompt must behave like a sprite-box extraction guide with tiny `96x96` occupancy and mostly empty magenta space; if that still fails twice, change the generation method or ask for explicit user direction.
 26. Do not call a Thalla run image-guided unless the actual imagegen request can attach the checked-in PNGs as image inputs. `view_image` and prompt text are not enough.
+27. Do not run the built-in disk-output diagnostic probe when reference-image input binding is unavailable. The probe proves file capture only and cannot unblock current Thalla proof art.

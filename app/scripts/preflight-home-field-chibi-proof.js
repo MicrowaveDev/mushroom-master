@@ -82,8 +82,14 @@ function main() {
     console.error('');
     console.error('Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding.');
     console.error('');
-    console.error('If built-in imagegen is the intended path, run one tiny diagnostic non-candidate image_gen probe in this same agent context, then run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`.');
-    console.error('Count only a file newer than the probe start; use `--include-temp` for one bounded retry. If a file is found, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 plus HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 only after reference-image input binding is also confirmed; otherwise stop. Do not archive stale files before preflight passes.');
+    if (!builtinDisabled && !builtinReferencesConfirmed) {
+      console.error('Do not run the built-in output diagnostic yet: it proves disk capture only and cannot unblock this Thalla proof until reference-image input binding is confirmed.');
+      console.error('First provide a reference-capable imagegen path, supplied local source PNG inputs, or explicit reference-capable CLI fallback.');
+    } else if (!builtinDisabled && !builtinDiskConfirmed) {
+      console.error('Because reference-image input binding is already confirmed and built-in disk capture is the remaining blocker, run one tiny diagnostic non-candidate image_gen probe in this same agent context, then run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`.');
+      console.error('Count only a file newer than the probe start; use `--include-temp` for one bounded retry. If a file is found, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 plus HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    }
+    console.error('Do not archive stale files before preflight passes.');
     process.exit(1);
   }
 

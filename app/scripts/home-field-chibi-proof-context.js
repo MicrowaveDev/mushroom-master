@@ -29,7 +29,7 @@ function main() {
   console.log('');
   console.log('Required commands:');
   console.log('  npm run game:home-field:preflight-chibi-proof');
-  console.log('  npm run game:home-field:find-imagegen-output -- --since-minutes=5  # diagnostic only after an unconfirmed built-in output preflight failure');
+  console.log('  npm run game:home-field:find-imagegen-output -- --since-minutes=5  # diagnostic only after reference binding is confirmed and built-in disk output is still unconfirmed');
   console.log('  npm run game:home-field:archive-stale-chibi-proof -- thalla');
   console.log('  npm run game:home-field:next-chibi-proof');
   console.log('  npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
@@ -53,7 +53,7 @@ function main() {
   console.log(`  candidate: ${candidatePath} (${exists(candidatePath) ? 'exists' : 'missing'})`);
   console.log('');
   console.log('Freshness warning: existing .agent files are not proof of a fresh run. After rejection, run archive-stale-chibi-proof only after preflight passes, then regenerate and bind the new source chain in candidate-evidence.manifest.json.');
-  console.log('Output probe warning: the only imagegen allowed before preflight passes is one tiny non-candidate built-in output probe from the same agent context, followed by the bounded locator command above.');
+  console.log('Output probe warning: the only imagegen allowed before preflight passes is one tiny non-candidate built-in output probe after reference-image input binding is confirmed and disk output is still unconfirmed; do not run the probe when reference binding is unavailable.');
   console.log('Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs. Viewing them in chat or naming them in text is not image-guided generation.');
   console.log('Frame contract: generate one coherent 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
   console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');
