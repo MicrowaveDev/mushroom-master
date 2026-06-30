@@ -1463,7 +1463,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Generation mode: chibi active-roster candidate root/);
   assert.match(result.stdout, /thalla \(character\)/);
   assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof/);
-  assert.match(result.stdout, /stop before stale-file archive if it fails/);
+  assert.match(result.stdout, /this read-only `npm run game:home-field:next-chibi-proof` helper/);
+  assert.match(result.stdout, /if preflight or the method gate fails, stop before stale-file archive\/imagegen but include this helper output in the blocker report/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
@@ -1572,8 +1573,12 @@ test('[home-field] chibi proof launcher carries built-in imagegen capability con
   const prompt = fs.readFileSync(runChibiProofPromptPath, 'utf8');
 
   assert.match(prompt, /Short Launcher Prompt/);
-  assert.match(prompt, /Use Codex Desktop built-in imagegen for proof art/);
+  assert.match(prompt, /First satisfy the current method gate/);
+  assert.match(prompt, /do not repeat the unchanged built-in sprite-box imagegen path/);
+  assert.match(prompt, /If using Codex Desktop built-in imagegen after that separate method change/);
   assert.match(prompt, /I confirm it can save discoverable PNGs and use the checked-in reference PNGs as actual image inputs/);
+  assert.match(prompt, /Capability flags are not the method change/);
+  assert.match(prompt, /stop after chibi-proof-context, preflight, and next-chibi-proof/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(prompt, /fresh Codex sessions do not inherit shell environment variables or prior chat confirmations/);
@@ -1590,6 +1595,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Built-in imagegen environment prefix/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stdout, /use only when the launcher\/user explicitly confirms both/);
+  assert.match(result.stdout, /next-chibi-proof  # read-only; run before a blocker handoff even when preflight or the method gate fails/);
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
@@ -1604,6 +1610,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
   assert.match(result.stdout, /Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs/);
   assert.match(result.stdout, /do not run the probe when reference binding is unavailable/);
+  assert.match(result.stdout, /Blocker reporting warning: if preflight or the method gate blocks the run/);
+  assert.match(result.stdout, /no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred/);
   assert.match(result.stdout, /archive-stale-chibi-proof/);
   assert.match(result.stdout, /claim-imagegen-output/);
   assert.match(result.stdout, /recover-chibi-alpha/);

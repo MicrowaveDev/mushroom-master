@@ -619,6 +619,20 @@ The active Stage 1 contract is:
 - `RUN_CHIBI_PROOF_PROMPT.md` and `docs/home-field-agent-flow.md` require a concrete method change before another reference attempt, such as a different reference-capable generation/editing path, supplied local source PNGs, or a revised helper/prompt that changes the method rather than only adding more negative wording;
 - if no method change is available, the next run should stop after `next-chibi-proof` and report the blocker instead of spending more built-in imagegen calls on the unchanged prompt.
 
+### 39. Method-Gate Stop Skipped The Read-Only Scoped Prompt Helper
+
+**Symptom:** Rollout `codex-019f1a83-9c67-7d42-85d9-fe105a6a9f75` correctly stopped before imagegen, but it did not run `npm run game:home-field:next-chibi-proof` before the final blocker report. The source request at line `6` asked for the method gate and said to stop if no method change was available. The agent ran `task:context` (lines `10`-`11`), read the run doc and imagegen requirements (lines `14`-`24`), ran `chibi-proof-context` and `preflight-chibi-proof` (lines `28`-`31`), then stopped at lines `33` and `38` because preflight had no confirmed built-in disk save, no confirmed reference-image binding, no explicit CLI fallback, and no supplied local source PNG inputs.
+
+**What was correct:** No imagegen call happened, no stale files were archived, no grouped state sheet or candidate was produced, and no app-facing PNG was overwritten. This obeyed the safety side of the method gate.
+
+**What was missing:** The run doc also said the no-method case should stop after `next-chibi-proof`, and the final-response contract requires reporting whether that helper ran. Because the preflight stop rule appeared earlier than the read-only helper requirement, the agent interpreted preflight failure as a full stop and skipped the scoped prompt/method-gate output.
+
+**Guardrails added:**
+
+- the short launcher now says capability flags are not the method change and that no-method stops still run `chibi-proof-context`, preflight, and `next-chibi-proof`;
+- `RUN_CHIBI_PROOF_PROMPT.md`, `docs/home-field-agent-flow.md`, and `home-field-chibi-proof-context.js` now state that `next-chibi-proof` is read-only and still required before a blocked handoff;
+- the generated `next-chibi-proof` workflow text now says a preflight or method-gate failure stops before archive/imagegen but must include the helper output in the blocker report.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -652,3 +666,4 @@ The active Stage 1 contract is:
 29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.
 30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.
 31. Do not start another unchanged built-in sprite-box reference attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. First change the generation method/tool/source-input path, or stop and report that the current built-in prompt path is exhausted.
+32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
