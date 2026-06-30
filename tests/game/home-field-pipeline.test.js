@@ -1508,6 +1508,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Copyable Sprite-Box Reference Prompt/);
   assert.match(result.stdout, /attach these checked-in PNGs as actual image inputs/);
   assert.match(result.stdout, /with those local PNGs attached as actual image inputs/);
+  assert.match(result.stdout, /Method gate after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070/);
+  assert.match(result.stdout, /do not run this unchanged through the same built-in sprite-box imagegen path again/);
+  assert.match(result.stdout, /concrete method change/);
   assert.match(result.stdout, /Viewing the PNGs in chat is not enough/i);
   assert.match(result.stdout, /Do not run this as another text-only generation/);
   assert.match(result.stdout, /sprite-box reference sheet/);

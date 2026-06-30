@@ -603,6 +603,22 @@ The active Stage 1 contract is:
 - `verify-chibi-proof-files -- --reference` now decodes the PNG, excludes transparent/hot-magenta background, finds major non-magenta connected blobs, and rejects blobs larger than the `128x128px` tolerance for the `96x96` sprite-box contract;
 - the chibi contract, agent flow, and run prompt now state that high magenta coverage does not compensate for oversized sprite occupancy.
 
+### 38. Compact Prompt And Occupancy Gate Still Did Not Change Built-In Art Mode
+
+**Symptom:** The follow-up 2026-06-30 run from rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070` used the compact-canvas prompt and the new occupancy verifier. The workflow behaved correctly: preflight passed, stale evidence was archived, two reference-bound built-in imagegen attempts were made, both were claimed, and no grouped state sheet or candidate was produced. But the art mode did not improve enough. Attempt 1 was `1445x1088`, sha256 `47e1afd760e6c2191097a8c2121e20f52878234549f39ebfc1487ce568cf1f56`, with oversized blobs up to `203x251` and `79` significant exact colors. Attempt 2 was `1448x1086`, sha256 `ed02134855b388fc0f4e261f6b874649c0cd7722613a0cec5dbbbcf7a7b3652a`, with oversized blobs up to `181x223`, `69` significant exact colors, `123` minor colors, and `60` coarse 32-step bins.
+
+**Decision that led there:** After adding the compact-canvas wording and mechanical occupancy verifier, the next run still tried the same built-in sprite-box reference generation path. That was reasonable as a validation run for the new guard, but it proved the guard catches the failure rather than proving the prompt can escape it.
+
+**Why it regressed:** The built-in imagegen path continued to interpret Thalla as a polished four-view anime/sticker turnaround. The high-resolution output alone is not the whole problem: a throwaway normalization check resized the live attempt to `512x384`, but palette audit still failed with `72` significant exact colors, `114` minor colors, and `68` coarse 32-step bins. The semantic failures also remained visible: glossy eyes, hair/wig-like locks under the cap, repeated cap/robe gold marks, and ornamental clasp/trim drift.
+
+**Evidence:** Rollout line `7` used the fixed short launcher. Lines `38`-`39` passed preflight. Lines `116`-`142` cover the two imagegen attempts, claims, verifier failures, and palette audits. Lines `164` and `169` show independent Visual Critic and Validator agreement to stop. Final line `188` reports no grouped state sheet, split frames, candidate production, candidate evidence, preview, `record-chibi-verdict`, or app-facing overwrite. The live reference and palette audit are `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png` and `.agent/home-field-workspace/review/thalla-reference-palette-audit.json`.
+
+**Guardrails added:**
+
+- the built-in sprite-box reference prompt is now marked as exhausted for unchanged same-path retries after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`;
+- `RUN_CHIBI_PROOF_PROMPT.md` and `docs/home-field-agent-flow.md` require a concrete method change before another reference attempt, such as a different reference-capable generation/editing path, supplied local source PNGs, or a revised helper/prompt that changes the method rather than only adding more negative wording;
+- if no method change is available, the next run should stop after `next-chibi-proof` and report the blocker instead of spending more built-in imagegen calls on the unchanged prompt.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -635,3 +651,4 @@ The active Stage 1 contract is:
 28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
 29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.
 30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.
+31. Do not start another unchanged built-in sprite-box reference attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. First change the generation method/tool/source-input path, or stop and report that the current built-in prompt path is exhausted.

@@ -433,6 +433,8 @@ function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } =
     '',
     'Paste this exact prompt into imagegen for the non-production reference sheet, with those local PNGs attached as actual image inputs. Do not hand-compose or add extra style terms. Do not run this as another text-only generation; viewing the PNGs in chat is not enough. If the imagegen path cannot attach the checked-in PNGs as actual image inputs to the generation call, stop and report that image-guided generation is required.',
     '',
+    'Method gate after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070: do not run this unchanged through the same built-in sprite-box imagegen path again. The reference-bound compact-canvas prompt still produced oversized anime/sticker turnaround art with palette bloat. Before another reference attempt, use a concrete method change such as a different reference-capable generation/editing path, supplied local source PNGs, or a revised helper/prompt that changes the generation method rather than only adding more negative wording. If no method change is available, stop and report this blocker.',
+    '',
     '```text',
     'Create one non-production sprite-box reference sheet for Thalla only, for the Mushroom Battles Home Field chibi proof.',
     '',
