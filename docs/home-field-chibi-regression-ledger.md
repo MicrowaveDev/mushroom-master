@@ -569,6 +569,24 @@ The active Stage 1 contract is:
 - cleanup or quantization must not override the biology/style gate;
 - `npm run game:home-field:palette-audit -- <png>` reports exact significant colors, coarse visible bins, top colors, and a swatch PNG before treating a chibi as palette-reviewed; chibi candidate evidence now requires the reference, state-sheet, and candidate palette audit artifacts and rejects stale audit source hashes.
 
+### 36. Fresh Launcher Lost Built-In Imagegen Capability Confirmation
+
+**Symptom:** The 2026-06-30 run from rollout `codex-019f1a45-38fe-7552-997d-d63073e2127f` produced no production-ready image because it never reached imagegen. It followed the short launcher prompt, ran `chibi-proof-context` and `preflight-chibi-proof`, then stopped with built-in disk save unconfirmed, built-in reference-image input binding unconfirmed, `OPENAI_API_KEY` missing, and no local image inputs supplied.
+
+**Decision that led there:** The launcher prompt stayed minimal and pointed to `RUN_CHIBI_PROOF_PROMPT.md`, while the capability proof lived only in shell environment variables (`HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`) or prior chat context. A fresh Codex session did not inherit those confirmations.
+
+**Why it regressed:** The stricter preflight gate was correct, but the launcher did not carry the operator's current built-in-imagegen capability assertion into the new session. The result was a clean but unproductive one-minute run: safe for files, wrong for the user's goal of another production-ready attempt.
+
+**Evidence:** Rollout `/Users/microwavedev/workspace/microwave-hub/agent-viewer/temp/codex-019f1a45-38fe-7552-997d-d63073e2127f-rollout-2026-06-30T21-42-52-019f1a45-38fe-7552-997d-d63073e2127f.jsonl` used the old short launcher at line `6`, failed preflight at line `27` with both built-in confirmations missing, and finaled at line `33` with no reference generation, no state sheet, no candidate, no palette audit, and no app-facing overwrite.
+
+**Guardrails added:**
+
+- the `RUN_CHIBI_PROOF_PROMPT.md` launcher now includes the built-in imagegen capability assertion and tells the agent to set both `HOME_FIELD_BUILTIN_IMAGEGEN_*` flags for proof helper commands;
+- `docs/home-field-imagegen-requirements.md` records that fresh Codex sessions do not inherit shell env or prior chat confirmations;
+- `chibi-proof-context` prints the built-in env prefix as a first-class run note;
+- the generated chibi next-prompt helper prints the same preflight env prefix when built-in imagegen is the intended path;
+- preflight failure text now says to rerun with both flags when the launcher/user explicitly confirmed built-in save plus reference-image input support for the same session.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -599,3 +617,4 @@ The active Stage 1 contract is:
 26. Do not call a Thalla run image-guided unless the actual imagegen request can attach the checked-in PNGs as image inputs. `view_image` and prompt text are not enough.
 27. Do not run the built-in disk-output diagnostic probe when reference-image input binding is unavailable. The probe proves file capture only and cannot unblock current Thalla proof art.
 28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
+29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.

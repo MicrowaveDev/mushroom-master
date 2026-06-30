@@ -55,6 +55,12 @@ For chibi:
 npm run game:home-field:preflight-chibi-proof
 ```
 
+Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can both save discoverable PNGs and attach the checked-in reference PNGs as actual image inputs, run the chibi proof helper commands with:
+
+```bash
+HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 <command>
+```
+
 If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
 If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed while reference-image input binding is already confirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files. Do not run this probe when reference-image input binding is unavailable; it proves file capture only and cannot unblock current Thalla proof art by itself.

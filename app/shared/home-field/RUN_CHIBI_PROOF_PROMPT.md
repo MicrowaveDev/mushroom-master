@@ -7,10 +7,10 @@ Use this file as the canonical instruction set for the next chibi generation run
 Paste this launcher prompt into a fresh Codex session:
 
 ```text
-In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Field chibi Stage 1 proof exactly as documented in app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md.
+In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run the Home Field chibi Stage 1 proof exactly as documented in app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md. Use Codex Desktop built-in imagegen for proof art; I confirm it can save discoverable PNGs and use the checked-in reference PNGs as actual image inputs, so set HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 for all chibi proof helper commands.
 ```
 
-The launcher prompt should stay this short. Do not put evolving art-direction or workflow requirements only in the pasted prompt; persist them below, in `app/shared/home-field/home-field-prompts.json`, and in any helper/test surface required by `docs/home-field-imagegen-requirements.md`.
+The launcher prompt should stay this short. Do not put evolving art-direction or workflow requirements only in the pasted prompt; persist them below, in `app/shared/home-field/home-field-prompts.json`, and in any helper/test surface required by `docs/home-field-imagegen-requirements.md`. The launcher may include the current run's imagegen capability assertion because fresh Codex sessions do not inherit shell environment variables or prior chat confirmations. If using supplied local PNGs or explicit CLI fallback instead of built-in imagegen, replace the second launcher sentence with that capability path.
 
 ## Required Flow
 

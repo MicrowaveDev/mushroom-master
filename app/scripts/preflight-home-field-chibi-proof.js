@@ -80,6 +80,8 @@ function main() {
     console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, after the user explicitly requests CLI fallback and the path can use the required local/reference image inputs');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing source PNG paths separated by ${JSON.stringify(path.delimiter)}`);
     console.error('');
+    console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    console.error('');
     console.error('Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding.');
     console.error('');
     if (!builtinDisabled && !builtinReferencesConfirmed) {

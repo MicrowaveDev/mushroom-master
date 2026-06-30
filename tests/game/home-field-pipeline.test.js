@@ -15,6 +15,7 @@ const candidateEvidenceScriptPath = path.join(repoRoot, 'app/scripts/generate-ho
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const homeFieldPromptsPath = path.join(repoRoot, 'app/shared/home-field/home-field-prompts.json');
+const runChibiProofPromptPath = path.join(repoRoot, 'app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
 const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
@@ -1425,6 +1426,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /stop before stale-file archive if it fails/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
+  assert.match(result.stdout, /launcher\/user explicitly confirmed built-in disk output plus actual reference-image input binding for this same session/);
   assert.match(result.stdout, /reference-image input binding/);
   assert.match(result.stdout, /diagnostic non-candidate built-in imagegen probe/);
   assert.match(result.stdout, /reference-image input binding is already confirmed/);
@@ -1519,6 +1522,17 @@ test('[home-field] placeholder chibi prompt stays legacy-only', () => {
   assert.doesNotMatch(placeholder.constraints, /full 32-frame animation is a later optional polish stage/);
 });
 
+test('[home-field] chibi proof launcher carries built-in imagegen capability confirmation', () => {
+  const prompt = fs.readFileSync(runChibiProofPromptPath, 'utf8');
+
+  assert.match(prompt, /Short Launcher Prompt/);
+  assert.match(prompt, /Use Codex Desktop built-in imagegen for proof art/);
+  assert.match(prompt, /I confirm it can save discoverable PNGs and use the checked-in reference PNGs as actual image inputs/);
+  assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(prompt, /fresh Codex sessions do not inherit shell environment variables or prior chat confirmations/);
+});
+
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
   const result = spawnSync(process.execPath, [chibiContextScriptPath], {
     cwd: repoRoot,
@@ -1527,6 +1541,9 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Thalla Home Field Chibi Proof Context/);
+  assert.match(result.stdout, /Built-in imagegen environment prefix/);
+  assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(result.stdout, /use only when the launcher\/user explicitly confirms both/);
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
@@ -1998,6 +2015,9 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stderr, /same agent context that will run imagegen/);
+  assert.match(result.stderr, /Fresh Codex sessions do not inherit HOME_FIELD_\* flags from prior chats/);
+  assert.match(result.stderr, /If the launcher\/user explicitly confirmed built-in save plus reference-image input support/);
+  assert.match(result.stderr, /rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stderr, /Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding/);
   assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
   assert.match(result.stderr, /cannot unblock this Thalla proof until reference-image input binding is confirmed/);

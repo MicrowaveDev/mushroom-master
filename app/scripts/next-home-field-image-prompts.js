@@ -628,7 +628,7 @@ function main() {
   console.log('');
   console.log('Workflow per asset:');
   if (chibiCandidate) {
-    console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `npm run game:home-field:preflight-chibi-proof`; stop before stale-file archive if it fails.');
+    console.log('  0. Run `npm run game:home-field:chibi-proof-context`, then `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof` only when the launcher/user explicitly confirmed built-in disk output plus actual reference-image input binding for this same session; stop before stale-file archive if it fails.');
     console.log('  1. Read the prompt block and copyable Sprite-Box Reference Prompt below; state the chibi palette, style-preservation, scale/face/biology, and status-simplification plans before imagegen.');
     console.log('  2. If preflight fails only because built-in disk output is unconfirmed and reference-image input binding is already confirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 plus HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 only if a newer file is found.');
     console.log('  3. Run `npm run game:home-field:archive-stale-chibi-proof -- thalla` with the same preflight-passing environment.');
