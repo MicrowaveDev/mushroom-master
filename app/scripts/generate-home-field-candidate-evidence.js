@@ -68,6 +68,24 @@ function hashIfExists(filePath) {
   };
 }
 
+function paletteAuditSummary(filePath) {
+  try {
+    const parsed = loadJson(filePath);
+    return {
+      sourceSha256: parsed.source?.sha256 || null,
+      budgetStatus: parsed.budget?.status || null,
+      budgetNote: parsed.budget?.note || null,
+      exactColorsAtLeastSignificantThreshold: parsed.counts?.exactColorsAtLeastSignificantThreshold ?? null,
+      exactColorsAtLeastMinorThreshold: parsed.counts?.exactColorsAtLeastMinorThreshold ?? null,
+      coarse32StepBinsAtLeastSignificantThreshold: parsed.counts?.coarseBins?.step32?.atLeastSignificantThreshold ?? null
+    };
+  } catch (err) {
+    return {
+      parseError: err.message
+    };
+  }
+}
+
 function characterSourceBase(asset) {
   if (!asset.sourcePath) return asset.id;
   const name = path.basename(asset.sourcePath);
@@ -91,7 +109,64 @@ function chibiFramePaths(asset) {
   ]);
 }
 
-function chibiSourceEvidence(asset, missing) {
+function chibiPaletteAuditEvidence(asset, missing) {
+  if (asset.type !== 'character' || !asset.spritesheet) return null;
+  const entries = [
+    {
+      key: 'reference',
+      label: 'reference sheet',
+      auditFile: `${asset.id}-reference-palette-audit.json`,
+      swatchFile: `${asset.id}-reference-palette-swatch.png`
+    },
+    {
+      key: 'groupedStateSheet',
+      label: 'grouped state sheet',
+      auditFile: `${asset.id}-state-sheet-palette-audit.json`,
+      swatchFile: `${asset.id}-state-sheet-palette-swatch.png`
+    },
+    {
+      key: 'candidateOutput',
+      label: 'candidate spritesheet',
+      auditFile: `${asset.id}-candidate-palette-audit.json`,
+      swatchFile: `${asset.id}-candidate-palette-swatch.png`
+    }
+  ];
+  return Object.fromEntries(entries.map((entry) => {
+    const auditPath = path.join(reviewDir, entry.auditFile);
+    const swatchPath = path.join(reviewDir, entry.swatchFile);
+    const audit = hashIfExists(auditPath);
+    const swatch = hashIfExists(swatchPath);
+    if (!audit) {
+      missing.push(`missing chibi palette audit for ${asset.id} ${entry.label}: ${path.relative(repoRoot, auditPath)}`);
+    }
+    if (audit && !swatch) {
+      missing.push(`missing chibi palette swatch for ${asset.id} ${entry.label}: ${path.relative(repoRoot, swatchPath)}`);
+    }
+    return [entry.key, {
+      audit,
+      swatch,
+      ...(audit ? { summary: paletteAuditSummary(auditPath) } : {})
+    }];
+  }));
+}
+
+function requirePaletteAuditSourceMatch(missing, auditEntry, sourceEvidence, label) {
+  if (!auditEntry?.audit) return;
+  if (auditEntry.summary?.parseError) {
+    missing.push(`unreadable chibi palette audit for ${label}: ${auditEntry.summary.parseError}`);
+    return;
+  }
+  const auditSourceSha256 = auditEntry.summary?.sourceSha256;
+  if (!auditSourceSha256) {
+    missing.push(`chibi palette audit for ${label} is missing source.sha256`);
+    return;
+  }
+  if (sourceEvidence?.sha256 && auditSourceSha256 !== sourceEvidence.sha256) {
+    missing.push(`stale chibi palette audit for ${label}: audit source ${auditSourceSha256} does not match current PNG ${sourceEvidence.sha256}`);
+  }
+}
+
+function chibiSourceEvidence(asset, missing, candidateOutputEvidence = null) {
   if (asset.type !== 'character' || !asset.spritesheet) return null;
   const base = characterSourceBase(asset);
   const rawDir = asset.sourcePath
@@ -113,6 +188,10 @@ function chibiSourceEvidence(asset, missing) {
   }
   const presentFrameHashes = frameHashes.filter(Boolean);
   const frameSetSha256 = bufferSha256(Buffer.from(JSON.stringify(presentFrameHashes, null, 2)));
+  const paletteAudits = chibiPaletteAuditEvidence(asset, missing);
+  requirePaletteAuditSourceMatch(missing, paletteAudits?.reference, reference, `${asset.id} reference sheet`);
+  requirePaletteAuditSourceMatch(missing, paletteAudits?.groupedStateSheet, groupedStateSheet, `${asset.id} grouped state sheet`);
+  requirePaletteAuditSourceMatch(missing, paletteAudits?.candidateOutput, candidateOutputEvidence, `${asset.id} candidate spritesheet`);
   return {
     reference,
     groupedStateSheet,
@@ -122,7 +201,8 @@ function chibiSourceEvidence(asset, missing) {
       missing: missingFrames,
       frameSetSha256,
       frames: presentFrameHashes
-    }
+    },
+    paletteAudits
   };
 }
 
@@ -191,7 +271,9 @@ function candidateEvidenceKey(entries) {
     id: entry.id,
     candidateOutputSha256: entry.candidateOutput?.sha256 || null,
     rawSourceSha256: entry.rawSource?.sha256 || null,
-    referenceSha256: entry.chibiSources?.reference?.sha256 || null
+    referenceSha256: entry.chibiSources?.reference?.sha256 || null,
+    paletteAuditSha256s: Object.fromEntries(Object.entries(entry.chibiSources?.paletteAudits || {})
+      .map(([key, value]) => [key, value.audit?.sha256 || null]))
   })), null, 2)));
 }
 
@@ -276,7 +358,7 @@ function main() {
     const candidateOutput = path.join(candidateRoot, asset.outputPath);
     const rawSource = asset.sourcePath ? path.join(repoRoot, asset.sourcePath) : null;
     const output = hashIfExists(candidateOutput);
-    const chibiSources = chibiSourceEvidence(asset, missing);
+    const chibiSources = chibiSourceEvidence(asset, missing, output);
     if (!output) missing.push(`missing candidate output: ${path.relative(repoRoot, candidateOutput)}`);
     return {
       id,

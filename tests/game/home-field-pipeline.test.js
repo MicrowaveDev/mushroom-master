@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { repoRoot } from '../../app/shared/repo-root.js';
-import { encodeDeterministicPng, readPngRgba, alphaStats } from '../../app/scripts/lib/bitmap-image-toolkit.js';
+import { encodeDeterministicPng, readPngRgba, alphaStats, fileSha256 } from '../../app/scripts/lib/bitmap-image-toolkit.js';
 
 const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js');
 const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
@@ -24,6 +24,7 @@ const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
 const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
 const chibiSplitScriptPath = path.join(repoRoot, 'app/scripts/split-home-field-chibi-state-sheet.js');
+const paletteAuditScriptPath = path.join(repoRoot, 'app/scripts/audit-home-field-chibi-palette.js');
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -52,6 +53,36 @@ function writeFixturePng(filePath, { checkerboard = false } = {}) {
       rgba[i + 3] = 255;
     }
   }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
+function writePaletteBlocksFixture(filePath, colors) {
+  const block = 8;
+  const cols = Math.ceil(Math.sqrt(colors.length));
+  const rows = Math.ceil(colors.length / cols);
+  const width = cols * block;
+  const height = rows * block;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let i = 0; i < rgba.length; i += 4) {
+    rgba[i + 0] = 255;
+    rgba[i + 1] = 0;
+    rgba[i + 2] = 255;
+    rgba[i + 3] = 255;
+  }
+  colors.forEach((rgb, idx) => {
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    for (let y = 0; y < block; y += 1) {
+      for (let x = 0; x < block; x += 1) {
+        const off = ((row * block + y) * width + (col * block + x)) * 4;
+        rgba[off + 0] = rgb[0];
+        rgba[off + 1] = rgb[1];
+        rgba[off + 2] = rgb[2];
+        rgba[off + 3] = 255;
+      }
+    }
+  });
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
@@ -226,6 +257,41 @@ function writeChibiEvidenceSources(rawDir) {
   }
 }
 
+function chibiPaletteAuditFixturePaths() {
+  const reviewDir = path.join(repoRoot, '.agent/home-field-workspace/review');
+  return ['reference', 'state-sheet', 'candidate'].flatMap((stage) => [
+    path.join(reviewDir, `thalla-${stage}-palette-audit.json`),
+    path.join(reviewDir, `thalla-${stage}-palette-swatch.png`)
+  ]);
+}
+
+function writeChibiPaletteAuditArtifacts({ rawDir, candidateOutputAbs }) {
+  const reviewDir = path.join(repoRoot, '.agent/home-field-workspace/review');
+  const sourceByStage = {
+    reference: path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png'),
+    'state-sheet': path.join(rawDir, 'thalla_chibi.states.source.png'),
+    candidate: candidateOutputAbs
+  };
+  for (const stage of ['reference', 'state-sheet', 'candidate']) {
+    const auditPath = path.join(reviewDir, `thalla-${stage}-palette-audit.json`);
+    fs.mkdirSync(path.dirname(auditPath), { recursive: true });
+    fs.writeFileSync(auditPath, JSON.stringify({
+      schemaVersion: 1,
+      source: { sha256: fileSha256(sourceByStage[stage]) },
+      counts: {
+        exactColorsAtLeastSignificantThreshold: 12,
+        exactColorsAtLeastMinorThreshold: 16,
+        coarseBins: { step32: { atLeastSignificantThreshold: 18 } }
+      },
+      budget: {
+        status: 'pass',
+        note: 'fixture palette audit'
+      }
+    }, null, 2));
+    writeSizedTransparentFixture(path.join(reviewDir, `thalla-${stage}-palette-swatch.png`), 16, 16);
+  }
+}
+
 function withPreservedFile(filePath, callback) {
   const existed = fs.existsSync(filePath);
   const backup = existed ? fs.readFileSync(filePath) : null;
@@ -237,6 +303,26 @@ function withPreservedFile(filePath, callback) {
       fs.writeFileSync(filePath, backup);
     } else {
       fs.rmSync(filePath, { force: true });
+    }
+  }
+}
+
+function withPreservedFiles(filePaths, callback) {
+  const backups = filePaths.map((filePath) => ({
+    filePath,
+    existed: fs.existsSync(filePath),
+    data: fs.existsSync(filePath) ? fs.readFileSync(filePath) : null
+  }));
+  try {
+    return callback();
+  } finally {
+    for (const backup of backups) {
+      if (backup.existed) {
+        fs.mkdirSync(path.dirname(backup.filePath), { recursive: true });
+        fs.writeFileSync(backup.filePath, backup.data);
+      } else {
+        fs.rmSync(backup.filePath, { force: true });
+      }
     }
   }
 }
@@ -703,7 +789,7 @@ test('[home-field] candidate evidence manifest binds candidate output hashes', (
 
 test('[home-field] chibi candidate evidence binds reference, grouped source, and split frames', () => {
   const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
-  return withPreservedFile(referencePath, () => {
+  return withPreservedFiles([referencePath, ...chibiPaletteAuditFixturePaths()], () => {
     const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-candidate-evidence-test');
     const outputPath = 'web/public/home-field/characters/thalla/spritesheet.png';
     const candidateRoot = path.join(repoRoot, 'tmp/home-field-chibi-candidate-evidence-candidates');
@@ -717,6 +803,7 @@ test('[home-field] chibi candidate evidence binds reference, grouped source, and
     });
     writeChibiSpritesheet(candidateOutputAbs);
     writeChibiEvidenceSources(rawDir);
+    writeChibiPaletteAuditArtifacts({ rawDir, candidateOutputAbs });
 
     try {
       const result = spawnSync(process.execPath, [
@@ -745,6 +832,9 @@ test('[home-field] chibi candidate evidence binds reference, grouped source, and
       assert.deepEqual(entry.chibiSources.splitFrames.missing, []);
       assert.equal(entry.chibiSources.splitFrames.frames.length, 32);
       assert.match(entry.chibiSources.splitFrames.frameSetSha256, /^[a-f0-9]{64}$/);
+      assert.equal(entry.chibiSources.paletteAudits.reference.summary.budgetStatus, 'pass');
+      assert.equal(entry.chibiSources.paletteAudits.groupedStateSheet.summary.exactColorsAtLeastSignificantThreshold, 12);
+      assert.match(entry.chibiSources.paletteAudits.candidateOutput.swatch.sha256, /^[a-f0-9]{64}$/);
       assert.ok(Array.isArray(manifest.previews));
       assert.match(manifest.candidateEvidenceKey, /^[a-f0-9]{64}$/);
       assert.ok(manifest.recoveredFailureNotes);
@@ -763,7 +853,7 @@ test('[home-field] chibi candidate evidence binds reference, grouped source, and
 test('[home-field] candidate evidence ignores stale recovered failure notes', () => {
   const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
   const notesPath = path.join(repoRoot, '.agent/home-field-workspace/review/recovered-failure-notes.json');
-  return withPreservedFile(referencePath, () => withPreservedFile(notesPath, () => {
+  return withPreservedFiles([referencePath, notesPath, ...chibiPaletteAuditFixturePaths()], () => {
     const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-stale-notes-test');
     const outputPath = 'web/public/home-field/characters/thalla/spritesheet.png';
     const candidateRoot = path.join(repoRoot, 'tmp/home-field-chibi-stale-notes-candidates');
@@ -777,6 +867,7 @@ test('[home-field] candidate evidence ignores stale recovered failure notes', ()
     });
     writeChibiSpritesheet(candidateOutputAbs);
     writeChibiEvidenceSources(rawDir);
+    writeChibiPaletteAuditArtifacts({ rawDir, candidateOutputAbs });
     fs.mkdirSync(path.dirname(notesPath), { recursive: true });
     fs.writeFileSync(notesPath, JSON.stringify({
       status: 'present',
@@ -809,7 +900,7 @@ test('[home-field] candidate evidence ignores stale recovered failure notes', ()
       fs.rmSync(fixtureDir, { recursive: true, force: true });
       fs.rmSync(candidateRoot, { recursive: true, force: true });
     }
-  }));
+  });
 });
 
 test('[home-field] chibi candidate evidence fails without grouped state source', () => {
@@ -850,6 +941,64 @@ test('[home-field] chibi candidate evidence fails without grouped state source',
       fs.rmSync(candidateRoot, { recursive: true, force: true });
     }
   });
+});
+
+test('[home-field] chibi palette audit writes JSON and swatch evidence', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-palette-audit-test');
+  const inputPath = path.join(fixtureDir, 'limited.png');
+  const outPath = path.join(fixtureDir, 'limited.audit.json');
+  const swatchPath = path.join(fixtureDir, 'limited.swatch.png');
+  const bloatedPath = path.join(fixtureDir, 'bloated.png');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+
+  try {
+    writePaletteBlocksFixture(inputPath, [
+      [50, 34, 24],
+      [230, 212, 170],
+      [172, 126, 58],
+      [92, 64, 42]
+    ]);
+    const result = spawnSync(process.execPath, [
+      paletteAuditScriptPath,
+      inputPath,
+      `--out=${outPath}`,
+      `--swatch=${swatchPath}`
+    ], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /home-field chibi palette audit: PASS/);
+    assert.match(result.stdout, /exact colors >=0\.10%: 4/);
+    assert.ok(fs.existsSync(outPath));
+    assert.ok(fs.existsSync(swatchPath));
+    const audit = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+    assert.equal(audit.counts.exactColorsAtLeastSignificantThreshold, 4);
+    assert.equal(audit.budget.status, 'pass');
+    assert.match(audit.artifacts.swatch.sha256, /^[a-f0-9]{64}$/);
+
+    const bloatedColors = Array.from({ length: 24 }, (_, idx) => [
+      24 + (idx * 7),
+      42 + ((idx * 11) % 168),
+      36 + ((idx * 13) % 160)
+    ]);
+    writePaletteBlocksFixture(bloatedPath, bloatedColors);
+    const failed = spawnSync(process.execPath, [
+      paletteAuditScriptPath,
+      bloatedPath,
+      '--fail-on-bloat'
+    ], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(failed.status, 2, failed.stderr || failed.stdout);
+    assert.match(failed.stdout, /home-field chibi palette audit: FAIL/);
+    assert.match(failed.stdout, /exact colors >=0\.10%: 24/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
 });
 
 test('[home-field] validation catches visible magenta alpha fringe', () => {
@@ -1287,8 +1436,11 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /game:home-field:claim-imagegen-output/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
+  assert.match(result.stdout, /palette-audit -- .*thalla_chibi_turnaround\.reference\.png/);
+  assert.match(result.stdout, /thalla-reference-palette-audit\.json/);
   assert.match(result.stdout, /thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --state-sheet/);
+  assert.match(result.stdout, /thalla-state-sheet-palette-audit\.json/);
   assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff --resize/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --frames/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
@@ -1344,6 +1496,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval/);
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --candidate/);
+  assert.match(result.stdout, /thalla-candidate-palette-audit\.json/);
   assert.doesNotMatch(result.stdout, /produce-chibi-candidate -- thalla --resize-nearest/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-readability/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-runtime-readiness/);
@@ -1352,6 +1505,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /at least as crisp, contrasted, and finished as approved Home Field props/);
   assert.match(result.stdout, /4 meaningful walk poses distributed across 6 slots/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
+  assert.match(result.stdout, /candidate-evidence requires thalla-reference\/state-sheet\/candidate palette audit JSON plus swatch PNGs/);
   assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=thalla .*chibi-candidate-preview/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- thalla/);
 });
@@ -1377,6 +1531,10 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /state sheet:/);
   assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
   assert.match(result.stdout, /Palette contract: state the plan before imagegen/);
+  assert.match(result.stdout, /palette-audit/);
+  assert.match(result.stdout, /thalla-reference-palette-audit\.json/);
+  assert.match(result.stdout, /thalla-state-sheet-palette-audit\.json/);
+  assert.match(result.stdout, /thalla-candidate-palette-audit\.json/);
   assert.match(result.stdout, /styleCohesionCheck\/stageContractCheck/);
   assert.match(result.stdout, /--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);

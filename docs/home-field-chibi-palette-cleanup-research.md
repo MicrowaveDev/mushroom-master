@@ -8,7 +8,7 @@ This note records the palette and cleanup findings from the Thalla Stage 1 proof
 - [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirements.md)
 - [`docs/home-field-chibi-regression-ledger.md`](home-field-chibi-regression-ledger.md)
 
-Use this document when deciding whether a future run needs a palette audit helper, a palette-aware cleanup pass, or a different imagegen path.
+Use this document when deciding whether a future run needs the checked-in palette audit helper, a palette-aware cleanup pass, or a different imagegen path.
 
 ## Local Evidence
 
@@ -67,14 +67,20 @@ Do not treat any of these as an approval shortcut. A cleanup tool can make a she
 ## Recommended Workflow Use
 
 1. Keep the current reference gate. If the reference fails hair/cap biology, glossy eyes, ornament, or sprite occupancy, stop before grouped state generation.
-2. Add or run a palette-audit helper before calling a reference "visually close". The helper should emit JSON plus a palette swatch PNG and should report:
+2. Run the checked-in palette-audit helper before calling a reference "visually close":
+
+   ```bash
+   npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<review-swatch.png>
+   ```
+
+   The helper emits JSON plus a palette swatch PNG and reports:
    - source image path and hash;
    - magenta/background exclusion rule;
    - exact non-background color count;
    - colors above `0.1%` and `0.05%`;
    - coarse visible-color bins;
    - top dominant colors;
-   - a pass/fail note for the `<20` visible design-color target.
+   - a pass/warn/fail note for the `<20` visible design-color target.
 3. Use palette cleanup only as a diagnostic or candidate-repair experiment unless it is followed by the same visual gate and runtime proof.
 4. If using a Retro/Tetro-style cleanup path, constrain it with the Home Field reference palette and style rules, then reject outputs that introduce or preserve:
    - hair or wig reads under the mushroom cap;
@@ -84,9 +90,9 @@ Do not treat any of these as an approval shortcut. A cleanup tool can make a she
    - hard pixel-art / flat vector overcorrection that loses the previous-best compact charm.
 5. Do not post-split quantize, crush, or repaint a generated state sheet to make it pass style review. Palette remap is allowed as an experiment only until a dedicated helper, evidence format, and visual gate make it safe.
 
-## Open Tooling Backlog
+## Tooling Status And Backlog
 
-- Add `npm run game:home-field:palette-audit -- <png>` or equivalent.
-- Make `candidate-evidence.manifest.json` include palette-audit artifacts when chibi proof reaches candidate generation.
+- Done: `npm run game:home-field:palette-audit -- <png>` emits JSON plus optional swatch PNG without adding external dependencies.
+- Done: chibi `candidate-evidence.manifest.json` now requires and binds `thalla-reference-palette-audit.json`, `thalla-state-sheet-palette-audit.json`, `thalla-candidate-palette-audit.json`, and their matching swatches when candidate evidence is generated; it also rejects stale audits whose `source.sha256` no longer matches the current PNG.
 - Consider a separate `palette-cleanup-experiment` helper that writes only under `.agent/home-field-workspace/experiments/`, never app-facing or candidate paths.
 - If a Retro/Tetro Diffusion API path is adopted, document its credential/env requirements and require source/reference hashes in the cleanup manifest.

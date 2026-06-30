@@ -564,10 +564,10 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- `docs/home-field-chibi-palette-cleanup-research.md` now records palette measurements, cleanup-tool findings, and the palette-audit helper recommendation;
-- docs now say palette cleanup is diagnostic until a dedicated helper/evidence format exists;
+- `docs/home-field-chibi-palette-cleanup-research.md` now records palette measurements, cleanup-tool findings, and the checked-in palette-audit helper workflow;
+- docs now say palette cleanup is diagnostic even when the dedicated palette-audit evidence exists;
 - cleanup or quantization must not override the biology/style gate;
-- future workflow work should add a palette audit that reports exact significant colors, coarse visible bins, top colors, and a swatch PNG before treating a chibi as palette-compliant.
+- `npm run game:home-field:palette-audit -- <png>` reports exact significant colors, coarse visible bins, top colors, and a swatch PNG before treating a chibi as palette-reviewed; chibi candidate evidence now requires the reference, state-sheet, and candidate palette audit artifacts and rejects stale audit source hashes.
 
 ## Decision Rules Going Forward
 

@@ -351,9 +351,11 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push('Save the non-production sprite-box reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
     lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
     lines.push('Immediately verify the saved reference with: npm run game:home-field:verify-chibi-proof-files -- --reference');
+    lines.push('Immediately audit the saved reference palette with: npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png');
     lines.push('Save the final 8x4 state sheet to: .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
     lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/raw/thalla_chibi.states.source.png --verify=state-sheet');
     lines.push('Immediately verify the saved state sheet with: npm run game:home-field:verify-chibi-proof-files -- --state-sheet');
+    lines.push('Immediately audit the saved state-sheet palette with: npm run game:home-field:palette-audit -- .agent/home-field-workspace/raw/thalla_chibi.states.source.png --out=.agent/home-field-workspace/review/thalla-state-sheet-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-state-sheet-palette-swatch.png');
     lines.push('Then split the state sheet into raw frames with: npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize');
     lines.push('The grouped state sheet itself must contain the idle bob and walk poses; do not synthesize motion after split by shifting, squashing, stretching, repainting, or otherwise changing frame pose/silhouette.');
     lines.push('Post-split deterministic processing may clean alpha/chroma fringe, crop, and resize only; it must not alter pose, motion, silhouette, style, or identity.');
@@ -367,6 +369,8 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   if (chibiCandidate && asset.type === 'character') {
     lines.push('Then verify the composed candidate spritesheet:');
     lines.push('  npm run game:home-field:verify-chibi-proof-files -- --candidate');
+    lines.push('Then audit the composed candidate palette:');
+    lines.push('  npm run game:home-field:palette-audit -- .agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png --out=.agent/home-field-workspace/review/thalla-candidate-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-candidate-palette-swatch.png');
   }
   lines.push('Then run:');
   if (objectCandidate || chibiCandidate || terrainCandidate) {
@@ -390,6 +394,9 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     } else {
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:mobile-readability-sheet -- --ids=${asset.id}`);
       lines.push(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:alpha-sheet -- --ids=${asset.id}`);
+    }
+    if (chibiCandidate) {
+      lines.push('  # candidate-evidence requires thalla-reference/state-sheet/candidate palette audit JSON plus swatch PNGs');
     }
     lines.push(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${asset.id} npm run game:home-field:candidate-evidence`);
     if (chibiCandidate) {

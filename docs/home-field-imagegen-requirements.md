@@ -200,7 +200,15 @@ Object-layer assets need transparent backgrounds, broad silhouettes, safe visibl
 
 Active-roster chibi candidates must follow `docs/home-field-chibi-candidate-contract.md`. The current proof is `thalla` only, candidate-only, with one non-production reference sheet followed by one coherent grouped `8x4` state sheet split into 32 character-only frames. The grouped sheet must author idle bob and walk motion; post-split processing may not synthesize animation. Generate chibis with a deliberately small sprite palette: prefer `12-18` artist-visible colors and stay under `20`, excluding transparency and chroma-key.
 
-If palette cleanup or external palette-aware tools are used, treat them as diagnostic or candidate-repair experiments until a dedicated helper and evidence format exist. Follow `docs/home-field-chibi-palette-cleanup-research.md`: palette improvement does not approve a chibi that still fails cap biology, eye scale, ornament, source-sprite occupancy, or composed field-sprite style.
+Run the palette audit helper on each chibi proof stage before treating palette discipline as reviewed:
+
+```bash
+npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<review-swatch.png>
+```
+
+For current Thalla proof runs, the required evidence filenames are `thalla-reference-palette-audit.json`, `thalla-state-sheet-palette-audit.json`, and `thalla-candidate-palette-audit.json`, each with the matching `*-palette-swatch.png` under `.agent/home-field-workspace/review/`. `candidate-evidence.manifest.json` requires these artifacts for chibi candidates and checks their `source.sha256` values against the current reference, grouped state sheet, and candidate PNG so stale palette reports cannot satisfy the gate.
+
+If palette cleanup or external palette-aware tools are used, treat them as diagnostic or candidate-repair experiments only. Follow `docs/home-field-chibi-palette-cleanup-research.md`: palette improvement does not approve a chibi that still fails cap biology, eye scale, ornament, source-sprite occupancy, or composed field-sprite style.
 
 ## Update Rule
 
