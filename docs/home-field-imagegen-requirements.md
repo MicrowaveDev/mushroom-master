@@ -15,6 +15,7 @@ This document is the shared imagegen contract. Family-specific contracts can add
 - `docs/home-field-tileset-contract.md` defines terrain/tile-family constraints.
 - `docs/home-field-chibi-candidate-contract.md` defines active-roster chibi-specific constraints.
 - `docs/home-field-chibi-style-reference.md` defines the current chibi visual target.
+- `docs/home-field-chibi-palette-cleanup-research.md` records palette-audit and cleanup-tool findings for Thalla chibi proof runs.
 - `docs/home-field-chibi-regression-ledger.md` records the regressions these requirements are meant to prevent.
 
 ## Core Requirements
@@ -198,6 +199,8 @@ Object-layer assets need transparent backgrounds, broad silhouettes, safe visibl
 ### Chibi
 
 Active-roster chibi candidates must follow `docs/home-field-chibi-candidate-contract.md`. The current proof is `thalla` only, candidate-only, with one non-production reference sheet followed by one coherent grouped `8x4` state sheet split into 32 character-only frames. The grouped sheet must author idle bob and walk motion; post-split processing may not synthesize animation. Generate chibis with a deliberately small sprite palette: prefer `12-18` artist-visible colors and stay under `20`, excluding transparency and chroma-key.
+
+If palette cleanup or external palette-aware tools are used, treat them as diagnostic or candidate-repair experiments until a dedicated helper and evidence format exist. Follow `docs/home-field-chibi-palette-cleanup-research.md`: palette improvement does not approve a chibi that still fails cap biology, eye scale, ornament, source-sprite occupancy, or composed field-sprite style.
 
 ## Update Rule
 

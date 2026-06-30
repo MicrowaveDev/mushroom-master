@@ -65,6 +65,8 @@ The current chibi problem is not only scale; it is palette discipline. Small gam
 
 For Home Field, the rule is therefore: generate the reference and grouped state sheet as if the artist had a visible swatch strip of fewer than `20` colors. Use one warm dark outline, shared dark shadows, shared bone highlights, a compact cap ramp, a compact robe/body ramp, a compact face ramp, and two gold identity tones. Do not let imagegen solve softness with extra beige, cream, blush, glow, or gold micro-tones.
 
+For tool and measurement follow-up, read [`docs/home-field-chibi-palette-cleanup-research.md`](home-field-chibi-palette-cleanup-research.md). That research records the 2026-06-30 Aseprite palette captures, the developer-cleaned Retro/Tetro-style sheet, and the recommendation to add a palette-audit helper. Palette cleanup can support diagnostics, but it does not override the biology/style gate: hair under the cap, glossy anime eyes, ornament, and large turnaround composition remain rejection signals even if the dominant color count improves.
+
 ## Important Differences
 
 Do not copy the reference directly. For Mushroom Battles:

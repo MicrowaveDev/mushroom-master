@@ -552,6 +552,23 @@ The active Stage 1 contract is:
 - preflight now says not to run the diagnostic when reference binding is unavailable because it proves file capture only;
 - context/helper output and docs now repeat that a missing reference-capable path is a clean stop before any imagegen call.
 
+### 35. Reference-Bound Built-In Imagegen Still Failed The Style Gate
+
+**Symptom:** The 2026-06-30 run from rollout `codex-019f1a06-dd6d-78d3-9d13-212a7f67232a` passed preflight with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`, made two reference attempts, claimed both PNG outputs, then correctly stopped at the reference gate. The live reference preserved some compact charm and magenta spacing, but still failed for hair/wig-like locks under the mushroom cap, glossy anime eyes, ornamental/status detail, and polished character-turnaround styling. Developer palette feedback compared Aseprite palette captures from the earlier better direction and this run, plus a cleanup made with a Tetro/Retro-style diffusion tool.
+
+**Decision that led there:** After fixing the file-output and reference-binding gates, the workflow tried the same exact sprite-box prompt again through built-in imagegen. The prompt now had the right negative constraints, but the generator still interpreted the concept as a polished chibi character sheet.
+
+**Why it regressed:** Actual reference binding fixed the provenance/tooling problem, not the art-mode problem. Palette cleanup can reduce dominant colors, but it cannot by itself fix semantic failures such as hair under a biological cap, glossy eyes, status jewelry, or large turnaround proportions. The workflow also had no palette-audit helper, so palette discussion depended on visual screenshots rather than a repeatable report.
+
+**Evidence:** The live reference was `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`, `1536x1024`, sha256 `d10b313024a1f43eff547126fbb34374bd0f11d3eb5dea4bc6332ce52a678194`. Claim manifest: `.agent/home-field-workspace/manifests/imagegen-claim-2026-06-30T19-47-01-589Z.json`. The developer palette/cleanup attachments are now stored as `docs/reference/home-field/chibi-thalla-palette-before-2026-06-30.png`, `docs/reference/home-field/chibi-thalla-palette-after-2026-06-30.png`, and `docs/reference/home-field/chibi-thalla-retro-cleaned-2026-06-30.png`.
+
+**Guardrails added:**
+
+- `docs/home-field-chibi-palette-cleanup-research.md` now records palette measurements, cleanup-tool findings, and the palette-audit helper recommendation;
+- docs now say palette cleanup is diagnostic until a dedicated helper/evidence format exists;
+- cleanup or quantization must not override the biology/style gate;
+- future workflow work should add a palette audit that reports exact significant colors, coarse visible bins, top colors, and a swatch PNG before treating a chibi as palette-compliant.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -581,3 +598,4 @@ The active Stage 1 contract is:
 25. Do not repeat the pre-2026-06-29 image-guided turnaround prompt unchanged. The reference prompt must behave like a sprite-box extraction guide with tiny `96x96` occupancy and mostly empty magenta space; if that still fails twice, change the generation method or ask for explicit user direction.
 26. Do not call a Thalla run image-guided unless the actual imagegen request can attach the checked-in PNGs as image inputs. `view_image` and prompt text are not enough.
 27. Do not run the built-in disk-output diagnostic probe when reference-image input binding is unavailable. The probe proves file capture only and cannot unblock current Thalla proof art.
+28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
