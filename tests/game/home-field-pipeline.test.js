@@ -169,6 +169,46 @@ function writeSizedTransparentFixture(filePath, width, height) {
   fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
 }
 
+function writeChibiReferenceSpriteBoxFixture(filePath, { oversized = false } = {}) {
+  const width = 512;
+  const height = 384;
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let i = 0; i < rgba.length; i += 4) {
+    rgba[i + 0] = 255;
+    rgba[i + 1] = 0;
+    rgba[i + 2] = 255;
+    rgba[i + 3] = 255;
+  }
+  const boxes = oversized
+    ? [
+      [80, 40],
+      [300, 40],
+      [80, 230],
+      [300, 230]
+    ]
+    : [
+      [96, 72],
+      [320, 72],
+      [96, 232],
+      [320, 232]
+    ];
+  const spriteWidth = oversized ? 166 : 62;
+  const spriteHeight = oversized ? 136 : 78;
+  for (const [cx, cy] of boxes) {
+    for (let y = cy; y < cy + spriteHeight; y += 1) {
+      for (let x = cx; x < cx + spriteWidth; x += 1) {
+        const i = (y * width + x) * 4;
+        rgba[i + 0] = 54;
+        rgba[i + 1] = 38;
+        rgba[i + 2] = 28;
+        rgba[i + 3] = 255;
+      }
+    }
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, encodeDeterministicPng({ width, height, rgba }));
+}
+
 function writeChibiSpritesheet(filePath, { staticIdle = false, staticWalk = false, deepIdle = false } = {}) {
   const width = 512;
   const height = 256;
@@ -1473,7 +1513,10 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /sprite-box reference sheet/);
   assert.match(result.stdout, /Input images: use the attached checked-in reference images as guidance/);
   assert.match(result.stdout, /tiny .*source-sprite views/);
+  assert.match(result.stdout, /compact source sheet around 512x384 or smaller/);
+  assert.match(result.stdout, /never a 1536x1024 showcase canvas/);
   assert.match(result.stdout, /invisible 96x96 source-sprite boxes/);
+  assert.match(result.stdout, /visible character blob should stay roughly 64-96px tall/);
   assert.match(result.stdout, /at least 70% of the sheet empty #ff00ff/);
   assert.match(result.stdout, /2026-06-29 image-guided attempts already failed/);
   assert.match(result.stdout, /field-sprite leader/);
@@ -1585,6 +1628,39 @@ test('[home-field] chibi proof file verifier checks generated PNG paths', () => 
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }
+});
+
+test('[home-field] chibi proof reference verifier accepts compact sprite-box blobs', () => {
+  const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+  return withPreservedFile(referencePath, () => {
+    writeChibiReferenceSpriteBoxFixture(referencePath);
+
+    const result = spawnSync(process.execPath, [chibiVerifyScriptPath, '--reference'], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Reference sprite-box occupancy: 4 major blob\(s\)/);
+    assert.match(result.stdout, /home-field chibi proof file verification: PASS/);
+  });
+});
+
+test('[home-field] chibi proof reference verifier rejects oversized turnaround blobs', () => {
+  const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+  return withPreservedFile(referencePath, () => {
+    writeChibiReferenceSpriteBoxFixture(referencePath, { oversized: true });
+
+    const result = spawnSync(process.execPath, [chibiVerifyScriptPath, '--reference'], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    assert.match(result.stdout, /Reference sprite-box occupancy: 4 major blob\(s\)/);
+    assert.match(result.stderr, /oversized source-sprite blob/);
+    assert.match(result.stderr, /96x96 sprite-box reference contract/);
+  });
 });
 
 test('[home-field] imagegen output claim copies only newer bounded files', () => {

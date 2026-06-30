@@ -587,6 +587,22 @@ The active Stage 1 contract is:
 - the generated chibi next-prompt helper prints the same preflight env prefix when built-in imagegen is the intended path;
 - preflight failure text now says to rerun with both flags when the launcher/user explicitly confirmed built-in save plus reference-image input support for the same session.
 
+### 37. Sprite-Box Prompt Still Produced Enlarged Showcase Reference
+
+**Symptom:** The 2026-06-30 run from rollout `codex-019f1a52-783f-7501-aa16-5cc88709aacf` used the fixed launcher, passed preflight with both built-in imagegen confirmations, attached the three checked-in reference PNGs, and made two exact-prompt built-in reference attempts. Both attempts saved and passed the old reference file verifier, but both failed the reference gate. The live second attempt was a `1536x1024` sheet with four enlarged chibi turnaround figures, hair/wig-like side locks, glossy eyes, repeated gold cap marks, robe/cap ornament, and a bloated cream/gold palette (`82` significant exact colors, `51,319` exact RGBs).
+
+**Decision that led there:** The reference verifier only proved the PNG existed and was readable. The prompt said "96x96 source-sprite boxes", but nothing mechanical rejected a high-resolution showcase sheet whose empty-magenta percentage looked acceptable while the visible sprite blobs were far larger than the source-sprite contract.
+
+**Why it regressed:** Reference binding solved the provenance/tooling problem, not the composition problem. Empty magenta coverage alone is a weak proxy: a huge canvas with four oversized figures can still have high magenta coverage. The run correctly stopped after two same-gate failures, but it spent two generation attempts before the same scale problem was caught visually.
+
+**Evidence:** Rollout line `7` used the fixed launcher with both `HOME_FIELD_BUILTIN_IMAGEGEN_*` flags. Lines `37`-`38` passed preflight. Lines `126`-`131` generated and claimed attempt 1 (`a64817139ceb4dd22c4d5265e26c58222bab85bbae26123a8c16e140e2e74364`), then line `134` failed palette audit with `71` significant exact colors. Lines `152`-`160` generated, claimed, and palette-audited attempt 2 (`b704667200f10bc47a544934ab290ba2f4283d56540b29ab2a5cea56d11d5cd4`) with `82` significant exact colors and `51,319` exact RGBs. Lines `194` and `199` show independent Visual Critic and Validator stop-gate agreement; final line `213` reports no grouped state sheet, split frames, candidate, evidence, preview, verdict, or app-facing overwrite.
+
+**Guardrails added:**
+
+- the copyable sprite-box reference prompt now asks for a compact source sheet around `512x384` or smaller, explicitly rejects a `1536x1024` showcase canvas, and says the visible character blob should stay roughly `64-96px` tall;
+- `verify-chibi-proof-files -- --reference` now decodes the PNG, excludes transparent/hot-magenta background, finds major non-magenta connected blobs, and rejects blobs larger than the `128x128px` tolerance for the `96x96` sprite-box contract;
+- the chibi contract, agent flow, and run prompt now state that high magenta coverage does not compensate for oversized sprite occupancy.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -618,3 +634,4 @@ The active Stage 1 contract is:
 27. Do not run the built-in disk-output diagnostic probe when reference-image input binding is unavailable. The probe proves file capture only and cannot unblock current Thalla proof art.
 28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
 29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.
+30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.

@@ -214,6 +214,8 @@ npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<rev
 
 For current Thalla proof runs, the required evidence filenames are `thalla-reference-palette-audit.json`, `thalla-state-sheet-palette-audit.json`, and `thalla-candidate-palette-audit.json`, each with the matching `*-palette-swatch.png` under `.agent/home-field-workspace/review/`. `candidate-evidence.manifest.json` requires these artifacts for chibi candidates and checks their `source.sha256` values against the current reference, grouped state sheet, and candidate PNG so stale palette reports cannot satisfy the gate.
 
+For the Thalla sprite-box reference, `npm run game:home-field:verify-chibi-proof-files -- --reference` also checks source-sprite occupancy: after excluding transparency and hot-magenta background pixels, each major visible character blob must fit within the verifier's `128x128px` tolerance for the `96x96` source-sprite box contract. A large canvas with high empty-magenta coverage still fails if the characters are enlarged showcase-turnaround figures.
+
 If palette cleanup or external palette-aware tools are used, treat them as diagnostic or candidate-repair experiments only. Follow `docs/home-field-chibi-palette-cleanup-research.md`: palette improvement does not approve a chibi that still fails cap biology, eye scale, ornament, source-sprite occupancy, or composed field-sprite style.
 
 ## Update Rule
