@@ -141,7 +141,7 @@ The active Stage 1 contract is:
 **Guardrails added:**
 
 - `npm run game:home-field:find-imagegen-output` searches bounded Codex/app/temp locations;
-- `npm run game:home-field:preflight-chibi-proof` now fails unless built-in disk output is explicitly confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` from the same agent context that will run imagegen, local image inputs exist, or explicit CLI fallback is configured.
+- `npm run game:home-field:preflight-chibi-proof` now fails unless built-in disk output is explicitly confirmed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` from the same agent context that will run imagegen, non-reference proof source local image inputs exist, or explicit CLI fallback is configured.
 
 ### 9. Mechanical Fallback Proof Looked Like Progress
 
@@ -534,7 +534,7 @@ The active Stage 1 contract is:
 - `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` proves file capture only, not image guidance;
 - `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` may be set only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context;
 - docs and generated helper output now say `view_image` plus text prompt references is not image-guided generation;
-- future runs should stop at preflight unless they have a real reference-capable imagegen path, supplied local source PNG inputs, or explicit reference-capable CLI fallback.
+- future runs should stop at preflight unless they have a real reference-capable imagegen path, supplied local proof source PNG inputs outside `docs/reference`, or explicit reference-capable CLI fallback.
 
 ### 34. Disk-Output Probe Ran Without Reference Binding
 
@@ -616,12 +616,12 @@ The active Stage 1 contract is:
 **Guardrails added:**
 
 - the built-in sprite-box reference prompt is now marked as exhausted for unchanged same-path retries after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`;
-- `RUN_CHIBI_PROOF_PROMPT.md` and `docs/home-field-agent-flow.md` require a concrete method change before another reference attempt, such as a different reference-capable generation/editing path, supplied local source PNGs, or a revised helper/prompt that changes the method rather than only adding more negative wording;
+- `RUN_CHIBI_PROOF_PROMPT.md` and `docs/home-field-agent-flow.md` require a concrete method change before another reference attempt, such as a different reference-capable generation/editing path, supplied local proof source PNGs outside `docs/reference`, or a revised helper/prompt that changes the method rather than only adding more negative wording;
 - if no method change is available, the next run should stop after `next-chibi-proof` and report the blocker instead of spending more built-in imagegen calls on the unchanged prompt.
 
 ### 39. Method-Gate Stop Skipped The Read-Only Scoped Prompt Helper
 
-**Symptom:** Rollout `codex-019f1a83-9c67-7d42-85d9-fe105a6a9f75` correctly stopped before imagegen, but it did not run `npm run game:home-field:next-chibi-proof` before the final blocker report. The source request at line `6` asked for the method gate and said to stop if no method change was available. The agent ran `task:context` (lines `10`-`11`), read the run doc and imagegen requirements (lines `14`-`24`), ran `chibi-proof-context` and `preflight-chibi-proof` (lines `28`-`31`), then stopped at lines `33` and `38` because preflight had no confirmed built-in disk save, no confirmed reference-image binding, no explicit CLI fallback, and no supplied local source PNG inputs.
+**Symptom:** Rollout `codex-019f1a83-9c67-7d42-85d9-fe105a6a9f75` correctly stopped before imagegen, but it did not run `npm run game:home-field:next-chibi-proof` before the final blocker report. The source request at line `6` asked for the method gate and said to stop if no method change was available. The agent ran `task:context` (lines `10`-`11`), read the run doc and imagegen requirements (lines `14`-`24`), ran `chibi-proof-context` and `preflight-chibi-proof` (lines `28`-`31`), then stopped at lines `33` and `38` because preflight had no confirmed built-in disk save, no confirmed reference-image binding, no explicit CLI fallback, and no supplied local proof source PNG inputs outside `docs/reference`.
 
 **What was correct:** No imagegen call happened, no stale files were archived, no grouped state sheet or candidate was produced, and no app-facing PNG was overwritten. This obeyed the safety side of the method gate.
 

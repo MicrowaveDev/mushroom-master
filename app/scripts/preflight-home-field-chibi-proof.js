@@ -98,7 +98,7 @@ function main() {
     console.error('');
     if (!builtinDisabled && !builtinReferencesConfirmed) {
       console.error('Do not run the built-in output diagnostic yet: it proves disk capture only and cannot unblock this Thalla proof until reference-image input binding is confirmed.');
-      console.error('First provide a reference-capable imagegen path, supplied local source PNG inputs, or explicit reference-capable CLI fallback.');
+      console.error('First provide a reference-capable imagegen path, supplied local proof source PNG inputs outside docs/reference, or explicit reference-capable CLI fallback.');
     } else if (!builtinDisabled && !builtinDiskConfirmed) {
       console.error('Because reference-image input binding is already confirmed and built-in disk capture is the remaining blocker, run one tiny diagnostic non-candidate image_gen probe in this same agent context, then run `npm run game:home-field:find-imagegen-output -- --since-minutes=5`.');
       console.error('Count only a file newer than the probe start; use `--include-temp` for one bounded retry. If a file is found, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 plus HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');

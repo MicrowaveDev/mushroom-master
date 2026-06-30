@@ -1509,6 +1509,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Copyable Sprite-Box Reference Prompt/);
   assert.match(result.stdout, /attach these checked-in PNGs as actual image inputs/);
   assert.match(result.stdout, /with those local PNGs attached as actual image inputs/);
+  assert.match(result.stdout, /supplied local proof source images outside docs\/reference/);
+  assert.match(result.stdout, /listing docs\/reference paths is not image-guided generation/);
   assert.match(result.stdout, /listing their filesystem paths is not enough/);
   assert.match(result.stdout, /only exposes a prompt field/);
   assert.match(result.stdout, /Method gate after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070/);
@@ -2115,6 +2117,7 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stderr, /Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding/);
   assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
   assert.match(result.stderr, /cannot unblock this Thalla proof until reference-image input binding is confirmed/);
+  assert.match(result.stderr, /supplied local proof source PNG inputs outside docs\/reference/);
   assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
   assert.doesNotMatch(result.stderr, /find-imagegen-output -- --since-minutes=5/);
   assert.match(result.stderr, /Do not archive stale files before preflight passes/);
