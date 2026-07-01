@@ -1616,7 +1616,8 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.doesNotMatch(shortLauncher, /plain OPENAI_API_KEY/);
   assert.doesNotMatch(shortLauncher, /Prefer built-in\/imagegen skill output/);
   assert.match(prompt, /app\/shared\/home-field\/home-field-generation-queue\.json/);
-  assert.match(prompt, /queue command must print the run title, canonical doc, env rules, reference-input gates, stop gates, and final-response fields/);
+  assert.match(prompt, /queue command must print the run title, canonical doc, built-in imagegen default path, env rules, reference-input gates, stop gates, and final-response fields/);
+  assert.match(prompt, /built-in section must include the `view_image` reference-input staging step, same-context built-in `image_gen` call, built-in preflight flags, and save\/claim-after-render instruction/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
   assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
@@ -1830,6 +1831,19 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.equal(item.env.apiFallbackRequiresSkillUnavailable, true);
   assert.equal(item.env.apiFallbackFlag, 'HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1');
   assert.match(item.env.blockedRunEvidence.rollout, /codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831/);
+  assert.equal(item.builtInImagegen.defaultPath, true);
+  assert.equal(item.builtInImagegen.sameContextRequired, true);
+  assert.deepEqual(item.builtInImagegen.confirmationFlags, [
+    'HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1',
+    'HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1'
+  ]);
+  assert.match(item.builtInImagegen.preflightCommand, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
+  assert.match(item.builtInImagegen.referenceStaging, /Load all 3 referenceInputs PNGs with view_image/);
+  assert.match(item.builtInImagegen.referenceStaging, /same-context input-staging step/);
+  assert.match(item.builtInImagegen.generationCall, /Call built-in image_gen/);
+  assert.match(item.builtInImagegen.generationCall, /visible referenceInputs images as references/);
+  assert.match(item.builtInImagegen.afterRender, /claim-imagegen-output/);
+  assert.match(item.builtInImagegen.notEnough, /Passive viewing/);
   assert.equal(item.generationContract.stateSheet.stopIfPromptOnly, true);
   assert.equal(item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput, true);
   assert.match(item.generationContract.stateSheet.requiredReferenceImageInput, /thalla_chibi_turnaround\.reference\.png/);
@@ -1864,6 +1878,13 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /Agent instructions:/);
   assert.match(result.stdout, /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/);
   assert.match(result.stdout, /Attach every referenceInputs PNG as actual image inputs/);
+  assert.match(result.stdout, /Built-in imagegen default path:/);
+  assert.match(result.stdout, /flags: HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(result.stdout, /preflight: HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
+  assert.match(result.stdout, /reference staging: Load all 3 referenceInputs PNGs with view_image/);
+  assert.match(result.stdout, /imagegen call: Call built-in image_gen in that same context/);
+  assert.match(result.stdout, /after render: Save each generated PNG directly to the required output path, or claim/);
+  assert.match(result.stdout, /not enough: Passive viewing, listing paths, or mentioning reference paths in prompt text is not enough/);
   assert.match(result.stdout, /same-context input-staging step/);
   assert.match(result.stdout, /visible images explicitly named as references/);
   assert.match(result.stdout, /passive viewing/);

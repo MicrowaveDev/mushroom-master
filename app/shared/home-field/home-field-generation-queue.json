@@ -54,6 +54,19 @@
           "reason": "The agent used mushroom-master/.env for --env-file; preflight correctly failed because the required imagegen fallback environment was missing. Future API fallback runners must receive an explicit env file path with OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 instead of guessing. Plain OPENAI_API_KEY must not count."
         }
       },
+      "builtInImagegen": {
+        "defaultPath": true,
+        "sameContextRequired": true,
+        "confirmationFlags": [
+          "HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1",
+          "HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1"
+        ],
+        "preflightCommand": "HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof",
+        "referenceStaging": "Load all 3 referenceInputs PNGs with view_image as the current imagegen skill's same-context input-staging step before imagegen.",
+        "generationCall": "Call built-in image_gen in that same context and explicitly name the visible referenceInputs images as references.",
+        "afterRender": "Save each generated PNG directly to the required output path, or claim a discoverable built-in output with npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>.",
+        "notEnough": "Passive viewing, listing paths, or mentioning reference paths in prompt text is not enough unless the following same-context built-in image_gen call uses those visible images as references."
+      },
       "referenceInputs": [
         {
           "path": "docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png",

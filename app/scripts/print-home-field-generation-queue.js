@@ -122,6 +122,36 @@ function validateQueue(queue) {
     if (item.env?.apiFallbackRequiresSkillUnavailable !== true) {
       issues.push(`${item.id}: env.apiFallbackRequiresSkillUnavailable must be true`);
     }
+    if (item.builtInImagegen?.defaultPath === true) {
+      const builtIn = item.builtInImagegen;
+      const flags = builtIn.confirmationFlags || [];
+      if (builtIn.sameContextRequired !== true) {
+        issues.push(`${item.id}: builtInImagegen.sameContextRequired must be true`);
+      }
+      if (!flags.includes('HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1')) {
+        issues.push(`${item.id}: builtInImagegen.confirmationFlags must include HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`);
+      }
+      if (!flags.includes('HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1')) {
+        issues.push(`${item.id}: builtInImagegen.confirmationFlags must include HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`);
+      }
+      if (!/preflight-chibi-proof/.test(builtIn.preflightCommand || '')) {
+        issues.push(`${item.id}: builtInImagegen.preflightCommand must name preflight-chibi-proof`);
+      }
+      if (!/referenceInputs/.test(builtIn.referenceStaging || '') || !/view_image/.test(builtIn.referenceStaging || '')) {
+        issues.push(`${item.id}: builtInImagegen.referenceStaging must tell agents to load referenceInputs with view_image`);
+      }
+      if (!/image_gen/.test(builtIn.generationCall || '') || !/references/i.test(builtIn.generationCall || '')) {
+        issues.push(`${item.id}: builtInImagegen.generationCall must tell agents to use built-in image_gen with references`);
+      }
+      if (!/claim-imagegen-output/.test(builtIn.afterRender || '')) {
+        issues.push(`${item.id}: builtInImagegen.afterRender must tell agents how to claim built-in output files`);
+      }
+      if (!/Passive viewing/.test(builtIn.notEnough || '') || !/not enough/.test(builtIn.notEnough || '')) {
+        issues.push(`${item.id}: builtInImagegen.notEnough must reject passive viewing`);
+      }
+    } else if (item.status?.includes('builtin')) {
+      issues.push(`${item.id}: builtin-ready items must include builtInImagegen.defaultPath=true`);
+    }
     for (const reference of item.referenceInputs || []) {
       if (!reference.path) {
         issues.push(`${item.id}: reference input missing path`);
@@ -165,6 +195,16 @@ function printItem(item) {
   console.log('Agent instructions:');
   for (const instruction of item.agentInstructions || []) console.log(`  - ${instruction}`);
   console.log('');
+  if (item.builtInImagegen?.defaultPath) {
+    console.log('Built-in imagegen default path:');
+    console.log(`  flags: ${(item.builtInImagegen.confirmationFlags || []).join(' ')}`);
+    console.log(`  preflight: ${item.builtInImagegen.preflightCommand}`);
+    console.log(`  reference staging: ${item.builtInImagegen.referenceStaging}`);
+    console.log(`  imagegen call: ${item.builtInImagegen.generationCall}`);
+    console.log(`  after render: ${item.builtInImagegen.afterRender}`);
+    console.log(`  not enough: ${item.builtInImagegen.notEnough}`);
+    console.log('');
+  }
   console.log(`env fallback arg: pass ${item.env.envFileArg} only for paid API fallback; always-required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
   console.log(`env fallback keys: ${(item.env.apiFallbackRequiredKeys || []).join(', ') || 'none'}`);
   if (item.env.doNotInferEnvFile) {
