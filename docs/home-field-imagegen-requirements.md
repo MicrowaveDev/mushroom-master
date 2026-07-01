@@ -17,7 +17,7 @@ This document is the shared imagegen contract. Family-specific contracts can add
 - `docs/home-field-chibi-style-reference.md` defines the current chibi visual target.
 - `docs/home-field-chibi-palette-cleanup-research.md` records palette-audit and cleanup-tool findings for Thalla chibi proof runs.
 - `docs/home-field-chibi-regression-ledger.md` records the regressions these requirements are meant to prevent.
-- `app/shared/home-field/home-field-generation-queue.json` plus `npm run game:home-field:generation-queue` define the fresh-agent queue output for queue-backed runs, including built-in imagegen defaults that should not be repeated in the pasted launcher.
+- `app/shared/home-field/home-field-generation-queue.json` plus `npm run game:home-field:generation-queue` define the fresh-agent queue output for queue-backed runs, including built-in imagegen defaults and method-gate status that should not be repeated in the pasted launcher.
 
 ## Core Requirements
 
@@ -34,16 +34,17 @@ Every imagegen run must start with a stated scope:
 
 Do not broaden a scoped run because a prompt, helper, or generated output suggests more assets. For the current chibi proof, the scope is `thalla` only.
 
-Queue-backed runs must keep the pasted launcher short and put operational detail in the queue response. The queue command must print, by default, the run title, canonical run doc, agent instructions, reference inputs, output paths, required commands, stop gates, final-response fields, and a **Built-in imagegen default path** section. For current Thalla chibi proof, that built-in section must include:
+Queue-backed runs must keep the pasted launcher short and put operational detail in the queue response. The queue command must print, by default, the run title, canonical run doc, agent instructions, reference inputs, output paths, required commands, method-gate status, stop gates, final-response fields, a **Built-in imagegen default path** section, and a **Method gate / allowed method change** section. For current Thalla chibi proof, the built-in section must include:
 
 - the required built-in confirmation flags: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`;
 - the built-in preflight command using those flags;
 - the instruction to load all three `referenceInputs` PNGs with `view_image` as the current imagegen skill's same-context input-staging step;
 - the instruction to call built-in `image_gen` in that same context and explicitly name the visible `referenceInputs` images as references;
 - the after-render rule to save each generated PNG directly to the documented output path or claim it with `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>`;
-- the warning that passive viewing, path listing, or prompt-text path mentions are not enough unless the following same-context built-in `image_gen` call uses those visible images as references.
+- the warning that passive viewing, path listing, or prompt-text path mentions are not enough unless the following same-context built-in `image_gen` call uses those visible images as references;
+- a **Method gate / allowed method change** section that states whether the queued path is allowed, why it is allowed, and when to stop before archive/imagegen.
 
-Do not rely on a human-pasted prompt to carry those built-in details. If a new queue item is marked built-in/imagegen-ready, the queue JSON and printer must carry and validate its built-in imagegen default path before the run starts.
+Do not rely on a human-pasted prompt to carry those built-in details. If a new queue item is marked built-in/imagegen-ready, the queue JSON and printer must carry and validate its built-in imagegen default path and method-gate status before the run starts. For current Thalla proof runs, the queue-backed built-in same-context reference-staging path is the current allowed method change after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`: it must load all three `referenceInputs` with `view_image`, immediately call built-in `image_gen` with those visible images explicitly named as references, and save or claim the output file. That allowance is for one fresh reference-attempt batch only. If the same queued path is unavailable or two exact-prompt image-guided attempts through it fail the same visual gate, stop and report the method-gate blocker.
 
 ### IG-2. A Chat-Visible Render Is Not A Pipeline Source
 

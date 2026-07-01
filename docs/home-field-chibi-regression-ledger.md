@@ -717,6 +717,20 @@ The active Stage 1 contract is:
 - passive viewing, listing paths, or mentioning file paths in the prompt remains text-only-equivalent and does not satisfy the image-guided gate;
 - the queue, run prompt, generated prompt JSON, candidate contract, imagegen requirements, agent flow, style reference, minimal production plan, preflight failure text, and tests now carry this distinction.
 
+### 46. Queue-Ready Built-In Path Was Contradicted By Stale Method Gate
+
+**Symptom:** Rollout `codex-019f1e4f-f109-7703-8ea9-0799ff0be872` followed the short queue launcher and stopped before archive/imagegen even though built-in preflight passed with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. It ran `task:context`, printed the `thalla-stage1-chibi-proof` queue item, read the run prompt and imagegen requirements, ran `chibi-proof-context`, `next-chibi-proof`, and `preflight-chibi-proof`, then reported the method-gate blocker. No image generation happened, no stale files were archived, no reference/state/candidate PNGs were produced, and no app-facing PNG was overwritten.
+
+**What was correct:** The agent obeyed the safety side of the stale method gate. It did not infer `.env`, did not spend the paid API fallback, did not use plain `OPENAI_API_KEY`, and did not claim stale `.agent` files as fresh output.
+
+**What was wrong in the flow:** The queue now said the built-in path was ready and printed the built-in default path, including same-context `view_image` staging plus built-in `image_gen` reference use. The canonical run prompt and generated `next-chibi-proof` method gate still said not to run another unchanged built-in sprite-box attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070` without naming the queue-backed staging path as the intended method change. A fresh agent had two valid-looking instructions and chose the stop condition.
+
+**Guardrails added:**
+
+- the queue item now includes a `methodGate` block and prints **Method gate / allowed method change**;
+- the queue-backed built-in same-context reference-staging path is explicitly the current allowed method change because it requires loading all three `referenceInputs` with `view_image`, immediately calling built-in `image_gen` with those visible images named as references, and saving or claiming the output;
+- the allowance is limited to one fresh reference-attempt batch; if that exact path is unavailable or two exact-prompt image-guided attempts fail the same visual gate, stop and report the method-gate blocker.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -749,7 +763,7 @@ The active Stage 1 contract is:
 28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
 29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.
 30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.
-31. Do not start another unchanged built-in sprite-box reference attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. First change the generation method/tool/source-input path, or stop and report that the current built-in prompt path is exhausted.
+31. Do not start ad hoc or unchanged built-in sprite-box reference attempts after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. The queue-backed built-in same-context reference-staging path is the current allowed method change for one fresh reference-attempt batch only; if that exact path is unavailable or fails the same visual gate twice, stop and report that the current built-in prompt path is exhausted.
 32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
 33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable paid API fallback, or separate fresh proof source PNGs.
 34. For paid API fallback reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. The env file must contain `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.

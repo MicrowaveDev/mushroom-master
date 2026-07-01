@@ -94,6 +94,9 @@ function validateQueue(queue) {
     if ((item.referenceInputs || []).length > 0 && !/actual image inputs/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must require actual image inputs for references`);
     }
+    if (item.methodGate && !/current allowed method change/i.test(agentInstructionText)) {
+      issues.push(`${item.id}: agentInstructions must name the current allowed method change`);
+    }
     if (item.generationContract?.stateSheet?.requiredReferenceImageInput && !/grouped 8x4 state sheet/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
     }
@@ -149,8 +152,24 @@ function validateQueue(queue) {
       if (!/Passive viewing/.test(builtIn.notEnough || '') || !/not enough/.test(builtIn.notEnough || '')) {
         issues.push(`${item.id}: builtInImagegen.notEnough must reject passive viewing`);
       }
+      if (!item.methodGate) {
+        issues.push(`${item.id}: builtin-ready items must include a methodGate`);
+      }
     } else if (item.status?.includes('builtin')) {
       issues.push(`${item.id}: builtin-ready items must include builtInImagegen.defaultPath=true`);
+    }
+    if (item.methodGate) {
+      if (!item.methodGate.rollout) issues.push(`${item.id}: methodGate missing rollout`);
+      if (!/allowed/i.test(item.methodGate.status || '')) issues.push(`${item.id}: methodGate.status must mark the allowed path`);
+      if (!/current allowed method change/i.test(item.methodGate.reason || '')) {
+        issues.push(`${item.id}: methodGate.reason must say current allowed method change`);
+      }
+      if (!/one fresh reference-attempt batch/i.test(item.methodGate.allowedPath || '')) {
+        issues.push(`${item.id}: methodGate.allowedPath must limit the queued path to one fresh reference-attempt batch`);
+      }
+      if (!/same visual gate twice/i.test(item.methodGate.stopIf || '')) {
+        issues.push(`${item.id}: methodGate.stopIf must stop after repeated same-gate failure`);
+      }
     }
     for (const reference of item.referenceInputs || []) {
       if (!reference.path) {
@@ -203,6 +222,15 @@ function printItem(item) {
     console.log(`  imagegen call: ${item.builtInImagegen.generationCall}`);
     console.log(`  after render: ${item.builtInImagegen.afterRender}`);
     console.log(`  not enough: ${item.builtInImagegen.notEnough}`);
+    console.log('');
+  }
+  if (item.methodGate) {
+    console.log('Method gate / allowed method change:');
+    console.log(`  rollout: ${item.methodGate.rollout}`);
+    console.log(`  status: ${item.methodGate.status}`);
+    console.log(`  reason: ${item.methodGate.reason}`);
+    console.log(`  allowed path: ${item.methodGate.allowedPath}`);
+    console.log(`  stop if: ${item.methodGate.stopIf}`);
     console.log('');
   }
   console.log(`env fallback arg: pass ${item.env.envFileArg} only for paid API fallback; always-required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
