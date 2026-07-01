@@ -200,8 +200,8 @@ These mechanics need adapters before extraction:
 - shop generation that imports Mushroom artifact pools and character
   eligibility rules
 - fusion application that writes DB rows
-- bot loadout generation that imports Mushroom catalogs, presets, affinities,
-  and portrait helpers
+- bot loadout generation until catalog, starter preset, affinity, price,
+  validation, and portrait/ghost snapshot responsibilities are separated
 - battle simulation with hard-coded Mushroom abilities
 
 These are product-specific and must stay out of `backpack-game-core`:
@@ -226,3 +226,15 @@ parameterized. Fusion application and run-shop buy/refresh/sell mutations still
 belong in `mushroom-master` because they write DB rows and touch run currency.
 The next likely slice is bot loadout generation after catalog, affinity, preset,
 and price providers are injected.
+
+### Planned Bot-Loadout Boundary
+
+The bot-loadout extraction must keep product identity in `mushroom-master`.
+Reusable core may own weighted item choice, first-fit bag placement,
+rectangular item placement, occupied-cell tracking, and retry orchestration.
+Mushroom must still provide artifact catalog data, prices, `isBag`, bag shapes,
+starter bag/preset rows, affinity weighting, validation policy, portrait URLs,
+and `createBotGhostSnapshot` response shaping.
+
+Do not move battle ghost selection, mushroom portrait selection, or Mushroom
+starter preset lookup into `backpack-game-core`.

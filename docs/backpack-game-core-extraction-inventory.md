@@ -45,7 +45,7 @@ The package is consumed by `mushroom-master` as a pinned Git dependency.
 | Fusion application | `app/server/services/artifact-fusion-service.js` | Product-specific | Reads/writes DB rows, inserts loadout items, records reveals, uses Mushroom artifact catalog and persistence services. |
 | Shop offer generation | `backpack-game-core/src/shop-offer.js`; Mushroom adapter in `app/server/services/shop-service.js` | Extracted with product config | Core owns deterministic pool sampling, bag pity, bag chance escalation, and character-item slot reservation. Mushroom passes combat pools, bag pools, eligible character items, and balance constants. |
 | Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Product-specific | DB transactions, run locks, persisted shop states, run currency, refunds, and loadout rows stay in product service code. |
-| Bot loadout generation | `app/server/services/bot-loadout.js` | Adapter-needed, later | Contains reusable placement ideas, but imports Mushroom artifacts, affinities, presets, portraits, prices, grid constants, RNG, and validator. |
+| Bot loadout generation | `app/server/services/bot-loadout.js` | Next planned adapter slice | Contains reusable placement and weighted-pick ideas, but imports Mushroom artifacts, affinities, presets, portraits, prices, grid constants, RNG, and validator. Extract only through provider hooks and keep ghost snapshot/portrait glue local. |
 | Battle simulation | `app/server/services/battle-engine.js` | Product-specific until adapterized | Hard-coded Mushroom ids and active/passive abilities are inside combat logic. Extract only after ability hooks/config are designed. |
 | Wallet / payment / assets / gacha | `app/server/services/wallet-service.js`, `app/server/services/asset-service.js`, models, routes | Product-specific | Payment providers, ledgers, profile assets, webhooks, compliance, and Mushroom skin catalog are not reusable backpack mechanics. |
 
@@ -206,13 +206,122 @@ The fourth shipped slice moved pure shop-offer generation:
 The wrapper passes those pools/config values into core, so the core package does
 not import Mushroom catalog data, run DB rows, or run currency services.
 
+## Planned Fifth Slice: Bot Loadout Generation
+
+**Status:** Planned only. No bot-loadout code has moved yet.
+
+### Source Of Truth
+
+- Current implementation: `app/server/services/bot-loadout.js`
+- Current behavior tests: `tests/game/bot-loadout.test.js`
+- Supporting local adapters: `app/server/game-data.js`,
+  `app/server/services/loadout-utils.js`, `app/shared/bag-shape.js`,
+  `app/server/lib/utils.js`, and `app/server/services/battle-engine.js`
+
+### Success Conditions
+
+- `backpack-game-core` owns only reusable loadout-generation mechanics:
+  weighted selection, first-fit bag placement, rectangular item placement, and
+  retry orchestration over injected data.
+- `mushroom-master` owns Mushroom data and presentation:
+  artifact catalog, family/affinity weights, starter presets, prices, portraits,
+  mushroom choice, ghost snapshot shape, and final validation policy.
+- Existing bot-loadout behavior stays deterministic for a given seed and
+  Mushroom catalog.
+- The core package gets fake-catalog unit tests before Mushroom imports change.
+- Mushroom keeps and passes:
+  - `gridWidth` / `gridHeight`
+  - item pool
+  - starter bag and starter preset rows
+  - `getItemPrice`
+  - `isBag`
+  - `getBagShape` / rotation handling
+  - `weightForItem`
+  - optional `validateLoadout`
+  - RNG and optional shuffle helper
+
+### Non-Goals
+
+- Do not move `createBotGhostSnapshot`; it chooses a Mushroom, portrait, and
+  response shape.
+- Do not move `getMushroomById`, `mushrooms`, `portraitUrl`,
+  `getStarterPreset`, `getStarterPresetCost`, or `getArtifactPrice`.
+- Do not move `validateLoadoutItems`; it still depends on Mushroom catalog,
+  prices, bag semantics, and validation errors.
+- Do not move battle simulation or ability logic as part of the bot-loadout
+  slice.
+
+### Proposed Adapter Shape
+
+The core API should be close to:
+
+```js
+generateBackpackLoadout({
+  rng,
+  budget,
+  attempts,
+  grid: { columns, rows },
+  items,
+  starterBag,
+  starterPreset,
+  presetCost,
+  getItemId,
+  getItemPrice,
+  isBag,
+  getBagShape,
+  weightForItem,
+  validateLoadout
+})
+```
+
+`mushroom-master` should expose a small wrapper:
+
+```js
+createBotLoadout(mushroom, rng, budget)
+```
+
+That wrapper builds the arguments above from Mushroom catalogs and returns the
+current `{ gridWidth, gridHeight, items }` shape.
+
+### Implementation Order
+
+1. Add core tests with a tiny fake catalog that covers:
+   - starter bag and starter preset are included first,
+   - at least one non-bag item is bought when affordable,
+   - first-fit compact bag anchors are stable,
+   - bought items can land inside bought bag cells,
+   - budget includes preset cost only through injected validation,
+   - failed validation retries up to the configured attempt limit.
+2. Move or duplicate pure helper logic into core:
+   - weighted item pick
+   - candidate rectangle cells
+   - first-fit bag placement candidates
+   - occupied item/bag marking
+   - optional deterministic shuffle helper
+3. Add `generateBackpackLoadout` to core and keep it free of Mushroom artifact
+   ids, portrait urls, DB calls, Express routes, and game-run rows.
+4. Update `mushroom-master` `createBotLoadout` to pass Mushroom providers into
+   core.
+5. Keep `createBotGhostSnapshot` local and unchanged except for calling the
+   wrapper.
+6. Verify:
+   - `backpack-game-core`: `npm test`
+   - `mushroom-master` focused:
+     `node --test tests/game/bot-loadout.test.js tests/game/round-resolution.test.js tests/game/loadout-refactor.test.js`
+   - `npm run game:build`
+
+### Rollback
+
+- Revert the Mushroom dependency pin and wrapper import.
+- Restore the local `createBotLoadout` body from the previous commit.
+- Keep the core commit unless it contains bad generated artifacts or secrets.
+
 ## Next Slices After Bag Shape, Grid Geometry, Fusion, And Shop Offer
 
 After the shipped bag-shape, grid-geometry, fusion-matching, and shop-offer
 slices, reassess in this order:
 
-1. Adapterize bot loadout generation over catalog, affinity, preset, and price
-   providers.
+1. Implement the planned bot-loadout adapter slice above.
 2. Design battle ability hooks before moving any battle simulation code.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
