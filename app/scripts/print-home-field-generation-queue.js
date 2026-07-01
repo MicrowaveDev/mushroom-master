@@ -141,6 +141,9 @@ function validateQueue(queue) {
       if (!/Do not run reference imagegen/i.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must skip reference imagegen for local state-sheet source mode`);
       }
+      if (!/Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/.test(agentInstructionText)) {
+        issues.push(`${item.id}: agentInstructions must preserve the same HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS value for preflight/archive/stage`);
+      }
     }
     if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
     if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);

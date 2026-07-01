@@ -1888,6 +1888,7 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet PNG/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /game:home-field:stage-chibi-local-source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Do not run reference imagegen/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/.test(instruction)));
   assert.equal(item.assetId, 'thalla');
   assert.equal(item.assetType, 'character');
   assert.equal(item.env.doNotInferEnvFile, true);
@@ -1983,6 +1984,7 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /passive viewing/);
   assert.match(result.stdout, /Supplied local state-sheet source path:/);
   assert.match(result.stdout, /env key: HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
+  assert.match(result.stdout, /Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/);
   assert.match(result.stdout, /stage command: npm run game:home-field:stage-chibi-local-source/);
   assert.match(result.stdout, /reference proxy: .*thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /skip imagegen: yes/);
