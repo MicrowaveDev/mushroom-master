@@ -69,7 +69,34 @@ function validateQueue(queue) {
     }
     if (seen.has(item.id)) issues.push(`duplicate item id: ${item.id}`);
     seen.add(item.id);
+    if (!item.displayTitle) issues.push(`${item.id}: missing displayTitle`);
     if (!item.assetId) issues.push(`${item.id}: missing assetId`);
+    if (!item.minimalLauncherPrompt) issues.push(`${item.id}: missing minimalLauncherPrompt`);
+    if (item.minimalLauncherPrompt && !item.minimalLauncherPrompt.includes(item.commands?.queue || '<missing>')) {
+      issues.push(`${item.id}: minimalLauncherPrompt must include the queue command`);
+    }
+    if (!Array.isArray(item.agentInstructions) || item.agentInstructions.length === 0) {
+      issues.push(`${item.id}: agentInstructions must be a non-empty array`);
+    }
+    const agentInstructionText = (item.agentInstructions || []).join('\n');
+    if (item.promptSource?.runDoc && !agentInstructionText.includes(item.promptSource.runDoc)) {
+      issues.push(`${item.id}: agentInstructions must mention ${item.promptSource.runDoc}`);
+    }
+    if (item.env?.doNotInferEnvFile === true && !/Do not infer `?\.env`?/i.test(agentInstructionText)) {
+      issues.push(`${item.id}: agentInstructions must say not to infer .env`);
+    }
+    if (item.env?.plainOpenAiApiKeyIgnored === true && !/plain OPENAI_API_KEY is ignored/i.test(agentInstructionText)) {
+      issues.push(`${item.id}: agentInstructions must say plain OPENAI_API_KEY is ignored`);
+    }
+    if (item.env?.apiFallbackRequiresSkillUnavailable === true && !agentInstructionText.includes('HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1')) {
+      issues.push(`${item.id}: agentInstructions must mention HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`);
+    }
+    if ((item.referenceInputs || []).length > 0 && !/actual image inputs/i.test(agentInstructionText)) {
+      issues.push(`${item.id}: agentInstructions must require actual image inputs for references`);
+    }
+    if (item.generationContract?.stateSheet?.requiredReferenceImageInput && !/grouped 8x4 state sheet/i.test(agentInstructionText)) {
+      issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
+    }
     if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
     if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);
     if (!item.env?.envFileArg) issues.push(`${item.id}: missing env.envFileArg`);
@@ -126,10 +153,18 @@ function selectItems(items, opts) {
 }
 
 function printItem(item) {
-  console.log(`=== ${item.id} ===`);
+  console.log(`=== ${item.displayTitle || item.id} ===`);
+  console.log(`id: ${item.id}`);
   console.log(`asset: ${item.assetId} (${item.assetType})`);
   console.log(`pipeline: ${item.pipeline}`);
   console.log(`status: ${item.status}`);
+  console.log('');
+  console.log('Minimal launcher prompt:');
+  console.log(`  ${item.minimalLauncherPrompt}`);
+  console.log('');
+  console.log('Agent instructions:');
+  for (const instruction of item.agentInstructions || []) console.log(`  - ${instruction}`);
+  console.log('');
   console.log(`env fallback arg: pass ${item.env.envFileArg} only for paid API fallback; always-required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
   console.log(`env fallback keys: ${(item.env.apiFallbackRequiredKeys || []).join(', ') || 'none'}`);
   if (item.env.doNotInferEnvFile) {

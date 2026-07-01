@@ -1599,20 +1599,22 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
 
 test('[home-field] chibi proof launcher carries explicit reference-capable workflow', () => {
   const prompt = fs.readFileSync(runChibiProofPromptPath, 'utf8');
+  const shortLauncher = prompt.match(/```text\n([\s\S]*?)\n```/)?.[1] || '';
 
   assert.match(prompt, /Short Launcher Prompt/);
-  assert.match(prompt, /home-field-generation-queue\.json item thalla-stage1-chibi-proof/);
-  assert.match(prompt, /generation-queue -- --id=thalla-stage1-chibi-proof/);
-  assert.match(prompt, /Prefer built-in\/imagegen skill output/);
-  assert.match(prompt, /paid API fallback/);
-  assert.match(prompt, /OPENAI_IMAGEGEN_API_KEY/);
-  assert.match(prompt, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
-  assert.match(prompt, /plain OPENAI_API_KEY must not be used/);
+  assert.match(shortLauncher, /run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof`/);
+  assert.match(shortLauncher, /follow the printed agent instructions exactly/);
+  assert.doesNotMatch(shortLauncher, /OPENAI_IMAGEGEN_API_KEY/);
+  assert.doesNotMatch(shortLauncher, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
+  assert.doesNotMatch(shortLauncher, /plain OPENAI_API_KEY/);
+  assert.doesNotMatch(shortLauncher, /Prefer built-in\/imagegen skill output/);
+  assert.match(prompt, /app\/shared\/home-field\/home-field-generation-queue\.json/);
+  assert.match(prompt, /queue command must print the run title, canonical doc, env rules, reference-input gates, stop gates, and final-response fields/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
   assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
-  assert.match(prompt, /Continue past the reference gate only if the grouped 8x4 state sheet can also be generated with the passed reference PNG attached as an actual image input/);
-  assert.match(prompt, /Do not infer \.env/);
+  assert.match(prompt, /ONE coherent `8x4` state sheet for Thalla only through a reference-capable image path with the passed `\.agent\/home-field-workspace\/reference\/thalla_chibi_turnaround\.reference\.png` attached as an actual image input/);
+  assert.match(prompt, /Do not infer `\.env`/);
   assert.match(prompt, /default launcher is built-in\/imagegen skill first/);
   assert.doesNotMatch(prompt, /default launcher now uses explicit CLI\/API fallback/);
   assert.doesNotMatch(prompt, /Use the explicit CLI\/API helper path by default/);
@@ -1627,7 +1629,6 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.match(prompt, /image_gen\.py edit/);
   assert.match(prompt, /API-size source PNG/);
   assert.match(prompt, /`chibi-reference-api-proof` creates only the non-production reference sheet/);
-  assert.match(prompt, /grouped 8x4 state sheet can also be generated with the passed reference PNG attached as an actual image input/);
   assert.match(prompt, /prompt text for the grouped state sheet/);
   assert.match(prompt, /palette audit and visual gate must still pass/);
   assert.match(prompt, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
@@ -1798,6 +1799,17 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
 
   assert.equal(queue.schemaVersion, 1);
   assert.ok(item, 'expected thalla-stage1-chibi-proof queue item');
+  assert.equal(item.displayTitle, 'Thalla Home Field chibi Stage 1 proof');
+  assert.match(item.minimalLauncherPrompt, /generation-queue -- --id=thalla-stage1-chibi-proof/);
+  assert.match(item.minimalLauncherPrompt, /follow the printed agent instructions exactly/);
+  assert.ok(item.agentInstructions.some((instruction) => /Thalla Home Field chibi Stage 1 proof/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /Do not infer `\.env`/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /OPENAI_IMAGEGEN_API_KEY/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /plain OPENAI_API_KEY is ignored/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /actual image inputs/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /grouped 8x4 state sheet/.test(instruction)));
   assert.equal(item.assetId, 'thalla');
   assert.equal(item.assetType, 'character');
   assert.equal(item.env.doNotInferEnvFile, true);
@@ -1835,7 +1847,14 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Home Field Generation Queue/);
+  assert.match(result.stdout, /Thalla Home Field chibi Stage 1 proof/);
   assert.match(result.stdout, /thalla-stage1-chibi-proof/);
+  assert.match(result.stdout, /Minimal launcher prompt:/);
+  assert.match(result.stdout, /follow the printed agent instructions exactly/);
+  assert.match(result.stdout, /Agent instructions:/);
+  assert.match(result.stdout, /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/);
+  assert.match(result.stdout, /Attach every referenceInputs PNG as actual image inputs/);
+  assert.match(result.stdout, /grouped 8x4 state sheet can attach/);
   assert.match(result.stdout, /do not infer \.env/i);
   assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY/);
   assert.match(result.stdout, /plain OPENAI_API_KEY is ignored/);
