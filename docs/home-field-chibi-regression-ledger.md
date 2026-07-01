@@ -729,7 +729,22 @@ The active Stage 1 contract is:
 
 - the queue item now includes a `methodGate` block and prints **Method gate / allowed method change**;
 - the queue-backed built-in same-context reference-staging path is explicitly the current allowed method change because it requires loading all three `referenceInputs` with `view_image`, immediately calling built-in `image_gen` with those visible images named as references, and saving or claiming the output;
-- the allowance is limited to one fresh reference-attempt batch; if that exact path is unavailable or two exact-prompt image-guided attempts fail the same visual gate, stop and report the method-gate blocker.
+- the allowance is limited to one fresh reference-attempt batch; if that exact path is unavailable or two exact-prompt image-guided attempts fail the same visual gate, stop and report the method-gate blocker. That allowance was later consumed and exhausted by regression 47.
+
+### 47. Queue-Backed Built-In Reference Staging Still Produced Oversized Palette-Bloated Turnaround
+
+**Symptom:** Rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c` finally exercised the queue-backed built-in same-context staging path. It printed the queue item, passed built-in preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`, archived stale reference evidence, loaded all three `referenceInputs` PNGs with `view_image`, called built-in `image_gen` once with those visible images named as references, and claimed the generated PNG. The claimed reference then failed the reference verifier at `1448x1086`: `4` major blobs with max `249x332`, including oversized blobs `249x332`, `242x325`, `219x327`, and `217x324`. Palette audit also failed with `91` significant exact colors, `159` minor colors, and `52` coarse 32-step bins. Visual review found the same failure family: a large soft four-view turnaround, glossy/large eyes, hair-like side locks, repeated gold cap/robe marks, and ornament/status drift.
+
+**What improved:** This run removed the previous contradiction. The agent used the short queue launcher, the queue printed the built-in reference-staging procedure, the same-context image staging was actually attempted, the output was saved/claimed, and the verifier plus palette audit stopped the run before grouped state-sheet generation, split frames, candidate production, preview, verdict recording, or app-facing overwrite.
+
+**What was wrong in the flow:** The one allowed built-in method-change attempt proved the current built-in same-context staging method still cannot obey the Thalla sprite-box, palette, and style constraints. The workflow was now executable, but the art method still collapsed back into an oversized polished turnaround. Leaving the queue as built-in-ready would invite another expensive unchanged retry with the same known failure mode.
+
+**Guardrails added:**
+
+- the `thalla-stage1-chibi-proof` queue status is now `blocked_builtin_same_context_reference_staging_exhausted`;
+- the queue printer labels the built-in section as blocked by the method gate and validates that blocked queue items explain the exhausted path, allowed alternatives, and stop-before-archive/imagegen rule;
+- `RUN_CHIBI_PROOF_PROMPT.md`, `next-chibi-proof`, `home-field-prompts.json`, imagegen requirements, candidate contract, agent flow, minimal production plan, and tests now say not to run the queue-backed built-in same-context reference-staging path again unchanged;
+- future runs must stop before archive/imagegen unless they have a different reference-capable generation/editing method, supplied local proof source PNGs outside `docs/reference`, or explicit user-approved fallback.
 
 ## Decision Rules Going Forward
 
@@ -763,7 +778,7 @@ The active Stage 1 contract is:
 28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
 29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.
 30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.
-31. Do not start ad hoc or unchanged built-in sprite-box reference attempts after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. The queue-backed built-in same-context reference-staging path is the current allowed method change for one fresh reference-attempt batch only; if that exact path is unavailable or fails the same visual gate twice, stop and report that the current built-in prompt path is exhausted.
+31. Do not start ad hoc or unchanged built-in sprite-box reference attempts after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. The queue-backed built-in same-context reference-staging path was consumed and failed in rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`; it is now exhausted. Stop before archive/imagegen unless a different reference-capable generation/editing method, supplied local proof source PNGs outside `docs/reference`, or explicit user-approved fallback is available.
 32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
 33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable paid API fallback, or separate fresh proof source PNGs.
 34. For paid API fallback reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. The env file must contain `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.

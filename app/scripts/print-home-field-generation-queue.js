@@ -94,8 +94,14 @@ function validateQueue(queue) {
     if ((item.referenceInputs || []).length > 0 && !/actual image inputs/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must require actual image inputs for references`);
     }
-    if (item.methodGate && !/current allowed method change/i.test(agentInstructionText)) {
+    const methodGateStatus = item.methodGate?.status || '';
+    const methodGateBlocked = /blocked|exhausted/i.test(methodGateStatus);
+    const methodGateAllowed = /allowed/i.test(methodGateStatus) && !methodGateBlocked;
+    if (item.methodGate && methodGateAllowed && !/current allowed method change/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must name the current allowed method change`);
+    }
+    if (item.methodGate && methodGateBlocked && !/exhausted|do not run it again/i.test(agentInstructionText)) {
+      issues.push(`${item.id}: agentInstructions must say the built-in method is exhausted or must not run again`);
     }
     if (item.generationContract?.stateSheet?.requiredReferenceImageInput && !/grouped 8x4 state sheet/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
@@ -160,15 +166,26 @@ function validateQueue(queue) {
     }
     if (item.methodGate) {
       if (!item.methodGate.rollout) issues.push(`${item.id}: methodGate missing rollout`);
-      if (!/allowed/i.test(item.methodGate.status || '')) issues.push(`${item.id}: methodGate.status must mark the allowed path`);
-      if (!/current allowed method change/i.test(item.methodGate.reason || '')) {
+      if (!methodGateAllowed && !methodGateBlocked) {
+        issues.push(`${item.id}: methodGate.status must mark the path allowed or blocked/exhausted`);
+      }
+      if (methodGateAllowed && !/current allowed method change/i.test(item.methodGate.reason || '')) {
         issues.push(`${item.id}: methodGate.reason must say current allowed method change`);
       }
-      if (!/one fresh reference-attempt batch/i.test(item.methodGate.allowedPath || '')) {
+      if (methodGateAllowed && !/one fresh reference-attempt batch/i.test(item.methodGate.allowedPath || '')) {
         issues.push(`${item.id}: methodGate.allowedPath must limit the queued path to one fresh reference-attempt batch`);
       }
-      if (!/same visual gate twice/i.test(item.methodGate.stopIf || '')) {
+      if (methodGateAllowed && !/same visual gate twice/i.test(item.methodGate.stopIf || '')) {
         issues.push(`${item.id}: methodGate.stopIf must stop after repeated same-gate failure`);
+      }
+      if (methodGateBlocked && !/failed|exhausted/i.test(item.methodGate.reason || '')) {
+        issues.push(`${item.id}: blocked methodGate.reason must explain the failed or exhausted path`);
+      }
+      if (methodGateBlocked && !/Do not run|Continue only/i.test(item.methodGate.allowedPath || '')) {
+        issues.push(`${item.id}: blocked methodGate.allowedPath must say not to run the exhausted path`);
+      }
+      if (methodGateBlocked && !/Stop before archive\/imagegen/i.test(item.methodGate.stopIf || '')) {
+        issues.push(`${item.id}: blocked methodGate.stopIf must stop before archive/imagegen`);
       }
     }
     for (const reference of item.referenceInputs || []) {
@@ -215,7 +232,8 @@ function printItem(item) {
   for (const instruction of item.agentInstructions || []) console.log(`  - ${instruction}`);
   console.log('');
   if (item.builtInImagegen?.defaultPath) {
-    console.log('Built-in imagegen default path:');
+    const methodGateBlocked = /blocked|exhausted/i.test(item.methodGate?.status || '');
+    console.log(methodGateBlocked ? 'Built-in imagegen path (blocked by method gate):' : 'Built-in imagegen default path:');
     console.log(`  flags: ${(item.builtInImagegen.confirmationFlags || []).join(' ')}`);
     console.log(`  preflight: ${item.builtInImagegen.preflightCommand}`);
     console.log(`  reference staging: ${item.builtInImagegen.referenceStaging}`);

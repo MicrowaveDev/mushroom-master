@@ -1526,11 +1526,10 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /mentioning paths in the prompt is not enough/);
   assert.match(result.stdout, /view_image only as the current imagegen skill's same-context input-staging step/);
   assert.match(result.stdout, /explicitly name those visible images as references/);
-  assert.match(result.stdout, /Method gate after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070/);
-  assert.match(result.stdout, /do not run ad hoc or unchanged built-in sprite-box imagegen attempts/);
-  assert.match(result.stdout, /queue-backed built-in path/);
-  assert.match(result.stdout, /current allowed method change/);
-  assert.match(result.stdout, /one fresh reference-attempt batch/);
+  assert.match(result.stdout, /Method gate after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/);
+  assert.match(result.stdout, /do not run the queue-backed built-in same-context reference-staging path again unchanged/);
+  assert.match(result.stdout, /same-context built-in image_gen call with the visible images named as references/);
+  assert.match(result.stdout, /built-in staging method is exhausted/);
   assert.match(result.stdout, /checked-in docs\/reference PNGs are style references, not supplied proof source PNGs/);
   assert.match(result.stdout, /passive viewing, listing filesystem paths, or mentioning paths in the prompt is not enough/i);
   assert.doesNotMatch(result.stdout, /only exposes a prompt field/);
@@ -1600,8 +1599,8 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
   assert.match(prompt.details, /OPENAI_IMAGEGEN_API_KEY/);
   assert.match(prompt.details, /Plain OPENAI_API_KEY is ignored/);
   assert.match(prompt.details, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
-  assert.match(prompt.details, /view_image is only the current imagegen skill's same-context input-staging step/);
-  assert.match(prompt.details, /queue-backed built-in same-context staging path is the current allowed method change/);
+  assert.match(prompt.details, /Use built-in\/imagegen skill output as the normal proof-art path only when the queue method gate allows it/);
+  assert.match(prompt.details, /queue-backed built-in same-context staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/);
   assert.match(prompt.details, /attach or same-context stage/);
   assert.match(prompt.details, /passive view_image reference exposure is still not enough/);
   assert.match(prompt.constraints, /attached or staged as actual same-context image inputs/);
@@ -1620,7 +1619,7 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.doesNotMatch(shortLauncher, /plain OPENAI_API_KEY/);
   assert.doesNotMatch(shortLauncher, /Prefer built-in\/imagegen skill output/);
   assert.match(prompt, /app\/shared\/home-field\/home-field-generation-queue\.json/);
-  assert.match(prompt, /queue command must print the run title, canonical doc, built-in imagegen default path, method-gate status, env rules, reference-input gates, stop gates, and final-response fields/);
+  assert.match(prompt, /queue command must print the run title, canonical doc, built-in imagegen default\/blocked path, method-gate status, env rules, reference-input gates, stop gates, and final-response fields/);
   assert.match(prompt, /built-in section must include the `view_image` reference-input staging step, same-context built-in `image_gen` call, built-in preflight flags, and save\/claim-after-render instruction/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
@@ -1628,8 +1627,9 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.match(prompt, /ONE coherent `8x4` state sheet for Thalla only through a reference-capable image path with the passed `\.agent\/home-field-workspace\/reference\/thalla_chibi_turnaround\.reference\.png` attached as an actual image input/);
   assert.match(prompt, /Do not infer `\.env`/);
   assert.match(prompt, /default launcher is built-in\/imagegen skill first/);
-  assert.match(prompt, /queue-backed built-in path printed by `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` is the current allowed method change/);
-  assert.match(prompt, /one fresh reference-attempt batch only/);
+  assert.match(prompt, /Current method gate: after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`/);
+  assert.match(prompt, /queue-backed built-in same-context reference-staging path again unchanged/);
+  assert.match(prompt, /built-in staging method is exhausted/);
   assert.doesNotMatch(prompt, /default launcher now uses explicit CLI\/API fallback/);
   assert.doesNotMatch(prompt, /Use the explicit CLI\/API helper path by default/);
   assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
@@ -1663,8 +1663,8 @@ test('[home-field] imagegen requirements put built-in defaults in queue output',
   assert.match(requirements, /claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference\|state-sheet>/);
   assert.match(requirements, /Do not rely on a human-pasted prompt to carry those built-in details/);
   assert.match(requirements, /Method gate \/ allowed method change/);
-  assert.match(requirements, /queue JSON and printer must carry and validate its built-in imagegen default path and method-gate status/);
-  assert.match(requirements, /queue-backed built-in same-context reference-staging path is the current allowed method change/);
+  assert.match(requirements, /queue JSON and printer must carry and validate its built-in imagegen path and method-gate status/);
+  assert.match(requirements, /queue-backed built-in same-context reference-staging path is exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`/);
 });
 
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
@@ -1830,6 +1830,7 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
 
   assert.equal(queue.schemaVersion, 1);
   assert.ok(item, 'expected thalla-stage1-chibi-proof queue item');
+  assert.equal(item.status, 'blocked_builtin_same_context_reference_staging_exhausted');
   assert.equal(item.displayTitle, 'Thalla Home Field chibi Stage 1 proof');
   assert.match(item.minimalLauncherPrompt, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(item.minimalLauncherPrompt, /follow the printed agent instructions exactly/);
@@ -1842,7 +1843,7 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /actual image inputs/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /same-context input-staging step/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /visible images explicitly named as references/.test(instruction)));
-  assert.ok(item.agentInstructions.some((instruction) => /current allowed method change/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /passive viewing/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /grouped 8x4 state sheet/.test(instruction)));
   assert.equal(item.assetId, 'thalla');
@@ -1868,11 +1869,12 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.builtInImagegen.generationCall, /visible referenceInputs images as references/);
   assert.match(item.builtInImagegen.afterRender, /claim-imagegen-output/);
   assert.match(item.builtInImagegen.notEnough, /Passive viewing/);
-  assert.equal(item.methodGate.rollout, 'codex-019f1a6c-3143-7631-b3a4-73da0f052070');
-  assert.equal(item.methodGate.status, 'queued_builtin_same_context_reference_staging_allowed_once');
-  assert.match(item.methodGate.reason, /current allowed method change/);
-  assert.match(item.methodGate.allowedPath, /one fresh reference-attempt batch/);
-  assert.match(item.methodGate.stopIf, /same visual gate twice/);
+  assert.equal(item.methodGate.rollout, 'codex-019f1eb1-1027-7752-95cf-d4f37cb0041c');
+  assert.equal(item.methodGate.status, 'blocked_builtin_same_context_reference_staging_exhausted');
+  assert.match(item.methodGate.reason, /failed the reference verifier/);
+  assert.match(item.methodGate.reason, /91 significant exact colors/);
+  assert.match(item.methodGate.allowedPath, /Do not run the built-in same-context staging path again/);
+  assert.match(item.methodGate.stopIf, /Stop before archive\/imagegen/);
   assert.equal(item.generationContract.stateSheet.stopIfPromptOnly, true);
   assert.equal(item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput, true);
   assert.match(item.generationContract.stateSheet.requiredReferenceImageInput, /thalla_chibi_turnaround\.reference\.png/);
@@ -1907,7 +1909,7 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /Agent instructions:/);
   assert.match(result.stdout, /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/);
   assert.match(result.stdout, /Attach every referenceInputs PNG as actual image inputs/);
-  assert.match(result.stdout, /Built-in imagegen default path:/);
+  assert.match(result.stdout, /Built-in imagegen path \(blocked by method gate\):/);
   assert.match(result.stdout, /flags: HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stdout, /preflight: HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
   assert.match(result.stdout, /reference staging: Load all 3 referenceInputs PNGs with view_image/);
@@ -1915,10 +1917,10 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /after render: Save each generated PNG directly to the required output path, or claim/);
   assert.match(result.stdout, /not enough: Passive viewing, listing paths, or mentioning reference paths in prompt text is not enough/);
   assert.match(result.stdout, /Method gate \/ allowed method change:/);
-  assert.match(result.stdout, /status: queued_builtin_same_context_reference_staging_allowed_once/);
-  assert.match(result.stdout, /reason: .*current allowed method change/);
-  assert.match(result.stdout, /allowed path: .*one fresh reference-attempt batch/);
-  assert.match(result.stdout, /stop if: .*same visual gate twice/);
+  assert.match(result.stdout, /status: blocked_builtin_same_context_reference_staging_exhausted/);
+  assert.match(result.stdout, /reason: .*91 significant exact colors/);
+  assert.match(result.stdout, /allowed path: .*Do not run the built-in same-context staging path again/);
+  assert.match(result.stdout, /stop if: .*Stop before archive\/imagegen/);
   assert.match(result.stdout, /same-context input-staging step/);
   assert.match(result.stdout, /visible images explicitly named as references/);
   assert.match(result.stdout, /passive viewing/);

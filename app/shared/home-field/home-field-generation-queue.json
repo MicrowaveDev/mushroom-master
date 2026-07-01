@@ -8,7 +8,7 @@
       "assetId": "thalla",
       "assetType": "character",
       "pipeline": "home-field-active-roster-chibi-stage1",
-      "status": "ready_for_builtin_imagegen_or_explicit_api_fallback",
+      "status": "blocked_builtin_same_context_reference_staging_exhausted",
       "priority": 10,
       "ownerRole": "Imagegen Worker",
       "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and follow the printed agent instructions exactly.",
@@ -19,7 +19,7 @@
         "Do not infer `.env` or neighboring repo env files; paid API fallback requires the launcher/user to provide --env-file=<explicit-env-file>.",
         "Prefer built-in/imagegen skill only when HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 are confirmed in the same agent context that will run imagegen.",
         "For the built-in path, load each referenceInputs PNG with view_image as the current imagegen skill's same-context input-staging step, then use built-in image_gen with those visible images explicitly named as references; passive viewing without the image_gen call is not enough.",
-        "Method gate: the queue-backed built-in same-context reference-staging path printed below is the current allowed method change after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070; use it for one fresh reference-attempt batch only.",
+        "Method gate: the queue-backed built-in same-context reference-staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c; do not run it again without a different generation method, source-input path, or explicit user-approved fallback.",
         "Use paid API fallback only if built-in/imagegen is unavailable and the explicit env file contains OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1; plain OPENAI_API_KEY is ignored.",
         "Attach every referenceInputs PNG as actual image inputs to imagegen; passive viewing, listing paths, or using view_image without the following same-context image_gen reference call is not enough.",
         "Continue past the reference gate only if the grouped 8x4 state sheet can attach .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as an actual image input.",
@@ -69,11 +69,11 @@
         "notEnough": "Passive viewing, listing paths, or mentioning reference paths in prompt text is not enough unless the following same-context built-in image_gen call uses those visible images as references."
       },
       "methodGate": {
-        "rollout": "codex-019f1a6c-3143-7631-b3a4-73da0f052070",
-        "status": "queued_builtin_same_context_reference_staging_allowed_once",
-        "reason": "The queue-backed built-in path is the current allowed method change from the exhausted ad hoc built-in sprite-box attempts because it requires same-context view_image staging of all referenceInputs, a same-context built-in image_gen call that explicitly uses the visible references, and save/claim handoff.",
-        "allowedPath": "Use the built-in imagegen default path printed by this queue item for one fresh reference-attempt batch before the state-sheet step.",
-        "stopIf": "Stop before archive/imagegen if the agent cannot perform the same-context reference staging plus image_gen reference call, or if this queued path has already failed the same visual gate twice."
+        "rollout": "codex-019f1eb1-1027-7752-95cf-d4f37cb0041c",
+        "status": "blocked_builtin_same_context_reference_staging_exhausted",
+        "reason": "The queue-backed built-in path was tried with same-context view_image staging, a same-context built-in image_gen reference call, and save/claim handoff. It still failed the reference verifier with 1448x1086 oversized turnaround figures and failed palette audit with 91 significant exact colors, so this built-in method is exhausted for unchanged Thalla proof runs.",
+        "allowedPath": "Do not run the built-in same-context staging path again. Continue only with a different reference-capable generation/editing method, supplied local proof source PNGs outside docs/reference, or explicit user-approved fallback.",
+        "stopIf": "Stop before archive/imagegen if no different method/source-input path is available; the exhausted built-in staging path must not be retried."
       },
       "referenceInputs": [
         {
@@ -146,7 +146,7 @@
         "Stop if paid API fallback is attempted without an explicit env file containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1.",
         "Stop if the run relies on plain OPENAI_API_KEY for image generation; it is intentionally ignored.",
         "Stop if the active imagegen path can only use prompt text for the reference or state sheet.",
-        "Stop if the queued built-in same-context reference-staging path is unavailable or has already failed the same visual gate twice.",
+        "Stop if the run would reuse the exhausted built-in same-context reference-staging path without a different generation method or source-input path.",
         "Stop if the reference sheet fails verifier, palette audit, or visual gate.",
         "Stop if the grouped state sheet cannot attach the approved reference PNG as an actual image input.",
         "Do not overwrite app-facing PNGs during candidate proof."
