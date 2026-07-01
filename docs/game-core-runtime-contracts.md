@@ -218,7 +218,8 @@ These are product-specific and must stay out of `backpack-game-core`:
 
 Code movement into `backpack-game-core` should stay small and evidence-led:
 port focused core tests before changing `mushroom-master` imports, then verify
-the Mushroom adapter/bridge tests. The first shipped slice is bag-shape masks
-and rotation. The next likely slice is pure grid geometry from
-`loadout-utils.js`, after it is separated from Mushroom catalog and validation
-policy.
+the Mushroom adapter/bridge tests. The shipped slices are bag-shape masks,
+rotation, and first grid-geometry primitives. Full placement/loadout validation
+still belongs in `mushroom-master` until catalog access, pricing, bag policy,
+and validation errors are parameterized. The next likely slice is pure fusion
+matching after it is separated from Mushroom recipe catalog data.

@@ -11,8 +11,9 @@
 > **6D** work, not a launch blocker. The
 > authoritative current backlog is the **Remaining launch gates** under Phase 7B
 > plus the Deferred list. Code movement into `backpack-game-core` has started
-> with the small bag-shape slice; broader extraction should continue one pure
-> or adapterized cluster at a time. Shipped runtime contracts (wallet ledger, purchase
+> with the small bag-shape slice and first grid-geometry primitives; broader
+> extraction should continue one pure or adapterized cluster at a time. Shipped
+> runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
 > `tests/game/wallet-assets.test.js`, and the current reference doc
 > `docs/game-core-runtime-contracts.md` rather than re-derived from this plan's
@@ -20,11 +21,11 @@
 > See the **Post-Implementation Review** section for the verified state and
 > current remaining work. As of the latest implementation pass, **Phase 8A/8B**
 > is complete via `docs/game-core-runtime-contracts.md` and
-> `docs/backpack-game-core-extraction-inventory.md`; **Phase 8C** has moved the
-> first small pure extraction slice, bag-shape helpers, into
+> `docs/backpack-game-core-extraction-inventory.md`; **Phase 8C** has moved
+> bag-shape helpers and first grid-geometry primitives into
 > `backpack-game-core`.
 
-**Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, and the first Phase 8C slice
+**Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, and the first Phase 8C slices
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
@@ -39,9 +40,9 @@ cases.
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
 
-`backpack-game-core` now has an initial `main` commit with the extracted
-bag-shape helpers. Earlier notes that treated the target repo as empty are
-historical only.
+`backpack-game-core` now has `main` commits with the extracted bag-shape helpers
+and first grid-geometry primitives. Earlier notes that treated the target repo
+as empty are historical only.
 
 ## Implementation Status
 
@@ -78,6 +79,10 @@ bullet below):
   effective dimensions, shape-cell checks, and shape area now live in
   `backpack-game-core`, with `app/shared/bag-shape.js` kept as a compatibility
   re-export for existing Mushroom server/client imports.
+- The first grid-geometry primitives are extracted: `pieceCells`, `cellSet`,
+  `setsIntersect`, and `cellKey` now live in `backpack-game-core`.
+  `loadout-utils.js` re-exports `pieceCells` for existing Mushroom callers
+  while keeping catalog-backed validation in product code.
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -103,13 +108,13 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after the first Phase 8C slice: split pure grid geometry helpers
-out of `loadout-utils.js` behind a product-data adapter. Deferred beyond that:
-optional Phase 6D database renames / physical removal of legacy compatibility
-fields, multi-item pack guarantees, duplicate burning, marketplace trading,
-database managed pack catalogs, an expanded terms/support frontend, provider
-refund and reversal handling, distributed payment mutation hardening, and
-broader code movement into `backpack-game-core`.
+Next local lane after the first Phase 8C slices: split pure fusion matching from
+Mushroom recipe/catalog data. Deferred beyond that: optional Phase 6D database
+renames / physical removal of legacy compatibility fields, multi-item pack
+guarantees, duplicate burning, marketplace trading, database managed pack
+catalogs, an expanded terms/support frontend, provider refund and reversal
+handling, distributed payment mutation hardening, and broader code movement
+into `backpack-game-core`.
 
 ## Post-Implementation Review
 
@@ -1126,9 +1131,11 @@ Done when the plan records:
 
 ### Phase 8C - Move First Pure Cluster
 
-Status: **Complete for first slice.** Bag-shape masks and rotation now live in
-`backpack-game-core`, and `mushroom-master` consumes the package through the
-compatibility re-export at `app/shared/bag-shape.js`.
+Status: **Complete for first slices.** Bag-shape masks/rotation and first
+grid-geometry primitives now live in `backpack-game-core`. `mushroom-master`
+consumes bag-shape through the compatibility re-export at
+`app/shared/bag-shape.js`; `loadout-utils.js` imports/re-exports the core grid
+helpers while keeping Mushroom validation policy local.
 
 Only after 8A and 8B are complete:
 
@@ -1269,16 +1276,18 @@ Recommended initial choices:
    bag-shape masks and rotation, with tests ported before `mushroom-master`
    import swaps. **Done 2026-07-01 for the first slice.**
 14. Split pure grid geometry helpers out of `loadout-utils.js` behind a
-   Mushroom catalog/config adapter.
-15. Adapterize and optionally extract battle simulation only after Mushroom
+   Mushroom catalog/config adapter. **Done 2026-07-01 for `pieceCells`,
+   `cellSet`, `setsIntersect`, and `cellKey`; validation remains local.**
+15. Split pure fusion matching from Mushroom recipe catalog data.
+16. Adapterize and optionally extract battle simulation only after Mushroom
    ability logic has a product adapter.
-16. Add hub/submodule metadata and final cross-repo verification if
+17. Add hub/submodule metadata and final cross-repo verification if
    `backpack-game-core` is added to the hub manifest/submodule set.
-17. Optional Phase 6D database rename only if raw legacy column names become a
+18. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-18. Paid rollout readiness when external inputs are available: real provider
+19. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-19. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+20. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.

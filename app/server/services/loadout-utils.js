@@ -7,12 +7,15 @@ import {
   MAX_STUN_CHANCE
 } from '../game-data.js';
 import { clamp } from '../lib/utils.js';
-import { getEffectiveShape, isCellInShape, normalizeRotation } from '../../shared/bag-shape.js';
+import { cellSet, pieceCells, setsIntersect as intersects } from '@microwavedev/backpack-game-core';
+import { getEffectiveShape, normalizeRotation } from '../../shared/bag-shape.js';
 import {
   contributesStats,
   isBag,
   isContainerItem
 } from './artifact-helpers.js';
+
+export { pieceCells } from '@microwavedev/backpack-game-core';
 
 export function buildArtifactSummary(items) {
   const totals = {
@@ -33,32 +36,6 @@ export function buildArtifactSummary(items) {
 
   totals.stunChance = clamp(totals.stunChance, 0, MAX_STUN_CHANCE);
   return totals;
-}
-
-export function pieceCells(item, shape = null) {
-  const cells = [];
-  const x0 = Number(item.x);
-  const y0 = Number(item.y);
-  const width = Number(item.width);
-  const height = Number(item.height);
-  for (let dx = 0; dx < width; dx += 1) {
-    for (let dy = 0; dy < height; dy += 1) {
-      if (shape && !isCellInShape(shape, dx, dy)) continue;
-      cells.push(`${x0 + dx}:${y0 + dy}`);
-    }
-  }
-  return cells;
-}
-
-function cellSet(cells) {
-  return new Set(cells);
-}
-
-function intersects(a, b) {
-  for (const key of a) {
-    if (b.has(key)) return true;
-  }
-  return false;
 }
 
 function activeBagRows(items) {
