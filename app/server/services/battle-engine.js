@@ -1,3 +1,4 @@
+import { simulateBattle as simulateCoreBattle } from '@microwavedev/backpack-game-core';
 import {
   getArtifactById,
   getMushroomById,
@@ -123,13 +124,6 @@ function actionArtifactAttribution(attacker, defender) {
   };
 }
 
-function combatState(left, right) {
-  return {
-    left: summarizeCombatant(left),
-    right: summarizeCombatant(right)
-  };
-}
-
 function summarizeCombatant(combatant) {
   return {
     side: combatant.side,
@@ -147,110 +141,85 @@ function summarizeCombatant(combatant) {
   };
 }
 
-function computeStepOrder(left, right, rng) {
-  const leftSpeed = left.speed + (left.mushroomId === 'kirt' && left.state.kirtRoundBoostReady ? 1 : 0);
-  const rightSpeed = right.speed + (right.mushroomId === 'kirt' && right.state.kirtRoundBoostReady ? 1 : 0);
-
-  if (leftSpeed === rightSpeed) {
-    if (left.baseSpeed === right.baseSpeed) {
-      if (left.mushroomId === 'morga' && right.mushroomId !== 'morga') {
-        return [left, right];
-      }
-      if (right.mushroomId === 'morga' && left.mushroomId !== 'morga') {
-        return [right, left];
-      }
-      return rng() >= 0.5 ? [left, right] : [right, left];
-    }
-    return left.baseSpeed > right.baseSpeed ? [left, right] : [right, left];
-  }
-
-  return leftSpeed > rightSpeed ? [left, right] : [right, left];
+function combatantLabel(combatant) {
+  return combatant.name.en;
 }
 
-function resolveAction(attacker, defender, step, rng, events) {
-  if (attacker.currentHealth <= 0 || defender.currentHealth <= 0) {
-    return;
-  }
+function actionSpeed(combatant) {
+  return combatant.speed + (combatant.mushroomId === 'kirt' && combatant.state.kirtRoundBoostReady ? 1 : 0);
+}
 
-  if (attacker.state.stunned) {
-    attacker.state.stunned = false;
-    events.push({
-      type: 'skip',
-      step,
-      actorSide: attacker.side,
-      targetSide: defender.side,
-      narration: `${attacker.name.en} is stunned and loses the turn.`,
-      state: combatState(attacker.side === 'left' ? attacker : defender, attacker.side === 'right' ? attacker : defender)
-    });
-    defender.state.wasStunnedByPreviousEnemyTurn = false;
-    return;
+function breakEqualBaseSpeedTie({ left, right }) {
+  if (left.mushroomId === 'morga' && right.mushroomId !== 'morga') {
+    return left;
   }
+  if (right.mushroomId === 'morga' && left.mushroomId !== 'morga') {
+    return right;
+  }
+  return null;
+}
 
-  let attackDamage = attacker.attack + attacker.state.pendingDamageBuff;
-  let armorIgnore = 0;
-  let attackStunChance = attacker.stunChance;
-  let narration = '';
+function prepareMushroomAction({ attacker, action }) {
+  action.attackDamage += attacker.state.pendingDamageBuff;
 
   switch (attacker.mushroomId) {
     case 'thalla':
-      attackStunChance += 5;
-      narration = 'Spore Lash';
+      action.stunChance += 5;
+      action.actionName = 'Spore Lash';
       break;
     case 'lomie':
       attacker.state.pendingArmorBonus += 2;
-      narration = 'Settling Guard';
+      action.actionName = 'Settling Guard';
       break;
     case 'axilin':
-      attackDamage += 2;
+      action.attackDamage += 2;
       attacker.defense -= 1;
       attacker.state.defensePenalty += 1;
-      narration = 'Ferment Burst';
+      action.actionName = 'Ferment Burst';
       break;
     case 'kirt':
-      armorIgnore = 2;
-      narration = 'Clean Strike';
+      action.armorIgnore = 2;
+      action.actionName = 'Clean Strike';
       break;
     case 'morga':
-      attackStunChance += 10;
-      narration = 'Flash Cap';
+      action.stunChance += 10;
+      action.actionName = 'Flash Cap';
       break;
     case 'dalamar':
-      attackStunChance += 15;
-      narration = 'Bone of Entropy';
+      action.stunChance += 15;
+      action.actionName = 'Bone of Entropy';
       break;
     default:
-      narration = 'Attack';
+      action.actionName = 'Attack';
       break;
   }
 
   if (attacker.mushroomId === 'morga' && !attacker.state.firstActionDone) {
-    attackDamage += 4;
+    action.attackDamage += 4;
   }
   if (attacker.mushroomId === 'axilin') {
     attacker.state.successfulHitCount += 1;
     if (attacker.state.successfulHitCount % 3 === 0) {
-      attackDamage += 3;
+      action.attackDamage += 3;
     }
   }
+}
 
-  const incomingDamage = attackDamage;
-  const defenseValue = Math.max(0, defender.defense + defender.state.pendingArmorBonus - armorIgnore);
-  let resolvedDamage = Math.max(1, attackDamage - defenseValue);
+function afterMushroomDamageCalculated({ defender, damage }) {
   if (defender.mushroomId === 'lomie' && !defender.state.receivedFirstHit) {
-    resolvedDamage = Math.max(1, resolvedDamage - 3);
+    damage.resolvedDamage = Math.max(1, damage.resolvedDamage - 3);
   }
-  const blockedDamage = Math.max(0, incomingDamage - resolvedDamage);
+}
 
-  defender.currentHealth = Math.max(0, defender.currentHealth - resolvedDamage);
+function afterMushroomDamageApplied({ attacker, defender }) {
   defender.state.receivedFirstHit = true;
   defender.state.pendingArmorBonus = 0;
   attacker.state.firstActionDone = true;
   attacker.state.pendingDamageBuff = 0;
+}
 
-  const roll = rng() * 100;
-  const stunned = roll < Math.min(MAX_STUN_CHANCE, Math.max(0, attackStunChance));
-  if (stunned && defender.currentHealth > 0) {
-    defender.state.stunned = true;
+function afterMushroomStunResolved({ attacker, defender, stun }) {
+  if (stun.applied) {
     defender.state.wasStunnedByPreviousEnemyTurn = true;
     if (attacker.mushroomId === 'thalla') {
       attacker.state.pendingDamageBuff = 2;
@@ -258,8 +227,9 @@ function resolveAction(attacker, defender, step, rng, events) {
   } else {
     defender.state.wasStunnedByPreviousEnemyTurn = false;
   }
+}
 
-  // Dalamar passive — Ashen Veil: each hit erodes 1 enemy defense
+function afterMushroomActionResolved({ attacker, defender }) {
   if (attacker.mushroomId === 'dalamar') {
     defender.defense = Math.max(0, defender.defense - 1);
   }
@@ -270,112 +240,43 @@ function resolveAction(attacker, defender, step, rng, events) {
   if (defender.mushroomId === 'kirt' && !defender.state.wasStunnedByPreviousEnemyTurn) {
     defender.state.kirtRoundBoostReady = true;
   }
+}
 
-  const left = attacker.side === 'left' ? attacker : defender;
-  const right = attacker.side === 'right' ? attacker : defender;
+function afterMushroomSkip({ opponent }) {
+  opponent.state.wasStunnedByPreviousEnemyTurn = false;
+}
 
-  events.push({
-    type: 'action',
-    step,
-    actorSide: attacker.side,
-    targetSide: defender.side,
-    actionName: narration,
-    damage: resolvedDamage,
-    blockedDamage,
-    stunned,
-    artifactAttribution: actionArtifactAttribution(attacker, defender),
-    effectTags: artifactBattleEffects({ attacker, defender, blockedDamage }),
-    narration: `${attacker.name.en} uses ${narration} for ${resolvedDamage} damage${stunned ? ' and stuns the target' : ''}.`,
-    state: combatState(left, right)
-  });
+function battleEndNarration({ left, right, winnerSide, endReason }) {
+  const winnerName = winnerSide === 'left' ? left.name.en : right.name.en;
+  return winnerSide
+    ? endReason === 'step_cap'
+      ? `Step limit reached — ${winnerName} wins on health.`
+      : `${winnerName} wins.`
+    : 'The battle ends in a draw.';
 }
 
 export function simulateBattle(snapshot, seed) {
   const left = deriveCombatant(snapshot.left, 'left');
   const right = deriveCombatant(snapshot.right, 'right');
-  const rng = createRng(seed);
-  const events = [
-    {
-      type: 'battle_start',
-      step: 0,
-      narration: `${left.name.en} faces ${right.name.en}.`,
-      state: combatState(left, right)
-    }
-  ];
-  let winnerSide = null;
-  let finalStep = STEP_CAP;
-  let endReason = 'step_cap';
-
-  for (let step = 1; step <= STEP_CAP; step += 1) {
-    events.push({
-      type: 'step_start',
-      step,
-      narration: `Step ${step} begins.`,
-      state: combatState(left, right)
-    });
-
-    const [first, second] = computeStepOrder(left, right, rng);
-    resolveAction(first, second, step, rng, events);
-    if (second.currentHealth <= 0) {
-      winnerSide = first.side;
-      finalStep = step;
-      endReason = 'death';
-      break;
-    }
-    resolveAction(second, first, step, rng, events);
-    if (first.currentHealth <= 0) {
-      winnerSide = second.side;
-      finalStep = step;
-      endReason = 'death';
-      break;
-    }
-  }
-
-  let outcome = 'draw';
-  if (!winnerSide) {
-    const leftPct = left.currentHealth / left.maxHealth;
-    const rightPct = right.currentHealth / right.maxHealth;
-    if (leftPct > rightPct) {
-      winnerSide = 'left';
-    } else if (rightPct > leftPct) {
-      winnerSide = 'right';
-    } else {
-      const leftDamageDealt = right.maxHealth - right.currentHealth;
-      const rightDamageDealt = left.maxHealth - left.currentHealth;
-      if (leftDamageDealt > rightDamageDealt) {
-        winnerSide = 'left';
-      } else if (rightDamageDealt > leftDamageDealt) {
-        winnerSide = 'right';
-      }
-    }
-  }
-
-  if (winnerSide) {
-    outcome = winnerSide === 'left' ? 'win' : 'loss';
-  }
-
-  const winnerName = winnerSide === 'left' ? left.name.en : right.name.en;
-  const narration = winnerSide
-    ? endReason === 'step_cap'
-      ? `Step limit reached — ${winnerName} wins on health.`
-      : `${winnerName} wins.`
-    : 'The battle ends in a draw.';
-
-  events.push({
-    type: 'battle_end',
-    step: finalStep,
-    winnerSide,
-    outcome,
-    endReason,
-    narration,
-    state: combatState(left, right)
+  return simulateCoreBattle({
+    left,
+    right,
+    rng: createRng(seed),
+    stepCap: STEP_CAP,
+    maxStunChance: MAX_STUN_CHANCE,
+    summarizeCombatant,
+    getCombatantLabel: combatantLabel,
+    getActionSpeed: actionSpeed,
+    breakEqualBaseSpeedTie,
+    prepareAction: prepareMushroomAction,
+    afterDamageCalculated: afterMushroomDamageCalculated,
+    afterDamageApplied: afterMushroomDamageApplied,
+    afterStunResolved: afterMushroomStunResolved,
+    afterActionResolved: afterMushroomActionResolved,
+    afterSkip: afterMushroomSkip,
+    getArtifactAttribution: ({ attacker, defender }) => actionArtifactAttribution(attacker, defender),
+    getEffectTags: ({ attacker, defender, damage }) =>
+      artifactBattleEffects({ attacker, defender, blockedDamage: damage.blockedDamage }),
+    getEndNarration: battleEndNarration
   });
-
-  return {
-    winnerSide,
-    outcome,
-    leftState: summarizeCombatant(left),
-    rightState: summarizeCombatant(right),
-    events
-  };
 }

@@ -1,6 +1,6 @@
 # Profile Currency And Core Extraction Plan
 
-> **Reading guide (updated 2026-07-01 post-implementation review).** This document
+> **Reading guide (updated 2026-07-02 post-implementation review).** This document
 > is a historical ship record plus forward plan, not a live status board. The
 > shipped, test-backed foundation is Phases **1-5, 6A-6C, 7, 7A, and 7B**.
 > Phase **6A-6C** shipped as a compatibility-safe neutral naming pass:
@@ -26,13 +26,17 @@
 > bag-shape helpers, first grid-geometry primitives, fusion matching, and
 > shop-offer generation into `backpack-game-core`. **Phase 8D** moved
 > bot-loadout generation into `backpack-game-core` through product providers
-> while keeping ghost snapshot and portrait glue local.
+> while keeping ghost snapshot and portrait glue local. **Phase 8E** moved the
+> deterministic battle loop into `backpack-game-core` through ability and
+> metadata hooks while keeping Mushroom combat identity local.
 
-**Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, and the first Phase 8C slices
+**Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
+8D, and 8E
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
-on 2026-07-01; Phase 8A-8C first-slice extraction on 2026-07-01). Phase 6D remains an optional database-breaking rename and
+on 2026-07-01; Phase 8A-8D extraction on 2026-07-01; Phase 8E battle-loop
+extraction on 2026-07-02). Phase 6D remains an optional database-breaking rename and
 should only happen after external consumers no longer depend on raw legacy
 column names.
 Real-money rollout still requires provider sandbox/live validation,
@@ -45,8 +49,9 @@ cases.
 
 `backpack-game-core` now has `main` commits with the extracted bag-shape
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
-generation, plus provider-driven bot-loadout generation. Earlier notes that
-treated the target repo as empty are historical only.
+generation, provider-driven bot-loadout generation, and hookable battle
+simulation. Earlier notes that treated the target repo as empty are historical
+only.
 
 ## Implementation Status
 
@@ -101,6 +106,12 @@ bullet below):
   affinities, starter presets, prices, validation, portraits, and
   `createBotGhostSnapshot` response shaping stay in `bot-loadout.js` and
   `game-data.js`.
+- Hookable battle simulation is extracted: deterministic step iteration, action
+  ordering, action/skip event sequencing, HP/stun/damage resolution, death and
+  step-cap ending, and result shaping now live in `backpack-game-core`.
+  Mushroom combatant derivation, active/passive ability hooks, Kirt/Morga
+  ordering hooks, artifact attribution, lore `effectTags`, narration labels,
+  constants, seeded RNG creation, persistence, rewards, and rating stay local.
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -126,8 +137,9 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after Phase 8D: design battle ability hooks before moving any
-battle simulation code. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
+Next local lane after Phase 8E: reassess full loadout validation and tiny
+RNG/shuffle helper extraction only if their catalog/error/RNG contracts are
+clear enough for another game. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
 trading, database managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
@@ -208,10 +220,10 @@ plan's own status text as evidence.
 6. **The current gacha is intentionally MVP-only.** It is one-result-per-roll,
    static/env configured, no pity/guarantees, no duplicate inventory, no burn
    exchange, no marketplace, and no database-managed seasons/collections.
-7. **Core extraction is still not started.** The next step is choosing the first
-   pure helper cluster to extract while keeping `spore`, Mushroom portraits,
-   Telegram auth, Sequelize models, and home-field code out of
-   `backpack-game-core`.
+7. **Core extraction has started and should stay adapter-led.** The next step
+   is choosing only small, evidence-backed clusters while keeping `spore`,
+   Mushroom portraits, Telegram auth, Sequelize models, battle persistence, and
+   home-field code out of `backpack-game-core`.
 
 ### Recommended follow-ups
 
@@ -1179,8 +1191,9 @@ Move mechanics that are already close to product-neutral:
 - Fusion matching: `app/shared/artifact-fusions.js` plus the pure matching part
   of `app/server/services/artifact-fusion-service.js`.
 - RNG helpers such as seeded random and shuffle.
-- Battle simulation only after the hard-coded mushroom ability switch is moved
-  behind configurable ability hooks or a product adapter.
+- Battle simulation now uses a core loop plus Mushroom ability hooks; future
+  battle work should keep Mushroom ids, stats, rewards, and replay storage in
+  product code.
 
 Keep these in `mushroom-master`:
 
@@ -1205,7 +1218,8 @@ portrait glue stayed local.
 - Current behavior tests: `tests/game/bot-loadout.test.js`
 - Current extraction inventory:
   `docs/backpack-game-core-extraction-inventory.md`
-- Current core package latest commit: `4056d7a` (`Add backpack loadout generator`)
+- Current core package latest commit at ship time: `4056d7a`
+  (`Add backpack loadout generator`)
 
 #### Stated Criteria And Constraints
 
@@ -1291,6 +1305,63 @@ then return the current `{ gridWidth, gridHeight, items }` response.
 - Restore the previous local `createBotLoadout` body.
 - Keep the core commit unless it contains secrets or bad generated artifacts.
 
+### Phase 8E - Battle Simulation Hook Extraction
+
+Status: **Implemented.** The deterministic battle loop moved into
+`backpack-game-core` through product-provided ability and metadata hooks.
+Mushroom combat identity, ability rules, artifact metadata, and persistence
+stayed local.
+
+#### Source Of Truth
+
+- Current Mushroom adapter: `app/server/services/battle-engine.js`
+- Current core implementation: `backpack-game-core/src/battle-simulation.js`
+- Current core tests: `backpack-game-core/tests/battle-simulation.test.js`
+- Current behavior tests: `tests/game/battle-engine.test.js`
+- Current extraction inventory:
+  `docs/backpack-game-core-extraction-inventory.md`
+- Current core package latest commit at ship time: `b9879bd`
+  (`Add hookable battle simulation core`)
+
+#### Shipped Boundary
+
+- Core owns reusable battle-loop mechanics only:
+  - deterministic step iteration,
+  - speed ordering plus base-speed/random tiebreak fallback,
+  - action and skip event sequencing,
+  - damage, armor, stun, death, and step-cap resolution,
+  - final result and event shaping.
+- Mushroom owns all product hooks:
+  - snapshot-to-combatant derivation from Mushroom catalog data,
+  - active and passive ability behavior,
+  - Kirt and Morga ordering hooks,
+  - artifact attribution and lore `effectTags`,
+  - narration labels,
+  - `STEP_CAP`, `MAX_STUN_CHANCE`, and seeded RNG creation.
+- Existing `simulateBattle(snapshot, seed)` remains the Mushroom service API, so
+  run resolution and replay persistence keep their import surface.
+
+#### Non-Goals
+
+- Do not move Mushroom ids, names, base stats, artifact catalog data, rewards,
+  rating, DB persistence, or replay storage into core.
+- Do not move `createRng` / `shuffleWithRng` in this slice. Extract them later
+  only if another consumer needs the same deterministic RNG surface.
+- Do not change combat balance or requirements as part of this adapter move.
+
+#### Verification
+
+- `backpack-game-core`: `npm test`
+- `mushroom-master`:
+  `node --test tests/game/battle-engine.test.js tests/game/round-resolution.test.js tests/game/challenge-run.test.js`
+- `npm run game:build`
+
+#### Rollback
+
+- Revert the Mushroom dependency pin and `battle-engine.js` adapter.
+- Restore the previous local battle-loop implementation.
+- Keep the core commit unless it contains secrets or bad generated artifacts.
+
 ## Phase 9 - Create `backpack-game-core`
 
 Initial package shape:
@@ -1331,7 +1402,7 @@ Recommended initial choices:
    - placement / validation
    - fusion matching
    - shop generation
-   - battle engine, only when adapterized
+   - battle engine through product hooks
 3. Keep adapter files in `mushroom-master` where product data is passed into
    core functions.
 4. Run the relevant Mushroom Battles verification after each cluster:
@@ -1351,8 +1422,7 @@ Recommended initial choices:
   might still use `coins`, `mycelium`, or `active_portrait`.
 - Do not move Sequelize models into the core package. The core should not know
   which product owns persistence.
-- Treat hard-coded Mushroom ability logic as product-specific until the battle
-  engine has a clear hook interface.
+- Keep Mushroom ability logic product-specific through the battle hook adapter.
 - Do not let "profile wallet coins" and "run shop coins" share one field or
   service method. They have different lifetimes, spend targets, and refund
   rules.
@@ -1406,8 +1476,9 @@ Recommended initial choices:
 18. Implement bot loadout generation over catalog, affinity, preset, and price
    providers. **Done 2026-07-01; ghost snapshot and portrait glue remain
    local.**
-19. Adapterize and optionally extract battle simulation only after Mushroom
-   ability logic has a product adapter.
+19. Adapterize and extract battle simulation through Mushroom ability hooks.
+   **Done 2026-07-02; combat identity, rewards, rating, and persistence remain
+   local.**
 20. Add hub/submodule metadata and final cross-repo verification if
    `backpack-game-core` is added to the hub manifest/submodule set.
 21. Optional Phase 6D database rename only if raw legacy column names become a

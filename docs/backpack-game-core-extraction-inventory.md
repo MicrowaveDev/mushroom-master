@@ -1,7 +1,7 @@
 # Backpack Game Core Extraction Inventory
 
-**Status:** Phase 8C first-slices extraction, after the Phase 6A-6C neutral
-naming pass.
+**Status:** Ongoing reusable-core extraction after the Phase 6A-6C neutral
+naming pass and the first battle-simulation adapter slice.
 
 This document chooses the first extraction slice and records why other modules
 wait. It should be updated after each cluster moves.
@@ -19,8 +19,10 @@ wait. It should be updated after each cluster moves.
 - fourth slice: `src/shop-offer.js`, tested by `tests/shop-offer.test.js`
 - fifth slice: `src/backpack-loadout.js`, tested by
   `tests/backpack-loadout.test.js`
+- sixth slice: `src/battle-simulation.js`, tested by
+  `tests/battle-simulation.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `4056d7a` (`Add backpack loadout generator`)
+- latest extraction commit: `b9879bd` (`Add hookable battle simulation core`)
 
 The package is consumed by `mushroom-master` as a pinned Git dependency.
 
@@ -48,7 +50,7 @@ The package is consumed by `mushroom-master` as a pinned Git dependency.
 | Shop offer generation | `backpack-game-core/src/shop-offer.js`; Mushroom adapter in `app/server/services/shop-service.js` | Extracted with product config | Core owns deterministic pool sampling, bag pity, bag chance escalation, and character-item slot reservation. Mushroom passes combat pools, bag pools, eligible character items, and balance constants. |
 | Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Product-specific | DB transactions, run locks, persisted shop states, run currency, refunds, and loadout rows stay in product service code. |
 | Bot loadout generation | `backpack-game-core/src/backpack-loadout.js`; Mushroom wrapper in `app/server/services/bot-loadout.js` | Extracted with product providers | Core owns weighted-pick, first-fit bag placement, rectangular item placement, occupied-cell tracking, and retry orchestration. Mushroom passes artifacts, affinities, presets, prices, grid constants, RNG, validation, and keeps ghost snapshot/portrait glue local. |
-| Battle simulation | `app/server/services/battle-engine.js` | Product-specific until adapterized | Hard-coded Mushroom ids and active/passive abilities are inside combat logic. Extract only after ability hooks/config are designed. |
+| Battle simulation | `backpack-game-core/src/battle-simulation.js`; Mushroom adapter in `app/server/services/battle-engine.js` | Extracted with product hooks | Core owns deterministic 1v1 turn loop, action/skip event sequencing, HP/stun flow, speed/base-speed tiebreak fallback, step-cap winner resolution, and result shaping. Mushroom passes combatant derivation, active/passive ability hooks, Morga/Kirt tiebreak hooks, artifact attribution/effect metadata, narration labels, constants, and seeded RNG. |
 | Wallet / payment / assets / gacha | `app/server/services/wallet-service.js`, `app/server/services/asset-service.js`, models, routes | Product-specific | Payment providers, ledgers, profile assets, webhooks, compliance, and Mushroom skin catalog are not reusable backpack mechanics. |
 
 ## Chosen First Slice
@@ -302,14 +304,70 @@ integration commit.
 - Restore the local `createBotLoadout` body from the previous commit.
 - Keep the core commit unless it contains bad generated artifacts or secrets.
 
-## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, And Bot Loadout
+## Sixth Slice: Battle Simulation
 
-After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer, and
-bot-loadout slices, reassess in this order:
+**Status:** Implemented. The deterministic battle loop moved into
+`backpack-game-core` behind product-provided ability and metadata hooks.
 
-1. Design battle ability hooks before moving any battle simulation code.
-2. Reassess full loadout validation only after catalog, pricing, bag policy,
+### Source Of Truth
+
+- Current Mushroom adapter: `app/server/services/battle-engine.js`
+- Current core implementation: `backpack-game-core/src/battle-simulation.js`
+- Current core tests: `backpack-game-core/tests/battle-simulation.test.js`
+- Current Mushroom behavior tests: `tests/game/battle-engine.test.js`
+- Supporting local adapters: `app/server/game-data.js`,
+  `app/server/services/loadout-utils.js`, `app/server/lib/utils.js`, and
+  artifact metadata in the Mushroom catalog.
+
+### Shipped Boundary
+
+- `backpack-game-core` owns only reusable battle-loop mechanics:
+  deterministic step iteration, speed ordering, base-speed and random
+  tiebreak fallback, action/skip event sequencing, damage/armor/stun
+  resolution, death and step-cap end conditions, and result/event shaping.
+- `mushroom-master` owns Mushroom combat identity and product hooks:
+  combatant derivation from snapshots/catalog data, active/passive abilities,
+  Kirt and Morga special ordering, artifact attribution, lore `effectTags`,
+  narration labels, `STEP_CAP`, `MAX_STUN_CHANCE`, and seeded RNG creation.
+- Existing `simulateBattle(snapshot, seed)` remains the public Mushroom
+  service API, so `run-service.js`, `game-service.js`, and current tests do not
+  need broad import churn.
+
+### Non-Goals
+
+- Do not move Mushroom ids, names, base stats, portraits, artifact catalog
+  data, battle effects, or ability definitions into `backpack-game-core`.
+- Do not move persistence, battle snapshot storage, rewards, rating, or run
+  resolution into core.
+- Do not move `createRng` or `shuffleWithRng` in this slice; RNG extraction can
+  happen later as a small helper module if another game needs the same seeded
+  implementation.
+
+### Verification
+
+- `backpack-game-core`: `npm test`
+- `mushroom-master` focused:
+  `node --test tests/game/battle-engine.test.js tests/game/round-resolution.test.js tests/game/challenge-run.test.js`
+
+`npm run game:build` should still be run before final handoff for the Mushroom
+integration commit.
+
+### Rollback
+
+- Revert the Mushroom dependency pin and `battle-engine.js` adapter.
+- Restore the prior local battle-loop implementation from the previous
+  `mushroom-master` commit.
+- Keep the core commit unless it contains bad generated artifacts or secrets.
+
+## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, And Battle Simulation
+
+After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
+bot-loadout, and battle-simulation slices, reassess in this order:
+
+1. Reassess full loadout validation only after catalog, pricing, bag policy,
    and validation error contracts can be injected without Mushroom imports.
+2. Consider a tiny RNG/shuffle helper module only if another consumer needs the
+   same deterministic seeded RNG and shuffle surface.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.

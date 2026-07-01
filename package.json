@@ -97,7 +97,7 @@
     "game:home-field:validate-full-registry-production": "node app/scripts/validate-home-field-assets.js --production --full-registry-production"
   },
   "dependencies": {
-    "@microwavedev/backpack-game-core": "github:MicrowaveDev/backpack-game-core#4056d7a",
+    "@microwavedev/backpack-game-core": "github:MicrowaveDev/backpack-game-core#b9879bd",
     "@playwright/test": "^1.58.2",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",

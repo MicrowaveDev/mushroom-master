@@ -193,6 +193,7 @@ These mechanics are closest to the reusable core boundary:
 - seeded RNG and deterministic shuffle
 - pure fusion matching with recipes/catalog policy injected
 - shop offer generation with item pools and eligibility hooks injected
+- battle simulation with combatant, ability, attribution, and narration hooks
 
 These mechanics need adapters before extraction:
 
@@ -203,7 +204,8 @@ These mechanics need adapters before extraction:
 - bot loadout generation with catalog, starter preset, affinity, price,
   validation, and portrait/ghost snapshot responsibilities injected or kept
   local
-- battle simulation with hard-coded Mushroom abilities
+- full battle-service integration that records snapshots/events, applies run
+  rewards, rating, and round transitions
 
 These are product-specific and must stay out of `backpack-game-core`:
 
@@ -221,13 +223,13 @@ Code movement into `backpack-game-core` should stay small and evidence-led:
 port focused core tests before changing `mushroom-master` imports, then verify
 the Mushroom adapter/bridge tests. The shipped slices are bag-shape masks,
 rotation, first grid-geometry primitives, fusion matching, shop-offer
-generation, and bot-loadout generation. Full placement/loadout validation still
-belongs in `mushroom-master` until catalog access, pricing, bag policy, and
-validation errors are parameterized. Fusion application and run-shop
-buy/refresh/sell mutations still belong in `mushroom-master` because they write
-DB rows and touch run currency. The next likely slice is battle simulation, but
-only after ability hooks and Mushroom-specific active/passive behavior are
-designed.
+generation, bot-loadout generation, and hookable battle simulation. Full
+placement/loadout validation still belongs in `mushroom-master` until catalog
+access, pricing, bag policy, and validation errors are parameterized. Fusion
+application, run-shop buy/refresh/sell mutations, and battle-service
+persistence/reward integration still belong in `mushroom-master` because they
+write DB rows and touch run currency, rating, snapshots, rewards, or product
+state.
 
 ### Planned Bot-Loadout Boundary
 
@@ -240,3 +242,16 @@ rows, affinity weighting, validation policy, portrait URLs, and
 
 Do not move battle ghost selection, mushroom portrait selection, or Mushroom
 starter preset lookup into `backpack-game-core`.
+
+### Battle-Simulation Boundary
+
+The battle-simulation extraction keeps product combat identity in
+`mushroom-master`. Reusable core owns the deterministic 1v1 loop, action/skip
+event sequencing, HP/stun/damage flow, speed and base-speed ordering fallback,
+death/step-cap resolution, and final result shape. Mushroom still provides
+snapshot-to-combatant derivation, Mushroom active/passive ability hooks,
+Kirt/Morga ordering hooks, artifact attribution, lore `effectTags`, narration
+labels, `STEP_CAP`, `MAX_STUN_CHANCE`, and seeded RNG creation.
+
+Do not move Mushroom ids, names, base stats, artifact catalog data, rewards,
+rating, DB persistence, or battle replay storage into `backpack-game-core`.
