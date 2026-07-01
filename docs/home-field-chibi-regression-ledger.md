@@ -779,6 +779,22 @@ The active Stage 1 contract is:
 - `RUN_CHIBI_PROOF_PROMPT.md` and imagegen requirements now say source-path readiness expires after a hard gate failure;
 - tests cover the blocked source-hash gate and queue output.
 
+### 50. Clean Queue Block Was Mistaken For Production-Run Success
+
+**Symptom:** In the follow-up analysis of rollout `codex-019f1fc8-ec40-72e0-8934-5124984e1842`, the queue correctly blocked the same supplied local source hash at the palette gate, but the handoff framed that as a healthy run. That was only true for queue safety. It did not satisfy the user's repeated request for another production-ready image run, because no new source, candidate PNG, evidence, preview, or production-ready verdict was produced.
+
+**What was correct:** The worker did not rerun inactive fallbacks, did not spend imagegen/API attempts, did not stage the blocked source again as a candidate, and did not overwrite app-facing files. The sourceGate did its safety job.
+
+**What was wrong in the flow:** The prompt-issuing layer had no explicit recovery path for "the queue is blocked, but the user wants another production-ready run." Agents could hand back the minimal queue launcher or a blocker verdict and treat that as completion, instead of issuing a method-change production prompt that creates or adopts a new complete `8x4` source or a documented repair method.
+
+**Guardrails added:**
+
+- `AGENTS.md` now says a correct sourceGate blocker is not production readiness and that another production-ready request must use a method-change/source-repair prompt;
+- the queue item now carries `sourceGateRecovery` with a copyable method-change production prompt, required actions, and success criteria;
+- the queue printer validates and prints the recovery section whenever the current sourceGate is blocked;
+- `RUN_CHIBI_PROOF_PROMPT.md`, `docs/home-field-imagegen-requirements.md`, `next-chibi-proof`, and `home-field-prompts.json` now point agents at the recovery prompt instead of the blocked helper when the user asks for another production-ready run;
+- tests assert that queue output and agent docs distinguish a clean blocker from actual production-ready PNG output.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -820,3 +836,4 @@ The active Stage 1 contract is:
 37. Do not let plain `OPENAI_API_KEY` trigger Home Field image generation. It is intentionally ignored so general OpenAI credentials are not silently spent on imagegen.
 38. Do not let preflight capability flags override the queue method gate. If the queue marks a built-in method as blocked or exhausted, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` must not pass preflight for that exhausted path.
 39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new complete `8x4` source or a documented repair method with evidence before the next production run.
+40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use the queue `sourceGateRecovery` method-change prompt or an equivalent new-source/repair-method prompt; a blocker-only handoff is incomplete for that request.

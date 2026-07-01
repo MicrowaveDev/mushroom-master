@@ -21,6 +21,7 @@ const runMinimalHomeFieldPromptPath = path.join(repoRoot, 'app/shared/home-field
 const homeFieldImagegenRequirementsPath = path.join(repoRoot, 'docs/home-field-imagegen-requirements.md');
 const homeFieldAgentFlowPath = path.join(repoRoot, 'docs/home-field-agent-flow.md');
 const homeFieldChibiCandidateContractPath = path.join(repoRoot, 'docs/home-field-chibi-candidate-contract.md');
+const mushroomAgentsPath = path.join(repoRoot, 'AGENTS.md');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
 const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
@@ -1499,9 +1500,12 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.doesNotMatch(result.stdout, /styleReferences for visual review only in local-source mode, not as active imagegen inputs/);
   assert.doesNotMatch(result.stdout, /After source preflight passes, run `npm run game:home-field:archive-stale-chibi-proof -- thalla --source=/);
   assert.match(result.stdout, /Continue only after replacing the queue sourcePath with a new complete 8x4 local state sheet/);
+  assert.match(result.stdout, /SourceGate recovery production attempt/);
+  assert.match(result.stdout, /clean blocker is not production-ready output/);
   assert.match(result.stdout, /do not split, produce a candidate, generate evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs while the sourceGate is blocked/);
   assert.match(result.stdout, /Stop here while sourceGate is blocked; do not run split, producer, validation, evidence, preview, or verdict commands/);
   assert.match(result.stdout, /Report the blocked source path\/hash, failed reference proxy hash, failed palette counts/);
+  assert.match(result.stdout, /For another production-ready run, use the queue SourceGate recovery production attempt prompt/);
   assert.doesNotMatch(result.stdout, /this stages the supplied 8x4 state sheet and derives the non-production reference proxy/);
   assert.doesNotMatch(result.stdout, /Stop if any source, archive, or staging gate fails/);
   assert.doesNotMatch(result.stdout, /Run the reference-proxy verifier\/palette audit and state-sheet verifier\/palette audit/);
@@ -1622,6 +1626,8 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.details, /12-18 artist-visible colors/);
   assert.match(prompt.details, /fewer than 20 total design colors/);
   assert.match(prompt.details, /new complete 8x4 local source/);
+  assert.match(prompt.details, /SourceGate recovery production attempt/);
+  assert.match(prompt.details, /clean blocker is not production-ready output/);
   assert.match(prompt.size, /one new or repair-approved supplied complete 8x4 state sheet after sourceGate is cleared/);
   assert.match(prompt.constraints, /Stage 1 blocked local-source validation until sourceGate is cleared/);
   assert.match(prompt.constraints, /do not stage that same hash again through the queue --source command/);
@@ -1659,6 +1665,8 @@ test('[home-field] chibi proof launcher carries explicit local-source workflow',
   assert.match(prompt, /default queue command must print the run title, canonical doc, prompt-issuance gate, local-source agent instructions, active source mode, style references, first-class `--source` commands/);
   assert.match(prompt, /Built-in imagegen flags, API fallback env rules, and exhausted method-gate history are inactive for this run and must print only with `--show-fallbacks`/);
   assert.match(prompt, /If the queue reports `sourceGate` blocked for the current source hash, stop before archive\/stage/);
+  assert.match(prompt, /sourceGateRecovery\.copyablePrompt/);
+  assert.match(prompt, /clean block as a healthy production-ready image run/);
   assert.match(prompt, /default local-source run must use `npm run game:home-field:preflight-chibi-proof -- --source=<queue localSourceMode\.sourcePath>`/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --source=<queue localSourceMode\.sourcePath>/);
   assert.match(prompt, /stage-chibi-local-source -- --source=<queue localSourceMode\.sourcePath>/);
@@ -1700,6 +1708,10 @@ test('[home-field] imagegen requirements keep fallback methods out of default qu
   assert.match(requirements, /A supplied local `sourcePath` can make the queue ready only until that exact source hash fails/);
   assert.match(requirements, /default queue output must stop issuing a production launcher for that same hash/);
   assert.match(requirements, /Preflight must reject a `--source` PNG whose sha256 matches a blocked `sourceGate`/);
+  assert.match(requirements, /sourceGateRecovery/);
+  assert.match(requirements, /copyable method-change production prompt/);
+  assert.match(requirements, /A clean blocker report is not production readiness/);
+  assert.match(requirements, /healthy queue behavior and still be an incomplete production attempt/);
   assert.match(requirements, /default `commands\.preflight` and `commands\.archiveStale` entries must be those local `--source` commands/);
   assert.match(requirements, /`referenceInputs` are not active imagegen inputs in supplied local-source mode/);
   assert.match(requirements, /The queue uses `styleReferences` for checked-in visual review references/);
@@ -1730,6 +1742,18 @@ test('[home-field] local chibi source queue sourcePath rule is persisted in agen
     assert.match(text, /--source/, filePath);
     assert.doesNotMatch(text, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/, filePath);
   }
+});
+
+test('[home-field] repo agent instructions distinguish sourceGate blockers from production readiness', () => {
+  const agents = fs.readFileSync(mushroomAgentsPath, 'utf8');
+
+  assert.match(agents, /Home Field chibi production-run prompts and queue work/);
+  assert.match(agents, /blocked `sourceGate`/);
+  assert.match(agents, /production objective as still unmet/);
+  assert.match(agents, /do not emit the minimal queue launcher by itself/);
+  assert.match(agents, /sourceGateRecovery/);
+  assert.match(agents, /Final handoff must clearly say whether production-ready PNGs were actually produced/);
+  assert.match(agents, /a correct blocker report is not production readiness/);
 });
 
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
@@ -1919,8 +1943,22 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.promptPolicy.blockedPromptAction, /new complete 8x4 local state-sheet PNG/);
   assert.match(item.promptPolicy.blockedPromptAction, /palette-cleanup\/repair method/);
   assert.match(item.promptPolicy.blockedShortResponse, /current supplied local source hash failed/);
+  assert.equal(item.sourceGateRecovery.mode, 'method-change-production-attempt');
+  assert.match(item.sourceGateRecovery.summary, /another production-ready run/);
+  assert.match(item.sourceGateRecovery.summary, /rerunning the default queue launcher only repeats a known blocker/);
+  assert.match(item.sourceGateRecovery.copyablePrompt, /method-change production attempt/);
+  assert.match(item.sourceGateRecovery.copyablePrompt, /not the blocked default queue launcher/);
+  assert.match(item.sourceGateRecovery.copyablePrompt, /do not rerun that source hash/);
+  assert.match(item.sourceGateRecovery.copyablePrompt, /--source=<new-source-png>/);
+  assert.match(item.sourceGateRecovery.copyablePrompt, /clean blocker is not production-ready/);
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /new complete 8x4 local state-sheet source/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /Use `--source=<new-source-png>`/.test(action)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /new source path and sha256/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /production-ready candidate output from an intentional blocker/.test(criterion)));
   assert.ok(item.agentInstructions.some((instruction) => /blocked Thalla Home Field chibi Stage 1 proof/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /sourceGateRecovery\.copyablePrompt/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /production-ready PNGs were not produced/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /generationContract\.stateSheet\.localSourceMode\.sourcePath/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Do not rerun preflight\/archive\/stage/.test(instruction)));
@@ -2042,8 +2080,19 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /action: .*same supplied local state-sheet source hash/);
   assert.match(result.stdout, /blocked action: .*new complete 8x4 local state-sheet PNG/);
   assert.match(result.stdout, /blocked short response: Blocked: the current supplied local source hash failed/);
+  assert.match(result.stdout, /SourceGate recovery production attempt:/);
+  assert.match(result.stdout, /mode: method-change-production-attempt/);
+  assert.match(result.stdout, /copyable method-change prompt:/);
+  assert.match(result.stdout, /run a Thalla Home Field chibi Stage 1 method-change production attempt, not the blocked default queue launcher/);
+  assert.match(result.stdout, /do not rerun that source hash/);
+  assert.match(result.stdout, /--source=<new-source-png>/);
+  assert.match(result.stdout, /clean blocker is not production-ready/);
+  assert.match(result.stdout, /required actions:/);
+  assert.match(result.stdout, /success criteria:/);
   assert.match(result.stdout, /Agent instructions:/);
   assert.match(result.stdout, /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/);
+  assert.match(result.stdout, /sourceGateRecovery\.copyablePrompt/);
+  assert.match(result.stdout, /production-ready PNGs were not produced unless a new candidate passes every listed gate/);
   assert.match(result.stdout, /Do not rerun preflight\/archive\/stage for the current generationContract\.stateSheet\.localSourceMode\.sourcePath/);
   assert.match(result.stdout, /sourceGate records that this exact source hash failed the reference palette audit/);
   assert.match(result.stdout, /If the user supplies a new complete 8x4 local state-sheet source/);

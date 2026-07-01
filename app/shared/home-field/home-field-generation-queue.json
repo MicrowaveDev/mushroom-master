@@ -18,9 +18,29 @@
         "blockedPromptAction": "Use this queue output as a blocker report. Continue only after replacing generationContract.stateSheet.localSourceMode.sourcePath with a new complete 8x4 local state-sheet PNG outside docs/reference, or after adding an explicit palette-cleanup/repair method with evidence and tests.",
         "blockedShortResponse": "Blocked: the current supplied local source hash failed the reference palette audit; provide a new paletted 8x4 source or documented repair method before another production run."
       },
+      "sourceGateRecovery": {
+        "mode": "method-change-production-attempt",
+        "summary": "When the user asks for another production-ready run while this sourceGate is blocked, the next prompt must request a new source or explicit repair method; rerunning the default queue launcher only repeats a known blocker.",
+        "copyablePrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run a Thalla Home Field chibi Stage 1 method-change production attempt, not the blocked default queue launcher. First print `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and confirm the current sourceGate blocks `.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png`; do not rerun that source hash. Create or adopt a new complete 8x4 local state-sheet PNG outside `docs/reference/`, either from a documented new generation method or an explicit palette-cleanup/repair method with manifest evidence. Save the new source under `.agent/home-field-workspace/supplied/`, then run preflight/archive/stage with `--source=<new-source-png>`, verify and palette-audit the derived reference proxy and staged state sheet, split frames, verify frames, produce the candidate, verify/audit the candidate, generate evidence, run preview, and record verdict. Do not overwrite app-facing PNGs. Final report must state whether production-ready PNGs were produced; a clean blocker is not production-ready.",
+        "requiredActions": [
+          "Confirm the existing sourceGate blocker and blocked source hash before creating or adopting a replacement source.",
+          "Produce or accept a new complete 8x4 local state-sheet source outside docs/reference, or document a repair method as an explicit active method with evidence.",
+          "Use `--source=<new-source-png>` for preflight, archive, and stage; do not use the blocked queue source hash.",
+          "Run reference proxy, state-sheet, frame, candidate, evidence, preview, and verdict gates only after the new source passes preflight/archive/stage.",
+          "Keep app-facing PNGs untouched until explicit approval."
+        ],
+        "successCriteria": [
+          "A new source path and sha256 are reported.",
+          "Reference proxy, staged state sheet, and candidate palette audits pass the fewer-than-20 visible design color gate.",
+          "Split frames, candidate validation, evidence, preview, and verdict complete.",
+          "The final response clearly distinguishes production-ready candidate output from an intentional blocker."
+        ]
+      },
       "agentInstructions": [
         "Run this queue item as a blocked Thalla Home Field chibi Stage 1 proof review, not a production attempt.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
+        "If the user asks for another production-ready run while this sourceGate is blocked, do not answer with the minimal launcher alone; use sourceGateRecovery.copyablePrompt or an equivalent method-change prompt.",
+        "Do not call a clean sourceGate block a healthy production-ready image run; production-ready PNGs were not produced unless a new candidate passes every listed gate.",
         "Do not rerun preflight/archive/stage for the current generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) because sourceGate records that this exact source hash failed the reference palette audit.",
         "If the user supplies a new complete 8x4 local state-sheet source, update generationContract.stateSheet.localSourceMode.sourcePath and the printed --source commands before issuing a launcher.",
         "If a palette-cleanup or repair method is intentionally adopted, add it as an explicit active method with evidence, not as hidden fallback behavior.",

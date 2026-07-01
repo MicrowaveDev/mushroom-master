@@ -169,6 +169,37 @@ function validateMethodGate(issues, itemId, methodGate) {
   }
 }
 
+function validateSourceGateRecovery(issues, itemId, recovery) {
+  if (!recovery) {
+    issues.push(`${itemId}: blocked sourceGate must include sourceGateRecovery`);
+    return;
+  }
+  if (recovery.mode !== 'method-change-production-attempt') {
+    issues.push(`${itemId}: sourceGateRecovery.mode must be method-change-production-attempt`);
+  }
+  if (!/another production-ready run/i.test(recovery.summary || '')) {
+    issues.push(`${itemId}: sourceGateRecovery.summary must address another production-ready run`);
+  }
+  if (!/method-change production attempt/i.test(recovery.copyablePrompt || '')) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must request a method-change production attempt`);
+  }
+  if (!/not the blocked default queue launcher/i.test(recovery.copyablePrompt || '')) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must reject the blocked default queue launcher`);
+  }
+  if (!/--source=<new-source-png>/.test(recovery.copyablePrompt || '')) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must tell agents to use --source=<new-source-png>`);
+  }
+  if (!/clean blocker is not production-ready/i.test(recovery.copyablePrompt || '')) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must say a clean blocker is not production-ready`);
+  }
+  if (!Array.isArray(recovery.requiredActions) || recovery.requiredActions.length < 4) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must list the new-source workflow`);
+  }
+  if (!Array.isArray(recovery.successCriteria) || recovery.successCriteria.length < 3) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must list production-readiness criteria`);
+  }
+}
+
 function validateQueue(queue) {
   const issues = [];
   if (queue.schemaVersion !== 1) issues.push('schemaVersion must be 1');
@@ -228,6 +259,7 @@ function validateQueue(queue) {
         if (!item.promptPolicy?.blockedPromptAction || !item.promptPolicy?.blockedShortResponse) {
           issues.push(`${item.id}: blocked local-source gate must include blockedPromptAction and blockedShortResponse`);
         }
+        validateSourceGateRecovery(issues, item.id, item.sourceGateRecovery);
         if (!item.sourceGate?.sourceSha256 || !item.sourceGate?.referenceProxySha256) {
           issues.push(`${item.id}: blocked local-source gate must record source and reference proxy hashes`);
         }
@@ -306,6 +338,9 @@ function validateQueue(queue) {
       if (!/complete 8x4 local state-sheet/i.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must describe complete 8x4 local state-sheet source mode`);
       }
+      if (sourceGateBlocked && !/production-ready PNGs were not produced/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: blocked local-source agentInstructions must distinguish a clean block from production-ready output`);
+      }
     }
 
     for (const reference of item.styleReferences || item.referenceInputs || []) {
@@ -356,6 +391,27 @@ function printPromptPolicy(item) {
   if (item.promptPolicy.action) console.log(`  action: ${item.promptPolicy.action}`);
   if (item.promptPolicy.blockedPromptAction) console.log(`  blocked action: ${item.promptPolicy.blockedPromptAction}`);
   if (item.promptPolicy.blockedShortResponse) console.log(`  blocked short response: ${item.promptPolicy.blockedShortResponse}`);
+  console.log('');
+}
+
+function printSourceGateRecovery(item) {
+  const recovery = item.sourceGateRecovery;
+  if (!recovery || !localSourceGateBlocked(item)) return;
+  console.log('SourceGate recovery production attempt:');
+  console.log(`  mode: ${recovery.mode}`);
+  if (recovery.summary) console.log(`  summary: ${recovery.summary}`);
+  if (recovery.copyablePrompt) {
+    console.log('  copyable method-change prompt:');
+    console.log(`    ${recovery.copyablePrompt}`);
+  }
+  if (Array.isArray(recovery.requiredActions) && recovery.requiredActions.length > 0) {
+    console.log('  required actions:');
+    for (const action of recovery.requiredActions) console.log(`    - ${action}`);
+  }
+  if (Array.isArray(recovery.successCriteria) && recovery.successCriteria.length > 0) {
+    console.log('  success criteria:');
+    for (const criterion of recovery.successCriteria) console.log(`    - ${criterion}`);
+  }
   console.log('');
 }
 
@@ -508,6 +564,7 @@ function printItem(item, opts) {
   console.log(`  ${item.minimalLauncherPrompt}`);
   console.log('');
   printPromptPolicy(item);
+  printSourceGateRecovery(item);
   console.log('Agent instructions:');
   for (const instruction of item.agentInstructions || []) console.log(`  - ${instruction}`);
   console.log('');
