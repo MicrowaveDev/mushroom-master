@@ -10,16 +10,17 @@
 > (`mycelium`→`character_xp`, `coins`→`run_currency`) remains optional Phase
 > **6D** work, not a launch blocker. The
 > authoritative current backlog is the **Remaining launch gates** under Phase 7B
-> plus the Deferred list. Phases **8A+** (contract reference, extraction into
-> `backpack-game-core`, and later rollout/data ops) are not started, by design.
-> Shipped runtime contracts (wallet ledger, purchase
-> intents, asset ownership, gacha) should be read from the code and
-> `tests/game/wallet-assets.test.js`, and ideally lifted into a dedicated
-> `docs/` reference doc rather than re-derived from this plan's phase sections.
+> plus the Deferred list. Code movement into `backpack-game-core` has not
+> started, by design. Shipped runtime contracts (wallet ledger, purchase
+> intents, asset ownership, gacha) should be read from the code,
+> `tests/game/wallet-assets.test.js`, and the current reference doc
+> `docs/game-core-runtime-contracts.md` rather than re-derived from this plan's
+> phase sections.
 > See the **Post-Implementation Review** section for the verified state and
-> current remaining work. As of the latest plan adjustment, the next lane is
-> **Phase 8A/8B**: write a current runtime contract reference and map the
-> extraction boundary before moving code.
+> current remaining work. As of the latest plan adjustment, **Phase 8A/8B** is
+> complete via `docs/game-core-runtime-contracts.md` and
+> `docs/backpack-game-core-extraction-inventory.md`; the next lane is the first
+> small pure extraction slice, currently bag-shape helpers.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, and 7B implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
@@ -95,13 +96,14 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after Phase 6A-6C: Phase 8A/8B, which creates a current runtime
-contract reference and a concrete extraction inventory before any code is moved.
-Deferred beyond that: optional Phase 6D database renames / physical removal of
-legacy compatibility fields, multi-item pack guarantees, duplicate burning,
-marketplace trading, database managed pack catalogs, an expanded terms/support
-frontend, provider refund and reversal handling, distributed payment mutation
-hardening, and actual code movement into `backpack-game-core`.
+Next local lane after Phase 8A/8B: move the first small pure cluster into
+`backpack-game-core`. The current inventory chooses bag-shape helpers as that
+first slice. Deferred beyond that: optional Phase 6D database renames /
+physical removal of legacy compatibility fields, multi-item pack guarantees,
+duplicate burning, marketplace trading, database managed pack catalogs, an
+expanded terms/support frontend, provider refund and reversal handling,
+distributed payment mutation hardening, and broader code movement into
+`backpack-game-core`.
 
 ## Post-Implementation Review
 
@@ -196,10 +198,13 @@ plan's own status text as evidence.
 - Extract the shipped wallet / asset / gacha runtime contracts into a dedicated
   `docs/` reference doc (the `docs/infra-hardening.md` pattern) so future agents
   read current behavior from a reference, not from this plan's phase sections.
+  Done for the current core boundary in `docs/game-core-runtime-contracts.md`.
 - Before moving mechanics into `backpack-game-core`, do a narrow import-boundary
   inventory and pick the first pure cluster from evidence. Do not start with
   payment, wallet, asset ownership, gacha, portraits, Telegram, database models,
-  or the battle engine.
+  or the battle engine. Done in
+  `docs/backpack-game-core-extraction-inventory.md`; the first slice is
+  bag-shape helpers.
 
 ## Source Of Truth
 
@@ -1048,14 +1053,17 @@ or legal/support/compliance rollout work.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 
-Status: **Next local lane.** Phase 6A-6C made the currency / XP vocabulary clean
-enough for a reusable boundary, but the next step is still planning and
-contract capture, not a broad code move.
+Status: **Phase 8A/8B complete; Phase 8C next.** Phase 6A-6C made the currency
+/ XP vocabulary clean enough for a reusable boundary. The runtime contract
+reference and extraction inventory now exist, so the next step is the first
+small pure extraction slice, not a broad code move.
 
 Only start extracting after the currency names above are clean enough that the
 core package does not inherit Mushroom-specific vocabulary.
 
 ### Phase 8A - Current Runtime Contract Reference
+
+Status: **Complete.** See `docs/game-core-runtime-contracts.md`.
 
 Create a dedicated current-state reference doc before moving code. Suggested
 path: `docs/game-core-runtime-contracts.md`.
@@ -1082,6 +1090,10 @@ agents to re-derive shipped behavior from old phase notes.
 
 ### Phase 8B - Extraction Inventory And First Slice Choice
 
+Status: **Complete.** See
+`docs/backpack-game-core-extraction-inventory.md`. The chosen first slice is
+bag-shape masks and rotation from `app/shared/bag-shape.js`.
+
 Before creating or editing `backpack-game-core`, map candidate modules with
 their imports and classify them:
 
@@ -1107,6 +1119,8 @@ Done when the plan records:
 - and rollback strategy if the core dependency integration fails.
 
 ### Phase 8C - Move First Pure Cluster
+
+Status: **Next.** Move bag-shape masks and rotation first.
 
 Only after 8A and 8B are complete:
 
@@ -1240,11 +1254,12 @@ Recommended initial choices:
    character XP and run currency helper/API aliases while keeping legacy DB
    columns and response aliases. **Done 2026-07-01.**
 11. Phase 8A current runtime contract reference:
-   `docs/game-core-runtime-contracts.md`.
-12. Phase 8B extraction inventory and first-slice choice; classify candidate
-   modules as pure, adapter-needed, or product-specific.
-13. Phase 8C / Phase 9 first pure extraction into `backpack-game-core`, with
-   tests ported before `mushroom-master` import swaps.
+   `docs/game-core-runtime-contracts.md`. **Done 2026-07-01.**
+12. Phase 8B extraction inventory and first-slice choice:
+   `docs/backpack-game-core-extraction-inventory.md`. **Done 2026-07-01.**
+13. Phase 8C / Phase 9 first pure extraction into `backpack-game-core`:
+   bag-shape masks and rotation, with tests ported before `mushroom-master`
+   import swaps.
 14. Adapterize and optionally extract battle simulation only after Mushroom
    ability logic has a product adapter.
 15. Add hub/submodule metadata and final cross-repo verification.
