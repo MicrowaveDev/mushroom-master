@@ -82,10 +82,13 @@ npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --de
 For the Thalla reference sheet through explicit CLI/API fallback, do not hand-roll credential discovery, Python SDK setup, prompt extraction, resize normalization, verifier, palette audit, and blocker-note writing. Use:
 
 ```bash
+npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof
+npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>
+npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>
 npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>
 ```
 
-The helper keeps the prompt source in `next-chibi-proof`, passes the checked-in reference PNGs as actual `--image` inputs, preserves an API-size source PNG, normalizes it to the current `512x384` sprite-box reference when needed, then runs `verify-chibi-proof-files -- --reference` and `palette-audit --fail-on-bloat` serially. A normalized reference still fails if palette bloat, status ornament, hair/wig reads, or other visual gate issues remain.
+Load credentials through the explicit env file instead of searching neighboring repos, assuming inherited shell state, or guessing `mushroom-master/.env`. The structured queue item records `doNotInferEnvFile: true`; rollout `codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831` correctly blocked because the guessed `.env` did not provide `OPENAI_API_KEY`. The helper keeps the prompt source in `next-chibi-proof`, passes the checked-in reference PNGs as actual `--image` inputs, preserves an API-size source PNG, normalizes it to the current `512x384` sprite-box reference when needed, then runs `verify-chibi-proof-files -- --reference` and `palette-audit --fail-on-bloat` serially. A normalized reference still fails if palette bloat, status ornament, hair/wig reads, or other visual gate issues remain.
 
 This helper is reference-only. It does not produce production-ready sprites by itself. After the reference gate passes, the grouped `8x4` state sheet must be generated through a reference-capable image path with the approved reference PNG attached as an actual image input. If only prompt-text state-sheet generation is available, stop and report the production-readiness blocker rather than burning another unguided attempt.
 

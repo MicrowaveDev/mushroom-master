@@ -674,6 +674,20 @@ The active Stage 1 contract is:
 - the launcher, generated prompt, requirements doc, candidate contract, agent flow, and context helper now default to the explicit CLI/API helper path and say to stop if only prompt-text state-sheet generation is available;
 - docs now state that `chibi-reference-api-proof` is reference-only and that production readiness requires the final grouped `8x4` state sheet to be generated through a reference-capable image path with the passed reference PNG attached as an actual image input.
 
+### 43. Env-File Guessing Correctly Blocked But Still Cost A Run
+
+**Symptom:** Rollout `codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831` followed the tightened gate and stopped before archive/imagegen, but it chose `/Users/microwavedev/workspace/microwave-hub/mushroom-master/.env` as the explicit env file. Preflight failed because `OPENAI_API_KEY` was missing after loading that file. No stale files were archived, no reference/state/candidate PNGs were generated, and no app-facing PNG was overwritten.
+
+**What was correct:** The agent ran `task:context`, `chibi-proof-context`, `preflight-chibi-proof -- --env-file=...`, and the read-only `next-chibi-proof` helper, then reported the blocked stages. This was the desired safety behavior.
+
+**What was missing in the flow:** The launcher still left `<explicit-env-file>` as a human placeholder without a structured per-item config saying the agent must not infer `.env`. The run was therefore safe but predictably blocked when the guessed file lacked the required key.
+
+**Guardrails added:**
+
+- `app/shared/home-field/home-field-generation-queue.json` now contains the first structured queue item, `thalla-stage1-chibi-proof`, including references, commands, output paths, env-file requirements, stop rules, and final-response fields;
+- `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` validates the queue item and prints the structured contract before agents choose an env file or imagegen path;
+- the run prompt and docs now say not to infer `.env` or neighboring repo env files; the launcher must provide an explicit env file that contains `OPENAI_API_KEY`.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -711,3 +725,4 @@ The active Stage 1 contract is:
 33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable CLI/API support, or separate fresh proof source PNGs.
 34. For explicit CLI/API reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.
 35. Do not treat a passing reference helper run as production readiness. Use the same explicit env file for preflight, archive, and reference generation, then continue only if the grouped `8x4` state sheet can also be generated with the approved reference PNG attached as an actual image input.
+36. Do not infer an env file for queue items that require `doNotInferEnvFile: true`. The launcher must provide the env file, and the queue/preflight must prove it contains the required keys before any archive or imagegen step.

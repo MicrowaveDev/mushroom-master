@@ -35,6 +35,7 @@ function main() {
   console.log('  HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1  # use only when the launcher/user explicitly confirms both built-in disk output and actual reference-image input binding for this same session');
   console.log('');
   console.log('Required commands:');
+  console.log('  npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof # structured queue item; read before choosing env file or imagegen path');
   console.log('  npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file> # default CLI/API path');
   console.log('  npm run game:home-field:next-chibi-proof  # read-only; run before a blocker handoff even when preflight or the method gate fails');
   console.log('  npm run game:home-field:find-imagegen-output -- --since-minutes=5  # diagnostic only after reference binding is confirmed and built-in disk output is still unconfirmed');

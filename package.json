@@ -46,6 +46,7 @@
     "game:home-field:rerun-path-family": "node app/scripts/next-home-field-path-family-prompt.js",
     "game:home-field:rerun-edge-family": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-edge --review-verdict=needs_review,needs_regen --include-existing --ignore-review-gate --all --terrain-candidate",
     "game:home-field:rerun-scene-props": "node app/scripts/next-home-field-image-prompts.js --id=mushroom_cluster_small_violet --include-existing --ignore-review-gate --all --object-candidate",
+    "game:home-field:generation-queue": "node app/scripts/print-home-field-generation-queue.js",
     "game:home-field:preflight-chibi-proof": "node app/scripts/preflight-home-field-chibi-proof.js",
     "game:home-field:find-imagegen-output": "node app/scripts/find-codex-generated-images.js",
     "game:home-field:claim-imagegen-output": "node app/scripts/claim-home-field-imagegen-output.js",

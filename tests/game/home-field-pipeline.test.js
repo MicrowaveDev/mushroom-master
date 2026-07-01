@@ -15,6 +15,7 @@ const candidateEvidenceScriptPath = path.join(repoRoot, 'app/scripts/generate-ho
 const validateScriptPath = path.join(repoRoot, 'app/scripts/validate-home-field-assets.js');
 const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-prompts.js');
 const homeFieldPromptsPath = path.join(repoRoot, 'app/shared/home-field/home-field-prompts.json');
+const homeFieldGenerationQueuePath = path.join(repoRoot, 'app/shared/home-field/home-field-generation-queue.json');
 const runChibiProofPromptPath = path.join(repoRoot, 'app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
@@ -25,6 +26,7 @@ const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home
 const chibiReferenceApiProofScriptPath = path.join(repoRoot, 'app/scripts/run-home-field-chibi-reference-api-proof.js');
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
 const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
+const generationQueueScriptPath = path.join(repoRoot, 'app/scripts/print-home-field-generation-queue.js');
 const chibiSplitScriptPath = path.join(repoRoot, 'app/scripts/split-home-field-chibi-state-sheet.js');
 const paletteAuditScriptPath = path.join(repoRoot, 'app/scripts/audit-home-field-chibi-palette.js');
 const chromaKeyScript = path.join(
@@ -1463,6 +1465,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Generation mode: chibi active-roster candidate root/);
   assert.match(result.stdout, /thalla \(character\)/);
+  assert.match(result.stdout, /npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /this read-only `npm run game:home-field:next-chibi-proof` helper/);
   assert.match(result.stdout, /If preflight or the method gate fails, stop before stale-file archive\/imagegen but include this helper output in the blocker report/);
@@ -1583,15 +1586,28 @@ test('[home-field] placeholder chibi prompt stays legacy-only', () => {
   assert.doesNotMatch(placeholder.constraints, /full 32-frame animation is a later optional polish stage/);
 });
 
+test('[home-field] Thalla chibi prompt details point to structured queue first', () => {
+  const prompts = JSON.parse(fs.readFileSync(homeFieldPromptsPath, 'utf8'));
+  const prompt = prompts.prompts.character_thalla_chibi;
+
+  assert.match(prompt.details, /generation-queue -- --id=thalla-stage1-chibi-proof/);
+  assert.match(prompt.details, /Do not infer \.env/);
+  assert.match(prompt.details, /OPENAI_API_KEY/);
+  assert.match(prompt.details, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
+});
+
 test('[home-field] chibi proof launcher carries explicit reference-capable workflow', () => {
   const prompt = fs.readFileSync(runChibiProofPromptPath, 'utf8');
 
   assert.match(prompt, /Short Launcher Prompt/);
+  assert.match(prompt, /home-field-generation-queue\.json item thalla-stage1-chibi-proof/);
+  assert.match(prompt, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(prompt, /Use the explicit CLI\/API helper path/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
   assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /Continue past the reference gate only if the grouped 8x4 state sheet can also be generated with the passed reference PNG attached as an actual image input/);
+  assert.match(prompt, /Do not infer \.env/);
   assert.match(prompt, /Do not use built-in or prompt-only generation unless you first state a stronger method change/);
   assert.match(prompt, /default launcher now uses explicit CLI\/API fallback/);
   assert.match(prompt, /Use the explicit CLI\/API helper path by default/);
@@ -1624,6 +1640,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Built-in imagegen environment prefix/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stdout, /use only when the launcher\/user explicitly confirms both/);
+  assert.match(result.stdout, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(result.stdout, /next-chibi-proof  # read-only; run before a blocker handoff even when preflight or the method gate fails/);
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
@@ -1755,7 +1772,8 @@ test('[home-field] chibi proof helper commands expose documented help', () => {
     chibiReferenceApiProofScriptPath,
     recoverChibiAlphaScriptPath,
     recordChibiVerdictScriptPath,
-    claimImagegenOutputScriptPath
+    claimImagegenOutputScriptPath,
+    generationQueueScriptPath
   ]) {
     const result = spawnSync(process.execPath, [script, '--help'], {
       cwd: repoRoot,
@@ -1764,6 +1782,54 @@ test('[home-field] chibi proof helper commands expose documented help', () => {
     assert.equal(result.status, 0, `${script}\n${result.stderr || result.stdout}`);
     assert.match(result.stdout, /Usage:/);
   }
+});
+
+test('[home-field] structured generation queue encodes Thalla chibi gates', () => {
+  const queue = JSON.parse(fs.readFileSync(homeFieldGenerationQueuePath, 'utf8'));
+  const item = queue.items.find((entry) => entry.id === 'thalla-stage1-chibi-proof');
+
+  assert.equal(queue.schemaVersion, 1);
+  assert.ok(item, 'expected thalla-stage1-chibi-proof queue item');
+  assert.equal(item.assetId, 'thalla');
+  assert.equal(item.assetType, 'character');
+  assert.equal(item.env.doNotInferEnvFile, true);
+  assert.equal(item.env.doNotUseRepoDotEnvUnlessUserExplicitlySaysItContainsRequiredKeys, true);
+  assert.deepEqual(item.env.requiredKeys, ['OPENAI_API_KEY']);
+  assert.match(item.env.blockedRunEvidence.rollout, /codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831/);
+  assert.equal(item.generationContract.stateSheet.stopIfPromptOnly, true);
+  assert.equal(item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput, true);
+  assert.match(item.generationContract.stateSheet.requiredReferenceImageInput, /thalla_chibi_turnaround\.reference\.png/);
+  assert.match(item.commands.queue, /generation-queue -- --id=thalla-stage1-chibi-proof/);
+  assert.match(item.commands.preflight, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
+  assert.match(item.commands.referenceApiProof, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
+  assert.ok(item.stopRules.some((rule) => /explicit env file containing OPENAI_API_KEY/.test(rule)));
+  assert.ok(item.finalResponseMustReport.includes('env source and preflight result'));
+
+  for (const reference of item.referenceInputs) {
+    assert.equal(fs.existsSync(path.join(repoRoot, reference.path)), true, reference.path);
+    assert.equal(reference.mustAttachAsActualImageInput, true);
+  }
+});
+
+test('[home-field] generation queue printer exposes env and state-sheet gates', () => {
+  const result = spawnSync(process.execPath, [
+    generationQueueScriptPath,
+    '--id=thalla-stage1-chibi-proof'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Home Field Generation Queue/);
+  assert.match(result.stdout, /thalla-stage1-chibi-proof/);
+  assert.match(result.stdout, /do not infer \.env/i);
+  assert.match(result.stdout, /OPENAI_API_KEY/);
+  assert.match(result.stdout, /codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831/);
+  assert.match(result.stdout, /required reference image input: .*thalla_chibi_turnaround\.reference\.png/);
+  assert.match(result.stdout, /stop if prompt-only: yes/);
+  assert.match(result.stdout, /stop if reference cannot attach: yes/);
+  assert.match(result.stdout, /final response must report:/i);
 });
 
 test('[home-field] chibi reference api proof dry-run prints normalized serial gate plan', () => {
@@ -1793,6 +1859,7 @@ test('[home-field] package exposes chibi proof helper aliases', () => {
   assert.equal(pkg.scripts['game:home-field:claim-imagegen-output'], 'node app/scripts/claim-home-field-imagegen-output.js');
   assert.equal(pkg.scripts['game:home-field:archive-stale-chibi-proof'], 'node app/scripts/archive-home-field-chibi-proof.js');
   assert.equal(pkg.scripts['game:home-field:chibi-reference-api-proof'], 'node app/scripts/run-home-field-chibi-reference-api-proof.js');
+  assert.equal(pkg.scripts['game:home-field:generation-queue'], 'node app/scripts/print-home-field-generation-queue.js');
   assert.equal(pkg.scripts['game:home-field:recover-chibi-alpha'], 'node app/scripts/recover-home-field-chibi-alpha.js');
   assert.equal(pkg.scripts['game:home-field:record-chibi-verdict'], 'node app/scripts/record-home-field-chibi-verdict.js');
   assert.equal(pkg.scripts['shrink:screenshots'], 'bash ../bash/shrink-screenshots.sh');

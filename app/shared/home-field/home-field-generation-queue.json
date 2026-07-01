@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "description": "Structured Home Field image-generation queue for agent/factory runs. Each item is a durable, machine-readable contract; prompt text and workflow docs remain the detailed human source.",
+  "items": [
+    {
+      "id": "thalla-stage1-chibi-proof",
+      "assetId": "thalla",
+      "assetType": "character",
+      "pipeline": "home-field-active-roster-chibi-stage1",
+      "status": "blocked_until_explicit_env_file_with_openai_api_key",
+      "priority": 10,
+      "ownerRole": "Imagegen Worker",
+      "promptSource": {
+        "script": "npm run game:home-field:next-chibi-proof",
+        "promptKey": "character_thalla_chibi",
+        "runDoc": "app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md",
+        "requirementsDoc": "docs/home-field-imagegen-requirements.md",
+        "candidateContractDoc": "docs/home-field-chibi-candidate-contract.md",
+        "regressionLedgerDoc": "docs/home-field-chibi-regression-ledger.md"
+      },
+      "env": {
+        "mode": "explicit-cli-api-env-file",
+        "envFileArg": "<explicit-env-file>",
+        "requiredKeys": [
+          "OPENAI_API_KEY"
+        ],
+        "doNotInferEnvFile": true,
+        "doNotUseRepoDotEnvUnlessUserExplicitlySaysItContainsRequiredKeys": true,
+        "blockedRunEvidence": {
+          "rollout": "codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831",
+          "reason": "The agent used mushroom-master/.env for --env-file; preflight correctly failed because OPENAI_API_KEY was missing. Future runners must receive an explicit env file path instead of guessing."
+        }
+      },
+      "referenceInputs": [
+        {
+          "path": "docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png",
+          "role": "primary positive compact grouped-sheet proportions and charm; fix palette bloat, ornament, and sticker softness",
+          "mustAttachAsActualImageInput": true
+        },
+        {
+          "path": "docs/reference/home-field/chibi-thalla-liked-2026-06-23.png",
+          "role": "positive Thalla face, cap, and robe appeal only; simplify heavily",
+          "mustAttachAsActualImageInput": true
+        },
+        {
+          "path": "docs/reference/home-field/chibi-style-agent-log-reference.png",
+          "role": "target scale, outline weight, and scene-scale simplicity only; do not copy symbols, costumes, or composition",
+          "mustAttachAsActualImageInput": true
+        }
+      ],
+      "outputPaths": {
+        "reference": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png",
+        "referenceApiSource": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.api-source.png",
+        "stateSheet": ".agent/home-field-workspace/raw/thalla_chibi.states.source.png",
+        "candidate": ".agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png",
+        "referencePaletteAudit": ".agent/home-field-workspace/review/thalla-reference-palette-audit.json",
+        "stateSheetPaletteAudit": ".agent/home-field-workspace/review/thalla-state-sheet-palette-audit.json",
+        "candidatePaletteAudit": ".agent/home-field-workspace/review/thalla-candidate-palette-audit.json",
+        "candidateEvidence": ".agent/home-field-workspace/review/candidate-evidence.manifest.json"
+      },
+      "commands": {
+        "queue": "npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof",
+        "context": "npm run game:home-field:chibi-proof-context",
+        "preflight": "npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>",
+        "scopedPrompt": "npm run game:home-field:next-chibi-proof",
+        "archiveStale": "npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>",
+        "referenceApiProof": "npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>",
+        "verifyReference": "npm run game:home-field:verify-chibi-proof-files -- --reference",
+        "auditReferencePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat",
+        "verifyStateSheet": "npm run game:home-field:verify-chibi-proof-files -- --state-sheet",
+        "auditStateSheetPalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/raw/thalla_chibi.states.source.png --out=.agent/home-field-workspace/review/thalla-state-sheet-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-state-sheet-palette-swatch.png --fail-on-bloat",
+        "splitStateSheet": "npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize",
+        "verifyFrames": "npm run game:home-field:verify-chibi-proof-files -- --frames",
+        "produceCandidate": "npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff",
+        "verifyCandidate": "npm run game:home-field:verify-chibi-proof-files -- --candidate",
+        "auditCandidatePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png --out=.agent/home-field-workspace/review/thalla-candidate-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-candidate-palette-swatch.png --fail-on-bloat",
+        "candidateEvidence": "HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence",
+        "preview": "HOME_FIELD_CANDIDATE_IDS=thalla HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:chibi-candidate-preview",
+        "recordVerdict": "npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>"
+      },
+      "generationContract": {
+        "referenceSheet": {
+          "production": false,
+          "method": "image_gen.py edit through chibi-reference-api-proof, with all referenceInputs attached as actual image inputs",
+          "maxSameCauseAttempts": 2,
+          "normalizeReferenceSize": "512x384",
+          "paletteBudget": "12-18 artist-visible colors; fewer than 20 total design colors excluding transparency and #ff00ff",
+          "mustShow": "tiny down, up, left, and right source-sprite views inside invisible 96x96 boxes with at least 70% empty #ff00ff space"
+        },
+        "stateSheet": {
+          "production": true,
+          "method": "one coherent grouped 8x4 state sheet generated through a reference-capable image path",
+          "requiredReferenceImageInput": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png",
+          "stopIfPromptOnly": true,
+          "stopIfReferenceCannotBeAttachedAsActualImageInput": true,
+          "layout": "8 columns x 4 rows; rows down, up, left, right; 2 idle plus 6 walk frames per row",
+          "motionRule": "idle bob and walk poses must exist in the grouped sheet itself; do not synthesize motion after split"
+        }
+      },
+      "stopRules": [
+        "Stop before archive/imagegen if preflight fails.",
+        "Stop if the launcher did not provide an explicit env file containing OPENAI_API_KEY for the CLI/API path.",
+        "Stop if the active imagegen path can only use prompt text for the reference or state sheet.",
+        "Stop if the reference sheet fails verifier, palette audit, or visual gate.",
+        "Stop if the grouped state sheet cannot attach the approved reference PNG as an actual image input.",
+        "Do not overwrite app-facing PNGs during candidate proof."
+      ],
+      "finalResponseMustReport": [
+        "env source and preflight result",
+        "commands run and pass/fail",
+        "whether archive, imagegen, state sheet, split frames, candidate, evidence, preview, and record verdict ran",
+        "reference, state-sheet, and candidate palette audit verdicts when those stages run",
+        "candidate folder path",
+        "that no app-facing PNG was overwritten"
+      ]
+    }
+  ]
+}
