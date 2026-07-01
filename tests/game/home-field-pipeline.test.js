@@ -17,7 +17,10 @@ const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-pr
 const homeFieldPromptsPath = path.join(repoRoot, 'app/shared/home-field/home-field-prompts.json');
 const homeFieldGenerationQueuePath = path.join(repoRoot, 'app/shared/home-field/home-field-generation-queue.json');
 const runChibiProofPromptPath = path.join(repoRoot, 'app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md');
+const runMinimalHomeFieldPromptPath = path.join(repoRoot, 'app/shared/home-field/RUN_MINIMAL_HOME_FIELD_PROMPT.md');
 const homeFieldImagegenRequirementsPath = path.join(repoRoot, 'docs/home-field-imagegen-requirements.md');
+const homeFieldAgentFlowPath = path.join(repoRoot, 'docs/home-field-agent-flow.md');
+const homeFieldChibiCandidateContractPath = path.join(repoRoot, 'docs/home-field-chibi-candidate-contract.md');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
 const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
@@ -1608,6 +1611,7 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
   assert.match(prompt.details, /Use built-in\/imagegen skill output as the normal proof-art path only when the queue method gate allows it/);
   assert.match(prompt.details, /queue-backed built-in same-context staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/);
   assert.match(prompt.details, /exactly one complete 8x4 local state-sheet PNG/);
+  assert.match(prompt.details, /Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage; this is a supplied complete 8x4 local state-sheet source run\./);
   assert.match(prompt.details, /game:home-field:stage-chibi-local-source/);
   assert.match(prompt.details, /non-production reference proxy/);
   assert.match(prompt.details, /skips reference imagegen/);
@@ -1650,6 +1654,7 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
   assert.match(prompt, /Do not set `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` to the checked-in PNGs under `docs\/reference\/home-field\/`/);
   assert.match(prompt, /exactly one supplied complete `8x4` local state-sheet PNG/);
+  assert.match(prompt, /Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage; this is a supplied complete 8x4 local state-sheet source run\./);
   assert.match(prompt, /npm run game:home-field:stage-chibi-local-source/);
   assert.match(prompt, /reference imagegen was skipped/);
   assert.match(prompt, /still run the read-only `npm run game:home-field:next-chibi-proof` helper/);
@@ -1686,10 +1691,26 @@ test('[home-field] imagegen requirements put built-in defaults in queue output',
   assert.match(requirements, /Method gate \/ allowed method change/);
   assert.match(requirements, /Supplied local state-sheet source path/);
   assert.match(requirements, /exactly one supplied complete `8x4` state-sheet PNG/);
+  assert.match(requirements, /Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage; this is a supplied complete 8x4 local state-sheet source run\./);
   assert.match(requirements, /npm run game:home-field:stage-chibi-local-source/);
   assert.match(requirements, /skip reference imagegen and the exhausted built-in reference-staging path/);
   assert.match(requirements, /queue JSON and printer must carry and validate its built-in imagegen path and method-gate status/);
   assert.match(requirements, /queue-backed built-in same-context reference-staging path is exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`/);
+});
+
+test('[home-field] local chibi source same-env rule is persisted in agent docs', () => {
+  const sameLocalSourceRule = /Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage; this is a supplied complete 8x4 local state-sheet source run\./;
+  const files = [
+    runChibiProofPromptPath,
+    runMinimalHomeFieldPromptPath,
+    homeFieldImagegenRequirementsPath,
+    homeFieldAgentFlowPath,
+    homeFieldChibiCandidateContractPath
+  ];
+
+  for (const filePath of files) {
+    assert.match(fs.readFileSync(filePath, 'utf8'), sameLocalSourceRule, filePath);
+  }
 });
 
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
