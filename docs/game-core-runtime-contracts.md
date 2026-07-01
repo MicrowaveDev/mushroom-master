@@ -192,7 +192,7 @@ These mechanics are closest to the reusable core boundary:
 - placement validation once catalog access is injected
 - seeded RNG and deterministic shuffle
 - pure fusion matching with recipes/catalog policy injected
-- shop offer generation once item pools and eligibility hooks are injected
+- shop offer generation with item pools and eligibility hooks injected
 
 These mechanics need adapters before extraction:
 
@@ -219,9 +219,10 @@ These are product-specific and must stay out of `backpack-game-core`:
 Code movement into `backpack-game-core` should stay small and evidence-led:
 port focused core tests before changing `mushroom-master` imports, then verify
 the Mushroom adapter/bridge tests. The shipped slices are bag-shape masks,
-rotation, first grid-geometry primitives, and fusion matching. Full
-placement/loadout validation still belongs in `mushroom-master` until catalog
-access, pricing, bag policy, and validation errors are parameterized. Fusion
-application still belongs in `mushroom-master` because it writes DB rows. The
-next likely slice is shop offer generation after item pools, RNG, bag chance,
-and eligibility hooks are injected.
+rotation, first grid-geometry primitives, fusion matching, and shop-offer
+generation. Full placement/loadout validation still belongs in `mushroom-master`
+until catalog access, pricing, bag policy, and validation errors are
+parameterized. Fusion application and run-shop buy/refresh/sell mutations still
+belong in `mushroom-master` because they write DB rows and touch run currency.
+The next likely slice is bot loadout generation after catalog, affinity, preset,
+and price providers are injected.

@@ -16,8 +16,9 @@ wait. It should be updated after each cluster moves.
   `tests/grid-geometry.test.js`
 - third slice: `src/fusion-matching.js`, tested by
   `tests/fusion-matching.test.js`
+- fourth slice: `src/shop-offer.js`, tested by `tests/shop-offer.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `fdbad4b` (`Add fusion matching core helper`)
+- latest extraction commit: `6be48a9` (`Add shop offer core helper`)
 
 The package is consumed by `mushroom-master` as a pinned Git dependency.
 
@@ -42,7 +43,7 @@ The package is consumed by `mushroom-master` as a pinned Git dependency.
 | Seeded RNG and shuffle | `createRng` in `app/server/lib/utils.js`, `shuffleWithRng` in `app/server/services/battle-engine.js` | Adapter-needed | Algorithms are generic. `createRng` lives beside server/id/time helpers; `shuffleWithRng` lives in battle-engine. Extract only after creating a small RNG module and updating imports. |
 | Fusion matching algorithm | `backpack-game-core/src/fusion-matching.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product hook | Core owns adjacency search, duplicate row consumption, match shaping, and `fusionIngredientRowIdSet`. Mushroom keeps recipe data and eligibility policy through `canUseIngredient`. |
 | Fusion application | `app/server/services/artifact-fusion-service.js` | Product-specific | Reads/writes DB rows, inserts loadout items, records reveals, uses Mushroom artifact catalog and persistence services. |
-| Shop offer generation | `generateShopOffer` in `app/server/services/shop-service.js` | Adapter-needed | The function is deterministic over pools/RNG, but current implementation imports Mushroom pools, bag chance constants, and character-item eligibility. Needs injected item pools/config/hooks. |
+| Shop offer generation | `backpack-game-core/src/shop-offer.js`; Mushroom adapter in `app/server/services/shop-service.js` | Extracted with product config | Core owns deterministic pool sampling, bag pity, bag chance escalation, and character-item slot reservation. Mushroom passes combat pools, bag pools, eligible character items, and balance constants. |
 | Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Product-specific | DB transactions, run locks, persisted shop states, run currency, refunds, and loadout rows stay in product service code. |
 | Bot loadout generation | `app/server/services/bot-loadout.js` | Adapter-needed, later | Contains reusable placement ideas, but imports Mushroom artifacts, affinities, presets, portraits, prices, grid constants, RNG, and validator. |
 | Battle simulation | `app/server/services/battle-engine.js` | Product-specific until adapterized | Hard-coded Mushroom ids and active/passive abilities are inside combat logic. Extract only after ability hooks/config are designed. |
@@ -187,15 +188,32 @@ The wrapper passes that policy into core through `canUseIngredient`, so the
 core package does not import Mushroom recipe data, artifact ids, or catalog
 helpers.
 
-## Next Slices After Bag Shape, Grid Geometry, And Fusion
+## Fourth Slice: Shop Offer Generation
 
-After the shipped bag-shape, grid-geometry, and fusion-matching slices, reassess
-in this order:
+The fourth shipped slice moved pure shop-offer generation:
 
-1. Parameterize shop offer generation over passed item pools/config.
-2. Adapterize bot loadout generation over catalog, affinity, preset, and price
+- `generateShopOffer`
+
+`app/server/services/shop-service.js` keeps:
+
+- run-shop buy, refresh, sell, refund, and DB mutations
+- Mushroom combat artifact pool
+- Mushroom bag artifact pool
+- eligible character item lookup
+- `BAG_BASE_CHANCE`, `BAG_ESCALATION_STEP`, `BAG_PITY_THRESHOLD`, and
+  `SHOP_OFFER_SIZE`
+
+The wrapper passes those pools/config values into core, so the core package does
+not import Mushroom catalog data, run DB rows, or run currency services.
+
+## Next Slices After Bag Shape, Grid Geometry, Fusion, And Shop Offer
+
+After the shipped bag-shape, grid-geometry, fusion-matching, and shop-offer
+slices, reassess in this order:
+
+1. Adapterize bot loadout generation over catalog, affinity, preset, and price
    providers.
-3. Design battle ability hooks before moving any battle simulation code.
+2. Design battle ability hooks before moving any battle simulation code.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.

@@ -11,6 +11,7 @@ import {
   getShopRefreshCost,
   SHOP_OFFER_SIZE
 } from '../game-data.js';
+import { generateShopOffer as generateCoreShopOffer } from '@microwavedev/backpack-game-core';
 import {
   computeCharacterLevel,
   createId,
@@ -87,42 +88,17 @@ export async function lookupEligibleCharacterItems(client, playerId, mode, gameR
  *   when non-empty, one slot is reserved for a random character item
  */
 export function generateShopOffer(rng, count = SHOP_OFFER_SIZE, roundsSinceBag = 1, eligibleCharacterItems = []) {
-  const combatPool = [...combatArtifacts];
-  const bagPool = [...bags];
-  const charPool = [...eligibleCharacterItems];
-  const offer = [];
-  let hasBag = false;
-  let hasCharacterItem = false;
-  const perSlotChance = BAG_BASE_CHANCE + roundsSinceBag * BAG_ESCALATION_STEP;
-
-  for (let i = 0; i < count; i++) {
-    const forceBag = !hasBag && roundsSinceBag >= BAG_PITY_THRESHOLD && i === count - 1;
-    const forceChar = !hasCharacterItem && charPool.length > 0 && i === count - 1 && !forceBag;
-    const isBagSlot = forceBag || (bagPool.length > 0 && rng() < perSlotChance);
-
-    if (forceChar) {
-      const idx = Math.floor(rng() * charPool.length);
-      offer.push(charPool[idx].id);
-      charPool.splice(idx, 1);
-      hasCharacterItem = true;
-    } else if (isBagSlot && bagPool.length > 0) {
-      const idx = Math.floor(rng() * bagPool.length);
-      offer.push(bagPool[idx].id);
-      bagPool.splice(idx, 1);
-      hasBag = true;
-    } else if (charPool.length > 0 && !hasCharacterItem && rng() < 0.3) {
-      const idx = Math.floor(rng() * charPool.length);
-      offer.push(charPool[idx].id);
-      charPool.splice(idx, 1);
-      hasCharacterItem = true;
-    } else if (combatPool.length > 0) {
-      const idx = Math.floor(rng() * combatPool.length);
-      offer.push(combatPool[idx].id);
-      combatPool.splice(idx, 1);
-    }
-  }
-
-  return { offer, hasBag };
+  return generateCoreShopOffer({
+    rng,
+    count,
+    roundsSinceBag,
+    combatItems: combatArtifacts,
+    bagItems: bags,
+    characterItems: eligibleCharacterItems,
+    bagBaseChance: BAG_BASE_CHANCE,
+    bagEscalationStep: BAG_ESCALATION_STEP,
+    bagPityThreshold: BAG_PITY_THRESHOLD
+  });
 }
 
 export async function buyRunShopItem(playerId, gameRunId, artifactId) {
