@@ -51,6 +51,7 @@
     "game:home-field:claim-imagegen-output": "node app/scripts/claim-home-field-imagegen-output.js",
     "game:home-field:archive-stale-chibi-proof": "node app/scripts/archive-home-field-chibi-proof.js",
     "game:home-field:chibi-proof-context": "node app/scripts/home-field-chibi-proof-context.js",
+    "game:home-field:chibi-reference-api-proof": "node app/scripts/run-home-field-chibi-reference-api-proof.js",
     "game:home-field:verify-chibi-proof-files": "node app/scripts/verify-home-field-chibi-proof-files.js",
     "game:home-field:split-chibi-state-sheet": "node app/scripts/split-home-field-chibi-state-sheet.js",
     "game:home-field:recover-chibi-alpha": "node app/scripts/recover-home-field-chibi-alpha.js",

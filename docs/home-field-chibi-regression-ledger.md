@@ -567,7 +567,7 @@ The active Stage 1 contract is:
 - `docs/home-field-chibi-palette-cleanup-research.md` now records palette measurements, cleanup-tool findings, and the checked-in palette-audit helper workflow;
 - docs now say palette cleanup is diagnostic even when the dedicated palette-audit evidence exists;
 - cleanup or quantization must not override the biology/style gate;
-- `npm run game:home-field:palette-audit -- <png>` reports exact significant colors, coarse visible bins, top colors, and a swatch PNG before treating a chibi as palette-reviewed; chibi candidate evidence now requires the reference, state-sheet, and candidate palette audit artifacts and rejects stale audit source hashes.
+- `npm run game:home-field:palette-audit -- <png> --fail-on-bloat` reports exact significant colors, coarse visible bins, top colors, and a swatch PNG before treating a chibi as palette-reviewed; chibi candidate evidence now requires the reference, state-sheet, and candidate palette audit artifacts and rejects stale audit source hashes.
 
 ### 36. Fresh Launcher Lost Built-In Imagegen Capability Confirmation
 
@@ -647,6 +647,20 @@ The active Stage 1 contract is:
 - `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` now rejects `docs/reference/home-field/` paths, because those are style references rather than proof source PNGs;
 - the next production-ready run must either use a reference-capable image/editing tool surface that truly attaches the PNGs, explicit CLI/API credentials, or fresh proof source PNGs that are not the checked-in style references.
 
+### 41. Real CLI Image Inputs Worked But The Reference Gate Still Failed
+
+**Symptom:** Rollout `codex-019f1ade-4d43-7b20-985a-1a1ae7e4ca6c` finally used a real reference-capable CLI/API path: `image_gen.py edit` with the three checked-in reference PNGs passed as actual `--image` inputs. Preflight passed after loading an explicit credential environment, stale live reference evidence was archived, and two exact-prompt image-guided reference attempts wrote PNG files. Both attempts still failed before final state-sheet generation: attempt 1 had oversized blobs up to `115x139` and `74` significant exact colors; attempt 2 had oversized blobs up to `139x172` and `72` significant exact colors.
+
+**What improved:** This moved the blocker from "no real image input path" to a real art/reference gate. The prompt-only built-in surface was not used, no app-facing assets were overwritten, and no grouped state sheet, split frames, candidate spritesheet, preview, or verdict was produced after the reference failure.
+
+**What was missing in the flow:** The agent had to reconstruct too much: credential discovery from neighboring env files, Python SDK setup, exact prompt copying, CLI/API command shape, API output sizing, verifier, palette audit, and blocker-note writing. It also learned that downscaling the `1024x768` API result to `512x384` fixes the mechanical blob-size gate (`70x86`, `68x84`, `62x84`, `60x84` in a temp check) but does not fix palette bloat (`68` significant exact colors after downscale). A scale fix alone is therefore not production readiness.
+
+**Guardrails added:**
+
+- `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>` now wraps the CLI/API reference attempt, exact prompt extraction, ignored Python SDK venv setup, API-size source preservation, `512x384` reference normalization, verifier, `palette-audit --fail-on-bloat`, and blocker-note writing;
+- docs now allow API-size-to-reference-size normalization only as deterministic scale normalization, never as palette/style approval;
+- future CLI/API reference runs should pass an explicit env file and use the helper instead of hand-rolled credential searches or parallel verifier/audit reads.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -682,3 +696,4 @@ The active Stage 1 contract is:
 31. Do not start another unchanged built-in sprite-box reference attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. First change the generation method/tool/source-input path, or stop and report that the current built-in prompt path is exhausted.
 32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
 33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable CLI/API support, or separate fresh proof source PNGs.
+34. For explicit CLI/API reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.

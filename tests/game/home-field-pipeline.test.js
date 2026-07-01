@@ -22,6 +22,7 @@ const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-hom
 const recoverChibiAlphaScriptPath = path.join(repoRoot, 'app/scripts/recover-home-field-chibi-alpha.js');
 const recordChibiVerdictScriptPath = path.join(repoRoot, 'app/scripts/record-home-field-chibi-verdict.js');
 const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home-field-chibi-proof.js');
+const chibiReferenceApiProofScriptPath = path.join(repoRoot, 'app/scripts/run-home-field-chibi-reference-api-proof.js');
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
 const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
 const chibiSplitScriptPath = path.join(repoRoot, 'app/scripts/split-home-field-chibi-state-sheet.js');
@@ -1482,9 +1483,11 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
   assert.match(result.stdout, /palette-audit -- .*thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /thalla-reference-palette-audit\.json/);
+  assert.match(result.stdout, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
   assert.match(result.stdout, /thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --state-sheet/);
   assert.match(result.stdout, /thalla-state-sheet-palette-audit\.json/);
+  assert.match(result.stdout, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
   assert.match(result.stdout, /split-chibi-state-sheet -- --chroma-key=#ff00ff --resize/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --frames/);
   assert.match(result.stdout, /Candidate output path .*candidates\/chibi-active-roster\/latest/);
@@ -1509,6 +1512,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /Copyable Sprite-Box Reference Prompt/);
   assert.match(result.stdout, /attach these checked-in PNGs as actual image inputs/);
   assert.match(result.stdout, /with those local PNGs attached as actual image inputs/);
+  assert.match(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
+  assert.match(result.stdout, /API-source normalization/);
+  assert.match(result.stdout, /palette audit must still pass/);
   assert.match(result.stdout, /supplied local proof source images outside docs\/reference/);
   assert.match(result.stdout, /listing docs\/reference paths is not image-guided generation/);
   assert.match(result.stdout, /listing their filesystem paths is not enough/);
@@ -1552,6 +1558,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --candidate/);
   assert.match(result.stdout, /thalla-candidate-palette-audit\.json/);
+  assert.match(result.stdout, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
   assert.doesNotMatch(result.stdout, /produce-chibi-candidate -- thalla --resize-nearest/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-readability/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*candidates\/chibi-active-roster\/latest.*--ids=thalla --check-files --check-runtime-readiness/);
@@ -1589,6 +1596,13 @@ test('[home-field] chibi proof launcher carries built-in imagegen capability con
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(prompt, /fresh Codex sessions do not inherit shell environment variables or prior chat confirmations/);
+  assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
+  assert.match(prompt, /image_gen\.py edit/);
+  assert.match(prompt, /API-size source PNG/);
+  assert.match(prompt, /palette audit and visual gate must still pass/);
+  assert.match(prompt, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
+  assert.match(prompt, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
+  assert.match(prompt, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
 });
 
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
@@ -1611,6 +1625,9 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /thalla-reference-palette-audit\.json/);
   assert.match(result.stdout, /thalla-state-sheet-palette-audit\.json/);
   assert.match(result.stdout, /thalla-candidate-palette-audit\.json/);
+  assert.match(result.stdout, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
+  assert.match(result.stdout, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
+  assert.match(result.stdout, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
   assert.match(result.stdout, /styleCohesionCheck\/stageContractCheck/);
   assert.match(result.stdout, /--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
@@ -1618,6 +1635,10 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs/);
   assert.match(result.stdout, /Local-input warning: docs\/reference PNGs are style references only/);
   assert.match(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs/);
+  assert.match(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
+  assert.match(result.stdout, /CLI\/API warning/);
+  assert.match(result.stdout, /Reference normalization warning/);
+  assert.match(result.stdout, /palette audit must still pass/);
   assert.match(result.stdout, /do not run the probe when reference binding is unavailable/);
   assert.match(result.stdout, /Blocker reporting warning: if preflight or the method gate blocks the run/);
   assert.match(result.stdout, /no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred/);
@@ -1720,6 +1741,7 @@ test('[home-field] imagegen output claim copies only newer bounded files', () =>
 test('[home-field] chibi proof helper commands expose documented help', () => {
   for (const script of [
     archiveChibiProofScriptPath,
+    chibiReferenceApiProofScriptPath,
     recoverChibiAlphaScriptPath,
     recordChibiVerdictScriptPath,
     claimImagegenOutputScriptPath
@@ -1733,10 +1755,33 @@ test('[home-field] chibi proof helper commands expose documented help', () => {
   }
 });
 
+test('[home-field] chibi reference api proof dry-run prints normalized serial gate plan', () => {
+  const result = spawnSync(process.execPath, [chibiReferenceApiProofScriptPath, '--dry-run'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, OPENAI_API_KEY: '' }
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Thalla Chibi Reference API Proof/);
+  assert.match(result.stdout, /chibi-thalla-previous-best-2026-06-26-state-sheet\.png/);
+  assert.match(result.stdout, /chibi-thalla-liked-2026-06-23\.png/);
+  assert.match(result.stdout, /chibi-style-agent-log-reference\.png/);
+  assert.match(result.stdout, /thalla_chibi_turnaround\.api-source\.png/);
+  assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
+  assert.match(result.stdout, /normalization: 512x384/);
+  assert.match(result.stdout, /palette audit uses --fail-on-bloat/);
+  assert.match(result.stdout, /dry-run: no prompt file, API image, venv, verifier, palette audit, or blocker note was written/);
+  assert.match(result.stdout, /would run image_gen\.py edit --model gpt-image-2 --quality medium --size 1024x768/);
+  assert.match(result.stdout, /--image docs\/reference\/home-field\/chibi-thalla-previous-best-2026-06-26-state-sheet\.png/);
+  assert.match(result.stdout, /would run verifier before palette audit, then palette audit with --fail-on-bloat/);
+});
+
 test('[home-field] package exposes chibi proof helper aliases', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
   assert.equal(pkg.scripts['game:home-field:claim-imagegen-output'], 'node app/scripts/claim-home-field-imagegen-output.js');
   assert.equal(pkg.scripts['game:home-field:archive-stale-chibi-proof'], 'node app/scripts/archive-home-field-chibi-proof.js');
+  assert.equal(pkg.scripts['game:home-field:chibi-reference-api-proof'], 'node app/scripts/run-home-field-chibi-reference-api-proof.js');
   assert.equal(pkg.scripts['game:home-field:recover-chibi-alpha'], 'node app/scripts/recover-home-field-chibi-alpha.js');
   assert.equal(pkg.scripts['game:home-field:record-chibi-verdict'], 'node app/scripts/record-home-field-chibi-verdict.js');
   assert.equal(pkg.scripts['shrink:screenshots'], 'bash ../bash/shrink-screenshots.sh');

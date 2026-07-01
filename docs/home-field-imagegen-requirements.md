@@ -79,6 +79,14 @@ For actual proof art after preflight passes, do not repeat the manual finder/cop
 npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>
 ```
 
+For the Thalla reference sheet through explicit CLI/API fallback, do not hand-roll credential discovery, Python SDK setup, prompt extraction, resize normalization, verifier, palette audit, and blocker-note writing. Use:
+
+```bash
+npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>
+```
+
+The helper keeps the prompt source in `next-chibi-proof`, passes the checked-in reference PNGs as actual `--image` inputs, preserves an API-size source PNG, normalizes it to the current `512x384` sprite-box reference when needed, then runs `verify-chibi-proof-files -- --reference` and `palette-audit --fail-on-bloat` serially. A normalized reference still fails if palette bloat, status ornament, hair/wig reads, or other visual gate issues remain.
+
 The claim helper considers only files newer than `--since`, copies the newest bounded result, records source/destination hashes, and runs the matching chibi file verifier. Keep `game:home-field:find-imagegen-output` for the one diagnostic preflight probe only.
 
 ### IG-4. Candidate Work Stays Out Of App-Facing Paths
@@ -209,7 +217,7 @@ Active-roster chibi candidates must follow `docs/home-field-chibi-candidate-cont
 Run the palette audit helper on each chibi proof stage before treating palette discipline as reviewed:
 
 ```bash
-npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<review-swatch.png>
+npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<review-swatch.png> --fail-on-bloat
 ```
 
 For current Thalla proof runs, the required evidence filenames are `thalla-reference-palette-audit.json`, `thalla-state-sheet-palette-audit.json`, and `thalla-candidate-palette-audit.json`, each with the matching `*-palette-swatch.png` under `.agent/home-field-workspace/review/`. `candidate-evidence.manifest.json` requires these artifacts for chibi candidates and checks their `source.sha256` values against the current reference, grouped state sheet, and candidate PNG so stale palette reports cannot satisfy the gate.

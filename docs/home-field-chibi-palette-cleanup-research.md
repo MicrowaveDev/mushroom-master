@@ -70,7 +70,7 @@ Do not treat any of these as an approval shortcut. A cleanup tool can make a she
 2. Run the checked-in palette-audit helper before calling a reference "visually close":
 
    ```bash
-   npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<review-swatch.png>
+   npm run game:home-field:palette-audit -- <png> --out=<review-json> --swatch=<review-swatch.png> --fail-on-bloat
    ```
 
    The helper emits JSON plus a palette swatch PNG and reports:
