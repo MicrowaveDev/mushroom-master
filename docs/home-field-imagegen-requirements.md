@@ -17,6 +17,7 @@ This document is the shared imagegen contract. Family-specific contracts can add
 - `docs/home-field-chibi-style-reference.md` defines the current chibi visual target.
 - `docs/home-field-chibi-palette-cleanup-research.md` records palette-audit and cleanup-tool findings for Thalla chibi proof runs.
 - `docs/home-field-chibi-regression-ledger.md` records the regressions these requirements are meant to prevent.
+- `app/shared/home-field/home-field-generation-queue.json` plus `npm run game:home-field:generation-queue` define the fresh-agent queue output for queue-backed runs, including built-in imagegen defaults that should not be repeated in the pasted launcher.
 
 ## Core Requirements
 
@@ -32,6 +33,17 @@ Every imagegen run must start with a stated scope:
 - explicit non-goals.
 
 Do not broaden a scoped run because a prompt, helper, or generated output suggests more assets. For the current chibi proof, the scope is `thalla` only.
+
+Queue-backed runs must keep the pasted launcher short and put operational detail in the queue response. The queue command must print, by default, the run title, canonical run doc, agent instructions, reference inputs, output paths, required commands, stop gates, final-response fields, and a **Built-in imagegen default path** section. For current Thalla chibi proof, that built-in section must include:
+
+- the required built-in confirmation flags: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`;
+- the built-in preflight command using those flags;
+- the instruction to load all three `referenceInputs` PNGs with `view_image` as the current imagegen skill's same-context input-staging step;
+- the instruction to call built-in `image_gen` in that same context and explicitly name the visible `referenceInputs` images as references;
+- the after-render rule to save each generated PNG directly to the documented output path or claim it with `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>`;
+- the warning that passive viewing, path listing, or prompt-text path mentions are not enough unless the following same-context built-in `image_gen` call uses those visible images as references.
+
+Do not rely on a human-pasted prompt to carry those built-in details. If a new queue item is marked built-in/imagegen-ready, the queue JSON and printer must carry and validate its built-in imagegen default path before the run starts.
 
 ### IG-2. A Chat-Visible Render Is Not A Pipeline Source
 

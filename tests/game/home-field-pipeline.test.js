@@ -17,6 +17,7 @@ const nextScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-image-pr
 const homeFieldPromptsPath = path.join(repoRoot, 'app/shared/home-field/home-field-prompts.json');
 const homeFieldGenerationQueuePath = path.join(repoRoot, 'app/shared/home-field/home-field-generation-queue.json');
 const runChibiProofPromptPath = path.join(repoRoot, 'app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md');
+const homeFieldImagegenRequirementsPath = path.join(repoRoot, 'docs/home-field-imagegen-requirements.md');
 const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
 const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
@@ -1642,6 +1643,21 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.match(prompt, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
+});
+
+test('[home-field] imagegen requirements put built-in defaults in queue output', () => {
+  const requirements = fs.readFileSync(homeFieldImagegenRequirementsPath, 'utf8');
+
+  assert.match(requirements, /app\/shared\/home-field\/home-field-generation-queue\.json/);
+  assert.match(requirements, /Built-in imagegen default path/);
+  assert.match(requirements, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
+  assert.match(requirements, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(requirements, /load all three `referenceInputs` PNGs with `view_image`/);
+  assert.match(requirements, /same-context input-staging step/);
+  assert.match(requirements, /call built-in `image_gen` in that same context/);
+  assert.match(requirements, /claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference\|state-sheet>/);
+  assert.match(requirements, /Do not rely on a human-pasted prompt to carry those built-in details/);
+  assert.match(requirements, /queue JSON and printer must carry and validate its built-in imagegen default path/);
 });
 
 test('[home-field] chibi proof context prints narrow paths and commands', () => {
