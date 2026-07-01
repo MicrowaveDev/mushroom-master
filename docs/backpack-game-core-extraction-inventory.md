@@ -14,8 +14,10 @@ wait. It should be updated after each cluster moves.
 - first slice: `src/bag-shape.js`, tested by `tests/bag-shape.test.js`
 - second slice: `src/grid-geometry.js`, tested by
   `tests/grid-geometry.test.js`
+- third slice: `src/fusion-matching.js`, tested by
+  `tests/fusion-matching.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `92a39d5` (`Add grid geometry helpers`)
+- latest extraction commit: `fdbad4b` (`Add fusion matching core helper`)
 
 The package is consumed by `mushroom-master` as a pinned Git dependency.
 
@@ -38,7 +40,7 @@ The package is consumed by `mushroom-master` as a pinned Git dependency.
 | Grid placement primitives | `backpack-game-core/src/grid-geometry.js`; validation remains in `app/server/services/loadout-utils.js` | Partially extracted | `pieceCells`, `cellSet`, `setsIntersect`, and `cellKey` are pure. Catalog-backed grid/bag/loadout validation still imports `game-data.js`, `artifact-helpers.js`, and bag policy, so it stays in Mushroom code. |
 | Full loadout validation | `app/server/services/loadout-utils.js` | Adapter-needed | Uses Mushroom artifact lookup, prices, dimensions, family semantics, grid constants, and stat caps. Needs injected catalog/config before it belongs in core. |
 | Seeded RNG and shuffle | `createRng` in `app/server/lib/utils.js`, `shuffleWithRng` in `app/server/services/battle-engine.js` | Adapter-needed | Algorithms are generic. `createRng` lives beside server/id/time helpers; `shuffleWithRng` lives in battle-engine. Extract only after creating a small RNG module and updating imports. |
-| Fusion matching algorithm | `findArtifactFusionMatches` and `fusionIngredientRowIdSet` in `app/shared/artifact-fusions.js` | Adapter-needed | Matching accepts `getArtifact` and is mostly pure, but the same module also exports Mushroom recipe data and artifact ids. Split algorithm from product recipe catalog first. |
+| Fusion matching algorithm | `backpack-game-core/src/fusion-matching.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product hook | Core owns adjacency search, duplicate row consumption, match shaping, and `fusionIngredientRowIdSet`. Mushroom keeps recipe data and eligibility policy through `canUseIngredient`. |
 | Fusion application | `app/server/services/artifact-fusion-service.js` | Product-specific | Reads/writes DB rows, inserts loadout items, records reveals, uses Mushroom artifact catalog and persistence services. |
 | Shop offer generation | `generateShopOffer` in `app/server/services/shop-service.js` | Adapter-needed | The function is deterministic over pools/RNG, but current implementation imports Mushroom pools, bag chance constants, and character-item eligibility. Needs injected item pools/config/hooks. |
 | Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Product-specific | DB transactions, run locks, persisted shop states, run currency, refunds, and loadout rows stay in product service code. |
@@ -164,15 +166,36 @@ Do not treat this as a full loadout-validation extraction. These remain local:
 They still depend on Mushroom artifact lookup, bag semantics, grid constants,
 pricing, and product policy.
 
-## Next Slices After Bag Shape And Grid Geometry
+## Third Slice: Fusion Matching
 
-After the shipped bag-shape and grid-geometry slices, reassess in this order:
+The third shipped slice moved pure fusion matching:
 
-1. Split fusion matching algorithm from Mushroom recipe catalog data.
-2. Parameterize shop offer generation over passed item pools/config.
-3. Adapterize bot loadout generation over catalog, affinity, preset, and price
+- `findFusionMatches`
+- `fusionIngredientRowIdSet`
+
+`app/shared/artifact-fusions.js` keeps:
+
+- `artifactFusionRecipes`
+- `getArtifactFusionRecipe`
+- Mushroom eligibility policy:
+  - reject bag artifacts
+  - reject starter-only artifacts
+  - reject existing fusion-only artifacts unless the recipe explicitly allows
+    them
+
+The wrapper passes that policy into core through `canUseIngredient`, so the
+core package does not import Mushroom recipe data, artifact ids, or catalog
+helpers.
+
+## Next Slices After Bag Shape, Grid Geometry, And Fusion
+
+After the shipped bag-shape, grid-geometry, and fusion-matching slices, reassess
+in this order:
+
+1. Parameterize shop offer generation over passed item pools/config.
+2. Adapterize bot loadout generation over catalog, affinity, preset, and price
    providers.
-4. Design battle ability hooks before moving any battle simulation code.
+3. Design battle ability hooks before moving any battle simulation code.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.
