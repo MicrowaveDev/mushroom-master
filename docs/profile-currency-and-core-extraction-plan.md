@@ -10,13 +10,16 @@
 > (`mycelium`→`character_xp`, `coins`→`run_currency`) remains optional Phase
 > **6D** work, not a launch blocker. The
 > authoritative current backlog is the **Remaining launch gates** under Phase 7B
-> plus the Deferred list. Phases **8-15** (extraction into `backpack-game-core`)
-> are not started, by design. Shipped runtime contracts (wallet ledger, purchase
+> plus the Deferred list. Phases **8A+** (contract reference, extraction into
+> `backpack-game-core`, and later rollout/data ops) are not started, by design.
+> Shipped runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code and
 > `tests/game/wallet-assets.test.js`, and ideally lifted into a dedicated
 > `docs/` reference doc rather than re-derived from this plan's phase sections.
 > See the **Post-Implementation Review** section for the verified state and
-> current remaining work.
+> current remaining work. As of the latest plan adjustment, the next lane is
+> **Phase 8A/8B**: write a current runtime contract reference and map the
+> extraction boundary before moving code.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, and 7B implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
@@ -92,14 +95,13 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after Phase 6A-6C: extract a current runtime contract reference
-doc and start reusable-core extraction planning. Deferred beyond that: optional
-Phase 6D database renames / physical removal of legacy compatibility fields,
-multi-item pack guarantees,
-duplicate burning, marketplace trading, database managed pack catalogs, an
-expanded terms/support frontend, provider refund and reversal handling,
-distributed payment mutation hardening, and reusable-core extraction into
-`backpack-game-core`.
+Next local lane after Phase 6A-6C: Phase 8A/8B, which creates a current runtime
+contract reference and a concrete extraction inventory before any code is moved.
+Deferred beyond that: optional Phase 6D database renames / physical removal of
+legacy compatibility fields, multi-item pack guarantees, duplicate burning,
+marketplace trading, database managed pack catalogs, an expanded terms/support
+frontend, provider refund and reversal handling, distributed payment mutation
+hardening, and actual code movement into `backpack-game-core`.
 
 ## Post-Implementation Review
 
@@ -194,6 +196,10 @@ plan's own status text as evidence.
 - Extract the shipped wallet / asset / gacha runtime contracts into a dedicated
   `docs/` reference doc (the `docs/infra-hardening.md` pattern) so future agents
   read current behavior from a reference, not from this plan's phase sections.
+- Before moving mechanics into `backpack-game-core`, do a narrow import-boundary
+  inventory and pick the first pure cluster from evidence. Do not start with
+  payment, wallet, asset ownership, gacha, portraits, Telegram, database models,
+  or the battle engine.
 
 ## Source Of Truth
 
@@ -1042,8 +1048,76 @@ or legal/support/compliance rollout work.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 
+Status: **Next local lane.** Phase 6A-6C made the currency / XP vocabulary clean
+enough for a reusable boundary, but the next step is still planning and
+contract capture, not a broad code move.
+
 Only start extracting after the currency names above are clean enough that the
 core package does not inherit Mushroom-specific vocabulary.
+
+### Phase 8A - Current Runtime Contract Reference
+
+Create a dedicated current-state reference doc before moving code. Suggested
+path: `docs/game-core-runtime-contracts.md`.
+
+The reference should describe what the system does now, with code/test anchors:
+
+- temporary run currency: legacy `coins` plus `runCurrency` / `runCoins` API
+  aliases, scoped to one run player and spendable only on run artifacts,
+  refreshes, and run-item refunds.
+- profile wallet currency: profile-scoped wallet ledger, `players.spore`
+  compatibility mirror, purchase intents, provider callbacks, and wallet
+  grant/spend invariants.
+- character XP: `characterXp` helper/API naming over legacy `mycelium` columns,
+  progression-only and not stat scaling.
+- asset ownership and gacha: profile-owned asset instances/equipment,
+  direct-buy policy, env-gated gacha policy, and future seasonal-pack direction.
+- non-core boundaries: Telegram auth, Express routes, database models,
+  migrations, wallet/payment providers, Mushroom portraits/lore/wiki,
+  achievements/seasons, home-field code, and UI copy.
+
+Done when the reference doc points to the authoritative tests and modules, and
+the plan links future extraction work to that reference instead of asking
+agents to re-derive shipped behavior from old phase notes.
+
+### Phase 8B - Extraction Inventory And First Slice Choice
+
+Before creating or editing `backpack-game-core`, map candidate modules with
+their imports and classify them:
+
+- **Pure candidate:** no database, Express, Telegram, filesystem, product lore,
+  portraits, wallet, asset, or payment dependency.
+- **Adapter-needed:** useful mechanics exist, but Mushroom-specific catalogs,
+  eligibility, abilities, or persistence must be passed in from
+  `mushroom-master`.
+- **Product-specific:** keep in `mushroom-master`.
+
+The first extraction slice should be the smallest low-risk pure cluster proven
+by that inventory. Likely candidates are bag-shape/grid helpers, placement
+validation, deterministic RNG/shuffle helpers, or pure fusion matching. Do not
+start with the battle engine until hard-coded Mushroom abilities are behind a
+clear product adapter.
+
+Done when the plan records:
+
+- the chosen first cluster and why it is pure enough,
+- the exact source files and tests to port,
+- the adapter surface `mushroom-master` will keep,
+- verification commands for both repos,
+- and rollback strategy if the core dependency integration fails.
+
+### Phase 8C - Move First Pure Cluster
+
+Only after 8A and 8B are complete:
+
+1. Create or update `backpack-game-core` with the chosen pure cluster.
+2. Port focused unit tests into the core repo before changing
+   `mushroom-master` imports.
+3. Swap `mushroom-master` to consume the core package for that one cluster.
+4. Keep all product catalogs, persistence, wallet/asset/gacha code, and UI in
+   `mushroom-master`.
+5. Verify the core tests, then the focused Mushroom game tests that exercise the
+   swapped cluster.
 
 Move mechanics that are already close to product-neutral:
 
@@ -1165,14 +1239,20 @@ Recommended initial choices:
 10. Phase 6A-6C neutral naming pass: freeze compatibility contract, add
    character XP and run currency helper/API aliases while keeping legacy DB
    columns and response aliases. **Done 2026-07-01.**
-11. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
-12. Adapterize and optionally extract battle simulation.
-13. Add hub/submodule metadata and final cross-repo verification.
-14. Optional Phase 6D database rename only if raw legacy column names become a
+11. Phase 8A current runtime contract reference:
+   `docs/game-core-runtime-contracts.md`.
+12. Phase 8B extraction inventory and first-slice choice; classify candidate
+   modules as pure, adapter-needed, or product-specific.
+13. Phase 8C / Phase 9 first pure extraction into `backpack-game-core`, with
+   tests ported before `mushroom-master` import swaps.
+14. Adapterize and optionally extract battle simulation only after Mushroom
+   ability logic has a product adapter.
+15. Add hub/submodule metadata and final cross-repo verification.
+16. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-15. Paid rollout readiness when external inputs are available: real provider
+17. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-16. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+18. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.
