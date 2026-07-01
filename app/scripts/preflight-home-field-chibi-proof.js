@@ -26,18 +26,20 @@ const requiredFramePaths = ['down', 'up', 'left', 'right'].flatMap((dir) => [
 
 function usage() {
   return [
-    'Usage: npm run game:home-field:preflight-chibi-proof -- [--env-file=<path>]',
+    'Usage: npm run game:home-field:preflight-chibi-proof -- [--env-file=<path>] [--source=<png>]',
     '',
     'Checks whether the current Thalla chibi proof run has an allowed way to produce real PNG files.',
     '',
     'Options:',
-    '  --env-file=<path>  Load OPENAI_IMAGEGEN_API_KEY and related imagegen env from an explicit file before checking API fallback readiness.'
+    '  --env-file=<path>  Load OPENAI_IMAGEGEN_API_KEY and related imagegen env from an explicit file before checking API fallback readiness.',
+    '  --source=<png>     Check one supplied complete local 8x4 state-sheet PNG from the queue sourcePath.'
   ].join('\n');
 }
 
 function parseArgs(argv) {
   const opts = {
-    envFile: ''
+    envFile: '',
+    source: ''
   };
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
@@ -45,6 +47,8 @@ function parseArgs(argv) {
       process.exit(0);
     } else if (arg.startsWith('--env-file=')) {
       opts.envFile = arg.slice('--env-file='.length);
+    } else if (arg.startsWith('--source=')) {
+      opts.source = arg.slice('--source='.length);
     } else {
       throw new Error(`Unexpected argument: ${arg}\n\n${usage()}`);
     }
@@ -66,6 +70,26 @@ function parseLocalInputs(value) {
     .split(path.delimiter)
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function localInputsFromOptions(opts, effectiveEnv) {
+  if (opts.source) {
+    return {
+      sourceLabel: '--source',
+      inputs: [opts.source]
+    };
+  }
+  const envInputs = parseLocalInputs(effectiveEnv.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS);
+  if (envInputs.length > 0) {
+    return {
+      sourceLabel: 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS',
+      inputs: envInputs
+    };
+  }
+  return {
+    sourceLabel: 'not supplied',
+    inputs: []
+  };
 }
 
 function normalizeRepoRelative(inputPath) {
@@ -160,7 +184,8 @@ function main() {
   const builtinDiskConfirmed = effectiveEnv.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE === '1';
   const builtinReferencesConfirmed = effectiveEnv.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES === '1';
   const builtinReady = builtinDiskConfirmed && builtinReferencesConfirmed && !builtinDisabled && !builtinMethodGateBlocked;
-  const localInputs = parseLocalInputs(effectiveEnv.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS);
+  const localInputSelection = localInputsFromOptions(opts, effectiveEnv);
+  const localInputs = localInputSelection.inputs;
   const missingLocalInputs = localInputs.filter((inputPath) => !fileExists(path.resolve(repoRoot, inputPath)));
   const rejectedLocalInputs = localInputs.filter((inputPath) => normalizeRepoRelative(inputPath).startsWith('docs/reference/home-field/'));
   const localInputsReady = localInputs.length > 0 && missingLocalInputs.length === 0 && rejectedLocalInputs.length === 0;
@@ -177,6 +202,7 @@ function main() {
   console.log(`State sheet output path: ${requiredStateSheetPath}`);
   console.log(`Raw frame output slots: ${requiredFramePaths.length}`);
   console.log(`Explicit env file: ${opts.envFile ? path.relative(repoRoot, resolveInputPath(opts.envFile)) : 'not used'}`);
+  console.log(`Explicit local source: ${opts.source || 'not used'}`);
   console.log('');
   console.log('Output capability:');
   console.log(`- imagegen CLI helper: ${hasCli ? cliPath : 'missing'}`);
@@ -188,6 +214,7 @@ function main() {
   console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
   console.log(`- built-in imagegen reference-input explicitly confirmed: ${builtinReferencesConfirmed ? 'yes' : 'no'}`);
   console.log(`- local image inputs supplied: ${localInputs.length}`);
+  console.log(`- local image input source: ${localInputSelection.sourceLabel}`);
   for (const info of localInputInfos) {
     if (info.error) {
       console.log(`  - ${info.path}: unreadable PNG (${info.error})`);
@@ -196,7 +223,7 @@ function main() {
     }
   }
   if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {
-    console.log('- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source');
+    console.log(`- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source -- --source=${localInputs[0]}`);
   }
   if (missingLocalInputs.length > 0) {
     console.log(`- missing local image inputs: ${missingLocalInputs.join(', ')}`);
@@ -232,7 +259,7 @@ function main() {
       console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach/use the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
     }
     console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
-    console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing supplied local proof source PNG paths outside docs/reference, separated by ${JSON.stringify(path.delimiter)}; checked-in docs/reference style images do not count`);
+    console.error(`- --source=<png> or HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing supplied local proof source PNG paths outside docs/reference, separated by ${JSON.stringify(path.delimiter)}; checked-in docs/reference style images do not count`);
     console.error('');
     if (builtinMethodGateBlocked) {
       console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats, and the queue method gate is authoritative. Do not rerun this preflight with only HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1; those flags would only prove the exhausted same-context built-in path, not a different method or source-input path. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1.');
@@ -261,7 +288,13 @@ function main() {
   }
 
   console.log('');
-  console.log('Preflight passed: an image output path is available. It is safe to run `npm run game:home-field:archive-stale-chibi-proof -- thalla` and start the documented regeneration flow.');
+  let archiveCommand = 'npm run game:home-field:archive-stale-chibi-proof -- thalla';
+  if (opts.source) {
+    archiveCommand = `npm run game:home-field:archive-stale-chibi-proof -- thalla --source=${opts.source}`;
+  } else if (opts.envFile) {
+    archiveCommand = `npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=${opts.envFile}`;
+  }
+  console.log(`Preflight passed: an image output path is available. It is safe to run \`${archiveCommand}\` and start the documented regeneration flow.`);
   if (builtinReady) {
     console.log('Note: using Codex Desktop built-in image_gen only because disk save and reference-image input binding were explicitly confirmed; save and verify each generated PNG at the documented repo path before producer/validation steps.');
   } else if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {

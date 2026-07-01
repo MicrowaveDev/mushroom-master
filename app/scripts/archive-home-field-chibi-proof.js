@@ -22,6 +22,7 @@ and writes an archive manifest. Supported id: thalla.
 
 Options:
   --env-file=<path>  Pass an explicit imagegen env file through to preflight.
+  --source=<png>     Pass one supplied complete local state-sheet PNG through to preflight.
 `);
 }
 
@@ -40,6 +41,8 @@ function parseArgs(argv) {
   };
   for (const arg of argv) {
     if (arg.startsWith('--env-file=')) {
+      opts.preflightArgs.push(arg);
+    } else if (arg.startsWith('--source=')) {
       opts.preflightArgs.push(arg);
     } else if (!arg.startsWith('-') && !opts.id) {
       opts.id = arg;

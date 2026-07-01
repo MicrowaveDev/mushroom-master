@@ -57,6 +57,12 @@ function relExists(relPath) {
   return fs.existsSync(path.join(repoRoot, relPath));
 }
 
+function sourcePathExists(sourcePath) {
+  if (!sourcePath) return false;
+  const abs = path.isAbsolute(sourcePath) ? sourcePath : path.join(repoRoot, sourcePath);
+  return fs.existsSync(abs);
+}
+
 function validateQueue(queue) {
   const issues = [];
   if (queue.schemaVersion !== 1) issues.push('schemaVersion must be 1');
@@ -116,11 +122,11 @@ function validateQueue(queue) {
         issues.push(`${item.id}: agentInstructions must forbid returning a blocked launcher prompt without concrete unblock input`);
       }
       if (localSourceMode?.completeStateSheetAllowed === true) {
-        if (!/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>/.test(blockedPromptAction)) {
-          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must tell prompt writers to prefix local-source launchers with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>`);
+        if (!/localSourceMode\.sourcePath/.test(blockedPromptAction) || !/--source commands/i.test(blockedPromptAction)) {
+          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must tell prompt writers to use localSourceMode.sourcePath and queue-printed --source commands`);
         }
-        if (!/Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/.test(blockedPromptAction)) {
-          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must include the local-source same-env prompt instruction`);
+        if (!/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only/.test(blockedPromptAction)) {
+          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must keep HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS as a legacy override only`);
         }
       }
     }
@@ -134,11 +140,33 @@ function validateQueue(queue) {
       issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
     }
     if (localSourceMode?.completeStateSheetAllowed === true) {
-      if (!item.commands?.stageLocalSource) {
-        issues.push(`${item.id}: local state-sheet source mode must include commands.stageLocalSource`);
+      const sourcePath = localSourceMode.sourcePath || '';
+      if (!sourcePath) {
+        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.sourcePath`);
       }
-      if (!agentInstructionText.includes(localSourceMode.envKey || 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS')) {
-        issues.push(`${item.id}: agentInstructions must mention the local source env key`);
+      if (sourcePath && sourcePath.startsWith(localSourceMode.sourceMustBeOutside || 'docs/reference/home-field/')) {
+        issues.push(`${item.id}: local state-sheet sourcePath must be outside ${localSourceMode.sourceMustBeOutside}`);
+      }
+      if (!item.commands?.stageLocalSource || !item.commands.stageLocalSource.includes(`--source=${sourcePath}`)) {
+        issues.push(`${item.id}: local state-sheet source mode must include commands.stageLocalSource with --source=${sourcePath}`);
+      }
+      if (!localSourceMode.preflightCommand?.includes(`--source=${sourcePath}`)) {
+        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.preflightCommand with --source=${sourcePath}`);
+      }
+      if (!localSourceMode.archiveCommand?.includes(`--source=${sourcePath}`)) {
+        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.archiveCommand with --source=${sourcePath}`);
+      }
+      if (!localSourceMode.stageCommand?.includes(`--source=${sourcePath}`)) {
+        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.stageCommand with --source=${sourcePath}`);
+      }
+      if (!agentInstructionText.includes(sourcePath)) {
+        issues.push(`${item.id}: agentInstructions must mention the queue-owned local sourcePath`);
+      }
+      if (!agentInstructionText.includes('--source')) {
+        issues.push(`${item.id}: agentInstructions must mention --source for local-source commands`);
+      }
+      if (!agentInstructionText.includes(localSourceMode.envKey || 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS') || !/legacy override only/.test(agentInstructionText)) {
+        issues.push(`${item.id}: agentInstructions must describe HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS as a legacy override only`);
       }
       if (!agentInstructionText.includes(item.commands?.stageLocalSource || '<missing-stage-command>')) {
         issues.push(`${item.id}: agentInstructions must mention the local source stage command`);
@@ -148,12 +176,6 @@ function validateQueue(queue) {
       }
       if (!/Do not run reference imagegen/i.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must skip reference imagegen for local state-sheet source mode`);
-      }
-      if (!/Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/.test(agentInstructionText)) {
-        issues.push(`${item.id}: agentInstructions must preserve the same HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS value for preflight/archive/stage`);
-      }
-      if (!/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>/.test(agentInstructionText)) {
-        issues.push(`${item.id}: agentInstructions must tell prompt writers to include the local-source env assignment in new-run prompts`);
       }
     }
     if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
@@ -312,9 +334,14 @@ function printItem(item) {
   const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
   if (localSourceMode?.completeStateSheetAllowed) {
     console.log('Supplied local state-sheet source path:');
-    console.log(`  env key: ${localSourceMode.envKey}`);
+    console.log(`  source path: ${localSourceMode.sourcePath || '<missing>'}`);
+    console.log(`  source exists: ${sourcePathExists(localSourceMode.sourcePath) ? 'yes' : 'no'}`);
+    console.log(`  source kind: ${localSourceMode.sourceKind || 'complete 8x4 local state-sheet'}`);
     console.log(`  allowed source: one complete 8x4 local PNG outside ${localSourceMode.sourceMustBeOutside}`);
+    console.log(`  preflight command: ${localSourceMode.preflightCommand}`);
+    console.log(`  archive command: ${localSourceMode.archiveCommand}`);
     console.log(`  stage command: ${localSourceMode.stageCommand}`);
+    console.log(`  env override: ${localSourceMode.envKey} (${localSourceMode.envPolicy || 'legacy override only'})`);
     console.log(`  stages to: ${localSourceMode.stagesTo}`);
     console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
     console.log(`  continue at: ${localSourceMode.continueAt}`);
@@ -342,7 +369,7 @@ function printItem(item) {
   }
   console.log('');
   console.log('Required commands:');
-  for (const key of ['context', 'preflight', 'scopedPrompt', 'archiveStale', 'stageLocalSource', 'referenceApiProof']) {
+  for (const key of ['context', 'preflight', 'preflightLocalSource', 'scopedPrompt', 'archiveStale', 'archiveStaleLocalSource', 'stageLocalSource', 'referenceApiProof']) {
     if (item.commands?.[key]) console.log(`  ${key}: ${item.commands[key]}`);
   }
   console.log('');
@@ -351,7 +378,7 @@ function printItem(item) {
   console.log(`  stop if prompt-only: ${item.generationContract.stateSheet.stopIfPromptOnly ? 'yes' : 'no'}`);
   console.log(`  stop if reference cannot attach: ${item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput ? 'yes' : 'no'}`);
   if (localSourceMode?.completeStateSheetAllowed) {
-    console.log(`  local source mode: ${localSourceMode.envKey} -> ${localSourceMode.stageCommand}; deterministic reference proxy derived, reference imagegen skipped`);
+    console.log(`  local source mode: ${localSourceMode.sourcePath} -> ${localSourceMode.stageCommand}; deterministic reference proxy derived, reference imagegen skipped; ${localSourceMode.envKey} is legacy override only`);
   }
   console.log(`  layout: ${item.generationContract.stateSheet.layout}`);
   console.log('');

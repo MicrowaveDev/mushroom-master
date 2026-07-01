@@ -14,14 +14,14 @@
       "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and follow the printed agent instructions exactly.",
       "promptPolicy": {
         "issueLauncherWhenStatus": "allowed_or_with_unblock_input_only",
-        "blockedPromptAction": "Do not give minimalLauncherPrompt to the user as a new production-ready run prompt while this queue item or method gate is blocked. First include a concrete allowed unblock input in the prompt: an explicit paid fallback env file containing OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1, a supplied complete 8x4 local state-sheet source PNG outside docs/reference via HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS, supplied local proof source PNGs outside docs/reference, or a different queue-approved reference-capable generation/editing method. For a supplied local state-sheet unblock prompt, prefix the launcher command with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png> and include this exact instruction: Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight/archive/stage; this is a supplied complete 8x4 local state-sheet source run.",
-        "blockedShortResponse": "Blocked: do not start another production run from the minimal launcher until an allowed non-built-in path, supplied proof source PNGs, a supplied local state-sheet launcher with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>, or explicit paid fallback env file is provided."
+        "blockedPromptAction": "Do not give minimalLauncherPrompt to the user as a new production-ready run prompt while this queue item or method gate is blocked unless the prompt also points to one concrete allowed unblock input. For the current supplied local state-sheet run, that unblock input is generationContract.stateSheet.localSourceMode.sourcePath in this JSON; use the queue-printed --source commands for preflight/archive/stage. Other allowed unblock inputs are an explicit paid fallback env file containing OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1, supplied local proof source PNGs outside docs/reference, or a different queue-approved reference-capable generation/editing method. HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only when the user supplies a different complete 8x4 local state-sheet PNG.",
+        "blockedShortResponse": "Blocked: the exhausted built-in path must not be retried, but this queue item includes a supplied local state-sheet sourcePath. Start only by running the queue command and then the printed --source preflight/archive/stage commands, or provide another allowed non-built-in path or explicit paid fallback env file."
       },
       "agentInstructions": [
         "Run this queue item as: Thalla Home Field chibi Stage 1 proof.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
         "Do not give the minimalLauncherPrompt back to the user as a new production-ready run prompt while this item or its method gate is blocked; only provide a new-run prompt if it includes one concrete allowed unblock input from promptPolicy.",
-        "When asked to produce a new-run prompt while this item is blocked, do not output the bare minimalLauncherPrompt. For a supplied local 8x4 state-sheet source, prefix the queue command with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png> and include the exact keep-same-env instruction from promptPolicy.",
+        "When asked to produce a new-run prompt while this item is blocked, do not output the bare minimalLauncherPrompt unless the queue item itself prints a concrete allowed unblock path. For the current supplied local 8x4 state-sheet run, use generationContract.stateSheet.localSourceMode.sourcePath from this JSON and the queue-printed --source commands; do not require HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS in the pasted prompt.",
         "Run npm run game:home-field:chibi-proof-context, npm run game:home-field:next-chibi-proof, and preflight before archive/imagegen.",
         "Do not infer `.env` or neighboring repo env files; paid API fallback requires the launcher/user to provide --env-file=<explicit-env-file>.",
         "Prefer built-in/imagegen skill only when HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 are confirmed in the same agent context that will run imagegen.",
@@ -29,8 +29,8 @@
         "Method gate: the queue-backed built-in same-context reference-staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c; do not run it again without a different generation method, source-input path, or explicit user-approved fallback.",
         "Use paid API fallback only if built-in/imagegen is unavailable and the explicit env file contains OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1; plain OPENAI_API_KEY is ignored.",
         "Attach every referenceInputs PNG as actual image inputs to imagegen; passive viewing, listing paths, or using view_image without the following same-context image_gen reference call is not enough.",
-        "If the launcher supplies HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with exactly one complete 8x4 local state-sheet PNG outside docs/reference, treat that path as the concrete unblock input: preflight and archive with the same env, run npm run game:home-field:stage-chibi-local-source, then continue at reference-proxy verification, state-sheet verification, palette audit, split, frame verify, candidate production, candidate validation, evidence, preview, and verdict. Do not run reference imagegen or the exhausted built-in reference-staging path for this local-source run.",
-        "Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight/archive/stage; this is a supplied complete 8x4 local state-sheet source run.",
+        "Use the queue item's generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) as the canonical supplied complete 8x4 local state-sheet source: preflight with npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png, archive with npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png, stage with npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png, then continue at reference-proxy verification, state-sheet verification, palette audit, split, frame verify, candidate production, candidate validation, evidence, preview, and verdict. Do not run reference imagegen or the exhausted built-in reference-staging path for this local-source run.",
+        "HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is a legacy override only when the user supplies a different complete 8x4 local state-sheet PNG; the current production-ready queue path comes from localSourceMode.sourcePath and should be passed with --source for preflight/archive/stage.",
         "For generated grouped sheets, continue past the reference gate only if the grouped 8x4 state sheet can attach .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as an actual image input; for supplied complete local state-sheet source mode, continue only after stage-chibi-local-source derives that reference proxy and the proxy/state-sheet verifier plus palette audits pass.",
         "Stop before archive/imagegen if preflight, reference verifier, palette audit, visual gate, or method gate fails.",
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
@@ -117,7 +117,7 @@
         "preflight": "npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>",
         "scopedPrompt": "npm run game:home-field:next-chibi-proof",
         "archiveStale": "npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>",
-        "stageLocalSource": "npm run game:home-field:stage-chibi-local-source",
+        "stageLocalSource": "npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
         "referenceApiProof": "npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>",
         "verifyReference": "npm run game:home-field:verify-chibi-proof-files -- --reference",
         "auditReferencePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat",
@@ -130,7 +130,9 @@
         "auditCandidatePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png --out=.agent/home-field-workspace/review/thalla-candidate-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-candidate-palette-swatch.png --fail-on-bloat",
         "candidateEvidence": "HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence",
         "preview": "HOME_FIELD_CANDIDATE_IDS=thalla HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:chibi-candidate-preview",
-        "recordVerdict": "npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>"
+        "recordVerdict": "npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>",
+        "preflightLocalSource": "npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
+        "archiveStaleLocalSource": "npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png"
       },
       "generationContract": {
         "referenceSheet": {
@@ -151,11 +153,17 @@
             "envKey": "HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS",
             "completeStateSheetAllowed": true,
             "sourceMustBeOutside": "docs/reference/home-field/",
-            "stageCommand": "npm run game:home-field:stage-chibi-local-source",
+            "stageCommand": "npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
             "stagesTo": ".agent/home-field-workspace/raw/thalla_chibi.states.source.png",
             "derivesReferenceProxy": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png",
             "continueAt": "verifyReferenceProxyThenVerifyStateSheet",
-            "skipImagegen": true
+            "skipImagegen": true,
+            "sourcePath": ".agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
+            "sourceKind": "supplied-complete-8x4-local-state-sheet",
+            "envPolicy": "Legacy override only when the user explicitly supplies a different complete 8x4 local state-sheet PNG; queue sourcePath is canonical for this item.",
+            "preflightCommand": "npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
+            "archiveCommand": "npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
+            "stageCommandWithoutSource": "npm run game:home-field:stage-chibi-local-source"
           },
           "layout": "8 columns x 4 rows; rows down, up, left, right; 2 idle plus 6 walk frames per row",
           "motionRule": "idle bob and walk poses must exist in the grouped sheet itself; do not synthesize motion after split"

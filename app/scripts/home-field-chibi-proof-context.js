@@ -14,6 +14,8 @@ const referencePath = `${workspace}/reference/thalla_chibi_turnaround.reference.
 const stateSheetPath = `${workspace}/raw/thalla_chibi.states.source.png`;
 const candidatePath = `${candidateRoot}/web/public/home-field/characters/thalla/spritesheet.png`;
 const localSourceManifestPath = `${reviewDir}/thalla-local-state-sheet-source.manifest.json`;
+const generationQueuePath = 'app/shared/home-field/home-field-generation-queue.json';
+const generationQueueItemId = 'thalla-stage1-chibi-proof';
 const referencePaletteAuditPath = `${reviewDir}/thalla-reference-palette-audit.json`;
 const stateSheetPaletteAuditPath = `${reviewDir}/thalla-state-sheet-palette-audit.json`;
 const candidatePaletteAuditPath = `${reviewDir}/thalla-candidate-palette-audit.json`;
@@ -28,8 +30,22 @@ function exists(relPath) {
   return fs.existsSync(path.join(repoRoot, relPath));
 }
 
+function chibiLocalSourceMode() {
+  try {
+    const queue = JSON.parse(fs.readFileSync(path.join(repoRoot, generationQueuePath), 'utf8'));
+    const item = (queue.items || []).find((entry) => entry.id === generationQueueItemId);
+    return item?.generationContract?.stateSheet?.localSourceMode || null;
+  } catch {
+    return null;
+  }
+}
+
 function main() {
   const existingFrameCount = framePaths.filter(exists).length;
+  const localSource = chibiLocalSourceMode();
+  const localPreflightCommand = localSource?.preflightCommand || 'npm run game:home-field:preflight-chibi-proof -- --source=<png>';
+  const localArchiveCommand = localSource?.archiveCommand || 'npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<png>';
+  const localStageCommand = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
   console.log('# Thalla Home Field Chibi Proof Context');
   console.log('');
   console.log('Built-in imagegen environment prefix:');
@@ -43,7 +59,9 @@ function main() {
   console.log('  npm run game:home-field:next-chibi-proof  # read-only; run before a blocker handoff even when preflight or the method gate fails');
   console.log('  npm run game:home-field:find-imagegen-output -- --since-minutes=5  # diagnostic only after reference binding is confirmed and built-in disk output is still unconfirmed');
   console.log('  npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file> # paid API fallback; for built-in/local paths, run under the same confirmed capability env');
-  console.log('  npm run game:home-field:stage-chibi-local-source # only for one supplied complete 8x4 local state-sheet PNG from HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS; stages state sheet and derives reference proxy without imagegen');
+  console.log(`  ${localPreflightCommand} # queue-owned supplied complete 8x4 local state-sheet source`);
+  console.log(`  ${localArchiveCommand} # queue-owned local-source archive preflights with the same --source path`);
+  console.log(`  ${localStageCommand} # stages state sheet and derives reference proxy without imagegen`);
   console.log('  npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file> # paid reference-capable API fallback; requires OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1');
   console.log('  npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
   console.log('  npm run game:home-field:verify-chibi-proof-files -- --reference');
@@ -76,10 +94,10 @@ function main() {
   console.log('Freshness warning: existing .agent files are not proof of a fresh run. After rejection, run archive-stale-chibi-proof only after preflight passes, then regenerate and bind the new source chain in candidate-evidence.manifest.json.');
   console.log('Output probe warning: the only imagegen allowed before preflight passes is one tiny non-candidate built-in output probe after reference-image input binding is confirmed and disk output is still unconfirmed; do not run the probe when reference binding is unavailable.');
   console.log('Blocker reporting warning: if preflight or the method gate blocks the run, still run the read-only next-chibi-proof helper before final response and report that no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred.');
-  console.log('Prompt issuance warning: do not give a new production-ready run prompt for this blocked queue item unless that prompt includes one concrete allowed unblock input: explicit paid fallback env file, supplied local proof source PNGs outside docs/reference, supplied complete local 8x4 state-sheet source with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>, or a different queue-approved reference-capable generation/editing method.');
+  console.log(`Prompt issuance warning: do not give a new production-ready run prompt for this blocked queue item unless that prompt includes or points to one concrete allowed unblock input. For the current supplied complete local 8x4 state-sheet run, that input is the queue JSON localSourceMode.sourcePath (${localSource?.sourcePath || '<missing>'}); use the queue-printed --source commands, not HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS in the pasted prompt. Other valid unblock inputs are an explicit paid fallback env file, supplied local proof source PNGs outside docs/reference, or a different queue-approved reference-capable generation/editing method.`);
   console.log('Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs. Viewing them in chat or naming them in text is not image-guided generation.');
-  console.log('Local-input warning: docs/reference PNGs are style references only; HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs, not the checked-in reference images.');
-  console.log('Local state-sheet source warning: if HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS points to exactly one complete 8x4 local state-sheet PNG, the new-run prompt must prefix the queue command with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>. Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight/archive/stage; this is a supplied complete 8x4 local state-sheet source run. Run stage-chibi-local-source after preflight/archive, skip reference imagegen, verify/audit the derived reference proxy and staged state sheet, then split and validate candidate evidence.');
+  console.log('Local-input warning: docs/reference PNGs are style references only; local source PNGs must be proof sources, not the checked-in reference images.');
+  console.log(`Local state-sheet source warning: use the queue-owned source path with --source: preflight ${localPreflightCommand}; archive ${localArchiveCommand}; stage ${localStageCommand}. HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only for a different user-supplied complete 8x4 local state-sheet PNG. Skip reference imagegen, verify/audit the derived reference proxy and staged state sheet, then split and validate candidate evidence.`);
   console.log('API fallback warning: prefer built-in/imagegen skill output when it can save files and attach references; use game:home-field:chibi-reference-api-proof with an explicit --env-file only when built-in/imagegen skill output is unavailable, and do not hand-roll env discovery, venv setup, prompt copying, normalization, verifier, and palette-audit steps.');
   console.log('API key warning: plain OPENAI_API_KEY is ignored for Home Field image generation; the paid fallback requires OPENAI_IMAGEGEN_API_KEY so general OpenAI credentials are not silently spent on imagegen.');
   console.log('Production-readiness warning: chibi-reference-api-proof creates only the non-production reference sheet. The grouped 8x4 state sheet must also be generated through a reference-capable image path with the passed reference attached as an actual image input; stop if only prompt-text generation is available.');

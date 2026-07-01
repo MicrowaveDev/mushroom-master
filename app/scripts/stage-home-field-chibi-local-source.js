@@ -25,6 +25,8 @@ const WORKSPACE = '.agent/home-field-workspace';
 const STATE_SHEET_PATH = `${WORKSPACE}/raw/thalla_chibi.states.source.png`;
 const REFERENCE_PATH = `${WORKSPACE}/reference/thalla_chibi_turnaround.reference.png`;
 const PROVENANCE_PATH = `${WORKSPACE}/review/thalla-local-state-sheet-source.manifest.json`;
+const GENERATION_QUEUE_PATH = 'app/shared/home-field/home-field-generation-queue.json';
+const GENERATION_QUEUE_ITEM_ID = 'thalla-stage1-chibi-proof';
 const MAGENTA = [255, 0, 255, 255];
 
 function usage() {
@@ -32,7 +34,7 @@ function usage() {
     'Usage: npm run game:home-field:stage-chibi-local-source -- [--source=<png>]',
     '',
     'Stages one supplied complete 8x4 Thalla state-sheet PNG from',
-    'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS or --source into the proof workspace.',
+    '--source, legacy HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS, or the queue localSourceMode.sourcePath into the proof workspace.',
     'The source must be outside docs/reference/home-field/.'
   ].join('\n');
 }
@@ -45,6 +47,16 @@ function optionValue(name) {
 function parseLocalInputs(value) {
   if (!value) return [];
   return value.split(path.delimiter).map((entry) => entry.trim()).filter(Boolean);
+}
+
+function queueLocalSourcePath() {
+  try {
+    const queue = JSON.parse(fs.readFileSync(path.join(repoRoot, GENERATION_QUEUE_PATH), 'utf8'));
+    const item = (queue.items || []).find((entry) => entry.id === GENERATION_QUEUE_ITEM_ID);
+    return item?.generationContract?.stateSheet?.localSourceMode?.sourcePath || '';
+  } catch {
+    return '';
+  }
 }
 
 function resolveRepoPath(inputPath) {
@@ -162,8 +174,12 @@ function sourceFromArgs() {
   const explicit = optionValue('source');
   if (explicit) return explicit;
   const localInputs = parseLocalInputs(process.env.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS || '');
+  if (localInputs.length === 0) {
+    const queueSource = queueLocalSourcePath();
+    if (queueSource) return queueSource;
+  }
   if (localInputs.length !== 1) {
-    throw new Error(`expected exactly one local state-sheet source in HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS; got ${localInputs.length}`);
+    throw new Error(`expected --source, one legacy HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS entry, or a queue localSourceMode.sourcePath; got ${localInputs.length} env entr${localInputs.length === 1 ? 'y' : 'ies'}`);
   }
   return localInputs[0];
 }
