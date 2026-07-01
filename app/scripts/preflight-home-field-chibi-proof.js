@@ -28,7 +28,7 @@ function usage() {
     'Checks whether the current Thalla chibi proof run has an allowed way to produce real PNG files.',
     '',
     'Options:',
-    '  --env-file=<path>  Load OPENAI_API_KEY and related imagegen env from an explicit file before checking CLI fallback readiness.'
+    '  --env-file=<path>  Load OPENAI_IMAGEGEN_API_KEY and related imagegen env from an explicit file before checking API fallback readiness.'
   ].join('\n');
 }
 
@@ -98,9 +98,11 @@ function main() {
   const codexHome = effectiveEnv.CODEX_HOME || path.join(effectiveEnv.HOME || '', '.codex');
   const cliPath = path.join(codexHome, 'skills/.system/imagegen/scripts/image_gen.py');
   const hasCli = fileExists(cliPath);
-  const hasApiKey = Boolean(effectiveEnv.OPENAI_API_KEY);
-  const hasApiKeyFromEnvFile = Boolean(envFromFile.OPENAI_API_KEY);
-  const cliReady = hasCli && hasApiKey;
+  const hasImagegenApiKey = Boolean(effectiveEnv.OPENAI_IMAGEGEN_API_KEY);
+  const hasImagegenApiKeyFromEnvFile = Boolean(envFromFile.OPENAI_IMAGEGEN_API_KEY);
+  const hasPlainOpenAiApiKey = Boolean(effectiveEnv.OPENAI_API_KEY);
+  const apiFallbackUnavailableConfirmed = effectiveEnv.HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE === '1';
+  const cliReady = hasCli && hasImagegenApiKey && apiFallbackUnavailableConfirmed;
   const builtinDisabled = effectiveEnv.HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN === '1';
   const builtinDiskConfirmed = effectiveEnv.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE === '1';
   const builtinReferencesConfirmed = effectiveEnv.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES === '1';
@@ -121,8 +123,10 @@ function main() {
   console.log('');
   console.log('Output capability:');
   console.log(`- imagegen CLI helper: ${hasCli ? cliPath : 'missing'}`);
-  console.log(`- OPENAI_API_KEY: ${hasApiKey ? (hasApiKeyFromEnvFile ? 'set from explicit env file' : 'set') : 'missing'}`);
-  console.log(`- CLI fallback ready: ${cliReady ? 'yes' : 'no'}`);
+  console.log(`- OPENAI_IMAGEGEN_API_KEY: ${hasImagegenApiKey ? (hasImagegenApiKeyFromEnvFile ? 'set from explicit env file' : 'set') : 'missing'}`);
+  console.log(`- OPENAI_API_KEY: ${hasPlainOpenAiApiKey ? 'present but ignored for Home Field image generation' : 'not used'}`);
+  console.log(`- imagegen skill unavailable explicitly confirmed: ${apiFallbackUnavailableConfirmed ? 'yes' : 'no'}`);
+  console.log(`- API fallback ready: ${cliReady ? 'yes' : 'no'}`);
   console.log(`- built-in Codex Desktop imagegen proof-art ready: ${builtinReady ? 'yes' : 'no'}`);
   console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
   console.log(`- built-in imagegen reference-input explicitly confirmed: ${builtinReferencesConfirmed ? 'yes' : 'no'}`);
@@ -140,10 +144,12 @@ function main() {
     console.error('');
     console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
     console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
-    console.error('- OPENAI_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>` before running the documented CLI fallback');
+    console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing proof source PNG paths separated by ${JSON.stringify(path.delimiter)}, not checked-in docs/reference style images`);
     console.error('');
-    console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. If using explicit CLI fallback, rerun this preflight with `--env-file=<explicit-env-file>`. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. Prefer built-in/imagegen skill output when it can save files and attach reference inputs. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    console.error('');
+    console.error('Plain OPENAI_API_KEY is intentionally ignored for Home Field image generation; set OPENAI_IMAGEGEN_API_KEY only for an explicit paid API fallback.');
     console.error('');
     console.error('Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding.');
     if (rejectedLocalInputs.length > 0) {

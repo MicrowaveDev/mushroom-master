@@ -76,6 +76,24 @@ function validateQueue(queue) {
     if (item.env?.doNotInferEnvFile !== true) issues.push(`${item.id}: env.doNotInferEnvFile must be true`);
     for (const key of item.env?.requiredKeys || []) {
       if (typeof key !== 'string' || !key) issues.push(`${item.id}: invalid required env key`);
+      if (key === 'OPENAI_API_KEY') {
+        issues.push(`${item.id}: Home Field image generation must require OPENAI_IMAGEGEN_API_KEY, not plain OPENAI_API_KEY`);
+      }
+    }
+    for (const key of item.env?.apiFallbackRequiredKeys || []) {
+      if (typeof key !== 'string' || !key) issues.push(`${item.id}: invalid API fallback env key`);
+      if (key === 'OPENAI_API_KEY') {
+        issues.push(`${item.id}: API fallback must require OPENAI_IMAGEGEN_API_KEY, not plain OPENAI_API_KEY`);
+      }
+    }
+    if (!Array.isArray(item.env?.apiFallbackRequiredKeys)) {
+      issues.push(`${item.id}: env.apiFallbackRequiredKeys must be an array`);
+    }
+    if (item.env?.plainOpenAiApiKeyIgnored !== true) {
+      issues.push(`${item.id}: env.plainOpenAiApiKeyIgnored must be true`);
+    }
+    if (item.env?.apiFallbackRequiresSkillUnavailable !== true) {
+      issues.push(`${item.id}: env.apiFallbackRequiresSkillUnavailable must be true`);
     }
     for (const reference of item.referenceInputs || []) {
       if (!reference.path) {
@@ -112,9 +130,16 @@ function printItem(item) {
   console.log(`asset: ${item.assetId} (${item.assetType})`);
   console.log(`pipeline: ${item.pipeline}`);
   console.log(`status: ${item.status}`);
-  console.log(`env: pass ${item.env.envFileArg}; required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
+  console.log(`env fallback arg: pass ${item.env.envFileArg} only for paid API fallback; always-required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
+  console.log(`env fallback keys: ${(item.env.apiFallbackRequiredKeys || []).join(', ') || 'none'}`);
   if (item.env.doNotInferEnvFile) {
     console.log('env rule: do not infer .env or neighboring repo env files; the launcher must provide the explicit env file.');
+  }
+  if (item.env.plainOpenAiApiKeyIgnored) {
+    console.log('env rule: plain OPENAI_API_KEY is ignored for Home Field image generation; use OPENAI_IMAGEGEN_API_KEY only for explicit paid API fallback.');
+  }
+  if (item.env.apiFallbackRequiresSkillUnavailable) {
+    console.log('env rule: paid API fallback also requires HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 after built-in/imagegen skill output is unavailable.');
   }
   if (item.env.blockedRunEvidence) {
     console.log(`latest blocker: ${item.env.blockedRunEvidence.rollout} - ${item.env.blockedRunEvidence.reason}`);

@@ -7,7 +7,7 @@
       "assetId": "thalla",
       "assetType": "character",
       "pipeline": "home-field-active-roster-chibi-stage1",
-      "status": "blocked_until_explicit_env_file_with_openai_api_key",
+      "status": "ready_for_builtin_imagegen_or_explicit_api_fallback",
       "priority": 10,
       "ownerRole": "Imagegen Worker",
       "promptSource": {
@@ -19,16 +19,24 @@
         "regressionLedgerDoc": "docs/home-field-chibi-regression-ledger.md"
       },
       "env": {
-        "mode": "explicit-cli-api-env-file",
+        "mode": "builtin-imagegen-first-api-fallback-env-file",
         "envFileArg": "<explicit-env-file>",
-        "requiredKeys": [
-          "OPENAI_API_KEY"
+        "requiredKeys": [],
+        "apiFallbackRequiredKeys": [
+          "OPENAI_IMAGEGEN_API_KEY"
+        ],
+        "plainOpenAiApiKeyIgnored": true,
+        "apiFallbackRequiresSkillUnavailable": true,
+        "apiFallbackFlag": "HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1",
+        "builtInPreferredFlags": [
+          "HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1",
+          "HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1"
         ],
         "doNotInferEnvFile": true,
         "doNotUseRepoDotEnvUnlessUserExplicitlySaysItContainsRequiredKeys": true,
         "blockedRunEvidence": {
           "rollout": "codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831",
-          "reason": "The agent used mushroom-master/.env for --env-file; preflight correctly failed because OPENAI_API_KEY was missing. Future runners must receive an explicit env file path instead of guessing."
+          "reason": "The agent used mushroom-master/.env for --env-file; preflight correctly failed because the required imagegen fallback environment was missing. Future API fallback runners must receive an explicit env file path with OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 instead of guessing. Plain OPENAI_API_KEY must not count."
         }
       },
       "referenceInputs": [
@@ -81,7 +89,7 @@
       "generationContract": {
         "referenceSheet": {
           "production": false,
-          "method": "image_gen.py edit through chibi-reference-api-proof, with all referenceInputs attached as actual image inputs",
+          "method": "built-in/imagegen skill with all referenceInputs attached as actual image inputs when save+reference binding is confirmed; otherwise paid image_gen.py edit fallback through chibi-reference-api-proof only after HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 and OPENAI_IMAGEGEN_API_KEY are set",
           "maxSameCauseAttempts": 2,
           "normalizeReferenceSize": "512x384",
           "paletteBudget": "12-18 artist-visible colors; fewer than 20 total design colors excluding transparency and #ff00ff",
@@ -99,7 +107,8 @@
       },
       "stopRules": [
         "Stop before archive/imagegen if preflight fails.",
-        "Stop if the launcher did not provide an explicit env file containing OPENAI_API_KEY for the CLI/API path.",
+        "Stop if paid API fallback is attempted without an explicit env file containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1.",
+        "Stop if the run relies on plain OPENAI_API_KEY for image generation; it is intentionally ignored.",
         "Stop if the active imagegen path can only use prompt text for the reference or state sheet.",
         "Stop if the reference sheet fails verifier, palette audit, or visual gate.",
         "Stop if the grouped state sheet cannot attach the approved reference PNG as an actual image input.",

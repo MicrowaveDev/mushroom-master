@@ -1592,7 +1592,8 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
 
   assert.match(prompt.details, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(prompt.details, /Do not infer \.env/);
-  assert.match(prompt.details, /OPENAI_API_KEY/);
+  assert.match(prompt.details, /OPENAI_IMAGEGEN_API_KEY/);
+  assert.match(prompt.details, /Plain OPENAI_API_KEY is ignored/);
   assert.match(prompt.details, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
 });
 
@@ -1602,21 +1603,26 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.match(prompt, /Short Launcher Prompt/);
   assert.match(prompt, /home-field-generation-queue\.json item thalla-stage1-chibi-proof/);
   assert.match(prompt, /generation-queue -- --id=thalla-stage1-chibi-proof/);
-  assert.match(prompt, /Use the explicit CLI\/API helper path/);
+  assert.match(prompt, /Prefer built-in\/imagegen skill output/);
+  assert.match(prompt, /paid API fallback/);
+  assert.match(prompt, /OPENAI_IMAGEGEN_API_KEY/);
+  assert.match(prompt, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
+  assert.match(prompt, /plain OPENAI_API_KEY must not be used/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
   assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /Continue past the reference gate only if the grouped 8x4 state sheet can also be generated with the passed reference PNG attached as an actual image input/);
   assert.match(prompt, /Do not infer \.env/);
-  assert.match(prompt, /Do not use built-in or prompt-only generation unless you first state a stronger method change/);
-  assert.match(prompt, /default launcher now uses explicit CLI\/API fallback/);
-  assert.match(prompt, /Use the explicit CLI\/API helper path by default/);
+  assert.match(prompt, /default launcher is built-in\/imagegen skill first/);
+  assert.doesNotMatch(prompt, /default launcher now uses explicit CLI\/API fallback/);
+  assert.doesNotMatch(prompt, /Use the explicit CLI\/API helper path by default/);
   assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
   assert.match(prompt, /Do not set `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` to the checked-in PNGs under `docs\/reference\/home-field\/`/);
   assert.match(prompt, /still run the read-only `npm run game:home-field:next-chibi-proof` helper/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
-  assert.match(prompt, /using the same environment that made preflight pass/);
+  assert.match(prompt, /same fallback env file/);
+  assert.match(prompt, /same confirmed capability environment that made preflight pass/);
   assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /image_gen\.py edit/);
   assert.match(prompt, /API-size source PNG/);
@@ -1661,8 +1667,10 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Local-input warning: docs\/reference PNGs are style references only/);
   assert.match(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs/);
   assert.match(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
-  assert.match(result.stdout, /CLI\/API warning/);
-  assert.match(result.stdout, /use game:home-field:chibi-reference-api-proof with an explicit --env-file/);
+  assert.match(result.stdout, /API fallback warning/);
+  assert.match(result.stdout, /prefer built-in\/imagegen skill output/);
+  assert.match(result.stdout, /plain OPENAI_API_KEY is ignored/);
+  assert.match(result.stdout, /paid fallback requires OPENAI_IMAGEGEN_API_KEY/);
   assert.match(result.stdout, /Production-readiness warning/);
   assert.match(result.stdout, /grouped 8x4 state sheet must also be generated through a reference-capable image path/);
   assert.match(result.stdout, /Reference normalization warning/);
@@ -1794,7 +1802,11 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.equal(item.assetType, 'character');
   assert.equal(item.env.doNotInferEnvFile, true);
   assert.equal(item.env.doNotUseRepoDotEnvUnlessUserExplicitlySaysItContainsRequiredKeys, true);
-  assert.deepEqual(item.env.requiredKeys, ['OPENAI_API_KEY']);
+  assert.deepEqual(item.env.requiredKeys, []);
+  assert.deepEqual(item.env.apiFallbackRequiredKeys, ['OPENAI_IMAGEGEN_API_KEY']);
+  assert.equal(item.env.plainOpenAiApiKeyIgnored, true);
+  assert.equal(item.env.apiFallbackRequiresSkillUnavailable, true);
+  assert.equal(item.env.apiFallbackFlag, 'HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1');
   assert.match(item.env.blockedRunEvidence.rollout, /codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831/);
   assert.equal(item.generationContract.stateSheet.stopIfPromptOnly, true);
   assert.equal(item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput, true);
@@ -1802,7 +1814,8 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.commands.queue, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(item.commands.preflight, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(item.commands.referenceApiProof, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
-  assert.ok(item.stopRules.some((rule) => /explicit env file containing OPENAI_API_KEY/.test(rule)));
+  assert.ok(item.stopRules.some((rule) => /OPENAI_IMAGEGEN_API_KEY/.test(rule)));
+  assert.ok(item.stopRules.some((rule) => /plain OPENAI_API_KEY/.test(rule)));
   assert.ok(item.finalResponseMustReport.includes('env source and preflight result'));
 
   for (const reference of item.referenceInputs) {
@@ -1824,7 +1837,9 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /Home Field Generation Queue/);
   assert.match(result.stdout, /thalla-stage1-chibi-proof/);
   assert.match(result.stdout, /do not infer \.env/i);
-  assert.match(result.stdout, /OPENAI_API_KEY/);
+  assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY/);
+  assert.match(result.stdout, /plain OPENAI_API_KEY is ignored/);
+  assert.match(result.stdout, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
   assert.match(result.stdout, /codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831/);
   assert.match(result.stdout, /required reference image input: .*thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /stop if prompt-only: yes/);
@@ -1836,7 +1851,7 @@ test('[home-field] chibi reference api proof dry-run prints normalized serial ga
   const result = spawnSync(process.execPath, [chibiReferenceApiProofScriptPath, '--dry-run'], {
     cwd: repoRoot,
     encoding: 'utf8',
-    env: { ...process.env, OPENAI_API_KEY: '' }
+    env: { ...process.env, OPENAI_API_KEY: '', OPENAI_IMAGEGEN_API_KEY: '', HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '' }
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -1852,6 +1867,48 @@ test('[home-field] chibi reference api proof dry-run prints normalized serial ga
   assert.match(result.stdout, /would run image_gen\.py edit --model gpt-image-2 --quality medium --size 1024x768/);
   assert.match(result.stdout, /--image docs\/reference\/home-field\/chibi-thalla-previous-best-2026-06-26-state-sheet\.png/);
   assert.match(result.stdout, /would run verifier before palette audit, then palette audit with --fail-on-bloat/);
+});
+
+test('[home-field] chibi reference api proof refuses plain OpenAI API key', () => {
+  const result = spawnSync(process.execPath, [
+    chibiReferenceApiProofScriptPath,
+    '--allow-process-env',
+    '--skip-venv-install'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: 'general-openai-key',
+      OPENAI_IMAGEGEN_API_KEY: '',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '1'
+    }
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stderr, /OPENAI_IMAGEGEN_API_KEY is missing/);
+  assert.match(result.stderr, /Plain OPENAI_API_KEY is ignored/);
+});
+
+test('[home-field] chibi reference api proof requires explicit unavailable fallback flag', () => {
+  const result = spawnSync(process.execPath, [
+    chibiReferenceApiProofScriptPath,
+    '--allow-process-env',
+    '--skip-venv-install'
+  ], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: '',
+      OPENAI_IMAGEGEN_API_KEY: 'test-imagegen-key',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: ''
+    }
+  });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stderr, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
+  assert.match(result.stderr, /built-in\/imagegen skill output is unavailable/);
 });
 
 test('[home-field] package exposes chibi proof helper aliases', () => {
@@ -2216,6 +2273,8 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
+      OPENAI_IMAGEGEN_API_KEY: '',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
@@ -2226,7 +2285,9 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   });
 
   assert.equal(result.status, 1, result.stderr || result.stdout);
-  assert.match(result.stdout, /OPENAI_API_KEY: missing/);
+  assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY: missing/);
+  assert.match(result.stdout, /OPENAI_API_KEY: not used/);
+  assert.match(result.stdout, /imagegen skill unavailable explicitly confirmed: no/);
   assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no/);
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
   assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: no/);
@@ -2248,7 +2309,44 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stdout, /Raw frame output slots: 32/);
 });
 
-test('[home-field] chibi proof preflight accepts explicit CLI env file', () => {
+test('[home-field] chibi proof preflight ignores plain OpenAI API key for paid fallback', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-preflight-plain-key-test');
+  const fakeCodexHome = path.join(fixtureDir, 'codex-home');
+  const fakeCli = path.join(fakeCodexHome, 'skills/.system/imagegen/scripts/image_gen.py');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(fakeCli), { recursive: true });
+  fs.writeFileSync(fakeCli, '#!/usr/bin/env python3\n');
+
+  try {
+    const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        CODEX_HOME: fakeCodexHome,
+        OPENAI_API_KEY: 'general-openai-key',
+        OPENAI_IMAGEGEN_API_KEY: '',
+        HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '1',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
+        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
+        HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
+        HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY: missing/);
+    assert.match(result.stdout, /OPENAI_API_KEY: present but ignored for Home Field image generation/);
+    assert.match(result.stdout, /imagegen skill unavailable explicitly confirmed: yes/);
+    assert.match(result.stdout, /API fallback ready: no/);
+    assert.match(result.stderr, /Plain OPENAI_API_KEY is intentionally ignored/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] chibi proof preflight accepts explicit paid API fallback env file', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-preflight-env-file-test');
   const fakeCodexHome = path.join(fixtureDir, 'codex-home');
   const fakeCli = path.join(fakeCodexHome, 'skills/.system/imagegen/scripts/image_gen.py');
@@ -2258,7 +2356,8 @@ test('[home-field] chibi proof preflight accepts explicit CLI env file', () => {
   fs.writeFileSync(fakeCli, '#!/usr/bin/env python3\n');
   fs.writeFileSync(envFile, [
     `CODEX_HOME=${fakeCodexHome}`,
-    'OPENAI_API_KEY=test-key',
+    'OPENAI_IMAGEGEN_API_KEY=test-key',
+    'HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1',
     'HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN=1',
     'HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=',
     'HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES='
@@ -2271,6 +2370,8 @@ test('[home-field] chibi proof preflight accepts explicit CLI env file', () => {
         ...process.env,
         CODEX_HOME: '',
         OPENAI_API_KEY: '',
+        OPENAI_IMAGEGEN_API_KEY: '',
+        HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
         HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
@@ -2282,8 +2383,10 @@ test('[home-field] chibi proof preflight accepts explicit CLI env file', () => {
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /Explicit env file: tmp\/home-field-chibi-preflight-env-file-test\/\.env/);
-    assert.match(result.stdout, /OPENAI_API_KEY: set from explicit env file/);
-    assert.match(result.stdout, /CLI fallback ready: yes/);
+    assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY: set from explicit env file/);
+    assert.match(result.stdout, /OPENAI_API_KEY: not used/);
+    assert.match(result.stdout, /imagegen skill unavailable explicitly confirmed: yes/);
+    assert.match(result.stdout, /API fallback ready: yes/);
     assert.match(result.stdout, /Preflight passed/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
@@ -2297,6 +2400,8 @@ test('[home-field] chibi proof preflight rejects checked-in style references as 
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
+      OPENAI_IMAGEGEN_API_KEY: '',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: checkedInReference,
@@ -2320,6 +2425,8 @@ test('[home-field] chibi proof preflight allows output probe only after referenc
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
+      OPENAI_IMAGEGEN_API_KEY: '',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '1',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
@@ -2342,6 +2449,8 @@ test('[home-field] chibi proof preflight blocks built-in imagegen without confir
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
+      OPENAI_IMAGEGEN_API_KEY: '',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
@@ -2364,6 +2473,8 @@ test('[home-field] chibi proof preflight accepts confirmed built-in disk output 
     env: {
       ...process.env,
       OPENAI_API_KEY: '',
+      OPENAI_IMAGEGEN_API_KEY: '',
+      HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '1',
       HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
@@ -2391,6 +2502,8 @@ test('[home-field] chibi proof preflight accepts supplied local image inputs', (
       env: {
         ...process.env,
         OPENAI_API_KEY: '',
+        OPENAI_IMAGEGEN_API_KEY: '',
+        HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
         HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput,

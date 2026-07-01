@@ -669,9 +669,9 @@ The active Stage 1 contract is:
 
 **Guardrails added:**
 
-- `preflight-chibi-proof` now accepts `--env-file=<explicit-env-file>` and reports when `OPENAI_API_KEY` came from that file;
+- `preflight-chibi-proof` accepted `--env-file=<explicit-env-file>` and reported when the old API key came from that file; this was later tightened by rule 44 to require the dedicated imagegen fallback key instead;
 - `archive-stale-chibi-proof` passes the same explicit env file through to preflight, so stale files are not moved under a different capability context;
-- the launcher, generated prompt, requirements doc, candidate contract, agent flow, and context helper now default to the explicit CLI/API helper path and say to stop if only prompt-text state-sheet generation is available;
+- the launcher, generated prompt, requirements doc, candidate contract, agent flow, and context helper temporarily defaulted to the explicit CLI/API helper path and said to stop if only prompt-text state-sheet generation is available; this was later corrected by rule 44 so built-in/imagegen is first and paid API is fallback only;
 - docs now state that `chibi-reference-api-proof` is reference-only and that production readiness requires the final grouped `8x4` state sheet to be generated through a reference-capable image path with the passed reference PNG attached as an actual image input.
 
 ### 43. Env-File Guessing Correctly Blocked But Still Cost A Run
@@ -686,7 +686,21 @@ The active Stage 1 contract is:
 
 - `app/shared/home-field/home-field-generation-queue.json` now contains the first structured queue item, `thalla-stage1-chibi-proof`, including references, commands, output paths, env-file requirements, stop rules, and final-response fields;
 - `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` validates the queue item and prints the structured contract before agents choose an env file or imagegen path;
-- the run prompt and docs now say not to infer `.env` or neighboring repo env files; the launcher must provide an explicit env file that contains `OPENAI_API_KEY`.
+- the run prompt and docs now say not to infer `.env` or neighboring repo env files; paid API fallback must use an explicit env file with a dedicated imagegen key and an explicit fallback flag.
+
+### 44. API Fallback Became Too Easy To Trigger
+
+**Symptom:** The post-helper flow treated the OpenAI API route as the default path for fresh runs, and the executable guard accepted plain `OPENAI_API_KEY`. That made an expensive image API call easier to trigger than intended and risked silently spending a general OpenAI key even when the built-in/imagegen skill should be the normal path.
+
+**Decision that led there:** We overcorrected from repeated built-in prompt-only failures by making the CLI/API helper the shortest runnable path. That solved reference attachment and env-file consistency, but it blurred "reference-capable fallback" into "default production route" and used the same environment variable name as unrelated OpenAI workflows.
+
+**Guardrails added:**
+
+- built-in/imagegen skill output is again the preferred path when same-agent file save and reference-image input binding are confirmed;
+- paid API fallback is allowed only when built-in/imagegen skill output is unavailable and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` is set;
+- the fallback credential is renamed to `OPENAI_IMAGEGEN_API_KEY`; plain `OPENAI_API_KEY` is ignored by the Home Field chibi preflight and API helper;
+- `chibi-reference-api-proof` maps `OPENAI_IMAGEGEN_API_KEY` to the child helper's `OPENAI_API_KEY` only inside the spawned API process, so ambient general OpenAI credentials are not silently used;
+- the queue, launcher, generated prompt, candidate contract, imagegen requirements, and tests now describe the API helper as paid fallback only, not the default production path.
 
 ## Decision Rules Going Forward
 
@@ -722,7 +736,8 @@ The active Stage 1 contract is:
 30. Do not accept a sprite-box reference because it has high empty-magenta coverage alone. The visible non-magenta character blobs must stay near source-sprite scale; oversized `1536x1024` showcase sheets fail before any final grouped state-sheet generation.
 31. Do not start another unchanged built-in sprite-box reference attempt after rollout `codex-019f1a6c-3143-7631-b3a4-73da0f052070`. First change the generation method/tool/source-input path, or stop and report that the current built-in prompt path is exhausted.
 32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
-33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable CLI/API support, or separate fresh proof source PNGs.
-34. For explicit CLI/API reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.
-35. Do not treat a passing reference helper run as production readiness. Use the same explicit env file for preflight, archive, and reference generation, then continue only if the grouped `8x4` state sheet can also be generated with the approved reference PNG attached as an actual image input.
-36. Do not infer an env file for queue items that require `doNotInferEnvFile: true`. The launcher must provide the env file, and the queue/preflight must prove it contains the required keys before any archive or imagegen step.
+33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable paid API fallback, or separate fresh proof source PNGs.
+34. For paid API fallback reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. The env file must contain `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.
+35. Do not treat a passing reference helper run as production readiness. Use the same explicit fallback env file for preflight, archive, and reference generation when the paid API fallback is used, then continue only if the grouped `8x4` state sheet can also be generated with the approved reference PNG attached as an actual image input.
+36. Do not infer an env file for queue items that require `doNotInferEnvFile: true`. Built-in/imagegen runs do not need a paid API key; paid API fallback must prove `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` before any archive or imagegen step.
+37. Do not let plain `OPENAI_API_KEY` trigger Home Field image generation. It is intentionally ignored so general OpenAI credentials are not silently spent on imagegen.

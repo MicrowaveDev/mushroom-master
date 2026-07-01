@@ -35,14 +35,14 @@ function usage() {
   return [
     'Usage: npm run game:home-field:chibi-reference-api-proof -- --env-file=<path> [options]',
     '',
-    'Runs one reference-capable Thalla sprite-box reference attempt through image_gen.py edit.',
+    'Runs one paid API fallback Thalla sprite-box reference attempt through image_gen.py edit.',
     '',
     'Required for real API calls:',
-    '  --env-file=<path>          explicit env file containing OPENAI_API_KEY',
+    '  --env-file=<path>          explicit env file containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1',
     '',
     'Options:',
     '  --dry-run                  print the planned command/gates without writing files or calling the API',
-    '  --allow-process-env        allow OPENAI_API_KEY from the current process env instead of --env-file',
+    '  --allow-process-env        allow OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE from the current process env instead of --env-file',
     '  --venv=<path>              local ignored Python venv path (default .agent/home-field-workspace/.imagegen-venv)',
     '  --python=<path>            Python executable to use instead of the helper venv',
     '  --model=<name>             image model (default gpt-image-2)',
@@ -283,14 +283,21 @@ function main() {
 
     const envFromFile = opts.envFile ? parseEnvFile(resolveRepoPath(opts.envFile)) : {};
     if (!opts.envFile && !opts.allowProcessEnv) {
-      throw new Error('Real API calls require explicit --env-file=<path>, or --allow-process-env when OPENAI_API_KEY is already exported.');
+      throw new Error('Real API calls require explicit --env-file=<path>, or --allow-process-env when OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 are already exported.');
     }
     const env = { ...process.env, ...envFromFile };
-    if (!env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is missing after loading the selected environment.');
+    if (!env.OPENAI_IMAGEGEN_API_KEY) {
+      throw new Error('OPENAI_IMAGEGEN_API_KEY is missing after loading the selected environment. Plain OPENAI_API_KEY is ignored for Home Field image generation.');
     }
+    if (env.HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE !== '1') {
+      throw new Error('API fallback requires HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 after confirming built-in/imagegen skill output is unavailable for this run.');
+    }
+    const apiEnv = {
+      ...env,
+      OPENAI_API_KEY: env.OPENAI_IMAGEGEN_API_KEY
+    };
 
-    const python = ensurePython(opts, env);
+    const python = ensurePython(opts, apiEnv);
     fs.mkdirSync(path.dirname(resolveRepoPath(promptPath)), { recursive: true });
     fs.writeFileSync(resolveRepoPath(promptPath), `${promptText}\n`);
     const promptSha = fileHashLike(resolveRepoPath(promptPath));
@@ -309,7 +316,7 @@ function main() {
       '--out', outputPath,
       '--force'
     ];
-    run(python, apiArgs, { env });
+    run(python, apiArgs, { env: apiEnv });
 
     let normalized = false;
     if (opts.normalizeReference) {
@@ -322,7 +329,7 @@ function main() {
     }
 
     const verifierResult = run('npm', ['run', 'game:home-field:verify-chibi-proof-files', '--', '--reference'], {
-      env,
+      env: apiEnv,
       allowFailure: true,
       capture: true
     });
@@ -338,7 +345,7 @@ function main() {
       `--swatch=${swatchPath}`,
       '--fail-on-bloat'
     ], {
-      env,
+      env: apiEnv,
       allowFailure: true,
       capture: true
     });

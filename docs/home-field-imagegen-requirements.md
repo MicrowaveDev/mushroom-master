@@ -41,7 +41,9 @@ Allowed source paths are:
 
 - confirmed built-in imagegen output that the same agent context can save or recover as a file, and for image-guided Thalla proof art can attach the checked-in reference PNGs as actual image inputs;
 - supplied local proof-source PNG inputs named by the run, not checked-in style/reference PNGs;
-- explicit CLI imagegen fallback when the user requested it and credentials are configured.
+- explicit paid API fallback only when built-in/imagegen skill output is unavailable for the run and `OPENAI_IMAGEGEN_API_KEY` plus `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` are configured.
+
+Plain `OPENAI_API_KEY` must not be used as an image-generation trigger for Home Field. The dedicated fallback key is `OPENAI_IMAGEGEN_API_KEY`, so general OpenAI credentials are not silently spent on imagegen.
 
 Do not report a generated asset as complete until the PNG exists at the documented repo path and the stage-specific verifier has passed. A filesystem path to a PNG under `docs/reference/home-field/` is reference material only. It is not a source-input method, not a proof source PNG, and not a substitute for actual reference-image binding in the generation call.
 
@@ -55,11 +57,20 @@ For chibi:
 npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>
 ```
 
-Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. For the explicit CLI/API route, load credentials with `--env-file=<explicit-env-file>` instead of searching neighboring repos or assuming the shell inherited `OPENAI_API_KEY`. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can both save discoverable PNGs and attach the checked-in reference PNGs as actual image inputs, run the chibi proof helper commands with:
+Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. Prefer the built-in/imagegen skill path when it can both save discoverable PNGs and attach the checked-in reference PNGs as actual image inputs. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can do both from the same agent context, run the chibi proof helper commands with:
 
 ```bash
 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 <command>
 ```
+
+Use the paid API fallback only when the built-in/imagegen skill output path is unavailable for this run. Its explicit env file must contain both:
+
+```bash
+OPENAI_IMAGEGEN_API_KEY=<imagegen-only-key>
+HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1
+```
+
+Do not search neighboring repos for credentials, guess `mushroom-master/.env`, or treat ambient `OPENAI_API_KEY` as usable for image generation. Plain `OPENAI_API_KEY` is intentionally ignored by the Home Field chibi preflight and API helper.
 
 If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
@@ -71,7 +82,7 @@ After that diagnostic render, run:
 npm run game:home-field:find-imagegen-output -- --since-minutes=5
 ```
 
-Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image`, mentioning them in the text prompt, or listing repository paths to them is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for fresh proof source PNG inputs or explicit reference-capable CLI fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
+Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image`, mentioning them in the text prompt, or listing repository paths to them is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for fresh proof source PNG inputs or explicit reference-capable paid API fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
 
 For actual proof art after preflight passes, do not repeat the manual finder/copy/hash/verifier loop. If built-in imagegen writes a discoverable file outside the repo, claim it into the documented proof path:
 
@@ -79,7 +90,7 @@ For actual proof art after preflight passes, do not repeat the manual finder/cop
 npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>
 ```
 
-For the Thalla reference sheet through explicit CLI/API fallback, do not hand-roll credential discovery, Python SDK setup, prompt extraction, resize normalization, verifier, palette audit, and blocker-note writing. Use:
+For the Thalla reference sheet through paid API fallback, do not hand-roll credential discovery, Python SDK setup, prompt extraction, resize normalization, verifier, palette audit, and blocker-note writing. Use:
 
 ```bash
 npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof
@@ -88,7 +99,7 @@ npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit
 npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>
 ```
 
-Load credentials through the explicit env file instead of searching neighboring repos, assuming inherited shell state, or guessing `mushroom-master/.env`. The structured queue item records `doNotInferEnvFile: true`; rollout `codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831` correctly blocked because the guessed `.env` did not provide `OPENAI_API_KEY`. The helper keeps the prompt source in `next-chibi-proof`, passes the checked-in reference PNGs as actual `--image` inputs, preserves an API-size source PNG, normalizes it to the current `512x384` sprite-box reference when needed, then runs `verify-chibi-proof-files -- --reference` and `palette-audit --fail-on-bloat` serially. A normalized reference still fails if palette bloat, status ornament, hair/wig reads, or other visual gate issues remain.
+Load fallback credentials through the explicit env file instead of searching neighboring repos, assuming inherited shell state, or guessing `mushroom-master/.env`. The structured queue item records `doNotInferEnvFile: true`; rollout `codex-019f1dbd-e6dd-70e0-a7fe-53977b1cc831` correctly blocked because the guessed `.env` did not provide the required imagegen fallback environment. Future paid API fallback files must contain `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`; plain `OPENAI_API_KEY` does not count. The helper keeps the prompt source in `next-chibi-proof`, passes the checked-in reference PNGs as actual `--image` inputs, preserves an API-size source PNG, normalizes it to the current `512x384` sprite-box reference when needed, then runs `verify-chibi-proof-files -- --reference` and `palette-audit --fail-on-bloat` serially. A normalized reference still fails if palette bloat, status ornament, hair/wig reads, or other visual gate issues remain.
 
 This helper is reference-only. It does not produce production-ready sprites by itself. After the reference gate passes, the grouped `8x4` state sheet must be generated through a reference-capable image path with the approved reference PNG attached as an actual image input. If only prompt-text state-sheet generation is available, stop and report the production-readiness blocker rather than burning another unguided attempt.
 
