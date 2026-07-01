@@ -702,6 +702,21 @@ The active Stage 1 contract is:
 - `chibi-reference-api-proof` maps `OPENAI_IMAGEGEN_API_KEY` to the child helper's `OPENAI_API_KEY` only inside the spawned API process, so ambient general OpenAI credentials are not silently used;
 - the queue, launcher, generated prompt, candidate contract, imagegen requirements, and tests now describe the API helper as paid fallback only, not the default production path.
 
+### 45. Built-In Reference Staging Was Blocked Too Aggressively
+
+**Symptom:** Rollout `codex-019f1e27-c368-7e11-a163-a391fd4f984d` followed the new queue launcher and stopped cleanly before imagegen. It ran `task:context`, printed the `thalla-stage1-chibi-proof` queue item, read the imagegen skill and chibi prompt, ran `chibi-proof-context`, `next-chibi-proof`, and `preflight-chibi-proof`, then reported the preflight blocker. No image generation happened, no stale files were archived, no reference sheet, grouped state sheet, split frames, candidate evidence, preview, verdict, or app-facing overwrite was produced.
+
+**What was correct:** The agent did not infer `.env`, did not use plain `OPENAI_API_KEY`, did not spend the paid API fallback, did not run the built-in disk-output probe before reference binding was confirmed, and left `mushroom-master` clean.
+
+**What was missing in the flow:** The Home Field docs and helper output said `view_image` was not enough without distinguishing passive viewing from the current `imagegen` skill's built-in local-image staging path. The current skill says local reference/edit images can be loaded into the same context with `view_image` before calling built-in `image_gen`. Because our wording treated any prompt-only exposed surface as not reference-capable, the agent had no no-API path to try after the user set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.
+
+**Guardrails added:**
+
+- docs and helper output now distinguish passive `view_image`/path mentions from built-in imagegen same-context input staging;
+- the built-in path may load each required reference PNG with `view_image` only as the current imagegen skill's input-staging step, then must call built-in `image_gen` in the same context and explicitly name those visible images as references;
+- passive viewing, listing paths, or mentioning file paths in the prompt remains text-only-equivalent and does not satisfy the image-guided gate;
+- the queue, run prompt, generated prompt JSON, candidate contract, imagegen requirements, agent flow, style reference, minimal production plan, preflight failure text, and tests now carry this distinction.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -729,7 +744,7 @@ The active Stage 1 contract is:
 23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, small seed/dot eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.
 24. Do not run more text-only Thalla reference attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as actual image inputs to imagegen, or stop and ask for a reference-capable generation path.
 25. Do not repeat the pre-2026-06-29 image-guided turnaround prompt unchanged. The reference prompt must behave like a sprite-box extraction guide with tiny `96x96` occupancy and mostly empty magenta space; if that still fails twice, change the generation method or ask for explicit user direction.
-26. Do not call a Thalla run image-guided unless the actual imagegen request can attach the checked-in PNGs as image inputs. `view_image` and prompt text are not enough.
+26. Do not call a Thalla run image-guided unless the actual imagegen request can attach or same-context stage the checked-in PNGs as image inputs. For built-in imagegen, `view_image` counts only as the current imagegen skill's input-staging step when the following built-in `image_gen` call explicitly uses those visible images as references; passive `view_image` plus prompt text is not enough.
 27. Do not run the built-in disk-output diagnostic probe when reference-image input binding is unavailable. The probe proves file capture only and cannot unblock current Thalla proof art.
 28. Do not treat palette cleanup, quantization, or a Retro/Tetro-style diffusion pass as approval. It must pass the same cap biology, eye scale, ornament, source-sprite occupancy, and composed field-style gates, and palette compliance needs a repeatable audit rather than only screenshots.
 29. Do not rely on env vars or capability confirmations from a previous Codex thread. If built-in imagegen is the intended path, the fresh launcher must carry the confirmation and helper commands must run with both `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`.

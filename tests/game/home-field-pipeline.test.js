@@ -1515,20 +1515,22 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
   assert.match(result.stdout, /state the chibi palette, style-preservation, scale\/face\/biology, and status-simplification plans before imagegen/);
   assert.match(result.stdout, /Copyable Sprite-Box Reference Prompt/);
-  assert.match(result.stdout, /attach these checked-in PNGs as actual image inputs/);
-  assert.match(result.stdout, /with those local PNGs attached as actual image inputs/);
+  assert.match(result.stdout, /attach or same-context stage these checked-in PNGs as actual image inputs/);
+  assert.match(result.stdout, /with those local PNGs attached or same-context staged as actual image inputs/);
   assert.match(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /API-source normalization/);
   assert.match(result.stdout, /palette audit must still pass/);
   assert.match(result.stdout, /supplied local proof source images outside docs\/reference/);
   assert.match(result.stdout, /listing docs\/reference paths is not image-guided generation/);
-  assert.match(result.stdout, /listing their filesystem paths is not enough/);
-  assert.match(result.stdout, /only exposes a prompt field/);
+  assert.match(result.stdout, /mentioning paths in the prompt is not enough/);
+  assert.match(result.stdout, /view_image only as the current imagegen skill's same-context input-staging step/);
+  assert.match(result.stdout, /explicitly name those visible images as references/);
   assert.match(result.stdout, /Method gate after rollout codex-019f1a6c-3143-7631-b3a4-73da0f052070/);
   assert.match(result.stdout, /do not run this unchanged through the same built-in sprite-box imagegen path again/);
   assert.match(result.stdout, /concrete method change/);
   assert.match(result.stdout, /checked-in docs\/reference PNGs are style references, not supplied proof source PNGs/);
-  assert.match(result.stdout, /viewing the PNGs in chat or listing their filesystem paths is not enough/i);
+  assert.match(result.stdout, /passive viewing, listing filesystem paths, or mentioning paths in the prompt is not enough/i);
+  assert.doesNotMatch(result.stdout, /only exposes a prompt field/);
   assert.match(result.stdout, /Do not run this as another text-only generation/);
   assert.match(result.stdout, /sprite-box reference sheet/);
   assert.match(result.stdout, /Input images: use the attached checked-in reference images as guidance/);
@@ -1595,6 +1597,11 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
   assert.match(prompt.details, /OPENAI_IMAGEGEN_API_KEY/);
   assert.match(prompt.details, /Plain OPENAI_API_KEY is ignored/);
   assert.match(prompt.details, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
+  assert.match(prompt.details, /view_image is only the current imagegen skill's same-context input-staging step/);
+  assert.match(prompt.details, /attach or same-context stage/);
+  assert.match(prompt.details, /passive view_image reference exposure is still not enough/);
+  assert.match(prompt.constraints, /attached or staged as actual same-context image inputs/);
+  assert.match(prompt.constraints, /passive view_image-only generation/);
 });
 
 test('[home-field] chibi proof launcher carries explicit reference-capable workflow', () => {
@@ -1809,6 +1816,9 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /plain OPENAI_API_KEY is ignored/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /actual image inputs/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /same-context input-staging step/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /visible images explicitly named as references/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /passive viewing/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /grouped 8x4 state sheet/.test(instruction)));
   assert.equal(item.assetId, 'thalla');
   assert.equal(item.assetType, 'character');
@@ -1854,6 +1864,9 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /Agent instructions:/);
   assert.match(result.stdout, /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/);
   assert.match(result.stdout, /Attach every referenceInputs PNG as actual image inputs/);
+  assert.match(result.stdout, /same-context input-staging step/);
+  assert.match(result.stdout, /visible images explicitly named as references/);
+  assert.match(result.stdout, /passive viewing/);
   assert.match(result.stdout, /grouped 8x4 state sheet can attach/);
   assert.match(result.stdout, /do not infer \.env/i);
   assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY/);
@@ -2315,9 +2328,11 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stderr, /same agent context that will run imagegen/);
   assert.match(result.stderr, /Fresh Codex sessions do not inherit HOME_FIELD_\* flags from prior chats/);
+  assert.match(result.stderr, /make the local reference PNGs visible to the same imagegen context/);
   assert.match(result.stderr, /If the launcher\/user explicitly confirmed built-in save plus reference-image input support/);
   assert.match(result.stderr, /rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
-  assert.match(result.stderr, /Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding/);
+  assert.match(result.stderr, /Passive viewing is not enough: a view_image step counts only when/);
+  assert.match(result.stderr, /following built-in image_gen call explicitly uses those visible images as references/);
   assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
   assert.match(result.stderr, /cannot unblock this Thalla proof until reference-image input binding is confirmed/);
   assert.match(result.stderr, /supplied local proof source PNG inputs outside docs\/reference/);

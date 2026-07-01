@@ -143,15 +143,15 @@ function main() {
     console.error('Preflight failed: no allowed reference-capable way to produce image PNGs for the required repo paths.');
     console.error('');
     console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
-    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
+    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach/use the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
     console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
     console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing proof source PNG paths separated by ${JSON.stringify(path.delimiter)}, not checked-in docs/reference style images`);
     console.error('');
-    console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. Prefer built-in/imagegen skill output when it can save files and attach reference inputs. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. Prefer built-in/imagegen skill output when it can save files and attach/use reference inputs. For the built-in path, first make the local reference PNGs visible to the same imagegen context using the current imagegen skill instructions, then run the built-in image_gen call in that same context. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
     console.error('');
     console.error('Plain OPENAI_API_KEY is intentionally ignored for Home Field image generation; set OPENAI_IMAGEGEN_API_KEY only for an explicit paid API fallback.');
     console.error('');
-    console.error('Viewing PNGs with view_image or mentioning them in the text prompt is not reference-image binding.');
+    console.error('Passive viewing is not enough: a view_image step counts only when it is the current imagegen skill\'s same-context input-staging step and the following built-in image_gen call explicitly uses those visible images as references.');
     if (rejectedLocalInputs.length > 0) {
       console.error('The checked-in docs/reference PNGs are style/reference material only. They are not supplied proof source PNGs and must not be used to bypass reference-capable imagegen.');
     }

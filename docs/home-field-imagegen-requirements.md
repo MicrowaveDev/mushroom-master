@@ -39,13 +39,13 @@ The pipeline requires a real PNG at a known filesystem path. A generated image t
 
 Allowed source paths are:
 
-- confirmed built-in imagegen output that the same agent context can save or recover as a file, and for image-guided Thalla proof art can attach the checked-in reference PNGs as actual image inputs;
+- confirmed built-in imagegen output that the same agent context can save or recover as a file, and for image-guided Thalla proof art can attach or stage the checked-in reference PNGs as actual same-context image inputs;
 - supplied local proof-source PNG inputs named by the run, not checked-in style/reference PNGs;
 - explicit paid API fallback only when built-in/imagegen skill output is unavailable for the run and `OPENAI_IMAGEGEN_API_KEY` plus `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` are configured.
 
 Plain `OPENAI_API_KEY` must not be used as an image-generation trigger for Home Field. The dedicated fallback key is `OPENAI_IMAGEGEN_API_KEY`, so general OpenAI credentials are not silently spent on imagegen.
 
-Do not report a generated asset as complete until the PNG exists at the documented repo path and the stage-specific verifier has passed. A filesystem path to a PNG under `docs/reference/home-field/` is reference material only. It is not a source-input method, not a proof source PNG, and not a substitute for actual reference-image binding in the generation call.
+Do not report a generated asset as complete until the PNG exists at the documented repo path and the stage-specific verifier has passed. A filesystem path to a PNG under `docs/reference/home-field/` is reference material only. It is not a source-input method, not a proof source PNG, and not a substitute for actual reference-image binding in the generation call. For the built-in imagegen path only, loading each local reference PNG with `view_image` is allowed as the current imagegen skill's same-context input-staging step when the next built-in `image_gen` call explicitly uses those visible images as references. Passive viewing, path listing, or a later text-only prompt still does not count.
 
 ### IG-3. Preflight Must Be The First Expensive Gate
 
@@ -57,7 +57,7 @@ For chibi:
 npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>
 ```
 
-Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. Prefer the built-in/imagegen skill path when it can both save discoverable PNGs and attach the checked-in reference PNGs as actual image inputs. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can do both from the same agent context, run the chibi proof helper commands with:
+Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. Prefer the built-in/imagegen skill path when it can both save discoverable PNGs and attach or stage the checked-in reference PNGs as actual same-context image inputs. If the current imagegen skill says local images become usable inputs after `view_image`, load all required reference PNGs in the same context before the built-in `image_gen` call and explicitly name them as input images in that call. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can do both from the same agent context, run the chibi proof helper commands with:
 
 ```bash
 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 <command>
@@ -82,7 +82,7 @@ After that diagnostic render, run:
 npm run game:home-field:find-imagegen-output -- --since-minutes=5
 ```
 
-Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach the checked-in PNGs as image inputs from the same agent context. Viewing PNGs with `view_image`, mentioning them in the text prompt, or listing repository paths to them is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for fresh proof source PNG inputs or explicit reference-capable paid API fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
+Count only a file whose timestamp is newer than the probe start, and record its path, timestamp, and hash. Use `--include-temp` for only one bounded retry. If a file is found, rerun preflight with `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`. Current Thalla reference generation requires that binding: set `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` only when the actual imagegen call can attach or use the checked-in PNGs as same-context image inputs. A `view_image` call counts only as the built-in tool's input-staging step when the following built-in `image_gen` call explicitly uses those visible images as references. Passive viewing, mentioning the PNGs in the text prompt, or listing repository paths to them is not reference-image binding. If no file is found, or if reference-image binding is unavailable, stop and ask for fresh proof source PNG inputs or explicit reference-capable paid API fallback; do not run broad filesystem searches, create fallback art, run a disk-output probe, or move stale evidence.
 
 For actual proof art after preflight passes, do not repeat the manual finder/copy/hash/verifier loop. If built-in imagegen writes a discoverable file outside the repo, claim it into the documented proof path:
 

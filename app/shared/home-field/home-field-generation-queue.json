@@ -18,8 +18,9 @@
         "Run npm run game:home-field:chibi-proof-context, npm run game:home-field:next-chibi-proof, and preflight before archive/imagegen.",
         "Do not infer `.env` or neighboring repo env files; paid API fallback requires the launcher/user to provide --env-file=<explicit-env-file>.",
         "Prefer built-in/imagegen skill only when HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 are confirmed in the same agent context that will run imagegen.",
+        "For the built-in path, load each referenceInputs PNG with view_image as the current imagegen skill's same-context input-staging step, then use built-in image_gen with those visible images explicitly named as references; passive viewing without the image_gen call is not enough.",
         "Use paid API fallback only if built-in/imagegen is unavailable and the explicit env file contains OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1; plain OPENAI_API_KEY is ignored.",
-        "Attach every referenceInputs PNG as actual image inputs to imagegen; viewing PNGs, listing paths, or using view_image is not enough.",
+        "Attach every referenceInputs PNG as actual image inputs to imagegen; passive viewing, listing paths, or using view_image without the following same-context image_gen reference call is not enough.",
         "Continue past the reference gate only if the grouped 8x4 state sheet can attach .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as an actual image input.",
         "Stop before archive/imagegen if preflight, reference verifier, palette audit, visual gate, or method gate fails.",
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
@@ -103,7 +104,7 @@
       "generationContract": {
         "referenceSheet": {
           "production": false,
-          "method": "built-in/imagegen skill with all referenceInputs attached as actual image inputs when save+reference binding is confirmed; otherwise paid image_gen.py edit fallback through chibi-reference-api-proof only after HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 and OPENAI_IMAGEGEN_API_KEY are set",
+          "method": "built-in/imagegen skill with all referenceInputs attached or loaded as same-context visible image inputs when save+reference binding is confirmed; otherwise paid image_gen.py edit fallback through chibi-reference-api-proof only after HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 and OPENAI_IMAGEGEN_API_KEY are set",
           "maxSameCauseAttempts": 2,
           "normalizeReferenceSize": "512x384",
           "paletteBudget": "12-18 artist-visible colors; fewer than 20 total design colors excluding transparency and #ff00ff",
