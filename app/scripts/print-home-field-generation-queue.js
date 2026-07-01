@@ -99,6 +99,7 @@ function validateQueue(queue) {
     const methodGateBlocked = /blocked|exhausted/i.test(methodGateStatus);
     const promptIssueBlocked = itemStatusBlocked || methodGateBlocked;
     const methodGateAllowed = /allowed/i.test(methodGateStatus) && !methodGateBlocked;
+    const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
     if (promptIssueBlocked) {
       if (item.promptPolicy?.issueLauncherWhenStatus !== 'allowed_or_with_unblock_input_only') {
         issues.push(`${item.id}: blocked items must set promptPolicy.issueLauncherWhenStatus=allowed_or_with_unblock_input_only`);
@@ -114,6 +115,14 @@ function validateQueue(queue) {
       if (!/Do not give the minimalLauncherPrompt back to the user/i.test(agentInstructionText) || !/concrete allowed unblock input/i.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must forbid returning a blocked launcher prompt without concrete unblock input`);
       }
+      if (localSourceMode?.completeStateSheetAllowed === true) {
+        if (!/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>/.test(blockedPromptAction)) {
+          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must tell prompt writers to prefix local-source launchers with HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>`);
+        }
+        if (!/Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/.test(blockedPromptAction)) {
+          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must include the local-source same-env prompt instruction`);
+        }
+      }
     }
     if (item.methodGate && methodGateAllowed && !/current allowed method change/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must name the current allowed method change`);
@@ -124,7 +133,6 @@ function validateQueue(queue) {
     if (item.generationContract?.stateSheet?.requiredReferenceImageInput && !/grouped 8x4 state sheet/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
     }
-    const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
     if (localSourceMode?.completeStateSheetAllowed === true) {
       if (!item.commands?.stageLocalSource) {
         issues.push(`${item.id}: local state-sheet source mode must include commands.stageLocalSource`);
@@ -143,6 +151,9 @@ function validateQueue(queue) {
       }
       if (!/Keep that same `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` value for preflight\/archive\/stage/.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must preserve the same HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS value for preflight/archive/stage`);
+      }
+      if (!/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS=<source-png>/.test(agentInstructionText)) {
+        issues.push(`${item.id}: agentInstructions must tell prompt writers to include the local-source env assignment in new-run prompts`);
       }
     }
     if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
