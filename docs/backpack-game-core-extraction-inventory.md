@@ -24,7 +24,12 @@ wait. It should be updated after each cluster moves.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest extraction commit: `b9879bd` (`Add hookable battle simulation core`)
 
-The package is consumed by `mushroom-master` as a pinned Git dependency.
+The package is currently consumed by `mushroom-master` as a pinned Git
+dependency. The next integration step is to make `backpack-game-core` a nested
+submodule of the backpack game repo and switch the package dependency to a
+local submodule path, so the game can import the core logic from the checked-out
+core source while still using the package name
+`@microwavedev/backpack-game-core`.
 
 ## Classification Rules
 
@@ -364,10 +369,56 @@ integration commit.
 After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
 bot-loadout, and battle-simulation slices, reassess in this order:
 
-1. Reassess full loadout validation only after catalog, pricing, bag policy,
+1. Add `backpack-game-core` to the backpack game as a nested submodule and
+   consume it through a local package dependency.
+2. Reassess full loadout validation only after catalog, pricing, bag policy,
    and validation error contracts can be injected without Mushroom imports.
-2. Consider a tiny RNG/shuffle helper module only if another consumer needs the
+3. Consider a tiny RNG/shuffle helper module only if another consumer needs the
    same deterministic seeded RNG and shuffle surface.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.
+
+## Next Infrastructure Slice: Core Submodule Consumption
+
+**Status:** Required before treating the core as shared game infrastructure.
+
+### Goal
+
+`mushroom-master` is the current backpack game consumer. It should track
+`backpack-game-core` as a nested Git submodule and import the same package from
+that local checkout, instead of relying only on a remote Git SHA dependency.
+
+### Proposed Shape
+
+- Add the nested submodule at `vendor/backpack-game-core` or
+  `packages/backpack-game-core`.
+- Switch `package.json` from:
+  `github:MicrowaveDev/backpack-game-core#<sha>`
+  to a local file dependency, for example:
+  `file:vendor/backpack-game-core`.
+- Keep application imports unchanged:
+  `import { ... } from '@microwavedev/backpack-game-core';`
+- Commit the game repo's nested-submodule pointer and lockfile update together.
+- Update CI/deploy/bootstrap docs so a fresh checkout runs:
+  `git submodule update --init --recursive`
+  before `npm ci` / `npm install`.
+
+### Additional TODOs
+
+1. Add a small install guard or verification script that fails clearly when the
+   nested core submodule is missing.
+2. Add a clean-clone verification note: clone the game repo, initialize nested
+   submodules, install, then run the focused game tests.
+3. Document the update flow: core commit first, nested game submodule pointer
+   second, hub pointer last.
+4. Update `AGENTS.md` or repo-local workflow notes with nested-submodule
+   staging rules so agents do not accidentally commit local core work only as a
+   dirty submodule pointer.
+5. Keep the core package API package-name stable even when consumed from a
+   local path; do not switch game imports to relative paths into the submodule.
+6. Add a consumer smoke test that imports at least one core helper through the
+   package name during the game test/build path.
+7. Decide whether the core repo needs TypeScript declarations or generated API
+   docs before a second game starts integrating it.
+8. Add release/update notes for the core pointer SHA used by each game commit.

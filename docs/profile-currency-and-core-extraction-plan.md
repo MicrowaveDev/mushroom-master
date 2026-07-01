@@ -1391,28 +1391,85 @@ Recommended initial choices:
   `mushroom-master`.
 - Copy or port the relevant unit tests into the core repo before swapping
   imports in `mushroom-master`.
-- Publish or consume via a pinned git dependency first; add it as a hub submodule
-  only after the first useful commit exists.
+- Consume the core through a nested game-repo submodule once the first useful
+  commits exist. The temporary pinned Git dependency was useful for the first
+  extraction slices, but the backpack game should move to a local dependency
+  backed by a checked-out `backpack-game-core` submodule.
 
 ## Phase 10 - Integrate Core Back Into `mushroom-master`
 
-1. Add `backpack-game-core` as a dependency.
-2. Replace local imports in `mushroom-master` one cluster at a time:
+1. Add `backpack-game-core` as a nested submodule of the backpack game
+   (`mushroom-master`) at a stable path such as `vendor/backpack-game-core` or
+   `packages/backpack-game-core`.
+2. Switch `package.json` to consume the package through that local submodule
+   path, for example `file:vendor/backpack-game-core`, while keeping imports as
+   `@microwavedev/backpack-game-core`.
+3. Update `package-lock.json` and verify `npm install` / `npm ci` from a clean
+   checkout after `git submodule update --init --recursive`.
+4. Add a small install guard or verification script that gives a clear error
+   when the nested core submodule has not been initialized.
+5. Update CI/deploy/bootstrap docs to initialize nested submodules before
+   dependency installation.
+6. Keep adapter files in `mushroom-master` where product data is passed into
+   core functions.
+7. Replace local imports in `mushroom-master` one cluster at a time:
    - `bag-shape`
    - placement / validation
    - fusion matching
    - shop generation
    - battle engine through product hooks
-3. Keep adapter files in `mushroom-master` where product data is passed into
-   core functions.
-4. Run the relevant Mushroom Battles verification after each cluster:
+8. Run the relevant Mushroom Battles verification after each cluster:
    - `npm run game:test`
    - targeted Playwright specs for UI-facing changes
    - `npm run game:test:e2e` before final handoff
-5. Update hub metadata only after the core repo has a committed SHA:
-   - `SUBMODULES.md`
-   - `submodules.manifest.json`
-   - hub submodule pointer if the repo is added as a submodule
+9. Commit order for core updates:
+   - commit and push `backpack-game-core`,
+   - update and commit the nested core submodule pointer in `mushroom-master`,
+   - update the hub `mushroom-master` pointer last.
+10. Update hub metadata only if `backpack-game-core` is also added as a
+    top-level hub repo for coordination:
+    - `SUBMODULES.md`
+    - `submodules.manifest.json`
+    - hub submodule pointer
+
+### Phase 10A - Submodule Consumption Implementation Plan
+
+Status: **Planned.** The first extraction slices used a pinned GitHub package
+dependency. The reusable-core integration should now move to a nested submodule
+inside the backpack game repo so the game owns an explicit core pointer and can
+import core logic from the checked-out source.
+
+Implementation steps:
+
+1. Add `git@github.com:MicrowaveDev/backpack-game-core.git` as a nested Git
+   submodule inside `mushroom-master` at `vendor/backpack-game-core`, unless an
+   existing repo convention suggests a better local package path.
+2. Change the game dependency from
+   `github:MicrowaveDev/backpack-game-core#<sha>` to a local file dependency
+   that points at the submodule, while keeping all runtime imports as
+   `@microwavedev/backpack-game-core`.
+3. Update `package-lock.json`, install/bootstrap docs, and any CI/dev setup
+   instructions so fresh clones run `git submodule update --init --recursive`
+   before installing dependencies.
+4. Add a cheap verification guard or test that fails clearly when the core
+   submodule is missing.
+5. Verify core tests, focused game tests, full game unit tests, and the
+   production game build.
+6. Commit the nested core pointer in `mushroom-master`, push it, then update
+   the hub `mushroom-master` pointer.
+
+Additional TODOs for that pass:
+
+1. Add/update repo-local agent instructions for nested-submodule staging.
+2. Add a consumer smoke test that imports from
+   `@microwavedev/backpack-game-core` through the installed local dependency.
+3. Confirm `npm ci` works with the `file:` dependency after submodule init.
+4. Keep `backpack-game-core` source changes committed in the core repo before
+   committing the game pointer.
+5. Document the exact core commit SHA in the extraction inventory after the
+   pointer moves.
+6. Decide whether to add TypeScript declarations or API docs before another
+   game consumes the core package.
 
 ## Risks And Guardrails
 
@@ -1479,13 +1536,21 @@ Recommended initial choices:
 19. Adapterize and extract battle simulation through Mushroom ability hooks.
    **Done 2026-07-02; combat identity, rewards, rating, and persistence remain
    local.**
-20. Add hub/submodule metadata and final cross-repo verification if
-   `backpack-game-core` is added to the hub manifest/submodule set.
-21. Optional Phase 6D database rename only if raw legacy column names become a
+20. Add `backpack-game-core` as a nested submodule of the backpack game and
+   switch the game dependency to a local submodule-backed package path.
+21. Add install/CI guardrails for the nested submodule: bootstrap docs,
+   submodule-init requirement, lockfile verification, and a clear missing-core
+   failure.
+22. Add a core-consumer smoke test plus final cross-repo verification
+   (`backpack-game-core` tests, focused game tests, full game unit tests, and
+   game build).
+23. Add hub metadata for `backpack-game-core` only if it should also be tracked
+   as a top-level hub repo in addition to the nested game submodule.
+24. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-22. Paid rollout readiness when external inputs are available: real provider
+25. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-23. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+26. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.
