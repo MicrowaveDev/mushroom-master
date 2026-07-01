@@ -10,6 +10,10 @@ export function useCustomization(state, refreshBootstrap) {
     return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
   }
 
+  function defaultPaymentSurface() {
+    return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
+  }
+
   async function switchPortrait({ mushroomId, portraitId }) {
     try {
       const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
@@ -47,10 +51,36 @@ export function useCustomization(state, refreshBootstrap) {
     }
   }
 
+  async function rollAssetPack({ packId }) {
+    try {
+      const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/roll`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': mutationKey('asset-roll') }
+      }, state.sessionKey);
+      if (result?.roll) await refreshBootstrap();
+    } catch (error) {
+      state.error = error.message || 'Failed to roll pack';
+    }
+  }
+
+  async function loadWalletBundles({ surface = defaultPaymentSurface() } = {}) {
+    state.walletBundlesLoading = true;
+    try {
+      const search = new URLSearchParams({ surface });
+      const result = await apiJson(`/api/wallet/bundles?${search.toString()}`, {}, state.sessionKey);
+      state.walletBundles = Array.isArray(result) ? result : [];
+      state.walletBundlesSurface = surface;
+    } catch (error) {
+      state.error = error.message || 'Failed to load wallet bundles';
+    } finally {
+      state.walletBundlesLoading = false;
+    }
+  }
+
   async function purchaseWalletCoins({
     bundleId = 'coins_small',
     provider = 'telegram_stars',
-    surface = 'telegram_mini_app'
+    surface = defaultPaymentSurface()
   } = {}) {
     try {
       const result = await apiJson('/api/wallet/purchase-intents', {
@@ -78,5 +108,12 @@ export function useCustomization(state, refreshBootstrap) {
     }
   }
 
-  return { switchPortrait, switchPreset, purchasePortrait, purchaseWalletCoins };
+  return {
+    switchPortrait,
+    switchPreset,
+    purchasePortrait,
+    rollAssetPack,
+    loadWalletBundles,
+    purchaseWalletCoins
+  };
 }

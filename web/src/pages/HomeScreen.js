@@ -19,13 +19,14 @@ export const HomeScreen = {
     'accept-challenge', 'decline-challenge',
     'select-mushroom',
     'switch-portrait', 'purchase-portrait', 'switch-preset',
-    'purchase-wallet'
+    'roll-asset-pack', 'load-wallet-bundles', 'purchase-wallet'
   ],
   data() {
     return {
       expandedMushroomId: null,
       selectedMushroomId: null,
       socialPanel: '',
+      walletShopOpen: false,
       homeAtTop: true,
       pulsingMushroomIds: {},
       pulsingMushroomDeltas: {},
@@ -44,10 +45,69 @@ export const HomeScreen = {
       this.openStatsPopover = this.openStatsPopover === id ? null : id;
     },
     handleStatsPopoverOutsideClick(event) {
-      if (!this.openStatsPopover) return;
       const target = event.target;
-      if (target && typeof target.closest === 'function' && target.closest('.home-mushroom-stats')) return;
-      this.openStatsPopover = null;
+      if (this.openStatsPopover) {
+        if (target && typeof target.closest === 'function' && target.closest('.home-mushroom-stats')) return;
+        this.openStatsPopover = null;
+      }
+      if (this.walletShopOpen && target && typeof target.closest === 'function' && !target.closest('.home-wallet-footer')) {
+        this.walletShopOpen = false;
+      }
+    },
+    toggleWalletShop() {
+      this.walletShopOpen = !this.walletShopOpen;
+      if (this.walletShopOpen && (!this.walletBundles.length || this.state.walletBundlesSurface !== this.walletSurface)) {
+        this.$emit('load-wallet-bundles', { surface: this.walletSurface });
+      }
+    },
+    handleWalletPurchase(bundle) {
+      this.walletShopOpen = false;
+      this.$emit('purchase-wallet', {
+        bundleId: bundle.id,
+        provider: bundle.provider,
+        surface: this.walletSurface
+      });
+    },
+    walletProviderLabel(provider) {
+      return this.t[`walletProvider_${provider}`] || provider;
+    },
+    formatWalletBundlePrice(bundle) {
+      const amount = Number(bundle.priceAmount || 0);
+      const currency = bundle.priceCurrency || '';
+      if (currency === 'USD') return `$${(amount / 100).toFixed(2)}`;
+      return `${amount} ${currency}`;
+    },
+    portraitPriceAmount(portrait) {
+      if (portrait.purchaseAvailable) return portrait.price || portrait.cost || 0;
+      if (portrait.rollAvailable) {
+        const pack = this.assetPacksById[portrait.packId] || {};
+        return pack.rollPriceAmount || portrait.price || portrait.cost || 0;
+      }
+      return portrait.price || portrait.cost || 0;
+    },
+    portraitActionTitle(portrait) {
+      if (portrait.unlocked) return portrait.name[this.state.lang];
+      const amount = this.portraitPriceAmount(portrait);
+      if (portrait.purchaseAvailable) return this.t.portraitBuy.replace('{n}', amount);
+      if (portrait.rollAvailable) return this.t.portraitRoll.replace('{n}', amount);
+      return this.t.portraitLocked.replace('{n}', amount);
+    },
+    handlePortraitClick(portrait) {
+      if (portrait.unlocked) {
+        this.$emit('switch-portrait', { mushroomId: this.selectedMushroom.id, portraitId: portrait.id });
+        return;
+      }
+      if (portrait.purchaseAvailable) {
+        this.$emit('purchase-portrait', {
+          mushroomId: this.selectedMushroom.id,
+          portraitId: portrait.id,
+          assetId: portrait.assetId
+        });
+        return;
+      }
+      if (portrait.rollAvailable && portrait.packId) {
+        this.$emit('roll-asset-pack', { packId: portrait.packId });
+      }
     },
     focusMushroom(mushroom) {
       this.selectedMushroomId = mushroom.id;
@@ -160,6 +220,16 @@ export const HomeScreen = {
     },
     walletBalance() {
       return this.state.bootstrap?.wallet?.balances?.soft_coin ?? this.state.bootstrap?.player?.spore ?? 0;
+    },
+    walletSurface() {
+      return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
+    },
+    walletBundles() {
+      if (this.state.walletBundlesSurface !== this.walletSurface) return [];
+      return Array.isArray(this.state.walletBundles) ? this.state.walletBundles : [];
+    },
+    assetPacksById() {
+      return Object.fromEntries((this.state.bootstrap?.assetPacks || []).map((pack) => [pack.id, pack]));
     },
     roster() {
       const mushrooms = this.state.bootstrap?.mushrooms || [];
@@ -399,9 +469,9 @@ export const HomeScreen = {
               <button
                 v-for="p in selectedMushroom.portraits" :key="p.id"
                 class="home-portrait-swatch"
-                :class="{ 'home-portrait-swatch--active': selectedMushroom.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked, 'home-portrait-swatch--buyable': !p.unlocked && p.purchaseAvailable }"
-                :title="p.unlocked ? p.name[state.lang] : p.purchaseAvailable ? t.portraitBuy.replace('{n}', p.price || p.cost) : t.portraitLocked.replace('{n}', p.price || p.cost)"
-                @click.stop="p.unlocked ? $emit('switch-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id }) : (p.purchaseAvailable && $emit('purchase-portrait', { mushroomId: selectedMushroom.id, portraitId: p.id, assetId: p.assetId }))"
+                :class="{ 'home-portrait-swatch--active': selectedMushroom.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked, 'home-portrait-swatch--buyable': !p.unlocked && p.purchaseAvailable, 'home-portrait-swatch--rollable': !p.unlocked && p.rollAvailable }"
+                :title="portraitActionTitle(p)"
+                @click.stop="handlePortraitClick(p)"
               >
                 <img
                   :src="p.path"
@@ -411,7 +481,7 @@ export const HomeScreen = {
                 <span v-if="!p.unlocked" class="home-swatch-price" aria-hidden="true">
                   <span class="home-swatch-price-icon">🪙</span>
                   <span class="home-swatch-price-value">
-                    <span class="home-swatch-price-have">{{ walletBalance }}</span><span class="home-swatch-price-sep">/</span>{{ p.price || p.cost }}
+                    <span class="home-swatch-price-have">{{ walletBalance }}</span><span class="home-swatch-price-sep">/</span>{{ portraitPriceAmount(p) }}
                   </span>
                 </span>
               </button>
@@ -531,9 +601,29 @@ export const HomeScreen = {
 
           <!-- Footer stats -->
           <div class="home-run-footer">
-            <span class="home-wallet-footer">
+            <span class="home-wallet-footer" @click.stop>
               <span>{{ t.spore }} <strong>{{ walletBalance }}</strong></span>
-              <button class="link home-wallet-buy" @click="$emit('purchase-wallet', { bundleId: 'coins_small', provider: 'telegram_stars', surface: 'telegram_mini_app' })">{{ t.walletBuy }}</button>
+              <button class="link home-wallet-buy" :aria-expanded="walletShopOpen" @click.stop="toggleWalletShop">{{ t.walletBuy }}</button>
+              <div v-if="walletShopOpen" class="home-wallet-shop" role="dialog" :aria-label="t.walletShopTitle">
+                <div class="home-wallet-shop-header">
+                  <strong>{{ t.walletShopTitle }}</strong>
+                  <button class="ghost home-wallet-shop-close" :aria-label="t.close" @click="walletShopOpen = false">×</button>
+                </div>
+                <p v-if="state.walletBundlesLoading" class="home-wallet-shop-note">{{ t.loading }}</p>
+                <div v-else-if="walletBundles.length" class="home-wallet-bundles">
+                  <button
+                    v-for="bundle in walletBundles"
+                    :key="bundle.provider + ':' + bundle.id"
+                    class="home-wallet-bundle"
+                    @click="handleWalletPurchase(bundle)"
+                  >
+                    <strong>+{{ bundle.walletAmount }}</strong>
+                    <span>{{ walletProviderLabel(bundle.provider) }} · {{ formatWalletBundlePrice(bundle) }}</span>
+                  </button>
+                </div>
+                <p v-else class="home-wallet-shop-note">{{ t.walletBundlesUnavailable }}</p>
+                <p class="home-wallet-shop-note">{{ t.walletPaymentNote }}</p>
+              </div>
             </span>
             <span>{{ t.battleLimit }} <strong>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</strong></span>
           </div>

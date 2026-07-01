@@ -106,6 +106,9 @@ const App = {
       challenge: null,
       inventoryReviewSamples: [],
       localLab: [],
+      walletBundles: [],
+      walletBundlesLoading: false,
+      walletBundlesSurface: '',
       localLabInput: 'Step 1: Thalla uses Spore Lash, deals 8 damage, and stuns the target.',
       gameRun: null,
       gameRunResult: null,
@@ -616,7 +619,7 @@ const App = {
           @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
           @select-mushroom="saveCharacter($event)"
           @switch-portrait="switchPortrait($event)" @purchase-portrait="purchasePortrait($event)" @switch-preset="switchPreset($event)"
-          @purchase-wallet="purchaseWalletCoins($event)"
+          @roll-asset-pack="rollAssetPack($event)" @load-wallet-bundles="loadWalletBundles($event)" @purchase-wallet="purchaseWalletCoins($event)"
         />
 
         <characters-screen v-else-if="state.screen === 'characters'"

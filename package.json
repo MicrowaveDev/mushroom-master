@@ -38,6 +38,7 @@
     "game:season:inspect": "node app/scripts/inspect-season-ranks.js",
     "game:season:analytics": "node app/scripts/summarize-season-rank-analytics.js",
     "game:season:archive": "node app/scripts/archive-season.js",
+    "game:wallet:audit": "node app/scripts/audit-wallet-balances.js",
     "game:home-field:next": "node app/scripts/next-home-field-image-prompts.js",
     "game:home-field:next-tiles": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_regen --all",
     "game:home-field:rerun-grass": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_review,needs_regen --all --ignore-review-gate",

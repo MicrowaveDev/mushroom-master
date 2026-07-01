@@ -210,16 +210,20 @@ export function nowPaymentsSignaturePayload(body) {
   return JSON.stringify(sortJsonValue(body || {}));
 }
 
+function allowUnsignedPaymentWebhookForDev() {
+  return process.env.NODE_ENV === 'test' || process.env.PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV === 'true';
+}
+
 export function verifyPaymentWebhookSignature(req, provider) {
   if (provider === 'btcpay') {
     const secret = process.env.BTCPAY_WEBHOOK_SECRET;
-    if (!secret) return process.env.NODE_ENV !== 'production';
+    if (!secret) return allowUnsignedPaymentWebhookForDev();
     const header = String(req.header('btcpay-sig') || '').replace(/^sha256=/i, '');
     return timingSafeEqualText(header, hmacDigest(secret, req.rawBody || '', 'sha256'));
   }
   if (provider === 'nowpayments') {
     const secret = process.env.NOWPAYMENTS_IPN_SECRET;
-    if (!secret) return process.env.NODE_ENV !== 'production';
+    if (!secret) return allowUnsignedPaymentWebhookForDev();
     const header = String(req.header('x-nowpayments-sig') || '');
     return timingSafeEqualText(header, hmacDigest(secret, nowPaymentsSignaturePayload(req.body || {}), 'sha512'));
   }

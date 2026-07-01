@@ -1535,6 +1535,7 @@ select {
   margin-top: auto;
 }
 .home-wallet-footer {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1543,6 +1544,74 @@ select {
 .home-wallet-buy {
   font-size: 0.95em;
   white-space: nowrap;
+}
+.home-wallet-shop {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 70;
+  width: min(340px, calc(100vw - 28px));
+  padding: 12px;
+  border: 1px solid rgba(126, 92, 54, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 251, 244, 0.98);
+  box-shadow: 0 16px 36px rgba(55, 43, 32, 0.18);
+  color: var(--ink);
+}
+.home-wallet-shop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.home-wallet-shop-header strong {
+  margin: 0;
+  font-size: 0.98rem;
+}
+.home-wallet-shop-close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  line-height: 1;
+}
+.home-wallet-bundles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.home-wallet-bundle {
+  display: grid;
+  gap: 4px;
+  min-height: 70px;
+  padding: 9px 8px;
+  border: 1px solid rgba(126, 92, 54, 0.16);
+  border-radius: 10px;
+  background: rgba(244, 238, 224, 0.72);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.home-wallet-bundle:hover {
+  border-color: rgba(95, 124, 79, 0.4);
+  background: rgba(229, 237, 216, 0.64);
+}
+.home-wallet-bundle strong {
+  margin: 0;
+  color: #3d5731;
+  font-size: 1rem;
+}
+.home-wallet-bundle span {
+  color: rgba(47, 36, 25, 0.64);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+.home-wallet-shop-note {
+  margin: 8px 0 0;
+  color: rgba(47, 36, 25, 0.58);
+  font-size: 0.74rem;
+  line-height: 1.35;
 }
 .home-run-footer strong {
   margin-left: 4px;
@@ -1978,6 +2047,10 @@ select {
 .home-portrait-swatch--buyable {
   cursor: pointer;
 }
+.home-portrait-swatch--rollable {
+  cursor: pointer;
+  border-color: rgba(73, 108, 136, 0.28);
+}
 .home-portrait-swatch--locked img {
   filter: grayscale(0.55) brightness(0.85);
   opacity: 0.55;
@@ -2018,6 +2091,10 @@ select {
 }
 .home-swatch-price-value {
   font-variant-numeric: lining-nums tabular-nums;
+}
+.home-portrait-swatch--rollable .home-swatch-price {
+  background: rgba(237, 246, 248, 0.94);
+  color: #274e62;
 }
 
 .home-preset-pills {

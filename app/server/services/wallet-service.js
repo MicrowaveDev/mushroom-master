@@ -26,7 +26,20 @@ const BASE_WALLET_BUNDLES = [
   { id: 'coins_large', walletAmount: 1200, priceUnits: 10 }
 ];
 
+export const WALLET_PURCHASE_STATUSES = new Set([
+  'pending',
+  'completed',
+  'expired',
+  'failed',
+  'refunded',
+  'underpaid',
+  'overpaid',
+  'cancelled'
+]);
+
 const walletMutationLocks = new Map();
+const purchaseIntentLocks = new Map();
+const checkoutLocks = new Map();
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -34,21 +47,25 @@ function httpError(message, statusCode = 400) {
   return err;
 }
 
-export async function withWalletMutationLock(playerId, work) {
-  const lockKey = String(playerId || '');
+async function withKeyedLock(lockMap, lockKey, work) {
+  const normalizedKey = String(lockKey || '');
   let releaseLock;
   const lockPromise = new Promise((resolve) => { releaseLock = resolve; });
-  const previousLock = walletMutationLocks.get(lockKey) || Promise.resolve();
-  walletMutationLocks.set(lockKey, lockPromise);
+  const previousLock = lockMap.get(normalizedKey) || Promise.resolve();
+  lockMap.set(normalizedKey, lockPromise);
   await previousLock;
   try {
     return await work();
   } finally {
-    if (walletMutationLocks.get(lockKey) === lockPromise) {
-      walletMutationLocks.delete(lockKey);
+    if (lockMap.get(normalizedKey) === lockPromise) {
+      lockMap.delete(normalizedKey);
     }
     releaseLock();
   }
+}
+
+export async function withWalletMutationLock(playerId, work) {
+  return withKeyedLock(walletMutationLocks, `wallet:${playerId || ''}`, work);
 }
 
 function normalizeCurrencyCode(currencyCode = WALLET_CURRENCY_CODE) {
@@ -116,6 +133,38 @@ function metadataJson(metadata) {
 
 function centsToDecimalUnits(amount) {
   return Number((Number(amount || 0) / 100).toFixed(2));
+}
+
+function decimalStringToMinorUnits(value, unitScale = 100) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number' && !Number.isFinite(value)) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const sign = raw.startsWith('-') ? -1 : 1;
+  const unsigned = raw.replace(/^[+-]/, '');
+  const [wholeText, fractionText = ''] = unsigned.split('.');
+  if (!/^\d+$/.test(wholeText || '0') || !/^\d*$/.test(fractionText)) return null;
+  const decimals = Math.max(0, String(unitScale).length - 1);
+  const whole = Number(wholeText || '0') * unitScale;
+  const paddedFraction = `${fractionText}${'0'.repeat(decimals)}`.slice(0, decimals);
+  const fraction = Number(paddedFraction || '0');
+  const nextDigit = Number((fractionText[decimals] || '0'));
+  const rounded = nextDigit >= 5 ? 1 : 0;
+  return sign * (whole + fraction + rounded);
+}
+
+function normalizePriceCurrency(currency) {
+  const normalized = String(currency || '').trim().toUpperCase();
+  return normalized || null;
+}
+
+function normalizeProviderPriceAmount(provider, amount) {
+  const { unitScale } = providerConfig(provider);
+  if (unitScale === 1) {
+    const value = Number(amount);
+    return Number.isInteger(value) ? value : null;
+  }
+  return decimalStringToMinorUnits(amount, unitScale);
 }
 
 function rowToTransaction(row) {
@@ -322,6 +371,24 @@ async function postJson(url, payload, { fetchImpl = globalThis.fetch, headers = 
   return json;
 }
 
+async function getJson(url, { fetchImpl = globalThis.fetch, headers = {} } = {}) {
+  if (typeof fetchImpl !== 'function') {
+    throw httpError('Payment provider fetch is unavailable', 503);
+  }
+  const response = await fetchImpl(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...headers
+    }
+  });
+  const json = await response.json();
+  if (!response.ok || json?.ok === false) {
+    throw httpError(`Payment provider lookup failed: ${json?.description || json?.message || response.status}`, 502);
+  }
+  return json;
+}
+
 function checkoutSetupRequired(provider, missing) {
   return {
     provider,
@@ -435,6 +502,28 @@ async function createProviderCheckout(intent, options = {}) {
   throw httpError('Unknown wallet purchase provider', 400);
 }
 
+function btcpayInvoiceLookupConfig() {
+  const serverUrl = String(process.env.BTCPAY_SERVER_URL || '').replace(/\/+$/, '');
+  const storeId = process.env.BTCPAY_STORE_ID;
+  const apiKey = process.env.BTCPAY_API_KEY;
+  if (!serverUrl || !storeId || !apiKey) return null;
+  return { serverUrl, storeId, apiKey };
+}
+
+async function fetchProviderInvoicePaymentDetails(provider, providerInvoiceId, { fetchImpl = globalThis.fetch } = {}) {
+  if (provider !== 'btcpay' || !providerInvoiceId || testModeWithoutInjectedFetch(fetchImpl)) return null;
+  const config = btcpayInvoiceLookupConfig();
+  if (!config) return null;
+  const json = await getJson(
+    `${config.serverUrl}/api/v1/stores/${config.storeId}/invoices/${encodeURIComponent(providerInvoiceId)}`,
+    {
+      fetchImpl,
+      headers: { Authorization: `token ${config.apiKey}` }
+    }
+  );
+  return extractProviderPaymentDetails(provider, json);
+}
+
 export async function grantCurrency(client, {
   playerId,
   currencyCode = WALLET_CURRENCY_CODE,
@@ -520,6 +609,82 @@ export async function getWalletState(playerId, { limit = 10 } = {}) {
   });
 }
 
+export async function auditWalletMirror({ limit = 100 } = {}) {
+  const rowLimit = Math.max(1, Math.min(1000, Number(limit) || 100));
+  const rows = await query(
+    `SELECT
+       players.id AS player_id,
+       COALESCE(players.spore, 0) AS legacy_balance,
+       player_wallet_balances.balance AS wallet_balance,
+       CASE
+         WHEN player_wallet_balances.player_id IS NULL THEN 'missing_wallet_balance'
+         ELSE 'mirror_mismatch'
+       END AS issue
+     FROM players
+     LEFT JOIN player_wallet_balances
+       ON player_wallet_balances.player_id = players.id
+      AND player_wallet_balances.currency_code = $1
+     WHERE player_wallet_balances.player_id IS NULL
+        OR COALESCE(player_wallet_balances.balance, 0) != COALESCE(players.spore, 0)
+     ORDER BY players.created_at ASC
+     LIMIT $2`,
+    [WALLET_CURRENCY_CODE, rowLimit]
+  );
+  const count = await query(
+    `SELECT COUNT(*) AS count
+     FROM players
+     LEFT JOIN player_wallet_balances
+       ON player_wallet_balances.player_id = players.id
+      AND player_wallet_balances.currency_code = $1
+     WHERE player_wallet_balances.player_id IS NULL
+        OR COALESCE(player_wallet_balances.balance, 0) != COALESCE(players.spore, 0)`,
+    [WALLET_CURRENCY_CODE]
+  );
+  return {
+    currencyCode: WALLET_CURRENCY_CODE,
+    total: Number(count.rows[0]?.count || 0),
+    limit: rowLimit,
+    items: rows.rows.map((row) => ({
+      playerId: row.player_id,
+      legacyBalance: Number(row.legacy_balance || 0),
+      walletBalance: row.wallet_balance == null ? null : Number(row.wallet_balance),
+      issue: row.issue
+    }))
+  };
+}
+
+export async function backfillMissingWalletBalancesFromPlayers({ limit = 500 } = {}) {
+  const rowLimit = Math.max(1, Math.min(5000, Number(limit) || 500));
+  return withTransaction(async (client) => {
+    const rows = await client.query(
+      `SELECT players.id, COALESCE(players.spore, 0) AS spore
+       FROM players
+       WHERE NOT EXISTS (
+         SELECT 1 FROM player_wallet_balances
+         WHERE player_wallet_balances.player_id = players.id
+           AND player_wallet_balances.currency_code = $1
+       )
+       ORDER BY players.created_at ASC
+       LIMIT $2`,
+      [WALLET_CURRENCY_CODE, rowLimit]
+    );
+    const now = nowIso();
+    for (const row of rows.rows) {
+      await client.query(
+        `INSERT INTO player_wallet_balances (player_id, currency_code, balance, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $4)
+         ON CONFLICT (player_id, currency_code) DO NOTHING`,
+        [row.id, WALLET_CURRENCY_CODE, Number(row.spore || 0), now]
+      );
+    }
+    return {
+      currencyCode: WALLET_CURRENCY_CODE,
+      inserted: rows.rowCount,
+      playerIds: rows.rows.map((row) => row.id)
+    };
+  });
+}
+
 export async function createPurchaseIntent(playerId, {
   bundleId,
   provider = 'telegram_stars',
@@ -530,7 +695,27 @@ export async function createPurchaseIntent(playerId, {
   const normalizedSurface = normalizePaymentSurface(surface);
   const normalizedProvider = providerConfig(provider).provider;
   assertProviderAllowedOnSurface(normalizedProvider, normalizedSurface);
-  const bundle = findWalletBundle(bundleId, provider);
+  const bundle = findWalletBundle(bundleId, normalizedProvider);
+  const work = () => createPurchaseIntentUnlocked(playerId, {
+    bundle,
+    idempotencyKey,
+    normalizedSurface,
+    fetchImpl
+  });
+  if (!idempotencyKey) return work();
+  return withKeyedLock(
+    purchaseIntentLocks,
+    `purchase-intent:${playerId}:${normalizedProvider}:${idempotencyKey}`,
+    work
+  );
+}
+
+async function createPurchaseIntentUnlocked(playerId, {
+  bundle,
+  idempotencyKey = null,
+  normalizedSurface,
+  fetchImpl = globalThis.fetch
+} = {}) {
   const intent = await withTransaction(async (client) => {
     if (idempotencyKey) {
       const existing = await client.query(
@@ -577,22 +762,30 @@ export async function createPurchaseIntent(playerId, {
 
   if (intent.checkout?.invoiceReady || intent.checkout?.setupRequired) return intent;
 
-  const checkout = await createProviderCheckout(intent, { fetchImpl });
-  const nextMetadata = {
-    ...intent.metadata,
-    checkout
-  };
-  const providerInvoiceId = checkout.providerInvoiceId || intent.providerInvoiceId;
-  await query(
-    `UPDATE wallet_purchase_intents
-     SET provider_invoice_id = $2,
-         metadata_json = $3,
-         updated_at = $4
-     WHERE id = $1`,
-    [intent.id, providerInvoiceId, metadataJson(nextMetadata), nowIso()]
-  );
-  const updated = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
-  return rowToPurchaseIntent(updated.rows[0]);
+  return withKeyedLock(checkoutLocks, `checkout:${intent.id}`, async () => {
+    const latest = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
+    if (!latest.rowCount) throw httpError('Unknown wallet purchase intent', 404);
+    const latestIntent = rowToPurchaseIntent(latest.rows[0]);
+    if (latestIntent.checkout?.invoiceReady || latestIntent.checkout?.setupRequired) return latestIntent;
+    if (latestIntent.status !== 'pending') return latestIntent;
+
+    const checkout = await createProviderCheckout(latestIntent, { fetchImpl });
+    const nextMetadata = {
+      ...latestIntent.metadata,
+      checkout
+    };
+    const providerInvoiceId = checkout.providerInvoiceId || latestIntent.providerInvoiceId;
+    await query(
+      `UPDATE wallet_purchase_intents
+       SET provider_invoice_id = $2,
+           metadata_json = $3,
+           updated_at = $4
+       WHERE id = $1 AND status = 'pending'`,
+      [latestIntent.id, providerInvoiceId, metadataJson(nextMetadata), nowIso()]
+    );
+    const updated = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [latestIntent.id]);
+    return rowToPurchaseIntent(updated.rows[0]);
+  });
 }
 
 export async function completePurchaseIntent({
@@ -638,8 +831,9 @@ export async function completePurchaseIntent({
 
     const expectedAmount = Number(row.price_amount || 0);
     const receivedAmount = priceAmount == null ? expectedAmount : Number(priceAmount);
-    const receivedCurrency = priceCurrency || row.price_currency;
-    if (receivedAmount !== expectedAmount || receivedCurrency !== row.price_currency) {
+    const expectedCurrency = normalizePriceCurrency(row.price_currency);
+    const receivedCurrency = normalizePriceCurrency(priceCurrency) || expectedCurrency;
+    if (receivedAmount !== expectedAmount || receivedCurrency !== expectedCurrency) {
       throw httpError('Invalid wallet purchase amount', 400);
     }
 
@@ -744,16 +938,16 @@ function isCompletedProviderStatus(provider, payload) {
   return false;
 }
 
-export async function completeProviderWebhook(provider, payload = {}) {
-  const normalizedProvider = providerConfig(provider).provider;
-  if (!isCompletedProviderStatus(normalizedProvider, payload)) {
-    return { ignored: true, reason: 'not_completed' };
-  }
+function firstPresent(...values) {
+  return values.find((value) => value != null && value !== '') ?? null;
+}
 
+function providerWebhookRefs(payload = {}) {
   const metadata = payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {};
   const intentId =
     metadata.walletPurchaseIntentId ||
     metadata.intentId ||
+    metadata.orderId ||
     payload.walletPurchaseIntentId ||
     payload.order_id ||
     payload.orderId ||
@@ -766,14 +960,200 @@ export async function completeProviderWebhook(provider, payload = {}) {
   const providerPaymentId =
     payload.paymentId ||
     payload.payment_id ||
+    payload.providerPaymentId ||
     payload.id ||
     providerInvoiceId;
+  return { metadata, intentId, providerInvoiceId, providerPaymentId };
+}
+
+function extractProviderPaymentDetails(provider, payload = {}) {
+  let amount = null;
+  let currency = null;
+  if (provider === 'btcpay') {
+    amount = firstPresent(
+      payload.amount,
+      payload.price,
+      payload.invoiceAmount,
+      payload.payment?.amount,
+      payload.invoice?.amount,
+      payload.data?.amount,
+      payload.data?.price
+    );
+    currency = firstPresent(
+      payload.currency,
+      payload.priceCurrency,
+      payload.invoiceCurrency,
+      payload.payment?.currency,
+      payload.invoice?.currency,
+      payload.data?.currency,
+      payload.data?.priceCurrency
+    );
+  } else if (provider === 'nowpayments') {
+    amount = firstPresent(
+      payload.price_amount,
+      payload.priceAmount,
+      payload.invoice?.price_amount,
+      payload.data?.price_amount
+    );
+    currency = firstPresent(
+      payload.price_currency,
+      payload.priceCurrency,
+      payload.invoice?.price_currency,
+      payload.data?.price_currency
+    );
+  }
+
+  const priceAmount = normalizeProviderPriceAmount(provider, amount);
+  const priceCurrency = normalizePriceCurrency(currency);
+  return priceAmount == null || !priceCurrency ? null : { priceAmount, priceCurrency };
+}
+
+function purchaseStatusFromProviderWebhook(provider, payload = {}) {
+  if (provider === 'btcpay') {
+    const type = String(payload?.type || '').toLowerCase();
+    const status = String(payload?.status || payload?.invoiceStatus || '').toLowerCase();
+    if (type === 'invoiceexpired' || status === 'expired') return 'expired';
+    if (type === 'invoiceinvalid' || ['invalid', 'failed'].includes(status)) return 'failed';
+    if (['cancelled', 'canceled'].includes(status)) return 'cancelled';
+    if (status === 'refunded') return 'refunded';
+    if (status === 'underpaid') return 'underpaid';
+    if (status === 'overpaid') return 'overpaid';
+  }
+  if (provider === 'nowpayments') {
+    const status = String(payload?.payment_status || payload?.status || '').toLowerCase();
+    if (status === 'expired') return 'expired';
+    if (status === 'failed') return 'failed';
+    if (status === 'refunded') return 'refunded';
+    if (['cancelled', 'canceled'].includes(status)) return 'cancelled';
+    if (status === 'underpaid') return 'underpaid';
+    if (status === 'overpaid') return 'overpaid';
+  }
+  return null;
+}
+
+async function recordPurchaseIntentStatus({
+  provider,
+  intentId = null,
+  providerInvoiceId = null,
+  status,
+  metadata = {}
+} = {}) {
+  if (!WALLET_PURCHASE_STATUSES.has(status) || ['pending', 'completed'].includes(status)) {
+    throw httpError('Invalid wallet purchase status', 400);
+  }
+  const normalizedProvider = providerConfig(provider).provider;
+  const initialLookup = intentId
+    ? await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intentId])
+    : await query(
+      `SELECT * FROM wallet_purchase_intents WHERE provider = $1 AND provider_invoice_id = $2`,
+      [normalizedProvider, providerInvoiceId]
+    );
+  if (!initialLookup.rowCount) {
+    return { ignored: true, reason: 'unknown_intent', status };
+  }
+  if (initialLookup.rows[0].provider !== normalizedProvider) {
+    throw httpError('Invalid wallet purchase provider', 400);
+  }
+
+  return withWalletMutationLock(initialLookup.rows[0].player_id, () => withTransaction(async (client) => {
+    const lookup = intentId
+      ? await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intentId])
+      : await client.query(
+        `SELECT * FROM wallet_purchase_intents WHERE provider = $1 AND provider_invoice_id = $2`,
+        [normalizedProvider, providerInvoiceId]
+      );
+    if (!lookup.rowCount) return { ignored: true, reason: 'unknown_intent', status };
+    const row = lookup.rows[0];
+    if (row.provider !== normalizedProvider) throw httpError('Invalid wallet purchase provider', 400);
+
+    if (row.status === 'completed') {
+      return {
+        intent: rowToPurchaseIntent(row),
+        transaction: null,
+        alreadyCompleted: true
+      };
+    }
+    if (row.status === status || row.status !== 'pending') {
+      return {
+        intent: rowToPurchaseIntent(row),
+        transaction: null,
+        alreadyRecorded: true,
+        ignored: true,
+        reason: row.status
+      };
+    }
+
+    const updatedAt = nowIso();
+    const currentMetadata = parseJson(row.metadata_json, {});
+    const updated = await client.query(
+      `UPDATE wallet_purchase_intents
+       SET status = $2,
+           updated_at = $3,
+           metadata_json = $4
+       WHERE id = $1 AND status = 'pending'
+       RETURNING *`,
+      [
+        row.id,
+        status,
+        updatedAt,
+        metadataJson({
+          ...currentMetadata,
+          providerStatus: {
+            status,
+            receivedAt: updatedAt,
+            payload: metadata
+          }
+        })
+      ]
+    );
+    if (!updated.rowCount) {
+      const current = await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [row.id]);
+      return {
+        intent: current.rowCount ? rowToPurchaseIntent(current.rows[0]) : rowToPurchaseIntent(row),
+        transaction: null,
+        alreadyRecorded: true,
+        ignored: true,
+        reason: current.rows[0]?.status || 'unknown'
+      };
+    }
+    return {
+      intent: rowToPurchaseIntent(updated.rows[0]),
+      transaction: null,
+      statusRecorded: true,
+      ignored: true,
+      reason: status
+    };
+  }));
+}
+
+export async function completeProviderWebhook(provider, payload = {}, { fetchImpl = globalThis.fetch } = {}) {
+  const normalizedProvider = providerConfig(provider).provider;
+  const { intentId, providerInvoiceId, providerPaymentId } = providerWebhookRefs(payload);
+  if (!isCompletedProviderStatus(normalizedProvider, payload)) {
+    const status = purchaseStatusFromProviderWebhook(normalizedProvider, payload);
+    if (status) {
+      return recordPurchaseIntentStatus({
+        provider: normalizedProvider,
+        intentId,
+        providerInvoiceId,
+        status,
+        metadata: payload
+      });
+    }
+    return { ignored: true, reason: 'not_completed' };
+  }
+
+  const paymentDetails =
+    extractProviderPaymentDetails(normalizedProvider, payload) ||
+    await fetchProviderInvoicePaymentDetails(normalizedProvider, providerInvoiceId, { fetchImpl });
 
   return completePurchaseIntent({
     provider: normalizedProvider,
     intentId,
     providerInvoiceId,
     providerPaymentId,
+    priceAmount: paymentDetails?.priceAmount ?? null,
+    priceCurrency: paymentDetails?.priceCurrency ?? null,
     metadata: payload
   });
 }

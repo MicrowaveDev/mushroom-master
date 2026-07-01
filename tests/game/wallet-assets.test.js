@@ -13,6 +13,8 @@ import {
   switchPortrait
 } from '../../app/server/services/game-service.js';
 import {
+  auditWalletMirror,
+  backfillMissingWalletBalancesFromPlayers,
   completePurchaseIntent,
   completeProviderWebhook,
   createPurchaseIntent,
@@ -161,6 +163,52 @@ test('[Req 4-Z] purchase providers create real checkout data when configured and
   });
 });
 
+test('[Req 4-Z] idempotent checkout retries reuse one provider invoice', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4016 });
+
+  await withEnv({
+    BTCPAY_SERVER_URL: 'https://btcpay.example',
+    BTCPAY_STORE_ID: 'store-1',
+    BTCPAY_API_KEY: 'api-key'
+  }, async () => {
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return {
+        ok: true,
+        async json() {
+          return { id: 'btcpay-retry-invoice', checkoutLink: 'https://btcpay.example/i/retry' };
+        }
+      };
+    };
+
+    const [first, second] = await Promise.all([
+      createPurchaseIntent(player.id, {
+        bundleId: 'coins_small',
+        provider: 'btcpay',
+        surface: 'web',
+        idempotencyKey: 'btcpay-retry',
+        fetchImpl
+      }),
+      createPurchaseIntent(player.id, {
+        bundleId: 'coins_small',
+        provider: 'btcpay',
+        surface: 'web',
+        idempotencyKey: 'btcpay-retry',
+        fetchImpl
+      })
+    ]);
+
+    assert.equal(calls, 1, 'same idempotency key must not create duplicate provider invoices');
+    assert.equal(first.id, second.id);
+    assert.equal(first.providerInvoiceId, 'btcpay-retry-invoice');
+    assert.equal(second.providerInvoiceId, 'btcpay-retry-invoice');
+    assert.equal(second.checkout.checkoutUrl, 'https://btcpay.example/i/retry');
+  });
+});
+
 test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
   const btcpayBody = '{"invoiceId":"invoice-1","type":"InvoiceSettled"}';
   const btcpaySig = crypto.createHmac('sha256', 'btcpay-secret').update(btcpayBody).digest('hex');
@@ -192,6 +240,32 @@ test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
     };
     assert.equal(verifyPaymentWebhookSignature(req, 'nowpayments'), true);
     assert.equal(verifyPaymentWebhookSignature({ ...req, header: () => 'bad' }, 'nowpayments'), false);
+  });
+
+  await withEnv({
+    NODE_ENV: 'development',
+    BTCPAY_WEBHOOK_SECRET: '',
+    PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV: ''
+  }, async () => {
+    const req = {
+      rawBody: btcpayBody,
+      body: JSON.parse(btcpayBody),
+      header() { return ''; }
+    };
+    assert.equal(verifyPaymentWebhookSignature(req, 'btcpay'), false);
+  });
+
+  await withEnv({
+    NODE_ENV: 'development',
+    BTCPAY_WEBHOOK_SECRET: '',
+    PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV: 'true'
+  }, async () => {
+    const req = {
+      rawBody: btcpayBody,
+      body: JSON.parse(btcpayBody),
+      header() { return ''; }
+    };
+    assert.equal(verifyPaymentWebhookSignature(req, 'btcpay'), true);
   });
 });
 
@@ -239,6 +313,98 @@ test('[Req 4-Z] provider webhooks ignore incomplete statuses and complete settle
   assert.equal((await getWalletState(player.id)).balance, 100);
 });
 
+test('[Req 4-Z] provider webhooks validate fiat amount and currency before granting', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4017 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'nowpayments',
+    surface: 'web',
+    idempotencyKey: 'nowpayments-price-check'
+  });
+
+  await assert.rejects(
+    () => completeProviderWebhook('nowpayments', {
+      payment_status: 'finished',
+      payment_id: intent.providerInvoiceId,
+      order_id: intent.id,
+      price_amount: '2.00',
+      price_currency: 'usd'
+    }),
+    (err) => err.statusCode === 400
+  );
+  assert.equal((await getWalletState(player.id)).balance, 0);
+
+  await completeProviderWebhook('nowpayments', {
+    payment_status: 'finished',
+    payment_id: intent.providerInvoiceId,
+    order_id: intent.id,
+    price_amount: '1.00',
+    price_currency: 'usd'
+  });
+  assert.equal((await getWalletState(player.id)).balance, 100);
+});
+
+test('[Req 4-Z] BTCPay settlement can verify invoice amount through provider lookup', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4018 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_medium',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'btcpay-lookup-check'
+  });
+
+  await withEnv({
+    BTCPAY_SERVER_URL: 'https://btcpay.example',
+    BTCPAY_STORE_ID: 'store-1',
+    BTCPAY_API_KEY: 'api-key'
+  }, async () => {
+    const calls = [];
+    await completeProviderWebhook('btcpay', {
+      type: 'InvoiceSettled',
+      invoiceId: intent.providerInvoiceId,
+      paymentId: 'btcpay-payment-lookup'
+    }, {
+      fetchImpl: async (url, options) => {
+        calls.push({ url, headers: options.headers });
+        return {
+          ok: true,
+          async json() { return { amount: '5.00', currency: 'USD' }; }
+        };
+      }
+    });
+
+    assert.match(calls[0].url, /\/api\/v1\/stores\/store-1\/invoices\//);
+    assert.equal(calls[0].headers.Authorization, 'token api-key');
+    assert.equal((await getWalletState(player.id)).balance, 550);
+  });
+});
+
+test('[Req 4-Z] terminal provider payment statuses are recorded without granting coins', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4019 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'nowpayments',
+    surface: 'web',
+    idempotencyKey: 'nowpayments-expired'
+  });
+
+  const recorded = await completeProviderWebhook('nowpayments', {
+    payment_status: 'expired',
+    payment_id: intent.providerInvoiceId,
+    order_id: intent.id
+  });
+
+  assert.equal(recorded.statusRecorded, true);
+  assert.equal(recorded.intent.status, 'expired');
+  assert.equal((await getWalletState(player.id)).balance, 0);
+
+  const stored = await query(`SELECT status FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
+  assert.equal(stored.rows[0].status, 'expired');
+});
+
 test('[Req 4-Y] concurrent wallet spends cannot overdraw the profile balance', async () => {
   await freshDb();
   const { player } = await createPlayer({ telegramId: 4013 });
@@ -273,6 +439,32 @@ test('[Req 4-Y] concurrent wallet spends cannot overdraw the profile balance', a
   assert.equal(fulfilled.length, 1, 'only one spend can win against a 500 balance');
   const wallet = await getWalletState(player.id);
   assert.equal(wallet.balance, 100);
+});
+
+test('[Req 4-Y] wallet audit reports missing rows and mirror drift', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4020 });
+  await query(`UPDATE players SET spore = 77 WHERE id = $1`, [player.id]);
+  await query(`DELETE FROM player_wallet_balances WHERE player_id = $1`, [player.id]);
+
+  const missing = await auditWalletMirror();
+  assert.equal(missing.total, 1);
+  assert.equal(missing.items[0].issue, 'missing_wallet_balance');
+
+  const backfill = await backfillMissingWalletBalancesFromPlayers();
+  assert.equal(backfill.inserted, 1);
+  assert.deepEqual(backfill.playerIds, [player.id]);
+  assert.equal((await auditWalletMirror()).total, 0);
+
+  await query(
+    `UPDATE player_wallet_balances SET balance = 12 WHERE player_id = $1 AND currency_code = 'soft_coin'`,
+    [player.id]
+  );
+  const drift = await auditWalletMirror();
+  assert.equal(drift.total, 1);
+  assert.equal(drift.items[0].issue, 'mirror_mismatch');
+  assert.equal(drift.items[0].legacyBalance, 77);
+  assert.equal(drift.items[0].walletBalance, 12);
 });
 
 test('[Req 4-Z] Telegram Stars pre-checkout validates pending intents and successful payment completes once', async () => {
