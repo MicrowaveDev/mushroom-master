@@ -15,6 +15,8 @@ import { repoRoot } from '../shared/repo-root.js';
 
 const requiredReferencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
 const requiredStateSheetPath = '.agent/home-field-workspace/raw/thalla_chibi.states.source.png';
+const generationQueuePath = 'app/shared/home-field/home-field-generation-queue.json';
+const generationQueueItemId = 'thalla-stage1-chibi-proof';
 const requiredFramePaths = ['down', 'up', 'left', 'right'].flatMap((dir) => [
   `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_0.source.png`,
   `.agent/home-field-workspace/raw/thalla_chibi.frame_idle_${dir}_1.source.png`,
@@ -91,10 +93,33 @@ function parseEnvFile(filePath) {
   return env;
 }
 
+function readQueueGate() {
+  const queueFile = path.join(repoRoot, generationQueuePath);
+  try {
+    const queue = JSON.parse(fs.readFileSync(queueFile, 'utf8'));
+    const item = (queue.items || []).find((entry) => entry.id === generationQueueItemId);
+    return {
+      queuePath: generationQueuePath,
+      itemStatus: item?.status || '',
+      methodGate: item?.methodGate || null
+    };
+  } catch (err) {
+    return {
+      queuePath: generationQueuePath,
+      itemStatus: '',
+      methodGate: null,
+      error: err.message
+    };
+  }
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const envFromFile = opts.envFile ? parseEnvFile(resolveInputPath(opts.envFile)) : {};
   const effectiveEnv = { ...process.env, ...envFromFile };
+  const queueGate = readQueueGate();
+  const methodGateStatus = queueGate.methodGate?.status || '';
+  const builtinMethodGateBlocked = /blocked|exhausted/i.test(methodGateStatus);
   const codexHome = effectiveEnv.CODEX_HOME || path.join(effectiveEnv.HOME || '', '.codex');
   const cliPath = path.join(codexHome, 'skills/.system/imagegen/scripts/image_gen.py');
   const hasCli = fileExists(cliPath);
@@ -106,7 +131,7 @@ function main() {
   const builtinDisabled = effectiveEnv.HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN === '1';
   const builtinDiskConfirmed = effectiveEnv.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE === '1';
   const builtinReferencesConfirmed = effectiveEnv.HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES === '1';
-  const builtinReady = builtinDiskConfirmed && builtinReferencesConfirmed && !builtinDisabled;
+  const builtinReady = builtinDiskConfirmed && builtinReferencesConfirmed && !builtinDisabled && !builtinMethodGateBlocked;
   const localInputs = parseLocalInputs(effectiveEnv.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS);
   const missingLocalInputs = localInputs.filter((inputPath) => !fileExists(path.resolve(repoRoot, inputPath)));
   const rejectedLocalInputs = localInputs.filter((inputPath) => normalizeRepoRelative(inputPath).startsWith('docs/reference/home-field/'));
@@ -127,7 +152,7 @@ function main() {
   console.log(`- OPENAI_API_KEY: ${hasPlainOpenAiApiKey ? 'present but ignored for Home Field image generation' : 'not used'}`);
   console.log(`- imagegen skill unavailable explicitly confirmed: ${apiFallbackUnavailableConfirmed ? 'yes' : 'no'}`);
   console.log(`- API fallback ready: ${cliReady ? 'yes' : 'no'}`);
-  console.log(`- built-in Codex Desktop imagegen proof-art ready: ${builtinReady ? 'yes' : 'no'}`);
+  console.log(`- built-in Codex Desktop imagegen proof-art ready: ${builtinReady ? 'yes' : `no${builtinMethodGateBlocked ? ' (blocked by queue method gate)' : ''}`}`);
   console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
   console.log(`- built-in imagegen reference-input explicitly confirmed: ${builtinReferencesConfirmed ? 'yes' : 'no'}`);
   console.log(`- local image inputs supplied: ${localInputs.length}`);
@@ -137,17 +162,41 @@ function main() {
   if (rejectedLocalInputs.length > 0) {
     console.log(`- rejected local image inputs: ${rejectedLocalInputs.join(', ')}`);
   }
+  if (queueGate.methodGate || queueGate.error) {
+    console.log('');
+    console.log('Queue method gate:');
+    console.log(`- source: ${queueGate.queuePath}`);
+    if (queueGate.error) {
+      console.log(`- read error: ${queueGate.error}`);
+    } else {
+      console.log(`- queue status: ${queueGate.itemStatus || 'not set'}`);
+      console.log(`- rollout: ${queueGate.methodGate.rollout || 'not set'}`);
+      console.log(`- status: ${methodGateStatus || 'not set'}`);
+      console.log(`- built-in same-context path blocked: ${builtinMethodGateBlocked ? 'yes' : 'no'}`);
+      if (queueGate.methodGate.reason) console.log(`- reason: ${queueGate.methodGate.reason}`);
+      if (queueGate.methodGate.allowedPath) console.log(`- allowed path: ${queueGate.methodGate.allowedPath}`);
+      if (queueGate.methodGate.stopIf) console.log(`- stop if: ${queueGate.methodGate.stopIf}`);
+    }
+  }
 
   if (!ok) {
     console.error('');
     console.error('Preflight failed: no allowed reference-capable way to produce image PNGs for the required repo paths.');
     console.error('');
     console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
-    console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach/use the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
+    if (builtinMethodGateBlocked) {
+      console.error('- a different reference-capable generation/editing method or explicit user-approved path that satisfies the queue method gate; do not reuse the exhausted built-in same-context staging path unchanged');
+    } else {
+      console.error('- HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 after confirming built-in image_gen writes discoverable PNG files and can attach/use the checked-in reference PNGs as actual image inputs from the same agent context that will run imagegen');
+    }
     console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
-    console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing proof source PNG paths separated by ${JSON.stringify(path.delimiter)}, not checked-in docs/reference style images`);
+    console.error(`- HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with existing supplied local proof source PNG paths outside docs/reference, separated by ${JSON.stringify(path.delimiter)}; checked-in docs/reference style images do not count`);
     console.error('');
-    console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. Prefer built-in/imagegen skill output when it can save files and attach/use reference inputs. For the built-in path, first make the local reference PNGs visible to the same imagegen context using the current imagegen skill instructions, then run the built-in image_gen call in that same context. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    if (builtinMethodGateBlocked) {
+      console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats, and the queue method gate is authoritative. Do not rerun this preflight with only HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1; those flags would only prove the exhausted same-context built-in path, not a different method or source-input path. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1.');
+    } else {
+      console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats. Prefer built-in/imagegen skill output when it can save files and attach/use reference inputs. For the built-in path, first make the local reference PNGs visible to the same imagegen context using the current imagegen skill instructions, then run the built-in image_gen call in that same context. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1. If the launcher/user explicitly confirmed built-in save plus reference-image input support for this same session, rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1.');
+    }
     console.error('');
     console.error('Plain OPENAI_API_KEY is intentionally ignored for Home Field image generation; set OPENAI_IMAGEGEN_API_KEY only for an explicit paid API fallback.');
     console.error('');
@@ -156,7 +205,9 @@ function main() {
       console.error('The checked-in docs/reference PNGs are style/reference material only. They are not supplied proof source PNGs and must not be used to bypass reference-capable imagegen.');
     }
     console.error('');
-    if (!builtinDisabled && !builtinReferencesConfirmed) {
+    if (builtinMethodGateBlocked) {
+      console.error('Do not run the built-in output diagnostic or built-in imagegen retry: the queue method gate blocks this unchanged built-in path before archive/imagegen.');
+    } else if (!builtinDisabled && !builtinReferencesConfirmed) {
       console.error('Do not run the built-in output diagnostic yet: it proves disk capture only and cannot unblock this Thalla proof until reference-image input binding is confirmed.');
       console.error('First provide a reference-capable imagegen path, supplied local proof source PNG inputs outside docs/reference, or explicit reference-capable CLI fallback.');
     } else if (!builtinDisabled && !builtinDiskConfirmed) {
@@ -171,6 +222,8 @@ function main() {
   console.log('Preflight passed: an image output path is available. It is safe to run `npm run game:home-field:archive-stale-chibi-proof -- thalla` and start the documented regeneration flow.');
   if (builtinReady) {
     console.log('Note: using Codex Desktop built-in image_gen only because disk save and reference-image input binding were explicitly confirmed; save and verify each generated PNG at the documented repo path before producer/validation steps.');
+  } else if (builtinMethodGateBlocked) {
+    console.log('Note: the queue method gate still blocks the exhausted built-in same-context path; this preflight passed through a non-built-in path.');
   }
 }
 

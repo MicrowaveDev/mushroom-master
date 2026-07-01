@@ -2356,7 +2356,7 @@ test('[home-field] chibi quality validator rejects soft low-contrast sheets', ()
   }
 });
 
-test('[home-field] chibi proof preflight blocks missing built-in reference binding before output probe', () => {
+test('[home-field] chibi proof preflight honors exhausted queue method gate before built-in retry', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
@@ -2377,22 +2377,26 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY: missing/);
   assert.match(result.stdout, /OPENAI_API_KEY: not used/);
   assert.match(result.stdout, /imagegen skill unavailable explicitly confirmed: no/);
-  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no/);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no \(blocked by queue method gate\)/);
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
   assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: no/);
+  assert.match(result.stdout, /Queue method gate:/);
+  assert.match(result.stdout, /status: blocked_builtin_same_context_reference_staging_exhausted/);
+  assert.match(result.stdout, /built-in same-context path blocked: yes/);
   assert.match(result.stderr, /Preflight failed/);
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stderr, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
-  assert.match(result.stderr, /same agent context that will run imagegen/);
+  assert.match(result.stderr, /different reference-capable generation\/editing method/);
+  assert.match(result.stderr, /do not reuse the exhausted built-in same-context staging path unchanged/);
   assert.match(result.stderr, /Fresh Codex sessions do not inherit HOME_FIELD_\* flags from prior chats/);
-  assert.match(result.stderr, /make the local reference PNGs visible to the same imagegen context/);
-  assert.match(result.stderr, /If the launcher\/user explicitly confirmed built-in save plus reference-image input support/);
-  assert.match(result.stderr, /rerun this preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(result.stderr, /queue method gate is authoritative/);
+  assert.match(result.stderr, /Do not rerun this preflight with only HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(result.stderr, /exhausted same-context built-in path/);
   assert.match(result.stderr, /Passive viewing is not enough: a view_image step counts only when/);
   assert.match(result.stderr, /following built-in image_gen call explicitly uses those visible images as references/);
-  assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
-  assert.match(result.stderr, /cannot unblock this Thalla proof until reference-image input binding is confirmed/);
-  assert.match(result.stderr, /supplied local proof source PNG inputs outside docs\/reference/);
+  assert.match(result.stderr, /Do not run the built-in output diagnostic or built-in imagegen retry/);
+  assert.match(result.stderr, /queue method gate blocks this unchanged built-in path/);
+  assert.match(result.stderr, /supplied local proof source PNG paths outside docs\/reference/);
   assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
   assert.doesNotMatch(result.stderr, /find-imagegen-output -- --since-minutes=5/);
   assert.match(result.stderr, /Do not archive stale files before preflight passes/);
@@ -2479,6 +2483,8 @@ test('[home-field] chibi proof preflight accepts explicit paid API fallback env 
     assert.match(result.stdout, /imagegen skill unavailable explicitly confirmed: yes/);
     assert.match(result.stdout, /API fallback ready: yes/);
     assert.match(result.stdout, /Preflight passed/);
+    assert.match(result.stdout, /queue method gate still blocks the exhausted built-in same-context path/);
+    assert.match(result.stdout, /preflight passed through a non-built-in path/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }
@@ -2510,7 +2516,7 @@ test('[home-field] chibi proof preflight rejects checked-in style references as 
   assert.match(result.stderr, /must not be used to bypass reference-capable imagegen/);
 });
 
-test('[home-field] chibi proof preflight allows output probe only after reference binding is confirmed', () => {
+test('[home-field] chibi proof preflight blocks output probe when queue method gate is exhausted', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
@@ -2527,14 +2533,16 @@ test('[home-field] chibi proof preflight allows output probe only after referenc
   });
 
   assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no \(blocked by queue method gate\)/);
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: no/);
   assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: yes/);
-  assert.match(result.stderr, /reference-image input binding is already confirmed/);
-  assert.match(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
-  assert.match(result.stderr, /find-imagegen-output -- --since-minutes=5/);
+  assert.match(result.stdout, /built-in same-context path blocked: yes/);
+  assert.match(result.stderr, /Do not run the built-in output diagnostic or built-in imagegen retry/);
+  assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
+  assert.doesNotMatch(result.stderr, /find-imagegen-output -- --since-minutes=5/);
 });
 
-test('[home-field] chibi proof preflight blocks built-in imagegen without confirmed reference inputs', () => {
+test('[home-field] chibi proof preflight blocks built-in imagegen when method gate is exhausted', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
@@ -2551,14 +2559,15 @@ test('[home-field] chibi proof preflight blocks built-in imagegen without confir
   });
 
   assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no \(blocked by queue method gate\)/);
   assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: yes/);
   assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: no/);
-  assert.match(result.stderr, /reference-image input binding/);
-  assert.match(result.stderr, /Do not run the built-in output diagnostic yet/);
+  assert.match(result.stdout, /built-in same-context path blocked: yes/);
+  assert.match(result.stderr, /queue method gate blocks this unchanged built-in path/);
   assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
 });
 
-test('[home-field] chibi proof preflight accepts confirmed built-in disk output and reference inputs', () => {
+test('[home-field] chibi proof preflight blocks exhausted built-in path even with confirmed disk output and reference inputs', () => {
   const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
     cwd: repoRoot,
     env: {
@@ -2574,11 +2583,14 @@ test('[home-field] chibi proof preflight accepts confirmed built-in disk output 
     encoding: 'utf8'
   });
 
-  assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: yes/);
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /built-in Codex Desktop imagegen proof-art ready: no \(blocked by queue method gate\)/);
+  assert.match(result.stdout, /built-in imagegen disk save explicitly confirmed: yes/);
   assert.match(result.stdout, /built-in imagegen reference-input explicitly confirmed: yes/);
-  assert.match(result.stdout, /Preflight passed/);
-  assert.match(result.stdout, /disk save and reference-image input binding were explicitly confirmed/);
+  assert.match(result.stdout, /built-in same-context path blocked: yes/);
+  assert.match(result.stderr, /Do not rerun this preflight with only HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
+  assert.match(result.stderr, /Do not archive stale files before preflight passes/);
+  assert.doesNotMatch(result.stdout, /Preflight passed/);
 });
 
 test('[home-field] chibi proof preflight accepts supplied local image inputs', () => {

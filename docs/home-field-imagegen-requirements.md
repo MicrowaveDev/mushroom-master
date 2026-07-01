@@ -87,6 +87,8 @@ Do not search neighboring repos for credentials, guess `mushroom-master/.env`, o
 
 If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
+The chibi preflight must also read the structured queue method gate. If the queue marks the built-in same-context path as blocked or exhausted, preflight must not pass from `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` alone, and it must not suggest the built-in disk-output diagnostic. In that state, only a non-built-in path such as explicit paid API fallback, supplied local proof source PNGs outside `docs/reference`, or a different queue-approved generation method can pass.
+
 If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed while reference-image input binding is already confirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files. Do not run this probe when reference-image input binding is unavailable; it proves file capture only and cannot unblock current Thalla proof art by itself.
 
 After that diagnostic render, run:

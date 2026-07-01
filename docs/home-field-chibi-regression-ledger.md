@@ -746,6 +746,21 @@ The active Stage 1 contract is:
 - `RUN_CHIBI_PROOF_PROMPT.md`, `next-chibi-proof`, `home-field-prompts.json`, imagegen requirements, candidate contract, agent flow, minimal production plan, and tests now say not to run the queue-backed built-in same-context reference-staging path again unchanged;
 - future runs must stop before archive/imagegen unless they have a different reference-capable generation/editing method, supplied local proof source PNGs outside `docs/reference`, or explicit user-approved fallback.
 
+### 48. Clean Queue Block Exposed Preflight Method-Gate Ambiguity
+
+**Symptom:** Rollout `codex-019f1ee5-f414-7cb3-ac5f-49a2407a6771` followed the short queue launcher after regression 47. It printed the blocked queue item, read the run prompt and imagegen requirements, ran `chibi-proof-context`, ran `next-chibi-proof`, and then ran `preflight-chibi-proof` without inventing an env file or fallback flags. Preflight failed cleanly because there was no `OPENAI_IMAGEGEN_API_KEY`, no `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`, no confirmed built-in save/reference flags, and no supplied local proof PNG inputs. No stale files were archived, no imagegen ran, no reference/state/candidate PNG was produced, and no app-facing PNG was overwritten.
+
+**What improved:** This was the intended blocked-run behavior. The agent did not spend a generation attempt, did not reuse stale `.agent` files, and reported that reference, state-sheet, candidate, evidence, preview, and verdict stages did not run.
+
+**What was still ambiguous:** The preflight helper was still only a capability checker. Its failure text listed `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` as a generic way forward, even though the queue method gate now says the queue-backed built-in same-context staging path is exhausted. A future agent could have treated those flags as a way to bypass the queue block.
+
+**Guardrails added:**
+
+- `preflight-chibi-proof` now reads `app/shared/home-field/home-field-generation-queue.json` and prints the current method-gate status;
+- if the queue marks the built-in path as blocked or exhausted, preflight does not pass from the built-in confirmation flags alone;
+- the preflight failure text now says not to rerun with only the built-in flags, and it suppresses the built-in disk-output diagnostic when the queue method gate blocks the path;
+- tests now cover the blocked queue gate, explicit paid API fallback, supplied local proof PNG inputs, and the old built-in flag bypass.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -785,3 +800,4 @@ The active Stage 1 contract is:
 35. Do not treat a passing reference helper run as production readiness. Use the same explicit fallback env file for preflight, archive, and reference generation when the paid API fallback is used, then continue only if the grouped `8x4` state sheet can also be generated with the approved reference PNG attached as an actual image input.
 36. Do not infer an env file for queue items that require `doNotInferEnvFile: true`. Built-in/imagegen runs do not need a paid API key; paid API fallback must prove `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` before any archive or imagegen step.
 37. Do not let plain `OPENAI_API_KEY` trigger Home Field image generation. It is intentionally ignored so general OpenAI credentials are not silently spent on imagegen.
+38. Do not let preflight capability flags override the queue method gate. If the queue marks a built-in method as blocked or exhausted, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` must not pass preflight for that exhausted path.
