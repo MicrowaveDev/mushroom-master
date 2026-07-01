@@ -7,7 +7,7 @@ import {
   STARTER_PRESET_VARIANTS
 } from '../game-data.js';
 import {
-  computeLevel,
+  computeCharacterLevel,
   createId,
   nowIso
 } from '../lib/utils.js';
@@ -95,7 +95,8 @@ export async function getPlayerState(playerId) {
 
   const progression = Object.fromEntries(
     playerMushroomsResult.rows.map((row) => {
-      const levelInfo = computeLevel(row.mycelium);
+      const characterXp = row.mycelium;
+      const levelInfo = computeCharacterLevel(characterXp);
       const level = levelInfo.level;
 
       const portraitVariants = freshPortraitVariants[row.mushroom_id] || [];
@@ -117,7 +118,7 @@ export async function getPlayerState(playerId) {
         row.mushroom_id,
         {
           mushroomId: row.mushroom_id,
-          mycelium: row.mycelium,
+          mycelium: characterXp,
           level,
           tier: getTier(level),
           currentLevelMycelium: levelInfo.current,
@@ -127,7 +128,7 @@ export async function getPlayerState(playerId) {
           draws: row.draws,
           activePortrait: activePortraitId,
           activePortraitUrl: activePortraitDef?.path || '',
-          characterXp: row.mycelium,
+          characterXp,
           currentLevelCharacterXp: levelInfo.current,
           nextLevelCharacterXp: levelInfo.next,
           portraits: portraitVariants.map(v => shapePortraitVariant({
@@ -452,8 +453,8 @@ export async function switchPreset(playerId, mushroomId, presetId) {
     `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
     [playerId, mushroomId]
   );
-  const mycelium = row.rowCount ? row.rows[0].mycelium : 0;
-  if (computeLevel(mycelium).level < variant.requiredLevel) throw httpError('Level too low', 403);
+  const characterXp = row.rowCount ? row.rows[0].mycelium : 0;
+  if (computeCharacterLevel(characterXp).level < variant.requiredLevel) throw httpError('Level too low', 403);
   await query(
     `UPDATE player_mushrooms SET active_preset = $1 WHERE player_id = $2 AND mushroom_id = $3`,
     [presetId, playerId, mushroomId]

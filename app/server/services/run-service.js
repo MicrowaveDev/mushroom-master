@@ -23,14 +23,15 @@ import {
   portraitUrl
 } from '../game-data.js';
 import {
-  computeLevel,
+  computeCharacterLevel,
   createId,
   createRng,
   dayKey,
   expectedScore,
   kFactor,
   nowIso,
-  parseJson
+  parseJson,
+  runCurrencyFields
 } from '../lib/utils.js';
 import { shuffleWithRng, simulateBattle } from './battle-engine.js';
 import {
@@ -66,6 +67,14 @@ function rewardMultiplier() {
   if (process.env.NODE_ENV === 'production') return 1;
   const n = parseInt(process.env.REWARD_MULTIPLIER ?? '1', 10);
   return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+function shapeRunPlayer(fields) {
+  const { coins, ...rest } = fields;
+  return {
+    ...rest,
+    ...runCurrencyFields(coins)
+  };
 }
 
 // getShopState / saveShopState (legacy player_shop_state blob) deleted
@@ -136,7 +145,7 @@ export async function startGameRun(playerId, mode = 'solo') {
     const myceliumResult = activeMushroomId
       ? await client.query(`SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`, [playerId, activeMushroomId])
       : { rowCount: 0 };
-    const playerLevel = myceliumResult.rowCount ? computeLevel(myceliumResult.rows[0].mycelium).level : 1;
+    const playerLevel = myceliumResult.rowCount ? computeCharacterLevel(myceliumResult.rows[0].mycelium).level : 1;
     const eligibleCharItems = activeMushroomId ? getEligibleCharacterItems(activeMushroomId, playerLevel) : [];
 
     const rng = createRng(`${runId}:shop:1`);
@@ -200,7 +209,7 @@ export async function startGameRun(playerId, mode = 'solo') {
       shopOffer,
       starterItems,
       loadoutItems,
-      player: {
+      player: shapeRunPlayer({
         id: runPlayerId,
         playerId,
         mushroomId: activeMushroomId,
@@ -209,7 +218,7 @@ export async function startGameRun(playerId, mode = 'solo') {
         losses: 0,
         livesRemaining: STARTING_LIVES,
         coins: initialCoins
-      }
+      })
     };
   });
 }
@@ -247,7 +256,7 @@ async function shapeActiveGameRun(row, playerId) {
     shopOffer,
     pendingFusions,
     loadoutItems: loadoutRows,
-    player: {
+    player: shapeRunPlayer({
       id: row.grp_id,
       playerId,
       mushroomId: row.mushroom_id || null,
@@ -256,7 +265,7 @@ async function shapeActiveGameRun(row, playerId) {
       losses: row.losses,
       livesRemaining: row.lives_remaining,
       coins: row.coins
-    },
+    }),
     rounds: roundsResult.rows.map((r) => ({
       id: r.id,
       roundNumber: r.round_number,
@@ -451,7 +460,7 @@ export async function abandonGameRun(playerId, gameRunId) {
       startedAt: run.started_at,
       endedAt: now,
       endReason: 'abandoned',
-      player: {
+      player: shapeRunPlayer({
         id: callerRow.id,
         playerId,
         completedRounds: callerRow.completed_rounds,
@@ -459,7 +468,7 @@ export async function abandonGameRun(playerId, gameRunId) {
         losses: callerRow.losses,
         livesRemaining: callerRow.lives_remaining,
         coins: callerRow.coins
-      },
+      }),
       season: seasonResults[playerId]?.season || null,
       achievements: seasonResults[playerId]?.achievements || []
     };
@@ -596,7 +605,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     }
   }
 
-  const player = {
+  const player = shapeRunPlayer({
     id: viewerPlayer.id,
     playerId: viewerPlayer.player_id,
     mushroomId: viewerMushroomId,
@@ -605,7 +614,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
     losses: viewerPlayer.losses,
     livesRemaining: viewerPlayer.lives_remaining,
     coins: viewerPlayer.coins
-  };
+  });
 
   return {
     id: run.id,
@@ -632,7 +641,7 @@ export async function getGameRun(gameRunId, viewerPlayerId) {
       ratingAfter: lastViewerRound.rating_after
     } : null,
     shopOffer,
-    players: playersResult.rows.map((r) => ({
+    players: playersResult.rows.map((r) => shapeRunPlayer({
       id: r.id,
       playerId: r.player_id,
       mushroomId: mushroomByPlayer.get(r.player_id) || null,
@@ -884,7 +893,7 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
       wins: newWins,
       losses: newLosses,
       livesRemaining: newLives,
-      coins: newCoins,
+      ...runCurrencyFields(newCoins),
       mushroomId,
       lastRound: {
         roundNumber,
@@ -1148,8 +1157,8 @@ export async function resolveRound(playerId, gameRunId) {
       [playerId, mushroomId, myceliumAwarded]
     );
 
-    const levelInfoBefore = computeLevel(myceliumBefore);
-    const levelInfoAfter = computeLevel(myceliumBefore + myceliumAwarded);
+    const levelInfoBefore = computeCharacterLevel(myceliumBefore);
+    const levelInfoAfter = computeCharacterLevel(myceliumBefore + myceliumAwarded);
     const levelBefore = levelInfoBefore.level;
     const levelAfter = levelInfoAfter.level;
 
@@ -1233,13 +1242,13 @@ export async function resolveRound(playerId, gameRunId) {
         battle: await getBattle(battle.id, playerId, client),
         shopOffer: newOffer,
         loadoutItems,
-        player: {
+        player: shapeRunPlayer({
           completedRounds,
           wins: newWins,
           losses: newLosses,
           livesRemaining: newLives,
           coins: newCoins
-        },
+        }),
         lastRound: {
           roundNumber,
           battleId: battle.id,
@@ -1277,13 +1286,13 @@ export async function resolveRound(playerId, gameRunId) {
       season: runEnded ? recap.season : null,
       achievements: runEnded ? recap.achievements : [],
       battle: await getBattle(battle.id, playerId, client),
-      player: {
+      player: shapeRunPlayer({
         completedRounds,
         wins: newWins,
         losses: newLosses,
         livesRemaining: newLives,
         coins: newCoins
-      },
+      }),
       lastRound: {
         roundNumber,
         battleId: battle.id,
@@ -1473,7 +1482,7 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
         [pid, currentDay]
       );
 
-      playerResults[pid] = { id: grpId, playerId: pid, coins: initialCoins, shopOffer };
+      playerResults[pid] = { id: grpId, playerId: pid, ...runCurrencyFields(initialCoins), shopOffer };
     }
 
     await client.query(

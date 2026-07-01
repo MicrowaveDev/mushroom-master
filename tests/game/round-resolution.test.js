@@ -51,6 +51,12 @@ const loadout = [
   { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
 ];
 
+function assertRunCurrencyAliases(subject, expected) {
+  assert.equal(subject.coins, expected);
+  assert.equal(subject.runCurrency, expected);
+  assert.equal(subject.runCoins, expected);
+}
+
 async function setupPlayerWithRun(overrides = {}) {
   const session = await createPlayer(overrides);
   await selectActiveMushroom(session.player.id, 'thalla');
@@ -131,7 +137,7 @@ test('[Req 1-D, 9-A] resolving a round updates wins or losses and pays rewards',
   assert.equal(stateAfter.player.spore, sporeBefore + expectedReward.spore);
 
   // Check coins include next round income
-  assert.equal(result.player.coins, ROUND_INCOME[0] + ROUND_INCOME[1]);
+  assertRunCurrencyAliases(result.player, ROUND_INCOME[0] + ROUND_INCOME[1]);
 });
 
 test('[Req 10-A] Elo is updated per round in solo mode', async () => {
@@ -271,7 +277,9 @@ test('[Req 1-A, 1-E, 11-A] solo run reaches max rounds while artifact rows updat
   let lastResult = null;
   for (let round = 1; round <= 9; round += 1) {
     await forceShopOffer(run.id, playerId, round, [cheap.id]);
+    const beforeBuy = await getActiveGameRun(playerId);
     const bought = await buyRunShopItem(playerId, run.id, cheap.id);
+    assertRunCurrencyAliases(bought, beforeBuy.player.coins - 1);
 
     const slot = placementSlots[round - 1];
     if (slot) {
@@ -350,7 +358,7 @@ test('[Req 4-G] shop refresh costs 1 coin for first 3 refreshes', async () => {
   const result1 = await refreshRunShop(playerId, run.id);
   assert.equal(result1.refreshCost, 1);
   assert.equal(result1.refreshCount, 1);
-  assert.equal(result1.coins, ROUND_INCOME[0] - 1);
+  assertRunCurrencyAliases(result1, ROUND_INCOME[0] - 1);
 
   const result2 = await refreshRunShop(playerId, run.id);
   assert.equal(result2.refreshCost, 1);
@@ -399,7 +407,7 @@ test('[Req 4-J] sell item same round gives full refund', async () => {
   // The player has 'spore_needle' (price 1) and 'bark_plate' (price 1) in loadout
   const result = await sellRunItem(playerId, run.id, 'spore_needle');
   assert.equal(result.sellPrice, 1);
-  assert.equal(result.coins, ROUND_INCOME[0] + 1);
+  assertRunCurrencyAliases(result, ROUND_INCOME[0] + 1);
 });
 
 test('sell non-existent item rejects', async () => {
@@ -695,7 +703,7 @@ test('[Req 4-H] first shop refresh costs 1 coin (not free)', async () => {
   const result = await refreshRunShop(playerId, run.id);
 
   assert.equal(result.refreshCost, 1, 'First refresh should cost 1 coin');
-  assert.equal(result.coins, coinsBefore - 1, 'Coins should decrease by 1');
+  assertRunCurrencyAliases(result, coinsBefore - 1);
 });
 
 test('[Req 4-G] refresh cost escalates after SHOP_REFRESH_CHEAP_LIMIT', async () => {
@@ -858,15 +866,14 @@ test('[Req 4-A] round income matches ROUND_INCOME table for each round', async (
 
   // Round 1 starts with ROUND_INCOME[0]
   const r1 = await getActiveGameRun(playerId);
-  assert.equal(r1.player.coins, ROUND_INCOME[0], 'Round 1 coins should equal ROUND_INCOME[0]');
+  assertRunCurrencyAliases(r1.player, ROUND_INCOME[0]);
 
   // Resolve round 1 and check round 2 coins include carry-forward + ROUND_INCOME[1]
   const result = await resolveRound(playerId, run.id);
   if (result.status === 'active') {
     const r2 = await getActiveGameRun(playerId);
     const expectedR2 = ROUND_INCOME[0] + ROUND_INCOME[1]; // unspent R1 + R2 income
-    assert.equal(r2.player.coins, expectedR2,
-      `Round 2 coins should be ${expectedR2} (carried ${ROUND_INCOME[0]} + income ${ROUND_INCOME[1]})`);
+    assertRunCurrencyAliases(r2.player, expectedR2);
   }
 });
 

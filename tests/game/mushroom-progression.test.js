@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeLevel, MYCELIUM_LEVEL_CURVE } from '../../app/server/lib/utils.js';
+import {
+  CHARACTER_XP_LEVEL_CURVE,
+  MYCELIUM_LEVEL_CURVE,
+  computeCharacterLevel,
+  computeLevel
+} from '../../app/server/lib/utils.js';
 import {
   getTier,
   WIKI_TIER_THRESHOLDS,
@@ -78,6 +83,13 @@ test('[Req 14-A] MYCELIUM_LEVEL_CURVE has 19 entries (levels 2–20)', () => {
   assert.equal(MYCELIUM_LEVEL_CURVE.length, 19);
   assert.equal(MYCELIUM_LEVEL_CURVE[0], 100);
   assert.equal(MYCELIUM_LEVEL_CURVE[18], 4000);
+});
+
+test('[Req 14-A, 14-H] character XP level helpers preserve legacy mycelium compatibility', () => {
+  assert.deepEqual(CHARACTER_XP_LEVEL_CURVE, MYCELIUM_LEVEL_CURVE);
+  for (const characterXp of [0, 99, 100, 349, 350, 1199, 1200, 4000, 9999]) {
+    assert.deepEqual(computeCharacterLevel(characterXp), computeLevel(characterXp));
+  }
 });
 
 // --- getTier ---
@@ -177,6 +189,9 @@ test('[Req 14-B] getPlayerState progression includes tier field', async () => {
   assert.ok(prog, 'thalla progression exists');
   assert.ok(prog.level >= 5, `level must be ≥ 5 after earning ≥350 mycelium, got ${prog.level}`);
   assert.equal(prog.tier, 'mycel');
+  assert.equal(prog.characterXp, prog.mycelium);
+  assert.equal(prog.currentLevelCharacterXp, prog.currentLevelMycelium);
+  assert.equal(prog.nextLevelCharacterXp, prog.nextLevelMycelium);
 });
 
 // --- Portrait variants (Option 6) ---

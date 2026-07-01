@@ -17,6 +17,12 @@ const loadout = [
   { artifactId: 'bark_plate', x: 1, y: 0, width: 1, height: 1 }
 ];
 
+function assertRunCurrencyAliases(subject, expected) {
+  assert.equal(subject.coins, expected);
+  assert.equal(subject.runCurrency, expected);
+  assert.equal(subject.runCoins, expected);
+}
+
 test('[Req 1-A, 1-C, 4-A] starting a solo run creates an active game run', async () => {
   await freshDb();
   const session = await createPlayer();
@@ -30,7 +36,7 @@ test('[Req 1-A, 1-C, 4-A] starting a solo run creates an active game run', async
   assert.equal(run.player.livesRemaining, STARTING_LIVES);
   assert.equal(run.player.wins, 0);
   assert.equal(run.player.losses, 0);
-  assert.equal(run.player.coins, ROUND_INCOME[0]);
+  assertRunCurrencyAliases(run.player, ROUND_INCOME[0]);
   assert.ok(run.shopOffer.length > 0);
   assert.ok(Array.isArray(run.loadoutItems), 'start response should include current-round loadout rows');
   assert.equal(run.loadoutItems.length, 3);
@@ -98,6 +104,7 @@ test('getActiveGameRun returns the active run', async () => {
   assert.equal(active.id, run.id);
   assert.equal(active.mode, 'solo');
   assert.equal(active.status, 'active');
+  assertRunCurrencyAliases(active.player, ROUND_INCOME[0]);
   assert.deepEqual(active.rounds, []);
 });
 
@@ -112,6 +119,7 @@ test('[Req 1-F] abandoning a run sets status to abandoned and clears active flag
   assert.equal(abandoned.status, 'abandoned');
   assert.equal(abandoned.endReason, 'abandoned');
   assert.ok(abandoned.endedAt);
+  assertRunCurrencyAliases(abandoned.player, ROUND_INCOME[0]);
 
   const active = await getActiveGameRun(session.player.id);
   assert.equal(active, null);
@@ -141,6 +149,8 @@ test('getGameRun returns run summary for participant', async () => {
   assert.equal(details.id, run.id);
   assert.equal(details.players.length, 1);
   assert.equal(details.players[0].playerId, session.player.id);
+  assertRunCurrencyAliases(details.player, ROUND_INCOME[0]);
+  assertRunCurrencyAliases(details.players[0], ROUND_INCOME[0]);
   assert.deepEqual(details.rounds, []);
 });
 
@@ -184,6 +194,8 @@ test('getGameRun returns persisted completed-run recap for refreshable runComple
 
   assert.equal(details.status, 'completed');
   assert.equal(details.player.completedRounds, 1);
+  assertRunCurrencyAliases(details.player, 2);
+  assertRunCurrencyAliases(details.players[0], 2);
   assert.equal(details.lastRound.roundNumber, 1);
   assert.deepEqual(details.lastRound.rewards, { spore: 1, mycelium: 5 });
   assert.equal(details.season.runPoints, 1);

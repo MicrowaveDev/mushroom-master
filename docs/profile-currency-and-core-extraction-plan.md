@@ -2,11 +2,13 @@
 
 > **Reading guide (updated 2026-07-01 post-implementation review).** This document
 > is a historical ship record plus forward plan, not a live status board. The
-> shipped, test-backed foundation is Phases **1-5, 7, 7A, and 7B**. Phase **6**
-> (the `mycelium`→`character_xp` / `coins`→`run_currency` rename) is the **next
-> local implementation lane**, but it is not shipped yet: only a thin
-> `characterXp` read-alias over the unchanged `mycelium` column exists today —
-> see the note in Phase 6. The
+> shipped, test-backed foundation is Phases **1-5, 6A-6C, 7, 7A, and 7B**.
+> Phase **6A-6C** shipped as a compatibility-safe neutral naming pass:
+> `characterXp` is the primary progression helper/export with legacy
+> `mycelium` aliases, and run player/shop responses expose `runCurrency` /
+> `runCoins` while keeping legacy `coins`. The physical database rename
+> (`mycelium`→`character_xp`, `coins`→`run_currency`) remains optional Phase
+> **6D** work, not a launch blocker. The
 > authoritative current backlog is the **Remaining launch gates** under Phase 7B
 > plus the Deferred list. Phases **8-15** (extraction into `backpack-game-core`)
 > are not started, by design. Shipped runtime contracts (wallet ledger, purchase
@@ -16,11 +18,12 @@
 > See the **Post-Implementation Review** section for the verified state and
 > current remaining work.
 
-**Status:** Phases 1-5, 7, 7A, and 7B implemented as the Mushroom Battles
+**Status:** Phases 1-5, 6A-6C, 7, 7A, and 7B implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
-2026-06-23; Phase 7B paid-readiness/UI hardening on 2026-07-01). Phase 6
-(currency / XP rename) is next for local implementation and should be done as a
-compatibility-safe internal/API naming pass before any database-breaking rename.
+2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
+on 2026-07-01). Phase 6D remains an optional database-breaking rename and
+should only happen after external consumers no longer depend on raw legacy
+column names.
 Real-money rollout still requires provider sandbox/live validation,
 product/legal support, terms/refund/age/content compliance gates, and
 operational handling for post-completion refunds/reversals/late crypto edge
@@ -35,8 +38,9 @@ otherwise.
 
 ## Implementation Status
 
-Phases 1-5, 7, 7A, and 7B are complete for the Mushroom Battles compatibility
-milestone (Phase 6 is next and not yet shipped — see the naming bullet below):
+Phases 1-5, 6A-6C, 7, 7A, and 7B are complete for the Mushroom Battles
+compatibility milestone (Phase 6D is optional and deferred — see the naming
+bullet below):
 
 - Requirements now define three separate ledgers: temporary run coins,
   profile wallet currency, and character XP / mastery.
@@ -50,13 +54,13 @@ milestone (Phase 6 is next and not yet shipped — see the naming bullet below):
   skins without binding purchase ownership to a character.
 - The backend supports direct asset purchases when gacha is off and an
   environment-gated gacha MVP that rolls an unowned asset from configured packs.
-- API responses now expose `wallet`, `asset`, and a `characterXp` **read alias**
-  (a thin wrapper over the unchanged `mycelium` column via
-  `computeCharacterLevel` and `characterXp: row.mycelium`), while preserving
-  legacy response aliases. The underlying Phase 6 database/code rename
-  (`mycelium`→`character_xp`, `coins`→`run_currency`) has **not** been
-  performed; the columns, models, and `MYCELIUM_LEVEL_CURVE` still use the
-  legacy names.
+- API responses now expose `wallet`, `asset`, `characterXp`, and run-currency
+  aliases (`runCurrency`, `runCoins`) while preserving legacy response aliases.
+  `CHARACTER_XP_LEVEL_CURVE` / `computeCharacterLevel` are the primary helper
+  exports, with `MYCELIUM_LEVEL_CURVE` / `computeLevel` kept as compatibility
+  wrappers over the unchanged database columns. The underlying Phase 6D
+  database rename (`mycelium`→`character_xp`, `coins`→`run_currency`) has
+  **not** been performed.
 - Backend and UI tests cover wallet earns/spends, atomic spend rejection,
   provider checkout creation and retry reuse, provider completion,
   amount/currency mismatch rejection, terminal payment states, direct purchase,
@@ -88,8 +92,10 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after phase 7B: Phase 6 neutral naming. Deferred beyond that:
-physical removal of legacy compatibility fields, multi-item pack guarantees,
+Next local lane after Phase 6A-6C: extract a current runtime contract reference
+doc and start reusable-core extraction planning. Deferred beyond that: optional
+Phase 6D database renames / physical removal of legacy compatibility fields,
+multi-item pack guarantees,
 duplicate burning, marketplace trading, database managed pack catalogs, an
 expanded terms/support frontend, provider refund and reversal handling,
 distributed payment mutation hardening, and reusable-core extraction into
@@ -100,9 +106,9 @@ distributed payment mutation hardening, and reusable-core extraction into
 Updated 2026-07-01 from a read-through of the current `main` implementation in
 `wallet-service.js`, `asset-service.js`, `create-app.js`, `bot-gateway.js`,
 `web/src/composables/useCustomization.js`, `web/src/pages/HomeScreen.js`, and
-`tests/game/wallet-assets.test.js`; refreshed after Phase 7B implementation on
-2026-07-01. This review intentionally does not treat the plan's own status text
-as evidence.
+`tests/game/wallet-assets.test.js`; refreshed after Phase 7B and Phase 6A-6C
+implementation on 2026-07-01. This review intentionally does not treat the
+plan's own status text as evidence.
 
 ### Verified as shipped
 
@@ -135,6 +141,10 @@ as evidence.
 - The home screen has a wallet bundle/provider picker sourced from
   `/api/wallet/bundles`, opens Telegram invoice links or crypto checkout URLs,
   and uses the backend `rollAvailable` flag to roll eligible gacha portraits.
+- Neutral compatibility naming is shipped for the reusable-core boundary:
+  progression code uses `CHARACTER_XP_LEVEL_CURVE` / `computeCharacterLevel`,
+  profile progression exposes `characterXp`, and run/shop response payloads
+  expose `runCurrency` plus `runCoins` alongside legacy `coins`.
 - All `players.spore` reward writes routed through `grantCurrency` with
   persistent idempotency keys in `app/server/services/run-service.js`.
 - Requirements 4-X / 4-Y / 4-Z and the portrait-purchase model in
@@ -143,8 +153,9 @@ as evidence.
 
 ### Gaps and corrections (now reflected above)
 
-1. **Phase 6 rename is not done** beyond the `characterXp` read alias — it is
-   now the next local implementation lane.
+1. **Phase 6D database rename is not done.** This is deliberate: legacy columns
+   remain in place while API and service aliases provide the reusable-core
+   boundary.
 2. **Provider sandbox/live validation is not done.** The code paths are covered
    by local fake-provider tests, but BTCPay/NOWPayments credentials, callback
    payloads, and Telegram Stars invoice behavior still need sandbox/live
@@ -165,18 +176,17 @@ as evidence.
 6. **The current gacha is intentionally MVP-only.** It is one-result-per-roll,
    static/env configured, no pity/guarantees, no duplicate inventory, no burn
    exchange, no marketplace, and no database-managed seasons/collections.
-7. **Core extraction is still not started.** The clean reusable-core step
-    remains blocked by the Phase 6 naming cleanup or by a deliberate adapter
-    boundary that prevents `mycelium`, `spore`, Mushroom portraits, Telegram
-    auth, Sequelize models, and home-field code from leaking into
-    `backpack-game-core`.
+7. **Core extraction is still not started.** The next step is choosing the first
+   pure helper cluster to extract while keeping `spore`, Mushroom portraits,
+   Telegram auth, Sequelize models, and home-field code out of
+   `backpack-game-core`.
 
 ### Recommended follow-ups
 
 - Keep this plan as a historical ship record; treat the Deferred list and the
   Phase 7B **Remaining launch gates** as the live backlog.
-- Implement Phase 6 next as an internal/API compatibility pass, not as a
-  one-shot database-breaking migration.
+- Keep the optional Phase 6D database rename separate from reusable-core
+  extraction unless raw legacy column names become a real blocker.
 - Before any paid pilot, the true blockers are provider sandbox/live validation,
   final terms/support/refund and age/content compliance, refund/reversal/late
   crypto operations, and distributed mutation hardening if more than one app
@@ -757,19 +767,21 @@ Deferred mechanics, with schema direction:
 
 ## Phase 6 - Generalize Reward And Progression Names
 
-> **Status (updated 2026-07-01): next local implementation lane.** Only the
-> `characterXp` read alias shipped so far (`computeCharacterLevel`,
-> `characterXp: row.mycelium`). The database/code rename below —
-> `mycelium`→`character_xp`, `coins`→`run_currency`, and the config/helper
-> renames — has not been performed. The next pass should make internal names and
-> API aliases reusable while keeping legacy database columns and response fields
-> stable until tests prove the compatibility boundary.
+> **Status (updated 2026-07-01): Phases 6A-6C shipped.** The reusable-core
+> compatibility boundary is now in place without a database-breaking rename:
+> `CHARACTER_XP_LEVEL_CURVE` / `computeCharacterLevel` are primary helper names,
+> legacy `MYCELIUM_LEVEL_CURVE` / `computeLevel` remain wrappers, profile
+> progression exposes `characterXp`, and run player/shop payloads expose
+> `runCurrency` / `runCoins` alongside legacy `coins`. Phase 6D physical column
+> renames remain optional later work.
 
 Do this after the wallet is real, so the rename has a stable destination. Do
 not combine this with provider sandbox validation, refund tooling, paid
 compliance gates, or `backpack-game-core` extraction.
 
 ### Phase 6A - Freeze Compatibility Contract
+
+Status: **Complete for the current API surface.**
 
 - Inventory every externally visible legacy field before editing:
   `progression[].mycelium`, `progression[].characterXp`, run player `coins`,
@@ -784,6 +796,9 @@ compliance gates, or `backpack-game-core` extraction.
     neutral helpers.
 
 ### Phase 6B - Character XP Internal Naming
+
+Status: **Complete for shared helper exports and touched services.** Raw SQL
+column names and historical reward fields intentionally keep `mycelium`.
 
 - Rename character-bound `mycelium` concepts in service code to
   `characterXp` / `character_xp` where they are not database column names.
@@ -803,6 +818,10 @@ compliance gates, or `backpack-game-core` extraction.
 
 ### Phase 6C - Run Currency Internal Naming
 
+Status: **Complete for backend run/shop API aliases.** The current Mushroom UI
+can continue reading `coins`; core consumers can read `runCurrency` or
+`runCoins`.
+
 - Rename temporary run-shop currency concepts in service/frontend code to
   `runCurrency` or `runCoins` where they are not database column names.
 - Keep `game_run_players.coins` and API `player.coins` as compatibility aliases
@@ -814,9 +833,8 @@ compliance gates, or `backpack-game-core` extraction.
 
 ### Phase 6D - Optional Database Rename, Later
 
-Only start this after Phases 6A-6C are green and after confirming the frontend,
-tests, and any analytics/export consumers no longer depend on raw legacy column
-names.
+Status: **Deferred.** Only start this after confirming the frontend, tests, and
+any analytics/export consumers no longer depend on raw legacy column names.
 
 - Rename database fields with compatibility migrations or dual-read/dual-write
   shims:
@@ -833,6 +851,9 @@ names.
 
 ### Phase 6 Verification
 
+- Executed on 2026-07-01:
+  `node --test tests/game/mushroom-progression.test.js tests/game/game-run.test.js tests/game/round-resolution.test.js`
+  (99 tests passed).
 - Focused unit tests for reward projection, run player payloads, and wallet
   separation.
 - `node --test tests/game/wallet-assets.test.js`
@@ -1141,16 +1162,17 @@ Recommended initial choices:
    callback amount/currency validation, terminal status recording,
    fail-closed unsigned webhooks outside tests, wallet audit/backfill script,
    wallet bundle/provider picker, and rollable portrait UI.
-10. Phase 6 neutral naming pass: freeze compatibility contract, rename
-   character XP and run currency internals/API aliases while keeping legacy
-   DB columns and response aliases, then decide whether a later database rename
-   is worth the migration risk.
+10. Phase 6A-6C neutral naming pass: freeze compatibility contract, add
+   character XP and run currency helper/API aliases while keeping legacy DB
+   columns and response aliases. **Done 2026-07-01.**
 11. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
 12. Adapterize and optionally extract battle simulation.
 13. Add hub/submodule metadata and final cross-repo verification.
-14. Paid rollout readiness when external inputs are available: real provider
+14. Optional Phase 6D database rename only if raw legacy column names become a
+   real extraction or analytics blocker.
+15. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-15. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+16. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.

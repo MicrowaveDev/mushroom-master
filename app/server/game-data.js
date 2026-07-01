@@ -6,8 +6,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MYCELIUM_LEVEL_CURVE } from './lib/utils.js';
-export { MYCELIUM_LEVEL_CURVE };
+import { CHARACTER_XP_LEVEL_CURVE, MYCELIUM_LEVEL_CURVE } from './lib/utils.js';
+export { CHARACTER_XP_LEVEL_CURVE, MYCELIUM_LEVEL_CURVE };
 
 const __gameDataFile = fileURLToPath(import.meta.url);
 const __publicDir = path.resolve(path.dirname(__gameDataFile), '..', '..', 'web', 'public');

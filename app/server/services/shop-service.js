@@ -12,11 +12,12 @@ import {
   SHOP_OFFER_SIZE
 } from '../game-data.js';
 import {
-  computeLevel,
+  computeCharacterLevel,
   createId,
   createRng,
   nowIso,
-  parseJson
+  parseJson,
+  runCurrencyFields
 } from '../lib/utils.js';
 import { isBag } from './artifact-helpers.js';
 import { bagsContainingItem } from './loadout-utils.js';
@@ -47,7 +48,7 @@ export async function lookupEligibleCharacterItems(client, playerId, mode, gameR
     `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
     [playerId, mushroomId]
   );
-  let level = myceliumResult.rowCount ? computeLevel(myceliumResult.rows[0].mycelium).level : 1;
+  let level = myceliumResult.rowCount ? computeCharacterLevel(myceliumResult.rows[0].mycelium).level : 1;
 
   if (mode === 'challenge') {
     const oppResult = await client.query(
@@ -66,7 +67,9 @@ export async function lookupEligibleCharacterItems(client, playerId, mode, gameR
           `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
           [oppPlayerId, oppMushroomId]
         );
-        const oppLevel = oppMyceliumResult.rowCount ? computeLevel(oppMyceliumResult.rows[0].mycelium).level : 1;
+        const oppLevel = oppMyceliumResult.rowCount
+          ? computeCharacterLevel(oppMyceliumResult.rows[0].mycelium).level
+          : 1;
         level = Math.min(level, oppLevel);
       }
     }
@@ -195,7 +198,7 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
       freshPurchase: true
     });
 
-    return { id: newRowId, coins: newCoins, artifactId, price, shopOffer: newOffer };
+    return { id: newRowId, ...runCurrencyFields(newCoins), artifactId, price, shopOffer: newOffer };
   }));
 }
 
@@ -251,7 +254,7 @@ export async function refreshRunShop(playerId, gameRunId) {
     );
 
     return {
-      coins: newCoins,
+      ...runCurrencyFields(newCoins),
       shopOffer: newOffer,
       refreshCount: shop.refresh_count + 1,
       refreshCost: cost
@@ -389,6 +392,6 @@ export async function sellRunItem(playerId, gameRunId, target) {
       [grp.id, newCoins]
     );
 
-    return { id: deleted.id, coins: newCoins, sellPrice, artifactId: resolvedArtifactId };
+    return { id: deleted.id, ...runCurrencyFields(newCoins), sellPrice, artifactId: resolvedArtifactId };
   }));
 }

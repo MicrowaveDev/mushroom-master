@@ -85,41 +85,50 @@ export function kFactor(rating, ratedBattles, mode = 'standard') {
   return 24;
 }
 
-// Cumulative mycelium required to reach each level.
-// MYCELIUM_LEVEL_CURVE[i] = total mycelium to reach level i+2, so:
-//   index 0 → level 2 (100 mycelium)   … index 18 → level 20 (4 000 mycelium)
+// Cumulative character XP required to reach each level.
+// CHARACTER_XP_LEVEL_CURVE[i] = total XP to reach level i+2, so:
+//   index 0 -> level 2 (100 XP)   ... index 18 -> level 20 (4 000 XP)
 // Tier bands (approx): Spore 1–4 | Mycel 5–9 | Root 10–14 | Cap 15–19 | Eternal 20
-export const MYCELIUM_LEVEL_CURVE = [
-  100, 200, 300,                          // levels 2–4  (Spore)
-  350, 520, 690, 860, 1030,               // levels 5–9  (Mycel)
-  1200, 1460, 1720, 1980, 2240,           // levels 10–14 (Root)
-  2500, 2800, 3100, 3400, 3700,           // levels 15–19 (Cap)
+export const CHARACTER_XP_LEVEL_CURVE = [
+  100, 200, 300,                          // levels 2-4  (Spore)
+  350, 520, 690, 860, 1030,               // levels 5-9  (Mycel)
+  1200, 1460, 1720, 1980, 2240,           // levels 10-14 (Root)
+  2500, 2800, 3100, 3400, 3700,           // levels 15-19 (Cap)
   4000                                    // level 20    (Eternal)
 ];
 
-export const CHARACTER_XP_LEVEL_CURVE = MYCELIUM_LEVEL_CURVE;
+export const MYCELIUM_LEVEL_CURVE = CHARACTER_XP_LEVEL_CURVE;
 
-export function computeLevel(mycelium) {
+export function computeCharacterLevel(characterXp) {
   let level = 1;
-  for (let i = 0; i < MYCELIUM_LEVEL_CURVE.length; i++) {
-    if (mycelium >= MYCELIUM_LEVEL_CURVE[i]) {
+  for (let i = 0; i < CHARACTER_XP_LEVEL_CURVE.length; i++) {
+    if (characterXp >= CHARACTER_XP_LEVEL_CURVE[i]) {
       level = i + 2;
     } else {
       break;
     }
   }
   if (level >= 20) {
-    return { level: 20, current: mycelium - 4000, next: null };
+    return { level: 20, current: characterXp - 4000, next: null };
   }
-  const currentThreshold = level >= 2 ? MYCELIUM_LEVEL_CURVE[level - 2] : 0;
-  const nextThreshold = MYCELIUM_LEVEL_CURVE[level - 1];
+  const currentThreshold = level >= 2 ? CHARACTER_XP_LEVEL_CURVE[level - 2] : 0;
+  const nextThreshold = CHARACTER_XP_LEVEL_CURVE[level - 1];
   return {
     level,
-    current: mycelium - currentThreshold,
+    current: characterXp - currentThreshold,
     next: nextThreshold - currentThreshold
   };
 }
 
-export function computeCharacterLevel(characterXp) {
-  return computeLevel(characterXp);
+export function computeLevel(mycelium) {
+  return computeCharacterLevel(mycelium);
+}
+
+export function runCurrencyFields(coins) {
+  const amount = Number(coins || 0);
+  return {
+    coins: amount,
+    runCurrency: amount,
+    runCoins: amount
+  };
 }
