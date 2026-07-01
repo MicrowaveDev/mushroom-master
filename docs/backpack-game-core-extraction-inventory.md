@@ -1,15 +1,21 @@
 # Backpack Game Core Extraction Inventory
 
-**Status:** Phase 8B inventory, after the Phase 6A-6C neutral naming pass.
+**Status:** Phase 8C first-slice extraction, after the Phase 6A-6C neutral
+naming pass.
 
 This document chooses the first extraction slice and records why other modules
 wait. It should be updated after each cluster moves.
 
 ## Current Core Repo State
 
-`git ls-remote --heads --tags git@github.com:MicrowaveDev/backpack-game-core.git`
-returned no refs on 2026-07-01. Treat the target repo as empty/new until a
-commit exists.
+`backpack-game-core` now has an initial `main` commit with an ESM package:
+
+- package: `@microwavedev/backpack-game-core`
+- first slice: `src/bag-shape.js`
+- tests: `tests/bag-shape.test.js`
+- initial commit: `69666c8` (`Add bag shape core helpers`)
+
+The package is consumed by `mushroom-master` as a pinned Git dependency.
 
 ## Classification Rules
 
@@ -24,7 +30,7 @@ commit exists.
 
 | Cluster | Current files | Classification | Why |
 | --- | --- | --- | --- |
-| Bag shape masks and rotation | `app/shared/bag-shape.js` | Pure candidate | Dependency-free ESM helpers over passed bag objects and shape arrays. Shared by server/client already. |
+| Bag shape masks and rotation | `backpack-game-core/src/bag-shape.js`; compatibility bridge at `app/shared/bag-shape.js` | Extracted pure slice | Dependency-free ESM helpers over passed bag objects and shape arrays. Shared by server/client through the bridge. |
 | Bag-shape unit tests | `tests/game/bag-shape.test.js` | Partial pure candidate | The top helper tests are portable. The coverage tests that call `validateItemCoverage` and `getArtifactById` depend on Mushroom validation/catalog code. |
 | Artifact family capability helpers | `app/server/services/artifact-helpers.js` | Pure candidate, later | Dependency-free today, but its family list is still Mushroom artifact taxonomy. Move only after deciding the generic family/capability API. |
 | Grid placement primitives | `pieceCells`, cell-set/intersection helpers in `app/server/services/loadout-utils.js` | Adapter-needed | The primitive geometry is pure, but the file imports `game-data.js`, `artifact-helpers.js`, and bag-shape helpers. Extract after splitting geometry from catalog-backed validation. |
@@ -40,7 +46,8 @@ commit exists.
 
 ## Chosen First Slice
 
-**First extraction slice:** bag shape masks and rotation.
+**First extraction slice:** bag shape masks and rotation. This slice has been
+moved to `backpack-game-core`.
 
 Start with:
 
@@ -105,20 +112,18 @@ Use ESM JavaScript first. Add TypeScript declarations after the API stabilizes.
 
 ## Integration Plan For First Slice
 
-1. Create the core package with `bag-shape.js` and pure tests.
-2. Run the core package tests.
-3. Add the core package to `mushroom-master` as a pinned git dependency or local
-   workspace dependency, depending on the hub/submodule decision at that moment.
-4. Replace imports of `app/shared/bag-shape.js` in `mushroom-master` with the
-   package import.
-5. Keep a small compatibility re-export at `app/shared/bag-shape.js` for one
-   transition commit if frontend/server import churn would otherwise be broad.
-6. Run focused Mushroom tests:
+1. Done: created the core package with `bag-shape.js` and pure tests.
+2. Done: ran the core package tests.
+3. Done: added the core package to `mushroom-master` as a pinned git dependency.
+4. Done: kept `app/shared/bag-shape.js` as a package re-export compatibility
+   bridge, so existing Mushroom imports did not need broad churn.
+5. Done: run focused Mushroom tests:
    - `node --test tests/game/bag-shape.test.js`
    - `node --test tests/game/bag-items.test.js`
    - `node --test tests/game/loadout-refactor.test.js`
-7. If client imports change, also run the cheapest relevant frontend build or
-   screenshot wrapper required by the changed surface.
+6. If direct client imports change in a future cleanup, also run the cheapest
+   relevant frontend build or screenshot wrapper required by the changed
+   surface.
 
 ## Rollback Strategy
 
@@ -130,7 +135,7 @@ Use ESM JavaScript first. Add TypeScript declarations after the API stabilizes.
 
 ## Next Slices After Bag Shape
 
-After the bag-shape slice is green, reassess in this order:
+After the bag-shape slice, reassess in this order:
 
 1. Split pure grid geometry helpers out of `loadout-utils.js`.
 2. Split fusion matching algorithm from Mushroom recipe catalog data.

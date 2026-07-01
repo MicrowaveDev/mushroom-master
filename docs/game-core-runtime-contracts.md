@@ -214,9 +214,11 @@ These are product-specific and must stay out of `backpack-game-core`:
   terms, and adult-content compliance gates
 - localized UI copy and product visual assets
 
-## First Extraction Rule
+## Extraction Rule
 
-The first code movement into `backpack-game-core` should be a small pure
-cluster with tests ported before `mushroom-master` imports change. Current
-inventory points to `app/shared/bag-shape.js` plus its pure helper tests as the
-lowest-risk first slice.
+Code movement into `backpack-game-core` should stay small and evidence-led:
+port focused core tests before changing `mushroom-master` imports, then verify
+the Mushroom adapter/bridge tests. The first shipped slice is bag-shape masks
+and rotation. The next likely slice is pure grid geometry from
+`loadout-utils.js`, after it is separated from Mushroom catalog and validation
+policy.
