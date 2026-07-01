@@ -25,6 +25,7 @@ const recoverChibiAlphaScriptPath = path.join(repoRoot, 'app/scripts/recover-hom
 const recordChibiVerdictScriptPath = path.join(repoRoot, 'app/scripts/record-home-field-chibi-verdict.js');
 const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home-field-chibi-proof.js');
 const chibiReferenceApiProofScriptPath = path.join(repoRoot, 'app/scripts/run-home-field-chibi-reference-api-proof.js');
+const chibiStageLocalSourceScriptPath = path.join(repoRoot, 'app/scripts/stage-home-field-chibi-local-source.js');
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
 const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
 const generationQueueScriptPath = path.join(repoRoot, 'app/scripts/print-home-field-generation-queue.js');
@@ -1483,6 +1484,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /same agent context that will run imagegen/);
   assert.match(result.stdout, /game:home-field:find-imagegen-output/);
   assert.match(result.stdout, /game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
+  assert.match(result.stdout, /game:home-field:stage-chibi-local-source/);
   assert.match(result.stdout, /game:home-field:claim-imagegen-output/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
@@ -1523,6 +1525,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /API-source normalization/);
   assert.match(result.stdout, /palette audit must still pass/);
   assert.match(result.stdout, /supplied local proof source images outside docs\/reference/);
+  assert.match(result.stdout, /one supplied complete 8x4 local state-sheet PNG/);
+  assert.match(result.stdout, /skip reference imagegen/);
+  assert.match(result.stdout, /derived reference proxy/);
   assert.match(result.stdout, /listing docs\/reference paths is not image-guided generation/);
   assert.match(result.stdout, /mentioning paths in the prompt is not enough/);
   assert.match(result.stdout, /view_image only as the current imagegen skill's same-context input-staging step/);
@@ -1602,6 +1607,10 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
   assert.match(prompt.details, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt.details, /Use built-in\/imagegen skill output as the normal proof-art path only when the queue method gate allows it/);
   assert.match(prompt.details, /queue-backed built-in same-context staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/);
+  assert.match(prompt.details, /exactly one complete 8x4 local state-sheet PNG/);
+  assert.match(prompt.details, /game:home-field:stage-chibi-local-source/);
+  assert.match(prompt.details, /non-production reference proxy/);
+  assert.match(prompt.details, /skips reference imagegen/);
   assert.match(prompt.details, /attach or same-context stage/);
   assert.match(prompt.details, /passive view_image reference exposure is still not enough/);
   assert.match(prompt.constraints, /attached or staged as actual same-context image inputs/);
@@ -1623,7 +1632,8 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.doesNotMatch(shortLauncher, /plain OPENAI_API_KEY/);
   assert.doesNotMatch(shortLauncher, /Prefer built-in\/imagegen skill output/);
   assert.match(prompt, /app\/shared\/home-field\/home-field-generation-queue\.json/);
-  assert.match(prompt, /queue command must print the run title, canonical doc, prompt-issuance gate, built-in imagegen default\/blocked path, method-gate status, env rules, reference-input gates, stop gates, and final-response fields/);
+  assert.match(prompt, /queue command must print the run title, canonical doc, prompt-issuance gate, built-in imagegen default\/blocked path, method-gate status, env rules, reference-input gates, local state-sheet source mode, stop gates, and final-response fields/);
+  assert.match(prompt, /local state-sheet source mode/);
   assert.match(prompt, /built-in section must include the `view_image` reference-input staging step, same-context built-in `image_gen` call, built-in preflight flags, and save\/claim-after-render instruction/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
@@ -1639,6 +1649,9 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.doesNotMatch(prompt, /Use the explicit CLI\/API helper path by default/);
   assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
   assert.match(prompt, /Do not set `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` to the checked-in PNGs under `docs\/reference\/home-field\/`/);
+  assert.match(prompt, /exactly one supplied complete `8x4` local state-sheet PNG/);
+  assert.match(prompt, /npm run game:home-field:stage-chibi-local-source/);
+  assert.match(prompt, /reference imagegen was skipped/);
   assert.match(prompt, /still run the read-only `npm run game:home-field:next-chibi-proof` helper/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
@@ -1671,6 +1684,10 @@ test('[home-field] imagegen requirements put built-in defaults in queue output',
   assert.match(requirements, /Do not give a user a "new production-ready run" launcher prompt that is known to block/);
   assert.match(requirements, /concrete allowed unblock input/);
   assert.match(requirements, /Method gate \/ allowed method change/);
+  assert.match(requirements, /Supplied local state-sheet source path/);
+  assert.match(requirements, /exactly one supplied complete `8x4` state-sheet PNG/);
+  assert.match(requirements, /npm run game:home-field:stage-chibi-local-source/);
+  assert.match(requirements, /skip reference imagegen and the exhausted built-in reference-staging path/);
   assert.match(requirements, /queue JSON and printer must carry and validate its built-in imagegen path and method-gate status/);
   assert.match(requirements, /queue-backed built-in same-context reference-staging path is exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`/);
 });
@@ -1687,6 +1704,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
   assert.match(result.stdout, /use only when the launcher\/user explicitly confirms both/);
   assert.match(result.stdout, /generation-queue -- --id=thalla-stage1-chibi-proof/);
+  assert.match(result.stdout, /stage-chibi-local-source # only for one supplied complete 8x4 local state-sheet PNG/);
   assert.match(result.stdout, /next-chibi-proof  # read-only; run before a blocker handoff even when preflight or the method gate fails/);
   assert.match(result.stdout, /raw frames: \d+\/32 present/);
   assert.match(result.stdout, /state sheet:/);
@@ -1706,6 +1724,8 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs/);
   assert.match(result.stdout, /Local-input warning: docs\/reference PNGs are style references only/);
   assert.match(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs/);
+  assert.match(result.stdout, /Local state-sheet source warning/);
+  assert.match(result.stdout, /verify\/audit the derived reference proxy and staged state sheet/);
   assert.match(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /API fallback warning/);
   assert.match(result.stdout, /prefer built-in\/imagegen skill output/);
@@ -1822,6 +1842,7 @@ test('[home-field] chibi proof helper commands expose documented help', () => {
     recoverChibiAlphaScriptPath,
     recordChibiVerdictScriptPath,
     claimImagegenOutputScriptPath,
+    chibiStageLocalSourceScriptPath,
     generationQueueScriptPath
   ]) {
     const result = spawnSync(process.execPath, [script, '--help'], {
@@ -1864,6 +1885,9 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /passive viewing/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /grouped 8x4 state sheet/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet PNG/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /game:home-field:stage-chibi-local-source/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /Do not run reference imagegen/.test(instruction)));
   assert.equal(item.assetId, 'thalla');
   assert.equal(item.assetType, 'character');
   assert.equal(item.env.doNotInferEnvFile, true);
@@ -1896,13 +1920,21 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.equal(item.generationContract.stateSheet.stopIfPromptOnly, true);
   assert.equal(item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput, true);
   assert.match(item.generationContract.stateSheet.requiredReferenceImageInput, /thalla_chibi_turnaround\.reference\.png/);
+  assert.equal(item.generationContract.stateSheet.localSourceMode.envKey, 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS');
+  assert.equal(item.generationContract.stateSheet.localSourceMode.completeStateSheetAllowed, true);
+  assert.equal(item.generationContract.stateSheet.localSourceMode.stageCommand, 'npm run game:home-field:stage-chibi-local-source');
+  assert.match(item.generationContract.stateSheet.localSourceMode.derivesReferenceProxy, /thalla_chibi_turnaround\.reference\.png/);
+  assert.equal(item.generationContract.stateSheet.localSourceMode.skipImagegen, true);
   assert.match(item.commands.queue, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(item.commands.preflight, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
+  assert.equal(item.commands.stageLocalSource, 'npm run game:home-field:stage-chibi-local-source');
   assert.match(item.commands.referenceApiProof, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.ok(item.stopRules.some((rule) => /OPENAI_IMAGEGEN_API_KEY/.test(rule)));
   assert.ok(item.stopRules.some((rule) => /plain OPENAI_API_KEY/.test(rule)));
+  assert.ok(item.stopRules.some((rule) => /stage-chibi-local-source fails/.test(rule)));
   assert.ok(item.stopRules.some((rule) => /instead of giving a new production-ready launcher prompt/.test(rule)));
   assert.ok(item.finalResponseMustReport.includes('env source and preflight result'));
+  assert.ok(item.finalResponseMustReport.some((field) => /local state-sheet source runs/.test(field)));
 
   for (const reference of item.referenceInputs) {
     assert.equal(fs.existsSync(path.join(repoRoot, reference.path)), true, reference.path);
@@ -1949,6 +1981,11 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /same-context input-staging step/);
   assert.match(result.stdout, /visible images explicitly named as references/);
   assert.match(result.stdout, /passive viewing/);
+  assert.match(result.stdout, /Supplied local state-sheet source path:/);
+  assert.match(result.stdout, /env key: HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
+  assert.match(result.stdout, /stage command: npm run game:home-field:stage-chibi-local-source/);
+  assert.match(result.stdout, /reference proxy: .*thalla_chibi_turnaround\.reference\.png/);
+  assert.match(result.stdout, /skip imagegen: yes/);
   assert.match(result.stdout, /grouped 8x4 state sheet can attach/);
   assert.match(result.stdout, /do not infer \.env/i);
   assert.match(result.stdout, /OPENAI_IMAGEGEN_API_KEY/);
@@ -1958,6 +1995,7 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /required reference image input: .*thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /stop if prompt-only: yes/);
   assert.match(result.stdout, /stop if reference cannot attach: yes/);
+  assert.match(result.stdout, /local source mode: HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS -> npm run game:home-field:stage-chibi-local-source/);
   assert.match(result.stdout, /final response must report:/i);
 });
 
@@ -2030,10 +2068,62 @@ test('[home-field] package exposes chibi proof helper aliases', () => {
   assert.equal(pkg.scripts['game:home-field:claim-imagegen-output'], 'node app/scripts/claim-home-field-imagegen-output.js');
   assert.equal(pkg.scripts['game:home-field:archive-stale-chibi-proof'], 'node app/scripts/archive-home-field-chibi-proof.js');
   assert.equal(pkg.scripts['game:home-field:chibi-reference-api-proof'], 'node app/scripts/run-home-field-chibi-reference-api-proof.js');
+  assert.equal(pkg.scripts['game:home-field:stage-chibi-local-source'], 'node app/scripts/stage-home-field-chibi-local-source.js');
   assert.equal(pkg.scripts['game:home-field:generation-queue'], 'node app/scripts/print-home-field-generation-queue.js');
   assert.equal(pkg.scripts['game:home-field:recover-chibi-alpha'], 'node app/scripts/recover-home-field-chibi-alpha.js');
   assert.equal(pkg.scripts['game:home-field:record-chibi-verdict'], 'node app/scripts/record-home-field-chibi-verdict.js');
   assert.equal(pkg.scripts['shrink:screenshots'], 'bash ../bash/shrink-screenshots.sh');
+});
+
+test('[home-field] chibi local state-sheet source staging writes proof paths and provenance', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-local-source-stage-test');
+  const sourcePath = path.join(fixtureDir, 'supplied-thalla-states.png');
+  const statePath = path.join(repoRoot, '.agent/home-field-workspace/raw/thalla_chibi.states.source.png');
+  const referencePath = path.join(repoRoot, '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
+  const provenancePath = path.join(repoRoot, '.agent/home-field-workspace/review/thalla-local-state-sheet-source.manifest.json');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  writeChibiSpritesheet(sourcePath);
+
+  return withPreservedFiles([statePath, referencePath, provenancePath], () => {
+    try {
+      const result = spawnSync(process.execPath, [chibiStageLocalSourceScriptPath], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: sourcePath
+        },
+        encoding: 'utf8'
+      });
+
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      assert.match(result.stdout, /home-field chibi local source stage: PASS/);
+      assert.match(result.stdout, /reference proxy/);
+      assert.equal(fileSha256(statePath), fileSha256(sourcePath));
+      const manifest = JSON.parse(fs.readFileSync(provenancePath, 'utf8'));
+      assert.equal(manifest.mode, 'supplied-complete-8x4-local-state-sheet');
+      assert.equal(manifest.source.path, sourcePath);
+      assert.equal(manifest.source.width, 512);
+      assert.equal(manifest.source.height, 256);
+      assert.equal(manifest.source.cellWidth, 64);
+      assert.equal(manifest.referenceProxy.productionGeneratedReference, false);
+      assert.match(manifest.referenceProxy.sha256, /^[a-f0-9]{64}$/);
+
+      const referenceVerify = spawnSync(process.execPath, [chibiVerifyScriptPath, '--reference'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+      assert.equal(referenceVerify.status, 0, referenceVerify.stderr || referenceVerify.stdout);
+      assert.match(referenceVerify.stdout, /Reference sprite-box occupancy: 4 major blob/);
+
+      const stateVerify = spawnSync(process.execPath, [chibiVerifyScriptPath, '--state-sheet'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+      assert.equal(stateVerify.status, 0, stateVerify.stderr || stateVerify.stdout);
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
 });
 
 test('[home-field] produce assets --help exits before asset lookup', () => {
@@ -2644,6 +2734,40 @@ test('[home-field] chibi proof preflight accepts supplied local image inputs', (
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /Preflight passed/);
     assert.match(result.stdout, /local image inputs supplied: 1/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test('[home-field] chibi proof preflight identifies supplied complete local state sheet', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-preflight-state-sheet-test');
+  const localInput = path.join(fixtureDir, 'thalla-states.png');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  writeChibiSpritesheet(localInput);
+
+  try {
+    const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        OPENAI_API_KEY: '',
+        OPENAI_IMAGEGEN_API_KEY: '',
+        HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
+        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput,
+        HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
+        HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Preflight passed/);
+    assert.match(result.stdout, /local image inputs supplied: 1/);
+    assert.match(result.stdout, /complete 8x4 state sheet: yes \(64x64 cells\)/);
+    assert.match(result.stdout, /local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source/);
+    assert.match(result.stdout, /skip reference imagegen and the exhausted built-in reference-staging path/);
   } finally {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
   }

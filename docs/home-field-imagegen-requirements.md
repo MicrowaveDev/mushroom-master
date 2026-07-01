@@ -44,6 +44,8 @@ Queue-backed runs must keep the pasted launcher short and put operational detail
 - the warning that passive viewing, path listing, or prompt-text path mentions are not enough unless the following same-context built-in `image_gen` call uses those visible images as references;
 - a **Method gate / allowed method change** section that states whether the queued path is allowed, why it is allowed, and when to stop before archive/imagegen.
 
+The queue must also print a **Supplied local state-sheet source path** section for the current Thalla proof. If a fresh launcher provides `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` with exactly one supplied complete `8x4` state-sheet PNG outside `docs/reference/home-field/`, that path is a concrete allowed unblock input. The agent must preflight and archive under the same environment, run `npm run game:home-field:stage-chibi-local-source`, skip reference imagegen and the exhausted built-in reference-staging path, verify/audit the derived reference proxy and staged state sheet, then continue through split, frame verification, candidate production, validation, evidence, preview, and verdict. The final report must include the supplied source path and hash and state that reference imagegen was skipped.
+
 Prompt issuance is gated too. Do not give a user a "new production-ready run" launcher prompt that is known to block. A queue item with a blocked or exhausted status must carry a prompt policy, and the queue printer must expose and validate it. In that state, an agent may report the blocker or give a new-run prompt only when the prompt also includes one concrete allowed unblock input: an explicit paid fallback env file containing `OPENAI_IMAGEGEN_API_KEY` plus `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`, supplied local proof source PNGs outside `docs/reference`, or a different queue-approved reference-capable generation/editing method. The short launcher template remains useful only after that prompt-issuance gate passes.
 
 Do not rely on a human-pasted prompt to carry those built-in details. If a new queue item is marked built-in/imagegen-ready or built-in/imagegen-blocked, the queue JSON and printer must carry and validate its built-in imagegen path and method-gate status before the run starts. The method-gate status is authoritative. For current Thalla proof runs, the queue-backed built-in same-context reference-staging path is exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`: it loaded all three `referenceInputs` with `view_image`, immediately called built-in `image_gen` with those visible images explicitly named as references, saved/claimed the output file, and still failed with a `1448x1086` oversized turnaround, source-sprite blobs up to `249x332`, and `91` significant exact colors. Do not run that built-in path again unchanged. Continue only with a different reference-capable generation/editing method, supplied local proof source PNGs outside `docs/reference`, or explicit user-approved fallback; otherwise stop before archive/imagegen and report the method-gate blocker.
@@ -56,6 +58,7 @@ Allowed source paths are:
 
 - confirmed built-in imagegen output that the same agent context can save or recover as a file, and for image-guided Thalla proof art can attach or stage the checked-in reference PNGs as actual same-context image inputs;
 - supplied local proof-source PNG inputs named by the run, not checked-in style/reference PNGs;
+- one supplied complete `8x4` local Thalla state-sheet source PNG outside `docs/reference/home-field/`, staged with `npm run game:home-field:stage-chibi-local-source` into `.agent/home-field-workspace/raw/thalla_chibi.states.source.png`; the helper derives `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png` as a non-production reference proxy for evidence and does not run imagegen;
 - explicit paid API fallback only when built-in/imagegen skill output is unavailable for the run and `OPENAI_IMAGEGEN_API_KEY` plus `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` are configured.
 
 Plain `OPENAI_API_KEY` must not be used as an image-generation trigger for Home Field. The dedicated fallback key is `OPENAI_IMAGEGEN_API_KEY`, so general OpenAI credentials are not silently spent on imagegen.
@@ -90,6 +93,14 @@ Do not search neighboring repos for credentials, guess `mushroom-master/.env`, o
 If preflight fails, stop and report the image-output blocker. Do not archive stale evidence, delete files, create deterministic fallback art, or pretend that existing `.agent` files prove a fresh run. This is an intentional clean block, not a failed imagegen attempt.
 
 The chibi preflight must also read the structured queue method gate. If the queue marks the built-in same-context path as blocked or exhausted, preflight must not pass from `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` alone, and it must not suggest the built-in disk-output diagnostic. In that state, only a non-built-in path such as explicit paid API fallback, supplied local proof source PNGs outside `docs/reference`, or a different queue-approved generation method can pass.
+
+For supplied complete local state-sheet source runs, preflight should print whether the single local PNG is a complete `8x4` sheet with square cells. After preflight and stale-file archive pass, use:
+
+```bash
+npm run game:home-field:stage-chibi-local-source
+```
+
+Then verify and audit both the derived reference proxy and staged state sheet before splitting. Do not reinterpret this mode as permission to run reference imagegen, to reuse stale `.agent` files, or to treat `docs/reference/home-field/*.png` as proof sources.
 
 If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed while reference-image input binding is already confirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files. Do not run this probe when reference-image input binding is unavailable; it proves file capture only and cannot unblock current Thalla proof art by itself.
 
@@ -177,6 +188,7 @@ Examples:
 - terrain families should come from one shared meadow/path source when the tiles must tile or blend together;
 - same-character state tiles must come from one coherent grouped state sheet;
 - reference sheets are allowed for consistency, but must not be sliced into production frames unless the family contract explicitly allows it.
+- when a human supplies a complete grouped `8x4` state sheet for the current Thalla proof, deterministic staging and reference-proxy derivation are allowed because they preserve provenance from that source and avoid another blocked imagegen attempt.
 
 Independent per-tile generation is allowed only when the family contract permits it or the user explicitly asks for diagnostics.
 

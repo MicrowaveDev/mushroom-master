@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { repoRoot } from '../shared/repo-root.js';
+import { readPngHeader } from './lib/bitmap-image-toolkit.js';
 
 const requiredReferencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
 const requiredStateSheetPath = '.agent/home-field-workspace/raw/thalla_chibi.states.source.png';
@@ -76,6 +77,33 @@ function resolveInputPath(inputPath) {
   return path.isAbsolute(inputPath) ? inputPath : path.resolve(repoRoot, inputPath);
 }
 
+function completeStateSheetInfo(inputPath) {
+  try {
+    const abs = resolveInputPath(inputPath);
+    const header = readPngHeader(abs);
+    const cellWidth = header.width / 8;
+    const cellHeight = header.height / 4;
+    const complete = header.width % 8 === 0 &&
+      header.height % 4 === 0 &&
+      cellWidth === cellHeight &&
+      cellWidth >= 64;
+    return {
+      path: inputPath,
+      width: header.width,
+      height: header.height,
+      cellWidth,
+      cellHeight,
+      complete
+    };
+  } catch (err) {
+    return {
+      path: inputPath,
+      error: err.message,
+      complete: false
+    };
+  }
+}
+
 function parseEnvFile(filePath) {
   const env = {};
   const text = fs.readFileSync(filePath, 'utf8');
@@ -136,6 +164,10 @@ function main() {
   const missingLocalInputs = localInputs.filter((inputPath) => !fileExists(path.resolve(repoRoot, inputPath)));
   const rejectedLocalInputs = localInputs.filter((inputPath) => normalizeRepoRelative(inputPath).startsWith('docs/reference/home-field/'));
   const localInputsReady = localInputs.length > 0 && missingLocalInputs.length === 0 && rejectedLocalInputs.length === 0;
+  const localInputInfos = localInputs
+    .filter((inputPath) => !missingLocalInputs.includes(inputPath) && !rejectedLocalInputs.includes(inputPath))
+    .map(completeStateSheetInfo);
+  const completeLocalStateSheetInputs = localInputInfos.filter((info) => info.complete);
   const ok = cliReady || builtinReady || localInputsReady;
 
   console.log('# Home Field Chibi Proof Preflight');
@@ -156,6 +188,16 @@ function main() {
   console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
   console.log(`- built-in imagegen reference-input explicitly confirmed: ${builtinReferencesConfirmed ? 'yes' : 'no'}`);
   console.log(`- local image inputs supplied: ${localInputs.length}`);
+  for (const info of localInputInfos) {
+    if (info.error) {
+      console.log(`  - ${info.path}: unreadable PNG (${info.error})`);
+    } else {
+      console.log(`  - ${info.path}: ${info.width}x${info.height}, complete 8x4 state sheet: ${info.complete ? `yes (${info.cellWidth}x${info.cellHeight} cells)` : 'no'}`);
+    }
+  }
+  if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {
+    console.log('- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source');
+  }
   if (missingLocalInputs.length > 0) {
     console.log(`- missing local image inputs: ${missingLocalInputs.join(', ')}`);
   }
@@ -222,6 +264,8 @@ function main() {
   console.log('Preflight passed: an image output path is available. It is safe to run `npm run game:home-field:archive-stale-chibi-proof -- thalla` and start the documented regeneration flow.');
   if (builtinReady) {
     console.log('Note: using Codex Desktop built-in image_gen only because disk save and reference-image input binding were explicitly confirmed; save and verify each generated PNG at the documented repo path before producer/validation steps.');
+  } else if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {
+    console.log('Note: supplied local complete 8x4 state sheet can be staged with game:home-field:stage-chibi-local-source; skip reference imagegen and the exhausted built-in reference-staging path.');
   } else if (builtinMethodGateBlocked) {
     console.log('Note: the queue method gate still blocks the exhausted built-in same-context path; this preflight passed through a non-built-in path.');
   }

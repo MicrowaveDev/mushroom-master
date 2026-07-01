@@ -124,6 +124,24 @@ function validateQueue(queue) {
     if (item.generationContract?.stateSheet?.requiredReferenceImageInput && !/grouped 8x4 state sheet/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
     }
+    const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
+    if (localSourceMode?.completeStateSheetAllowed === true) {
+      if (!item.commands?.stageLocalSource) {
+        issues.push(`${item.id}: local state-sheet source mode must include commands.stageLocalSource`);
+      }
+      if (!agentInstructionText.includes(localSourceMode.envKey || 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS')) {
+        issues.push(`${item.id}: agentInstructions must mention the local source env key`);
+      }
+      if (!agentInstructionText.includes(item.commands?.stageLocalSource || '<missing-stage-command>')) {
+        issues.push(`${item.id}: agentInstructions must mention the local source stage command`);
+      }
+      if (!/complete 8x4 local state-sheet/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: agentInstructions must describe complete 8x4 local state-sheet source mode`);
+      }
+      if (!/Do not run reference imagegen/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: agentInstructions must skip reference imagegen for local state-sheet source mode`);
+      }
+    }
     if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
     if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);
     if (!item.env?.envFileArg) issues.push(`${item.id}: missing env.envFileArg`);
@@ -277,6 +295,18 @@ function printItem(item) {
     console.log(`  stop if: ${item.methodGate.stopIf}`);
     console.log('');
   }
+  const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
+  if (localSourceMode?.completeStateSheetAllowed) {
+    console.log('Supplied local state-sheet source path:');
+    console.log(`  env key: ${localSourceMode.envKey}`);
+    console.log(`  allowed source: one complete 8x4 local PNG outside ${localSourceMode.sourceMustBeOutside}`);
+    console.log(`  stage command: ${localSourceMode.stageCommand}`);
+    console.log(`  stages to: ${localSourceMode.stagesTo}`);
+    console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
+    console.log(`  continue at: ${localSourceMode.continueAt}`);
+    console.log(`  skip imagegen: ${localSourceMode.skipImagegen ? 'yes' : 'no'}`);
+    console.log('');
+  }
   console.log(`env fallback arg: pass ${item.env.envFileArg} only for paid API fallback; always-required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
   console.log(`env fallback keys: ${(item.env.apiFallbackRequiredKeys || []).join(', ') || 'none'}`);
   if (item.env.doNotInferEnvFile) {
@@ -298,7 +328,7 @@ function printItem(item) {
   }
   console.log('');
   console.log('Required commands:');
-  for (const key of ['context', 'preflight', 'scopedPrompt', 'archiveStale', 'referenceApiProof']) {
+  for (const key of ['context', 'preflight', 'scopedPrompt', 'archiveStale', 'stageLocalSource', 'referenceApiProof']) {
     if (item.commands?.[key]) console.log(`  ${key}: ${item.commands[key]}`);
   }
   console.log('');
@@ -306,6 +336,9 @@ function printItem(item) {
   console.log(`  required reference image input: ${item.generationContract.stateSheet.requiredReferenceImageInput}`);
   console.log(`  stop if prompt-only: ${item.generationContract.stateSheet.stopIfPromptOnly ? 'yes' : 'no'}`);
   console.log(`  stop if reference cannot attach: ${item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput ? 'yes' : 'no'}`);
+  if (localSourceMode?.completeStateSheetAllowed) {
+    console.log(`  local source mode: ${localSourceMode.envKey} -> ${localSourceMode.stageCommand}; deterministic reference proxy derived, reference imagegen skipped`);
+  }
   console.log(`  layout: ${item.generationContract.stateSheet.layout}`);
   console.log('');
   console.log('Stop rules:');

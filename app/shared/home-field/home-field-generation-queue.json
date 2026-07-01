@@ -14,7 +14,7 @@
       "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and follow the printed agent instructions exactly.",
       "promptPolicy": {
         "issueLauncherWhenStatus": "allowed_or_with_unblock_input_only",
-        "blockedPromptAction": "Do not give minimalLauncherPrompt to the user as a new production-ready run prompt while this queue item or method gate is blocked. First include a concrete allowed unblock input in the prompt: an explicit paid fallback env file containing OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1, supplied local proof source PNGs outside docs/reference via HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS, or a different queue-approved reference-capable generation/editing method.",
+        "blockedPromptAction": "Do not give minimalLauncherPrompt to the user as a new production-ready run prompt while this queue item or method gate is blocked. First include a concrete allowed unblock input in the prompt: an explicit paid fallback env file containing OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1, a supplied complete 8x4 local state-sheet source PNG outside docs/reference via HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS, supplied local proof source PNGs outside docs/reference, or a different queue-approved reference-capable generation/editing method.",
         "blockedShortResponse": "Blocked: do not start another production run from the minimal launcher until an allowed non-built-in path, supplied proof source PNGs, or explicit paid fallback env file is provided."
       },
       "agentInstructions": [
@@ -28,7 +28,8 @@
         "Method gate: the queue-backed built-in same-context reference-staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c; do not run it again without a different generation method, source-input path, or explicit user-approved fallback.",
         "Use paid API fallback only if built-in/imagegen is unavailable and the explicit env file contains OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1; plain OPENAI_API_KEY is ignored.",
         "Attach every referenceInputs PNG as actual image inputs to imagegen; passive viewing, listing paths, or using view_image without the following same-context image_gen reference call is not enough.",
-        "Continue past the reference gate only if the grouped 8x4 state sheet can attach .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as an actual image input.",
+        "If the launcher supplies HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS with exactly one complete 8x4 local state-sheet PNG outside docs/reference, treat that path as the concrete unblock input: preflight and archive with the same env, run npm run game:home-field:stage-chibi-local-source, then continue at reference-proxy verification, state-sheet verification, palette audit, split, frame verify, candidate production, candidate validation, evidence, preview, and verdict. Do not run reference imagegen or the exhausted built-in reference-staging path for this local-source run.",
+        "For generated grouped sheets, continue past the reference gate only if the grouped 8x4 state sheet can attach .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as an actual image input; for supplied complete local state-sheet source mode, continue only after stage-chibi-local-source derives that reference proxy and the proxy/state-sheet verifier plus palette audits pass.",
         "Stop before archive/imagegen if preflight, reference verifier, palette audit, visual gate, or method gate fails.",
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
       ],
@@ -114,6 +115,7 @@
         "preflight": "npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>",
         "scopedPrompt": "npm run game:home-field:next-chibi-proof",
         "archiveStale": "npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>",
+        "stageLocalSource": "npm run game:home-field:stage-chibi-local-source",
         "referenceApiProof": "npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>",
         "verifyReference": "npm run game:home-field:verify-chibi-proof-files -- --reference",
         "auditReferencePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat",
@@ -139,10 +141,20 @@
         },
         "stateSheet": {
           "production": true,
-          "method": "one coherent grouped 8x4 state sheet generated through a reference-capable image path",
+          "method": "one coherent grouped 8x4 state sheet generated through a reference-capable image path, or one supplied complete 8x4 local state-sheet source staged through game:home-field:stage-chibi-local-source",
           "requiredReferenceImageInput": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png",
           "stopIfPromptOnly": true,
           "stopIfReferenceCannotBeAttachedAsActualImageInput": true,
+          "localSourceMode": {
+            "envKey": "HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS",
+            "completeStateSheetAllowed": true,
+            "sourceMustBeOutside": "docs/reference/home-field/",
+            "stageCommand": "npm run game:home-field:stage-chibi-local-source",
+            "stagesTo": ".agent/home-field-workspace/raw/thalla_chibi.states.source.png",
+            "derivesReferenceProxy": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png",
+            "continueAt": "verifyReferenceProxyThenVerifyStateSheet",
+            "skipImagegen": true
+          },
           "layout": "8 columns x 4 rows; rows down, up, left, right; 2 idle plus 6 walk frames per row",
           "motionRule": "idle bob and walk poses must exist in the grouped sheet itself; do not synthesize motion after split"
         }
@@ -153,6 +165,7 @@
         "Stop if the run relies on plain OPENAI_API_KEY for image generation; it is intentionally ignored.",
         "Stop if the active imagegen path can only use prompt text for the reference or state sheet.",
         "Stop if the run would reuse the exhausted built-in same-context reference-staging path without a different generation method or source-input path.",
+        "For a supplied complete 8x4 local state-sheet source, stop if game:home-field:stage-chibi-local-source fails; do not fall back to imagegen or stale .agent files.",
         "Stop and report the blocker instead of giving a new production-ready launcher prompt when the queue item remains blocked and no concrete allowed unblock input is provided.",
         "Stop if the reference sheet fails verifier, palette audit, or visual gate.",
         "Stop if the grouped state sheet cannot attach the approved reference PNG as an actual image input.",
@@ -163,6 +176,7 @@
         "commands run and pass/fail",
         "whether archive, imagegen, state sheet, split frames, candidate, evidence, preview, and record verdict ran",
         "reference, state-sheet, and candidate palette audit verdicts when those stages run",
+        "for local state-sheet source runs, the supplied source path, sha256, and statement that reference imagegen was skipped and a deterministic reference proxy was derived",
         "candidate folder path",
         "that no app-facing PNG was overwritten"
       ]
