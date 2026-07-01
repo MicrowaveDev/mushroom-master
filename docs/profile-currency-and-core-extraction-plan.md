@@ -1,24 +1,27 @@
 # Profile Currency And Core Extraction Plan
 
-> **Reading guide (added 2026-06-23 post-implementation review).** This document
+> **Reading guide (updated 2026-07-01 post-implementation review).** This document
 > is a historical ship record plus forward plan, not a live status board. The
 > shipped, test-backed foundation is Phases **1-5, 7, and 7A**. Phase **6** (the
 > `mycelium`→`character_xp` / `coins`→`run_currency` rename) is **deferred**:
 > only a thin `characterXp` read-alias over the unchanged `mycelium` column
 > exists today — see the Deferred list below and the note in Phase 6. The
 > authoritative current backlog is the **Remaining launch gates** under Phase 7A
-> plus the Deferred list. Phases **8-13** (extraction into `backpack-game-core`)
+> plus the Deferred list. Phases **8-15** (extraction into `backpack-game-core`)
 > are not started, by design. Shipped runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code and
 > `tests/game/wallet-assets.test.js`, and ideally lifted into a dedicated
 > `docs/` reference doc rather than re-derived from this plan's phase sections.
-> See the **Post-Implementation Review** section for the verified state.
+> See the **Post-Implementation Review** section for the verified state and
+> current remaining work.
 
 **Status:** Phases 1-5, 7, and 7A implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
-2026-06-23). Phase 6 (currency / XP rename) is deferred to a read-alias layer
-only. Real-money rollout still requires provider sandbox/live validation and
-final product/legal support, terms, refund, age, and content compliance gates.
+2026-06-23; reviewed again on 2026-07-01). Phase 6 (currency / XP rename) is
+deferred to a read-alias layer only. Real-money rollout still requires provider
+sandbox/live validation, payment callback hardening, a real purchase/gacha UI,
+and final product/legal support, terms, refund, age, and content compliance
+gates.
 **Created:** 2026-06-22
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
@@ -64,7 +67,8 @@ wallet-buy entry point.
 
 This is still not a paid production rollout. Remaining launch gates are:
 real provider sandbox/live validation, real Telegram invoice/manual webhook
-testing, purchase UI terms/refund/support presentation, age/content-compliance
+testing, external callback amount/currency validation, race-safe checkout
+creation, purchase UI terms/refund/support presentation, age/content-compliance
 gating for adult or sexual content, and operational runbooks for refunds,
 late crypto payments, overpayments, and support investigations.
 
@@ -73,14 +77,17 @@ Deferred beyond phase 7A: the Phase 6 currency / XP rename
 physical removal of legacy compatibility fields, multi-item pack guarantees,
 duplicate burning, marketplace trading, database managed pack catalogs, an
 eager `players.spore`→wallet backfill plus a drift-audit helper, the
-gacha-roll / multi-bundle / terms-and-support frontend, and reusable-core
+gacha-roll / multi-bundle / terms-and-support frontend, provider refund and
+reversal handling, distributed payment mutation hardening, and reusable-core
 extraction into `backpack-game-core`.
 
 ## Post-Implementation Review
 
-Recorded 2026-06-23 from a verification pass against the current `main` working
-tree (not the plan's self-reported status). `tests/game/wallet-assets.test.js`
-passes `11/11`.
+Updated 2026-07-01 from a read-through of the current `main` implementation in
+`wallet-service.js`, `asset-service.js`, `create-app.js`, `bot-gateway.js`,
+`web/src/composables/useCustomization.js`, `web/src/pages/HomeScreen.js`, and
+`tests/game/wallet-assets.test.js`. This review intentionally does not treat the
+plan's own status text as evidence.
 
 ### Verified as shipped
 
@@ -121,14 +128,47 @@ passes `11/11`.
    `true` for any non-production `NODE_ENV`. Intentional for local dev, but a
    staging environment that mirrors production payments would accept forged
    callbacks until secrets are set. See the new launch gate in Phase 7A.
+5. **External provider callback amount/currency is not normalized yet.**
+   `completePurchaseIntent(...)` can validate `priceAmount` and `priceCurrency`
+   when passed, but `completeProviderWebhook(...)` currently completes BTCPay /
+   NOWPayments callbacks from status + intent/invoice ids only. Before live
+   crypto payments, the webhook adapter must either extract provider-reported
+   amount/currency from callbacks or re-fetch the invoice/payment from the
+   provider API before granting wallet currency.
+6. **Checkout creation can race.** `createPurchaseIntent(...)` persists the
+   local intent, then calls the provider outside that transaction. A repeated
+   request with the same idempotency key can see an existing intent without
+   checkout metadata and create a second external invoice/link before the first
+   response updates metadata. Use provider-level idempotency/order ids plus a
+   local `checkout_status`/lock or move invoice creation behind a retry-safe job
+   before paid launch.
+7. **The wallet mutation lock is process-local.** Atomic SQL debits protect the
+   balance row, and uniqueness constraints roll back duplicate active assets,
+   but multi-instance deployments still need database row locks/advisory locks
+   or conflict-aware retries for nicer direct-purchase/gacha behavior under
+   simultaneous requests.
+8. **The current gacha is intentionally MVP-only.** It is one-result-per-roll,
+   static/env configured, no pity/guarantees, no duplicate inventory, no burn
+   exchange, no marketplace, and no database-managed seasons/collections.
+9. **The current payment lifecycle has no refund/reversal/cancelled states.**
+   `wallet_purchase_intents.status` is effectively `pending|completed` in the
+   shipped path. Before live money, add explicit statuses and support handling
+   for expired, cancelled, refunded, disputed, underpaid, overpaid, and late
+   crypto payments.
+10. **Core extraction is still not started.** The clean reusable-core step
+    remains blocked by the Phase 6 naming cleanup or by a deliberate adapter
+    boundary that prevents `mycelium`, `spore`, Mushroom portraits, Telegram
+    auth, Sequelize models, and home-field code from leaking into
+    `backpack-game-core`.
 
 ### Recommended follow-ups
 
 - Keep this plan as a historical ship record; treat the Deferred list and the
   Phase 7A **Remaining launch gates** as the live backlog.
 - Before any paid pilot, the true blockers are the purchase/gacha frontend
-  (bundle picker, roll UI, terms/support copy) and the wallet drift-audit
-  helper — not additional backend plumbing.
+  (bundle picker, roll UI, terms/support copy), provider sandbox/live validation,
+  callback amount/currency normalization, checkout race hardening, refund/late
+  crypto handling, and the wallet drift-audit helper.
 - Extract the shipped wallet / asset / gacha runtime contracts into a dedicated
   `docs/` reference doc (the `docs/infra-hardening.md` pattern) so future agents
   read current behavior from a reference, not from this plan's phase sections.
@@ -219,7 +259,12 @@ simple direct skin buying available when gacha mode is off.
   roll, grant duplicate dust/shards, or allow duplicate instances. The MVP below
   recommends rejecting until duplicate mechanics are implemented.
 
-## Current State Snapshot
+## Pre-Implementation State Snapshot
+
+Historical snapshot from 2026-06-22 before Phases 1-5, 7, and 7A shipped. This
+section explains why the plan was shaped this way; it is not the current runtime
+contract. For the current state, use the Implementation Status and
+Post-Implementation Review sections above.
 
 - Run/prep economy uses `game_run_players.coins`. This is temporary per-run
   shop currency used for artifacts, refreshes, refunds, and budget validation.
@@ -446,6 +491,26 @@ Backend contract:
   enabling real-money purchases in production.
 
 ### Crypto provider recommendation
+
+Revalidated against public provider docs on 2026-07-01:
+
+- Telegram's official Bot Payments API for digital goods says bots and Mini
+  Apps selling digital goods/services inside Telegram apps must use Telegram
+  Stars, not cryptocurrency:
+  <https://core.telegram.org/bots/payments-stars>.
+- BTCPay's official site/docs still describe a self-hosted, open-source Bitcoin
+  payment processor with no platform processing/subscription fees and merchant
+  control of funds:
+  <https://btcpayserver.org/> and <https://docs.btcpayserver.org/Guide/>.
+- NOWPayments still publicly advertises 0.5% monocurrency / 1% conversion
+  service fees and an adult-industry solution page:
+  <https://nowpayments.io/pricing> and
+  <https://nowpayments.io/all-solutions/adult>.
+
+Treat this as a dated provider-policy snapshot, not a permanent guarantee. Fees,
+accepted categories, KYB/AML requirements, sanctions controls, and adult-content
+policy can change; re-check provider docs and account terms before every paid
+pilot or geography expansion.
 
 Use provider adapters in this order:
 
@@ -834,23 +899,45 @@ policy, and coverage gaps in code.
 
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
+- Normalize and validate external provider callback amount/currency before
+  granting wallet currency. For BTCPay this can be done by re-fetching the
+  settled invoice or extracting settled invoice amount/currency when present;
+  for NOWPayments extract `price_amount` / `price_currency` (and any actual
+  paid amount fields needed for support) before calling `completePurchaseIntent`.
+- Make checkout creation retry-safe. The local intent insert is idempotent, but
+  provider checkout creation currently happens after the DB transaction; protect
+  it with provider order-id idempotency plus local checkout state/locking so one
+  player retry cannot create multiple payable invoices for the same intent.
+- Add explicit purchase-intent lifecycle states beyond `pending|completed`:
+  expired, cancelled, refunded, disputed, underpaid, overpaid, and late-paid.
+  Decide which states grant currency, which need manual review, and which create
+  compensating wallet transactions.
 - Set provider webhook secrets in every non-local environment.
   `verifyPaymentWebhookSignature` fails **open** (returns `true`) when the
   secret env var is unset and `NODE_ENV !== 'production'`, so a staging
   environment that mirrors production payments would accept forged callbacks
   until `BTCPAY_WEBHOOK_SECRET` / `NOWPAYMENTS_IPN_SECRET` are configured.
   Consider failing closed once a payment-capable staging surface exists.
+- Replace the process-local wallet mutation lock with database row/advisory
+  locks or conflict-aware retries before running multiple app instances that can
+  process paid wallet, direct asset purchase, or gacha requests concurrently.
 - Add terms, refund/support contact, and payment-dispute copy reachable from
   the purchase UI.
 - Add adult-content/age/compliance gates before enabling crypto providers:
   prohibit unlawful sexual content, minors/CSAM, non-consensual material, and
   anything forbidden in the merchant's jurisdictions or provider terms.
+- Build a real wallet purchase UI: bundle picker, configured provider/surface
+  availability, pending/failed/completed states, Telegram invoice opening,
+  external crypto checkout links, support/terms links, and localized errors.
 - Add frontend/e2e coverage for wallet bundle listing, Telegram invoice opening,
-  wallet refresh after verified payment, and purchase failure states. The
-  current screenshot coverage only proves the home wallet-buy entry point is
-  visible.
+  wallet refresh after verified payment, external checkout fallback, and
+  purchase failure states. The current screenshot coverage only proves the home
+  wallet-buy entry point is visible.
 - Add gacha UI coverage where pack skins show roll acquisition instead of
   direct buy, while direct-only skins still show direct buy.
+- Build the gacha UI before paid rolls: pack detail, odds display, roll action,
+  "no unowned assets left" state, active/expired/future pack states, and a clear
+  distinction between direct-buy and roll-only skins.
 - Add frontend/e2e coverage that buying a skin while one mushroom is active
   makes it owned/equippable for the target mushroom without changing character
   XP.
@@ -978,11 +1065,16 @@ Recommended initial choices:
 8. Phase 7A code hardening: atomic wallet debits, provider checkout creation,
    payment webhook verification, payment-surface policy, first support hooks,
    selective gacha catalog config, and initial frontend/screenshot coverage.
-9. Paid launch readiness: real provider validation, purchase terms/refund UI,
+9. Paid launch readiness: real provider validation, callback amount/currency
+   validation, checkout-race hardening, purchase terms/refund UI,
    adult/content-compliance gates, refund/late-payment runbooks, and deeper
    frontend/e2e payment coverage.
-10. Rename character XP and run currency internals, keeping compatibility where
+10. Product purchase UX: wallet bundle picker, provider/surface-aware checkout,
+   gacha pack/odds/roll UI, and localized support/error states.
+11. Data operations: eager wallet backfill, drift audit/reconciliation helper,
+   purchase-intent expiry/refund/reversal jobs, and provider support runbooks.
+12. Rename character XP and run currency internals, keeping compatibility where
    needed.
-11. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
-12. Adapterize and optionally extract battle simulation.
-13. Add hub/submodule metadata and final cross-repo verification.
+13. Extract pure grid/loadout/fusion/shop helpers to `backpack-game-core`.
+14. Adapterize and optionally extract battle simulation.
+15. Add hub/submodule metadata and final cross-repo verification.
