@@ -1463,9 +1463,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Generation mode: chibi active-roster candidate root/);
   assert.match(result.stdout, /thalla \(character\)/);
-  assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof/);
+  assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /this read-only `npm run game:home-field:next-chibi-proof` helper/);
-  assert.match(result.stdout, /if preflight or the method gate fails, stop before stale-file archive\/imagegen but include this helper output in the blocker report/);
+  assert.match(result.stdout, /If preflight or the method gate fails, stop before stale-file archive\/imagegen but include this helper output in the blocker report/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
@@ -1477,7 +1477,7 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /same-agent file output and reference-image input binding are confirmed/);
   assert.match(result.stdout, /same agent context that will run imagegen/);
   assert.match(result.stdout, /game:home-field:find-imagegen-output/);
-  assert.match(result.stdout, /game:home-field:archive-stale-chibi-proof -- thalla/);
+  assert.match(result.stdout, /game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /game:home-field:claim-imagegen-output/);
   assert.match(result.stdout, /chibi-proof-context/);
   assert.match(result.stdout, /verify-chibi-proof-files -- --reference/);
@@ -1502,7 +1502,9 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /sprite-box reference sheet/i);
   assert.match(result.stdout, /thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /Use that reference only for consistency; do not slice it into final frames/);
+  assert.match(result.stdout, /approved reference PNG as an actual image input/);
   assert.match(result.stdout, /one coherent 8x4 state sheet/i);
+  assert.match(result.stdout, /Stop if only prompt-text state-sheet generation is available/);
   assert.match(result.stdout, /Do not generate the final idle\/walk states as separate imagegen calls/);
   assert.match(result.stdout, /grouped state sheet itself must contain the idle bob and walk poses/);
   assert.match(result.stdout, /do not synthesize motion after split/i);
@@ -1581,24 +1583,30 @@ test('[home-field] placeholder chibi prompt stays legacy-only', () => {
   assert.doesNotMatch(placeholder.constraints, /full 32-frame animation is a later optional polish stage/);
 });
 
-test('[home-field] chibi proof launcher carries built-in imagegen capability confirmation', () => {
+test('[home-field] chibi proof launcher carries explicit reference-capable workflow', () => {
   const prompt = fs.readFileSync(runChibiProofPromptPath, 'utf8');
 
   assert.match(prompt, /Short Launcher Prompt/);
-  assert.match(prompt, /First satisfy the current method gate/);
-  assert.match(prompt, /do not repeat the unchanged built-in sprite-box imagegen path/);
-  assert.match(prompt, /If using Codex Desktop built-in imagegen after that separate method change/);
-  assert.match(prompt, /I confirm it can save discoverable PNGs and use the checked-in reference PNGs as actual image inputs/);
-  assert.match(prompt, /Capability flags are not the method change/);
-  assert.match(prompt, /listing docs\/reference PNG paths is not image attachment/);
+  assert.match(prompt, /Use the explicit CLI\/API helper path/);
+  assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
+  assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
+  assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
+  assert.match(prompt, /Continue past the reference gate only if the grouped 8x4 state sheet can also be generated with the passed reference PNG attached as an actual image input/);
+  assert.match(prompt, /Do not use built-in or prompt-only generation unless you first state a stronger method change/);
+  assert.match(prompt, /default launcher now uses explicit CLI\/API fallback/);
+  assert.match(prompt, /Use the explicit CLI\/API helper path by default/);
+  assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
   assert.match(prompt, /Do not set `HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` to the checked-in PNGs under `docs\/reference\/home-field\/`/);
-  assert.match(prompt, /stop after chibi-proof-context, preflight, and next-chibi-proof/);
+  assert.match(prompt, /still run the read-only `npm run game:home-field:next-chibi-proof` helper/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
-  assert.match(prompt, /fresh Codex sessions do not inherit shell environment variables or prior chat confirmations/);
+  assert.match(prompt, /using the same environment that made preflight pass/);
   assert.match(prompt, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /image_gen\.py edit/);
   assert.match(prompt, /API-size source PNG/);
+  assert.match(prompt, /`chibi-reference-api-proof` creates only the non-production reference sheet/);
+  assert.match(prompt, /grouped 8x4 state sheet can also be generated with the passed reference PNG attached as an actual image input/);
+  assert.match(prompt, /prompt text for the grouped state sheet/);
   assert.match(prompt, /palette audit and visual gate must still pass/);
   assert.match(prompt, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
@@ -1637,6 +1645,9 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs/);
   assert.match(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /CLI\/API warning/);
+  assert.match(result.stdout, /use game:home-field:chibi-reference-api-proof with an explicit --env-file/);
+  assert.match(result.stdout, /Production-readiness warning/);
+  assert.match(result.stdout, /grouped 8x4 state sheet must also be generated through a reference-capable image path/);
   assert.match(result.stdout, /Reference normalization warning/);
   assert.match(result.stdout, /palette audit must still pass/);
   assert.match(result.stdout, /do not run the probe when reference binding is unavailable/);
@@ -2168,6 +2179,48 @@ test('[home-field] chibi proof preflight blocks missing built-in reference bindi
   assert.match(result.stderr, /Do not archive stale files before preflight passes/);
   assert.match(result.stdout, /State sheet output path: \.agent\/home-field-workspace\/raw\/thalla_chibi\.states\.source\.png/);
   assert.match(result.stdout, /Raw frame output slots: 32/);
+});
+
+test('[home-field] chibi proof preflight accepts explicit CLI env file', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-preflight-env-file-test');
+  const fakeCodexHome = path.join(fixtureDir, 'codex-home');
+  const fakeCli = path.join(fakeCodexHome, 'skills/.system/imagegen/scripts/image_gen.py');
+  const envFile = path.join(fixtureDir, '.env');
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(fakeCli), { recursive: true });
+  fs.writeFileSync(fakeCli, '#!/usr/bin/env python3\n');
+  fs.writeFileSync(envFile, [
+    `CODEX_HOME=${fakeCodexHome}`,
+    'OPENAI_API_KEY=test-key',
+    'HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN=1',
+    'HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=',
+    'HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES='
+  ].join('\n'));
+
+  try {
+    const result = spawnSync(process.execPath, [chibiPreflightScriptPath, `--env-file=${envFile}`], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        CODEX_HOME: '',
+        OPENAI_API_KEY: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
+        HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
+        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
+        HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
+        HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Explicit env file: tmp\/home-field-chibi-preflight-env-file-test\/\.env/);
+    assert.match(result.stdout, /OPENAI_API_KEY: set from explicit env file/);
+    assert.match(result.stdout, /CLI fallback ready: yes/);
+    assert.match(result.stdout, /Preflight passed/);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
 });
 
 test('[home-field] chibi proof preflight rejects checked-in style references as local source inputs', () => {

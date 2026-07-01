@@ -35,10 +35,10 @@ function main() {
   console.log('  HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1  # use only when the launcher/user explicitly confirms both built-in disk output and actual reference-image input binding for this same session');
   console.log('');
   console.log('Required commands:');
-  console.log('  npm run game:home-field:preflight-chibi-proof');
+  console.log('  npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file> # default CLI/API path');
   console.log('  npm run game:home-field:next-chibi-proof  # read-only; run before a blocker handoff even when preflight or the method gate fails');
   console.log('  npm run game:home-field:find-imagegen-output -- --since-minutes=5  # diagnostic only after reference binding is confirmed and built-in disk output is still unconfirmed');
-  console.log('  npm run game:home-field:archive-stale-chibi-proof -- thalla');
+  console.log('  npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>');
   console.log('  npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file> # reference-capable CLI/API path; writes API source, normalizes to 512x384, then runs verifier + palette audit serially');
   console.log('  npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
   console.log('  npm run game:home-field:verify-chibi-proof-files -- --reference');
@@ -72,7 +72,8 @@ function main() {
   console.log('Blocker reporting warning: if preflight or the method gate blocks the run, still run the read-only next-chibi-proof helper before final response and report that no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred.');
   console.log('Reference-input warning: current Thalla proof art needs the checked-in PNGs attached as actual imagegen inputs. Viewing them in chat or naming them in text is not image-guided generation.');
   console.log('Local-input warning: docs/reference PNGs are style references only; HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS must point to proof source PNGs, not the checked-in reference images.');
-  console.log('CLI/API warning: when using image_gen.py edit, prefer game:home-field:chibi-reference-api-proof with an explicit --env-file; do not hand-roll env discovery, venv setup, prompt copying, normalization, verifier, and palette-audit steps.');
+  console.log('CLI/API warning: when using image_gen.py edit, use game:home-field:chibi-reference-api-proof with an explicit --env-file; do not hand-roll env discovery, venv setup, prompt copying, normalization, verifier, and palette-audit steps.');
+  console.log('Production-readiness warning: chibi-reference-api-proof creates only the non-production reference sheet. The grouped 8x4 state sheet must also be generated through a reference-capable image path with the passed reference attached as an actual image input; stop if only prompt-text generation is available.');
   console.log('Reference normalization warning: GPT-image-2 may render a 1024x768 API source, but the reference gate verifies the normalized 512x384 sprite-box source; palette audit must still pass after normalization.');
   console.log('Frame contract: generate one coherent 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
   console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');

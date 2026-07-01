@@ -661,6 +661,19 @@ The active Stage 1 contract is:
 - docs now allow API-size-to-reference-size normalization only as deterministic scale normalization, never as palette/style approval;
 - future CLI/API reference runs should pass an explicit env file and use the helper instead of hand-rolled credential searches or parallel verifier/audit reads.
 
+### 42. Production Prompt Loop Hid The State-Sheet Method Gap
+
+**Symptom:** After the reference API helper landed, repeated "give me a new production-ready prompt" loops still did not reliably produce production-ready PNGs. The flow had improved the non-production reference sheet path, but the next state-sheet step could still slide back to prompt-only generation or an unproven built-in imagegen surface. That meant a run could pass or discuss the reference gate and still have no production-safe method for `.agent/home-field-workspace/raw/thalla_chibi.states.source.png`.
+
+**What was wrong in the flow:** The short launcher and generated helper output did not make the CLI/API env file the default shared capability path for preflight, archive, and reference generation. The generated asset prompt still described CLI fallback as optional, and `archive-stale-chibi-proof` reran preflight from the ambient environment instead of accepting the same explicit env file. Most importantly, `chibi-reference-api-proof` was easy to mistake for the production generator even though it only creates the reference sheet; the final grouped `8x4` state sheet still needs an image-guided call with the approved reference PNG attached as an actual image input.
+
+**Guardrails added:**
+
+- `preflight-chibi-proof` now accepts `--env-file=<explicit-env-file>` and reports when `OPENAI_API_KEY` came from that file;
+- `archive-stale-chibi-proof` passes the same explicit env file through to preflight, so stale files are not moved under a different capability context;
+- the launcher, generated prompt, requirements doc, candidate contract, agent flow, and context helper now default to the explicit CLI/API helper path and say to stop if only prompt-text state-sheet generation is available;
+- docs now state that `chibi-reference-api-proof` is reference-only and that production readiness requires the final grouped `8x4` state sheet to be generated through a reference-capable image path with the passed reference PNG attached as an actual image input.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -697,3 +710,4 @@ The active Stage 1 contract is:
 32. When preflight or the method gate blocks a run before imagegen, still run the read-only `npm run game:home-field:next-chibi-proof` helper before final handoff, then report that archive, imagegen, grouped state sheet, split frames, candidate production, preview, verdict recording, and app overwrite did not happen.
 33. Do not treat checked-in `docs/reference/home-field/*.png` paths as a local source-input method. They are style references only; actual image inputs require tool-level attachment, explicit reference-capable CLI/API support, or separate fresh proof source PNGs.
 34. For explicit CLI/API reference attempts, use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>`. API-size output may be normalized to `512x384` before the reference verifier, but palette audit and visual review remain hard gates.
+35. Do not treat a passing reference helper run as production readiness. Use the same explicit env file for preflight, archive, and reference generation, then continue only if the grouped `8x4` state sheet can also be generated with the approved reference PNG attached as an actual image input.

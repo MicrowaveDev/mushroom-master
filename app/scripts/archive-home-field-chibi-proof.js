@@ -15,10 +15,13 @@ const supportedIds = new Set(['thalla']);
 function usage() {
   console.log(`Usage: archive-home-field-chibi-proof <id>
 
-Runs game:home-field:preflight-chibi-proof with the current environment. Only
-after preflight passes, moves the exact live chibi proof paths for <id> into
-.agent/home-field-workspace/rejected/<id>-chibi-proof-<timestamp>/ and writes an
-archive manifest. Supported id: thalla.
+Runs game:home-field:preflight-chibi-proof with the current environment or an
+explicit env file. Only after preflight passes, moves the exact live chibi proof
+paths for <id> into .agent/home-field-workspace/rejected/<id>-chibi-proof-<timestamp>/
+and writes an archive manifest. Supported id: thalla.
+
+Options:
+  --env-file=<path>  Pass an explicit imagegen env file through to preflight.
 `);
 }
 
@@ -30,8 +33,27 @@ function rel(filePath) {
   return path.relative(repoRoot, filePath);
 }
 
-function runPreflight() {
-  const result = spawnSync('npm', ['run', 'game:home-field:preflight-chibi-proof'], {
+function parseArgs(argv) {
+  const opts = {
+    id: '',
+    preflightArgs: []
+  };
+  for (const arg of argv) {
+    if (arg.startsWith('--env-file=')) {
+      opts.preflightArgs.push(arg);
+    } else if (!arg.startsWith('-') && !opts.id) {
+      opts.id = arg;
+    } else {
+      throw new Error(`Unexpected argument: ${arg}`);
+    }
+  }
+  return opts;
+}
+
+function runPreflight(preflightArgs) {
+  const args = ['run', 'game:home-field:preflight-chibi-proof'];
+  if (preflightArgs.length > 0) args.push('--', ...preflightArgs);
+  const result = spawnSync('npm', args, {
     cwd: repoRoot,
     env: process.env,
     encoding: 'utf8'
@@ -86,7 +108,16 @@ function main() {
     return;
   }
 
-  const id = argv.find((arg) => !arg.startsWith('-'));
+  let parsed;
+  try {
+    parsed = parseArgs(argv);
+  } catch (err) {
+    console.error(`Usage error: ${err.message}`);
+    usage();
+    process.exit(1);
+  }
+
+  const id = parsed.id;
   if (!id || !supportedIds.has(id)) {
     console.error(`Usage error: expected supported chibi id (${[...supportedIds].join(', ')})`);
     usage();
@@ -94,7 +125,7 @@ function main() {
   }
 
   try {
-    runPreflight();
+    runPreflight(parsed.preflightArgs);
 
     const prefix = `${id}_chibi`;
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');

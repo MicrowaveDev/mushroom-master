@@ -52,10 +52,10 @@ When a family-specific preflight exists, run it immediately after the launcher/c
 For chibi:
 
 ```bash
-npm run game:home-field:preflight-chibi-proof
+npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>
 ```
 
-Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can both save discoverable PNGs and attach the checked-in reference PNGs as actual image inputs, run the chibi proof helper commands with:
+Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. For the explicit CLI/API route, load credentials with `--env-file=<explicit-env-file>` instead of searching neighboring repos or assuming the shell inherited `OPENAI_API_KEY`. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can both save discoverable PNGs and attach the checked-in reference PNGs as actual image inputs, run the chibi proof helper commands with:
 
 ```bash
 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 <command>
@@ -87,6 +87,8 @@ npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-fi
 
 The helper keeps the prompt source in `next-chibi-proof`, passes the checked-in reference PNGs as actual `--image` inputs, preserves an API-size source PNG, normalizes it to the current `512x384` sprite-box reference when needed, then runs `verify-chibi-proof-files -- --reference` and `palette-audit --fail-on-bloat` serially. A normalized reference still fails if palette bloat, status ornament, hair/wig reads, or other visual gate issues remain.
 
+This helper is reference-only. It does not produce production-ready sprites by itself. After the reference gate passes, the grouped `8x4` state sheet must be generated through a reference-capable image path with the approved reference PNG attached as an actual image input. If only prompt-text state-sheet generation is available, stop and report the production-readiness blocker rather than burning another unguided attempt.
+
 The claim helper considers only files newer than `--since`, copies the newest bounded result, records source/destination hashes, and runs the matching chibi file verifier. Keep `game:home-field:find-imagegen-output` for the one diagnostic preflight probe only.
 
 ### IG-4. Candidate Work Stays Out Of App-Facing Paths
@@ -115,7 +117,7 @@ Every run must preserve enough evidence to explain where the asset came from:
 
 Rejected source images and candidates are negative examples. Archive them under `.agent/home-field-workspace/rejected/` when the workflow says to clear the live workspace; do not delete them as a way to make the evidence simpler.
 
-For Thalla chibi proof reruns, use `npm run game:home-field:archive-stale-chibi-proof -- thalla` instead of ad hoc `rg`, `find`, or shell moves. The helper reruns preflight with the current environment and moves only the documented live reference, raw, and candidate paths after preflight passes.
+For Thalla chibi proof reruns, use `npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>` instead of ad hoc `rg`, `find`, or shell moves. The helper reruns preflight with the same explicit environment and moves only the documented live reference, raw, and candidate paths after preflight passes.
 
 ### IG-6. Prompt For Runtime Assets, Not Pretty Standalone Pictures
 
