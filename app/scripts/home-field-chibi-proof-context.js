@@ -30,11 +30,10 @@ function exists(relPath) {
   return fs.existsSync(path.join(repoRoot, relPath));
 }
 
-function chibiLocalSourceMode() {
+function chibiQueueItem() {
   try {
     const queue = JSON.parse(fs.readFileSync(path.join(repoRoot, generationQueuePath), 'utf8'));
-    const item = (queue.items || []).find((entry) => entry.id === generationQueueItemId);
-    return item?.generationContract?.stateSheet?.localSourceMode || null;
+    return (queue.items || []).find((entry) => entry.id === generationQueueItemId) || null;
   } catch {
     return null;
   }
@@ -49,18 +48,29 @@ function parseArgs(argv) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const existingFrameCount = framePaths.filter(exists).length;
-  const localSource = chibiLocalSourceMode();
+  const queueItem = chibiQueueItem();
+  const localSource = queueItem?.generationContract?.stateSheet?.localSourceMode || null;
+  const sourceGate = queueItem?.sourceGate || null;
+  const sourceGateBlocked = /blocked|failed|exhausted/i.test(sourceGate?.status || '');
   const localPreflightCommand = localSource?.preflightCommand || 'npm run game:home-field:preflight-chibi-proof -- --source=<png>';
   const localArchiveCommand = localSource?.archiveCommand || 'npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<png>';
   const localStageCommand = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
   console.log('# Thalla Home Field Chibi Proof Context');
   console.log('');
-  console.log('Active default path: supplied complete 8x4 local state-sheet source');
+  console.log(`${sourceGateBlocked ? 'Blocked' : 'Active'} default path: supplied complete 8x4 local state-sheet source`);
   console.log(`  sourcePath: ${localSource?.sourcePath || '<missing queue localSourceMode.sourcePath>'}`);
+  if (sourceGate) {
+    console.log(`  sourceGate: ${sourceGate.status || '<missing>'}`);
+    if (sourceGate.sourceSha256) console.log(`  blocked source sha256: ${sourceGate.sourceSha256}`);
+    if (sourceGate.referenceProxySha256) console.log(`  failed reference proxy sha256: ${sourceGate.referenceProxySha256}`);
+    if (sourceGate.evidence) {
+      console.log(`  palette failure: significant exact ${sourceGate.evidence.exactColorsAtLeastSignificantThreshold}/${sourceGate.evidence.targetMaxSignificantExactColors}, minor ${sourceGate.evidence.exactColorsAtLeastMinorThreshold}, coarse32 significant ${sourceGate.evidence.coarseStep32SignificantBins}`);
+    }
+  }
   console.log('  reference inputs: styleReferences for visual review only; not active imagegen inputs');
   console.log('  fallback history: hidden by default; use --show-fallbacks only when intentionally planning a future method change');
   console.log('');
-  console.log('Required commands:');
+  console.log(sourceGateBlocked ? 'Commands after sourceGate is cleared (do not run for the blocked source hash):' : 'Required commands:');
   console.log('  npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof # structured queue item; default output is the local-source run contract');
   console.log('  npm run game:home-field:next-chibi-proof  # read-only local-source prompt, paths, validation commands, and style references');
   console.log(`  ${localPreflightCommand} # queue-owned supplied complete 8x4 local state-sheet source`);
@@ -94,9 +104,13 @@ function main() {
   console.log('');
   console.log('Freshness warning: existing .agent files are not proof of a fresh run. After rejection, run archive-stale-chibi-proof only after source preflight passes, then stage the queue source and bind the new source chain in candidate-evidence.manifest.json.');
   console.log('Blocker reporting warning: if source preflight, archive, or staging blocks the run, still run the read-only next-chibi-proof helper before final response and report that no split frames, candidate, preview, app overwrite, or fallback imagegen occurred.');
-  console.log(`Prompt issuance warning: this queue item is ready because it has a concrete supplied complete local 8x4 state-sheet source (${localSource?.sourcePath || '<missing>'}); use the queue-printed --source commands. Do not infer .env or retry inactive methods from memory.`);
+  if (sourceGateBlocked) {
+    console.log(`Prompt issuance warning: this queue item is blocked for the current supplied source hash (${sourceGate.sourceSha256 || '<missing hash>'}); do not rerun archive/stage for ${localSource?.sourcePath || '<missing>'} until the sourcePath is replaced or a documented repair method is added.`);
+  } else {
+    console.log(`Prompt issuance warning: this queue item is ready because it has a concrete supplied complete local 8x4 state-sheet source (${localSource?.sourcePath || '<missing>'}); use the queue-printed --source commands. Do not infer .env or retry inactive methods from memory.`);
+  }
   console.log('Style-reference warning: docs/reference PNGs are style references only for visual review; local source PNGs must be proof sources, not the checked-in reference images.');
-  console.log(`Local state-sheet source warning: use the queue-owned source path with --source: preflight ${localPreflightCommand}; archive ${localArchiveCommand}; stage ${localStageCommand}. A different supplied complete 8x4 local state-sheet PNG must be passed explicitly with --source or recorded in the queue sourcePath. Skip reference imagegen, verify/audit the derived reference proxy and staged state sheet, then split and validate candidate evidence.`);
+  console.log(`Local state-sheet source warning: ${sourceGateBlocked ? 'after the sourceGate is cleared, use' : 'use'} the queue-owned source path with --source: preflight ${localPreflightCommand}; archive ${localArchiveCommand}; stage ${localStageCommand}. A different supplied complete 8x4 local state-sheet PNG must be passed explicitly with --source or recorded in the queue sourcePath. Skip reference imagegen, verify/audit the derived reference proxy and staged state sheet, then split and validate candidate evidence.`);
   console.log('Frame contract: use one coherent supplied 8x4 chibi state sheet, split it, then verify 32 isolated character-only frames.');
   console.log('Motion contract: idle bob and walk poses must exist in the grouped state sheet itself; do not synthesize motion after split.');
   console.log('Palette contract: state the plan before staging/audit, target 12-18 artist-visible colors, stay under 20 visible design colors excluding transparency/#ff00ff, run palette-audit on reference/state/candidate images, and fail palette bloat through styleCohesionCheck/stageContractCheck.');

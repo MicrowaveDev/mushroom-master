@@ -8,24 +8,25 @@
       "assetId": "thalla",
       "assetType": "character",
       "pipeline": "home-field-active-roster-chibi-stage1",
-      "status": "ready_supplied_local_state_sheet",
+      "status": "blocked_supplied_local_state_sheet_palette_gate_failed",
       "priority": 10,
       "ownerRole": "Producer/Validation Worker",
       "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and follow the printed agent instructions exactly.",
       "promptPolicy": {
-        "issueLauncherWhenStatus": "ready",
-        "action": "Launcher is allowed because this queue item includes a concrete supplied local state-sheet sourcePath and exact --source commands. Keep the pasted prompt minimal; operational details live in this queue output."
+        "issueLauncherWhenStatus": "new_source_or_repair_method_only",
+        "action": "Do not issue another production launcher for the same supplied local state-sheet source hash. Rollout codex-019f1f94-ed13-7701-85a2-62a97f7431e7 proved the queue-owned sourcePath exists and stages, but its derived reference proxy failed the hard palette audit.",
+        "blockedPromptAction": "Use this queue output as a blocker report. Continue only after replacing generationContract.stateSheet.localSourceMode.sourcePath with a new complete 8x4 local state-sheet PNG outside docs/reference, or after adding an explicit palette-cleanup/repair method with evidence and tests.",
+        "blockedShortResponse": "Blocked: the current supplied local source hash failed the reference palette audit; provide a new paletted 8x4 source or documented repair method before another production run."
       },
       "agentInstructions": [
-        "Run this queue item as: Thalla Home Field chibi Stage 1 proof.",
+        "Run this queue item as a blocked Thalla Home Field chibi Stage 1 proof review, not a production attempt.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
-        "Use generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) as the canonical supplied complete 8x4 local state-sheet source.",
-        "Preflight with npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png.",
-        "Archive stale proof files with npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png.",
-        "Stage the supplied sheet with npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png; this derives .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as a deterministic non-production reference proxy and skips reference imagegen.",
-        "Treat styleReferences as visual review references only in this local-source run; do not attach them to imagegen or run reference imagegen.",
-        "Then run reference-proxy verification, reference palette audit, state-sheet verification, state-sheet palette audit, split, frame verification, candidate production, candidate validation, candidate palette audit, evidence, preview, and verdict recording.",
-        "Stop if source preflight, archive, staging, verifier, palette audit, split, candidate validation, evidence, preview, or visual gate fails.",
+        "Do not rerun preflight/archive/stage for the current generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) because sourceGate records that this exact source hash failed the reference palette audit.",
+        "If the user supplies a new complete 8x4 local state-sheet source, update generationContract.stateSheet.localSourceMode.sourcePath and the printed --source commands before issuing a launcher.",
+        "If a palette-cleanup or repair method is intentionally adopted, add it as an explicit active method with evidence, not as hidden fallback behavior.",
+        "Treat styleReferences as visual review references only; reference imagegen is skipped, and agents must not attach styleReferences to imagegen or run reference imagegen for this blocked local-source item.",
+        "Do not use built-in imagegen, paid API fallback, or --show-fallbacks unless planning a future method change with explicit user approval.",
+        "Report the blocked source path/hash, failed reference proxy hash, failed palette audit counts, and the requirement for a new source or documented repair method.",
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
       ],
       "promptSource": {
@@ -118,6 +119,22 @@
         "that no app-facing PNG was overwritten"
       ],
       "activeSourceMode": "supplied_local_state_sheet",
+      "sourceGate": {
+        "rollout": "codex-019f1f94-ed13-7701-85a2-62a97f7431e7",
+        "status": "blocked_reference_proxy_palette_audit_failed",
+        "sourcePath": ".agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
+        "sourceSha256": "19eb3f1abc5bbaba1e88eb36c8ca308353f0e0d756528cbbddfc05430bb868fa",
+        "referenceProxyPath": ".agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png",
+        "referenceProxySha256": "8eb95c9f5a96439affccd6795bfff846a6128bc631a02ccddeccfe04743a75ec",
+        "failedCommand": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat",
+        "evidence": {
+          "exactColorsAtLeastSignificantThreshold": 31,
+          "targetMaxSignificantExactColors": 20,
+          "exactColorsAtLeastMinorThreshold": 98,
+          "coarseStep32SignificantBins": 57
+        },
+        "action": "Do not rerun this exact supplied source hash as a production-ready path. Replace it with a new paletted complete 8x4 local source outside docs/reference, or add a dedicated palette-cleanup/repair method with manifest evidence and visual gates."
+      },
       "styleReferences": [
         {
           "path": "docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png",

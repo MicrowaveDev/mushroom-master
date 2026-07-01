@@ -103,6 +103,8 @@ npm run game:home-field:stage-chibi-local-source -- --source=<queue localSourceM
 
 Then verify and audit both the derived reference proxy and staged state sheet before splitting. Do not reinterpret this mode as permission to run reference imagegen, to reuse stale `.agent` files, or to treat `docs/reference/home-field/*.png` as proof sources.
 
+Prompt issuance is source-hash gated. A supplied local `sourcePath` can make the queue ready only until that exact source hash fails a hard verifier, palette audit, or visual gate. After a failed source run, the queue must record a `sourceGate` with rollout, source hash, failed command, evidence counts, and next action; the default queue output must stop issuing a production launcher for that same hash. Preflight must reject a `--source` PNG whose sha256 matches a blocked `sourceGate`, even if the file exists and still has a complete `8x4` layout. Continue only after replacing `generationContract.stateSheet.localSourceMode.sourcePath` with a new complete `8x4` local source outside `docs/reference`, or after adding an explicit palette-cleanup/repair method with manifest evidence and the same visual gates.
+
 The same default-path rule applies to `npm run game:home-field:next-chibi-proof` and `app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md`: their default Thalla local-source output must not tell the worker to attach `docs/reference` images to imagegen, run `chibi-reference-api-proof`, claim built-in outputs, or regenerate the state sheet. They may show inactive method history only by pointing to the queue `--show-fallbacks` view or, for fallback tooling, by running `npm run game:home-field:next-chibi-proof -- --show-fallbacks`.
 
 For paid API fallback only, preflight uses:

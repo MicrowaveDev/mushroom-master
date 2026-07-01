@@ -84,6 +84,10 @@ function apiFallbackInactiveMethod(item) {
   return inactiveMethods(item).find((method) => method.env) || null;
 }
 
+function localSourceGateBlocked(item) {
+  return isBlockedStatus(item.sourceGate?.status || '');
+}
+
 function validateEnvBlock(issues, itemId, env, label) {
   if (!env.envFileArg) issues.push(`${itemId}: ${label} missing envFileArg`);
   if (env.doNotInferEnvFile !== true) issues.push(`${itemId}: ${label}.doNotInferEnvFile must be true`);
@@ -191,6 +195,7 @@ function validateQueue(queue) {
     const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
     const activeLocalSource = item.activeSourceMode === 'supplied_local_state_sheet';
     const sourcePath = localSourceMode?.sourcePath || '';
+    const sourceGateBlocked = localSourceGateBlocked(item);
     const serializedActiveItem = JSON.stringify({
       ...item,
       inactiveMethods: undefined
@@ -205,8 +210,8 @@ function validateQueue(queue) {
     if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);
 
     if (activeLocalSource) {
-      if (isBlockedStatus(item.status)) {
-        issues.push(`${item.id}: supplied local-source queue item must not use a blocked/exhausted status`);
+      if (isBlockedStatus(item.status) && !sourceGateBlocked) {
+        issues.push(`${item.id}: blocked supplied local-source status requires sourceGate with blocked status`);
       }
       if (!['Producer/Validation Worker', 'Local Source Worker'].includes(item.ownerRole)) {
         issues.push(`${item.id}: supplied local-source queue item ownerRole must be Producer/Validation Worker or Local Source Worker`);
@@ -216,10 +221,23 @@ function validateQueue(queue) {
           issues.push(`${item.id}: ${field} must not be top-level in supplied local-source mode; move inactive details behind inactiveMethods`);
         }
       }
-      if (item.promptPolicy?.issueLauncherWhenStatus !== 'ready') {
+      if (sourceGateBlocked) {
+        if (item.promptPolicy?.issueLauncherWhenStatus === 'ready') {
+          issues.push(`${item.id}: blocked local-source gate must not issue launcher when ready`);
+        }
+        if (!item.promptPolicy?.blockedPromptAction || !item.promptPolicy?.blockedShortResponse) {
+          issues.push(`${item.id}: blocked local-source gate must include blockedPromptAction and blockedShortResponse`);
+        }
+        if (!item.sourceGate?.sourceSha256 || !item.sourceGate?.referenceProxySha256) {
+          issues.push(`${item.id}: blocked local-source gate must record source and reference proxy hashes`);
+        }
+        if (!/palette/i.test(item.sourceGate?.status || '') || !/palette/i.test(item.sourceGate?.action || '')) {
+          issues.push(`${item.id}: blocked local-source gate must explain palette failure and next action`);
+        }
+      } else if (item.promptPolicy?.issueLauncherWhenStatus !== 'ready') {
         issues.push(`${item.id}: supplied local-source promptPolicy.issueLauncherWhenStatus must be ready`);
       }
-      if (!/sourcePath/.test(item.promptPolicy?.action || '') || !/--source/.test(item.promptPolicy?.action || '')) {
+      if (!/sourcePath/.test(item.promptPolicy?.action || '') || (!sourceGateBlocked && !/--source/.test(item.promptPolicy?.action || ''))) {
         issues.push(`${item.id}: supplied local-source promptPolicy.action must point to the sourcePath and --source commands`);
       }
       if (/OPENAI_IMAGEGEN_API_KEY|HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE|OPENAI_API_KEY|built-in imagegen path|referenceInputs/i.test(agentInstructionText)) {
@@ -228,7 +246,7 @@ function validateQueue(queue) {
       if (!/styleReferences as visual review references only/i.test(agentInstructionText)) {
         issues.push(`${item.id}: supplied local-source agentInstructions must describe styleReferences as visual review references`);
       }
-      if (!/skips reference imagegen/i.test(agentInstructionText)) {
+      if (!/skips reference imagegen|reference imagegen is skipped/i.test(agentInstructionText)) {
         issues.push(`${item.id}: supplied local-source agentInstructions must say reference imagegen is skipped`);
       }
       if (!Array.isArray(item.styleReferences) || item.styleReferences.length === 0) {
@@ -279,8 +297,11 @@ function validateQueue(queue) {
       if (!agentInstructionText.includes('--source')) {
         issues.push(`${item.id}: agentInstructions must mention --source for local-source commands`);
       }
-      if (!agentInstructionText.includes(item.commands?.stageLocalSource || '<missing-stage-command>')) {
+      if (!sourceGateBlocked && !agentInstructionText.includes(item.commands?.stageLocalSource || '<missing-stage-command>')) {
         issues.push(`${item.id}: agentInstructions must mention the local source stage command`);
+      }
+      if (sourceGateBlocked && !/sourceGate/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: blocked local-source agentInstructions must mention sourceGate`);
       }
       if (!/complete 8x4 local state-sheet/i.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must describe complete 8x4 local state-sheet source mode`);
@@ -341,7 +362,9 @@ function printPromptPolicy(item) {
 function printLocalSourceMode(item) {
   const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
   if (!localSourceMode?.completeStateSheetAllowed) return;
-  console.log('Active local-source plan:');
+  const sourceGate = item.sourceGate;
+  const sourceBlocked = localSourceGateBlocked(item);
+  console.log(sourceBlocked ? 'Blocked local-source plan:' : 'Active local-source plan:');
   console.log(`  source path: ${localSourceMode.sourcePath || '<missing>'}`);
   console.log(`  source exists: ${sourcePathExists(localSourceMode.sourcePath) ? 'yes' : 'no'}`);
   console.log(`  source kind: ${localSourceMode.sourceKind || 'complete 8x4 local state-sheet'}`);
@@ -353,6 +376,19 @@ function printLocalSourceMode(item) {
   console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
   console.log(`  continue at: ${localSourceMode.continueAt}`);
   console.log(`  reference imagegen skipped: ${localSourceMode.skipImagegen ? 'yes' : 'no'}`);
+  if (sourceGate) {
+    console.log('  source gate:');
+    console.log(`    rollout: ${sourceGate.rollout || '<missing>'}`);
+    console.log(`    status: ${sourceGate.status || '<missing>'}`);
+    if (sourceGate.sourceSha256) console.log(`    source sha256: ${sourceGate.sourceSha256}`);
+    if (sourceGate.referenceProxySha256) console.log(`    reference proxy sha256: ${sourceGate.referenceProxySha256}`);
+    if (sourceGate.failedCommand) console.log(`    failed command: ${sourceGate.failedCommand}`);
+    const evidence = sourceGate.evidence || {};
+    if (Object.keys(evidence).length > 0) {
+      console.log(`    palette evidence: significant exact ${evidence.exactColorsAtLeastSignificantThreshold ?? '<missing>'}/${evidence.targetMaxSignificantExactColors ?? '<missing>'}, minor ${evidence.exactColorsAtLeastMinorThreshold ?? '<missing>'}, coarse32 significant ${evidence.coarseStep32SignificantBins ?? '<missing>'}`);
+    }
+    if (sourceGate.action) console.log(`    action: ${sourceGate.action}`);
+  }
   console.log('');
 }
 
@@ -368,7 +404,9 @@ function printStyleReferences(item) {
 }
 
 function printCommands(item) {
-  console.log('Required commands:');
+  console.log(localSourceGateBlocked(item)
+    ? 'Commands after sourceGate is cleared (do not run for the blocked source hash):'
+    : 'Required commands:');
   for (const key of [
     'context',
     'scopedPrompt',

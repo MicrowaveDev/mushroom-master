@@ -11,6 +11,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { repoRoot } from '../shared/repo-root.js';
 import { readPngHeader } from './lib/bitmap-image-toolkit.js';
 
@@ -90,6 +91,7 @@ function completeStateSheetInfo(inputPath) {
   try {
     const abs = resolveInputPath(inputPath);
     const header = readPngHeader(abs);
+    const sha256 = crypto.createHash('sha256').update(fs.readFileSync(abs)).digest('hex');
     const cellWidth = header.width / 8;
     const cellHeight = header.height / 4;
     const complete = header.width % 8 === 0 &&
@@ -102,6 +104,7 @@ function completeStateSheetInfo(inputPath) {
       height: header.height,
       cellWidth,
       cellHeight,
+      sha256,
       complete
     };
   } catch (err) {
@@ -139,13 +142,15 @@ function readQueueGate() {
     return {
       queuePath: generationQueuePath,
       itemStatus: item?.status || '',
-      methodGate: item?.methodGate || inactiveBuiltin?.methodGate || null
+      methodGate: item?.methodGate || inactiveBuiltin?.methodGate || null,
+      sourceGate: item?.sourceGate || null
     };
   } catch (err) {
     return {
       queuePath: generationQueuePath,
       itemStatus: '',
       methodGate: null,
+      sourceGate: null,
       error: err.message
     };
   }
@@ -158,6 +163,8 @@ function main() {
   const queueGate = readQueueGate();
   const methodGateStatus = queueGate.methodGate?.status || '';
   const builtinMethodGateBlocked = /blocked|exhausted/i.test(methodGateStatus);
+  const sourceGateStatus = queueGate.sourceGate?.status || '';
+  const localSourceGateBlocked = /blocked|exhausted|failed/i.test(sourceGateStatus);
   const codexHome = effectiveEnv.CODEX_HOME || path.join(effectiveEnv.HOME || '', '.codex');
   const cliPath = path.join(codexHome, 'skills/.system/imagegen/scripts/image_gen.py');
   const hasCli = fileExists(cliPath);
@@ -178,8 +185,15 @@ function main() {
   const localInputInfos = localInputs
     .filter((inputPath) => !missingLocalInputs.includes(inputPath) && !rejectedLocalInputs.includes(inputPath))
     .map(completeStateSheetInfo);
+  const blockedLocalSourceInputs = localInputInfos.filter((info) => (
+    localSourceGateBlocked &&
+    info.sha256 &&
+    queueGate.sourceGate?.sourceSha256 &&
+    info.sha256 === queueGate.sourceGate.sourceSha256
+  ));
   const completeLocalStateSheetInputs = localInputInfos.filter((info) => info.complete);
-  const ok = cliReady || builtinReady || localInputsReady;
+  const localSourceGateBlocksInput = blockedLocalSourceInputs.length > 0;
+  const ok = cliReady || builtinReady || (localInputsReady && !localSourceGateBlocksInput);
 
   console.log('# Home Field Chibi Proof Preflight');
   console.log('');
@@ -190,26 +204,22 @@ function main() {
   console.log(`Explicit env file: ${opts.envFile ? path.relative(repoRoot, resolveInputPath(opts.envFile)) : 'not used'}`);
   console.log(`Explicit local source: ${opts.source || 'not used'}`);
   console.log('');
-  console.log('Output capability:');
-  console.log(`- imagegen CLI helper: ${hasCli ? cliPath : 'missing'}`);
-  console.log(`- OPENAI_IMAGEGEN_API_KEY: ${hasImagegenApiKey ? (hasImagegenApiKeyFromEnvFile ? 'set from explicit env file' : 'set') : 'missing'}`);
-  console.log(`- OPENAI_API_KEY: ${hasPlainOpenAiApiKey ? 'present but ignored for Home Field image generation' : 'not used'}`);
-  console.log(`- imagegen skill unavailable explicitly confirmed: ${apiFallbackUnavailableConfirmed ? 'yes' : 'no'}`);
-  console.log(`- API fallback ready: ${cliReady ? 'yes' : 'no'}`);
-  console.log(`- built-in Codex Desktop imagegen proof-art ready: ${builtinReady ? 'yes' : `no${builtinMethodGateBlocked ? ' (blocked by queue method gate)' : ''}`}`);
-  console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
-  console.log(`- built-in imagegen reference-input explicitly confirmed: ${builtinReferencesConfirmed ? 'yes' : 'no'}`);
+  console.log('Local source input:');
   console.log(`- local image inputs supplied: ${localInputs.length}`);
   console.log(`- local image input source: ${localInputSelection.sourceLabel}`);
   for (const info of localInputInfos) {
     if (info.error) {
       console.log(`  - ${info.path}: unreadable PNG (${info.error})`);
     } else {
-      console.log(`  - ${info.path}: ${info.width}x${info.height}, complete 8x4 state sheet: ${info.complete ? `yes (${info.cellWidth}x${info.cellHeight} cells)` : 'no'}`);
+      console.log(`  - ${info.path}: ${info.width}x${info.height}, sha256 ${info.sha256}, complete 8x4 state sheet: ${info.complete ? `yes (${info.cellWidth}x${info.cellHeight} cells)` : 'no'}`);
     }
   }
   if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {
-    console.log(`- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source -- --source=${localInputs[0]}`);
+    if (localSourceGateBlocksInput) {
+      console.log('- local complete state-sheet staging command: blocked for this source hash; replace the source or add a documented repair method first');
+    } else {
+      console.log(`- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source -- --source=${localInputs[0]}`);
+    }
   }
   if (missingLocalInputs.length > 0) {
     console.log(`- missing local image inputs: ${missingLocalInputs.join(', ')}`);
@@ -217,7 +227,21 @@ function main() {
   if (rejectedLocalInputs.length > 0) {
     console.log(`- rejected local image inputs: ${rejectedLocalInputs.join(', ')}`);
   }
-  if (queueGate.methodGate || queueGate.error) {
+  console.log('');
+  if (localSourceGateBlocksInput) {
+    console.log('Output capability: skipped because the current --source hash is blocked by the queue local-source gate.');
+  } else {
+    console.log('Output capability:');
+    console.log(`- imagegen CLI helper: ${hasCli ? cliPath : 'missing'}`);
+    console.log(`- OPENAI_IMAGEGEN_API_KEY: ${hasImagegenApiKey ? (hasImagegenApiKeyFromEnvFile ? 'set from explicit env file' : 'set') : 'missing'}`);
+    console.log(`- OPENAI_API_KEY: ${hasPlainOpenAiApiKey ? 'present but ignored for Home Field image generation' : 'not used'}`);
+    console.log(`- imagegen skill unavailable explicitly confirmed: ${apiFallbackUnavailableConfirmed ? 'yes' : 'no'}`);
+    console.log(`- API fallback ready: ${cliReady ? 'yes' : 'no'}`);
+    console.log(`- built-in Codex Desktop imagegen proof-art ready: ${builtinReady ? 'yes' : `no${builtinMethodGateBlocked ? ' (blocked by queue method gate)' : ''}`}`);
+    console.log(`- built-in imagegen disk save explicitly confirmed: ${builtinDiskConfirmed ? 'yes' : 'no'}`);
+    console.log(`- built-in imagegen reference-input explicitly confirmed: ${builtinReferencesConfirmed ? 'yes' : 'no'}`);
+  }
+  if (!localSourceGateBlocksInput && (queueGate.methodGate || queueGate.error)) {
     console.log('');
     console.log('Queue method gate:');
     console.log(`- source: ${queueGate.queuePath}`);
@@ -233,9 +257,40 @@ function main() {
       if (queueGate.methodGate.stopIf) console.log(`- stop if: ${queueGate.methodGate.stopIf}`);
     }
   }
+  if (queueGate.sourceGate || queueGate.error) {
+    console.log('');
+    console.log('Queue local-source gate:');
+    console.log(`- source: ${queueGate.queuePath}`);
+    if (queueGate.error) {
+      console.log(`- read error: ${queueGate.error}`);
+    } else {
+      console.log(`- queue status: ${queueGate.itemStatus || 'not set'}`);
+      console.log(`- rollout: ${queueGate.sourceGate?.rollout || 'not set'}`);
+      console.log(`- status: ${sourceGateStatus || 'not set'}`);
+      console.log(`- current --source hash blocked: ${localSourceGateBlocksInput ? 'yes' : 'no'}`);
+      if (queueGate.sourceGate?.sourceSha256) console.log(`- blocked source sha256: ${queueGate.sourceGate.sourceSha256}`);
+      if (queueGate.sourceGate?.referenceProxySha256) console.log(`- failed reference proxy sha256: ${queueGate.sourceGate.referenceProxySha256}`);
+      if (queueGate.sourceGate?.failedCommand) console.log(`- failed command: ${queueGate.sourceGate.failedCommand}`);
+      if (queueGate.sourceGate?.action) console.log(`- action: ${queueGate.sourceGate.action}`);
+    }
+  }
 
   if (!ok) {
     console.error('');
+    if (localSourceGateBlocksInput) {
+      console.error('Preflight failed: supplied --source PNG matches a queue-recorded failed local-source hash.');
+      console.error('');
+      console.error('Do not archive, stage, split, produce, validate, evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs for this source hash.');
+      if (queueGate.sourceGate?.sourceSha256) {
+        console.error(`Blocked source sha256: ${queueGate.sourceGate.sourceSha256}`);
+      }
+      if (queueGate.sourceGate?.referenceProxySha256) {
+        console.error(`Failed reference proxy sha256: ${queueGate.sourceGate.referenceProxySha256}`);
+      }
+      console.error('Continue only after replacing the queue sourcePath with a different complete 8x4 local source PNG whose sha256 does not match the sourceGate failure, or after adding a documented queue-approved palette-cleanup/repair method with evidence.');
+      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source or add a documented repair method first.');
+      process.exit(1);
+    }
     console.error('Preflight failed: no allowed reference-capable way to produce image PNGs for the required repo paths.');
     console.error('');
     console.error('Before archiving stale Thalla raw/candidate files, provide one of:');
@@ -246,6 +301,9 @@ function main() {
     }
     console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
     console.error('- --source=<png> with an existing supplied local proof source PNG path outside docs/reference; checked-in docs/reference style images do not count');
+    if (localSourceGateBlocksInput) {
+      console.error('- a different complete 8x4 local source PNG whose sha256 does not match the queue sourceGate failure, or a queue-approved palette-cleanup/repair method with evidence');
+    }
     console.error('');
     if (builtinMethodGateBlocked) {
       console.error('Fresh Codex sessions do not inherit HOME_FIELD_* flags from prior chats, and the queue method gate is authoritative. Do not rerun this preflight with only HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1; those flags would only prove the exhausted same-context built-in path, not a different method or source-input path. If using explicit API fallback, rerun this preflight with `--env-file=<explicit-env-file>` containing OPENAI_IMAGEGEN_API_KEY and HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1.');
@@ -258,6 +316,9 @@ function main() {
     console.error('Passive viewing is not enough: a view_image step counts only when it is the current imagegen skill\'s same-context input-staging step and the following built-in image_gen call explicitly uses those visible images as references.');
     if (rejectedLocalInputs.length > 0) {
       console.error('The checked-in docs/reference PNGs are style/reference material only. They are not supplied proof source PNGs and must not be used to bypass reference-capable imagegen.');
+    }
+    if (localSourceGateBlocksInput) {
+      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source or add a documented repair method first.');
     }
     console.error('');
     if (builtinMethodGateBlocked) {

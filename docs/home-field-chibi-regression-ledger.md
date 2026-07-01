@@ -761,6 +761,24 @@ The active Stage 1 contract is:
 - the preflight failure text now says not to rerun with only the built-in flags, and it suppresses the built-in disk-output diagnostic when the queue method gate blocks the path;
 - tests now cover the blocked queue gate, explicit paid API fallback, supplied local proof PNG inputs, and the old built-in flag bypass.
 
+### 49. Supplied Local State Sheet Was Runnable But Failed The Palette Gate
+
+**Symptom:** Rollout `codex-019f1f94-ed13-7701-85a2-62a97f7431e7` finally exercised the simplified local-source queue path without built-in/API fallback noise. The agent used the short launcher, printed the default queue output without `--show-fallbacks`, ran `chibi-proof-context`, `next-chibi-proof`, and `preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png`. Preflight passed because the supplied PNG existed as a complete `1280x640` `8x4` state sheet with `160x160` cells. The agent archived one stale reference, staged the source, derived the deterministic `512x384` reference proxy, and verified the proxy dimensions. The run then stopped correctly at the reference palette audit: `31` significant exact colors over the `<=20` gate, `98` minor-threshold colors, and `57` coarse 32-step significant bins. No state-sheet audit, split frames, candidate, evidence, preview, verdict recording, or app-facing overwrite happened.
+
+**What improved:** The queue architecture worked. The agent did not infer `.env`, did not run imagegen, did not expose inactive fallback details, used the queue-owned `--source` commands, and stopped at the first hard gate with source/proxy hashes in the final response.
+
+**What was wrong in the flow:** The queue still advertised the same source as a ready production path after the exact source hash had failed. Leaving `status: ready_supplied_local_state_sheet` would invite the next agent to rerun the same known-bad source and stop at the same audit. A local source path being present is not enough once that source has failed a hard gate.
+
+**Evidence:** Source path `.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png`, sha256 `19eb3f1abc5bbaba1e88eb36c8ca308353f0e0d756528cbbddfc05430bb868fa`. Staged reference proxy `.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png`, sha256 `8eb95c9f5a96439affccd6795bfff846a6128bc631a02ccddeccfe04743a75ec`. Failed command: `npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat`.
+
+**Guardrails added:**
+
+- the queue now records a `sourceGate` for the failed local source hash and changes the item status to `blocked_supplied_local_state_sheet_palette_gate_failed`;
+- the default queue output reports that a new paletted `8x4` source or documented repair method is required instead of issuing another production launcher for the same source hash;
+- `preflight-chibi-proof` now prints source sha256 and rejects a `--source` PNG whose hash matches a blocked `sourceGate`;
+- `RUN_CHIBI_PROOF_PROMPT.md` and imagegen requirements now say source-path readiness expires after a hard gate failure;
+- tests cover the blocked source-hash gate and queue output.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -801,3 +819,4 @@ The active Stage 1 contract is:
 36. Do not infer an env file for queue items that require `doNotInferEnvFile: true`. Built-in/imagegen runs do not need a paid API key; paid API fallback must prove `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` before any archive or imagegen step.
 37. Do not let plain `OPENAI_API_KEY` trigger Home Field image generation. It is intentionally ignored so general OpenAI credentials are not silently spent on imagegen.
 38. Do not let preflight capability flags override the queue method gate. If the queue marks a built-in method as blocked or exhausted, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` must not pass preflight for that exhausted path.
+39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new complete `8x4` source or a documented repair method with evidence before the next production run.
