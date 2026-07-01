@@ -95,8 +95,26 @@ function validateQueue(queue) {
       issues.push(`${item.id}: agentInstructions must require actual image inputs for references`);
     }
     const methodGateStatus = item.methodGate?.status || '';
+    const itemStatusBlocked = /blocked|exhausted/i.test(item.status || '');
     const methodGateBlocked = /blocked|exhausted/i.test(methodGateStatus);
+    const promptIssueBlocked = itemStatusBlocked || methodGateBlocked;
     const methodGateAllowed = /allowed/i.test(methodGateStatus) && !methodGateBlocked;
+    if (promptIssueBlocked) {
+      if (item.promptPolicy?.issueLauncherWhenStatus !== 'allowed_or_with_unblock_input_only') {
+        issues.push(`${item.id}: blocked items must set promptPolicy.issueLauncherWhenStatus=allowed_or_with_unblock_input_only`);
+      }
+      const blockedPromptAction = item.promptPolicy?.blockedPromptAction || '';
+      const blockedShortResponse = item.promptPolicy?.blockedShortResponse || '';
+      if (!/Do not give minimalLauncherPrompt/i.test(blockedPromptAction) || !/concrete allowed unblock input/i.test(blockedPromptAction)) {
+        issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must forbid giving the launcher without a concrete unblock input`);
+      }
+      if (!/Blocked:/i.test(blockedShortResponse) || !/allowed non-built-in path|explicit paid fallback env file|supplied proof source PNGs/i.test(blockedShortResponse)) {
+        issues.push(`${item.id}: blocked promptPolicy.blockedShortResponse must tell agents not to start another blocked production run`);
+      }
+      if (!/Do not give the minimalLauncherPrompt back to the user/i.test(agentInstructionText) || !/concrete allowed unblock input/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: agentInstructions must forbid returning a blocked launcher prompt without concrete unblock input`);
+      }
+    }
     if (item.methodGate && methodGateAllowed && !/current allowed method change/i.test(agentInstructionText)) {
       issues.push(`${item.id}: agentInstructions must name the current allowed method change`);
     }
@@ -228,6 +246,14 @@ function printItem(item) {
   console.log('Minimal launcher prompt:');
   console.log(`  ${item.minimalLauncherPrompt}`);
   console.log('');
+  if (item.promptPolicy) {
+    const promptIssueBlocked = /blocked|exhausted/i.test(`${item.status || ''} ${item.methodGate?.status || ''}`);
+    console.log(promptIssueBlocked ? 'Prompt issuance gate (blocked):' : 'Prompt issuance gate:');
+    console.log(`  issue launcher when: ${item.promptPolicy.issueLauncherWhenStatus}`);
+    if (item.promptPolicy.blockedPromptAction) console.log(`  blocked action: ${item.promptPolicy.blockedPromptAction}`);
+    if (item.promptPolicy.blockedShortResponse) console.log(`  blocked short response: ${item.promptPolicy.blockedShortResponse}`);
+    console.log('');
+  }
   console.log('Agent instructions:');
   for (const instruction of item.agentInstructions || []) console.log(`  - ${instruction}`);
   console.log('');

@@ -1469,7 +1469,8 @@ test('[home-field] chibi proof emits chibi candidate producer and scoped evidenc
   assert.match(result.stdout, /npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(result.stdout, /npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(result.stdout, /this read-only `npm run game:home-field:next-chibi-proof` helper/);
-  assert.match(result.stdout, /If preflight or the method gate fails, stop before stale-file archive\/imagegen but include this helper output in the blocker report/);
+  assert.match(result.stdout, /If preflight or the method gate fails, stop before stale-file archive\/imagegen, include this helper output in the blocker report/);
+  assert.match(result.stdout, /do not give a new production-ready launcher prompt unless it includes a concrete allowed unblock input/);
   assert.match(result.stdout, /real PNG file at a known filesystem path/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
   assert.match(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof/);
@@ -1611,7 +1612,10 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   const prompt = fs.readFileSync(runChibiProofPromptPath, 'utf8');
   const shortLauncher = prompt.match(/```text\n([\s\S]*?)\n```/)?.[1] || '';
 
-  assert.match(prompt, /Short Launcher Prompt/);
+  assert.match(prompt, /Short Launcher Prompt Template/);
+  assert.match(prompt, /Use this launcher only when the queue item and method gate are allowed/);
+  assert.match(prompt, /Do not give this as a "new production-ready run" prompt while the queue item is blocked/);
+  assert.match(prompt, /prompt-issuance gate/);
   assert.match(shortLauncher, /run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof`/);
   assert.match(shortLauncher, /follow the printed agent instructions exactly/);
   assert.doesNotMatch(shortLauncher, /OPENAI_IMAGEGEN_API_KEY/);
@@ -1619,7 +1623,7 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.doesNotMatch(shortLauncher, /plain OPENAI_API_KEY/);
   assert.doesNotMatch(shortLauncher, /Prefer built-in\/imagegen skill output/);
   assert.match(prompt, /app\/shared\/home-field\/home-field-generation-queue\.json/);
-  assert.match(prompt, /queue command must print the run title, canonical doc, built-in imagegen default\/blocked path, method-gate status, env rules, reference-input gates, stop gates, and final-response fields/);
+  assert.match(prompt, /queue command must print the run title, canonical doc, prompt-issuance gate, built-in imagegen default\/blocked path, method-gate status, env rules, reference-input gates, stop gates, and final-response fields/);
   assert.match(prompt, /built-in section must include the `view_image` reference-input staging step, same-context built-in `image_gen` call, built-in preflight flags, and save\/claim-after-render instruction/);
   assert.match(prompt, /preflight-chibi-proof -- --env-file=<explicit-env-file>/);
   assert.match(prompt, /archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>/);
@@ -1630,6 +1634,7 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.match(prompt, /Current method gate: after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`/);
   assert.match(prompt, /queue-backed built-in same-context reference-staging path again unchanged/);
   assert.match(prompt, /built-in staging method is exhausted/);
+  assert.match(prompt, /Do not give another "new production-ready run" launcher prompt in that blocked state unless the prompt includes one concrete allowed unblock input/);
   assert.doesNotMatch(prompt, /default launcher now uses explicit CLI\/API fallback/);
   assert.doesNotMatch(prompt, /Use the explicit CLI\/API helper path by default/);
   assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
@@ -1662,6 +1667,9 @@ test('[home-field] imagegen requirements put built-in defaults in queue output',
   assert.match(requirements, /call built-in `image_gen` in that same context/);
   assert.match(requirements, /claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference\|state-sheet>/);
   assert.match(requirements, /Do not rely on a human-pasted prompt to carry those built-in details/);
+  assert.match(requirements, /Prompt issuance is gated too/);
+  assert.match(requirements, /Do not give a user a "new production-ready run" launcher prompt that is known to block/);
+  assert.match(requirements, /concrete allowed unblock input/);
   assert.match(requirements, /Method gate \/ allowed method change/);
   assert.match(requirements, /queue JSON and printer must carry and validate its built-in imagegen path and method-gate status/);
   assert.match(requirements, /queue-backed built-in same-context reference-staging path is exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`/);
@@ -1709,6 +1717,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /palette audit must still pass/);
   assert.match(result.stdout, /do not run the probe when reference binding is unavailable/);
   assert.match(result.stdout, /Blocker reporting warning: if preflight or the method gate blocks the run/);
+  assert.match(result.stdout, /Prompt issuance warning: do not give a new production-ready run prompt for this blocked queue item unless that prompt includes one concrete allowed unblock input/);
   assert.match(result.stdout, /no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred/);
   assert.match(result.stdout, /archive-stale-chibi-proof/);
   assert.match(result.stdout, /claim-imagegen-output/);
@@ -1834,8 +1843,17 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.equal(item.displayTitle, 'Thalla Home Field chibi Stage 1 proof');
   assert.match(item.minimalLauncherPrompt, /generation-queue -- --id=thalla-stage1-chibi-proof/);
   assert.match(item.minimalLauncherPrompt, /follow the printed agent instructions exactly/);
+  assert.equal(item.promptPolicy.issueLauncherWhenStatus, 'allowed_or_with_unblock_input_only');
+  assert.match(item.promptPolicy.blockedPromptAction, /Do not give minimalLauncherPrompt/);
+  assert.match(item.promptPolicy.blockedPromptAction, /concrete allowed unblock input/);
+  assert.match(item.promptPolicy.blockedPromptAction, /OPENAI_IMAGEGEN_API_KEY/);
+  assert.match(item.promptPolicy.blockedPromptAction, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
+  assert.match(item.promptPolicy.blockedPromptAction, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
+  assert.match(item.promptPolicy.blockedShortResponse, /Blocked:/);
   assert.ok(item.agentInstructions.some((instruction) => /Thalla Home Field chibi Stage 1 proof/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /Do not give the minimalLauncherPrompt back to the user/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /concrete allowed unblock input from promptPolicy/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Do not infer `\.env`/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /OPENAI_IMAGEGEN_API_KEY/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/.test(instruction)));
@@ -1883,6 +1901,7 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.commands.referenceApiProof, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
   assert.ok(item.stopRules.some((rule) => /OPENAI_IMAGEGEN_API_KEY/.test(rule)));
   assert.ok(item.stopRules.some((rule) => /plain OPENAI_API_KEY/.test(rule)));
+  assert.ok(item.stopRules.some((rule) => /instead of giving a new production-ready launcher prompt/.test(rule)));
   assert.ok(item.finalResponseMustReport.includes('env source and preflight result'));
 
   for (const reference of item.referenceInputs) {
@@ -1906,8 +1925,14 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /thalla-stage1-chibi-proof/);
   assert.match(result.stdout, /Minimal launcher prompt:/);
   assert.match(result.stdout, /follow the printed agent instructions exactly/);
+  assert.match(result.stdout, /Prompt issuance gate \(blocked\):/);
+  assert.match(result.stdout, /issue launcher when: allowed_or_with_unblock_input_only/);
+  assert.match(result.stdout, /blocked action: .*Do not give minimalLauncherPrompt/);
+  assert.match(result.stdout, /blocked action: .*concrete allowed unblock input/);
+  assert.match(result.stdout, /blocked short response: Blocked:/);
   assert.match(result.stdout, /Agent instructions:/);
   assert.match(result.stdout, /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/);
+  assert.match(result.stdout, /Do not give the minimalLauncherPrompt back to the user/);
   assert.match(result.stdout, /Attach every referenceInputs PNG as actual image inputs/);
   assert.match(result.stdout, /Built-in imagegen path \(blocked by method gate\):/);
   assert.match(result.stdout, /flags: HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
