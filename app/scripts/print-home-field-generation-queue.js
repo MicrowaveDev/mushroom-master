@@ -169,7 +169,7 @@ function validateMethodGate(issues, itemId, methodGate) {
   }
 }
 
-function validateSourceGateRecovery(issues, itemId, recovery) {
+function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!recovery) {
     issues.push(`${itemId}: blocked sourceGate must include sourceGateRecovery`);
     return;
@@ -180,23 +180,41 @@ function validateSourceGateRecovery(issues, itemId, recovery) {
   if (!/another production-ready run/i.test(recovery.summary || '')) {
     issues.push(`${itemId}: sourceGateRecovery.summary must address another production-ready run`);
   }
-  if (!/method-change production attempt/i.test(recovery.copyablePrompt || '')) {
-    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must request a method-change production attempt`);
+  const copyablePrompt = recovery.copyablePrompt || '';
+  if (!copyablePrompt.includes(queueCommand || 'generation-queue')) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must include the queue command`);
   }
-  if (!/not the blocked default queue launcher/i.test(recovery.copyablePrompt || '')) {
-    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must reject the blocked default queue launcher`);
+  if (!/printed queue results/i.test(copyablePrompt)) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must tell agents to use the printed queue results`);
   }
-  if (!/--source=<new-source-png>/.test(recovery.copyablePrompt || '')) {
-    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must tell agents to use --source=<new-source-png>`);
-  }
-  if (!/clean blocker is not production-ready/i.test(recovery.copyablePrompt || '')) {
-    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must say a clean blocker is not production-ready`);
+  if (/method-change production attempt|--source=<new-source-png>|palette-cleanup|blocked default queue launcher/i.test(copyablePrompt)) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must stay queue-only; put method-change details in requiredActions`);
   }
   if (!Array.isArray(recovery.requiredActions) || recovery.requiredActions.length < 4) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must list the new-source workflow`);
   }
   if (!Array.isArray(recovery.successCriteria) || recovery.successCriteria.length < 3) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must list production-readiness criteria`);
+  }
+  const requiredText = (recovery.requiredActions || []).join('\n');
+  const criteriaText = (recovery.successCriteria || []).join('\n');
+  if (!/method-change details/i.test(requiredText) || !/copyable user prompt/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must say method-change details stay in queue output, not the prompt`);
+  }
+  if (!/new complete 8x4 local state-sheet source/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must require a new complete 8x4 local source`);
+  }
+  if (!/repair method/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must allow only an explicit documented repair method`);
+  }
+  if (!/--source=<new-source-png>/.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must tell agents to use --source=<new-source-png>`);
+  }
+  if (!/blocked queue source hash/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject the blocked queue source hash`);
+  }
+  if (!/production-ready candidate output from an intentional blocker/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must distinguish production-ready output from a blocker`);
   }
 }
 
@@ -259,7 +277,7 @@ function validateQueue(queue) {
         if (!item.promptPolicy?.blockedPromptAction || !item.promptPolicy?.blockedShortResponse) {
           issues.push(`${item.id}: blocked local-source gate must include blockedPromptAction and blockedShortResponse`);
         }
-        validateSourceGateRecovery(issues, item.id, item.sourceGateRecovery);
+        validateSourceGateRecovery(issues, item.id, item.sourceGateRecovery, item.commands?.queue);
         if (!item.sourceGate?.sourceSha256 || !item.sourceGate?.referenceProxySha256) {
           issues.push(`${item.id}: blocked local-source gate must record source and reference proxy hashes`);
         }
@@ -401,7 +419,7 @@ function printSourceGateRecovery(item) {
   console.log(`  mode: ${recovery.mode}`);
   if (recovery.summary) console.log(`  summary: ${recovery.summary}`);
   if (recovery.copyablePrompt) {
-    console.log('  copyable method-change prompt:');
+    console.log('  copyable queue-only prompt:');
     console.log(`    ${recovery.copyablePrompt}`);
   }
   if (Array.isArray(recovery.requiredActions) && recovery.requiredActions.length > 0) {

@@ -11,7 +11,7 @@
       "status": "blocked_supplied_local_state_sheet_palette_gate_failed",
       "priority": 10,
       "ownerRole": "Producer/Validation Worker",
-      "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and follow the printed agent instructions exactly.",
+      "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and use the printed queue results to generate what is needed.",
       "promptPolicy": {
         "issueLauncherWhenStatus": "new_source_or_repair_method_only",
         "action": "Do not issue another production launcher for the same supplied local state-sheet source hash. Rollout codex-019f1f94-ed13-7701-85a2-62a97f7431e7 proved the queue-owned sourcePath exists and stages, but its derived reference proxy failed the hard palette audit.",
@@ -20,9 +20,10 @@
       },
       "sourceGateRecovery": {
         "mode": "method-change-production-attempt",
-        "summary": "When the user asks for another production-ready run while this sourceGate is blocked, the next prompt must request a new source or explicit repair method; rerunning the default queue launcher only repeats a known blocker.",
-        "copyablePrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run a Thalla Home Field chibi Stage 1 method-change production attempt, not the blocked default queue launcher. First print `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and confirm the current sourceGate blocks `.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png`; do not rerun that source hash. Create or adopt a new complete 8x4 local state-sheet PNG outside `docs/reference/`, either from a documented new generation method or an explicit palette-cleanup/repair method with manifest evidence. Save the new source under `.agent/home-field-workspace/supplied/`, then run preflight/archive/stage with `--source=<new-source-png>`, verify and palette-audit the derived reference proxy and staged state sheet, split frames, verify frames, produce the candidate, verify/audit the candidate, generate evidence, run preview, and record verdict. Do not overwrite app-facing PNGs. Final report must state whether production-ready PNGs were produced; a clean blocker is not production-ready.",
+        "summary": "When the user asks for another production-ready run while this sourceGate is blocked, the next pasted prompt must stay queue-only; the queue output owns the method-change instructions for creating or repairing the source.",
+        "copyablePrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and use the printed queue results to generate what is needed.",
         "requiredActions": [
+          "Treat this SourceGate recovery production attempt section as the source of truth; do not inline these method-change details into the copyable user prompt.",
           "Confirm the existing sourceGate blocker and blocked source hash before creating or adopting a replacement source.",
           "Produce or accept a new complete 8x4 local state-sheet source outside docs/reference, or document a repair method as an explicit active method with evidence.",
           "Use `--source=<new-source-png>` for preflight, archive, and stage; do not use the blocked queue source hash.",
@@ -39,7 +40,8 @@
       "agentInstructions": [
         "Run this queue item as a blocked Thalla Home Field chibi Stage 1 proof review, not a production attempt.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
-        "If the user asks for another production-ready run while this sourceGate is blocked, do not answer with the minimal launcher alone; use sourceGateRecovery.copyablePrompt or an equivalent method-change prompt.",
+        "If the user asks for another production-ready run while this sourceGate is blocked, answer only with the queue-only sourceGateRecovery.copyablePrompt/minimalLauncherPrompt; do not paste method-change details outside the queue output.",
+        "The runner must use the printed SourceGate recovery production attempt section to create or adopt a new complete 8x4 source or documented repair method, then validate that new source through every listed gate.",
         "Do not call a clean sourceGate block a healthy production-ready image run; production-ready PNGs were not produced unless a new candidate passes every listed gate.",
         "Do not rerun preflight/archive/stage for the current generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) because sourceGate records that this exact source hash failed the reference palette audit.",
         "If the user supplies a new complete 8x4 local state-sheet source, update generationContract.stateSheet.localSourceMode.sourcePath and the printed --source commands before issuing a launcher.",
