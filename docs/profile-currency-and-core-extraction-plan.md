@@ -24,8 +24,9 @@
 > is complete via `docs/game-core-runtime-contracts.md` and
 > `docs/backpack-game-core-extraction-inventory.md`; **Phase 8C** has moved
 > bag-shape helpers, first grid-geometry primitives, fusion matching, and
-> shop-offer generation into `backpack-game-core`. **Phase 8D** is planned for
-> bot-loadout adapter extraction but not implemented yet.
+> shop-offer generation into `backpack-game-core`. **Phase 8D** moved
+> bot-loadout generation into `backpack-game-core` through product providers
+> while keeping ghost snapshot and portrait glue local.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, and the first Phase 8C slices
 implemented as the Mushroom Battles
@@ -44,8 +45,8 @@ cases.
 
 `backpack-game-core` now has `main` commits with the extracted bag-shape
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
-generation. Earlier notes that treated the target repo as empty are historical
-only.
+generation, plus provider-driven bot-loadout generation. Earlier notes that
+treated the target repo as empty are historical only.
 
 ## Implementation Status
 
@@ -94,6 +95,12 @@ bullet below):
   escalation, and character-item slot reservation now live in
   `backpack-game-core`. Mushroom combat pools, bag pools, character-item pools,
   and balance constants stay in `shop-service.js`.
+- Provider-driven bot-loadout generation is extracted: weighted choice,
+  first-fit bag placement, rectangular placement, occupied-cell tracking, and
+  retry orchestration now live in `backpack-game-core`. Mushroom artifacts,
+  affinities, starter presets, prices, validation, portraits, and
+  `createBotGhostSnapshot` response shaping stay in `bot-loadout.js` and
+  `game-data.js`.
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -119,9 +126,8 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after the current Phase 8C slices: implement the planned Phase
-8D bot-loadout adapter extraction over catalog, affinity, preset, and price
-providers. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
+Next local lane after Phase 8D: design battle ability hooks before moving any
+battle simulation code. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
 trading, database managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
@@ -1186,18 +1192,20 @@ Keep these in `mushroom-master`:
 - Any code that references `player_mushrooms`, `PORTRAIT_VARIANTS`, wiki
   thresholds, or Mushroom lore directly.
 
-### Phase 8D - Plan Bot Loadout Adapter Extraction
+### Phase 8D - Bot Loadout Adapter Extraction
 
-Status: **Planned only.** No bot-loadout code has moved into
-`backpack-game-core` yet.
+Status: **Implemented.** Bot-loadout generation moved into
+`backpack-game-core` through product providers. Mushroom ghost snapshot and
+portrait glue stayed local.
 
 #### Source Of Truth
 
-- Current implementation: `app/server/services/bot-loadout.js`
+- Current Mushroom adapter: `app/server/services/bot-loadout.js`
+- Current core implementation: `backpack-game-core/src/backpack-loadout.js`
 - Current behavior tests: `tests/game/bot-loadout.test.js`
 - Current extraction inventory:
   `docs/backpack-game-core-extraction-inventory.md`
-- Current core package latest commit: `6be48a9` (`Add shop offer core helper`)
+- Current core package latest commit: `4056d7a` (`Add backpack loadout generator`)
 
 #### Stated Criteria And Constraints
 
@@ -1210,7 +1218,7 @@ Status: **Planned only.** No bot-loadout code has moved into
 - Keep compatibility through pinned Git dependency updates, one cluster at a
   time.
 
-#### Success Conditions
+#### Shipped Boundary
 
 - Core owns reusable bot/loadout mechanics only:
   - weighted item choice over injected item weights,
@@ -1238,9 +1246,9 @@ Status: **Planned only.** No bot-loadout code has moved into
 - Keep `createRng` local for now; if deterministic shuffle extraction is needed,
   move only shuffle/random helpers, not server id/time utilities.
 
-#### Proposed Core Adapter
+#### Core Adapter
 
-The core function should be shaped around injected providers:
+The core function is shaped around injected providers:
 
 ```js
 generateBackpackLoadout({
@@ -1270,27 +1278,12 @@ createBotLoadout(mushroom, rng, budget)
 It should build the core arguments from `game-data.js`, call the core helper,
 then return the current `{ gridWidth, gridHeight, items }` response.
 
-#### Implementation Steps
+#### Verification
 
-1. Add `backpack-game-core` tests with a fake catalog for starter bag/preset,
-   one bought combat item, first-fit bag anchors, items inside bought bags,
-   validation retry, and budget ceiling behavior.
-2. Move pure helper logic into core:
-   - weighted pick,
-   - placement candidates,
-   - bag shape cell marking,
-   - occupied cell checks,
-   - optional deterministic shuffle.
-3. Add `generateBackpackLoadout` to core with no Mushroom ids, no DB, no
-   Express, no portraits, and no wallet/gacha/payment dependencies.
-4. Update `mushroom-master` `createBotLoadout` to call the core helper through
-   Mushroom providers.
-5. Keep `createBotGhostSnapshot` local except for using the wrapper result.
-6. Verify:
-   - `backpack-game-core`: `npm test`
-   - `mushroom-master`:
-     `node --test tests/game/bot-loadout.test.js tests/game/round-resolution.test.js tests/game/loadout-refactor.test.js`
-   - `npm run game:build`
+- `backpack-game-core`: `npm test`
+- `mushroom-master`:
+  `node --test tests/game/bot-loadout.test.js tests/game/round-resolution.test.js tests/game/loadout-refactor.test.js`
+- `npm run game:build`
 
 #### Rollback
 
@@ -1409,10 +1402,10 @@ Recommended initial choices:
    local.**
 16. Parameterize shop offer generation over passed item pools/config.
    **Done 2026-07-01; run-shop buy/refresh/sell mutations remain local.**
-17. Phase 8D bot-loadout adapter extraction plan. **Planned 2026-07-01; not
-   implemented.**
+17. Phase 8D bot-loadout adapter extraction plan. **Done 2026-07-01.**
 18. Implement bot loadout generation over catalog, affinity, preset, and price
-   providers.
+   providers. **Done 2026-07-01; ghost snapshot and portrait glue remain
+   local.**
 19. Adapterize and optionally extract battle simulation only after Mushroom
    ability logic has a product adapter.
 20. Add hub/submodule metadata and final cross-repo verification if

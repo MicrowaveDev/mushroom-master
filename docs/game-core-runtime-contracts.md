@@ -200,8 +200,9 @@ These mechanics need adapters before extraction:
 - shop generation that imports Mushroom artifact pools and character
   eligibility rules
 - fusion application that writes DB rows
-- bot loadout generation until catalog, starter preset, affinity, price,
-  validation, and portrait/ghost snapshot responsibilities are separated
+- bot loadout generation with catalog, starter preset, affinity, price,
+  validation, and portrait/ghost snapshot responsibilities injected or kept
+  local
 - battle simulation with hard-coded Mushroom abilities
 
 These are product-specific and must stay out of `backpack-game-core`:
@@ -219,22 +220,23 @@ These are product-specific and must stay out of `backpack-game-core`:
 Code movement into `backpack-game-core` should stay small and evidence-led:
 port focused core tests before changing `mushroom-master` imports, then verify
 the Mushroom adapter/bridge tests. The shipped slices are bag-shape masks,
-rotation, first grid-geometry primitives, fusion matching, and shop-offer
-generation. Full placement/loadout validation still belongs in `mushroom-master`
-until catalog access, pricing, bag policy, and validation errors are
-parameterized. Fusion application and run-shop buy/refresh/sell mutations still
-belong in `mushroom-master` because they write DB rows and touch run currency.
-The next likely slice is bot loadout generation after catalog, affinity, preset,
-and price providers are injected.
+rotation, first grid-geometry primitives, fusion matching, shop-offer
+generation, and bot-loadout generation. Full placement/loadout validation still
+belongs in `mushroom-master` until catalog access, pricing, bag policy, and
+validation errors are parameterized. Fusion application and run-shop
+buy/refresh/sell mutations still belong in `mushroom-master` because they write
+DB rows and touch run currency. The next likely slice is battle simulation, but
+only after ability hooks and Mushroom-specific active/passive behavior are
+designed.
 
 ### Planned Bot-Loadout Boundary
 
-The bot-loadout extraction must keep product identity in `mushroom-master`.
-Reusable core may own weighted item choice, first-fit bag placement,
-rectangular item placement, occupied-cell tracking, and retry orchestration.
-Mushroom must still provide artifact catalog data, prices, `isBag`, bag shapes,
-starter bag/preset rows, affinity weighting, validation policy, portrait URLs,
-and `createBotGhostSnapshot` response shaping.
+The bot-loadout extraction keeps product identity in `mushroom-master`.
+Reusable core owns weighted item choice, first-fit bag placement, rectangular
+item placement, occupied-cell tracking, and retry orchestration. Mushroom still
+provides artifact catalog data, prices, `isBag`, bag shapes, starter bag/preset
+rows, affinity weighting, validation policy, portrait URLs, and
+`createBotGhostSnapshot` response shaping.
 
 Do not move battle ghost selection, mushroom portrait selection, or Mushroom
 starter preset lookup into `backpack-game-core`.
