@@ -1618,7 +1618,8 @@ test('[home-field] Thalla chibi prompt details point to structured queue first',
   assert.match(prompt.details, new RegExp(chibiQueueLocalSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(prompt.details, /preflight-chibi-proof -- --source=/);
   assert.match(prompt.details, /game:home-field:stage-chibi-local-source -- --source=/);
-  assert.match(prompt.details, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only/);
+  assert.match(prompt.details, /different supplied complete 8x4 local state-sheet PNG must be passed explicitly with --source or recorded in the queue source path/);
+  assert.doesNotMatch(prompt.details, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(prompt.details, /non-production reference proxy/);
   assert.match(prompt.details, /skips reference imagegen/);
   assert.match(prompt.details, /attach or same-context stage/);
@@ -1658,13 +1659,14 @@ test('[home-field] chibi proof launcher carries explicit reference-capable workf
   assert.doesNotMatch(prompt, /default launcher now uses explicit CLI\/API fallback/);
   assert.doesNotMatch(prompt, /Use the explicit CLI\/API helper path by default/);
   assert.match(prompt, /Listing filesystem paths to checked-in PNGs is also not enough/);
-  assert.match(prompt, /Do not set it to the checked-in PNGs under `docs\/reference\/home-field\/`/);
+  assert.match(prompt, /Do not use the checked-in PNGs under `docs\/reference\/home-field\/` as local proof sources/);
   assert.match(prompt, /current supplied complete local state-sheet run/);
   assert.match(prompt, /localSourceMode\.sourcePath/);
   assert.match(prompt, new RegExp(chibiQueueLocalSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(prompt, /preflight-chibi-proof -- --source=/);
   assert.match(prompt, /npm run game:home-field:stage-chibi-local-source -- --source=/);
-  assert.match(prompt, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS` is legacy override only/);
+  assert.match(prompt, /different supplied local state-sheet PNG must be passed explicitly with `--source` or recorded in the queue source path/);
+  assert.doesNotMatch(prompt, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(prompt, /reference imagegen was skipped/);
   assert.match(prompt, /still run the read-only `npm run game:home-field:next-chibi-proof` helper/);
   assert.match(prompt, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1/);
@@ -1722,7 +1724,7 @@ test('[home-field] local chibi source queue sourcePath rule is persisted in agen
     const text = fs.readFileSync(filePath, 'utf8');
     assert.match(text, sourcePathRule, filePath);
     assert.match(text, /--source/, filePath);
-    assert.match(text, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS.*legacy override only/s, filePath);
+    assert.doesNotMatch(text, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/, filePath);
   }
 });
 
@@ -1776,7 +1778,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Prompt issuance warning: do not give a new production-ready run prompt for this blocked queue item unless that prompt includes or points to one concrete allowed unblock input/);
   assert.match(result.stdout, /queue JSON localSourceMode\.sourcePath/);
   assert.match(result.stdout, /use the queue-printed --source commands/);
-  assert.match(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS in the pasted prompt/);
+  assert.doesNotMatch(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(result.stdout, /no archive, imagegen, state sheet, split frames, candidate, preview, or app overwrite occurred/);
   assert.match(result.stdout, /archive-stale-chibi-proof/);
   assert.match(result.stdout, /claim-imagegen-output/);
@@ -1910,7 +1912,8 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.promptPolicy.blockedPromptAction, /HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1/);
   assert.match(item.promptPolicy.blockedPromptAction, /localSourceMode\.sourcePath/);
   assert.match(item.promptPolicy.blockedPromptAction, /queue-printed --source commands/);
-  assert.match(item.promptPolicy.blockedPromptAction, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only/);
+  assert.match(item.promptPolicy.blockedPromptAction, /supplied local proof source PNGs outside docs\/reference passed with --source or recorded in the queue/);
+  assert.doesNotMatch(item.promptPolicy.blockedPromptAction, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(item.promptPolicy.blockedShortResponse, /Blocked:/);
   assert.match(item.promptPolicy.blockedShortResponse, /supplied local state-sheet sourcePath/);
   assert.match(item.promptPolicy.blockedShortResponse, /printed --source preflight\/archive\/stage commands/);
@@ -1930,11 +1933,11 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /passive viewing/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /grouped 8x4 state sheet/.test(instruction)));
-  assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet PNG/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /game:home-field:stage-chibi-local-source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiQueueLocalSourcePath)));
   assert.ok(item.agentInstructions.some((instruction) => /Do not run reference imagegen/.test(instruction)));
-  assert.ok(item.agentInstructions.some((instruction) => /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is a legacy override only/.test(instruction)));
+  assert.ok(item.agentInstructions.every((instruction) => !/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/.test(instruction)));
   assert.equal(item.assetId, 'thalla');
   assert.equal(item.assetType, 'character');
   assert.equal(item.env.doNotInferEnvFile, true);
@@ -1967,10 +1970,10 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.equal(item.generationContract.stateSheet.stopIfPromptOnly, true);
   assert.equal(item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput, true);
   assert.match(item.generationContract.stateSheet.requiredReferenceImageInput, /thalla_chibi_turnaround\.reference\.png/);
-  assert.equal(item.generationContract.stateSheet.localSourceMode.envKey, 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS');
   assert.equal(item.generationContract.stateSheet.localSourceMode.sourcePath, chibiQueueLocalSourcePath);
   assert.equal(item.generationContract.stateSheet.localSourceMode.sourceKind, 'supplied-complete-8x4-local-state-sheet');
-  assert.match(item.generationContract.stateSheet.localSourceMode.envPolicy, /legacy override only/i);
+  assert.equal(Object.hasOwn(item.generationContract.stateSheet.localSourceMode, 'envKey'), false);
+  assert.equal(Object.hasOwn(item.generationContract.stateSheet.localSourceMode, 'envPolicy'), false);
   assert.equal(item.generationContract.stateSheet.localSourceMode.completeStateSheetAllowed, true);
   assert.equal(item.generationContract.stateSheet.localSourceMode.preflightCommand, `npm run game:home-field:preflight-chibi-proof -- --source=${chibiQueueLocalSourcePath}`);
   assert.equal(item.generationContract.stateSheet.localSourceMode.archiveCommand, `npm run game:home-field:archive-stale-chibi-proof -- thalla --source=${chibiQueueLocalSourcePath}`);
@@ -2048,7 +2051,8 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /preflight command: npm run game:home-field:preflight-chibi-proof -- --source=.*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
   assert.match(result.stdout, /archive command: npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
   assert.match(result.stdout, /stage command: npm run game:home-field:stage-chibi-local-source -- --source=.*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
-  assert.match(result.stdout, /env override: HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS .*legacy override only/i);
+  assert.doesNotMatch(result.stdout, /env override:/i);
+  assert.doesNotMatch(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(result.stdout, /reference proxy: .*thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /skip imagegen: yes/);
   assert.match(result.stdout, /grouped 8x4 state sheet can attach/);
@@ -2060,7 +2064,7 @@ test('[home-field] generation queue printer exposes env and state-sheet gates', 
   assert.match(result.stdout, /required reference image input: .*thalla_chibi_turnaround\.reference\.png/);
   assert.match(result.stdout, /stop if prompt-only: yes/);
   assert.match(result.stdout, /stop if reference cannot attach: yes/);
-  assert.match(result.stdout, /local source mode: .*thalla_tetro_cleaned_2026-06-30\.states\.source\.png -> npm run game:home-field:stage-chibi-local-source -- --source=.*legacy override only/);
+  assert.match(result.stdout, /local source mode: .*thalla_tetro_cleaned_2026-06-30\.states\.source\.png -> npm run game:home-field:stage-chibi-local-source -- --source=.*reference imagegen skipped/);
   assert.match(result.stdout, /final response must report:/i);
 });
 
@@ -2151,12 +2155,8 @@ test('[home-field] chibi local state-sheet source staging writes proof paths and
 
   return withPreservedFiles([statePath, referencePath, provenancePath], () => {
     try {
-      const result = spawnSync(process.execPath, [chibiStageLocalSourceScriptPath], {
+      const result = spawnSync(process.execPath, [chibiStageLocalSourceScriptPath, `--source=${sourcePath}`], {
         cwd: repoRoot,
-        env: {
-          ...process.env,
-          HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: sourcePath
-        },
         encoding: 'utf8'
       });
 
@@ -2546,7 +2546,6 @@ test('[home-field] chibi proof preflight honors exhausted queue method gate befo
       HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
       HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
     },
@@ -2576,7 +2575,7 @@ test('[home-field] chibi proof preflight honors exhausted queue method gate befo
   assert.match(result.stderr, /following built-in image_gen call explicitly uses those visible images as references/);
   assert.match(result.stderr, /Do not run the built-in output diagnostic or built-in imagegen retry/);
   assert.match(result.stderr, /queue method gate blocks this unchanged built-in path/);
-  assert.match(result.stderr, /supplied local proof source PNG paths outside docs\/reference/);
+  assert.match(result.stderr, /supplied local proof source PNG path outside docs\/reference/);
   assert.doesNotMatch(result.stderr, /run one tiny diagnostic non-candidate image_gen probe/);
   assert.doesNotMatch(result.stderr, /find-imagegen-output -- --since-minutes=5/);
   assert.match(result.stderr, /Do not archive stale files before preflight passes/);
@@ -2603,7 +2602,6 @@ test('[home-field] chibi proof preflight ignores plain OpenAI API key for paid f
         HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '1',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
         HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
         HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
       },
@@ -2649,7 +2647,6 @@ test('[home-field] chibi proof preflight accepts explicit paid API fallback env 
         HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
         HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '',
         HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
       },
@@ -2672,7 +2669,7 @@ test('[home-field] chibi proof preflight accepts explicit paid API fallback env 
 
 test('[home-field] chibi proof preflight rejects checked-in style references as local source inputs', () => {
   const checkedInReference = 'docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png';
-  const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+  const result = spawnSync(process.execPath, [chibiPreflightScriptPath, `--source=${checkedInReference}`], {
     cwd: repoRoot,
     env: {
       ...process.env,
@@ -2681,7 +2678,6 @@ test('[home-field] chibi proof preflight rejects checked-in style references as 
       HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: checkedInReference,
       HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
     },
@@ -2706,7 +2702,6 @@ test('[home-field] chibi proof preflight blocks output probe when queue method g
       HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '1',
-      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
     },
     encoding: 'utf8'
@@ -2732,7 +2727,6 @@ test('[home-field] chibi proof preflight blocks built-in imagegen when method ga
       HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
     },
     encoding: 'utf8'
@@ -2757,7 +2751,6 @@ test('[home-field] chibi proof preflight blocks exhausted built-in path even wit
       HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '1',
       HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '1',
-      HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: '',
       HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: ''
     },
     encoding: 'utf8'
@@ -2773,14 +2766,14 @@ test('[home-field] chibi proof preflight blocks exhausted built-in path even wit
   assert.doesNotMatch(result.stdout, /Preflight passed/);
 });
 
-test('[home-field] chibi proof preflight accepts supplied local image inputs', () => {
+test('[home-field] chibi proof preflight accepts supplied local source argument', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-preflight-test');
   const localInput = path.join(fixtureDir, 'thalla-reference.png');
   fs.rmSync(fixtureDir, { recursive: true, force: true });
   writeTinyTransparentFixture(localInput);
 
   try {
-    const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    const result = spawnSync(process.execPath, [chibiPreflightScriptPath, `--source=${localInput}`], {
       cwd: repoRoot,
       env: {
         ...process.env,
@@ -2789,7 +2782,6 @@ test('[home-field] chibi proof preflight accepts supplied local image inputs', (
         HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput,
         HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
         HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
       },
@@ -2811,7 +2803,7 @@ test('[home-field] chibi proof preflight identifies supplied complete local stat
   writeChibiSpritesheet(localInput);
 
   try {
-    const result = spawnSync(process.execPath, [chibiPreflightScriptPath], {
+    const result = spawnSync(process.execPath, [chibiPreflightScriptPath, `--source=${localInput}`], {
       cwd: repoRoot,
       env: {
         ...process.env,
@@ -2820,7 +2812,6 @@ test('[home-field] chibi proof preflight identifies supplied complete local stat
         HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE: '',
         HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES: '',
-        HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS: localInput,
         HOME_FIELD_REQUIRE_EXPLICIT_IMAGE_OUTPUT: '1',
         HOME_FIELD_DISABLE_BUILTIN_IMAGEGEN: '1'
       },

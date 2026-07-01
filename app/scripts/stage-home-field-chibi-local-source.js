@@ -34,7 +34,7 @@ function usage() {
     'Usage: npm run game:home-field:stage-chibi-local-source -- [--source=<png>]',
     '',
     'Stages one supplied complete 8x4 Thalla state-sheet PNG from',
-    '--source, legacy HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS, or the queue localSourceMode.sourcePath into the proof workspace.',
+    '--source or the queue localSourceMode.sourcePath into the proof workspace.',
     'The source must be outside docs/reference/home-field/.'
   ].join('\n');
 }
@@ -42,11 +42,6 @@ function usage() {
 function optionValue(name) {
   const prefix = `--${name}=`;
   return process.argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length) || '';
-}
-
-function parseLocalInputs(value) {
-  if (!value) return [];
-  return value.split(path.delimiter).map((entry) => entry.trim()).filter(Boolean);
 }
 
 function queueLocalSourcePath() {
@@ -173,15 +168,9 @@ function sourceFromArgs() {
   }
   const explicit = optionValue('source');
   if (explicit) return explicit;
-  const localInputs = parseLocalInputs(process.env.HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS || '');
-  if (localInputs.length === 0) {
-    const queueSource = queueLocalSourcePath();
-    if (queueSource) return queueSource;
-  }
-  if (localInputs.length !== 1) {
-    throw new Error(`expected --source, one legacy HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS entry, or a queue localSourceMode.sourcePath; got ${localInputs.length} env entr${localInputs.length === 1 ? 'y' : 'ies'}`);
-  }
-  return localInputs[0];
+  const queueSource = queueLocalSourcePath();
+  if (queueSource) return queueSource;
+  throw new Error('expected --source or a queue localSourceMode.sourcePath');
 }
 
 function main() {

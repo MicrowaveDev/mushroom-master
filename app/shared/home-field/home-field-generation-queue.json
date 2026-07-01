@@ -14,7 +14,7 @@
       "minimalLauncherPrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and follow the printed agent instructions exactly.",
       "promptPolicy": {
         "issueLauncherWhenStatus": "allowed_or_with_unblock_input_only",
-        "blockedPromptAction": "Do not give minimalLauncherPrompt to the user as a new production-ready run prompt while this queue item or method gate is blocked unless the prompt also points to one concrete allowed unblock input. For the current supplied local state-sheet run, that unblock input is generationContract.stateSheet.localSourceMode.sourcePath in this JSON; use the queue-printed --source commands for preflight/archive/stage. Other allowed unblock inputs are an explicit paid fallback env file containing OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1, supplied local proof source PNGs outside docs/reference, or a different queue-approved reference-capable generation/editing method. HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only when the user supplies a different complete 8x4 local state-sheet PNG.",
+        "blockedPromptAction": "Do not give minimalLauncherPrompt to the user as a new production-ready run prompt while this queue item or method gate is blocked unless the prompt also points to one concrete allowed unblock input. For the current supplied local state-sheet run, that unblock input is generationContract.stateSheet.localSourceMode.sourcePath in this JSON; use the queue-printed --source commands for preflight/archive/stage. Other allowed unblock inputs are an explicit paid fallback env file containing OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1, supplied local proof source PNGs outside docs/reference passed with --source or recorded in the queue, or a different queue-approved reference-capable generation/editing method.",
         "blockedShortResponse": "Blocked: the exhausted built-in path must not be retried, but this queue item includes a supplied local state-sheet sourcePath. Start only by running the queue command and then the printed --source preflight/archive/stage commands, or provide another allowed non-built-in path or explicit paid fallback env file."
       },
       "agentInstructions": [
@@ -22,7 +22,7 @@
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
         "Use the queue's supplied local 8x4 source path and printed `--source` commands; do not infer `.env` or retry the exhausted built-in imagegen path.",
         "Do not give the minimalLauncherPrompt back to the user as a new production-ready run prompt while this item or its method gate is blocked; only provide a new-run prompt if it includes one concrete allowed unblock input from promptPolicy.",
-        "When asked to produce a new-run prompt while this item is blocked, do not output the bare minimalLauncherPrompt unless the queue item itself prints a concrete allowed unblock path. For the current supplied local 8x4 state-sheet run, use generationContract.stateSheet.localSourceMode.sourcePath from this JSON and the queue-printed --source commands; do not require HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS in the pasted prompt.",
+        "When asked to produce a new-run prompt while this item is blocked, do not output the bare minimalLauncherPrompt unless the queue item itself prints a concrete allowed unblock path. For the current supplied local 8x4 state-sheet run, use generationContract.stateSheet.localSourceMode.sourcePath from this JSON and the queue-printed --source commands.",
         "Run npm run game:home-field:chibi-proof-context, npm run game:home-field:next-chibi-proof, and preflight before archive/imagegen.",
         "Do not infer `.env` or neighboring repo env files; paid API fallback requires the launcher/user to provide --env-file=<explicit-env-file>.",
         "Prefer built-in/imagegen skill only when HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 and HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 are confirmed in the same agent context that will run imagegen.",
@@ -31,7 +31,6 @@
         "Use paid API fallback only if built-in/imagegen is unavailable and the explicit env file contains OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1; plain OPENAI_API_KEY is ignored.",
         "Attach every referenceInputs PNG as actual image inputs to imagegen; passive viewing, listing paths, or using view_image without the following same-context image_gen reference call is not enough.",
         "Use the queue item's generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) as the canonical supplied complete 8x4 local state-sheet source: preflight with npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png, archive with npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png, stage with npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png, then continue at reference-proxy verification, state-sheet verification, palette audit, split, frame verify, candidate production, candidate validation, evidence, preview, and verdict. Do not run reference imagegen or the exhausted built-in reference-staging path for this local-source run.",
-        "HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is a legacy override only when the user supplies a different complete 8x4 local state-sheet PNG; the current production-ready queue path comes from localSourceMode.sourcePath and should be passed with --source for preflight/archive/stage.",
         "For generated grouped sheets, continue past the reference gate only if the grouped 8x4 state sheet can attach .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as an actual image input; for supplied complete local state-sheet source mode, continue only after stage-chibi-local-source derives that reference proxy and the proxy/state-sheet verifier plus palette audits pass.",
         "Stop before archive/imagegen if preflight, reference verifier, palette audit, visual gate, or method gate fails.",
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
@@ -151,7 +150,6 @@
           "stopIfPromptOnly": true,
           "stopIfReferenceCannotBeAttachedAsActualImageInput": true,
           "localSourceMode": {
-            "envKey": "HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS",
             "completeStateSheetAllowed": true,
             "sourceMustBeOutside": "docs/reference/home-field/",
             "stageCommand": "npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
@@ -161,7 +159,6 @@
             "skipImagegen": true,
             "sourcePath": ".agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
             "sourceKind": "supplied-complete-8x4-local-state-sheet",
-            "envPolicy": "Legacy override only when the user explicitly supplies a different complete 8x4 local state-sheet PNG; queue sourcePath is canonical for this item.",
             "preflightCommand": "npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
             "archiveCommand": "npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
             "stageCommandWithoutSource": "npm run game:home-field:stage-chibi-local-source"

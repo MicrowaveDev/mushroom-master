@@ -8,6 +8,7 @@ import path from 'node:path';
 import { repoRoot } from '../shared/repo-root.js';
 
 const queuePath = path.join(repoRoot, 'app/shared/home-field/home-field-generation-queue.json');
+const retiredLocalInputEnv = ['HOME', 'FIELD', 'CHIBI', 'LOCAL', 'IMAGE', 'INPUTS'].join('_');
 
 function usage() {
   return [
@@ -85,6 +86,10 @@ function validateQueue(queue) {
       issues.push(`${item.id}: agentInstructions must be a non-empty array`);
     }
     const agentInstructionText = (item.agentInstructions || []).join('\n');
+    const serializedItem = JSON.stringify(item);
+    if (serializedItem.includes(retiredLocalInputEnv)) {
+      issues.push(`${item.id}: active queue items must not mention retired local-input env vars; use localSourceMode.sourcePath and --source commands`);
+    }
     if (item.promptSource?.runDoc && !agentInstructionText.includes(item.promptSource.runDoc)) {
       issues.push(`${item.id}: agentInstructions must mention ${item.promptSource.runDoc}`);
     }
@@ -125,9 +130,6 @@ function validateQueue(queue) {
         if (!/localSourceMode\.sourcePath/.test(blockedPromptAction) || !/--source commands/i.test(blockedPromptAction)) {
           issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must tell prompt writers to use localSourceMode.sourcePath and queue-printed --source commands`);
         }
-        if (!/HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS is legacy override only/.test(blockedPromptAction)) {
-          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must keep HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS as a legacy override only`);
-        }
       }
     }
     if (item.methodGate && methodGateAllowed && !/current allowed method change/i.test(agentInstructionText)) {
@@ -164,9 +166,6 @@ function validateQueue(queue) {
       }
       if (!agentInstructionText.includes('--source')) {
         issues.push(`${item.id}: agentInstructions must mention --source for local-source commands`);
-      }
-      if (!agentInstructionText.includes(localSourceMode.envKey || 'HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS') || !/legacy override only/.test(agentInstructionText)) {
-        issues.push(`${item.id}: agentInstructions must describe HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS as a legacy override only`);
       }
       if (!agentInstructionText.includes(item.commands?.stageLocalSource || '<missing-stage-command>')) {
         issues.push(`${item.id}: agentInstructions must mention the local source stage command`);
@@ -341,7 +340,6 @@ function printItem(item) {
     console.log(`  preflight command: ${localSourceMode.preflightCommand}`);
     console.log(`  archive command: ${localSourceMode.archiveCommand}`);
     console.log(`  stage command: ${localSourceMode.stageCommand}`);
-    console.log(`  env override: ${localSourceMode.envKey} (${localSourceMode.envPolicy || 'legacy override only'})`);
     console.log(`  stages to: ${localSourceMode.stagesTo}`);
     console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
     console.log(`  continue at: ${localSourceMode.continueAt}`);
@@ -378,7 +376,7 @@ function printItem(item) {
   console.log(`  stop if prompt-only: ${item.generationContract.stateSheet.stopIfPromptOnly ? 'yes' : 'no'}`);
   console.log(`  stop if reference cannot attach: ${item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput ? 'yes' : 'no'}`);
   if (localSourceMode?.completeStateSheetAllowed) {
-    console.log(`  local source mode: ${localSourceMode.sourcePath} -> ${localSourceMode.stageCommand}; deterministic reference proxy derived, reference imagegen skipped; ${localSourceMode.envKey} is legacy override only`);
+    console.log(`  local source mode: ${localSourceMode.sourcePath} -> ${localSourceMode.stageCommand}; deterministic reference proxy derived, reference imagegen skipped`);
   }
   console.log(`  layout: ${item.generationContract.stateSheet.layout}`);
   console.log('');
