@@ -39,6 +39,7 @@
     "game:season:analytics": "node app/scripts/summarize-season-rank-analytics.js",
     "game:season:archive": "node app/scripts/archive-season.js",
     "game:wallet:audit": "node app/scripts/audit-wallet-balances.js",
+    "game:core:check": "node app/scripts/check-backpack-game-core-submodule.js",
     "game:home-field:next": "node app/scripts/next-home-field-image-prompts.js",
     "game:home-field:next-tiles": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_regen --all",
     "game:home-field:rerun-grass": "node app/scripts/next-home-field-image-prompts.js --batch=terrain-grass --review-verdict=needs_review,needs_regen --all --ignore-review-gate",
@@ -97,7 +98,7 @@
     "game:home-field:validate-full-registry-production": "node app/scripts/validate-home-field-assets.js --production --full-registry-production"
   },
   "dependencies": {
-    "@microwavedev/backpack-game-core": "github:MicrowaveDev/backpack-game-core#b9879bd",
+    "@microwavedev/backpack-game-core": "file:vendor/backpack-game-core",
     "@playwright/test": "^1.58.2",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",

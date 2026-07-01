@@ -17,6 +17,16 @@ For game-UI changes specifically:
 
 Direct-to-main workflow: `mushroom-master` does not use agent feature branches for normal work. Start from `main`, commit completed work on `main`, and push completed `mushroom-master` commits directly to `origin/main` before handoff unless the user explicitly asks not to push or the push is technically blocked. If work is already sitting on an agent feature branch, merge it back into `main` before handoff rather than leaving the fix stranded on that branch. Use a feature branch or PR-only handoff only when the user explicitly asks for one or direct push is technically blocked.
 
+Nested core submodule workflow: reusable backpack mechanics live in
+`vendor/backpack-game-core`, a nested Git submodule consumed through the local
+`file:vendor/backpack-game-core` package dependency. On fresh checkouts run
+`git submodule update --init --recursive` before `npm install` / `npm ci`, and
+use `npm run game:core:check` when diagnosing missing-core import failures. If
+a task changes core source, commit and push inside `vendor/backpack-game-core`
+first, then stage the nested submodule pointer plus any `package-lock.json` /
+adapter changes in `mushroom-master`; do not hand off with only a dirty nested
+submodule pointer.
+
 Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for both renderer (PDF dossier) and autobattler Mini App UI styling. Before changing any app-frontend visual surface (panels, cards, stat tiles, result screens, headers), read Part 2 — especially the Flat Design Rules, the Stat and Metric Card Pattern, and the Dated Design Signals checklist — and self-audit the change against that list before reporting completion. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
 
 Before debugging an app-frontend symptom that looks like a "weird visual bug" (truncation, mystery clipping, font/figure oddities, layout drift on certain viewports), check [docs/known-issues.md](/Users/microwavedev/workspace/mushroom-master/docs/known-issues.md) first — it lists recurring traps with documented context and acceptable mitigations so you don't re-investigate from scratch or apply a "fix" that's already been tried and rejected. When you discover a new recurring trap or fix one of the listed entries, update that file in the same change.

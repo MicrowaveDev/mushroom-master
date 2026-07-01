@@ -29,11 +29,18 @@ Database runtime:
 Game commands:
 
 ```bash
+npm run game:core:check
 npm run game:start
 npm run game:build
 npm run game:test
 npm run game:test:screens
 ```
+
+Fresh checkouts must initialize nested submodules before installing
+dependencies. The reusable backpack mechanics package lives at
+`vendor/backpack-game-core` and is installed through the local
+`file:vendor/backpack-game-core` dependency while application imports stay as
+`@microwavedev/backpack-game-core`.
 
 What is production-real vs dev-only in the e2e flows:
 
@@ -245,13 +252,25 @@ Current behavior by content type:
 
 ## Setup
 
-1. Install dependencies:
+1. Initialize nested submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Fill in `.env`.
+3. Check the reusable core submodule:
+
+```bash
+npm run game:core:check
+```
+
+4. Fill in `.env`.
 
 Required:
 

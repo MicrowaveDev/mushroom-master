@@ -1399,10 +1399,9 @@ Recommended initial choices:
 ## Phase 10 - Integrate Core Back Into `mushroom-master`
 
 1. Add `backpack-game-core` as a nested submodule of the backpack game
-   (`mushroom-master`) at a stable path such as `vendor/backpack-game-core` or
-   `packages/backpack-game-core`.
+   (`mushroom-master`) at `vendor/backpack-game-core`.
 2. Switch `package.json` to consume the package through that local submodule
-   path, for example `file:vendor/backpack-game-core`, while keeping imports as
+   path, `file:vendor/backpack-game-core`, while keeping imports as
    `@microwavedev/backpack-game-core`.
 3. Update `package-lock.json` and verify `npm install` / `npm ci` from a clean
    checkout after `git submodule update --init --recursive`.
@@ -1434,41 +1433,44 @@ Recommended initial choices:
 
 ### Phase 10A - Submodule Consumption Implementation Plan
 
-Status: **Planned.** The first extraction slices used a pinned GitHub package
-dependency. The reusable-core integration should now move to a nested submodule
-inside the backpack game repo so the game owns an explicit core pointer and can
-import core logic from the checked-out source.
+Status: **Implemented.** The first extraction slices used a pinned GitHub
+package dependency. The reusable-core integration now uses a nested submodule
+inside the backpack game repo, so the game owns an explicit core pointer and
+imports core logic from the checked-out source.
 
 Implementation steps:
 
-1. Add `git@github.com:MicrowaveDev/backpack-game-core.git` as a nested Git
+1. Done: add `git@github.com:MicrowaveDev/backpack-game-core.git` as a nested Git
    submodule inside `mushroom-master` at `vendor/backpack-game-core`, unless an
    existing repo convention suggests a better local package path.
-2. Change the game dependency from
+2. Done: change the game dependency from
    `github:MicrowaveDev/backpack-game-core#<sha>` to a local file dependency
    that points at the submodule, while keeping all runtime imports as
    `@microwavedev/backpack-game-core`.
-3. Update `package-lock.json`, install/bootstrap docs, and any CI/dev setup
+3. Done: update `package-lock.json`, install/bootstrap docs, and any CI/dev setup
    instructions so fresh clones run `git submodule update --init --recursive`
    before installing dependencies.
-4. Add a cheap verification guard or test that fails clearly when the core
+4. Done: add a cheap verification guard or test that fails clearly when the core
    submodule is missing.
-5. Verify core tests, focused game tests, full game unit tests, and the
-   production game build.
-6. Commit the nested core pointer in `mushroom-master`, push it, then update
+5. Done for this core-consumption slice: verify core tests, the submodule
+   guard, focused game tests, `npm ci`, and the production game build. The full
+   game unit suite must be rerun after the unrelated Home Field prompt/queue
+   working-tree changes are resolved; it currently fails in Home Field pipeline
+   assertions outside this core-submodule integration.
+6. Done: commit the nested core pointer in `mushroom-master`, push it, then update
    the hub `mushroom-master` pointer.
 
 Additional TODOs for that pass:
 
-1. Add/update repo-local agent instructions for nested-submodule staging.
-2. Add a consumer smoke test that imports from
+1. Done: add/update repo-local agent instructions for nested-submodule staging.
+2. Done: add a consumer smoke test that imports from
    `@microwavedev/backpack-game-core` through the installed local dependency.
-3. Confirm `npm ci` works with the `file:` dependency after submodule init.
-4. Keep `backpack-game-core` source changes committed in the core repo before
+3. Done: confirm `npm ci` works with the `file:` dependency after submodule init.
+4. Ongoing rule: keep `backpack-game-core` source changes committed in the core repo before
    committing the game pointer.
-5. Document the exact core commit SHA in the extraction inventory after the
+5. Ongoing rule: document the exact core commit SHA in the extraction inventory after the
    pointer moves.
-6. Decide whether to add TypeScript declarations or API docs before another
+6. Deferred: decide whether to add TypeScript declarations or API docs before another
    game consumes the core package.
 
 ## Risks And Guardrails
@@ -1538,12 +1540,14 @@ Additional TODOs for that pass:
    local.**
 20. Add `backpack-game-core` as a nested submodule of the backpack game and
    switch the game dependency to a local submodule-backed package path.
+   **Done.**
 21. Add install/CI guardrails for the nested submodule: bootstrap docs,
    submodule-init requirement, lockfile verification, and a clear missing-core
-   failure.
+   failure. **Done.**
 22. Add a core-consumer smoke test plus final cross-repo verification
-   (`backpack-game-core` tests, focused game tests, full game unit tests, and
-   game build).
+   (`backpack-game-core` tests, submodule guard, focused game tests, `npm ci`,
+   and game build). **Done for the core integration.** Full game unit-suite
+   signoff is pending the unrelated Home Field prompt/queue working-tree fix.
 23. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
 24. Optional Phase 6D database rename only if raw legacy column names become a

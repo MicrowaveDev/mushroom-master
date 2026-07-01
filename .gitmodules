@@ -1,0 +1,3 @@
+[submodule "vendor/backpack-game-core"]
+	path = vendor/backpack-game-core
+	url = git@github.com:MicrowaveDev/backpack-game-core.git
