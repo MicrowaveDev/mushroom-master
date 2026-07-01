@@ -1916,6 +1916,7 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.promptPolicy.blockedShortResponse, /printed --source preflight\/archive\/stage commands/);
   assert.ok(item.agentInstructions.some((instruction) => /Thalla Home Field chibi Stage 1 proof/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/.test(instruction)));
+  assert.ok(item.agentInstructions.includes("Use the queue's supplied local 8x4 source path and printed `--source` commands; do not infer `.env` or retry the exhausted built-in imagegen path."));
   assert.ok(item.agentInstructions.some((instruction) => /Do not give the minimalLauncherPrompt back to the user/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /concrete allowed unblock input from promptPolicy/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /new-run prompt/.test(instruction) && /localSourceMode\.sourcePath/.test(instruction) && /--source commands/.test(instruction)));

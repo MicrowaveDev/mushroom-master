@@ -20,6 +20,7 @@
       "agentInstructions": [
         "Run this queue item as: Thalla Home Field chibi Stage 1 proof.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
+        "Use the queue's supplied local 8x4 source path and printed `--source` commands; do not infer `.env` or retry the exhausted built-in imagegen path.",
         "Do not give the minimalLauncherPrompt back to the user as a new production-ready run prompt while this item or its method gate is blocked; only provide a new-run prompt if it includes one concrete allowed unblock input from promptPolicy.",
         "When asked to produce a new-run prompt while this item is blocked, do not output the bare minimalLauncherPrompt unless the queue item itself prints a concrete allowed unblock path. For the current supplied local 8x4 state-sheet run, use generationContract.stateSheet.localSourceMode.sourcePath from this JSON and the queue-printed --source commands; do not require HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS in the pasted prompt.",
         "Run npm run game:home-field:chibi-proof-context, npm run game:home-field:next-chibi-proof, and preflight before archive/imagegen.",
