@@ -17,7 +17,7 @@ This document is the shared imagegen contract. Family-specific contracts can add
 - `docs/home-field-chibi-style-reference.md` defines the current chibi visual target.
 - `docs/home-field-chibi-palette-cleanup-research.md` records palette-audit and cleanup-tool findings for Thalla chibi proof runs.
 - `docs/home-field-chibi-regression-ledger.md` records the regressions these requirements are meant to prevent.
-- `app/shared/home-field/home-field-generation-queue.json` plus `npm run game:home-field:generation-queue` define the fresh-agent queue output for queue-backed runs, including built-in imagegen defaults and method-gate status that should not be repeated in the pasted launcher.
+- `app/shared/home-field/home-field-generation-queue.json` plus `npm run game:home-field:generation-queue` define the fresh-agent queue output for queue-backed runs. The default output must describe the active run path only; inactive built-in/API fallback history is printed only with `--show-fallbacks`.
 
 ## Core Requirements
 
@@ -34,21 +34,21 @@ Every imagegen run must start with a stated scope:
 
 Do not broaden a scoped run because a prompt, helper, or generated output suggests more assets. For the current chibi proof, the scope is `thalla` only.
 
-Queue-backed runs must keep the pasted launcher short and put operational detail in the queue response. The queue command must print, by default, the run title, canonical run doc, agent instructions, reference inputs, output paths, required commands, method-gate status, stop gates, final-response fields, a **Built-in imagegen default path** section when allowed or **Built-in imagegen path (blocked by method gate)** section when blocked, and a **Method gate / allowed method change** section. For current Thalla chibi proof, the built-in section must include:
+Queue-backed runs must keep the pasted launcher short and put operational detail in the queue response. The queue command must print, by default, the run title, canonical run doc, prompt-issuance gate, local-source agent instructions, style references, output paths, first-class `--source` commands, validation/evidence commands, stop gates, and final-response fields. For the current Thalla proof, the active default path is not imagegen. It is the supplied complete local state-sheet path in `generationContract.stateSheet.localSourceMode.sourcePath`: `.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png`.
 
-- the required built-in confirmation flags: `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` and `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`;
-- the built-in preflight command using those flags;
-- the instruction to load all three `referenceInputs` PNGs with `view_image` as the current imagegen skill's same-context input-staging step;
-- the instruction to call built-in `image_gen` in that same context and explicitly name the visible `referenceInputs` images as references;
-- the after-render rule to save each generated PNG directly to the documented output path or claim it with `npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=<documented-path> --verify=<reference|state-sheet>`;
-- the warning that passive viewing, path listing, or prompt-text path mentions are not enough unless the following same-context built-in `image_gen` call uses those visible images as references;
-- a **Method gate / allowed method change** section that states whether the queued path is allowed, why it is allowed, and when to stop before archive/imagegen.
+For queue-backed local-source runs, the default queue output must say `issue launcher when: ready`, not `Prompt issuance gate (blocked)`, when a concrete supplied source path is present. The agent instructions must lead with the source path and exact local commands:
 
-The queue must also print a **Supplied local state-sheet source path** section for the current Thalla proof. For queue-backed local-source runs, the queue JSON owns the concrete source path in `generationContract.stateSheet.localSourceMode.sourcePath`; the current path is `.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png`. The queue printer must emit exact `--source` commands for preflight, archive, and stage so the pasted launcher can stay minimal. A different supplied complete `8x4` local state-sheet PNG outside `docs/reference/home-field/` must be passed explicitly with `--source` or recorded in the queue source path. The agent must preflight with the queue-owned `--source`, archive with the same `--source`, run `npm run game:home-field:stage-chibi-local-source -- --source=<queue localSourceMode.sourcePath>`, skip reference imagegen and the exhausted built-in reference-staging path, verify/audit the derived reference proxy and staged state sheet, then continue through split, frame verification, candidate production, validation, evidence, preview, and verdict. The final report must include the supplied source path and hash and state that reference imagegen was skipped.
+- `npm run game:home-field:preflight-chibi-proof -- --source=<queue localSourceMode.sourcePath>`;
+- `npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<queue localSourceMode.sourcePath>`;
+- `npm run game:home-field:stage-chibi-local-source -- --source=<queue localSourceMode.sourcePath>`.
 
-Prompt issuance is gated too. Do not give a user a "new production-ready run" launcher prompt that is known to block. A queue item with a blocked or exhausted status must carry a prompt policy, and the queue printer must expose and validate it. In that state, an agent may report the blocker or give a new-run prompt only when the prompt also includes or points to one concrete allowed unblock input: the queue-owned local state-sheet `sourcePath` plus printed `--source` commands, an explicit paid fallback env file containing `OPENAI_IMAGEGEN_API_KEY` plus `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`, supplied local proof source PNGs outside `docs/reference`, or a different queue-approved reference-capable generation/editing method. The short launcher template remains useful only after that prompt-issuance gate passes or when the queue output itself contains the concrete unblock path.
+The default `commands.preflight` and `commands.archiveStale` entries must be those local `--source` commands, not `--env-file` fallback commands. A different supplied complete `8x4` local state-sheet PNG outside `docs/reference/home-field/` must be passed explicitly with `--source` or recorded in the queue source path. The agent must preflight with the queue-owned `--source`, archive with the same `--source`, stage the source, verify/audit the derived reference proxy and staged state sheet, then continue through split, frame verification, candidate production, candidate validation, candidate palette audit, evidence, preview, and verdict. The final report must include the supplied source path/hash, archive/staging provenance, proxy derivation, audit verdicts, candidate folder, and a note that no app-facing PNG was overwritten.
 
-Do not rely on a human-pasted prompt to carry those built-in details. If a new queue item is marked built-in/imagegen-ready or built-in/imagegen-blocked, the queue JSON and printer must carry and validate its built-in imagegen path and method-gate status before the run starts. The method-gate status is authoritative. For current Thalla proof runs, the queue-backed built-in same-context reference-staging path is exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`: it loaded all three `referenceInputs` with `view_image`, immediately called built-in `image_gen` with those visible images explicitly named as references, saved/claimed the output file, and still failed with a `1448x1086` oversized turnaround, source-sprite blobs up to `249x332`, and `91` significant exact colors. Do not run that built-in path again unchanged. Continue only with a different reference-capable generation/editing method, supplied local proof source PNGs outside `docs/reference`, or explicit user-approved fallback; otherwise stop before archive/imagegen and report the method-gate blocker.
+`referenceInputs` are not active imagegen inputs in supplied local-source mode. The queue uses `styleReferences` for checked-in visual review references, and the default instructions must say they are for review only. Do not tell the local-source worker to attach those images to imagegen, and do not run reference imagegen in the default local-source path.
+
+Inactive methods belong under `inactiveMethods` or `fallbacks` and are hidden from default output. Built-in imagegen flags, API fallback env rules, and the historical method gate for the exhausted built-in same-context reference-staging path must print only with `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof --show-fallbacks`. For current Thalla proof runs, that inactive built-in path remains exhausted after rollout `codex-019f1eb1-1027-7752-95cf-d4f37cb0041c`: it loaded all three old `referenceInputs` with `view_image`, immediately called built-in `image_gen` with those visible images explicitly named as references, saved/claimed the output file, and still failed with a `1448x1086` oversized turnaround, source-sprite blobs up to `249x332`, and `91` significant exact colors. Do not run that built-in path again unchanged.
+
+Prompt issuance is gated too. Do not give a user a "new production-ready run" launcher prompt that is known to block. A queue item with a blocked or exhausted active status must carry a prompt policy, and the queue printer must expose and validate it. A queue item with a ready supplied source path must instead carry a ready prompt policy and put the concrete source path plus printed `--source` commands in the queue output, so the pasted launcher can remain minimal.
 
 ### IG-2. A Chat-Visible Render Is Not A Pipeline Source
 
@@ -72,7 +72,8 @@ When a family-specific preflight exists, run it immediately after the launcher/c
 For chibi:
 
 ```bash
-npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>
+npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof
+npm run game:home-field:preflight-chibi-proof -- --source=<queue localSourceMode.sourcePath>
 ```
 
 Fresh Codex sessions do not inherit shell environment variables or capability confirmations from prior chats. Prefer the built-in/imagegen skill path when it can both save discoverable PNGs and attach or stage the checked-in reference PNGs as actual same-context image inputs. If the current imagegen skill says local images become usable inputs after `view_image`, load all required reference PNGs in the same context before the built-in `image_gen` call and explicitly name them as input images in that call. If the launcher/user explicitly confirms that Codex Desktop built-in imagegen can do both from the same agent context, run the chibi proof helper commands with:
@@ -101,6 +102,14 @@ npm run game:home-field:stage-chibi-local-source -- --source=<queue localSourceM
 ```
 
 Then verify and audit both the derived reference proxy and staged state sheet before splitting. Do not reinterpret this mode as permission to run reference imagegen, to reuse stale `.agent` files, or to treat `docs/reference/home-field/*.png` as proof sources.
+
+The same default-path rule applies to `npm run game:home-field:next-chibi-proof` and `app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md`: their default Thalla local-source output must not tell the worker to attach `docs/reference` images to imagegen, run `chibi-reference-api-proof`, claim built-in outputs, or regenerate the state sheet. They may show inactive method history only by pointing to the queue `--show-fallbacks` view or, for fallback tooling, by running `npm run game:home-field:next-chibi-proof -- --show-fallbacks`.
+
+For paid API fallback only, preflight uses:
+
+```bash
+npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>
+```
 
 If the intended path is built-in imagegen and preflight fails only because built-in disk output is unconfirmed while reference-image input binding is already confirmed, one narrow diagnostic exception is allowed before the clean stop: run exactly one tiny non-candidate built-in `image_gen` probe in the same agent context that would run imagegen. The probe must not depict Thalla, a Home Field asset, a reference sheet, or a state sheet, and it must not archive or mutate candidate files. Do not run this probe when reference-image input binding is unavailable; it proves file capture only and cannot unblock current Thalla proof art by itself.
 

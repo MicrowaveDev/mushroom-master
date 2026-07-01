@@ -135,10 +135,11 @@ function readQueueGate() {
   try {
     const queue = JSON.parse(fs.readFileSync(queueFile, 'utf8'));
     const item = (queue.items || []).find((entry) => entry.id === generationQueueItemId);
+    const inactiveBuiltin = (item?.inactiveMethods || []).find((method) => method.methodGate || method.id === 'builtin_same_context_reference_staging');
     return {
       queuePath: generationQueuePath,
       itemStatus: item?.status || '',
-      methodGate: item?.methodGate || null
+      methodGate: item?.methodGate || inactiveBuiltin?.methodGate || null
     };
   } catch (err) {
     return {

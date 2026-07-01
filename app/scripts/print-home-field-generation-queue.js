@@ -12,7 +12,7 @@ const retiredLocalInputEnv = ['HOME', 'FIELD', 'CHIBI', 'LOCAL', 'IMAGE', 'INPUT
 
 function usage() {
   return [
-    'Usage: npm run game:home-field:generation-queue -- [--id=<queue-id>] [--asset-id=<asset-id>] [--type=<asset-type>] [--json]',
+    'Usage: npm run game:home-field:generation-queue -- [--id=<queue-id>] [--asset-id=<asset-id>] [--type=<asset-type>] [--json] [--show-fallbacks]',
     '',
     'Prints machine-readable Home Field generation queue items and validates local reference paths.',
     '',
@@ -20,7 +20,8 @@ function usage() {
     '  --id=<queue-id>       Select one queue item id.',
     '  --asset-id=<asset-id> Select items for one asset id.',
     '  --type=<asset-type>   Select items for one asset type.',
-    '  --json                Emit selected items as JSON.'
+    '  --json                Emit selected items as JSON.',
+    '  --show-fallbacks     Also print inactive imagegen/API fallback history.'
   ].join('\n');
 }
 
@@ -29,7 +30,8 @@ function parseArgs(argv) {
     id: '',
     assetId: '',
     type: '',
-    json: false
+    json: false,
+    showFallbacks: false
   };
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
@@ -37,6 +39,8 @@ function parseArgs(argv) {
       process.exit(0);
     } else if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--show-fallbacks') {
+      opts.showFallbacks = true;
     } else if (arg.startsWith('--id=')) {
       opts.id = arg.slice('--id='.length);
     } else if (arg.startsWith('--asset-id=')) {
@@ -64,6 +68,103 @@ function sourcePathExists(sourcePath) {
   return fs.existsSync(abs);
 }
 
+function isBlockedStatus(status) {
+  return /blocked|exhausted/i.test(status || '');
+}
+
+function inactiveMethods(item) {
+  return Array.isArray(item.inactiveMethods) ? item.inactiveMethods : [];
+}
+
+function builtinInactiveMethod(item) {
+  return inactiveMethods(item).find((method) => method.builtInImagegen || method.methodGate) || null;
+}
+
+function apiFallbackInactiveMethod(item) {
+  return inactiveMethods(item).find((method) => method.env) || null;
+}
+
+function validateEnvBlock(issues, itemId, env, label) {
+  if (!env.envFileArg) issues.push(`${itemId}: ${label} missing envFileArg`);
+  if (env.doNotInferEnvFile !== true) issues.push(`${itemId}: ${label}.doNotInferEnvFile must be true`);
+  if (!Array.isArray(env.apiFallbackRequiredKeys)) {
+    issues.push(`${itemId}: ${label}.apiFallbackRequiredKeys must be an array`);
+  }
+  for (const key of env.requiredKeys || []) {
+    if (typeof key !== 'string' || !key) issues.push(`${itemId}: invalid required env key`);
+    if (key === 'OPENAI_API_KEY') {
+      issues.push(`${itemId}: Home Field image generation must require OPENAI_IMAGEGEN_API_KEY, not plain OPENAI_API_KEY`);
+    }
+  }
+  for (const key of env.apiFallbackRequiredKeys || []) {
+    if (typeof key !== 'string' || !key) issues.push(`${itemId}: invalid API fallback env key`);
+    if (key === 'OPENAI_API_KEY') {
+      issues.push(`${itemId}: API fallback must require OPENAI_IMAGEGEN_API_KEY, not plain OPENAI_API_KEY`);
+    }
+  }
+  if (env.plainOpenAiApiKeyIgnored !== true) {
+    issues.push(`${itemId}: ${label}.plainOpenAiApiKeyIgnored must be true`);
+  }
+  if (env.apiFallbackRequiresSkillUnavailable !== true) {
+    issues.push(`${itemId}: ${label}.apiFallbackRequiresSkillUnavailable must be true`);
+  }
+}
+
+function validateBuiltInBlock(issues, itemId, builtIn, hasMethodGate) {
+  if (builtIn.defaultPath !== true) return;
+  const flags = builtIn.confirmationFlags || [];
+  if (builtIn.sameContextRequired !== true) {
+    issues.push(`${itemId}: builtInImagegen.sameContextRequired must be true`);
+  }
+  if (!flags.includes('HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1')) {
+    issues.push(`${itemId}: builtInImagegen.confirmationFlags must include HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`);
+  }
+  if (!flags.includes('HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1')) {
+    issues.push(`${itemId}: builtInImagegen.confirmationFlags must include HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`);
+  }
+  if (!/preflight-chibi-proof/.test(builtIn.preflightCommand || '')) {
+    issues.push(`${itemId}: builtInImagegen.preflightCommand must name preflight-chibi-proof`);
+  }
+  if (!/referenceInputs/.test(builtIn.referenceStaging || '') || !/view_image/.test(builtIn.referenceStaging || '')) {
+    issues.push(`${itemId}: builtInImagegen.referenceStaging must tell agents to load referenceInputs with view_image`);
+  }
+  if (!/image_gen/.test(builtIn.generationCall || '') || !/references/i.test(builtIn.generationCall || '')) {
+    issues.push(`${itemId}: builtInImagegen.generationCall must tell agents to use built-in image_gen with references`);
+  }
+  if (!/claim-imagegen-output/.test(builtIn.afterRender || '')) {
+    issues.push(`${itemId}: builtInImagegen.afterRender must tell agents how to claim built-in output files`);
+  }
+  if (!/Passive viewing/.test(builtIn.notEnough || '') || !/not enough/.test(builtIn.notEnough || '')) {
+    issues.push(`${itemId}: builtInImagegen.notEnough must reject passive viewing`);
+  }
+  if (!hasMethodGate) {
+    issues.push(`${itemId}: built-in inactive method must include a methodGate`);
+  }
+}
+
+function validateMethodGate(issues, itemId, methodGate) {
+  if (!methodGate) return;
+  const methodGateStatus = methodGate.status || '';
+  const methodGateAllowed = /allowed/i.test(methodGateStatus) && !isBlockedStatus(methodGateStatus);
+  const methodGateBlocked = isBlockedStatus(methodGateStatus);
+  if (!methodGate.rollout) issues.push(`${itemId}: methodGate missing rollout`);
+  if (!methodGateAllowed && !methodGateBlocked) {
+    issues.push(`${itemId}: methodGate.status must mark the path allowed or blocked/exhausted`);
+  }
+  if (methodGateAllowed && !/current allowed method change/i.test(methodGate.reason || '')) {
+    issues.push(`${itemId}: methodGate.reason must say current allowed method change`);
+  }
+  if (methodGateBlocked && !/failed|exhausted/i.test(methodGate.reason || '')) {
+    issues.push(`${itemId}: blocked methodGate.reason must explain the failed or exhausted path`);
+  }
+  if (methodGateBlocked && !/Do not run|Continue only/i.test(methodGate.allowedPath || '')) {
+    issues.push(`${itemId}: blocked methodGate.allowedPath must say not to run the exhausted path`);
+  }
+  if (methodGateBlocked && !/Stop before archive\/imagegen/i.test(methodGate.stopIf || '')) {
+    issues.push(`${itemId}: blocked methodGate.stopIf must stop before archive/imagegen`);
+  }
+}
+
 function validateQueue(queue) {
   const issues = [];
   if (queue.schemaVersion !== 1) issues.push('schemaVersion must be 1');
@@ -85,81 +186,92 @@ function validateQueue(queue) {
     if (!Array.isArray(item.agentInstructions) || item.agentInstructions.length === 0) {
       issues.push(`${item.id}: agentInstructions must be a non-empty array`);
     }
+
     const agentInstructionText = (item.agentInstructions || []).join('\n');
-    const serializedItem = JSON.stringify(item);
-    if (serializedItem.includes(retiredLocalInputEnv)) {
-      issues.push(`${item.id}: active queue items must not mention retired local-input env vars; use localSourceMode.sourcePath and --source commands`);
+    const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
+    const activeLocalSource = item.activeSourceMode === 'supplied_local_state_sheet';
+    const sourcePath = localSourceMode?.sourcePath || '';
+    const serializedActiveItem = JSON.stringify({
+      ...item,
+      inactiveMethods: undefined
+    });
+    if (serializedActiveItem.includes(retiredLocalInputEnv)) {
+      issues.push(`${item.id}: active queue item must not mention retired local-input env vars; use localSourceMode.sourcePath and --source commands`);
     }
     if (item.promptSource?.runDoc && !agentInstructionText.includes(item.promptSource.runDoc)) {
       issues.push(`${item.id}: agentInstructions must mention ${item.promptSource.runDoc}`);
     }
-    if (item.env?.doNotInferEnvFile === true && !/Do not infer `?\.env`?/i.test(agentInstructionText)) {
-      issues.push(`${item.id}: agentInstructions must say not to infer .env`);
-    }
-    if (item.env?.plainOpenAiApiKeyIgnored === true && !/plain OPENAI_API_KEY is ignored/i.test(agentInstructionText)) {
-      issues.push(`${item.id}: agentInstructions must say plain OPENAI_API_KEY is ignored`);
-    }
-    if (item.env?.apiFallbackRequiresSkillUnavailable === true && !agentInstructionText.includes('HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1')) {
-      issues.push(`${item.id}: agentInstructions must mention HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`);
-    }
-    if ((item.referenceInputs || []).length > 0 && !/actual image inputs/i.test(agentInstructionText)) {
-      issues.push(`${item.id}: agentInstructions must require actual image inputs for references`);
-    }
-    const methodGateStatus = item.methodGate?.status || '';
-    const itemStatusBlocked = /blocked|exhausted/i.test(item.status || '');
-    const methodGateBlocked = /blocked|exhausted/i.test(methodGateStatus);
-    const promptIssueBlocked = itemStatusBlocked || methodGateBlocked;
-    const methodGateAllowed = /allowed/i.test(methodGateStatus) && !methodGateBlocked;
-    const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
-    if (promptIssueBlocked) {
-      if (item.promptPolicy?.issueLauncherWhenStatus !== 'allowed_or_with_unblock_input_only') {
-        issues.push(`${item.id}: blocked items must set promptPolicy.issueLauncherWhenStatus=allowed_or_with_unblock_input_only`);
+    if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
+    if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);
+
+    if (activeLocalSource) {
+      if (isBlockedStatus(item.status)) {
+        issues.push(`${item.id}: supplied local-source queue item must not use a blocked/exhausted status`);
       }
-      const blockedPromptAction = item.promptPolicy?.blockedPromptAction || '';
-      const blockedShortResponse = item.promptPolicy?.blockedShortResponse || '';
-      if (!/Do not give minimalLauncherPrompt/i.test(blockedPromptAction) || !/concrete allowed unblock input/i.test(blockedPromptAction)) {
-        issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must forbid giving the launcher without a concrete unblock input`);
+      if (!['Producer/Validation Worker', 'Local Source Worker'].includes(item.ownerRole)) {
+        issues.push(`${item.id}: supplied local-source queue item ownerRole must be Producer/Validation Worker or Local Source Worker`);
       }
-      if (!/Blocked:/i.test(blockedShortResponse) || !/allowed non-built-in path|explicit paid fallback env file|supplied proof source PNGs/i.test(blockedShortResponse)) {
-        issues.push(`${item.id}: blocked promptPolicy.blockedShortResponse must tell agents not to start another blocked production run`);
-      }
-      if (!/Do not give the minimalLauncherPrompt back to the user/i.test(agentInstructionText) || !/concrete allowed unblock input/i.test(agentInstructionText)) {
-        issues.push(`${item.id}: agentInstructions must forbid returning a blocked launcher prompt without concrete unblock input`);
-      }
-      if (localSourceMode?.completeStateSheetAllowed === true) {
-        if (!/localSourceMode\.sourcePath/.test(blockedPromptAction) || !/--source commands/i.test(blockedPromptAction)) {
-          issues.push(`${item.id}: blocked promptPolicy.blockedPromptAction must tell prompt writers to use localSourceMode.sourcePath and queue-printed --source commands`);
+      for (const field of ['env', 'builtInImagegen', 'methodGate', 'referenceInputs']) {
+        if (Object.hasOwn(item, field)) {
+          issues.push(`${item.id}: ${field} must not be top-level in supplied local-source mode; move inactive details behind inactiveMethods`);
         }
       }
+      if (item.promptPolicy?.issueLauncherWhenStatus !== 'ready') {
+        issues.push(`${item.id}: supplied local-source promptPolicy.issueLauncherWhenStatus must be ready`);
+      }
+      if (!/sourcePath/.test(item.promptPolicy?.action || '') || !/--source/.test(item.promptPolicy?.action || '')) {
+        issues.push(`${item.id}: supplied local-source promptPolicy.action must point to the sourcePath and --source commands`);
+      }
+      if (/OPENAI_IMAGEGEN_API_KEY|HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE|OPENAI_API_KEY|built-in imagegen path|referenceInputs/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: supplied local-source agentInstructions must not lead with env/API/built-in/referenceInputs details`);
+      }
+      if (!/styleReferences as visual review references only/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: supplied local-source agentInstructions must describe styleReferences as visual review references`);
+      }
+      if (!/skips reference imagegen/i.test(agentInstructionText)) {
+        issues.push(`${item.id}: supplied local-source agentInstructions must say reference imagegen is skipped`);
+      }
+      if (!Array.isArray(item.styleReferences) || item.styleReferences.length === 0) {
+        issues.push(`${item.id}: supplied local-source queue item must include styleReferences`);
+      }
+      if (!Array.isArray(item.inactiveMethods) || item.inactiveMethods.length === 0) {
+        issues.push(`${item.id}: supplied local-source queue item must keep fallback history in inactiveMethods`);
+      }
+      for (const key of ['preflight', 'archiveStale', 'stageLocalSource']) {
+        if (!item.commands?.[key]?.includes(`--source=${sourcePath}`)) {
+          issues.push(`${item.id}: commands.${key} must use --source=${sourcePath}`);
+        }
+      }
+      for (const oldKey of ['preflightLocalSource', 'archiveStaleLocalSource', 'referenceApiProof']) {
+        if (Object.hasOwn(item.commands || {}, oldKey)) {
+          issues.push(`${item.id}: commands.${oldKey} must not be a default command in supplied local-source mode`);
+        }
+      }
+    } else {
+      const promptIssueBlocked = isBlockedStatus(item.status) || isBlockedStatus(item.methodGate?.status);
+      if (promptIssueBlocked && item.promptPolicy?.issueLauncherWhenStatus !== 'allowed_or_with_unblock_input_only') {
+        issues.push(`${item.id}: blocked items must set promptPolicy.issueLauncherWhenStatus=allowed_or_with_unblock_input_only`);
+      }
+      if (item.env) validateEnvBlock(issues, item.id, item.env, 'env');
+      if (item.builtInImagegen) validateBuiltInBlock(issues, item.id, item.builtInImagegen, Boolean(item.methodGate));
+      validateMethodGate(issues, item.id, item.methodGate);
     }
-    if (item.methodGate && methodGateAllowed && !/current allowed method change/i.test(agentInstructionText)) {
-      issues.push(`${item.id}: agentInstructions must name the current allowed method change`);
-    }
-    if (item.methodGate && methodGateBlocked && !/exhausted|do not run it again/i.test(agentInstructionText)) {
-      issues.push(`${item.id}: agentInstructions must say the built-in method is exhausted or must not run again`);
-    }
-    if (item.generationContract?.stateSheet?.requiredReferenceImageInput && !/grouped 8x4 state sheet/i.test(agentInstructionText)) {
-      issues.push(`${item.id}: agentInstructions must mention the grouped 8x4 state sheet reference-input gate`);
-    }
+
     if (localSourceMode?.completeStateSheetAllowed === true) {
-      const sourcePath = localSourceMode.sourcePath || '';
       if (!sourcePath) {
         issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.sourcePath`);
       }
       if (sourcePath && sourcePath.startsWith(localSourceMode.sourceMustBeOutside || 'docs/reference/home-field/')) {
         issues.push(`${item.id}: local state-sheet sourcePath must be outside ${localSourceMode.sourceMustBeOutside}`);
       }
-      if (!item.commands?.stageLocalSource || !item.commands.stageLocalSource.includes(`--source=${sourcePath}`)) {
-        issues.push(`${item.id}: local state-sheet source mode must include commands.stageLocalSource with --source=${sourcePath}`);
-      }
-      if (!localSourceMode.preflightCommand?.includes(`--source=${sourcePath}`)) {
-        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.preflightCommand with --source=${sourcePath}`);
-      }
-      if (!localSourceMode.archiveCommand?.includes(`--source=${sourcePath}`)) {
-        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.archiveCommand with --source=${sourcePath}`);
-      }
-      if (!localSourceMode.stageCommand?.includes(`--source=${sourcePath}`)) {
-        issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.stageCommand with --source=${sourcePath}`);
+      for (const [field, command] of [
+        ['preflightCommand', localSourceMode.preflightCommand],
+        ['archiveCommand', localSourceMode.archiveCommand],
+        ['stageCommand', localSourceMode.stageCommand]
+      ]) {
+        if (!command?.includes(`--source=${sourcePath}`)) {
+          issues.push(`${item.id}: local state-sheet source mode must include localSourceMode.${field} with --source=${sourcePath}`);
+        }
       }
       if (!agentInstructionText.includes(sourcePath)) {
         issues.push(`${item.id}: agentInstructions must mention the queue-owned local sourcePath`);
@@ -173,108 +285,35 @@ function validateQueue(queue) {
       if (!/complete 8x4 local state-sheet/i.test(agentInstructionText)) {
         issues.push(`${item.id}: agentInstructions must describe complete 8x4 local state-sheet source mode`);
       }
-      if (!/Do not run reference imagegen/i.test(agentInstructionText)) {
-        issues.push(`${item.id}: agentInstructions must skip reference imagegen for local state-sheet source mode`);
-      }
     }
-    if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
-    if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);
-    if (!item.env?.envFileArg) issues.push(`${item.id}: missing env.envFileArg`);
-    if (item.env?.doNotInferEnvFile !== true) issues.push(`${item.id}: env.doNotInferEnvFile must be true`);
-    for (const key of item.env?.requiredKeys || []) {
-      if (typeof key !== 'string' || !key) issues.push(`${item.id}: invalid required env key`);
-      if (key === 'OPENAI_API_KEY') {
-        issues.push(`${item.id}: Home Field image generation must require OPENAI_IMAGEGEN_API_KEY, not plain OPENAI_API_KEY`);
-      }
-    }
-    for (const key of item.env?.apiFallbackRequiredKeys || []) {
-      if (typeof key !== 'string' || !key) issues.push(`${item.id}: invalid API fallback env key`);
-      if (key === 'OPENAI_API_KEY') {
-        issues.push(`${item.id}: API fallback must require OPENAI_IMAGEGEN_API_KEY, not plain OPENAI_API_KEY`);
-      }
-    }
-    if (!Array.isArray(item.env?.apiFallbackRequiredKeys)) {
-      issues.push(`${item.id}: env.apiFallbackRequiredKeys must be an array`);
-    }
-    if (item.env?.plainOpenAiApiKeyIgnored !== true) {
-      issues.push(`${item.id}: env.plainOpenAiApiKeyIgnored must be true`);
-    }
-    if (item.env?.apiFallbackRequiresSkillUnavailable !== true) {
-      issues.push(`${item.id}: env.apiFallbackRequiresSkillUnavailable must be true`);
-    }
-    if (item.builtInImagegen?.defaultPath === true) {
-      const builtIn = item.builtInImagegen;
-      const flags = builtIn.confirmationFlags || [];
-      if (builtIn.sameContextRequired !== true) {
-        issues.push(`${item.id}: builtInImagegen.sameContextRequired must be true`);
-      }
-      if (!flags.includes('HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1')) {
-        issues.push(`${item.id}: builtInImagegen.confirmationFlags must include HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1`);
-      }
-      if (!flags.includes('HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1')) {
-        issues.push(`${item.id}: builtInImagegen.confirmationFlags must include HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1`);
-      }
-      if (!/preflight-chibi-proof/.test(builtIn.preflightCommand || '')) {
-        issues.push(`${item.id}: builtInImagegen.preflightCommand must name preflight-chibi-proof`);
-      }
-      if (!/referenceInputs/.test(builtIn.referenceStaging || '') || !/view_image/.test(builtIn.referenceStaging || '')) {
-        issues.push(`${item.id}: builtInImagegen.referenceStaging must tell agents to load referenceInputs with view_image`);
-      }
-      if (!/image_gen/.test(builtIn.generationCall || '') || !/references/i.test(builtIn.generationCall || '')) {
-        issues.push(`${item.id}: builtInImagegen.generationCall must tell agents to use built-in image_gen with references`);
-      }
-      if (!/claim-imagegen-output/.test(builtIn.afterRender || '')) {
-        issues.push(`${item.id}: builtInImagegen.afterRender must tell agents how to claim built-in output files`);
-      }
-      if (!/Passive viewing/.test(builtIn.notEnough || '') || !/not enough/.test(builtIn.notEnough || '')) {
-        issues.push(`${item.id}: builtInImagegen.notEnough must reject passive viewing`);
-      }
-      if (!item.methodGate) {
-        issues.push(`${item.id}: builtin-ready items must include a methodGate`);
-      }
-    } else if (item.status?.includes('builtin')) {
-      issues.push(`${item.id}: builtin-ready items must include builtInImagegen.defaultPath=true`);
-    }
-    if (item.methodGate) {
-      if (!item.methodGate.rollout) issues.push(`${item.id}: methodGate missing rollout`);
-      if (!methodGateAllowed && !methodGateBlocked) {
-        issues.push(`${item.id}: methodGate.status must mark the path allowed or blocked/exhausted`);
-      }
-      if (methodGateAllowed && !/current allowed method change/i.test(item.methodGate.reason || '')) {
-        issues.push(`${item.id}: methodGate.reason must say current allowed method change`);
-      }
-      if (methodGateAllowed && !/one fresh reference-attempt batch/i.test(item.methodGate.allowedPath || '')) {
-        issues.push(`${item.id}: methodGate.allowedPath must limit the queued path to one fresh reference-attempt batch`);
-      }
-      if (methodGateAllowed && !/same visual gate twice/i.test(item.methodGate.stopIf || '')) {
-        issues.push(`${item.id}: methodGate.stopIf must stop after repeated same-gate failure`);
-      }
-      if (methodGateBlocked && !/failed|exhausted/i.test(item.methodGate.reason || '')) {
-        issues.push(`${item.id}: blocked methodGate.reason must explain the failed or exhausted path`);
-      }
-      if (methodGateBlocked && !/Do not run|Continue only/i.test(item.methodGate.allowedPath || '')) {
-        issues.push(`${item.id}: blocked methodGate.allowedPath must say not to run the exhausted path`);
-      }
-      if (methodGateBlocked && !/Stop before archive\/imagegen/i.test(item.methodGate.stopIf || '')) {
-        issues.push(`${item.id}: blocked methodGate.stopIf must stop before archive/imagegen`);
-      }
-    }
-    for (const reference of item.referenceInputs || []) {
+
+    for (const reference of item.styleReferences || item.referenceInputs || []) {
       if (!reference.path) {
-        issues.push(`${item.id}: reference input missing path`);
+        issues.push(`${item.id}: style/reference input missing path`);
       } else if (!relExists(reference.path)) {
-        issues.push(`${item.id}: missing reference input ${reference.path}`);
+        issues.push(`${item.id}: missing style/reference input ${reference.path}`);
       }
-      if (!reference.role) issues.push(`${item.id}: reference input ${reference.path || '<missing>'} missing role`);
-      if (reference.mustAttachAsActualImageInput !== true) {
-        issues.push(`${item.id}: reference input ${reference.path || '<missing>'} must require actual image attachment`);
+      if (!reference.role) issues.push(`${item.id}: style/reference input ${reference.path || '<missing>'} missing role`);
+      if (activeLocalSource && !/visual style reference|visual review reference/i.test(reference.usage || '')) {
+        issues.push(`${item.id}: styleReference ${reference.path || '<missing>'} must be visual review only in local-source mode`);
       }
     }
+
     if (item.generationContract?.stateSheet?.stopIfPromptOnly !== true) {
       issues.push(`${item.id}: state sheet must stop if only prompt text is available`);
     }
-    if (!item.generationContract?.stateSheet?.requiredReferenceImageInput) {
+    if (!activeLocalSource && !item.generationContract?.stateSheet?.requiredReferenceImageInput) {
       issues.push(`${item.id}: state sheet missing required reference image input`);
+    }
+
+    const inactiveBuiltin = builtinInactiveMethod(item);
+    if (inactiveBuiltin?.builtInImagegen) {
+      validateBuiltInBlock(issues, item.id, inactiveBuiltin.builtInImagegen, Boolean(inactiveBuiltin.methodGate));
+      validateMethodGate(issues, item.id, inactiveBuiltin.methodGate);
+    }
+    const inactiveApi = apiFallbackInactiveMethod(item);
+    if (inactiveApi?.env) {
+      validateEnvBlock(issues, item.id, inactiveApi.env, 'inactiveMethods.env');
     }
   }
   return issues;
@@ -289,97 +328,156 @@ function selectItems(items, opts) {
   });
 }
 
-function printItem(item) {
+function printPromptPolicy(item) {
+  if (!item.promptPolicy) return;
+  console.log('Prompt issuance gate:');
+  console.log(`  issue launcher when: ${item.promptPolicy.issueLauncherWhenStatus}`);
+  if (item.promptPolicy.action) console.log(`  action: ${item.promptPolicy.action}`);
+  if (item.promptPolicy.blockedPromptAction) console.log(`  blocked action: ${item.promptPolicy.blockedPromptAction}`);
+  if (item.promptPolicy.blockedShortResponse) console.log(`  blocked short response: ${item.promptPolicy.blockedShortResponse}`);
+  console.log('');
+}
+
+function printLocalSourceMode(item) {
+  const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
+  if (!localSourceMode?.completeStateSheetAllowed) return;
+  console.log('Active local-source plan:');
+  console.log(`  source path: ${localSourceMode.sourcePath || '<missing>'}`);
+  console.log(`  source exists: ${sourcePathExists(localSourceMode.sourcePath) ? 'yes' : 'no'}`);
+  console.log(`  source kind: ${localSourceMode.sourceKind || 'complete 8x4 local state-sheet'}`);
+  console.log(`  allowed source: one complete 8x4 local PNG outside ${localSourceMode.sourceMustBeOutside}`);
+  console.log(`  preflight command: ${localSourceMode.preflightCommand}`);
+  console.log(`  archive command: ${localSourceMode.archiveCommand}`);
+  console.log(`  stage command: ${localSourceMode.stageCommand}`);
+  console.log(`  stages to: ${localSourceMode.stagesTo}`);
+  console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
+  console.log(`  continue at: ${localSourceMode.continueAt}`);
+  console.log(`  reference imagegen skipped: ${localSourceMode.skipImagegen ? 'yes' : 'no'}`);
+  console.log('');
+}
+
+function printStyleReferences(item) {
+  const references = item.styleReferences || item.referenceInputs || [];
+  if (references.length === 0) return;
+  console.log(item.styleReferences ? 'Style references (visual review only):' : 'References:');
+  for (const reference of references) {
+    const usage = reference.usage ? `; ${reference.usage}` : '';
+    console.log(`  - ${reference.path} (${reference.role}${usage})`);
+  }
+  console.log('');
+}
+
+function printCommands(item) {
+  console.log('Required commands:');
+  for (const key of [
+    'context',
+    'scopedPrompt',
+    'preflight',
+    'archiveStale',
+    'stageLocalSource',
+    'verifyReference',
+    'auditReferencePalette',
+    'verifyStateSheet',
+    'auditStateSheetPalette',
+    'splitStateSheet',
+    'verifyFrames',
+    'produceCandidate',
+    'verifyCandidate',
+    'auditCandidatePalette',
+    'candidateEvidence',
+    'preview',
+    'recordVerdict'
+  ]) {
+    if (item.commands?.[key]) console.log(`  ${key}: ${item.commands[key]}`);
+  }
+  console.log('');
+}
+
+function printStateSheetGate(item) {
+  const stateSheet = item.generationContract?.stateSheet || {};
+  const localSourceMode = stateSheet.localSourceMode;
+  console.log('Production state-sheet gate:');
+  if (localSourceMode?.completeStateSheetAllowed && item.activeSourceMode === 'supplied_local_state_sheet') {
+    console.log(`  active mode: supplied local 8x4 source -> ${localSourceMode.stageCommand}`);
+    console.log('  state sheet generation: skipped; staged from supplied source');
+    console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
+  } else {
+    console.log(`  required reference image input: ${stateSheet.requiredReferenceImageInput}`);
+    console.log(`  stop if prompt-only: ${stateSheet.stopIfPromptOnly ? 'yes' : 'no'}`);
+    console.log(`  stop if reference cannot attach: ${stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput ? 'yes' : 'no'}`);
+  }
+  console.log(`  layout: ${stateSheet.layout}`);
+  console.log('');
+}
+
+function printInactiveMethods(item) {
+  const methods = inactiveMethods(item);
+  if (methods.length === 0) return;
+  console.log('Inactive/fallback methods (--show-fallbacks):');
+  for (const method of methods) {
+    console.log(`  - ${method.label || method.id}`);
+    console.log(`    id: ${method.id || '<missing>'}`);
+    console.log(`    status: ${method.status || '<missing>'}`);
+    if (method.reason) console.log(`    reason: ${method.reason}`);
+    if (method.showWith) console.log(`    default visibility: hidden; print with ${method.showWith}`);
+    if (method.builtInImagegen) {
+      const builtIn = method.builtInImagegen;
+      console.log('    built-in imagegen:');
+      console.log(`      flags: ${(builtIn.confirmationFlags || []).join(' ')}`);
+      console.log(`      preflight: ${builtIn.preflightCommand}`);
+      console.log(`      reference staging: ${builtIn.referenceStaging}`);
+      console.log(`      imagegen call: ${builtIn.generationCall}`);
+      console.log(`      after render: ${builtIn.afterRender}`);
+      console.log(`      not enough: ${builtIn.notEnough}`);
+    }
+    if (method.methodGate) {
+      console.log('    method gate:');
+      console.log(`      rollout: ${method.methodGate.rollout}`);
+      console.log(`      status: ${method.methodGate.status}`);
+      console.log(`      reason: ${method.methodGate.reason}`);
+      console.log(`      allowed path: ${method.methodGate.allowedPath}`);
+      console.log(`      stop if: ${method.methodGate.stopIf}`);
+    }
+    if (method.env) {
+      const env = method.env;
+      console.log('    paid API fallback env:');
+      console.log(`      env file arg: ${env.envFileArg}`);
+      console.log(`      always-required keys: ${(env.requiredKeys || []).join(', ') || 'none'}`);
+      console.log(`      fallback keys: ${(env.apiFallbackRequiredKeys || []).join(', ') || 'none'}`);
+      if (env.doNotInferEnvFile) console.log('      rule: do not infer .env or neighboring repo env files');
+      if (env.plainOpenAiApiKeyIgnored) console.log('      rule: plain OPENAI_API_KEY is ignored for Home Field image generation');
+      if (env.apiFallbackRequiresSkillUnavailable) console.log(`      rule: paid fallback also requires ${env.apiFallbackFlag}`);
+      if (env.blockedRunEvidence) console.log(`      latest blocker: ${env.blockedRunEvidence.rollout} - ${env.blockedRunEvidence.reason}`);
+    }
+    if (method.commands) {
+      console.log('    commands:');
+      for (const [key, command] of Object.entries(method.commands)) console.log(`      ${key}: ${command}`);
+    }
+  }
+  console.log('');
+}
+
+function printItem(item, opts) {
   console.log(`=== ${item.displayTitle || item.id} ===`);
   console.log(`id: ${item.id}`);
   console.log(`asset: ${item.assetId} (${item.assetType})`);
   console.log(`pipeline: ${item.pipeline}`);
   console.log(`status: ${item.status}`);
+  if (item.activeSourceMode) console.log(`active source mode: ${item.activeSourceMode}`);
+  if (item.ownerRole) console.log(`owner role: ${item.ownerRole}`);
   console.log('');
   console.log('Minimal launcher prompt:');
   console.log(`  ${item.minimalLauncherPrompt}`);
   console.log('');
-  if (item.promptPolicy) {
-    const promptIssueBlocked = /blocked|exhausted/i.test(`${item.status || ''} ${item.methodGate?.status || ''}`);
-    console.log(promptIssueBlocked ? 'Prompt issuance gate (blocked):' : 'Prompt issuance gate:');
-    console.log(`  issue launcher when: ${item.promptPolicy.issueLauncherWhenStatus}`);
-    if (item.promptPolicy.blockedPromptAction) console.log(`  blocked action: ${item.promptPolicy.blockedPromptAction}`);
-    if (item.promptPolicy.blockedShortResponse) console.log(`  blocked short response: ${item.promptPolicy.blockedShortResponse}`);
-    console.log('');
-  }
+  printPromptPolicy(item);
   console.log('Agent instructions:');
   for (const instruction of item.agentInstructions || []) console.log(`  - ${instruction}`);
   console.log('');
-  if (item.builtInImagegen?.defaultPath) {
-    const methodGateBlocked = /blocked|exhausted/i.test(item.methodGate?.status || '');
-    console.log(methodGateBlocked ? 'Built-in imagegen path (blocked by method gate):' : 'Built-in imagegen default path:');
-    console.log(`  flags: ${(item.builtInImagegen.confirmationFlags || []).join(' ')}`);
-    console.log(`  preflight: ${item.builtInImagegen.preflightCommand}`);
-    console.log(`  reference staging: ${item.builtInImagegen.referenceStaging}`);
-    console.log(`  imagegen call: ${item.builtInImagegen.generationCall}`);
-    console.log(`  after render: ${item.builtInImagegen.afterRender}`);
-    console.log(`  not enough: ${item.builtInImagegen.notEnough}`);
-    console.log('');
-  }
-  if (item.methodGate) {
-    console.log('Method gate / allowed method change:');
-    console.log(`  rollout: ${item.methodGate.rollout}`);
-    console.log(`  status: ${item.methodGate.status}`);
-    console.log(`  reason: ${item.methodGate.reason}`);
-    console.log(`  allowed path: ${item.methodGate.allowedPath}`);
-    console.log(`  stop if: ${item.methodGate.stopIf}`);
-    console.log('');
-  }
-  const localSourceMode = item.generationContract?.stateSheet?.localSourceMode;
-  if (localSourceMode?.completeStateSheetAllowed) {
-    console.log('Supplied local state-sheet source path:');
-    console.log(`  source path: ${localSourceMode.sourcePath || '<missing>'}`);
-    console.log(`  source exists: ${sourcePathExists(localSourceMode.sourcePath) ? 'yes' : 'no'}`);
-    console.log(`  source kind: ${localSourceMode.sourceKind || 'complete 8x4 local state-sheet'}`);
-    console.log(`  allowed source: one complete 8x4 local PNG outside ${localSourceMode.sourceMustBeOutside}`);
-    console.log(`  preflight command: ${localSourceMode.preflightCommand}`);
-    console.log(`  archive command: ${localSourceMode.archiveCommand}`);
-    console.log(`  stage command: ${localSourceMode.stageCommand}`);
-    console.log(`  stages to: ${localSourceMode.stagesTo}`);
-    console.log(`  reference proxy: ${localSourceMode.derivesReferenceProxy}`);
-    console.log(`  continue at: ${localSourceMode.continueAt}`);
-    console.log(`  skip imagegen: ${localSourceMode.skipImagegen ? 'yes' : 'no'}`);
-    console.log('');
-  }
-  console.log(`env fallback arg: pass ${item.env.envFileArg} only for paid API fallback; always-required keys: ${(item.env.requiredKeys || []).join(', ') || 'none'}`);
-  console.log(`env fallback keys: ${(item.env.apiFallbackRequiredKeys || []).join(', ') || 'none'}`);
-  if (item.env.doNotInferEnvFile) {
-    console.log('env rule: do not infer .env or neighboring repo env files; the launcher must provide the explicit env file.');
-  }
-  if (item.env.plainOpenAiApiKeyIgnored) {
-    console.log('env rule: plain OPENAI_API_KEY is ignored for Home Field image generation; use OPENAI_IMAGEGEN_API_KEY only for explicit paid API fallback.');
-  }
-  if (item.env.apiFallbackRequiresSkillUnavailable) {
-    console.log('env rule: paid API fallback also requires HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 after built-in/imagegen skill output is unavailable.');
-  }
-  if (item.env.blockedRunEvidence) {
-    console.log(`latest blocker: ${item.env.blockedRunEvidence.rollout} - ${item.env.blockedRunEvidence.reason}`);
-  }
-  console.log('');
-  console.log('References:');
-  for (const reference of item.referenceInputs || []) {
-    console.log(`  - ${reference.path} (${reference.role})`);
-  }
-  console.log('');
-  console.log('Required commands:');
-  for (const key of ['context', 'preflight', 'preflightLocalSource', 'scopedPrompt', 'archiveStale', 'archiveStaleLocalSource', 'stageLocalSource', 'referenceApiProof']) {
-    if (item.commands?.[key]) console.log(`  ${key}: ${item.commands[key]}`);
-  }
-  console.log('');
-  console.log('Production state-sheet gate:');
-  console.log(`  required reference image input: ${item.generationContract.stateSheet.requiredReferenceImageInput}`);
-  console.log(`  stop if prompt-only: ${item.generationContract.stateSheet.stopIfPromptOnly ? 'yes' : 'no'}`);
-  console.log(`  stop if reference cannot attach: ${item.generationContract.stateSheet.stopIfReferenceCannotBeAttachedAsActualImageInput ? 'yes' : 'no'}`);
-  if (localSourceMode?.completeStateSheetAllowed) {
-    console.log(`  local source mode: ${localSourceMode.sourcePath} -> ${localSourceMode.stageCommand}; deterministic reference proxy derived, reference imagegen skipped`);
-  }
-  console.log(`  layout: ${item.generationContract.stateSheet.layout}`);
-  console.log('');
+  printLocalSourceMode(item);
+  printStyleReferences(item);
+  printCommands(item);
+  printStateSheetGate(item);
+  if (opts.showFallbacks) printInactiveMethods(item);
   console.log('Stop rules:');
   for (const rule of item.stopRules || []) console.log(`  - ${rule}`);
   console.log('');
@@ -413,7 +511,7 @@ function main() {
   console.log('');
   items.forEach((item, idx) => {
     if (idx > 0) console.log('');
-    printItem(item);
+    printItem(item, opts);
   });
 }
 

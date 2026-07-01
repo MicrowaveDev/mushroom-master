@@ -20,6 +20,7 @@
  *   --object-candidate  print object-layer candidate producer guidance instead of app-facing producer guidance
  *   --chibi-candidate   print chibi candidate producer guidance instead of app-facing producer guidance
  *   --terrain-candidate print terrain candidate producer guidance instead of app-facing producer guidance
+ *   --show-fallbacks    include inactive fallback prompt blocks for fallback tooling
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
  * next-season-image-prompts.js). The PROMPT_MARKER line is the recognised handshake
@@ -45,6 +46,7 @@ const REVIEW_PATH = process.env.HOME_FIELD_REVIEW_PATH
 
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game home-field bitmap.';
 const CANDIDATE_PROMPT_MARKER = 'Use the imagegen skill to create a candidate game home-field bitmap; do not approve or overwrite app assets.';
+const LOCAL_SOURCE_CANDIDATE_PROMPT_MARKER = 'Use the queue-supplied local state-sheet source to produce and validate a candidate game home-field bitmap; do not run imagegen or overwrite app assets.';
 
 const BATCHES = {
   'terrain-grass': [
@@ -109,6 +111,10 @@ function chibiLocalSourceMode() {
   } catch {
     return null;
   }
+}
+
+function isThallaChibiLocalSourceCandidate(asset, { chibiCandidate = false } = {}) {
+  return Boolean(chibiCandidate && asset.type === 'character' && asset.id === 'thalla' && chibiLocalSourceMode()?.sourcePath);
 }
 
 function parseListFlag(argv, name) {
@@ -259,7 +265,66 @@ function fieldContextBlock(asset, { fieldContext = false } = {}) {
   ].join('\n');
 }
 
-function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false, objectCandidate = false, chibiCandidate = false, terrainCandidate = false }) {
+function chibiLocalSourceDetails(asset) {
+  const localSource = chibiLocalSourceMode();
+  const sourcePath = localSource?.sourcePath || '<queue-localSourceMode.sourcePath>';
+  const preflightCommand = localSource?.preflightCommand || 'npm run game:home-field:preflight-chibi-proof -- --source=<png>';
+  const archiveCommand = localSource?.archiveCommand || 'npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<png>';
+  const stageCommand = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
+  return [
+    'CANDIDATE-ONLY STAGE 1 LOCAL-SOURCE PROOF: validate Thalla only from the queue-supplied complete 8x4 local state-sheet source. Do not run reference imagegen, built-in imagegen, paid API fallback, or text-only generation in this default run.',
+    `First run npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof and follow the printed agent instructions. The active source path is ${sourcePath}. Preflight with ${preflightCommand}, archive stale proof files with ${archiveCommand}, then stage with ${stageCommand}. Stop if any source, archive, or staging gate fails; do not reuse stale .agent files.`,
+    'The stage helper copies the supplied state sheet to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, derives .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as a deterministic non-production reference proxy for evidence, and writes .agent/home-field-workspace/review/thalla-local-state-sheet-source.manifest.json. Skip reference imagegen for this local-source path.',
+    'Treat docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png, docs/reference/home-field/chibi-thalla-liked-2026-06-23.png, and docs/reference/home-field/chibi-style-agent-log-reference.png as styleReferences for visual review only. They are not proof sources and must not be attached to imagegen in this run.',
+    'Immediately verify the derived reference proxy with npm run game:home-field:verify-chibi-proof-files -- --reference and audit its palette with npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat.',
+    'Immediately verify the staged state sheet with npm run game:home-field:verify-chibi-proof-files -- --state-sheet and audit its palette with npm run game:home-field:palette-audit -- .agent/home-field-workspace/raw/thalla_chibi.states.source.png --out=.agent/home-field-workspace/review/thalla-state-sheet-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-state-sheet-palette-swatch.png --fail-on-bloat.',
+    'The grouped state sheet must contain the idle bob and walk poses. Row order must be down, up, left, right. Columns 0-1 are idle frames: col 0 normal planted pose, col 1 little 1-3px bob/squish that loops back to normal while staying upright; do not make a crouch, seated pose, or deep squat. Columns 2-7 are the walk lane: aim for 4 meaningful walk poses distributed across 6 slots, with optional subtle holds/in-betweens rather than six important poses.',
+    'Then split with npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize. Post-split deterministic processing may clean alpha/chroma fringe, crop, and resize only; it must not alter pose, motion, silhouette, style, or identity. After splitting, run npm run game:home-field:verify-chibi-proof-files -- --frames.',
+    'Follow docs/home-field-imagegen-requirements.md, docs/home-field-chibi-candidate-contract.md, and docs/home-field-chibi-style-reference.md. Preserve Thalla as an ancient gold-white mushroom-elf field-sprite leader with cap-as-biology, not a hair-covered hat, small black seed eyes with fiery-gold life, 1-2 flat gold mycelium/spore marks total, simple fungal robe/cap silhouette, warm bone/gold/white/brown palette, and calm biostasis stillness.',
+    'Represent authority through cap silhouette, robe blocks, posture, and 1-2 flat mycelium/spore marks only; do not use royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, gold filigree, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, or repeated gold badges.',
+    'Use a deliberately limited sprite palette: 12-18 artist-visible colors across the source sheet, fewer than 20 total design colors excluding transparency and #ff00ff chroma-key. Reuse shared cap/robe/skin/gold ramps; do not introduce many near-duplicate beige, cream, blush, glow, or gold tones. Do not overcorrect the palette rule into hard pixel art, clean vector/cel icon art, a cold exactly-16-swatches exercise, or a large anime/fashion turnaround.',
+    'Use an elevated top-down 2.5D hub-sprite camera with the top of the mushroom cap/head visible and the feet/base planted on the map. Quality bar: the composed chibi must look at least as crisp, contrasted, and finished as approved Home Field props; avoid blurry/downscaled sticker quality; use chunky readable shapes, thicker warm-brown outline, clear face/cap/robe value separation, and strong tiny silhouette. Make a small readable hand-drawn chibi with BJD-inspired doll simplicity, not pixel art and not a portrait.',
+    'Eyes may be expressive like the liked 2026-06-23 reference, but must stay small dark seed/dot eyes for a map sprite and must not become glossy anime eyes, eyelashes, or huge white portrait eyes. Do not bake a blob/cast shadow, foot oval, floor contact patch, grass, floor, text, UI, or per-frame ground shadow into the source sheet; the renderer uses a separate shared chibi_shadow layer.',
+    'Mechanical sheet success, alpha success, mobile readability, and chibi-quality validation do not count as style approval. The composed preview must match the hand-drawn elevated 2.5D field-sprite target and look as finished as the approved bushes, mushrooms, and gates. If the supplied source fails the visual gate, record the verdict and require a new supplied complete local source or an intentional future method change; do not silently fall back to imagegen.'
+  ].join(' ');
+}
+
+function promptDetailsForOutput(asset, promptEntry, { chibiCandidate = false } = {}) {
+  if (isThallaChibiLocalSourceCandidate(asset, { chibiCandidate })) {
+    return chibiLocalSourceDetails(asset);
+  }
+  return promptEntry.details;
+}
+
+function promptConstraintsForOutput(asset, promptEntry, { chibiCandidate = false } = {}) {
+  if (!isThallaChibiLocalSourceCandidate(asset, { chibiCandidate })) {
+    return promptEntry.constraints;
+  }
+  return [
+    'Stage 1 candidate-only local-source validation. Generate only Thalla. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.',
+    'The current default run uses one supplied complete 8x4 local state sheet staged through the queue --source command. The checked-in PNGs under docs/reference/home-field/ are styleReferences for visual review only, not active imagegen inputs, not proof sources, and not files to attach to imagegen in this run.',
+    'Final candidate input must originate from one coherent grouped state sheet, not 32 separate imagegen calls. The grouped state sheet itself must contain the idle bob and walk poses; do not synthesize motion after split by shifting, squashing, stretching, repainting, or otherwise changing frame pose/silhouette. Post-split deterministic processing may clean alpha/chroma fringe, crop, and resize only; it must not alter pose, motion, silhouette, style, or identity.',
+    'The split output must contain 32 isolated character-only raw frames: 2 idle plus 6 walk-lane frames for each direction, with non-duplicated normal/little-bob idle frames, a 4-pose walk-cycle target across the 6 slots, and at least 3 unique walk frames per direction. Idle frame 1 must be only a little 1-3px bob/squish while staying upright; no crouch, seated pose, or deep squat.',
+    'No blurry/downscaled sticker quality, no weak outline, no low-contrast beige-on-beige chibi, no crop-from-reference workflow, no deterministic drawn substitutes reported as fresh art, no baked ground shadow in chibi frames, no human-only mushroom hat, no visible hair bangs or wig fringe under a mushroom cap, no missing elf ears when ears are shown, no front-facing portrait sticker, no straight-on fashion pose, no full scene, no grass background, no text in final raw frames, no UI, no floor plane, no high-detail portrait rendering, no large soft illustration palette, no more than roughly 20 visible design colors, no painterly gradients, no airbrushed blush, no many local highlight/shadow tones, no near-duplicate beige/gold micro-tones, no overcorrected flat/vector/cel/pixel style, no exactly-16-swatches prompt drift, no large anime/fashion/showcase turnaround proportions, no full-height polished character-design figures, no soft painterly turnaround sheet, no earrings, no jewelry, no royal regalia, no crown jewels, no forehead gems, no brooches, no chest medallions, no pendants, no jewelry-like cap crests, no gold filigree, no scalloped collars, no ornamental robe borders, no decorative trim clusters, no sleeve cuff trim, no clasps, no collar jewels, no repeated gold badges, no baked foot ovals, no ornate filigree, no scattered cap freckles, no many small gold droplets, no particle halo, no jewelry clusters, no tiny chains, no glossy anime eyes, no eyelashes, no huge white portrait eyes, no eye-dominated face, no pure-black outline, no pure-white highlights, no realistic doll-photo rendering, no glossy plastic toy rendering.',
+    'Must remain simpler than the 2026-06-20 candidate, with a BJD-inspired chibi doll read at mobile scale, and remain readable on green field. Produce with smooth --resize rather than --resize-nearest when source frames are larger than 64x64.'
+  ].join(' ');
+}
+
+function promptSizeForOutput(asset, promptEntry, { chibiCandidate = false } = {}) {
+  if (!isThallaChibiLocalSourceCandidate(asset, { chibiCandidate })) {
+    return promptEntry.size;
+  }
+  return 'one supplied complete 8x4 state sheet staged as .agent/home-field-workspace/raw/thalla_chibi.states.source.png, split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
+}
+
+function finalApprovedPathLabel(asset, { chibiCandidate = false } = {}) {
+  if (isThallaChibiLocalSourceCandidate(asset, { chibiCandidate })) {
+    return `Final approved path (do NOT write candidate proof here): ${asset.outputPath}`;
+  }
+  return `Final approved path (do NOT save imagegen output here): ${asset.outputPath}`;
+}
+
+function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContext = false, objectCandidate = false, chibiCandidate = false, terrainCandidate = false, showFallbacks = false }) {
   const candidateRoot = chibiCandidate
     ? '.agent/home-field-workspace/candidates/chibi-active-roster/latest'
     : terrainCandidate
@@ -267,7 +332,9 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       : '.agent/home-field-workspace/candidates/object-layer/latest';
   const lines = [];
   lines.push(`\n=== [${idx}/${total}] ${asset.id} (${asset.type}) ===`);
-  lines.push((objectCandidate || chibiCandidate || terrainCandidate) ? CANDIDATE_PROMPT_MARKER : PROMPT_MARKER);
+  lines.push(isThallaChibiLocalSourceCandidate(asset, { chibiCandidate })
+    ? LOCAL_SOURCE_CANDIDATE_PROMPT_MARKER
+    : (objectCandidate || chibiCandidate || terrainCandidate) ? CANDIDATE_PROMPT_MARKER : PROMPT_MARKER);
   lines.push('');
   lines.push(`Asset id: ${asset.id}`);
   lines.push(`Asset type: ${asset.type}`);
@@ -276,7 +343,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   if (chibiCandidate && asset.type === 'character') {
     const localSource = chibiLocalSourceMode();
     lines.push(`Raw source manifest path: ${asset.sourcePath}`);
-    lines.push('Grouped state sheet path (save imagegen output HERE): .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
+    lines.push('Grouped state sheet path (stage supplied local source HERE): .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
     if (localSource?.sourcePath) {
       lines.push(`Supplied local state-sheet sourcePath from queue JSON: ${localSource.sourcePath}`);
       lines.push(`Supplied local state-sheet command: ${localSource.stageCommand}; this copies the queue sourcePath here and derives the reference proxy.`);
@@ -287,7 +354,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   } else {
     lines.push(`Raw source path (save imagegen output HERE, with PNG extension): ${asset.sourcePath}`);
   }
-  lines.push(`Final approved path (do NOT save imagegen output here): ${asset.outputPath}`);
+  lines.push(finalApprovedPathLabel(asset, { chibiCandidate }));
   if (objectCandidate || chibiCandidate || terrainCandidate) {
     lines.push(`Candidate output path (written by candidate producer): ${candidateRoot}/${asset.outputPath}`);
   }
@@ -322,16 +389,16 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push(promptEntry.subject);
     lines.push('');
     lines.push('## Details');
-    lines.push(promptEntry.details);
+    lines.push(promptDetailsForOutput(asset, promptEntry, { chibiCandidate }));
     lines.push('');
     lines.push('## Size');
-    lines.push(promptEntry.size);
+    lines.push(promptSizeForOutput(asset, promptEntry, { chibiCandidate }));
     lines.push('');
     lines.push('## Transparency');
     lines.push(promptEntry.transparency);
     lines.push('');
     lines.push('## Constraints');
-    lines.push(promptEntry.constraints);
+    lines.push(promptConstraintsForOutput(asset, promptEntry, { chibiCandidate }));
     lines.push('');
     const scaleContract = scaleContractBlock(asset);
     if (scaleContract) {
@@ -360,7 +427,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
 
   lines.push(styleAnchorBlock(anchor));
   lines.push('');
-  const referencePrompt = chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate });
+  const referencePrompt = chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate, showFallbacks });
   if (referencePrompt) {
     lines.push(referencePrompt);
     lines.push('');
@@ -370,12 +437,10 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     const localSource = chibiLocalSourceMode();
     lines.push(`For a supplied complete 8x4 local state-sheet source, first run: ${localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>'}`);
     lines.push('That helper copies the supplied source to .agent/home-field-workspace/raw/thalla_chibi.states.source.png and derives .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png as a non-production reference proxy for evidence. Skip reference imagegen for that local-source path.');
-    lines.push('Save the non-production sprite-box reference sheet to: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
-    lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --verify=reference');
+    lines.push('Derived reference proxy path: .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png');
     lines.push('Immediately verify the saved reference with: npm run game:home-field:verify-chibi-proof-files -- --reference');
     lines.push('Immediately audit the saved reference palette with: npm run game:home-field:palette-audit -- .agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png --out=.agent/home-field-workspace/review/thalla-reference-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-reference-palette-swatch.png --fail-on-bloat');
-    lines.push('Save the final 8x4 state sheet to: .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
-    lines.push('If built-in imagegen produced a discoverable file outside the repo, claim it with: npm run game:home-field:claim-imagegen-output -- --since=<render-start-iso> --dest=.agent/home-field-workspace/raw/thalla_chibi.states.source.png --verify=state-sheet');
+    lines.push('Staged final 8x4 state sheet path: .agent/home-field-workspace/raw/thalla_chibi.states.source.png');
     lines.push('Immediately verify the saved state sheet with: npm run game:home-field:verify-chibi-proof-files -- --state-sheet');
     lines.push('Immediately audit the saved state-sheet palette with: npm run game:home-field:palette-audit -- .agent/home-field-workspace/raw/thalla_chibi.states.source.png --out=.agent/home-field-workspace/review/thalla-state-sheet-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-state-sheet-palette-swatch.png --fail-on-bloat');
     lines.push('Then split the state sheet into raw frames with: npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize');
@@ -436,7 +501,9 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     lines.push('  npm run game:home-field:adjacency');
     lines.push('  npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line');
   }
-  if (objectCandidate || chibiCandidate) {
+  if (isThallaChibiLocalSourceCandidate(asset, { chibiCandidate })) {
+    lines.push('Until those pass and the contact sheet, alpha/readability sheets, and candidate preview look at least as crisp and finished as the approved props, do not commit the image; request a new supplied complete 8x4 local source or an intentional future method change.');
+  } else if (objectCandidate || chibiCandidate) {
     lines.push('Until those pass and the contact sheet, alpha/readability sheets, and candidate preview look at least as crisp and finished as the approved props, do not commit the image; rerun imagegen with adjusted constraints.');
   } else {
     lines.push('Until those pass and the contact sheet, adjacency sheet, and clean preview look better, do not commit the image; rerun imagegen with adjusted constraints.');
@@ -444,8 +511,21 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   return lines.join('\n');
 }
 
-function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false } = {}) {
+function chibiReferenceTurnaroundPromptBlock(asset, { chibiCandidate = false, showFallbacks = false } = {}) {
   if (!chibiCandidate || asset.type !== 'character' || asset.id !== 'thalla') return '';
+  if (isThallaChibiLocalSourceCandidate(asset, { chibiCandidate }) && !showFallbacks) {
+    return [
+      '## Local-Source Style Review References',
+      'The checked-in PNGs below are visual review references only for the supplied local-source run. Do not attach them to imagegen, do not treat them as proof sources, and do not regenerate the reference proxy.',
+      '- `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` - positive compact grouped-sheet proportions and charm; fix palette bloat, ornament, and sticker softness.',
+      '- `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png` - positive Thalla face, cap, and robe appeal only; simplify heavily.',
+      '- `docs/reference/home-field/chibi-style-agent-log-reference.png` - target scale, outline weight, and scene-scale simplicity only; do not copy symbols, costumes, or composition.',
+      '',
+      'Review target: the staged 8x4 sheet should preserve the compact grouped-sheet charm while satisfying the current proof contract: 12-18 artist-visible colors, fewer than 20 total design colors excluding transparency and #ff00ff, small dark seed/dot eyes, cap-as-biology, no visible hair bangs or wig fringe, no royal/status ornament clusters, no baked foot ovals or ground shadows, no pixel-art or flat-vector overcorrection, and no large anime/fashion/showcase proportions.',
+      '',
+      'If the supplied source fails these checks, stop after verifier/audit/evidence, record the visual verdict, and request a new supplied complete 8x4 local state-sheet source or an intentional future method change.'
+    ].join('\n');
+  }
   return [
     '## Copyable Sprite-Box Reference Prompt',
     'Before imagegen, attach or same-context stage these checked-in PNGs as actual image inputs and label their roles:',
@@ -587,6 +667,7 @@ function main() {
   const objectCandidate = hasFlag(argv, 'object-candidate');
   const chibiCandidate = hasFlag(argv, 'chibi-candidate');
   const terrainCandidate = hasFlag(argv, 'terrain-candidate');
+  const showFallbacks = hasFlag(argv, 'show-fallbacks');
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const promptsDoc = loadJson(PROMPTS_PATH);
@@ -630,7 +711,7 @@ function main() {
 
   const slice = all ? pending : pending.slice(0, limit);
 
-  console.log('# Home Field — Next Imagegen Batch');
+  console.log(chibiCandidate ? '# Home Field — Next Local-Source Chibi Batch' : '# Home Field — Next Imagegen Batch');
   console.log('');
   console.log(`Workspace root: ${repoRoot}`);
   if (batch) console.log(`Batch: ${batch.name}`);
@@ -657,18 +738,18 @@ function main() {
     const localPreflight = localSource?.preflightCommand || 'npm run game:home-field:preflight-chibi-proof -- --source=<png>';
     const localArchive = localSource?.archiveCommand || 'npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<png>';
     const localStage = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
-    console.log(`  0. Run \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof\`, \`npm run game:home-field:chibi-proof-context\`, this read-only \`npm run game:home-field:next-chibi-proof\` helper, then preflight the intended image path. Prefer built-in/imagegen skill output with \`HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 npm run game:home-field:preflight-chibi-proof\` when the launcher/user explicitly confirmed built-in disk output plus actual reference-image input binding for this same session and the method gate allows it. For the built-in path, stage the reference PNGs with view_image in the same imagegen context per the imagegen skill, then use built-in image_gen with those visible images explicitly named as references. Use \`npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>\` only for the paid API fallback when the env file contains OPENAI_IMAGEGEN_API_KEY plus HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1. Plain OPENAI_API_KEY is ignored. If preflight or the method gate fails, stop before stale-file archive/imagegen, include this helper output in the blocker report, and do not give a new production-ready launcher prompt unless it includes a concrete allowed unblock input. For the current supplied complete local state-sheet unblock, use queue JSON localSourceMode.sourcePath ${sourcePath} and the queue-printed --source commands.`);
-    console.log('  1. Read the prompt block and copyable Sprite-Box Reference Prompt below; state the chibi palette, style-preservation, scale/face/biology, and status-simplification plans before imagegen.');
-    console.log('  2. If preflight fails only because built-in disk output is unconfirmed and reference-image input binding is already confirmed, run one tiny diagnostic non-candidate built-in imagegen probe in the same agent context, then `npm run game:home-field:find-imagegen-output -- --since-minutes=5`; rerun preflight with HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 plus HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1 only if a newer file is found.');
-    console.log(`  3. Run \`npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>\` only when the same preflight-passing API fallback env is being used; for the queue local-source path, run \`${localArchive}\`; for built-in/local paths, run archive under the same confirmed capability/source context.`);
-    console.log('  4. Attach or stage the checked-in Thalla reference PNGs as actual same-context image inputs, then use the exact copyable Sprite-Box Reference Prompt for the reference sheet only if a non-exhausted imagegen method is available. The queue-backed built-in same-context staging path is exhausted after rollout codex-019f1eb1-1027-7752-95cf-d4f37cb0041c; do not run it again unchanged. Use `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>` only as the paid API fallback after HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 is set and the user explicitly provides the fallback env, so env loading, SDK setup, exact prompt extraction, API-source normalization, verifier, and palette audit happen serially. Stop at the visual reference gate if palette, style, or status-ornament drift appears. Do not run another text-only reference attempt. If two exact-prompt image-guided reference attempts fail the same visual gate, stop and report instead of burning more blind retries.');
-    console.log(`  5. Use built-in/imagegen skill output as the normal proof-art path after same-agent file output and reference-image input binding are confirmed and the method gate allows it, or use supplied local proof source PNG inputs. For the queue-owned complete 8x4 local state-sheet source, preflight with \`${localPreflight}\`, stage with \`${localStage}\`, skip reference imagegen, verify/audit the derived reference proxy, then continue at staged state-sheet verification/split. A different supplied local state sheet must be passed explicitly with --source or recorded in the queue sourcePath. docs/reference PNGs are style references, not proof source inputs. GPT-image-2 API fallback reference output may be normalized from a required API size such as 1024x768 to the 512x384 sprite-box source before verifier/audit, but palette audit must still pass. Save each generated PNG to the required repo path or claim it with \`npm run game:home-field:claim-imagegen-output\`.`);
+    console.log(`  0. Run \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof\`, \`npm run game:home-field:chibi-proof-context\`, this read-only \`npm run game:home-field:next-chibi-proof\` helper, then preflight the queue-owned local source with \`${localPreflight}\`. The current default path is supplied local-source mode: sourcePath ${sourcePath}, then the queue-printed --source archive/stage commands. Do not infer .env, do not retry the exhausted built-in imagegen path, and do not use paid API fallback in this default run.`);
+    console.log('  1. Read the prompt block below; use the checked-in reference PNGs as styleReferences for visual review only in local-source mode, not as active imagegen inputs.');
+    console.log(`  2. After source preflight passes, run \`${localArchive}\`, then \`${localStage}\`; this stages the supplied 8x4 state sheet and derives the non-production reference proxy. Stop if any source, archive, or staging gate fails.`);
+    console.log('  3. Run the reference-proxy verifier/palette audit and state-sheet verifier/palette audit. Then split, verify frames, produce the candidate, verify the candidate, run candidate palette audit, evidence, preview, and record the verdict.');
+    console.log(`  4. Inactive built-in/API fallback details are intentionally hidden from the default helper output; inspect them with \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof --show-fallbacks\`${showFallbacks ? ' or this helper --show-fallbacks' : ''} only for a future method change.`);
+    console.log(`  5. A different supplied complete 8x4 local state sheet must be passed explicitly with --source or recorded in the queue sourcePath. docs/reference PNGs are style references, not proof source inputs. Save no output to app-facing paths during the candidate proof.`);
   } else {
     console.log('  1. Read the prompt block below.');
     console.log('  2. Use the imagegen skill with the subject + details + style anchor.');
   }
   if (chibiCandidate) {
-    console.log('  6. Only after the reference gate passes, generate one coherent 8x4 state sheet through a reference-capable image path with the passed reference attached as an actual image input, save it to .agent/home-field-workspace/raw/thalla_chibi.states.source.png, then split it into raw frames. For supplied complete local state-sheet source mode, this state sheet is already staged; do not regenerate it, and continue directly to verify/audit/split. Stop if only prompt-text state-sheet generation is available.');
+    console.log('  6. In supplied complete local state-sheet mode, the 8x4 state sheet is already staged; do not regenerate it, and continue directly to verify/audit/split.');
   } else {
     console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   }
@@ -721,7 +802,7 @@ function main() {
 
   slice.forEach((asset, idx) => {
     const promptEntry = promptsDoc.prompts[asset.promptKey];
-    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext, objectCandidate, chibiCandidate, terrainCandidate }));
+    console.log(formatAssetPrompt({ asset, promptEntry, anchor, idx: idx + 1, total: slice.length, fieldContext, objectCandidate, chibiCandidate, terrainCandidate, showFallbacks }));
   });
 
   console.log('');
