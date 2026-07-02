@@ -464,7 +464,7 @@ function secureRandomUnit() {
   return crypto.randomInt(0, 0x100000000) / 0x100000000;
 }
 
-function chooseWeighted(candidates, rng) {
+export function chooseWeightedAssetCandidate(candidates, rng) {
   const total = candidates.reduce((sum, candidate) => sum + Math.max(0, Number(candidate.dropWeight || 0)), 0);
   if (total <= 0) throw httpError('Gacha pack has no weighted candidates', 400);
   let target = rng() * total;
@@ -473,6 +473,15 @@ function chooseWeighted(candidates, rng) {
     if (target < 0) return candidate;
   }
   return candidates[candidates.length - 1];
+}
+
+export function resolveAssetPackRollCandidates(pack, {
+  ownedAssetIds = []
+} = {}) {
+  const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
+  return (pack?.items || [])
+    .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
+    .filter((item) => item.asset && !owned.has(item.assetId));
 }
 
 function hashCandidatePool(candidates) {
@@ -534,15 +543,13 @@ export async function rollAssetPack(playerId, packId, {
         [playerId]
       );
       const owned = new Set(ownedRows.rows.map((row) => row.asset_id));
-      const candidates = pack.items
-        .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
-        .filter((item) => item.asset && !owned.has(item.assetId));
+      const candidates = resolveAssetPackRollCandidates(pack, { ownedAssetIds: owned });
 
       if (!candidates.length) {
         throw httpError('No unowned assets left in this pack', 409);
       }
 
-      const selected = chooseWeighted(candidates, rng);
+      const selected = chooseWeightedAssetCandidate(candidates, rng);
       const candidatePoolHash = hashCandidatePool(candidates);
       const transaction = await spendCurrency(client, {
         playerId,

@@ -335,6 +335,11 @@ backlog until the items are split into tickets or implementation phases.
   grants, and processed webhook events. Still schedule these checks, add alert
   routing, and import provider settlement exports/API data for true external
   reconciliation.
+- Local stale purchase-intent expiry now exists as of 2026-07-02:
+  `npm run game:wallet:expire-intents` marks old pending wallet purchase
+  intents expired without granting currency, skips active checkout claims, and
+  records local-expiry metadata. Still schedule it in production and tune the
+  expiry window to match provider invoice lifetimes.
 - Post-completion refund/reversal handling now exists for provider clawback
   statuses as of 2026-07-02: completed purchases can move to
   `refunded`/`reversed`/`chargeback`, record provider evidence in intent
@@ -377,8 +382,11 @@ backlog until the items are split into tickets or implementation phases.
 - Add marketplace/trading only after asset-instance transfer rules exist:
   escrow, listing fees, fraud controls, moderation, trade locks, audit logs, and
   refund/dispute interaction.
-- Add simulation tests for pack odds and guarantees so probability changes can
-  be reviewed before a season launches.
+- Local weighted-odds simulation now exists for the current one-result,
+  unowned-only gacha MVP via `simulateAssetPackOdds`,
+  `npm run game:gacha:simulate`, and focused tests as of 2026-07-02. Still add
+  guarantee, pity, duplicate, and multi-result simulation once those mechanics
+  exist in the runtime.
 
 ### 6. Frontend And E2E Coverage Still Missing
 
@@ -1285,6 +1293,11 @@ or legal/support/compliance rollout work.
      grant/revoke, purchase refund marking with optional clawback, and support
      action listing.
    - Read-only money lookup includes matching support action audit rows.
+14. Stale wallet purchase-intent expiry exists.
+   - `expireStalePurchaseIntents(...)` and
+     `npm run game:wallet:expire-intents` mark old pending intents expired,
+     skip active checkout creation claims, preserve terminal purchases, and
+     record local-expiry metadata for support review.
 
 ### Remaining launch gates
 
@@ -2003,10 +2016,11 @@ Additional TODOs for that pass:
    validation, final terms/refund/support UI, adult/content-compliance gates,
    tax/accounting/data-retention review, dispute/freeze/late-payment tooling,
    distributed mutation hardening, and deeper frontend/e2e payment coverage.
-31. Data operations before and after paid pilot: purchase-intent
-   expiry jobs, provider support runbooks, admin/support money tooling,
-   immutable support audit notes, scheduled reconciliation jobs, provider
-   settlement imports, and periodic wallet drift monitoring.
+31. Data operations before and after paid pilot: production scheduling for
+   purchase-intent expiry, provider support runbooks, authenticated
+   admin/support money tooling, approval policy, scheduled reconciliation jobs,
+   provider settlement imports, and periodic wallet drift monitoring.
 32. Full gacha economy roadmap: database/admin-managed pack catalogs,
    seasons/collections, multi-item packs, rarity guarantees, pity rules,
-   duplicate burning/exchange, marketplace/trading, and odds simulation tests.
+   duplicate burning/exchange, marketplace/trading, and guarantee/pity
+   simulation tests beyond the current weighted one-result simulator.

@@ -59,6 +59,7 @@ const checkoutLocks = new Map();
 const CHECKOUT_CLAIM_TTL_MS = 2 * 60 * 1000;
 const CHECKOUT_WAIT_TIMEOUT_MS = 2500;
 const CHECKOUT_WAIT_INTERVAL_MS = 25;
+const PURCHASE_INTENT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -170,6 +171,11 @@ function checkoutWaitTimeoutMs() {
 function checkoutWaitIntervalMs() {
   const value = Number(process.env.WALLET_CHECKOUT_WAIT_INTERVAL_MS || CHECKOUT_WAIT_INTERVAL_MS);
   return Number.isFinite(value) && value > 0 ? value : CHECKOUT_WAIT_INTERVAL_MS;
+}
+
+function purchaseIntentExpiryMs() {
+  const value = Number(process.env.WALLET_PURCHASE_INTENT_EXPIRY_MS || PURCHASE_INTENT_EXPIRY_MS);
+  return Number.isFinite(value) && value > 0 ? value : PURCHASE_INTENT_EXPIRY_MS;
 }
 
 function sleep(ms) {
@@ -1073,6 +1079,110 @@ export async function reconcileWalletPayments({ limit = 100 } = {}) {
     limit: rowLimit,
     generatedAt: nowIso(),
     categories
+  };
+}
+
+export async function expireStalePurchaseIntents({
+  olderThanMs = null,
+  limit = 100,
+  dryRun = false,
+  now = new Date()
+} = {}) {
+  const rowLimit = Math.max(1, Math.min(1000, Number(limit) || 100));
+  const expiryMs = olderThanMs == null ? purchaseIntentExpiryMs() : Number(olderThanMs);
+  if (!Number.isFinite(expiryMs) || expiryMs <= 0) {
+    throw httpError('Wallet purchase intent expiry must be a positive number of milliseconds', 400);
+  }
+  const runDate = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(runDate.getTime())) throw httpError('Invalid expiry run timestamp', 400);
+  const cutoff = new Date(runDate.getTime() - expiryMs).toISOString();
+  const activeClaimCutoff = new Date(runDate.getTime() - checkoutClaimTtlMs()).toISOString();
+  const candidates = await query(
+    `SELECT * FROM wallet_purchase_intents
+     WHERE status = 'pending'
+       AND created_at < $1
+       AND (
+         checkout_status IS NULL
+         OR checkout_status != 'creating'
+         OR checkout_claimed_at IS NULL
+         OR checkout_claimed_at < $2
+       )
+     ORDER BY created_at ASC
+     LIMIT $3`,
+    [cutoff, activeClaimCutoff, rowLimit]
+  );
+
+  if (dryRun) {
+    return {
+      ok: true,
+      dryRun: true,
+      expired: 0,
+      candidateCount: candidates.rowCount,
+      limit: rowLimit,
+      olderThanMs: expiryMs,
+      cutoffCreatedBefore: cutoff,
+      activeClaimCutoff,
+      generatedAt: runDate.toISOString(),
+      candidates: candidates.rows.map(rowToPurchaseIntent)
+    };
+  }
+
+  const expiredIntents = [];
+  await withTransaction(async (client) => {
+    for (const row of candidates.rows) {
+      const expiredAt = nowIso();
+      const currentMetadata = parseJson(row.metadata_json, {});
+      const updated = await client.query(
+        `UPDATE wallet_purchase_intents
+         SET status = 'expired',
+             checkout_claim_token = NULL,
+             checkout_claimed_at = NULL,
+             updated_at = $2,
+             metadata_json = $3
+         WHERE id = $1
+           AND status = 'pending'
+           AND created_at < $4
+           AND (
+             checkout_status IS NULL
+             OR checkout_status != 'creating'
+             OR checkout_claimed_at IS NULL
+             OR checkout_claimed_at < $5
+           )
+         RETURNING *`,
+        [
+          row.id,
+          expiredAt,
+          metadataJson({
+            ...currentMetadata,
+            expiration: {
+              source: 'local_expiry_job',
+              expiredAt,
+              olderThanMs: expiryMs,
+              cutoffCreatedBefore: cutoff,
+              previousCheckoutStatus: row.checkout_status || null
+            }
+          }),
+          cutoff,
+          activeClaimCutoff
+        ]
+      );
+      if (updated.rowCount) {
+        expiredIntents.push(rowToPurchaseIntent(updated.rows[0]));
+      }
+    }
+  });
+
+  return {
+    ok: true,
+    dryRun: false,
+    expired: expiredIntents.length,
+    candidateCount: candidates.rowCount,
+    limit: rowLimit,
+    olderThanMs: expiryMs,
+    cutoffCreatedBefore: cutoff,
+    activeClaimCutoff,
+    generatedAt: runDate.toISOString(),
+    expiredIntents
   };
 }
 
