@@ -795,6 +795,19 @@ The active Stage 1 contract is:
 - `RUN_CHIBI_PROOF_PROMPT.md`, `docs/home-field-imagegen-requirements.md`, `next-chibi-proof`, and `home-field-prompts.json` now point agents at the queue-only recovery prompt and the printed recovery output instead of the blocked helper when the user asks for another production-ready run;
 - tests assert that queue output and agent docs distinguish a clean blocker from actual production-ready PNG output.
 
+### 51. Queue-Only Recovery Prompt Was Too Generic
+
+**Symptom:** In rollout `codex-019f2028-54cc-7563-b4c8-287860410770`, the user launched the new queue-only prompt. The worker ran the queue, respected the blocked source hash, and correctly avoided stale production steps, but then ended with a blocker report because no replacement source already existed. It did not treat the printed `SourceGate recovery production attempt` section as the production work to execute.
+
+**What was wrong in the flow:** The recovery copyable prompt was queue-only, but it was identical to the generic minimal launcher. That left the worker to choose between the normal blocked-review interpretation and the recovery-production interpretation, and it chose the safer blocker-only path. The queue output also did not explicitly say that lack of an existing replacement source is not completion for a production-ready request.
+
+**Guardrails added:**
+
+- `sourceGateRecovery.copyablePrompt` now still only tells the next agent to run the queue script, but it names the printed queue `SourceGate recovery production attempt` results as the instructions to execute;
+- the queue printer validates that the recovery prompt points to those recovery results instead of being only the generic minimal launcher;
+- `sourceGateRecovery.requiredActions` now says not to stop merely because no replacement source already exists; the runner must attempt the recovery path or report missing source-generation capability explicitly;
+- `RUN_CHIBI_PROOF_PROMPT.md`, `docs/home-field-imagegen-requirements.md`, `next-chibi-proof`, and `home-field-prompts.json` now preserve the distinction between a generic queue blocker and a recovery production attempt.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -836,4 +849,4 @@ The active Stage 1 contract is:
 37. Do not let plain `OPENAI_API_KEY` trigger Home Field image generation. It is intentionally ignored so general OpenAI credentials are not silently spent on imagegen.
 38. Do not let preflight capability flags override the queue method gate. If the queue marks a built-in method as blocked or exhausted, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` must not pass preflight for that exhausted path.
 39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new complete `8x4` source or a documented repair method with evidence before the next production run.
-40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use only the queue-only `sourceGateRecovery.copyablePrompt`; the new-source/repair-method instructions must come from the printed queue output. A blocker-only handoff is incomplete for that request.
+40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use only the queue-only `sourceGateRecovery.copyablePrompt`; the new-source/repair-method instructions must come from the printed queue `SourceGate recovery production attempt` output. A blocker-only handoff is incomplete for that request, and lack of a pre-existing replacement source is not by itself completion.

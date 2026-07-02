@@ -20,12 +20,13 @@
       },
       "sourceGateRecovery": {
         "mode": "method-change-production-attempt",
-        "summary": "When the user asks for another production-ready run while this sourceGate is blocked, the next pasted prompt must stay queue-only; the queue output owns the method-change instructions for creating or repairing the source.",
-        "copyablePrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and use the printed queue results to generate what is needed.",
+        "summary": "When the user asks for another production-ready run while this sourceGate is blocked, the next pasted prompt must stay queue-only but must identify the printed queue SourceGate recovery production attempt results as the instructions to execute.",
+        "copyablePrompt": "In /Users/microwavedev/workspace/microwave-hub/mushroom-master, run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and use the printed queue SourceGate recovery production attempt results to generate what is needed.",
         "requiredActions": [
           "Treat this SourceGate recovery production attempt section as the source of truth; do not inline these method-change details into the copyable user prompt.",
           "Confirm the existing sourceGate blocker and blocked source hash before creating or adopting a replacement source.",
           "Produce or accept a new complete 8x4 local state-sheet source outside docs/reference, or document a repair method as an explicit active method with evidence.",
+          "Do not stop only because no replacement source already exists; if the current tool surface cannot create or repair a source, report that missing capability explicitly instead of treating the old blocker as completion.",
           "Use `--source=<new-source-png>` for preflight, archive, and stage; do not use the blocked queue source hash.",
           "Run reference proxy, state-sheet, frame, candidate, evidence, preview, and verdict gates only after the new source passes preflight/archive/stage.",
           "Keep app-facing PNGs untouched until explicit approval."
@@ -38,10 +39,10 @@
         ]
       },
       "agentInstructions": [
-        "Run this queue item as a blocked Thalla Home Field chibi Stage 1 proof review, not a production attempt.",
+        "Treat the existing Thalla Home Field chibi Stage 1 source hash as blocked; do not run the default production path against that hash.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
-        "If the user asks for another production-ready run while this sourceGate is blocked, answer only with the queue-only sourceGateRecovery.copyablePrompt/minimalLauncherPrompt; do not paste method-change details outside the queue output.",
-        "The runner must use the printed SourceGate recovery production attempt section to create or adopt a new complete 8x4 source or documented repair method, then validate that new source through every listed gate.",
+        "If the user asks for another production-ready run while this sourceGate is blocked, answer only with the queue-only sourceGateRecovery.copyablePrompt; it must point to the printed SourceGate recovery production attempt results rather than the generic minimal launcher.",
+        "The runner must use the printed SourceGate recovery production attempt section to create or adopt a new complete 8x4 source or documented repair method, then validate that new source through every listed gate; do not stop merely because no replacement source already exists.",
         "Do not call a clean sourceGate block a healthy production-ready image run; production-ready PNGs were not produced unless a new candidate passes every listed gate.",
         "Do not rerun preflight/archive/stage for the current generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) because sourceGate records that this exact source hash failed the reference palette audit.",
         "If the user supplies a new complete 8x4 local state-sheet source, update generationContract.stateSheet.localSourceMode.sourcePath and the printed --source commands before issuing a launcher.",

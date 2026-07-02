@@ -184,8 +184,11 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!copyablePrompt.includes(queueCommand || 'generation-queue')) {
     issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must include the queue command`);
   }
-  if (!/printed queue results/i.test(copyablePrompt)) {
+  if (!/printed queue .*results/i.test(copyablePrompt)) {
     issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must tell agents to use the printed queue results`);
+  }
+  if (!/SourceGate recovery production attempt results/i.test(copyablePrompt)) {
+    issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must point to the printed SourceGate recovery production attempt results`);
   }
   if (/method-change production attempt|--source=<new-source-png>|palette-cleanup|blocked default queue launcher/i.test(copyablePrompt)) {
     issues.push(`${itemId}: sourceGateRecovery.copyablePrompt must stay queue-only; put method-change details in requiredActions`);
@@ -212,6 +215,9 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   }
   if (!/blocked queue source hash/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject the blocked queue source hash`);
+  }
+  if (!/Do not stop only because no replacement source already exists/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must prevent blocker-only completion when no replacement source already exists`);
   }
   if (!/production-ready candidate output from an intentional blocker/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must distinguish production-ready output from a blocker`);
