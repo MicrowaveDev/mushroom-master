@@ -28,15 +28,17 @@
 > bot-loadout generation into `backpack-game-core` through product providers
 > while keeping ghost snapshot and portrait glue local. **Phase 8E** moved the
 > deterministic battle loop into `backpack-game-core` through ability and
-> metadata hooks while keeping Mushroom combat identity local.
+> metadata hooks while keeping Mushroom combat identity local. **Phase 8F**
+> moved full loadout validation into `backpack-game-core` through product config
+> providers while keeping Mushroom artifact/catalog policy local.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
-8D, and 8E
+8D, 8E, and 8F
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
 on 2026-07-01; Phase 8A-8D extraction on 2026-07-01; Phase 8E battle-loop
-extraction on 2026-07-02). Phase 6D remains an optional database-breaking rename and
+extraction and Phase 8F loadout-validation extraction on 2026-07-02). Phase 6D remains an optional database-breaking rename and
 should only happen after external consumers no longer depend on raw legacy
 column names.
 Real-money rollout still requires provider sandbox/live validation,
@@ -49,9 +51,9 @@ cases.
 
 `backpack-game-core` now has `main` commits with the extracted bag-shape
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
-generation, provider-driven bot-loadout generation, and hookable battle
-simulation. Earlier notes that treated the target repo as empty are historical
-only.
+generation, provider-driven bot-loadout generation, hookable battle
+simulation, and provider-driven loadout validation. Earlier notes that treated
+the target repo as empty are historical only.
 
 ## Implementation Status
 
@@ -112,6 +114,12 @@ bullet below):
   Mushroom combatant derivation, active/passive ability hooks, Kirt/Morga
   ordering hooks, artifact attribution, lore `effectTags`, narration labels,
   constants, seeded RNG creation, persistence, rewards, and rating stay local.
+- Provider-driven loadout validation is extracted: flat-grid bounds and
+  overlap checks, active-bag placement, bag-cell coverage, effective grid-height
+  expansion, budget summing, stat aggregation, and orchestrated validation now
+  live in `backpack-game-core`. Mushroom artifact lookup, pricing, dimensions,
+  bag/family policy, container sentinel rules, grid constants, and stat caps
+  stay local through `app/server/services/loadout-utils.js`.
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -137,9 +145,9 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after Phase 8E: reassess full loadout validation and tiny
-RNG/shuffle helper extraction only if their catalog/error/RNG contracts are
-clear enough for another game. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
+Next local lane after Phase 8F: consider a tiny RNG/shuffle helper extraction
+only if another consumer needs the same deterministic seeded RNG and shuffle
+surface. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
 trading, database managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
@@ -1362,6 +1370,69 @@ stayed local.
 - Restore the previous local battle-loop implementation.
 - Keep the core commit unless it contains secrets or bad generated artifacts.
 
+### Phase 8F - Loadout Validation Adapter Extraction
+
+Status: **Implemented.** The flat-grid loadout validator moved into
+`backpack-game-core` through product-provided catalog, pricing, family, and stat
+policy hooks. Mushroom keeps its artifact data, bag policy, grid constants, and
+service exports local.
+
+#### Source Of Truth
+
+- Current Mushroom adapter: `app/server/services/loadout-utils.js`
+- Current core implementation: `backpack-game-core/src/loadout-validation.js`
+- Current core tests: `backpack-game-core/tests/loadout-validation.test.js`
+- Current behavior tests:
+  `tests/game/validator-split.test.js`, `tests/game/bag-shape.test.js`,
+  `tests/game/bag-items.test.js`, `tests/game/bot-loadout.test.js`, and
+  `tests/game/loadout-refactor.test.js`
+- Current extraction inventory:
+  `docs/backpack-game-core-extraction-inventory.md`
+- Current core package latest commit at ship time: `d884410`
+  (`Add provider-driven loadout validation core`)
+
+#### Shipped Boundary
+
+- Core owns reusable loadout-validation mechanics:
+  - flat-grid item bounds and overlap checks,
+  - active-bag placement and overlap checks,
+  - bag cell set derivation and item coverage checks,
+  - effective grid-height expansion from active bag extents,
+  - loadout currency-budget summing,
+  - stat aggregation and configured stat clamps,
+  - the orchestrated `validateLoadoutItems` flow.
+- Mushroom owns product hooks:
+  - artifact lookup and price rules,
+  - item dimensions and bag/family classification,
+  - container sentinel semantics,
+  - grid constants,
+  - combat stat contribution rules and caps.
+- Existing Mushroom exports from `loadout-utils.js` remain stable for
+  `game-run-loadout.js`, `battle-service.js`, `battle-engine.js`, tests, and
+  other callers.
+
+#### Non-Goals
+
+- Do not move Mushroom artifacts, families, prices, balance constants, database
+  rows, or API route semantics into core.
+- Do not change loadout error messages, budget math, active-bag policy, or
+  battle stat contribution behavior in this slice.
+- Do not move RNG/shuffle helpers unless another game needs the same seeded RNG
+  surface.
+
+#### Verification
+
+- `backpack-game-core`: `npm test`
+- `mushroom-master`:
+  `node --test tests/game/validator-split.test.js tests/game/bag-shape.test.js tests/game/bag-items.test.js tests/game/bot-loadout.test.js tests/game/loadout-refactor.test.js`
+- `npm run game:build`
+
+#### Rollback
+
+- Revert the Mushroom nested core pointer and `loadout-utils.js` adapter.
+- Restore the previous local validator implementation.
+- Keep the core commit unless it contains secrets or bad generated artifacts.
+
 ## Phase 9 - Create `backpack-game-core`
 
 Initial package shape:
@@ -1525,7 +1596,8 @@ Additional TODOs for that pass:
    import swaps. **Done 2026-07-01 for the first slice.**
 14. Split pure grid geometry helpers out of `loadout-utils.js` behind a
    Mushroom catalog/config adapter. **Done 2026-07-01 for `pieceCells`,
-   `cellSet`, `setsIntersect`, and `cellKey`; validation remains local.**
+   `cellSet`, `setsIntersect`, and `cellKey`; full validation followed in
+   Phase 8F.**
 15. Split pure fusion matching from Mushroom recipe catalog data.
    **Done 2026-07-01; Mushroom recipe data and eligibility policy remain
    local.**
@@ -1538,23 +1610,26 @@ Additional TODOs for that pass:
 19. Adapterize and extract battle simulation through Mushroom ability hooks.
    **Done 2026-07-02; combat identity, rewards, rating, and persistence remain
    local.**
-20. Add `backpack-game-core` as a nested submodule of the backpack game and
+20. Adapterize and extract full loadout validation through Mushroom catalog,
+   pricing, family, grid, and stat hooks. **Done 2026-07-02; artifact data,
+   balance constants, and service/API semantics remain local.**
+21. Add `backpack-game-core` as a nested submodule of the backpack game and
    switch the game dependency to a local submodule-backed package path.
    **Done.**
-21. Add install/CI guardrails for the nested submodule: bootstrap docs,
+22. Add install/CI guardrails for the nested submodule: bootstrap docs,
    submodule-init requirement, lockfile verification, and a clear missing-core
    failure. **Done.**
-22. Add a core-consumer smoke test plus final cross-repo verification
+23. Add a core-consumer smoke test plus final cross-repo verification
    (`backpack-game-core` tests, submodule guard, focused game tests, `npm ci`,
    and game build). **Done for the core integration.** Full game unit-suite
    signoff is pending the unrelated Home Field prompt/queue working-tree fix.
-23. Add hub metadata for `backpack-game-core` only if it should also be tracked
+24. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
-24. Optional Phase 6D database rename only if raw legacy column names become a
+25. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-25. Paid rollout readiness when external inputs are available: real provider
+26. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-26. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+27. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.

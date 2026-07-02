@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  createLoadoutValidator,
   getEffectiveShape,
   generateShopOffer,
   pieceCells,
@@ -17,6 +18,7 @@ test('[core-submodule] backpack-game-core nested submodule is initialized', () =
 
 test('[core-submodule] package-name imports resolve reusable core helpers', () => {
   assert.equal(typeof getEffectiveShape, 'function');
+  assert.equal(typeof createLoadoutValidator, 'function');
   assert.equal(typeof generateShopOffer, 'function');
   assert.equal(typeof pieceCells, 'function');
   assert.equal(typeof simulateBattle, 'function');

@@ -21,8 +21,10 @@ wait. It should be updated after each cluster moves.
   `tests/backpack-loadout.test.js`
 - sixth slice: `src/battle-simulation.js`, tested by
   `tests/battle-simulation.test.js`
+- seventh slice: `src/loadout-validation.js`, tested by
+  `tests/loadout-validation.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `b9879bd` (`Add hookable battle simulation core`)
+- latest extraction commit: `d884410` (`Add provider-driven loadout validation core`)
 
 The package is consumed by `mushroom-master` through the nested submodule
 `vendor/backpack-game-core` and the local package dependency
@@ -46,7 +48,7 @@ through the stable package name `@microwavedev/backpack-game-core`.
 | Bag-shape unit tests | `tests/game/bag-shape.test.js` | Partial pure candidate | The top helper tests are portable. The coverage tests that call `validateItemCoverage` and `getArtifactById` depend on Mushroom validation/catalog code. |
 | Artifact family capability helpers | `app/server/services/artifact-helpers.js` | Pure candidate, later | Dependency-free today, but its family list is still Mushroom artifact taxonomy. Move only after deciding the generic family/capability API. |
 | Grid placement primitives | `backpack-game-core/src/grid-geometry.js`; validation remains in `app/server/services/loadout-utils.js` | Partially extracted | `pieceCells`, `cellSet`, `setsIntersect`, and `cellKey` are pure. Catalog-backed grid/bag/loadout validation still imports `game-data.js`, `artifact-helpers.js`, and bag policy, so it stays in Mushroom code. |
-| Full loadout validation | `app/server/services/loadout-utils.js` | Adapter-needed | Uses Mushroom artifact lookup, prices, dimensions, family semantics, grid constants, and stat caps. Needs injected catalog/config before it belongs in core. |
+| Full loadout validation | `backpack-game-core/src/loadout-validation.js`; Mushroom adapter in `app/server/services/loadout-utils.js` | Extracted with product config | Core owns flat-grid bounds/overlap validation, active-bag placement, bag coverage, budget summing, stat totals, and orchestrated loadout validation. Mushroom injects artifact lookup, pricing, family semantics, grid constants, and stat caps. |
 | Seeded RNG and shuffle | `createRng` in `app/server/lib/utils.js`, `shuffleWithRng` in `app/server/services/battle-engine.js` | Adapter-needed | Algorithms are generic. `createRng` lives beside server/id/time helpers; `shuffleWithRng` lives in battle-engine. Extract only after creating a small RNG module and updating imports. |
 | Fusion matching algorithm | `backpack-game-core/src/fusion-matching.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product hook | Core owns adjacency search, duplicate row consumption, match shaping, and `fusionIngredientRowIdSet`. Mushroom keeps recipe data and eligibility policy through `canUseIngredient`. |
 | Fusion application | `app/server/services/artifact-fusion-service.js` | Product-specific | Reads/writes DB rows, inserts loadout items, records reveals, uses Mushroom artifact catalog and persistence services. |
@@ -362,14 +364,52 @@ integration commit.
   `mushroom-master` commit.
 - Keep the core commit unless it contains bad generated artifacts or secrets.
 
-## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, And Battle Simulation
+## Loadout Validation Extraction Slice
+
+**Status:** Implemented in `backpack-game-core` commit `d884410`.
+
+### Current shape
+
+- Current core implementation: `backpack-game-core/src/loadout-validation.js`
+- Current core tests: `backpack-game-core/tests/loadout-validation.test.js`
+- Current Mushroom adapter: `app/server/services/loadout-utils.js`
+
+### Boundary
+
+- `backpack-game-core` owns reusable flat-grid validation mechanics:
+  bounds/overlap checks, active-bag placement, coverage by bag cells, effective
+  grid-height expansion, budget summing, stat aggregation, and the
+  all-in-one loadout validator.
+- Mushroom owns product policy through injected providers: artifact lookup,
+  prices, dimensions, family/bag checks, container sentinel rules, stat
+  contribution rules, grid constants, and stat caps.
+- Existing Mushroom imports stay stable: `loadout-utils.js` still exports
+  `validateLoadoutItems`, `validateGridItems`, `validateBagPlacement`,
+  `validateItemCoverage`, `validateCoinBudget`, `buildArtifactSummary`,
+  `bagsContainingItem`, `bagCellSets`, `effectiveGridHeight`, and `pieceCells`.
+
+### Verification
+
+- `backpack-game-core`: `npm test`
+- `mushroom-master` focused:
+  `node --test tests/game/validator-split.test.js tests/game/bag-shape.test.js tests/game/bag-items.test.js tests/game/bot-loadout.test.js tests/game/loadout-refactor.test.js`
+- `npm run game:build` should still be run before final handoff for the
+  Mushroom consumer.
+
+### Rollback
+
+- Keep the core commit unless it contains bad generated artifacts or secrets.
+- If the adapter creates a regression, restore `loadout-utils.js` from the
+  previous Mushroom commit and move the nested submodule pointer back to the
+  last known-good core commit while keeping the core tests for later repair.
+
+## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, Battle Simulation, And Loadout Validation
 
 After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
-bot-loadout, and battle-simulation slices, reassess in this order:
+bot-loadout, battle-simulation, and loadout-validation slices, reassess in this
+order:
 
-1. Reassess full loadout validation only after catalog, pricing, bag policy,
-   and validation error contracts can be injected without Mushroom imports.
-2. Consider a tiny RNG/shuffle helper module only if another consumer needs the
+1. Consider a tiny RNG/shuffle helper module only if another consumer needs the
    same deterministic seeded RNG and shuffle surface.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
