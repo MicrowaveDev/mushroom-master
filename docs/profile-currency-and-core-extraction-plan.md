@@ -391,8 +391,9 @@ backlog until the items are split into tickets or implementation phases.
   processing status, stored processed results, and duplicate replay responses.
   Timestamp-window checks now reject stale/future webhook deliveries when a
   provider sends explicit webhook/event timestamps, and can require timestamps
-  through env flags after live payload validation. Still add live
-  secret-rotation procedures and production-grade structured payment log
+  through env flags after live payload validation. Multi-secret webhook
+  verification and the local rotation runbook now exist; still wire production
+  secret-manager deployment and production-grade structured payment log
   routing/retention.
 - Checkout creation, gacha rolls, direct asset purchases, asset catalog, and
   pack-odds endpoints now have route-scoped rate-limit buckets as of
@@ -1411,6 +1412,15 @@ or legal/support/compliance rollout work.
      payload validation.
    - The payment webhook route performs signature verification first, then
      timestamp freshness validation before any event row is stored or processed.
+24. Payment webhook secret rotation overlap exists.
+   - BTCPay and NOWPayments signature verification accepts the legacy
+     single-secret env vars plus plural rotation env vars:
+     `BTCPAY_WEBHOOK_SECRETS` and `NOWPAYMENTS_IPN_SECRETS`.
+   - The plural env vars accept comma/newline-separated strings or JSON arrays,
+     allowing old provider secrets to remain valid during retry windows while a
+     new primary secret is deployed.
+   - `docs/payment-operations-runbook.md` documents the rotation steps and
+     reminds operators to keep real secrets in the production secret manager.
 
 ### Remaining launch gates
 
@@ -1421,12 +1431,13 @@ or legal/support/compliance rollout work.
   suitable.
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
-- Set provider webhook secrets in every non-local environment.
-- Validate provider timestamp fields where available, document webhook secret
-  rotation, and verify the new `payment_webhook_events` audit trail against
-  real provider retry/replay behavior. **Local timestamp-window checks are
-  implemented 2026-07-02**, but live payload shapes must be validated before
-  requiring timestamps in production.
+- Set provider webhook secrets and rotation env vars in every non-local
+  environment through the production secret manager.
+- Validate provider timestamp fields where available and verify the new
+  `payment_webhook_events` audit trail against real provider retry/replay
+  behavior. **Local timestamp-window checks and multi-secret rotation overlap
+  are implemented 2026-07-02**, but live payload shapes must be validated before
+  requiring timestamps in production or removing old secrets.
 - Validate multi-instance paid mutation behavior against the production
   database/provider mix before launch. **Local DB-backed claims are implemented
   2026-07-02:** provider invoice creation uses checkout claim fields, and direct

@@ -396,7 +396,7 @@ test('[Req 4-Z] stale checkout claims can be reclaimed without a new intent', as
 test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
   const btcpayBody = '{"invoiceId":"invoice-1","type":"InvoiceSettled"}';
   const btcpaySig = crypto.createHmac('sha256', 'btcpay-secret').update(btcpayBody).digest('hex');
-  await withEnv({ BTCPAY_WEBHOOK_SECRET: 'btcpay-secret' }, async () => {
+  await withEnv({ BTCPAY_WEBHOOK_SECRET: 'btcpay-secret', BTCPAY_WEBHOOK_SECRETS: '' }, async () => {
     const req = {
       rawBody: btcpayBody,
       body: JSON.parse(btcpayBody),
@@ -408,13 +408,28 @@ test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
     assert.equal(verifyPaymentWebhookSignature({ ...req, header: () => 'sha256=bad' }, 'btcpay'), false);
   });
 
+  const btcpayOldSig = crypto.createHmac('sha256', 'btcpay-old-secret').update(btcpayBody).digest('hex');
+  await withEnv({
+    BTCPAY_WEBHOOK_SECRET: 'btcpay-new-secret',
+    BTCPAY_WEBHOOK_SECRETS: 'btcpay-old-secret,btcpay-older-secret'
+  }, async () => {
+    const req = {
+      rawBody: btcpayBody,
+      body: JSON.parse(btcpayBody),
+      header(name) {
+        return name.toLowerCase() === 'btcpay-sig' ? `sha256=${btcpayOldSig}` : '';
+      }
+    };
+    assert.equal(verifyPaymentWebhookSignature(req, 'btcpay'), true);
+  });
+
   const nowBody = { payment_status: 'finished', order_id: 'intent-1', nested: { z: 1, a: 2 } };
   assert.equal(
     nowPaymentsSignaturePayload(nowBody),
     '{"nested":{"a":2,"z":1},"order_id":"intent-1","payment_status":"finished"}'
   );
   const nowSig = crypto.createHmac('sha512', 'now-secret').update(nowPaymentsSignaturePayload(nowBody)).digest('hex');
-  await withEnv({ NOWPAYMENTS_IPN_SECRET: 'now-secret' }, async () => {
+  await withEnv({ NOWPAYMENTS_IPN_SECRET: 'now-secret', NOWPAYMENTS_IPN_SECRETS: '' }, async () => {
     const req = {
       rawBody: JSON.stringify({ payment_status: 'finished', nested: { z: 1, a: 2 }, order_id: 'intent-1' }),
       body: nowBody,
@@ -426,9 +441,25 @@ test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
     assert.equal(verifyPaymentWebhookSignature({ ...req, header: () => 'bad' }, 'nowpayments'), false);
   });
 
+  const nowOldSig = crypto.createHmac('sha512', 'now-old-secret').update(nowPaymentsSignaturePayload(nowBody)).digest('hex');
+  await withEnv({
+    NOWPAYMENTS_IPN_SECRET: 'now-new-secret',
+    NOWPAYMENTS_IPN_SECRETS: JSON.stringify(['now-old-secret', 'now-older-secret'])
+  }, async () => {
+    const req = {
+      rawBody: JSON.stringify(nowBody),
+      body: nowBody,
+      header(name) {
+        return name.toLowerCase() === 'x-nowpayments-sig' ? nowOldSig : '';
+      }
+    };
+    assert.equal(verifyPaymentWebhookSignature(req, 'nowpayments'), true);
+  });
+
   await withEnv({
     NODE_ENV: 'development',
     BTCPAY_WEBHOOK_SECRET: '',
+    BTCPAY_WEBHOOK_SECRETS: '',
     PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV: ''
   }, async () => {
     const req = {
@@ -442,6 +473,7 @@ test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
   await withEnv({
     NODE_ENV: 'development',
     BTCPAY_WEBHOOK_SECRET: '',
+    BTCPAY_WEBHOOK_SECRETS: '',
     PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV: 'true'
   }, async () => {
     const req = {

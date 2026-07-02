@@ -70,6 +70,35 @@ If a provider starts sending reliable webhook timestamps, require them with
 Keep the requirement off until sandbox/live provider payloads confirm the exact
 timestamp field and retry behavior.
 
+## Webhook Secret Rotation
+
+Payment webhook signature checks accept the existing single-secret env vars and
+optional plural env vars so providers can rotate secrets without dropping retry
+deliveries:
+
+```bash
+BTCPAY_WEBHOOK_SECRET=<new-secret>
+BTCPAY_WEBHOOK_SECRETS=<old-secret>,<older-secret>
+
+NOWPAYMENTS_IPN_SECRET=<new-secret>
+NOWPAYMENTS_IPN_SECRETS='["<old-secret>","<older-secret>"]'
+```
+
+Rotation procedure:
+
+1. Create the new provider webhook secret in the provider dashboard.
+2. Deploy the new secret as `BTCPAY_WEBHOOK_SECRET` or
+   `NOWPAYMENTS_IPN_SECRET`, and keep the currently active secret in the matching
+   plural env var.
+3. Update the provider dashboard to sign new deliveries with the new secret.
+4. Watch webhook failures and `payment_webhook_events` replay/audit rows through
+   at least the provider retry window.
+5. Remove the old secret from the plural env var only after retries signed with
+   the old value have stopped.
+
+Keep all webhook secrets in the production secret manager. Do not commit real
+secret values to this repository or issue trackers.
+
 ## Follow-Up Actions
 
 Use `npm run game:support:money-lookup -- --query=<id-or-reference>` before any

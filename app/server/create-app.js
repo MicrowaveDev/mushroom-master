@@ -359,6 +359,37 @@ function hmacDigest(secret, payload, algorithm) {
   return crypto.createHmac(algorithm, secret).update(payload || '').digest('hex');
 }
 
+function parseWebhookSecrets(...values) {
+  const secrets = [];
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (!text) continue;
+    let entries = null;
+    if (text.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) entries = parsed;
+      } catch {
+        entries = null;
+      }
+    }
+    entries ||= text.split(/[,\n]/);
+    for (const entry of entries) {
+      const secret = String(entry || '').trim();
+      if (secret && !secrets.includes(secret)) secrets.push(secret);
+    }
+  }
+  return secrets;
+}
+
+function timingSafeAnyHmac(header, payload, algorithm, secrets) {
+  let matched = false;
+  for (const secret of secrets) {
+    matched = timingSafeEqualText(header, hmacDigest(secret, payload, algorithm)) || matched;
+  }
+  return matched;
+}
+
 function sortJsonValue(value) {
   if (Array.isArray(value)) return value.map(sortJsonValue);
   if (!value || typeof value !== 'object') return value;
@@ -479,16 +510,16 @@ export function verifyPaymentWebhookTimestamp(req, provider, {
 
 export function verifyPaymentWebhookSignature(req, provider) {
   if (provider === 'btcpay') {
-    const secret = process.env.BTCPAY_WEBHOOK_SECRET;
-    if (!secret) return allowUnsignedPaymentWebhookForDev();
+    const secrets = parseWebhookSecrets(process.env.BTCPAY_WEBHOOK_SECRET, process.env.BTCPAY_WEBHOOK_SECRETS);
+    if (!secrets.length) return allowUnsignedPaymentWebhookForDev();
     const header = String(req.header('btcpay-sig') || '').replace(/^sha256=/i, '');
-    return timingSafeEqualText(header, hmacDigest(secret, req.rawBody || '', 'sha256'));
+    return timingSafeAnyHmac(header, req.rawBody || '', 'sha256', secrets);
   }
   if (provider === 'nowpayments') {
-    const secret = process.env.NOWPAYMENTS_IPN_SECRET;
-    if (!secret) return allowUnsignedPaymentWebhookForDev();
+    const secrets = parseWebhookSecrets(process.env.NOWPAYMENTS_IPN_SECRET, process.env.NOWPAYMENTS_IPN_SECRETS);
+    if (!secrets.length) return allowUnsignedPaymentWebhookForDev();
     const header = String(req.header('x-nowpayments-sig') || '');
-    return timingSafeEqualText(header, hmacDigest(secret, nowPaymentsSignaturePayload(req.body || {}), 'sha512'));
+    return timingSafeAnyHmac(header, nowPaymentsSignaturePayload(req.body || {}), 'sha512', secrets);
   }
   return false;
 }
