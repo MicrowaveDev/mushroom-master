@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { query, withTransaction } from '../db.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 
@@ -1079,6 +1080,23 @@ function firstPresent(...values) {
   return values.find((value) => value != null && value !== '') ?? null;
 }
 
+function sortJsonValue(value) {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value).sort().reduce((acc, key) => {
+    acc[key] = sortJsonValue(value[key]);
+    return acc;
+  }, {});
+}
+
+function stableJsonStringify(value) {
+  return JSON.stringify(sortJsonValue(value || {}));
+}
+
+function sha256Text(value) {
+  return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
 function providerWebhookRefs(payload = {}) {
   const metadata = payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {};
   const intentId =
@@ -1101,6 +1119,52 @@ function providerWebhookRefs(payload = {}) {
     payload.id ||
     providerInvoiceId;
   return { metadata, intentId, providerInvoiceId, providerPaymentId };
+}
+
+function providerWebhookExplicitEventId(payload = {}) {
+  return firstPresent(
+    payload.deliveryId,
+    payload.delivery_id,
+    payload.eventId,
+    payload.event_id,
+    payload.webhookEventId,
+    payload.webhook_event_id,
+    payload.webhook?.deliveryId,
+    payload.webhook?.eventId,
+    payload.metadata?.deliveryId,
+    payload.metadata?.eventId
+  );
+}
+
+function providerWebhookPayloadText(payload = {}, rawBody = '') {
+  return rawBody || stableJsonStringify(payload);
+}
+
+function providerWebhookEventIdentity(payload = {}, rawBody = '') {
+  const payloadText = providerWebhookPayloadText(payload, rawBody);
+  const payloadHash = sha256Text(payloadText);
+  const explicitEventId = providerWebhookExplicitEventId(payload);
+  return {
+    payloadHash,
+    explicitEventId: explicitEventId || null,
+    eventKey: explicitEventId ? `event:${explicitEventId}` : `payload:${payloadHash}`
+  };
+}
+
+function rowToPaymentWebhookEvent(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    provider: row.provider,
+    eventKey: row.event_key,
+    payloadHash: row.payload_hash,
+    processingStatus: row.processing_status,
+    result: parseJson(row.result_json, null),
+    errorMessage: row.error_message || null,
+    receivedAt: row.received_at,
+    processedAt: row.processed_at || null,
+    metadata: parseJson(row.metadata_json, {})
+  };
 }
 
 function extractProviderPaymentDetails(provider, payload = {}) {
@@ -1166,6 +1230,95 @@ function purchaseStatusFromProviderWebhook(provider, payload = {}) {
     if (status === 'overpaid') return 'overpaid';
   }
   return null;
+}
+
+async function beginPaymentWebhookEvent(provider, payload = {}, { rawBody = '' } = {}) {
+  const normalizedProvider = providerConfig(provider).provider;
+  const { payloadHash, explicitEventId, eventKey } = providerWebhookEventIdentity(payload, rawBody);
+  const refs = providerWebhookRefs(payload);
+  const now = nowIso();
+  const metadata = {
+    explicitEventId,
+    intentId: refs.intentId,
+    providerInvoiceId: refs.providerInvoiceId,
+    providerPaymentId: refs.providerPaymentId,
+    status: firstPresent(payload.payment_status, payload.status, payload.invoiceStatus, payload.type)
+  };
+  const id = createId('pwh');
+  const inserted = await query(
+    `INSERT INTO payment_webhook_events
+     (id, provider, event_key, payload_hash, processing_status, metadata_json, received_at)
+     VALUES ($1, $2, $3, $4, 'processing', $5, $6)
+     ON CONFLICT DO NOTHING`,
+    [id, normalizedProvider, eventKey, payloadHash, metadataJson(metadata), now]
+  );
+  if (inserted.rowCount) {
+    const row = await query(`SELECT * FROM payment_webhook_events WHERE id = $1`, [id]);
+    return { action: 'process', event: rowToPaymentWebhookEvent(row.rows[0]) };
+  }
+
+  const existing = await query(
+    `SELECT * FROM payment_webhook_events
+     WHERE provider = $1 AND event_key = $2
+     LIMIT 1`,
+    [normalizedProvider, eventKey]
+  );
+  const event = rowToPaymentWebhookEvent(existing.rows[0]);
+  if (!event) throw httpError('Payment webhook event conflict could not be read', 409);
+  if (event.payloadHash !== payloadHash) {
+    throw httpError('Payment webhook replay payload mismatch', 409);
+  }
+  if (event.processingStatus === 'processed') {
+    return { action: 'replay', event };
+  }
+  if (event.processingStatus === 'processing') {
+    return { action: 'in_progress', event };
+  }
+
+  const retried = await query(
+    `UPDATE payment_webhook_events
+     SET processing_status = 'processing',
+         error_message = NULL,
+         metadata_json = $3,
+         received_at = $4,
+         processed_at = NULL
+     WHERE provider = $1
+       AND event_key = $2
+       AND processing_status = 'failed'
+     RETURNING *`,
+    [normalizedProvider, eventKey, metadataJson(metadata), now]
+  );
+  if (retried.rowCount) {
+    return { action: 'process', event: rowToPaymentWebhookEvent(retried.rows[0]) };
+  }
+  return { action: 'in_progress', event };
+}
+
+async function markPaymentWebhookEventProcessed(event, result) {
+  const processedAt = nowIso();
+  const updated = await query(
+    `UPDATE payment_webhook_events
+     SET processing_status = 'processed',
+         result_json = $2,
+         error_message = NULL,
+         processed_at = $3
+     WHERE id = $1
+     RETURNING *`,
+    [event.id, metadataJson(result), processedAt]
+  );
+  return rowToPaymentWebhookEvent(updated.rows[0]);
+}
+
+async function markPaymentWebhookEventFailed(event, error) {
+  const processedAt = nowIso();
+  await query(
+    `UPDATE payment_webhook_events
+     SET processing_status = 'failed',
+         error_message = $2,
+         processed_at = $3
+     WHERE id = $1`,
+    [event.id, error?.message || 'Payment webhook processing failed', processedAt]
+  );
 }
 
 async function recordPurchaseIntentStatus({
@@ -1293,4 +1446,54 @@ export async function completeProviderWebhook(provider, payload = {}, { fetchImp
     priceCurrency: paymentDetails?.priceCurrency ?? null,
     metadata: payload
   });
+}
+
+export async function processProviderWebhookEvent(provider, payload = {}, {
+  rawBody = '',
+  fetchImpl = globalThis.fetch
+} = {}) {
+  const started = await beginPaymentWebhookEvent(provider, payload, { rawBody });
+  if (started.action === 'replay') {
+    return {
+      ...(started.event.result || {}),
+      webhookEvent: {
+        id: started.event.id,
+        provider: started.event.provider,
+        eventKey: started.event.eventKey,
+        duplicate: true,
+        replayed: true
+      }
+    };
+  }
+  if (started.action === 'in_progress') {
+    return {
+      ignored: true,
+      reason: 'duplicate_webhook_processing',
+      webhookEvent: {
+        id: started.event.id,
+        provider: started.event.provider,
+        eventKey: started.event.eventKey,
+        duplicate: true,
+        processing: true
+      }
+    };
+  }
+
+  try {
+    const result = await completeProviderWebhook(provider, payload, { fetchImpl });
+    const event = await markPaymentWebhookEventProcessed(started.event, result);
+    return {
+      ...result,
+      webhookEvent: {
+        id: event.id,
+        provider: event.provider,
+        eventKey: event.eventKey,
+        duplicate: false,
+        replayed: false
+      }
+    };
+  } catch (err) {
+    await markPaymentWebhookEventFailed(started.event, err);
+    throw err;
+  }
 }

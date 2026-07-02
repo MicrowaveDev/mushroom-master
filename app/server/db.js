@@ -135,6 +135,10 @@ async function ensurePostSyncIndexes(sequelize) {
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_mutation_claims_scope_key
      ON mutation_claims(scope, claim_key)`
   );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_provider_key
+     ON payment_webhook_events(provider, event_key)`
+  );
 }
 
 async function backfillLegacyWalletBalances(sequelize) {

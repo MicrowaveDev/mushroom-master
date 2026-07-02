@@ -69,6 +69,7 @@ export {
   getWalletBundles,
   getWalletState,
   grantCurrencyForPlayer,
+  processProviderWebhookEvent,
   spendCurrencyForPlayer,
   validateTelegramPreCheckout
 } from './wallet-service.js';

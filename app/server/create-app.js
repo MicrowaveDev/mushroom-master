@@ -55,7 +55,6 @@ import {
   updateSettings,
   switchPortrait,
   switchPreset,
-  completeProviderWebhook,
   createPurchaseIntent,
   equipAsset,
   getAssetCatalog,
@@ -63,6 +62,7 @@ import {
   getPaymentSupportLinks,
   getWalletBundles,
   getWalletState,
+  processProviderWebhookEvent,
   purchaseAsset,
   rollAssetPack
 } from './services/game-service.js';
@@ -527,7 +527,10 @@ export async function createApp() {
         res.status(403).json({ success: false, error: 'Invalid payment webhook signature' });
         return;
       }
-      const data = await completeProviderWebhook(provider, req.body || {});
+      const data = await processProviderWebhookEvent(provider, req.body || {}, {
+        rawBody: req.rawBody || '',
+        fetchImpl: globalThis.fetch
+      });
       res.json({ success: true, data });
     })
   );

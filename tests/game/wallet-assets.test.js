@@ -21,6 +21,7 @@ import {
   getWalletState,
   getPaymentSupportLinks,
   grantCurrencyForPlayer,
+  processProviderWebhookEvent,
   spendCurrencyForPlayer,
   validateTelegramPreCheckout
 } from '../../app/server/services/wallet-service.js';
@@ -491,6 +492,77 @@ test('[Req 4-Z] provider webhooks ignore incomplete statuses and complete settle
   });
   assert.equal(replay.alreadyCompleted, true);
   assert.equal((await getWalletState(player.id)).balance, 100);
+});
+
+test('[Req 4-Z] payment webhook event replay returns stored result without reprocessing', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4025 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'btcpay-webhook-event'
+  });
+  const payload = {
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-payment-event'
+  };
+  const rawBody = JSON.stringify(payload);
+
+  const first = await processProviderWebhookEvent('btcpay', payload, { rawBody });
+  const replay = await processProviderWebhookEvent('btcpay', payload, { rawBody });
+
+  assert.equal(first.webhookEvent.duplicate, false);
+  assert.equal(replay.webhookEvent.duplicate, true);
+  assert.equal(replay.webhookEvent.replayed, true);
+  assert.equal((await getWalletState(player.id)).balance, 100);
+
+  const events = await query(
+    `SELECT processing_status, result_json
+     FROM payment_webhook_events
+     WHERE provider = 'btcpay'`
+  );
+  assert.equal(events.rowCount, 1);
+  assert.equal(events.rows[0].processing_status, 'processed');
+  assert.equal(JSON.parse(events.rows[0].result_json).alreadyCompleted, false);
+});
+
+test('[Req 4-Z] payment webhook replay with changed payload is rejected', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4026 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'btcpay-webhook-mismatch'
+  });
+  const firstPayload = {
+    deliveryId: 'delivery-replay-1',
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-payment-mismatch-a'
+  };
+  await processProviderWebhookEvent('btcpay', firstPayload, { rawBody: JSON.stringify(firstPayload) });
+
+  const changedPayload = {
+    ...firstPayload,
+    paymentId: 'btcpay-payment-mismatch-b'
+  };
+  await assert.rejects(
+    () => processProviderWebhookEvent('btcpay', changedPayload, { rawBody: JSON.stringify(changedPayload) }),
+    (err) => err.statusCode === 409 && /payload mismatch/.test(err.message)
+  );
+
+  assert.equal((await getWalletState(player.id)).balance, 100);
+  const events = await query(
+    `SELECT event_key, processing_status
+     FROM payment_webhook_events
+     WHERE provider = 'btcpay'`
+  );
+  assert.equal(events.rowCount, 1);
+  assert.equal(events.rows[0].event_key, 'event:delivery-replay-1');
+  assert.equal(events.rows[0].processing_status, 'processed');
 });
 
 test('[Req 4-Z] provider webhooks validate fiat amount and currency before granting', async () => {

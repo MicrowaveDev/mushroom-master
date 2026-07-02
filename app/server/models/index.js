@@ -38,6 +38,7 @@ import definePlayerAssetInstance from './PlayerAssetInstance.js';
 import definePlayerEquippedAsset from './PlayerEquippedAsset.js';
 import defineAssetRoll from './AssetRoll.js';
 import defineMutationClaim from './MutationClaim.js';
+import definePaymentWebhookEvent from './PaymentWebhookEvent.js';
 
 export function initModels(sequelize) {
   const Player = definePlayer(sequelize);
@@ -74,6 +75,7 @@ export function initModels(sequelize) {
   const PlayerEquippedAsset = definePlayerEquippedAsset(sequelize);
   const AssetRoll = defineAssetRoll(sequelize);
   const MutationClaim = defineMutationClaim(sequelize);
+  const PaymentWebhookEvent = definePaymentWebhookEvent(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
   Player.hasMany(Session, { foreignKey: 'player_id' });
@@ -144,6 +146,7 @@ export function initModels(sequelize) {
     PlayerAssetInstance,
     PlayerEquippedAsset,
     AssetRoll,
-    MutationClaim
+    MutationClaim,
+    PaymentWebhookEvent
   };
 }

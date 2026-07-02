@@ -334,9 +334,12 @@ backlog until the items are split into tickets or implementation phases.
   and gacha pack rolls now use reusable `mutation_claims` rows with stale-claim
   recovery as of 2026-07-02. Still validate these behaviors against the
   production database/provider mix before paid launch.
-- Add webhook replay protection, timestamp windows where providers support
-  them, duplicate-event handling, structured payment logs, and secret rotation
-  procedures.
+- Payment webhook replay and duplicate-event handling now use
+  `payment_webhook_events` rows as of 2026-07-02, including payload hashes,
+  processing status, stored processed results, and duplicate replay responses.
+  Still add provider timestamp-window checks where providers support them, live
+  secret-rotation procedures, and production-grade structured payment log
+  routing/retention.
 - Add rate limits and abuse controls for checkout creation, gacha rolls, direct
   purchases, support-sensitive endpoints, and expensive odds/catalog calls.
 
@@ -1218,6 +1221,12 @@ or legal/support/compliance rollout work.
      candidate and spending wallet currency.
    - Focused tests assert live claims are waited on and stale claims are
      reclaimed without leaving rows behind.
+8. Payment webhook event audit/replay handling exists.
+   - `processProviderWebhookEvent(...)` records provider/event identity,
+     payload hash, processing status, stored result, and duplicate replay
+     metadata in `payment_webhook_events`.
+   - Duplicate processed webhooks return the stored result without granting
+     wallet currency again; same-event payload mismatches are rejected.
 
 ### Remaining launch gates
 
@@ -1229,6 +1238,9 @@ or legal/support/compliance rollout work.
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
 - Set provider webhook secrets in every non-local environment.
+- Add provider timestamp-window validation where available, document webhook
+  secret rotation, and verify the new `payment_webhook_events` audit trail
+  against real provider retry/replay behavior.
 - Validate multi-instance paid mutation behavior against the production
   database/provider mix before launch. **Local DB-backed claims are implemented
   2026-07-02:** provider invoice creation uses checkout claim fields, and direct
