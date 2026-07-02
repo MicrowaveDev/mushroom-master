@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
+import request from 'supertest';
 import {
   createPlayer,
   freshDb,
@@ -33,8 +34,10 @@ import {
 } from '../../app/server/services/asset-service.js';
 import { createPaymentSupportReply, handleTelegramWebhook } from '../../app/server/bot-gateway.js';
 import {
+  createApp,
   nowPaymentsSignaturePayload,
-  verifyPaymentWebhookSignature
+  verifyPaymentWebhookSignature,
+  verifyPaymentWebhookTimestamp
 } from '../../app/server/create-app.js';
 
 async function withEnv(overrides, work) {
@@ -448,6 +451,83 @@ test('[Req 4-Z] payment webhook signatures are provider-specific', async () => {
     };
     assert.equal(verifyPaymentWebhookSignature(req, 'btcpay'), true);
   });
+});
+
+test('[Req 4-Z] payment webhook timestamp freshness is enforced when present or required', async () => {
+  const now = new Date('2026-07-02T12:00:00.000Z');
+  const reqWithHeader = (headerValue, body = {}) => ({
+    body,
+    header(name) {
+      return name.toLowerCase() === 'x-webhook-timestamp' ? headerValue : '';
+    }
+  });
+  const freshHeader = verifyPaymentWebhookTimestamp(
+    reqWithHeader('2026-07-02T11:59:30.000Z'),
+    'btcpay',
+    { now }
+  );
+  assert.equal(freshHeader.ok, true);
+  assert.equal(freshHeader.reason, 'timestamp_fresh');
+
+  const staleHeader = verifyPaymentWebhookTimestamp(
+    reqWithHeader('2026-07-02T11:40:00.000Z'),
+    'btcpay',
+    { now }
+  );
+  assert.equal(staleHeader.ok, false);
+  assert.equal(staleHeader.reason, 'stale_timestamp');
+
+  const futureHeader = verifyPaymentWebhookTimestamp(
+    reqWithHeader('2026-07-02T12:30:00.000Z'),
+    'btcpay',
+    { now }
+  );
+  assert.equal(futureHeader.ok, false);
+  assert.equal(futureHeader.reason, 'future_timestamp');
+
+  const payloadTimestamp = verifyPaymentWebhookTimestamp(
+    reqWithHeader('', { webhook: { timestamp: Math.floor(now.getTime() / 1000) } }),
+    'nowpayments',
+    { now }
+  );
+  assert.equal(payloadTimestamp.ok, true);
+
+  const missingAllowed = verifyPaymentWebhookTimestamp(reqWithHeader(''), 'btcpay', { now });
+  assert.equal(missingAllowed.ok, true);
+  assert.equal(missingAllowed.reason, 'timestamp_not_provided');
+
+  await withEnv({ PAYMENT_WEBHOOK_REQUIRE_TIMESTAMP: 'true' }, async () => {
+    const missingRequired = verifyPaymentWebhookTimestamp(reqWithHeader(''), 'btcpay', { now });
+    assert.equal(missingRequired.ok, false);
+    assert.equal(missingRequired.reason, 'missing_timestamp');
+  });
+
+  await withEnv({ BTCPAY_WEBHOOK_REQUIRE_TIMESTAMP: 'true' }, async () => {
+    const invalidRequired = verifyPaymentWebhookTimestamp(reqWithHeader('not-a-date'), 'btcpay', { now });
+    assert.equal(invalidRequired.ok, false);
+    assert.equal(invalidRequired.reason, 'invalid_timestamp');
+  });
+});
+
+test('[Req 4-Z] payment webhook route rejects stale timestamped deliveries before processing', async () => {
+  await freshDb();
+  const app = await createApp();
+  const response = await request(app)
+    .post('/api/wallet/purchase-webhook/btcpay')
+    .set('x-webhook-timestamp', '2026-07-02T11:40:00.000Z')
+    .send({
+      deliveryId: 'stale-webhook-route',
+      type: 'InvoiceSettled',
+      invoiceId: 'unknown-invoice'
+    });
+  assert.equal(response.status, 403);
+  assert.equal(response.body.error, 'Invalid payment webhook timestamp');
+  assert.equal(response.body.reason, 'stale_timestamp');
+
+  const stored = await query(`SELECT * FROM payment_webhook_events WHERE event_key = $1`, [
+    'event:stale-webhook-route'
+  ]);
+  assert.equal(stored.rowCount, 0);
 });
 
 test('[Req 4-Z] provider webhooks ignore incomplete statuses and complete settled payments once', async () => {

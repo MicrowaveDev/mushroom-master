@@ -54,6 +54,22 @@ npm run game:wallet:import-settlement -- \
   `telegram_payment_charge_id` / `provider_payment_charge_id` are payment
   references; `total_amount` is in Stars (`XTR`) units.
 
+## Webhook Freshness
+
+Payment webhooks fail signature verification first, then timestamp freshness
+when a provider sends an explicit webhook/event timestamp header or payload
+field. The default window is 5 minutes. Override with:
+
+```bash
+PAYMENT_WEBHOOK_TIMESTAMP_TOLERANCE_MS=300000
+```
+
+If a provider starts sending reliable webhook timestamps, require them with
+`PAYMENT_WEBHOOK_REQUIRE_TIMESTAMP=true` or a provider-specific flag such as
+`BTCPAY_WEBHOOK_REQUIRE_TIMESTAMP=true` / `NOWPAYMENTS_WEBHOOK_REQUIRE_TIMESTAMP=true`.
+Keep the requirement off until sandbox/live provider payloads confirm the exact
+timestamp field and retry behavior.
+
 ## Follow-Up Actions
 
 Use `npm run game:support:money-lookup -- --query=<id-or-reference>` before any

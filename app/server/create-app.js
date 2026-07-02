@@ -376,6 +376,107 @@ function allowUnsignedPaymentWebhookForDev() {
   return process.env.NODE_ENV === 'test' || process.env.PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV === 'true';
 }
 
+function paymentWebhookTimestampToleranceMs() {
+  const value = Number(process.env.PAYMENT_WEBHOOK_TIMESTAMP_TOLERANCE_MS || 5 * 60 * 1000);
+  return Number.isFinite(value) && value > 0 ? value : 5 * 60 * 1000;
+}
+
+function paymentWebhookTimestampRequired(provider) {
+  const normalizedProvider = String(provider || '').toUpperCase().replace(/[^A-Z0-9]/g, '_');
+  return process.env.PAYMENT_WEBHOOK_REQUIRE_TIMESTAMP === 'true' ||
+    process.env[`${normalizedProvider}_WEBHOOK_REQUIRE_TIMESTAMP`] === 'true';
+}
+
+function firstWebhookTimestampValue(req) {
+  const headerNames = [
+    'x-webhook-timestamp',
+    'x-event-timestamp',
+    'x-timestamp',
+    'btcpay-timestamp',
+    'x-nowpayments-timestamp'
+  ];
+  for (const name of headerNames) {
+    const value = req.header(name);
+    if (value) return value;
+  }
+  const body = req.body || {};
+  return body.webhook?.timestamp ||
+    body.webhook?.createdAt ||
+    body.webhook?.created_at ||
+    body.event?.timestamp ||
+    body.event?.createdAt ||
+    body.event?.created_at ||
+    body.deliveryTimestamp ||
+    body.delivery_timestamp ||
+    body.eventTimestamp ||
+    body.event_timestamp ||
+    body.eventTime ||
+    body.event_time ||
+    body.timestamp ||
+    null;
+}
+
+function parseWebhookTimestampMs(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 10_000_000_000 ? value * 1000 : value;
+  }
+  const text = String(value).trim();
+  if (!text) return null;
+  if (/^\d+(\.\d+)?$/.test(text)) {
+    const numeric = Number(text);
+    if (!Number.isFinite(numeric)) return NaN;
+    return numeric < 10_000_000_000 ? numeric * 1000 : numeric;
+  }
+  const parsed = Date.parse(text);
+  return Number.isNaN(parsed) ? NaN : parsed;
+}
+
+export function verifyPaymentWebhookTimestamp(req, provider, {
+  now = new Date()
+} = {}) {
+  const required = paymentWebhookTimestampRequired(provider);
+  const rawTimestamp = firstWebhookTimestampValue(req);
+  if (!rawTimestamp) {
+    return required
+      ? { ok: false, reason: 'missing_timestamp', required }
+      : { ok: true, reason: 'timestamp_not_provided', required };
+  }
+  const timestampMs = parseWebhookTimestampMs(rawTimestamp);
+  if (!Number.isFinite(timestampMs)) {
+    return { ok: false, reason: 'invalid_timestamp', required, rawTimestamp };
+  }
+  const observedAt = now instanceof Date ? now : new Date(now);
+  const observedMs = observedAt.getTime();
+  if (!Number.isFinite(observedMs)) {
+    return { ok: false, reason: 'invalid_now', required, rawTimestamp };
+  }
+  const toleranceMs = paymentWebhookTimestampToleranceMs();
+  const ageMs = observedMs - timestampMs;
+  if (Math.abs(ageMs) > toleranceMs) {
+    return {
+      ok: false,
+      reason: ageMs > 0 ? 'stale_timestamp' : 'future_timestamp',
+      required,
+      rawTimestamp,
+      timestamp: new Date(timestampMs).toISOString(),
+      observedAt: observedAt.toISOString(),
+      ageMs,
+      toleranceMs
+    };
+  }
+  return {
+    ok: true,
+    reason: 'timestamp_fresh',
+    required,
+    rawTimestamp,
+    timestamp: new Date(timestampMs).toISOString(),
+    observedAt: observedAt.toISOString(),
+    ageMs,
+    toleranceMs
+  };
+}
+
 export function verifyPaymentWebhookSignature(req, provider) {
   if (provider === 'btcpay') {
     const secret = process.env.BTCPAY_WEBHOOK_SECRET;
@@ -734,6 +835,15 @@ export async function createApp() {
       const provider = req.params.provider;
       if (!verifyPaymentWebhookSignature(req, provider)) {
         res.status(403).json({ success: false, error: 'Invalid payment webhook signature' });
+        return;
+      }
+      const timestampCheck = verifyPaymentWebhookTimestamp(req, provider);
+      if (!timestampCheck.ok) {
+        res.status(403).json({
+          success: false,
+          error: 'Invalid payment webhook timestamp',
+          reason: timestampCheck.reason
+        });
         return;
       }
       const data = await processProviderWebhookEvent(provider, req.body || {}, {

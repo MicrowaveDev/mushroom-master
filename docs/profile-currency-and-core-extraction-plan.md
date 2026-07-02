@@ -389,8 +389,10 @@ backlog until the items are split into tickets or implementation phases.
 - Payment webhook replay and duplicate-event handling now use
   `payment_webhook_events` rows as of 2026-07-02, including payload hashes,
   processing status, stored processed results, and duplicate replay responses.
-  Still add provider timestamp-window checks where providers support them, live
-  secret-rotation procedures, and production-grade structured payment log
+  Timestamp-window checks now reject stale/future webhook deliveries when a
+  provider sends explicit webhook/event timestamps, and can require timestamps
+  through env flags after live payload validation. Still add live
+  secret-rotation procedures and production-grade structured payment log
   routing/retention.
 - Checkout creation, gacha rolls, direct asset purchases, asset catalog, and
   pack-odds endpoints now have route-scoped rate-limit buckets as of
@@ -1398,6 +1400,17 @@ or legal/support/compliance rollout work.
      carrying the resolved `assetId` in the result payload.
    - The support CLI exposes `--instance=<assetInstanceId>`, and the token-gated
      admin API accepts `assetInstanceId` on freeze/unfreeze/revoke bodies.
+23. Payment webhook timestamp-window checks exist.
+   - `verifyPaymentWebhookTimestamp(...)` accepts common webhook/event timestamp
+     headers and payload fields, supports ISO, epoch seconds, and epoch
+     milliseconds, and rejects stale or far-future deliveries outside
+     `PAYMENT_WEBHOOK_TIMESTAMP_TOLERANCE_MS` (default 5 minutes).
+   - Missing timestamps remain allowed by default for provider compatibility,
+     but `PAYMENT_WEBHOOK_REQUIRE_TIMESTAMP=true` or provider-specific
+     `<PROVIDER>_WEBHOOK_REQUIRE_TIMESTAMP=true` can require them after live
+     payload validation.
+   - The payment webhook route performs signature verification first, then
+     timestamp freshness validation before any event row is stored or processed.
 
 ### Remaining launch gates
 
@@ -1409,9 +1422,11 @@ or legal/support/compliance rollout work.
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
 - Set provider webhook secrets in every non-local environment.
-- Add provider timestamp-window validation where available, document webhook
-  secret rotation, and verify the new `payment_webhook_events` audit trail
-  against real provider retry/replay behavior.
+- Validate provider timestamp fields where available, document webhook secret
+  rotation, and verify the new `payment_webhook_events` audit trail against
+  real provider retry/replay behavior. **Local timestamp-window checks are
+  implemented 2026-07-02**, but live payload shapes must be validated before
+  requiring timestamps in production.
 - Validate multi-instance paid mutation behavior against the production
   database/provider mix before launch. **Local DB-backed claims are implemented
   2026-07-02:** provider invoice creation uses checkout claim fields, and direct
