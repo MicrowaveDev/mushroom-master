@@ -524,6 +524,54 @@ export function verifyPaymentWebhookSignature(req, provider) {
   return false;
 }
 
+function walletPurchaseIntentLogFields(intent = {}) {
+  const metadata = intent.metadata && typeof intent.metadata === 'object' ? intent.metadata : {};
+  const checkout = intent.checkout && typeof intent.checkout === 'object' ? intent.checkout : {};
+  return {
+    kind: 'wallet_purchase_intent',
+    playerId: intent.playerId || null,
+    intentId: intent.id || null,
+    provider: intent.provider || null,
+    status: intent.status || null,
+    checkoutStatus: intent.checkoutStatus || null,
+    paymentSurface: metadata.paymentSurface || null,
+    bundleId: metadata.bundleId || null,
+    providerInvoiceId: intent.providerInvoiceId || null,
+    walletAmount: intent.walletAmount ?? null,
+    priceAmount: intent.priceAmount ?? null,
+    priceCurrency: intent.priceCurrency || null,
+    checkoutType: checkout.type || null,
+    hasCheckoutUrl: Boolean(checkout.checkoutUrl),
+    hasPaymentUri: Boolean(checkout.paymentUri)
+  };
+}
+
+function paymentWebhookResultLogFields(provider, result = {}, timestampCheck = {}) {
+  const intent = result.intent && typeof result.intent === 'object' ? result.intent : {};
+  const transaction = result.transaction && typeof result.transaction === 'object' ? result.transaction : {};
+  const webhookEvent = result.webhookEvent && typeof result.webhookEvent === 'object' ? result.webhookEvent : {};
+  return {
+    kind: 'payment_webhook_processed',
+    provider,
+    playerId: intent.playerId || null,
+    intentId: intent.id || null,
+    intentStatus: intent.status || null,
+    providerInvoiceId: intent.providerInvoiceId || null,
+    providerPaymentId: intent.providerPaymentId || null,
+    webhookEventId: webhookEvent.id || null,
+    eventKey: webhookEvent.eventKey || null,
+    duplicate: Boolean(webhookEvent.duplicate),
+    replayed: Boolean(webhookEvent.replayed),
+    processing: Boolean(webhookEvent.processing),
+    ignored: Boolean(result.ignored),
+    reason: result.reason || null,
+    supportRequired: Boolean(result.supportRequired),
+    transactionId: transaction.id || null,
+    transactionReason: transaction.reason || null,
+    timestampReason: timestampCheck.reason || null
+  };
+}
+
 function securityHeaders() {
   return function securityHeadersMiddleware(_req, res, next) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -856,6 +904,10 @@ export async function createApp() {
         surface: req.body.surface || req.query.surface || 'web',
         fetchImpl: globalThis.fetch
       });
+      log.info({
+        requestId: req.requestId || null,
+        ...walletPurchaseIntentLogFields(data)
+      });
       res.json({ success: true, data });
     })
   );
@@ -865,11 +917,26 @@ export async function createApp() {
     asyncRoute(async (req, res) => {
       const provider = req.params.provider;
       if (!verifyPaymentWebhookSignature(req, provider)) {
+        log.warn({
+          kind: 'payment_webhook_rejected',
+          requestId: req.requestId || null,
+          provider,
+          reason: 'invalid_signature'
+        });
         res.status(403).json({ success: false, error: 'Invalid payment webhook signature' });
         return;
       }
       const timestampCheck = verifyPaymentWebhookTimestamp(req, provider);
       if (!timestampCheck.ok) {
+        log.warn({
+          kind: 'payment_webhook_rejected',
+          requestId: req.requestId || null,
+          provider,
+          reason: timestampCheck.reason,
+          timestampRequired: Boolean(timestampCheck.required),
+          ageMs: timestampCheck.ageMs ?? null,
+          toleranceMs: timestampCheck.toleranceMs ?? null
+        });
         res.status(403).json({
           success: false,
           error: 'Invalid payment webhook timestamp',
@@ -877,9 +944,24 @@ export async function createApp() {
         });
         return;
       }
-      const data = await processProviderWebhookEvent(provider, req.body || {}, {
-        rawBody: req.rawBody || '',
-        fetchImpl: globalThis.fetch
+      let data;
+      try {
+        data = await processProviderWebhookEvent(provider, req.body || {}, {
+          rawBody: req.rawBody || '',
+          fetchImpl: globalThis.fetch
+        });
+      } catch (error) {
+        log.error({
+          kind: 'payment_webhook_failed',
+          requestId: req.requestId || null,
+          provider,
+          message: error.message
+        });
+        throw error;
+      }
+      log.info({
+        requestId: req.requestId || null,
+        ...paymentWebhookResultLogFields(provider, data, timestampCheck)
       });
       res.json({ success: true, data });
     })

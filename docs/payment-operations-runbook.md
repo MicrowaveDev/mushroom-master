@@ -99,6 +99,24 @@ Rotation procedure:
 Keep all webhook secrets in the production secret manager. Do not commit real
 secret values to this repository or issue trackers.
 
+## Structured Payment Logs
+
+Payment routes emit JSON lines through the normal app logger. Route these log
+kinds to the production payment/support log sink:
+
+- `wallet_purchase_intent`: checkout intent created or reused for a player.
+- `payment_webhook_rejected`: webhook failed signature or timestamp validation.
+- `payment_webhook_processed`: verified webhook was processed, replayed, or
+  ignored with an explicit reason.
+- `payment_webhook_failed`: verified webhook failed during processing after a
+  `payment_webhook_events` row was created.
+
+These logs include request ids, local intent/event ids, provider names, status
+fields, and provider invoice/payment references. They do not include raw
+provider payloads, webhook secrets, player auth tokens, or checkout URLs. Keep
+the retention window aligned with the final payment dispute and tax/accounting
+policy.
+
 ## Follow-Up Actions
 
 Use `npm run game:support:money-lookup -- --query=<id-or-reference>` before any

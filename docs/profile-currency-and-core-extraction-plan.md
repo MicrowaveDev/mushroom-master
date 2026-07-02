@@ -393,8 +393,7 @@ backlog until the items are split into tickets or implementation phases.
   provider sends explicit webhook/event timestamps, and can require timestamps
   through env flags after live payload validation. Multi-secret webhook
   verification and the local rotation runbook now exist; still wire production
-  secret-manager deployment and production-grade structured payment log
-  routing/retention.
+  secret-manager deployment plus production payment-log routing/retention.
 - Checkout creation, gacha rolls, direct asset purchases, asset catalog, and
   pack-odds endpoints now have route-scoped rate-limit buckets as of
   2026-07-02. The support admin API also has an actor-scoped rate-limit bucket.
@@ -1421,6 +1420,17 @@ or legal/support/compliance rollout work.
      new primary secret is deployed.
    - `docs/payment-operations-runbook.md` documents the rotation steps and
      reminds operators to keep real secrets in the production secret manager.
+25. Structured payment route logs exist.
+   - Purchase-intent creation emits `wallet_purchase_intent` JSON logs with
+     request id, player id, local intent id, provider, checkout status, bundle,
+     surface, and price/currency fields.
+   - Payment webhook routes emit `payment_webhook_rejected`,
+     `payment_webhook_processed`, and `payment_webhook_failed` JSON logs for
+     validation failures, duplicate/replay/ignored outcomes, and processing
+     errors.
+   - `docs/payment-operations-runbook.md` names the log kinds and records that
+     raw provider payloads, checkout URLs, auth tokens, and webhook secrets stay
+     out of runtime logs.
 
 ### Remaining launch gates
 
@@ -1438,6 +1448,8 @@ or legal/support/compliance rollout work.
   behavior. **Local timestamp-window checks and multi-secret rotation overlap
   are implemented 2026-07-02**, but live payload shapes must be validated before
   requiring timestamps in production or removing old secrets.
+- Route structured payment logs to the production payment/support sink and set
+  retention according to the final dispute, tax/accounting, and privacy policy.
 - Validate multi-instance paid mutation behavior against the production
   database/provider mix before launch. **Local DB-backed claims are implemented
   2026-07-02:** provider invoice creation uses checkout claim fields, and direct
