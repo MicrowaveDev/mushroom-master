@@ -47,6 +47,13 @@ function httpError(message, statusCode = 400) {
   return err;
 }
 
+export function getPaymentSupportLinks({ fallbackUrl = '' } = {}) {
+  return {
+    supportUrl: process.env.PAYMENT_SUPPORT_URL || process.env.PUBLIC_SUPPORT_URL || fallbackUrl || '',
+    termsUrl: process.env.PAYMENT_TERMS_URL || process.env.PUBLIC_TERMS_URL || fallbackUrl || ''
+  };
+}
+
 async function withKeyedLock(lockMap, lockKey, work) {
   const normalizedKey = String(lockKey || '');
   let releaseLock;

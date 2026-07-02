@@ -1,6 +1,7 @@
 import { createTelegramAuthCode, confirmTelegramAuthCode } from './auth.js';
 import {
   completeTelegramSuccessfulPayment,
+  getPaymentSupportLinks,
   validateTelegramPreCheckout
 } from './services/wallet-service.js';
 
@@ -43,8 +44,9 @@ export function createTelegramInlineKeyboard(reply) {
 }
 
 export function createPaymentSupportReply() {
-  const supportUrl = process.env.PAYMENT_SUPPORT_URL || process.env.PUBLIC_SUPPORT_URL || process.env.PUBLIC_GAME_URL || '';
-  const termsUrl = process.env.PAYMENT_TERMS_URL || process.env.PUBLIC_TERMS_URL || process.env.PUBLIC_GAME_URL || '';
+  const { supportUrl, termsUrl } = getPaymentSupportLinks({
+    fallbackUrl: process.env.PUBLIC_GAME_URL || ''
+  });
   return {
     text: [
       'Payment support: contact the Mushroom Battles team before opening a dispute.',

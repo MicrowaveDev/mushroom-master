@@ -188,7 +188,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     try {
       state.appConfig = await apiJson('/api/app-config');
     } catch (_error) {
-      state.appConfig = { localAiLabEnabled: false, localDevAuthEnabled: false };
+      state.appConfig = { localAiLabEnabled: false, localDevAuthEnabled: false, paymentSupport: {} };
     }
     try {
       const [characters, artifacts] = await Promise.all([

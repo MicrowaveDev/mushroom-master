@@ -83,6 +83,7 @@ export function useCustomization(state, refreshBootstrap) {
     surface = defaultPaymentSurface()
   } = {}) {
     try {
+      state.walletPurchaseStatus = 'opening';
       const result = await apiJson('/api/wallet/purchase-intents', {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
@@ -91,19 +92,28 @@ export function useCustomization(state, refreshBootstrap) {
       const checkout = result?.checkout || {};
       const telegramInvoice = checkout.invoiceLink && globalThis.Telegram?.WebApp?.openInvoice;
       if (telegramInvoice) {
+        state.walletPurchaseStatus = 'opened';
         globalThis.Telegram.WebApp.openInvoice(checkout.invoiceLink, async (status) => {
-          if (status === 'paid') await refreshBootstrap();
+          if (status === 'paid') {
+            state.walletPurchaseStatus = 'confirmed';
+            await refreshBootstrap();
+          } else if (status === 'failed' || status === 'cancelled') {
+            state.walletPurchaseStatus = 'failed';
+          }
         });
         return;
       }
       if (checkout.checkoutUrl && typeof window !== 'undefined') {
         window.open(checkout.checkoutUrl, '_blank', 'noopener,noreferrer');
+        state.walletPurchaseStatus = 'opened';
         return;
       }
+      state.walletPurchaseStatus = 'failed';
       state.error = checkout.setupRequired
         ? 'Wallet purchases are not configured yet'
         : 'Payment checkout is not available';
     } catch (error) {
+      state.walletPurchaseStatus = 'failed';
       state.error = error.message || 'Failed to start wallet purchase';
     }
   }

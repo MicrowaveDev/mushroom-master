@@ -65,6 +65,7 @@ export {
   completeProviderWebhook,
   completePurchaseIntent,
   createPurchaseIntent,
+  getPaymentSupportLinks,
   getWalletBundles,
   getWalletState,
   grantCurrencyForPlayer,

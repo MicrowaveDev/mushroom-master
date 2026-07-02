@@ -1097,16 +1097,24 @@ or legal/support/compliance rollout work.
   locks or conflict-aware retries before running multiple app instances that can
   process paid wallet, direct asset purchase, or gacha requests concurrently.
 - Add final terms, refund/support contact, and payment-dispute copy reachable
-  from the purchase UI.
+  from the purchase UI. **Local support link plumbing is implemented
+  2026-07-02:** `/api/app-config` exposes `paymentSupport`, the wallet popover
+  renders configured support/terms links, and `/paysupport` / `/terms` bot
+  replies reuse the same env-parsed URLs. Final copy, URLs, and legal review
+  still need launch approval.
 - Add adult-content/age/compliance gates before enabling crypto providers:
   prohibit unlawful sexual content, minors/CSAM, non-consensual material, and
   anything forbidden in the merchant's jurisdictions or provider terms.
 - Expand purchase/gacha UI beyond MVP: pending/failed/completed states,
-  support/terms links, pack detail, odds display, active/expired/future pack
-  states, and "no unowned assets left" handling.
+  active/expired/future pack states, and "no unowned assets left" handling.
+  **Local basics are implemented 2026-07-02:** checkout-opening status text,
+  support/terms links, and roll-pack detail/odds summaries now render on the
+  home wallet/skin surfaces.
 - Add dedicated frontend/e2e coverage for wallet bundle listing, Telegram
   invoice opening, wallet refresh after verified payment, external checkout
   fallback, purchase failure states, and roll-only vs direct-only skins.
+  Focused unit coverage now pins wallet support links, checkout status text, and
+  roll-pack summaries; full e2e coverage remains.
 - Add frontend/e2e coverage that buying a skin while one mushroom is active
   makes it owned/equippable for the target mushroom without changing character
   XP.

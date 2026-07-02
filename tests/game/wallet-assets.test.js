@@ -19,6 +19,7 @@ import {
   completeProviderWebhook,
   createPurchaseIntent,
   getWalletState,
+  getPaymentSupportLinks,
   grantCurrencyForPlayer,
   spendCurrencyForPlayer,
   validateTelegramPreCheckout
@@ -29,7 +30,7 @@ import {
   purchaseAsset,
   rollAssetPack
 } from '../../app/server/services/asset-service.js';
-import { handleTelegramWebhook } from '../../app/server/bot-gateway.js';
+import { createPaymentSupportReply, handleTelegramWebhook } from '../../app/server/bot-gateway.js';
 import {
   nowPaymentsSignaturePayload,
   verifyPaymentWebhookSignature
@@ -652,4 +653,22 @@ test('[Req 4-Z] bot answers payment support commands', async () => {
   assert.equal(result.kind, 'payment_support');
   assert.match(calls[0].url, /sendMessage$/);
   assert.match(calls[0].body.text, /Payment support/);
+});
+
+test('[Req 4-Z] payment support links are sourced from public payment env', async () => {
+  await withEnv({
+    PAYMENT_SUPPORT_URL: 'https://support.example/pay',
+    PAYMENT_TERMS_URL: 'https://terms.example/pay'
+  }, async () => {
+    assert.deepEqual(getPaymentSupportLinks(), {
+      supportUrl: 'https://support.example/pay',
+      termsUrl: 'https://terms.example/pay'
+    });
+
+    const reply = createPaymentSupportReply();
+    assert.deepEqual(reply.ctas, [
+      { label: 'Support', url: 'https://support.example/pay' },
+      { label: 'Terms', url: 'https://terms.example/pay' }
+    ]);
+  });
 });

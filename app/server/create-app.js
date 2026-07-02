@@ -60,6 +60,7 @@ import {
   equipAsset,
   getAssetCatalog,
   getPackOdds,
+  getPaymentSupportLinks,
   getWalletBundles,
   getWalletState,
   purchaseAsset,
@@ -344,7 +345,8 @@ export async function createApp() {
         localAiLabEnabled: isLocalAiLabEnabled(),
         localDevAuthEnabled: process.env.NODE_ENV !== 'production',
         botUsername: botUsername(),
-        telegramGameShortName: gameShortName()
+        telegramGameShortName: gameShortName(),
+        paymentSupport: getPaymentSupportLinks()
       }
     });
   });

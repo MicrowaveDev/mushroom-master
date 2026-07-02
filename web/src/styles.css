@@ -1613,6 +1613,28 @@ select {
   font-size: 0.74rem;
   line-height: 1.35;
 }
+.home-wallet-shop-status {
+  margin: 8px 0 0;
+  color: #3d5731;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.home-wallet-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.76rem;
+}
+.home-wallet-links a {
+  color: #5b7447;
+  font-weight: 700;
+  text-decoration: none;
+}
+.home-wallet-links a:hover {
+  text-decoration: underline;
+}
 .home-run-footer strong {
   margin-left: 4px;
   color: rgba(47, 36, 25, 0.85);
@@ -2095,6 +2117,26 @@ select {
 .home-portrait-swatch--rollable .home-swatch-price {
   background: rgba(237, 246, 248, 0.94);
   color: #274e62;
+}
+
+.home-pack-details {
+  display: grid;
+  gap: 5px;
+  padding-top: 2px;
+  font-size: 0.74em;
+  color: rgba(47, 36, 25, 0.62);
+}
+.home-pack-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  line-height: 1.3;
+}
+.home-pack-detail strong {
+  color: rgba(47, 36, 25, 0.82);
+}
+.home-pack-detail span {
+  min-width: 0;
 }
 
 .home-preset-pills {

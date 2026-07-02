@@ -61,7 +61,6 @@ export const HomeScreen = {
       }
     },
     handleWalletPurchase(bundle) {
-      this.walletShopOpen = false;
       this.$emit('purchase-wallet', {
         bundleId: bundle.id,
         provider: bundle.provider,
@@ -76,6 +75,44 @@ export const HomeScreen = {
       const currency = bundle.priceCurrency || '';
       if (currency === 'USD') return `$${(amount / 100).toFixed(2)}`;
       return `${amount} ${currency}`;
+    },
+    paymentSupportEntries() {
+      const support = this.state.appConfig?.paymentSupport || {};
+      return [
+        support.supportUrl ? { label: this.t.walletSupport, url: support.supportUrl } : null,
+        support.termsUrl ? { label: this.t.walletTerms, url: support.termsUrl } : null
+      ].filter(Boolean);
+    },
+    packName(pack) {
+      const name = pack?.name;
+      if (name && typeof name === 'object') return name[this.state.lang] || name.en || Object.values(name)[0] || pack.id;
+      return name || pack?.id || '';
+    },
+    rarityOddsText(pack) {
+      const items = Array.isArray(pack?.items) ? pack.items : [];
+      const total = items.reduce((sum, item) => sum + Number(item.dropWeight || 0), 0);
+      if (!total) return '';
+      const grouped = items.reduce((acc, item) => {
+        const rarity = item.rarity || 'common';
+        acc[rarity] = (acc[rarity] || 0) + Number(item.dropWeight || 0);
+        return acc;
+      }, {});
+      return Object.entries(grouped)
+        .sort((a, b) => b[1] - a[1])
+        .map(([rarity, weight]) => {
+          const label = this.t[`rarity_${rarity}`] || rarity;
+          return `${label} ${Math.round((weight / total) * 100)}%`;
+        })
+        .join(' · ');
+    },
+    packOwnedCount(pack) {
+      const owned = new Set();
+      for (const progression of Object.values(this.state.bootstrap?.progression || {})) {
+        for (const portrait of progression?.portraits || []) {
+          if (portrait.owned && portrait.assetId) owned.add(portrait.assetId);
+        }
+      }
+      return (pack?.items || []).filter((item) => owned.has(item.assetId)).length;
     },
     portraitPriceAmount(portrait) {
       if (portrait.purchaseAvailable) return portrait.price || portrait.cost || 0;
@@ -227,6 +264,27 @@ export const HomeScreen = {
     walletBundles() {
       if (this.state.walletBundlesSurface !== this.walletSurface) return [];
       return Array.isArray(this.state.walletBundles) ? this.state.walletBundles : [];
+    },
+    walletPurchaseStatusText() {
+      if (!this.state.walletPurchaseStatus) return '';
+      return this.t[`walletPayment_${this.state.walletPurchaseStatus}`] || '';
+    },
+    rollPackSummaries() {
+      if (!this.selectedMushroom) return [];
+      const packIds = [...new Set(this.selectedMushroom.portraits
+        .filter((portrait) => !portrait.unlocked && portrait.rollAvailable && portrait.packId)
+        .map((portrait) => portrait.packId))];
+      return packIds
+        .map((packId) => this.assetPacksById[packId])
+        .filter(Boolean)
+        .map((pack) => ({
+          id: pack.id,
+          name: this.packName(pack),
+          total: pack.items?.length || 0,
+          owned: this.packOwnedCount(pack),
+          price: pack.rollPriceAmount || 0,
+          odds: this.rarityOddsText(pack)
+        }));
     },
     assetPacksById() {
       return Object.fromEntries((this.state.bootstrap?.assetPacks || []).map((pack) => [pack.id, pack]));
@@ -486,6 +544,13 @@ export const HomeScreen = {
                 </span>
               </button>
             </div>
+            <div v-if="rollPackSummaries.length" class="home-pack-details">
+              <div v-for="pack in rollPackSummaries" :key="pack.id" class="home-pack-detail">
+                <strong>{{ pack.name }}</strong>
+                <span>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', Math.max(0, pack.total - pack.owned)).replace('{price}', pack.price) }}</span>
+                <span v-if="pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </article>
@@ -623,6 +688,10 @@ export const HomeScreen = {
                 </div>
                 <p v-else class="home-wallet-shop-note">{{ t.walletBundlesUnavailable }}</p>
                 <p class="home-wallet-shop-note">{{ t.walletPaymentNote }}</p>
+                <p v-if="walletPurchaseStatusText" class="home-wallet-shop-status">{{ walletPurchaseStatusText }}</p>
+                <div v-if="paymentSupportEntries().length" class="home-wallet-links">
+                  <a v-for="link in paymentSupportEntries()" :key="link.label" :href="link.url" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>
+                </div>
               </div>
             </span>
             <span>{{ t.battleLimit }} <strong>{{ state.bootstrap.battleLimit.used }} / {{ state.bootstrap.battleLimit.limit }}</strong></span>
