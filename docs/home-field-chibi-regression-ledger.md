@@ -890,6 +890,21 @@ The active Stage 1 contract is:
 - prompt helper, static prompt JSON, runbook, requirements, style reference, candidate contract, and repo agent instructions now require raw source/repaired source/final candidate/positive-reference comparison whenever palette cleanup, quantization, resize, or chroma repair is used;
 - tests assert the charm language, hard toy-like palette-repair rejection, baseline hashes, and queue-printer output.
 
+### 58. Charming Recovery Baked Motion Marks Into A Character Frame
+
+**Symptom:** Rollout `codex-019f24ce-d11f-7701-afc5-8ece3346537a` followed the queue-only SourceGate recovery path and produced a much softer, more liked-reference-aligned Thalla source. The raw image and quantized candidate read more like a youthful little-girl mushroom-elf chibi, with rounded cheeks and visible oval doll eyes. However, the final repaired source `.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_textonly_2026-07-02_512x256_quant20_rgba.states.source.png`, source sha256 `270fc4005413ad943373b9c79fb511c0819eb1bf38e73be3c51fe5783d85d6ac`, candidate sha256 `d5963832fa5406f6fef356be145061f4db51cd8b210064c09c8ab0979fd4c8df`, baked detached black motion/squiggle marks into a front idle frame.
+
+**What was correct:** The worker ran the queue script, used the printed SourceGate recovery section, created a fresh non-exhausted source, kept the result candidate-only, left app-facing PNGs untouched, and explicitly said the candidate was `needs_review`, not approved. It also recovered from a stale default evidence-manifest attempt by regenerating canonical candidate evidence before recording the verdict.
+
+**What was wrong in the flow:** The prompt and docs implied character-only frames, but they focused on shadows, floors, text, and style failures. The validators checked palette, alpha, animation, footprint, and crispness, but did not reject tiny detached non-character components. A mechanically passing candidate could therefore contain action/comic marks that do not belong in runtime state frames.
+
+**Guardrails added:**
+
+- the charm-improved source/candidate hash pair is listed under `sourceGateRecovery.exhaustedRepairSources` as `needs_regen`;
+- `--check-chibi-quality` now rejects detached non-character mark clusters in chibi frames;
+- queue recovery, prompt helper, static prompt JSON, runbook, requirements, candidate contract, and repo agent instructions now ban detached motion/action lines, squiggle marks, speed lines, punctuation-like accents, text marks, stray specks, and other non-character components outside the sprite body;
+- tests cover the validator failure and assert the queue/prompt surfaces carry the character-only mark ban.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -938,3 +953,4 @@ The active Stage 1 contract is:
 44. Do not reuse a source/candidate hash the user rejected for old-monk, beige mascot pawn, elderly gnome, or faceless-token style. The next Thalla source must read as a youthful little-girl mushroom-elf chibi like the liked reference; mechanical validators and palette gates are not enough.
 45. Do not let the face collapse into hollow pin-dots or a skull-mask while trying to keep map-sprite eyes small. Thalla needs compact visible oval/almond doll eyes, rounded cheeks, and a soft cute expression like the old reference; reject blank-mask faces even when the body scale and palette pass.
 46. Do not let palette repair, quantization, resize repair, or chroma repair win by flattening the liked-reference charm. Compare raw generated source, repaired source, final candidate, and positive references; if repair erases soft doll-face warmth, rounded cheeks, compact visible oval/almond eyes, or cute expression, record `needs_regen` even if palette audits pass.
+47. Do not accept detached motion/action lines, squiggle marks, speed lines, punctuation-like accents, text marks, stray specks, baked shadows, or floor/background pieces in chibi state frames. Stage 1 sheets must be character-only; if the marks are baked into the source or candidate, record `needs_regen` even when style, palette, alpha, animation, and readability gates pass.

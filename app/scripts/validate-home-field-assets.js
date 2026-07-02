@@ -382,7 +382,7 @@ function frameAlphaBounds(image, frameWidth, frameHeight, row, col) {
   }
 
   if (visiblePixels === 0) {
-    return { visiblePixels: 0, width: 0, height: 0, centerY: 0, minY: 0, maxY: 0 };
+    return { visiblePixels: 0, width: 0, height: 0, centerY: 0, minX: 0, maxX: 0, minY: 0, maxY: 0 };
   }
 
   return {
@@ -390,9 +390,81 @@ function frameAlphaBounds(image, frameWidth, frameHeight, row, col) {
     width: maxX - minX + 1,
     height: maxY - minY + 1,
     centerY: (minY + maxY) / 2,
+    minX,
+    maxX,
     minY,
     maxY
   };
+}
+
+function frameVisibleComponents(image, frameWidth, frameHeight, row, col) {
+  const visited = new Uint8Array(frameWidth * frameHeight);
+  const components = [];
+  const visibleAt = (x, y) => {
+    const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
+    return image.rgba[offset + 3] > 32;
+  };
+
+  for (let y = 0; y < frameHeight; y += 1) {
+    for (let x = 0; x < frameWidth; x += 1) {
+      const start = y * frameWidth + x;
+      if (visited[start] || !visibleAt(x, y)) continue;
+      const stack = [start];
+      visited[start] = 1;
+      let pixels = 0;
+      let minX = x;
+      let maxX = x;
+      let minY = y;
+      let maxY = y;
+
+      while (stack.length) {
+        const current = stack.pop();
+        const cx = current % frameWidth;
+        const cy = Math.floor(current / frameWidth);
+        pixels += 1;
+        minX = Math.min(minX, cx);
+        maxX = Math.max(maxX, cx);
+        minY = Math.min(minY, cy);
+        maxY = Math.max(maxY, cy);
+        for (const [nx, ny] of [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]]) {
+          if (nx < 0 || ny < 0 || nx >= frameWidth || ny >= frameHeight) continue;
+          const next = ny * frameWidth + nx;
+          if (visited[next] || !visibleAt(nx, ny)) continue;
+          visited[next] = 1;
+          stack.push(next);
+        }
+      }
+
+      components.push({
+        pixels,
+        minX,
+        maxX,
+        minY,
+        maxY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+        touchesFrameEdge: minX === 0 || minY === 0 || maxX === frameWidth - 1 || maxY === frameHeight - 1
+      });
+    }
+  }
+
+  return components.sort((a, b) => b.pixels - a.pixels);
+}
+
+function detachedFrameMarkComponents(image, frameWidth, frameHeight, row, col) {
+  const components = frameVisibleComponents(image, frameWidth, frameHeight, row, col);
+  if (components.length <= 1) return [];
+  const marks = components.slice(1).filter((component) => (
+    !component.touchesFrameEdge &&
+    component.pixels <= 48 &&
+    component.width <= 16 &&
+    component.height <= 16
+  ));
+  const detachedPixels = marks.reduce((sum, component) => sum + component.pixels, 0);
+  if (detachedPixels >= 3 || marks.some((component) => component.pixels >= 6)) {
+    return marks;
+  }
+  return [];
 }
 
 function checkChibiQuality(assetsDoc, errors, {
@@ -424,8 +496,18 @@ function checkChibiQuality(assetsDoc, errors, {
     const cols = [...(s.framesPerRow?.idle || []), ...(s.framesPerRow?.walk || [])];
     const stats = [];
     for (let row = 0; row < (s.rowOrder || []).length; row += 1) {
+      const facing = s.rowOrder[row] || `row ${row}`;
       for (const col of cols) {
         stats.push(frameStats(image, s.frameWidth, s.frameHeight, row, col));
+        const detachedMarks = detachedFrameMarkComponents(image, s.frameWidth, s.frameHeight, row, col);
+        if (detachedMarks.length > 0) {
+          const pixels = detachedMarks.reduce((sum, component) => sum + component.pixels, 0);
+          errors.push({
+            scope: 'chibi_quality',
+            code: 'detached_non_character_marks',
+            message: `character "${character.id}" ${facing} frame ${col} contains ${pixels} detached non-character mark pixel${pixels === 1 ? '' : 's'} outside the main sprite body; chibi frames must be character-only with no motion/action lines, squiggle marks, speed lines, text, or stray specks`
+          });
+        }
       }
     }
     if (stats.length === 0) continue;

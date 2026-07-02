@@ -247,8 +247,14 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!/Do not stop only because no replacement source already exists/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must prevent blocker-only completion when no replacement source already exists`);
   }
+  if (!/detached motion\/action lines/i.test(requiredText) || !/character-only/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject detached motion/action/squiggle marks and require character-only frames`);
+  }
   if (!/production-ready candidate output from an intentional blocker/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must distinguish production-ready output from a blocker`);
+  }
+  if (!/detached motion\/action\/squiggle\/speed-line marks/i.test(criteriaText) || !/character-only/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject detached non-character marks`);
   }
   if (!/must not match .*exhausted repair source\/candidate hash/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject blocked/exhausted repair source and candidate hashes`);
