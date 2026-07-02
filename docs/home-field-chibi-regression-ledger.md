@@ -875,6 +875,21 @@ The active Stage 1 contract is:
 - skull-mask faces, hollow pin-dot eyes, blank mask faces, and mask-like sprites are explicit rejection signals even when palette and runtime validators pass;
 - tests assert the new exhausted hash pair and face-specific language so another mechanically tidy but not-cute Thalla candidate is not treated as reusable.
 
+### 57. Palette Repair Preserved Gates But Flattened Old-Reference Charm
+
+**Symptom:** Rollout `codex-019f2495-31ad-7033-9436-aee13df5de65` followed the queue-only SourceGate recovery path, produced a fresh source, then used native-64 quantization/palette repair to pass the hard color gates. It recorded a candidate-only `needs_review` result without overwriting app-facing PNGs. The final source `.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_fresh_2026-07-02_512x256_quant18_rgba.states.source.png` had raw generated source sha256 `115f77467df49e07f8b2a7b4e2c2afa1222d59310e67a5dfc093d82aa7dc545d` and candidate sha256 `6ae5e6f886c9e99f7a1ea6700eb035c87dffd479222cb55f713e019d0182d06a`. It was better than the skull-mask run, but still less soft/charming than the liked reference; the raw imagegen sheet `thalla_sourcegate_recovery_fresh_2026-07-02_imagegen_ig01d6114f.raw.png` was softer than the final quantized source.
+
+**What was correct:** The worker ran the queue script, used the printed SourceGate recovery section, produced a fresh non-exhausted source, kept the result candidate-only, passed palette/evidence/preview gates, recorded `accepted: false`, and pushed the candidate state without claiming app-facing production approval.
+
+**What was wrong in the flow:** The prompt had become too constraint-heavy and palette-led compared with the old concise style prompt. The old liked reference came from language like "cute dark storybook", "simple BJD-inspired chibi doll face", "smooth BJD-like face planes", and "rounded cheeks"; the newer prompt foregrounded production constraints, negatives, and color limits. The final visual review also did not require a raw-source versus repaired-source comparison, so palette repair could pass the audits while flattening the old-reference softness, doll-face warmth, and little-girl charm.
+
+**Guardrails added:**
+
+- queue recovery required actions and success criteria now require old liked prompt charm language before palette constraints;
+- the latest `needs_review` candidate is recorded as a baseline to beat, not approval;
+- prompt helper, static prompt JSON, runbook, requirements, style reference, candidate contract, and repo agent instructions now require raw source/repaired source/final candidate/positive-reference comparison whenever palette cleanup, quantization, resize, or chroma repair is used;
+- tests assert the charm language, hard toy-like palette-repair rejection, baseline hashes, and queue-printer output.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -922,3 +937,4 @@ The active Stage 1 contract is:
 43. Do not create relative `.agent/...` visual-critic reason files from the hub root. Prefer `record-chibi-verdict --reason-stdin` or `--reason=<text>`; use `--reason-file` only with an explicit repo-local absolute path.
 44. Do not reuse a source/candidate hash the user rejected for old-monk, beige mascot pawn, elderly gnome, or faceless-token style. The next Thalla source must read as a youthful little-girl mushroom-elf chibi like the liked reference; mechanical validators and palette gates are not enough.
 45. Do not let the face collapse into hollow pin-dots or a skull-mask while trying to keep map-sprite eyes small. Thalla needs compact visible oval/almond doll eyes, rounded cheeks, and a soft cute expression like the old reference; reject blank-mask faces even when the body scale and palette pass.
+46. Do not let palette repair, quantization, resize repair, or chroma repair win by flattening the liked-reference charm. Compare raw generated source, repaired source, final candidate, and positive references; if repair erases soft doll-face warmth, rounded cheeks, compact visible oval/almond eyes, or cute expression, record `needs_regen` even if palette audits pass.

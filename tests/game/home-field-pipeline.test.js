@@ -45,6 +45,8 @@ const chibiStyleRejectedCandidateSha256 = '64b71fc1a0bb29fce6860d0246a41ab9539fb
 const chibiMaskRejectedSourcePath = '.agent/home-field-workspace/supplied/thalla_imagegen_recovery_runtime_2026-07-02.states.source.png';
 const chibiMaskRejectedSourceSha256 = 'aac982b3eee1769a7b78e42a96784f99d09ccfb33f0f7a7894f16518e5d40414';
 const chibiMaskRejectedCandidateSha256 = 'fce7bff0f41b29c69132942e5c1cc5d5b4bf43c0a076741181b911977a2eefa6';
+const chibiCharmBaselineSourceSha256 = '115f77467df49e07f8b2a7b4e2c2afa1222d59310e67a5dfc093d82aa7dc545d';
+const chibiCharmBaselineCandidateSha256 = '6ae5e6f886c9e99f7a1ea6700eb035c87dffd479222cb55f713e019d0182d06a';
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -1666,6 +1668,12 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.details, /old mushroom monk or beige mascot pawn/);
   assert.match(prompt.details, /youthful little-girl/);
   assert.match(prompt.details, /liked Thalla reference is the primary positive style target/);
+  assert.match(prompt.details, /cute dark storybook warmth/);
+  assert.match(prompt.details, /simple BJD-inspired chibi doll face/);
+  assert.match(prompt.details, /smooth BJD-like face planes/);
+  assert.match(prompt.details, /softness through shape language/);
+  assert.match(prompt.details, /charm survived palette repair/);
+  assert.match(prompt.details, /soft BJD doll face was not flattened/);
   assert.match(prompt.details, /older cute little-girl references were much better/);
   assert.match(prompt.details, /skull-mask\/hollow pin-dot face/);
   assert.match(prompt.details, /compact visible oval\/almond doll eyes/);
@@ -1683,6 +1691,8 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.constraints, /no beige mascot pawn/);
   assert.match(prompt.constraints, /no skull-mask face/);
   assert.match(prompt.constraints, /no hollow pin-dot eyes/);
+  assert.match(prompt.constraints, /no charm-destroying quantization/);
+  assert.match(prompt.constraints, /no hard toy-like palette repair/);
   assert.match(prompt.constraints, /youthful little-girl BJD-inspired chibi doll read/);
   assert.match(prompt.constraints, /compact visible oval\/almond doll eyes/);
   assert.match(prompt.constraints, /do not stage any of those hashes again through the queue --source command/);
@@ -1730,6 +1740,13 @@ test('[home-field] chibi proof launcher carries explicit local-source workflow',
   assert.match(prompt, new RegExp(chibiMaskRejectedCandidateSha256));
   assert.match(prompt, /youthful little-girl mushroom-elf chibi/);
   assert.match(prompt, /compact but visible dark oval\/almond doll eyes/);
+  assert.match(prompt, /cute dark storybook/);
+  assert.match(prompt, /simple BJD-inspired chibi doll face/);
+  assert.match(prompt, /smooth BJD-like face planes/);
+  assert.match(prompt, /charm survived palette repair/);
+  assert.match(prompt, /hard toy-like palette repair/);
+  assert.match(prompt, new RegExp(chibiCharmBaselineSourceSha256));
+  assert.match(prompt, new RegExp(chibiCharmBaselineCandidateSha256));
   assert.match(prompt, /skull-mask face/);
   assert.match(prompt, /hollow pin-dot eyes/);
   assert.match(prompt, /old mushroom monk\/beige mascot pawn/);
@@ -1786,6 +1803,12 @@ test('[home-field] imagegen requirements keep fallback methods out of default qu
   assert.match(requirements, /skull-mask face/);
   assert.match(requirements, /hollow pin-dot-eye mask/);
   assert.match(requirements, /visible oval\/almond doll eyes/);
+  assert.match(requirements, /raw generated source, repaired source, final candidate, and positive references/);
+  assert.match(requirements, /cute dark storybook warmth/);
+  assert.match(requirements, /simple BJD-inspired chibi doll face/);
+  assert.match(requirements, /smooth BJD-like face planes/);
+  assert.match(requirements, /flattens the liked reference's soft doll-face warmth into a hard toy, flat icon, or generic mascot/);
+  assert.match(requirements, /whether charm survived palette repair/);
   assert.match(requirements, /exhausted source hashes before archive\/stage/);
   assert.match(requirements, /missing fresh authored-source capability/);
   assert.match(requirements, /copyable queue-only launcher/);
@@ -1839,6 +1862,9 @@ test('[home-field] repo agent instructions distinguish sourceGate blockers from 
   assert.match(agents, /old mushroom monk, beige mascot pawn, elderly gnome, faceless mushroom-token, skull-mask, hollow pin-dot-eye, or blank-mask/);
   assert.match(agents, /youthful little-girl mushroom-elf chibi/);
   assert.match(agents, /compact visible oval\/almond doll eyes/);
+  assert.match(agents, /raw generated source, repaired source or candidate, and positive references/);
+  assert.match(agents, /old liked reference softness/);
+  assert.match(agents, /hard toy, flat icon, or generic mascot/);
   assert.match(agents, /missing fresh authored-source capability/);
   assert.match(agents, /Final handoff must clearly say whether production-ready PNGs were actually produced/);
   assert.match(agents, /a correct blocker report is not production readiness/);
@@ -2056,6 +2082,11 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /old monk, beige mascot pawn, elderly gnome, faceless mushroom token, skull-mask face/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /oval\/almond doll eyes/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /skull-mask face, hollow pin-dot eyes, or blank mask/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /cute dark storybook/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /simple BJD-inspired chibi doll face/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /smooth BJD-like face planes/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /raw generated source, repaired source, final candidate, and the two positive references/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /doll-face warmth/.test(action)));
   assert.equal(item.sourceGateRecovery.exhaustedRepairSources.length, 3);
   const exhaustedRepairSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiExhaustedRepairSourcePath);
   const styleRejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiStyleRejectedSourcePath);
@@ -2087,6 +2118,8 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /old monk, beige mascot pawn, elderly gnome, faceless mushroom token, skull-mask face/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /visible oval\/almond eyes/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /skull-mask face/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /raw imagegen sheet's soft\/charming face/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /flat toy, hard icon, or generic mascot/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /repair experiment/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /visual review clears the original source defects/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /production-ready candidate output from an intentional blocker/.test(criterion)));
@@ -2113,6 +2146,10 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /oval\/almond doll eyes/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /old monk, beige mascot pawn, elderly gnome, faceless mushroom-token/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /skull-mask face, hollow pin-dot eyes, blank mask face/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiCharmBaselineSourceSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiCharmBaselineCandidateSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => /baseline to beat, not as approval/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /charm survived palette repair/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /missing fresh authored-source capability/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /production-ready PNGs were not produced/.test(instruction)));
   assert.match(item.commands.recordVerdict, /--reason-stdin/);
@@ -2283,6 +2320,13 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /visible oval\/almond eyes/);
   assert.match(result.stdout, /old monk, beige mascot pawn, elderly gnome, faceless mushroom token, skull-mask face/);
   assert.match(result.stdout, /skull-mask face/);
+  assert.match(result.stdout, /cute dark storybook/);
+  assert.match(result.stdout, /simple BJD-inspired chibi doll face/);
+  assert.match(result.stdout, /smooth BJD-like face planes/);
+  assert.match(result.stdout, /raw generated source, repaired source, final candidate, and the two positive references/);
+  assert.match(result.stdout, /doll-face warmth/);
+  assert.match(result.stdout, /raw imagegen sheet's soft\/charming face/);
+  assert.match(result.stdout, /flat toy, hard icon, or generic mascot/);
   assert.match(result.stdout, /visual review clears the original source defects/);
   assert.match(result.stdout, /production-ready candidate output from an intentional blocker/);
   assert.match(result.stdout, /required actions:/);
@@ -2310,6 +2354,10 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /youthful little-girl mushroom-elf chibi/);
   assert.match(result.stdout, /oval\/almond doll eyes/);
   assert.match(result.stdout, /skull-mask face, hollow pin-dot eyes, blank mask face/);
+  assert.match(result.stdout, new RegExp(chibiCharmBaselineSourceSha256));
+  assert.match(result.stdout, new RegExp(chibiCharmBaselineCandidateSha256));
+  assert.match(result.stdout, /baseline to beat, not as approval/);
+  assert.match(result.stdout, /charm survived palette repair/);
   assert.match(result.stdout, /same needs_regen verdict/);
   assert.match(result.stdout, /If a palette-cleanup or repair method is intentionally adopted/);
   assert.match(result.stdout, /Treat styleReferences as visual review references only/);
