@@ -12,7 +12,7 @@ import {
   portraitUrl
 } from '../game-data.js';
 import { getEffectiveShape } from '../../shared/bag-shape.js';
-import { generateBackpackLoadout } from '@microwavedev/backpack-game-core';
+import { generateBackpackLoadout, randomInt } from '@microwavedev/backpack-game-core';
 import { createRng } from '../lib/utils.js';
 import { isBag } from './artifact-helpers.js';
 import { validateLoadoutItems } from './loadout-utils.js';
@@ -28,10 +28,6 @@ function artifactWeightForBot(mushroom, artifact) {
     return 1;
   }
   return 2;
-}
-
-function randomInt(rng, max) {
-  return Math.floor(rng() * max);
 }
 
 export function createBotLoadout(mushroom, rng, budget = MAX_ARTIFACT_COINS) {

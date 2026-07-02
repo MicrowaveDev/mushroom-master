@@ -8,18 +8,7 @@ import {
 import { createRng } from '../lib/utils.js';
 import { buildArtifactSummary } from './loadout-utils.js';
 
-export function randomInt(rng, max) {
-  return Math.floor(rng() * max);
-}
-
-export function shuffleWithRng(items, rng) {
-  const next = [...items];
-  for (let index = next.length - 1; index > 0; index -= 1) {
-    const swapIndex = randomInt(rng, index + 1);
-    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
-  }
-  return next;
-}
+export { randomInt, shuffleWithRng } from '@microwavedev/backpack-game-core';
 
 function deriveCombatant(snapshot, side) {
   const mushroom = getMushroomById(snapshot.mushroomId);

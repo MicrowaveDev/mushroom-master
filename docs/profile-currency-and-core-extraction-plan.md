@@ -30,15 +30,18 @@
 > deterministic battle loop into `backpack-game-core` through ability and
 > metadata hooks while keeping Mushroom combat identity local. **Phase 8F**
 > moved full loadout validation into `backpack-game-core` through product config
-> providers while keeping Mushroom artifact/catalog policy local.
+> providers while keeping Mushroom artifact/catalog policy local. **Phase 8G**
+> moved deterministic numeric RNG and shuffle helpers into
+> `backpack-game-core` while keeping Mushroom string-seed hashing local.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
-8D, 8E, and 8F
+8D, 8E, 8F, and 8G
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
 on 2026-07-01; Phase 8A-8D extraction on 2026-07-01; Phase 8E battle-loop
-extraction and Phase 8F loadout-validation extraction on 2026-07-02). Phase 6D remains an optional database-breaking rename and
+extraction, Phase 8F loadout-validation extraction, and Phase 8G RNG helper
+extraction on 2026-07-02). Phase 6D remains an optional database-breaking rename and
 should only happen after external consumers no longer depend on raw legacy
 column names.
 Real-money rollout still requires provider sandbox/live validation,
@@ -52,8 +55,9 @@ cases.
 `backpack-game-core` now has `main` commits with the extracted bag-shape
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
 generation, provider-driven bot-loadout generation, hookable battle
-simulation, and provider-driven loadout validation. Earlier notes that treated
-the target repo as empty are historical only.
+simulation, provider-driven loadout validation, and browser-safe numeric RNG /
+shuffle helpers. Earlier notes that treated the target repo as empty are
+historical only.
 
 ## Implementation Status
 
@@ -120,6 +124,11 @@ bullet below):
   live in `backpack-game-core`. Mushroom artifact lookup, pricing, dimensions,
   bag/family policy, container sentinel rules, grid constants, and stat caps
   stay local through `app/server/services/loadout-utils.js`.
+- Deterministic numeric RNG helpers are extracted: core owns the numeric-seed
+  RNG state machine, integer rolls, and non-mutating seeded shuffle. Mushroom
+  keeps string seed hashing in `app/server/lib/utils.js` via Node `crypto`, so
+  existing shop, bot, ghost, and battle seed inputs keep their deterministic
+  behavior while the core package remains browser-safe.
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -145,9 +154,9 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after Phase 8F: consider a tiny RNG/shuffle helper extraction
-only if another consumer needs the same deterministic seeded RNG and shuffle
-surface. Deferred beyond that: optional Phase 6D database renames / physical removal of legacy
+Next local lane after Phase 8G: add TypeScript declarations or generated API
+docs if another game is ready to integrate the package. Deferred beyond that:
+optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
 trading, database managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
@@ -1353,8 +1362,8 @@ stayed local.
 
 - Do not move Mushroom ids, names, base stats, artifact catalog data, rewards,
   rating, DB persistence, or replay storage into core.
-- Do not move `createRng` / `shuffleWithRng` in this slice. Extract them later
-  only if another consumer needs the same deterministic RNG surface.
+- Do not move `createRng` / `shuffleWithRng` in this slice. They were extracted
+  separately in Phase 8G after the battle adapter stayed stable.
 - Do not change combat balance or requirements as part of this adapter move.
 
 #### Verification
@@ -1417,8 +1426,8 @@ service exports local.
   rows, or API route semantics into core.
 - Do not change loadout error messages, budget math, active-bag policy, or
   battle stat contribution behavior in this slice.
-- Do not move RNG/shuffle helpers unless another game needs the same seeded RNG
-  surface.
+- Keep RNG/shuffle helper movement separate from validation behavior; that
+  follow-up happened in Phase 8G.
 
 #### Verification
 
@@ -1431,6 +1440,65 @@ service exports local.
 
 - Revert the Mushroom nested core pointer and `loadout-utils.js` adapter.
 - Restore the previous local validator implementation.
+- Keep the core commit unless it contains secrets or bad generated artifacts.
+
+### Phase 8G - RNG And Shuffle Helper Extraction
+
+Status: **Implemented.** The numeric RNG state machine, integer rolls, and
+non-mutating shuffle helper moved into `backpack-game-core`. Mushroom keeps
+string seed hashing local so existing deterministic seed inputs keep their
+sequence while the reusable package stays browser-safe.
+
+#### Source Of Truth
+
+- Current Mushroom string-seed adapter: `app/server/lib/utils.js`
+- Current Mushroom compatibility re-export:
+  `app/server/services/battle-engine.js`
+- Current core implementation: `backpack-game-core/src/rng.js`
+- Current core tests: `backpack-game-core/tests/rng.test.js`
+- Current behavior tests:
+  `tests/game/core-submodule.test.js`, `tests/game/battle-engine.test.js`,
+  `tests/game/bot-loadout.test.js`, `tests/game/round-resolution.test.js`,
+  `tests/game/challenge-run.test.js`, and
+  `tests/game/validator-split.test.js`
+- Current extraction inventory:
+  `docs/backpack-game-core-extraction-inventory.md`
+- Current core package latest commit at ship time: `13e6e0c`
+  (`Add reusable rng helpers`)
+
+#### Shipped Boundary
+
+- Core owns reusable RNG/shuffle mechanics:
+  - numeric-seed deterministic RNG state progression,
+  - integer rolls,
+  - non-mutating seeded shuffle.
+- Mushroom owns product seed derivation:
+  - `hashToSeed(seedInput)` remains in `app/server/lib/utils.js`,
+  - `createRng(seedInput)` hashes string seed inputs with Node `crypto`, then
+    delegates to core `createSeededRng`,
+  - server services keep their current imports through compatibility exports.
+- Core does not import Node `crypto`, `Date`, database state, game ids, or
+  balance constants.
+
+#### Non-Goals
+
+- Do not change shop, bot, ghost, or battle seed strings.
+- Do not move secure gacha RNG into core; asset/gacha randomness remains
+  product economy code.
+- Do not expose payment, wallet, or asset acquisition policy through this
+  helper.
+
+#### Verification
+
+- `backpack-game-core`: `npm test`
+- `mushroom-master`:
+  `node --test tests/game/core-submodule.test.js tests/game/battle-engine.test.js tests/game/bot-loadout.test.js tests/game/round-resolution.test.js tests/game/challenge-run.test.js tests/game/validator-split.test.js`
+- `npm run game:build`
+
+#### Rollback
+
+- Revert the Mushroom nested core pointer and restore local `createRng`,
+  `randomInt`, and `shuffleWithRng` implementations.
 - Keep the core commit unless it contains secrets or bad generated artifacts.
 
 ## Phase 9 - Create `backpack-game-core`
@@ -1524,10 +1592,8 @@ Implementation steps:
 4. Done: add a cheap verification guard or test that fails clearly when the core
    submodule is missing.
 5. Done for this core-consumption slice: verify core tests, the submodule
-   guard, focused game tests, `npm ci`, and the production game build. The full
-   game unit suite must be rerun after the unrelated Home Field prompt/queue
-   working-tree changes are resolved; it currently fails in Home Field pipeline
-   assertions outside this core-submodule integration.
+   guard, focused game tests, `npm ci`, the production game build, and the full
+   game unit suite after the unrelated Home Field prompt/queue fix landed.
 6. Done: commit the nested core pointer in `mushroom-master`, push it, then update
    the hub `mushroom-master` pointer.
 
@@ -1613,23 +1679,25 @@ Additional TODOs for that pass:
 20. Adapterize and extract full loadout validation through Mushroom catalog,
    pricing, family, grid, and stat hooks. **Done 2026-07-02; artifact data,
    balance constants, and service/API semantics remain local.**
-21. Add `backpack-game-core` as a nested submodule of the backpack game and
+21. Extract deterministic numeric RNG, integer roll, and seeded shuffle helpers
+   while keeping Mushroom string seed hashing local. **Done 2026-07-02; secure
+   gacha RNG and product seed strings remain local.**
+22. Add `backpack-game-core` as a nested submodule of the backpack game and
    switch the game dependency to a local submodule-backed package path.
    **Done.**
-22. Add install/CI guardrails for the nested submodule: bootstrap docs,
+23. Add install/CI guardrails for the nested submodule: bootstrap docs,
    submodule-init requirement, lockfile verification, and a clear missing-core
    failure. **Done.**
-23. Add a core-consumer smoke test plus final cross-repo verification
+24. Add a core-consumer smoke test plus final cross-repo verification
    (`backpack-game-core` tests, submodule guard, focused game tests, `npm ci`,
-   and game build). **Done for the core integration.** Full game unit-suite
-   signoff is pending the unrelated Home Field prompt/queue working-tree fix.
-24. Add hub metadata for `backpack-game-core` only if it should also be tracked
+   game build, and full game unit suite). **Done for the core integration.**
+25. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
-25. Optional Phase 6D database rename only if raw legacy column names become a
+26. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-26. Paid rollout readiness when external inputs are available: real provider
+27. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-27. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+28. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.

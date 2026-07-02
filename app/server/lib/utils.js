@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { createSeededRng } from '@microwavedev/backpack-game-core';
 
 export function nowIso() {
   return new Date().toISOString();
@@ -56,14 +57,7 @@ export function hashToSeed(input) {
 }
 
 export function createRng(seedInput) {
-  let state = hashToSeed(seedInput) || 1;
-  return () => {
-    state |= 0;
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+  return createSeededRng(hashToSeed(seedInput));
 }
 
 export function clamp(value, min, max) {

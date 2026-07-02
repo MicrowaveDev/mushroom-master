@@ -1,7 +1,7 @@
 # Backpack Game Core Extraction Inventory
 
 **Status:** Ongoing reusable-core extraction after the Phase 6A-6C neutral
-naming pass and the first battle-simulation adapter slice.
+naming pass and the first RNG/helper extraction slice.
 
 This document chooses the first extraction slice and records why other modules
 wait. It should be updated after each cluster moves.
@@ -23,8 +23,9 @@ wait. It should be updated after each cluster moves.
   `tests/battle-simulation.test.js`
 - seventh slice: `src/loadout-validation.js`, tested by
   `tests/loadout-validation.test.js`
+- eighth slice: `src/rng.js`, tested by `tests/rng.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `d884410` (`Add provider-driven loadout validation core`)
+- latest extraction commit: `13e6e0c` (`Add reusable rng helpers`)
 
 The package is consumed by `mushroom-master` through the nested submodule
 `vendor/backpack-game-core` and the local package dependency
@@ -47,9 +48,9 @@ through the stable package name `@microwavedev/backpack-game-core`.
 | Bag shape masks and rotation | `backpack-game-core/src/bag-shape.js`; compatibility bridge at `app/shared/bag-shape.js` | Extracted pure slice | Dependency-free ESM helpers over passed bag objects and shape arrays. Shared by server/client through the bridge. |
 | Bag-shape unit tests | `tests/game/bag-shape.test.js` | Partial pure candidate | The top helper tests are portable. The coverage tests that call `validateItemCoverage` and `getArtifactById` depend on Mushroom validation/catalog code. |
 | Artifact family capability helpers | `app/server/services/artifact-helpers.js` | Pure candidate, later | Dependency-free today, but its family list is still Mushroom artifact taxonomy. Move only after deciding the generic family/capability API. |
-| Grid placement primitives | `backpack-game-core/src/grid-geometry.js`; validation remains in `app/server/services/loadout-utils.js` | Partially extracted | `pieceCells`, `cellSet`, `setsIntersect`, and `cellKey` are pure. Catalog-backed grid/bag/loadout validation still imports `game-data.js`, `artifact-helpers.js`, and bag policy, so it stays in Mushroom code. |
+| Grid placement primitives | `backpack-game-core/src/grid-geometry.js`; validation uses `backpack-game-core/src/loadout-validation.js` through the Mushroom adapter | Extracted pure slice | `pieceCells`, `cellSet`, `setsIntersect`, and `cellKey` are pure and shared by server/client through package imports. Catalog-backed grid/bag/loadout policy is injected into the core validator from Mushroom code. |
 | Full loadout validation | `backpack-game-core/src/loadout-validation.js`; Mushroom adapter in `app/server/services/loadout-utils.js` | Extracted with product config | Core owns flat-grid bounds/overlap validation, active-bag placement, bag coverage, budget summing, stat totals, and orchestrated loadout validation. Mushroom injects artifact lookup, pricing, family semantics, grid constants, and stat caps. |
-| Seeded RNG and shuffle | `createRng` in `app/server/lib/utils.js`, `shuffleWithRng` in `app/server/services/battle-engine.js` | Adapter-needed | Algorithms are generic. `createRng` lives beside server/id/time helpers; `shuffleWithRng` lives in battle-engine. Extract only after creating a small RNG module and updating imports. |
+| Seeded RNG and shuffle | `backpack-game-core/src/rng.js`; Mushroom string-seed adapter in `app/server/lib/utils.js`; compatibility re-export in `app/server/services/battle-engine.js` | Extracted with product seed hashing | Core owns the browser-safe numeric-seed RNG state machine, integer rolls, and non-mutating shuffle. Mushroom keeps Node `crypto` string hashing for existing deterministic seed inputs. |
 | Fusion matching algorithm | `backpack-game-core/src/fusion-matching.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product hook | Core owns adjacency search, duplicate row consumption, match shaping, and `fusionIngredientRowIdSet`. Mushroom keeps recipe data and eligibility policy through `canUseIngredient`. |
 | Fusion application | `app/server/services/artifact-fusion-service.js` | Product-specific | Reads/writes DB rows, inserts loadout items, records reveals, uses Mushroom artifact catalog and persistence services. |
 | Shop offer generation | `backpack-game-core/src/shop-offer.js`; Mushroom adapter in `app/server/services/shop-service.js` | Extracted with product config | Core owns deterministic pool sampling, bag pity, bag chance escalation, and character-item slot reservation. Mushroom passes combat pools, bag pools, eligible character items, and balance constants. |
@@ -403,14 +404,53 @@ integration commit.
   previous Mushroom commit and move the nested submodule pointer back to the
   last known-good core commit while keeping the core tests for later repair.
 
-## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, Battle Simulation, And Loadout Validation
+## RNG And Shuffle Extraction Slice
+
+**Status:** Implemented in `backpack-game-core` commit `13e6e0c`.
+
+### Current shape
+
+- Current core implementation: `backpack-game-core/src/rng.js`
+- Current core tests: `backpack-game-core/tests/rng.test.js`
+- Current Mushroom string-seed adapter: `app/server/lib/utils.js`
+- Current Mushroom compatibility re-export:
+  `app/server/services/battle-engine.js`
+
+### Boundary
+
+- `backpack-game-core` owns reusable RNG/shuffle mechanics:
+  numeric-seed deterministic RNG state progression, integer rolls, and
+  non-mutating seeded shuffle.
+- Mushroom owns product seed derivation: `createRng(seedInput)` still hashes
+  arbitrary string seed inputs with Node `crypto` before delegating to the core
+  numeric-seed RNG. This preserves existing shop, bot, ghost, and battle seed
+  behavior while keeping core browser-safe.
+- Existing Mushroom imports stay stable: callers can still import
+  `createRng` from `app/server/lib/utils.js` and `shuffleWithRng` /
+  `randomInt` from `app/server/services/battle-engine.js`.
+
+### Verification
+
+- `backpack-game-core`: `npm test`
+- `mushroom-master` focused:
+  `node --test tests/game/core-submodule.test.js tests/game/battle-engine.test.js tests/game/bot-loadout.test.js tests/game/round-resolution.test.js tests/game/challenge-run.test.js tests/game/validator-split.test.js`
+- `npm run game:build` should still be run before final handoff for the
+  Mushroom consumer.
+
+### Rollback
+
+- Keep the core commit unless it contains bad generated artifacts or secrets.
+- If deterministic behavior regresses, restore local `createRng`,
+  `shuffleWithRng`, and `randomInt` implementations and move the nested
+  submodule pointer back to the last known-good core commit.
+
+## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, Battle Simulation, Loadout Validation, And RNG
 
 After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
-bot-loadout, battle-simulation, and loadout-validation slices, reassess in this
-order:
-
-1. Consider a tiny RNG/shuffle helper module only if another consumer needs the
-   same deterministic seeded RNG and shuffle surface.
+bot-loadout, battle-simulation, loadout-validation, and RNG slices, there is no
+obvious next mechanics cluster to move without another game's concrete
+requirements. Reassess TypeScript declarations or generated API docs before the
+second game starts integrating the package.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.
