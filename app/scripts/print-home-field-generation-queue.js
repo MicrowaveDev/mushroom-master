@@ -235,6 +235,15 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!/passing palette\/count scripts alone is not production-ready/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject palette-only production readiness`);
   }
+  if (!/generic anime/i.test(requiredText) || !/glossy\/white anime eyes/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject cute-but-generic anime styling and glossy anime eyes`);
+  }
+  if (!/hair.*bangs.*wig/i.test(requiredText) || !/brooch.*medallion.*clasp/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject hair/wig cap drift and brooch/medallion/clasp ornament`);
+  }
+  if (!/oversized polished character sheet/i.test(requiredText) || !/normalization as technical processing only/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must say oversized polished sheets are not style-approved by normalization`);
+  }
   if (!/repair method/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must allow only an explicit documented repair method`);
   }
@@ -255,6 +264,12 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   }
   if (!/detached motion\/action\/squiggle\/speed-line marks/i.test(criteriaText) || !/character-only/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject detached non-character marks`);
+  }
+  if (!/generic anime\/doll turnaround/i.test(criteriaText) || !/minimal\/no white sclera/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject generic anime/doll turnaround eyes`);
+  }
+  if (!/hair\/wig fringe/i.test(criteriaText) || !/brooch\/medallion\/clasp/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject hair/wig fringe and brooch/medallion/clasp drift`);
   }
   if (!/must not match .*exhausted repair source\/candidate hash/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject blocked/exhausted repair source and candidate hashes`);

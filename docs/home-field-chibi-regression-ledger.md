@@ -905,6 +905,22 @@ The active Stage 1 contract is:
 - queue recovery, prompt helper, static prompt JSON, runbook, requirements, candidate contract, and repo agent instructions now ban detached motion/action lines, squiggle marks, speed lines, punctuation-like accents, text marks, stray specks, and other non-character components outside the sprite body;
 - tests cover the validator failure and assert the queue/prompt surfaces carry the character-only mark ban.
 
+### 59. Cute Generic Anime Sheet Passed The Mechanical Gates
+
+**Symptom:** Rollout `codex-019f2501-098e-7e62-a32f-c5534884843e` followed the queue-only SourceGate recovery path, generated a fresh source, normalized raw `1774x887` imagegen output into a `512x256` sheet, palette-cleaned it, passed mechanical/palette/evidence/preview gates, and recorded `needs_review`. The final source `.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_fresh_2026-07-02_bjd_littlegirl_512x256_quant20_rgba.states.source.png` had source sha256 `1f97d423792a5396a4b325d7c4d4f08d7e33d7b254d1ea57d39fe75133af8f70` and candidate sha256 `7bcd69287d4662b691f487262837899f06da83eb4530c230bff5195f21f6e26b`. The user rejected it as a style regression.
+
+**What was correct:** The run used the queue script, kept output candidate-only, preserved evidence, passed the validators it ran, did not overwrite app-facing PNGs, and did not mark the candidate approved.
+
+**What was wrong in the flow:** The prompt and final review treated "cute", "little-girl", and "not monk/skull-mask" as enough. The generated sheet was polished and appealing, but it drifted into generic anime/chibi character-sheet language: large glossy/white eyes, visible hair/bangs or wig fringe under the mushroom cap, and brooch/medallion-like ornament. Normalizing the oversized raw image fixed the dimensions, not the style.
+
+**Guardrails added:**
+
+- the generic-anime source/candidate hash pair is listed under `sourceGateRecovery.exhaustedRepairSources` as `needs_regen`;
+- `docs/home-field-asset-review.json` demotes the candidate from `needs_review` to `needs_regen` with `styleCohesionCheck`, `stageContractCheck`, `identityCheck`, and `detailBudgetCheck` failed;
+- queue recovery required actions, success criteria, and agent instructions now reject cute-but-generic anime styling, glossy/white eyes, cap hair/wig drift, brooch/medallion/clasp ornament, and oversized polished turnaround normalization as style approval;
+- prompt helper, static prompt JSON, runbook, requirements, style reference, candidate contract, agent flow, and repo agent instructions now carry the same rejection language;
+- tests assert the new exhausted hash pair and queue/prompt language.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -954,3 +970,4 @@ The active Stage 1 contract is:
 45. Do not let the face collapse into hollow pin-dots or a skull-mask while trying to keep map-sprite eyes small. Thalla needs compact visible oval/almond doll eyes, rounded cheeks, and a soft cute expression like the old reference; reject blank-mask faces even when the body scale and palette pass.
 46. Do not let palette repair, quantization, resize repair, or chroma repair win by flattening the liked-reference charm. Compare raw generated source, repaired source, final candidate, and positive references; if repair erases soft doll-face warmth, rounded cheeks, compact visible oval/almond eyes, or cute expression, record `needs_regen` even if palette audits pass.
 47. Do not accept detached motion/action lines, squiggle marks, speed lines, punctuation-like accents, text marks, stray specks, baked shadows, or floor/background pieces in chibi state frames. Stage 1 sheets must be character-only; if the marks are baked into the source or candidate, record `needs_regen` even when style, palette, alpha, animation, and readability gates pass.
+48. Do not accept a Thalla source merely because it is cute, mechanically clean, and palette-compliant. Reject cute generic anime/chibi character sheets, large glossy/white eyes, visible hair/bangs/wig fringe under the mushroom cap, brooch/medallion/clasp ornament, or oversized polished turnaround art normalized down to `512x256`; those are style failures against the old liked little-girl field-sprite reference.
