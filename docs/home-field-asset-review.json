@@ -622,7 +622,7 @@
       "id": "thalla",
       "verdict": "needs_regen",
       "accepted": false,
-      "reason": "needs_regen: SourceGate recovery produced a mechanically valid candidate from a documented palette-repair source, but the visual gate is not production-ready. Palette audits now pass (reference/state 18 significant colors, recovered candidate 16), and the composed mobile/desktop previews render, but the repaired sheet preserves source-level status ornament and shows a visible purple-pink edge/outline at field scale. The result reads more like a palette-crushed sticker repair than a final warm-outline Home Field chibi; use a new authored 8x4 source or a stronger repair method that removes the purple edge and status-ornament drift without losing the compact grouped-sheet charm.",
+      "reason": "Secondary SourceGate recovery repair experiment, not a new authored source. The repaired 8x4 sheet declares lineage from blocked source hash 19eb3f1abc5bbaba1e88eb36c8ca308353f0e0d756528cbbddfc05430bb868fa and passes the mechanical gates after alpha recovery at chroma tolerance 128: reference/state/candidate palette audits are within budget, split frames and candidate validation pass, and no app-facing PNG was overwritten. Keep verdict as needs_regen because the visual gate is still not production-ready: the repair preserves a visible purple-pink edge/outline at field scale and reads partly like a palette-crushed sticker/status-ornament repair rather than a final warm-outline Home Field chibi. Use a genuinely new authored complete 8x4 source, or a stronger explicit repair method that removes the purple edge and ornament drift without losing the compact grouped-sheet charm.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "fail",
@@ -641,12 +641,12 @@
       "sourceFrameIsolationCheck": "pass",
       "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest",
       "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json",
-      "candidateEvidenceSha256": "cbe8a2859f206c5e0f0db10c593b6a4b950c6ca26c545b17190d838a234bf00b",
+      "candidateEvidenceSha256": "3b20896471c0698e9c4f372093a7219876f70fe07bdc9ceaa8447501f8183d41",
       "candidateSha256": "477e72e876ae67b3b90f02e134465f86f9c02a1b5ecdc9c19f4b3705ba923221",
       "referenceSha256": "2e53cb3c3e55de81b77a10135eaff7895f385f66c7c687df56b61dfcef624ab0",
       "rawSourceSha256": "0ce11c117499b96d6446d7884e2c0fc9eb2a6d7c3c87a6db53ac55b070fbf2ee",
-      "mobileScreenshotSha256": "b5b6f35f570e90372b7b85401719cb9cc694db90c9162afb0c78b36f974909eb",
-      "desktopScreenshotSha256": "88158c5df588287d1d19bf6f6e7175c1fa433e9b8cc2bd9bbfb2e6eff19c4c98"
+      "mobileScreenshotSha256": "886484309258324ae9195bb105b25fe4d828c77ca2e73a381740163f77b319e1",
+      "desktopScreenshotSha256": "ad0f1ad452e8d0c6fc0f044a40a527367daf6fe608669dbe8f32df36c0025a13"
     },
     {
       "id": "lomie",
