@@ -315,8 +315,12 @@ backlog until the items are split into tickets or implementation phases.
 
 ### 3. Money Operations And Support Tooling
 
-- Build admin/support tooling to search purchase intents, provider references,
-  wallet transactions, asset grants, and player balances without direct SQL.
+- Read-only support lookup now exists as of 2026-07-02:
+  `npm run game:support:money-lookup -- --query=<player-or-provider-reference>`
+  searches purchase intents, provider references, wallet transactions, webhook
+  events, asset grants/equipment, rolls, player records, and wallet balances
+  without direct SQL. Still build authenticated admin UI/API surfaces before
+  exposing this to non-engineering support staff.
 - Add manual support flows with audit logs: grant coins/assets, revoke mistaken
   grants, mark refunds, attach provider evidence, and leave immutable notes.
 - Add reconciliation jobs for provider settlement vs local purchase intents and
@@ -1235,6 +1239,13 @@ or legal/support/compliance rollout work.
      odds routes use separate player-scoped rate-limit buckets.
    - `RATE_LIMIT_FORCE=true` allows deterministic staging/test enforcement
      without switching the whole process to production mode.
+10. Read-only money support lookup exists.
+   - `lookupMoneySupportRecords(...)` and
+     `npm run game:support:money-lookup` produce JSON support packets for
+     players, wallet balances/transactions, purchase intents, webhook events,
+     asset grants/equipment, and gacha rolls.
+   - Provider invoice searches resolve back to local player context, and asset
+     searches pull the same player's payment/wallet context.
 
 ### Remaining launch gates
 
@@ -1284,8 +1295,8 @@ or legal/support/compliance rollout work.
 - Add provider-specific operational notes and tooling for refunds, reversals,
   chargebacks/disputes, partial/late crypto payments, overpayments, and support
   investigations.
-- Add admin/support tooling for purchase-intent lookup, wallet transaction
-  lookup, manual grant/revoke with immutable audit notes, and scheduled
+- Add authenticated admin/support UI/API surfaces on top of the read-only money
+  lookup, then add manual grant/revoke with immutable audit notes and scheduled
   reconciliation against provider settlements.
 
 ## Phase 8 - Prepare Core Extraction Boundary

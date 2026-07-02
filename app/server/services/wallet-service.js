@@ -1296,15 +1296,24 @@ async function beginPaymentWebhookEvent(provider, payload = {}, { rawBody = '' }
 
 async function markPaymentWebhookEventProcessed(event, result) {
   const processedAt = nowIso();
+  const intent = result?.intent && typeof result.intent === 'object' ? result.intent : {};
+  const nextMetadata = {
+    ...(event.metadata || {}),
+    intentId: event.metadata?.intentId || intent.id || null,
+    providerInvoiceId: event.metadata?.providerInvoiceId || intent.providerInvoiceId || null,
+    providerPaymentId: event.metadata?.providerPaymentId || intent.providerPaymentId || null,
+    intentStatus: intent.status || null
+  };
   const updated = await query(
     `UPDATE payment_webhook_events
      SET processing_status = 'processed',
          result_json = $2,
          error_message = NULL,
-         processed_at = $3
+         processed_at = $3,
+         metadata_json = $4
      WHERE id = $1
      RETURNING *`,
-    [event.id, metadataJson(result), processedAt]
+    [event.id, metadataJson(result), processedAt, metadataJson(nextMetadata)]
   );
   return rowToPaymentWebhookEvent(updated.rows[0]);
 }
