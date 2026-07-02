@@ -588,12 +588,6 @@ export async function supportUnfreezeAsset({
     let unfrozen = rowToAssetInstance(active);
     let alreadyActive = Boolean(active);
     if (existing) {
-      if (target.assetInstanceId) {
-        const activeDuplicate = await activeAssetInstance(client, playerId, asset.assetId);
-        if (activeDuplicate && activeDuplicate.id !== existing.id) {
-          throw new Error('Cannot unfreeze asset instance while another active instance exists');
-        }
-      }
       await client.query(
         `UPDATE player_asset_instances
          SET status = 'active',

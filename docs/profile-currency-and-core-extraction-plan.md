@@ -170,8 +170,8 @@ simple static pack lane plus static multi-slot pack support. The second
 `backpack-game-core` consumer remains blocked until a real backpack/grid game
 target exists. Deferred beyond the current static gacha lane:
 optional Phase 6D database renames / physical removal of legacy compatibility
-fields, guarantees and pity, duplicate burning, marketplace trading,
-database-managed pack catalogs, an expanded terms/support frontend, provider
+fields, marketplace trading, database-managed pack catalogs, an expanded
+terms/support frontend, provider
 refund and reversal handling, distributed payment mutation hardening, expanded
 support/admin operations beyond the current lookup, wallet, asset, gacha roll,
 and purchase-refund console, tax/accounting evidence, and broader code movement
@@ -256,9 +256,10 @@ as evidence.
    Multi-instance deployments still need production-database validation plus
    broader operations around refunds, reversals, and provider replay handling.
 6. **The current gacha is intentionally static-config only.** It now supports
-   one-result and multi-slot unowned openings with static guarantees and
-   pack-scoped pity, but still has no duplicate inventory, no burn exchange, no
-   marketplace, and no database-managed seasons/collections.
+   one-result and multi-slot openings with static guarantees, pack-scoped pity,
+   opt-in duplicate active instances, and simple configured duplicate burn
+   exchanges. It still has no marketplace and no database-managed
+   seasons/collections.
 7. **Core extraction has started and should stay adapter-led.** The next step
    is choosing only small, evidence-backed clusters while keeping `spore`,
    Mushroom portraits, Telegram auth, Sequelize models, battle persistence, and
@@ -531,13 +532,13 @@ packs.**
   pack detail copy; screenshot coverage captures the multi-result strip.
 - Done: `simulateAssetPackOdds` supports multi-slot openings and reports
   observed per-opening rates plus average item count per opening.
-- Deferred to G4+: explicit duplicate inventory, burn/exchange, and exact
-  player-facing odds disclosures for duplicate-enabled packs.
+- Deferred to G4+/G5+: richer duplicate economy policy, exact player-facing
+  odds disclosures for duplicate-enabled packs, and admin-managed seasons.
 
 #### G3 - Guarantees And Pity
 
-Status: **Implemented 2026-07-02 for static-config, unowned-only packs with
-pack-scoped pity.**
+Status: **Implemented 2026-07-02 for static-config packs with pack-scoped
+pity.**
 
 - Done: packs can define `guarantees` / `guaranteeRules` with a min rarity and
   count, such as "at least two rare-or-better cards."
@@ -557,16 +558,28 @@ pack-scoped pity.**
 
 #### G4 - Duplicate Inventory And Burning
 
-- Replace the G1 unowned-only shortcut with explicit duplicate ownership
-  semantics: stackable copies or separate asset instances, chosen per asset
-  type.
-- Add duplicate-burn rules, starting with a simple exchange such as five common
-  duplicates for one random rare from the same active season or collection.
-- Decide what happens when the target exchange pool is complete.
-- Keep support tooling instance-aware so disputed copies can be frozen/revoked
-  without touching later legitimate copies.
-- Add simulation and scenario tests for duplicate rates, burn costs, and edge
-  cases around complete pools.
+Status: **Partially implemented 2026-07-02 as G4A.** The shipped slice is
+duplicate-enabled pack instances plus a simple configured burn exchange. The
+larger duplicate economy remains backlog.
+
+- Done: packs can opt into `duplicatePolicy: "allow_duplicates"` so owned pack
+  items remain rollable and create separate active `player_asset_instances`
+  rows. Default packs still reject once all unique items are owned.
+- Done: duplicate roll metadata, roll result items, pack projection, simulator
+  warnings, and Home pack UI expose duplicate copies and duplicate-enabled
+  rollability.
+- Done: `asset_burn_exchanges` records simple idempotent burn exchanges.
+  Configured rules consume spare duplicate copies of a source rarity while
+  preserving one active/equipped copy per asset, then grant random eligible
+  pack targets.
+- Done: support asset operations are instance-aware enough to freeze/unfreeze
+  legitimate duplicate copies independently.
+- Done: backend, simulator, Home view-model, and Playwright coverage exercise
+  duplicate rolls, burn costs, validation failures, and the rendered burn
+  affordance.
+- Backlog: decide complete-target behavior, dust/shard balances, per-asset copy
+  caps, burn-result duplicate policy, richer odds disclosure, and advanced
+  duplicate-rate simulation before paid duplicate packs.
 
 #### G5 - Database/Admin-Managed Seasons
 
@@ -736,9 +749,9 @@ simple direct skin buying available when gacha mode is off.
 - Decide whether existing portrait variants become one-time purchases at their
   current `cost` values, or whether those values need a balance pass before the
   purchase model ships.
-- Decide what happens when a gacha pool has no unowned skins left: reject the
-  roll, grant duplicate dust/shards, or allow duplicate instances. The MVP below
-  recommends rejecting until duplicate mechanics are implemented.
+- Default packs still reject when no unowned skins remain. Packs that explicitly
+  set `duplicatePolicy: "allow_duplicates"` now allow duplicate active
+  instances and can attach simple burn rules; dust/shards remain backlog.
 
 ## Pre-Implementation State Snapshot
 
@@ -1076,13 +1089,14 @@ MVP bundles can live in config first:
    - `rarity`: nullable initially; future values `common`, `rare`, `epic`,
      `legendary`, `secret`.
    - `maxCopiesPerPlayer`: `1` for current direct-buy portrait skins; higher or
-     `null` later for duplicate gacha items.
+     `null` for future duplicate gacha policy.
 2. Add profile-scoped inventory:
    - Canonical table:
      `player_asset_instances(id, player_id, asset_id, acquisition_source,
      acquisition_source_id, status, acquired_at, metadata_json)`.
-   - MVP uniqueness: enforce at most one active instance per
-     `(player_id, asset_id)` for `maxCopiesPerPlayer = 1` assets.
+   - Direct-buy/default uniqueness is enforced in the asset service; duplicate
+     gacha packs intentionally allow multiple active instances for the same
+     `(player_id, asset_id)`.
    - Derived ownership: `owned = active instance exists`. A summary table or
      query helper can expose the simple ownership boolean expected by the
      current portrait UI.
@@ -1121,8 +1135,9 @@ Environment flags:
 - `ASSET_GACHA_ENABLED=false` by default.
 - `ASSET_GACHA_DIRECT_BUY_POLICY=allow|block_gacha_assets`, default `allow`.
 - Optional `ASSET_GACHA_ACTIVE_PACK_IDS=season_1_pack_a,season_1_pack_b`.
-- Optional `ASSET_GACHA_ALLOW_DUPLICATES=false` for the MVP. Keep it false
-  until duplicate inventory, burn, and trade flows are implemented.
+- No global duplicate flag is required for the shipped slice. Duplicate
+  behavior is pack-scoped through `duplicatePolicy: "allow_duplicates"`; trade
+  flows remain backlog.
 
 Direct purchase behavior:
 
@@ -1185,8 +1200,9 @@ MVP roll contract:
   one random unowned asset from that pack.
 - The first MVP can use `roll_size = 1` even though the schema allows future
   packs with 5-10 results.
-- The roll candidate pool excludes already owned assets.
-- If no unowned candidate exists, reject the roll without spending currency.
+- The roll candidate pool excludes already owned assets by default.
+  Duplicate-enabled packs include owned pack assets as copy candidates.
+- If no candidate exists, reject the roll without spending currency.
 - Use weighted random selection from `drop_weight`; do not hardcode rarity math
   in route handlers.
 - Use cryptographic server randomness, not the deterministic game RNG helper.
@@ -1207,8 +1223,8 @@ Future seasonal pack target:
   two rare-or-better cards in a 10-pull.
 - One secret asset can exist per collection/season with an explicit low weight
   and optional separate pity/guarantee policy.
-- Duplicate handling should move from ownership rows to inventory instances or
-  quantities before duplicate packs ship.
+- Duplicate handling now uses separate inventory instances for duplicate-enabled
+  packs; aggregate quantities/dust remain future economy work.
 - Direct-trade and sales flows should lock instances in escrow before they are
   listed, traded, burned, or sold. Equipped instances must either be rejected
   for transfer or automatically unequipped in the same transaction.
@@ -1344,8 +1360,11 @@ Backend tests:
 - With `ASSET_GACHA_ENABLED=false`, direct skin purchase remains available.
 - With gacha enabled and policy blocking gacha assets, direct purchase rejects
   configured gacha-pack skins.
-- A gacha roll spends wallet currency and grants one unowned skin from the pack.
-- A gacha roll with no unowned candidates rejects without spending currency.
+- A default gacha roll spends wallet currency and grants one unowned skin from
+  the pack; duplicate-enabled packs may grant extra active copies of owned pack
+  skins.
+- A default gacha roll with no unowned candidates rejects without spending
+  currency.
 - Gacha rolls use a deterministic fake RNG in tests through dependency
   injection, while production uses cryptographic randomness.
 - Pack sale windows prevent rolling expired / inactive packs.
@@ -2404,7 +2423,11 @@ Additional TODOs for that pass:
    settlement imports, reconciliation/admin UI, stricter approval-policy UX,
    alert routing, periodic wallet drift monitoring, distributed mutation
    hardening, and live provider-status validation.
-33. Gacha roadmap backlog after G3: season/collection-scoped pity, secret rarity
-   policy, duplicate inventory, burn/exchange, database/admin-managed seasons
-   and collections, marketplace/trading, NFT-set policy decisions, and expanded
-   disclosure/simulation work for duplicate-enabled packs.
+33. G4A duplicate inventory and simple burn exchange. **Done 2026-07-02:**
+   duplicate-enabled packs can roll owned items as separate active instances,
+   and configured burn rules can exchange spare duplicates for random eligible
+   pack targets.
+34. Gacha roadmap backlog after G4A: season/collection-scoped pity, secret
+   rarity policy, target-complete/dust/copy-cap policy, database/admin-managed
+   seasons and collections, marketplace/trading, NFT-set policy decisions, and
+   expanded disclosure/simulation work for duplicate-enabled paid packs.

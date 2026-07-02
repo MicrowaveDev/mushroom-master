@@ -30,6 +30,7 @@ import {
   getAssetPacksForPlayer,
   getPackOdds,
   portraitAssetId,
+  burnAssetPackDuplicates,
   purchaseAsset,
   rollAssetPack,
   validateAssetPack
@@ -1268,6 +1269,172 @@ test('[Req 14-F] multi-item gacha pack spends once and grants slot-weighted unow
   });
 });
 
+test('[Req 14-F] duplicate-enabled gacha packs can roll owned skins as active copies', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        duplicatePolicy: 'allow_duplicates',
+        rollSize: 1,
+        slots: [
+          { rarityWeights: { common: 1 } }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4029 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'duplicate-gacha'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+    assert.equal(odds.duplicatePolicy.enabled, true);
+    assert.equal(odds.complete, false);
+
+    const first = await rollAssetPack(player.id, odds.id, { idempotencyKey: 'duplicate-roll-1', rng: () => 0 });
+    const second = await rollAssetPack(player.id, odds.id, { idempotencyKey: 'duplicate-roll-2', rng: () => 0 });
+    assert.equal(first.rollResult.assetId, commonA);
+    assert.equal(first.rollResult.items[0].duplicateCopy, false);
+    assert.equal(second.rollResult.assetId, commonA);
+    assert.equal(second.rollResult.items[0].duplicateCopy, true);
+    assert.notEqual(first.rollResult.resultInstanceId, second.rollResult.resultInstanceId);
+
+    const rows = await query(
+      `SELECT id, asset_id, status, metadata_json
+       FROM player_asset_instances
+       WHERE player_id = $1 AND asset_id = $2
+       ORDER BY acquired_at ASC, id ASC`,
+      [player.id, commonA]
+    );
+    assert.equal(rows.rowCount, 2);
+    assert.ok(rows.rows.every((row) => row.status === 'active'));
+    assert.deepEqual(rows.rows.map((row) => JSON.parse(row.metadata_json).duplicateCopy), [false, true]);
+
+    const shapedPacks = await getAssetPacksForPlayer(player.id);
+    const shapedPack = shapedPacks.find((pack) => pack.id === odds.id);
+    assert.equal(shapedPack.ownedCount, 1);
+    assert.equal(shapedPack.remainingCount, 0);
+    assert.equal(shapedPack.uniqueComplete, true);
+    assert.equal(shapedPack.complete, false);
+    assert.equal(shapedPack.duplicateCopies, 1);
+    assert.equal(shapedPack.rollableCount, 1);
+    assert.equal(shapedPack.nextRollItemCount, 1);
+    assert.equal((await getWalletState(player.id)).balance, 80);
+  });
+});
+
+test('[Req 14-F] duplicate burn exchanges spare copies for a random rare pack item', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const rareA = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        duplicatePolicy: 'allow_duplicates',
+        rollSize: 1,
+        slots: [
+          { rarityWeights: { common: 1 } }
+        ],
+        burnRules: [
+          { id: 'two_common_to_rare', sourceRarity: 'common', sourceCount: 2, targetMinRarity: 'rare', targetCount: 1 }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 },
+          { assetId: rareA, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4030 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'burn-gacha'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+
+    for (let index = 1; index <= 3; index += 1) {
+      const roll = await rollAssetPack(player.id, odds.id, {
+        idempotencyKey: `burn-roll-${index}`,
+        rng: () => 0
+      });
+      assert.equal(roll.rollResult.assetId, commonA);
+    }
+
+    const readyPacks = await getAssetPacksForPlayer(player.id);
+    const readyPack = readyPacks.find((pack) => pack.id === odds.id);
+    assert.equal(readyPack.duplicateCopies, 2);
+    assert.equal(readyPack.burn.rules[0].ready, true);
+    assert.equal(readyPack.burn.rules[0].burnableCount, 2);
+
+    const burn = await burnAssetPackDuplicates(player.id, odds.id, {
+      ruleId: 'two_common_to_rare',
+      idempotencyKey: 'burn-1',
+      rng: () => 0
+    });
+    assert.equal(burn.alreadyProcessed, false);
+    assert.equal(burn.exchange.sourceAssetInstanceIds.length, 2);
+    assert.deepEqual(burn.exchange.resultAssetIds, [rareA]);
+    assert.equal(burn.burnResult.assetId, rareA);
+    assert.equal(burn.burnResult.items[0].rarity, 'rare');
+
+    const replay = await burnAssetPackDuplicates(player.id, odds.id, {
+      ruleId: 'two_common_to_rare',
+      idempotencyKey: 'burn-1',
+      rng: () => 0.99
+    });
+    assert.equal(replay.alreadyProcessed, true);
+    assert.equal(replay.exchange.id, burn.exchange.id);
+    assert.deepEqual(replay.exchange.resultAssetIds, [rareA]);
+
+    const rows = await query(
+      `SELECT asset_id, status, COUNT(*) AS count
+       FROM player_asset_instances
+       WHERE player_id = $1 AND asset_id IN ($2, $3)
+       GROUP BY asset_id, status
+       ORDER BY asset_id ASC, status ASC`,
+      [player.id, commonA, rareA]
+    );
+    assert.deepEqual(rows.rows.map((row) => ({
+      assetId: row.asset_id,
+      status: row.status,
+      count: Number(row.count)
+    })), [
+      { assetId: commonA, status: 'active', count: 1 },
+      { assetId: commonA, status: 'burned', count: 2 },
+      { assetId: rareA, status: 'active', count: 1 }
+    ]);
+
+    const afterPacks = await getAssetPacksForPlayer(player.id);
+    const afterPack = afterPacks.find((pack) => pack.id === odds.id);
+    assert.equal(afterPack.duplicateCopies, 0);
+    assert.equal(afterPack.burn.rules[0].ready, false);
+    assert.equal(afterPack.burn.rules[0].burnableCount, 0);
+    assert.equal((await getWalletState(player.id)).balance, 70, 'burn exchange should not spend wallet currency');
+  });
+});
+
 test('[Req 14-F] static gacha guarantees upgrade multi-item openings', async () => {
   const commonA = portraitAssetId('thalla', '1');
   const commonB = portraitAssetId('lomie', '1');
@@ -1429,6 +1596,10 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
       season_1_portraits: {
         rollSize: 11,
+        duplicatePolicy: 'bad_mode',
+        burnRules: [
+          { id: 'bad_burn', sourceRarity: 'common', sourceCount: 0, targetMinRarity: 'mythic', targetCount: 99 }
+        ],
         guarantees: [
           { id: 'impossible_rare', minRarity: 'rare', count: 3 }
         ],
@@ -1466,6 +1637,11 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_threshold_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_scope_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_impossible'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'duplicate_policy_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_requires_duplicates'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_source_count_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_target_rarity_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_target_count_invalid'));
     assert.equal(validateAssetPack(odds).ok, false);
 
     const before = await getWalletState(player.id);

@@ -118,10 +118,10 @@ async function ensurePostSyncIndexes(sequelize) {
      ON wallet_purchase_intents(provider, provider_payment_id)
      WHERE provider_payment_id IS NOT NULL`
   );
+  await sequelize.query('DROP INDEX IF EXISTS idx_player_asset_active_once');
   await sequelize.query(
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_player_asset_active_once
-     ON player_asset_instances(player_id, asset_id)
-     WHERE status = 'active'`
+    `CREATE INDEX IF NOT EXISTS idx_player_asset_instances_active_lookup
+     ON player_asset_instances(player_id, asset_id, status)`
   );
   await sequelize.query(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_player_equipped_assets_one_target
@@ -130,6 +130,11 @@ async function ensurePostSyncIndexes(sequelize) {
   await sequelize.query(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_asset_rolls_idempotency
      ON asset_rolls(player_id, pack_id, idempotency_key)
+     WHERE idempotency_key IS NOT NULL`
+  );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_asset_burn_exchanges_idempotency
+     ON asset_burn_exchanges(player_id, pack_id, rule_id, idempotency_key)
      WHERE idempotency_key IS NOT NULL`
   );
   await sequelize.query(

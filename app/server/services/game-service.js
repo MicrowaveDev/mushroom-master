@@ -54,6 +54,7 @@ export {
   startGameRun
 } from './run-service.js';
 export {
+  burnAssetPackDuplicates,
   equipAsset,
   equipPortrait,
   getAssetCatalog,

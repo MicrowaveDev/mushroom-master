@@ -312,6 +312,16 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
         rollPriceCurrencyCode: 'soft_coin',
         rollSize: 2,
         nextRollItemCount: 2,
+        duplicatePolicy: { enabled: true, mode: 'allow_duplicates' },
+        duplicateCopies: 5,
+        rollableCount: 2,
+        uniqueComplete: false,
+        complete: false,
+        burn: {
+          rules: [
+            { id: 'five_common_to_rare', sourceRarity: 'common', sourceCount: 5, ready: true }
+          ]
+        },
         guarantees: {
           rules: [
             { id: 'one_rare_plus', minRarity: 'rare', count: 1 }
@@ -393,6 +403,8 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
   await expect(page.locator('.home-pack-detail')).toContainText('Season 1 Portrait Pack');
   await expect(page.locator('.home-pack-detail')).toContainText('2 skins');
   await expect(page.locator('.home-pack-detail')).toContainText('opens 2');
+  await expect(page.locator('.home-pack-detail')).toContainText('Duplicates: 5');
+  await expect(page.locator('.home-pack-detail')).toContainText('Burn 5 Common');
   await expect(page.locator('.home-pack-detail')).toContainText(/Odds:.*Common 70%.*Rare 30%/);
   await expect(page.locator('.home-pack-detail')).toContainText('Guarantee: 1 Rare+');
   await expect(page.locator('.home-pack-detail')).toContainText('Epic+ guaranteed next open');

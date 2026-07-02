@@ -19,7 +19,7 @@ export const HomeScreen = {
     'accept-challenge', 'decline-challenge',
     'select-mushroom',
     'switch-portrait', 'purchase-portrait', 'switch-preset',
-    'roll-asset-pack', 'load-wallet-bundles', 'purchase-wallet'
+    'roll-asset-pack', 'burn-asset-pack', 'load-wallet-bundles', 'purchase-wallet'
   ],
   data() {
     return {
@@ -135,6 +135,10 @@ export const HomeScreen = {
             .replace('{count}', rule.remaining || rule.threshold);
         })
         .join(' · ');
+    },
+    packDuplicateText(pack) {
+      if (!pack?.duplicatePolicy?.enabled) return '';
+      return this.t.portraitPackDuplicateCopies.replace('{count}', Number(pack.duplicateCopies || 0));
     },
     packIsActive(pack) {
       if (!pack) return false;
@@ -359,6 +363,13 @@ export const HomeScreen = {
           text: this.t.portraitRollOpening
         };
       }
+      if (status === 'burning') {
+        return {
+          status,
+          title: this.t.portraitBurnOpeningTitle,
+          text: this.t.portraitBurnOpening
+        };
+      }
       if (status === 'success' && this.state.assetRollResult) {
         const rarity = this.rarityLabel(this.state.assetRollResult.rarity);
         const count = Number(this.state.assetRollResult.count || this.state.assetRollResult.items?.length || 1);
@@ -377,8 +388,19 @@ export const HomeScreen = {
             .replace('{rarity}', rarity)
         };
       }
+      if (status === 'burned' && this.state.assetRollResult) {
+        const rarity = this.rarityLabel(this.state.assetRollResult.rarity);
+        return {
+          status: 'success',
+          title: this.t.portraitBurnResultTitle,
+          text: this.t.portraitBurnResult
+            .replace('{asset}', this.assetRollResultName())
+            .replace('{rarity}', rarity)
+        };
+      }
       const key = {
         complete: 'portraitRollErrorComplete',
+        burn_unavailable: 'portraitBurnErrorUnavailable',
         insufficient: 'portraitRollErrorInsufficient',
         unavailable: 'portraitRollErrorUnavailable',
         disabled: 'portraitRollErrorDisabled',
@@ -414,6 +436,13 @@ export const HomeScreen = {
           const left = Number.isFinite(Number(pack.remainingCount))
             ? Number(pack.remainingCount)
             : Math.max(0, total - owned);
+          const duplicateEnabled = Boolean(pack.duplicatePolicy?.enabled);
+          const burnRules = Array.isArray(pack?.burn?.rules) ? pack.burn.rules : [];
+          const readyBurnRule = burnRules.find((rule) => rule.ready) || burnRules[0] || null;
+          const rollableCount = Number.isFinite(Number(pack.rollableCount))
+            ? Number(pack.rollableCount)
+            : duplicateEnabled ? total : left;
+          const complete = Boolean(pack.complete) || (!duplicateEnabled && left <= 0);
           return {
             id: pack.id,
             name: this.packName(pack),
@@ -421,14 +450,23 @@ export const HomeScreen = {
             owned,
             left,
             rollSize: Number(pack.rollSize || 1),
-            nextRollItemCount: Number(pack.nextRollItemCount || Math.min(Number(pack.rollSize || 1), left)),
+            nextRollItemCount: Number(pack.nextRollItemCount || Math.min(Number(pack.rollSize || 1), rollableCount)),
             active: this.packIsActive(pack),
             availabilityLabel: this.packAvailabilityLabel(pack),
             price: pack.rollPriceAmount || 0,
-            complete: Boolean(pack.complete) || left <= 0,
+            complete,
+            duplicateEnabled,
+            uniqueComplete: Boolean(pack.uniqueComplete),
+            duplicateCopies: Number(pack.duplicateCopies || 0),
+            canRoll: this.packIsActive(pack) && !complete && rollableCount > 0,
+            canBurn: this.packIsActive(pack) && Boolean(readyBurnRule?.ready),
+            burnRuleId: readyBurnRule?.id || null,
+            burnCost: Number(readyBurnRule?.sourceCount || 0),
+            burnRarity: readyBurnRule?.sourceRarity ? this.rarityLabel(readyBurnRule.sourceRarity) : '',
             odds: this.rarityOddsText(pack),
             guaranteeText: this.packGuaranteeText(pack),
-            pityText: this.packPityText(pack)
+            pityText: this.packPityText(pack),
+            duplicateText: this.packDuplicateText(pack)
           };
         });
     },
@@ -697,11 +735,18 @@ export const HomeScreen = {
                 <strong>{{ pack.name }}</strong>
                 <span v-if="pack.availabilityLabel">{{ pack.availabilityLabel }}</span>
                 <span v-else-if="pack.complete">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
+                <span v-else-if="pack.duplicateEnabled && pack.rollSize > 1">{{ t.portraitPackDetailsDuplicateMulti.replace('{count}', pack.total).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
+                <span v-else-if="pack.duplicateEnabled">{{ t.portraitPackDetailsDuplicate.replace('{count}', pack.total).replace('{price}', pack.price) }}</span>
                 <span v-else-if="pack.rollSize > 1">{{ t.portraitPackDetailsMulti.replace('{count}', pack.total).replace('{left}', pack.left).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
                 <span v-else>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', pack.left).replace('{price}', pack.price) }}</span>
-                <span v-if="pack.active && pack.left > 0 && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
-                <span v-if="pack.active && pack.left > 0 && pack.guaranteeText">{{ pack.guaranteeText }}</span>
-                <span v-if="pack.active && pack.left > 0 && pack.pityText">{{ pack.pityText }}</span>
+                <span v-if="pack.active && pack.duplicateText">{{ pack.duplicateText }}</span>
+                <span v-if="pack.canRoll && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
+                <span v-if="pack.canRoll && pack.guaranteeText">{{ pack.guaranteeText }}</span>
+                <span v-if="pack.canRoll && pack.pityText">{{ pack.pityText }}</span>
+                <span v-if="pack.canRoll || pack.canBurn" class="home-pack-actions">
+                  <button v-if="pack.canRoll" class="link home-pack-action" type="button" @click="$emit('roll-asset-pack', { packId: pack.id })">{{ t.portraitPackRollAction }}</button>
+                  <button v-if="pack.canBurn" class="link home-pack-action" type="button" @click="$emit('burn-asset-pack', { packId: pack.id, ruleId: pack.burnRuleId })">{{ t.portraitPackBurnAction.replace('{count}', pack.burnCost).replace('{rarity}', pack.burnRarity) }}</button>
+                </span>
               </div>
             </div>
             <div

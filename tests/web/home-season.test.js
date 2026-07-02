@@ -177,9 +177,91 @@ test('home skin picker summarizes roll pack availability and odds', () => {
     availabilityLabel: '',
     price: 500,
     complete: false,
+    duplicateEnabled: false,
+    uniqueComplete: false,
+    duplicateCopies: 0,
+    canRoll: true,
+    canBurn: false,
+    burnRuleId: null,
+    burnCost: 0,
+    burnRarity: '',
     odds: 'Common 75% · Rare 25%',
     guaranteeText: 'Guarantee: 1 Rare+',
-    pityText: 'Epic+ pity in 2 opens'
+    pityText: 'Epic+ pity in 2 opens',
+    duplicateText: ''
+  });
+});
+
+test('home skin picker keeps duplicate-complete packs rollable and burnable', () => {
+  const vm = viewModel({
+    lang: 'en',
+    leaderboard: [],
+    walletBundlesSurface: 'web',
+    bootstrap: {
+      player: { id: 'player_a' },
+      mushrooms: [
+        { id: 'thalla', name: { en: 'Thalla' }, imagePath: '/thalla.png', styleTag: 'control' }
+      ],
+      activeMushroomId: 'thalla',
+      assetPacks: [
+        {
+          id: 'season_1_portraits',
+          name: { en: 'Season 1 Portrait Pack' },
+          rollPriceAmount: 10,
+          totalItems: 1,
+          ownedCount: 1,
+          remainingCount: 0,
+          complete: false,
+          uniqueComplete: true,
+          duplicatePolicy: { enabled: true, mode: 'allow_duplicates' },
+          duplicateCopies: 2,
+          rollableCount: 1,
+          availability: 'active',
+          burn: {
+            rules: [
+              { id: 'two_common_to_rare', sourceRarity: 'common', sourceCount: 2, ready: true }
+            ]
+          },
+          items: [
+            { assetId: 'portrait.thalla.1', rarity: 'common', dropWeight: 1 }
+          ]
+        }
+      ],
+      progression: {
+        thalla: {
+          portraits: [
+            { id: '1', unlocked: true, owned: true, assetId: 'portrait.thalla.1', name: { en: 'Mooncap' } }
+          ]
+        }
+      },
+      season: {}
+    }
+  });
+
+  assert.deepEqual(vm.rollPackSummaries[0], {
+    id: 'season_1_portraits',
+    name: 'Season 1 Portrait Pack',
+    total: 1,
+    owned: 1,
+    left: 0,
+    rollSize: 1,
+    nextRollItemCount: 1,
+    active: true,
+    availabilityLabel: '',
+    price: 10,
+    complete: false,
+    duplicateEnabled: true,
+    uniqueComplete: true,
+    duplicateCopies: 2,
+    canRoll: true,
+    canBurn: true,
+    burnRuleId: 'two_common_to_rare',
+    burnCost: 2,
+    burnRarity: 'Common',
+    odds: 'Common 100%',
+    guaranteeText: '',
+    pityText: '',
+    duplicateText: 'Duplicates: 2'
   });
 });
 
@@ -246,4 +328,37 @@ test('home skin picker describes gacha roll results and known failures', () => {
   });
   assert.equal(complete.assetRollFeedback.title, 'Pack not opened');
   assert.equal(complete.assetRollFeedback.text, 'Every skin in this pack is already owned.');
+
+  const burning = viewModel({
+    ...baseState,
+    assetRollStatus: 'burning'
+  });
+  assert.deepEqual(burning.assetRollFeedback, {
+    status: 'burning',
+    title: 'Trading duplicates',
+    text: 'Burning spare skins for a new drop.'
+  });
+
+  const burned = viewModel({
+    ...baseState,
+    assetRollStatus: 'burned',
+    assetRollResult: {
+      assetName: { en: 'Rare Bloom' },
+      assetId: 'portrait.thalla.2',
+      rarity: 'rare'
+    }
+  });
+  assert.deepEqual(burned.assetRollFeedback, {
+    status: 'success',
+    title: 'Exchange complete',
+    text: 'Rare Bloom · Rare'
+  });
+
+  const burnUnavailable = viewModel({
+    ...baseState,
+    assetRollStatus: 'burn_unavailable',
+    assetRollErrorMessage: 'Not enough duplicate assets to burn'
+  });
+  assert.equal(burnUnavailable.assetRollFeedback.title, 'Pack not opened');
+  assert.equal(burnUnavailable.assetRollFeedback.text, 'Not enough duplicate skins to burn yet.');
 });

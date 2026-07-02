@@ -174,12 +174,21 @@ Step 1a (fallback): Legacy Home Dashboard
       to its own replay (preserves [Req 13-B] battle-history accessibility).
     - Friends list (up to 3) + challenge buttons
     - Leaderboard (top 5)
+    - Skin picker opened from "Change skin" shows direct-buy swatches, roll-only
+      pack swatches, pack odds/guarantees/pity, duplicate counts for
+      duplicate-enabled packs, and a Burn action only when enough spare copies
+      can be exchanged.
   Action: Click "Start Game"
   Expected:
     - [Req 1-G] Only one active run allowed; button disabled if run exists
     - [Req 1-H] Rejected if daily limit (10) reached
     - startNewGameRun('solo') called
     - Navigate to prep screen
+  Skin picker expected:
+    - Default packs stop rolling when all unique skins are owned.
+    - Duplicate-enabled packs can still roll owned skins as extra copies, and
+      burn exchanges preserve one/equipped copy before granting a random
+      eligible pack target.
 
 Step 2: Prep Screen (Round N)
   Screen: prep → PrepScreen.js

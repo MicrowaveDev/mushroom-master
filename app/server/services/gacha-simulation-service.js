@@ -56,6 +56,13 @@ function configuredPityRules(pack) {
   return Array.isArray(pack.pityRules) ? pack.pityRules : [];
 }
 
+function duplicatePolicyEnabled(pack) {
+  const raw = pack?.duplicatePolicy;
+  if (raw === true || raw === 'allow_duplicates' || raw === 'copies') return true;
+  if (raw && typeof raw === 'object') return raw.mode === 'allow_duplicates' || raw.mode === 'copies';
+  return false;
+}
+
 function summarizeRarities(items, trials) {
   const byRarity = new Map();
   for (const item of items) {
@@ -104,14 +111,27 @@ export function simulateAssetPackOdds(packId, {
     ));
   }
 
+  const duplicatesEnabled = duplicatePolicyEnabled(pack);
   const ownedPackAssetIds = pack.items
-    .filter((item) => owned.has(item.assetId) && getAssetById(item.assetId))
+    .filter((item) => owned.has(item.assetId) && getAssetById(item.assetId) && !duplicatesEnabled)
     .map((item) => item.assetId);
   if (ownedPackAssetIds.length) {
     warnings.push(warning(
       'owned_items_excluded',
       'Owned pack assets are excluded because duplicate inventory is not enabled yet.',
       { assetIds: ownedPackAssetIds }
+    ));
+  }
+  const includedOwnedAssetIds = duplicatesEnabled
+    ? pack.items
+      .filter((item) => owned.has(item.assetId) && getAssetById(item.assetId))
+      .map((item) => item.assetId)
+    : [];
+  if (includedOwnedAssetIds.length) {
+    warnings.push(warning(
+      'owned_items_included_as_duplicates',
+      'Owned pack assets remain rollable because duplicate inventory is enabled for this pack.',
+      { assetIds: includedOwnedAssetIds }
     ));
   }
 
@@ -193,12 +213,15 @@ export function simulateAssetPackOdds(packId, {
     candidateCount: candidates.length,
     weightedCandidateCount: candidates.filter((candidate) => candidateWeight(candidate) > 0).length,
     totalWeight,
+    duplicatePolicy: {
+      enabled: duplicatesEnabled
+    },
     rollable: candidates.length > 0 && totalWeight > 0,
     guarantees: {
       supported: guaranteeRules.length > 0,
       configured: guaranteeRules,
       note: guaranteeRules.length
-        ? 'Configured guarantees are applied after the weighted slot draw and before duplicate inventory exists.'
+        ? 'Configured guarantees are applied after the weighted slot draw and before pity state is advanced.'
         : 'No per-opening guarantees are configured for this pack.'
     },
     pity: {

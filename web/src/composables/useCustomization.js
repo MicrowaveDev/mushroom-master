@@ -37,6 +37,7 @@ export function useCustomization(state, refreshBootstrap) {
   function statusFromAssetRollError(error) {
     const message = String(error?.message || '').toLowerCase();
     if (message.includes('no unowned assets')) return 'complete';
+    if (message.includes('duplicate assets')) return 'burn_unavailable';
     if (message.includes('insufficient') || message.includes('not enough')) return 'insufficient';
     if (message.includes('disabled')) return 'disabled';
     if (message.includes('not active') || message.includes('inactive') || message.includes('expired')) return 'unavailable';
@@ -101,6 +102,33 @@ export function useCustomization(state, refreshBootstrap) {
     } catch (error) {
       state.assetRollStatus = statusFromAssetRollError(error);
       state.assetRollErrorMessage = error.message || 'Failed to roll pack';
+      if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
+        state.error = state.assetRollErrorMessage;
+      }
+    }
+  }
+
+  async function burnAssetPack({ packId, ruleId = null }) {
+    state.assetRollStatus = 'burning';
+    state.assetRollResult = null;
+    state.assetRollErrorMessage = '';
+    try {
+      const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/burn`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': mutationKey('asset-burn') },
+        body: JSON.stringify({ ruleId })
+      }, state.sessionKey);
+      if (result?.exchange) {
+        state.assetRollResult = result.burnResult || null;
+        state.assetRollStatus = 'burned';
+        await refreshBootstrap();
+      } else {
+        state.assetRollStatus = 'failed';
+        state.assetRollErrorMessage = 'Failed to burn duplicates';
+      }
+    } catch (error) {
+      state.assetRollStatus = statusFromAssetRollError(error);
+      state.assetRollErrorMessage = error.message || 'Failed to burn duplicates';
       if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
         state.error = state.assetRollErrorMessage;
       }
@@ -172,6 +200,7 @@ export function useCustomization(state, refreshBootstrap) {
     switchPreset,
     purchasePortrait,
     rollAssetPack,
+    burnAssetPack,
     loadWalletBundles,
     purchaseWalletCoins
   };

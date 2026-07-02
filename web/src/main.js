@@ -624,7 +624,8 @@ const App = {
           @accept-challenge="acceptChallenge" @decline-challenge="declineChallenge"
           @select-mushroom="saveCharacter($event)"
           @switch-portrait="switchPortrait($event)" @purchase-portrait="purchasePortrait($event)" @switch-preset="switchPreset($event)"
-          @roll-asset-pack="rollAssetPack($event)" @load-wallet-bundles="loadWalletBundles($event)" @purchase-wallet="purchaseWalletCoins($event)"
+          @roll-asset-pack="rollAssetPack($event)" @burn-asset-pack="burnAssetPack($event)"
+          @load-wallet-bundles="loadWalletBundles($event)" @purchase-wallet="purchaseWalletCoins($event)"
         />
 
         <characters-screen v-else-if="state.screen === 'characters'"

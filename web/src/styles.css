@@ -2138,6 +2138,17 @@ select {
 .home-pack-detail span {
   min-width: 0;
 }
+.home-pack-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-pack-action {
+  min-height: auto;
+  padding: 0;
+  font-size: 1em;
+  line-height: inherit;
+}
 
 .home-pack-roll-result {
   display: grid;

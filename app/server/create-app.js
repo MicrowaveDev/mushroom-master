@@ -64,6 +64,7 @@ import {
   getWalletState,
   processProviderWebhookEvent,
   purchaseAsset,
+  burnAssetPackDuplicates,
   rollAssetPack
 } from './services/game-service.js';
 import { lookupMoneySupportRecords } from './services/support-money-service.js';
@@ -1177,6 +1178,19 @@ export async function createApp() {
     ...assetRollGuards,
     asyncRoute(async (req, res) => {
       const data = await rollAssetPack(req.user.id, req.params.packId, {
+        idempotencyKey: req.header('idempotency-key') || null
+      });
+      res.json({ success: true, data });
+    })
+  );
+
+  app.post(
+    '/api/assets/packs/:packId/burn',
+    requireAuth,
+    ...assetRollGuards,
+    asyncRoute(async (req, res) => {
+      const data = await burnAssetPackDuplicates(req.user.id, req.params.packId, {
+        ruleId: req.body?.ruleId || null,
         idempotencyKey: req.header('idempotency-key') || null
       });
       res.json({ success: true, data });

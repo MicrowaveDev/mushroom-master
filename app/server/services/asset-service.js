@@ -20,6 +20,8 @@ const MAX_ASSET_PACK_ROLL_SIZE = 10;
 const ASSET_RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'secret'];
 const ASSET_RARITY_RANK = new Map(ASSET_RARITY_ORDER.map((rarity, index) => [rarity, index]));
 const SUPPORTED_PITY_RESET_SCOPES = new Set(['pack']);
+const SUPPORTED_DUPLICATE_POLICY_MODES = new Set(['unowned_only', 'allow_duplicates']);
+const MAX_BURN_TARGET_COUNT = 10;
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -216,7 +218,65 @@ function normalizedPityRules(pack) {
   });
 }
 
+function normalizedDuplicatePolicy(pack) {
+  const raw = pack?.duplicatePolicy;
+  if (raw === true || raw === 'allow_duplicates' || raw === 'copies') {
+    return { mode: 'allow_duplicates', enabled: true, preserveFirstCopy: true };
+  }
+  if (typeof raw === 'string') {
+    const mode = raw === 'copies' ? 'allow_duplicates' : raw;
+    return {
+      mode,
+      enabled: mode === 'allow_duplicates',
+      preserveFirstCopy: true
+    };
+  }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const configuredMode = raw.mode === 'copies' ? 'allow_duplicates' : raw.mode;
+    const mode = SUPPORTED_DUPLICATE_POLICY_MODES.has(configuredMode)
+      ? configuredMode
+      : String(configuredMode || 'unowned_only');
+    return {
+      mode,
+      enabled: mode === 'allow_duplicates',
+      preserveFirstCopy: raw.preserveFirstCopy !== false
+    };
+  }
+  return { mode: 'unowned_only', enabled: false, preserveFirstCopy: true };
+}
+
+function rawBurnRules(pack) {
+  if (Array.isArray(pack?.burnRules)) return pack.burnRules;
+  if (Array.isArray(pack?.duplicateBurnRules)) return pack.duplicateBurnRules;
+  return [];
+}
+
+function normalizedBurnRules(pack) {
+  return rawBurnRules(pack).map((rule, index) => {
+    const sourceRarity = String(rule?.sourceRarity || rule?.rarity || 'common');
+    const sourceCount = Number(rule?.sourceCount ?? rule?.count ?? 5);
+    const targetMinRarity = String(rule?.targetMinRarity || rule?.targetRarity || 'rare');
+    const targetCount = Number(rule?.targetCount ?? 1);
+    return {
+      id: String(rule?.id || `burn_${sourceCount}_${sourceRarity}_to_${targetMinRarity}`),
+      type: 'duplicate_burn_exchange',
+      sourceRarity,
+      sourceCount: Number.isInteger(sourceCount) ? sourceCount : Number.NaN,
+      targetMinRarity,
+      targetCount: Number.isInteger(targetCount) ? targetCount : Number.NaN,
+      sourceScope: 'duplicate_copies',
+      targetScope: 'pack',
+      label: rule?.label || null,
+      index
+    };
+  });
+}
+
 function guaranteeRuleEligibleCount(pack, minRarity) {
+  return (pack?.items || []).filter((item) => rarityAtLeast(item.rarity, minRarity)).length;
+}
+
+function burnRuleTargetCount(pack, minRarity) {
   return (pack?.items || []).filter((item) => rarityAtLeast(item.rarity, minRarity)).length;
 }
 
@@ -343,6 +403,10 @@ export function validateAssetPack(pack, {
       }
     }
   }
+  const duplicatePolicy = normalizedDuplicatePolicy(pack);
+  if (pack.duplicatePolicy !== undefined && !SUPPORTED_DUPLICATE_POLICY_MODES.has(duplicatePolicy.mode)) {
+    errors.push(packValidationIssue('duplicate_policy_invalid', `Asset pack ${pack.id || '(unknown)'} has an invalid duplicatePolicy mode.`));
+  }
   if (pack.guarantees !== undefined && !Array.isArray(pack.guarantees)) {
     errors.push(packValidationIssue('guarantees_invalid', `Asset pack ${pack.id || '(unknown)'} guarantees must be an array.`));
   }
@@ -384,6 +448,35 @@ export function validateAssetPack(pack, {
     }
     if (VALID_ASSET_RARITIES.has(rule.minRarity) && Number.isInteger(rule.count) && guaranteeRuleEligibleCount(pack, rule.minRarity) < rule.count) {
       errors.push(packValidationIssue('pity_impossible', `Asset pack ${pack.id || '(unknown)'} does not contain enough ${rule.minRarity}+ items for its pity rule.`, index));
+    }
+  }
+  if (pack.burnRules !== undefined && !Array.isArray(pack.burnRules)) {
+    errors.push(packValidationIssue('burn_rules_invalid', `Asset pack ${pack.id || '(unknown)'} burnRules must be an array.`));
+  }
+  if (pack.duplicateBurnRules !== undefined && !Array.isArray(pack.duplicateBurnRules)) {
+    errors.push(packValidationIssue('duplicate_burn_rules_invalid', `Asset pack ${pack.id || '(unknown)'} duplicateBurnRules must be an array.`));
+  }
+  for (const [index, rule] of normalizedBurnRules(pack).entries()) {
+    if (!duplicatePolicy.enabled) {
+      errors.push(packValidationIssue('burn_requires_duplicates', `Asset pack ${pack.id || '(unknown)'} burn rules require duplicatePolicy allow_duplicates.`, index));
+    }
+    if (!VALID_ASSET_RARITIES.has(rule.sourceRarity)) {
+      errors.push(packValidationIssue('burn_source_rarity_invalid', `Asset pack ${pack.id || '(unknown)'} burn rule has invalid sourceRarity.`, index));
+    }
+    if (!VALID_ASSET_RARITIES.has(rule.targetMinRarity)) {
+      errors.push(packValidationIssue('burn_target_rarity_invalid', `Asset pack ${pack.id || '(unknown)'} burn rule has invalid targetMinRarity.`, index));
+    }
+    if (!Number.isInteger(rule.sourceCount) || rule.sourceCount <= 0) {
+      errors.push(packValidationIssue('burn_source_count_invalid', `Asset pack ${pack.id || '(unknown)'} burn rule needs a positive sourceCount.`, index));
+    }
+    if (!Number.isInteger(rule.targetCount) || rule.targetCount <= 0 || rule.targetCount > MAX_BURN_TARGET_COUNT) {
+      errors.push(packValidationIssue('burn_target_count_invalid', `Asset pack ${pack.id || '(unknown)'} burn rule targetCount must be 1-${MAX_BURN_TARGET_COUNT}.`, index));
+    }
+    if (VALID_ASSET_RARITIES.has(rule.sourceRarity) && (pack.items || []).filter((item) => item.rarity === rule.sourceRarity).length === 0) {
+      errors.push(packValidationIssue('burn_source_impossible', `Asset pack ${pack.id || '(unknown)'} does not contain ${rule.sourceRarity} items to burn.`, index));
+    }
+    if (VALID_ASSET_RARITIES.has(rule.targetMinRarity) && Number.isInteger(rule.targetCount) && burnRuleTargetCount(pack, rule.targetMinRarity) < rule.targetCount) {
+      errors.push(packValidationIssue('burn_target_impossible', `Asset pack ${pack.id || '(unknown)'} does not contain enough ${rule.targetMinRarity}+ target items.`, index));
     }
   }
   return {
@@ -520,18 +613,85 @@ function advancePackPityState(pityBefore, selectedItems) {
   });
 }
 
+function normalizeAssetInstanceRows(rows = []) {
+  return rows.map((row) => ({
+    id: row.id,
+    player_id: row.player_id,
+    asset_id: row.asset_id || row.assetId,
+    status: row.status,
+    acquired_at: row.acquired_at || row.acquiredAt,
+    metadata_json: row.metadata_json || (row.metadata ? JSON.stringify(row.metadata) : null)
+  }));
+}
+
+function activeCopyCounts(activeAssetRows = []) {
+  const counts = new Map();
+  for (const row of normalizeAssetInstanceRows(activeAssetRows)) {
+    if (!row.asset_id) continue;
+    counts.set(row.asset_id, (counts.get(row.asset_id) || 0) + 1);
+  }
+  return counts;
+}
+
+function burnableDuplicateRows(pack, activeAssetRows = [], rule, equippedInstanceIds = new Set()) {
+  const packRarities = new Map((pack?.items || []).map((item) => [item.assetId, item.rarity || 'common']));
+  const byAssetId = new Map();
+  for (const row of normalizeAssetInstanceRows(activeAssetRows)) {
+    const rarity = packRarities.get(row.asset_id);
+    if (row.status !== 'active' || rarity !== rule.sourceRarity) continue;
+    const rows = byAssetId.get(row.asset_id) || [];
+    rows.push(row);
+    byAssetId.set(row.asset_id, rows);
+  }
+
+  const burnable = [];
+  for (const rows of byAssetId.values()) {
+    rows.sort((a, b) => {
+      const aTime = new Date(a.acquired_at || 0).getTime();
+      const bTime = new Date(b.acquired_at || 0).getTime();
+      return aTime - bTime || String(a.id).localeCompare(String(b.id));
+    });
+    const equipped = rows.find((row) => equippedInstanceIds.has(row.id));
+    const retainedId = equipped?.id || rows[0]?.id || null;
+    for (const row of rows) {
+      if (row.id !== retainedId && !equippedInstanceIds.has(row.id)) burnable.push(row);
+    }
+  }
+  return burnable;
+}
+
+function computePackBurnState(pack, { activeAssetRows = [], equippedInstanceIds = new Set() } = {}) {
+  return normalizedBurnRules(pack).map((rule) => {
+    const burnableCount = burnableDuplicateRows(pack, activeAssetRows, rule, equippedInstanceIds).length;
+    return {
+      ...rule,
+      burnableCount,
+      ready: burnableCount >= rule.sourceCount
+    };
+  });
+}
+
 export function shapeAssetPack(pack, {
   ownedAssetIds = [],
   includeAssets = false,
   now = new Date(),
-  rollHistory = []
+  rollHistory = [],
+  activeAssetRows = [],
+  equippedAssetInstanceIds = []
 } = {}) {
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
+  const equippedIds = equippedAssetInstanceIds instanceof Set
+    ? equippedAssetInstanceIds
+    : new Set(equippedAssetInstanceIds);
+  const copyCounts = activeCopyCounts(activeAssetRows);
   const validation = validateAssetPack(pack);
   const availability = packAvailability(pack, now);
+  const duplicatePolicy = normalizedDuplicatePolicy(pack);
   const totalWeight = (pack.items || []).reduce((sum, item) => sum + Math.max(0, Number(item.dropWeight || 0)), 0);
   const items = (pack.items || []).map((item) => ({
     ...item,
+    ownedCopies: copyCounts.get(item.assetId) || (owned.has(item.assetId) ? 1 : 0),
+    duplicateCopies: Math.max(0, (copyCounts.get(item.assetId) || (owned.has(item.assetId) ? 1 : 0)) - 1),
     probability: totalWeight > 0 ? Math.max(0, Number(item.dropWeight || 0)) / totalWeight : 0,
     ...(includeAssets ? { asset: getAssetById(item.assetId) } : {})
   }));
@@ -539,6 +699,7 @@ export function shapeAssetPack(pack, {
   const normalizedRollSize = Number.isInteger(rollSize) ? rollSize : pack.rollSize;
   const ownedCount = items.filter((item) => owned.has(item.assetId)).length;
   const remainingCount = Math.max(0, items.length - ownedCount);
+  const rollableCount = duplicatePolicy.enabled ? items.length : remainingCount;
   const raritySummary = Number(normalizedRollSize) > 1
     ? summarizeSlotRarities(pack, items)
     : summarizePackRarities(items);
@@ -553,8 +714,12 @@ export function shapeAssetPack(pack, {
     totalItems: items.length,
     ownedCount,
     remainingCount,
-    nextRollItemCount: Math.min(Math.max(0, Number(normalizedRollSize) || 0), remainingCount),
-    complete: items.length > 0 && ownedCount >= items.length,
+    uniqueComplete: items.length > 0 && ownedCount >= items.length,
+    duplicatePolicy,
+    duplicateCopies: items.reduce((sum, item) => sum + Number(item.duplicateCopies || 0), 0),
+    rollableCount,
+    nextRollItemCount: Math.min(Math.max(0, Number(normalizedRollSize) || 0), rollableCount),
+    complete: !duplicatePolicy.enabled && items.length > 0 && ownedCount >= items.length,
     totalWeight,
     raritySummary,
     guarantees: {
@@ -563,6 +728,9 @@ export function shapeAssetPack(pack, {
     pity: {
       resetScope: 'pack',
       rules: computePackPityState(pack, { rolls: rollHistory })
+    },
+    burn: {
+      rules: computePackBurnState(pack, { activeAssetRows, equippedInstanceIds: equippedIds })
     },
     items
   };
@@ -607,9 +775,9 @@ export function getAssetPack(packId) {
 }
 
 export async function getAssetPacksForPlayer(playerId) {
-  const [ownedRows, rollRows] = await Promise.all([
+  const [ownedRows, rollRows, equippedRows] = await Promise.all([
     query(
-      `SELECT asset_id FROM player_asset_instances
+      `SELECT * FROM player_asset_instances
        WHERE player_id = $1 AND status = 'active'`,
       [playerId]
     ),
@@ -619,11 +787,19 @@ export async function getAssetPacksForPlayer(playerId) {
        ORDER BY created_at DESC
        LIMIT 500`,
       [playerId]
+    ),
+    query(
+      `SELECT asset_instance_id FROM player_equipped_assets
+       WHERE player_id = $1 AND asset_instance_id IS NOT NULL`,
+      [playerId]
     )
   ]);
   const ownedAssetIds = new Set(ownedRows.rows.map((row) => row.asset_id));
+  const equippedAssetInstanceIds = new Set(equippedRows.rows.map((row) => row.asset_instance_id));
   return getAssetPacks().map((pack) => shapeAssetPack(pack, {
     ownedAssetIds,
+    activeAssetRows: ownedRows.rows,
+    equippedAssetInstanceIds,
     rollHistory: rollRows.rows.filter((row) => row.pack_id === pack.id)
   }));
 }
@@ -668,10 +844,13 @@ async function insertAssetInstance(client, {
   assetId,
   acquisitionSource,
   acquisitionSourceId = null,
-  metadata = {}
+  metadata = {},
+  allowDuplicate = false
 }) {
-  const existing = await activeAssetInstance(client, playerId, assetId);
-  if (existing) return { row: existing, alreadyOwned: true };
+  if (!allowDuplicate) {
+    const existing = await activeAssetInstance(client, playerId, assetId);
+    if (existing) return { row: existing, alreadyOwned: true };
+  }
 
   const row = {
     id: createId('asset'),
@@ -1070,12 +1249,13 @@ export function selectAssetPackRollResults(candidates, pack, {
 }
 
 export function resolveAssetPackRollCandidates(pack, {
-  ownedAssetIds = []
+  ownedAssetIds = [],
+  includeOwned = normalizedDuplicatePolicy(pack).enabled
 } = {}) {
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
   return (pack?.items || [])
     .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
-    .filter((item) => item.asset && !owned.has(item.assetId));
+    .filter((item) => item.asset && (includeOwned || !owned.has(item.assetId)));
 }
 
 function hashCandidatePool(candidates) {
@@ -1132,6 +1312,7 @@ function shapeAssetRollResult(roll, {
         assetPath: itemAsset?.path || null,
         rarity: metadataItem.rarity || itemAsset?.rarity || null,
         selectedRarity: metadataItem.selectedRarity || metadataItem.rarity || itemAsset?.rarity || null,
+        duplicateCopy: Boolean(metadataItem.duplicateCopy),
         resultInstanceId: metadataItem.instanceId || (index === 0 ? roll.resultInstanceId : null)
       };
     });
@@ -1153,6 +1334,256 @@ function shapeAssetRollResult(roll, {
     pityAfter: Array.isArray(roll.guaranteeState?.pityAfter) ? roll.guaranteeState.pityAfter : [],
     items: resultItems
   };
+}
+
+function rowToBurnExchange(row) {
+  return {
+    id: row.id,
+    playerId: row.player_id,
+    packId: row.pack_id,
+    ruleId: row.rule_id,
+    sourceAssetInstanceIds: parseJson(row.source_asset_instance_ids_json, []),
+    resultAssetIds: parseJson(row.result_asset_ids_json, []),
+    resultInstanceIds: parseJson(row.result_instance_ids_json, []),
+    idempotencyKey: row.idempotency_key || null,
+    metadata: parseJson(row.metadata_json, {}),
+    createdAt: row.created_at
+  };
+}
+
+function shapeAssetBurnResult(exchange, {
+  pack = null,
+  items = null
+} = {}) {
+  const selectedPack = pack || getAssetPack(exchange.packId);
+  const resultItems = Array.isArray(items)
+    ? items
+    : (exchange.resultAssetIds || []).map((assetId, index) => {
+      const itemAsset = getAssetById(assetId);
+      return {
+        slotIndex: index,
+        assetId,
+        assetName: itemAsset?.name || null,
+        assetPath: itemAsset?.path || null,
+        rarity: assetRarityForPack(selectedPack, assetId),
+        selectedRarity: assetRarityForPack(selectedPack, assetId),
+        duplicateCopy: Boolean(exchange.metadata?.duplicateAssetIds?.includes(assetId)),
+        resultInstanceId: exchange.resultInstanceIds?.[index] || null
+      };
+    });
+  const firstItem = resultItems[0] || null;
+  return {
+    exchangeId: exchange.id,
+    packId: exchange.packId,
+    packName: selectedPack ? localizedName(selectedPack.name) : exchange.packId,
+    ruleId: exchange.ruleId,
+    assetId: firstItem?.assetId || exchange.resultAssetIds?.[0] || null,
+    assetName: firstItem?.assetName || null,
+    assetPath: firstItem?.assetPath || null,
+    rarity: firstItem?.rarity || null,
+    resultInstanceId: firstItem?.resultInstanceId || exchange.resultInstanceIds?.[0] || null,
+    sourceAssetInstanceIds: exchange.sourceAssetInstanceIds,
+    count: resultItems.length,
+    items: resultItems
+  };
+}
+
+function selectBurnTargets(pack, rule, rng) {
+  const candidates = (pack?.items || [])
+    .filter((item) => rarityAtLeast(item.rarity, rule.targetMinRarity))
+    .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
+    .filter((item) => item.asset);
+  const selected = [];
+  const remaining = [...candidates];
+  for (let index = 0; index < rule.targetCount && remaining.length; index += 1) {
+    const selectedItem = chooseWeightedAssetCandidate(remaining, rng);
+    selected.push({
+      slotIndex: index,
+      selectedRarity: selectedItem.rarity || rule.targetMinRarity,
+      assetId: selectedItem.assetId,
+      rarity: selectedItem.rarity || selectedItem.asset?.rarity || null,
+      dropWeight: selectedItem.dropWeight,
+      asset: selectedItem.asset,
+      candidatePoolHash: hashCandidatePool(remaining)
+    });
+    const selectedIndex = remaining.findIndex((candidate) => candidate.assetId === selectedItem.assetId);
+    if (selectedIndex >= 0) remaining.splice(selectedIndex, 1);
+  }
+  return selected;
+}
+
+export async function burnAssetPackDuplicates(playerId, packId, {
+  ruleId = null,
+  idempotencyKey = null,
+  rng = secureRandomUnit
+} = {}) {
+  if (!isAssetGachaEnabled()) throw httpError('Asset gacha is disabled', 403);
+  const pack = getAssetPack(packId);
+  if (!pack) throw httpError('Unknown asset pack', 404);
+  const validation = validateAssetPack(pack);
+  if (!validation.ok) {
+    throw httpError(`Asset pack configuration is invalid: ${validation.errors.map((issue) => issue.code).join(', ')}`, 400);
+  }
+  if (!packIsActive(pack)) throw httpError('Asset pack is not active', 403);
+  const rules = normalizedBurnRules(pack);
+  const rule = ruleId
+    ? rules.find((candidate) => candidate.id === ruleId)
+    : rules[0];
+  if (!rule) throw httpError('Asset pack has no duplicate burn rule', 404);
+
+  return withMutationClaim('asset_burn_exchange', `${playerId}:${pack.id}:${rule.id}`, () =>
+    withWalletMutationLock(playerId, () => withTransaction(async (client) => {
+      if (idempotencyKey) {
+        const existing = await client.query(
+          `SELECT * FROM asset_burn_exchanges
+           WHERE player_id = $1 AND pack_id = $2 AND rule_id = $3 AND idempotency_key = $4
+           LIMIT 1`,
+          [playerId, pack.id, rule.id, idempotencyKey]
+        );
+        if (existing.rowCount) {
+          const exchange = rowToBurnExchange(existing.rows[0]);
+          return {
+            exchange,
+            burnResult: shapeAssetBurnResult(exchange, { pack }),
+            alreadyProcessed: true
+          };
+        }
+      }
+
+      const [activeRows, equippedRows] = await Promise.all([
+        client.query(
+          `SELECT * FROM player_asset_instances
+           WHERE player_id = $1 AND status = 'active'
+           ORDER BY acquired_at ASC, id ASC`,
+          [playerId]
+        ),
+        client.query(
+          `SELECT asset_instance_id FROM player_equipped_assets
+           WHERE player_id = $1 AND asset_instance_id IS NOT NULL`,
+          [playerId]
+        )
+      ]);
+      const equippedInstanceIds = new Set(equippedRows.rows.map((row) => row.asset_instance_id).filter(Boolean));
+      const burnableRows = burnableDuplicateRows(pack, activeRows.rows, rule, equippedInstanceIds)
+        .sort((a, b) => {
+          const aTime = new Date(a.acquired_at || 0).getTime();
+          const bTime = new Date(b.acquired_at || 0).getTime();
+          return aTime - bTime || String(a.id).localeCompare(String(b.id));
+        });
+      if (burnableRows.length < rule.sourceCount) {
+        throw httpError('Not enough duplicate assets to burn', 409);
+      }
+
+      const sourceRows = burnableRows.slice(0, rule.sourceCount);
+      const targetItems = selectBurnTargets(pack, rule, rng);
+      if (targetItems.length < rule.targetCount) {
+        throw httpError('Asset burn target pool is unavailable', 400);
+      }
+
+      const exchangeId = createId('burn');
+      const now = nowIso();
+      for (const row of sourceRows) {
+        await client.query(
+          `UPDATE player_asset_instances
+           SET status = 'burned',
+               metadata_json = $2
+           WHERE id = $1 AND status = 'active'`,
+          [
+            row.id,
+            JSON.stringify({
+              ...parseJson(row.metadata_json, {}),
+              burnedAt: now,
+              burnExchangeId: exchangeId,
+              burnRuleId: rule.id,
+              burnPackId: pack.id
+            })
+          ]
+        );
+      }
+
+      const activeAfterBurnRows = await client.query(
+        `SELECT asset_id FROM player_asset_instances
+         WHERE player_id = $1 AND status = 'active'`,
+        [playerId]
+      );
+      const ownedAfterBurn = new Set(activeAfterBurnRows.rows.map((row) => row.asset_id));
+      const insertedItems = [];
+      for (const selected of targetItems) {
+        const inserted = await insertAssetInstance(client, {
+          playerId,
+          assetId: selected.assetId,
+          acquisitionSource: 'asset_burn_exchange',
+          acquisitionSourceId: exchangeId,
+          metadata: {
+            packId: pack.id,
+            burnRuleId: rule.id,
+            rarity: selected.rarity,
+            selectedRarity: selected.selectedRarity,
+            duplicateCopy: ownedAfterBurn.has(selected.assetId),
+            sourceAssetInstanceIds: sourceRows.map((row) => row.id)
+          },
+          allowDuplicate: true
+        });
+        insertedItems.push({
+          ...selected,
+          duplicateCopy: ownedAfterBurn.has(selected.assetId),
+          instance: rowToAssetInstance(inserted.row)
+        });
+        ownedAfterBurn.add(selected.assetId);
+      }
+
+      const resultAssetIds = insertedItems.map((item) => item.assetId);
+      const resultInstanceIds = insertedItems.map((item) => item.instance?.id || null);
+      const duplicateAssetIds = insertedItems.filter((item) => item.duplicateCopy).map((item) => item.assetId);
+      await client.query(
+        `INSERT INTO asset_burn_exchanges
+         (id, player_id, pack_id, rule_id, source_asset_instance_ids_json,
+          result_asset_ids_json, result_instance_ids_json, idempotency_key,
+          metadata_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          exchangeId,
+          playerId,
+          pack.id,
+          rule.id,
+          JSON.stringify(sourceRows.map((row) => row.id)),
+          JSON.stringify(resultAssetIds),
+          JSON.stringify(resultInstanceIds),
+          idempotencyKey,
+          JSON.stringify({
+            rule,
+            sourceAssetIds: sourceRows.map((row) => row.asset_id),
+            sourceAssetInstanceIds: sourceRows.map((row) => row.id),
+            resultAssetIds,
+            resultInstanceIds,
+            duplicateAssetIds,
+            randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng'
+          }),
+          now
+        ]
+      );
+
+      const exchangeRow = await client.query(`SELECT * FROM asset_burn_exchanges WHERE id = $1`, [exchangeId]);
+      const exchange = rowToBurnExchange(exchangeRow.rows[0]);
+      const resultItems = insertedItems.map((item) => ({
+        slotIndex: item.slotIndex,
+        assetId: item.assetId,
+        assetName: item.asset?.name || null,
+        assetPath: item.asset?.path || null,
+        rarity: item.rarity,
+        selectedRarity: item.selectedRarity,
+        duplicateCopy: item.duplicateCopy,
+        resultInstanceId: item.instance?.id || null
+      }));
+      return {
+        exchange,
+        burnResult: shapeAssetBurnResult(exchange, { pack, items: resultItems }),
+        assets: insertedItems.map((item) => item.asset),
+        instances: insertedItems.map((item) => item.instance),
+        alreadyProcessed: false
+      };
+    }))
+  );
 }
 
 export async function rollAssetPack(playerId, packId, {
@@ -1193,6 +1624,7 @@ export async function rollAssetPack(playerId, packId, {
         [playerId]
       );
       const owned = new Set(ownedRows.rows.map((row) => row.asset_id));
+      const duplicatePolicy = normalizedDuplicatePolicy(pack);
       const candidates = resolveAssetPackRollCandidates(pack, { ownedAssetIds: owned });
 
       if (!candidates.length) {
@@ -1215,6 +1647,7 @@ export async function rollAssetPack(playerId, packId, {
       const pityAfter = advancePackPityState(pityBefore, selectedItems);
       const candidatePoolHash = hashCandidatePool(candidates);
       const resultAssetIds = selectedItems.map((item) => item.assetId);
+      const duplicateAssetIds = resultAssetIds.filter((assetId) => owned.has(assetId));
       const rarityTableVersion = pack.rarityTableVersion || `${pack.id}:v1`;
       const transaction = await spendCurrency(client, {
         playerId,
@@ -1232,6 +1665,8 @@ export async function rollAssetPack(playerId, packId, {
           rollSize: assetPackRollSize(pack),
           effectiveRollSize: selectedItems.length,
           rarityTableVersion,
+          duplicatePolicy,
+          duplicateAssetIds,
           guaranteesApplied: guaranteesApplied.map((entry) => ({
             id: entry.id,
             source: entry.source,
@@ -1258,12 +1693,15 @@ export async function rollAssetPack(playerId, packId, {
             rarity: selected.rarity,
             selectedRarity: selected.selectedRarity,
             rarityTableVersion,
+            duplicatePolicy: duplicatePolicy.mode,
+            duplicateCopy: owned.has(selected.assetId),
             guaranteeId: selected.guaranteeId || null,
             guaranteeSource: selected.guaranteeSource || null,
             guaranteeMinRarity: selected.guaranteeMinRarity || null,
             guaranteeReplacedAssetId: selected.guaranteeReplacedAssetId || null,
             transactionId: transaction.id
-          }
+          },
+          allowDuplicate: duplicatePolicy.enabled
         });
         insertedItems.push({
           ...selected,
@@ -1277,6 +1715,7 @@ export async function rollAssetPack(playerId, packId, {
         assetPath: item.asset?.path || null,
         rarity: item.rarity,
         selectedRarity: item.selectedRarity,
+        duplicateCopy: owned.has(item.assetId),
         resultInstanceId: item.instance?.id || null
       }));
       const evidenceItems = insertedItems.map((item) => ({
@@ -1291,7 +1730,8 @@ export async function rollAssetPack(playerId, packId, {
         guaranteeId: item.guaranteeId || null,
         guaranteeSource: item.guaranteeSource || null,
         guaranteeMinRarity: item.guaranteeMinRarity || null,
-        guaranteeReplacedAssetId: item.guaranteeReplacedAssetId || null
+        guaranteeReplacedAssetId: item.guaranteeReplacedAssetId || null,
+        duplicateCopy: owned.has(item.assetId)
       }));
 
       await client.query(
@@ -1327,6 +1767,8 @@ export async function rollAssetPack(playerId, packId, {
             rarityTableVersion,
             rollSize: assetPackRollSize(pack),
             effectiveRollSize: selectedItems.length,
+            duplicatePolicy,
+            duplicateAssetIds,
             guaranteesApplied,
             pityBefore,
             pityAfter,

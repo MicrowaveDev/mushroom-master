@@ -85,6 +85,38 @@ test('[Req 14-F] gacha odds simulation excludes owned and missing pack items', a
   });
 });
 
+test('[Req 14-F] gacha odds simulation includes owned items for duplicate-enabled packs', async () => {
+  const owned = portraitAssetId('thalla', '1');
+  const remaining = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        duplicatePolicy: 'allow_duplicates',
+        items: [
+          { assetId: owned, rarity: 'common', dropWeight: 1 },
+          { assetId: remaining, rarity: 'rare', dropWeight: 3 }
+        ]
+      }
+    })
+  }, async () => {
+    const sequence = [0, 0.99, 0.1, 0.5];
+    let index = 0;
+    const result = simulateAssetPackOdds('season_1_portraits', {
+      trials: sequence.length,
+      ownedAssetIds: [owned],
+      rng: () => sequence[index++ % sequence.length]
+    });
+
+    assert.equal(result.duplicatePolicy.enabled, true);
+    assert.equal(result.candidateCount, 2);
+    assert.equal(result.totalWeight, 4);
+    assert.ok(result.warnings.find((entry) => entry.code === 'owned_items_included_as_duplicates'));
+    assert.equal(result.warnings.find((entry) => entry.code === 'owned_items_excluded'), undefined);
+    assert.equal(result.items.find((item) => item.assetId === owned).observedCount, 2);
+    assert.equal(result.items.find((item) => item.assetId === remaining).observedCount, 2);
+  });
+});
+
 test('[Req 14-F] gacha odds simulation supports multi-slot pack openings', async () => {
   const common = portraitAssetId('thalla', '1');
   const rare = portraitAssetId('thalla', '2');
