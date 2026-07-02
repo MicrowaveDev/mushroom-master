@@ -774,7 +774,7 @@ The active Stage 1 contract is:
 **Guardrails added:**
 
 - the queue now records a `sourceGate` for the failed local source hash and changes the item status to `blocked_supplied_local_state_sheet_palette_gate_failed`;
-- the default queue output reports that a new paletted `8x4` source or documented repair method is required instead of issuing another production launcher for the same source hash;
+- the default queue output reports that a new authored paletted `8x4` source is required, with repair only as secondary evidence-backed candidate repair, instead of issuing another production launcher for the same source hash;
 - `preflight-chibi-proof` now prints source sha256 and rejects a `--source` PNG whose hash matches a blocked `sourceGate`;
 - `RUN_CHIBI_PROOF_PROMPT.md` and imagegen requirements now say source-path readiness expires after a hard gate failure;
 - tests cover the blocked source-hash gate and queue output.
@@ -848,5 +848,5 @@ The active Stage 1 contract is:
 36. Do not infer an env file for queue items that require `doNotInferEnvFile: true`. Built-in/imagegen runs do not need a paid API key; paid API fallback must prove `OPENAI_IMAGEGEN_API_KEY` and `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1` before any archive or imagegen step.
 37. Do not let plain `OPENAI_API_KEY` trigger Home Field image generation. It is intentionally ignored so general OpenAI credentials are not silently spent on imagegen.
 38. Do not let preflight capability flags override the queue method gate. If the queue marks a built-in method as blocked or exhausted, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` must not pass preflight for that exhausted path.
-39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new complete `8x4` source or a documented repair method with evidence before the next production run.
+39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new authored complete `8x4` source before the next production run. A documented repair method is secondary candidate repair and must not be treated as production-ready unless visual review clears the original source defects.
 40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use only the queue-only `sourceGateRecovery.copyablePrompt`; the new-source/repair-method instructions must come from the printed queue `SourceGate recovery production attempt` output. A blocker-only handoff is incomplete for that request, and lack of a pre-existing replacement source is not by itself completion.

@@ -292,9 +292,9 @@ function chibiLocalSourceDetails(asset) {
   const opening = sourceBlocked
       ? [
         'BLOCKED STAGE 1 LOCAL-SOURCE PROOF: the current queue-supplied complete 8x4 local state-sheet source already failed a hard sourceGate; do not produce a candidate from this hash.',
-        `First run npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof and follow the printed blocker. The blocked source path is ${sourcePath}; sourceGate status ${sourceGate?.status || '<missing>'}; source sha256 ${sourceGate?.sourceSha256 || '<missing>'}; failed reference proxy sha256 ${sourceGate?.referenceProxySha256 || '<missing>'}. Do not preflight, archive, stage, split, produce, validate, evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs for this same source hash. Replace the queue sourcePath with a new complete 8x4 local source or add a documented repair method with evidence.`,
+        `First run npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof and follow the printed blocker. The blocked source path is ${sourcePath}; sourceGate status ${sourceGate?.status || '<missing>'}; source sha256 ${sourceGate?.sourceSha256 || '<missing>'}; failed reference proxy sha256 ${sourceGate?.referenceProxySha256 || '<missing>'}. Do not preflight, archive, stage, split, produce, validate, evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs for this same source hash. Replace the queue sourcePath with a new authored complete 8x4 local source. Use repair only as an explicit secondary candidate-repair method with evidence, and do not claim production-ready from repair unless visual review clears the original defects.`,
         'If the user asked for another production-ready run, give only the queue-only launcher from sourceGateRecovery.copyablePrompt; the runner must use the printed queue SourceGate recovery production attempt results, and a clean blocker is not production-ready output.',
-        'Keep the requirements below only as the next-source acceptance contract. Once the sourceGate is cleared, the queue must print fresh first-class --source commands for preflight, archive, stage, verifier, palette audit, split, candidate production, evidence, preview, and verdict recording.'
+        'Keep the requirements below only as the next-source acceptance contract. Once the sourceGate is cleared, the queue must print fresh first-class --source commands for a new authored source, or an explicitly repair-approved candidate-repair source, from preflight through verdict recording.'
       ]
     : [
         'CANDIDATE-ONLY STAGE 1 LOCAL-SOURCE PROOF: validate Thalla only from the queue-supplied complete 8x4 local state-sheet source. Do not run reference imagegen, built-in imagegen, paid API fallback, or text-only generation in this default run.',
@@ -331,7 +331,7 @@ function promptConstraintsForOutput(asset, promptEntry, { chibiCandidate = false
   const sourceBlocked = chibiSourceGateBlocked();
   return [
     sourceBlocked
-      ? 'Stage 1 blocked local-source validation until sourceGate is cleared. Generate only Thalla after the queue sourcePath is replaced or a documented repair method is added. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.'
+      ? 'Stage 1 blocked local-source validation until sourceGate is cleared. Generate only Thalla after the queue sourcePath is replaced with a new authored source, or after a documented secondary repair method is explicitly adopted. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.'
       : 'Stage 1 candidate-only local-source validation. Generate only Thalla. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.',
     sourceBlocked
       ? 'The current sourceGate blocks the existing supplied complete 8x4 local state sheet hash; do not stage that same hash again through the queue --source command. The checked-in PNGs under docs/reference/home-field/ are styleReferences for visual review only, not active imagegen inputs, not proof sources, and not files to attach to imagegen in this run.'
@@ -350,7 +350,7 @@ function promptSizeForOutput(asset, promptEntry, { chibiCandidate = false } = {}
     return promptEntry.size;
   }
   if (chibiSourceGateBlocked()) {
-    return 'one new or repair-approved supplied complete 8x4 state sheet after sourceGate is cleared, then split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
+    return 'one new authored supplied complete 8x4 state sheet, or explicitly repair-approved candidate-repair sheet, after sourceGate is cleared; then split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
   }
   return 'one supplied complete 8x4 state sheet staged as .agent/home-field-workspace/raw/thalla_chibi.states.source.png, split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
 }
@@ -486,7 +486,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(`SourceGate-blocked state: do not run ${localSource?.stageCommand || 'stage-chibi-local-source -- --source=<png>'}, split, producer, validation, evidence, preview, verdict, imagegen, or app-facing overwrite commands for the current source hash.`);
       lines.push('Report the blocked source path/hash, failed reference proxy hash, palette audit counts, and that no candidate/app-facing PNG was produced.');
       lines.push('For another production-ready run, give only the queue-only launcher and have the runner use the printed queue SourceGate recovery production attempt results; do not hand off this blocked helper as a production launcher.');
-      lines.push('Continue only after the queue sourcePath is replaced with a new complete 8x4 local PNG or after a documented palette-cleanup/repair method is added with explicit evidence gates.');
+      lines.push('Continue only after the queue sourcePath is replaced with a new authored complete 8x4 local PNG. Use palette-cleanup/repair only as a secondary explicit candidate-repair method with evidence gates, and do not call repair production-ready unless visual review clears the original defects.');
       lines.push('After sourceGate is cleared, rerun the queue and use its printed first-class --source commands from preflight through candidate evidence.');
     } else {
       lines.push(`For a supplied complete 8x4 local state-sheet source, first run: ${localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>'}`);
@@ -508,7 +508,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
   }
   if (sourceBlocked) {
     lines.push('Do not run the recommended producer command while sourceGate is blocked.');
-    lines.push('Request a new supplied complete 8x4 local source or a documented palette-cleanup/repair method with evidence.');
+    lines.push('Request a new authored supplied complete 8x4 local source first; use palette-cleanup/repair only as a secondary explicit candidate-repair method with evidence.');
     return lines.join('\n');
   }
   lines.push('Then run the recommended producer command:');
@@ -802,7 +802,7 @@ function main() {
     const localStage = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
     if (chibiSourceBlocked) {
       console.log(`  0. Run \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof\`, \`npm run game:home-field:chibi-proof-context\`, and this read-only \`npm run game:home-field:next-chibi-proof\` helper. The current sourceGate is ${sourceGate?.status || '<missing>'} for sourcePath ${sourcePath}; do not run \`${localPreflight}\`, \`${localArchive}\`, or \`${localStage}\` for that same source hash.`);
-      console.log('  1. Use the prompt block below only as next-source requirements. If the user asked for another production-ready run, give only the queue-only launcher from sourceGateRecovery.copyablePrompt and have the runner use the printed queue SourceGate recovery production attempt results. Continue only after replacing the queue sourcePath with a new complete 8x4 local state sheet or adding a documented repair method with evidence.');
+      console.log('  1. Use the prompt block below only as next-source requirements. If the user asked for another production-ready run, give only the queue-only launcher from sourceGateRecovery.copyablePrompt and have the runner use the printed queue SourceGate recovery production attempt results. Continue only after replacing the queue sourcePath with a new authored complete 8x4 local state sheet. Use repair only as a secondary evidence-backed candidate-repair method.');
       console.log('  2. Do not infer .env, do not retry the exhausted built-in imagegen path, do not use paid API fallback, and do not split, produce a candidate, generate evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs while the sourceGate is blocked.');
     } else {
       console.log(`  0. Run \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof\`, \`npm run game:home-field:chibi-proof-context\`, this read-only \`npm run game:home-field:next-chibi-proof\` helper, then preflight the queue-owned local source with \`${localPreflight}\`. The current default path is supplied local-source mode: sourcePath ${sourcePath}, then the queue-printed --source archive/stage commands. Do not infer .env, do not retry the exhausted built-in imagegen path, and do not use paid API fallback in this default run.`);

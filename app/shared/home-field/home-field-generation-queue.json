@@ -15,8 +15,8 @@
       "promptPolicy": {
         "issueLauncherWhenStatus": "new_source_or_repair_method_only",
         "action": "Do not issue another production launcher for the same supplied local state-sheet source hash. Rollout codex-019f1f94-ed13-7701-85a2-62a97f7431e7 proved the queue-owned sourcePath exists and stages, but its derived reference proxy failed the hard palette audit.",
-        "blockedPromptAction": "Use this queue output as a blocker report. Continue only after replacing generationContract.stateSheet.localSourceMode.sourcePath with a new complete 8x4 local state-sheet PNG outside docs/reference, or after adding an explicit palette-cleanup/repair method with evidence and tests.",
-        "blockedShortResponse": "Blocked: the current supplied local source hash failed the reference palette audit; provide a new paletted 8x4 source or documented repair method before another production run."
+        "blockedPromptAction": "Use this queue output as a blocker report. Continue only after replacing generationContract.stateSheet.localSourceMode.sourcePath with a new authored complete 8x4 local state-sheet PNG outside docs/reference. A palette-cleanup/repair method is secondary and must be explicit evidence-backed candidate repair, not the preferred production path.",
+        "blockedShortResponse": "Blocked: the current supplied local source hash failed the reference palette audit; provide a new authored paletted 8x4 source, or an explicit evidence-backed repair experiment, before another production run."
       },
       "sourceGateRecovery": {
         "mode": "method-change-production-attempt",
@@ -25,7 +25,8 @@
         "requiredActions": [
           "Treat this SourceGate recovery production attempt section as the source of truth; do not inline these method-change details into the copyable user prompt.",
           "Confirm the existing sourceGate blocker and blocked source hash before creating or adopting a replacement source.",
-          "Produce or accept a new complete 8x4 local state-sheet source outside docs/reference, or document a repair method as an explicit active method with evidence.",
+          "Prefer producing or accepting a genuinely new authored complete 8x4 local state-sheet source outside docs/reference; use palette-cleanup/repair only as a secondary explicit method when no source-generation surface is available or when intentionally running a diagnostic/candidate-repair experiment.",
+          "If a repair method reuses the blocked art lineage, declare that lineage in the repair manifest and keep the final verdict as an intentional blocker unless the visual gate clears the preserved source defects; passing palette/count scripts alone is not production-ready.",
           "Do not stop only because no replacement source already exists; if the current tool surface cannot create or repair a source, report that missing capability explicitly instead of treating the old blocker as completion.",
           "Use `--source=<new-source-png>` for preflight, archive, and stage; do not use the blocked queue source hash.",
           "Run reference proxy, state-sheet, frame, candidate, evidence, preview, and verdict gates only after the new source passes preflight/archive/stage.",
@@ -35,6 +36,7 @@
           "A new source path and sha256 are reported.",
           "Reference proxy, staged state sheet, and candidate palette audits pass the fewer-than-20 visible design color gate.",
           "Split frames, candidate validation, evidence, preview, and verdict complete.",
+          "If the run used repair instead of a new authored source, the final response labels it as a repair experiment and does not claim production-ready unless visual review clears the original source defects.",
           "The final response clearly distinguishes production-ready candidate output from an intentional blocker."
         ]
       },
@@ -42,14 +44,15 @@
         "Treat the existing Thalla Home Field chibi Stage 1 source hash as blocked; do not run the default production path against that hash.",
         "Follow app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md exactly.",
         "If the user asks for another production-ready run while this sourceGate is blocked, answer only with the queue-only sourceGateRecovery.copyablePrompt; it must point to the printed SourceGate recovery production attempt results rather than the generic minimal launcher.",
-        "The runner must use the printed SourceGate recovery production attempt section to create or adopt a new complete 8x4 source or documented repair method, then validate that new source through every listed gate; do not stop merely because no replacement source already exists.",
+        "The runner must use the printed SourceGate recovery production attempt section to create or adopt a new authored complete 8x4 source, or an explicitly documented secondary repair method, then validate that source through every listed gate; do not stop merely because no replacement source already exists.",
+        "Prefer a genuinely new authored complete 8x4 source for another production-ready attempt. Palette-cleanup/repair is secondary evidence-backed candidate repair, not a production-ready shortcut.",
         "Do not call a clean sourceGate block a healthy production-ready image run; production-ready PNGs were not produced unless a new candidate passes every listed gate.",
         "Do not rerun preflight/archive/stage for the current generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) because sourceGate records that this exact source hash failed the reference palette audit.",
         "If the user supplies a new complete 8x4 local state-sheet source, update generationContract.stateSheet.localSourceMode.sourcePath and the printed --source commands before issuing a launcher.",
-        "If a palette-cleanup or repair method is intentionally adopted, add it as an explicit active method with evidence, not as hidden fallback behavior.",
+        "If a palette-cleanup or repair method is intentionally adopted, add it as an explicit active method with evidence, not as hidden fallback behavior; if it preserves blocked-source visual defects, record needs_regen rather than production-ready.",
         "Treat styleReferences as visual review references only; reference imagegen is skipped, and agents must not attach styleReferences to imagegen or run reference imagegen for this blocked local-source item.",
         "Do not use built-in imagegen, paid API fallback, or --show-fallbacks unless planning a future method change with explicit user approval.",
-        "Report the blocked source path/hash, failed reference proxy hash, failed palette audit counts, and the requirement for a new source or documented repair method.",
+        "Report the blocked source path/hash, failed reference proxy hash, failed palette audit counts, and the requirement for a new authored source or explicitly documented secondary repair method.",
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
       ],
       "promptSource": {
@@ -156,7 +159,7 @@
           "exactColorsAtLeastMinorThreshold": 98,
           "coarseStep32SignificantBins": 57
         },
-        "action": "Do not rerun this exact supplied source hash as a production-ready path. Replace it with a new paletted complete 8x4 local source outside docs/reference, or add a dedicated palette-cleanup/repair method with manifest evidence and visual gates."
+        "action": "Do not rerun this exact supplied source hash as a production-ready path. Replace it with a new authored paletted complete 8x4 local source outside docs/reference. Use a dedicated palette-cleanup/repair method only as secondary evidence-backed candidate repair with manifest evidence and visual gates."
       },
       "styleReferences": [
         {

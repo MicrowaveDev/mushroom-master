@@ -1499,7 +1499,7 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, /Do not infer \.env, do not retry the exhausted built-in imagegen path, do not use paid API fallback/);
   assert.doesNotMatch(result.stdout, /styleReferences for visual review only in local-source mode, not as active imagegen inputs/);
   assert.doesNotMatch(result.stdout, /After source preflight passes, run `npm run game:home-field:archive-stale-chibi-proof -- thalla --source=/);
-  assert.match(result.stdout, /Continue only after replacing the queue sourcePath with a new complete 8x4 local state sheet/);
+  assert.match(result.stdout, /Continue only after replacing the queue sourcePath with a new authored complete 8x4 local state sheet/);
   assert.match(result.stdout, /SourceGate recovery production attempt/);
   assert.match(result.stdout, /clean blocker is not production-ready output/);
   assert.match(result.stdout, /do not split, produce a candidate, generate evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs while the sourceGate is blocked/);
@@ -1543,7 +1543,7 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, /Do not attach them to imagegen, do not treat them as proof sources, and do not regenerate the reference proxy/);
   assert.match(result.stdout, /failed reference proxy hash/);
   assert.match(result.stdout, /supplied complete 8x4 local state-sheet source/i);
-  assert.match(result.stdout, /one new or repair-approved supplied complete 8x4 state sheet after sourceGate is cleared/);
+  assert.match(result.stdout, /one new authored supplied complete 8x4 state sheet, or explicitly repair-approved candidate-repair sheet/);
   assert.match(result.stdout, /not active imagegen inputs, not proof sources, and not files to attach to imagegen in this run/);
   assert.doesNotMatch(result.stdout, /In supplied complete local state-sheet mode, the 8x4 state sheet is already staged; do not regenerate it/);
   assert.match(result.stdout, /Final candidate input must originate from one coherent grouped state sheet, not 32 separate imagegen calls/);
@@ -1625,10 +1625,10 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.details, /not proof sources and must not be attached to imagegen in this run/);
   assert.match(prompt.details, /12-18 artist-visible colors/);
   assert.match(prompt.details, /fewer than 20 total design colors/);
-  assert.match(prompt.details, /new complete 8x4 local source/);
+  assert.match(prompt.details, /new authored complete 8x4 local source/);
   assert.match(prompt.details, /SourceGate recovery production attempt/);
   assert.match(prompt.details, /clean blocker is not production-ready output/);
-  assert.match(prompt.size, /one new or repair-approved supplied complete 8x4 state sheet after sourceGate is cleared/);
+  assert.match(prompt.size, /one new authored supplied complete 8x4 state sheet, or explicitly repair-approved candidate-repair sheet/);
   assert.match(prompt.constraints, /Stage 1 blocked local-source validation until sourceGate is cleared/);
   assert.match(prompt.constraints, /do not stage that same hash again through the queue --source command/);
   assert.match(prompt.constraints, /styleReferences for visual review only/);
@@ -1808,7 +1808,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /Blocker reporting warning: if source preflight, archive, or staging blocks the run/);
   assert.match(result.stdout, /Prompt issuance warning: this queue item is blocked for the current supplied source hash/);
   assert.match(result.stdout, /do not rerun archive\/stage/);
-  assert.match(result.stdout, /until the sourcePath is replaced or a documented repair method is added/);
+  assert.match(result.stdout, /until the sourcePath is replaced with a new authored source or a documented secondary repair method is explicitly adopted/);
   assert.doesNotMatch(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(result.stdout, /no split frames, candidate, preview, app overwrite, or fallback imagegen occurred/);
   assert.match(result.stdout, /archive-stale-chibi-proof/);
@@ -1943,8 +1943,8 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(item.promptPolicy.action, /Do not issue another production launcher/);
   assert.match(item.promptPolicy.action, /failed the hard palette audit/);
   assert.match(item.promptPolicy.action, /sourcePath/);
-  assert.match(item.promptPolicy.blockedPromptAction, /new complete 8x4 local state-sheet PNG/);
-  assert.match(item.promptPolicy.blockedPromptAction, /palette-cleanup\/repair method/);
+  assert.match(item.promptPolicy.blockedPromptAction, /new authored complete 8x4 local state-sheet PNG/);
+  assert.match(item.promptPolicy.blockedPromptAction, /repair method is secondary/);
   assert.match(item.promptPolicy.blockedShortResponse, /current supplied local source hash failed/);
   assert.equal(item.sourceGateRecovery.mode, 'method-change-production-attempt');
   assert.match(item.sourceGateRecovery.summary, /another production-ready run/);
@@ -1959,9 +1959,13 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.doesNotMatch(item.sourceGateRecovery.copyablePrompt, /palette-cleanup/);
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /do not inline these method-change details into the copyable user prompt/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /Do not stop only because no replacement source already exists/.test(action)));
-  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /new complete 8x4 local state-sheet source/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /new authored complete 8x4 local state-sheet source/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /repair only as a secondary explicit method/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /passing palette\/count scripts alone is not production-ready/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /Use `--source=<new-source-png>`/.test(action)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /new source path and sha256/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /repair experiment/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /visual review clears the original source defects/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /production-ready candidate output from an intentional blocker/.test(criterion)));
   assert.ok(item.agentInstructions.some((instruction) => /existing Thalla Home Field chibi Stage 1 source hash as blocked/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/.test(instruction)));
@@ -1970,13 +1974,16 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => /generic minimal launcher/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /printed SourceGate recovery production attempt section/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /do not stop merely because no replacement source already exists/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /new authored complete 8x4 source/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /not a production-ready shortcut/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /production-ready PNGs were not produced/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /generationContract\.stateSheet\.localSourceMode\.sourcePath/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Do not rerun preflight\/archive\/stage/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /sourceGate records/.test(instruction)));
-  assert.ok(item.agentInstructions.some((instruction) => /new complete 8x4 local state-sheet source/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /new complete 8x4 local state-sheet source|new authored complete 8x4 source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /palette-cleanup or repair method/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /preserves blocked-source visual defects/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiQueueLocalSourcePath)));
   assert.ok(item.agentInstructions.some((instruction) => /styleReferences as visual review references only/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /reference imagegen is skipped/.test(instruction)));
@@ -2090,7 +2097,8 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.doesNotMatch(result.stdout, /Prompt issuance gate \(blocked\):/);
   assert.match(result.stdout, /issue launcher when: new_source_or_repair_method_only/);
   assert.match(result.stdout, /action: .*same supplied local state-sheet source hash/);
-  assert.match(result.stdout, /blocked action: .*new complete 8x4 local state-sheet PNG/);
+  assert.match(result.stdout, /blocked action: .*new authored complete 8x4 local state-sheet PNG/);
+  assert.match(result.stdout, /blocked action: .*repair method is secondary/);
   assert.match(result.stdout, /blocked short response: Blocked: the current supplied local source hash failed/);
   assert.match(result.stdout, /SourceGate recovery production attempt:/);
   assert.match(result.stdout, /mode: method-change-production-attempt/);
@@ -2098,9 +2106,14 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /copyable queue-only prompt:/);
   assert.match(result.stdout, /run `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and use the printed queue SourceGate recovery production attempt results to generate what is needed/);
   assert.doesNotMatch(result.stdout, /run a Thalla Home Field chibi Stage 1 method-change production attempt/);
+  assert.match(result.stdout, /Prefer producing or accepting a genuinely new authored complete 8x4 local state-sheet source/);
+  assert.match(result.stdout, /repair only as a secondary explicit method/);
+  assert.match(result.stdout, /passing palette\/count scripts alone is not production-ready/);
   assert.match(result.stdout, /Do not stop only because no replacement source already exists/);
   assert.match(result.stdout, /do not use the blocked queue source hash/);
   assert.match(result.stdout, /--source=<new-source-png>/);
+  assert.match(result.stdout, /repair experiment/);
+  assert.match(result.stdout, /visual review clears the original source defects/);
   assert.match(result.stdout, /production-ready candidate output from an intentional blocker/);
   assert.match(result.stdout, /required actions:/);
   assert.match(result.stdout, /success criteria:/);
@@ -2113,6 +2126,8 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /Do not rerun preflight\/archive\/stage for the current generationContract\.stateSheet\.localSourceMode\.sourcePath/);
   assert.match(result.stdout, /sourceGate records that this exact source hash failed the reference palette audit/);
   assert.match(result.stdout, /If the user supplies a new complete 8x4 local state-sheet source/);
+  assert.match(result.stdout, /new authored complete 8x4 source/);
+  assert.match(result.stdout, /not a production-ready shortcut/);
   assert.match(result.stdout, /If a palette-cleanup or repair method is intentionally adopted/);
   assert.match(result.stdout, /Treat styleReferences as visual review references only/);
   assert.match(result.stdout, /reference imagegen is skipped/);
@@ -2965,7 +2980,7 @@ test('[home-field] chibi proof preflight blocks a source matching queue sourceGa
       assert.doesNotMatch(result.stdout, /OPENAI_IMAGEGEN_API_KEY|API fallback ready|built-in Codex Desktop imagegen/);
       assert.match(result.stderr, /supplied --source PNG matches a queue-recorded failed local-source hash/);
       assert.match(result.stderr, /Do not archive, stage, split, produce, validate, evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs/);
-      assert.match(result.stderr, /replace the source or add a documented repair method first/);
+      assert.match(result.stderr, /replace the source with a new authored source or explicitly adopt a documented secondary repair method first/);
       assert.doesNotMatch(result.stderr, /OPENAI_IMAGEGEN_API_KEY|HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE|Plain OPENAI_API_KEY|built-in imagegen/);
       assert.doesNotMatch(result.stdout, /Preflight passed/);
     } finally {

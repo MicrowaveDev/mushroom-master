@@ -216,7 +216,7 @@ function main() {
   }
   if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {
     if (localSourceGateBlocksInput) {
-      console.log('- local complete state-sheet staging command: blocked for this source hash; replace the source or add a documented repair method first');
+      console.log('- local complete state-sheet staging command: blocked for this source hash; replace the source with a new authored source or explicitly adopt a documented secondary repair method first');
     } else {
       console.log(`- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source -- --source=${localInputs[0]}`);
     }
@@ -287,8 +287,8 @@ function main() {
       if (queueGate.sourceGate?.referenceProxySha256) {
         console.error(`Failed reference proxy sha256: ${queueGate.sourceGate.referenceProxySha256}`);
       }
-      console.error('Continue only after replacing the queue sourcePath with a different complete 8x4 local source PNG whose sha256 does not match the sourceGate failure, or after adding a documented queue-approved palette-cleanup/repair method with evidence.');
-      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source or add a documented repair method first.');
+      console.error('Continue only after replacing the queue sourcePath with a different authored complete 8x4 local source PNG whose sha256 does not match the sourceGate failure, or after explicitly adopting a documented secondary palette-cleanup/repair method with evidence.');
+      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source with a new authored source or explicitly adopt a documented secondary repair method first.');
       process.exit(1);
     }
     console.error('Preflight failed: no allowed reference-capable way to produce image PNGs for the required repo paths.');
@@ -302,7 +302,7 @@ function main() {
     console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
     console.error('- --source=<png> with an existing supplied local proof source PNG path outside docs/reference; checked-in docs/reference style images do not count');
     if (localSourceGateBlocksInput) {
-      console.error('- a different complete 8x4 local source PNG whose sha256 does not match the queue sourceGate failure, or a queue-approved palette-cleanup/repair method with evidence');
+      console.error('- a different authored complete 8x4 local source PNG whose sha256 does not match the queue sourceGate failure, or a queue-approved secondary palette-cleanup/repair method with evidence');
     }
     console.error('');
     if (builtinMethodGateBlocked) {
@@ -318,7 +318,7 @@ function main() {
       console.error('The checked-in docs/reference PNGs are style/reference material only. They are not supplied proof source PNGs and must not be used to bypass reference-capable imagegen.');
     }
     if (localSourceGateBlocksInput) {
-      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source or add a documented repair method first.');
+      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source with a new authored source or explicitly adopt a documented secondary repair method first.');
     }
     console.error('');
     if (builtinMethodGateBlocked) {

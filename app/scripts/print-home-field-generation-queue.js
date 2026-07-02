@@ -204,8 +204,14 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!/method-change details/i.test(requiredText) || !/copyable user prompt/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must say method-change details stay in queue output, not the prompt`);
   }
-  if (!/new complete 8x4 local state-sheet source/i.test(requiredText)) {
-    issues.push(`${itemId}: sourceGateRecovery.requiredActions must require a new complete 8x4 local source`);
+  if (!/Prefer .*new authored complete 8x4 local state-sheet source/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must prefer a new authored complete 8x4 local source`);
+  }
+  if (!/repair only as a secondary explicit method/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must make repair secondary to new authored source`);
+  }
+  if (!/passing palette\/count scripts alone is not production-ready/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject palette-only production readiness`);
   }
   if (!/repair method/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must allow only an explicit documented repair method`);
@@ -221,6 +227,9 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   }
   if (!/production-ready candidate output from an intentional blocker/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must distinguish production-ready output from a blocker`);
+  }
+  if (!/repair experiment/i.test(criteriaText) || !/visual review clears the original source defects/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must label repair runs and require visual clearance before production-ready claims`);
   }
 }
 

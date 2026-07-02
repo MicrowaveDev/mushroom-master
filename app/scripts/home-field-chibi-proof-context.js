@@ -105,7 +105,7 @@ function main() {
   console.log('Freshness warning: existing .agent files are not proof of a fresh run. After rejection, run archive-stale-chibi-proof only after source preflight passes, then stage the queue source and bind the new source chain in candidate-evidence.manifest.json.');
   console.log('Blocker reporting warning: if source preflight, archive, or staging blocks the run, still run the read-only next-chibi-proof helper before final response and report that no split frames, candidate, preview, app overwrite, or fallback imagegen occurred.');
   if (sourceGateBlocked) {
-    console.log(`Prompt issuance warning: this queue item is blocked for the current supplied source hash (${sourceGate.sourceSha256 || '<missing hash>'}); do not rerun archive/stage for ${localSource?.sourcePath || '<missing>'} until the sourcePath is replaced or a documented repair method is added.`);
+    console.log(`Prompt issuance warning: this queue item is blocked for the current supplied source hash (${sourceGate.sourceSha256 || '<missing hash>'}); do not rerun archive/stage for ${localSource?.sourcePath || '<missing>'} until the sourcePath is replaced with a new authored source or a documented secondary repair method is explicitly adopted.`);
   } else {
     console.log(`Prompt issuance warning: this queue item is ready because it has a concrete supplied complete local 8x4 state-sheet source (${localSource?.sourcePath || '<missing>'}); use the queue-printed --source commands. Do not infer .env or retry inactive methods from memory.`);
   }
