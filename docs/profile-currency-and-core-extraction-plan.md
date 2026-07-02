@@ -326,18 +326,20 @@ backlog until the items are split into tickets or implementation phases.
 - Manual support flows now exist locally as of 2026-07-02:
   `npm run game:support:money-action` can grant/revoke wallet currency,
   grant/revoke/freeze/unfreeze assets, mark a purchase refunded, attach
-  evidence JSON, and record immutable `support_actions` notes. Still build the
-  actual admin UI and final support runbooks before non-engineering support
-  staff use these flows.
+  evidence JSON, and record immutable `support_actions` notes. Asset
+  freeze/unfreeze/revoke actions can target either `assetId` or
+  `assetInstanceId`. Still build the actual admin UI and final support runbooks
+  before non-engineering support staff use these flows.
 - A token-gated support admin JSON API now exists as of 2026-07-02:
   `/api/admin/support/*` mirrors the read-only lookup and audited mutation
   services for future admin UI integration. It requires
   `SUPPORT_ADMIN_API_TOKEN` and an explicit support actor id. Optional
   `SUPPORT_ADMIN_OPERATORS_JSON` / `SUPPORT_ADMIN_OPERATORS` role mapping can
   restrict read, wallet, asset, refund, and approval actions per operator.
-  Asset mutation endpoints cover grant, revoke, freeze, and unfreeze. Still
-  build the actual admin UI and final support runbooks before non-engineering
-  support staff use these flows.
+  Asset mutation endpoints cover grant, revoke, freeze, and unfreeze; disputed
+  asset operations can target either `assetId` or `assetInstanceId`. Still build
+  the actual admin UI and final support runbooks before non-engineering support
+  staff use these flows.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -407,9 +409,10 @@ backlog until the items are split into tickets or implementation phases.
 - Add duplicate inventory semantics instead of only "unowned candidate" rolls:
   stackable duplicates, burn/exchange rules, and clear handling for "no
   eligible assets left."
-- Before duplicate inventory or marketplace transfers, extend support asset
-  actions to target specific asset instance ids, not only asset ids, so
-  freezes/revokes can distinguish a disputed copy from a later legitimate copy.
+- Support asset actions can now target specific asset instance ids as of
+  2026-07-02, so freezes/revokes can distinguish a disputed copy from a later
+  legitimate copy. Still add the actual duplicate inventory, burn/exchange, and
+  transfer semantics before marketplace work.
 - Add marketplace/trading only after asset-instance transfer rules exist:
   escrow, listing fees, fraud controls, moderation, trade locks, audit logs, and
   refund/dispute interaction.
@@ -1386,6 +1389,15 @@ or legal/support/compliance rollout work.
    - The token-gated support admin API exposes `asset-freeze` and
      `asset-unfreeze` endpoints behind the `asset_operator` role and optional
      multi-operator approval policy.
+22. Instance-scoped support asset actions exist.
+   - `supportFreezeAsset(...)`, `supportUnfreezeAsset(...)`, and
+     `supportRevokeAsset(...)` accept `assetInstanceId` as a narrower target
+     than `assetId`.
+   - Instance-scoped mutations record `support_actions.target_type =
+     "asset_instance"` and `target_id = player_asset_instances.id`, while still
+     carrying the resolved `assetId` in the result payload.
+   - The support CLI exposes `--instance=<assetInstanceId>`, and the token-gated
+     admin API accepts `assetInstanceId` on freeze/unfreeze/revoke bodies.
 
 ### Remaining launch gates
 
@@ -1436,8 +1448,8 @@ or legal/support/compliance rollout work.
   freezes, partial/late crypto payments, overpayments, and support
   investigations. **Local refund/reversal clawback and support-review status
   recording are implemented 2026-07-02, and local asset freeze/unfreeze support
-  tooling is implemented**, but live provider semantics and runbooks still need
-  validation.
+  tooling, including instance-scoped targeting, is implemented**, but live
+  provider semantics and runbooks still need validation.
 - Add the actual admin/support UI on top of the token-gated JSON API before
   non-engineering support use, then finish production scheduler/webhook routing.
 - Validate provider-specific settlement adapters and runbooks against real

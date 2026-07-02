@@ -65,6 +65,10 @@ For disputed assets, use `asset-freeze` first. Frozen assets do not count as
 active owned assets and cannot stay equipped. Use `asset-unfreeze` if the
 dispute is resolved in the player's favor, or `asset-revoke` if the chargeback
 or refund is confirmed and the asset should be permanently removed.
+When a support packet gives a specific `player_asset_instances.id`, pass
+`--instance=<assetInstanceId>` to `asset-freeze`, `asset-unfreeze`, or
+`asset-revoke`; otherwise pass `--asset=<assetId>` for the current one-copy skin
+model.
 
 For API-backed support tooling, set `SUPPORT_ADMIN_API_TOKEN` and pass an
 explicit support actor id. To restrict operators by role, configure
@@ -88,6 +92,8 @@ wallet, asset, and refund mutations. The approving actor must be different from
 the action actor and must have `support_approver` or `admin`. Pass the approver
 with `x-support-approval-actor-id` or `approvalActorId`; successful mutations
 store the approval under `support_actions.evidence.approval`.
+Asset admin API mutations accept the same optional `assetInstanceId` body field
+for instance-scoped disputes.
 
 Keep provider raw exports according to the final data-retention policy. Do not
 store payment exports in the repository.

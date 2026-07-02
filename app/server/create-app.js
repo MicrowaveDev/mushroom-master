@@ -856,6 +856,7 @@ export async function createApp() {
           actorId: req.supportActorId,
           playerId: req.body.playerId,
           assetId: req.body.assetId,
+          assetInstanceId: req.body.assetInstanceId,
           reason: req.body.reason,
           note: req.body.note,
           evidence: supportEvidence(req)
@@ -877,6 +878,7 @@ export async function createApp() {
           actorId: req.supportActorId,
           playerId: req.body.playerId,
           assetId: req.body.assetId,
+          assetInstanceId: req.body.assetInstanceId,
           reason: req.body.reason,
           note: req.body.note,
           evidence: supportEvidence(req)
@@ -898,6 +900,7 @@ export async function createApp() {
           actorId: req.supportActorId,
           playerId: req.body.playerId,
           assetId: req.body.assetId,
+          assetInstanceId: req.body.assetInstanceId,
           reason: req.body.reason,
           note: req.body.note,
           evidence: supportEvidence(req)

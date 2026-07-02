@@ -209,6 +209,92 @@ test('[Req 4-Z, 14-F] support can freeze, unfreeze, and revoke disputed assets',
   );
 });
 
+test('[Req 4-Z, 14-F] support can target disputed asset instances directly', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4705 });
+  const assetId = portraitAssetId('axilin', '1');
+  const grant = await supportGrantAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetId,
+    reason: 'event_reward',
+    evidence: { ticket: 'SUP-12' }
+  });
+  const assetInstanceId = grant.instance.id;
+  await equipAsset(player.id, assetId);
+
+  const mismatch = supportFreezeAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetId: portraitAssetId('lomie', '1'),
+    assetInstanceId,
+    reason: 'wrong_asset_reference',
+    evidence: { ticket: 'SUP-13' }
+  });
+  await assert.rejects(mismatch, /must match assetId/);
+
+  const freeze = await supportFreezeAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetInstanceId,
+    reason: 'instance_dispute_opened',
+    evidence: { ticket: 'SUP-14' }
+  });
+  assert.equal(freeze.action.status, 'applied');
+  assert.equal(freeze.action.targetType, 'asset_instance');
+  assert.equal(freeze.action.targetId, assetInstanceId);
+  assert.equal(freeze.action.result.assetId, assetId);
+  assert.equal(freeze.action.result.assetInstanceId, assetInstanceId);
+  assert.equal(freeze.frozen.id, assetInstanceId);
+  assert.equal(freeze.resetEquipment.assetId, portraitAssetId('axilin', 'default'));
+
+  const instanceLookup = await lookupMoneySupportRecords({ query: assetInstanceId, limit: 10 });
+  assert.ok(instanceLookup.assetInstances.some((row) => row.id === assetInstanceId));
+  assert.ok(instanceLookup.supportActions.some((action) => action.id === freeze.action.id));
+
+  const unfreeze = await supportUnfreezeAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetInstanceId,
+    reason: 'instance_dispute_resolved',
+    evidence: { ticket: 'SUP-15' }
+  });
+  assert.equal(unfreeze.action.status, 'applied');
+  assert.equal(unfreeze.action.targetType, 'asset_instance');
+  assert.equal(unfreeze.unfrozen.id, assetInstanceId);
+  assert.equal(unfreeze.unfrozen.status, 'active');
+
+  await supportFreezeAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetInstanceId,
+    reason: 'instance_chargeback_confirmed',
+    evidence: { ticket: 'SUP-16' }
+  });
+  const revoke = await supportRevokeAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetInstanceId,
+    reason: 'instance_chargeback_removal',
+    evidence: { ticket: 'SUP-17' }
+  });
+  assert.equal(revoke.action.status, 'applied');
+  assert.equal(revoke.action.targetType, 'asset_instance');
+  assert.equal(revoke.action.targetId, assetInstanceId);
+  assert.equal(revoke.revoked.id, assetInstanceId);
+  assert.equal(revoke.revoked.status, 'revoked');
+
+  const instanceActions = await listSupportActions({
+    playerId: player.id,
+    targetType: 'asset_instance',
+    targetId: assetInstanceId
+  });
+  assert.deepEqual(
+    instanceActions.map((action) => action.actionType).sort(),
+    ['asset_freeze', 'asset_freeze', 'asset_revoke', 'asset_unfreeze']
+  );
+});
+
 test('[Req 4-Z] support can mark a completed purchase refunded with audit evidence', async () => {
   await freshDb();
   const { player } = await createPlayer({ telegramId: 4703 });

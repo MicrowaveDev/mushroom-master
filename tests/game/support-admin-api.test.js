@@ -248,18 +248,21 @@ test('[Req 4-Z, 14-F] support admin API can grant, freeze, unfreeze, and revoke 
     assert.equal(grant.status, 200);
     assert.equal(grant.body.data.action.actionType, 'asset_grant');
     assert.equal(grant.body.data.instance.assetId, assetId);
+    const assetInstanceId = grant.body.data.instance.id;
 
     const freeze = await request(app)
       .post('/api/admin/support/actions/asset-freeze')
       .set(supportHeaders)
       .send({
         playerId: player.id,
-        assetId,
+        assetInstanceId,
         reason: 'api_dispute_opened',
         evidence: { ticket: 'SUP-API-3' }
       });
     assert.equal(freeze.status, 200);
     assert.equal(freeze.body.data.action.actionType, 'asset_freeze');
+    assert.equal(freeze.body.data.action.targetType, 'asset_instance');
+    assert.equal(freeze.body.data.action.targetId, assetInstanceId);
     assert.equal(freeze.body.data.frozen.status, 'frozen');
 
     const unfreeze = await request(app)
@@ -267,12 +270,13 @@ test('[Req 4-Z, 14-F] support admin API can grant, freeze, unfreeze, and revoke 
       .set(supportHeaders)
       .send({
         playerId: player.id,
-        assetId,
+        assetInstanceId,
         reason: 'api_dispute_resolved',
         evidence: { ticket: 'SUP-API-4' }
       });
     assert.equal(unfreeze.status, 200);
     assert.equal(unfreeze.body.data.action.actionType, 'asset_unfreeze');
+    assert.equal(unfreeze.body.data.action.targetType, 'asset_instance');
     assert.equal(unfreeze.body.data.unfrozen.status, 'active');
 
     const revoke = await request(app)

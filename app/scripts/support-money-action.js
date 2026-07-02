@@ -33,9 +33,9 @@ function usage() {
     '  npm run game:support:money-action -- wallet-grant --actor=<id> --player=<playerId> --amount=<n> [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- wallet-revoke --actor=<id> --player=<playerId> --amount=<n> [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- asset-grant --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
-    '  npm run game:support:money-action -- asset-revoke --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
-    '  npm run game:support:money-action -- asset-freeze --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
-    '  npm run game:support:money-action -- asset-unfreeze --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
+    '  npm run game:support:money-action -- asset-revoke --actor=<id> --player=<playerId> [--asset=<assetId>] [--instance=<assetInstanceId>] [--reason=...] [--note=...] [--evidence-json={}]',
+    '  npm run game:support:money-action -- asset-freeze --actor=<id> --player=<playerId> [--asset=<assetId>] [--instance=<assetInstanceId>] [--reason=...] [--note=...] [--evidence-json={}]',
+    '  npm run game:support:money-action -- asset-unfreeze --actor=<id> --player=<playerId> [--asset=<assetId>] [--instance=<assetInstanceId>] [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- purchase-refund --actor=<id> --intent=<intentId> [--no-clawback] [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- list [--player=<playerId>] [--target-type=...] [--target-id=...] [--limit=25]'
   ].join('\n');
@@ -75,19 +75,22 @@ if (action === 'wallet-grant' || action === 'wallet-revoke') {
   result = await supportRevokeAsset({
     ...common,
     playerId: argValue('--player'),
-    assetId: argValue('--asset')
+    assetId: argValue('--asset'),
+    assetInstanceId: argValue('--instance')
   });
 } else if (action === 'asset-freeze') {
   result = await supportFreezeAsset({
     ...common,
     playerId: argValue('--player'),
-    assetId: argValue('--asset')
+    assetId: argValue('--asset'),
+    assetInstanceId: argValue('--instance')
   });
 } else if (action === 'asset-unfreeze') {
   result = await supportUnfreezeAsset({
     ...common,
     playerId: argValue('--player'),
-    assetId: argValue('--asset')
+    assetId: argValue('--asset'),
+    assetInstanceId: argValue('--instance')
   });
 } else if (action === 'purchase-refund') {
   result = await supportMarkPurchaseRefunded({

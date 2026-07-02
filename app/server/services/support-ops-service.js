@@ -32,6 +32,11 @@ function normalizeEvidence(evidence = {}) {
   return evidence && typeof evidence === 'object' && !Array.isArray(evidence) ? evidence : {};
 }
 
+function normalizeAssetInstanceId(assetInstanceId) {
+  const value = String(assetInstanceId || '').trim();
+  return value || null;
+}
+
 function rowToSupportAction(row) {
   return {
     id: row.id,
@@ -104,6 +109,18 @@ async function activeAssetInstance(client, playerId, assetId) {
   return assetInstanceByStatus(client, playerId, assetId, 'active');
 }
 
+async function assetInstanceById(client, playerId, assetInstanceId) {
+  const existing = await client.query(
+    `SELECT *
+     FROM player_asset_instances
+     WHERE id = $1
+       AND player_id = $2
+     LIMIT 1`,
+    [assetInstanceId, playerId]
+  );
+  return existing.rows[0] || null;
+}
+
 function rowToAssetInstance(row) {
   if (!row) return null;
   return {
@@ -118,13 +135,69 @@ function rowToAssetInstance(row) {
   };
 }
 
-async function resetDisabledPortraitEquipment(client, playerId, asset) {
+async function resolveSupportAssetTarget(client, {
+  playerId,
+  assetId,
+  assetInstanceId,
+  actionName
+}) {
+  const normalizedInstanceId = normalizeAssetInstanceId(assetInstanceId);
+  let resolvedAssetId = String(assetId || '').trim();
+  let requestedInstance = null;
+
+  if (normalizedInstanceId) {
+    requestedInstance = await assetInstanceById(client, playerId, normalizedInstanceId);
+    if (!requestedInstance) throw new Error('Unknown asset instance');
+    if (resolvedAssetId && requestedInstance.asset_id !== resolvedAssetId) {
+      throw new Error('Asset instance must match assetId');
+    }
+    resolvedAssetId = requestedInstance.asset_id;
+  }
+
+  if (!resolvedAssetId) {
+    throw new Error(`Support asset ${actionName} requires assetId or assetInstanceId`);
+  }
+
+  const asset = getAssetById(resolvedAssetId);
+  if (!asset) throw new Error('Unknown asset');
+
+  return {
+    asset,
+    assetInstanceId: normalizedInstanceId,
+    requestedInstance
+  };
+}
+
+function supportAssetActionTarget(asset, assetInstanceId) {
+  return assetInstanceId
+    ? { targetType: 'asset_instance', targetId: assetInstanceId }
+    : { targetType: 'asset', targetId: asset.assetId };
+}
+
+async function resetDisabledPortraitEquipment(client, playerId, asset, assetInstanceId = null) {
   if (asset?.slot !== 'portrait' || asset?.targetType !== 'character') return null;
   const parsed = parsePortraitAssetId(asset.assetId);
   const targetId = asset.targetId || parsed?.mushroomId || null;
   if (!targetId) return null;
   const defaultAssetId = `portrait.${targetId}.default`;
   const now = nowIso();
+  if (assetInstanceId) {
+    const matchingEquipment = await client.query(
+      `SELECT id FROM player_equipped_assets
+       WHERE player_id = $1
+         AND slot = 'portrait'
+         AND target_type = 'character'
+         AND target_id = $2
+         AND asset_id = $3
+         AND asset_instance_id = $4
+       LIMIT 1`,
+      [playerId, targetId, asset.assetId, assetInstanceId]
+    );
+    if (!matchingEquipment.rowCount) return null;
+  }
+  const params = [playerId, targetId, defaultAssetId, now, asset.assetId];
+  const instanceClause = assetInstanceId ? 'AND asset_instance_id = $6' : '';
+  if (assetInstanceId) params.push(assetInstanceId);
   await client.query(
     `UPDATE player_equipped_assets
      SET asset_instance_id = NULL,
@@ -134,8 +207,9 @@ async function resetDisabledPortraitEquipment(client, playerId, asset) {
        AND slot = 'portrait'
        AND target_type = 'character'
        AND target_id = $2
-       AND asset_id = $5`,
-    [playerId, targetId, defaultAssetId, now, asset.assetId]
+       AND asset_id = $5
+       ${instanceClause}`,
+    params
   );
   await client.query(
     `UPDATE player_mushrooms
@@ -308,22 +382,32 @@ export async function supportRevokeAsset({
   actorId,
   playerId,
   assetId,
+  assetInstanceId,
   reason,
   note = '',
   evidence = {}
 } = {}) {
   const actor = normalizeActor(actorId);
-  const asset = getAssetById(assetId);
   if (!playerId) throw new Error('Support asset revoke requires playerId');
-  if (!asset) throw new Error('Unknown asset');
   const actionId = createId('support');
   const actionReason = normalizeReason(reason);
   const actionNote = normalizeNote(note);
   const actionEvidence = normalizeEvidence(evidence);
 
   return withTransaction(async (client) => {
-    const existing = await activeAssetInstance(client, playerId, asset.assetId)
-      || await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
+    const target = await resolveSupportAssetTarget(client, {
+      playerId,
+      assetId,
+      assetInstanceId,
+      actionName: 'revoke'
+    });
+    const { asset } = target;
+    const actionTarget = supportAssetActionTarget(asset, target.assetInstanceId);
+    const requestedInstance = target.requestedInstance;
+    const existing = requestedInstance
+      ? (['active', 'frozen'].includes(requestedInstance.status) ? requestedInstance : null)
+      : await activeAssetInstance(client, playerId, asset.assetId)
+        || await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
     let revoked = null;
     let resetEquipment = null;
     if (existing) {
@@ -347,7 +431,12 @@ export async function supportRevokeAsset({
       );
       const updated = await client.query(`SELECT * FROM player_asset_instances WHERE id = $1`, [existing.id]);
       revoked = rowToAssetInstance(updated.rows[0]);
-      resetEquipment = await resetDisabledPortraitEquipment(client, playerId, asset);
+      resetEquipment = await resetDisabledPortraitEquipment(
+        client,
+        playerId,
+        asset,
+        target.assetInstanceId ? existing.id : null
+      );
     }
 
     const action = await insertSupportAction(client, {
@@ -355,13 +444,19 @@ export async function supportRevokeAsset({
       actorId: actor,
       actionType: 'asset_revoke',
       playerId,
-      targetType: 'asset',
-      targetId: asset.assetId,
+      targetType: actionTarget.targetType,
+      targetId: actionTarget.targetId,
       status: revoked ? 'applied' : 'noop',
       reason: actionReason,
       note: actionNote,
       evidence: actionEvidence,
-      result: { assetId: asset.assetId, revoked, resetEquipment }
+      result: {
+        assetId: asset.assetId,
+        assetInstanceId: target.assetInstanceId || revoked?.id || null,
+        requestedInstance: rowToAssetInstance(requestedInstance),
+        revoked,
+        resetEquipment
+      }
     });
     return { action, asset, revoked, resetEquipment };
   });
@@ -371,22 +466,34 @@ export async function supportFreezeAsset({
   actorId,
   playerId,
   assetId,
+  assetInstanceId,
   reason,
   note = '',
   evidence = {}
 } = {}) {
   const actor = normalizeActor(actorId);
-  const asset = getAssetById(assetId);
   if (!playerId) throw new Error('Support asset freeze requires playerId');
-  if (!asset) throw new Error('Unknown asset');
   const actionId = createId('support');
   const actionReason = normalizeReason(reason || 'support_asset_freeze');
   const actionNote = normalizeNote(note);
   const actionEvidence = normalizeEvidence(evidence);
 
   return withTransaction(async (client) => {
-    const existing = await activeAssetInstance(client, playerId, asset.assetId);
-    const existingFrozen = existing ? null : await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
+    const target = await resolveSupportAssetTarget(client, {
+      playerId,
+      assetId,
+      assetInstanceId,
+      actionName: 'freeze'
+    });
+    const { asset } = target;
+    const actionTarget = supportAssetActionTarget(asset, target.assetInstanceId);
+    const requestedInstance = target.requestedInstance;
+    const existing = requestedInstance
+      ? (requestedInstance.status === 'active' ? requestedInstance : null)
+      : await activeAssetInstance(client, playerId, asset.assetId);
+    const existingFrozen = requestedInstance
+      ? (requestedInstance.status === 'frozen' ? requestedInstance : null)
+      : existing ? null : await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
     let frozen = null;
     let resetEquipment = null;
     if (existing) {
@@ -408,7 +515,12 @@ export async function supportFreezeAsset({
       );
       const updated = await client.query(`SELECT * FROM player_asset_instances WHERE id = $1`, [existing.id]);
       frozen = rowToAssetInstance(updated.rows[0]);
-      resetEquipment = await resetDisabledPortraitEquipment(client, playerId, asset);
+      resetEquipment = await resetDisabledPortraitEquipment(
+        client,
+        playerId,
+        asset,
+        target.assetInstanceId ? existing.id : null
+      );
     }
 
     const action = await insertSupportAction(client, {
@@ -416,14 +528,16 @@ export async function supportFreezeAsset({
       actorId: actor,
       actionType: 'asset_freeze',
       playerId,
-      targetType: 'asset',
-      targetId: asset.assetId,
+      targetType: actionTarget.targetType,
+      targetId: actionTarget.targetId,
       status: frozen ? 'applied' : 'noop',
       reason: actionReason,
       note: actionNote,
       evidence: actionEvidence,
       result: {
         assetId: asset.assetId,
+        assetInstanceId: target.assetInstanceId || frozen?.id || existingFrozen?.id || null,
+        requestedInstance: rowToAssetInstance(requestedInstance),
         frozen: frozen || rowToAssetInstance(existingFrozen),
         alreadyFrozen: Boolean(existingFrozen),
         resetEquipment
@@ -443,25 +557,43 @@ export async function supportUnfreezeAsset({
   actorId,
   playerId,
   assetId,
+  assetInstanceId,
   reason,
   note = '',
   evidence = {}
 } = {}) {
   const actor = normalizeActor(actorId);
-  const asset = getAssetById(assetId);
   if (!playerId) throw new Error('Support asset unfreeze requires playerId');
-  if (!asset) throw new Error('Unknown asset');
   const actionId = createId('support');
   const actionReason = normalizeReason(reason || 'support_asset_unfreeze');
   const actionNote = normalizeNote(note);
   const actionEvidence = normalizeEvidence(evidence);
 
   return withTransaction(async (client) => {
-    const active = await activeAssetInstance(client, playerId, asset.assetId);
-    const existing = active ? null : await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
+    const target = await resolveSupportAssetTarget(client, {
+      playerId,
+      assetId,
+      assetInstanceId,
+      actionName: 'unfreeze'
+    });
+    const { asset } = target;
+    const actionTarget = supportAssetActionTarget(asset, target.assetInstanceId);
+    const requestedInstance = target.requestedInstance;
+    const active = requestedInstance
+      ? (requestedInstance.status === 'active' ? requestedInstance : null)
+      : await activeAssetInstance(client, playerId, asset.assetId);
+    const existing = requestedInstance
+      ? (requestedInstance.status === 'frozen' ? requestedInstance : null)
+      : active ? null : await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
     let unfrozen = rowToAssetInstance(active);
     let alreadyActive = Boolean(active);
     if (existing) {
+      if (target.assetInstanceId) {
+        const activeDuplicate = await activeAssetInstance(client, playerId, asset.assetId);
+        if (activeDuplicate && activeDuplicate.id !== existing.id) {
+          throw new Error('Cannot unfreeze asset instance while another active instance exists');
+        }
+      }
       await client.query(
         `UPDATE player_asset_instances
          SET status = 'active',
@@ -488,13 +620,19 @@ export async function supportUnfreezeAsset({
       actorId: actor,
       actionType: 'asset_unfreeze',
       playerId,
-      targetType: 'asset',
-      targetId: asset.assetId,
+      targetType: actionTarget.targetType,
+      targetId: actionTarget.targetId,
       status: existing ? 'applied' : 'noop',
       reason: actionReason,
       note: actionNote,
       evidence: actionEvidence,
-      result: { assetId: asset.assetId, unfrozen, alreadyActive }
+      result: {
+        assetId: asset.assetId,
+        assetInstanceId: target.assetInstanceId || unfrozen?.id || null,
+        requestedInstance: rowToAssetInstance(requestedInstance),
+        unfrozen,
+        alreadyActive
+      }
     });
     return { action, asset, unfrozen, alreadyActive };
   });
