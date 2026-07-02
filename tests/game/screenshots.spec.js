@@ -36,6 +36,204 @@ function debugLog(message, details = undefined) {
   console.log(`[screenshots] ${message}`, details);
 }
 
+async function installSession(page, sessionKey) {
+  await page.addInitScript((key) => {
+    localStorage.setItem('sessionKey', key);
+    localStorage.setItem('mushroomPreferredLang', 'en');
+  }, sessionKey);
+}
+
+async function setupHome(request, page, {
+  telegramId,
+  username
+}) {
+  await resetDevDb(request);
+  const player = await createSession(request, {
+    telegramId,
+    username,
+    name: username,
+    lang: 'en'
+  });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  await installSession(page, player.sessionKey);
+  return player;
+}
+
+async function expectInsideViewport(locator, label) {
+  const bounds = await locator.evaluate((element) => {
+    element.scrollIntoView({ block: 'center', inline: 'nearest' });
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight
+    };
+  });
+  expect(bounds.left, `${label} should not overflow left`).toBeGreaterThanOrEqual(0);
+  expect(bounds.top, `${label} should not overflow top`).toBeGreaterThanOrEqual(0);
+  expect(bounds.right, `${label} should not overflow right`).toBeLessThanOrEqual(bounds.viewportWidth);
+  expect(bounds.bottom, `${label} should not overflow bottom`).toBeLessThanOrEqual(bounds.viewportHeight);
+}
+
+async function expectStackedWithoutOverlap(page, upperSelector, lowerSelector, label) {
+  const bounds = await page.evaluate(({ upperSelector: first, lowerSelector: second }) => {
+    const upper = document.querySelector(first)?.getBoundingClientRect();
+    const lower = document.querySelector(second)?.getBoundingClientRect();
+    if (!upper || !lower) return null;
+    return { upperBottom: upper.bottom, lowerTop: lower.top };
+  }, { upperSelector, lowerSelector });
+  expect(bounds, `${label} elements should exist`).toBeTruthy();
+  expect(bounds.lowerTop, `${label} lower block should sit after upper block`).toBeGreaterThanOrEqual(bounds.upperBottom - 1);
+}
+
+async function captureWalletSurface(page, name) {
+  await expect(page.locator('.home-wallet-shop')).toBeVisible();
+  await expectInsideViewport(page.locator('.home-wallet-shop'), `wallet shop ${name}`);
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+  await captureElementScreenshot(page, screenshotDir, '.home-wallet-shop', name);
+}
+
+async function captureSkinPackSurface(page, name) {
+  await expect(page.locator('.home-mushroom-picker')).toBeVisible();
+  await expectStackedWithoutOverlap(page, '.home-portrait-swatches', '.home-pack-details', `skin pack ${name}`);
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+  await captureElementScreenshot(page, screenshotDir, '.home-mushroom-picker', name);
+}
+
+test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', async ({ page, request, baseURL }) => {
+  const player = await setupHome(request, page, {
+    telegramId: 7201,
+    username: 'wallet_pack_screens'
+  });
+
+  for (const [viewport, suffix] of [
+    [MOBILE_VIEWPORT, 'mobile'],
+    [DESKTOP_VIEWPORT, 'desktop']
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto(`${baseURL}/home`);
+    await page.waitForSelector('.home');
+    await page.locator('.home-wallet-buy').click();
+    await expect(page.locator('.home-wallet-bundle')).toHaveCount(9);
+    await expect(page.locator('.home-wallet-links a[href="https://support.example/pay"]')).toBeVisible();
+    await expect(page.locator('.home-wallet-links a[href="https://terms.example/pay"]')).toBeVisible();
+    await page.locator('.home-wallet-bundle', { hasText: 'NOWPayments' }).first().click();
+    await expect(page.locator('.home-wallet-shop-status')).toHaveText(/Payment was not completed/i);
+    await captureWalletSurface(page, `02e-home-wallet-shop-${suffix}.png`);
+  }
+
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  const paidPortraits = bootstrap.progression.thalla.portraits.filter((portrait) => portrait.id !== 'default');
+  expect(paidPortraits.length).toBeGreaterThan(1);
+  const [rollPortrait, ownedPortrait] = paidPortraits;
+  await page.route('**/api/bootstrap', async (route) => {
+    const response = await route.fetch();
+    const json = await response.json();
+    json.data.progression.thalla.portraits = json.data.progression.thalla.portraits.map((portrait) => {
+      if (portrait.id === rollPortrait.id) {
+        return {
+          ...portrait,
+          owned: false,
+          unlocked: false,
+          purchaseAvailable: false,
+          rollAvailable: true,
+          packId: 'active_pack',
+          price: 10,
+          cost: 10
+        };
+      }
+      if (portrait.id === ownedPortrait.id) {
+        return {
+          ...portrait,
+          owned: true,
+          unlocked: true,
+          purchaseAvailable: false,
+          rollAvailable: false,
+          packId: 'complete_pack'
+        };
+      }
+      return portrait;
+    });
+    json.data.assetPacks = [
+      {
+        id: 'active_pack',
+        name: { en: 'Active Odds Pack', ru: 'Активный пак' },
+        status: 'active',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: rollPortrait.assetId, rarity: 'rare', dropWeight: 30 },
+          { assetId: ownedPortrait.assetId, rarity: 'common', dropWeight: 70 }
+        ]
+      },
+      {
+        id: 'complete_pack',
+        name: { en: 'Complete Pack', ru: 'Полный пак' },
+        status: 'active',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: ownedPortrait.assetId, rarity: 'rare', dropWeight: 100 }
+        ]
+      },
+      {
+        id: 'future_pack',
+        name: { en: 'Future Pack', ru: 'Будущий пак' },
+        status: 'active',
+        startsAt: '2999-01-01T00:00:00.000Z',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: rollPortrait.assetId, rarity: 'common', dropWeight: 100 }
+        ]
+      },
+      {
+        id: 'expired_pack',
+        name: { en: 'Expired Pack', ru: 'Завершённый пак' },
+        status: 'active',
+        endsAt: '2000-01-01T00:00:00.000Z',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: rollPortrait.assetId, rarity: 'rare', dropWeight: 100 }
+        ]
+      }
+    ];
+    await route.fulfill({
+      status: response.status(),
+      headers: {
+        ...response.headers(),
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(json)
+    });
+  });
+
+  for (const [viewport, suffix] of [
+    [MOBILE_VIEWPORT, 'mobile'],
+    [DESKTOP_VIEWPORT, 'desktop']
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto(`${baseURL}/home`);
+    await page.waitForSelector('.home');
+    await page.locator('.home-roster-change-skin').click();
+    const rollableSwatch = page.locator(`.home-portrait-swatch--rollable[data-portrait-id="${rollPortrait.id}"]`);
+    await expect(rollableSwatch).toBeVisible();
+    await expect(page.locator('.home-pack-detail', { hasText: 'Active Odds Pack' })).toContainText(/Odds:.*Common 70%.*Rare 30%/);
+    await expect(page.locator('.home-pack-detail', { hasText: 'Complete Pack' })).toContainText('All 1 skins owned.');
+    await expect(page.locator('.home-pack-detail', { hasText: 'Future Pack' })).toContainText('Pack opens later.');
+    await expect(page.locator('.home-pack-detail', { hasText: 'Expired Pack' })).toContainText('Pack ended.');
+    await captureSkinPackSurface(page, `02f-home-pack-states-${suffix}.png`);
+  }
+});
+
 test('[Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)', async ({ page, request, baseURL }) => {
   debugLog('starting screenshot capture run', { baseURL });
   await page.setViewportSize(MOBILE_VIEWPORT);

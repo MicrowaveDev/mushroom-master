@@ -433,13 +433,16 @@ backlog until the items are split into tickets or implementation phases.
   purchase/equip for the active mushroom, unchanged character XP after that
   purchase, and roll-only vs direct-only skin picker presentation. This pass
   also fixed the frontend customization refresh wiring after successful skin
-  actions. Still add deeper screenshot/layout assertions and live provider
-  status validation with real sandbox/live payloads.
+  actions. Screenshot-backed layout assertions now cover the wallet shop,
+  checkout failure/support links, active pack odds, complete pack copy, and
+  future/expired pack labels. Still add live provider status validation with
+  real sandbox/live payloads.
 - Frontend/e2e coverage now exists for the no-unowned-assets/complete-pack
   picker state plus active, future, and expired pack presentation. Still add
   full pack-odds presentation across real configured packs.
-- Add product screenshots/layout assertions for wallet, purchase failure, pack
-  odds, and support states whenever those surfaces change.
+- Product screenshots/layout assertions now exist for wallet purchase failure,
+  support links, pack odds, and complete/future/expired pack states. Add more
+  screenshots whenever those surfaces change again.
 
 ### 7. Core Package Release And Second Consumer
 
@@ -1452,6 +1455,14 @@ or legal/support/compliance rollout work.
      without changing the global e2e backend gacha env.
    - The same spec now also pins complete-pack/no-unowned copy plus future and
      expired pack state labels in the skin picker.
+27. Screenshot/layout coverage exists for wallet and pack states.
+   - `tests/game/screenshots.spec.js` captures
+     `02e-home-wallet-shop-{mobile,desktop}.png` and
+     `02f-home-pack-states-{mobile,desktop}.png` with sidecar JSON diagnostics.
+   - The test asserts configured support/terms links, checkout failure status,
+     wallet shop viewport fit, no broken images, no horizontal overflow, active
+     pack odds text, complete-pack/no-unowned copy, future/expired pack labels,
+     and pack-detail non-overlap with portrait swatches.
 
 ### Remaining launch gates
 
@@ -1503,9 +1514,9 @@ or legal/support/compliance rollout work.
   checkout fallback, pending/failed/expired purchase status text, support/terms
   links, direct-buy skin ownership/equip for the active mushroom, unchanged
   character XP, roll-only vs direct-only picker states, and the frontend refresh
-  hook after successful skin actions, and complete/future/expired pack state
-  copy.** Full screenshot coverage, full real-pack odds coverage, and live
-  provider-status validation remain.
+  hook after successful skin actions, complete/future/expired pack state copy,
+  and screenshot-backed layout checks for wallet/support/pack surfaces.** Full
+  real-pack odds coverage and live provider-status validation remain.
 - Add provider-specific operational notes and tooling for disputes, asset
   freezes, partial/late crypto payments, overpayments, and support
   investigations. **Local refund/reversal clawback and support-review status
