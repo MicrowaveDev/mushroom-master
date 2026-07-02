@@ -28,6 +28,32 @@ async function grantWallet(request, playerId, amount) {
   expect(json.success).toBe(true);
 }
 
+async function installTelegramMiniApp(page) {
+  await page.addInitScript(() => {
+    window.__telegramInvoiceCalls = [];
+    window.__telegramInvoiceCallback = null;
+    window.Telegram = {
+      WebApp: {
+        version: '8.0',
+        initData: '',
+        viewportHeight: window.innerHeight,
+        viewportStableHeight: window.innerHeight,
+        themeParams: {},
+        safeAreaInset: {},
+        contentSafeAreaInset: {},
+        ready() {},
+        expand() {},
+        onEvent() {},
+        offEvent() {},
+        openInvoice(invoiceLink, callback) {
+          window.__telegramInvoiceCalls.push({ invoiceLink });
+          window.__telegramInvoiceCallback = callback;
+        }
+      }
+    };
+  });
+}
+
 async function setupHome(request, page, {
   telegramId,
   username
@@ -59,20 +85,28 @@ test('[Req 4-Z] wallet shop lists bundles, opens external checkout, and shows fa
   });
   await page.route('**/api/wallet/purchase-intents', async (route) => {
     const body = JSON.parse(route.request().postData() || '{}');
-    const checkout = body.provider === 'btcpay'
+    const isExpiredTelegram = body.provider === 'telegram_stars';
+    const checkout = isExpiredTelegram
       ? {
-          type: 'crypto_invoice',
+          type: 'telegram_invoice',
           provider: body.provider,
-          checkoutUrl: 'https://checkout.example/invoice-ui',
-          paymentUri: null
+          invoiceLink: null,
+          invoiceReady: false
         }
-      : {
-          type: 'crypto_invoice',
-          provider: body.provider,
-          checkoutUrl: null,
-          paymentUri: null,
-          setupRequired: true
-        };
+      : body.provider === 'btcpay'
+        ? {
+            type: 'crypto_invoice',
+            provider: body.provider,
+            checkoutUrl: 'https://checkout.example/invoice-ui',
+            paymentUri: null
+          }
+        : {
+            type: 'crypto_invoice',
+            provider: body.provider,
+            checkoutUrl: null,
+            paymentUri: null,
+            setupRequired: true
+          };
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -82,11 +116,11 @@ test('[Req 4-Z] wallet shop lists bundles, opens external checkout, and shows fa
           id: `intent-${body.provider}`,
           provider: body.provider,
           providerInvoiceId: `invoice-${body.provider}`,
-          status: 'pending',
-          checkoutStatus: checkout.setupRequired ? 'setup_required' : 'ready',
+          status: isExpiredTelegram ? 'expired' : 'pending',
+          checkoutStatus: isExpiredTelegram ? 'expired' : checkout.setupRequired ? 'setup_required' : 'ready',
           walletAmount: 100,
-          priceAmount: 100,
-          priceCurrency: 'USD',
+          priceAmount: isExpiredTelegram ? 1 : 100,
+          priceCurrency: isExpiredTelegram ? 'XTR' : 'USD',
           metadata: {
             bundleId: body.bundleId,
             paymentSurface: body.surface
@@ -105,6 +139,9 @@ test('[Req 4-Z] wallet shop lists bundles, opens external checkout, and shows fa
   await expect(page.locator('.home-wallet-links a[href="https://support.example/pay"]')).toBeVisible();
   await expect(page.locator('.home-wallet-links a[href="https://terms.example/pay"]')).toBeVisible();
 
+  await page.locator('.home-wallet-bundle', { hasText: 'Telegram Stars' }).first().click();
+  await expect(page.locator('.home-wallet-shop-status')).toHaveText(/Payment expired/i);
+
   await page.locator('.home-wallet-bundle', { hasText: 'BTCPay' }).first().click();
   await expect(page.locator('.home-wallet-shop-status')).toHaveText(/Checkout opened/i);
   await expect.poll(() => page.evaluate(() => window.__walletOpenCalls?.[0]?.url)).toBe('https://checkout.example/invoice-ui');
@@ -112,6 +149,79 @@ test('[Req 4-Z] wallet shop lists bundles, opens external checkout, and shows fa
 
   await page.locator('.home-wallet-bundle', { hasText: 'NOWPayments' }).first().click();
   await expect(page.locator('.home-wallet-shop-status')).toHaveText(/Payment was not completed/i);
+});
+
+test('[Req 4-Z] Telegram invoice completion refreshes the wallet balance', async ({ page, request, baseURL }) => {
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  const player = await setupHome(request, page, {
+    telegramId: 9104,
+    username: 'telegram_invoice_ui'
+  });
+  await installTelegramMiniApp(page);
+  const before = await api(request, player.sessionKey, '/api/bootstrap');
+  let telegramIntent = null;
+  await page.route('**/api/wallet/purchase-intents', async (route) => {
+    const response = await route.fetch();
+    const json = await response.json();
+    telegramIntent = json.data;
+    json.data.checkoutStatus = 'ready';
+    json.data.checkout = {
+      ...json.data.checkout,
+      invoiceLink: 'https://t.me/invoice/e2e-telegram-wallet',
+      invoiceReady: true,
+      setupRequired: false
+    };
+    await route.fulfill({
+      status: response.status(),
+      contentType: 'application/json',
+      body: JSON.stringify(json)
+    });
+  });
+
+  await page.goto(`${baseURL}/home`);
+  await page.waitForSelector('.home');
+  await page.locator('.home-wallet-buy').click();
+  await expect(page.locator('.home-wallet-bundle')).toHaveCount(3);
+  await page.locator('.home-wallet-bundle', { hasText: 'Telegram Stars' }).first().click();
+  await expect(page.locator('.home-wallet-shop-status')).toHaveText(/Checkout opened/i);
+  await expect.poll(() => page.evaluate(() => window.__telegramInvoiceCalls?.[0]?.invoiceLink))
+    .toBe('https://t.me/invoice/e2e-telegram-wallet');
+
+  await page.evaluate(() => window.__telegramInvoiceCallback?.('pending'));
+  await expect(page.locator('.home-wallet-shop-status')).toHaveText(/waiting for confirmation/i);
+  expect(telegramIntent).toBeTruthy();
+
+  const webhookResponse = await request.post('/api/bot/webhook', {
+    data: {
+      update_id: 910400,
+      message: {
+        message_id: 1,
+        date: Math.floor(Date.now() / 1000),
+        successful_payment: {
+          currency: telegramIntent.priceCurrency,
+          total_amount: telegramIntent.priceAmount,
+          invoice_payload: telegramIntent.id,
+          telegram_payment_charge_id: 'tg-e2e-wallet-ui'
+        }
+      }
+    }
+  });
+  expect(webhookResponse.status()).toBe(200);
+  const webhookJson = await webhookResponse.json();
+  expect(webhookJson.success).toBe(true);
+  expect(webhookJson.data.kind).toBe('wallet_payment');
+
+  const refreshPromise = page.waitForResponse((response) =>
+    response.url().includes('/api/bootstrap') && response.status() === 200
+  );
+  await page.evaluate(() => window.__telegramInvoiceCallback?.('paid'));
+  await refreshPromise;
+  await expect(page.locator('.home-wallet-shop-status')).toHaveText(/Payment confirmed/i);
+  await expect(page.locator('.home-wallet-footer > span').first().locator('strong'))
+    .toHaveText(String((before.wallet?.balances?.soft_coin || 0) + telegramIntent.walletAmount));
+
+  const after = await api(request, player.sessionKey, '/api/bootstrap');
+  expect(after.wallet.balances.soft_coin).toBe((before.wallet?.balances?.soft_coin || 0) + telegramIntent.walletAmount);
 });
 
 test('[Req 4-Y, 14-F] buying an active mushroom skin equips it without changing character XP', async ({ page, request, baseURL }) => {

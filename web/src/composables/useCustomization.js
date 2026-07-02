@@ -14,6 +14,26 @@ export function useCustomization(state, refreshBootstrap) {
     return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
   }
 
+  function statusFromWalletIntent(intent) {
+    const status = String(intent?.status || '').toLowerCase();
+    const checkoutStatus = String(intent?.checkoutStatus || '').toLowerCase();
+    if (status === 'completed') return 'confirmed';
+    if (status === 'expired' || checkoutStatus === 'expired') return 'expired';
+    if (['failed', 'cancelled', 'refunded', 'reversed', 'chargeback'].includes(status) || checkoutStatus === 'failed') {
+      return 'failed';
+    }
+    return '';
+  }
+
+  function statusFromTelegramInvoice(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'paid') return 'confirmed';
+    if (normalized === 'pending') return 'pending';
+    if (normalized === 'expired') return 'expired';
+    if (['failed', 'cancelled'].includes(normalized)) return 'failed';
+    return 'failed';
+  }
+
   async function switchPortrait({ mushroomId, portraitId }) {
     try {
       const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
@@ -89,16 +109,21 @@ export function useCustomization(state, refreshBootstrap) {
         headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
         body: JSON.stringify({ bundleId, provider, surface })
       }, state.sessionKey);
+      const intentStatus = statusFromWalletIntent(result);
+      if (intentStatus) {
+        state.walletPurchaseStatus = intentStatus;
+        if (intentStatus === 'confirmed') await refreshBootstrap();
+        return;
+      }
       const checkout = result?.checkout || {};
       const telegramInvoice = checkout.invoiceLink && globalThis.Telegram?.WebApp?.openInvoice;
       if (telegramInvoice) {
         state.walletPurchaseStatus = 'opened';
         globalThis.Telegram.WebApp.openInvoice(checkout.invoiceLink, async (status) => {
-          if (status === 'paid') {
-            state.walletPurchaseStatus = 'confirmed';
+          const invoiceStatus = statusFromTelegramInvoice(status);
+          state.walletPurchaseStatus = invoiceStatus;
+          if (invoiceStatus === 'confirmed') {
             await refreshBootstrap();
-          } else if (status === 'failed' || status === 'cancelled') {
-            state.walletPurchaseStatus = 'failed';
           }
         });
         return;

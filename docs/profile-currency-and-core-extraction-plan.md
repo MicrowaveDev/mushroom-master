@@ -427,13 +427,14 @@ backlog until the items are split into tickets or implementation phases.
 ### 6. Frontend And E2E Coverage Still Missing
 
 - Dedicated e2e coverage now exists for wallet bundle listing, external crypto
-  checkout fallback via `window.open`, checkout failure status, support/terms
-  links, direct-buy skin purchase/equip for the active mushroom, unchanged
-  character XP after that purchase, and roll-only vs direct-only skin picker
-  presentation. This pass also fixed the frontend customization refresh wiring
-  after successful skin actions. Still add Telegram invoice opening, wallet
-  refresh after verified provider payment, failed/expired provider states, and
-  deeper screenshot/layout assertions.
+  checkout fallback via `window.open`, Telegram invoice opening, wallet refresh
+  after a real local Telegram successful-payment webhook, checkout
+  pending/failed/expired status copy, support/terms links, direct-buy skin
+  purchase/equip for the active mushroom, unchanged character XP after that
+  purchase, and roll-only vs direct-only skin picker presentation. This pass
+  also fixed the frontend customization refresh wiring after successful skin
+  actions. Still add deeper screenshot/layout assertions and live provider
+  status validation with real sandbox/live payloads.
 - Add frontend/e2e coverage for no-unowned-assets gacha state, active/expired/
   future pack states, and full pack-odds presentation across real configured
   packs.
@@ -1439,7 +1440,9 @@ or legal/support/compliance rollout work.
 26. Focused wallet and skin e2e coverage exists.
    - `tests/game/wallet-purchase-ui.spec.js` covers wallet bundle listing,
      configured support/terms links, external checkout opening through
-     `window.open`, and checkout failure status.
+     `window.open`, Telegram invoice opening, wallet refresh after a real local
+     Telegram successful-payment webhook, and pending/failed/expired checkout
+     status text.
    - The same spec covers direct skin purchase/equip for the active mushroom
      after an audited support wallet grant and asserts character XP is
      unchanged. This pass also fixed the frontend customization refresh wiring
@@ -1493,12 +1496,13 @@ or legal/support/compliance rollout work.
 - Add dedicated frontend/e2e coverage for wallet bundle listing, Telegram
   invoice opening, wallet refresh after verified payment, external checkout
   fallback, purchase failure states, and roll-only vs direct-only skins.
-  **Focused e2e now covers bundle listing, external checkout fallback, purchase
-  failure status, support/terms links, direct-buy skin ownership/equip for the
-  active mushroom, unchanged character XP, roll-only vs direct-only picker
-  states, and the frontend refresh hook after successful skin actions.**
-  Telegram invoice opening, verified-payment wallet refresh, provider
-  failed/expired states, and full screenshot coverage remain.
+  **Focused e2e now covers bundle listing, Telegram invoice opening,
+  verified-payment wallet refresh through the local Telegram webhook, external
+  checkout fallback, pending/failed/expired purchase status text, support/terms
+  links, direct-buy skin ownership/equip for the active mushroom, unchanged
+  character XP, roll-only vs direct-only picker states, and the frontend refresh
+  hook after successful skin actions.** Full screenshot coverage and live
+  provider-status validation remain.
 - Add provider-specific operational notes and tooling for disputes, asset
   freezes, partial/late crypto payments, overpayments, and support
   investigations. **Local refund/reversal clawback and support-review status
