@@ -435,9 +435,9 @@ backlog until the items are split into tickets or implementation phases.
   also fixed the frontend customization refresh wiring after successful skin
   actions. Still add deeper screenshot/layout assertions and live provider
   status validation with real sandbox/live payloads.
-- Add frontend/e2e coverage for no-unowned-assets gacha state, active/expired/
-  future pack states, and full pack-odds presentation across real configured
-  packs.
+- Frontend/e2e coverage now exists for the no-unowned-assets/complete-pack
+  picker state plus active, future, and expired pack presentation. Still add
+  full pack-odds presentation across real configured packs.
 - Add product screenshots/layout assertions for wallet, purchase failure, pack
   odds, and support states whenever those surfaces change.
 
@@ -1450,6 +1450,8 @@ or legal/support/compliance rollout work.
    - The same spec patches bootstrap data only inside the browser test to pin
      roll-only vs direct-buy skin picker classes and pack detail/odds rendering
      without changing the global e2e backend gacha env.
+   - The same spec now also pins complete-pack/no-unowned copy plus future and
+     expired pack state labels in the skin picker.
 
 ### Remaining launch gates
 
@@ -1501,7 +1503,8 @@ or legal/support/compliance rollout work.
   checkout fallback, pending/failed/expired purchase status text, support/terms
   links, direct-buy skin ownership/equip for the active mushroom, unchanged
   character XP, roll-only vs direct-only picker states, and the frontend refresh
-  hook after successful skin actions.** Full screenshot coverage and live
+  hook after successful skin actions, and complete/future/expired pack state
+  copy.** Full screenshot coverage, full real-pack odds coverage, and live
   provider-status validation remain.
 - Add provider-specific operational notes and tooling for disputes, asset
   freezes, partial/late crypto payments, overpayments, and support

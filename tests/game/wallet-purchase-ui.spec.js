@@ -335,3 +335,84 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
   await expect(page.locator('.home-pack-detail')).toContainText('2 skins');
   await expect(page.locator('.home-pack-detail')).toContainText(/Odds:.*Common 70%.*Rare 30%/);
 });
+
+test('[Req 14-F] skin picker shows complete, future, and expired pack states', async ({ page, request, baseURL }) => {
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  const player = await setupHome(request, page, {
+    telegramId: 9105,
+    username: 'gacha_pack_states_ui'
+  });
+  const bootstrap = await api(request, player.sessionKey, '/api/bootstrap');
+  const paidPortraits = bootstrap.progression.thalla.portraits.filter((portrait) => portrait.id !== 'default');
+  expect(paidPortraits.length).toBeGreaterThan(1);
+  const [firstPortrait, secondPortrait] = paidPortraits;
+
+  await page.route('**/api/bootstrap', async (route) => {
+    const response = await route.fetch();
+    const json = await response.json();
+    const portraits = json.data.progression.thalla.portraits;
+    json.data.progression.thalla.portraits = portraits.map((portrait) => {
+      if (portrait.id === firstPortrait.id || portrait.id === secondPortrait.id) {
+        return {
+          ...portrait,
+          owned: true,
+          unlocked: true,
+          purchaseAvailable: false,
+          rollAvailable: false,
+          packId: 'complete_pack'
+        };
+      }
+      return portrait;
+    });
+    json.data.assetPacks = [
+      {
+        id: 'complete_pack',
+        name: { en: 'Complete Pack', ru: 'Полный пак' },
+        status: 'active',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: firstPortrait.assetId, rarity: 'common', dropWeight: 50 },
+          { assetId: secondPortrait.assetId, rarity: 'rare', dropWeight: 50 }
+        ]
+      },
+      {
+        id: 'future_pack',
+        name: { en: 'Future Pack', ru: 'Будущий пак' },
+        status: 'active',
+        startsAt: '2999-01-01T00:00:00.000Z',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: firstPortrait.assetId, rarity: 'common', dropWeight: 100 }
+        ]
+      },
+      {
+        id: 'expired_pack',
+        name: { en: 'Expired Pack', ru: 'Завершённый пак' },
+        status: 'active',
+        endsAt: '2000-01-01T00:00:00.000Z',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        items: [
+          { assetId: secondPortrait.assetId, rarity: 'rare', dropWeight: 100 }
+        ]
+      }
+    ];
+    await route.fulfill({
+      status: response.status(),
+      headers: {
+        ...response.headers(),
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(json)
+    });
+  });
+
+  await page.goto(`${baseURL}/home`);
+  await page.waitForSelector('.home');
+  await page.locator('.home-roster-change-skin').click();
+  await expect(page.locator('.home-pack-detail', { hasText: 'Complete Pack' })).toContainText('All 2 skins owned.');
+  await expect(page.locator('.home-pack-detail', { hasText: 'Future Pack' })).toContainText('Pack opens later.');
+  await expect(page.locator('.home-pack-detail', { hasText: 'Expired Pack' })).toContainText('Pack ended.');
+});

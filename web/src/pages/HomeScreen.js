@@ -105,6 +105,25 @@ export const HomeScreen = {
         })
         .join(' · ');
     },
+    packIsActive(pack) {
+      if (!pack) return false;
+      if (pack.active === false || (pack.status && pack.status !== 'active')) return false;
+      const now = Date.now();
+      const startsAt = pack.startsAt ? new Date(pack.startsAt).getTime() : null;
+      const endsAt = pack.endsAt ? new Date(pack.endsAt).getTime() : null;
+      if (startsAt && startsAt > now) return false;
+      if (endsAt && endsAt <= now) return false;
+      return true;
+    },
+    packAvailabilityLabel(pack) {
+      if (this.packIsActive(pack)) return '';
+      const now = Date.now();
+      const startsAt = pack?.startsAt ? new Date(pack.startsAt).getTime() : null;
+      const endsAt = pack?.endsAt ? new Date(pack.endsAt).getTime() : null;
+      if (startsAt && startsAt > now) return this.t.portraitPackFuture;
+      if (endsAt && endsAt <= now) return this.t.portraitPackExpired;
+      return this.t.portraitPackUnavailable;
+    },
     packOwnedCount(pack) {
       const owned = new Set();
       for (const progression of Object.values(this.state.bootstrap?.progression || {})) {
@@ -271,20 +290,35 @@ export const HomeScreen = {
     },
     rollPackSummaries() {
       if (!this.selectedMushroom) return [];
-      const packIds = [...new Set(this.selectedMushroom.portraits
-        .filter((portrait) => !portrait.unlocked && portrait.rollAvailable && portrait.packId)
-        .map((portrait) => portrait.packId))];
-      return packIds
+      const selectedAssetIds = new Set(this.selectedMushroom.portraits
+        .map((portrait) => portrait.assetId)
+        .filter(Boolean));
+      const packIds = new Set(this.selectedMushroom.portraits
+        .filter((portrait) => portrait.packId && (!portrait.unlocked || portrait.rollAvailable))
+        .map((portrait) => portrait.packId));
+      for (const pack of this.state.bootstrap?.assetPacks || []) {
+        if ((pack.items || []).some((item) => selectedAssetIds.has(item.assetId))) {
+          packIds.add(pack.id);
+        }
+      }
+      return [...packIds]
         .map((packId) => this.assetPacksById[packId])
         .filter(Boolean)
-        .map((pack) => ({
-          id: pack.id,
-          name: this.packName(pack),
-          total: pack.items?.length || 0,
-          owned: this.packOwnedCount(pack),
-          price: pack.rollPriceAmount || 0,
-          odds: this.rarityOddsText(pack)
-        }));
+        .map((pack) => {
+          const total = pack.items?.length || 0;
+          const owned = this.packOwnedCount(pack);
+          return {
+            id: pack.id,
+            name: this.packName(pack),
+            total,
+            owned,
+            left: Math.max(0, total - owned),
+            active: this.packIsActive(pack),
+            availabilityLabel: this.packAvailabilityLabel(pack),
+            price: pack.rollPriceAmount || 0,
+            odds: this.rarityOddsText(pack)
+          };
+        });
     },
     assetPacksById() {
       return Object.fromEntries((this.state.bootstrap?.assetPacks || []).map((pack) => [pack.id, pack]));
@@ -549,8 +583,10 @@ export const HomeScreen = {
             <div v-if="rollPackSummaries.length" class="home-pack-details">
               <div v-for="pack in rollPackSummaries" :key="pack.id" class="home-pack-detail">
                 <strong>{{ pack.name }}</strong>
-                <span>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', Math.max(0, pack.total - pack.owned)).replace('{price}', pack.price) }}</span>
-                <span v-if="pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
+                <span v-if="pack.availabilityLabel">{{ pack.availabilityLabel }}</span>
+                <span v-else-if="pack.left <= 0">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
+                <span v-else>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', pack.left).replace('{price}', pack.price) }}</span>
+                <span v-if="pack.active && pack.left > 0 && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
               </div>
             </div>
           </div>
