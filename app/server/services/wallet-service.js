@@ -799,6 +799,198 @@ export async function auditWalletMirror({ limit = 100 } = {}) {
   };
 }
 
+function rowToReconciledIntent(row) {
+  return {
+    intentId: row.intent_id,
+    playerId: row.player_id,
+    provider: row.provider,
+    providerInvoiceId: row.provider_invoice_id || null,
+    providerPaymentId: row.provider_payment_id || null,
+    currencyCode: row.currency_code,
+    walletAmount: Number(row.wallet_amount || 0),
+    status: row.status,
+    completedAt: row.completed_at || null,
+    transactionId: row.transaction_id || null,
+    transactionDelta: row.transaction_delta == null ? null : Number(row.transaction_delta),
+    transactionCurrencyCode: row.transaction_currency_code || null
+  };
+}
+
+function rowToReconciledTransaction(row) {
+  return {
+    transactionId: row.transaction_id,
+    playerId: row.player_id,
+    currencyCode: row.currency_code,
+    delta: Number(row.delta || 0),
+    reason: row.reason,
+    sourceType: row.source_type || null,
+    sourceId: row.source_id || null,
+    intentStatus: row.intent_status || null,
+    intentWalletAmount: row.intent_wallet_amount == null ? null : Number(row.intent_wallet_amount),
+    createdAt: row.created_at
+  };
+}
+
+function rowToWebhookReconciliationIssue(row, issue) {
+  const metadata = parseJson(row.metadata_json, {});
+  const result = parseJson(row.result_json, {});
+  return {
+    webhookEventId: row.id,
+    provider: row.provider,
+    eventKey: row.event_key,
+    issue,
+    intentId: metadata.intentId || result?.intent?.id || null,
+    providerInvoiceId: metadata.providerInvoiceId || result?.intent?.providerInvoiceId || null,
+    processingStatus: row.processing_status,
+    receivedAt: row.received_at,
+    processedAt: row.processed_at || null
+  };
+}
+
+async function processedWebhookIntentIssues(limit) {
+  const events = await query(
+    `SELECT *
+     FROM payment_webhook_events
+     WHERE processing_status = 'processed'
+     ORDER BY received_at DESC
+     LIMIT $1`,
+    [limit]
+  );
+  const candidates = [];
+  const intentIds = new Set();
+  for (const row of events.rows) {
+    const result = parseJson(row.result_json, {});
+    if (result?.ignored) continue;
+    const metadata = parseJson(row.metadata_json, {});
+    const intentId = metadata.intentId || result?.intent?.id || null;
+    if (!intentId) {
+      candidates.push({ row, intentId: null });
+      continue;
+    }
+    candidates.push({ row, intentId });
+    intentIds.add(intentId);
+  }
+
+  const knownIntentIds = new Set();
+  if (intentIds.size) {
+    const ids = [...intentIds];
+    const placeholders = ids.map((_id, index) => `$${index + 1}`).join(', ');
+    const intents = await query(
+      `SELECT id, status
+       FROM wallet_purchase_intents
+       WHERE id IN (${placeholders})`,
+      ids
+    );
+    for (const row of intents.rows) {
+      if (row.status === 'completed') knownIntentIds.add(row.id);
+    }
+  }
+
+  return candidates
+    .filter(({ intentId }) => !intentId || !knownIntentIds.has(intentId))
+    .map(({ row, intentId }) => rowToWebhookReconciliationIssue(
+      row,
+      intentId ? 'webhook_intent_not_completed' : 'webhook_missing_intent'
+    ));
+}
+
+export async function reconcileWalletPayments({ limit = 100 } = {}) {
+  const rowLimit = Math.max(1, Math.min(1000, Number(limit) || 100));
+  const completedMissingGrant = await query(
+    `SELECT
+       wallet_purchase_intents.id AS intent_id,
+       wallet_purchase_intents.player_id,
+       wallet_purchase_intents.provider,
+       wallet_purchase_intents.provider_invoice_id,
+       wallet_purchase_intents.provider_payment_id,
+       wallet_purchase_intents.currency_code,
+       wallet_purchase_intents.wallet_amount,
+       wallet_purchase_intents.status,
+       wallet_purchase_intents.completed_at,
+       player_wallet_transactions.id AS transaction_id,
+       player_wallet_transactions.delta AS transaction_delta,
+       player_wallet_transactions.currency_code AS transaction_currency_code
+     FROM wallet_purchase_intents
+     LEFT JOIN player_wallet_transactions
+       ON player_wallet_transactions.source_type = 'wallet_purchase_intent'
+      AND player_wallet_transactions.source_id = wallet_purchase_intents.id
+      AND player_wallet_transactions.reason = 'wallet_purchase'
+     WHERE wallet_purchase_intents.status = 'completed'
+       AND player_wallet_transactions.id IS NULL
+     ORDER BY wallet_purchase_intents.completed_at DESC
+     LIMIT $1`,
+    [rowLimit]
+  );
+  const grantsWithoutCompletedIntent = await query(
+    `SELECT
+       player_wallet_transactions.id AS transaction_id,
+       player_wallet_transactions.player_id,
+       player_wallet_transactions.currency_code,
+       player_wallet_transactions.delta,
+       player_wallet_transactions.reason,
+       player_wallet_transactions.source_type,
+       player_wallet_transactions.source_id,
+       player_wallet_transactions.created_at,
+       wallet_purchase_intents.status AS intent_status,
+       wallet_purchase_intents.wallet_amount AS intent_wallet_amount
+     FROM player_wallet_transactions
+     LEFT JOIN wallet_purchase_intents
+       ON wallet_purchase_intents.id = player_wallet_transactions.source_id
+     WHERE player_wallet_transactions.reason = 'wallet_purchase'
+       AND player_wallet_transactions.source_type = 'wallet_purchase_intent'
+       AND (
+         wallet_purchase_intents.id IS NULL
+         OR wallet_purchase_intents.status != 'completed'
+       )
+     ORDER BY player_wallet_transactions.created_at DESC
+     LIMIT $1`,
+    [rowLimit]
+  );
+  const grantAmountMismatches = await query(
+    `SELECT
+       wallet_purchase_intents.id AS intent_id,
+       wallet_purchase_intents.player_id,
+       wallet_purchase_intents.provider,
+       wallet_purchase_intents.provider_invoice_id,
+       wallet_purchase_intents.provider_payment_id,
+       wallet_purchase_intents.currency_code,
+       wallet_purchase_intents.wallet_amount,
+       wallet_purchase_intents.status,
+       wallet_purchase_intents.completed_at,
+       player_wallet_transactions.id AS transaction_id,
+       player_wallet_transactions.delta AS transaction_delta,
+       player_wallet_transactions.currency_code AS transaction_currency_code
+     FROM wallet_purchase_intents
+     JOIN player_wallet_transactions
+       ON player_wallet_transactions.source_type = 'wallet_purchase_intent'
+      AND player_wallet_transactions.source_id = wallet_purchase_intents.id
+      AND player_wallet_transactions.reason = 'wallet_purchase'
+     WHERE wallet_purchase_intents.status = 'completed'
+       AND (
+         player_wallet_transactions.delta != wallet_purchase_intents.wallet_amount
+         OR player_wallet_transactions.currency_code != wallet_purchase_intents.currency_code
+       )
+     ORDER BY wallet_purchase_intents.completed_at DESC
+     LIMIT $1`,
+    [rowLimit]
+  );
+  const webhookIntentIssues = await processedWebhookIntentIssues(rowLimit);
+  const categories = {
+    completedIntentsMissingWalletGrant: completedMissingGrant.rows.map(rowToReconciledIntent),
+    walletGrantsWithoutCompletedIntent: grantsWithoutCompletedIntent.rows.map(rowToReconciledTransaction),
+    walletGrantAmountMismatches: grantAmountMismatches.rows.map(rowToReconciledIntent),
+    processedWebhookIntentIssues: webhookIntentIssues
+  };
+  const total = Object.values(categories).reduce((sum, items) => sum + items.length, 0);
+  return {
+    ok: total === 0,
+    total,
+    limit: rowLimit,
+    generatedAt: nowIso(),
+    categories
+  };
+}
+
 export async function backfillMissingWalletBalancesFromPlayers({ limit = 500 } = {}) {
   const rowLimit = Math.max(1, Math.min(5000, Number(limit) || 500));
   return withTransaction(async (client) => {

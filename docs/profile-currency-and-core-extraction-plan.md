@@ -323,9 +323,12 @@ backlog until the items are split into tickets or implementation phases.
   exposing this to non-engineering support staff.
 - Add manual support flows with audit logs: grant coins/assets, revoke mistaken
   grants, mark refunds, attach provider evidence, and leave immutable notes.
-- Add reconciliation jobs for provider settlement vs local purchase intents and
-  periodic wallet mirror drift checks. `npm run game:wallet:audit` is a manual
-  starting point, not a scheduled operations system.
+- Local reconciliation reports now exist as manual commands:
+  `npm run game:wallet:audit` checks player/wallet mirror drift, and
+  `npm run game:wallet:reconcile` checks completed purchase intents, wallet
+  grants, and processed webhook events. Still schedule these checks, add alert
+  routing, and import provider settlement exports/API data for true external
+  reconciliation.
 - Add post-completion refund/reversal handling. Today terminal non-completed
   statuses do not grant coins, but completed-payment chargebacks, provider
   reversals, and late crypto review do not yet claw back currency or freeze
@@ -1246,6 +1249,13 @@ or legal/support/compliance rollout work.
      asset grants/equipment, and gacha rolls.
    - Provider invoice searches resolve back to local player context, and asset
      searches pull the same player's payment/wallet context.
+11. Local wallet payment reconciliation exists.
+   - `reconcileWalletPayments(...)` and `npm run game:wallet:reconcile` report
+     completed intents missing wallet grants, wallet grants without completed
+     intents, grant amount/currency mismatches, and processed webhook events
+     that did not resolve a completed local intent.
+   - This is still a local-state reconciliation report, not provider settlement
+     import or scheduled alerting.
 
 ### Remaining launch gates
 
@@ -1296,8 +1306,8 @@ or legal/support/compliance rollout work.
   chargebacks/disputes, partial/late crypto payments, overpayments, and support
   investigations.
 - Add authenticated admin/support UI/API surfaces on top of the read-only money
-  lookup, then add manual grant/revoke with immutable audit notes and scheduled
-  reconciliation against provider settlements.
+  lookup, then add manual grant/revoke with immutable audit notes, scheduled
+  reconciliation, alert routing, and provider settlement import.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 

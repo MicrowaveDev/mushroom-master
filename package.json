@@ -39,6 +39,7 @@
     "game:season:analytics": "node app/scripts/summarize-season-rank-analytics.js",
     "game:season:archive": "node app/scripts/archive-season.js",
     "game:wallet:audit": "node app/scripts/audit-wallet-balances.js",
+    "game:wallet:reconcile": "node app/scripts/reconcile-wallet-payments.js",
     "game:support:money-lookup": "node app/scripts/support-money-lookup.js",
     "game:core:check": "node app/scripts/check-backpack-game-core-submodule.js",
     "game:home-field:next": "node app/scripts/next-home-field-image-prompts.js",
