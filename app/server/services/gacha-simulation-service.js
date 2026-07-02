@@ -88,6 +88,7 @@ export function simulateAssetPackOdds(packId, {
   seed = null,
   rng = null,
   ownedAssetIds = [],
+  ownedCopyCounts = null,
   pityState = []
 } = {}) {
   const pack = getAssetPack(packId);
@@ -135,7 +136,10 @@ export function simulateAssetPackOdds(packId, {
     ));
   }
 
-  const candidates = resolveAssetPackRollCandidates(pack, { ownedAssetIds: owned });
+  const candidates = resolveAssetPackRollCandidates(pack, {
+    ownedAssetIds: owned,
+    copyCounts: ownedCopyCounts
+  });
   const guaranteeRules = configuredGuarantees(pack);
   const pityRules = configuredPityRules(pack);
   const hasGuaranteedSelection = guaranteeRules.length > 0 || pityState.some((rule) => rule?.active);
@@ -181,6 +185,9 @@ export function simulateAssetPackOdds(packId, {
       assetId: candidate.assetId,
       rarity: candidate.rarity || candidate.asset?.rarity || null,
       dropWeight: weight,
+      ownedCopies: Number(candidate.ownedCopies || 0),
+      copyLimit: candidate.copyLimit ?? null,
+      copyCapped: Boolean(candidate.copyCapped),
       expectedProbability,
       observedProbability,
       observedCount,
@@ -214,7 +221,8 @@ export function simulateAssetPackOdds(packId, {
     weightedCandidateCount: candidates.filter((candidate) => candidateWeight(candidate) > 0).length,
     totalWeight,
     duplicatePolicy: {
-      enabled: duplicatesEnabled
+      enabled: duplicatesEnabled,
+      maxCopiesPerAsset: odds.duplicatePolicy?.maxCopiesPerAsset ?? null
     },
     rollable: candidates.length > 0 && totalWeight > 0,
     guarantees: {

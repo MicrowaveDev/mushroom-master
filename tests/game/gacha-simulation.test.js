@@ -117,6 +117,41 @@ test('[Req 14-F] gacha odds simulation includes owned items for duplicate-enable
   });
 });
 
+test('[Req 14-F] gacha odds simulation respects duplicate copy caps', async () => {
+  const capped = portraitAssetId('thalla', '1');
+  const open = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        duplicatePolicy: { mode: 'allow_duplicates', maxCopiesPerAsset: 2 },
+        items: [
+          { assetId: capped, rarity: 'common', dropWeight: 1 },
+          { assetId: open, rarity: 'rare', dropWeight: 3 }
+        ]
+      }
+    })
+  }, async () => {
+    const result = simulateAssetPackOdds('season_1_portraits', {
+      trials: 4,
+      ownedAssetIds: [capped, open],
+      ownedCopyCounts: {
+        [capped]: 2,
+        [open]: 1
+      },
+      rng: () => 0
+    });
+
+    assert.equal(result.duplicatePolicy.enabled, true);
+    assert.equal(result.duplicatePolicy.maxCopiesPerAsset, 2);
+    assert.equal(result.candidateCount, 1);
+    assert.equal(result.items[0].assetId, open);
+    assert.equal(result.items[0].ownedCopies, 1);
+    assert.equal(result.items[0].copyLimit, 2);
+    assert.equal(result.items[0].copyCapped, false);
+    assert.equal(result.items[0].observedCount, 4);
+  });
+});
+
 test('[Req 14-F] gacha odds simulation supports multi-slot pack openings', async () => {
   const common = portraitAssetId('thalla', '1');
   const rare = portraitAssetId('thalla', '2');

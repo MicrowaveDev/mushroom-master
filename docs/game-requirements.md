@@ -388,13 +388,17 @@ Membership is not stored. It is derived from overlap between item cells and acti
   random skins from a configured pack when env-gated gacha is enabled. Packs are
   unowned-only by default; packs that set `duplicatePolicy: "allow_duplicates"`
   can grant extra active asset instances for already owned skins, with duplicate
-  results marked in roll metadata. Multi-item packs draw without replacement
-  inside one opening; the response keeps the first result in legacy fields and
-  exposes the full opening in `rollResult.items[]`. Static pack config may
-  define per-opening min-rarity guarantees, pack-scoped pity rules, and simple
-  duplicate-burn exchange rules. `POST /api/assets/packs/:packId/burn` consumes
-  configured duplicate copies while preserving one/equipped copy per asset and
-  grants random eligible pack targets with an audit row. Authoring validation
+  results marked in roll metadata. Duplicate-enabled packs may define
+  pack-level or item-level copy caps; capped assets leave the roll candidate
+  pool and capped duplicate packs reject without spending currency. Multi-item
+  packs draw without replacement inside one opening; the response keeps the
+  first result in legacy fields and exposes the full opening in
+  `rollResult.items[]`. Static pack config may define per-opening min-rarity
+  guarantees, pack-scoped pity rules, and simple duplicate-burn exchange rules.
+  `POST /api/assets/packs/:packId/burn` consumes configured duplicate copies
+  while preserving one/equipped copy per asset and grants random eligible pack
+  targets with an audit row. Burn rules can target `allow_duplicates`,
+  `unowned_first`, or `unowned_only` eligible assets. Authoring validation
   blocks impossible rules, pack projection exposes current pity/burn readiness,
   and roll evidence records any guarantee/pity replacement. Real-player ghost
   snapshots preserve the equipped portrait id/path from the sampled player;

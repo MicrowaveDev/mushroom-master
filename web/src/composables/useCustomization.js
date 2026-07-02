@@ -37,6 +37,7 @@ export function useCustomization(state, refreshBootstrap) {
   function statusFromAssetRollError(error) {
     const message = String(error?.message || '').toLowerCase();
     if (message.includes('no unowned assets')) return 'complete';
+    if (message.includes('no rollable assets')) return 'complete';
     if (message.includes('duplicate assets')) return 'burn_unavailable';
     if (message.includes('insufficient') || message.includes('not enough')) return 'insufficient';
     if (message.includes('disabled')) return 'disabled';

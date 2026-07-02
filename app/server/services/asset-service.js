@@ -21,6 +21,7 @@ const ASSET_RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'secret'];
 const ASSET_RARITY_RANK = new Map(ASSET_RARITY_ORDER.map((rarity, index) => [rarity, index]));
 const SUPPORTED_PITY_RESET_SCOPES = new Set(['pack']);
 const SUPPORTED_DUPLICATE_POLICY_MODES = new Set(['unowned_only', 'allow_duplicates']);
+const SUPPORTED_BURN_TARGET_DUPLICATE_POLICIES = new Set(['allow_duplicates', 'unowned_first', 'unowned_only']);
 const MAX_BURN_TARGET_COUNT = 10;
 
 function httpError(message, statusCode = 400) {
@@ -45,6 +46,12 @@ function parseJsonEnv(name, fallback = {}) {
   } catch {
     return fallback;
   }
+}
+
+function optionalPositiveInteger(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const numeric = Number(value);
+  return Number.isInteger(numeric) ? numeric : Number.NaN;
 }
 
 export function isAssetGachaEnabled() {
@@ -220,15 +227,20 @@ function normalizedPityRules(pack) {
 
 function normalizedDuplicatePolicy(pack) {
   const raw = pack?.duplicatePolicy;
+  const rawCopyLimit = raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? raw.maxCopiesPerAsset ?? raw.maxCopies ?? raw.copyLimit ?? pack?.maxCopiesPerAsset
+    : pack?.maxCopiesPerAsset;
+  const maxCopiesPerAsset = optionalPositiveInteger(rawCopyLimit);
   if (raw === true || raw === 'allow_duplicates' || raw === 'copies') {
-    return { mode: 'allow_duplicates', enabled: true, preserveFirstCopy: true };
+    return { mode: 'allow_duplicates', enabled: true, preserveFirstCopy: true, maxCopiesPerAsset };
   }
   if (typeof raw === 'string') {
     const mode = raw === 'copies' ? 'allow_duplicates' : raw;
     return {
       mode,
       enabled: mode === 'allow_duplicates',
-      preserveFirstCopy: true
+      preserveFirstCopy: true,
+      maxCopiesPerAsset
     };
   }
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -239,10 +251,24 @@ function normalizedDuplicatePolicy(pack) {
     return {
       mode,
       enabled: mode === 'allow_duplicates',
-      preserveFirstCopy: raw.preserveFirstCopy !== false
+      preserveFirstCopy: raw.preserveFirstCopy !== false,
+      maxCopiesPerAsset
     };
   }
-  return { mode: 'unowned_only', enabled: false, preserveFirstCopy: true };
+  return { mode: 'unowned_only', enabled: false, preserveFirstCopy: true, maxCopiesPerAsset };
+}
+
+function rawItemCopyLimit(item) {
+  return item?.maxCopiesPerPlayer ?? item?.maxCopies ?? item?.copyLimit;
+}
+
+function copyLimitForPackItem(pack, item, duplicatePolicy = normalizedDuplicatePolicy(pack)) {
+  const itemLimit = optionalPositiveInteger(rawItemCopyLimit(item));
+  return itemLimit === null ? duplicatePolicy.maxCopiesPerAsset : itemLimit;
+}
+
+function copyLimitReached(copyCount, copyLimit) {
+  return copyLimit !== null && Number.isInteger(copyLimit) && copyCount >= copyLimit;
 }
 
 function rawBurnRules(pack) {
@@ -257,6 +283,7 @@ function normalizedBurnRules(pack) {
     const sourceCount = Number(rule?.sourceCount ?? rule?.count ?? 5);
     const targetMinRarity = String(rule?.targetMinRarity || rule?.targetRarity || 'rare');
     const targetCount = Number(rule?.targetCount ?? 1);
+    const targetDuplicatePolicy = String(rule?.targetDuplicatePolicy || rule?.targetPolicy || 'allow_duplicates');
     return {
       id: String(rule?.id || `burn_${sourceCount}_${sourceRarity}_to_${targetMinRarity}`),
       type: 'duplicate_burn_exchange',
@@ -266,6 +293,7 @@ function normalizedBurnRules(pack) {
       targetCount: Number.isInteger(targetCount) ? targetCount : Number.NaN,
       sourceScope: 'duplicate_copies',
       targetScope: 'pack',
+      targetDuplicatePolicy,
       label: rule?.label || null,
       index
     };
@@ -407,6 +435,17 @@ export function validateAssetPack(pack, {
   if (pack.duplicatePolicy !== undefined && !SUPPORTED_DUPLICATE_POLICY_MODES.has(duplicatePolicy.mode)) {
     errors.push(packValidationIssue('duplicate_policy_invalid', `Asset pack ${pack.id || '(unknown)'} has an invalid duplicatePolicy mode.`));
   }
+  if (duplicatePolicy.maxCopiesPerAsset !== null && (!Number.isInteger(duplicatePolicy.maxCopiesPerAsset) || duplicatePolicy.maxCopiesPerAsset <= 0)) {
+    errors.push(packValidationIssue('duplicate_copy_cap_invalid', `Asset pack ${pack.id || '(unknown)'} duplicate copy cap must be a positive integer.`));
+  }
+  for (const [index, item] of (pack.items || []).entries()) {
+    const rawLimit = rawItemCopyLimit(item);
+    if (rawLimit === undefined || rawLimit === null || rawLimit === '') continue;
+    const copyLimit = optionalPositiveInteger(rawLimit);
+    if (!Number.isInteger(copyLimit) || copyLimit <= 0) {
+      errors.push(packValidationIssue('item_copy_cap_invalid', `Pack item ${item?.assetId || index} copy cap must be a positive integer.`, index));
+    }
+  }
   if (pack.guarantees !== undefined && !Array.isArray(pack.guarantees)) {
     errors.push(packValidationIssue('guarantees_invalid', `Asset pack ${pack.id || '(unknown)'} guarantees must be an array.`));
   }
@@ -471,6 +510,9 @@ export function validateAssetPack(pack, {
     }
     if (!Number.isInteger(rule.targetCount) || rule.targetCount <= 0 || rule.targetCount > MAX_BURN_TARGET_COUNT) {
       errors.push(packValidationIssue('burn_target_count_invalid', `Asset pack ${pack.id || '(unknown)'} burn rule targetCount must be 1-${MAX_BURN_TARGET_COUNT}.`, index));
+    }
+    if (!SUPPORTED_BURN_TARGET_DUPLICATE_POLICIES.has(rule.targetDuplicatePolicy)) {
+      errors.push(packValidationIssue('burn_target_policy_invalid', `Asset pack ${pack.id || '(unknown)'} burn rule has invalid targetDuplicatePolicy.`, index));
     }
     if (VALID_ASSET_RARITIES.has(rule.sourceRarity) && (pack.items || []).filter((item) => item.rarity === rule.sourceRarity).length === 0) {
       errors.push(packValidationIssue('burn_source_impossible', `Asset pack ${pack.id || '(unknown)'} does not contain ${rule.sourceRarity} items to burn.`, index));
@@ -633,6 +675,22 @@ function activeCopyCounts(activeAssetRows = []) {
   return counts;
 }
 
+function normalizeCopyCountsInput({ activeAssetRows = [], copyCounts = null, ownedAssetIds = [] } = {}) {
+  let counts = new Map();
+  if (copyCounts instanceof Map) {
+    counts = new Map(copyCounts);
+  } else if (copyCounts && typeof copyCounts === 'object') {
+    counts = new Map(Object.entries(copyCounts).map(([assetId, count]) => [assetId, Number(count || 0)]));
+  } else if (activeAssetRows.length) {
+    counts = activeCopyCounts(activeAssetRows);
+  }
+  const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
+  for (const assetId of owned) {
+    if (!counts.has(assetId)) counts.set(assetId, 1);
+  }
+  return counts;
+}
+
 function burnableDuplicateRows(pack, activeAssetRows = [], rule, equippedInstanceIds = new Set()) {
   const packRarities = new Map((pack?.items || []).map((item) => [item.assetId, item.rarity || 'common']));
   const byAssetId = new Map();
@@ -688,18 +746,27 @@ export function shapeAssetPack(pack, {
   const availability = packAvailability(pack, now);
   const duplicatePolicy = normalizedDuplicatePolicy(pack);
   const totalWeight = (pack.items || []).reduce((sum, item) => sum + Math.max(0, Number(item.dropWeight || 0)), 0);
-  const items = (pack.items || []).map((item) => ({
-    ...item,
-    ownedCopies: copyCounts.get(item.assetId) || (owned.has(item.assetId) ? 1 : 0),
-    duplicateCopies: Math.max(0, (copyCounts.get(item.assetId) || (owned.has(item.assetId) ? 1 : 0)) - 1),
-    probability: totalWeight > 0 ? Math.max(0, Number(item.dropWeight || 0)) / totalWeight : 0,
-    ...(includeAssets ? { asset: getAssetById(item.assetId) } : {})
-  }));
+  const items = (pack.items || []).map((item) => {
+    const ownedCopies = copyCounts.get(item.assetId) || (owned.has(item.assetId) ? 1 : 0);
+    const copyLimit = copyLimitForPackItem(pack, item, duplicatePolicy);
+    return {
+      ...item,
+      ownedCopies,
+      duplicateCopies: Math.max(0, ownedCopies - 1),
+      copyLimit,
+      copyCapped: copyLimitReached(ownedCopies, copyLimit),
+      probability: totalWeight > 0 ? Math.max(0, Number(item.dropWeight || 0)) / totalWeight : 0,
+      ...(includeAssets ? { asset: getAssetById(item.assetId) } : {})
+    };
+  });
   const rollSize = assetPackRollSize(pack);
   const normalizedRollSize = Number.isInteger(rollSize) ? rollSize : pack.rollSize;
   const ownedCount = items.filter((item) => owned.has(item.assetId)).length;
   const remainingCount = Math.max(0, items.length - ownedCount);
-  const rollableCount = duplicatePolicy.enabled ? items.length : remainingCount;
+  const rollableCount = duplicatePolicy.enabled
+    ? items.filter((item) => !item.copyCapped).length
+    : remainingCount;
+  const copyComplete = items.length > 0 && rollableCount === 0;
   const raritySummary = Number(normalizedRollSize) > 1
     ? summarizeSlotRarities(pack, items)
     : summarizePackRarities(items);
@@ -715,11 +782,12 @@ export function shapeAssetPack(pack, {
     ownedCount,
     remainingCount,
     uniqueComplete: items.length > 0 && ownedCount >= items.length,
+    copyComplete,
     duplicatePolicy,
     duplicateCopies: items.reduce((sum, item) => sum + Number(item.duplicateCopies || 0), 0),
     rollableCount,
     nextRollItemCount: Math.min(Math.max(0, Number(normalizedRollSize) || 0), rollableCount),
-    complete: !duplicatePolicy.enabled && items.length > 0 && ownedCount >= items.length,
+    complete: duplicatePolicy.enabled ? copyComplete : items.length > 0 && ownedCount >= items.length,
     totalWeight,
     raritySummary,
     guarantees: {
@@ -1250,12 +1318,31 @@ export function selectAssetPackRollResults(candidates, pack, {
 
 export function resolveAssetPackRollCandidates(pack, {
   ownedAssetIds = [],
+  activeAssetRows = [],
+  copyCounts = null,
   includeOwned = normalizedDuplicatePolicy(pack).enabled
 } = {}) {
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
+  const duplicatePolicy = normalizedDuplicatePolicy(pack);
+  const activeCounts = normalizeCopyCountsInput({ activeAssetRows, copyCounts, ownedAssetIds: owned });
   return (pack?.items || [])
-    .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
-    .filter((item) => item.asset && (includeOwned || !owned.has(item.assetId)));
+    .map((item) => {
+      const ownedCopies = activeCounts.get(item.assetId) || 0;
+      const copyLimit = copyLimitForPackItem(pack, item, duplicatePolicy);
+      return {
+        ...item,
+        ownedCopies,
+        copyLimit,
+        copyCapped: copyLimitReached(ownedCopies, copyLimit),
+        asset: getAssetById(item.assetId)
+      };
+    })
+    .filter((item) => {
+      if (!item.asset) return false;
+      if (!duplicatePolicy.enabled) return !owned.has(item.assetId);
+      if (!includeOwned && owned.has(item.assetId)) return false;
+      return !item.copyCapped;
+    });
 }
 
 function hashCandidatePool(candidates) {
@@ -1388,15 +1475,52 @@ function shapeAssetBurnResult(exchange, {
   };
 }
 
-function selectBurnTargets(pack, rule, rng) {
-  const candidates = (pack?.items || [])
+function burnTargetCandidates(pack, rule, {
+  ownedAssetIds = new Set(),
+  copyCounts = new Map(),
+  selectedAssetIds = new Set()
+} = {}) {
+  const duplicatePolicy = normalizedDuplicatePolicy(pack);
+  return (pack?.items || [])
     .filter((item) => rarityAtLeast(item.rarity, rule.targetMinRarity))
-    .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
-    .filter((item) => item.asset);
+    .filter((item) => !selectedAssetIds.has(item.assetId))
+    .map((item) => {
+      const ownedCopies = copyCounts.get(item.assetId) || (ownedAssetIds.has(item.assetId) ? 1 : 0);
+      const copyLimit = copyLimitForPackItem(pack, item, duplicatePolicy);
+      return {
+        ...item,
+        ownedCopies,
+        copyLimit,
+        copyCapped: copyLimitReached(ownedCopies, copyLimit),
+        asset: getAssetById(item.assetId)
+      };
+    })
+    .filter((item) => item.asset && !item.copyCapped);
+}
+
+function selectBurnTargets(pack, rule, rng, {
+  ownedAssetIds = [],
+  activeAssetRows = [],
+  copyCounts = null
+} = {}) {
   const selected = [];
-  const remaining = [...candidates];
-  for (let index = 0; index < rule.targetCount && remaining.length; index += 1) {
-    const selectedItem = chooseWeightedAssetCandidate(remaining, rng);
+  const owned = ownedAssetIds instanceof Set ? new Set(ownedAssetIds) : new Set(ownedAssetIds);
+  const activeCounts = normalizeCopyCountsInput({ activeAssetRows, copyCounts, ownedAssetIds: owned });
+  const selectedAssetIds = new Set();
+  for (let index = 0; index < rule.targetCount; index += 1) {
+    const candidates = burnTargetCandidates(pack, rule, {
+      ownedAssetIds: owned,
+      copyCounts: activeCounts,
+      selectedAssetIds
+    });
+    const unownedCandidates = candidates.filter((candidate) => !owned.has(candidate.assetId));
+    const pool = rule.targetDuplicatePolicy === 'unowned_only'
+      ? unownedCandidates
+      : (rule.targetDuplicatePolicy === 'unowned_first' && unownedCandidates.length
+        ? unownedCandidates
+        : candidates);
+    if (!pool.length) break;
+    const selectedItem = chooseWeightedAssetCandidate(pool, rng);
     selected.push({
       slotIndex: index,
       selectedRarity: selectedItem.rarity || rule.targetMinRarity,
@@ -1404,10 +1528,11 @@ function selectBurnTargets(pack, rule, rng) {
       rarity: selectedItem.rarity || selectedItem.asset?.rarity || null,
       dropWeight: selectedItem.dropWeight,
       asset: selectedItem.asset,
-      candidatePoolHash: hashCandidatePool(remaining)
+      candidatePoolHash: hashCandidatePool(pool)
     });
-    const selectedIndex = remaining.findIndex((candidate) => candidate.assetId === selectedItem.assetId);
-    if (selectedIndex >= 0) remaining.splice(selectedIndex, 1);
+    selectedAssetIds.add(selectedItem.assetId);
+    owned.add(selectedItem.assetId);
+    activeCounts.set(selectedItem.assetId, (activeCounts.get(selectedItem.assetId) || 0) + 1);
   }
   return selected;
 }
@@ -1475,11 +1600,6 @@ export async function burnAssetPackDuplicates(playerId, packId, {
       }
 
       const sourceRows = burnableRows.slice(0, rule.sourceCount);
-      const targetItems = selectBurnTargets(pack, rule, rng);
-      if (targetItems.length < rule.targetCount) {
-        throw httpError('Asset burn target pool is unavailable', 400);
-      }
-
       const exchangeId = createId('burn');
       const now = nowIso();
       for (const row of sourceRows) {
@@ -1502,11 +1622,19 @@ export async function burnAssetPackDuplicates(playerId, packId, {
       }
 
       const activeAfterBurnRows = await client.query(
-        `SELECT asset_id FROM player_asset_instances
+        `SELECT * FROM player_asset_instances
          WHERE player_id = $1 AND status = 'active'`,
         [playerId]
       );
       const ownedAfterBurn = new Set(activeAfterBurnRows.rows.map((row) => row.asset_id));
+      const targetItems = selectBurnTargets(pack, rule, rng, {
+        ownedAssetIds: ownedAfterBurn,
+        activeAssetRows: activeAfterBurnRows.rows
+      });
+      if (targetItems.length < rule.targetCount) {
+        throw httpError('Asset burn target pool is unavailable', 400);
+      }
+
       const insertedItems = [];
       for (const selected of targetItems) {
         const inserted = await insertAssetInstance(client, {
@@ -1619,16 +1747,21 @@ export async function rollAssetPack(playerId, packId, {
       }
 
       const ownedRows = await client.query(
-        `SELECT asset_id FROM player_asset_instances
+        `SELECT * FROM player_asset_instances
          WHERE player_id = $1 AND status = 'active'`,
         [playerId]
       );
       const owned = new Set(ownedRows.rows.map((row) => row.asset_id));
       const duplicatePolicy = normalizedDuplicatePolicy(pack);
-      const candidates = resolveAssetPackRollCandidates(pack, { ownedAssetIds: owned });
+      const candidates = resolveAssetPackRollCandidates(pack, {
+        ownedAssetIds: owned,
+        activeAssetRows: ownedRows.rows
+      });
 
       if (!candidates.length) {
-        throw httpError('No unowned assets left in this pack', 409);
+        throw httpError(duplicatePolicy.enabled
+          ? 'No rollable assets left in this pack'
+          : 'No unowned assets left in this pack', 409);
       }
 
       const previousRollRows = await client.query(
@@ -1641,7 +1774,9 @@ export async function rollAssetPack(playerId, packId, {
       const pityBefore = computePackPityState(pack, { rolls: previousRollRows.rows });
       const selectedItems = selectAssetPackRollResults(candidates, pack, { rng, pityState: pityBefore });
       if (!selectedItems.length) {
-        throw httpError('No unowned assets left in this pack', 409);
+        throw httpError(duplicatePolicy.enabled
+          ? 'No rollable assets left in this pack'
+          : 'No unowned assets left in this pack', 409);
       }
       const guaranteesApplied = selectedItems.guaranteeApplications || [];
       const pityAfter = advancePackPityState(pityBefore, selectedItems);

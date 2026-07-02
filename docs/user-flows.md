@@ -187,8 +187,11 @@ Step 1a (fallback): Legacy Home Dashboard
   Skin picker expected:
     - Default packs stop rolling when all unique skins are owned.
     - Duplicate-enabled packs can still roll owned skins as extra copies, and
-      burn exchanges preserve one/equipped copy before granting a random
-      eligible pack target.
+      capped duplicate packs stop rolling when every configured copy limit is
+      reached.
+    - Burn exchanges preserve one/equipped copy before granting a random
+      eligible pack target; configured rules may prefer or require an unowned
+      target.
 
 Step 2: Prep Screen (Round N)
   Screen: prep → PrepScreen.js

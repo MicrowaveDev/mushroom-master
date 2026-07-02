@@ -179,6 +179,7 @@ test('home skin picker summarizes roll pack availability and odds', () => {
     complete: false,
     duplicateEnabled: false,
     uniqueComplete: false,
+    copyComplete: false,
     duplicateCopies: 0,
     canRoll: true,
     canBurn: false,
@@ -252,6 +253,7 @@ test('home skin picker keeps duplicate-complete packs rollable and burnable', ()
     complete: false,
     duplicateEnabled: true,
     uniqueComplete: true,
+    copyComplete: false,
     duplicateCopies: 2,
     canRoll: true,
     canBurn: true,
@@ -263,6 +265,55 @@ test('home skin picker keeps duplicate-complete packs rollable and burnable', ()
     pityText: '',
     duplicateText: 'Duplicates: 2'
   });
+});
+
+test('home skin picker summarizes capped duplicate packs as copy-complete', () => {
+  const vm = viewModel({
+    lang: 'en',
+    leaderboard: [],
+    walletBundlesSurface: 'web',
+    bootstrap: {
+      player: { id: 'player_a' },
+      mushrooms: [
+        { id: 'thalla', name: { en: 'Thalla' }, imagePath: '/thalla.png', styleTag: 'control' }
+      ],
+      activeMushroomId: 'thalla',
+      assetPacks: [
+        {
+          id: 'season_1_portraits',
+          name: { en: 'Season 1 Portrait Pack' },
+          rollPriceAmount: 10,
+          totalItems: 1,
+          ownedCount: 1,
+          remainingCount: 0,
+          complete: true,
+          uniqueComplete: true,
+          copyComplete: true,
+          duplicatePolicy: { enabled: true, mode: 'allow_duplicates', maxCopiesPerAsset: 2 },
+          duplicateCopies: 1,
+          rollableCount: 0,
+          availability: 'active',
+          items: [
+            { assetId: 'portrait.thalla.1', rarity: 'common', dropWeight: 1, ownedCopies: 2, copyLimit: 2, copyCapped: true }
+          ]
+        }
+      ],
+      progression: {
+        thalla: {
+          portraits: [
+            { id: '1', unlocked: true, owned: true, assetId: 'portrait.thalla.1', name: { en: 'Mooncap' } }
+          ]
+        }
+      },
+      season: {}
+    }
+  });
+
+  const summary = vm.rollPackSummaries[0];
+  assert.equal(summary.complete, true);
+  assert.equal(summary.copyComplete, true);
+  assert.equal(summary.canRoll, false);
+  assert.equal(summary.duplicateText, 'Duplicates: 1');
 });
 
 test('home skin picker describes gacha roll results and known failures', () => {

@@ -558,9 +558,10 @@ pity.**
 
 #### G4 - Duplicate Inventory And Burning
 
-Status: **Partially implemented 2026-07-02 as G4A.** The shipped slice is
-duplicate-enabled pack instances plus a simple configured burn exchange. The
-larger duplicate economy remains backlog.
+Status: **Partially implemented 2026-07-02 through G4B.** The shipped slices
+are duplicate-enabled pack instances, simple configured burn exchange, copy
+caps, and basic burn target policy. The larger duplicate economy remains
+backlog.
 
 - Done: packs can opt into `duplicatePolicy: "allow_duplicates"` so owned pack
   items remain rollable and create separate active `player_asset_instances`
@@ -572,14 +573,21 @@ larger duplicate economy remains backlog.
   Configured rules consume spare duplicate copies of a source rarity while
   preserving one active/equipped copy per asset, then grant random eligible
   pack targets.
+- Done: duplicate-enabled packs can set pack-wide or per-item copy caps; capped
+  assets leave the roll candidate pool, capped packs reject before wallet spend,
+  and pack projection exposes `copyLimit`, `copyCapped`, and `copyComplete`.
+- Done: burn rules can use `targetDuplicatePolicy:
+  "allow_duplicates" | "unowned_first" | "unowned_only"` so simple exchanges can
+  prefer new targets or fail when no unowned target remains.
 - Done: support asset operations are instance-aware enough to freeze/unfreeze
   legitimate duplicate copies independently.
 - Done: backend, simulator, Home view-model, and Playwright coverage exercise
-  duplicate rolls, burn costs, validation failures, and the rendered burn
-  affordance.
-- Backlog: decide complete-target behavior, dust/shard balances, per-asset copy
-  caps, burn-result duplicate policy, richer odds disclosure, and advanced
-  duplicate-rate simulation before paid duplicate packs.
+  duplicate rolls, burn costs, copy caps, validation failures, burn target
+  policy, and the rendered burn affordance.
+- Backlog: dust/shard balances, richer complete-target rewards after
+  `unowned_only` failure, burn-result lock/cooldown policy, richer odds
+  disclosure, and advanced duplicate-rate simulation before paid duplicate
+  packs.
 
 #### G5 - Database/Admin-Managed Seasons
 
@@ -2427,7 +2435,12 @@ Additional TODOs for that pass:
    duplicate-enabled packs can roll owned items as separate active instances,
    and configured burn rules can exchange spare duplicates for random eligible
    pack targets.
-34. Gacha roadmap backlog after G4A: season/collection-scoped pity, secret
-   rarity policy, target-complete/dust/copy-cap policy, database/admin-managed
-   seasons and collections, marketplace/trading, NFT-set policy decisions, and
-   expanded disclosure/simulation work for duplicate-enabled paid packs.
+34. G4B duplicate copy caps and burn target policy. **Done 2026-07-03:**
+   duplicate-enabled packs can cap active copies per asset, simulators accept
+   current copy counts, and burn rules can allow, prefer, or require unowned
+   targets.
+35. Gacha roadmap backlog after G4B: season/collection-scoped pity, secret
+   rarity policy, dust/shard and richer target-complete rewards,
+   database/admin-managed seasons and collections, marketplace/trading, NFT-set
+   policy decisions, and expanded disclosure/simulation work for
+   duplicate-enabled paid packs.

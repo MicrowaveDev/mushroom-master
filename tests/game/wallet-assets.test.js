@@ -42,6 +42,7 @@ import {
   verifyPaymentWebhookSignature,
   verifyPaymentWebhookTimestamp
 } from '../../app/server/create-app.js';
+import { supportGrantAsset } from '../../app/server/services/support-ops-service.js';
 
 async function withEnv(overrides, work) {
   const previous = {};
@@ -1336,6 +1337,66 @@ test('[Req 14-F] duplicate-enabled gacha packs can roll owned skins as active co
   });
 });
 
+test('[Req 14-F] duplicate-enabled gacha packs can cap active copies per asset', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        duplicatePolicy: { mode: 'allow_duplicates', maxCopiesPerAsset: 2 },
+        rollSize: 1,
+        slots: [
+          { rarityWeights: { common: 1 } }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4031 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'duplicate-cap-gacha'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+    assert.equal(odds.duplicatePolicy.maxCopiesPerAsset, 2);
+    assert.equal(odds.items[0].copyLimit, 2);
+
+    const first = await rollAssetPack(player.id, odds.id, { idempotencyKey: 'copy-cap-roll-1', rng: () => 0 });
+    const second = await rollAssetPack(player.id, odds.id, { idempotencyKey: 'copy-cap-roll-2', rng: () => 0 });
+    assert.equal(first.rollResult.items[0].duplicateCopy, false);
+    assert.equal(second.rollResult.items[0].duplicateCopy, true);
+
+    const beforeRejected = await getWalletState(player.id);
+    await assert.rejects(
+      () => rollAssetPack(player.id, odds.id, { idempotencyKey: 'copy-cap-roll-3', rng: () => 0 }),
+      (err) => err.statusCode === 409 && /no rollable assets/i.test(err.message)
+    );
+    const afterRejected = await getWalletState(player.id);
+    assert.equal(afterRejected.balance, beforeRejected.balance, 'copy-cap rejection must not spend wallet currency');
+
+    const shapedPacks = await getAssetPacksForPlayer(player.id);
+    const shapedPack = shapedPacks.find((pack) => pack.id === odds.id);
+    assert.equal(shapedPack.complete, true);
+    assert.equal(shapedPack.copyComplete, true);
+    assert.equal(shapedPack.rollableCount, 0);
+    assert.equal(shapedPack.duplicateCopies, 1);
+    assert.equal(shapedPack.items[0].ownedCopies, 2);
+    assert.equal(shapedPack.items[0].copyLimit, 2);
+    assert.equal(shapedPack.items[0].copyCapped, true);
+  });
+});
+
 test('[Req 14-F] duplicate burn exchanges spare copies for a random rare pack item', async () => {
   const commonA = portraitAssetId('thalla', '1');
   const rareA = portraitAssetId('thalla', '2');
@@ -1432,6 +1493,104 @@ test('[Req 14-F] duplicate burn exchanges spare copies for a random rare pack it
     assert.equal(afterPack.burn.rules[0].ready, false);
     assert.equal(afterPack.burn.rules[0].burnableCount, 0);
     assert.equal((await getWalletState(player.id)).balance, 70, 'burn exchange should not spend wallet currency');
+  });
+});
+
+test('[Req 14-F] duplicate burn target policy can prefer or require unowned targets', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const rareA = portraitAssetId('thalla', '2');
+  const rareB = portraitAssetId('axilin', '2');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        duplicatePolicy: 'allow_duplicates',
+        rollSize: 1,
+        slots: [
+          { rarityWeights: { common: 1 } }
+        ],
+        burnRules: [
+          { id: 'two_common_to_unowned_first_rare', sourceRarity: 'common', sourceCount: 2, targetMinRarity: 'rare', targetCount: 1, targetDuplicatePolicy: 'unowned_first' },
+          { id: 'two_common_to_unowned_only_rare', sourceRarity: 'common', sourceCount: 2, targetMinRarity: 'rare', targetCount: 1, targetDuplicatePolicy: 'unowned_only' }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 },
+          { assetId: rareA, rarity: 'rare', dropWeight: 99 },
+          { assetId: rareB, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4032 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'burn-target-policy'
+    });
+    await supportGrantAsset({
+      actorId: 'test-support',
+      playerId: player.id,
+      assetId: rareA,
+      reason: 'test_setup'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+    assert.deepEqual(odds.burn.rules.map((rule) => rule.targetDuplicatePolicy), ['unowned_first', 'unowned_only']);
+
+    for (let index = 1; index <= 3; index += 1) {
+      await rollAssetPack(player.id, odds.id, {
+        idempotencyKey: `target-policy-roll-${index}`,
+        rng: () => 0
+      });
+    }
+
+    const burn = await burnAssetPackDuplicates(player.id, odds.id, {
+      ruleId: 'two_common_to_unowned_first_rare',
+      idempotencyKey: 'target-policy-burn-1',
+      rng: () => 0
+    });
+    assert.equal(burn.burnResult.assetId, rareB, 'unowned_first should choose the unowned rare before weighted owned duplicates');
+    assert.equal(burn.burnResult.items[0].duplicateCopy, false);
+
+    for (let index = 4; index <= 5; index += 1) {
+      await rollAssetPack(player.id, odds.id, {
+        idempotencyKey: `target-policy-roll-${index}`,
+        rng: () => 0
+      });
+    }
+
+    const beforeRejected = await query(
+      `SELECT status, COUNT(*) AS count
+       FROM player_asset_instances
+       WHERE player_id = $1 AND asset_id = $2
+       GROUP BY status
+       ORDER BY status ASC`,
+      [player.id, commonA]
+    );
+    await assert.rejects(
+      () => burnAssetPackDuplicates(player.id, odds.id, {
+        ruleId: 'two_common_to_unowned_only_rare',
+        idempotencyKey: 'target-policy-burn-2',
+        rng: () => 0
+      }),
+      (err) => err.statusCode === 400 && /target pool/i.test(err.message)
+    );
+    const afterRejected = await query(
+      `SELECT status, COUNT(*) AS count
+       FROM player_asset_instances
+       WHERE player_id = $1 AND asset_id = $2
+       GROUP BY status
+       ORDER BY status ASC`,
+      [player.id, commonA]
+    );
+    assert.deepEqual(afterRejected.rows, beforeRejected.rows, 'failed unowned_only exchange must roll back source burns');
   });
 });
 
@@ -1596,9 +1755,9 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
       season_1_portraits: {
         rollSize: 11,
-        duplicatePolicy: 'bad_mode',
+        duplicatePolicy: { mode: 'bad_mode', maxCopiesPerAsset: 0 },
         burnRules: [
-          { id: 'bad_burn', sourceRarity: 'common', sourceCount: 0, targetMinRarity: 'mythic', targetCount: 99 }
+          { id: 'bad_burn', sourceRarity: 'common', sourceCount: 0, targetMinRarity: 'mythic', targetCount: 99, targetDuplicatePolicy: 'owned_only' }
         ],
         guarantees: [
           { id: 'impossible_rare', minRarity: 'rare', count: 3 }
@@ -1607,7 +1766,7 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
           { id: 'invalid_pity', minRarity: 'rare', threshold: 0, count: 3, resetScope: 'season' }
         ],
         items: [
-          { assetId: portraitAssetId('thalla', '1'), rarity: 'common', dropWeight: 0 },
+          { assetId: portraitAssetId('thalla', '1'), rarity: 'common', dropWeight: 0, copyLimit: 0 },
           { assetId: portraitAssetId('thalla', '1'), rarity: 'secretish', dropWeight: 1 },
           { assetId: 'portrait.missing.ghost', rarity: 'secret', dropWeight: 10 }
         ]
@@ -1638,10 +1797,13 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_scope_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_impossible'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'duplicate_policy_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'duplicate_copy_cap_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_copy_cap_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_requires_duplicates'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_source_count_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_target_rarity_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_target_count_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'burn_target_policy_invalid'));
     assert.equal(validateAssetPack(odds).ok, false);
 
     const before = await getWalletState(player.id);

@@ -199,6 +199,22 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
         ]
       },
       {
+        id: 'capped_pack',
+        name: { en: 'Capped Copy Pack', ru: 'Пак с лимитом копий' },
+        status: 'active',
+        rollPriceAmount: 10,
+        rollPriceCurrencyCode: 'soft_coin',
+        duplicatePolicy: { enabled: true, mode: 'allow_duplicates', maxCopiesPerAsset: 2 },
+        duplicateCopies: 1,
+        rollableCount: 0,
+        complete: true,
+        uniqueComplete: true,
+        copyComplete: true,
+        items: [
+          { assetId: ownedPortrait.assetId, rarity: 'common', dropWeight: 100, ownedCopies: 2, copyLimit: 2, copyCapped: true }
+        ]
+      },
+      {
         id: 'future_pack',
         name: { en: 'Future Pack', ru: 'Будущий пак' },
         status: 'active',
@@ -291,6 +307,8 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
     await expect(page.locator('.home-pack-detail', { hasText: 'Active Odds Pack' })).toContainText('Guarantee: 1 Rare+');
     await expect(page.locator('.home-pack-detail', { hasText: 'Active Odds Pack' })).toContainText('Epic+ pity in 3 opens');
     await expect(page.locator('.home-pack-detail', { hasText: 'Complete Pack' })).toContainText('All 1 skins owned.');
+    await expect(page.locator('.home-pack-detail', { hasText: 'Capped Copy Pack' })).toContainText('Copy limit reached for 1 skins.');
+    await expect(page.locator('.home-pack-detail', { hasText: 'Capped Copy Pack' })).toContainText('Duplicates: 1');
     await expect(page.locator('.home-pack-detail', { hasText: 'Future Pack' })).toContainText('Pack opens later.');
     await expect(page.locator('.home-pack-detail', { hasText: 'Expired Pack' })).toContainText('Pack ended.');
     const rollResponsePromise = page.waitForResponse((response) =>

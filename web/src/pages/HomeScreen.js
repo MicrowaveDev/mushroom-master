@@ -457,6 +457,7 @@ export const HomeScreen = {
             complete,
             duplicateEnabled,
             uniqueComplete: Boolean(pack.uniqueComplete),
+            copyComplete: Boolean(pack.copyComplete),
             duplicateCopies: Number(pack.duplicateCopies || 0),
             canRoll: this.packIsActive(pack) && !complete && rollableCount > 0,
             canBurn: this.packIsActive(pack) && Boolean(readyBurnRule?.ready),
@@ -734,6 +735,7 @@ export const HomeScreen = {
               <div v-for="pack in rollPackSummaries" :key="pack.id" class="home-pack-detail">
                 <strong>{{ pack.name }}</strong>
                 <span v-if="pack.availabilityLabel">{{ pack.availabilityLabel }}</span>
+                <span v-else-if="pack.duplicateEnabled && pack.copyComplete">{{ t.portraitPackCopiesComplete.replace('{count}', pack.total) }}</span>
                 <span v-else-if="pack.complete">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
                 <span v-else-if="pack.duplicateEnabled && pack.rollSize > 1">{{ t.portraitPackDetailsDuplicateMulti.replace('{count}', pack.total).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
                 <span v-else-if="pack.duplicateEnabled">{{ t.portraitPackDetailsDuplicate.replace('{count}', pack.total).replace('{price}', pack.price) }}</span>
