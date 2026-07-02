@@ -37,6 +37,7 @@ import { FusionAnimationLabScreen } from './pages/FusionAnimationLabScreen.js';
 import { HomeFieldPreviewScreen } from './pages/HomeFieldPreviewScreen.js';
 import { ProfileScreen } from './pages/ProfileScreen.js';
 import { SettingsScreen } from './pages/SettingsScreen.js';
+import { SupportAdminScreen } from './pages/SupportAdminScreen.js';
 
 // Existing components
 import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
@@ -51,7 +52,7 @@ const App = {
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
     FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
-    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen
+    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen, SupportAdminScreen
   },
   setup() {
     const startParams = parseStartParams();
@@ -779,6 +780,8 @@ const App = {
         <profile-screen v-else-if="state.screen === 'profile'" :state="state" :t="t" :get-mushroom="getMushroom" :portrait-position="portraitPosition" />
 
         <settings-screen v-else-if="state.screen === 'settings'" :state="state" :t="t" @save-settings="saveSettings" />
+
+        <support-admin-screen v-else-if="state.screen === 'supportAdmin'" />
 
         <section v-else-if="state.screen === 'lab' && isLocalLabEnabled" class="panel stack">
           <h2>{{ t.lab }}</h2>

@@ -9,6 +9,7 @@ const BOOTSTRAP_LOADER_DELAY_MS = 320;
 const TELEGRAM_AUTH_POLL_INTERVAL_MS = 3000;
 const TELEGRAM_AUTH_MAX_POLLS = 200;
 const PUBLIC_NO_AUTH_SCREENS = new Set(['home-field-preview']);
+const AUTHENTICATED_NO_CHARACTER_SCREENS = new Set(['supportAdmin']);
 
 export function normalizeLanguagePreference(lang) {
   return lang === 'en' ? 'en' : 'ru';
@@ -273,7 +274,8 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
         };
       }
 
-      if (!state.bootstrap.activeMushroomId) {
+      const requestedScreen = urlParams.screen || state.screen;
+      if (!state.bootstrap.activeMushroomId && !AUTHENTICATED_NO_CHARACTER_SCREENS.has(requestedScreen)) {
         navigate('onboarding');
       } else if (urlMissingRequiredRunId) {
         navigate(fallbackScreenAfterBootstrap());

@@ -14,7 +14,8 @@ const ROUTE_PARAMS = {
 
 const SCREEN_ROUTES = {
   runSummary: 'run-summary',
-  runComplete: 'run-complete'
+  runComplete: 'run-complete',
+  supportAdmin: 'support-admin'
 };
 
 const ROUTE_SCREENS = Object.fromEntries(
