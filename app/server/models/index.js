@@ -39,6 +39,8 @@ import definePlayerEquippedAsset from './PlayerEquippedAsset.js';
 import defineAssetRoll from './AssetRoll.js';
 import defineMutationClaim from './MutationClaim.js';
 import definePaymentWebhookEvent from './PaymentWebhookEvent.js';
+import defineProviderSettlementImport from './ProviderSettlementImport.js';
+import defineProviderSettlementRecord from './ProviderSettlementRecord.js';
 import defineSupportAction from './SupportAction.js';
 
 export function initModels(sequelize) {
@@ -77,6 +79,8 @@ export function initModels(sequelize) {
   const AssetRoll = defineAssetRoll(sequelize);
   const MutationClaim = defineMutationClaim(sequelize);
   const PaymentWebhookEvent = definePaymentWebhookEvent(sequelize);
+  const ProviderSettlementImport = defineProviderSettlementImport(sequelize);
+  const ProviderSettlementRecord = defineProviderSettlementRecord(sequelize);
   const SupportAction = defineSupportAction(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
@@ -97,6 +101,7 @@ export function initModels(sequelize) {
   Player.hasMany(PlayerAssetInstance, { foreignKey: 'player_id' });
   Player.hasMany(PlayerEquippedAsset, { foreignKey: 'player_id' });
   Player.hasMany(AssetRoll, { foreignKey: 'player_id' });
+  ProviderSettlementImport.hasMany(ProviderSettlementRecord, { foreignKey: 'import_id' });
 
   Battle.hasMany(BattleSnapshot, { foreignKey: 'battle_id' });
   Battle.hasMany(BattleEvent, { foreignKey: 'battle_id' });
@@ -150,6 +155,8 @@ export function initModels(sequelize) {
     AssetRoll,
     MutationClaim,
     PaymentWebhookEvent,
+    ProviderSettlementImport,
+    ProviderSettlementRecord,
     SupportAction
   };
 }

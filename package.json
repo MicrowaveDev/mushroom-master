@@ -41,6 +41,7 @@
     "game:wallet:audit": "node app/scripts/audit-wallet-balances.js",
     "game:wallet:reconcile": "node app/scripts/reconcile-wallet-payments.js",
     "game:wallet:expire-intents": "node app/scripts/expire-wallet-purchase-intents.js",
+    "game:wallet:import-settlement": "node app/scripts/import-provider-settlement.js",
     "game:support:money-lookup": "node app/scripts/support-money-lookup.js",
     "game:support:money-action": "node app/scripts/support-money-action.js",
     "game:gacha:simulate": "node app/scripts/simulate-asset-pack-odds.js",

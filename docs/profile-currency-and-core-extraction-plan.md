@@ -341,6 +341,12 @@ backlog until the items are split into tickets or implementation phases.
   grants, and processed webhook events. Still schedule these checks, add alert
   routing, and import provider settlement exports/API data for true external
   reconciliation.
+- Normalized provider settlement import now exists as of 2026-07-02:
+  `npm run game:wallet:import-settlement -- --provider=<provider> --file=<json>`
+  stores imported settlement batches and compares provider rows to local
+  purchase intents, wallet grants, amounts, and refund clawbacks. Still add
+  provider-specific CSV/API adapters, scheduling, alert routing, and live
+  settlement runbooks.
 - Local stale purchase-intent expiry now exists as of 2026-07-02:
   `npm run game:wallet:expire-intents` marks old pending wallet purchase
   intents expired without granting currency, skips active checkout claims, and
@@ -1310,6 +1316,13 @@ or legal/support/compliance rollout work.
      grant/revoke, asset grant/revoke, and purchase-refund endpoints.
    - The endpoints reuse the same support lookup and immutable
      `support_actions` mutation services as the CLI.
+16. Normalized provider settlement import exists.
+   - `provider_settlement_imports` and `provider_settlement_records` persist
+     imported provider rows for auditability.
+   - `importProviderSettlementRecords(...)` and
+     `npm run game:wallet:import-settlement` compare normalized provider rows
+     against local purchase intent status, expected price/currency, wallet
+     grants, and refund clawbacks.
 
 ### Remaining launch gates
 
@@ -1365,6 +1378,9 @@ or legal/support/compliance rollout work.
   non-engineering support use, then add role-based operator authorization,
   approval policy, scheduled reconciliation, alert routing, and provider
   settlement import.
+- Add provider-specific settlement adapters and runbooks for BTCPay,
+  NOWPayments, and Telegram Stars exports/API payloads. The current import
+  command accepts normalized JSON only.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 
