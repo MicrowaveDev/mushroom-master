@@ -340,8 +340,11 @@ backlog until the items are split into tickets or implementation phases.
   Still add provider timestamp-window checks where providers support them, live
   secret-rotation procedures, and production-grade structured payment log
   routing/retention.
-- Add rate limits and abuse controls for checkout creation, gacha rolls, direct
-  purchases, support-sensitive endpoints, and expensive odds/catalog calls.
+- Checkout creation, gacha rolls, direct asset purchases, asset catalog, and
+  pack-odds endpoints now have route-scoped rate-limit buckets as of
+  2026-07-02. Still tune production thresholds with real traffic, add
+  distributed/shared-bucket enforcement if multiple app instances are used, and
+  apply equivalent controls to future admin/support-sensitive endpoints.
 
 ### 5. Gacha, Asset Economy, And Marketplace Roadmap
 
@@ -1227,6 +1230,11 @@ or legal/support/compliance rollout work.
      metadata in `payment_webhook_events`.
    - Duplicate processed webhooks return the stored result without granting
      wallet currency again; same-event payload mismatches are rejected.
+9. Paid asset route abuse-control buckets exist.
+   - Checkout creation, direct asset purchase, gacha roll, catalog, and pack
+     odds routes use separate player-scoped rate-limit buckets.
+   - `RATE_LIMIT_FORCE=true` allows deterministic staging/test enforcement
+     without switching the whole process to production mode.
 
 ### Remaining launch gates
 
@@ -1246,6 +1254,8 @@ or legal/support/compliance rollout work.
   2026-07-02:** provider invoice creation uses checkout claim fields, and direct
   asset purchase / gacha roll paths use reusable `mutation_claims` rows with
   stale-claim recovery.
+- Tune paid-route rate-limit capacities/refill windows against real traffic and
+  move buckets to shared storage before horizontally scaling the API.
 - Add final terms, refund/support contact, and payment-dispute copy reachable
   from the purchase UI. **Local support link plumbing is implemented
   2026-07-02:** `/api/app-config` exposes `paymentSupport`, the wallet popover
@@ -1880,7 +1890,8 @@ Additional TODOs for that pass:
 9. Phase 7B paid-readiness/UI hardening: idempotent checkout retry reuse,
    callback amount/currency validation, terminal status recording,
    fail-closed unsigned webhooks outside tests, wallet audit/backfill script,
-   wallet bundle/provider picker, and rollable portrait UI.
+   wallet bundle/provider picker, rollable portrait UI, payment webhook event
+   replay/audit, and paid-route rate-limit buckets.
 10. Phase 6A-6C neutral naming pass: freeze compatibility contract, add
    character XP and run currency helper/API aliases while keeping legacy DB
    columns and response aliases. **Done 2026-07-01.**

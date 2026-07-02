@@ -31,7 +31,7 @@ export function rateLimit({
   force = false,
   keyFn = (req) => req.user?.id
 } = {}) {
-  const disabled = !force && process.env.NODE_ENV !== 'production';
+  const disabled = !force && process.env.RATE_LIMIT_FORCE !== 'true' && process.env.NODE_ENV !== 'production';
   return function rateLimitMiddleware(req, res, next) {
     if (disabled) return next();
     const playerId = keyFn(req);

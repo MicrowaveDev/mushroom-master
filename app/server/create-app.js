@@ -188,6 +188,13 @@ function clientIp(req) {
   return forwardedFor || req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
+function scopedPlayerRateLimit(scope, options = {}) {
+  return rateLimit({
+    ...options,
+    keyFn: (req) => req.user?.id ? `${scope}:${req.user.id}` : null
+  });
+}
+
 function timingSafeEqualText(left, right) {
   const leftBuffer = Buffer.from(String(left || ''), 'utf8');
   const rightBuffer = Buffer.from(String(right || ''), 'utf8');
@@ -326,8 +333,28 @@ export async function createApp() {
   app.use(requestLogger());
   app.use(authenticateRequest);
 
-  const runMutationGuards = [rateLimit(), idempotency()];
-  const profileMutationGuards = [rateLimit(), idempotency()];
+  const runMutationGuards = [scopedPlayerRateLimit('run-mutation'), idempotency()];
+  const profileMutationGuards = [scopedPlayerRateLimit('profile-mutation'), idempotency()];
+  const checkoutCreationGuards = [
+    scopedPlayerRateLimit('wallet-purchase-intents', { capacity: 4, refillPerSec: 1 / 30 }),
+    idempotency()
+  ];
+  const assetPurchaseGuards = [
+    scopedPlayerRateLimit('asset-purchase', { capacity: 8, refillPerSec: 1 / 20 }),
+    idempotency()
+  ];
+  const assetRollGuards = [
+    scopedPlayerRateLimit('asset-pack-roll', { capacity: 6, refillPerSec: 1 / 20 }),
+    idempotency()
+  ];
+  const assetCatalogRateLimit = scopedPlayerRateLimit('asset-catalog', {
+    capacity: 30,
+    refillPerSec: 1 / 5
+  });
+  const assetOddsRateLimit = scopedPlayerRateLimit('asset-pack-odds', {
+    capacity: 20,
+    refillPerSec: 1 / 5
+  });
   const publicAuthRateLimit = rateLimit({
     capacity: 8,
     refillPerSec: 1 / 30,
@@ -506,7 +533,7 @@ export async function createApp() {
   app.post(
     '/api/wallet/purchase-intents',
     requireAuth,
-    ...profileMutationGuards,
+    ...checkoutCreationGuards,
     asyncRoute(async (req, res) => {
       const data = await createPurchaseIntent(req.user.id, {
         bundleId: req.body.bundleId,
@@ -538,6 +565,7 @@ export async function createApp() {
   app.get(
     '/api/assets/catalog',
     requireAuth,
+    assetCatalogRateLimit,
     asyncRoute(async (_req, res) => {
       res.json({ success: true, data: getAssetCatalog() });
     })
@@ -546,6 +574,7 @@ export async function createApp() {
   app.get(
     '/api/assets/packs/:packId/odds',
     requireAuth,
+    assetOddsRateLimit,
     asyncRoute(async (req, res) => {
       res.json({ success: true, data: getPackOdds(req.params.packId) });
     })
@@ -554,7 +583,7 @@ export async function createApp() {
   app.post(
     '/api/assets/packs/:packId/roll',
     requireAuth,
-    ...profileMutationGuards,
+    ...assetRollGuards,
     asyncRoute(async (req, res) => {
       const data = await rollAssetPack(req.user.id, req.params.packId, {
         idempotencyKey: req.header('idempotency-key') || null
@@ -566,7 +595,7 @@ export async function createApp() {
   app.post(
     '/api/assets/:assetId/purchase',
     requireAuth,
-    ...profileMutationGuards,
+    ...assetPurchaseGuards,
     asyncRoute(async (req, res) => {
       const purchase = await purchaseAsset(req.user.id, req.params.assetId, {
         idempotencyKey: req.header('idempotency-key') || null

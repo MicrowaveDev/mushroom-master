@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { createApp } from '../../app/server/create-app.js';
+import { loginWithWebSession } from '../../app/server/auth.js';
+import { clearRateLimitBuckets } from '../../app/server/lib/rate-limit.js';
 import { freshDb } from './helpers.js';
 
 async function withEnv(overrides, work) {
@@ -46,5 +48,61 @@ test('[Req 4-Z] app config exposes payment support links for wallet UI', async (
       supportUrl: 'https://support.example/pay',
       termsUrl: 'https://terms.example/pay'
     });
+  });
+});
+
+test('[Req 4-Z] paid asset routes use separate abuse-control buckets', async () => {
+  await withEnv({ RATE_LIMIT_FORCE: 'true' }, async () => {
+    await freshDb();
+    clearRateLimitBuckets();
+    const login = await loginWithWebSession({
+      clientId: 'rate-limit-paid-assets',
+      name: 'Rate',
+      lastName: 'Limit',
+      lang: 'en'
+    });
+    const app = await createApp();
+    const auth = { 'x-session-key': login.session.sessionKey };
+
+    for (let i = 0; i < 30; i++) {
+      const response = await request(app).get('/api/assets/catalog').set(auth);
+      assert.equal(response.status, 200);
+    }
+    const catalogRejected = await request(app).get('/api/assets/catalog').set(auth);
+    assert.equal(catalogRejected.status, 429);
+
+    for (let i = 0; i < 4; i++) {
+      const response = await request(app)
+        .post('/api/wallet/purchase-intents')
+        .set(auth)
+        .send({ bundleId: 'coins_small', provider: 'btcpay', surface: 'web' });
+      assert.equal(response.status, 200);
+    }
+    const checkoutRejected = await request(app)
+      .post('/api/wallet/purchase-intents')
+      .set(auth)
+      .send({ bundleId: 'coins_small', provider: 'btcpay', surface: 'web' });
+    assert.equal(checkoutRejected.status, 429);
+
+    for (let i = 0; i < 8; i++) {
+      const response = await request(app).post('/api/assets/unknown.purchase/purchase').set(auth).send({});
+      assert.equal(response.status, 404);
+    }
+    const purchaseRejected = await request(app).post('/api/assets/unknown.purchase/purchase').set(auth).send({});
+    assert.equal(purchaseRejected.status, 429);
+
+    for (let i = 0; i < 6; i++) {
+      const response = await request(app).post('/api/assets/packs/missing-pack/roll').set(auth).send({});
+      assert.equal(response.status, 403);
+    }
+    const rollRejected = await request(app).post('/api/assets/packs/missing-pack/roll').set(auth).send({});
+    assert.equal(rollRejected.status, 429);
+
+    for (let i = 0; i < 20; i++) {
+      const response = await request(app).get('/api/assets/packs/missing-pack/odds').set(auth);
+      assert.equal(response.status, 404);
+    }
+    const oddsRejected = await request(app).get('/api/assets/packs/missing-pack/odds').set(auth);
+    assert.equal(oddsRejected.status, 429);
   });
 });
