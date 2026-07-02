@@ -128,6 +128,7 @@ function rowToSettlementRecord(row) {
     id: row.id,
     importId: row.import_id,
     provider: row.provider,
+    localIntentId: row.local_intent_id || null,
     providerInvoiceId: row.provider_invoice_id || null,
     providerPaymentId: row.provider_payment_id || null,
     settlementStatus: row.settlement_status,
@@ -201,6 +202,20 @@ export function normalizeProviderSettlementRecord(rawRecord = {}, {
   ));
   return {
     provider: normalizedProvider,
+    localIntentId: firstPresent(
+      rawRecord.localIntentId,
+      rawRecord.local_intent_id,
+      rawRecord.walletPurchaseIntentId,
+      rawRecord.wallet_purchase_intent_id,
+      rawRecord.intentId,
+      rawRecord.intent_id,
+      rawRecord.invoicePayload,
+      rawRecord.invoice_payload,
+      rawRecord.orderId,
+      rawRecord.order_id,
+      rawRecord.data?.intent_id,
+      rawRecord.data?.order_id
+    ),
     providerInvoiceId: firstPresent(
       rawRecord.providerInvoiceId,
       rawRecord.provider_invoice_id,
@@ -237,6 +252,15 @@ export function normalizeProviderSettlementRecord(rawRecord = {}, {
 }
 
 async function findIntentForSettlementRecord(client, record) {
+  if (record.localIntentId) {
+    const byIntentId = await client.query(
+      `SELECT * FROM wallet_purchase_intents
+       WHERE id = $1 AND provider = $2
+       LIMIT 1`,
+      [record.localIntentId, record.provider]
+    );
+    if (byIntentId.rowCount) return rowToIntent(byIntentId.rows[0]);
+  }
   if (record.providerInvoiceId) {
     const byInvoice = await client.query(
       `SELECT * FROM wallet_purchase_intents
@@ -410,13 +434,14 @@ export async function importProviderSettlementRecords({
       const recordId = createId('settlement_record');
       await client.query(
         `INSERT INTO provider_settlement_records
-         (id, import_id, provider, provider_invoice_id, provider_payment_id,
+         (id, import_id, provider, local_intent_id, provider_invoice_id, provider_payment_id,
           settlement_status, price_amount, price_currency, settled_at, raw_json, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           recordId,
           importId,
           record.provider,
+          record.localIntentId,
           record.providerInvoiceId,
           record.providerPaymentId,
           record.settlementStatus,

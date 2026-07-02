@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { createPlayer, freshDb } from './helpers.js';
 import { query } from '../../app/server/db.js';
 import {
+  completeTelegramSuccessfulPayment,
   completePurchaseIntent,
   createPurchaseIntent,
   getWalletState,
   processProviderWebhookEvent
 } from '../../app/server/services/wallet-service.js';
+import { parseProviderSettlementInput } from '../../app/server/services/provider-settlement-adapters.js';
 import {
   importProviderSettlementRecords,
   normalizeProviderSettlementRecord
@@ -148,6 +150,7 @@ test('[Req 4-Z] settlement normalizer handles provider status and minor amount s
     }),
     {
       provider: 'nowpayments',
+      localIntentId: null,
       providerInvoiceId: null,
       providerPaymentId: 'pay-1',
       settlementStatus: 'completed',
@@ -163,4 +166,106 @@ test('[Req 4-Z] settlement normalizer handles provider status and minor amount s
       }
     }
   );
+});
+
+test('[Req 4-Z] provider settlement adapters parse BTCPay CSV exports', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4804 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'settlement-btcpay-csv'
+  });
+  await completePurchaseIntent({
+    provider: 'btcpay',
+    providerInvoiceId: intent.providerInvoiceId,
+    providerPaymentId: 'btcpay-csv-payment'
+  });
+
+  const input = parseProviderSettlementInput([
+    'Order ID,Invoice ID,Payment ID,Status,Amount,Currency,Settled At',
+    `${intent.id},${intent.providerInvoiceId},btcpay-csv-payment,Settled,1.00,USD,2026-07-02T14:00:00.000Z`
+  ].join('\n'), {
+    provider: 'btcpay',
+    format: 'csv',
+    sourceRef: 'btcpay-settlement.csv'
+  });
+
+  assert.equal(input.format, 'csv');
+  assert.equal(input.rawRecordCount, 1);
+  assert.equal(input.records[0].localIntentId, intent.id);
+  assert.equal(input.records[0].providerInvoiceId, intent.providerInvoiceId);
+
+  const result = await importProviderSettlementRecords({
+    provider: 'btcpay',
+    records: input.records,
+    sourceType: input.format,
+    dryRun: true
+  });
+
+  assert.equal(result.report.ok, true);
+  assert.equal(result.report.matchedCount, 1);
+});
+
+test('[Req 4-Z] Telegram Stars settlement rows reconcile by invoice payload intent id', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4805 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'telegram_stars',
+    surface: 'telegram_mini_app',
+    idempotencyKey: 'settlement-telegram-stars'
+  });
+  await completeTelegramSuccessfulPayment({
+    invoice_payload: intent.id,
+    telegram_payment_charge_id: 'tg-charge-1',
+    total_amount: intent.priceAmount,
+    currency: 'XTR'
+  });
+
+  const input = parseProviderSettlementInput(JSON.stringify({
+    payments: [{
+      invoice_payload: intent.id,
+      telegram_payment_charge_id: 'tg-charge-1',
+      total_amount: intent.priceAmount,
+      currency: 'XTR',
+      status: 'paid'
+    }]
+  }), {
+    provider: 'telegram_stars',
+    sourceRef: 'telegram-stars-payments.json'
+  });
+  const result = await importProviderSettlementRecords({
+    provider: 'telegram_stars',
+    records: input.records,
+    dryRun: true
+  });
+
+  assert.equal(result.report.ok, true);
+  assert.equal(result.report.matchedCount, 1);
+  assert.equal(result.records[0].localIntentId, intent.id);
+  assert.equal(result.records[0].priceAmount, intent.priceAmount);
+});
+
+test('[Req 4-Z] provider settlement adapters parse NOWPayments JSON payloads', () => {
+  const input = parseProviderSettlementInput(JSON.stringify({
+    data: [{
+      order_id: 'intent-now-1',
+      payment_id: 'now-payment-1',
+      payment_status: 'finished',
+      price_amount: '5.50',
+      price_currency: 'usd',
+      updated_at: '2026-07-02T15:00:00.000Z'
+    }]
+  }), {
+    provider: 'nowpayments',
+    sourceRef: 'nowpayments-payments.json'
+  });
+
+  assert.equal(input.format, 'json');
+  assert.equal(input.records[0].localIntentId, 'intent-now-1');
+  assert.equal(input.records[0].providerInvoiceId, 'now-payment-1');
+  assert.equal(input.records[0].payment_status, 'finished');
+  assert.equal(input.records[0].price_amount, '5.50');
 });

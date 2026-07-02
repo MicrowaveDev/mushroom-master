@@ -92,6 +92,7 @@ async function initSchema(sequelize) {
   await ensureColumnExists(sequelize, 'wallet_purchase_intents', 'checkout_status', 'TEXT');
   await ensureColumnExists(sequelize, 'wallet_purchase_intents', 'checkout_claim_token', 'TEXT');
   await ensureColumnExists(sequelize, 'wallet_purchase_intents', 'checkout_claimed_at', 'TEXT');
+  await ensureColumnExists(sequelize, 'provider_settlement_records', 'local_intent_id', 'TEXT');
   await sequelize.query('DROP INDEX IF EXISTS idx_one_active_run_per_player');
   await backfillActiveRunMushrooms(sequelize);
   await sequelize.query(

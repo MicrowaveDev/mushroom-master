@@ -347,6 +347,12 @@ backlog until the items are split into tickets or implementation phases.
   purchase intents, wallet grants, amounts, and refund clawbacks. Still add
   provider-specific CSV/API adapters, scheduling, alert routing, and live
   settlement runbooks.
+- Provider-specific settlement adapters and a local operations runbook now
+  exist as of 2026-07-02: the same import command accepts `--format=json|csv|auto`
+  and maps common BTCPay, NOWPayments, and Telegram Stars export/API fields into
+  the normalized reconciliation service. See
+  `docs/payment-operations-runbook.md`. Still validate real sandbox/live export
+  shapes, add scheduled imports/reconciliation, and route alerts.
 - Local stale purchase-intent expiry now exists as of 2026-07-02:
   `npm run game:wallet:expire-intents` marks old pending wallet purchase
   intents expired without granting currency, skips active checkout claims, and
@@ -1323,6 +1329,15 @@ or legal/support/compliance rollout work.
      `npm run game:wallet:import-settlement` compare normalized provider rows
      against local purchase intent status, expected price/currency, wallet
      grants, and refund clawbacks.
+17. Provider-specific settlement adapters and local runbook exist.
+   - `parseProviderSettlementInput(...)` accepts normalized/provider JSON and
+     provider CSV files, maps BTCPay/NOWPayments/Telegram Stars fields, and
+     preserves provider raw rows under the stored settlement record.
+   - Telegram Stars settlement rows can reconcile through `invoice_payload`
+     because `provider_settlement_records.local_intent_id` is now stored and
+     checked before provider invoice/payment references.
+   - `docs/payment-operations-runbook.md` documents dry-run-first imports,
+     provider field mapping, and support follow-up.
 
 ### Remaining launch gates
 
@@ -1378,9 +1393,10 @@ or legal/support/compliance rollout work.
   non-engineering support use, then add role-based operator authorization,
   approval policy, scheduled reconciliation, alert routing, and provider
   settlement import.
-- Add provider-specific settlement adapters and runbooks for BTCPay,
-  NOWPayments, and Telegram Stars exports/API payloads. The current import
-  command accepts normalized JSON only.
+- Validate provider-specific settlement adapters and runbooks against real
+  BTCPay, NOWPayments, and Telegram Stars sandbox/live exports/API payloads.
+  Local adapters exist for common JSON/CSV shapes, but live examples and
+  scheduled alert routing are still required.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 

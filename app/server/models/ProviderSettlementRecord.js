@@ -10,6 +10,7 @@ export default function defineProviderSettlementRecord(sequelize) {
       onDelete: 'CASCADE'
     },
     provider: { type: DataTypes.TEXT, allowNull: false },
+    local_intent_id: { type: DataTypes.TEXT },
     provider_invoice_id: { type: DataTypes.TEXT },
     provider_payment_id: { type: DataTypes.TEXT },
     settlement_status: { type: DataTypes.TEXT, allowNull: false },
@@ -23,6 +24,7 @@ export default function defineProviderSettlementRecord(sequelize) {
     timestamps: false,
     indexes: [
       { fields: ['import_id'], name: 'idx_provider_settlement_records_import' },
+      { fields: ['provider', 'local_intent_id'], name: 'idx_provider_settlement_records_local_intent' },
       { fields: ['provider', 'provider_invoice_id'], name: 'idx_provider_settlement_records_invoice' },
       { fields: ['provider', 'provider_payment_id'], name: 'idx_provider_settlement_records_payment' },
       { fields: ['provider', 'settlement_status'], name: 'idx_provider_settlement_records_status' }
