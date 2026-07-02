@@ -310,6 +310,8 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
         status: 'active',
         rollPriceAmount: 10,
         rollPriceCurrencyCode: 'soft_coin',
+        rollSize: 2,
+        nextRollItemCount: 2,
         items: [
           { assetId: rollPortrait.assetId, rarity: 'rare', dropWeight: 30 },
           { assetId: directPortrait.assetId, rarity: 'common', dropWeight: 70 }
@@ -347,7 +349,24 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
             assetName: rollPortrait.name,
             assetPath: rollPortrait.path,
             rarity: 'rare',
-            resultInstanceId: 'asset-ui-1'
+            resultInstanceId: 'asset-ui-1',
+            count: 2,
+            items: [
+              {
+                assetId: rollPortrait.assetId,
+                assetName: rollPortrait.name,
+                assetPath: rollPortrait.path,
+                rarity: 'rare',
+                resultInstanceId: 'asset-ui-1'
+              },
+              {
+                assetId: directPortrait.assetId,
+                assetName: directPortrait.name,
+                assetPath: directPortrait.path,
+                rarity: 'common',
+                resultInstanceId: 'asset-ui-2'
+              }
+            ]
           },
           alreadyProcessed: false
         }
@@ -363,6 +382,7 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
   await expect(page.locator(`.home-portrait-swatch--buyable[data-portrait-id="${directPortrait.id}"]`)).toBeVisible();
   await expect(page.locator('.home-pack-detail')).toContainText('Season 1 Portrait Pack');
   await expect(page.locator('.home-pack-detail')).toContainText('2 skins');
+  await expect(page.locator('.home-pack-detail')).toContainText('opens 2');
   await expect(page.locator('.home-pack-detail')).toContainText(/Odds:.*Common 70%.*Rare 30%/);
   const rollResponsePromise = page.waitForResponse((response) =>
     response.url().includes('/api/assets/packs/season_1_portraits/roll')
@@ -370,8 +390,9 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
   await rollableSwatch.click();
   const rollResponse = await rollResponsePromise;
   expect(rollResponse.status()).toBe(200);
-  await expect(page.getByTestId('home-pack-roll-result')).toContainText('New skin unlocked');
+  await expect(page.getByTestId('home-pack-roll-result')).toContainText('2 skins unlocked');
   await expect(page.getByTestId('home-pack-roll-result')).toContainText('Rare');
+  await expect(page.getByTestId('home-pack-roll-result')).toContainText('Common');
 });
 
 test('[Req 14-F] skin picker shows complete, future, and expired pack states', async ({ page, request, baseURL }) => {

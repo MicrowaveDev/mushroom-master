@@ -84,3 +84,46 @@ test('[Req 14-F] gacha odds simulation excludes owned and missing pack items', a
     assert.ok(result.warnings.find((entry) => entry.code === 'missing_asset_items'));
   });
 });
+
+test('[Req 14-F] gacha odds simulation supports multi-slot pack openings', async () => {
+  const common = portraitAssetId('thalla', '1');
+  const rare = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        rollSize: 2,
+        slots: [
+          { rarityWeights: { common: 1 } },
+          { rarityWeights: { rare: 1 } }
+        ],
+        items: [
+          { assetId: common, rarity: 'common', dropWeight: 1 },
+          { assetId: rare, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    const sequence = [0, 0, 0, 0];
+    let index = 0;
+    const result = simulateAssetPackOdds('season_1_portraits', {
+      trials: 4,
+      rng: () => sequence[index++ % sequence.length]
+    });
+
+    assert.equal(result.rollable, true);
+    assert.equal(result.rollSize, 2);
+    assert.equal(result.averageItemsPerRoll, 2);
+    assert.equal(result.guarantees.supported, false);
+    assert.equal(result.guarantees.note.includes('multi-slot'), true);
+
+    const commonItem = result.items.find((item) => item.assetId === common);
+    const rareItem = result.items.find((item) => item.assetId === rare);
+    assert.equal(commonItem.expectedProbability, null);
+    assert.equal(commonItem.observedCount, 4);
+    assert.equal(commonItem.observedProbability, 1);
+    assert.equal(rareItem.observedCount, 4);
+    assert.equal(rareItem.observedProbability, 1);
+    assert.equal(result.raritySummary.find((row) => row.rarity === 'common').observedCount, 4);
+    assert.equal(result.raritySummary.find((row) => row.rarity === 'rare').observedCount, 4);
+  });
+});

@@ -15,6 +15,8 @@ import { withMutationClaim } from './mutation-claim-service.js';
 const PORTRAIT_PACK_ID = 'season_1_portraits';
 const VALID_ASSET_RARITIES = new Set(['common', 'rare', 'epic', 'legendary', 'secret']);
 const VALID_PACK_STATUSES = new Set(['active', 'future', 'expired', 'disabled']);
+const MIN_ASSET_PACK_ROLL_SIZE = 1;
+const MAX_ASSET_PACK_ROLL_SIZE = 10;
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -124,6 +126,13 @@ function configuredRollPriceAmount() {
   return Number.isInteger(value) && value > 0 ? value : 500;
 }
 
+function configuredRollSize() {
+  const value = Number(process.env.ASSET_GACHA_ROLL_SIZE || 1);
+  return Number.isInteger(value) && value >= MIN_ASSET_PACK_ROLL_SIZE && value <= MAX_ASSET_PACK_ROLL_SIZE
+    ? value
+    : 1;
+}
+
 function validDateValue(value) {
   if (value === null || value === undefined || value === '') return true;
   return !Number.isNaN(new Date(value).getTime());
@@ -131,6 +140,46 @@ function validDateValue(value) {
 
 function packValidationIssue(code, message, itemIndex = null) {
   return { code, message, itemIndex };
+}
+
+function assetPackRollSize(pack) {
+  const rollSize = Number(pack?.rollSize ?? 1);
+  return Number.isInteger(rollSize) ? rollSize : Number.NaN;
+}
+
+function rarityWeightEntries(rarityWeights) {
+  if (!rarityWeights || typeof rarityWeights !== 'object' || Array.isArray(rarityWeights)) return [];
+  return Object.entries(rarityWeights)
+    .map(([rarity, weight]) => [rarity, Number(weight)])
+    .filter(([, weight]) => Number.isFinite(weight) && weight > 0);
+}
+
+function defaultRarityWeightsForItems(items = []) {
+  return items.reduce((weights, item) => {
+    const rarity = item.rarity || 'common';
+    weights[rarity] = (weights[rarity] || 0) + Math.max(0, Number(item.dropWeight || 0));
+    return weights;
+  }, {});
+}
+
+function normalizedPackSlots(pack) {
+  const rollSize = assetPackRollSize(pack);
+  if (!Number.isInteger(rollSize) || rollSize < MIN_ASSET_PACK_ROLL_SIZE || rollSize > MAX_ASSET_PACK_ROLL_SIZE) return [];
+  const fallbackWeights = pack?.rarityWeights && typeof pack.rarityWeights === 'object'
+    ? pack.rarityWeights
+    : defaultRarityWeightsForItems(pack?.items || []);
+  const configuredSlots = Array.isArray(pack?.slots) ? pack.slots : [];
+  return Array.from({ length: rollSize }, (_, index) => {
+    const slot = configuredSlots[index] && typeof configuredSlots[index] === 'object'
+      ? configuredSlots[index]
+      : {};
+    return {
+      slotIndex: index,
+      rarityWeights: slot.rarityWeights && typeof slot.rarityWeights === 'object'
+        ? slot.rarityWeights
+        : fallbackWeights
+    };
+  });
 }
 
 export function validateAssetPack(pack, {
@@ -172,8 +221,12 @@ export function validateAssetPack(pack, {
   if (!Number.isInteger(Number(pack.rollPriceAmount)) || Number(pack.rollPriceAmount) <= 0) {
     errors.push(packValidationIssue('price_invalid', `Asset pack ${pack.id || '(unknown)'} needs a positive integer roll price.`));
   }
-  if (Number(pack.rollSize || 0) !== 1) {
-    errors.push(packValidationIssue('roll_size_unsupported', `Asset pack ${pack.id || '(unknown)'} must keep rollSize=1 for G1.`));
+  const rollSize = assetPackRollSize(pack);
+  if (!Number.isInteger(rollSize) || rollSize < MIN_ASSET_PACK_ROLL_SIZE || rollSize > MAX_ASSET_PACK_ROLL_SIZE) {
+    errors.push(packValidationIssue('roll_size_invalid', `Asset pack ${pack.id || '(unknown)'} rollSize must be an integer from ${MIN_ASSET_PACK_ROLL_SIZE} to ${MAX_ASSET_PACK_ROLL_SIZE}.`));
+  }
+  if (pack.rarityTableVersion !== undefined && typeof pack.rarityTableVersion !== 'string') {
+    errors.push(packValidationIssue('rarity_table_version_invalid', `Asset pack ${pack.id || '(unknown)'} rarityTableVersion must be a string.`));
   }
   if (!Array.isArray(pack.items) || pack.items.length === 0) {
     errors.push(packValidationIssue('items_missing', `Asset pack ${pack.id || '(unknown)'} needs at least one item.`));
@@ -199,6 +252,38 @@ export function validateAssetPack(pack, {
   }
   if ((pack.items || []).length < 2) {
     warnings.push(packValidationIssue('small_pack', `Asset pack ${pack.id || '(unknown)'} has fewer than two items.`));
+  }
+  if (pack.slots !== undefined && !Array.isArray(pack.slots)) {
+    errors.push(packValidationIssue('slots_invalid', `Asset pack ${pack.id || '(unknown)'} slots must be an array.`));
+  }
+  if (Array.isArray(pack.slots) && Number.isInteger(rollSize) && pack.slots.length !== rollSize) {
+    errors.push(packValidationIssue('slots_length_invalid', `Asset pack ${pack.id || '(unknown)'} slots length must match rollSize.`));
+  }
+  if (Number.isInteger(rollSize) && rollSize > 1 && !Array.isArray(pack.slots) && !pack.rarityWeights) {
+    warnings.push(packValidationIssue('slots_missing_for_multi_roll', `Asset pack ${pack.id || '(unknown)'} uses item rarity weights for every roll slot.`));
+  }
+  for (const [index, slot] of (Array.isArray(pack.slots) ? pack.slots : []).entries()) {
+    const weights = rarityWeightEntries(slot?.rarityWeights);
+    if (!weights.length) {
+      errors.push(packValidationIssue('slot_rarity_weights_missing', 'Pack roll slot needs positive rarityWeights.', index));
+      continue;
+    }
+    for (const [rarity] of weights) {
+      if (!VALID_ASSET_RARITIES.has(rarity)) {
+        errors.push(packValidationIssue('slot_rarity_invalid', `Pack roll slot has invalid rarity ${rarity}.`, index));
+      }
+    }
+  }
+  if (pack.rarityWeights !== undefined) {
+    const weights = rarityWeightEntries(pack.rarityWeights);
+    if (!weights.length) {
+      errors.push(packValidationIssue('rarity_weights_missing', `Asset pack ${pack.id || '(unknown)'} rarityWeights must contain positive weights.`));
+    }
+    for (const [rarity] of weights) {
+      if (!VALID_ASSET_RARITIES.has(rarity)) {
+        errors.push(packValidationIssue('rarity_weights_invalid', `Asset pack ${pack.id || '(unknown)'} has invalid rarity weight ${rarity}.`));
+      }
+    }
   }
   return {
     ok: errors.length === 0,
@@ -237,6 +322,35 @@ function summarizePackRarities(items) {
     .sort((a, b) => b.dropWeight - a.dropWeight || a.rarity.localeCompare(b.rarity));
 }
 
+function summarizeSlotRarities(pack, items) {
+  const rollSize = assetPackRollSize(pack);
+  if (!Number.isInteger(rollSize) || rollSize < MIN_ASSET_PACK_ROLL_SIZE) return [];
+  const raritiesWithItems = new Set(items.map((item) => item.rarity || 'common'));
+  const byRarity = new Map();
+  for (const slot of normalizedPackSlots(pack)) {
+    const weights = rarityWeightEntries(slot.rarityWeights)
+      .filter(([rarity]) => raritiesWithItems.has(rarity));
+    const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+    if (total <= 0) continue;
+    for (const [rarity, weight] of weights) {
+      const current = byRarity.get(rarity) || {
+        rarity,
+        count: 0,
+        dropWeight: 0,
+        probability: 0,
+        expectedPerOpen: 0
+      };
+      current.count = items.filter((item) => (item.rarity || 'common') === rarity).length;
+      current.dropWeight += weight;
+      current.expectedPerOpen += weight / total;
+      current.probability = current.expectedPerOpen / rollSize;
+      byRarity.set(rarity, current);
+    }
+  }
+  return [...byRarity.values()]
+    .sort((a, b) => b.expectedPerOpen - a.expectedPerOpen || a.rarity.localeCompare(b.rarity));
+}
+
 export function shapeAssetPack(pack, {
   ownedAssetIds = [],
   includeAssets = false,
@@ -251,18 +365,28 @@ export function shapeAssetPack(pack, {
     probability: totalWeight > 0 ? Math.max(0, Number(item.dropWeight || 0)) / totalWeight : 0,
     ...(includeAssets ? { asset: getAssetById(item.assetId) } : {})
   }));
+  const rollSize = assetPackRollSize(pack);
+  const normalizedRollSize = Number.isInteger(rollSize) ? rollSize : pack.rollSize;
   const ownedCount = items.filter((item) => owned.has(item.assetId)).length;
+  const remainingCount = Math.max(0, items.length - ownedCount);
+  const raritySummary = Number(normalizedRollSize) > 1
+    ? summarizeSlotRarities(pack, items)
+    : summarizePackRarities(items);
   return {
     ...pack,
+    rollSize: normalizedRollSize,
+    rarityTableVersion: pack.rarityTableVersion || `${pack.id || 'asset_pack'}:v1`,
+    slots: normalizedPackSlots(pack),
     active: availability === 'active',
     availability,
     validation,
     totalItems: items.length,
     ownedCount,
-    remainingCount: Math.max(0, items.length - ownedCount),
+    remainingCount,
+    nextRollItemCount: Math.min(Math.max(0, Number(normalizedRollSize) || 0), remainingCount),
     complete: items.length > 0 && ownedCount >= items.length,
     totalWeight,
-    raritySummary: summarizePackRarities(items),
+    raritySummary,
     items
   };
 }
@@ -270,6 +394,7 @@ export function shapeAssetPack(pack, {
 export function getAssetPacks() {
   const assets = getAssetCatalog().filter((asset) => asset.packId === PORTRAIT_PACK_ID);
   const packOverrides = parseJsonEnv('ASSET_GACHA_PACK_OVERRIDES_JSON', {});
+  const rollSize = configuredRollSize();
   const pack = {
       id: PORTRAIT_PACK_ID,
       seasonId: 'season_1',
@@ -280,7 +405,8 @@ export function getAssetPacks() {
       endsAt: null,
       rollPriceCurrencyCode: WALLET_CURRENCY_CODE,
       rollPriceAmount: configuredRollPriceAmount(),
-      rollSize: 1,
+      rollSize,
+      rarityTableVersion: `${PORTRAIT_PACK_ID}:v1`,
       items: assets.map((asset) => ({
         assetId: asset.assetId,
         rarity: asset.rarity || 'common',
@@ -626,6 +752,53 @@ export function chooseWeightedAssetCandidate(candidates, rng) {
   return candidates[candidates.length - 1];
 }
 
+function chooseWeightedRarity(rarityWeights, candidates, rng) {
+  const raritiesWithCandidates = new Set(candidates.map((candidate) => candidate.rarity || 'common'));
+  const entries = rarityWeightEntries(rarityWeights)
+    .filter(([rarity]) => raritiesWithCandidates.has(rarity));
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  if (total <= 0) return null;
+  let target = rng() * total;
+  for (const [rarity, weight] of entries) {
+    target -= weight;
+    if (target < 0) return rarity;
+  }
+  return entries[entries.length - 1]?.[0] || null;
+}
+
+export function selectAssetPackRollResults(candidates, pack, {
+  rng = secureRandomUnit
+} = {}) {
+  const rollSize = assetPackRollSize(pack);
+  if (!Number.isInteger(rollSize) || rollSize < MIN_ASSET_PACK_ROLL_SIZE || rollSize > MAX_ASSET_PACK_ROLL_SIZE) {
+    throw httpError('Asset pack rollSize is invalid', 400);
+  }
+  const remaining = [...candidates];
+  const slots = normalizedPackSlots(pack);
+  const selected = [];
+  for (let slotIndex = 0; slotIndex < rollSize && remaining.length; slotIndex += 1) {
+    const slot = slots[slotIndex] || { slotIndex, rarityWeights: defaultRarityWeightsForItems(remaining) };
+    const selectedRarity = chooseWeightedRarity(slot.rarityWeights, remaining, rng);
+    const slotCandidates = selectedRarity
+      ? remaining.filter((candidate) => (candidate.rarity || 'common') === selectedRarity)
+      : remaining;
+    const selectedItem = chooseWeightedAssetCandidate(slotCandidates.length ? slotCandidates : remaining, rng);
+    selected.push({
+      slotIndex,
+      selectedRarity: selectedRarity || selectedItem.rarity || null,
+      assetId: selectedItem.assetId,
+      rarity: selectedItem.rarity || selectedItem.asset?.rarity || null,
+      dropWeight: selectedItem.dropWeight,
+      asset: selectedItem.asset,
+      slotRarityWeights: slot.rarityWeights,
+      candidatePoolHash: hashCandidatePool(remaining)
+    });
+    const selectedIndex = remaining.findIndex((candidate) => candidate.assetId === selectedItem.assetId);
+    if (selectedIndex >= 0) remaining.splice(selectedIndex, 1);
+  }
+  return selected;
+}
+
 export function resolveAssetPackRollCandidates(pack, {
   ownedAssetIds = []
 } = {}) {
@@ -671,19 +844,39 @@ function shapeAssetRollResult(roll, {
   asset = null,
   pack = null,
   instance = null,
-  rarity = null
+  rarity = null,
+  items = null
 } = {}) {
   const selectedAsset = asset || getAssetById(roll.selectedAssetId || roll.resultAssetIds?.[0]);
   const selectedPack = pack || getAssetPack(roll.packId);
+  const metadataItems = Array.isArray(roll.metadata?.results) ? roll.metadata.results : [];
+  const resultItems = Array.isArray(items)
+    ? items
+    : (roll.resultAssetIds || []).map((assetId, index) => {
+      const metadataItem = metadataItems.find((entry) => entry.assetId === assetId) || metadataItems[index] || {};
+      const itemAsset = getAssetById(assetId);
+      return {
+        slotIndex: Number.isInteger(Number(metadataItem.slotIndex)) ? Number(metadataItem.slotIndex) : index,
+        assetId,
+        assetName: itemAsset?.name || null,
+        assetPath: itemAsset?.path || null,
+        rarity: metadataItem.rarity || itemAsset?.rarity || null,
+        selectedRarity: metadataItem.selectedRarity || metadataItem.rarity || itemAsset?.rarity || null,
+        resultInstanceId: metadataItem.instanceId || (index === 0 ? roll.resultInstanceId : null)
+      };
+    });
+  const firstItem = resultItems[0] || null;
   return {
     rollId: roll.id,
     packId: roll.packId,
     packName: selectedPack ? localizedName(selectedPack.name) : roll.packId,
-    assetId: selectedAsset?.assetId || roll.selectedAssetId || roll.resultAssetIds?.[0] || null,
-    assetName: selectedAsset?.name || null,
-    assetPath: selectedAsset?.path || null,
-    rarity: rarity || selectedAsset?.rarity || null,
-    resultInstanceId: instance?.id || roll.resultInstanceId || null
+    assetId: firstItem?.assetId || selectedAsset?.assetId || roll.selectedAssetId || roll.resultAssetIds?.[0] || null,
+    assetName: firstItem?.assetName || selectedAsset?.name || null,
+    assetPath: firstItem?.assetPath || selectedAsset?.path || null,
+    rarity: firstItem?.rarity || rarity || selectedAsset?.rarity || null,
+    resultInstanceId: firstItem?.resultInstanceId || instance?.id || roll.resultInstanceId || null,
+    count: resultItems.length,
+    items: resultItems
   };
 }
 
@@ -731,8 +924,13 @@ export async function rollAssetPack(playerId, packId, {
         throw httpError('No unowned assets left in this pack', 409);
       }
 
-      const selected = chooseWeightedAssetCandidate(candidates, rng);
+      const selectedItems = selectAssetPackRollResults(candidates, pack, { rng });
+      if (!selectedItems.length) {
+        throw httpError('No unowned assets left in this pack', 409);
+      }
       const candidatePoolHash = hashCandidatePool(candidates);
+      const resultAssetIds = selectedItems.map((item) => item.assetId);
+      const rarityTableVersion = pack.rarityTableVersion || `${pack.id}:v1`;
       const transaction = await spendCurrency(client, {
         playerId,
         currencyCode: pack.rollPriceCurrencyCode,
@@ -744,22 +942,55 @@ export async function rollAssetPack(playerId, packId, {
         metadata: {
           packId: pack.id,
           candidatePoolHash,
-          selectedAssetId: selected.assetId
+          selectedAssetId: resultAssetIds[0] || null,
+          selectedAssetIds: resultAssetIds,
+          rollSize: assetPackRollSize(pack),
+          effectiveRollSize: selectedItems.length,
+          rarityTableVersion
         }
       });
 
       const rollId = createId('roll');
-      const inserted = await insertAssetInstance(client, {
-        playerId,
-        assetId: selected.assetId,
-        acquisitionSource: 'gacha',
-        acquisitionSourceId: rollId,
-        metadata: {
-          packId: pack.id,
-          rarity: selected.rarity,
-          transactionId: transaction.id
-        }
-      });
+      const insertedItems = [];
+      for (const selected of selectedItems) {
+        const inserted = await insertAssetInstance(client, {
+          playerId,
+          assetId: selected.assetId,
+          acquisitionSource: 'gacha',
+          acquisitionSourceId: rollId,
+          metadata: {
+            packId: pack.id,
+            slotIndex: selected.slotIndex,
+            rarity: selected.rarity,
+            selectedRarity: selected.selectedRarity,
+            rarityTableVersion,
+            transactionId: transaction.id
+          }
+        });
+        insertedItems.push({
+          ...selected,
+          instance: rowToAssetInstance(inserted.row)
+        });
+      }
+      const resultItems = insertedItems.map((item) => ({
+        slotIndex: item.slotIndex,
+        assetId: item.assetId,
+        assetName: item.asset?.name || null,
+        assetPath: item.asset?.path || null,
+        rarity: item.rarity,
+        selectedRarity: item.selectedRarity,
+        resultInstanceId: item.instance?.id || null
+      }));
+      const evidenceItems = insertedItems.map((item) => ({
+        slotIndex: item.slotIndex,
+        assetId: item.assetId,
+        instanceId: item.instance?.id || null,
+        rarity: item.rarity,
+        selectedRarity: item.selectedRarity,
+        dropWeight: item.dropWeight,
+        slotRarityWeights: item.slotRarityWeights,
+        candidatePoolHash: item.candidatePoolHash
+      }));
 
       await client.query(
         `INSERT INTO asset_rolls
@@ -773,16 +1004,26 @@ export async function rollAssetPack(playerId, packId, {
           pack.id,
           pack.rollPriceCurrencyCode,
           pack.rollPriceAmount,
-          JSON.stringify([selected.assetId]),
-          JSON.stringify({ rollSize: 1 }),
+          JSON.stringify(resultAssetIds),
+          JSON.stringify({
+            rollSize: assetPackRollSize(pack),
+            effectiveRollSize: selectedItems.length,
+            rarityTableVersion,
+            guaranteesApplied: []
+          }),
           candidatePoolHash,
-          selected.assetId,
-          inserted.row.id,
+          resultAssetIds[0] || null,
+          insertedItems[0]?.instance?.id || null,
           idempotencyKey,
           JSON.stringify({
             gachaEnabled: isAssetGachaEnabled(),
             directBuyPolicy: directBuyPolicy(),
-            activePackIds: activeGachaPackIds()
+            activePackIds: activeGachaPackIds(),
+            randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng',
+            rarityTableVersion,
+            rollSize: assetPackRollSize(pack),
+            effectiveRollSize: selectedItems.length,
+            results: evidenceItems
           }),
           nowIso()
         ]
@@ -793,13 +1034,16 @@ export async function rollAssetPack(playerId, packId, {
       return {
         roll,
         rollResult: shapeAssetRollResult(roll, {
-          asset: selected.asset,
+          asset: insertedItems[0]?.asset || null,
           pack,
-          instance: rowToAssetInstance(inserted.row),
-          rarity: selected.rarity
+          instance: insertedItems[0]?.instance || null,
+          rarity: insertedItems[0]?.rarity || null,
+          items: resultItems
         }),
-        asset: selected.asset,
-        instance: rowToAssetInstance(inserted.row),
+        asset: insertedItems[0]?.asset || null,
+        instance: insertedItems[0]?.instance || null,
+        assets: insertedItems.map((item) => item.asset),
+        instances: insertedItems.map((item) => item.instance),
         transaction,
         alreadyProcessed: false
       };

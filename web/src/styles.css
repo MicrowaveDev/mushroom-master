@@ -2152,6 +2152,9 @@ select {
 .home-pack-roll-result strong {
   color: rgba(47, 36, 25, 0.88);
 }
+.home-pack-roll-result span {
+  overflow-wrap: anywhere;
+}
 .home-pack-roll-result--success strong {
   color: #4f7142;
 }

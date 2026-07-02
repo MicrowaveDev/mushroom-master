@@ -182,7 +182,28 @@ export const HomeScreen = {
       }
     },
     assetRollResultName() {
-      return this.localizedName(this.state.assetRollResult?.assetName) || this.state.assetRollResult?.assetId || '';
+      const firstItem = Array.isArray(this.state.assetRollResult?.items)
+        ? this.state.assetRollResult.items[0]
+        : null;
+      return this.localizedName(firstItem?.assetName || this.state.assetRollResult?.assetName) ||
+        firstItem?.assetId ||
+        this.state.assetRollResult?.assetId ||
+        '';
+    },
+    assetRollResultItemsText() {
+      const items = Array.isArray(this.state.assetRollResult?.items)
+        ? this.state.assetRollResult.items
+        : [];
+      const named = items
+        .map((item) => {
+          const name = this.localizedName(item.assetName) || item.assetId || '';
+          const rarity = this.rarityLabel(item.rarity);
+          return [name, rarity].filter(Boolean).join(' · ');
+        })
+        .filter(Boolean);
+      if (!named.length) return '';
+      if (named.length <= 3) return named.join(' | ');
+      return `${named.slice(0, 3).join(' | ')} +${named.length - 3}`;
     },
     focusMushroom(mushroom) {
       this.selectedMushroomId = mushroom.id;
@@ -319,6 +340,14 @@ export const HomeScreen = {
       }
       if (status === 'success' && this.state.assetRollResult) {
         const rarity = this.rarityLabel(this.state.assetRollResult.rarity);
+        const count = Number(this.state.assetRollResult.count || this.state.assetRollResult.items?.length || 1);
+        if (count > 1) {
+          return {
+            status,
+            title: this.t.portraitRollResultsTitle.replace('{count}', count),
+            text: this.assetRollResultItemsText()
+          };
+        }
         return {
           status,
           title: this.t.portraitRollResultTitle,
@@ -370,6 +399,8 @@ export const HomeScreen = {
             total,
             owned,
             left,
+            rollSize: Number(pack.rollSize || 1),
+            nextRollItemCount: Number(pack.nextRollItemCount || Math.min(Number(pack.rollSize || 1), left)),
             active: this.packIsActive(pack),
             availabilityLabel: this.packAvailabilityLabel(pack),
             price: pack.rollPriceAmount || 0,
@@ -643,6 +674,7 @@ export const HomeScreen = {
                 <strong>{{ pack.name }}</strong>
                 <span v-if="pack.availabilityLabel">{{ pack.availabilityLabel }}</span>
                 <span v-else-if="pack.complete">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
+                <span v-else-if="pack.rollSize > 1">{{ t.portraitPackDetailsMulti.replace('{count}', pack.total).replace('{left}', pack.left).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
                 <span v-else>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', pack.left).replace('{price}', pack.price) }}</span>
                 <span v-if="pack.active && pack.left > 0 && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
               </div>

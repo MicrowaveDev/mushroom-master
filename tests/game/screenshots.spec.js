@@ -171,6 +171,8 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
         status: 'active',
         rollPriceAmount: 10,
         rollPriceCurrencyCode: 'soft_coin',
+        rollSize: 2,
+        nextRollItemCount: 2,
         items: [
           { assetId: rollPortrait.assetId, rarity: 'rare', dropWeight: 30 },
           { assetId: ownedPortrait.assetId, rarity: 'common', dropWeight: 70 }
@@ -240,7 +242,24 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
             assetName: rollPortrait.name,
             assetPath: rollPortrait.path,
             rarity: 'rare',
-            resultInstanceId: 'asset-screenshot-1'
+            resultInstanceId: 'asset-screenshot-1',
+            count: 2,
+            items: [
+              {
+                assetId: rollPortrait.assetId,
+                assetName: rollPortrait.name,
+                assetPath: rollPortrait.path,
+                rarity: 'rare',
+                resultInstanceId: 'asset-screenshot-1'
+              },
+              {
+                assetId: ownedPortrait.assetId,
+                assetName: ownedPortrait.name,
+                assetPath: ownedPortrait.path,
+                rarity: 'common',
+                resultInstanceId: 'asset-screenshot-2'
+              }
+            ]
           },
           alreadyProcessed: false
         }
@@ -267,7 +286,7 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
     );
     await rollableSwatch.click();
     await rollResponsePromise;
-    await expect(page.getByTestId('home-pack-roll-result')).toContainText('New skin unlocked');
+    await expect(page.getByTestId('home-pack-roll-result')).toContainText(/2 skins unlocked|Открыто образов: 2/);
     await captureSkinPackSurface(page, `02f-home-pack-states-${suffix}.png`);
   }
 });

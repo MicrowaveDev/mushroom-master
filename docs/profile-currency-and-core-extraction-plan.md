@@ -165,17 +165,17 @@ operational runbooks plus tooling for post-completion refunds, reversals,
 chargebacks/disputes, late crypto payments, overpayments, and support
 investigations.
 
-Next local lane after Phase 8H: make the gacha path useful with a simple,
-static, season-aware pack implementation before building the full seasonal pack
-economy. The second `backpack-game-core` consumer remains blocked until a real
-backpack/grid game target exists. Deferred beyond the simple gacha lane:
+Next local lane after Phase 8H moved through G1 and G2: the gacha path now has a
+simple static pack lane plus static multi-slot pack support. The second
+`backpack-game-core` consumer remains blocked until a real backpack/grid game
+target exists. Deferred beyond the current static gacha lane:
 optional Phase 6D database renames / physical removal of legacy compatibility
-fields, multi-item pack guarantees, duplicate burning, marketplace trading,
+fields, guarantees and pity, duplicate burning, marketplace trading,
 database-managed pack catalogs, an expanded terms/support frontend, provider
 refund and reversal handling, distributed payment mutation hardening, expanded
-support/admin operations beyond the current lookup, wallet, asset, and
-purchase-refund console, tax/accounting evidence, and broader code movement into
-`backpack-game-core`.
+support/admin operations beyond the current lookup, wallet, asset, gacha roll,
+and purchase-refund console, tax/accounting evidence, and broader code movement
+into `backpack-game-core`.
 
 ## Post-Implementation Review
 
@@ -255,9 +255,10 @@ as evidence.
    purchase / gacha roll paths now use `mutation_claims` rows with TTL recovery.
    Multi-instance deployments still need production-database validation plus
    broader operations around refunds, reversals, and provider replay handling.
-6. **The current gacha is intentionally MVP-only.** It is one-result-per-roll,
-   static/env configured, no pity/guarantees, no duplicate inventory, no burn
-   exchange, no marketplace, and no database-managed seasons/collections.
+6. **The current gacha is intentionally static-config only.** It now supports
+   one-result and multi-slot unowned openings, but still has no pity/guarantees,
+   no duplicate inventory, no burn exchange, no marketplace, and no
+   database-managed seasons/collections.
 7. **Core extraction has started and should stay adapter-led.** The next step
    is choosing only small, evidence-backed clusters while keeping `spore`,
    Mushroom portraits, Telegram auth, Sequelize models, battle persistence, and
@@ -503,18 +504,34 @@ implementation lane.
 
 ### 5. Gacha, Asset Economy, And Marketplace Roadmap Backlog
 
-The active gacha lane is G1 above: one static, season-aware, one-result,
-unowned-only pack. The items below are deliberately backlog until G1 is
-implemented, tested, and playable.
+G1 and G2 are now implemented for static-config packs. The current runtime keeps
+Mushroom's default Season 1 portrait pack as a one-result pack unless config
+opts into `rollSize`/slot rarity tables, but the backend, UI, support lookup,
+and simulator can handle multi-slot unowned openings. The items below are the
+remaining roadmap beyond that static lane.
 
 #### G2 - Multi-Item Packs
 
-- Roll a pack that grants 5-10 assets in one purchase.
-- Support rarity-weighted slots instead of one global weighted draw.
-- Preserve clear roll evidence for every granted item: roll seed/source,
-  rarity table version, selected asset, and wallet transaction.
-- Add pack-opening UI that reveals each item cleanly on mobile and desktop.
-- Extend odds simulation from one-result rolls to multi-slot pack outputs.
+Status: **Implemented 2026-07-02 for static-config, unowned-only multi-slot
+packs.**
+
+- Done: packs can set `rollSize` from 1-10 through static/env config.
+- Done: packs can define per-slot `rarityWeights`; selection draws without
+  replacement from unowned assets, first by slot rarity and then by item
+  `dropWeight` inside the selected rarity.
+- Done: one wallet spend grants every selected asset instance in the opening.
+  Legacy first-result fields stay populated, and the full opening is exposed in
+  `rollResult.items[]`.
+- Done: roll rows preserve per-item evidence in `metadata_json.results`,
+  including slot index, selected rarity, rarity table version, candidate-pool
+  hash, instance id, and the shared wallet transaction.
+- Done: Home pack UI shows multi-result roll feedback and compact "opens N"
+  pack detail copy; screenshot coverage captures the multi-result strip.
+- Done: `simulateAssetPackOdds` supports multi-slot openings and reports
+  observed per-opening rates plus average item count per opening.
+- Deferred to G3/G4: guaranteed rare slots, pity counters, explicit duplicate
+  inventory, burn/exchange, and exact player-facing odds disclosures for
+  duplicate-enabled packs.
 
 #### G3 - Guarantees And Pity
 
@@ -569,10 +586,10 @@ implemented, tested, and playable.
 - Add content moderation, legal review, asset provenance, and player disclosure
   before anything is advertised as an NFT-like collectible.
 
-Local weighted-odds simulation already exists for the current one-result,
-unowned-only MVP via `simulateAssetPackOdds`,
-`npm run game:gacha:simulate`, and focused tests as of 2026-07-02. Extend that
-simulation at each roadmap phase instead of waiting until the end.
+Local weighted-odds simulation exists for one-result and static multi-slot
+unowned packs via `simulateAssetPackOdds`, `npm run game:gacha:simulate`, and
+focused tests as of 2026-07-02. Extend that simulation at each roadmap phase
+instead of waiting until the end.
 
 ### 6. Frontend And E2E Coverage Still Missing
 
@@ -2360,20 +2377,23 @@ Additional TODOs for that pass:
    loadout consumer.**
 29. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-30. Active next lane: G1 simple seasonal gacha pack. Keep it static-config,
-   one-result, unowned-only, wallet-backed, rarity-aware, and screenshot/test
-   covered before expanding the economy. **Done 2026-07-02 for the static
-   Season 1 portrait-pack lane; next gacha implementation work starts at G2
-   multi-item packs only if product wants to expand beyond the simple loop.**
-31. Paid/ops backlog moved out of active lane: current processor due diligence,
+30. G1 simple seasonal gacha pack. Keep it static-config, one-result,
+   unowned-only, wallet-backed, rarity-aware, and screenshot/test covered before
+   expanding the economy. **Done 2026-07-02 for the static Season 1
+   portrait-pack lane.**
+31. G2 static multi-item packs. Allow configured packs to open multiple
+   unowned assets in one wallet spend with slot-level rarity tables, full
+   roll-result evidence, UI feedback, screenshots, and simulator coverage.
+   **Done 2026-07-02 for static-config packs; Mushroom's default live pack
+   remains one-result unless config opts into `rollSize`/`slots`.**
+32. Paid/ops backlog moved out of active lane: current processor due diligence,
    real provider validation, final terms/refund/support UI,
    adult-content/compliance gates, tax/accounting/data-retention review,
    dispute/freeze/late-payment runbooks, production scheduling, provider
    settlement imports, reconciliation/admin UI, stricter approval-policy UX,
    alert routing, periodic wallet drift monitoring, distributed mutation
    hardening, and live provider-status validation.
-32. Gacha roadmap backlog after G1: multi-item packs, slot-level rarity tables,
-   guarantees, pity rules, secret rarity policy, duplicate inventory,
-   burn/exchange, database/admin-managed seasons and collections,
-   marketplace/trading, NFT-set policy decisions, and expanded simulation tests
-   beyond the current weighted one-result simulator.
+33. Gacha roadmap backlog after G2: guarantees, pity rules, secret rarity
+   policy, duplicate inventory, burn/exchange, database/admin-managed seasons
+   and collections, marketplace/trading, NFT-set policy decisions, and expanded
+   disclosure/simulation work for duplicate-enabled packs.

@@ -573,7 +573,7 @@ export const SupportAdminScreen = {
               <tbody>
                 <tr v-for="roll in latestRolls" :key="roll.id">
                   <td>{{ roll.packId }}<small>{{ roll.id }}</small></td>
-                  <td>{{ roll.selectedAssetId || roll.resultAssetIds.join(', ') || '-' }}</td>
+                  <td>{{ roll.resultAssetIds?.length ? roll.resultAssetIds.join(', ') : (roll.selectedAssetId || '-') }}</td>
                   <td>{{ roll.priceAmount }} {{ roll.currencyCode }}</td>
                   <td>{{ formatDate(roll.createdAt) }}</td>
                 </tr>

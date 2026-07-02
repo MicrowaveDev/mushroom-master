@@ -1168,6 +1168,106 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
   });
 });
 
+test('[Req 14-F] multi-item gacha pack spends once and grants slot-weighted unowned assets', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const commonB = portraitAssetId('lomie', '1');
+  const rareA = portraitAssetId('thalla', '2');
+  const rareB = portraitAssetId('axilin', '2');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        rollSize: 3,
+        rarityTableVersion: 'test-slots:v2',
+        slots: [
+          { rarityWeights: { common: 1 } },
+          { rarityWeights: { rare: 1 } },
+          { rarityWeights: { common: 1, rare: 1 } }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 },
+          { assetId: commonB, rarity: 'common', dropWeight: 1 },
+          { assetId: rareA, rarity: 'rare', dropWeight: 1 },
+          { assetId: rareB, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4026 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'multi-gacha'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+    assert.equal(odds.rollSize, 3);
+    assert.equal(odds.nextRollItemCount, 3);
+    assert.equal(odds.rarityTableVersion, 'test-slots:v2');
+    assert.deepEqual(odds.raritySummary.map((entry) => ({
+      rarity: entry.rarity,
+      count: entry.count,
+      expectedPerOpen: entry.expectedPerOpen
+    })), [
+      { rarity: 'common', count: 2, expectedPerOpen: 1.5 },
+      { rarity: 'rare', count: 2, expectedPerOpen: 1.5 }
+    ]);
+
+    const rngValues = [0, 0, 0, 0, 0.75, 0];
+    let rngIndex = 0;
+    const first = await rollAssetPack(player.id, odds.id, {
+      idempotencyKey: 'multi-roll-1',
+      rng: () => rngValues[rngIndex++ % rngValues.length]
+    });
+    assert.deepEqual(first.roll.resultAssetIds, [commonA, rareA, rareB]);
+    assert.equal(first.roll.priceAmount, 10);
+    assert.equal(first.roll.guaranteeState.rollSize, 3);
+    assert.equal(first.roll.guaranteeState.effectiveRollSize, 3);
+    assert.equal(first.roll.guaranteeState.rarityTableVersion, 'test-slots:v2');
+    assert.equal(first.roll.selectedAssetId, commonA);
+    assert.equal(first.rollResult.assetId, commonA, 'legacy first-result field remains populated');
+    assert.equal(first.rollResult.count, 3);
+    assert.deepEqual(first.rollResult.items.map((item) => item.assetId), [commonA, rareA, rareB]);
+    assert.deepEqual(first.roll.metadata.results.map((item) => item.slotIndex), [0, 1, 2]);
+    assert.deepEqual(first.roll.metadata.results.map((item) => item.selectedRarity), ['common', 'rare', 'rare']);
+    assert.equal((await getWalletState(player.id)).balance, 90, 'multi-opening spends the pack price once');
+
+    const ownedRows = await query(
+      `SELECT asset_id, acquisition_source, acquisition_source_id, metadata_json
+       FROM player_asset_instances
+       WHERE player_id = $1 AND asset_id IN ($2, $3, $4)
+       ORDER BY asset_id ASC`,
+      [player.id, commonA, rareA, rareB]
+    );
+    assert.equal(ownedRows.rowCount, 3);
+    assert.ok(ownedRows.rows.every((row) => row.acquisition_source === 'gacha'));
+    assert.ok(ownedRows.rows.every((row) => row.acquisition_source_id === first.roll.id));
+    assert.ok(ownedRows.rows.every((row) => JSON.parse(row.metadata_json).rarityTableVersion === 'test-slots:v2'));
+
+    const replay = await rollAssetPack(player.id, odds.id, {
+      idempotencyKey: 'multi-roll-1',
+      rng: () => 0.99
+    });
+    assert.equal(replay.alreadyProcessed, true);
+    assert.deepEqual(replay.roll.resultAssetIds, first.roll.resultAssetIds);
+    assert.deepEqual(replay.rollResult.items.map((item) => item.assetId), first.rollResult.items.map((item) => item.assetId));
+    assert.equal((await getWalletState(player.id)).balance, 90, 'idempotent replay does not spend twice');
+
+    const shapedPacks = await getAssetPacksForPlayer(player.id);
+    const shapedPack = shapedPacks.find((pack) => pack.id === odds.id);
+    assert.equal(shapedPack.ownedCount, 3);
+    assert.equal(shapedPack.remainingCount, 1);
+    assert.equal(shapedPack.nextRollItemCount, 1, 'near-complete pack opens only remaining unowned assets until duplicate rules exist');
+  });
+});
+
 test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls without spending', async () => {
   await withEnv({
     ASSET_GACHA_ENABLED: 'true',
@@ -1178,7 +1278,7 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     }),
     ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
       season_1_portraits: {
-        rollSize: 2,
+        rollSize: 11,
         items: [
           { assetId: portraitAssetId('thalla', '1'), rarity: 'common', dropWeight: 0 },
           { assetId: portraitAssetId('thalla', '1'), rarity: 'secretish', dropWeight: 1 },
@@ -1201,7 +1301,7 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     assert.equal(odds.active, false);
     assert.equal(odds.availability, 'invalid');
     assert.equal(odds.validation.ok, false);
-    assert.ok(odds.validation.errors.find((entry) => entry.code === 'roll_size_unsupported'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'roll_size_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_asset_duplicate'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_rarity_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_weight_invalid'));

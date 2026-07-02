@@ -161,6 +161,8 @@ test('home skin picker summarizes roll pack availability and odds', () => {
     total: 2,
     owned: 1,
     left: 1,
+    rollSize: 1,
+    nextRollItemCount: 1,
     active: true,
     availabilityLabel: '',
     price: 500,
@@ -205,6 +207,24 @@ test('home skin picker describes gacha roll results and known failures', () => {
     status: 'success',
     title: 'New skin unlocked',
     text: 'Mooncap · Rare'
+  });
+
+  const multi = viewModel({
+    ...baseState,
+    assetRollStatus: 'success',
+    assetRollResult: {
+      count: 3,
+      items: [
+        { assetName: { en: 'Mooncap' }, assetId: 'portrait.thalla.1', rarity: 'rare' },
+        { assetName: { en: 'Amber Veil' }, assetId: 'portrait.lomie.1', rarity: 'common' },
+        { assetName: { en: 'Spore Crown' }, assetId: 'portrait.axilin.2', rarity: 'epic' }
+      ]
+    }
+  });
+  assert.deepEqual(multi.assetRollFeedback, {
+    status: 'success',
+    title: '3 skins unlocked',
+    text: 'Mooncap · Rare | Amber Veil · Common | Spore Crown · Epic'
   });
 
   const complete = viewModel({

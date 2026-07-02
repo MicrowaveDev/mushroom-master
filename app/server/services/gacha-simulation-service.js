@@ -4,7 +4,8 @@ import {
   getAssetById,
   getAssetPack,
   getPackOdds,
-  resolveAssetPackRollCandidates
+  resolveAssetPackRollCandidates,
+  selectAssetPackRollResults
 } from './asset-service.js';
 
 function httpError(message, statusCode = 400) {
@@ -104,7 +105,7 @@ export function simulateAssetPackOdds(packId, {
   if (ownedPackAssetIds.length) {
     warnings.push(warning(
       'owned_items_excluded',
-      'Owned pack assets are excluded because the current MVP rolls only unowned assets.',
+      'Owned pack assets are excluded because duplicate inventory is not enabled yet.',
       { assetIds: ownedPackAssetIds }
     ));
   }
@@ -127,17 +128,26 @@ export function simulateAssetPackOdds(packId, {
     warnings.push(warning('no_unowned_candidates', 'No unowned assets are available for this pack.'));
   } else if (totalWeight <= 0) {
     warnings.push(warning('no_weighted_candidates', 'No unowned candidates have positive drop weight.'));
-  } else {
+  } else if (Number(pack.rollSize || 1) === 1) {
     for (let i = 0; i < trialCount; i += 1) {
       const selected = chooseWeightedAssetCandidate(candidates, random);
       counts.set(selected.assetId, (counts.get(selected.assetId) || 0) + 1);
     }
+  } else {
+    for (let i = 0; i < trialCount; i += 1) {
+      const selectedItems = selectAssetPackRollResults(candidates, pack, { rng: random });
+      for (const selected of selectedItems) {
+        counts.set(selected.assetId, (counts.get(selected.assetId) || 0) + 1);
+      }
+    }
   }
+  const totalObservedSelections = [...counts.values()].reduce((sum, count) => sum + count, 0);
+  const averageItemsPerRoll = totalObservedSelections / trialCount;
 
   const items = candidates.map((candidate) => {
     const weight = candidateWeight(candidate);
     const observedCount = counts.get(candidate.assetId) || 0;
-    const expectedProbability = totalWeight > 0 ? weight / totalWeight : 0;
+    const expectedProbability = Number(pack.rollSize || 1) === 1 && totalWeight > 0 ? weight / totalWeight : null;
     const observedProbability = observedCount / trialCount;
     return {
       assetId: candidate.assetId,
@@ -146,7 +156,7 @@ export function simulateAssetPackOdds(packId, {
       expectedProbability,
       observedProbability,
       observedCount,
-      delta: observedProbability - expectedProbability,
+      delta: expectedProbability === null ? null : observedProbability - expectedProbability,
       asset: {
         slot: candidate.asset.slot,
         targetType: candidate.asset.targetType,
@@ -169,6 +179,7 @@ export function simulateAssetPackOdds(packId, {
     rollPriceCurrencyCode: pack.rollPriceCurrencyCode,
     rollPriceAmount: pack.rollPriceAmount,
     rollSize: pack.rollSize,
+    averageItemsPerRoll,
     trials: trialCount,
     seed: rng ? null : seedValue,
     candidateCount: candidates.length,
@@ -178,7 +189,7 @@ export function simulateAssetPackOdds(packId, {
     guarantees: {
       supported: false,
       configured: configuredGuarantees(pack),
-      note: 'The current runtime rolls one unowned item at a time; multi-result guarantee and pity simulation remains future work.'
+      note: 'The current runtime supports unowned multi-slot openings; guarantee and pity simulation remains future work.'
     },
     warnings,
     raritySummary: summarizeRarities(items, trialCount),
