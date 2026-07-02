@@ -622,7 +622,7 @@
       "id": "thalla",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "SourceGate recovery production attempt produced a new non-exhausted fresh imagegen source, then an explicit native-64 palette-repair experiment to satisfy the hard <20 visible-color gate. Active source .agent/home-field-workspace/supplied/thalla_sourcegate_recovery_fresh_2026-07-02_512x256_quant18_rgba.states.source.png has sha256 115f77467df49e07f8b2a7b4e2c2afa1222d59310e67a5dfc093d82aa7dc545d; candidate sha256 6ae5e6f886c9e99f7a1ea6700eb035c87dffd479222cb55f713e019d0182d06a. Reference proxy, grouped state sheet, and candidate palette audits pass under the 20-color budget (17/20, 17/20, 15/20 significant colors). Split frames, candidate verification, review/readability/runtime/animation/quality validators, evidence manifest, and mobile/desktop clean previews pass after documented alpha recovery cleared magenta fringe at tolerance 160. Visual review: the composed previews read as a compact youthful little-girl mushroom-elf Thalla with pale cap/robe, visible elf ears, tiny planted body, simple oval eyes, rounded cheeks, and restrained gold mycelium marks; it does not read as the old monk/beige mascot pawn/skull-mask style rejected in the queue. Candidate-only evidence, not human approval or app-facing promotion; accepted remains false and no app-facing PNGs were overwritten.",
+      "reason": "SourceGate recovery used a new text-only authored 8x4 source, then an explicit pngquant/libimagequant-style palette repair on that new lineage. The raw generated sheet had the strongest soft doll-face charm; the quant20 repaired source flattened some softness but preserved the liked-reference essentials better than the exhausted repairs: youthful little-girl Thalla read, visible compact oval doll eyes, rounded cheeks, elf ears in side views, pillowy cap, and no old-monk, beige-pawn, skull-mask, hollow-pin-dot, or blank-mask read. Reference proxy, state sheet, candidate palette audits, alpha recovery, readability, runtime readiness, animation, chibi quality, evidence, and mobile/desktop clean previews passed. Candidate remains needs_review, not approved, because palette cleanup and alpha recovery were used and human production acceptance is still required before app-facing overwrite.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -641,12 +641,12 @@
       "sourceFrameIsolationCheck": "pass",
       "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest",
       "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json",
-      "candidateEvidenceSha256": "76294d5a7c8a1c32228189622d9926a27f4121d32d9eb354a1747e05fa1d21cb",
-      "candidateSha256": "6ae5e6f886c9e99f7a1ea6700eb035c87dffd479222cb55f713e019d0182d06a",
-      "referenceSha256": "553a2bb8888907ee25fd1f3dbd95f3fc30b95933af4d48a0613df4912d20aaa0",
-      "rawSourceSha256": "115f77467df49e07f8b2a7b4e2c2afa1222d59310e67a5dfc093d82aa7dc545d",
-      "mobileScreenshotSha256": "ec9a563e5c32e7cd33a49d961062bb1ff3c7651efdb53aa74ca14e7231d46f37",
-      "desktopScreenshotSha256": "c2b94fc61141ffe3d19131fb6f424de9c4d4735d25bd960af08476c0bb2a0d99"
+      "candidateEvidenceSha256": "150fef9ef728392ba5f1e3a3e5fb94a32d009764e1f015eec46c03c8df47382f",
+      "candidateSha256": "d5963832fa5406f6fef356be145061f4db51cd8b210064c09c8ab0979fd4c8df",
+      "referenceSha256": "3785c47f3471bf6cebec1a0677ac6b92454f85f8dd0897e3d039b56946e9cb77",
+      "rawSourceSha256": "270fc4005413ad943373b9c79fb511c0819eb1bf38e73be3c51fe5783d85d6ac",
+      "mobileScreenshotSha256": "e373e92dbac37a987ad1305c034df8695a9957bdd14e7eeca6f7b1e7e399fd66",
+      "desktopScreenshotSha256": "049b80d3af30f1e3b9187017d73756617feaefa4cec6b95e617ae722c7e39014"
     },
     {
       "id": "lomie",
