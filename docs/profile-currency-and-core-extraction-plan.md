@@ -33,15 +33,17 @@
 > providers while keeping Mushroom artifact/catalog policy local. **Phase 8G**
 > moved deterministic numeric RNG and shuffle helpers into
 > `backpack-game-core` while keeping Mushroom string-seed hashing local.
+> **Phase 8H** added TypeScript declarations for the root and subpath package
+> exports so another game can integrate with typed provider hooks.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
-8D, 8E, 8F, and 8G
+8D, 8E, 8F, 8G, and 8H
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
 on 2026-07-01; Phase 8A-8D extraction on 2026-07-01; Phase 8E battle-loop
 extraction, Phase 8F loadout-validation extraction, and Phase 8G RNG helper
-extraction on 2026-07-02). Phase 6D remains an optional database-breaking rename and
+extraction on 2026-07-02; Phase 8H type declarations on 2026-07-02). Phase 6D remains an optional database-breaking rename and
 should only happen after external consumers no longer depend on raw legacy
 column names.
 Real-money rollout still requires provider sandbox/live validation,
@@ -56,8 +58,9 @@ cases.
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
 generation, provider-driven bot-loadout generation, hookable battle
 simulation, provider-driven loadout validation, and browser-safe numeric RNG /
-shuffle helpers. Earlier notes that treated the target repo as empty are
-historical only.
+shuffle helpers. The package now ships TypeScript declarations for the root
+export and every subpath export. Earlier notes that treated the target repo as
+empty are historical only.
 
 ## Implementation Status
 
@@ -129,6 +132,9 @@ bullet below):
   keeps string seed hashing in `app/server/lib/utils.js` via Node `crypto`, so
   existing shop, bot, ghost, and battle seed inputs keep their deterministic
   behavior while the core package remains browser-safe.
+- Type declarations are shipped: `backpack-game-core` has `.d.ts` files for
+  the root export and every subpath export, and `tests/package-types.test.js`
+  guards that each package export has matching JS and declaration targets.
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -154,9 +160,9 @@ gating for adult or sexual content, and operational runbooks plus tooling for
 post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
 overpayments, and support investigations.
 
-Next local lane after Phase 8G: add TypeScript declarations or generated API
-docs if another game is ready to integrate the package. Deferred beyond that:
-optional Phase 6D database renames / physical removal of legacy
+Next local lane after Phase 8H: integrate the package from a second game and
+let that concrete consumer drive API cleanup or release notes. Deferred beyond
+that: optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
 trading, database managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
@@ -1501,6 +1507,53 @@ sequence while the reusable package stays browser-safe.
   `randomInt`, and `shuffleWithRng` implementations.
 - Keep the core commit unless it contains secrets or bad generated artifacts.
 
+### Phase 8H - Core Package Type Declarations
+
+Status: **Implemented.** `backpack-game-core` now ships TypeScript declaration
+files for the root package export and every subpath export without converting
+the runtime source away from ESM JavaScript.
+
+#### Source Of Truth
+
+- Current core declarations: `backpack-game-core/src/*.d.ts`
+- Current package metadata: `backpack-game-core/package.json`
+- Current declaration guard: `backpack-game-core/tests/package-types.test.js`
+- Current core package latest commit at ship time: `d5fb481`
+  (`Add package type declarations`)
+
+#### Shipped Boundary
+
+- Core package metadata exposes:
+  - top-level `"types": "./src/index.d.ts"`,
+  - per-export `"types"` and `"import"` condition targets for the root export
+    and all subpaths.
+- Declaration files type the stable reusable mechanics, provider hooks, and
+  returned result shapes.
+- Product-owned catalog and runtime objects remain generic/plain-object types,
+  because concrete games own artifacts, abilities, wallet state, assets,
+  payment policy, and persistence.
+
+#### Non-Goals
+
+- Do not migrate the package to TypeScript in this slice.
+- Do not overfit declarations to Mushroom artifact/catalog shapes.
+- Do not introduce build tooling or publish automation before another consumer
+  needs it.
+
+#### Verification
+
+- `backpack-game-core`: `npm test`
+- `backpack-game-core`: `npm pack --dry-run`
+- `mushroom-master`: `npm run game:core:check`
+- `mushroom-master`: `node --test tests/game/core-submodule.test.js`
+
+#### Rollback
+
+- Revert the declaration files and package export metadata if they block
+  runtime package resolution.
+- Keep prior mechanics commits unless they contain secrets or bad generated
+  artifacts.
+
 ## Phase 9 - Create `backpack-game-core`
 
 Initial package shape:
@@ -1523,7 +1576,8 @@ backpack-game-core/
 Recommended initial choices:
 
 - Use ESM JavaScript first to reduce migration risk from the current codebase.
-  Add TypeScript declarations or migrate to TypeScript after the API stabilizes.
+  TypeScript declarations are now shipped; migrate runtime source to TypeScript
+  only if a future consumer or release process needs it.
 - Export pure functions only in the first pass. No database, Express, Telegram,
   filesystem, or image dependencies.
 - Require catalogs/config through function arguments instead of imports from
@@ -1607,8 +1661,8 @@ Additional TODOs for that pass:
    committing the game pointer.
 5. Ongoing rule: document the exact core commit SHA in the extraction inventory after the
    pointer moves.
-6. Deferred: decide whether to add TypeScript declarations or API docs before another
-   game consumes the core package.
+6. Done: add TypeScript declarations for the core package before another game
+   consumes it.
 
 ## Risks And Guardrails
 
@@ -1682,22 +1736,24 @@ Additional TODOs for that pass:
 21. Extract deterministic numeric RNG, integer roll, and seeded shuffle helpers
    while keeping Mushroom string seed hashing local. **Done 2026-07-02; secure
    gacha RNG and product seed strings remain local.**
-22. Add `backpack-game-core` as a nested submodule of the backpack game and
+22. Add TypeScript declarations and package export metadata for the root and
+   subpath exports. **Done 2026-07-02; runtime remains ESM JavaScript.**
+23. Add `backpack-game-core` as a nested submodule of the backpack game and
    switch the game dependency to a local submodule-backed package path.
    **Done.**
-23. Add install/CI guardrails for the nested submodule: bootstrap docs,
+24. Add install/CI guardrails for the nested submodule: bootstrap docs,
    submodule-init requirement, lockfile verification, and a clear missing-core
    failure. **Done.**
-24. Add a core-consumer smoke test plus final cross-repo verification
+25. Add a core-consumer smoke test plus final cross-repo verification
    (`backpack-game-core` tests, submodule guard, focused game tests, `npm ci`,
    game build, and full game unit suite). **Done for the core integration.**
-25. Add hub metadata for `backpack-game-core` only if it should also be tracked
+26. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
-26. Optional Phase 6D database rename only if raw legacy column names become a
+27. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-27. Paid rollout readiness when external inputs are available: real provider
+28. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-28. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+29. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.

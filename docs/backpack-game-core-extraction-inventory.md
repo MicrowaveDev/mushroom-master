@@ -1,7 +1,7 @@
 # Backpack Game Core Extraction Inventory
 
 **Status:** Ongoing reusable-core extraction after the Phase 6A-6C neutral
-naming pass and the first RNG/helper extraction slice.
+naming pass and the first package type-declaration pass.
 
 This document chooses the first extraction slice and records why other modules
 wait. It should be updated after each cluster moves.
@@ -24,8 +24,10 @@ wait. It should be updated after each cluster moves.
 - seventh slice: `src/loadout-validation.js`, tested by
   `tests/loadout-validation.test.js`
 - eighth slice: `src/rng.js`, tested by `tests/rng.test.js`
+- package declaration pass: `src/*.d.ts`, guarded by
+  `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `13e6e0c` (`Add reusable rng helpers`)
+- latest extraction commit: `d5fb481` (`Add package type declarations`)
 
 The package is consumed by `mushroom-master` through the nested submodule
 `vendor/backpack-game-core` and the local package dependency
@@ -123,7 +125,9 @@ export {
 } from './bag-shape.js';
 ```
 
-Use ESM JavaScript first. Add TypeScript declarations after the API stabilizes.
+Use ESM JavaScript first. TypeScript declarations were added after the initial
+API surface stabilized; migrate runtime source to TypeScript only if a future
+consumer or release process needs it.
 
 ## Integration Plan For First Slice
 
@@ -449,8 +453,9 @@ integration commit.
 After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
 bot-loadout, battle-simulation, loadout-validation, and RNG slices, there is no
 obvious next mechanics cluster to move without another game's concrete
-requirements. Reassess TypeScript declarations or generated API docs before the
-second game starts integrating the package.
+requirements. The package now ships TypeScript declarations for the root export
+and every subpath export, so the next practical step is to use a second game as
+the first external consumer and let that integration drive any API cleanup.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.
@@ -481,7 +486,7 @@ that local checkout, instead of relying only on a remote Git SHA dependency.
 
 ### Additional TODOs
 
-1. Decide whether the core repo needs TypeScript declarations or generated API
-   docs before a second game starts integrating it.
+1. Done: add TypeScript declarations for root and subpath exports before a
+   second game starts integrating the package.
 2. Add release/update notes for the core pointer SHA used by each game commit
    if core updates become frequent.
