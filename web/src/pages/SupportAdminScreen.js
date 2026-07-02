@@ -8,10 +8,11 @@ function readStoredCredentials() {
   }
 }
 
-function writeStoredCredentials({ token, actorId }) {
+function writeStoredCredentials({ token, actorId, approvalActorId }) {
   sessionStorage.setItem(SUPPORT_ADMIN_STORAGE_KEY, JSON.stringify({
     token: String(token || ''),
-    actorId: String(actorId || '')
+    actorId: String(actorId || ''),
+    approvalActorId: String(approvalActorId || '')
   }));
 }
 
@@ -27,13 +28,14 @@ function rowPlayerLabel(player) {
   return player.telegramUsername || player.name || player.friendCode || player.id;
 }
 
-async function supportJson(path, { token, actorId, method = 'GET', body = null }) {
+async function supportJson(path, { token, actorId, approvalActorId = '', method = 'GET', body = null }) {
   const response = await fetch(path, {
     method,
     headers: {
       ...(body ? { 'Content-Type': 'application/json' } : {}),
       Authorization: `Bearer ${token}`,
-      'x-support-actor-id': actorId
+      'x-support-actor-id': actorId,
+      ...(approvalActorId ? { 'x-support-approval-actor-id': approvalActorId } : {})
     },
     ...(body ? { body: JSON.stringify(body) } : {})
   });
@@ -51,6 +53,7 @@ export const SupportAdminScreen = {
     return {
       token: credentials.token || '',
       actorId: credentials.actorId || '',
+      approvalActorId: credentials.approvalActorId || '',
       query: '',
       limit: 25,
       lookup: null,
@@ -63,6 +66,20 @@ export const SupportAdminScreen = {
         direction: 'grant',
         amount: 25,
         reason: 'support_adjustment',
+        note: ''
+      },
+      assetForm: {
+        playerId: '',
+        action: 'grant',
+        assetId: '',
+        assetInstanceId: '',
+        reason: 'support_asset_review',
+        note: ''
+      },
+      refundForm: {
+        intentId: '',
+        clawback: true,
+        reason: 'support_refund',
         note: ''
       }
     };
@@ -96,6 +113,21 @@ export const SupportAdminScreen = {
     latestWebhookEvents() {
       return (this.lookup?.paymentWebhookEvents || []).slice(0, 6);
     },
+    assetInstanceOptions() {
+      const playerId = this.assetForm.playerId;
+      return (this.lookup?.assetInstances || [])
+        .filter((asset) => !playerId || asset.playerId === playerId)
+        .slice(0, 25);
+    },
+    selectedAssetInstance() {
+      return this.assetInstanceOptions.find((asset) => asset.id === this.assetForm.assetInstanceId) || null;
+    },
+    refundIntentOptions() {
+      return (this.lookup?.purchaseIntents || []).slice(0, 25);
+    },
+    selectedRefundIntent() {
+      return this.refundIntentOptions.find((intent) => intent.id === this.refundForm.intentId) || null;
+    },
     canSubmitLookup() {
       return this.token.trim() && this.actorId.trim() && this.query.trim() && !this.loading;
     },
@@ -107,18 +139,77 @@ export const SupportAdminScreen = {
         && Number(this.walletForm.amount) > 0
         && this.walletForm.reason.trim()
         && !this.actionLoading;
+    },
+    canSubmitAssetAction() {
+      const action = this.assetForm.action;
+      const needsAssetId = action === 'grant' || !this.assetForm.assetInstanceId.trim();
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.assetForm.playerId.trim()
+        && ['grant', 'freeze', 'unfreeze', 'revoke'].includes(action)
+        && (!needsAssetId || this.assetForm.assetId.trim())
+        && (action === 'grant' || this.assetForm.assetId.trim() || this.assetForm.assetInstanceId.trim())
+        && this.assetForm.reason.trim()
+        && !this.actionLoading;
+    },
+    canSubmitRefundAction() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.refundForm.intentId.trim()
+        && this.refundForm.reason.trim()
+        && !this.actionLoading;
     }
   },
   methods: {
     formatDate,
     rowPlayerLabel,
+    assetInstanceLabel(asset) {
+      if (!asset) return '';
+      return `${asset.assetId} · ${asset.status} · ${asset.id}`;
+    },
+    purchaseIntentLabel(intent) {
+      if (!intent) return '';
+      return `${intent.status} · ${intent.provider} · ${intent.walletAmount} ${intent.currencyCode} · ${intent.id}`;
+    },
     setWalletDirection(direction) {
       this.walletForm.direction = direction === 'revoke' ? 'revoke' : 'grant';
+    },
+    setAssetAction(action) {
+      this.assetForm.action = ['grant', 'freeze', 'unfreeze', 'revoke'].includes(action) ? action : 'grant';
+    },
+    applyLookupDefaults() {
+      const playerId = this.lookup?.players?.[0]?.id || '';
+      if (playerId) {
+        if (!this.walletForm.playerId) this.walletForm.playerId = playerId;
+        if (!this.assetForm.playerId) this.assetForm.playerId = playerId;
+      }
+      const preferredIntent = this.refundIntentOptions.find((intent) => intent.status === 'completed')
+        || this.refundIntentOptions[0]
+        || null;
+      if (!this.refundForm.intentId && preferredIntent?.id) {
+        this.refundForm.intentId = preferredIntent.id;
+      }
+    },
+    syncAssetFromInstance() {
+      const selected = this.selectedAssetInstance;
+      if (!selected) return;
+      this.assetForm.assetId = selected.assetId;
+      this.assetForm.playerId = selected.playerId;
+    },
+    supportRequest(path, { method = 'GET', body = null } = {}) {
+      return supportJson(path, {
+        token: this.token.trim(),
+        actorId: this.actorId.trim(),
+        approvalActorId: this.approvalActorId.trim(),
+        method,
+        body
+      });
     },
     rememberCredentials() {
       writeStoredCredentials({
         token: this.token.trim(),
-        actorId: this.actorId.trim()
+        actorId: this.actorId.trim(),
+        approvalActorId: this.approvalActorId.trim()
       });
     },
     async runLookup() {
@@ -132,13 +223,8 @@ export const SupportAdminScreen = {
           query: this.query.trim(),
           limit: String(this.limit || 25)
         });
-        this.lookup = await supportJson(`/api/admin/support/money-lookup?${params.toString()}`, {
-          token: this.token.trim(),
-          actorId: this.actorId.trim()
-        });
-        if (!this.walletForm.playerId && this.lookup?.players?.[0]?.id) {
-          this.walletForm.playerId = this.lookup.players[0].id;
-        }
+        this.lookup = await this.supportRequest(`/api/admin/support/money-lookup?${params.toString()}`);
+        this.applyLookupDefaults();
         this.status = 'Lookup complete.';
       } catch (error) {
         this.error = error.message;
@@ -154,9 +240,7 @@ export const SupportAdminScreen = {
       this.rememberCredentials();
       const direction = this.walletForm.direction === 'revoke' ? 'revoke' : 'grant';
       try {
-        const data = await supportJson(`/api/admin/support/actions/wallet-${direction}`, {
-          token: this.token.trim(),
-          actorId: this.actorId.trim(),
+        const data = await this.supportRequest(`/api/admin/support/actions/wallet-${direction}`, {
           method: 'POST',
           body: {
             playerId: this.walletForm.playerId.trim(),
@@ -168,6 +252,61 @@ export const SupportAdminScreen = {
         });
         this.status = `${data.action.actionType} applied.`;
         this.query = this.walletForm.playerId.trim();
+        await this.runLookup();
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.actionLoading = false;
+      }
+    },
+    async submitAssetAction() {
+      if (!this.canSubmitAssetAction) return;
+      this.actionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      const action = this.assetForm.action;
+      try {
+        const body = {
+          playerId: this.assetForm.playerId.trim(),
+          reason: this.assetForm.reason.trim(),
+          note: this.assetForm.note.trim(),
+          evidence: { source: 'support_admin_ui' }
+        };
+        if (this.assetForm.assetId.trim()) body.assetId = this.assetForm.assetId.trim();
+        if (this.assetForm.assetInstanceId.trim()) body.assetInstanceId = this.assetForm.assetInstanceId.trim();
+        const data = await this.supportRequest(`/api/admin/support/actions/asset-${action}`, {
+          method: 'POST',
+          body
+        });
+        this.status = `${data.action.actionType} applied.`;
+        this.query = this.assetForm.playerId.trim();
+        await this.runLookup();
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.actionLoading = false;
+      }
+    },
+    async submitRefundAction() {
+      if (!this.canSubmitRefundAction) return;
+      this.actionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const data = await this.supportRequest('/api/admin/support/actions/purchase-refund', {
+          method: 'POST',
+          body: {
+            intentId: this.refundForm.intentId.trim(),
+            clawback: this.refundForm.clawback !== false,
+            reason: this.refundForm.reason.trim(),
+            note: this.refundForm.note.trim(),
+            evidence: { source: 'support_admin_ui' }
+          }
+        });
+        this.status = `${data.action.actionType} applied.`;
+        this.query = this.refundForm.intentId.trim();
         await this.runLookup();
       } catch (error) {
         this.error = error.message;
@@ -195,6 +334,10 @@ export const SupportAdminScreen = {
         <label>
           <span>Actor</span>
           <input class="support-admin-input" data-testid="support-actor" v-model="actorId" autocomplete="off" />
+        </label>
+        <label>
+          <span>Approval</span>
+          <input class="support-admin-input" data-testid="support-approval-actor" v-model="approvalActorId" autocomplete="off" />
         </label>
         <label class="support-admin-query">
           <span>Lookup</span>
@@ -270,6 +413,76 @@ export const SupportAdminScreen = {
           </label>
           <button class="primary support-admin-submit" data-testid="support-wallet-submit" type="button" :disabled="!canSubmitWalletAction" @click="submitWalletAction">
             {{ actionLoading ? 'Applying' : 'Apply' }}
+          </button>
+        </section>
+      </div>
+
+      <div v-if="lookup" class="support-admin-columns support-admin-operator-columns">
+        <section class="panel support-admin-panel support-admin-action-form" data-testid="support-asset-form">
+          <h3>Asset Actions</h3>
+          <label>
+            <span>Player</span>
+            <select class="support-admin-input" data-testid="support-asset-player" v-model="assetForm.playerId">
+              <option value="">Select player</option>
+              <option v-for="player in playerOptions" :key="player.id" :value="player.id">{{ rowPlayerLabel(player) }} · {{ player.id }}</option>
+            </select>
+          </label>
+          <div class="support-admin-segment support-admin-segment--four" role="group" aria-label="Asset action">
+            <button type="button" :class="{ active: assetForm.action === 'grant' }" data-testid="support-asset-grant-mode" @click="setAssetAction('grant')">Grant</button>
+            <button type="button" :class="{ active: assetForm.action === 'freeze' }" data-testid="support-asset-freeze-mode" @click="setAssetAction('freeze')">Freeze</button>
+            <button type="button" :class="{ active: assetForm.action === 'unfreeze' }" data-testid="support-asset-unfreeze-mode" @click="setAssetAction('unfreeze')">Unfreeze</button>
+            <button type="button" :class="{ active: assetForm.action === 'revoke' }" data-testid="support-asset-revoke-mode" @click="setAssetAction('revoke')">Revoke</button>
+          </div>
+          <label>
+            <span>Asset ID</span>
+            <input class="support-admin-input" data-testid="support-asset-id" v-model="assetForm.assetId" />
+          </label>
+          <label>
+            <span>Instance</span>
+            <select class="support-admin-input" data-testid="support-asset-instance" v-model="assetForm.assetInstanceId" @change="syncAssetFromInstance">
+              <option value="">Use asset id</option>
+              <option v-for="asset in assetInstanceOptions" :key="asset.id" :value="asset.id">{{ assetInstanceLabel(asset) }}</option>
+            </select>
+          </label>
+          <label>
+            <span>Reason</span>
+            <input class="support-admin-input" data-testid="support-asset-reason" v-model="assetForm.reason" />
+          </label>
+          <label>
+            <span>Note</span>
+            <textarea class="support-admin-input" data-testid="support-asset-note" rows="3" v-model="assetForm.note"></textarea>
+          </label>
+          <button class="primary support-admin-submit" data-testid="support-asset-submit" type="button" :disabled="!canSubmitAssetAction" @click="submitAssetAction">
+            {{ actionLoading ? 'Applying' : 'Apply Asset Action' }}
+          </button>
+        </section>
+
+        <section class="panel support-admin-panel support-admin-action-form" data-testid="support-refund-form">
+          <h3>Purchase Refund</h3>
+          <label>
+            <span>Intent</span>
+            <select class="support-admin-input" data-testid="support-refund-intent" v-model="refundForm.intentId">
+              <option value="">Select purchase intent</option>
+              <option v-for="intent in refundIntentOptions" :key="intent.id" :value="intent.id">{{ purchaseIntentLabel(intent) }}</option>
+            </select>
+          </label>
+          <p v-if="selectedRefundIntent" class="support-admin-balance" data-testid="support-refund-intent-summary">
+            {{ selectedRefundIntent.status }} · {{ selectedRefundIntent.walletAmount }} {{ selectedRefundIntent.currencyCode }} · {{ selectedRefundIntent.provider }}
+          </p>
+          <label class="support-admin-checkbox">
+            <input type="checkbox" data-testid="support-refund-clawback" v-model="refundForm.clawback" />
+            <span>Claw back wallet balance</span>
+          </label>
+          <label>
+            <span>Reason</span>
+            <input class="support-admin-input" data-testid="support-refund-reason" v-model="refundForm.reason" />
+          </label>
+          <label>
+            <span>Note</span>
+            <textarea class="support-admin-input" data-testid="support-refund-note" rows="3" v-model="refundForm.note"></textarea>
+          </label>
+          <button class="primary support-admin-submit" data-testid="support-refund-submit" type="button" :disabled="!canSubmitRefundAction" @click="submitRefundAction">
+            {{ actionLoading ? 'Applying' : 'Mark Refunded' }}
           </button>
         </section>
       </div>

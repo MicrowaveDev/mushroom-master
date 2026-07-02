@@ -171,8 +171,9 @@ that: optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
 trading, database-managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
-expanded support/admin money tooling beyond the first wallet-adjustment console,
-tax/accounting evidence, and broader code movement into `backpack-game-core`.
+expanded support/admin operations beyond the current lookup, wallet, asset, and
+purchase-refund console, tax/accounting evidence, and broader code movement into
+`backpack-game-core`.
 
 ## Post-Implementation Review
 
@@ -328,9 +329,11 @@ backlog until the items are split into tickets or implementation phases.
   grant/revoke/freeze/unfreeze assets, mark a purchase refunded, attach
   evidence JSON, and record immutable `support_actions` notes. Asset
   freeze/unfreeze/revoke actions can target either `assetId` or
-  `assetInstanceId`. The first admin UI exposes wallet grant/revoke only; still
-  add asset freeze/revoke, refund/dispute workflows, approval UX, and final
-  support runbooks before non-engineering support staff use the full flow set.
+  `assetInstanceId`. The `/support-admin` UI now exposes wallet grant/revoke,
+  asset grant/freeze/unfreeze/revoke, purchase refund with optional wallet
+  clawback, and optional approval-actor header entry. Still add settlement /
+  reconciliation operator screens and final support runbooks before
+  non-engineering support staff use the full flow set.
 - A token-gated support admin JSON API now exists as of 2026-07-02:
   `/api/admin/support/*` mirrors the read-only lookup and audited mutation
   services for future admin UI integration. It requires
@@ -339,8 +342,9 @@ backlog until the items are split into tickets or implementation phases.
   restrict read, wallet, asset, refund, and approval actions per operator.
   Asset mutation endpoints cover grant, revoke, freeze, and unfreeze; disputed
   asset operations can target either `assetId` or `assetInstanceId`. The
-  `/support-admin` UI consumes this API for support lookup plus wallet
-  grant/revoke; asset/refund/dispute operator screens and final runbooks remain.
+  `/support-admin` UI consumes this API for support lookup, wallet grant/revoke,
+  asset grant/freeze/unfreeze/revoke, purchase refund, and optional approval
+  actor submission; settlement/reconciliation screens and final runbooks remain.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -444,14 +448,16 @@ backlog until the items are split into tickets or implementation phases.
 - Product screenshots/layout assertions now exist for wallet purchase failure,
   support links, pack odds, and complete/future/expired pack states. Add more
   screenshots whenever those surfaces change again.
-- Support-admin frontend/e2e coverage now exists for the token-gated lookup
-  flow plus audited wallet grant/revoke from `/support-admin`. Still add UI
-  coverage when asset freeze/revoke, refund/dispute, approval, or settlement
-  operator screens are added.
+- Support-admin frontend/e2e coverage now exists for token-gated lookup,
+  audited wallet grant/revoke, asset grant/freeze/unfreeze/revoke, and purchase
+  refund with wallet clawback from `/support-admin`. Still add UI coverage when
+  settlement/reconciliation operator screens or stricter approval-policy flows
+  are added.
 - Support-admin screenshot/layout coverage now exists for the first console:
-  `02g-support-admin-wallet-{desktop,mobile}.png` sidecars show no broken
-  images, no horizontal overflow, and the lookup/wallet/action/history sections
-  present at both viewport sizes.
+  `02g-support-admin-wallet-{desktop,mobile}.png` and
+  `02h-support-admin-ops-{desktop,mobile}.png` sidecars show no broken images,
+  no horizontal overflow, and the lookup/wallet/asset/refund/action/history
+  sections present at both viewport sizes.
 
 ### 7. Core Package Release And Second Consumer
 
@@ -1529,8 +1535,10 @@ or legal/support/compliance rollout work.
 - Add frontend support-operator coverage before staff use. **First support admin
   UI coverage is implemented 2026-07-02:** `tests/game/support-admin-ui.spec.js`
   drives `/support-admin` through token-gated lookup, wallet grant, wallet
-  revoke, refreshed balance, wallet transaction rows, and support action rows.
-  Asset/refund/dispute/approval UI coverage remains for those future screens.
+  revoke, refreshed balance, asset grant/freeze/unfreeze/revoke, purchase
+  refund with wallet clawback, wallet transaction rows, purchase rows, asset
+  rows, and support action rows. Stricter approval-policy and
+  settlement/reconciliation UI coverage remains for those future screens.
 - Add provider-specific operational notes and tooling for disputes, asset
   freezes, partial/late crypto payments, overpayments, and support
   investigations. **Local refund/reversal clawback and support-review status
@@ -1538,10 +1546,12 @@ or legal/support/compliance rollout work.
   tooling, including instance-scoped targeting, is implemented**, but live
   provider semantics and runbooks still need validation.
 - Expand the actual admin/support UI on top of the token-gated JSON API before
-  non-engineering support use beyond wallet adjustments. **First UI shipped
-  2026-07-02:** `/support-admin` provides lookup plus audited wallet
-  grant/revoke. Still add asset freeze/revoke, refund/dispute, approval, and
-  settlement/reconciliation operator screens, then finish production
+  non-engineering support use beyond basic actions. **Current UI shipped
+  2026-07-02:** `/support-admin` provides lookup, audited wallet grant/revoke,
+  asset grant/freeze/unfreeze/revoke by asset or instance id, purchase refund
+  with optional wallet clawback, and optional approval-actor submission. Still
+  add settlement/reconciliation operator screens, validate stricter
+  approval-policy UX against configured operator roles, and finish production
   scheduler/webhook routing.
 - Validate provider-specific settlement adapters and runbooks against real
   BTCPay, NOWPayments, and Telegram Stars sandbox/live exports/API payloads.
@@ -2212,10 +2222,10 @@ Additional TODOs for that pass:
    distributed mutation hardening, live provider-status validation, and
    real-pack odds coverage.
 31. Data operations before and after paid pilot: production scheduling for
-   purchase-intent expiry, provider support runbooks, asset/refund/dispute
-   admin UI beyond the first wallet-adjustment console, approval UX, scheduled
-   reconciliation jobs, provider settlement imports, and periodic wallet drift
-   monitoring.
+   purchase-intent expiry, provider support runbooks, settlement/reconciliation
+   admin UI beyond the current support console, stricter approval-policy UX
+   validation, scheduled reconciliation jobs, provider settlement imports, and
+   periodic wallet drift monitoring.
 32. Full gacha economy roadmap: database/admin-managed pack catalogs,
    seasons/collections, multi-item packs, rarity guarantees, pity rules,
    duplicate burning/exchange, marketplace/trading, and guarantee/pity

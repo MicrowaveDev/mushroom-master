@@ -6275,7 +6275,13 @@ select {
 
 .support-admin-lookup {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(220px, 2fr) 96px auto;
+  grid-template-columns:
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(220px, 2fr)
+    86px
+    auto;
   align-items: end;
   gap: 12px;
 }
@@ -6387,6 +6393,11 @@ textarea.support-admin-input {
   gap: 12px;
 }
 
+.support-admin-action-form {
+  display: grid;
+  gap: 12px;
+}
+
 .support-admin-balance {
   margin: 0;
   color: rgba(47, 36, 25, 0.72);
@@ -6420,6 +6431,35 @@ textarea.support-admin-input {
 .support-admin-segment button.active {
   background: #7f9872;
   color: #fffaf0;
+}
+
+.support-admin-segment--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.support-admin-segment--four button {
+  min-width: 0;
+  padding-inline: 6px;
+  font-size: 0.84rem;
+}
+
+.support-admin-panel .support-admin-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.support-admin-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #7f9872;
 }
 
 .support-admin-table-wrap {
@@ -6477,6 +6517,10 @@ textarea.support-admin-input {
   }
 
   .support-admin-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .support-admin-segment--four {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
