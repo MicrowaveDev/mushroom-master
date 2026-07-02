@@ -58,8 +58,13 @@ npm run game:wallet:import-settlement -- \
 
 Use `npm run game:support:money-lookup -- --query=<id-or-reference>` before any
 manual intervention. Use `npm run game:support:money-action` for audited wallet
-or asset grants/revokes and purchase refund marking. Attach provider evidence
-JSON to manual actions whenever a settlement row is disputed.
+or asset grants/revokes/freezes/unfreezes and purchase refund marking. Attach
+provider evidence JSON to manual actions whenever a settlement row is disputed.
+
+For disputed assets, use `asset-freeze` first. Frozen assets do not count as
+active owned assets and cannot stay equipped. Use `asset-unfreeze` if the
+dispute is resolved in the player's favor, or `asset-revoke` if the chargeback
+or refund is confirmed and the asset should be permanently removed.
 
 For API-backed support tooling, set `SUPPORT_ADMIN_API_TOKEN` and pass an
 explicit support actor id. To restrict operators by role, configure
@@ -74,8 +79,9 @@ explicit support actor id. To restrict operators by role, configure
 ```
 
 Supported roles are `support_viewer`, `wallet_operator`, `asset_operator`,
-`refund_operator`, and `admin`. If no operator map is configured, the support
-admin API keeps the token-only behavior for local/internal deployments.
+`refund_operator`, `support_approver`, and `admin`. If no operator map is
+configured, the support admin API keeps the token-only behavior for
+local/internal deployments.
 
 Set `SUPPORT_ADMIN_APPROVAL_REQUIRED=true` to require a second support actor on
 wallet, asset, and refund mutations. The approving actor must be different from

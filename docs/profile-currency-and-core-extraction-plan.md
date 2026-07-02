@@ -321,22 +321,23 @@ backlog until the items are split into tickets or implementation phases.
   `npm run game:support:money-lookup -- --query=<player-or-provider-reference>`
   searches purchase intents, provider references, wallet transactions, webhook
   events, asset grants/equipment, rolls, support actions, player records, and
-  wallet balances without direct SQL. Still build authenticated admin UI/API
-  surfaces before exposing this to non-engineering support staff.
+  wallet balances without direct SQL. Still build the actual admin UI before
+  exposing this to non-engineering support staff.
 - Manual support flows now exist locally as of 2026-07-02:
   `npm run game:support:money-action` can grant/revoke wallet currency,
-  grant/revoke assets, mark a purchase refunded, attach evidence JSON, and
-  record immutable `support_actions` notes. Still build authenticated admin
-  UI/API surfaces, operator authorization, approval policy, and runbooks before
-  non-engineering support staff use these flows.
+  grant/revoke/freeze/unfreeze assets, mark a purchase refunded, attach
+  evidence JSON, and record immutable `support_actions` notes. Still build the
+  actual admin UI and final support runbooks before non-engineering support
+  staff use these flows.
 - A token-gated support admin JSON API now exists as of 2026-07-02:
   `/api/admin/support/*` mirrors the read-only lookup and audited mutation
   services for future admin UI integration. It requires
   `SUPPORT_ADMIN_API_TOKEN` and an explicit support actor id. Optional
   `SUPPORT_ADMIN_OPERATORS_JSON` / `SUPPORT_ADMIN_OPERATORS` role mapping can
-  restrict read, wallet, asset, and refund actions per operator. Still build
-  the actual admin UI and final support runbooks before non-engineering support
-  staff use these flows.
+  restrict read, wallet, asset, refund, and approval actions per operator.
+  Asset mutation endpoints cover grant, revoke, freeze, and unfreeze. Still
+  build the actual admin UI and final support runbooks before non-engineering
+  support staff use these flows.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -351,9 +352,9 @@ backlog until the items are split into tickets or implementation phases.
 - Normalized provider settlement import now exists as of 2026-07-02:
   `npm run game:wallet:import-settlement -- --provider=<provider> --file=<json>`
   stores imported settlement batches and compares provider rows to local
-  purchase intents, wallet grants, amounts, and refund clawbacks. Still add
-  provider-specific CSV/API adapters, scheduling, alert routing, and live
-  settlement runbooks.
+  purchase intents, wallet grants, amounts, and refund clawbacks. Still validate
+  real provider export/API shapes, schedule imports, route alerts, and finish
+  live settlement runbooks.
 - Provider-specific settlement adapters and a local operations runbook now
   exist as of 2026-07-02: the same import command accepts `--format=json|csv|auto`
   and maps common BTCPay, NOWPayments, and Telegram Stars export/API fields into
@@ -372,8 +373,9 @@ backlog until the items are split into tickets or implementation phases.
   enough wallet balance. Insufficient-balance clawbacks are recorded as
   support-required and surfaced by reconciliation. Completed-purchase
   `disputed`/`underpaid`/`overpaid` statuses are recorded for support review
-  without automatic clawback. Still add disputed-asset freezes, provider
-  settlement imports, and richer support runbooks.
+  without automatic clawback. Disputed asset freeze/unfreeze tooling now exists
+  locally; still validate live provider dispute semantics and richer support
+  runbooks.
 
 ### 4. Distributed Concurrency, Security, And Abuse Controls
 
@@ -390,9 +392,10 @@ backlog until the items are split into tickets or implementation phases.
   routing/retention.
 - Checkout creation, gacha rolls, direct asset purchases, asset catalog, and
   pack-odds endpoints now have route-scoped rate-limit buckets as of
-  2026-07-02. Still tune production thresholds with real traffic, add
-  distributed/shared-bucket enforcement if multiple app instances are used, and
-  apply equivalent controls to future admin/support-sensitive endpoints.
+  2026-07-02. The support admin API also has an actor-scoped rate-limit bucket.
+  Still tune production thresholds with real traffic, add shared bucket
+  enforcement if multiple app instances are used, and keep equivalent controls
+  on future admin/support-sensitive endpoints.
 
 ### 5. Gacha, Asset Economy, And Marketplace Roadmap
 
@@ -404,6 +407,9 @@ backlog until the items are split into tickets or implementation phases.
 - Add duplicate inventory semantics instead of only "unowned candidate" rolls:
   stackable duplicates, burn/exchange rules, and clear handling for "no
   eligible assets left."
+- Before duplicate inventory or marketplace transfers, extend support asset
+  actions to target specific asset instance ids, not only asset ids, so
+  freezes/revokes can distinguish a disputed copy from a later legitimate copy.
 - Add marketplace/trading only after asset-instance transfer rules exist:
   escrow, listing fees, fraud controls, moderation, trade locks, audit logs, and
   refund/dispute interaction.
@@ -1259,8 +1265,9 @@ or legal/support/compliance rollout work.
    - Terminal non-completed statuses are recorded without granting wallet
      currency.
    - Completed-payment refund/reversal clawback is implemented locally for
-     refundable/reversed/chargeback provider statuses; live-provider semantics
-     and dispute/freeze workflows remain launch gates below.
+     refundable/reversed/chargeback provider statuses. Disputed-payment review
+     statuses and local asset freeze/unfreeze tooling exist; live-provider
+     semantics remain a launch gate below.
 4. Webhook signature behavior fails closed outside tests unless explicitly
    opted in with `PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV=true`.
 5. Wallet data operations exist.
@@ -1315,8 +1322,8 @@ or legal/support/compliance rollout work.
    - `support_actions` records immutable actor/action/player/target/status,
      note, evidence JSON, result JSON, and timestamp rows.
    - `npm run game:support:money-action` supports wallet grant/revoke, asset
-     grant/revoke, purchase refund marking with optional clawback, and support
-     action listing.
+     grant/revoke/freeze/unfreeze, purchase refund marking with optional
+     clawback, and support action listing.
    - Read-only money lookup includes matching support action audit rows.
 14. Stale wallet purchase-intent expiry exists.
    - `expireStalePurchaseIntents(...)` and
@@ -1326,7 +1333,8 @@ or legal/support/compliance rollout work.
 15. Token-gated support admin API exists.
    - `SUPPORT_ADMIN_API_TOKEN` plus `x-support-actor-id` / bearer auth gates
      `/api/admin/support/money-lookup`, `/api/admin/support/actions`, wallet
-     grant/revoke, asset grant/revoke, and purchase-refund endpoints.
+     grant/revoke, asset grant/revoke/freeze/unfreeze, and purchase-refund
+     endpoints.
    - The endpoints reuse the same support lookup and immutable
      `support_actions` mutation services as the CLI.
 16. Normalized provider settlement import exists.
@@ -1368,6 +1376,16 @@ or legal/support/compliance rollout work.
      `support_approver` or `admin`.
    - Successful approved mutations store approval evidence in the immutable
      `support_actions.evidence.approval` payload.
+21. Disputed asset freeze/unfreeze tooling exists.
+   - `supportFreezeAsset(...)` changes active asset instances to `frozen`,
+     resets equipped portraits to default, and records immutable
+     `asset_freeze` support actions with evidence.
+   - `supportUnfreezeAsset(...)` restores frozen assets to active ownership,
+     while `supportRevokeAsset(...)` can permanently revoke an already frozen
+     disputed asset.
+   - The token-gated support admin API exposes `asset-freeze` and
+     `asset-unfreeze` endpoints behind the `asset_operator` role and optional
+     multi-operator approval policy.
 
 ### Remaining launch gates
 
@@ -1417,8 +1435,9 @@ or legal/support/compliance rollout work.
 - Add provider-specific operational notes and tooling for disputes, asset
   freezes, partial/late crypto payments, overpayments, and support
   investigations. **Local refund/reversal clawback and support-review status
-  recording are implemented 2026-07-02**, but live provider semantics and
-  runbooks still need validation.
+  recording are implemented 2026-07-02, and local asset freeze/unfreeze support
+  tooling is implemented**, but live provider semantics and runbooks still need
+  validation.
 - Add the actual admin/support UI on top of the token-gated JSON API before
   non-engineering support use, then finish production scheduler/webhook routing.
 - Validate provider-specific settlement adapters and runbooks against real

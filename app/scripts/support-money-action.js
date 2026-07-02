@@ -4,9 +4,11 @@ import { getDb } from '../server/db.js';
 import {
   listSupportActions,
   supportAdjustWallet,
+  supportFreezeAsset,
   supportGrantAsset,
   supportMarkPurchaseRefunded,
-  supportRevokeAsset
+  supportRevokeAsset,
+  supportUnfreezeAsset
 } from '../server/services/support-ops-service.js';
 
 function argValue(name, fallback = null) {
@@ -32,6 +34,8 @@ function usage() {
     '  npm run game:support:money-action -- wallet-revoke --actor=<id> --player=<playerId> --amount=<n> [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- asset-grant --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- asset-revoke --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
+    '  npm run game:support:money-action -- asset-freeze --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
+    '  npm run game:support:money-action -- asset-unfreeze --actor=<id> --player=<playerId> --asset=<assetId> [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- purchase-refund --actor=<id> --intent=<intentId> [--no-clawback] [--reason=...] [--note=...] [--evidence-json={}]',
     '  npm run game:support:money-action -- list [--player=<playerId>] [--target-type=...] [--target-id=...] [--limit=25]'
   ].join('\n');
@@ -69,6 +73,18 @@ if (action === 'wallet-grant' || action === 'wallet-revoke') {
   });
 } else if (action === 'asset-revoke') {
   result = await supportRevokeAsset({
+    ...common,
+    playerId: argValue('--player'),
+    assetId: argValue('--asset')
+  });
+} else if (action === 'asset-freeze') {
+  result = await supportFreezeAsset({
+    ...common,
+    playerId: argValue('--player'),
+    assetId: argValue('--asset')
+  });
+} else if (action === 'asset-unfreeze') {
+  result = await supportUnfreezeAsset({
     ...common,
     playerId: argValue('--player'),
     assetId: argValue('--asset')

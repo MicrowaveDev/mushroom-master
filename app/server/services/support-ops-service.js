@@ -86,17 +86,22 @@ async function insertSupportAction(client, {
   return rowToSupportAction(inserted.rows[0]);
 }
 
-async function activeAssetInstance(client, playerId, assetId) {
+async function assetInstanceByStatus(client, playerId, assetId, status) {
   const existing = await client.query(
     `SELECT *
      FROM player_asset_instances
      WHERE player_id = $1
        AND asset_id = $2
-       AND status = 'active'
+       AND status = $3
+     ORDER BY acquired_at DESC
      LIMIT 1`,
-    [playerId, assetId]
+    [playerId, assetId, status]
   );
   return existing.rows[0] || null;
+}
+
+async function activeAssetInstance(client, playerId, assetId) {
+  return assetInstanceByStatus(client, playerId, assetId, 'active');
 }
 
 function rowToAssetInstance(row) {
@@ -113,7 +118,7 @@ function rowToAssetInstance(row) {
   };
 }
 
-async function resetRevokedPortraitEquipment(client, playerId, asset) {
+async function resetDisabledPortraitEquipment(client, playerId, asset) {
   if (asset?.slot !== 'portrait' || asset?.targetType !== 'character') return null;
   const parsed = parsePortraitAssetId(asset.assetId);
   const targetId = asset.targetId || parsed?.mushroomId || null;
@@ -317,7 +322,8 @@ export async function supportRevokeAsset({
   const actionEvidence = normalizeEvidence(evidence);
 
   return withTransaction(async (client) => {
-    const existing = await activeAssetInstance(client, playerId, asset.assetId);
+    const existing = await activeAssetInstance(client, playerId, asset.assetId)
+      || await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
     let revoked = null;
     let resetEquipment = null;
     if (existing) {
@@ -326,20 +332,22 @@ export async function supportRevokeAsset({
          SET status = 'revoked',
              metadata_json = $2
          WHERE id = $1
-           AND status = 'active'`,
+           AND status = $3`,
         [
           existing.id,
           jsonText({
             ...parseJson(existing.metadata_json, {}),
             revokedBySupportActionId: actionId,
             revokedReason: actionReason,
-            revokedAt: nowIso()
-          })
+            revokedAt: nowIso(),
+            revokedPreviousStatus: existing.status
+          }),
+          existing.status
         ]
       );
       const updated = await client.query(`SELECT * FROM player_asset_instances WHERE id = $1`, [existing.id]);
       revoked = rowToAssetInstance(updated.rows[0]);
-      resetEquipment = await resetRevokedPortraitEquipment(client, playerId, asset);
+      resetEquipment = await resetDisabledPortraitEquipment(client, playerId, asset);
     }
 
     const action = await insertSupportAction(client, {
@@ -356,6 +364,139 @@ export async function supportRevokeAsset({
       result: { assetId: asset.assetId, revoked, resetEquipment }
     });
     return { action, asset, revoked, resetEquipment };
+  });
+}
+
+export async function supportFreezeAsset({
+  actorId,
+  playerId,
+  assetId,
+  reason,
+  note = '',
+  evidence = {}
+} = {}) {
+  const actor = normalizeActor(actorId);
+  const asset = getAssetById(assetId);
+  if (!playerId) throw new Error('Support asset freeze requires playerId');
+  if (!asset) throw new Error('Unknown asset');
+  const actionId = createId('support');
+  const actionReason = normalizeReason(reason || 'support_asset_freeze');
+  const actionNote = normalizeNote(note);
+  const actionEvidence = normalizeEvidence(evidence);
+
+  return withTransaction(async (client) => {
+    const existing = await activeAssetInstance(client, playerId, asset.assetId);
+    const existingFrozen = existing ? null : await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
+    let frozen = null;
+    let resetEquipment = null;
+    if (existing) {
+      await client.query(
+        `UPDATE player_asset_instances
+         SET status = 'frozen',
+             metadata_json = $2
+         WHERE id = $1
+           AND status = 'active'`,
+        [
+          existing.id,
+          jsonText({
+            ...parseJson(existing.metadata_json, {}),
+            frozenBySupportActionId: actionId,
+            frozenReason: actionReason,
+            frozenAt: nowIso()
+          })
+        ]
+      );
+      const updated = await client.query(`SELECT * FROM player_asset_instances WHERE id = $1`, [existing.id]);
+      frozen = rowToAssetInstance(updated.rows[0]);
+      resetEquipment = await resetDisabledPortraitEquipment(client, playerId, asset);
+    }
+
+    const action = await insertSupportAction(client, {
+      id: actionId,
+      actorId: actor,
+      actionType: 'asset_freeze',
+      playerId,
+      targetType: 'asset',
+      targetId: asset.assetId,
+      status: frozen ? 'applied' : 'noop',
+      reason: actionReason,
+      note: actionNote,
+      evidence: actionEvidence,
+      result: {
+        assetId: asset.assetId,
+        frozen: frozen || rowToAssetInstance(existingFrozen),
+        alreadyFrozen: Boolean(existingFrozen),
+        resetEquipment
+      }
+    });
+    return {
+      action,
+      asset,
+      frozen: frozen || rowToAssetInstance(existingFrozen),
+      alreadyFrozen: Boolean(existingFrozen),
+      resetEquipment
+    };
+  });
+}
+
+export async function supportUnfreezeAsset({
+  actorId,
+  playerId,
+  assetId,
+  reason,
+  note = '',
+  evidence = {}
+} = {}) {
+  const actor = normalizeActor(actorId);
+  const asset = getAssetById(assetId);
+  if (!playerId) throw new Error('Support asset unfreeze requires playerId');
+  if (!asset) throw new Error('Unknown asset');
+  const actionId = createId('support');
+  const actionReason = normalizeReason(reason || 'support_asset_unfreeze');
+  const actionNote = normalizeNote(note);
+  const actionEvidence = normalizeEvidence(evidence);
+
+  return withTransaction(async (client) => {
+    const active = await activeAssetInstance(client, playerId, asset.assetId);
+    const existing = active ? null : await assetInstanceByStatus(client, playerId, asset.assetId, 'frozen');
+    let unfrozen = rowToAssetInstance(active);
+    let alreadyActive = Boolean(active);
+    if (existing) {
+      await client.query(
+        `UPDATE player_asset_instances
+         SET status = 'active',
+             metadata_json = $2
+         WHERE id = $1
+           AND status = 'frozen'`,
+        [
+          existing.id,
+          jsonText({
+            ...parseJson(existing.metadata_json, {}),
+            unfrozenBySupportActionId: actionId,
+            unfrozenReason: actionReason,
+            unfrozenAt: nowIso()
+          })
+        ]
+      );
+      const updated = await client.query(`SELECT * FROM player_asset_instances WHERE id = $1`, [existing.id]);
+      unfrozen = rowToAssetInstance(updated.rows[0]);
+      alreadyActive = false;
+    }
+
+    const action = await insertSupportAction(client, {
+      id: actionId,
+      actorId: actor,
+      actionType: 'asset_unfreeze',
+      playerId,
+      targetType: 'asset',
+      targetId: asset.assetId,
+      status: existing ? 'applied' : 'noop',
+      reason: actionReason,
+      note: actionNote,
+      evidence: actionEvidence,
+      result: { assetId: asset.assetId, unfrozen, alreadyActive }
+    });
+    return { action, asset, unfrozen, alreadyActive };
   });
 }
 

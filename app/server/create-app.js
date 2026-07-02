@@ -70,9 +70,11 @@ import { lookupMoneySupportRecords } from './services/support-money-service.js';
 import {
   listSupportActions,
   supportAdjustWallet,
+  supportFreezeAsset,
   supportGrantAsset,
   supportMarkPurchaseRefunded,
-  supportRevokeAsset
+  supportRevokeAsset,
+  supportUnfreezeAsset
 } from './services/support-ops-service.js';
 import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
@@ -851,6 +853,48 @@ export async function createApp() {
       res.json({
         success: true,
         data: await supportRevokeAsset({
+          actorId: req.supportActorId,
+          playerId: req.body.playerId,
+          assetId: req.body.assetId,
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/asset-freeze',
+    requireSupportAdmin,
+    requireSupportAdminRole('asset_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportFreezeAsset({
+          actorId: req.supportActorId,
+          playerId: req.body.playerId,
+          assetId: req.body.assetId,
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/asset-unfreeze',
+    requireSupportAdmin,
+    requireSupportAdminRole('asset_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportUnfreezeAsset({
           actorId: req.supportActorId,
           playerId: req.body.playerId,
           assetId: req.body.assetId,

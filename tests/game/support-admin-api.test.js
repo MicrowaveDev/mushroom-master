@@ -229,7 +229,7 @@ test('[Req 4-Z] support admin API can grant wallet currency and search support p
   });
 });
 
-test('[Req 4-Z, 14-F] support admin API can grant and revoke assets', async () => {
+test('[Req 4-Z, 14-F] support admin API can grant, freeze, unfreeze, and revoke assets', async () => {
   await withEnv({ SUPPORT_ADMIN_API_TOKEN: 'support-test-token' }, async () => {
     await freshDb();
     const { player } = await createPlayer({ telegramId: 4712 });
@@ -249,6 +249,32 @@ test('[Req 4-Z, 14-F] support admin API can grant and revoke assets', async () =
     assert.equal(grant.body.data.action.actionType, 'asset_grant');
     assert.equal(grant.body.data.instance.assetId, assetId);
 
+    const freeze = await request(app)
+      .post('/api/admin/support/actions/asset-freeze')
+      .set(supportHeaders)
+      .send({
+        playerId: player.id,
+        assetId,
+        reason: 'api_dispute_opened',
+        evidence: { ticket: 'SUP-API-3' }
+      });
+    assert.equal(freeze.status, 200);
+    assert.equal(freeze.body.data.action.actionType, 'asset_freeze');
+    assert.equal(freeze.body.data.frozen.status, 'frozen');
+
+    const unfreeze = await request(app)
+      .post('/api/admin/support/actions/asset-unfreeze')
+      .set(supportHeaders)
+      .send({
+        playerId: player.id,
+        assetId,
+        reason: 'api_dispute_resolved',
+        evidence: { ticket: 'SUP-API-4' }
+      });
+    assert.equal(unfreeze.status, 200);
+    assert.equal(unfreeze.body.data.action.actionType, 'asset_unfreeze');
+    assert.equal(unfreeze.body.data.unfrozen.status, 'active');
+
     const revoke = await request(app)
       .post('/api/admin/support/actions/asset-revoke')
       .set(supportHeaders)
@@ -256,7 +282,7 @@ test('[Req 4-Z, 14-F] support admin API can grant and revoke assets', async () =
         playerId: player.id,
         assetId,
         reason: 'api_event_reversal',
-        evidence: { ticket: 'SUP-API-3' }
+        evidence: { ticket: 'SUP-API-5' }
       });
     assert.equal(revoke.status, 200);
     assert.equal(revoke.body.data.action.actionType, 'asset_revoke');
