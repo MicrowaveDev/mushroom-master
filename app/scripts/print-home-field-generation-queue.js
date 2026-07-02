@@ -9,6 +9,7 @@ import { repoRoot } from '../shared/repo-root.js';
 
 const queuePath = path.join(repoRoot, 'app/shared/home-field/home-field-generation-queue.json');
 const retiredLocalInputEnv = ['HOME', 'FIELD', 'CHIBI', 'LOCAL', 'IMAGE', 'INPUTS'].join('_');
+const sha256Pattern = /^[a-f0-9]{64}$/i;
 
 function usage() {
   return [
@@ -199,6 +200,21 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!Array.isArray(recovery.successCriteria) || recovery.successCriteria.length < 3) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must list production-readiness criteria`);
   }
+  const exhaustedRepairSources = recovery.exhaustedRepairSources || [];
+  if (!Array.isArray(exhaustedRepairSources) || exhaustedRepairSources.length < 1) {
+    issues.push(`${itemId}: sourceGateRecovery.exhaustedRepairSources must list exhausted repair sources/candidates`);
+  } else {
+    for (const [idx, source] of exhaustedRepairSources.entries()) {
+      const label = `${itemId}: sourceGateRecovery.exhaustedRepairSources[${idx}]`;
+      if (!source.path) issues.push(`${label} missing path`);
+      if (!sha256Pattern.test(source.sourceSha256 || '')) issues.push(`${label} missing 64-char sourceSha256`);
+      if (!sha256Pattern.test(source.candidateSha256 || '')) issues.push(`${label} missing 64-char candidateSha256`);
+      if (source.verdict !== 'needs_regen') issues.push(`${label}.verdict must be needs_regen`);
+      if (!/do not rerun|exhausted|not production-ready/i.test(source.reason || '')) {
+        issues.push(`${label}.reason must say the repair is exhausted/do-not-rerun/not production-ready`);
+      }
+    }
+  }
   const requiredText = (recovery.requiredActions || []).join('\n');
   const criteriaText = (recovery.successCriteria || []).join('\n');
   if (!/method-change details/i.test(requiredText) || !/copyable user prompt/i.test(requiredText)) {
@@ -209,6 +225,12 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   }
   if (!/repair only as a secondary explicit method/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must make repair secondary to new authored source`);
+  }
+  if (!/exhausted repair source/i.test(requiredText) || !/Do not adopt/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must say not to adopt exhausted repair sources`);
+  }
+  if (!/missing fresh authored-source capability/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must tell agents to report missing fresh authored-source capability`);
   }
   if (!/passing palette\/count scripts alone is not production-ready/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject palette-only production readiness`);
@@ -227,6 +249,9 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   }
   if (!/production-ready candidate output from an intentional blocker/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must distinguish production-ready output from a blocker`);
+  }
+  if (!/must not match .*exhausted repair source\/candidate hash/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject blocked/exhausted repair source and candidate hashes`);
   }
   if (!/repair experiment/i.test(criteriaText) || !/visual review clears the original source defects/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must label repair runs and require visual clearance before production-ready claims`);
@@ -440,6 +465,19 @@ function printSourceGateRecovery(item) {
   if (Array.isArray(recovery.requiredActions) && recovery.requiredActions.length > 0) {
     console.log('  required actions:');
     for (const action of recovery.requiredActions) console.log(`    - ${action}`);
+  }
+  if (Array.isArray(recovery.exhaustedRepairSources) && recovery.exhaustedRepairSources.length > 0) {
+    console.log('  exhausted repair sources:');
+    for (const source of recovery.exhaustedRepairSources) {
+      console.log(`    - path: ${source.path || '<missing>'}`);
+      if (source.sourceSha256) console.log(`      source sha256: ${source.sourceSha256}`);
+      if (source.candidatePath) console.log(`      candidate path: ${source.candidatePath}`);
+      if (source.candidateSha256) console.log(`      candidate sha256: ${source.candidateSha256}`);
+      if (source.verdict) console.log(`      verdict: ${source.verdict}`);
+      if (source.rollout) console.log(`      rollout: ${source.rollout}`);
+      if (source.commit) console.log(`      commit: ${source.commit}`);
+      if (source.reason) console.log(`      reason: ${source.reason}`);
+    }
   }
   if (Array.isArray(recovery.successCriteria) && recovery.successCriteria.length > 0) {
     console.log('  success criteria:');

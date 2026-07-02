@@ -125,6 +125,24 @@ function chibiSourceGateRecovery() {
   return chibiQueueItem()?.sourceGateRecovery || null;
 }
 
+function chibiExhaustedRepairSources() {
+  const sources = chibiSourceGateRecovery()?.exhaustedRepairSources;
+  return Array.isArray(sources) ? sources : [];
+}
+
+function chibiExhaustedRepairSummary() {
+  const sources = chibiExhaustedRepairSources();
+  if (sources.length === 0) return '';
+  const entries = sources.map((source) => {
+    const parts = [source.path || '<missing path>'];
+    if (source.sourceSha256) parts.push(`source sha256 ${source.sourceSha256}`);
+    if (source.candidateSha256) parts.push(`candidate sha256 ${source.candidateSha256}`);
+    if (source.verdict) parts.push(`verdict ${source.verdict}`);
+    return parts.join(', ');
+  });
+  return `Exhausted repair sources that must not be reused: ${entries.join('; ')}. If only these exhausted repair sources exist, stop and report missing fresh authored-source capability instead of rerunning gates or committing the same verdict.`;
+}
+
 function chibiSourceGateBlocked() {
   return /blocked|failed|exhausted/i.test(chibiSourceGate()?.status || '');
 }
@@ -289,13 +307,15 @@ function chibiLocalSourceDetails(asset) {
   const preflightCommand = localSource?.preflightCommand || 'npm run game:home-field:preflight-chibi-proof -- --source=<png>';
   const archiveCommand = localSource?.archiveCommand || 'npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<png>';
   const stageCommand = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
+  const exhaustedRepairSummary = chibiExhaustedRepairSummary();
   const opening = sourceBlocked
       ? [
         'BLOCKED STAGE 1 LOCAL-SOURCE PROOF: the current queue-supplied complete 8x4 local state-sheet source already failed a hard sourceGate; do not produce a candidate from this hash.',
         `First run npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof and follow the printed blocker. The blocked source path is ${sourcePath}; sourceGate status ${sourceGate?.status || '<missing>'}; source sha256 ${sourceGate?.sourceSha256 || '<missing>'}; failed reference proxy sha256 ${sourceGate?.referenceProxySha256 || '<missing>'}. Do not preflight, archive, stage, split, produce, validate, evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs for this same source hash. Replace the queue sourcePath with a new authored complete 8x4 local source. Use repair only as an explicit secondary candidate-repair method with evidence, and do not claim production-ready from repair unless visual review clears the original defects.`,
+        exhaustedRepairSummary,
         'If the user asked for another production-ready run, give only the queue-only launcher from sourceGateRecovery.copyablePrompt; the runner must use the printed queue SourceGate recovery production attempt results, and a clean blocker is not production-ready output.',
         'Keep the requirements below only as the next-source acceptance contract. Once the sourceGate is cleared, the queue must print fresh first-class --source commands for a new authored source, or an explicitly repair-approved candidate-repair source, from preflight through verdict recording.'
-      ]
+      ].filter(Boolean)
     : [
         'CANDIDATE-ONLY STAGE 1 LOCAL-SOURCE PROOF: validate Thalla only from the queue-supplied complete 8x4 local state-sheet source. Do not run reference imagegen, built-in imagegen, paid API fallback, or text-only generation in this default run.',
         `First run npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof and follow the printed agent instructions. The active source path is ${sourcePath}. Preflight with ${preflightCommand}, archive stale proof files with ${archiveCommand}, then stage with ${stageCommand}. Stop if any source, archive, or staging gate fails; do not reuse stale .agent files.`,
@@ -331,10 +351,10 @@ function promptConstraintsForOutput(asset, promptEntry, { chibiCandidate = false
   const sourceBlocked = chibiSourceGateBlocked();
   return [
     sourceBlocked
-      ? 'Stage 1 blocked local-source validation until sourceGate is cleared. Generate only Thalla after the queue sourcePath is replaced with a new authored source, or after a documented secondary repair method is explicitly adopted. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.'
+      ? 'Stage 1 blocked local-source validation until sourceGate is cleared. Generate only Thalla after the queue sourcePath is replaced with a new authored source, or after a documented secondary repair method is explicitly adopted with source/candidate hashes that do not match exhausted repair sources. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.'
       : 'Stage 1 candidate-only local-source validation. Generate only Thalla. No full-roster batch, no stale rejected raw-frame reuse, no app-facing overwrite, no approval, no accepted=true.',
     sourceBlocked
-      ? 'The current sourceGate blocks the existing supplied complete 8x4 local state sheet hash; do not stage that same hash again through the queue --source command. The checked-in PNGs under docs/reference/home-field/ are styleReferences for visual review only, not active imagegen inputs, not proof sources, and not files to attach to imagegen in this run.'
+      ? 'The current sourceGate blocks the existing supplied complete 8x4 local state sheet hash, and sourceGateRecovery.exhaustedRepairSources blocks the recorded repair source/candidate hashes; do not stage any of those hashes again through the queue --source command. The checked-in PNGs under docs/reference/home-field/ are styleReferences for visual review only, not active imagegen inputs, not proof sources, and not files to attach to imagegen in this run.'
       : 'The current default run uses one supplied complete 8x4 local state sheet staged through the queue --source command. The checked-in PNGs under docs/reference/home-field/ are styleReferences for visual review only, not active imagegen inputs, not proof sources, and not files to attach to imagegen in this run.',
     'Final candidate input must originate from one coherent grouped state sheet, not 32 separate imagegen calls. The grouped state sheet itself must contain the idle bob and walk poses; do not synthesize motion after split by shifting, squashing, stretching, repainting, or otherwise changing frame pose/silhouette. Post-split deterministic processing may clean alpha/chroma fringe, crop, and resize only; it must not alter pose, motion, silhouette, style, or identity.',
     'The split output must contain 32 isolated character-only raw frames: 2 idle plus 6 walk-lane frames for each direction, with non-duplicated normal/little-bob idle frames, a 4-pose walk-cycle target across the 6 slots, and at least 3 unique walk frames per direction. Idle frame 1 must be only a little 1-3px bob/squish while staying upright; no crouch, seated pose, or deep squat.',
@@ -350,7 +370,7 @@ function promptSizeForOutput(asset, promptEntry, { chibiCandidate = false } = {}
     return promptEntry.size;
   }
   if (chibiSourceGateBlocked()) {
-    return 'one new authored supplied complete 8x4 state sheet, or explicitly repair-approved candidate-repair sheet, after sourceGate is cleared; then split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
+    return 'one new authored supplied complete 8x4 state sheet, or explicitly repair-approved candidate-repair sheet whose source/candidate hashes are not listed as exhausted, after sourceGate is cleared; then split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
   }
   return 'one supplied complete 8x4 state sheet staged as .agent/home-field-workspace/raw/thalla_chibi.states.source.png, split into 32 64x64 raw frames and composed into a 512x256 candidate sheet';
 }

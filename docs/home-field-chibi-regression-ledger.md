@@ -808,6 +808,19 @@ The active Stage 1 contract is:
 - `sourceGateRecovery.requiredActions` now says not to stop merely because no replacement source already exists; the runner must attempt the recovery path or report missing source-generation capability explicitly;
 - `RUN_CHIBI_PROOF_PROMPT.md`, `docs/home-field-imagegen-requirements.md`, `next-chibi-proof`, and `home-field-prompts.json` now preserve the distinction between a generic queue blocker and a recovery production attempt.
 
+### 52. Recovery Prompt Reused The Already-Failed Repair Lineage
+
+**Symptom:** Rollout `codex-019f2204-df8c-7dc0-a3c4-7a753b3fdf2a` no longer falsely claimed production readiness, but it spent another run on the same repair lineage. The worker adopted `.agent/home-field-workspace/supplied/thalla_palette_repair_2026-07-02.states.source.png`, source sha256 `0ce11c117499b96d6446d7884e2c0fc9eb2a6d7c3c87a6db53ac55b070fbf2ee`, produced candidate sha256 `477e72e876ae67b3b90f02e134465f86f9c02a1b5ecdc9c19f4b3705ba923221`, passed mechanical/evidence gates after alpha recovery, and correctly recorded `needs_regen` because the visual gate still found purple-pink edge/status ornament drift. No app-facing PNGs were overwritten.
+
+**What was wrong in the flow:** The queue preferred a new authored source, but still allowed the already-failed repair source to look like a valid secondary method. That made the next worker repeat the same gates and commit the same verdict instead of reporting that a fresh authored-source capability or stronger non-exhausted repair method was missing.
+
+**Guardrails added:**
+
+- `sourceGateRecovery.exhaustedRepairSources` now records the exhausted repair source path, source hash, candidate hash, rollout, commit, verdict, and do-not-rerun reason;
+- the queue printer validates and prints exhausted repair sources in the recovery section;
+- `preflight-chibi-proof -- --source=<png>` now rejects a supplied source whose sha256 matches an exhausted repair source before archive/stage;
+- `next-chibi-proof`, `home-field-prompts.json`, run docs, imagegen requirements, agent flow, and repo agent instructions now say not to adopt exhausted repair sources and to report missing fresh authored-source capability when only those sources exist.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -850,3 +863,4 @@ The active Stage 1 contract is:
 38. Do not let preflight capability flags override the queue method gate. If the queue marks a built-in method as blocked or exhausted, `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1` plus `HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1` must not pass preflight for that exhausted path.
 39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new authored complete `8x4` source before the next production run. A documented repair method is secondary candidate repair and must not be treated as production-ready unless visual review clears the original source defects.
 40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use only the queue-only `sourceGateRecovery.copyablePrompt`; the new-source/repair-method instructions must come from the printed queue `SourceGate recovery production attempt` output. A blocker-only handoff is incomplete for that request, and lack of a pre-existing replacement source is not by itself completion.
+41. Do not adopt source or candidate hashes listed under `sourceGateRecovery.exhaustedRepairSources` as another recovery attempt. Preflight must reject exhausted repair source hashes before archive/stage; if only exhausted repair sources exist, report missing fresh authored-source capability or use a stronger explicit repair method with new hashes.

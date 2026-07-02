@@ -143,7 +143,8 @@ function readQueueGate() {
       queuePath: generationQueuePath,
       itemStatus: item?.status || '',
       methodGate: item?.methodGate || inactiveBuiltin?.methodGate || null,
-      sourceGate: item?.sourceGate || null
+      sourceGate: item?.sourceGate || null,
+      sourceGateRecovery: item?.sourceGateRecovery || null
     };
   } catch (err) {
     return {
@@ -151,6 +152,7 @@ function readQueueGate() {
       itemStatus: '',
       methodGate: null,
       sourceGate: null,
+      sourceGateRecovery: null,
       error: err.message
     };
   }
@@ -185,15 +187,28 @@ function main() {
   const localInputInfos = localInputs
     .filter((inputPath) => !missingLocalInputs.includes(inputPath) && !rejectedLocalInputs.includes(inputPath))
     .map(completeStateSheetInfo);
+  const exhaustedRepairSources = Array.isArray(queueGate.sourceGateRecovery?.exhaustedRepairSources)
+    ? queueGate.sourceGateRecovery.exhaustedRepairSources
+    : [];
+  const exhaustedRepairSourceSha256s = new Set(exhaustedRepairSources
+    .map((source) => source.sourceSha256)
+    .filter(Boolean));
   const blockedLocalSourceInputs = localInputInfos.filter((info) => (
     localSourceGateBlocked &&
     info.sha256 &&
     queueGate.sourceGate?.sourceSha256 &&
     info.sha256 === queueGate.sourceGate.sourceSha256
   ));
+  const exhaustedRepairLocalSourceInputs = localInputInfos.filter((info) => (
+    info.sha256 &&
+    exhaustedRepairSourceSha256s.has(info.sha256)
+  ));
   const completeLocalStateSheetInputs = localInputInfos.filter((info) => info.complete);
   const localSourceGateBlocksInput = blockedLocalSourceInputs.length > 0;
-  const ok = cliReady || builtinReady || (localInputsReady && !localSourceGateBlocksInput);
+  const localSourceGateBlocksExhaustedRepair = exhaustedRepairLocalSourceInputs.length > 0;
+  const ok = (localSourceGateBlocksInput || localSourceGateBlocksExhaustedRepair)
+    ? false
+    : cliReady || builtinReady || localInputsReady;
 
   console.log('# Home Field Chibi Proof Preflight');
   console.log('');
@@ -217,6 +232,8 @@ function main() {
   if (completeLocalStateSheetInputs.length === 1 && localInputs.length === 1) {
     if (localSourceGateBlocksInput) {
       console.log('- local complete state-sheet staging command: blocked for this source hash; replace the source with a new authored source or explicitly adopt a documented secondary repair method first');
+    } else if (localSourceGateBlocksExhaustedRepair) {
+      console.log('- local complete state-sheet staging command: blocked because this source hash is listed as an exhausted repair source; use a fresh authored source or a stronger explicit repair method with a new hash');
     } else {
       console.log(`- local complete state-sheet staging command: npm run game:home-field:stage-chibi-local-source -- --source=${localInputs[0]}`);
     }
@@ -228,8 +245,10 @@ function main() {
     console.log(`- rejected local image inputs: ${rejectedLocalInputs.join(', ')}`);
   }
   console.log('');
-  if (localSourceGateBlocksInput) {
-    console.log('Output capability: skipped because the current --source hash is blocked by the queue local-source gate.');
+  if (localSourceGateBlocksInput || localSourceGateBlocksExhaustedRepair) {
+    console.log(localSourceGateBlocksExhaustedRepair
+      ? 'Output capability: skipped because the current --source hash is listed as an exhausted repair source by the queue local-source gate.'
+      : 'Output capability: skipped because the current --source hash is blocked by the queue local-source gate.');
   } else {
     console.log('Output capability:');
     console.log(`- imagegen CLI helper: ${hasCli ? cliPath : 'missing'}`);
@@ -268,17 +287,30 @@ function main() {
       console.log(`- rollout: ${queueGate.sourceGate?.rollout || 'not set'}`);
       console.log(`- status: ${sourceGateStatus || 'not set'}`);
       console.log(`- current --source hash blocked: ${localSourceGateBlocksInput ? 'yes' : 'no'}`);
+      console.log(`- current --source exhausted repair: ${localSourceGateBlocksExhaustedRepair ? 'yes' : 'no'}`);
       if (queueGate.sourceGate?.sourceSha256) console.log(`- blocked source sha256: ${queueGate.sourceGate.sourceSha256}`);
       if (queueGate.sourceGate?.referenceProxySha256) console.log(`- failed reference proxy sha256: ${queueGate.sourceGate.referenceProxySha256}`);
       if (queueGate.sourceGate?.failedCommand) console.log(`- failed command: ${queueGate.sourceGate.failedCommand}`);
       if (queueGate.sourceGate?.action) console.log(`- action: ${queueGate.sourceGate.action}`);
+      if (exhaustedRepairSources.length > 0) {
+        console.log('- exhausted repair sources:');
+        for (const source of exhaustedRepairSources) {
+          console.log(`  - ${source.path || '<missing>'}`);
+          if (source.sourceSha256) console.log(`    source sha256: ${source.sourceSha256}`);
+          if (source.candidateSha256) console.log(`    candidate sha256: ${source.candidateSha256}`);
+          if (source.verdict) console.log(`    verdict: ${source.verdict}`);
+          if (source.reason) console.log(`    reason: ${source.reason}`);
+        }
+      }
     }
   }
 
   if (!ok) {
     console.error('');
-    if (localSourceGateBlocksInput) {
-      console.error('Preflight failed: supplied --source PNG matches a queue-recorded failed local-source hash.');
+    if (localSourceGateBlocksInput || localSourceGateBlocksExhaustedRepair) {
+      console.error(localSourceGateBlocksExhaustedRepair
+        ? 'Preflight failed: supplied --source PNG matches a queue-recorded exhausted repair source.'
+        : 'Preflight failed: supplied --source PNG matches a queue-recorded failed local-source hash.');
       console.error('');
       console.error('Do not archive, stage, split, produce, validate, evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs for this source hash.');
       if (queueGate.sourceGate?.sourceSha256) {
@@ -287,8 +319,18 @@ function main() {
       if (queueGate.sourceGate?.referenceProxySha256) {
         console.error(`Failed reference proxy sha256: ${queueGate.sourceGate.referenceProxySha256}`);
       }
-      console.error('Continue only after replacing the queue sourcePath with a different authored complete 8x4 local source PNG whose sha256 does not match the sourceGate failure, or after explicitly adopting a documented secondary palette-cleanup/repair method with evidence.');
-      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source with a new authored source or explicitly adopt a documented secondary repair method first.');
+      if (localSourceGateBlocksExhaustedRepair) {
+        for (const source of exhaustedRepairLocalSourceInputs) {
+          console.error(`Exhausted repair source sha256: ${source.sha256}`);
+        }
+        for (const source of exhaustedRepairSources) {
+          if (source.candidateSha256) console.error(`Exhausted repair candidate sha256: ${source.candidateSha256}`);
+        }
+      }
+      console.error('Continue only after replacing the queue sourcePath with a different authored complete 8x4 local source PNG whose sha256 does not match the sourceGate failure or any exhausted repair source, or after explicitly adopting a stronger documented repair method with evidence whose source/candidate hashes are not listed as exhausted.');
+      console.error(localSourceGateBlocksExhaustedRepair
+        ? 'The supplied --source PNG matches a queue-recorded exhausted repair source. Do not archive or stage it again unchanged; use a new authored source or a stronger explicit repair method first.'
+        : 'The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source with a new authored source or explicitly adopt a documented secondary repair method first.');
       process.exit(1);
     }
     console.error('Preflight failed: no allowed reference-capable way to produce image PNGs for the required repo paths.');
@@ -301,8 +343,8 @@ function main() {
     }
     console.error('- HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1 plus OPENAI_IMAGEGEN_API_KEY with the installed imagegen CLI helper, preferably loaded through `npm run game:home-field:preflight-chibi-proof -- --env-file=<explicit-env-file>`, only when built-in/imagegen skill output is unavailable for this run');
     console.error('- --source=<png> with an existing supplied local proof source PNG path outside docs/reference; checked-in docs/reference style images do not count');
-    if (localSourceGateBlocksInput) {
-      console.error('- a different authored complete 8x4 local source PNG whose sha256 does not match the queue sourceGate failure, or a queue-approved secondary palette-cleanup/repair method with evidence');
+    if (localSourceGateBlocksInput || localSourceGateBlocksExhaustedRepair) {
+      console.error('- a different authored complete 8x4 local source PNG whose sha256 does not match the queue sourceGate failure or any exhausted repair source, or a queue-approved stronger secondary repair method with evidence');
     }
     console.error('');
     if (builtinMethodGateBlocked) {
@@ -317,8 +359,10 @@ function main() {
     if (rejectedLocalInputs.length > 0) {
       console.error('The checked-in docs/reference PNGs are style/reference material only. They are not supplied proof source PNGs and must not be used to bypass reference-capable imagegen.');
     }
-    if (localSourceGateBlocksInput) {
-      console.error('The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source with a new authored source or explicitly adopt a documented secondary repair method first.');
+    if (localSourceGateBlocksInput || localSourceGateBlocksExhaustedRepair) {
+      console.error(localSourceGateBlocksExhaustedRepair
+        ? 'The supplied --source PNG matches a queue-recorded exhausted repair source. Do not archive or stage it again unchanged; use a new authored source or a stronger explicit repair method first.'
+        : 'The supplied --source PNG matches a queue-recorded failed local-source hash. Do not archive or stage it again unchanged; replace the source with a new authored source or explicitly adopt a documented secondary repair method first.');
     }
     console.error('');
     if (builtinMethodGateBlocked) {
