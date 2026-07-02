@@ -165,13 +165,15 @@ operational runbooks plus tooling for post-completion refunds, reversals,
 chargebacks/disputes, late crypto payments, overpayments, and support
 investigations.
 
-Next local lane after Phase 8H: integrate the package from a second game and
-let that concrete consumer drive API cleanup or release notes. Deferred beyond
-that: optional Phase 6D database renames / physical removal of legacy
-compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
-trading, database-managed pack catalogs, an expanded terms/support frontend,
-provider refund and reversal handling, distributed payment mutation hardening,
-expanded support/admin operations beyond the current lookup, wallet, asset, and
+Next local lane after Phase 8H: make the gacha path useful with a simple,
+static, season-aware pack implementation before building the full seasonal pack
+economy. The second `backpack-game-core` consumer remains blocked until a real
+backpack/grid game target exists. Deferred beyond the simple gacha lane:
+optional Phase 6D database renames / physical removal of legacy compatibility
+fields, multi-item pack guarantees, duplicate burning, marketplace trading,
+database-managed pack catalogs, an expanded terms/support frontend, provider
+refund and reversal handling, distributed payment mutation hardening, expanded
+support/admin operations beyond the current lookup, wallet, asset, and
 purchase-refund console, tax/accounting evidence, and broader code movement into
 `backpack-game-core`.
 
@@ -286,7 +288,84 @@ as evidence.
 ## Current Remaining Work Matrix
 
 Added 2026-07-02 after the post-implementation review. Treat this as the live
-backlog until the items are split into tickets or implementation phases.
+backlog until the items are split into tickets or implementation phases. Updated
+2026-07-02 to make the active next lane gacha-focused: paid-provider,
+compliance, support-ops, approval, and production scheduling work is important,
+but it is now backlog unless a paid pilot is being prepared.
+
+### Active Lane - Gacha Roadmap Plan
+
+#### Source Of Truth
+
+- User request: move the previous non-gacha next items 1-5 into backlog and
+  write a gacha roadmap with a simple implementation first.
+- Keep Mushroom Battles direct skin buying available when gacha mode is off.
+- Keep the first gacha implementation intentionally small so it can ship and be
+  tested without the full future NFT-set/season/marketplace economy.
+- Put complex seasonal packs, guarantees, duplicate burning, and player trading
+  into the gacha roadmap backlog instead of mixing them into the first pass.
+
+#### G1 - Simple Seasonal Gacha Pack
+
+Goal: ship one static, season-aware pack loop that proves wallet spend, roll
+eligibility, rarity display, ownership, and UI feedback without creating a
+large economy system yet.
+
+- Use static catalog/config for the first season and collection. Keep one active
+  pack at a time for the first implementation; no admin database editor yet.
+- Keep the existing one-result roll model: one wallet spend grants one random
+  unowned asset from the active pack.
+- Add or normalize pack metadata needed by the UI: `seasonId`, `collectionId`,
+  `rarity`, active/future/expired dates, cost, rollable asset count, and odds.
+- Keep direct-buy behavior simple: when gacha is off, direct skin buying remains
+  available; when gacha is on with direct-buy blocking, configured gacha-only
+  skins roll from the pack instead of showing a buy button.
+- Show the player a clear roll result, rarity, newly-owned state, remaining
+  rollable count, and "complete pack" state when no unowned assets remain.
+- Keep duplicate behavior out of G1 by rolling only unowned assets. This avoids
+  inventory clutter until duplicate/burn rules exist.
+- Add focused tests for static pack validation, weighted roll selection,
+  wallet debit safety, no-unowned completion, direct-buy blocking, and UI
+  result/complete states.
+- Add screenshot coverage for active pack, roll result, complete pack, and
+  disabled/expired pack states on desktop and mobile.
+
+G1 is allowed to reuse the current `asset_rolls`, asset ownership, wallet, pack
+odds, and gacha simulation services. The implementation should first audit what
+already exists, then fill only the gaps required for a polished simple pack.
+
+#### G1 Implementation Checklist
+
+1. Audit current MVP against G1: catalog fields, endpoint response shape, UI
+   copy, tests, and screenshots.
+2. Define the first static season/collection/pack in one place with authoring
+   validation and stable test fixtures.
+3. Normalize rarity and season metadata in the backend catalog/pack projection.
+4. Add a roll-result projection that the frontend can render without guessing
+   from refreshed ownership state.
+5. Update the skin/customization UI so direct buy, roll, owned, complete,
+   future, and expired states are visually distinct.
+6. Expand simulation/tests to cover the first real configured pack and expected
+   rarity distribution.
+7. Regenerate desktop/mobile screenshots and record layout sidecar assertions.
+
+### Paid/Ops Backlog - Moved Out Of Active Lane
+
+Moved 2026-07-02 from the previous "what next" list. These items remain
+required for paid production rollout, but they are not the immediate gacha
+implementation lane.
+
+1. Settlement/reconciliation admin UI for imports, reconciliation failures,
+   provider mismatch review, and alert status.
+2. Stricter approval-policy UX that understands configured operator roles and
+   approval requirements, not only an optional approval actor header.
+3. Production scheduling and alert routing for purchase-intent expiry,
+   wallet ops checks, settlement imports, reconciliation reports, and support
+   notifications.
+4. Provider live validation for Telegram Stars, BTCPay, NOWPayments, and the
+   chosen crypto/fallback processor with real sandbox/live payload examples.
+5. Final support runbooks, refund/dispute policy, legal/compliance review,
+   adult-content/age gates, tax/accounting exports, and data-retention rules.
 
 ### 1. Payment Provider Decision And Validation
 
@@ -406,28 +485,78 @@ backlog until the items are split into tickets or implementation phases.
   enforcement if multiple app instances are used, and keep equivalent controls
   on future admin/support-sensitive endpoints.
 
-### 5. Gacha, Asset Economy, And Marketplace Roadmap
+### 5. Gacha, Asset Economy, And Marketplace Roadmap Backlog
 
-- Move packs/seasons/collections from static/env configuration to a database or
-  admin-managed catalog before operating frequent seasonal drops.
-- Implement multi-result packs, rarity weights, per-pack guarantees, pity rules,
-  secret rarity policy, active/future/expired pack states, and deterministic
-  authoring validation.
-- Add duplicate inventory semantics instead of only "unowned candidate" rolls:
-  stackable duplicates, burn/exchange rules, and clear handling for "no
-  eligible assets left."
-- Support asset actions can now target specific asset instance ids as of
-  2026-07-02, so freezes/revokes can distinguish a disputed copy from a later
-  legitimate copy. Still add the actual duplicate inventory, burn/exchange, and
-  transfer semantics before marketplace work.
-- Add marketplace/trading only after asset-instance transfer rules exist:
-  escrow, listing fees, fraud controls, moderation, trade locks, audit logs, and
-  refund/dispute interaction.
-- Local weighted-odds simulation now exists for the current one-result,
-  unowned-only gacha MVP via `simulateAssetPackOdds`,
-  `npm run game:gacha:simulate`, and focused tests as of 2026-07-02. Still add
-  guarantee, pity, duplicate, and multi-result simulation once those mechanics
-  exist in the runtime.
+The active gacha lane is G1 above: one static, season-aware, one-result,
+unowned-only pack. The items below are deliberately backlog until G1 is
+implemented, tested, and playable.
+
+#### G2 - Multi-Item Packs
+
+- Roll a pack that grants 5-10 assets in one purchase.
+- Support rarity-weighted slots instead of one global weighted draw.
+- Preserve clear roll evidence for every granted item: roll seed/source,
+  rarity table version, selected asset, and wallet transaction.
+- Add pack-opening UI that reveals each item cleanly on mobile and desktop.
+- Extend odds simulation from one-result rolls to multi-slot pack outputs.
+
+#### G3 - Guarantees And Pity
+
+- Add per-pack guarantees such as "at least two rare-or-better cards."
+- Add pity counters for epic/legendary/secret rarity where product policy
+  requires them.
+- Define whether guarantees reset per pack, per season, or per collection.
+- Expose guarantee/pity state in the backend response and in the UI without
+  encouraging misleading odds interpretation.
+- Add deterministic authoring validation so bad packs cannot ship with
+  impossible guarantees or misleading odds.
+
+#### G4 - Duplicate Inventory And Burning
+
+- Replace the G1 unowned-only shortcut with explicit duplicate ownership
+  semantics: stackable copies or separate asset instances, chosen per asset
+  type.
+- Add duplicate-burn rules, starting with a simple exchange such as five common
+  duplicates for one random rare from the same active season or collection.
+- Decide what happens when the target exchange pool is complete.
+- Keep support tooling instance-aware so disputed copies can be frozen/revoked
+  without touching later legitimate copies.
+- Add simulation and scenario tests for duplicate rates, burn costs, and edge
+  cases around complete pools.
+
+#### G5 - Database/Admin-Managed Seasons
+
+- Move packs, seasons, collections, rarity tables, dates, and prices out of
+  static config into database-managed records.
+- Add an internal authoring/review flow before a season is activated.
+- Support future/active/expired states, with expired packs no longer buyable
+  while owned assets remain usable.
+- Add migration and rollback rules for season data, including how to correct a
+  bad rarity table after launch.
+
+#### G6 - Marketplace And Trading
+
+- Add player-to-player transfer rules only after duplicate/instance semantics
+  are stable.
+- Build listing, escrow, purchase, cancellation, trade lock, fraud-control, and
+  moderation flows.
+- Define how refunds, chargebacks, frozen assets, and revoked assets interact
+  with sold or traded items.
+- Add audit logs and support views before enabling real trading.
+
+#### G7 - Full Seasonal NFT-Set Direction
+
+- Plan monthly seasons with multiple collections and 50-100 images across
+  common, rare, epic, legendary, and secret rarity.
+- Decide which assets are purely in-game, which are exportable/claimable, and
+  whether external NFT mechanics are truly needed.
+- Add content moderation, legal review, asset provenance, and player disclosure
+  before anything is advertised as an NFT-like collectible.
+
+Local weighted-odds simulation already exists for the current one-result,
+unowned-only MVP via `simulateAssetPackOdds`,
+`npm run game:gacha:simulate`, and focused tests as of 2026-07-02. Extend that
+simulation at each roadmap phase instead of waiting until the end.
 
 ### 6. Frontend And E2E Coverage Still Missing
 
@@ -2215,18 +2344,18 @@ Additional TODOs for that pass:
    loadout consumer.**
 29. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-30. Paid rollout readiness when external inputs are available: current
-   processor due diligence for fee/UX/content-policy fit, real provider
-   validation, final terms/refund/support UI, adult/content-compliance gates,
-   tax/accounting/data-retention review, dispute/freeze/late-payment tooling,
-   distributed mutation hardening, live provider-status validation, and
-   real-pack odds coverage.
-31. Data operations before and after paid pilot: production scheduling for
-   purchase-intent expiry, provider support runbooks, settlement/reconciliation
-   admin UI beyond the current support console, stricter approval-policy UX
-   validation, scheduled reconciliation jobs, provider settlement imports, and
-   periodic wallet drift monitoring.
-32. Full gacha economy roadmap: database/admin-managed pack catalogs,
-   seasons/collections, multi-item packs, rarity guarantees, pity rules,
-   duplicate burning/exchange, marketplace/trading, and guarantee/pity
-   simulation tests beyond the current weighted one-result simulator.
+30. Active next lane: G1 simple seasonal gacha pack. Keep it static-config,
+   one-result, unowned-only, wallet-backed, rarity-aware, and screenshot/test
+   covered before expanding the economy.
+31. Paid/ops backlog moved out of active lane: current processor due diligence,
+   real provider validation, final terms/refund/support UI,
+   adult-content/compliance gates, tax/accounting/data-retention review,
+   dispute/freeze/late-payment runbooks, production scheduling, provider
+   settlement imports, reconciliation/admin UI, stricter approval-policy UX,
+   alert routing, periodic wallet drift monitoring, distributed mutation
+   hardening, and live provider-status validation.
+32. Gacha roadmap backlog after G1: multi-item packs, slot-level rarity tables,
+   guarantees, pity rules, secret rarity policy, duplicate inventory,
+   burn/exchange, database/admin-managed seasons and collections,
+   marketplace/trading, NFT-set policy decisions, and expanded simulation tests
+   beyond the current weighted one-result simulator.
