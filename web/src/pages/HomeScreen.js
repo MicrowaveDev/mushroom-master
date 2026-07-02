@@ -528,6 +528,8 @@ export const HomeScreen = {
                 v-for="p in selectedMushroom.portraits" :key="p.id"
                 class="home-portrait-swatch"
                 :class="{ 'home-portrait-swatch--active': selectedMushroom.activePortrait === p.id, 'home-portrait-swatch--locked': !p.unlocked, 'home-portrait-swatch--buyable': !p.unlocked && p.purchaseAvailable, 'home-portrait-swatch--rollable': !p.unlocked && p.rollAvailable }"
+                :data-portrait-id="p.id"
+                :data-asset-id="p.assetId"
                 :title="portraitActionTitle(p)"
                 @click.stop="handlePortraitClick(p)"
               >

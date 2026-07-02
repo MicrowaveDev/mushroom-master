@@ -49,7 +49,7 @@ export default defineConfig({
       // call /api/dev/reset, which deletes/recreates SQLITE_STORAGE; sharing
       // the default dev sqlite file leaves an already-running dev backend
       // holding a stale handle and turns later shop buys into SQLITE_READONLY.
-      command: `SQLITE_STORAGE=${testSqliteStorage} PORT=${testBackendPort} node app/server/start.js`,
+      command: `PAYMENT_SUPPORT_URL=https://support.example/pay PAYMENT_TERMS_URL=https://terms.example/pay SUPPORT_ADMIN_API_TOKEN=e2e-support SQLITE_STORAGE=${testSqliteStorage} PORT=${testBackendPort} node app/server/start.js`,
       port: testBackendPort,
       reuseExistingServer: false,
       cwd: repoRoot

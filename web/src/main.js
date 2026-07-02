@@ -183,7 +183,7 @@ const App = {
       }
     }
 
-    const customization = useCustomization(state, gs.refreshBootstrap);
+    const customization = useCustomization(state, auth.refreshBootstrap);
     const devTools = useDevTools(state);
 
     function handleRunComplete() {
