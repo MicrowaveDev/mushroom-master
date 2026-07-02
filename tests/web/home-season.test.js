@@ -151,6 +151,9 @@ test('home skin picker summarizes roll pack availability and odds', () => {
     name: 'Season 1 Portrait Pack',
     total: 2,
     owned: 1,
+    left: 1,
+    active: true,
+    availabilityLabel: '',
     price: 500,
     odds: 'Common 75% · Rare 25%'
   });
