@@ -1663,6 +1663,15 @@ Additional TODOs for that pass:
    pointer moves.
 6. Done: add TypeScript declarations for the core package before another game
    consumes it.
+7. Done: add a core package changelog and a Mushroom consumer update log for
+   core SHA to game-commit mapping:
+   `vendor/backpack-game-core/CHANGELOG.md` and
+   `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
+   `300583b`; runtime/API baseline remains `d5fb481`.
+8. Blocked pending product target: integrate a second backpack-style game
+   consumer. A 2026-07-02 hub search found no other current repo with a
+   backpack/grid loadout mechanic; do not add this package to unrelated
+   card/save inventories only to prove reuse.
 
 ## Risks And Guardrails
 
@@ -1747,13 +1756,19 @@ Additional TODOs for that pass:
 25. Add a core-consumer smoke test plus final cross-repo verification
    (`backpack-game-core` tests, submodule guard, focused game tests, `npm ci`,
    game build, and full game unit suite). **Done for the core integration.**
-26. Add hub metadata for `backpack-game-core` only if it should also be tracked
+26. Add release/update notes for the core pointer SHA used by each game commit.
+   **Done 2026-07-02 via `docs/backpack-game-core-update-log.md` and core
+   `CHANGELOG.md`.**
+27. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
-27. Optional Phase 6D database rename only if raw legacy column names become a
+28. Integrate a second backpack-style game consumer after a real target exists.
+   **Blocked as of 2026-07-02: hub search found no other current backpack/grid
+   loadout consumer.**
+29. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-28. Paid rollout readiness when external inputs are available: real provider
+30. Paid rollout readiness when external inputs are available: real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
    refund/reversal/late-payment tooling, distributed mutation hardening, and
    deeper frontend/e2e payment coverage.
-29. Data operations after paid pilot: purchase-intent expiry/refund/reversal
+31. Data operations after paid pilot: purchase-intent expiry/refund/reversal
    jobs, provider support runbooks, and periodic wallet drift monitoring.

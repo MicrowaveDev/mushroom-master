@@ -28,11 +28,17 @@ wait. It should be updated after each cluster moves.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest extraction commit: `d5fb481` (`Add package type declarations`)
+- latest consumed core commit: `300583b`
+  (`Clarify core runtime baseline notes`; documentation/package notes only)
+- consumer update log:
+  `docs/backpack-game-core-update-log.md`
 
 The package is consumed by `mushroom-master` through the nested submodule
 `vendor/backpack-game-core` and the local package dependency
 `file:vendor/backpack-game-core`, so the game imports checked-out core source
-through the stable package name `@microwavedev/backpack-game-core`.
+through the stable package name `@microwavedev/backpack-game-core`. The exact
+core SHA to game-commit mapping is tracked in
+`docs/backpack-game-core-update-log.md`.
 
 ## Classification Rules
 
@@ -454,8 +460,16 @@ After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
 bot-loadout, battle-simulation, loadout-validation, and RNG slices, there is no
 obvious next mechanics cluster to move without another game's concrete
 requirements. The package now ships TypeScript declarations for the root export
-and every subpath export, so the next practical step is to use a second game as
-the first external consumer and let that integration drive any API cleanup.
+and every subpath export.
+
+Post-implementation review on 2026-07-02 found no second hub game with a
+backpack/grid loadout surface. Existing `inventory` matches outside
+`mushroom-master` are card/save inventories or unrelated operational
+inventories, not consumers for this package. The next practical consumer step is
+therefore blocked on identifying or creating a real backpack-style game target;
+do not add the package to another repo just to prove reuse. Until then, keep
+the package release trail current through `docs/backpack-game-core-update-log.md`
+and the core `CHANGELOG.md`.
 
 Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
 routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.
@@ -488,5 +502,8 @@ that local checkout, instead of relying only on a remote Git SHA dependency.
 
 1. Done: add TypeScript declarations for root and subpath exports before a
    second game starts integrating the package.
-2. Add release/update notes for the core pointer SHA used by each game commit
-   if core updates become frequent.
+2. Done: add release/update notes for the core pointer SHA used by each game
+   commit in `docs/backpack-game-core-update-log.md` and core package notes in
+   `vendor/backpack-game-core/CHANGELOG.md`.
+3. Blocked pending product input: integrate a second backpack-style game
+   consumer and let that concrete integration drive API cleanup.
