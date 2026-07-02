@@ -66,6 +66,14 @@ import {
   purchaseAsset,
   rollAssetPack
 } from './services/game-service.js';
+import { lookupMoneySupportRecords } from './services/support-money-service.js';
+import {
+  listSupportActions,
+  supportAdjustWallet,
+  supportGrantAsset,
+  supportMarkPurchaseRefunded,
+  supportRevokeAsset
+} from './services/support-ops-service.js';
 import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
 import { log, requestLogger } from './lib/obs.js';
@@ -195,6 +203,29 @@ function scopedPlayerRateLimit(scope, options = {}) {
   });
 }
 
+function supportAdminToken() {
+  return process.env.SUPPORT_ADMIN_API_TOKEN || process.env.ADMIN_API_TOKEN || '';
+}
+
+function bearerToken(req) {
+  const authorization = String(req.header('authorization') || '');
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : '';
+}
+
+function requestSupportAdminToken(req) {
+  return String(req.header('x-support-admin-token') || bearerToken(req) || '').trim();
+}
+
+function requestSupportActorId(req) {
+  return String(
+    req.header('x-support-actor-id') ||
+    req.body?.actorId ||
+    req.query?.actorId ||
+    ''
+  ).trim();
+}
+
 function timingSafeEqualText(left, right) {
   const leftBuffer = Buffer.from(String(left || ''), 'utf8');
   const rightBuffer = Buffer.from(String(right || ''), 'utf8');
@@ -278,6 +309,25 @@ async function requireRunMembership(req, _res, next) {
   }
 }
 
+function requireSupportAdmin(req, res, next) {
+  const configuredToken = supportAdminToken();
+  if (!configuredToken) {
+    res.status(503).json({ success: false, error: 'SUPPORT_ADMIN_API_TOKEN is required for support admin API' });
+    return;
+  }
+  if (!timingSafeEqualText(requestSupportAdminToken(req), configuredToken)) {
+    res.status(403).json({ success: false, error: 'Invalid support admin token' });
+    return;
+  }
+  const actorId = requestSupportActorId(req);
+  if (!actorId) {
+    res.status(400).json({ success: false, error: 'Support actor is required' });
+    return;
+  }
+  req.supportActorId = actorId.slice(0, 120);
+  next();
+}
+
 // Map an application-layer Error message to an HTTP status code. Exported so
 // the test suite can pin the contract for each class of thrown error without
 // spinning up a full HTTP server. Keep this list in sync with the thrown
@@ -292,6 +342,9 @@ const ERROR_STATUS_MAP = [
   ['already', 409],
   ['limit reached', 429],
   ['not enough', 400],
+  ['required', 400],
+  ['requires', 400],
+  ['must be', 400],
   ['unavailable', 403],
   ['disabled', 403],
   ['expired', 410],
@@ -354,6 +407,11 @@ export async function createApp() {
   const assetOddsRateLimit = scopedPlayerRateLimit('asset-pack-odds', {
     capacity: 20,
     refillPerSec: 1 / 5
+  });
+  const supportAdminRateLimit = rateLimit({
+    capacity: 40,
+    refillPerSec: 1 / 5,
+    keyFn: (req) => req.supportActorId ? `support-admin:${req.supportActorId}` : null
   });
   const publicAuthRateLimit = rateLimit({
     capacity: 8,
@@ -559,6 +617,135 @@ export async function createApp() {
         fetchImpl: globalThis.fetch
       });
       res.json({ success: true, data });
+    })
+  );
+
+  app.get(
+    '/api/admin/support/money-lookup',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await lookupMoneySupportRecords({
+          query: req.query.query,
+          limit: req.query.limit
+        })
+      });
+    })
+  );
+
+  app.get(
+    '/api/admin/support/actions',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await listSupportActions({
+          playerId: req.query.playerId || null,
+          targetType: req.query.targetType || null,
+          targetId: req.query.targetId || null,
+          limit: req.query.limit || 25
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/wallet-grant',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportAdjustWallet({
+          actorId: req.supportActorId,
+          playerId: req.body.playerId,
+          amount: req.body.amount,
+          direction: 'grant',
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: req.body.evidence
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/wallet-revoke',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportAdjustWallet({
+          actorId: req.supportActorId,
+          playerId: req.body.playerId,
+          amount: req.body.amount,
+          direction: 'revoke',
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: req.body.evidence
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/asset-grant',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportGrantAsset({
+          actorId: req.supportActorId,
+          playerId: req.body.playerId,
+          assetId: req.body.assetId,
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: req.body.evidence
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/asset-revoke',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportRevokeAsset({
+          actorId: req.supportActorId,
+          playerId: req.body.playerId,
+          assetId: req.body.assetId,
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: req.body.evidence
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/support/actions/purchase-refund',
+    requireSupportAdmin,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await supportMarkPurchaseRefunded({
+          actorId: req.supportActorId,
+          intentId: req.body.intentId,
+          clawback: req.body.clawback !== false,
+          reason: req.body.reason,
+          note: req.body.note,
+          evidence: req.body.evidence
+        })
+      });
     })
   );
 

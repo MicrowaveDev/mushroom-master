@@ -329,6 +329,12 @@ backlog until the items are split into tickets or implementation phases.
   record immutable `support_actions` notes. Still build authenticated admin
   UI/API surfaces, operator authorization, approval policy, and runbooks before
   non-engineering support staff use these flows.
+- A token-gated support admin JSON API now exists as of 2026-07-02:
+  `/api/admin/support/*` mirrors the read-only lookup and audited mutation
+  services for future admin UI integration. It requires
+  `SUPPORT_ADMIN_API_TOKEN` and an explicit support actor id. Still build the
+  actual admin UI, role-based operator authorization, multi-operator approval
+  policy, and runbooks before non-engineering support staff use these flows.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -1298,6 +1304,12 @@ or legal/support/compliance rollout work.
      `npm run game:wallet:expire-intents` mark old pending intents expired,
      skip active checkout creation claims, preserve terminal purchases, and
      record local-expiry metadata for support review.
+15. Token-gated support admin API exists.
+   - `SUPPORT_ADMIN_API_TOKEN` plus `x-support-actor-id` / bearer auth gates
+     `/api/admin/support/money-lookup`, `/api/admin/support/actions`, wallet
+     grant/revoke, asset grant/revoke, and purchase-refund endpoints.
+   - The endpoints reuse the same support lookup and immutable
+     `support_actions` mutation services as the CLI.
 
 ### Remaining launch gates
 
@@ -1349,8 +1361,8 @@ or legal/support/compliance rollout work.
   investigations. **Local refund/reversal clawback and support-review status
   recording are implemented 2026-07-02**, but live provider semantics and
   runbooks still need validation.
-- Add authenticated admin/support UI/API surfaces on top of the read-only money
-  lookup and audited support-action service, then add operator authorization,
+- Add the actual admin/support UI on top of the token-gated JSON API before
+  non-engineering support use, then add role-based operator authorization,
   approval policy, scheduled reconciliation, alert routing, and provider
   settlement import.
 
@@ -2017,9 +2029,9 @@ Additional TODOs for that pass:
    tax/accounting/data-retention review, dispute/freeze/late-payment tooling,
    distributed mutation hardening, and deeper frontend/e2e payment coverage.
 31. Data operations before and after paid pilot: production scheduling for
-   purchase-intent expiry, provider support runbooks, authenticated
-   admin/support money tooling, approval policy, scheduled reconciliation jobs,
-   provider settlement imports, and periodic wallet drift monitoring.
+   purchase-intent expiry, provider support runbooks, admin/support UI,
+   role-based operator authorization, approval policy, scheduled reconciliation
+   jobs, provider settlement imports, and periodic wallet drift monitoring.
 32. Full gacha economy roadmap: database/admin-managed pack catalogs,
    seasons/collections, multi-item packs, rarity guarantees, pity rules,
    duplicate burning/exchange, marketplace/trading, and guarantee/pity
