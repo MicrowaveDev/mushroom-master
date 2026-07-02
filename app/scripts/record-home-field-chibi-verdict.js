@@ -11,6 +11,7 @@ const supportedIds = new Set(['thalla']);
 const allowedVerdicts = new Set(['needs_review', 'needs_regen', 'rejected', 'pending']);
 const reviewPath = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
 const defaultManifestPath = path.join(repoRoot, '.agent', 'home-field-workspace', 'review', 'candidate-evidence.manifest.json');
+const defaultCandidateRoot = path.join(repoRoot, '.agent', 'home-field-workspace', 'candidates', 'chibi-active-roster', 'latest');
 
 function usage() {
   console.log(`Usage: record-home-field-chibi-verdict <id> --verdict=<needs_review|needs_regen|rejected|pending> --reason-file=<path> [--manifest=<path>]
@@ -37,6 +38,52 @@ function loadJson(filePath) {
 
 function resolveRepoPath(value) {
   return path.resolve(repoRoot, value);
+}
+
+function repoRelative(value) {
+  if (!value || typeof value !== 'string') return '';
+  const absolutePath = path.isAbsolute(value) ? value : path.resolve(repoRoot, value);
+  return path.relative(repoRoot, absolutePath).split(path.sep).join('/');
+}
+
+function isDefaultManifest(manifestPath) {
+  return path.resolve(manifestPath) === defaultManifestPath;
+}
+
+function isTmpRepoPath(value) {
+  const relativePath = repoRelative(value);
+  return relativePath === 'tmp' || relativePath.startsWith('tmp/');
+}
+
+function candidatePathList(manifest, entry) {
+  return [
+    manifest.candidateRoot,
+    entry.candidateOutput?.path,
+    entry.rawSource?.path,
+    entry.chibiSources?.reference?.path,
+    entry.chibiSources?.groupedStateSheet?.path,
+    ...(entry.chibiSources?.splitFrames?.frames || []).map((frame) => frame.path),
+    ...(manifest.previews || []).map((preview) => preview.path)
+  ].filter(Boolean);
+}
+
+function regenerationCommand() {
+  return 'HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence';
+}
+
+function validateDefaultManifestFreshness(manifest, entry, manifestPath) {
+  if (!isDefaultManifest(manifestPath)) return;
+
+  const expectedRoot = repoRelative(defaultCandidateRoot);
+  const actualRoot = repoRelative(manifest.candidateRoot);
+  if (actualRoot !== expectedRoot) {
+    throw new Error(`default candidate evidence manifest candidateRoot must be ${expectedRoot}; found ${actualRoot || '<missing>'}. Regenerate evidence with: ${regenerationCommand()}`);
+  }
+
+  const stalePath = candidatePathList(manifest, entry).find((value) => isTmpRepoPath(value));
+  if (stalePath) {
+    throw new Error(`default candidate evidence manifest contains stale tmp path ${repoRelative(stalePath)}. Regenerate evidence with: ${regenerationCommand()}`);
+  }
 }
 
 function findHash(list, name) {
@@ -81,6 +128,7 @@ function main() {
     const manifest = loadJson(manifestAbs);
     const entry = (manifest.entries || []).find((candidate) => candidate.id === id);
     if (!entry) throw new Error(`candidate evidence manifest does not contain id "${id}"`);
+    validateDefaultManifestFreshness(manifest, entry, manifestAbs);
 
     const reviewDoc = loadJson(reviewPath);
     const review = (reviewDoc.assets || []).find((row) => row.id === id);

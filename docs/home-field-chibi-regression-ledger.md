@@ -821,6 +821,18 @@ The active Stage 1 contract is:
 - `preflight-chibi-proof -- --source=<png>` now rejects a supplied source whose sha256 matches an exhausted repair source before archive/stage;
 - `next-chibi-proof`, `home-field-prompts.json`, run docs, imagegen requirements, agent flow, and repo agent instructions now say not to adopt exhausted repair sources and to report missing fresh authored-source capability when only those sources exist.
 
+### 53. Verdict Recording Trusted A Stale Default Evidence Manifest
+
+**Symptom:** Rollout `codex-019f2375-f586-7a81-8491-7cce3a78f96f` finally used the queue recovery output, generated a fresh authored Thalla source, produced a candidate, recovered alpha fringe, and correctly left the app-facing PNG untouched. During verdict recording, however, the first successful `record-chibi-verdict` run copied stale candidate hash `352956a4...` from a default `.agent/home-field-workspace/review/candidate-evidence.manifest.json` whose `candidateRoot` still pointed at `tmp/home-field-chibi-stale-notes-candidates`. The worker noticed the mismatch against its fresh reason text, regenerated candidate evidence from the canonical candidate root, and reran the verdict successfully.
+
+**What was wrong in the flow:** The docs told agents to regenerate evidence from `.agent/home-field-workspace/candidates/chibi-active-roster/latest`, but the verdict helper trusted the ambient default manifest on disk. Tests and diagnostics can leave ignored `.agent` evidence behind, so correctness depended on the agent manually comparing hashes after the record step.
+
+**Guardrails added:**
+
+- `record-home-field-chibi-verdict` now rejects the default evidence manifest unless `candidateRoot` is `.agent/home-field-workspace/candidates/chibi-active-roster/latest`;
+- the helper also rejects `tmp/` candidate paths in the default manifest and prints the exact canonical candidate-evidence command to rerun;
+- tests cover the stale default-manifest failure mode while preserving explicit `--manifest=<path>` fixtures for diagnostics.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -864,3 +876,4 @@ The active Stage 1 contract is:
 39. Do not rerun the same supplied local chibi source hash after it fails verifier, palette audit, or visual review. Record the failure in the queue `sourceGate`, block prompt issuance for that hash, and require a new authored complete `8x4` source before the next production run. A documented repair method is secondary candidate repair and must not be treated as production-ready unless visual review clears the original source defects.
 40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use only the queue-only `sourceGateRecovery.copyablePrompt`; the new-source/repair-method instructions must come from the printed queue `SourceGate recovery production attempt` output. A blocker-only handoff is incomplete for that request, and lack of a pre-existing replacement source is not by itself completion.
 41. Do not adopt source or candidate hashes listed under `sourceGateRecovery.exhaustedRepairSources` as another recovery attempt. Preflight must reject exhausted repair source hashes before archive/stage; if only exhausted repair sources exist, report missing fresh authored-source capability or use a stronger explicit repair method with new hashes.
+42. Do not let `record-chibi-verdict` consume a default candidate-evidence manifest from a diagnostic or test `tmp/` root. Regenerate evidence from `.agent/home-field-workspace/candidates/chibi-active-roster/latest` immediately before recording the verdict.

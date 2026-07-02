@@ -2441,6 +2441,54 @@ test('[home-field] record chibi verdict copies hashes from candidate evidence', 
   });
 });
 
+test('[home-field] record chibi verdict rejects stale default tmp candidate evidence', () => {
+  const reviewPath = path.join(repoRoot, 'docs/home-field-asset-review.json');
+  const manifestPath = path.join(repoRoot, '.agent/home-field-workspace/review/candidate-evidence.manifest.json');
+  return withPreservedFiles([reviewPath, manifestPath], () => {
+    const fixtureDir = path.join(repoRoot, 'tmp/home-field-record-chibi-verdict-stale-default-test');
+    const reasonPath = path.join(fixtureDir, 'reason.txt');
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.mkdirSync(fixtureDir, { recursive: true });
+    fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+    fs.writeFileSync(reasonPath, 'Visual critic: do not trust stale tmp evidence.');
+    fs.writeFileSync(manifestPath, JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: '2026-07-02T16:03:51.622Z',
+      candidateRoot: 'tmp/home-field-chibi-stale-notes-candidates',
+      ids: ['thalla'],
+      entries: [{
+        id: 'thalla',
+        candidateOutput: { path: 'tmp/home-field-chibi-stale-notes-candidates/web/public/home-field/characters/thalla/spritesheet.png', sha256: '1'.repeat(64) },
+        rawSource: { path: 'tmp/home-field-chibi-stale-notes-candidates/raw/thalla_chibi.states.source.png', sha256: '2'.repeat(64) },
+        chibiSources: {
+          reference: { path: '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png', sha256: '3'.repeat(64) }
+        }
+      }],
+      manifestSha256: '4'.repeat(64)
+    }, null, 2));
+    const reviewBefore = fs.readFileSync(reviewPath, 'utf8');
+
+    try {
+      const result = spawnSync(process.execPath, [
+        recordChibiVerdictScriptPath,
+        'thalla',
+        '--verdict=needs_review',
+        `--reason-file=${path.relative(repoRoot, reasonPath)}`
+      ], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+
+      assert.equal(result.status, 1, result.stderr || result.stdout);
+      assert.match(result.stderr, /candidateRoot must be \.agent\/home-field-workspace\/candidates\/chibi-active-roster\/latest/);
+      assert.match(result.stderr, /HOME_FIELD_CANDIDATE_ROOT=\.agent\/home-field-workspace\/candidates\/chibi-active-roster\/latest/);
+      assert.equal(fs.readFileSync(reviewPath, 'utf8'), reviewBefore);
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
+});
+
 test('[home-field] chibi state sheet splitter writes canonical raw frame chunks', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-chibi-state-sheet-test');
   const sourcePath = path.join(fixtureDir, 'raw/thalla_chibi.states.source.png');

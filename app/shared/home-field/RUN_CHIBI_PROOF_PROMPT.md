@@ -51,6 +51,8 @@ npm run game:home-field:chibi-candidate-preview
 npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>
 ```
 
+Do not run `record-chibi-verdict` against an ambient default evidence manifest from a diagnostic or test candidate root. The helper must see `.agent/home-field-workspace/candidates/chibi-active-roster/latest` as the default `candidateRoot`; if it reports a stale `tmp/` evidence manifest, rerun the canonical `HOME_FIELD_CANDIDATE_ROOT=... game:home-field:candidate-evidence` command above before recording the verdict.
+
 ## Stage 1 Visual Target
 
 Stage 1 proves the character design plus a simple idle/walk read, not full animation polish. Use the supplied local state sheet and derived reference proxy to keep the four directions consistent. Split the coherent `8x4` final state sheet into 32 isolated character-only frames: 2 idle frames plus 6 simple walk-loop frames for down, up, left, and right. The two idle frames are `normal -> little 1-3px bob/squish`, returning to normal in the runtime loop. The bob/squish must be present in the grouped state sheet itself; do not create it after split by shifting, squashing, stretching, repainting, or otherwise changing frame pose/silhouette. Each direction must have a non-duplicated idle pair and at least 3 unique walk frames in the composed sheet. The validator rejects idle frame 1 if it squats too deeply by losing too much visible height, moving its alpha center too far, or dropping the cap/body too low.
