@@ -622,7 +622,7 @@
       "id": "thalla",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "SourceGate recovery production attempt produced a new non-exhausted authored local 8x4 source and candidate. Source .agent/home-field-workspace/supplied/thalla_imagegen_recovery_runtime_2026-07-02.states.source.png has sha256 aac982b3eee1769a7b78e42a96784f99d09ccfb33f0f7a7894f16518e5d40414; candidate sha256 fce7bff0f41b29c69132942e5c1cc5d5b4bf43c0a076741181b911977a2eefa6. Reference proxy, grouped state sheet, and candidate palette audits pass under the 20-color budget (17/20, 17/20, 15/20 significant colors). Split frames, candidate verification, review/readability/runtime/animation/quality validators, evidence manifest, and mobile/desktop clean previews pass after the documented alpha recovery cleared magenta fringe at tolerance 160. Visual review: the composed previews read as a compact youthful little-girl mushroom-elf Thalla with pale cap/robe, visible elf ears, tiny planted body, simple dark eyes, and restrained gold mycelium marks; it does not read as the old monk/beige mascot pawn/faceless token style rejected in the queue. Candidate-only evidence, not human approval or app-facing promotion; accepted remains false and no app-facing PNGs were overwritten.",
+      "reason": "SourceGate recovery production attempt produced a new non-exhausted fresh imagegen source, then an explicit native-64 palette-repair experiment to satisfy the hard <20 visible-color gate. Active source .agent/home-field-workspace/supplied/thalla_sourcegate_recovery_fresh_2026-07-02_512x256_quant18_rgba.states.source.png has sha256 115f77467df49e07f8b2a7b4e2c2afa1222d59310e67a5dfc093d82aa7dc545d; candidate sha256 6ae5e6f886c9e99f7a1ea6700eb035c87dffd479222cb55f713e019d0182d06a. Reference proxy, grouped state sheet, and candidate palette audits pass under the 20-color budget (17/20, 17/20, 15/20 significant colors). Split frames, candidate verification, review/readability/runtime/animation/quality validators, evidence manifest, and mobile/desktop clean previews pass after documented alpha recovery cleared magenta fringe at tolerance 160. Visual review: the composed previews read as a compact youthful little-girl mushroom-elf Thalla with pale cap/robe, visible elf ears, tiny planted body, simple oval eyes, rounded cheeks, and restrained gold mycelium marks; it does not read as the old monk/beige mascot pawn/skull-mask style rejected in the queue. Candidate-only evidence, not human approval or app-facing promotion; accepted remains false and no app-facing PNGs were overwritten.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -641,12 +641,12 @@
       "sourceFrameIsolationCheck": "pass",
       "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest",
       "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json",
-      "candidateEvidenceSha256": "28d4dcae3b274b0394367336ce28f1ef49cc9be6f1c56ba064fbbcccd26b6612",
-      "candidateSha256": "fce7bff0f41b29c69132942e5c1cc5d5b4bf43c0a076741181b911977a2eefa6",
-      "referenceSha256": "080995b05ee13a800c432ab5fc1354b749a46dd9e4014619d9d0ed9af1d2ee57",
-      "rawSourceSha256": "aac982b3eee1769a7b78e42a96784f99d09ccfb33f0f7a7894f16518e5d40414",
-      "mobileScreenshotSha256": "2fda23c1f1b2c7c23c175b608b3c86e0f1e9855c4d8daf4d13ab3cbf49336b9b",
-      "desktopScreenshotSha256": "fbf1bc0ecf42b1949df1b7ca97c61b023f10eeabac6e02534b57fdc25f4075f0"
+      "candidateEvidenceSha256": "76294d5a7c8a1c32228189622d9926a27f4121d32d9eb354a1747e05fa1d21cb",
+      "candidateSha256": "6ae5e6f886c9e99f7a1ea6700eb035c87dffd479222cb55f713e019d0182d06a",
+      "referenceSha256": "553a2bb8888907ee25fd1f3dbd95f3fc30b95933af4d48a0613df4912d20aaa0",
+      "rawSourceSha256": "115f77467df49e07f8b2a7b4e2c2afa1222d59310e67a5dfc093d82aa7dc545d",
+      "mobileScreenshotSha256": "ec9a563e5c32e7cd33a49d961062bb1ff3c7651efdb53aa74ca14e7231d46f37",
+      "desktopScreenshotSha256": "c2b94fc61141ffe3d19131fb6f424de9c4d4735d25bd960af08476c0bb2a0d99"
     },
     {
       "id": "lomie",
