@@ -89,6 +89,9 @@ async function initSchema(sequelize) {
   await ensureColumnExists(sequelize, 'game_run_players', 'mushroom_id', 'TEXT');
   await ensureColumnExists(sequelize, 'player_season_progress', 'peak_points', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumnExists(sequelize, 'player_season_progress', 'peak_level_id', "TEXT NOT NULL DEFAULT 'bronze'");
+  await ensureColumnExists(sequelize, 'wallet_purchase_intents', 'checkout_status', 'TEXT');
+  await ensureColumnExists(sequelize, 'wallet_purchase_intents', 'checkout_claim_token', 'TEXT');
+  await ensureColumnExists(sequelize, 'wallet_purchase_intents', 'checkout_claimed_at', 'TEXT');
   await sequelize.query('DROP INDEX IF EXISTS idx_one_active_run_per_player');
   await backfillActiveRunMushrooms(sequelize);
   await sequelize.query(

@@ -52,6 +52,46 @@ async function withEnv(overrides, work) {
   }
 }
 
+async function insertPendingWalletIntent({
+  playerId,
+  provider = 'btcpay',
+  idempotencyKey,
+  checkoutStatus = null,
+  checkoutClaimToken = null,
+  checkoutClaimedAt = null,
+  metadata = {}
+}) {
+  const id = `wpintent_test_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  const baseMetadata = {
+    bundleId: 'coins_small',
+    checkoutProvider: provider,
+    paymentSurface: 'web',
+    ...metadata
+  };
+  await query(
+    `INSERT INTO wallet_purchase_intents
+     (id, player_id, provider, provider_invoice_id, currency_code, wallet_amount,
+      price_amount, price_currency, status, checkout_status, checkout_claim_token,
+      checkout_claimed_at, idempotency_key, metadata_json, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, 'soft_coin', 100, 100, 'USD', 'pending',
+      $5, $6, $7, $8, $9, $10, $10)`,
+    [
+      id,
+      playerId,
+      provider,
+      `invoice_${provider}_seed`,
+      checkoutStatus,
+      checkoutClaimToken,
+      checkoutClaimedAt,
+      idempotencyKey,
+      JSON.stringify(baseMetadata),
+      now
+    ]
+  );
+  return id;
+}
+
 test('[Req 4-Y, 9-A] run rewards grant profile wallet currency and keep players.spore mirrored', async () => {
   await freshDb();
   const { playerId, run } = await bootRun({ telegramId: 4001, mushroomId: 'thalla' });
@@ -207,6 +247,131 @@ test('[Req 4-Z] idempotent checkout retries reuse one provider invoice', async (
     assert.equal(first.providerInvoiceId, 'btcpay-retry-invoice');
     assert.equal(second.providerInvoiceId, 'btcpay-retry-invoice');
     assert.equal(second.checkout.checkoutUrl, 'https://btcpay.example/i/retry');
+  });
+});
+
+test('[Req 4-Z] checkout retries wait for an in-progress database checkout claim', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4021 });
+  const intentId = await insertPendingWalletIntent({
+    playerId: player.id,
+    provider: 'btcpay',
+    idempotencyKey: 'btcpay-db-claim',
+    checkoutStatus: 'creating',
+    checkoutClaimToken: 'other-process',
+    checkoutClaimedAt: new Date().toISOString()
+  });
+
+  await withEnv({
+    WALLET_CHECKOUT_WAIT_TIMEOUT_MS: '500',
+    WALLET_CHECKOUT_WAIT_INTERVAL_MS: '10'
+  }, async () => {
+    let calls = 0;
+    let finishClaimError = null;
+    const finishClaim = setTimeout(() => {
+      query(
+        `UPDATE wallet_purchase_intents
+         SET provider_invoice_id = 'btcpay-db-ready',
+             checkout_status = 'ready',
+             checkout_claim_token = NULL,
+             checkout_claimed_at = NULL,
+             metadata_json = $2,
+             updated_at = $3
+         WHERE id = $1`,
+        [
+          intentId,
+          JSON.stringify({
+            bundleId: 'coins_small',
+            checkoutProvider: 'btcpay',
+            paymentSurface: 'web',
+            checkout: {
+              type: 'crypto_invoice',
+              provider: 'btcpay',
+              providerInvoiceId: 'btcpay-db-ready',
+              checkoutUrl: 'https://btcpay.example/i/db-ready',
+              invoiceReady: true
+            }
+          }),
+          new Date().toISOString()
+        ]
+      ).catch((err) => {
+        finishClaimError = err;
+      });
+    }, 30);
+
+    try {
+      const intent = await createPurchaseIntent(player.id, {
+        bundleId: 'coins_small',
+        provider: 'btcpay',
+        surface: 'web',
+        idempotencyKey: 'btcpay-db-claim',
+        fetchImpl: async () => {
+          calls += 1;
+          throw new Error('provider should not be called while another checkout claim is active');
+        }
+      });
+
+      assert.equal(calls, 0);
+      assert.equal(intent.id, intentId);
+      assert.equal(intent.checkoutStatus, 'ready');
+      assert.equal(intent.providerInvoiceId, 'btcpay-db-ready');
+      assert.equal(intent.checkout.checkoutUrl, 'https://btcpay.example/i/db-ready');
+      assert.equal(finishClaimError, null);
+    } finally {
+      clearTimeout(finishClaim);
+    }
+  });
+});
+
+test('[Req 4-Z] stale checkout claims can be reclaimed without a new intent', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4022 });
+  const intentId = await insertPendingWalletIntent({
+    playerId: player.id,
+    provider: 'btcpay',
+    idempotencyKey: 'btcpay-stale-claim',
+    checkoutStatus: 'creating',
+    checkoutClaimToken: 'stale-process',
+    checkoutClaimedAt: '2000-01-01T00:00:00.000Z'
+  });
+
+  await withEnv({
+    BTCPAY_SERVER_URL: 'https://btcpay.example',
+    BTCPAY_STORE_ID: 'store-1',
+    BTCPAY_API_KEY: 'api-key'
+  }, async () => {
+    let calls = 0;
+    const intent = await createPurchaseIntent(player.id, {
+      bundleId: 'coins_small',
+      provider: 'btcpay',
+      surface: 'web',
+      idempotencyKey: 'btcpay-stale-claim',
+      fetchImpl: async () => {
+        calls += 1;
+        return {
+          ok: true,
+          async json() {
+            return { id: 'btcpay-reclaimed', checkoutLink: 'https://btcpay.example/i/reclaimed' };
+          }
+        };
+      }
+    });
+
+    assert.equal(calls, 1);
+    assert.equal(intent.id, intentId);
+    assert.equal(intent.checkoutStatus, 'ready');
+    assert.equal(intent.providerInvoiceId, 'btcpay-reclaimed');
+    assert.equal(intent.checkout.checkoutUrl, 'https://btcpay.example/i/reclaimed');
+
+    const stored = await query(
+      `SELECT checkout_status, checkout_claim_token, checkout_claimed_at
+       FROM wallet_purchase_intents
+       WHERE id = $1`,
+      [intentId]
+    );
+    assert.equal(stored.rows[0].checkout_status, 'ready');
+    assert.equal(stored.rows[0].checkout_claim_token, null);
+    assert.equal(stored.rows[0].checkout_claimed_at, null);
   });
 });
 

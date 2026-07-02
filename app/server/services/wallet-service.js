@@ -40,6 +40,9 @@ export const WALLET_PURCHASE_STATUSES = new Set([
 const walletMutationLocks = new Map();
 const purchaseIntentLocks = new Map();
 const checkoutLocks = new Map();
+const CHECKOUT_CLAIM_TTL_MS = 2 * 60 * 1000;
+const CHECKOUT_WAIT_TIMEOUT_MS = 2500;
+const CHECKOUT_WAIT_INTERVAL_MS = 25;
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -138,6 +141,25 @@ function metadataJson(metadata) {
   return JSON.stringify(metadata && typeof metadata === 'object' ? metadata : {});
 }
 
+function checkoutClaimTtlMs() {
+  const value = Number(process.env.WALLET_CHECKOUT_CLAIM_TTL_MS || CHECKOUT_CLAIM_TTL_MS);
+  return Number.isFinite(value) && value > 0 ? value : CHECKOUT_CLAIM_TTL_MS;
+}
+
+function checkoutWaitTimeoutMs() {
+  const value = Number(process.env.WALLET_CHECKOUT_WAIT_TIMEOUT_MS || CHECKOUT_WAIT_TIMEOUT_MS);
+  return Number.isFinite(value) && value >= 0 ? value : CHECKOUT_WAIT_TIMEOUT_MS;
+}
+
+function checkoutWaitIntervalMs() {
+  const value = Number(process.env.WALLET_CHECKOUT_WAIT_INTERVAL_MS || CHECKOUT_WAIT_INTERVAL_MS);
+  return Number.isFinite(value) && value > 0 ? value : CHECKOUT_WAIT_INTERVAL_MS;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function centsToDecimalUnits(amount) {
   return Number((Number(amount || 0) / 100).toFixed(2));
 }
@@ -232,6 +254,8 @@ function rowToPurchaseIntent(row) {
     priceAmount: Number(row.price_amount || 0),
     priceCurrency: row.price_currency,
     status: row.status,
+    checkoutStatus: row.checkout_status || null,
+    checkoutClaimedAt: row.checkout_claimed_at || null,
     idempotencyKey: row.idempotency_key || null,
     metadata: parseJson(row.metadata_json, {}),
     createdAt: row.created_at,
@@ -242,6 +266,120 @@ function rowToPurchaseIntent(row) {
     ...intent,
     checkout: checkoutDataForIntent(intent)
   };
+}
+
+function checkoutIsResolved(intent) {
+  return Boolean(intent.checkout?.invoiceReady || intent.checkout?.setupRequired);
+}
+
+async function getPurchaseIntentById(intentId) {
+  const result = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intentId]);
+  if (!result.rowCount) throw httpError('Unknown wallet purchase intent', 404);
+  return rowToPurchaseIntent(result.rows[0]);
+}
+
+async function waitForCheckoutResolution(intentId) {
+  const timeoutMs = checkoutWaitTimeoutMs();
+  const deadline = Date.now() + timeoutMs;
+  let latest = await getPurchaseIntentById(intentId);
+  while (latest.status === 'pending' && latest.checkoutStatus === 'creating' && !checkoutIsResolved(latest)) {
+    if (Date.now() >= deadline) return latest;
+    await sleep(Math.min(checkoutWaitIntervalMs(), Math.max(0, deadline - Date.now())));
+    latest = await getPurchaseIntentById(intentId);
+  }
+  return latest;
+}
+
+async function claimCheckoutCreation(intentId) {
+  const claimToken = createId('checkout_claim');
+  const now = nowIso();
+  const staleBefore = new Date(Date.now() - checkoutClaimTtlMs()).toISOString();
+  const claimed = await query(
+    `UPDATE wallet_purchase_intents
+     SET checkout_status = 'creating',
+         checkout_claim_token = $2,
+         checkout_claimed_at = $3,
+         updated_at = $3
+     WHERE id = $1
+       AND status = 'pending'
+       AND (
+         checkout_status IS NULL
+         OR checkout_status = ''
+         OR checkout_status = 'failed'
+         OR (
+           checkout_status = 'creating'
+           AND (checkout_claimed_at IS NULL OR checkout_claimed_at < $4)
+         )
+       )
+     RETURNING *`,
+    [intentId, claimToken, now, staleBefore]
+  );
+  if (!claimed.rowCount) return null;
+  return {
+    claimToken,
+    intent: rowToPurchaseIntent(claimed.rows[0])
+  };
+}
+
+async function markCheckoutClaimFailed(intent, claimToken, error) {
+  const failedAt = nowIso();
+  const nextMetadata = {
+    ...intent.metadata,
+    checkoutError: {
+      message: error?.message || 'Payment provider checkout creation failed',
+      failedAt
+    }
+  };
+  await query(
+    `UPDATE wallet_purchase_intents
+     SET checkout_status = 'failed',
+         checkout_claim_token = NULL,
+         checkout_claimed_at = NULL,
+         metadata_json = $3,
+         updated_at = $2
+     WHERE id = $1 AND checkout_claim_token = $4`,
+    [intent.id, failedAt, metadataJson(nextMetadata), claimToken]
+  );
+}
+
+async function storeProviderCheckout(intent, claimToken, checkout) {
+  const nextMetadata = {
+    ...intent.metadata,
+    checkout
+  };
+  const providerInvoiceId = checkout.providerInvoiceId || intent.providerInvoiceId;
+  const updatedAt = nowIso();
+  const updated = await query(
+    `UPDATE wallet_purchase_intents
+     SET provider_invoice_id = $2,
+         metadata_json = $3,
+         checkout_status = 'ready',
+         checkout_claim_token = NULL,
+         checkout_claimed_at = NULL,
+         updated_at = $4
+     WHERE id = $1 AND checkout_claim_token = $5
+     RETURNING *`,
+    [intent.id, providerInvoiceId, metadataJson(nextMetadata), updatedAt, claimToken]
+  );
+  if (updated.rowCount) return rowToPurchaseIntent(updated.rows[0]);
+  return getPurchaseIntentById(intent.id);
+}
+
+async function ensureProviderCheckout(intent, { fetchImpl = globalThis.fetch } = {}) {
+  let latestIntent = await getPurchaseIntentById(intent.id);
+  if (checkoutIsResolved(latestIntent) || latestIntent.status !== 'pending') return latestIntent;
+
+  const claim = await claimCheckoutCreation(latestIntent.id);
+  if (!claim) return waitForCheckoutResolution(latestIntent.id);
+
+  latestIntent = claim.intent;
+  try {
+    const checkout = await createProviderCheckout(latestIntent, { fetchImpl });
+    return await storeProviderCheckout(latestIntent, claim.claimToken, checkout);
+  } catch (err) {
+    await markCheckoutClaimFailed(latestIntent, claim.claimToken, err);
+    throw err;
+  }
 }
 
 async function ensureWalletBalanceRow(client, playerId, currencyCode = WALLET_CURRENCY_CODE) {
@@ -743,11 +881,12 @@ async function createPurchaseIntentUnlocked(playerId, {
       paymentSurface: normalizedSurface
     };
 
-    await client.query(
+    const inserted = await client.query(
       `INSERT INTO wallet_purchase_intents
        (id, player_id, provider, provider_invoice_id, currency_code, wallet_amount,
         price_amount, price_currency, status, idempotency_key, metadata_json, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $11)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $11)
+       ON CONFLICT DO NOTHING`,
       [
         id,
         playerId,
@@ -762,6 +901,18 @@ async function createPurchaseIntentUnlocked(playerId, {
         now
       ]
     );
+    if (!inserted.rowCount) {
+      const conflict = idempotencyKey
+        ? await client.query(
+          `SELECT * FROM wallet_purchase_intents
+           WHERE player_id = $1 AND provider = $2 AND idempotency_key = $3
+           LIMIT 1`,
+          [playerId, bundle.provider, idempotencyKey]
+        )
+        : await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [id]);
+      if (conflict.rowCount) return rowToPurchaseIntent(conflict.rows[0]);
+      throw httpError('Could not create wallet purchase intent', 409);
+    }
 
     const row = await client.query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [id]);
     return rowToPurchaseIntent(row.rows[0]);
@@ -770,28 +921,7 @@ async function createPurchaseIntentUnlocked(playerId, {
   if (intent.checkout?.invoiceReady || intent.checkout?.setupRequired) return intent;
 
   return withKeyedLock(checkoutLocks, `checkout:${intent.id}`, async () => {
-    const latest = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
-    if (!latest.rowCount) throw httpError('Unknown wallet purchase intent', 404);
-    const latestIntent = rowToPurchaseIntent(latest.rows[0]);
-    if (latestIntent.checkout?.invoiceReady || latestIntent.checkout?.setupRequired) return latestIntent;
-    if (latestIntent.status !== 'pending') return latestIntent;
-
-    const checkout = await createProviderCheckout(latestIntent, { fetchImpl });
-    const nextMetadata = {
-      ...latestIntent.metadata,
-      checkout
-    };
-    const providerInvoiceId = checkout.providerInvoiceId || latestIntent.providerInvoiceId;
-    await query(
-      `UPDATE wallet_purchase_intents
-       SET provider_invoice_id = $2,
-           metadata_json = $3,
-           updated_at = $4
-       WHERE id = $1 AND status = 'pending'`,
-      [latestIntent.id, providerInvoiceId, metadataJson(nextMetadata), nowIso()]
-    );
-    const updated = await query(`SELECT * FROM wallet_purchase_intents WHERE id = $1`, [latestIntent.id]);
-    return rowToPurchaseIntent(updated.rows[0]);
+    return ensureProviderCheckout(intent, { fetchImpl });
   });
 }
 

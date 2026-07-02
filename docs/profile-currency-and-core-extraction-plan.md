@@ -145,14 +145,16 @@ signature tests, Telegram Mini App vs web payment surfaces are encoded,
 selective gacha catalog policy is configurable, and the home screen has a
 wallet-buy entry point.
 
-Phase 7B closed the local paid-readiness gaps found on 2026-07-01: idempotent
-checkout retries reuse one external invoice in-process, crypto webhook
-completion validates normalized fiat amount/currency and can re-fetch BTCPay
-invoice details, terminal provider statuses are recorded without granting
-currency, unsigned payment webhooks fail closed outside `NODE_ENV=test` unless
-`PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV=true`, a wallet drift audit/backfill script
-exists, the home screen exposes server-provided wallet bundles/providers, and
-rollable portraits now call the gacha pack roll endpoint.
+Phase 7B closed the local paid-readiness gaps found on 2026-07-01 and the
+first distributed-checkout hardening gap on 2026-07-02: idempotent checkout
+retries reuse one external invoice through a DB-backed checkout claim, crypto
+webhook completion validates normalized fiat amount/currency and can re-fetch
+BTCPay invoice details, terminal provider statuses are recorded without
+granting currency, unsigned payment webhooks fail closed outside
+`NODE_ENV=test` unless `PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV=true`, a wallet drift
+audit/backfill script exists, the home screen exposes server-provided wallet
+bundles/providers, and rollable portraits now call the gacha pack roll
+endpoint.
 
 This is still not a paid production rollout. Remaining launch gates are:
 current payment-provider due diligence for fee/UX/content-policy fit, real
@@ -191,9 +193,11 @@ as evidence.
 - Provider-neutral purchase intents with `telegram_stars`, `btcpay`, and
   `nowpayments` adapters, surface policy (`WALLET_PAYMENT_SURFACES`), and
   idempotent completion keyed by `wallet_purchase:${id}`.
-- Idempotent purchase-intent checkout creation is guarded by in-process keyed
-  locks; retrying the same idempotency key reuses the same provider invoice
-  metadata instead of fanning out provider invoices in a single app process.
+- Idempotent purchase-intent checkout creation is guarded by an in-process key
+  lock plus DB-backed checkout claim fields on `wallet_purchase_intents`.
+  Retrying the same idempotency key reuses existing provider invoice metadata;
+  if another process is creating the checkout, the retry waits briefly for that
+  claim to finish instead of creating a second provider invoice.
 - Provider webhook signatures match the plan: BTCPay HMAC-SHA256 over the raw
   body; NOWPayments HMAC-SHA512 over key-sorted JSON
   (`nowPaymentsSignaturePayload` in `app/server/create-app.js`). Unsigned
@@ -240,11 +244,12 @@ as evidence.
    non-completed statuses are recorded before grant, but completed-payment
    refunds, chargebacks/disputes, provider reversals, and late crypto review do
    not yet claw back wallet currency or open support cases automatically.
-5. **The wallet mutation lock is process-local.** Atomic SQL debits protect the
-   balance row, and uniqueness constraints roll back duplicate active assets,
-   but multi-instance deployments still need database row locks/advisory locks
-   or conflict-aware retries for nicer direct-purchase/gacha behavior under
-   simultaneous requests.
+5. **Some wallet mutation locks are still process-local.** Atomic SQL debits
+   protect the balance row, uniqueness constraints roll back duplicate active
+   assets, and wallet checkout creation now has a DB-backed claim. Multi-instance
+   deployments still need database row locks/advisory locks or conflict-aware
+   retries for direct asset purchase and gacha behavior under simultaneous
+   requests.
 6. **The current gacha is intentionally MVP-only.** It is one-result-per-roll,
    static/env configured, no pity/guarantees, no duplicate inventory, no burn
    exchange, no marketplace, and no database-managed seasons/collections.
@@ -324,11 +329,12 @@ backlog until the items are split into tickets or implementation phases.
 
 ### 4. Distributed Concurrency, Security, And Abuse Controls
 
-- Replace process-local wallet/purchase/gacha mutation locks with database row
-  locks, advisory locks, or conflict-aware retries before running multiple app
-  instances that can process paid mutations.
-- Make checkout idempotency and provider invoice reuse resilient across process
-  restarts, not only concurrent retries inside one process.
+- Replace remaining process-local wallet/purchase/gacha mutation locks with
+  database row locks, advisory locks, or conflict-aware retries before running
+  multiple app instances that can process paid mutations.
+- Checkout idempotency and provider invoice reuse now have DB-backed claim
+  fields on `wallet_purchase_intents` as of 2026-07-02. Still validate this
+  behavior against the production database/provider mix before paid launch.
 - Add webhook replay protection, timestamp windows where providers support
   them, duplicate-event handling, structured payment logs, and secret rotation
   procedures.
@@ -1180,10 +1186,14 @@ or legal/support/compliance rollout work.
 
 ### Completed in code
 
-1. Checkout creation is retry-safe for in-process idempotent retries.
+1. Checkout creation is retry-safe for idempotent retries.
    - `createPurchaseIntent(...)` serializes same-player/provider/idempotency-key
-     checkout creation and reuses existing checkout metadata.
-   - Focused tests assert that concurrent retries create one provider invoice.
+     checkout creation in-process, stores checkout claim state on
+     `wallet_purchase_intents`, reclaims stale checkout claims, and reuses
+     existing checkout metadata.
+   - Focused tests assert that concurrent in-process retries create one
+     provider invoice, DB-observed in-progress claims wait for the winning
+     checkout, and stale claims can be reclaimed without creating a new intent.
 2. Provider callback amount/currency validation exists.
    - NOWPayments callback `price_amount` / `price_currency` are normalized
      before wallet grant.
@@ -1213,9 +1223,11 @@ or legal/support/compliance rollout work.
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
 - Set provider webhook secrets in every non-local environment.
-- Replace the process-local wallet mutation lock with database row/advisory
-  locks or conflict-aware retries before running multiple app instances that can
-  process paid wallet, direct asset purchase, or gacha requests concurrently.
+- Replace remaining process-local wallet mutation paths with database
+  row/advisory locks or conflict-aware retries before running multiple app
+  instances that can process paid direct asset purchase or gacha requests
+  concurrently. **Checkout creation is partially hardened 2026-07-02:** provider
+  invoice creation now uses DB-backed claim fields and stale-claim recovery.
 - Add final terms, refund/support contact, and payment-dispute copy reachable
   from the purchase UI. **Local support link plumbing is implemented
   2026-07-02:** `/api/app-config` exposes `paymentSupport`, the wallet popover
