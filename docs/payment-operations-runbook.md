@@ -63,3 +63,21 @@ JSON to manual actions whenever a settlement row is disputed.
 
 Keep provider raw exports according to the final data-retention policy. Do not
 store payment exports in the repository.
+
+## Scheduled Checks And Alerts
+
+Use the wallet ops check from cron or the production scheduler:
+
+```bash
+npm run game:wallet:ops-check -- --limit=100
+```
+
+The command runs wallet mirror drift and wallet-payment reconciliation checks in
+one report. If `WALLET_OPS_ALERT_WEBHOOK_URL` is configured, any non-clean
+report is posted to that webhook as JSON and the command exits with status `1`.
+Use `--alert-webhook-url=<url>` to override the environment value or
+`--no-alert` for local dry runs.
+
+The alert payload has `type: "wallet_ops_check_failed"`, a compact `summary`,
+and the full report. Production routing should send this to the support/ops
+channel that owns payment incidents.

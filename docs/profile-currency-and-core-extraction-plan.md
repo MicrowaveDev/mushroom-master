@@ -338,9 +338,14 @@ backlog until the items are split into tickets or implementation phases.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
-  grants, and processed webhook events. Still schedule these checks, add alert
-  routing, and import provider settlement exports/API data for true external
-  reconciliation.
+  grants, and processed webhook events. Use the ops-check command below for a
+  scheduler-ready aggregate report; real provider settlement exports/API data
+  still need live validation before true external reconciliation is complete.
+- A cron-friendly wallet ops check now exists as of 2026-07-02:
+  `npm run game:wallet:ops-check` runs wallet mirror drift and payment
+  reconciliation checks in one report and can post failed reports to
+  `WALLET_OPS_ALERT_WEBHOOK_URL`. Still wire this command into the production
+  scheduler and route the webhook to the final ops/support channel.
 - Normalized provider settlement import now exists as of 2026-07-02:
   `npm run game:wallet:import-settlement -- --provider=<provider> --file=<json>`
   stores imported settlement batches and compares provider rows to local
@@ -1338,6 +1343,14 @@ or legal/support/compliance rollout work.
      checked before provider invoice/payment references.
    - `docs/payment-operations-runbook.md` documents dry-run-first imports,
      provider field mapping, and support follow-up.
+18. Wallet ops scheduler hook and alert payload exist.
+   - `runWalletOpsChecks(...)` aggregates wallet mirror drift and
+     wallet-payment reconciliation into one report.
+   - `npm run game:wallet:ops-check` emits the report for cron/scheduler use
+     and posts non-clean reports to `WALLET_OPS_ALERT_WEBHOOK_URL` or
+     `--alert-webhook-url=<url>`.
+   - Tests cover clean no-alert behavior and failed reconciliation alert
+     payloads.
 
 ### Remaining launch gates
 
@@ -1391,8 +1404,7 @@ or legal/support/compliance rollout work.
   runbooks still need validation.
 - Add the actual admin/support UI on top of the token-gated JSON API before
   non-engineering support use, then add role-based operator authorization,
-  approval policy, scheduled reconciliation, alert routing, and provider
-  settlement import.
+  approval policy, and production scheduler/webhook routing.
 - Validate provider-specific settlement adapters and runbooks against real
   BTCPay, NOWPayments, and Telegram Stars sandbox/live exports/API payloads.
   Local adapters exist for common JSON/CSV shapes, but live examples and
