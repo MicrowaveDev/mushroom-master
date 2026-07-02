@@ -83,12 +83,25 @@ export const HomeScreen = {
         support.termsUrl ? { label: this.t.walletTerms, url: support.termsUrl } : null
       ].filter(Boolean);
     },
+    localizedName(value) {
+      if (value && typeof value === 'object') return value[this.state.lang] || value.en || Object.values(value)[0] || '';
+      return value || '';
+    },
     packName(pack) {
-      const name = pack?.name;
-      if (name && typeof name === 'object') return name[this.state.lang] || name.en || Object.values(name)[0] || pack.id;
-      return name || pack?.id || '';
+      return this.localizedName(pack?.name) || pack?.id || '';
+    },
+    rarityLabel(rarity) {
+      return this.t[`rarity_${rarity}`] || rarity || '';
     },
     rarityOddsText(pack) {
+      const summary = Array.isArray(pack?.raritySummary) && pack.raritySummary.length
+        ? pack.raritySummary
+        : null;
+      if (summary) {
+        return summary
+          .map((entry) => `${this.rarityLabel(entry.rarity)} ${Math.round(Number(entry.probability || 0) * 100)}%`)
+          .join(' · ');
+      }
       const items = Array.isArray(pack?.items) ? pack.items : [];
       const total = items.reduce((sum, item) => sum + Number(item.dropWeight || 0), 0);
       if (!total) return '';
@@ -99,14 +112,12 @@ export const HomeScreen = {
       }, {});
       return Object.entries(grouped)
         .sort((a, b) => b[1] - a[1])
-        .map(([rarity, weight]) => {
-          const label = this.t[`rarity_${rarity}`] || rarity;
-          return `${label} ${Math.round((weight / total) * 100)}%`;
-        })
+        .map(([rarity, weight]) => `${this.rarityLabel(rarity)} ${Math.round((weight / total) * 100)}%`)
         .join(' · ');
     },
     packIsActive(pack) {
       if (!pack) return false;
+      if (pack.availability) return pack.availability === 'active';
       if (pack.active === false || (pack.status && pack.status !== 'active')) return false;
       const now = Date.now();
       const startsAt = pack.startsAt ? new Date(pack.startsAt).getTime() : null;
@@ -117,6 +128,10 @@ export const HomeScreen = {
     },
     packAvailabilityLabel(pack) {
       if (this.packIsActive(pack)) return '';
+      if (pack?.availability === 'invalid') return this.t.portraitPackInvalid;
+      if (pack?.availability === 'disabled') return this.t.portraitPackUnavailable;
+      if (pack?.availability === 'future') return this.t.portraitPackFuture;
+      if (pack?.availability === 'expired') return this.t.portraitPackExpired;
       const now = Date.now();
       const startsAt = pack?.startsAt ? new Date(pack.startsAt).getTime() : null;
       const endsAt = pack?.endsAt ? new Date(pack.endsAt).getTime() : null;
@@ -125,6 +140,7 @@ export const HomeScreen = {
       return this.t.portraitPackUnavailable;
     },
     packOwnedCount(pack) {
+      if (Number.isFinite(Number(pack?.ownedCount))) return Number(pack.ownedCount);
       const owned = new Set();
       for (const progression of Object.values(this.state.bootstrap?.progression || {})) {
         for (const portrait of progression?.portraits || []) {
@@ -164,6 +180,9 @@ export const HomeScreen = {
       if (portrait.rollAvailable && portrait.packId) {
         this.$emit('roll-asset-pack', { packId: portrait.packId });
       }
+    },
+    assetRollResultName() {
+      return this.localizedName(this.state.assetRollResult?.assetName) || this.state.assetRollResult?.assetId || '';
     },
     focusMushroom(mushroom) {
       this.selectedMushroomId = mushroom.id;
@@ -288,6 +307,41 @@ export const HomeScreen = {
       if (!this.state.walletPurchaseStatus) return '';
       return this.t[`walletPayment_${this.state.walletPurchaseStatus}`] || '';
     },
+    assetRollFeedback() {
+      const status = this.state.assetRollStatus;
+      if (!status) return null;
+      if (status === 'rolling') {
+        return {
+          status,
+          title: this.t.portraitRollOpeningTitle,
+          text: this.t.portraitRollOpening
+        };
+      }
+      if (status === 'success' && this.state.assetRollResult) {
+        const rarity = this.rarityLabel(this.state.assetRollResult.rarity);
+        return {
+          status,
+          title: this.t.portraitRollResultTitle,
+          text: this.t.portraitRollResult
+            .replace('{asset}', this.assetRollResultName())
+            .replace('{rarity}', rarity)
+        };
+      }
+      const key = {
+        complete: 'portraitRollErrorComplete',
+        insufficient: 'portraitRollErrorInsufficient',
+        unavailable: 'portraitRollErrorUnavailable',
+        disabled: 'portraitRollErrorDisabled',
+        invalid: 'portraitRollErrorInvalid',
+        failed: 'portraitRollErrorFailed'
+      }[status];
+      if (!key) return null;
+      return {
+        status,
+        title: this.t.portraitRollProblemTitle,
+        text: this.t[key] || this.state.assetRollErrorMessage || ''
+      };
+    },
     rollPackSummaries() {
       if (!this.selectedMushroom) return [];
       const selectedAssetIds = new Set(this.selectedMushroom.portraits
@@ -305,17 +359,21 @@ export const HomeScreen = {
         .map((packId) => this.assetPacksById[packId])
         .filter(Boolean)
         .map((pack) => {
-          const total = pack.items?.length || 0;
+          const total = Number.isFinite(Number(pack.totalItems)) ? Number(pack.totalItems) : (pack.items?.length || 0);
           const owned = this.packOwnedCount(pack);
+          const left = Number.isFinite(Number(pack.remainingCount))
+            ? Number(pack.remainingCount)
+            : Math.max(0, total - owned);
           return {
             id: pack.id,
             name: this.packName(pack),
             total,
             owned,
-            left: Math.max(0, total - owned),
+            left,
             active: this.packIsActive(pack),
             availabilityLabel: this.packAvailabilityLabel(pack),
             price: pack.rollPriceAmount || 0,
+            complete: Boolean(pack.complete) || left <= 0,
             odds: this.rarityOddsText(pack)
           };
         });
@@ -584,10 +642,21 @@ export const HomeScreen = {
               <div v-for="pack in rollPackSummaries" :key="pack.id" class="home-pack-detail">
                 <strong>{{ pack.name }}</strong>
                 <span v-if="pack.availabilityLabel">{{ pack.availabilityLabel }}</span>
-                <span v-else-if="pack.left <= 0">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
+                <span v-else-if="pack.complete">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
                 <span v-else>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', pack.left).replace('{price}', pack.price) }}</span>
                 <span v-if="pack.active && pack.left > 0 && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
               </div>
+            </div>
+            <div
+              v-if="assetRollFeedback"
+              class="home-pack-roll-result"
+              :class="'home-pack-roll-result--' + assetRollFeedback.status"
+              data-testid="home-pack-roll-result"
+              role="status"
+              aria-live="polite"
+            >
+              <strong>{{ assetRollFeedback.title }}</strong>
+              <span>{{ assetRollFeedback.text }}</span>
             </div>
           </div>
         </div>

@@ -307,6 +307,13 @@ but it is now backlog unless a paid pilot is being prepared.
 
 #### G1 - Simple Seasonal Gacha Pack
 
+Status: **Implemented 2026-07-02 for the simple static-pack lane.** The audit
+found that the one-result unowned roll, wallet debit, direct-buy policy, pack
+odds endpoint, static Season 1 portrait pack, and first UI pack states already
+existed. The completion pass added pack authoring validation, player-aware pack
+summary projection, a frontend-renderable roll result payload, localized
+roll-result/error feedback, and screenshot-backed UI coverage.
+
 Goal: ship one static, season-aware pack loop that proves wallet spend, roll
 eligibility, rarity display, ownership, and UI feedback without creating a
 large economy system yet.
@@ -337,17 +344,26 @@ already exists, then fill only the gaps required for a polished simple pack.
 #### G1 Implementation Checklist
 
 1. Audit current MVP against G1: catalog fields, endpoint response shape, UI
-   copy, tests, and screenshots.
+   copy, tests, and screenshots. **Done 2026-07-02.**
 2. Define the first static season/collection/pack in one place with authoring
-   validation and stable test fixtures.
+   validation and stable test fixtures. **Done 2026-07-02:** invalid pack
+   authoring is surfaced in pack projection and blocks rolls without spending.
 3. Normalize rarity and season metadata in the backend catalog/pack projection.
+   **Done 2026-07-02:** bootstrap pack projection includes availability,
+   validation, total/owned/remaining counts, completion, total weight, per-item
+   probability, and rarity summary.
 4. Add a roll-result projection that the frontend can render without guessing
-   from refreshed ownership state.
+   from refreshed ownership state. **Done 2026-07-02.**
 5. Update the skin/customization UI so direct buy, roll, owned, complete,
-   future, and expired states are visually distinct.
+   future, and expired states are visually distinct. **Done 2026-07-02:** the
+   picker now also shows localized roll success and known failure feedback.
 6. Expand simulation/tests to cover the first real configured pack and expected
-   rarity distribution.
+   rarity distribution. **Done for G1 2026-07-02:** focused backend, view-model,
+   Playwright, and existing odds-simulation tests cover the simple one-result
+   pack. Multi-slot guarantee/pity simulation stays in G2/G3.
 7. Regenerate desktop/mobile screenshots and record layout sidecar assertions.
+   **Done 2026-07-02:** `02f-home-pack-states-{mobile,desktop}.png` now
+   captures the pack states with roll-result feedback and layout assertions.
 
 ### Paid/Ops Backlog - Moved Out Of Active Lane
 
@@ -2346,7 +2362,9 @@ Additional TODOs for that pass:
    real extraction or analytics blocker.
 30. Active next lane: G1 simple seasonal gacha pack. Keep it static-config,
    one-result, unowned-only, wallet-backed, rarity-aware, and screenshot/test
-   covered before expanding the economy.
+   covered before expanding the economy. **Done 2026-07-02 for the static
+   Season 1 portrait-pack lane; next gacha implementation work starts at G2
+   multi-item packs only if product wants to expand beyond the simple loop.**
 31. Paid/ops backlog moved out of active lane: current processor due diligence,
    real provider validation, final terms/refund/support UI,
    adult-content/compliance gates, tax/accounting/data-retention review,

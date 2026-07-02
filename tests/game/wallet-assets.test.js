@@ -27,10 +27,12 @@ import {
   validateTelegramPreCheckout
 } from '../../app/server/services/wallet-service.js';
 import {
+  getAssetPacksForPlayer,
   getPackOdds,
   portraitAssetId,
   purchaseAsset,
-  rollAssetPack
+  rollAssetPack,
+  validateAssetPack
 } from '../../app/server/services/asset-service.js';
 import { createPaymentSupportReply, handleTelegramWebhook } from '../../app/server/bot-gateway.js';
 import {
@@ -1128,12 +1130,30 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
 
     const odds = getPackOdds('season_1_portraits');
     assert.equal(odds.active, true);
+    assert.equal(odds.availability, 'active');
+    assert.equal(odds.validation.ok, true);
+    assert.equal(odds.totalItems, 1);
+    assert.equal(odds.remainingCount, 1);
+    assert.deepEqual(odds.raritySummary.map((entry) => ({
+      rarity: entry.rarity,
+      count: entry.count,
+      probability: entry.probability
+    })), [{ rarity: 'rare', count: 1, probability: 1 }]);
     assert.deepEqual(odds.items.map((item) => item.assetId), [portraitAssetId('thalla', '1')]);
 
     const first = await rollAssetPack(player.id, odds.id, { idempotencyKey: 'roll-1', rng: () => 0 });
+    assert.equal(first.rollResult.assetId, portraitAssetId('thalla', '1'));
+    assert.equal(first.rollResult.packId, odds.id);
+    assert.equal(first.rollResult.rarity, 'rare');
+    const shapedPacks = await getAssetPacksForPlayer(player.id);
+    const shapedPack = shapedPacks.find((pack) => pack.id === odds.id);
+    assert.equal(shapedPack.ownedCount, 1);
+    assert.equal(shapedPack.remainingCount, 0);
+    assert.equal(shapedPack.complete, true);
     const replay = await rollAssetPack(player.id, odds.id, { idempotencyKey: 'roll-1', rng: () => 0.99 });
     assert.equal(replay.alreadyProcessed, true, 'same roll idempotency key should replay the first roll');
     assert.deepEqual(replay.roll.resultAssetIds, first.roll.resultAssetIds);
+    assert.equal(replay.rollResult.assetId, first.rollResult.assetId);
 
     for (let i = 2; i <= odds.items.length; i += 1) {
       await rollAssetPack(player.id, odds.id, { idempotencyKey: `roll-${i}`, rng: () => 0 });
@@ -1145,6 +1165,56 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
     );
     const afterRejected = await getWalletState(player.id);
     assert.equal(afterRejected.balance, beforeRejected.balance, 'empty pack rejection must not spend wallet currency');
+  });
+});
+
+test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls without spending', async () => {
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'direct',
+    ASSET_CATALOG_POLICY_JSON: JSON.stringify({
+      [portraitAssetId('thalla', '1')]: { acquisitionMode: 'gacha' }
+    }),
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        rollSize: 2,
+        items: [
+          { assetId: portraitAssetId('thalla', '1'), rarity: 'common', dropWeight: 0 },
+          { assetId: portraitAssetId('thalla', '1'), rarity: 'secretish', dropWeight: 1 },
+          { assetId: 'portrait.missing.ghost', rarity: 'secret', dropWeight: 10 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4025 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'invalid-gacha-pack'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.active, false);
+    assert.equal(odds.availability, 'invalid');
+    assert.equal(odds.validation.ok, false);
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'roll_size_unsupported'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_asset_duplicate'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_rarity_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_weight_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_asset_unknown'));
+    assert.equal(validateAssetPack(odds).ok, false);
+
+    const before = await getWalletState(player.id);
+    await assert.rejects(
+      () => rollAssetPack(player.id, 'season_1_portraits', { idempotencyKey: 'invalid-roll', rng: () => 0 }),
+      (err) => err.statusCode === 400 && /configuration is invalid/i.test(err.message)
+    );
+    const after = await getWalletState(player.id);
+    assert.equal(after.balance, before.balance);
   });
 });
 

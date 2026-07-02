@@ -34,6 +34,16 @@ export function useCustomization(state, refreshBootstrap) {
     return 'failed';
   }
 
+  function statusFromAssetRollError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    if (message.includes('no unowned assets')) return 'complete';
+    if (message.includes('insufficient') || message.includes('not enough')) return 'insufficient';
+    if (message.includes('disabled')) return 'disabled';
+    if (message.includes('not active') || message.includes('inactive') || message.includes('expired')) return 'unavailable';
+    if (message.includes('configuration is invalid')) return 'invalid';
+    return 'failed';
+  }
+
   async function switchPortrait({ mushroomId, portraitId }) {
     try {
       const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
@@ -72,14 +82,28 @@ export function useCustomization(state, refreshBootstrap) {
   }
 
   async function rollAssetPack({ packId }) {
+    state.assetRollStatus = 'rolling';
+    state.assetRollResult = null;
+    state.assetRollErrorMessage = '';
     try {
       const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/roll`, {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('asset-roll') }
       }, state.sessionKey);
-      if (result?.roll) await refreshBootstrap();
+      if (result?.roll) {
+        state.assetRollResult = result.rollResult || null;
+        state.assetRollStatus = 'success';
+        await refreshBootstrap();
+      } else {
+        state.assetRollStatus = 'failed';
+        state.assetRollErrorMessage = 'Failed to roll pack';
+      }
     } catch (error) {
-      state.error = error.message || 'Failed to roll pack';
+      state.assetRollStatus = statusFromAssetRollError(error);
+      state.assetRollErrorMessage = error.message || 'Failed to roll pack';
+      if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
+        state.error = state.assetRollErrorMessage;
+      }
     }
   }
 

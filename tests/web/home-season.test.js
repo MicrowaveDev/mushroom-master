@@ -114,6 +114,15 @@ test('home skin picker summarizes roll pack availability and odds', () => {
           id: 'season_1_portraits',
           name: { en: 'Season 1 Portrait Pack' },
           rollPriceAmount: 500,
+          totalItems: 2,
+          ownedCount: 1,
+          remainingCount: 1,
+          complete: false,
+          availability: 'active',
+          raritySummary: [
+            { rarity: 'common', count: 1, dropWeight: 90, probability: 0.75 },
+            { rarity: 'rare', count: 1, dropWeight: 30, probability: 0.25 }
+          ],
           items: [
             { assetId: 'portrait.thalla.1', rarity: 'rare', dropWeight: 30 },
             { assetId: 'portrait.axilin.1', rarity: 'common', dropWeight: 90 }
@@ -155,6 +164,54 @@ test('home skin picker summarizes roll pack availability and odds', () => {
     active: true,
     availabilityLabel: '',
     price: 500,
+    complete: false,
     odds: 'Common 75% · Rare 25%'
   });
+});
+
+test('home skin picker describes gacha roll results and known failures', () => {
+  const baseState = {
+    lang: 'en',
+    leaderboard: [],
+    walletBundlesSurface: 'web',
+    bootstrap: {
+      player: { id: 'player_a' },
+      mushrooms: [
+        { id: 'thalla', name: { en: 'Thalla' }, imagePath: '/thalla.png', styleTag: 'control' }
+      ],
+      activeMushroomId: 'thalla',
+      assetPacks: [],
+      progression: {
+        thalla: {
+          portraits: [
+            { id: 'default', unlocked: true, owned: true, assetId: 'portrait.thalla.default', name: { en: 'Default' } }
+          ]
+        }
+      },
+      season: {}
+    }
+  };
+
+  const success = viewModel({
+    ...baseState,
+    assetRollStatus: 'success',
+    assetRollResult: {
+      assetName: { en: 'Mooncap' },
+      assetId: 'portrait.thalla.1',
+      rarity: 'rare'
+    }
+  });
+  assert.deepEqual(success.assetRollFeedback, {
+    status: 'success',
+    title: 'New skin unlocked',
+    text: 'Mooncap · Rare'
+  });
+
+  const complete = viewModel({
+    ...baseState,
+    assetRollStatus: 'complete',
+    assetRollErrorMessage: 'No unowned assets left in this pack'
+  });
+  assert.equal(complete.assetRollFeedback.title, 'Pack not opened');
+  assert.equal(complete.assetRollFeedback.text, 'Every skin in this pack is already owned.');
 });

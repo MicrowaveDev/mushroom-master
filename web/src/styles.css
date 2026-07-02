@@ -2139,6 +2139,34 @@ select {
   min-width: 0;
 }
 
+.home-pack-roll-result {
+  display: grid;
+  gap: 2px;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(126, 92, 54, 0.16);
+  color: rgba(47, 36, 25, 0.72);
+  font-size: 0.78em;
+  line-height: 1.35;
+}
+.home-pack-roll-result strong {
+  color: rgba(47, 36, 25, 0.88);
+}
+.home-pack-roll-result--success strong {
+  color: #4f7142;
+}
+.home-pack-roll-result--rolling strong {
+  color: #496c88;
+}
+.home-pack-roll-result--complete strong,
+.home-pack-roll-result--insufficient strong,
+.home-pack-roll-result--unavailable strong,
+.home-pack-roll-result--disabled strong,
+.home-pack-roll-result--invalid strong,
+.home-pack-roll-result--failed strong {
+  color: #8b5c38;
+}
+
 .home-preset-pills {
   display: flex;
   gap: 6px;

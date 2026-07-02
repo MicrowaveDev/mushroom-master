@@ -9,7 +9,7 @@ import {
   activeGachaPackIds,
   directBuyPolicy,
   getAssetCatalog,
-  getAssetPacks,
+  getAssetPacksForPlayer,
   isAssetGachaEnabled
 } from './asset-service.js';
 
@@ -113,7 +113,7 @@ export async function getBootstrap(playerId) {
     gameRunHistory: runHistory,
     homeField: getHomeFieldConfig(),
     assetCatalog: getAssetCatalog(),
-    assetPacks: getAssetPacks(),
+    assetPacks: await getAssetPacksForPlayer(playerId),
     assetAcquisition: {
       gachaEnabled: isAssetGachaEnabled(),
       directBuyPolicy: directBuyPolicy(),

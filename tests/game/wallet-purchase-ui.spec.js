@@ -325,15 +325,53 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
       body: JSON.stringify(json)
     });
   });
+  await page.route('**/api/assets/packs/season_1_portraits/roll', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          roll: {
+            id: 'roll-ui-1',
+            packId: 'season_1_portraits',
+            resultAssetIds: [rollPortrait.assetId],
+            selectedAssetId: rollPortrait.assetId,
+            resultInstanceId: 'asset-ui-1'
+          },
+          rollResult: {
+            rollId: 'roll-ui-1',
+            packId: 'season_1_portraits',
+            packName: 'Season 1 Portrait Pack',
+            assetId: rollPortrait.assetId,
+            assetName: rollPortrait.name,
+            assetPath: rollPortrait.path,
+            rarity: 'rare',
+            resultInstanceId: 'asset-ui-1'
+          },
+          alreadyProcessed: false
+        }
+      })
+    });
+  });
 
   await page.goto(`${baseURL}/home`);
   await page.waitForSelector('.home');
   await page.locator('.home-roster-change-skin').click();
-  await expect(page.locator(`.home-portrait-swatch--rollable[data-portrait-id="${rollPortrait.id}"]`)).toBeVisible();
+  const rollableSwatch = page.locator(`.home-portrait-swatch--rollable[data-portrait-id="${rollPortrait.id}"]`);
+  await expect(rollableSwatch).toBeVisible();
   await expect(page.locator(`.home-portrait-swatch--buyable[data-portrait-id="${directPortrait.id}"]`)).toBeVisible();
   await expect(page.locator('.home-pack-detail')).toContainText('Season 1 Portrait Pack');
   await expect(page.locator('.home-pack-detail')).toContainText('2 skins');
   await expect(page.locator('.home-pack-detail')).toContainText(/Odds:.*Common 70%.*Rare 30%/);
+  const rollResponsePromise = page.waitForResponse((response) =>
+    response.url().includes('/api/assets/packs/season_1_portraits/roll')
+  );
+  await rollableSwatch.click();
+  const rollResponse = await rollResponsePromise;
+  expect(rollResponse.status()).toBe(200);
+  await expect(page.getByTestId('home-pack-roll-result')).toContainText('New skin unlocked');
+  await expect(page.getByTestId('home-pack-roll-result')).toContainText('Rare');
 });
 
 test('[Req 14-F] skin picker shows complete, future, and expired pack states', async ({ page, request, baseURL }) => {

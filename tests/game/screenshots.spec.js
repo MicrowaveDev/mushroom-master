@@ -102,6 +102,9 @@ async function captureWalletSurface(page, name) {
 async function captureSkinPackSurface(page, name) {
   await expect(page.locator('.home-mushroom-picker')).toBeVisible();
   await expectStackedWithoutOverlap(page, '.home-portrait-swatches', '.home-pack-details', `skin pack ${name}`);
+  if (await page.getByTestId('home-pack-roll-result').count()) {
+    await expectStackedWithoutOverlap(page, '.home-pack-details', '[data-testid="home-pack-roll-result"]', `skin pack result ${name}`);
+  }
   await assertImagesLoaded(page);
   await assertNoHorizontalOverflow(page);
   await captureElementScreenshot(page, screenshotDir, '.home-mushroom-picker', name);
@@ -215,6 +218,35 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
       body: JSON.stringify(json)
     });
   });
+  await page.route('**/api/assets/packs/active_pack/roll', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          roll: {
+            id: 'roll-screenshot-1',
+            packId: 'active_pack',
+            resultAssetIds: [rollPortrait.assetId],
+            selectedAssetId: rollPortrait.assetId,
+            resultInstanceId: 'asset-screenshot-1'
+          },
+          rollResult: {
+            rollId: 'roll-screenshot-1',
+            packId: 'active_pack',
+            packName: 'Active Odds Pack',
+            assetId: rollPortrait.assetId,
+            assetName: rollPortrait.name,
+            assetPath: rollPortrait.path,
+            rarity: 'rare',
+            resultInstanceId: 'asset-screenshot-1'
+          },
+          alreadyProcessed: false
+        }
+      })
+    });
+  });
 
   for (const [viewport, suffix] of [
     [MOBILE_VIEWPORT, 'mobile'],
@@ -230,6 +262,12 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
     await expect(page.locator('.home-pack-detail', { hasText: 'Complete Pack' })).toContainText('All 1 skins owned.');
     await expect(page.locator('.home-pack-detail', { hasText: 'Future Pack' })).toContainText('Pack opens later.');
     await expect(page.locator('.home-pack-detail', { hasText: 'Expired Pack' })).toContainText('Pack ended.');
+    const rollResponsePromise = page.waitForResponse((response) =>
+      response.url().includes('/api/assets/packs/active_pack/roll')
+    );
+    await rollableSwatch.click();
+    await rollResponsePromise;
+    await expect(page.getByTestId('home-pack-roll-result')).toContainText('New skin unlocked');
     await captureSkinPackSurface(page, `02f-home-pack-states-${suffix}.png`);
   }
 });
