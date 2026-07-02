@@ -123,6 +123,16 @@ test('home skin picker summarizes roll pack availability and odds', () => {
             { rarity: 'common', count: 1, dropWeight: 90, probability: 0.75 },
             { rarity: 'rare', count: 1, dropWeight: 30, probability: 0.25 }
           ],
+          guarantees: {
+            rules: [
+              { id: 'one_rare_plus', minRarity: 'rare', count: 1 }
+            ]
+          },
+          pity: {
+            rules: [
+              { id: 'epic_pity', minRarity: 'epic', threshold: 5, remaining: 2, active: false }
+            ]
+          },
           items: [
             { assetId: 'portrait.thalla.1', rarity: 'rare', dropWeight: 30 },
             { assetId: 'portrait.axilin.1', rarity: 'common', dropWeight: 90 }
@@ -167,7 +177,9 @@ test('home skin picker summarizes roll pack availability and odds', () => {
     availabilityLabel: '',
     price: 500,
     complete: false,
-    odds: 'Common 75% · Rare 25%'
+    odds: 'Common 75% · Rare 25%',
+    guaranteeText: 'Guarantee: 1 Rare+',
+    pityText: 'Epic+ pity in 2 opens'
   });
 });
 

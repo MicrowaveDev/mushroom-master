@@ -173,6 +173,16 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
         rollPriceCurrencyCode: 'soft_coin',
         rollSize: 2,
         nextRollItemCount: 2,
+        guarantees: {
+          rules: [
+            { id: 'one_rare_plus', minRarity: 'rare', count: 1 }
+          ]
+        },
+        pity: {
+          rules: [
+            { id: 'epic_pity', minRarity: 'epic', threshold: 5, remaining: 3, active: false }
+          ]
+        },
         items: [
           { assetId: rollPortrait.assetId, rarity: 'rare', dropWeight: 30 },
           { assetId: ownedPortrait.assetId, rarity: 'common', dropWeight: 70 }
@@ -278,6 +288,8 @@ test('[Req 4-Z, 14-F] wallet and pack state screenshots have stable layout', asy
     const rollableSwatch = page.locator(`.home-portrait-swatch--rollable[data-portrait-id="${rollPortrait.id}"]`);
     await expect(rollableSwatch).toBeVisible();
     await expect(page.locator('.home-pack-detail', { hasText: 'Active Odds Pack' })).toContainText(/Odds:.*Common 70%.*Rare 30%/);
+    await expect(page.locator('.home-pack-detail', { hasText: 'Active Odds Pack' })).toContainText('Guarantee: 1 Rare+');
+    await expect(page.locator('.home-pack-detail', { hasText: 'Active Odds Pack' })).toContainText('Epic+ pity in 3 opens');
     await expect(page.locator('.home-pack-detail', { hasText: 'Complete Pack' })).toContainText('All 1 skins owned.');
     await expect(page.locator('.home-pack-detail', { hasText: 'Future Pack' })).toContainText('Pack opens later.');
     await expect(page.locator('.home-pack-detail', { hasText: 'Expired Pack' })).toContainText('Pack ended.');

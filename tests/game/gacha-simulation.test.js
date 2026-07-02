@@ -114,7 +114,7 @@ test('[Req 14-F] gacha odds simulation supports multi-slot pack openings', async
     assert.equal(result.rollSize, 2);
     assert.equal(result.averageItemsPerRoll, 2);
     assert.equal(result.guarantees.supported, false);
-    assert.equal(result.guarantees.note.includes('multi-slot'), true);
+    assert.equal(result.pity.supported, false);
 
     const commonItem = result.items.find((item) => item.assetId === common);
     const rareItem = result.items.find((item) => item.assetId === rare);
@@ -125,5 +125,44 @@ test('[Req 14-F] gacha odds simulation supports multi-slot pack openings', async
     assert.equal(rareItem.observedProbability, 1);
     assert.equal(result.raritySummary.find((row) => row.rarity === 'common').observedCount, 4);
     assert.equal(result.raritySummary.find((row) => row.rarity === 'rare').observedCount, 4);
+  });
+});
+
+test('[Req 14-F] gacha odds simulation applies configured guarantees', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const commonB = portraitAssetId('lomie', '1');
+  const rare = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        rollSize: 2,
+        slots: [
+          { rarityWeights: { common: 1 } },
+          { rarityWeights: { common: 1 } }
+        ],
+        guarantees: [
+          { id: 'one_rare_plus', minRarity: 'rare', count: 1 }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 },
+          { assetId: commonB, rarity: 'common', dropWeight: 1 },
+          { assetId: rare, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    const sequence = [0, 0, 0, 0, 0, 0];
+    let index = 0;
+    const result = simulateAssetPackOdds('season_1_portraits', {
+      trials: 3,
+      rng: () => sequence[index++ % sequence.length]
+    });
+
+    assert.equal(result.rollable, true);
+    assert.equal(result.guarantees.supported, true);
+    assert.equal(result.guarantees.configured[0].id, 'one_rare_plus');
+    assert.equal(result.items.find((item) => item.assetId === rare).observedCount, 3);
+    assert.equal(result.raritySummary.find((row) => row.rarity === 'rare').observedCount, 3);
+    assert.equal(result.items.find((item) => item.assetId === rare).expectedProbability, null);
   });
 });

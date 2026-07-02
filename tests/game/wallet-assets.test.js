@@ -1268,6 +1268,156 @@ test('[Req 14-F] multi-item gacha pack spends once and grants slot-weighted unow
   });
 });
 
+test('[Req 14-F] static gacha guarantees upgrade multi-item openings', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const commonB = portraitAssetId('lomie', '1');
+  const commonC = portraitAssetId('axilin', '1');
+  const rareA = portraitAssetId('thalla', '2');
+  const rareB = portraitAssetId('axilin', '2');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        rollSize: 3,
+        rarityTableVersion: 'test-guarantee:v1',
+        slots: [
+          { rarityWeights: { common: 1 } },
+          { rarityWeights: { common: 1 } },
+          { rarityWeights: { common: 1 } }
+        ],
+        guarantees: [
+          { id: 'two_rare_plus', minRarity: 'rare', count: 2 }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 },
+          { assetId: commonB, rarity: 'common', dropWeight: 1 },
+          { assetId: commonC, rarity: 'common', dropWeight: 1 },
+          { assetId: rareA, rarity: 'rare', dropWeight: 1 },
+          { assetId: rareB, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4027 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'guarantee-gacha'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+    assert.deepEqual(odds.guarantees.rules, [{
+      id: 'two_rare_plus',
+      type: 'min_rarity_count',
+      source: 'guarantee',
+      minRarity: 'rare',
+      count: 2,
+      label: null
+    }]);
+
+    const roll = await rollAssetPack(player.id, odds.id, {
+      idempotencyKey: 'guaranteed-roll',
+      rng: () => 0
+    });
+
+    assert.deepEqual(roll.roll.resultAssetIds, [rareA, rareB, commonC]);
+    assert.equal(roll.roll.guaranteeState.guaranteesApplied.length, 2);
+    assert.deepEqual(roll.roll.guaranteeState.guaranteesApplied.map((entry) => entry.source), ['guarantee', 'guarantee']);
+    assert.deepEqual(roll.roll.metadata.results.map((item) => item.guaranteeSource), ['guarantee', 'guarantee', null]);
+    assert.deepEqual(roll.roll.metadata.results.map((item) => item.guaranteeReplacedAssetId), [commonA, commonB, null]);
+    assert.deepEqual(roll.rollResult.guaranteesApplied.map((entry) => entry.selectedAssetId), [rareA, rareB]);
+    assert.equal((await getWalletState(player.id)).balance, 90);
+
+    const instanceRows = await query(
+      `SELECT asset_id, metadata_json
+       FROM player_asset_instances
+       WHERE player_id = $1 AND asset_id IN ($2, $3)
+       ORDER BY asset_id ASC`,
+      [player.id, rareA, rareB]
+    );
+    assert.equal(instanceRows.rowCount, 2);
+    assert.ok(instanceRows.rows.every((row) => JSON.parse(row.metadata_json).guaranteeSource === 'guarantee'));
+  });
+});
+
+test('[Req 14-F] pack-scoped pity guarantees the next eligible gacha opening', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const commonB = portraitAssetId('lomie', '1');
+  const rareA = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
+      season_1_portraits: {
+        rollSize: 1,
+        rarityTableVersion: 'test-pity:v1',
+        slots: [
+          { rarityWeights: { common: 1 } }
+        ],
+        pityRules: [
+          { id: 'rare_after_two_misses', minRarity: 'rare', threshold: 2, count: 1, resetScope: 'pack' }
+        ],
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 1 },
+          { assetId: commonB, rarity: 'common', dropWeight: 1 },
+          { assetId: rareA, rarity: 'rare', dropWeight: 1 }
+        ]
+      }
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4028 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'pity-gacha'
+    });
+
+    const odds = getPackOdds('season_1_portraits');
+    assert.equal(odds.validation.ok, true);
+    assert.equal(odds.pity.rules[0].remaining, 2);
+    assert.equal(odds.pity.rules[0].active, false);
+
+    const first = await rollAssetPack(player.id, odds.id, {
+      idempotencyKey: 'pity-roll-1',
+      rng: () => 0
+    });
+    assert.deepEqual(first.roll.resultAssetIds, [commonA]);
+    assert.equal(first.roll.guaranteeState.pityBefore[0].active, false);
+    assert.equal(first.roll.guaranteeState.pityAfter[0].remaining, 1);
+    assert.equal(first.roll.guaranteeState.pityAfter[0].active, true);
+
+    const afterMissPacks = await getAssetPacksForPlayer(player.id);
+    const afterMissPack = afterMissPacks.find((pack) => pack.id === odds.id);
+    assert.equal(afterMissPack.pity.rules[0].remaining, 1);
+    assert.equal(afterMissPack.pity.rules[0].active, true);
+
+    const second = await rollAssetPack(player.id, odds.id, {
+      idempotencyKey: 'pity-roll-2',
+      rng: () => 0
+    });
+    assert.deepEqual(second.roll.resultAssetIds, [rareA]);
+    assert.equal(second.roll.guaranteeState.guaranteesApplied[0].source, 'pity');
+    assert.equal(second.roll.guaranteeState.guaranteesApplied[0].replacedAssetId, commonB);
+    assert.equal(second.roll.guaranteeState.pityBefore[0].active, true);
+    assert.equal(second.roll.guaranteeState.pityAfter[0].currentMisses, 0);
+    assert.equal(second.rollResult.pityBefore[0].active, true);
+    assert.equal(second.rollResult.pityAfter[0].remaining, 2);
+    assert.equal((await getWalletState(player.id)).balance, 80);
+  });
+});
+
 test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls without spending', async () => {
   await withEnv({
     ASSET_GACHA_ENABLED: 'true',
@@ -1279,6 +1429,12 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     ASSET_GACHA_PACK_OVERRIDES_JSON: JSON.stringify({
       season_1_portraits: {
         rollSize: 11,
+        guarantees: [
+          { id: 'impossible_rare', minRarity: 'rare', count: 3 }
+        ],
+        pityRules: [
+          { id: 'invalid_pity', minRarity: 'rare', threshold: 0, count: 3, resetScope: 'season' }
+        ],
         items: [
           { assetId: portraitAssetId('thalla', '1'), rarity: 'common', dropWeight: 0 },
           { assetId: portraitAssetId('thalla', '1'), rarity: 'secretish', dropWeight: 1 },
@@ -1306,6 +1462,10 @@ test('[Req 14-F] invalid gacha pack authoring is visible and blocks rolls withou
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_rarity_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_weight_invalid'));
     assert.ok(odds.validation.errors.find((entry) => entry.code === 'item_asset_unknown'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'guarantee_impossible'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_threshold_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_scope_invalid'));
+    assert.ok(odds.validation.errors.find((entry) => entry.code === 'pity_impossible'));
     assert.equal(validateAssetPack(odds).ok, false);
 
     const before = await getWalletState(player.id);

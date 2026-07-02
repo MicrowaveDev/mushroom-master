@@ -312,6 +312,16 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
         rollPriceCurrencyCode: 'soft_coin',
         rollSize: 2,
         nextRollItemCount: 2,
+        guarantees: {
+          rules: [
+            { id: 'one_rare_plus', minRarity: 'rare', count: 1 }
+          ]
+        },
+        pity: {
+          rules: [
+            { id: 'epic_pity', minRarity: 'epic', threshold: 5, remaining: 1, active: true }
+          ]
+        },
         items: [
           { assetId: rollPortrait.assetId, rarity: 'rare', dropWeight: 30 },
           { assetId: directPortrait.assetId, rarity: 'common', dropWeight: 70 }
@@ -384,6 +394,8 @@ test('[Req 14-F] skin picker presents roll-only packs separately from direct-buy
   await expect(page.locator('.home-pack-detail')).toContainText('2 skins');
   await expect(page.locator('.home-pack-detail')).toContainText('opens 2');
   await expect(page.locator('.home-pack-detail')).toContainText(/Odds:.*Common 70%.*Rare 30%/);
+  await expect(page.locator('.home-pack-detail')).toContainText('Guarantee: 1 Rare+');
+  await expect(page.locator('.home-pack-detail')).toContainText('Epic+ guaranteed next open');
   const rollResponsePromise = page.waitForResponse((response) =>
     response.url().includes('/api/assets/packs/season_1_portraits/roll')
   );

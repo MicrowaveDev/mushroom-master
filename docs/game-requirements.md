@@ -388,9 +388,12 @@ Membership is not stored. It is derived from overlap between item cells and acti
   random unowned skins from a configured pack when env-gated gacha is enabled.
   Multi-item packs draw without replacement until duplicate inventory rules are
   defined; the response keeps the first result in legacy fields and exposes the
-  full opening in `rollResult.items[]`. Real-player ghost snapshots preserve the
-  equipped portrait id/path from the sampled player; synthetic bot ghosts use
-  the default portrait.
+  full opening in `rollResult.items[]`. Static pack config may define
+  per-opening min-rarity guarantees and pack-scoped pity rules; authoring
+  validation blocks impossible rules, pack projection exposes current pity state,
+  and roll evidence records any guarantee/pity replacement. Real-player ghost
+  snapshots preserve the equipped portrait id/path from the sampled player;
+  synthetic bot ghosts use the default portrait.
 
 - **14-G.** Each mushroom has exactly **3 starter preset variants** defined in `STARTER_PRESET_VARIANTS` (in `app/server/game-data.js`). The first is always `id: 'default'` with `requiredLevel: 0`. Variants are unlocked when `computeLevel(mycelium).level >= variant.requiredLevel`. All variants use two price-1 items so the total preset cost stays at 2, satisfying the `[Req 4-N]` budget ceiling. The active preset is stored in `player_mushrooms.active_preset` (default `'default'`). `startGameRun` reads the active preset and seeds its two items at `(0,0)` and `(1,0)` in round 1 instead of the character's signature default. If the stored preset id is unknown it falls back to `default` without error. `getPlayerState` returns `presets[]` per mushroom, each with an `unlocked` boolean and `activePreset`. `PUT /api/mushroom/:id/preset { presetId }` validates the level gate and persists the choice; it returns 403 if level is too low, 400 for an unknown preset id, and 404 for an unknown mushroom. Ghosts always receive the character's default preset regardless of player selection.
 

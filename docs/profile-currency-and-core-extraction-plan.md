@@ -256,9 +256,9 @@ as evidence.
    Multi-instance deployments still need production-database validation plus
    broader operations around refunds, reversals, and provider replay handling.
 6. **The current gacha is intentionally static-config only.** It now supports
-   one-result and multi-slot unowned openings, but still has no pity/guarantees,
-   no duplicate inventory, no burn exchange, no marketplace, and no
-   database-managed seasons/collections.
+   one-result and multi-slot unowned openings with static guarantees and
+   pack-scoped pity, but still has no duplicate inventory, no burn exchange, no
+   marketplace, and no database-managed seasons/collections.
 7. **Core extraction has started and should stay adapter-led.** The next step
    is choosing only small, evidence-backed clusters while keeping `spore`,
    Mushroom portraits, Telegram auth, Sequelize models, battle persistence, and
@@ -303,8 +303,9 @@ but it is now backlog unless a paid pilot is being prepared.
 - Keep Mushroom Battles direct skin buying available when gacha mode is off.
 - Keep the first gacha implementation intentionally small so it can ship and be
   tested without the full future NFT-set/season/marketplace economy.
-- Put complex seasonal packs, guarantees, duplicate burning, and player trading
-  into the gacha roadmap backlog instead of mixing them into the first pass.
+- Put complex seasonal packs, advanced pity scopes, duplicate burning, and player
+  trading into the gacha roadmap backlog instead of mixing them into the first
+  pass.
 
 #### G1 - Simple Seasonal Gacha Pack
 
@@ -504,10 +505,11 @@ implementation lane.
 
 ### 5. Gacha, Asset Economy, And Marketplace Roadmap Backlog
 
-G1 and G2 are now implemented for static-config packs. The current runtime keeps
-Mushroom's default Season 1 portrait pack as a one-result pack unless config
-opts into `rollSize`/slot rarity tables, but the backend, UI, support lookup,
-and simulator can handle multi-slot unowned openings. The items below are the
+G1, G2, and G3 are now implemented for static-config packs. The current runtime
+keeps Mushroom's default Season 1 portrait pack as a one-result pack unless
+config opts into `rollSize`/slot rarity tables, `guarantees`, or `pityRules`, but
+the backend, UI, support lookup, and simulator can handle multi-slot unowned
+openings with static guarantees and pack-scoped pity. The items below are the
 remaining roadmap beyond that static lane.
 
 #### G2 - Multi-Item Packs
@@ -529,20 +531,29 @@ packs.**
   pack detail copy; screenshot coverage captures the multi-result strip.
 - Done: `simulateAssetPackOdds` supports multi-slot openings and reports
   observed per-opening rates plus average item count per opening.
-- Deferred to G3/G4: guaranteed rare slots, pity counters, explicit duplicate
-  inventory, burn/exchange, and exact player-facing odds disclosures for
-  duplicate-enabled packs.
+- Deferred to G4+: explicit duplicate inventory, burn/exchange, and exact
+  player-facing odds disclosures for duplicate-enabled packs.
 
 #### G3 - Guarantees And Pity
 
-- Add per-pack guarantees such as "at least two rare-or-better cards."
-- Add pity counters for epic/legendary/secret rarity where product policy
-  requires them.
-- Define whether guarantees reset per pack, per season, or per collection.
-- Expose guarantee/pity state in the backend response and in the UI without
-  encouraging misleading odds interpretation.
-- Add deterministic authoring validation so bad packs cannot ship with
-  impossible guarantees or misleading odds.
+Status: **Implemented 2026-07-02 for static-config, unowned-only packs with
+pack-scoped pity.**
+
+- Done: packs can define `guarantees` / `guaranteeRules` with a min rarity and
+  count, such as "at least two rare-or-better cards."
+- Done: packs can define `pityRules` with min rarity, count, threshold, and
+  `resetScope: "pack"`; active pity temporarily behaves as a guarantee for the
+  next opening and resets after a qualifying hit.
+- Done: pack projection exposes normalized guarantee rules and player-specific
+  pity counters, including remaining openings and active state.
+- Done: roll evidence records `guaranteesApplied`, `pityBefore`, `pityAfter`,
+  and per-item replacement metadata in roll and acquired-instance metadata.
+- Done: Home pack details show compact guarantee and pity copy, including a
+  "guaranteed next open" state, and screenshot/UI coverage asserts the text.
+- Done: validation blocks invalid rarity/count/threshold/scope values and
+  impossible min-rarity rules before spending wallet currency.
+- Deferred to G5+: season-scoped or collection-scoped pity, admin-managed pity
+  policy, duplicate-enabled pity math, and fuller odds disclosure tooling.
 
 #### G4 - Duplicate Inventory And Burning
 
@@ -2393,7 +2404,7 @@ Additional TODOs for that pass:
    settlement imports, reconciliation/admin UI, stricter approval-policy UX,
    alert routing, periodic wallet drift monitoring, distributed mutation
    hardening, and live provider-status validation.
-33. Gacha roadmap backlog after G2: guarantees, pity rules, secret rarity
+33. Gacha roadmap backlog after G3: season/collection-scoped pity, secret rarity
    policy, duplicate inventory, burn/exchange, database/admin-managed seasons
    and collections, marketplace/trading, NFT-set policy decisions, and expanded
    disclosure/simulation work for duplicate-enabled packs.

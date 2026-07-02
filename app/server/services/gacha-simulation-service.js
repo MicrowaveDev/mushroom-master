@@ -52,6 +52,10 @@ function configuredGuarantees(pack) {
   return [];
 }
 
+function configuredPityRules(pack) {
+  return Array.isArray(pack.pityRules) ? pack.pityRules : [];
+}
+
 function summarizeRarities(items, trials) {
   const byRarity = new Map();
   for (const item of items) {
@@ -76,7 +80,8 @@ export function simulateAssetPackOdds(packId, {
   trials = 10_000,
   seed = null,
   rng = null,
-  ownedAssetIds = []
+  ownedAssetIds = [],
+  pityState = []
 } = {}) {
   const pack = getAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
@@ -111,6 +116,9 @@ export function simulateAssetPackOdds(packId, {
   }
 
   const candidates = resolveAssetPackRollCandidates(pack, { ownedAssetIds: owned });
+  const guaranteeRules = configuredGuarantees(pack);
+  const pityRules = configuredPityRules(pack);
+  const hasGuaranteedSelection = guaranteeRules.length > 0 || pityState.some((rule) => rule?.active);
   const totalWeight = candidates.reduce((sum, candidate) => sum + candidateWeight(candidate), 0);
   const zeroWeightAssetIds = candidates
     .filter((candidate) => candidateWeight(candidate) <= 0)
@@ -128,14 +136,14 @@ export function simulateAssetPackOdds(packId, {
     warnings.push(warning('no_unowned_candidates', 'No unowned assets are available for this pack.'));
   } else if (totalWeight <= 0) {
     warnings.push(warning('no_weighted_candidates', 'No unowned candidates have positive drop weight.'));
-  } else if (Number(pack.rollSize || 1) === 1) {
+  } else if (Number(pack.rollSize || 1) === 1 && !hasGuaranteedSelection) {
     for (let i = 0; i < trialCount; i += 1) {
       const selected = chooseWeightedAssetCandidate(candidates, random);
       counts.set(selected.assetId, (counts.get(selected.assetId) || 0) + 1);
     }
   } else {
     for (let i = 0; i < trialCount; i += 1) {
-      const selectedItems = selectAssetPackRollResults(candidates, pack, { rng: random });
+      const selectedItems = selectAssetPackRollResults(candidates, pack, { rng: random, pityState });
       for (const selected of selectedItems) {
         counts.set(selected.assetId, (counts.get(selected.assetId) || 0) + 1);
       }
@@ -147,7 +155,7 @@ export function simulateAssetPackOdds(packId, {
   const items = candidates.map((candidate) => {
     const weight = candidateWeight(candidate);
     const observedCount = counts.get(candidate.assetId) || 0;
-    const expectedProbability = Number(pack.rollSize || 1) === 1 && totalWeight > 0 ? weight / totalWeight : null;
+    const expectedProbability = !hasGuaranteedSelection && Number(pack.rollSize || 1) === 1 && totalWeight > 0 ? weight / totalWeight : null;
     const observedProbability = observedCount / trialCount;
     return {
       assetId: candidate.assetId,
@@ -187,9 +195,19 @@ export function simulateAssetPackOdds(packId, {
     totalWeight,
     rollable: candidates.length > 0 && totalWeight > 0,
     guarantees: {
-      supported: false,
-      configured: configuredGuarantees(pack),
-      note: 'The current runtime supports unowned multi-slot openings; guarantee and pity simulation remains future work.'
+      supported: guaranteeRules.length > 0,
+      configured: guaranteeRules,
+      note: guaranteeRules.length
+        ? 'Configured guarantees are applied after the weighted slot draw and before duplicate inventory exists.'
+        : 'No per-opening guarantees are configured for this pack.'
+    },
+    pity: {
+      supported: pityRules.length > 0,
+      configured: pityRules,
+      simulatedState: pityState,
+      note: pityRules.length
+        ? 'Pack-scoped pity is runtime state from previous rolls; pass pityState to simulate an active counter.'
+        : 'No pity rules are configured for this pack.'
     },
     warnings,
     raritySummary: summarizeRarities(items, trialCount),

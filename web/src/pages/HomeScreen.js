@@ -115,6 +115,27 @@ export const HomeScreen = {
         .map(([rarity, weight]) => `${this.rarityLabel(rarity)} ${Math.round((weight / total) * 100)}%`)
         .join(' · ');
     },
+    packGuaranteeText(pack) {
+      const rules = Array.isArray(pack?.guarantees?.rules) ? pack.guarantees.rules : [];
+      return rules
+        .filter((rule) => Number(rule.count || 0) > 0 && rule.minRarity)
+        .map((rule) => this.t.portraitPackGuarantee
+          .replace('{count}', rule.count)
+          .replace('{rarity}', this.rarityLabel(rule.minRarity)))
+        .join(' · ');
+    },
+    packPityText(pack) {
+      const rules = Array.isArray(pack?.pity?.rules) ? pack.pity.rules : [];
+      return rules
+        .filter((rule) => Number(rule.threshold || 0) > 0 && rule.minRarity)
+        .map((rule) => {
+          const key = rule.active ? 'portraitPackPityReady' : 'portraitPackPity';
+          return this.t[key]
+            .replace('{rarity}', this.rarityLabel(rule.minRarity))
+            .replace('{count}', rule.remaining || rule.threshold);
+        })
+        .join(' · ');
+    },
     packIsActive(pack) {
       if (!pack) return false;
       if (pack.availability) return pack.availability === 'active';
@@ -405,7 +426,9 @@ export const HomeScreen = {
             availabilityLabel: this.packAvailabilityLabel(pack),
             price: pack.rollPriceAmount || 0,
             complete: Boolean(pack.complete) || left <= 0,
-            odds: this.rarityOddsText(pack)
+            odds: this.rarityOddsText(pack),
+            guaranteeText: this.packGuaranteeText(pack),
+            pityText: this.packPityText(pack)
           };
         });
     },
@@ -677,6 +700,8 @@ export const HomeScreen = {
                 <span v-else-if="pack.rollSize > 1">{{ t.portraitPackDetailsMulti.replace('{count}', pack.total).replace('{left}', pack.left).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
                 <span v-else>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', pack.left).replace('{price}', pack.price) }}</span>
                 <span v-if="pack.active && pack.left > 0 && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
+                <span v-if="pack.active && pack.left > 0 && pack.guaranteeText">{{ pack.guaranteeText }}</span>
+                <span v-if="pack.active && pack.left > 0 && pack.pityText">{{ pack.pityText }}</span>
               </div>
             </div>
             <div

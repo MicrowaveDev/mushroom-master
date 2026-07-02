@@ -17,6 +17,9 @@ const VALID_ASSET_RARITIES = new Set(['common', 'rare', 'epic', 'legendary', 'se
 const VALID_PACK_STATUSES = new Set(['active', 'future', 'expired', 'disabled']);
 const MIN_ASSET_PACK_ROLL_SIZE = 1;
 const MAX_ASSET_PACK_ROLL_SIZE = 10;
+const ASSET_RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'secret'];
+const ASSET_RARITY_RANK = new Map(ASSET_RARITY_ORDER.map((rarity, index) => [rarity, index]));
+const SUPPORTED_PITY_RESET_SCOPES = new Set(['pack']);
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -147,6 +150,14 @@ function assetPackRollSize(pack) {
   return Number.isInteger(rollSize) ? rollSize : Number.NaN;
 }
 
+function rarityRank(rarity) {
+  return ASSET_RARITY_RANK.get(String(rarity || 'common')) ?? 0;
+}
+
+function rarityAtLeast(rarity, minRarity) {
+  return rarityRank(rarity) >= rarityRank(minRarity);
+}
+
 function rarityWeightEntries(rarityWeights) {
   if (!rarityWeights || typeof rarityWeights !== 'object' || Array.isArray(rarityWeights)) return [];
   return Object.entries(rarityWeights)
@@ -160,6 +171,53 @@ function defaultRarityWeightsForItems(items = []) {
     weights[rarity] = (weights[rarity] || 0) + Math.max(0, Number(item.dropWeight || 0));
     return weights;
   }, {});
+}
+
+function rawGuaranteeRules(pack) {
+  if (Array.isArray(pack?.guarantees)) return pack.guarantees;
+  if (Array.isArray(pack?.guaranteeRules)) return pack.guaranteeRules;
+  return [];
+}
+
+function normalizedGuaranteeRules(pack) {
+  return rawGuaranteeRules(pack).map((rule, index) => {
+    const minRarity = String(rule?.minRarity || rule?.rarity || 'rare');
+    const count = Number(rule?.count || 1);
+    return {
+      id: String(rule?.id || `guarantee_${index + 1}_${minRarity}_plus`),
+      type: 'min_rarity_count',
+      source: 'guarantee',
+      minRarity,
+      count: Number.isInteger(count) ? count : Number.NaN,
+      label: rule?.label || null
+    };
+  });
+}
+
+function rawPityRules(pack) {
+  return Array.isArray(pack?.pityRules) ? pack.pityRules : [];
+}
+
+function normalizedPityRules(pack) {
+  return rawPityRules(pack).map((rule, index) => {
+    const minRarity = String(rule?.minRarity || rule?.rarity || 'epic');
+    const threshold = Number(rule?.threshold || rule?.opens || 0);
+    const count = Number(rule?.count || 1);
+    return {
+      id: String(rule?.id || `pity_${index + 1}_${minRarity}_plus`),
+      type: 'min_rarity_pity',
+      source: 'pity',
+      minRarity,
+      threshold: Number.isInteger(threshold) ? threshold : Number.NaN,
+      count: Number.isInteger(count) ? count : Number.NaN,
+      resetScope: rule?.resetScope || 'pack',
+      label: rule?.label || null
+    };
+  });
+}
+
+function guaranteeRuleEligibleCount(pack, minRarity) {
+  return (pack?.items || []).filter((item) => rarityAtLeast(item.rarity, minRarity)).length;
 }
 
 function normalizedPackSlots(pack) {
@@ -285,6 +343,49 @@ export function validateAssetPack(pack, {
       }
     }
   }
+  if (pack.guarantees !== undefined && !Array.isArray(pack.guarantees)) {
+    errors.push(packValidationIssue('guarantees_invalid', `Asset pack ${pack.id || '(unknown)'} guarantees must be an array.`));
+  }
+  if (pack.guaranteeRules !== undefined && !Array.isArray(pack.guaranteeRules)) {
+    errors.push(packValidationIssue('guarantee_rules_invalid', `Asset pack ${pack.id || '(unknown)'} guaranteeRules must be an array.`));
+  }
+  for (const [index, rule] of normalizedGuaranteeRules(pack).entries()) {
+    if (!VALID_ASSET_RARITIES.has(rule.minRarity)) {
+      errors.push(packValidationIssue('guarantee_rarity_invalid', `Asset pack ${pack.id || '(unknown)'} guarantee has invalid minRarity.`, index));
+    }
+    if (!Number.isInteger(rule.count) || rule.count <= 0) {
+      errors.push(packValidationIssue('guarantee_count_invalid', `Asset pack ${pack.id || '(unknown)'} guarantee needs a positive count.`, index));
+    }
+    if (Number.isInteger(rule.count) && Number.isInteger(rollSize) && rule.count > rollSize) {
+      errors.push(packValidationIssue('guarantee_count_exceeds_roll_size', `Asset pack ${pack.id || '(unknown)'} guarantee count exceeds rollSize.`, index));
+    }
+    if (VALID_ASSET_RARITIES.has(rule.minRarity) && Number.isInteger(rule.count) && guaranteeRuleEligibleCount(pack, rule.minRarity) < rule.count) {
+      errors.push(packValidationIssue('guarantee_impossible', `Asset pack ${pack.id || '(unknown)'} does not contain enough ${rule.minRarity}+ items for its guarantee.`, index));
+    }
+  }
+  if (pack.pityRules !== undefined && !Array.isArray(pack.pityRules)) {
+    errors.push(packValidationIssue('pity_rules_invalid', `Asset pack ${pack.id || '(unknown)'} pityRules must be an array.`));
+  }
+  for (const [index, rule] of normalizedPityRules(pack).entries()) {
+    if (!VALID_ASSET_RARITIES.has(rule.minRarity)) {
+      errors.push(packValidationIssue('pity_rarity_invalid', `Asset pack ${pack.id || '(unknown)'} pity rule has invalid minRarity.`, index));
+    }
+    if (!Number.isInteger(rule.threshold) || rule.threshold <= 0) {
+      errors.push(packValidationIssue('pity_threshold_invalid', `Asset pack ${pack.id || '(unknown)'} pity rule needs a positive threshold.`, index));
+    }
+    if (!Number.isInteger(rule.count) || rule.count <= 0) {
+      errors.push(packValidationIssue('pity_count_invalid', `Asset pack ${pack.id || '(unknown)'} pity rule needs a positive count.`, index));
+    }
+    if (!SUPPORTED_PITY_RESET_SCOPES.has(rule.resetScope)) {
+      errors.push(packValidationIssue('pity_scope_invalid', `Asset pack ${pack.id || '(unknown)'} only supports pack-scoped pity in static config.`, index));
+    }
+    if (Number.isInteger(rule.count) && Number.isInteger(rollSize) && rule.count > rollSize) {
+      errors.push(packValidationIssue('pity_count_exceeds_roll_size', `Asset pack ${pack.id || '(unknown)'} pity count exceeds rollSize.`, index));
+    }
+    if (VALID_ASSET_RARITIES.has(rule.minRarity) && Number.isInteger(rule.count) && guaranteeRuleEligibleCount(pack, rule.minRarity) < rule.count) {
+      errors.push(packValidationIssue('pity_impossible', `Asset pack ${pack.id || '(unknown)'} does not contain enough ${rule.minRarity}+ items for its pity rule.`, index));
+    }
+  }
   return {
     ok: errors.length === 0,
     errors,
@@ -351,10 +452,79 @@ function summarizeSlotRarities(pack, items) {
     .sort((a, b) => b.expectedPerOpen - a.expectedPerOpen || a.rarity.localeCompare(b.rarity));
 }
 
+function assetRarityForPack(pack, assetId, metadataItem = null) {
+  if (metadataItem?.rarity) return metadataItem.rarity;
+  const packItem = (pack?.items || []).find((item) => item.assetId === assetId);
+  if (packItem?.rarity) return packItem.rarity;
+  return getAssetById(assetId)?.rarity || 'common';
+}
+
+function rowResultAssetIds(row) {
+  if (Array.isArray(row?.resultAssetIds)) return row.resultAssetIds;
+  return parseJson(row?.result_asset_ids_json, []);
+}
+
+function rowMetadata(row) {
+  if (row?.metadata && typeof row.metadata === 'object') return row.metadata;
+  return parseJson(row?.metadata_json, {});
+}
+
+function rollHasMinimumRarity(pack, row, minRarity, count = 1) {
+  const metadata = rowMetadata(row);
+  const metadataItems = Array.isArray(metadata.results) ? metadata.results : [];
+  const matches = rowResultAssetIds(row).filter((assetId, index) => {
+    const metadataItem = metadataItems.find((entry) => entry.assetId === assetId) || metadataItems[index] || null;
+    return rarityAtLeast(assetRarityForPack(pack, assetId, metadataItem), minRarity);
+  });
+  return matches.length >= count;
+}
+
+function sortedRollHistory(rolls = []) {
+  return [...rolls].sort((a, b) => {
+    const aTime = new Date(a.created_at || a.createdAt || 0).getTime();
+    const bTime = new Date(b.created_at || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+export function computePackPityState(pack, {
+  rolls = []
+} = {}) {
+  const history = sortedRollHistory(rolls);
+  return normalizedPityRules(pack).map((rule) => {
+    let currentMisses = 0;
+    for (const roll of history) {
+      if (rollHasMinimumRarity(pack, roll, rule.minRarity, rule.count)) break;
+      currentMisses += 1;
+    }
+    const remaining = Math.max(1, rule.threshold - currentMisses);
+    return {
+      ...rule,
+      currentMisses,
+      remaining,
+      active: remaining <= 1
+    };
+  });
+}
+
+function advancePackPityState(pityBefore, selectedItems) {
+  return (pityBefore || []).map((rule) => {
+    const hitCount = selectedItems.filter((item) => rarityAtLeast(item.rarity, rule.minRarity)).length;
+    const currentMisses = hitCount >= rule.count ? 0 : rule.currentMisses + 1;
+    return {
+      ...rule,
+      currentMisses,
+      remaining: Math.max(1, rule.threshold - currentMisses),
+      active: Math.max(1, rule.threshold - currentMisses) <= 1
+    };
+  });
+}
+
 export function shapeAssetPack(pack, {
   ownedAssetIds = [],
   includeAssets = false,
-  now = new Date()
+  now = new Date(),
+  rollHistory = []
 } = {}) {
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
   const validation = validateAssetPack(pack);
@@ -387,6 +557,13 @@ export function shapeAssetPack(pack, {
     complete: items.length > 0 && ownedCount >= items.length,
     totalWeight,
     raritySummary,
+    guarantees: {
+      rules: normalizedGuaranteeRules(pack)
+    },
+    pity: {
+      resetScope: 'pack',
+      rules: computePackPityState(pack, { rolls: rollHistory })
+    },
     items
   };
 }
@@ -430,13 +607,25 @@ export function getAssetPack(packId) {
 }
 
 export async function getAssetPacksForPlayer(playerId) {
-  const ownedRows = await query(
-    `SELECT asset_id FROM player_asset_instances
-     WHERE player_id = $1 AND status = 'active'`,
-    [playerId]
-  );
+  const [ownedRows, rollRows] = await Promise.all([
+    query(
+      `SELECT asset_id FROM player_asset_instances
+       WHERE player_id = $1 AND status = 'active'`,
+      [playerId]
+    ),
+    query(
+      `SELECT * FROM asset_rolls
+       WHERE player_id = $1
+       ORDER BY created_at DESC
+       LIMIT 500`,
+      [playerId]
+    )
+  ]);
   const ownedAssetIds = new Set(ownedRows.rows.map((row) => row.asset_id));
-  return getAssetPacks().map((pack) => shapeAssetPack(pack, { ownedAssetIds }));
+  return getAssetPacks().map((pack) => shapeAssetPack(pack, {
+    ownedAssetIds,
+    rollHistory: rollRows.rows.filter((row) => row.pack_id === pack.id)
+  }));
 }
 
 function packIsActive(pack, now = new Date()) {
@@ -766,8 +955,89 @@ function chooseWeightedRarity(rarityWeights, candidates, rng) {
   return entries[entries.length - 1]?.[0] || null;
 }
 
+function activeRollGuaranteeRules(pack, pityState = []) {
+  const activePityRules = (pityState || [])
+    .filter((rule) => rule.active)
+    .map((rule) => ({
+      id: rule.id,
+      type: 'min_rarity_count',
+      source: 'pity',
+      minRarity: rule.minRarity,
+      count: rule.count,
+      label: rule.label || null
+    }));
+  return [
+    ...normalizedGuaranteeRules(pack),
+    ...activePityRules
+  ];
+}
+
+function lowestReplaceableSelectionIndex(selected, minRarity) {
+  let replaceIndex = -1;
+  let lowestRank = Number.POSITIVE_INFINITY;
+  for (const [index, item] of selected.entries()) {
+    const rank = rarityRank(item.rarity);
+    if (rank < rarityRank(minRarity) && rank < lowestRank) {
+      lowestRank = rank;
+      replaceIndex = index;
+    }
+  }
+  return replaceIndex;
+}
+
+function applyGuaranteeRules(selectedItems, candidates, rules, rng) {
+  const selected = selectedItems.map((item) => ({ ...item }));
+  const applications = [];
+  for (const rule of rules) {
+    let matchingCount = selected.filter((item) => rarityAtLeast(item.rarity, rule.minRarity)).length;
+    const maxEligibleCount = candidates.filter((candidate) => rarityAtLeast(candidate.rarity, rule.minRarity)).length;
+    const targetCount = Math.min(rule.count, maxEligibleCount, selected.length);
+    while (matchingCount < targetCount) {
+      const selectedAssetIds = new Set(selected.map((item) => item.assetId));
+      const eligibleCandidates = candidates.filter((candidate) =>
+        !selectedAssetIds.has(candidate.assetId) && rarityAtLeast(candidate.rarity, rule.minRarity)
+      );
+      if (!eligibleCandidates.length) break;
+      const replaceIndex = lowestReplaceableSelectionIndex(selected, rule.minRarity);
+      if (replaceIndex < 0) break;
+      const replaced = selected[replaceIndex];
+      const selectedCandidate = chooseWeightedAssetCandidate(eligibleCandidates, rng);
+      selected[replaceIndex] = {
+        ...selectedCandidate,
+        slotIndex: replaced.slotIndex,
+        selectedRarity: selectedCandidate.rarity || rule.minRarity,
+        asset: selectedCandidate.asset,
+        guaranteeId: rule.id,
+        guaranteeSource: rule.source,
+        guaranteeMinRarity: rule.minRarity,
+        guaranteeReplacedAssetId: replaced.assetId,
+        slotRarityWeights: replaced.slotRarityWeights,
+        candidatePoolHash: hashCandidatePool(candidates)
+      };
+      applications.push({
+        id: rule.id,
+        source: rule.source,
+        minRarity: rule.minRarity,
+        count: rule.count,
+        slotIndex: replaced.slotIndex,
+        replacedAssetId: replaced.assetId,
+        selectedAssetId: selectedCandidate.assetId
+      });
+      matchingCount += 1;
+    }
+  }
+  selected.sort((a, b) => a.slotIndex - b.slotIndex);
+  Object.defineProperty(selected, 'guaranteeApplications', {
+    enumerable: false,
+    configurable: true,
+    value: applications
+  });
+  return selected;
+}
+
 export function selectAssetPackRollResults(candidates, pack, {
-  rng = secureRandomUnit
+  rng = secureRandomUnit,
+  pityState = []
 } = {}) {
   const rollSize = assetPackRollSize(pack);
   if (!Number.isInteger(rollSize) || rollSize < MIN_ASSET_PACK_ROLL_SIZE || rollSize > MAX_ASSET_PACK_ROLL_SIZE) {
@@ -796,7 +1066,7 @@ export function selectAssetPackRollResults(candidates, pack, {
     const selectedIndex = remaining.findIndex((candidate) => candidate.assetId === selectedItem.assetId);
     if (selectedIndex >= 0) remaining.splice(selectedIndex, 1);
   }
-  return selected;
+  return applyGuaranteeRules(selected, candidates, activeRollGuaranteeRules(pack, pityState), rng);
 }
 
 export function resolveAssetPackRollCandidates(pack, {
@@ -876,6 +1146,11 @@ function shapeAssetRollResult(roll, {
     rarity: firstItem?.rarity || rarity || selectedAsset?.rarity || null,
     resultInstanceId: firstItem?.resultInstanceId || instance?.id || roll.resultInstanceId || null,
     count: resultItems.length,
+    guaranteesApplied: Array.isArray(roll.guaranteeState?.guaranteesApplied)
+      ? roll.guaranteeState.guaranteesApplied
+      : [],
+    pityBefore: Array.isArray(roll.guaranteeState?.pityBefore) ? roll.guaranteeState.pityBefore : [],
+    pityAfter: Array.isArray(roll.guaranteeState?.pityAfter) ? roll.guaranteeState.pityAfter : [],
     items: resultItems
   };
 }
@@ -924,10 +1199,20 @@ export async function rollAssetPack(playerId, packId, {
         throw httpError('No unowned assets left in this pack', 409);
       }
 
-      const selectedItems = selectAssetPackRollResults(candidates, pack, { rng });
+      const previousRollRows = await client.query(
+        `SELECT * FROM asset_rolls
+         WHERE player_id = $1 AND pack_id = $2
+         ORDER BY created_at DESC
+         LIMIT 200`,
+        [playerId, pack.id]
+      );
+      const pityBefore = computePackPityState(pack, { rolls: previousRollRows.rows });
+      const selectedItems = selectAssetPackRollResults(candidates, pack, { rng, pityState: pityBefore });
       if (!selectedItems.length) {
         throw httpError('No unowned assets left in this pack', 409);
       }
+      const guaranteesApplied = selectedItems.guaranteeApplications || [];
+      const pityAfter = advancePackPityState(pityBefore, selectedItems);
       const candidatePoolHash = hashCandidatePool(candidates);
       const resultAssetIds = selectedItems.map((item) => item.assetId);
       const rarityTableVersion = pack.rarityTableVersion || `${pack.id}:v1`;
@@ -946,7 +1231,16 @@ export async function rollAssetPack(playerId, packId, {
           selectedAssetIds: resultAssetIds,
           rollSize: assetPackRollSize(pack),
           effectiveRollSize: selectedItems.length,
-          rarityTableVersion
+          rarityTableVersion,
+          guaranteesApplied: guaranteesApplied.map((entry) => ({
+            id: entry.id,
+            source: entry.source,
+            minRarity: entry.minRarity,
+            selectedAssetId: entry.selectedAssetId,
+            replacedAssetId: entry.replacedAssetId
+          })),
+          pityBefore,
+          pityAfter
         }
       });
 
@@ -964,6 +1258,10 @@ export async function rollAssetPack(playerId, packId, {
             rarity: selected.rarity,
             selectedRarity: selected.selectedRarity,
             rarityTableVersion,
+            guaranteeId: selected.guaranteeId || null,
+            guaranteeSource: selected.guaranteeSource || null,
+            guaranteeMinRarity: selected.guaranteeMinRarity || null,
+            guaranteeReplacedAssetId: selected.guaranteeReplacedAssetId || null,
             transactionId: transaction.id
           }
         });
@@ -989,7 +1287,11 @@ export async function rollAssetPack(playerId, packId, {
         selectedRarity: item.selectedRarity,
         dropWeight: item.dropWeight,
         slotRarityWeights: item.slotRarityWeights,
-        candidatePoolHash: item.candidatePoolHash
+        candidatePoolHash: item.candidatePoolHash,
+        guaranteeId: item.guaranteeId || null,
+        guaranteeSource: item.guaranteeSource || null,
+        guaranteeMinRarity: item.guaranteeMinRarity || null,
+        guaranteeReplacedAssetId: item.guaranteeReplacedAssetId || null
       }));
 
       await client.query(
@@ -1009,7 +1311,9 @@ export async function rollAssetPack(playerId, packId, {
             rollSize: assetPackRollSize(pack),
             effectiveRollSize: selectedItems.length,
             rarityTableVersion,
-            guaranteesApplied: []
+            guaranteesApplied,
+            pityBefore,
+            pityAfter
           }),
           candidatePoolHash,
           resultAssetIds[0] || null,
@@ -1023,6 +1327,9 @@ export async function rollAssetPack(playerId, packId, {
             rarityTableVersion,
             rollSize: assetPackRollSize(pack),
             effectiveRollSize: selectedItems.length,
+            guaranteesApplied,
+            pityBefore,
+            pityAfter,
             results: evidenceItems
           }),
           nowIso()
