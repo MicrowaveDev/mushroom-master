@@ -8,9 +8,10 @@
 > `mycelium` aliases, and run player/shop responses expose `runCurrency` /
 > `runCoins` while keeping legacy `coins`. The physical database rename
 > (`mycelium`→`character_xp`, `coins`→`run_currency`) remains optional Phase
-> **6D** work, not a launch blocker. The
-> authoritative current backlog is the **Remaining launch gates** under Phase 7B
-> plus the Deferred list. Code movement into `backpack-game-core` has started
+> **6D** work, not a launch blocker. The authoritative current backlog is the
+> **Current Remaining Work Matrix** in the Post-Implementation Review; the
+> Phase 7B **Remaining launch gates** are the paid-rollout subset, not the whole
+> backlog. Code movement into `backpack-game-core` has started
 > with bag-shape, first grid-geometry primitives, fusion matching, and shop-offer
 > generation; broader extraction should continue one pure or adapterized cluster
 > at a time. Shipped
@@ -154,28 +155,32 @@ exists, the home screen exposes server-provided wallet bundles/providers, and
 rollable portraits now call the gacha pack roll endpoint.
 
 This is still not a paid production rollout. Remaining launch gates are:
-real provider sandbox/live validation, real Telegram invoice/manual webhook
-testing, purchase UI terms/refund/support presentation, age/content-compliance
-gating for adult or sexual content, and operational runbooks plus tooling for
-post-completion refunds, reversals, chargebacks/disputes, late crypto payments,
-overpayments, and support investigations.
+current payment-provider due diligence for fee/UX/content-policy fit, real
+provider sandbox/live validation, real Telegram invoice/manual webhook testing,
+purchase UI terms/refund/support presentation, age/content-compliance gating
+for adult or sexual content, tax/accounting/data-retention review, and
+operational runbooks plus tooling for post-completion refunds, reversals,
+chargebacks/disputes, late crypto payments, overpayments, and support
+investigations.
 
 Next local lane after Phase 8H: integrate the package from a second game and
 let that concrete consumer drive API cleanup or release notes. Deferred beyond
 that: optional Phase 6D database renames / physical removal of legacy
 compatibility fields, multi-item pack guarantees, duplicate burning, marketplace
-trading, database managed pack catalogs, an expanded terms/support frontend,
+trading, database-managed pack catalogs, an expanded terms/support frontend,
 provider refund and reversal handling, distributed payment mutation hardening,
-and broader code movement into `backpack-game-core`.
+support/admin money tooling, tax/accounting evidence, and broader code movement
+into `backpack-game-core`.
 
 ## Post-Implementation Review
 
-Updated 2026-07-01 from a read-through of the current `main` implementation in
+Updated 2026-07-02 from a read-through of the current `main` implementation in
 `wallet-service.js`, `asset-service.js`, `create-app.js`, `bot-gateway.js`,
 `web/src/composables/useCustomization.js`, `web/src/pages/HomeScreen.js`, and
 `tests/game/wallet-assets.test.js`; refreshed after Phase 7B and Phase 6A-6C
-implementation on 2026-07-01. This review intentionally does not treat the
-plan's own status text as evidence.
+implementation on 2026-07-01 and the local wallet-support UI pass on
+2026-07-02. This review intentionally does not treat the plan's own status text
+as evidence.
 
 ### Verified as shipped
 
@@ -250,8 +255,9 @@ plan's own status text as evidence.
 
 ### Recommended follow-ups
 
-- Keep this plan as a historical ship record; treat the Deferred list and the
-  Phase 7B **Remaining launch gates** as the live backlog.
+- Keep this plan as a historical ship record; treat the **Current Remaining Work
+  Matrix** below as the live backlog. The Phase 7B **Remaining launch gates**
+  are the paid-rollout subset of that backlog.
 - Keep the optional Phase 6D database rename separate from reusable-core
   extraction unless raw legacy column names become a real blocker.
 - Before any paid pilot, the true blockers are provider sandbox/live validation,
@@ -268,6 +274,115 @@ plan's own status text as evidence.
   or the battle engine. Done in
   `docs/backpack-game-core-extraction-inventory.md`; the first slice is
   bag-shape helpers.
+
+## Current Remaining Work Matrix
+
+Added 2026-07-02 after the post-implementation review. Treat this as the live
+backlog until the items are split into tickets or implementation phases.
+
+### 1. Payment Provider Decision And Validation
+
+- Re-run current processor due diligence before launch. Fees, checkout UX,
+  settlement timing, webhook reliability, supported regions, and adult/sexual
+  content policy can change; do not rely on stale notes when selecting a final
+  crypto provider or fallback.
+- Record the chosen provider path for each surface: Telegram Mini App,
+  external web checkout, and crypto checkout. Include why each provider was
+  accepted or rejected.
+- Validate Telegram Stars, BTCPay, NOWPayments, and any final extra processor
+  with real sandbox/live credentials. Capture successful, failed, expired,
+  underpaid, overpaid, refunded, and disputed callback examples.
+- Define provider cutover and fallback behavior if a provider disables the
+  merchant account, rejects content, has degraded webhooks, or changes fee
+  structure.
+
+### 2. Compliance, Tax, And User-Facing Policy
+
+- Finalize terms, refund policy, support contact, payment-dispute wording, and
+  virtual-currency disclosure before enabling paid checkout.
+- Add age/content gates for any adult or sexual content path. The gate must
+  prohibit unlawful sexual content, minors/CSAM, non-consensual material, and
+  anything forbidden by target jurisdictions or provider terms.
+- Decide whether gacha/pack odds need jurisdiction-specific disclosure,
+  eligibility restrictions, spending limits, or additional consent screens.
+- Confirm tax/accounting needs: invoice/receipt data, VAT/sales-tax handling,
+  data retention, export format, and who can access purchase records.
+
+### 3. Money Operations And Support Tooling
+
+- Build admin/support tooling to search purchase intents, provider references,
+  wallet transactions, asset grants, and player balances without direct SQL.
+- Add manual support flows with audit logs: grant coins/assets, revoke mistaken
+  grants, mark refunds, attach provider evidence, and leave immutable notes.
+- Add reconciliation jobs for provider settlement vs local purchase intents and
+  periodic wallet mirror drift checks. `npm run game:wallet:audit` is a manual
+  starting point, not a scheduled operations system.
+- Add post-completion refund/reversal handling. Today terminal non-completed
+  statuses do not grant coins, but completed-payment chargebacks, provider
+  reversals, and late crypto review do not yet claw back currency or freeze
+  disputed assets automatically.
+
+### 4. Distributed Concurrency, Security, And Abuse Controls
+
+- Replace process-local wallet/purchase/gacha mutation locks with database row
+  locks, advisory locks, or conflict-aware retries before running multiple app
+  instances that can process paid mutations.
+- Make checkout idempotency and provider invoice reuse resilient across process
+  restarts, not only concurrent retries inside one process.
+- Add webhook replay protection, timestamp windows where providers support
+  them, duplicate-event handling, structured payment logs, and secret rotation
+  procedures.
+- Add rate limits and abuse controls for checkout creation, gacha rolls, direct
+  purchases, support-sensitive endpoints, and expensive odds/catalog calls.
+
+### 5. Gacha, Asset Economy, And Marketplace Roadmap
+
+- Move packs/seasons/collections from static/env configuration to a database or
+  admin-managed catalog before operating frequent seasonal drops.
+- Implement multi-result packs, rarity weights, per-pack guarantees, pity rules,
+  secret rarity policy, active/future/expired pack states, and deterministic
+  authoring validation.
+- Add duplicate inventory semantics instead of only "unowned candidate" rolls:
+  stackable duplicates, burn/exchange rules, and clear handling for "no
+  eligible assets left."
+- Add marketplace/trading only after asset-instance transfer rules exist:
+  escrow, listing fees, fraud controls, moderation, trade locks, audit logs, and
+  refund/dispute interaction.
+- Add simulation tests for pack odds and guarantees so probability changes can
+  be reviewed before a season launches.
+
+### 6. Frontend And E2E Coverage Still Missing
+
+- Add dedicated e2e coverage for wallet bundle listing, Telegram invoice
+  opening, external crypto checkout fallback, payment refresh after verified
+  completion, failed/expired payment states, and support/terms links.
+- Add frontend/e2e coverage for direct-only vs roll-only skins, no-unowned-assets
+  gacha state, pack odds presentation, active/expired/future pack states, and
+  buying/equipping a profile-owned skin while a specific mushroom is active.
+- Add product screenshots/layout assertions for wallet, purchase failure, pack
+  odds, and support states whenever those surfaces change.
+
+### 7. Core Package Release And Second Consumer
+
+- Integrate `@microwavedev/backpack-game-core` into a real second
+  backpack/grid game when one exists. Do not add it to unrelated inventories
+  only to prove reuse.
+- Decide package release discipline: semver versioning, tags, changelog format,
+  npm/GitHub package publishing vs submodule-only consumption, and compatibility
+  windows for Mushroom adapters.
+- Add CI that verifies `backpack-game-core` tests, package exports/types, the
+  Mushroom consumer, and any second consumer against the same core commit.
+- Decide whether `backpack-game-core` should also be tracked as a top-level hub
+  repo in addition to the nested `mushroom-master` submodule.
+
+### 8. Optional Compatibility Cleanup
+
+- Keep Phase 6D physical database renames (`mycelium` -> `character_xp`,
+  run-level `coins` -> `run_currency`) separate from paid launch and core
+  extraction. Do them only if raw legacy column names become a real analytics,
+  integration, or maintenance blocker.
+- Remove legacy response aliases only after known clients and tests consume the
+  neutral names.
 
 ## Source Of Truth
 
@@ -1090,6 +1205,11 @@ or legal/support/compliance rollout work.
 
 ### Remaining launch gates
 
+- Re-run payment processor selection before launch, including current fees,
+  checkout UX, settlement timing, support responsiveness, region coverage,
+  webhook reliability, and adult/sexual-content policy. Record the chosen
+  provider, fallback provider, and rejection reasons for providers that are not
+  suitable.
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
 - Set provider webhook secrets in every non-local environment.
@@ -1105,6 +1225,9 @@ or legal/support/compliance rollout work.
 - Add adult-content/age/compliance gates before enabling crypto providers:
   prohibit unlawful sexual content, minors/CSAM, non-consensual material, and
   anything forbidden in the merchant's jurisdictions or provider terms.
+- Confirm tax/accounting/data-retention requirements for virtual coin sales:
+  receipts or invoice exports, VAT/sales-tax handling if applicable, retention
+  period, support access, and deletion/privacy behavior.
 - Expand purchase/gacha UI beyond MVP: pending/failed/completed states,
   active/expired/future pack states, and "no unowned assets left" handling.
   **Local basics are implemented 2026-07-02:** checkout-opening status text,
@@ -1121,16 +1244,23 @@ or legal/support/compliance rollout work.
 - Add provider-specific operational notes and tooling for refunds, reversals,
   chargebacks/disputes, partial/late crypto payments, overpayments, and support
   investigations.
+- Add admin/support tooling for purchase-intent lookup, wallet transaction
+  lookup, manual grant/revoke with immutable audit notes, and scheduled
+  reconciliation against provider settlements.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 
-Status: **Phase 8A/8B complete; Phase 8C next.** Phase 6A-6C made the currency
-/ XP vocabulary clean enough for a reusable boundary. The runtime contract
-reference and extraction inventory now exist, so the next step is the first
-small pure extraction slice, not a broad code move.
+Status: **Phase 8A-8H complete for the current Mushroom consumer.** Phase 6A-6C
+made the currency / XP vocabulary clean enough for a reusable boundary, the
+runtime contract reference and extraction inventory exist, the first pure and
+adapterized clusters are in `backpack-game-core`, and Mushroom now consumes the
+core through a nested submodule. The next extraction proof should come from a
+real second backpack/grid game consumer; do not invent an unrelated consumer
+only to mark reuse complete.
 
-Only start extracting after the currency names above are clean enough that the
-core package does not inherit Mushroom-specific vocabulary.
+Only continue extracting after the currency names above are clean enough that
+the core package does not inherit Mushroom-specific vocabulary, and only move a
+cluster when it has a clear adapter boundary and tests.
 
 ### Phase 8A - Current Runtime Contract Reference
 
@@ -1774,9 +1904,15 @@ Additional TODOs for that pass:
    loadout consumer.**
 29. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
-30. Paid rollout readiness when external inputs are available: real provider
+30. Paid rollout readiness when external inputs are available: current
+   processor due diligence for fee/UX/content-policy fit, real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
-   refund/reversal/late-payment tooling, distributed mutation hardening, and
-   deeper frontend/e2e payment coverage.
-31. Data operations after paid pilot: purchase-intent expiry/refund/reversal
-   jobs, provider support runbooks, and periodic wallet drift monitoring.
+   tax/accounting/data-retention review, refund/reversal/late-payment tooling,
+   distributed mutation hardening, and deeper frontend/e2e payment coverage.
+31. Data operations before and after paid pilot: purchase-intent
+   expiry/refund/reversal jobs, provider support runbooks, admin/support money
+   tooling, immutable support audit notes, reconciliation jobs, and periodic
+   wallet drift monitoring.
+32. Full gacha economy roadmap: database/admin-managed pack catalogs,
+   seasons/collections, multi-item packs, rarity guarantees, pity rules,
+   duplicate burning/exchange, marketplace/trading, and odds simulation tests.
