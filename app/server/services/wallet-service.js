@@ -33,9 +33,24 @@ export const WALLET_PURCHASE_STATUSES = new Set([
   'expired',
   'failed',
   'refunded',
+  'reversed',
+  'chargeback',
+  'disputed',
   'underpaid',
   'overpaid',
   'cancelled'
+]);
+
+const WALLET_PURCHASE_CLAWBACK_STATUSES = new Set([
+  'refunded',
+  'reversed',
+  'chargeback'
+]);
+
+const WALLET_PURCHASE_POST_COMPLETION_REVIEW_STATUSES = new Set([
+  'disputed',
+  'underpaid',
+  'overpaid'
 ]);
 
 const walletMutationLocks = new Map();
@@ -831,6 +846,23 @@ function rowToReconciledTransaction(row) {
   };
 }
 
+function rowToRefundedPurchaseWithoutReversal(row) {
+  return {
+    intentId: row.intent_id,
+    playerId: row.player_id,
+    provider: row.provider,
+    providerInvoiceId: row.provider_invoice_id || null,
+    providerPaymentId: row.provider_payment_id || null,
+    currencyCode: row.currency_code,
+    walletAmount: Number(row.wallet_amount || 0),
+    status: row.status,
+    updatedAt: row.updated_at,
+    grantTransactionId: row.grant_transaction_id || null,
+    reversalTransactionId: row.reversal_transaction_id || null,
+    clawbackStatus: parseJson(row.metadata_json, {})?.clawback?.status || null
+  };
+}
+
 function rowToWebhookReconciliationIssue(row, issue) {
   const metadata = parseJson(row.metadata_json, {});
   const result = parseJson(row.result_json, {});
@@ -876,13 +908,25 @@ async function processedWebhookIntentIssues(limit) {
     const ids = [...intentIds];
     const placeholders = ids.map((_id, index) => `$${index + 1}`).join(', ');
     const intents = await query(
-      `SELECT id, status
+      `SELECT wallet_purchase_intents.id,
+              wallet_purchase_intents.status,
+              reversal_transactions.id AS reversal_transaction_id
        FROM wallet_purchase_intents
-       WHERE id IN (${placeholders})`,
+       LEFT JOIN player_wallet_transactions AS reversal_transactions
+         ON reversal_transactions.source_type = 'wallet_purchase_intent'
+        AND reversal_transactions.source_id = wallet_purchase_intents.id
+        AND reversal_transactions.reason = 'wallet_purchase_reversal'
+       WHERE wallet_purchase_intents.id IN (${placeholders})`,
       ids
     );
     for (const row of intents.rows) {
       if (row.status === 'completed') knownIntentIds.add(row.id);
+      if (
+        ['refunded', 'reversed', 'chargeback'].includes(row.status) &&
+        row.reversal_transaction_id
+      ) {
+        knownIntentIds.add(row.id);
+      }
     }
   }
 
@@ -936,11 +980,21 @@ export async function reconcileWalletPayments({ limit = 100 } = {}) {
      FROM player_wallet_transactions
      LEFT JOIN wallet_purchase_intents
        ON wallet_purchase_intents.id = player_wallet_transactions.source_id
+     LEFT JOIN player_wallet_transactions AS reversal_transactions
+       ON reversal_transactions.source_type = 'wallet_purchase_intent'
+      AND reversal_transactions.source_id = player_wallet_transactions.source_id
+      AND reversal_transactions.reason = 'wallet_purchase_reversal'
      WHERE player_wallet_transactions.reason = 'wallet_purchase'
        AND player_wallet_transactions.source_type = 'wallet_purchase_intent'
        AND (
          wallet_purchase_intents.id IS NULL
-         OR wallet_purchase_intents.status != 'completed'
+         OR (
+           wallet_purchase_intents.status != 'completed'
+           AND NOT (
+             wallet_purchase_intents.status IN ('refunded', 'reversed', 'chargeback')
+             AND reversal_transactions.id IS NOT NULL
+           )
+         )
        )
      ORDER BY player_wallet_transactions.created_at DESC
      LIMIT $1`,
@@ -974,11 +1028,42 @@ export async function reconcileWalletPayments({ limit = 100 } = {}) {
      LIMIT $1`,
     [rowLimit]
   );
+  const refundedMissingReversal = await query(
+    `SELECT
+       wallet_purchase_intents.id AS intent_id,
+       wallet_purchase_intents.player_id,
+       wallet_purchase_intents.provider,
+       wallet_purchase_intents.provider_invoice_id,
+       wallet_purchase_intents.provider_payment_id,
+       wallet_purchase_intents.currency_code,
+       wallet_purchase_intents.wallet_amount,
+       wallet_purchase_intents.status,
+       wallet_purchase_intents.updated_at,
+       wallet_purchase_intents.metadata_json,
+       grant_transactions.id AS grant_transaction_id,
+       reversal_transactions.id AS reversal_transaction_id
+     FROM wallet_purchase_intents
+     LEFT JOIN player_wallet_transactions AS grant_transactions
+       ON grant_transactions.source_type = 'wallet_purchase_intent'
+      AND grant_transactions.source_id = wallet_purchase_intents.id
+      AND grant_transactions.reason = 'wallet_purchase'
+     LEFT JOIN player_wallet_transactions AS reversal_transactions
+       ON reversal_transactions.source_type = 'wallet_purchase_intent'
+      AND reversal_transactions.source_id = wallet_purchase_intents.id
+      AND reversal_transactions.reason = 'wallet_purchase_reversal'
+     WHERE wallet_purchase_intents.status IN ('refunded', 'reversed', 'chargeback')
+       AND grant_transactions.id IS NOT NULL
+       AND reversal_transactions.id IS NULL
+     ORDER BY wallet_purchase_intents.updated_at DESC
+     LIMIT $1`,
+    [rowLimit]
+  );
   const webhookIntentIssues = await processedWebhookIntentIssues(rowLimit);
   const categories = {
     completedIntentsMissingWalletGrant: completedMissingGrant.rows.map(rowToReconciledIntent),
     walletGrantsWithoutCompletedIntent: grantsWithoutCompletedIntent.rows.map(rowToReconciledTransaction),
     walletGrantAmountMismatches: grantAmountMismatches.rows.map(rowToReconciledIntent),
+    refundedPurchasesMissingReversal: refundedMissingReversal.rows.map(rowToRefundedPurchaseWithoutReversal),
     processedWebhookIntentIssues: webhookIntentIssues
   };
   const total = Object.values(categories).reduce((sum, items) => sum + items.length, 0);
@@ -1408,7 +1493,10 @@ function purchaseStatusFromProviderWebhook(provider, payload = {}) {
     if (type === 'invoiceexpired' || status === 'expired') return 'expired';
     if (type === 'invoiceinvalid' || ['invalid', 'failed'].includes(status)) return 'failed';
     if (['cancelled', 'canceled'].includes(status)) return 'cancelled';
-    if (status === 'refunded') return 'refunded';
+    if (type.includes('refund') || status === 'refunded') return 'refunded';
+    if (status === 'reversed') return 'reversed';
+    if (status === 'chargeback') return 'chargeback';
+    if (status === 'disputed') return 'disputed';
     if (status === 'underpaid') return 'underpaid';
     if (status === 'overpaid') return 'overpaid';
   }
@@ -1417,6 +1505,9 @@ function purchaseStatusFromProviderWebhook(provider, payload = {}) {
     if (status === 'expired') return 'expired';
     if (status === 'failed') return 'failed';
     if (status === 'refunded') return 'refunded';
+    if (status === 'reversed') return 'reversed';
+    if (status === 'chargeback') return 'chargeback';
+    if (status === 'disputed') return 'disputed';
     if (['cancelled', 'canceled'].includes(status)) return 'cancelled';
     if (status === 'underpaid') return 'underpaid';
     if (status === 'overpaid') return 'overpaid';
@@ -1558,6 +1649,19 @@ async function recordPurchaseIntentStatus({
     if (row.provider !== normalizedProvider) throw httpError('Invalid wallet purchase provider', 400);
 
     if (row.status === 'completed') {
+      if (WALLET_PURCHASE_CLAWBACK_STATUSES.has(status)) {
+        return recordCompletedPurchaseClawback(client, row, {
+          provider: normalizedProvider,
+          status,
+          metadata
+        });
+      }
+      if (WALLET_PURCHASE_POST_COMPLETION_REVIEW_STATUSES.has(status)) {
+        return recordCompletedPurchaseReviewStatus(client, row, {
+          status,
+          metadata
+        });
+      }
       return {
         intent: rowToPurchaseIntent(row),
         transaction: null,
@@ -1615,6 +1719,130 @@ async function recordPurchaseIntentStatus({
       reason: status
     };
   }));
+}
+
+async function recordCompletedPurchaseReviewStatus(client, row, {
+  status,
+  metadata = {}
+}) {
+  const reviewedAt = nowIso();
+  const currentMetadata = parseJson(row.metadata_json, {});
+  const updated = await client.query(
+    `UPDATE wallet_purchase_intents
+     SET status = $2,
+         updated_at = $3,
+         metadata_json = $4
+     WHERE id = $1
+       AND status = 'completed'
+     RETURNING *`,
+    [
+      row.id,
+      status,
+      reviewedAt,
+      metadataJson({
+        ...currentMetadata,
+        providerStatus: {
+          status,
+          receivedAt: reviewedAt,
+          payload: metadata
+        },
+        supportReview: {
+          status: 'required',
+          reason: status,
+          recordedAt: reviewedAt
+        }
+      })
+    ]
+  );
+  return {
+    intent: rowToPurchaseIntent(updated.rows[0] || row),
+    transaction: null,
+    statusRecorded: true,
+    supportRequired: true,
+    ignored: true,
+    reason: status
+  };
+}
+
+async function recordCompletedPurchaseClawback(client, row, {
+  provider,
+  status,
+  metadata = {}
+}) {
+  const reversedAt = nowIso();
+  const currentMetadata = parseJson(row.metadata_json, {});
+  let transaction = null;
+  let clawback = {
+    status: 'not_attempted',
+    reason: null,
+    transactionId: null
+  };
+
+  try {
+    transaction = await spendCurrency(client, {
+      playerId: row.player_id,
+      currencyCode: row.currency_code,
+      amount: Number(row.wallet_amount || 0),
+      reason: 'wallet_purchase_reversal',
+      sourceType: 'wallet_purchase_intent',
+      sourceId: row.id,
+      idempotencyKey: `wallet_purchase_reversal:${row.id}:${status}`,
+      metadata: {
+        provider,
+        status,
+        providerInvoiceId: row.provider_invoice_id,
+        providerPaymentId: row.provider_payment_id,
+        payload: metadata
+      }
+    });
+    clawback = {
+      status: 'completed',
+      reason: null,
+      transactionId: transaction.id
+    };
+  } catch (err) {
+    if (err?.message !== 'Not enough wallet balance') throw err;
+    clawback = {
+      status: 'insufficient_balance',
+      reason: err.message,
+      transactionId: null
+    };
+  }
+
+  const updated = await client.query(
+    `UPDATE wallet_purchase_intents
+     SET status = $2,
+         updated_at = $3,
+         metadata_json = $4
+     WHERE id = $1
+       AND status = 'completed'
+     RETURNING *`,
+    [
+      row.id,
+      status,
+      reversedAt,
+      metadataJson({
+        ...currentMetadata,
+        providerStatus: {
+          status,
+          receivedAt: reversedAt,
+          payload: metadata
+        },
+        clawback
+      })
+    ]
+  );
+  const intent = rowToPurchaseIntent(updated.rows[0] || row);
+  return {
+    intent,
+    transaction,
+    statusRecorded: true,
+    reversalRecorded: true,
+    clawbackStatus: clawback.status,
+    supportRequired: clawback.status !== 'completed',
+    ignored: true,
+    reason: status
+  };
 }
 
 export async function completeProviderWebhook(provider, payload = {}, { fetchImpl = globalThis.fetch } = {}) {

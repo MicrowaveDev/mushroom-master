@@ -657,6 +657,142 @@ test('[Req 4-Z] terminal provider payment statuses are recorded without granting
   assert.equal(stored.rows[0].status, 'expired');
 });
 
+test('[Req 4-Z] post-completion provider refund claws back wallet currency once', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4027 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'btcpay-refund-clawback'
+  });
+  const settledPayload = {
+    deliveryId: 'btcpay-refund-clawback-settled',
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-refund-clawback-payment'
+  };
+  await processProviderWebhookEvent('btcpay', settledPayload, { rawBody: JSON.stringify(settledPayload) });
+  assert.equal((await getWalletState(player.id)).balance, 100);
+
+  const refundPayload = {
+    deliveryId: 'btcpay-refund-clawback-refunded',
+    type: 'InvoicePaymentRefunded',
+    status: 'refunded',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-refund-clawback-payment'
+  };
+  const refund = await processProviderWebhookEvent('btcpay', refundPayload, {
+    rawBody: JSON.stringify(refundPayload)
+  });
+  const replay = await processProviderWebhookEvent('btcpay', refundPayload, {
+    rawBody: JSON.stringify(refundPayload)
+  });
+
+  assert.equal(refund.intent.status, 'refunded');
+  assert.equal(refund.reversalRecorded, true);
+  assert.equal(refund.clawbackStatus, 'completed');
+  assert.equal(refund.supportRequired, false);
+  assert.equal(refund.transaction.delta, -100);
+  assert.equal(replay.webhookEvent.duplicate, true);
+  assert.equal((await getWalletState(player.id)).balance, 0);
+
+  const stored = await query(`SELECT status, metadata_json FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
+  assert.equal(stored.rows[0].status, 'refunded');
+  assert.equal(JSON.parse(stored.rows[0].metadata_json).clawback.status, 'completed');
+  const tx = await query(
+    `SELECT reason, delta FROM player_wallet_transactions
+     WHERE source_id = $1
+     ORDER BY created_at ASC`,
+    [intent.id]
+  );
+  assert.deepEqual(tx.rows.map((row) => [row.reason, Number(row.delta)]), [
+    ['wallet_purchase', 100],
+    ['wallet_purchase_reversal', -100]
+  ]);
+});
+
+test('[Req 4-Z] post-completion provider refund records support follow-up when balance is spent', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4028 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'btcpay-refund-insufficient'
+  });
+  const settledPayload = {
+    deliveryId: 'btcpay-refund-insufficient-settled',
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-refund-insufficient-payment'
+  };
+  await processProviderWebhookEvent('btcpay', settledPayload, { rawBody: JSON.stringify(settledPayload) });
+  await spendCurrencyForPlayer({
+    playerId: player.id,
+    amount: 100,
+    reason: 'test_wallet_spend',
+    sourceType: 'test',
+    sourceId: 'spent-before-refund',
+    idempotencyKey: 'spent-before-refund'
+  });
+
+  const refundPayload = {
+    deliveryId: 'btcpay-refund-insufficient-refunded',
+    status: 'refunded',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-refund-insufficient-payment'
+  };
+  const refund = await processProviderWebhookEvent('btcpay', refundPayload, {
+    rawBody: JSON.stringify(refundPayload)
+  });
+
+  assert.equal(refund.intent.status, 'refunded');
+  assert.equal(refund.clawbackStatus, 'insufficient_balance');
+  assert.equal(refund.supportRequired, true);
+  assert.equal(refund.transaction, null);
+  assert.equal((await getWalletState(player.id)).balance, 0);
+  const stored = await query(`SELECT status, metadata_json FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
+  assert.equal(stored.rows[0].status, 'refunded');
+  assert.equal(JSON.parse(stored.rows[0].metadata_json).clawback.status, 'insufficient_balance');
+});
+
+test('[Req 4-Z] post-completion provider dispute is recorded for support review without clawback', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4029 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'btcpay-dispute-review'
+  });
+  const settledPayload = {
+    deliveryId: 'btcpay-dispute-review-settled',
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-dispute-review-payment'
+  };
+  await processProviderWebhookEvent('btcpay', settledPayload, { rawBody: JSON.stringify(settledPayload) });
+
+  const disputePayload = {
+    deliveryId: 'btcpay-dispute-review-disputed',
+    status: 'disputed',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'btcpay-dispute-review-payment'
+  };
+  const dispute = await processProviderWebhookEvent('btcpay', disputePayload, {
+    rawBody: JSON.stringify(disputePayload)
+  });
+
+  assert.equal(dispute.intent.status, 'disputed');
+  assert.equal(dispute.supportRequired, true);
+  assert.equal(dispute.transaction, null);
+  assert.equal((await getWalletState(player.id)).balance, 100);
+  const stored = await query(`SELECT status, metadata_json FROM wallet_purchase_intents WHERE id = $1`, [intent.id]);
+  assert.equal(stored.rows[0].status, 'disputed');
+  assert.equal(JSON.parse(stored.rows[0].metadata_json).supportReview.reason, 'disputed');
+});
+
 test('[Req 4-Y] concurrent wallet spends cannot overdraw the profile balance', async () => {
   await freshDb();
   const { player } = await createPlayer({ telegramId: 4013 });

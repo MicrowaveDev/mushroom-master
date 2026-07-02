@@ -240,10 +240,12 @@ as evidence.
    backend has `/paysupport` and `/terms` bot replies, but the web purchase
    surface still needs final public support/terms URLs, refund wording, and
    adult-content/payment-processor compliance decisions.
-4. **Refund/reversal handling is still operational, not automated.** Terminal
-   non-completed statuses are recorded before grant, but completed-payment
-   refunds, chargebacks/disputes, provider reversals, and late crypto review do
-   not yet claw back wallet currency or open support cases automatically.
+4. **Refund/reversal handling is partially automated.** Terminal non-completed
+   statuses are recorded before grant, and completed-payment
+   refunded/reversed/chargeback statuses now attempt wallet clawback when the
+   balance is available. Insufficient-balance clawbacks are recorded for
+   support follow-up. Dispute freezes, provider settlement import, late crypto
+   review workflows, and support cases are still operational work.
 5. **Paid asset mutation locks now have DB-backed claims.** Atomic SQL debits
    protect the balance row, uniqueness constraints roll back duplicate active
    assets, wallet checkout creation has a DB-backed claim, and direct asset
@@ -329,10 +331,15 @@ backlog until the items are split into tickets or implementation phases.
   grants, and processed webhook events. Still schedule these checks, add alert
   routing, and import provider settlement exports/API data for true external
   reconciliation.
-- Add post-completion refund/reversal handling. Today terminal non-completed
-  statuses do not grant coins, but completed-payment chargebacks, provider
-  reversals, and late crypto review do not yet claw back currency or freeze
-  disputed assets automatically.
+- Post-completion refund/reversal handling now exists for provider clawback
+  statuses as of 2026-07-02: completed purchases can move to
+  `refunded`/`reversed`/`chargeback`, record provider evidence in intent
+  metadata, and create a `wallet_purchase_reversal` spend when the profile has
+  enough wallet balance. Insufficient-balance clawbacks are recorded as
+  support-required and surfaced by reconciliation. Completed-purchase
+  `disputed`/`underpaid`/`overpaid` statuses are recorded for support review
+  without automatic clawback. Still add disputed-asset freezes, provider
+  settlement imports, and richer support runbooks.
 
 ### 4. Distributed Concurrency, Security, And Abuse Controls
 
@@ -1214,7 +1221,9 @@ or legal/support/compliance rollout work.
 3. Payment lifecycle is broader than `pending|completed`.
    - Terminal non-completed statuses are recorded without granting wallet
      currency.
-   - Completed-payment refunds/reversals still need operational handling below.
+   - Completed-payment refund/reversal clawback is implemented locally for
+     refundable/reversed/chargeback provider statuses; live-provider semantics
+     and dispute/freeze workflows remain launch gates below.
 4. Webhook signature behavior fails closed outside tests unless explicitly
    opted in with `PAYMENT_WEBHOOK_ALLOW_UNSIGNED_DEV=true`.
 5. Wallet data operations exist.
@@ -1256,6 +1265,15 @@ or legal/support/compliance rollout work.
      that did not resolve a completed local intent.
    - This is still a local-state reconciliation report, not provider settlement
      import or scheduled alerting.
+12. Post-completion provider refund clawback exists.
+   - Provider `refunded` / `reversed` / `chargeback` statuses on completed
+     purchases update the purchase intent, store provider evidence, and attempt
+     an idempotent `wallet_purchase_reversal` spend.
+   - If the player already spent the wallet currency, the intent records
+     `clawback.status = "insufficient_balance"` and reconciliation reports a
+     support-required refunded purchase missing reversal.
+   - Completed-purchase `disputed`, `underpaid`, and `overpaid` statuses are
+     recorded as support-review-required without automatic wallet clawback.
 
 ### Remaining launch gates
 
@@ -1302,9 +1320,11 @@ or legal/support/compliance rollout work.
 - Add frontend/e2e coverage that buying a skin while one mushroom is active
   makes it owned/equippable for the target mushroom without changing character
   XP.
-- Add provider-specific operational notes and tooling for refunds, reversals,
-  chargebacks/disputes, partial/late crypto payments, overpayments, and support
-  investigations.
+- Add provider-specific operational notes and tooling for disputes, asset
+  freezes, partial/late crypto payments, overpayments, and support
+  investigations. **Local refund/reversal clawback and support-review status
+  recording are implemented 2026-07-02**, but live provider semantics and
+  runbooks still need validation.
 - Add authenticated admin/support UI/API surfaces on top of the read-only money
   lookup, then add manual grant/revoke with immutable audit notes, scheduled
   reconciliation, alert routing, and provider settlement import.
@@ -1969,12 +1989,12 @@ Additional TODOs for that pass:
 30. Paid rollout readiness when external inputs are available: current
    processor due diligence for fee/UX/content-policy fit, real provider
    validation, final terms/refund/support UI, adult/content-compliance gates,
-   tax/accounting/data-retention review, refund/reversal/late-payment tooling,
+   tax/accounting/data-retention review, dispute/freeze/late-payment tooling,
    distributed mutation hardening, and deeper frontend/e2e payment coverage.
 31. Data operations before and after paid pilot: purchase-intent
-   expiry/refund/reversal jobs, provider support runbooks, admin/support money
-   tooling, immutable support audit notes, reconciliation jobs, and periodic
-   wallet drift monitoring.
+   expiry jobs, provider support runbooks, admin/support money tooling,
+   immutable support audit notes, scheduled reconciliation jobs, provider
+   settlement imports, and periodic wallet drift monitoring.
 32. Full gacha economy roadmap: database/admin-managed pack catalogs,
    seasons/collections, multi-item packs, rarity guarantees, pity rules,
    duplicate burning/exchange, marketplace/trading, and odds simulation tests.

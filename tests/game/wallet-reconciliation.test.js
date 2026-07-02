@@ -32,6 +32,35 @@ test('[Req 4-Z] wallet payment reconciliation is clean after a normal provider c
   assert.equal(report.total, 0);
 });
 
+test('[Req 4-Z] wallet payment reconciliation is clean after a completed refund clawback', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4603 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'reconcile-refund-clean'
+  });
+  const settledPayload = {
+    deliveryId: 'reconcile-refund-clean-settled',
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'reconcile-refund-clean-payment'
+  };
+  await processProviderWebhookEvent('btcpay', settledPayload, { rawBody: JSON.stringify(settledPayload) });
+  const refundPayload = {
+    deliveryId: 'reconcile-refund-clean-refunded',
+    status: 'refunded',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'reconcile-refund-clean-payment'
+  };
+  await processProviderWebhookEvent('btcpay', refundPayload, { rawBody: JSON.stringify(refundPayload) });
+
+  const report = await reconcileWalletPayments({ limit: 10 });
+  assert.equal(report.ok, true);
+  assert.equal(report.total, 0);
+});
+
 test('[Req 4-Z] wallet payment reconciliation reports local payment mismatches', async () => {
   await freshDb();
   const { player } = await createPlayer({ telegramId: 4602 });
