@@ -39,6 +39,9 @@ const chibiQueueLocalSourcePath = '.agent/home-field-workspace/supplied/thalla_t
 const chibiExhaustedRepairSourcePath = '.agent/home-field-workspace/supplied/thalla_palette_repair_2026-07-02.states.source.png';
 const chibiExhaustedRepairSourceSha256 = '0ce11c117499b96d6446d7884e2c0fc9eb2a6d7c3c87a6db53ac55b070fbf2ee';
 const chibiExhaustedRepairCandidateSha256 = '477e72e876ae67b3b90f02e134465f86f9c02a1b5ecdc9c19f4b3705ba923221';
+const chibiStyleRejectedSourcePath = '.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_2026-07-02_512x256_palette20_exactwarm_rgba.states.source.png';
+const chibiStyleRejectedSourceSha256 = 'bd82997b6b9d790d31e9e1bdf56ea191cf6e7dd63f4efd4f9bf271e8701e0fb1';
+const chibiStyleRejectedCandidateSha256 = '64b71fc1a0bb29fce6860d0246a41ab9539fbfc4ddb35b55a8d19b8530f835f9';
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -1507,6 +1510,11 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, /Exhausted repair sources that must not be reused/);
   assert.match(result.stdout, new RegExp(chibiExhaustedRepairSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(result.stdout, new RegExp(chibiExhaustedRepairSourceSha256));
+  assert.match(result.stdout, new RegExp(chibiStyleRejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(result.stdout, new RegExp(chibiStyleRejectedSourceSha256));
+  assert.match(result.stdout, new RegExp(chibiStyleRejectedCandidateSha256));
+  assert.match(result.stdout, /old mushroom monk|beige mascot pawn/);
+  assert.match(result.stdout, /youthful little-girl/);
   assert.match(result.stdout, /missing fresh authored-source capability/);
   assert.match(result.stdout, /clean blocker is not production-ready output/);
   assert.match(result.stdout, /do not split, produce a candidate, generate evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs while the sourceGate is blocked/);
@@ -1558,6 +1566,8 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, /do not synthesize motion after split/i);
   assert.match(result.stdout, /Post-split deterministic processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /BJD-inspired doll simplicity/);
+  assert.match(result.stdout, /youthful little-girl/);
+  assert.match(result.stdout, /old monk|beige mascot pawn|elderly gnome|faceless mushroom token/);
   assert.match(result.stdout, /--show-fallbacks` only for a future method change/);
   assert.doesNotMatch(result.stdout, /reference-proxy verifier\/palette audit and state-sheet verifier\/palette audit/);
   assert.match(result.stdout, /supplied complete 8x4 local/);
@@ -1638,12 +1648,23 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.details, new RegExp(chibiExhaustedRepairSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(prompt.details, new RegExp(chibiExhaustedRepairSourceSha256));
   assert.match(prompt.details, new RegExp(chibiExhaustedRepairCandidateSha256));
+  assert.match(prompt.details, new RegExp(chibiStyleRejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(prompt.details, new RegExp(chibiStyleRejectedSourceSha256));
+  assert.match(prompt.details, new RegExp(chibiStyleRejectedCandidateSha256));
+  assert.match(prompt.details, /old mushroom monk or beige mascot pawn/);
+  assert.match(prompt.details, /youthful little-girl/);
+  assert.match(prompt.details, /liked Thalla reference is the primary positive style target/);
   assert.match(prompt.details, /missing fresh authored-source capability/);
   assert.match(prompt.details, /clean blocker is not production-ready output/);
   assert.match(prompt.size, /one new authored supplied complete 8x4 state sheet, or explicitly repair-approved candidate-repair sheet whose source\/candidate hashes are not listed as exhausted/);
   assert.match(prompt.constraints, /Stage 1 blocked local-source validation until sourceGate is cleared/);
   assert.match(prompt.constraints, /exhausted repair sources/);
   assert.match(prompt.constraints, /sourceGateRecovery\.exhaustedRepairSources/);
+  assert.match(prompt.constraints, new RegExp(chibiStyleRejectedSourceSha256));
+  assert.match(prompt.constraints, new RegExp(chibiStyleRejectedCandidateSha256));
+  assert.match(prompt.constraints, /no elderly monk/);
+  assert.match(prompt.constraints, /no beige mascot pawn/);
+  assert.match(prompt.constraints, /youthful little-girl BJD-inspired chibi doll read/);
   assert.match(prompt.constraints, /do not stage any of those hashes again through the queue --source command/);
   assert.match(prompt.constraints, /styleReferences for visual review only/);
   assert.match(prompt.constraints, /not active imagegen inputs/);
@@ -1681,6 +1702,11 @@ test('[home-field] chibi proof launcher carries explicit local-source workflow',
   assert.match(prompt, /If the queue reports `sourceGate` blocked for the current source hash, stop before archive\/stage/);
   assert.match(prompt, /sourceGateRecovery\.copyablePrompt/);
   assert.match(prompt, /sourceGateRecovery\.exhaustedRepairSources/);
+  assert.match(prompt, new RegExp(chibiStyleRejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(prompt, new RegExp(chibiStyleRejectedSourceSha256));
+  assert.match(prompt, new RegExp(chibiStyleRejectedCandidateSha256));
+  assert.match(prompt, /youthful little-girl mushroom-elf chibi/);
+  assert.match(prompt, /old mushroom monk\/beige mascot pawn/);
   assert.match(prompt, /missing fresh authored-source capability/);
   assert.match(prompt, /clean block as a healthy production-ready image run/);
   assert.match(prompt, /default local-source run must use `npm run game:home-field:preflight-chibi-proof -- --source=<queue localSourceMode\.sourcePath>`/);
@@ -1728,7 +1754,10 @@ test('[home-field] imagegen requirements keep fallback methods out of default qu
   assert.match(requirements, /Preflight must reject a `--source` PNG whose sha256 matches a blocked `sourceGate`/);
   assert.match(requirements, /sourceGateRecovery/);
   assert.match(requirements, /sourceGateRecovery\.exhaustedRepairSources/);
-  assert.match(requirements, /exhausted repair source hashes before archive\/stage/);
+  assert.match(requirements, /user rejected for missing the required style read/);
+  assert.match(requirements, /old monk, beige mascot pawn, elderly gnome, or faceless mushroom token/);
+  assert.match(requirements, /youthful little-girl Thalla style/);
+  assert.match(requirements, /exhausted source hashes before archive\/stage/);
   assert.match(requirements, /missing fresh authored-source capability/);
   assert.match(requirements, /copyable queue-only launcher/);
   assert.match(requirements, /run the queue script and use the printed queue `SourceGate recovery production attempt` results/);
@@ -1777,6 +1806,9 @@ test('[home-field] repo agent instructions distinguish sourceGate blockers from 
   assert.match(agents, /use the printed queue `SourceGate recovery production attempt` results to generate what is needed/);
   assert.match(agents, /sourceGateRecovery/);
   assert.match(agents, /sourceGateRecovery\.exhaustedRepairSources/);
+  assert.match(agents, /user-rejected style sources/);
+  assert.match(agents, /old mushroom monk, beige mascot pawn, elderly gnome, or faceless mushroom-token/);
+  assert.match(agents, /youthful little-girl mushroom-elf chibi/);
   assert.match(agents, /missing fresh authored-source capability/);
   assert.match(agents, /Final handoff must clearly say whether production-ready PNGs were actually produced/);
   assert.match(agents, /a correct blocker report is not production readiness/);
@@ -1990,16 +2022,29 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /missing fresh authored-source capability/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /passing palette\/count scripts alone is not production-ready/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /Use `--source=<new-source-png>`/.test(action)));
-  assert.equal(item.sourceGateRecovery.exhaustedRepairSources.length, 1);
-  assert.equal(item.sourceGateRecovery.exhaustedRepairSources[0].path, chibiExhaustedRepairSourcePath);
-  assert.equal(item.sourceGateRecovery.exhaustedRepairSources[0].sourceSha256, chibiExhaustedRepairSourceSha256);
-  assert.equal(item.sourceGateRecovery.exhaustedRepairSources[0].candidateSha256, chibiExhaustedRepairCandidateSha256);
-  assert.equal(item.sourceGateRecovery.exhaustedRepairSources[0].verdict, 'needs_regen');
-  assert.match(item.sourceGateRecovery.exhaustedRepairSources[0].rollout, /codex-019f2204/);
-  assert.match(item.sourceGateRecovery.exhaustedRepairSources[0].reason, /Do not rerun/);
-  assert.match(item.sourceGateRecovery.exhaustedRepairSources[0].reason, /not production-ready/);
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /youthful little-girl mushroom-elf chibi/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /old monk, beige mascot pawn, elderly gnome, or faceless mushroom token/.test(action)));
+  assert.equal(item.sourceGateRecovery.exhaustedRepairSources.length, 2);
+  const exhaustedRepairSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiExhaustedRepairSourcePath);
+  const styleRejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiStyleRejectedSourcePath);
+  assert.ok(exhaustedRepairSource, 'expected exhausted palette-repair source');
+  assert.equal(exhaustedRepairSource.sourceSha256, chibiExhaustedRepairSourceSha256);
+  assert.equal(exhaustedRepairSource.candidateSha256, chibiExhaustedRepairCandidateSha256);
+  assert.equal(exhaustedRepairSource.verdict, 'needs_regen');
+  assert.match(exhaustedRepairSource.rollout, /codex-019f2204/);
+  assert.match(exhaustedRepairSource.reason, /Do not rerun/);
+  assert.match(exhaustedRepairSource.reason, /not production-ready/);
+  assert.ok(styleRejectedSource, 'expected user-rejected style source');
+  assert.equal(styleRejectedSource.sourceSha256, chibiStyleRejectedSourceSha256);
+  assert.equal(styleRejectedSource.candidateSha256, chibiStyleRejectedCandidateSha256);
+  assert.equal(styleRejectedSource.verdict, 'needs_regen');
+  assert.match(styleRejectedSource.rollout, /codex-019f23e4/);
+  assert.match(styleRejectedSource.reason, /old mushroom monk\/mascot pawn/);
+  assert.match(styleRejectedSource.reason, /youthful little-girl/);
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /new source path and sha256/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /must not match .*exhausted repair source\/candidate hash/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /youthful little-girl Thalla chibi/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /old monk, beige mascot pawn, elderly gnome, or faceless mushroom token/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /repair experiment/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /visual review clears the original source defects/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /production-ready candidate output from an intentional blocker/.test(criterion)));
@@ -2016,6 +2061,11 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiExhaustedRepairSourcePath)));
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiExhaustedRepairSourceSha256)));
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiExhaustedRepairCandidateSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiStyleRejectedSourcePath)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiStyleRejectedSourceSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiStyleRejectedCandidateSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => /youthful little-girl mushroom-elf chibi/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /old monk, beige mascot pawn, elderly gnome, faceless mushroom-token/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /missing fresh authored-source capability/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /production-ready PNGs were not produced/.test(instruction)));
   assert.match(item.commands.recordVerdict, /--reason-stdin/);
@@ -2116,6 +2166,11 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
     assert.match(reference.usage, /visual style reference/);
     assert.match(reference.usage, /not an active imagegen input/);
   }
+
+  const likedThallaReference = item.styleReferences.find((reference) => reference.path === 'docs/reference/home-field/chibi-thalla-liked-2026-06-23.png');
+  assert.ok(likedThallaReference, 'expected liked Thalla style reference');
+  assert.match(likedThallaReference.role, /primary positive youthful little-girl Thalla/);
+  assert.match(likedThallaReference.role, /rounded-cheek appeal/);
 });
 
 test('[home-field] generation queue printer exposes local-source defaults without fallback dirt', () => {
@@ -2164,7 +2219,15 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, new RegExp(`candidate sha256: ${chibiExhaustedRepairCandidateSha256}`));
   assert.match(result.stdout, /verdict: needs_regen/);
   assert.match(result.stdout, /Do not rerun this exhausted repair source/);
+  assert.match(result.stdout, new RegExp(`path: ${chibiStyleRejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  assert.match(result.stdout, new RegExp(`source sha256: ${chibiStyleRejectedSourceSha256}`));
+  assert.match(result.stdout, new RegExp(`candidate sha256: ${chibiStyleRejectedCandidateSha256}`));
+  assert.match(result.stdout, /verdict: needs_regen/);
+  assert.match(result.stdout, /old mushroom monk\/mascot pawn/);
+  assert.match(result.stdout, /youthful little-girl/);
   assert.match(result.stdout, /must not match the blocked source hash or any exhausted repair source\/candidate hash/);
+  assert.match(result.stdout, /liked Thalla reference/);
+  assert.match(result.stdout, /old monk, beige mascot pawn, elderly gnome, or faceless mushroom token/);
   assert.match(result.stdout, /visual review clears the original source defects/);
   assert.match(result.stdout, /production-ready candidate output from an intentional blocker/);
   assert.match(result.stdout, /required actions:/);
@@ -2183,6 +2246,10 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /new authored complete 8x4 source/);
   assert.match(result.stdout, /not a production-ready shortcut/);
   assert.match(result.stdout, /Do not rerun the exhausted repair source/);
+  assert.match(result.stdout, /Do not rerun the user-rejected SourceGate recovery source/);
+  assert.match(result.stdout, new RegExp(chibiStyleRejectedSourceSha256));
+  assert.match(result.stdout, new RegExp(chibiStyleRejectedCandidateSha256));
+  assert.match(result.stdout, /youthful little-girl mushroom-elf chibi/);
   assert.match(result.stdout, /same needs_regen verdict/);
   assert.match(result.stdout, /If a palette-cleanup or repair method is intentionally adopted/);
   assert.match(result.stdout, /Treat styleReferences as visual review references only/);

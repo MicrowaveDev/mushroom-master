@@ -845,6 +845,21 @@ The active Stage 1 contract is:
 - the queue, chibi proof context, next prompt, README, and run doc now prefer piping the visual-critic reason through stdin;
 - `--reason-file` remains available for explicit absolute repo-local paths and fixture tests, but it is no longer the default printed workflow.
 
+### 55. Recovery Candidate Passed Mechanics But Missed The Little-Girl Style
+
+**Symptom:** Rollout `codex-019f23e4-c4c6-76e0-b4e7-795a9f780640` followed the queue mechanics and did not call imagegen. It discovered and adopted the existing SourceGate recovery sheet `.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_2026-07-02_512x256_palette20_exactwarm_rgba.states.source.png`, source sha256 `bd82997b6b9d790d31e9e1bdf56ea191cf6e7dd63f4efd4f9bf271e8701e0fb1`, produced candidate sha256 `64b71fc1a0bb29fce6860d0246a41ab9539fbfc4ddb35b55a8d19b8530f835f9`, and recorded `needs_review` without overwriting app-facing PNGs. The user rejected the style: it was mechanically cleaner, but it read like an old mushroom monk/beige mascot pawn rather than the youthful little-girl Thalla chibi in the liked reference.
+
+**What was correct:** The worker used the queue-only prompt, kept the result candidate-only, used `--reason-stdin`, did not promote app-facing PNGs, and left a reviewable paper trail.
+
+**What was wrong in the flow:** The queue and prompts treated source/candidate hash exhaustion mostly as a mechanical or palette lineage problem. They did not encode the user's stricter style target clearly enough: the liked 2026-06-23 Thalla reference and previous-best state sheet should drive a youthful little-girl mushroom-elf face/body read, while old monk, elderly gnome, beige mascot pawn, and faceless mushroom-token reads fail even if validators pass.
+
+**Guardrails added:**
+
+- the rejected SourceGate recovery source/candidate hash pair is now listed under `sourceGateRecovery.exhaustedRepairSources`;
+- queue recovery required actions, success criteria, and agent instructions now make the little-girl Thalla reference read a hard visual gate;
+- `home-field-prompts.json`, `RUN_CHIBI_PROOF_PROMPT.md`, the chibi style reference, candidate contract, and imagegen requirements now reject old monk/beige mascot pawn/elderly gnome/faceless token reads explicitly;
+- tests assert the rejected hash pair, queue printer output, prompt text, and style language so a mechanically passing but stylistically wrong source cannot look like a reusable recovery input.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -890,3 +905,4 @@ The active Stage 1 contract is:
 41. Do not adopt source or candidate hashes listed under `sourceGateRecovery.exhaustedRepairSources` as another recovery attempt. Preflight must reject exhausted repair source hashes before archive/stage; if only exhausted repair sources exist, report missing fresh authored-source capability or use a stronger explicit repair method with new hashes.
 42. Do not let `record-chibi-verdict` consume a default candidate-evidence manifest from a diagnostic or test `tmp/` root. Regenerate evidence from `.agent/home-field-workspace/candidates/chibi-active-roster/latest` immediately before recording the verdict.
 43. Do not create relative `.agent/...` visual-critic reason files from the hub root. Prefer `record-chibi-verdict --reason-stdin` or `--reason=<text>`; use `--reason-file` only with an explicit repo-local absolute path.
+44. Do not reuse a source/candidate hash the user rejected for old-monk, beige mascot pawn, elderly gnome, or faceless-token style. The next Thalla source must read as a youthful little-girl mushroom-elf chibi like the liked reference; mechanical validators and palette gates are not enough.

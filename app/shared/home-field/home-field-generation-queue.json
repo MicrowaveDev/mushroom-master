@@ -27,6 +27,7 @@
           "Confirm the existing sourceGate blocker and blocked source hash before creating or adopting a replacement source.",
           "Prefer producing or accepting a genuinely new authored complete 8x4 local state-sheet source outside docs/reference; use palette-cleanup/repair only as a secondary explicit method when no source-generation surface is available or when intentionally running a diagnostic/candidate-repair experiment.",
           "Do not adopt any exhausted repair source or candidate hash listed below; if only exhausted repair sources exist, stop and report missing fresh authored-source capability instead of rerunning gates or committing the same verdict.",
+          "The next source must read as a youthful little-girl mushroom-elf chibi like the liked Thalla reference, with rounded cheeks, a sweet simple face, tiny childlike body, and soft hand-drawn field-sprite charm; do not accept an old monk, beige mascot pawn, elderly gnome, or faceless mushroom token read.",
           "If a repair method reuses the blocked art lineage, declare that lineage in the repair manifest and keep the final verdict as an intentional blocker unless the visual gate clears the preserved source defects; passing palette/count scripts alone is not production-ready.",
           "Do not stop only because no replacement source already exists; if the current tool surface cannot create or repair a source, report that missing capability explicitly instead of treating the old blocker as completion.",
           "Use `--source=<new-source-png>` for preflight, archive, and stage; do not use the blocked queue source hash.",
@@ -43,11 +44,22 @@
             "rollout": "codex-019f2204-df8c-7dc0-a3c4-7a753b3fdf2a",
             "commit": "69dd35e",
             "reason": "Do not rerun this exhausted repair source as another production attempt: it preserves the purple-pink edge/status ornament drift and was recorded as needs_regen, not production-ready."
+          },
+          {
+            "path": ".agent/home-field-workspace/supplied/thalla_sourcegate_recovery_2026-07-02_512x256_palette20_exactwarm_rgba.states.source.png",
+            "sourceSha256": "bd82997b6b9d790d31e9e1bdf56ea191cf6e7dd63f4efd4f9bf271e8701e0fb1",
+            "candidatePath": ".agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png",
+            "candidateSha256": "64b71fc1a0bb29fce6860d0246a41ab9539fbfc4ddb35b55a8d19b8530f835f9",
+            "verdict": "needs_regen",
+            "rollout": "codex-019f23e4-c4c6-76e0-b4e7-795a9f780640",
+            "commit": "98bdf95",
+            "reason": "Do not rerun this candidate-only SourceGate recovery source: the rollout recorded needs_review, then the user rejected the style because it reads too much like an old mushroom monk/mascot pawn and not enough like the youthful little-girl chibi in the liked Thalla reference."
           }
         ],
         "successCriteria": [
           "A new source path and sha256 are reported.",
           "The new source and candidate sha256 values must not match the blocked source hash or any exhausted repair source/candidate hash.",
+          "The composed preview and source sheet read as a youthful little-girl Thalla chibi like docs/reference/home-field/chibi-thalla-liked-2026-06-23.png and docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png, not an old monk, beige mascot pawn, elderly gnome, or faceless mushroom token.",
           "Reference proxy, staged state sheet, and candidate palette audits pass the fewer-than-20 visible design color gate.",
           "Split frames, candidate validation, evidence, preview, and verdict complete.",
           "If the run used repair instead of a new authored source, the final response labels it as a repair experiment and does not claim production-ready unless visual review clears the original source defects.",
@@ -61,6 +73,8 @@
         "The runner must use the printed SourceGate recovery production attempt section to create or adopt a new authored complete 8x4 source, or an explicitly documented secondary repair method, then validate that source through every listed gate; do not stop merely because no replacement source already exists.",
         "Prefer a genuinely new authored complete 8x4 source for another production-ready attempt. Palette-cleanup/repair is secondary evidence-backed candidate repair, not a production-ready shortcut.",
         "Do not rerun the exhausted repair source .agent/home-field-workspace/supplied/thalla_palette_repair_2026-07-02.states.source.png, source sha256 0ce11c117499b96d6446d7884e2c0fc9eb2a6d7c3c87a6db53ac55b070fbf2ee, or candidate sha256 477e72e876ae67b3b90f02e134465f86f9c02a1b5ecdc9c19f4b3705ba923221 as another production-ready attempt.",
+        "Do not rerun the user-rejected SourceGate recovery source .agent/home-field-workspace/supplied/thalla_sourcegate_recovery_2026-07-02_512x256_palette20_exactwarm_rgba.states.source.png, source sha256 bd82997b6b9d790d31e9e1bdf56ea191cf6e7dd63f4efd4f9bf271e8701e0fb1, or candidate sha256 64b71fc1a0bb29fce6860d0246a41ab9539fbfc4ddb35b55a8d19b8530f835f9 as another production-ready attempt.",
+        "Style target for the next authored source: the liked Thalla reference and previous-best state sheet should drive the face/body read. Thalla must look like a youthful little-girl mushroom-elf chibi with rounded cheeks, clear simple dark eyes, tiny planted body, and soft hand-drawn charm; reject old monk, beige mascot pawn, elderly gnome, faceless mushroom-token, or generic robed elder reads even if mechanical validators pass.",
         "If the only available replacement is an exhausted repair source, stop and report missing fresh authored-source capability instead of rerunning the same gates or committing the same needs_regen verdict again.",
         "Do not call a clean sourceGate block a healthy production-ready image run; production-ready PNGs were not produced unless a new candidate passes every listed gate.",
         "Do not rerun preflight/archive/stage for the current generationContract.stateSheet.localSourceMode.sourcePath (.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png) because sourceGate records that this exact source hash failed the reference palette audit.",
@@ -185,7 +199,7 @@
         },
         {
           "path": "docs/reference/home-field/chibi-thalla-liked-2026-06-23.png",
-          "role": "positive Thalla face, cap, and robe appeal only; simplify heavily",
+          "role": "primary positive youthful little-girl Thalla face, cap, robe, rounded-cheek appeal, and soft hand-drawn charm; simplify heavily for the 64px field sprite",
           "usage": "visual style reference for local-source review; not an active imagegen input in supplied local-source mode"
         },
         {

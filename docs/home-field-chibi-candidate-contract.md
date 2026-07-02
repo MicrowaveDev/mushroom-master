@@ -168,6 +168,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
 - follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base over the shared chibi shadow layer, and elevated 2.5D map read;
 - use `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` as a positive direction for compact grouped-sheet proportions and charm, while fixing its palette bloat, ornament, and sticker softness;
+- use `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png` as the primary positive direction for Thalla's youthful little-girl chibi face/body read: rounded cheeks, sweet simple expression, tiny childlike body, and soft hand-drawn field-sprite charm;
 - use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, small calm face features, small dark seed/dot eyes, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
 - mushroom-elf biology first, not a human wearing a mushroom hat and not hair/wig under a mushroom cap
 - visible elf ears whenever ears are visible
@@ -178,6 +179,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - clear feet/base grounding
 - no baked ground shadow in any chibi frame; use the separate shared `chibi_shadow` renderer/asset layer under the character
 - warm dark outline and quiet Home Field palette fit
+- no old monk, elderly gnome, beige mascot pawn, faceless mushroom token, or generic robed elder read; mechanical validators do not approve a source that misses the youthful little-girl Thalla reference style
 - limited source palette: `12-18` visible swatches, fewer than `20` total design colors, with shared ramps instead of many near-duplicate highlights and shadows
 - no text, UI, frame borders, floor plane, or baked background
 - no glossy anime eyes, eyelashes, or huge white portrait eyes; eyes must be small dark seed/dot features, much smaller than the reference screenshot's biggest facial read, and should not dominate the head
@@ -187,7 +189,7 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`. Imagegen prompts may translate that canon into "field-sprite leader" / "calm biostasis stillness" language when "sovereign", "regal", or "sacred regalia" repeatedly pulls in jewelry-like ornament.
 
-Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige featureless doll, a busy ornate fantasy sprite, a generic elf, a straight portrait sticker, a human with a mushroom hat or hair under a mushroom cap, glossy anime-eyed turnaround art, quadrant-filling character art, or a different renderer from the Home Field reference.
+Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige featureless doll, a busy ornate fantasy sprite, a generic elf, a straight portrait sticker, a human with a mushroom hat or hair under a mushroom cap, glossy anime-eyed turnaround art, quadrant-filling character art, an old mushroom monk, an elderly gnome, a beige mascot pawn, a faceless mushroom token, or a different renderer from the Home Field reference.
 
 Stage 1 detail budget:
 
