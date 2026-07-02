@@ -32,6 +32,13 @@ const supportHeaders = {
   'x-support-actor-id': 'support-agent-api'
 };
 
+function supportHeadersFor(actorId) {
+  return {
+    ...supportHeaders,
+    'x-support-actor-id': actorId
+  };
+}
+
 test('[Req 4-Z] support admin API requires configured token and actor id', async () => {
   await freshDb();
   const app = await createApp();
@@ -57,6 +64,64 @@ test('[Req 4-Z] support admin API requires configured token and actor id', async
       .set(supportHeaders);
     assert.equal(ok.status, 200);
     assert.deepEqual(ok.body.data, []);
+  });
+});
+
+test('[Req 4-Z] support admin API enforces configured operator roles', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    SUPPORT_ADMIN_OPERATORS_JSON: JSON.stringify({
+      support_viewer_api: ['support_viewer'],
+      support_wallet_api: ['support_viewer', 'wallet_operator'],
+      support_admin_api: ['admin']
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4710 });
+    const app = await createApp();
+
+    const unknown = await request(app)
+      .get('/api/admin/support/actions')
+      .set(supportHeadersFor('unknown_support_api'));
+    assert.equal(unknown.status, 403);
+    assert.equal(unknown.body.requiredRole, 'support_viewer');
+
+    const viewerList = await request(app)
+      .get('/api/admin/support/actions')
+      .set(supportHeadersFor('support_viewer_api'));
+    assert.equal(viewerList.status, 200);
+
+    const viewerGrant = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set(supportHeadersFor('support_viewer_api'))
+      .send({
+        playerId: player.id,
+        amount: 10,
+        reason: 'api_role_denied'
+      });
+    assert.equal(viewerGrant.status, 403);
+    assert.equal(viewerGrant.body.requiredRole, 'wallet_operator');
+
+    const walletGrant = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set(supportHeadersFor('support_wallet_api'))
+      .send({
+        playerId: player.id,
+        amount: 25,
+        reason: 'api_role_allowed'
+      });
+    assert.equal(walletGrant.status, 200);
+    assert.equal(walletGrant.body.data.action.actorId, 'support_wallet_api');
+
+    const adminGrant = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set(supportHeadersFor('support_admin_api'))
+      .send({
+        playerId: player.id,
+        amount: 5,
+        reason: 'api_admin_role_allowed'
+      });
+    assert.equal(adminGrant.status, 200);
   });
 });
 

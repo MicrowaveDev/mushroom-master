@@ -226,6 +226,62 @@ function requestSupportActorId(req) {
   ).trim();
 }
 
+function normalizeSupportRole(role) {
+  const normalized = String(role || '').trim().toLowerCase();
+  const aliases = {
+    view: 'support_viewer',
+    viewer: 'support_viewer',
+    read: 'support_viewer',
+    wallet: 'wallet_operator',
+    asset: 'asset_operator',
+    refund: 'refund_operator'
+  };
+  return aliases[normalized] || normalized;
+}
+
+function supportAdminOperatorConfig() {
+  const json = String(process.env.SUPPORT_ADMIN_OPERATORS_JSON || '').trim();
+  if (json) return JSON.parse(json);
+  const compact = String(process.env.SUPPORT_ADMIN_OPERATORS || '').trim();
+  if (!compact) return null;
+  return Object.fromEntries(compact.split(';').map((entry) => {
+    const [actorId, rolesText = ''] = entry.split(':');
+    return [
+      String(actorId || '').trim(),
+      rolesText.split(/[|,]/).map((role) => role.trim()).filter(Boolean)
+    ];
+  }).filter(([actorId]) => actorId));
+}
+
+function configuredSupportAdminRoles(actorId) {
+  const config = supportAdminOperatorConfig();
+  if (!config || !Object.keys(config).length) return null;
+  const entry = config[actorId];
+  if (!entry) return new Set();
+  const roles = Array.isArray(entry) ? entry : entry?.roles;
+  return new Set((roles || []).map(normalizeSupportRole).filter(Boolean));
+}
+
+function requireSupportAdminRole(requiredRole) {
+  const normalizedRequiredRole = normalizeSupportRole(requiredRole);
+  return (req, res, next) => {
+    const configuredRoles = configuredSupportAdminRoles(req.supportActorId);
+    if (
+      !configuredRoles ||
+      configuredRoles.has('admin') ||
+      configuredRoles.has(normalizedRequiredRole)
+    ) {
+      next();
+      return;
+    }
+    res.status(403).json({
+      success: false,
+      error: 'Support actor is not allowed to perform this action',
+      requiredRole: normalizedRequiredRole
+    });
+  };
+}
+
 function timingSafeEqualText(left, right) {
   const leftBuffer = Buffer.from(String(left || ''), 'utf8');
   const rightBuffer = Buffer.from(String(right || ''), 'utf8');
@@ -325,6 +381,7 @@ function requireSupportAdmin(req, res, next) {
     return;
   }
   req.supportActorId = actorId.slice(0, 120);
+  req.supportActorRoles = [...(configuredSupportAdminRoles(req.supportActorId) || [])];
   next();
 }
 
@@ -623,6 +680,7 @@ export async function createApp() {
   app.get(
     '/api/admin/support/money-lookup',
     requireSupportAdmin,
+    requireSupportAdminRole('support_viewer'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -638,6 +696,7 @@ export async function createApp() {
   app.get(
     '/api/admin/support/actions',
     requireSupportAdmin,
+    requireSupportAdminRole('support_viewer'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -655,6 +714,7 @@ export async function createApp() {
   app.post(
     '/api/admin/support/actions/wallet-grant',
     requireSupportAdmin,
+    requireSupportAdminRole('wallet_operator'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -675,6 +735,7 @@ export async function createApp() {
   app.post(
     '/api/admin/support/actions/wallet-revoke',
     requireSupportAdmin,
+    requireSupportAdminRole('wallet_operator'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -695,6 +756,7 @@ export async function createApp() {
   app.post(
     '/api/admin/support/actions/asset-grant',
     requireSupportAdmin,
+    requireSupportAdminRole('asset_operator'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -714,6 +776,7 @@ export async function createApp() {
   app.post(
     '/api/admin/support/actions/asset-revoke',
     requireSupportAdmin,
+    requireSupportAdminRole('asset_operator'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -733,6 +796,7 @@ export async function createApp() {
   app.post(
     '/api/admin/support/actions/purchase-refund',
     requireSupportAdmin,
+    requireSupportAdminRole('refund_operator'),
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({

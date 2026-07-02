@@ -61,6 +61,22 @@ manual intervention. Use `npm run game:support:money-action` for audited wallet
 or asset grants/revokes and purchase refund marking. Attach provider evidence
 JSON to manual actions whenever a settlement row is disputed.
 
+For API-backed support tooling, set `SUPPORT_ADMIN_API_TOKEN` and pass an
+explicit support actor id. To restrict operators by role, configure
+`SUPPORT_ADMIN_OPERATORS_JSON`, for example:
+
+```json
+{
+  "alice": ["support_viewer", "wallet_operator"],
+  "bob": ["support_viewer", "asset_operator", "refund_operator"],
+  "ops-lead": ["admin"]
+}
+```
+
+Supported roles are `support_viewer`, `wallet_operator`, `asset_operator`,
+`refund_operator`, and `admin`. If no operator map is configured, the support
+admin API keeps the token-only behavior for local/internal deployments.
+
 Keep provider raw exports according to the final data-retention policy. Do not
 store payment exports in the repository.
 

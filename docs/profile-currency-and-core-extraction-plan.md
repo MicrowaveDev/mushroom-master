@@ -332,9 +332,11 @@ backlog until the items are split into tickets or implementation phases.
 - A token-gated support admin JSON API now exists as of 2026-07-02:
   `/api/admin/support/*` mirrors the read-only lookup and audited mutation
   services for future admin UI integration. It requires
-  `SUPPORT_ADMIN_API_TOKEN` and an explicit support actor id. Still build the
-  actual admin UI, role-based operator authorization, multi-operator approval
-  policy, and runbooks before non-engineering support staff use these flows.
+  `SUPPORT_ADMIN_API_TOKEN` and an explicit support actor id. Optional
+  `SUPPORT_ADMIN_OPERATORS_JSON` / `SUPPORT_ADMIN_OPERATORS` role mapping can
+  restrict read, wallet, asset, and refund actions per operator. Still build
+  the actual admin UI, multi-operator approval policy, and final support
+  runbooks before non-engineering support staff use these flows.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -1351,6 +1353,14 @@ or legal/support/compliance rollout work.
      `--alert-webhook-url=<url>`.
    - Tests cover clean no-alert behavior and failed reconciliation alert
      payloads.
+19. Optional role-based support operator authorization exists.
+   - `SUPPORT_ADMIN_OPERATORS_JSON` or `SUPPORT_ADMIN_OPERATORS` can restrict
+     token-authenticated support actors by `support_viewer`, `wallet_operator`,
+     `asset_operator`, `refund_operator`, or `admin` roles.
+   - Existing token-only behavior remains available when no operator map is
+     configured.
+   - Tests cover unknown operators, read-only operators, wallet operators, and
+     admin override.
 
 ### Remaining launch gates
 
@@ -1403,8 +1413,8 @@ or legal/support/compliance rollout work.
   recording are implemented 2026-07-02**, but live provider semantics and
   runbooks still need validation.
 - Add the actual admin/support UI on top of the token-gated JSON API before
-  non-engineering support use, then add role-based operator authorization,
-  approval policy, and production scheduler/webhook routing.
+  non-engineering support use, then add multi-operator approval policy and
+  production scheduler/webhook routing.
 - Validate provider-specific settlement adapters and runbooks against real
   BTCPay, NOWPayments, and Telegram Stars sandbox/live exports/API payloads.
   Local adapters exist for common JSON/CSV shapes, but live examples and
