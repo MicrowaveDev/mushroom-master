@@ -335,8 +335,8 @@ backlog until the items are split into tickets or implementation phases.
   `SUPPORT_ADMIN_API_TOKEN` and an explicit support actor id. Optional
   `SUPPORT_ADMIN_OPERATORS_JSON` / `SUPPORT_ADMIN_OPERATORS` role mapping can
   restrict read, wallet, asset, and refund actions per operator. Still build
-  the actual admin UI, multi-operator approval policy, and final support
-  runbooks before non-engineering support staff use these flows.
+  the actual admin UI and final support runbooks before non-engineering support
+  staff use these flows.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -1361,6 +1361,13 @@ or legal/support/compliance rollout work.
      configured.
    - Tests cover unknown operators, read-only operators, wallet operators, and
      admin override.
+20. Optional multi-operator support approval policy exists.
+   - `SUPPORT_ADMIN_APPROVAL_REQUIRED=true` requires a second support actor on
+     wallet, asset, and refund mutation endpoints.
+   - The approver must be different from the action actor and must have
+     `support_approver` or `admin`.
+   - Successful approved mutations store approval evidence in the immutable
+     `support_actions.evidence.approval` payload.
 
 ### Remaining launch gates
 
@@ -1413,8 +1420,7 @@ or legal/support/compliance rollout work.
   recording are implemented 2026-07-02**, but live provider semantics and
   runbooks still need validation.
 - Add the actual admin/support UI on top of the token-gated JSON API before
-  non-engineering support use, then add multi-operator approval policy and
-  production scheduler/webhook routing.
+  non-engineering support use, then finish production scheduler/webhook routing.
 - Validate provider-specific settlement adapters and runbooks against real
   BTCPay, NOWPayments, and Telegram Stars sandbox/live exports/API payloads.
   Local adapters exist for common JSON/CSV shapes, but live examples and

@@ -232,6 +232,8 @@ function normalizeSupportRole(role) {
     view: 'support_viewer',
     viewer: 'support_viewer',
     read: 'support_viewer',
+    approval: 'support_approver',
+    approver: 'support_approver',
     wallet: 'wallet_operator',
     asset: 'asset_operator',
     refund: 'refund_operator'
@@ -262,6 +264,19 @@ function configuredSupportAdminRoles(actorId) {
   return new Set((roles || []).map(normalizeSupportRole).filter(Boolean));
 }
 
+function supportApprovalRequired() {
+  return process.env.SUPPORT_ADMIN_APPROVAL_REQUIRED === 'true';
+}
+
+function requestSupportApprovalActorId(req) {
+  return String(
+    req.header('x-support-approval-actor-id') ||
+    req.body?.approvalActorId ||
+    req.query?.approvalActorId ||
+    ''
+  ).trim();
+}
+
 function requireSupportAdminRole(requiredRole) {
   const normalizedRequiredRole = normalizeSupportRole(requiredRole);
   return (req, res, next) => {
@@ -279,6 +294,56 @@ function requireSupportAdminRole(requiredRole) {
       error: 'Support actor is not allowed to perform this action',
       requiredRole: normalizedRequiredRole
     });
+  };
+}
+
+function requireSupportApproval(req, res, next) {
+  if (!supportApprovalRequired()) {
+    next();
+    return;
+  }
+  const config = supportAdminOperatorConfig();
+  if (!config || !Object.keys(config).length) {
+    res.status(503).json({
+      success: false,
+      error: 'SUPPORT_ADMIN_OPERATORS_JSON or SUPPORT_ADMIN_OPERATORS is required for support approval policy'
+    });
+    return;
+  }
+  const approvalActorId = requestSupportApprovalActorId(req).slice(0, 120);
+  if (!approvalActorId) {
+    res.status(400).json({ success: false, error: 'Support approval actor is required' });
+    return;
+  }
+  if (approvalActorId === req.supportActorId) {
+    res.status(400).json({ success: false, error: 'Support approval actor must be different from action actor' });
+    return;
+  }
+  const approverRoles = configuredSupportAdminRoles(approvalActorId);
+  if (!approverRoles?.has('admin') && !approverRoles?.has('support_approver')) {
+    res.status(403).json({
+      success: false,
+      error: 'Support approval actor is not allowed to approve this action',
+      requiredRole: 'support_approver'
+    });
+    return;
+  }
+  req.supportApproval = {
+    actorId: approvalActorId,
+    required: true,
+    recordedAt: nowIso()
+  };
+  next();
+}
+
+function supportEvidence(req) {
+  const evidence = req.body?.evidence && typeof req.body.evidence === 'object' && !Array.isArray(req.body.evidence)
+    ? req.body.evidence
+    : {};
+  if (!req.supportApproval) return evidence;
+  return {
+    ...evidence,
+    approval: req.supportApproval
   };
 }
 
@@ -715,6 +780,7 @@ export async function createApp() {
     '/api/admin/support/actions/wallet-grant',
     requireSupportAdmin,
     requireSupportAdminRole('wallet_operator'),
+    requireSupportApproval,
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -726,7 +792,7 @@ export async function createApp() {
           direction: 'grant',
           reason: req.body.reason,
           note: req.body.note,
-          evidence: req.body.evidence
+          evidence: supportEvidence(req)
         })
       });
     })
@@ -736,6 +802,7 @@ export async function createApp() {
     '/api/admin/support/actions/wallet-revoke',
     requireSupportAdmin,
     requireSupportAdminRole('wallet_operator'),
+    requireSupportApproval,
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -747,7 +814,7 @@ export async function createApp() {
           direction: 'revoke',
           reason: req.body.reason,
           note: req.body.note,
-          evidence: req.body.evidence
+          evidence: supportEvidence(req)
         })
       });
     })
@@ -757,6 +824,7 @@ export async function createApp() {
     '/api/admin/support/actions/asset-grant',
     requireSupportAdmin,
     requireSupportAdminRole('asset_operator'),
+    requireSupportApproval,
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -767,7 +835,7 @@ export async function createApp() {
           assetId: req.body.assetId,
           reason: req.body.reason,
           note: req.body.note,
-          evidence: req.body.evidence
+          evidence: supportEvidence(req)
         })
       });
     })
@@ -777,6 +845,7 @@ export async function createApp() {
     '/api/admin/support/actions/asset-revoke',
     requireSupportAdmin,
     requireSupportAdminRole('asset_operator'),
+    requireSupportApproval,
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -787,7 +856,7 @@ export async function createApp() {
           assetId: req.body.assetId,
           reason: req.body.reason,
           note: req.body.note,
-          evidence: req.body.evidence
+          evidence: supportEvidence(req)
         })
       });
     })
@@ -797,6 +866,7 @@ export async function createApp() {
     '/api/admin/support/actions/purchase-refund',
     requireSupportAdmin,
     requireSupportAdminRole('refund_operator'),
+    requireSupportApproval,
     supportAdminRateLimit,
     asyncRoute(async (req, res) => {
       res.json({
@@ -807,7 +877,7 @@ export async function createApp() {
           clawback: req.body.clawback !== false,
           reason: req.body.reason,
           note: req.body.note,
-          evidence: req.body.evidence
+          evidence: supportEvidence(req)
         })
       });
     })

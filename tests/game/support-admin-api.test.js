@@ -125,6 +125,77 @@ test('[Req 4-Z] support admin API enforces configured operator roles', async () 
   });
 });
 
+test('[Req 4-Z] support admin API can require a second operator approval for mutations', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    SUPPORT_ADMIN_APPROVAL_REQUIRED: 'true',
+    SUPPORT_ADMIN_OPERATORS_JSON: JSON.stringify({
+      support_wallet_api: ['support_viewer', 'wallet_operator'],
+      support_viewer_api: ['support_viewer'],
+      support_approver_api: ['support_approver']
+    })
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4714 });
+    const app = await createApp();
+
+    const missingApproval = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set(supportHeadersFor('support_wallet_api'))
+      .send({
+        playerId: player.id,
+        amount: 10,
+        reason: 'api_approval_missing'
+      });
+    assert.equal(missingApproval.status, 400);
+
+    const sameActorApproval = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set({
+        ...supportHeadersFor('support_wallet_api'),
+        'x-support-approval-actor-id': 'support_wallet_api'
+      })
+      .send({
+        playerId: player.id,
+        amount: 10,
+        reason: 'api_approval_same_actor'
+      });
+    assert.equal(sameActorApproval.status, 400);
+
+    const unauthorizedApproval = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set({
+        ...supportHeadersFor('support_wallet_api'),
+        'x-support-approval-actor-id': 'support_viewer_api'
+      })
+      .send({
+        playerId: player.id,
+        amount: 10,
+        reason: 'api_approval_unauthorized'
+      });
+    assert.equal(unauthorizedApproval.status, 403);
+    assert.equal(unauthorizedApproval.body.requiredRole, 'support_approver');
+
+    const approved = await request(app)
+      .post('/api/admin/support/actions/wallet-grant')
+      .set({
+        ...supportHeadersFor('support_wallet_api'),
+        'x-support-approval-actor-id': 'support_approver_api'
+      })
+      .send({
+        playerId: player.id,
+        amount: 25,
+        reason: 'api_approval_allowed',
+        evidence: { ticket: 'SUP-API-APPROVAL' }
+      });
+    assert.equal(approved.status, 200);
+    assert.equal(approved.body.data.action.actorId, 'support_wallet_api');
+    assert.equal(approved.body.data.action.evidence.ticket, 'SUP-API-APPROVAL');
+    assert.equal(approved.body.data.action.evidence.approval.actorId, 'support_approver_api');
+    assert.equal(approved.body.data.action.evidence.approval.required, true);
+  });
+});
+
 test('[Req 4-Z] support admin API can grant wallet currency and search support packet', async () => {
   await withEnv({ SUPPORT_ADMIN_API_TOKEN: 'support-test-token' }, async () => {
     await freshDb();

@@ -77,6 +77,12 @@ Supported roles are `support_viewer`, `wallet_operator`, `asset_operator`,
 `refund_operator`, and `admin`. If no operator map is configured, the support
 admin API keeps the token-only behavior for local/internal deployments.
 
+Set `SUPPORT_ADMIN_APPROVAL_REQUIRED=true` to require a second support actor on
+wallet, asset, and refund mutations. The approving actor must be different from
+the action actor and must have `support_approver` or `admin`. Pass the approver
+with `x-support-approval-actor-id` or `approvalActorId`; successful mutations
+store the approval under `support_actions.evidence.approval`.
+
 Keep provider raw exports according to the final data-retention policy. Do not
 store payment exports in the repository.
 
