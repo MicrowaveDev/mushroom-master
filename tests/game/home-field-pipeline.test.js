@@ -1711,6 +1711,8 @@ test('[home-field] chibi proof launcher carries explicit local-source workflow',
   assert.match(prompt, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
+  assert.match(prompt, /--reason-stdin/);
+  assert.match(prompt, /Do not create a relative `\.agent\/\.\.\.` reason file from the hub root/);
 });
 
 test('[home-field] imagegen requirements keep fallback methods out of default queue output', () => {
@@ -1835,6 +1837,7 @@ test('[home-field] chibi proof context prints narrow paths and commands', () => 
   assert.match(result.stdout, /archive-stale-chibi-proof/);
   assert.match(result.stdout, /recover-chibi-alpha/);
   assert.match(result.stdout, /record-chibi-verdict/);
+  assert.match(result.stdout, /--reason-stdin/);
   assert.match(result.stdout, /Runtime contract: raw source must be unclipped/);
   assert.match(result.stdout, /Post-split processing may clean alpha\/chroma fringe, crop, and resize only/);
   assert.match(result.stdout, /Shadow contract: no baked shadow/);
@@ -2015,6 +2018,8 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiExhaustedRepairCandidateSha256)));
   assert.ok(item.agentInstructions.some((instruction) => /missing fresh authored-source capability/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /production-ready PNGs were not produced/.test(instruction)));
+  assert.match(item.commands.recordVerdict, /--reason-stdin/);
+  assert.doesNotMatch(item.commands.recordVerdict, /--reason-file/);
   assert.ok(item.agentInstructions.some((instruction) => /generationContract\.stateSheet\.localSourceMode\.sourcePath/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /complete 8x4 local state-sheet source/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Do not rerun preflight\/archive\/stage/.test(instruction)));
@@ -2170,6 +2175,8 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /generic minimal launcher/);
   assert.match(result.stdout, /printed SourceGate recovery production attempt section/);
   assert.match(result.stdout, /production-ready PNGs were not produced unless a new candidate passes every listed gate/);
+  assert.match(result.stdout, /recordVerdict: .*--reason-stdin/);
+  assert.doesNotMatch(result.stdout, /recordVerdict: .*--reason-file/);
   assert.match(result.stdout, /Do not rerun preflight\/archive\/stage for the current generationContract\.stateSheet\.localSourceMode\.sourcePath/);
   assert.match(result.stdout, /sourceGate records that this exact source hash failed the reference palette audit/);
   assert.match(result.stdout, /If the user supplies a new complete 8x4 local state-sheet source/);
@@ -2435,6 +2442,57 @@ test('[home-field] record chibi verdict copies hashes from candidate evidence', 
       assert.equal(review.mobileScreenshotSha256, '4'.repeat(64));
       assert.equal(review.desktopScreenshotSha256, '5'.repeat(64));
       assert.equal(review.candidateEvidenceSha256, '6'.repeat(64));
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('[home-field] record chibi verdict accepts reason text from stdin', () => {
+  const reviewPath = path.join(repoRoot, 'docs/home-field-asset-review.json');
+  return withPreservedFile(reviewPath, () => {
+    const fixtureDir = path.join(repoRoot, 'tmp/home-field-record-chibi-verdict-stdin-test');
+    const manifestPath = path.join(fixtureDir, 'candidate-evidence.manifest.json');
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.mkdirSync(fixtureDir, { recursive: true });
+    fs.writeFileSync(manifestPath, JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: '2026-07-02T00:00:00.000Z',
+      candidateRoot: '.agent/home-field-workspace/candidates/chibi-active-roster/latest',
+      ids: ['thalla'],
+      entries: [{
+        id: 'thalla',
+        candidateOutput: { path: 'candidate/spritesheet.png', sha256: 'a'.repeat(64) },
+        rawSource: { path: 'raw/thalla_chibi.states.source.png', sha256: 'b'.repeat(64) },
+        chibiSources: {
+          reference: { path: 'reference/thalla_chibi_turnaround.reference.png', sha256: 'c'.repeat(64) }
+        }
+      }],
+      previews: [],
+      manifestSha256: 'd'.repeat(64)
+    }, null, 2));
+
+    try {
+      const result = spawnSync(process.execPath, [
+        recordChibiVerdictScriptPath,
+        'thalla',
+        '--verdict=needs_review',
+        '--reason-stdin',
+        `--manifest=${path.relative(repoRoot, manifestPath)}`
+      ], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        input: 'Visual critic: stdin reason avoids ignored scratch-file placement.'
+      });
+
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const review = JSON.parse(fs.readFileSync(reviewPath, 'utf8')).assets.find((entry) => entry.id === 'thalla');
+      assert.equal(review.verdict, 'needs_review');
+      assert.equal(review.reason, 'Visual critic: stdin reason avoids ignored scratch-file placement.');
+      assert.equal(review.candidateSha256, 'a'.repeat(64));
+      assert.equal(review.rawSourceSha256, 'b'.repeat(64));
+      assert.equal(review.referenceSha256, 'c'.repeat(64));
+      assert.equal(review.candidateEvidenceSha256, 'd'.repeat(64));
     } finally {
       fs.rmSync(fixtureDir, { recursive: true, force: true });
     }

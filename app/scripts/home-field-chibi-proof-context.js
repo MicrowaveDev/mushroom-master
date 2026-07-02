@@ -89,7 +89,7 @@ function main() {
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo --check-readability --check-runtime-readiness --check-chibi-animation');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-chibi-quality');
   console.log('  HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence');
-  console.log('  npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>');
+  console.log("  printf '%s\\n' '<visual-critic reason>' | npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-stdin");
   console.log('  npm run game:home-field:chibi-candidate-preview');
   console.log('');
   console.log('Required paths:');

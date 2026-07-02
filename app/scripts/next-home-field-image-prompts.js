@@ -567,7 +567,7 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
     }
     lines.push(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${asset.id} npm run game:home-field:candidate-evidence`);
     if (chibiCandidate) {
-      lines.push(`  npm run game:home-field:record-chibi-verdict -- ${asset.id} --verdict=needs_regen --reason-file=<visual-critic-reason.txt>`);
+      lines.push(`  printf '%s\\n' '<visual-critic reason>' | npm run game:home-field:record-chibi-verdict -- ${asset.id} --verdict=needs_regen --reason-stdin`);
     }
     const previewCommand = chibiCandidate
       ? 'game:home-field:chibi-candidate-preview'

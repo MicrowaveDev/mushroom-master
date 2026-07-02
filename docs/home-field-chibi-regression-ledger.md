@@ -833,6 +833,18 @@ The active Stage 1 contract is:
 - the helper also rejects `tmp/` candidate paths in the default manifest and prints the exact canonical candidate-evidence command to rerun;
 - tests cover the stale default-manifest failure mode while preserving explicit `--manifest=<path>` fixtures for diagnostics.
 
+### 54. Verdict Reason Files Landed In The Hub Root
+
+**Symptom:** Rollout `codex-019f23a5-4fdd-78f2-8516-9bd630fd78e8` successfully produced a fresh SourceGate recovery candidate, repaired palette/outline issues, regenerated evidence, and recorded `needs_review`. The first `record-chibi-verdict` attempt still failed with `ENOENT` because the visual-critic reason file had been created as a relative `.agent/...` path in the hub root instead of inside `/Users/microwavedev/workspace/microwave-hub/mushroom-master`.
+
+**What was wrong in the flow:** The helper and queue surfaces required `--reason-file=<path>`, which encouraged agents to create a transient ignored file. `apply_patch` uses the current turn/workspace path unless given an absolute path, so a repo-local verdict command could not see a hub-local reason file. This was harmless after manual recovery, but it repeated across runs.
+
+**Guardrails added:**
+
+- `record-home-field-chibi-verdict` now supports `--reason-stdin` and `--reason=<text>` in addition to explicit `--reason-file`;
+- the queue, chibi proof context, next prompt, README, and run doc now prefer piping the visual-critic reason through stdin;
+- `--reason-file` remains available for explicit absolute repo-local paths and fixture tests, but it is no longer the default printed workflow.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -877,3 +889,4 @@ The active Stage 1 contract is:
 40. Do not report a sourceGate-blocked queue run as a production-ready image run. If the user asked for another production-ready run, use only the queue-only `sourceGateRecovery.copyablePrompt`; the new-source/repair-method instructions must come from the printed queue `SourceGate recovery production attempt` output. A blocker-only handoff is incomplete for that request, and lack of a pre-existing replacement source is not by itself completion.
 41. Do not adopt source or candidate hashes listed under `sourceGateRecovery.exhaustedRepairSources` as another recovery attempt. Preflight must reject exhausted repair source hashes before archive/stage; if only exhausted repair sources exist, report missing fresh authored-source capability or use a stronger explicit repair method with new hashes.
 42. Do not let `record-chibi-verdict` consume a default candidate-evidence manifest from a diagnostic or test `tmp/` root. Regenerate evidence from `.agent/home-field-workspace/candidates/chibi-active-roster/latest` immediately before recording the verdict.
+43. Do not create relative `.agent/...` visual-critic reason files from the hub root. Prefer `record-chibi-verdict --reason-stdin` or `--reason=<text>`; use `--reason-file` only with an explicit repo-local absolute path.

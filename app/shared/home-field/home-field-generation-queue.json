@@ -107,7 +107,7 @@
         "auditCandidatePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png --out=.agent/home-field-workspace/review/thalla-candidate-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-candidate-palette-swatch.png --fail-on-bloat",
         "candidateEvidence": "HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence",
         "preview": "HOME_FIELD_CANDIDATE_IDS=thalla HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:chibi-candidate-preview",
-        "recordVerdict": "npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>"
+        "recordVerdict": "printf '%s\\n' '<visual-critic reason>' | npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-stdin"
       },
       "generationContract": {
         "referenceSheet": {

@@ -48,10 +48,11 @@ npm run game:home-field:palette-audit -- .agent/home-field-workspace/raw/thalla_
 npm run game:home-field:palette-audit -- .agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png --out=.agent/home-field-workspace/review/thalla-candidate-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-candidate-palette-swatch.png --fail-on-bloat
 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence
 npm run game:home-field:chibi-candidate-preview
-npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-file=<visual-critic-reason.txt>
+printf '%s\n' '<visual-critic reason>' | npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-stdin
 ```
 
 Do not run `record-chibi-verdict` against an ambient default evidence manifest from a diagnostic or test candidate root. The helper must see `.agent/home-field-workspace/candidates/chibi-active-roster/latest` as the default `candidateRoot`; if it reports a stale `tmp/` evidence manifest, rerun the canonical `HOME_FIELD_CANDIDATE_ROOT=... game:home-field:candidate-evidence` command above before recording the verdict.
+Prefer `--reason-stdin` or `--reason=<text>` for the visual-critic reason. Do not create a relative `.agent/...` reason file from the hub root; if `--reason-file` is used, make it an absolute path under `/Users/microwavedev/workspace/microwave-hub/mushroom-master/.agent/home-field-workspace/review/`.
 
 ## Stage 1 Visual Target
 

@@ -14,12 +14,14 @@ const defaultManifestPath = path.join(repoRoot, '.agent', 'home-field-workspace'
 const defaultCandidateRoot = path.join(repoRoot, '.agent', 'home-field-workspace', 'candidates', 'chibi-active-roster', 'latest');
 
 function usage() {
-  console.log(`Usage: record-home-field-chibi-verdict <id> --verdict=<needs_review|needs_regen|rejected|pending> --reason-file=<path> [--manifest=<path>]
+  console.log(`Usage: record-home-field-chibi-verdict <id> --verdict=<needs_review|needs_regen|rejected|pending> (--reason-file=<path>|--reason=<text>|--reason-stdin) [--manifest=<path>]
 
 Updates docs/home-field-asset-review.json for the chibi id by copying candidate,
 reference, raw source, screenshot, and evidence-manifest hashes from the current
 candidate-evidence.manifest.json. This helper never records approved/accepted
-production sign-off.
+production sign-off. Prefer --reason-stdin for generated .agent review notes so
+the verdict does not depend on creating an ignored scratch file in the right
+working directory.
 `);
 }
 
@@ -86,6 +88,21 @@ function validateDefaultManifestFreshness(manifest, entry, manifestPath) {
   }
 }
 
+function readReason({ reasonFile, inlineReason, reasonStdin }) {
+  const sourceCount = [reasonFile, inlineReason, reasonStdin].filter(Boolean).length;
+  if (sourceCount !== 1) {
+    throw new Error('exactly one of --reason-file, --reason, or --reason-stdin is required');
+  }
+  const reason = reasonFile
+    ? fs.readFileSync(resolveRepoPath(reasonFile), 'utf8')
+    : reasonStdin
+      ? fs.readFileSync(0, 'utf8')
+      : inlineReason;
+  const trimmed = reason.trim();
+  if (!trimmed) throw new Error('review reason must contain non-empty text');
+  return trimmed;
+}
+
 function findHash(list, name) {
   return (list || []).find((entry) => entry.path?.endsWith(name))?.sha256 || null;
 }
@@ -104,6 +121,8 @@ function main() {
   const id = argv.find((arg) => !arg.startsWith('-'));
   const verdict = optionValue(argv, 'verdict');
   const reasonFile = optionValue(argv, 'reason-file');
+  const inlineReason = optionValue(argv, 'reason');
+  const reasonStdin = hasFlag(argv, 'reason-stdin');
   const manifestFile = optionValue(argv, 'manifest') || defaultManifestPath;
 
   if (!id || !supportedIds.has(id)) {
@@ -115,14 +134,9 @@ function main() {
     console.error(`Usage error: --verdict must be one of ${[...allowedVerdicts].join('|')}; approved verdicts require explicit human promotion outside this helper`);
     process.exit(1);
   }
-  if (!reasonFile) {
-    console.error('Usage error: --reason-file is required');
-    process.exit(1);
-  }
 
   try {
-    const reason = fs.readFileSync(resolveRepoPath(reasonFile), 'utf8').trim();
-    if (!reason) throw new Error('--reason-file must contain non-empty review text');
+    const reason = readReason({ reasonFile, inlineReason, reasonStdin });
 
     const manifestAbs = resolveRepoPath(manifestFile);
     const manifest = loadJson(manifestAbs);
