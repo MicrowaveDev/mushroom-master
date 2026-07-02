@@ -64,7 +64,7 @@ The reference sheet should show the same Thalla design in the four facing direct
 For current Thalla runs, create this reference with image-guided generation from the checked-in PNG references, not another text-only prompt-only attempt. Attach or same-context stage these images as actual image inputs to the generation call and state their roles before imagegen:
 
 - `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png`: primary positive compact grouped-sheet proportions and charm; fix palette bloat/ornament.
-- `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`: positive Thalla face/cap/robe appeal only; simplify heavily.
+- `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png`: primary positive youthful little-girl face/cap/robe appeal, compact visible oval/almond doll eyes, rounded cheeks, and soft cute expression; simplify heavily.
 - `docs/reference/home-field/chibi-style-agent-log-reference.png`: target scale, outline weight, and scene-scale simplicity only; do not copy symbols/costumes.
 
 If the active imagegen path cannot attach or use those checked-in PNGs as actual same-context image inputs to the generation call, stop and report that image-guided generation is required. Do not keep retrying text-only reference sheets; rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999` proved they still drift into oversized anime/turnaround art even with the tightened prompt. Do not retry the old image-guided turnaround wording unchanged either; rollout `codex-019f140b-07a4-7e10-85e1-f64c9d8a0bdb` only loaded the references for viewing and still produced large painterly turnaround figures instead of tiny sprite-box views. Rollout `codex-019f1482-8954-7b52-9f75-b377cf957645` proved the sprite-box prompt still fails when the run only views reference PNGs before a text prompt; that passive sequence is not sufficient image binding.
@@ -168,8 +168,8 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 
 - follow [`docs/home-field-chibi-style-reference.md`](home-field-chibi-style-reference.md) for the target field-sprite proportions: squat body, oversized but not eye-dominated head, warm dark irregular outline, simple costume blocks, planted feet/base over the shared chibi shadow layer, and elevated 2.5D map read;
 - use `docs/reference/home-field/chibi-thalla-previous-best-2026-06-26-state-sheet.png` as a positive direction for compact grouped-sheet proportions and charm, while fixing its palette bloat, ornament, and sticker softness;
-- use `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png` as the primary positive direction for Thalla's youthful little-girl chibi face/body read: rounded cheeks, sweet simple expression, tiny childlike body, and soft hand-drawn field-sprite charm;
-- use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, small calm face features, small dark seed/dot eyes, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
+- use `docs/reference/home-field/chibi-thalla-liked-2026-06-23.png` as the primary positive direction for Thalla's youthful little-girl chibi face/body read: rounded cheeks, sweet simple expression, compact but visible oval/almond doll eyes, tiny childlike body, and soft hand-drawn field-sprite charm;
+- use BJD-inspired chibi doll simplicity: smooth porcelain/resin-like face planes translated into hand-drawn 2D art, rounded cheeks, compact calm face features, visible dark oval/almond doll eyes, mitten-like hands, tiny feet, and a quiet collectible-doll posture;
 - mushroom-elf biology first, not a human wearing a mushroom hat and not hair/wig under a mushroom cap
 - visible elf ears whenever ears are visible
 - strong silhouette readable without labels
@@ -179,17 +179,17 @@ The chibi must read at `64px` on the green Home Field on mobile and desktop:
 - clear feet/base grounding
 - no baked ground shadow in any chibi frame; use the separate shared `chibi_shadow` renderer/asset layer under the character
 - warm dark outline and quiet Home Field palette fit
-- no old monk, elderly gnome, beige mascot pawn, faceless mushroom token, or generic robed elder read; mechanical validators do not approve a source that misses the youthful little-girl Thalla reference style
+- no old monk, elderly gnome, beige mascot pawn, faceless mushroom token, skull-mask face, hollow pin-dot eyes, blank mask face, or generic robed elder read; mechanical validators do not approve a source that misses the youthful little-girl Thalla reference style
 - limited source palette: `12-18` visible swatches, fewer than `20` total design colors, with shared ramps instead of many near-duplicate highlights and shadows
 - no text, UI, frame borders, floor plane, or baked background
-- no glossy anime eyes, eyelashes, or huge white portrait eyes; eyes must be small dark seed/dot features, much smaller than the reference screenshot's biggest facial read, and should not dominate the head
+- no glossy anime eyes, eyelashes, or huge white portrait eyes; eyes must be compact but visibly cute dark oval/almond doll features, smaller than the reference screenshot's biggest facial read but not reduced to hollow pin-dots or a skull-mask face
 - no realistic doll-photo rendering, glossy plastic toy rendering, fashion-doll proportions, or porcelain figurine material study
 - no dense cap spots, scattered gold freckles, robe filigree, many tear/drop marks, or baked blob/cast shadows; if a detail does not read as one of the few large identity marks at `64px`, remove it
 - no earrings, fashion jewelry, royal regalia, crown jewels, forehead gems, brooches, chest medallions, pendants, jewelry-like cap crests, scalloped collars, ornamental robe borders, decorative trim clusters, sleeve cuff trim, clasps, collar jewels, repeated gold badges, large standalone character-turnaround proportions, soft painterly turnaround figures, quadrant-filling reference art, or over-flat cel/vector/pixel style introduced only to satisfy the palette budget
 
 For Thalla, use `docs/design-requirements.md` as the authoritative design source: ancient gold-white mushroom-elf sovereign, black eyes with fiery-gold life, gold tear-like spore traces, luminous gold mycelium across skin, sacred fungal regalia, and a warm bone/gold/white/brown palette. Simplify aggressively for `64px`. Imagegen prompts may translate that canon into "field-sprite leader" / "calm biostasis stillness" language when "sovereign", "regal", or "sacred regalia" repeatedly pulls in jewelry-like ornament.
 
-Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige featureless doll, a busy ornate fantasy sprite, a generic elf, a straight portrait sticker, a human with a mushroom hat or hair under a mushroom cap, glossy anime-eyed turnaround art, quadrant-filling character art, an old mushroom monk, an elderly gnome, a beige mascot pawn, a faceless mushroom token, or a different renderer from the Home Field reference.
+Mechanical checks are necessary but not sufficient. A candidate that passes dimensions, alpha, sheet mapping, or mobile readability still fails if it reads as pixel art, a tiny beige featureless doll, a busy ornate fantasy sprite, a generic elf, a straight portrait sticker, a human with a mushroom hat or hair under a mushroom cap, glossy anime-eyed turnaround art, quadrant-filling character art, an old mushroom monk, an elderly gnome, a beige mascot pawn, a faceless mushroom token, a skull-mask face, hollow pin-dot eyes, a blank mask face, or a different renderer from the Home Field reference.
 
 Stage 1 detail budget:
 

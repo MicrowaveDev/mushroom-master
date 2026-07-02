@@ -477,12 +477,12 @@ The active Stage 1 contract is:
 
 **Decision that led there:** The previous fix removed royal/regalia wording and asked for miniature sprite-reference views, but the prompt still let the model draw polished character-turnaround art inside a high-resolution canvas. "BJD-inspired chibi" and "turnaround sheet" still invited anime face polish and costume detailing unless the face, biology, scale, and costume-detail budgets are spelled out.
 
-**Why it regressed:** Text-only imagegen tends to spend unused canvas/detail budget on attractive character-sheet features. Negative lists reduced the worst regalia, but did not explicitly say that each view should behave like a tiny `96x96` source-sprite box, that the cap is biology rather than a hair-covered hat, or that eyes must be small seed/dot features rather than glossy anime eyes.
+**Why it regressed:** Text-only imagegen tends to spend unused canvas/detail budget on attractive character-sheet features. Negative lists reduced the worst regalia, but did not explicitly say that each view should behave like a tiny `96x96` source-sprite box, that the cap is biology rather than a hair-covered hat, or that the face must keep compact visible doll eyes rather than glossy anime eyes.
 
 **Guardrails added:**
 
 - the copyable reference prompt now asks for tiny source-sprite views with most of the sheet left as empty `#ff00ff`, not quadrant-filling character art;
-- face budget now says small dark seed/dot eyes with only a tiny gold life glint, no glossy anime eyes or eyelashes;
+- then-current face budget asked for smaller map-sprite eyes and a tiny gold life glint, no glossy anime eyes or eyelashes; this was later superseded by the compact visible oval/almond doll-eye rule after pin-dot/skull-mask failures;
 - biology language now rejects hair/wig under a mushroom cap and says the cap is part of the character, not a removable hat;
 - costume/detail budget now rejects scalloped collars, sleeve cuff trim, and repeated status marks in addition to earlier regalia bans.
 
@@ -860,6 +860,21 @@ The active Stage 1 contract is:
 - `home-field-prompts.json`, `RUN_CHIBI_PROOF_PROMPT.md`, the chibi style reference, candidate contract, and imagegen requirements now reject old monk/beige mascot pawn/elderly gnome/faceless token reads explicitly;
 - tests assert the rejected hash pair, queue printer output, prompt text, and style language so a mechanically passing but stylistically wrong source cannot look like a reusable recovery input.
 
+### 56. Imagegen Recovery Kept The Body But Lost The Cute Reference Face
+
+**Symptom:** Rollout `codex-019f2409-df38-7ec0-91be-e177ff62ba09` followed the queue-only recovery path, called imagegen, produced a fresh authored local `8x4` source `.agent/home-field-workspace/supplied/thalla_imagegen_recovery_runtime_2026-07-02.states.source.png`, source sha256 `aac982b3eee1769a7b78e42a96784f99d09ccfb33f0f7a7894f16518e5d40414`, candidate sha256 `fce7bff0f41b29c69132942e5c1cc5d5b4bf43c0a076741181b911977a2eefa6`, and recorded `needs_review` with passing mechanical, palette, evidence, and preview gates. The user rejected the new images because the old cute little-girl references were much better.
+
+**What was correct:** The run created a new non-exhausted source, kept the output candidate-only, passed the documented gates, recorded `accepted: false`, and did not overwrite app-facing PNGs.
+
+**What was wrong in the flow:** The prompt said "youthful little-girl", but it still overconstrained eyes toward small seed/dot features. Imagegen complied by making tidy sprites with a skull-mask/hollow pin-dot face. Mechanical validators and the final visual review text accepted "youthful little-girl" from body scale alone, without requiring the liked reference's soft doll face, visible oval/almond eyes, rounded cheeks, and cute expression.
+
+**Guardrails added:**
+
+- the new source/candidate hash pair is listed under `sourceGateRecovery.exhaustedRepairSources`;
+- queue recovery, prompt helper, runbook, style reference, candidate contract, and repo agent instructions now require compact but visible oval/almond doll eyes and rounded cheeks;
+- skull-mask faces, hollow pin-dot eyes, blank mask faces, and mask-like sprites are explicit rejection signals even when palette and runtime validators pass;
+- tests assert the new exhausted hash pair and face-specific language so another mechanically tidy but not-cute Thalla candidate is not treated as reusable.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -884,7 +899,7 @@ The active Stage 1 contract is:
 20. Do not fix palette bloat by changing the renderer into hard pixel art, flat vector/cel/anime art, or a large fashion turnaround. Preserve the previous-best compact field-sprite charm while reducing palette and detail.
 21. Do not let "sovereign", "regal", or "gold-white" become jewelry/regalia. For Thalla chibis, sovereignty must read through silhouette, posture, robe blocks, and `1-2` flat mycelium/spore marks only.
 22. Do not keep retrying the exact same reference prompt after repeated same-cause reference-gate failures. Fix the persisted prompt/helper or stop for review.
-23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, small seed/dot eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.
+23. Do not let "miniature reference" be interpreted as a polished anime character sheet. Thalla reference attempts must keep tiny source-sprite occupancy, compact visible oval/almond doll eyes, cap-as-biology, and a plain robe block before any final state-sheet generation.
 24. Do not run more text-only Thalla reference attempts after rollout `codex-019f105b-b55a-7ad0-9f8d-38903fdf7999`. Use the checked-in reference PNGs as actual image inputs to imagegen, or stop and ask for a reference-capable generation path.
 25. Do not repeat the pre-2026-06-29 image-guided turnaround prompt unchanged. The reference prompt must behave like a sprite-box extraction guide with tiny `96x96` occupancy and mostly empty magenta space; if that still fails twice, change the generation method or ask for explicit user direction.
 26. Do not call a Thalla run image-guided unless the actual imagegen request can attach or same-context stage the checked-in PNGs as image inputs. For built-in imagegen, `view_image` counts only as the current imagegen skill's input-staging step when the following built-in `image_gen` call explicitly uses those visible images as references; passive `view_image` plus prompt text is not enough.
@@ -906,3 +921,4 @@ The active Stage 1 contract is:
 42. Do not let `record-chibi-verdict` consume a default candidate-evidence manifest from a diagnostic or test `tmp/` root. Regenerate evidence from `.agent/home-field-workspace/candidates/chibi-active-roster/latest` immediately before recording the verdict.
 43. Do not create relative `.agent/...` visual-critic reason files from the hub root. Prefer `record-chibi-verdict --reason-stdin` or `--reason=<text>`; use `--reason-file` only with an explicit repo-local absolute path.
 44. Do not reuse a source/candidate hash the user rejected for old-monk, beige mascot pawn, elderly gnome, or faceless-token style. The next Thalla source must read as a youthful little-girl mushroom-elf chibi like the liked reference; mechanical validators and palette gates are not enough.
+45. Do not let the face collapse into hollow pin-dots or a skull-mask while trying to keep map-sprite eyes small. Thalla needs compact visible oval/almond doll eyes, rounded cheeks, and a soft cute expression like the old reference; reject blank-mask faces even when the body scale and palette pass.
