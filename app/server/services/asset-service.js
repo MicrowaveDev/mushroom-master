@@ -62,9 +62,17 @@ export function directBuyPolicy() {
   return process.env.ASSET_GACHA_DIRECT_BUY_POLICY || 'allow';
 }
 
-export function activeGachaPackIds() {
+function configuredActiveGachaPackIds() {
   const configured = parseCsvEnv(process.env.ASSET_GACHA_ACTIVE_PACK_IDS);
-  return configured.length ? configured : [PORTRAIT_PACK_ID];
+  return configured.length ? configured : null;
+}
+
+export function activeGachaPackIds() {
+  return configuredActiveGachaPackIds() || [PORTRAIT_PACK_ID];
+}
+
+export function assetGachaDbPacksEnabled() {
+  return ['1', 'true', 'yes', 'on'].includes(String(process.env.ASSET_GACHA_DB_PACKS_ENABLED || '').toLowerCase());
 }
 
 function rarityForPortraitVariant(variant) {
@@ -536,7 +544,8 @@ function packAvailability(pack, now = new Date()) {
   if (pack.status === 'expired') return 'expired';
   if (pack.startsAt && new Date(pack.startsAt) > now) return 'future';
   if (pack.endsAt && new Date(pack.endsAt) <= now) return 'expired';
-  if (isAssetGachaEnabled() && !activeGachaPackIds().includes(pack.id)) return 'disabled';
+  const activeIds = configuredActiveGachaPackIds();
+  if (isAssetGachaEnabled() && activeIds && !activeIds.includes(pack.id)) return 'disabled';
   return 'active';
 }
 
@@ -838,12 +847,122 @@ export function getAssetPacks() {
   ];
 }
 
+async function runAssetCatalogQuery(client, sql, params = []) {
+  return client?.query ? client.query(sql, params) : query(sql, params);
+}
+
+function parsedDbJson(value, fallback = undefined) {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'object') return value;
+  return parseJson(value, fallback);
+}
+
+function assignDbJsonField(pack, key, value) {
+  const parsed = parsedDbJson(value, undefined);
+  if (parsed !== undefined) pack[key] = parsed;
+}
+
+function inheritedDbPackStatus(row) {
+  const statuses = [row.season_status, row.collection_status, row.status].map((status) => String(status || 'active'));
+  if (statuses.includes('expired')) return 'expired';
+  if (statuses.includes('future')) return 'future';
+  return String(row.status || 'active');
+}
+
+function shapeDatabaseAssetPack(row, itemRows = []) {
+  const pack = {
+    id: row.id,
+    seasonId: row.season_id,
+    collectionId: row.collection_id,
+    name: parsedDbJson(row.name_json, {}),
+    status: inheritedDbPackStatus(row),
+    startsAt: row.starts_at || row.collection_starts_at || row.season_starts_at || null,
+    endsAt: row.ends_at || row.collection_ends_at || row.season_ends_at || null,
+    rollPriceCurrencyCode: row.roll_price_currency_code,
+    rollPriceAmount: Number(row.roll_price_amount),
+    rollSize: Number(row.roll_size || 1),
+    rarityTableVersion: row.rarity_table_version || `${row.id}:db:${row.updated_at || row.reviewed_at || row.created_at || 'v1'}`,
+    source: 'database',
+    reviewStatus: row.review_status,
+    metadata: parsedDbJson(row.metadata_json, {}),
+    items: itemRows
+      .sort((a, b) => Number(a.item_order || 0) - Number(b.item_order || 0) || String(a.id).localeCompare(String(b.id)))
+      .map((item) => ({
+        assetId: item.asset_id,
+        rarity: item.rarity,
+        dropWeight: Number(item.drop_weight),
+        ...(item.copy_limit === null || item.copy_limit === undefined ? {} : { copyLimit: Number(item.copy_limit) }),
+        metadata: parsedDbJson(item.metadata_json, {})
+      }))
+  };
+  assignDbJsonField(pack, 'rarityWeights', row.rarity_weights_json);
+  assignDbJsonField(pack, 'slots', row.slots_json);
+  assignDbJsonField(pack, 'guarantees', row.guarantees_json);
+  assignDbJsonField(pack, 'pityRules', row.pity_rules_json);
+  assignDbJsonField(pack, 'duplicatePolicy', row.duplicate_policy_json);
+  assignDbJsonField(pack, 'burnRules', row.burn_rules_json);
+  return pack;
+}
+
+export async function getDatabaseAssetPacks({ client = null } = {}) {
+  if (!assetGachaDbPacksEnabled()) return [];
+  const packRows = await runAssetCatalogQuery(
+    client,
+    `SELECT p.*,
+            s.status AS season_status,
+            s.starts_at AS season_starts_at,
+            s.ends_at AS season_ends_at,
+            c.status AS collection_status,
+            c.starts_at AS collection_starts_at,
+            c.ends_at AS collection_ends_at
+     FROM asset_gacha_packs p
+     JOIN asset_gacha_seasons s ON s.id = p.season_id
+     JOIN asset_gacha_collections c ON c.id = p.collection_id
+     WHERE p.review_status = 'approved'
+       AND p.status IN ('active', 'future', 'expired')
+       AND s.status IN ('active', 'future', 'expired')
+       AND c.status IN ('active', 'future', 'expired')
+     ORDER BY COALESCE(p.starts_at, c.starts_at, s.starts_at, ''), p.id`,
+    []
+  );
+  if (!packRows.rowCount) return [];
+  const placeholders = packRows.rows.map((_, index) => `$${index + 1}`).join(', ');
+  const itemRows = await runAssetCatalogQuery(
+    client,
+    `SELECT *
+     FROM asset_gacha_pack_items
+     WHERE pack_id IN (${placeholders})
+     ORDER BY pack_id, item_order ASC, id ASC`,
+    packRows.rows.map((row) => row.id)
+  );
+  const itemsByPack = new Map();
+  for (const row of itemRows.rows) {
+    const rows = itemsByPack.get(row.pack_id) || [];
+    rows.push(row);
+    itemsByPack.set(row.pack_id, rows);
+  }
+  return packRows.rows.map((row) => shapeDatabaseAssetPack(row, itemsByPack.get(row.id) || []));
+}
+
+export async function getRuntimeAssetPacks({ client = null } = {}) {
+  const byId = new Map(getAssetPacks().map((pack) => [pack.id, pack]));
+  for (const pack of await getDatabaseAssetPacks({ client })) {
+    byId.set(pack.id, pack);
+  }
+  return [...byId.values()];
+}
+
 export function getAssetPack(packId) {
   return getAssetPacks().find((pack) => pack.id === packId) || null;
 }
 
+export async function getRuntimeAssetPack(packId, { client = null } = {}) {
+  return (await getRuntimeAssetPacks({ client })).find((pack) => pack.id === packId) || null;
+}
+
 export async function getAssetPacksForPlayer(playerId) {
-  const [ownedRows, rollRows, equippedRows] = await Promise.all([
+  const [packs, ownedRows, rollRows, equippedRows] = await Promise.all([
+    getRuntimeAssetPacks(),
     query(
       `SELECT * FROM player_asset_instances
        WHERE player_id = $1 AND status = 'active'`,
@@ -864,7 +983,7 @@ export async function getAssetPacksForPlayer(playerId) {
   ]);
   const ownedAssetIds = new Set(ownedRows.rows.map((row) => row.asset_id));
   const equippedAssetInstanceIds = new Set(equippedRows.rows.map((row) => row.asset_instance_id));
-  return getAssetPacks().map((pack) => shapeAssetPack(pack, {
+  return packs.map((pack) => shapeAssetPack(pack, {
     ownedAssetIds,
     activeAssetRows: ownedRows.rows,
     equippedAssetInstanceIds,
@@ -1543,7 +1662,7 @@ export async function burnAssetPackDuplicates(playerId, packId, {
   rng = secureRandomUnit
 } = {}) {
   if (!isAssetGachaEnabled()) throw httpError('Asset gacha is disabled', 403);
-  const pack = getAssetPack(packId);
+  const pack = await getRuntimeAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
   const validation = validateAssetPack(pack);
   if (!validation.ok) {
@@ -1719,7 +1838,7 @@ export async function rollAssetPack(playerId, packId, {
   rng = secureRandomUnit
 } = {}) {
   if (!isAssetGachaEnabled()) throw httpError('Asset gacha is disabled', 403);
-  const pack = getAssetPack(packId);
+  const pack = await getRuntimeAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
   const validation = validateAssetPack(pack);
   if (!validation.ok) {
@@ -1897,7 +2016,7 @@ export async function rollAssetPack(playerId, packId, {
           JSON.stringify({
             gachaEnabled: isAssetGachaEnabled(),
             directBuyPolicy: directBuyPolicy(),
-            activePackIds: activeGachaPackIds(),
+            activePackIds: configuredActiveGachaPackIds() || [pack.id],
             randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng',
             rarityTableVersion,
             rollSize: assetPackRollSize(pack),
@@ -1937,6 +2056,12 @@ export async function rollAssetPack(playerId, packId, {
 
 export function getPackOdds(packId) {
   const pack = getAssetPack(packId);
+  if (!pack) throw httpError('Unknown asset pack', 404);
+  return shapeAssetPack(pack, { includeAssets: true });
+}
+
+export async function getPackOddsForRuntime(packId) {
+  const pack = await getRuntimeAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
   return shapeAssetPack(pack, { includeAssets: true });
 }

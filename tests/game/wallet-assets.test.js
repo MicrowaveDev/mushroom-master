@@ -10,6 +10,7 @@ import {
 } from './helpers.js';
 import { query } from '../../app/server/db.js';
 import {
+  getBootstrap,
   getPlayerState,
   switchPortrait
 } from '../../app/server/services/game-service.js';
@@ -29,6 +30,7 @@ import {
 import {
   getAssetPacksForPlayer,
   getPackOdds,
+  getPackOddsForRuntime,
   portraitAssetId,
   burnAssetPackDuplicates,
   purchaseAsset,
@@ -112,6 +114,87 @@ async function insertMutationClaim({
     [scope, claimKey, claimToken, claimedAt]
   );
   return claimToken;
+}
+
+async function insertDbGachaPack({
+  packId,
+  seasonId = 'db_season_1',
+  collectionId = 'db_collection_1',
+  seasonStatus = 'active',
+  collectionStatus = 'active',
+  packStatus = 'active',
+  reviewStatus = 'approved',
+  rollPriceAmount = 13,
+  rollSize = 1,
+  rarityTableVersion = `${packId}:db:v1`,
+  name = { en: 'Database Pack', ru: 'Пак из базы' },
+  rarityWeights = null,
+  slots = null,
+  guarantees = null,
+  pityRules = null,
+  duplicatePolicy = null,
+  burnRules = null,
+  items
+}) {
+  const now = new Date().toISOString();
+  await query(
+    `INSERT INTO asset_gacha_seasons
+     (id, name_json, status, starts_at, ends_at, metadata_json, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, NULL, NULL, '{}', 'test', $4, $4)`,
+    [seasonId, JSON.stringify({ en: 'DB Season' }), seasonStatus, now]
+  );
+  await query(
+    `INSERT INTO asset_gacha_collections
+     (id, season_id, name_json, status, starts_at, ends_at, metadata_json, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, NULL, NULL, '{}', 'test', $5, $5)`,
+    [collectionId, seasonId, JSON.stringify({ en: 'DB Collection' }), collectionStatus, now]
+  );
+  await query(
+    `INSERT INTO asset_gacha_packs
+     (id, season_id, collection_id, name_json, status, review_status, starts_at, ends_at,
+      roll_price_currency_code, roll_price_amount, roll_size, rarity_table_version,
+      rarity_weights_json, slots_json, guarantees_json, pity_rules_json, duplicate_policy_json,
+      burn_rules_json, metadata_json, created_by, reviewed_by, reviewed_at, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, 'soft_coin', $7, $8, $9,
+      $10, $11, $12, $13, $14, $15, '{}', 'test', $16, $17, $18, $18)`,
+    [
+      packId,
+      seasonId,
+      collectionId,
+      JSON.stringify(name),
+      packStatus,
+      reviewStatus,
+      rollPriceAmount,
+      rollSize,
+      rarityTableVersion,
+      rarityWeights ? JSON.stringify(rarityWeights) : null,
+      slots ? JSON.stringify(slots) : null,
+      guarantees ? JSON.stringify(guarantees) : null,
+      pityRules ? JSON.stringify(pityRules) : null,
+      duplicatePolicy ? JSON.stringify(duplicatePolicy) : null,
+      burnRules ? JSON.stringify(burnRules) : null,
+      reviewStatus === 'approved' ? 'reviewer' : null,
+      reviewStatus === 'approved' ? now : null,
+      now
+    ]
+  );
+  for (const [index, item] of items.entries()) {
+    await query(
+      `INSERT INTO asset_gacha_pack_items
+       (id, pack_id, asset_id, rarity, drop_weight, copy_limit, item_order, metadata_json, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, '{}', $8, $8)`,
+      [
+        `dbitem_${packId}_${index}`,
+        packId,
+        item.assetId,
+        item.rarity,
+        item.dropWeight,
+        item.copyLimit ?? null,
+        index,
+        now
+      ]
+    );
+  }
 }
 
 test('[Req 4-Y, 9-A] run rewards grant profile wallet currency and keep players.spore mirrored', async () => {
@@ -1167,6 +1250,108 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
     );
     const afterRejected = await getWalletState(player.id);
     assert.equal(afterRejected.balance, beforeRejected.balance, 'empty pack rejection must not spend wallet currency');
+  });
+});
+
+test('[Req 14-F] approved database gacha packs override static packs and hide drafts', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  const rareA = portraitAssetId('thalla', '2');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DB_PACKS_ENABLED: 'true',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha'
+  }, async () => {
+    await freshDb();
+    await insertDbGachaPack({
+      packId: 'season_1_portraits',
+      rollPriceAmount: 17,
+      rollSize: 2,
+      slots: [
+        { rarityWeights: { common: 1 } },
+        { rarityWeights: { rare: 1 } }
+      ],
+      duplicatePolicy: { mode: 'allow_duplicates', maxCopiesPerAsset: 3 },
+      items: [
+        { assetId: commonA, rarity: 'common', dropWeight: 100, copyLimit: 3 },
+        { assetId: rareA, rarity: 'rare', dropWeight: 1 }
+      ]
+    });
+    await insertDbGachaPack({
+      packId: 'db_draft_pack',
+      seasonId: 'db_season_draft',
+      collectionId: 'db_collection_draft',
+      reviewStatus: 'draft',
+      items: [
+        { assetId: commonA, rarity: 'common', dropWeight: 1 }
+      ]
+    });
+    const { player } = await createPlayer({ telegramId: 4033 });
+
+    const odds = await getPackOddsForRuntime('season_1_portraits');
+    assert.equal(odds.source, 'database');
+    assert.equal(odds.reviewStatus, 'approved');
+    assert.equal(odds.rollPriceAmount, 17);
+    assert.equal(odds.rollSize, 2);
+    assert.equal(odds.items.length, 2);
+    assert.equal(odds.items[0].copyLimit, 3);
+    assert.equal(odds.duplicatePolicy.maxCopiesPerAsset, 3);
+    assert.equal(odds.validation.ok, true);
+
+    await assert.rejects(
+      () => getPackOddsForRuntime('db_draft_pack'),
+      (err) => err.statusCode === 404 && /unknown asset pack/i.test(err.message)
+    );
+    const packs = await getAssetPacksForPlayer(player.id);
+    assert.ok(packs.some((pack) => pack.id === 'season_1_portraits' && pack.source === 'database'));
+    assert.equal(packs.some((pack) => pack.id === 'db_draft_pack'), false);
+    const bootstrap = await getBootstrap(player.id);
+    assert.deepEqual(bootstrap.assetAcquisition.activePackIds, ['season_1_portraits']);
+  });
+});
+
+test('[Req 14-F] approved database gacha pack can roll and spend from runtime config', async () => {
+  const commonA = portraitAssetId('thalla', '1');
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DB_PACKS_ENABLED: 'true',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha'
+  }, async () => {
+    await freshDb();
+    await insertDbGachaPack({
+      packId: 'db_runtime_pack',
+      seasonId: 'db_season_runtime',
+      collectionId: 'db_collection_runtime',
+      rollPriceAmount: 11,
+      items: [
+        { assetId: commonA, rarity: 'common', dropWeight: 1 }
+      ]
+    });
+    const { player } = await createPlayer({ telegramId: 4034 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 50,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'db-gacha-pack'
+    });
+
+    const before = await getWalletState(player.id);
+    const result = await rollAssetPack(player.id, 'db_runtime_pack', {
+      idempotencyKey: 'db-runtime-roll',
+      rng: () => 0
+    });
+    const after = await getWalletState(player.id);
+
+    assert.equal(result.roll.packId, 'db_runtime_pack');
+    assert.equal(result.roll.priceAmount, 11);
+    assert.equal(result.rollResult.assetId, commonA);
+    assert.equal(result.transaction.delta, -11);
+    assert.equal(after.balance, before.balance - 11);
+    const shapedPacks = await getAssetPacksForPlayer(player.id);
+    const shapedPack = shapedPacks.find((pack) => pack.id === 'db_runtime_pack');
+    assert.equal(shapedPack.source, 'database');
+    assert.equal(shapedPack.ownedCount, 1);
+    assert.equal(shapedPack.complete, true);
   });
 });
 

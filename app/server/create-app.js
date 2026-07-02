@@ -58,7 +58,7 @@ import {
   createPurchaseIntent,
   equipAsset,
   getAssetCatalog,
-  getPackOdds,
+  getPackOddsForRuntime,
   getPaymentSupportLinks,
   getWalletBundles,
   getWalletState,
@@ -1168,7 +1168,7 @@ export async function createApp() {
     requireAuth,
     assetOddsRateLimit,
     asyncRoute(async (req, res) => {
-      res.json({ success: true, data: getPackOdds(req.params.packId) });
+      res.json({ success: true, data: await getPackOddsForRuntime(req.params.packId) });
     })
   );
 

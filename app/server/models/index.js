@@ -38,6 +38,10 @@ import definePlayerAssetInstance from './PlayerAssetInstance.js';
 import definePlayerEquippedAsset from './PlayerEquippedAsset.js';
 import defineAssetRoll from './AssetRoll.js';
 import defineAssetBurnExchange from './AssetBurnExchange.js';
+import defineAssetGachaSeason from './AssetGachaSeason.js';
+import defineAssetGachaCollection from './AssetGachaCollection.js';
+import defineAssetGachaPack from './AssetGachaPack.js';
+import defineAssetGachaPackItem from './AssetGachaPackItem.js';
 import defineMutationClaim from './MutationClaim.js';
 import definePaymentWebhookEvent from './PaymentWebhookEvent.js';
 import defineProviderSettlementImport from './ProviderSettlementImport.js';
@@ -79,6 +83,10 @@ export function initModels(sequelize) {
   const PlayerEquippedAsset = definePlayerEquippedAsset(sequelize);
   const AssetRoll = defineAssetRoll(sequelize);
   const AssetBurnExchange = defineAssetBurnExchange(sequelize);
+  const AssetGachaSeason = defineAssetGachaSeason(sequelize);
+  const AssetGachaCollection = defineAssetGachaCollection(sequelize);
+  const AssetGachaPack = defineAssetGachaPack(sequelize);
+  const AssetGachaPackItem = defineAssetGachaPackItem(sequelize);
   const MutationClaim = defineMutationClaim(sequelize);
   const PaymentWebhookEvent = definePaymentWebhookEvent(sequelize);
   const ProviderSettlementImport = defineProviderSettlementImport(sequelize);
@@ -105,6 +113,15 @@ export function initModels(sequelize) {
   Player.hasMany(AssetRoll, { foreignKey: 'player_id' });
   Player.hasMany(AssetBurnExchange, { foreignKey: 'player_id' });
   ProviderSettlementImport.hasMany(ProviderSettlementRecord, { foreignKey: 'import_id' });
+
+  AssetGachaSeason.hasMany(AssetGachaCollection, { foreignKey: 'season_id' });
+  AssetGachaSeason.hasMany(AssetGachaPack, { foreignKey: 'season_id' });
+  AssetGachaCollection.belongsTo(AssetGachaSeason, { foreignKey: 'season_id' });
+  AssetGachaCollection.hasMany(AssetGachaPack, { foreignKey: 'collection_id' });
+  AssetGachaPack.belongsTo(AssetGachaSeason, { foreignKey: 'season_id' });
+  AssetGachaPack.belongsTo(AssetGachaCollection, { foreignKey: 'collection_id' });
+  AssetGachaPack.hasMany(AssetGachaPackItem, { foreignKey: 'pack_id' });
+  AssetGachaPackItem.belongsTo(AssetGachaPack, { foreignKey: 'pack_id' });
 
   Battle.hasMany(BattleSnapshot, { foreignKey: 'battle_id' });
   Battle.hasMany(BattleEvent, { foreignKey: 'battle_id' });
@@ -157,6 +174,10 @@ export function initModels(sequelize) {
     PlayerEquippedAsset,
     AssetRoll,
     AssetBurnExchange,
+    AssetGachaSeason,
+    AssetGachaCollection,
+    AssetGachaPack,
+    AssetGachaPackItem,
     MutationClaim,
     PaymentWebhookEvent,
     ProviderSettlementImport,

@@ -385,7 +385,10 @@ Membership is not stored. It is derived from overlap between item cells and acti
   and returns 403 when the profile does not own the requested paid portrait.
   `POST /api/assets/:assetId/purchase` spends wallet currency for direct-buy
   assets, and `POST /api/assets/packs/:packId/roll` can grant one or more
-  random skins from a configured pack when env-gated gacha is enabled. Packs are
+  random skins from a configured pack when env-gated gacha is enabled. Packs can
+  come from the static fallback config or, when `ASSET_GACHA_DB_PACKS_ENABLED`
+  is enabled, from approved database-managed season/collection/pack/item rows;
+  draft or unapproved database packs are not player-visible. Packs are
   unowned-only by default; packs that set `duplicatePolicy: "allow_duplicates"`
   can grant extra active asset instances for already owned skins, with duplicate
   results marked in roll metadata. Duplicate-enabled packs may define

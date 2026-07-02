@@ -6,7 +6,6 @@ import { getPlayerState } from './player-service.js';
 import { getActiveGameRun, getActiveGameRuns, getGameRunHistory } from './run-service.js';
 import { getHomeFieldConfig } from './home-field-config.js';
 import {
-  activeGachaPackIds,
   directBuyPolicy,
   getAssetCatalog,
   getAssetPacksForPlayer,
@@ -59,6 +58,7 @@ export {
   equipPortrait,
   getAssetCatalog,
   getPackOdds,
+  getPackOddsForRuntime,
   purchaseAsset,
   rollAssetPack
 } from './asset-service.js';
@@ -95,6 +95,7 @@ export async function getBootstrap(playerId) {
       : run
   ));
   const activeGameRun = normalizedActiveGameRuns.find((run) => run.mushroomId === state.activeMushroomId) || null;
+  const assetPacks = await getAssetPacksForPlayer(playerId);
   return {
     ...state,
     // Re-stamp portrait URLs with current mtime at response time so a file
@@ -114,11 +115,11 @@ export async function getBootstrap(playerId) {
     gameRunHistory: runHistory,
     homeField: getHomeFieldConfig(),
     assetCatalog: getAssetCatalog(),
-    assetPacks: await getAssetPacksForPlayer(playerId),
+    assetPacks,
     assetAcquisition: {
       gachaEnabled: isAssetGachaEnabled(),
       directBuyPolicy: directBuyPolicy(),
-      activePackIds: activeGachaPackIds()
+      activePackIds: assetPacks.filter((pack) => pack.active).map((pack) => pack.id)
     }
   };
 }

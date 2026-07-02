@@ -591,6 +591,26 @@ backlog.
 
 #### G5 - Database/Admin-Managed Seasons
 
+Status: **Partially implemented 2026-07-03 as G5A.** The shipped slice adds
+database-backed season, collection, pack, and pack-item records behind
+`ASSET_GACHA_DB_PACKS_ENABLED`, plus a runtime loader that lets approved DB
+packs override or extend the static pack fallback. Full admin authoring UI,
+rollback tooling, richer season-scoped pity, and operational launch workflow
+remain backlog.
+
+- Done: database schema now has season, collection, pack, and pack-item tables
+  with `review_status`, status/date windows, price, roll size, rarity table,
+  slot, guarantee, pity, duplicate, and burn-rule fields.
+- Done: player-facing runtime pack projection, odds endpoint, roll flow, and
+  burn flow can use approved DB packs while existing synchronous/static helpers
+  remain available for the simulator and static tests.
+- Done: draft or unapproved DB packs stay hidden from runtime odds/bootstrap
+  and cannot be rolled.
+- Backlog: internal admin CRUD/review UI, migration/rollback scripts for live
+  season corrections, richer season/collection-scoped pity state, default
+  authoring fixtures, DB-managed acquisition-policy/catalog mapping for
+  DB-only pack assets, and operator audit/runbook coverage.
+
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
 - Add an internal authoring/review flow before a season is activated.
@@ -2441,6 +2461,10 @@ Additional TODOs for that pass:
    targets.
 35. Gacha roadmap backlog after G4B: season/collection-scoped pity, secret
    rarity policy, dust/shard and richer target-complete rewards,
-   database/admin-managed seasons and collections, marketplace/trading, NFT-set
-   policy decisions, and expanded disclosure/simulation work for
+   remaining database/admin-managed season tooling, marketplace/trading,
+   NFT-set policy decisions, and expanded disclosure/simulation work for
    duplicate-enabled paid packs.
+36. G5A database-backed gacha pack runtime foundation. **Done 2026-07-03:**
+   approved DB season/collection/pack/item rows can override or extend static
+   packs at runtime, draft packs stay hidden, and rolls/odds/bootstrap can use
+   DB-authored pack prices, dates, rarity tables, and item pools.

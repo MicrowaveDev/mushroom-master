@@ -145,6 +145,14 @@ async function ensurePostSyncIndexes(sequelize) {
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_provider_key
      ON payment_webhook_events(provider, event_key)`
   );
+  await sequelize.query(
+    `CREATE INDEX IF NOT EXISTS idx_asset_gacha_packs_review_window
+     ON asset_gacha_packs(review_status, status, starts_at, ends_at)`
+  );
+  await sequelize.query(
+    `CREATE INDEX IF NOT EXISTS idx_asset_gacha_pack_items_pack_order
+     ON asset_gacha_pack_items(pack_id, item_order)`
+  );
 }
 
 async function backfillLegacyWalletBalances(sequelize) {
