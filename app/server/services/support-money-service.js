@@ -157,6 +157,23 @@ function rowToAssetRoll(row) {
   };
 }
 
+function rowToSupportAction(row) {
+  return {
+    id: row.id,
+    actorId: row.actor_id,
+    actionType: row.action_type,
+    playerId: row.player_id || null,
+    targetType: row.target_type,
+    targetId: row.target_id || null,
+    status: row.status,
+    reason: row.reason || null,
+    note: row.note || '',
+    evidence: parseJson(row.evidence_json, {}),
+    result: parseJson(row.result_json, {}),
+    createdAt: row.created_at
+  };
+}
+
 async function findPlayersByTerm(term, likeTerm, limit) {
   const result = await query(
     `SELECT id, telegram_id, telegram_username, name, lang, friend_code, spore, created_at
@@ -394,6 +411,40 @@ async function assetRollsByPlayerIds(playerIds, limit) {
   return result.rows;
 }
 
+async function supportActionsByTerm(term, likeTerm, limit) {
+  const result = await query(
+    `SELECT *
+     FROM support_actions
+     WHERE id = $1
+        OR player_id = $1
+        OR target_id = $1
+        OR LOWER(actor_id) = LOWER($1)
+        OR LOWER(action_type) = LOWER($1)
+        OR LOWER(COALESCE(reason, '')) = LOWER($1)
+        OR LOWER(COALESCE(note, '')) LIKE $2
+        OR LOWER(COALESCE(evidence_json, '')) LIKE $2
+        OR LOWER(COALESCE(result_json, '')) LIKE $2
+     ORDER BY created_at DESC
+     LIMIT $3`,
+    [term, likeTerm, limit]
+  );
+  return result.rows;
+}
+
+async function supportActionsByPlayerIds(playerIds, limit) {
+  const ids = [...playerIds];
+  if (!ids.length) return [];
+  const result = await query(
+    `SELECT *
+     FROM support_actions
+     WHERE player_id IN (${placeholders(ids)})
+     ORDER BY created_at DESC
+     LIMIT $${ids.length + 1}`,
+    [...ids, limit]
+  );
+  return result.rows;
+}
+
 export async function lookupMoneySupportRecords({ query: searchQuery, limit = DEFAULT_LIMIT } = {}) {
   const term = normalizeSearchTerm(searchQuery);
   if (!term) {
@@ -450,6 +501,12 @@ export async function lookupMoneySupportRecords({ query: searchQuery, limit = DE
   ]);
   collectPlayerIds(assetRolls, playerIds);
 
+  let supportActions = uniqueRowsById([
+    ...await supportActionsByTerm(term, likeTerm, normalizedLimit),
+    ...await supportActionsByPlayerIds(playerIds, normalizedLimit)
+  ]);
+  collectPlayerIds(supportActions, playerIds);
+
   purchaseIntents = uniqueRowsById([
     ...purchaseIntents,
     ...await purchaseIntentsByPlayerIds(playerIds, normalizedLimit)
@@ -469,6 +526,10 @@ export async function lookupMoneySupportRecords({ query: searchQuery, limit = DE
   assetRolls = uniqueRowsById([
     ...assetRolls,
     ...await assetRollsByPlayerIds(playerIds, normalizedLimit)
+  ]);
+  supportActions = uniqueRowsById([
+    ...supportActions,
+    ...await supportActionsByPlayerIds(playerIds, normalizedLimit)
   ]);
 
   const webhookRefs = [];
@@ -494,7 +555,8 @@ export async function lookupMoneySupportRecords({ query: searchQuery, limit = DE
       paymentWebhookEvents: webhookEvents.length,
       assetInstances: assetInstances.length,
       equippedAssets: equippedAssets.length,
-      assetRolls: assetRolls.length
+      assetRolls: assetRolls.length,
+      supportActions: supportActions.length
     },
     players: players.map(rowToPlayer),
     walletBalances: walletBalances.map(rowToBalance),
@@ -503,6 +565,7 @@ export async function lookupMoneySupportRecords({ query: searchQuery, limit = DE
     paymentWebhookEvents: webhookEvents.map(rowToWebhookEvent),
     assetInstances: assetInstances.map(rowToAssetInstance),
     equippedAssets: equippedAssets.map(rowToEquippedAsset),
-    assetRolls: assetRolls.map(rowToAssetRoll)
+    assetRolls: assetRolls.map(rowToAssetRoll),
+    supportActions: supportActions.map(rowToSupportAction)
   };
 }

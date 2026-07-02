@@ -1,0 +1,142 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createPlayer, freshDb } from './helpers.js';
+import { query } from '../../app/server/db.js';
+import {
+  createPurchaseIntent,
+  getWalletState,
+  processProviderWebhookEvent,
+  reconcileWalletPayments
+} from '../../app/server/services/wallet-service.js';
+import {
+  equipAsset,
+  portraitAssetId
+} from '../../app/server/services/asset-service.js';
+import { lookupMoneySupportRecords } from '../../app/server/services/support-money-service.js';
+import {
+  listSupportActions,
+  supportAdjustWallet,
+  supportGrantAsset,
+  supportMarkPurchaseRefunded,
+  supportRevokeAsset
+} from '../../app/server/services/support-ops-service.js';
+
+test('[Req 4-Z] support wallet grant and revoke create immutable audit actions', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4701 });
+
+  const grant = await supportAdjustWallet({
+    actorId: 'support-agent',
+    playerId: player.id,
+    amount: 250,
+    direction: 'grant',
+    reason: 'failed_checkout_compensation',
+    note: 'Manual compensation after provider callback delay',
+    evidence: { ticket: 'SUP-1' }
+  });
+  assert.equal(grant.action.status, 'applied');
+  assert.equal(grant.transaction.delta, 250);
+  assert.equal((await getWalletState(player.id)).balance, 250);
+
+  const revoke = await supportAdjustWallet({
+    actorId: 'support-agent',
+    playerId: player.id,
+    amount: 50,
+    direction: 'revoke',
+    reason: 'mistaken_grant',
+    note: 'Revoke excess compensation',
+    evidence: { ticket: 'SUP-2' }
+  });
+  assert.equal(revoke.action.status, 'applied');
+  assert.equal(revoke.transaction.delta, -50);
+  assert.equal((await getWalletState(player.id)).balance, 200);
+
+  const actions = await listSupportActions({ playerId: player.id });
+  assert.equal(actions.length, 2);
+  assert.deepEqual(actions.map((action) => action.actionType).sort(), ['wallet_grant', 'wallet_revoke']);
+
+  const lookup = await lookupMoneySupportRecords({ query: grant.action.id, limit: 10 });
+  assert.ok(lookup.supportActions.some((action) => action.id === grant.action.id));
+  assert.ok(lookup.walletTransactions.some((tx) => tx.sourceId === grant.action.id));
+});
+
+test('[Req 4-Z, 14-F] support asset grant and revoke audit ownership changes', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4702 });
+  const assetId = portraitAssetId('axilin', '1');
+
+  const grant = await supportGrantAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetId,
+    reason: 'event_reward',
+    note: 'Grant event portrait',
+    evidence: { ticket: 'SUP-3' }
+  });
+  assert.equal(grant.action.status, 'applied');
+  assert.equal(grant.instance.assetId, assetId);
+
+  await equipAsset(player.id, assetId);
+  const revoke = await supportRevokeAsset({
+    actorId: 'support-agent',
+    playerId: player.id,
+    assetId,
+    reason: 'mistaken_asset_grant',
+    note: 'Wrong account',
+    evidence: { ticket: 'SUP-4' }
+  });
+  assert.equal(revoke.action.status, 'applied');
+  assert.equal(revoke.revoked.status, 'revoked');
+  assert.equal(revoke.resetEquipment.assetId, portraitAssetId('axilin', 'default'));
+
+  const active = await query(
+    `SELECT * FROM player_asset_instances
+     WHERE player_id = $1 AND asset_id = $2 AND status = 'active'`,
+    [player.id, assetId]
+  );
+  assert.equal(active.rowCount, 0);
+  const equipped = await query(
+    `SELECT asset_id FROM player_equipped_assets
+     WHERE player_id = $1 AND slot = 'portrait' AND target_id = 'axilin'`,
+    [player.id]
+  );
+  assert.equal(equipped.rows[0].asset_id, portraitAssetId('axilin', 'default'));
+});
+
+test('[Req 4-Z] support can mark a completed purchase refunded with audit evidence', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4703 });
+  const intent = await createPurchaseIntent(player.id, {
+    bundleId: 'coins_small',
+    provider: 'btcpay',
+    surface: 'web',
+    idempotencyKey: 'support-refund-intent'
+  });
+  const payload = {
+    deliveryId: 'support-refund-settled',
+    type: 'InvoiceSettled',
+    invoiceId: intent.providerInvoiceId,
+    paymentId: 'support-refund-payment'
+  };
+  await processProviderWebhookEvent('btcpay', payload, { rawBody: JSON.stringify(payload) });
+  assert.equal((await getWalletState(player.id)).balance, 100);
+
+  const refund = await supportMarkPurchaseRefunded({
+    actorId: 'support-agent',
+    intentId: intent.id,
+    reason: 'manual_refund',
+    note: 'Provider dashboard refund confirmed',
+    evidence: { ticket: 'SUP-5', providerRefundId: 'refund-1' }
+  });
+  assert.equal(refund.action.status, 'applied');
+  assert.equal(refund.intent.status, 'refunded');
+  assert.equal(refund.clawback.status, 'completed');
+  assert.equal(refund.transaction.delta, -100);
+  assert.equal((await getWalletState(player.id)).balance, 0);
+
+  const report = await reconcileWalletPayments({ limit: 10 });
+  assert.equal(report.ok, true);
+  assert.equal(report.total, 0);
+  const lookup = await lookupMoneySupportRecords({ query: intent.id, limit: 10 });
+  assert.ok(lookup.supportActions.some((action) => action.id === refund.action.id));
+});

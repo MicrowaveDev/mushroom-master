@@ -320,11 +320,15 @@ backlog until the items are split into tickets or implementation phases.
 - Read-only support lookup now exists as of 2026-07-02:
   `npm run game:support:money-lookup -- --query=<player-or-provider-reference>`
   searches purchase intents, provider references, wallet transactions, webhook
-  events, asset grants/equipment, rolls, player records, and wallet balances
-  without direct SQL. Still build authenticated admin UI/API surfaces before
-  exposing this to non-engineering support staff.
-- Add manual support flows with audit logs: grant coins/assets, revoke mistaken
-  grants, mark refunds, attach provider evidence, and leave immutable notes.
+  events, asset grants/equipment, rolls, support actions, player records, and
+  wallet balances without direct SQL. Still build authenticated admin UI/API
+  surfaces before exposing this to non-engineering support staff.
+- Manual support flows now exist locally as of 2026-07-02:
+  `npm run game:support:money-action` can grant/revoke wallet currency,
+  grant/revoke assets, mark a purchase refunded, attach evidence JSON, and
+  record immutable `support_actions` notes. Still build authenticated admin
+  UI/API surfaces, operator authorization, approval policy, and runbooks before
+  non-engineering support staff use these flows.
 - Local reconciliation reports now exist as manual commands:
   `npm run game:wallet:audit` checks player/wallet mirror drift, and
   `npm run game:wallet:reconcile` checks completed purchase intents, wallet
@@ -1255,7 +1259,7 @@ or legal/support/compliance rollout work.
    - `lookupMoneySupportRecords(...)` and
      `npm run game:support:money-lookup` produce JSON support packets for
      players, wallet balances/transactions, purchase intents, webhook events,
-     asset grants/equipment, and gacha rolls.
+     asset grants/equipment, gacha rolls, and support action audit rows.
    - Provider invoice searches resolve back to local player context, and asset
      searches pull the same player's payment/wallet context.
 11. Local wallet payment reconciliation exists.
@@ -1274,6 +1278,13 @@ or legal/support/compliance rollout work.
      support-required refunded purchase missing reversal.
    - Completed-purchase `disputed`, `underpaid`, and `overpaid` statuses are
      recorded as support-review-required without automatic wallet clawback.
+13. Manual audited support actions exist.
+   - `support_actions` records immutable actor/action/player/target/status,
+     note, evidence JSON, result JSON, and timestamp rows.
+   - `npm run game:support:money-action` supports wallet grant/revoke, asset
+     grant/revoke, purchase refund marking with optional clawback, and support
+     action listing.
+   - Read-only money lookup includes matching support action audit rows.
 
 ### Remaining launch gates
 
@@ -1326,8 +1337,9 @@ or legal/support/compliance rollout work.
   recording are implemented 2026-07-02**, but live provider semantics and
   runbooks still need validation.
 - Add authenticated admin/support UI/API surfaces on top of the read-only money
-  lookup, then add manual grant/revoke with immutable audit notes, scheduled
-  reconciliation, alert routing, and provider settlement import.
+  lookup and audited support-action service, then add operator authorization,
+  approval policy, scheduled reconciliation, alert routing, and provider
+  settlement import.
 
 ## Phase 8 - Prepare Core Extraction Boundary
 
