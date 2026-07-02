@@ -92,6 +92,20 @@ async function insertPendingWalletIntent({
   return id;
 }
 
+async function insertMutationClaim({
+  scope,
+  claimKey,
+  claimToken = `claim_test_${crypto.randomUUID()}`,
+  claimedAt = new Date().toISOString()
+}) {
+  await query(
+    `INSERT INTO mutation_claims (scope, claim_key, claim_token, claimed_at, updated_at)
+     VALUES ($1, $2, $3, $4, $4)`,
+    [scope, claimKey, claimToken, claimedAt]
+  );
+  return claimToken;
+}
+
 test('[Req 4-Y, 9-A] run rewards grant profile wallet currency and keep players.spore mirrored', async () => {
   await freshDb();
   const { playerId, run } = await bootRun({ telegramId: 4001, mushroomId: 'thalla' });
@@ -716,6 +730,54 @@ test('[Req 4-Y, 14-F] wallet currency earned on Thalla can buy and equip an Axil
   assert.equal(state.progression.axilin.mycelium, 0, 'Axilin did not need character XP to use the purchased skin');
 });
 
+test('[Req 4-Y, 14-F] direct asset purchase waits for an active database mutation claim', async () => {
+  await freshDb();
+  const { player } = await createPlayer({ telegramId: 4023 });
+  const assetId = portraitAssetId('axilin', '1');
+  await grantCurrencyForPlayer({
+    playerId: player.id,
+    amount: 500,
+    reason: 'test_wallet_grant',
+    sourceType: 'test',
+    sourceId: 'asset-claim'
+  });
+  await insertMutationClaim({
+    scope: 'asset_purchase',
+    claimKey: `${player.id}:${assetId}`
+  });
+
+  await withEnv({
+    MUTATION_CLAIM_WAIT_TIMEOUT_MS: '500',
+    MUTATION_CLAIM_WAIT_INTERVAL_MS: '10'
+  }, async () => {
+    let releaseError = null;
+    const releaseClaim = setTimeout(() => {
+      query(
+        `DELETE FROM mutation_claims WHERE scope = $1 AND claim_key = $2`,
+        ['asset_purchase', `${player.id}:${assetId}`]
+      ).catch((err) => {
+        releaseError = err;
+      });
+    }, 30);
+
+    try {
+      const purchase = await purchaseAsset(player.id, assetId, { idempotencyKey: 'direct-claim-wait' });
+      assert.equal(releaseError, null);
+      assert.equal(purchase.asset.assetId, assetId);
+      assert.equal(purchase.alreadyOwned, false);
+      assert.equal((await getWalletState(player.id)).balance, 0);
+    } finally {
+      clearTimeout(releaseClaim);
+    }
+  });
+
+  const remainingClaim = await query(
+    `SELECT 1 FROM mutation_claims WHERE scope = $1 AND claim_key = $2`,
+    ['asset_purchase', `${player.id}:${assetId}`]
+  );
+  assert.equal(remainingClaim.rowCount, 0, 'asset purchase claim should be released');
+});
+
 test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack assets without duplicate spend', async () => {
   await withEnv({
     ASSET_GACHA_ENABLED: 'true',
@@ -763,6 +825,51 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
     );
     const afterRejected = await getWalletState(player.id);
     assert.equal(afterRejected.balance, beforeRejected.balance, 'empty pack rejection must not spend wallet currency');
+  });
+});
+
+test('[Req 14-F] gacha roll reclaims a stale database mutation claim', async () => {
+  await withEnv({
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DIRECT_BUY_POLICY: 'block_gacha_assets',
+    ASSET_GACHA_ROLL_PRICE_AMOUNT: '10',
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'direct',
+    ASSET_CATALOG_POLICY_JSON: JSON.stringify({
+      [portraitAssetId('thalla', '1')]: { acquisitionMode: 'gacha' }
+    }),
+    MUTATION_CLAIM_TTL_MS: '1',
+    MUTATION_CLAIM_WAIT_TIMEOUT_MS: '100',
+    MUTATION_CLAIM_WAIT_INTERVAL_MS: '5'
+  }, async () => {
+    await freshDb();
+    const { player } = await createPlayer({ telegramId: 4024 });
+    await grantCurrencyForPlayer({
+      playerId: player.id,
+      amount: 100,
+      reason: 'test_wallet_grant',
+      sourceType: 'test',
+      sourceId: 'gacha-claim'
+    });
+    await insertMutationClaim({
+      scope: 'asset_roll',
+      claimKey: `${player.id}:season_1_portraits`,
+      claimToken: 'stale-gacha-claim',
+      claimedAt: '2000-01-01T00:00:00.000Z'
+    });
+
+    const roll = await rollAssetPack(player.id, 'season_1_portraits', {
+      idempotencyKey: 'stale-claim-roll',
+      rng: () => 0
+    });
+    assert.equal(roll.roll.resultAssetIds[0], portraitAssetId('thalla', '1'));
+    assert.equal(roll.alreadyProcessed, false);
+    assert.equal((await getWalletState(player.id)).balance, 90);
+
+    const remainingClaim = await query(
+      `SELECT 1 FROM mutation_claims WHERE scope = $1 AND claim_key = $2`,
+      ['asset_roll', `${player.id}:season_1_portraits`]
+    );
+    assert.equal(remainingClaim.rowCount, 0, 'gacha roll claim should be released after reclaim');
   });
 });
 

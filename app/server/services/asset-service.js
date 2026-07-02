@@ -10,6 +10,7 @@ import {
   WALLET_CURRENCY_CODE,
   withWalletMutationLock
 } from './wallet-service.js';
+import { withMutationClaim } from './mutation-claim-service.js';
 
 const PORTRAIT_PACK_ID = 'season_1_portraits';
 
@@ -338,55 +339,57 @@ export async function purchaseAsset(playerId, assetId, {
     throw httpError('Direct purchase is unavailable for this asset', 403);
   }
 
-  return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
-    const existing = await activeAssetInstance(client, playerId, asset.assetId);
-    if (existing) {
-      return {
-        asset,
-        instance: rowToAssetInstance(existing),
-        alreadyOwned: true,
-        transaction: null
-      };
-    }
+  return withMutationClaim('asset_purchase', `${playerId}:${asset.assetId}`, () =>
+    withWalletMutationLock(playerId, () => withTransaction(async (client) => {
+      const existing = await activeAssetInstance(client, playerId, asset.assetId);
+      if (existing) {
+        return {
+          asset,
+          instance: rowToAssetInstance(existing),
+          alreadyOwned: true,
+          transaction: null
+        };
+      }
 
-    let transaction = null;
-    if (asset.price > 0) {
-      transaction = await spendCurrency(client, {
+      let transaction = null;
+      if (asset.price > 0) {
+        transaction = await spendCurrency(client, {
+          playerId,
+          currencyCode: asset.currencyCode,
+          amount: asset.price,
+          reason: 'asset_purchase',
+          sourceType: 'asset',
+          sourceId: asset.assetId,
+          idempotencyKey: idempotencyKey
+            ? `asset_purchase:${asset.assetId}:${idempotencyKey}`
+            : `asset_purchase:${asset.assetId}`,
+          metadata: {
+            slot: asset.slot,
+            targetType: asset.targetType,
+            targetId: asset.targetId
+          }
+        });
+      }
+
+      const inserted = await insertAssetInstance(client, {
         playerId,
-        currencyCode: asset.currencyCode,
-        amount: asset.price,
-        reason: 'asset_purchase',
-        sourceType: 'asset',
-        sourceId: asset.assetId,
-        idempotencyKey: idempotencyKey
-          ? `asset_purchase:${asset.assetId}:${idempotencyKey}`
-          : `asset_purchase:${asset.assetId}`,
+        assetId: asset.assetId,
+        acquisitionSource: asset.price > 0 ? 'direct_purchase' : 'free',
+        acquisitionSourceId: transaction?.id || null,
         metadata: {
-          slot: asset.slot,
-          targetType: asset.targetType,
-          targetId: asset.targetId
+          price: asset.price,
+          currencyCode: asset.currencyCode
         }
       });
-    }
 
-    const inserted = await insertAssetInstance(client, {
-      playerId,
-      assetId: asset.assetId,
-      acquisitionSource: asset.price > 0 ? 'direct_purchase' : 'free',
-      acquisitionSourceId: transaction?.id || null,
-      metadata: {
-        price: asset.price,
-        currencyCode: asset.currencyCode
-      }
-    });
-
-    return {
-      asset,
-      instance: rowToAssetInstance(inserted.row),
-      alreadyOwned: inserted.alreadyOwned,
-      transaction
-    };
-  }));
+      return {
+        asset,
+        instance: rowToAssetInstance(inserted.row),
+        alreadyOwned: inserted.alreadyOwned,
+        transaction
+      };
+    }))
+  );
 }
 
 export async function equipAsset(playerId, assetId) {
@@ -508,102 +511,104 @@ export async function rollAssetPack(playerId, packId, {
   if (!pack) throw httpError('Unknown asset pack', 404);
   if (!packIsActive(pack)) throw httpError('Asset pack is not active', 403);
 
-  return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
-    if (idempotencyKey) {
-      const existing = await client.query(
-        `SELECT * FROM asset_rolls
-         WHERE player_id = $1 AND pack_id = $2 AND idempotency_key = $3
-         LIMIT 1`,
-        [playerId, packId, idempotencyKey]
+  return withMutationClaim('asset_roll', `${playerId}:${pack.id}`, () =>
+    withWalletMutationLock(playerId, () => withTransaction(async (client) => {
+      if (idempotencyKey) {
+        const existing = await client.query(
+          `SELECT * FROM asset_rolls
+           WHERE player_id = $1 AND pack_id = $2 AND idempotency_key = $3
+           LIMIT 1`,
+          [playerId, packId, idempotencyKey]
+        );
+        if (existing.rowCount) {
+          return {
+            roll: rowToRoll(existing.rows[0]),
+            alreadyProcessed: true
+          };
+        }
+      }
+
+      const ownedRows = await client.query(
+        `SELECT asset_id FROM player_asset_instances
+         WHERE player_id = $1 AND status = 'active'`,
+        [playerId]
       );
-      if (existing.rowCount) {
-        return {
-          roll: rowToRoll(existing.rows[0]),
-          alreadyProcessed: true
-        };
+      const owned = new Set(ownedRows.rows.map((row) => row.asset_id));
+      const candidates = pack.items
+        .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
+        .filter((item) => item.asset && !owned.has(item.assetId));
+
+      if (!candidates.length) {
+        throw httpError('No unowned assets left in this pack', 409);
       }
-    }
 
-    const ownedRows = await client.query(
-      `SELECT asset_id FROM player_asset_instances
-       WHERE player_id = $1 AND status = 'active'`,
-      [playerId]
-    );
-    const owned = new Set(ownedRows.rows.map((row) => row.asset_id));
-    const candidates = pack.items
-      .map((item) => ({ ...item, asset: getAssetById(item.assetId) }))
-      .filter((item) => item.asset && !owned.has(item.assetId));
-
-    if (!candidates.length) {
-      throw httpError('No unowned assets left in this pack', 409);
-    }
-
-    const selected = chooseWeighted(candidates, rng);
-    const candidatePoolHash = hashCandidatePool(candidates);
-    const transaction = await spendCurrency(client, {
-      playerId,
-      currencyCode: pack.rollPriceCurrencyCode,
-      amount: pack.rollPriceAmount,
-      reason: 'asset_pack_roll',
-      sourceType: 'asset_pack',
-      sourceId: pack.id,
-      idempotencyKey: idempotencyKey ? `asset_roll:${pack.id}:${idempotencyKey}` : null,
-      metadata: {
-        packId: pack.id,
-        candidatePoolHash,
-        selectedAssetId: selected.assetId
-      }
-    });
-
-    const rollId = createId('roll');
-    const inserted = await insertAssetInstance(client, {
-      playerId,
-      assetId: selected.assetId,
-      acquisitionSource: 'gacha',
-      acquisitionSourceId: rollId,
-      metadata: {
-        packId: pack.id,
-        rarity: selected.rarity,
-        transactionId: transaction.id
-      }
-    });
-
-    await client.query(
-      `INSERT INTO asset_rolls
-       (id, player_id, pack_id, currency_code, price_amount, result_asset_ids_json,
-        guarantee_state_json, candidate_pool_hash, selected_asset_id, result_instance_id,
-        idempotency_key, metadata_json, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-      [
-        rollId,
+      const selected = chooseWeighted(candidates, rng);
+      const candidatePoolHash = hashCandidatePool(candidates);
+      const transaction = await spendCurrency(client, {
         playerId,
-        pack.id,
-        pack.rollPriceCurrencyCode,
-        pack.rollPriceAmount,
-        JSON.stringify([selected.assetId]),
-        JSON.stringify({ rollSize: 1 }),
-        candidatePoolHash,
-        selected.assetId,
-        inserted.row.id,
-        idempotencyKey,
-        JSON.stringify({
-          gachaEnabled: isAssetGachaEnabled(),
-          directBuyPolicy: directBuyPolicy(),
-          activePackIds: activeGachaPackIds()
-        }),
-        nowIso()
-      ]
-    );
+        currencyCode: pack.rollPriceCurrencyCode,
+        amount: pack.rollPriceAmount,
+        reason: 'asset_pack_roll',
+        sourceType: 'asset_pack',
+        sourceId: pack.id,
+        idempotencyKey: idempotencyKey ? `asset_roll:${pack.id}:${idempotencyKey}` : null,
+        metadata: {
+          packId: pack.id,
+          candidatePoolHash,
+          selectedAssetId: selected.assetId
+        }
+      });
 
-    const rollRow = await client.query(`SELECT * FROM asset_rolls WHERE id = $1`, [rollId]);
-    return {
-      roll: rowToRoll(rollRow.rows[0]),
-      asset: selected.asset,
-      instance: rowToAssetInstance(inserted.row),
-      transaction,
-      alreadyProcessed: false
-    };
-  }));
+      const rollId = createId('roll');
+      const inserted = await insertAssetInstance(client, {
+        playerId,
+        assetId: selected.assetId,
+        acquisitionSource: 'gacha',
+        acquisitionSourceId: rollId,
+        metadata: {
+          packId: pack.id,
+          rarity: selected.rarity,
+          transactionId: transaction.id
+        }
+      });
+
+      await client.query(
+        `INSERT INTO asset_rolls
+         (id, player_id, pack_id, currency_code, price_amount, result_asset_ids_json,
+          guarantee_state_json, candidate_pool_hash, selected_asset_id, result_instance_id,
+          idempotency_key, metadata_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          rollId,
+          playerId,
+          pack.id,
+          pack.rollPriceCurrencyCode,
+          pack.rollPriceAmount,
+          JSON.stringify([selected.assetId]),
+          JSON.stringify({ rollSize: 1 }),
+          candidatePoolHash,
+          selected.assetId,
+          inserted.row.id,
+          idempotencyKey,
+          JSON.stringify({
+            gachaEnabled: isAssetGachaEnabled(),
+            directBuyPolicy: directBuyPolicy(),
+            activePackIds: activeGachaPackIds()
+          }),
+          nowIso()
+        ]
+      );
+
+      const rollRow = await client.query(`SELECT * FROM asset_rolls WHERE id = $1`, [rollId]);
+      return {
+        roll: rowToRoll(rollRow.rows[0]),
+        asset: selected.asset,
+        instance: rowToAssetInstance(inserted.row),
+        transaction,
+        alreadyProcessed: false
+      };
+    }))
+  );
 }
 
 export function getPackOdds(packId) {

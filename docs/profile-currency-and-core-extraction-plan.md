@@ -244,12 +244,12 @@ as evidence.
    non-completed statuses are recorded before grant, but completed-payment
    refunds, chargebacks/disputes, provider reversals, and late crypto review do
    not yet claw back wallet currency or open support cases automatically.
-5. **Some wallet mutation locks are still process-local.** Atomic SQL debits
+5. **Paid asset mutation locks now have DB-backed claims.** Atomic SQL debits
    protect the balance row, uniqueness constraints roll back duplicate active
-   assets, and wallet checkout creation now has a DB-backed claim. Multi-instance
-   deployments still need database row locks/advisory locks or conflict-aware
-   retries for direct asset purchase and gacha behavior under simultaneous
-   requests.
+   assets, wallet checkout creation has a DB-backed claim, and direct asset
+   purchase / gacha roll paths now use `mutation_claims` rows with TTL recovery.
+   Multi-instance deployments still need production-database validation plus
+   broader operations around refunds, reversals, and provider replay handling.
 6. **The current gacha is intentionally MVP-only.** It is one-result-per-roll,
    static/env configured, no pity/guarantees, no duplicate inventory, no burn
    exchange, no marketplace, and no database-managed seasons/collections.
@@ -329,12 +329,11 @@ backlog until the items are split into tickets or implementation phases.
 
 ### 4. Distributed Concurrency, Security, And Abuse Controls
 
-- Replace remaining process-local wallet/purchase/gacha mutation locks with
-  database row locks, advisory locks, or conflict-aware retries before running
-  multiple app instances that can process paid mutations.
 - Checkout idempotency and provider invoice reuse now have DB-backed claim
-  fields on `wallet_purchase_intents` as of 2026-07-02. Still validate this
-  behavior against the production database/provider mix before paid launch.
+  fields on `wallet_purchase_intents` as of 2026-07-02. Direct asset purchases
+  and gacha pack rolls now use reusable `mutation_claims` rows with stale-claim
+  recovery as of 2026-07-02. Still validate these behaviors against the
+  production database/provider mix before paid launch.
 - Add webhook replay protection, timestamp windows where providers support
   them, duplicate-event handling, structured payment logs, and secret rotation
   procedures.
@@ -1212,6 +1211,13 @@ or legal/support/compliance rollout work.
    - Home wallet UI loads `/api/wallet/bundles` for the active payment surface.
    - Telegram Stars opens invoice links; crypto providers open checkout URLs.
    - Rollable portrait swatches call the gacha pack roll endpoint.
+7. Direct asset purchase and gacha roll mutation claims exist.
+   - `purchaseAsset(...)` claims `asset_purchase` by player/asset before
+     spending wallet currency.
+   - `rollAssetPack(...)` claims `asset_roll` by player/pack before selecting a
+     candidate and spending wallet currency.
+   - Focused tests assert live claims are waited on and stale claims are
+     reclaimed without leaving rows behind.
 
 ### Remaining launch gates
 
@@ -1223,11 +1229,11 @@ or legal/support/compliance rollout work.
 - Validate Telegram Stars, BTCPay, and NOWPayments against real sandbox/live
   credentials and record callback payload examples.
 - Set provider webhook secrets in every non-local environment.
-- Replace remaining process-local wallet mutation paths with database
-  row/advisory locks or conflict-aware retries before running multiple app
-  instances that can process paid direct asset purchase or gacha requests
-  concurrently. **Checkout creation is partially hardened 2026-07-02:** provider
-  invoice creation now uses DB-backed claim fields and stale-claim recovery.
+- Validate multi-instance paid mutation behavior against the production
+  database/provider mix before launch. **Local DB-backed claims are implemented
+  2026-07-02:** provider invoice creation uses checkout claim fields, and direct
+  asset purchase / gacha roll paths use reusable `mutation_claims` rows with
+  stale-claim recovery.
 - Add final terms, refund/support contact, and payment-dispute copy reachable
   from the purchase UI. **Local support link plumbing is implemented
   2026-07-02:** `/api/app-config` exposes `paymentSupport`, the wallet popover

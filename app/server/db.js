@@ -131,6 +131,10 @@ async function ensurePostSyncIndexes(sequelize) {
      ON asset_rolls(player_id, pack_id, idempotency_key)
      WHERE idempotency_key IS NOT NULL`
   );
+  await sequelize.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_mutation_claims_scope_key
+     ON mutation_claims(scope, claim_key)`
+  );
 }
 
 async function backfillLegacyWalletBalances(sequelize) {

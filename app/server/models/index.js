@@ -37,6 +37,7 @@ import defineWalletPurchaseIntent from './WalletPurchaseIntent.js';
 import definePlayerAssetInstance from './PlayerAssetInstance.js';
 import definePlayerEquippedAsset from './PlayerEquippedAsset.js';
 import defineAssetRoll from './AssetRoll.js';
+import defineMutationClaim from './MutationClaim.js';
 
 export function initModels(sequelize) {
   const Player = definePlayer(sequelize);
@@ -72,6 +73,7 @@ export function initModels(sequelize) {
   const PlayerAssetInstance = definePlayerAssetInstance(sequelize);
   const PlayerEquippedAsset = definePlayerEquippedAsset(sequelize);
   const AssetRoll = defineAssetRoll(sequelize);
+  const MutationClaim = defineMutationClaim(sequelize);
 
   Player.hasOne(PlayerSettings, { foreignKey: 'player_id' });
   Player.hasMany(Session, { foreignKey: 'player_id' });
@@ -141,6 +143,7 @@ export function initModels(sequelize) {
     WalletPurchaseIntent,
     PlayerAssetInstance,
     PlayerEquippedAsset,
-    AssetRoll
+    AssetRoll,
+    MutationClaim
   };
 }
