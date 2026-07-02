@@ -622,7 +622,7 @@
       "id": "thalla",
       "verdict": "needs_review",
       "accepted": false,
-      "reason": "SourceGate recovery produced a new authored local 8x4 source, not the blocked source hash and not the exhausted repair hash. The new source `.agent/home-field-workspace/supplied/thalla_imagegen_recovery_runtime_2026-07-02.states.source.png` has sha256 `aac982b3eee1769a7b78e42a96784f99d09ccfb33f0f7a7894f16518e5d40414`; the candidate has sha256 `fce7bff0f41b29c69132942e5c1cc5d5b4bf43c0a076741181b911977a2eefa6`. Reference, state-sheet, and candidate palette audits pass the fewer-than-20 visible design color gate. Split frames, candidate validation, evidence, and composed mobile/desktop preview pass after the allowed alpha recovery path cleared initial magenta fringe at tolerance `160`. Visual review: candidate is compact, clean, readable on field screenshots, and preserves Thalla's mushroom-cap silhouette, pale robe, elf ears, and simple gold mycelium marks without jewelry/regalia drift. It is still candidate-only and not human-approved, so record as `needs_review`, leave `accepted: false`, and do not overwrite app-facing PNGs.",
+      "reason": "Needs review after SourceGate recovery: the final Thalla candidate uses a fresh non-exhausted local source hash, passes the reference, state-sheet, and candidate palette gates under the 20-color budget, passes split/frame/candidate/runtime validators, and renders cleanly in mobile and desktop Home Field previews. The final exact warm-outline repair removed the earlier purple/magenta rim without changing pose, silhouette, identity, or sheet layout. This is candidate-only evidence, not approved production promotion; app-facing PNGs remain untouched.",
       "repeatCheck": "not_applicable",
       "connectorCheck": "not_applicable",
       "cleanPreviewCheck": "pass",
@@ -641,12 +641,12 @@
       "sourceFrameIsolationCheck": "pass",
       "candidateRoot": ".agent/home-field-workspace/candidates/chibi-active-roster/latest",
       "candidateEvidenceManifest": ".agent/home-field-workspace/review/candidate-evidence.manifest.json",
-      "candidateEvidenceSha256": "ff9992866a482d2dab439f760209a4045d92617e6c5719cee0e93ac00c64a01a",
-      "candidateSha256": "fce7bff0f41b29c69132942e5c1cc5d5b4bf43c0a076741181b911977a2eefa6",
-      "referenceSha256": "080995b05ee13a800c432ab5fc1354b749a46dd9e4014619d9d0ed9af1d2ee57",
-      "rawSourceSha256": "aac982b3eee1769a7b78e42a96784f99d09ccfb33f0f7a7894f16518e5d40414",
-      "mobileScreenshotSha256": "2fda23c1f1b2c7c23c175b608b3c86e0f1e9855c4d8daf4d13ab3cbf49336b9b",
-      "desktopScreenshotSha256": "fbf1bc0ecf42b1949df1b7ca97c61b023f10eeabac6e02534b57fdc25f4075f0"
+      "candidateEvidenceSha256": "1be895dc261a4667cf8780ff5e735a2662ace3a694ec46a13768141a57654454",
+      "candidateSha256": "64b71fc1a0bb29fce6860d0246a41ab9539fbfc4ddb35b55a8d19b8530f835f9",
+      "referenceSha256": "07a55d6c668ff22da9e7a7c6d632f43e05648db37fcaa1c0b349888c4b37d262",
+      "rawSourceSha256": "bd82997b6b9d790d31e9e1bdf56ea191cf6e7dd63f4efd4f9bf271e8701e0fb1",
+      "mobileScreenshotSha256": "b68f9f432a49aa8271e72428ff886a59ab8e3cadc6367e51bad62c121ded42e7",
+      "desktopScreenshotSha256": "0376ce1111b454ef7e22b4abe3dae06ec2acde6c9b94aaca71702bf279a6ffaa"
     },
     {
       "id": "lomie",
