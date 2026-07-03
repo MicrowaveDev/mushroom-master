@@ -618,12 +618,12 @@ for tests and emergency maintenance, not normal season authoring.
   runtime pack validator; review status transitions; cloned draft revisions for
   edits to approved packs; emergency disable/expire actions; and audited
   before/after change records in `support_actions`.
-- Required next, **G5C - admin UI MVP**: add a `/gacha-admin` page or a
-  dedicated support-admin tab where operators can list seasons, open
-  collections/packs, edit names/dates/status/price/roll size/items, use an
-  asset picker, edit structured rarity/slot/guarantee/pity/duplicate/burn
-  rules, validate a draft, approve it, publish it, expire it, and see errors
-  without touching SQL.
+- Done: **G5C - admin UI MVP** adds a dedicated `/support-admin` Gacha tab
+  where operators can load the token-gated catalog, see season/collection/pack
+  counts, pick existing asset ids from the admin catalog, create/update seasons,
+  collections, packs, and pack items, edit rarity/slot/guarantee/pity/
+  duplicate/burn JSON fields, validate drafts, publish approved active packs,
+  expire/disable packs, and see validation errors without touching SQL.
 - Required next, **G5D - preview and safety tooling**: add live-vs-draft diff,
   player-facing pack preview, odds preview, roll simulation, duplicate/copy-cap
   warnings, DB-managed acquisition-policy mapping for DB-only pack assets, and
@@ -2502,8 +2502,12 @@ Additional TODOs for that pass:
    collection, pack, and pack-item CRUD, validates draft packs, handles
    review/publish/disable transitions, clones approved packs into draft
    revisions for edits, and records audited before/after operator actions.
-38. G5C-G5D gacha admin panel UI and safety tooling. Add the operator screen
-   or support-admin tab, structured editors for rarity/slot/guarantee/pity/
-   duplicate/burn configs, live-vs-draft preview, roll simulation, asset policy
-   mapping, release checklist, screenshots, and UI/e2e coverage before
-   DB-authored paid seasons are managed in production.
+38. G5C gacha admin panel UI MVP. **Done 2026-07-04:** `/support-admin` has a
+   Gacha tab with token-gated catalog loading, season/collection/pack forms,
+   asset-picker-backed pack item rows, advanced JSON rule fields, validation,
+   publish/expire/disable controls, desktop/mobile screenshots, and UI/e2e
+   coverage.
+39. G5D gacha preview and safety tooling. Add live-vs-draft preview, roll
+   simulation, asset policy mapping, release checklist, richer disclosure
+   checks, and stricter warning surfaces before DB-authored paid seasons are
+   managed in production.

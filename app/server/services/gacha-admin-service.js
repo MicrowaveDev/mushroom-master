@@ -1,6 +1,7 @@
 import { query, withTransaction } from '../db.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 import {
+  getAssetCatalog,
   shapeAssetPack,
   validateAssetPack
 } from './asset-service.js';
@@ -577,7 +578,19 @@ export async function listGachaAdminCatalog() {
         itemCount: runtimePack.items.length
       };
     }),
-    items: items.rows.map(rowToPackItem)
+    items: items.rows.map(rowToPackItem),
+    assetOptions: getAssetCatalog().map((asset) => ({
+      assetId: asset.assetId,
+      mushroomId: asset.mushroomId,
+      portraitId: asset.portraitId,
+      name: asset.name,
+      rarity: asset.rarity,
+      dropWeight: asset.dropWeight,
+      price: asset.price,
+      currencyCode: asset.currencyCode,
+      acquisitionMode: asset.acquisitionMode,
+      packId: asset.packId
+    }))
   };
 }
 

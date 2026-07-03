@@ -28,6 +28,73 @@ function rowPlayerLabel(player) {
   return player.telegramUsername || player.name || player.friendCode || player.id;
 }
 
+function localizedName(value) {
+  if (!value || typeof value !== 'object') return '';
+  return value.en || value.ru || Object.values(value).find(Boolean) || '';
+}
+
+function prettyJson(value, fallback) {
+  return JSON.stringify(value ?? fallback, null, 2);
+}
+
+function parseJsonInput(value, fallback, label) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return fallback;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    throw new Error(`${label} must be valid JSON`);
+  }
+}
+
+function nullableText(value) {
+  const trimmed = String(value || '').trim();
+  return trimmed || null;
+}
+
+function makeDefaultGachaItemDraft() {
+  return {
+    assetId: '',
+    rarity: 'common',
+    dropWeight: 100,
+    copyLimit: '',
+    metadataJson: '{}'
+  };
+}
+
+const DEFAULT_GACHA_FORM = {
+  seasonId: '',
+  seasonName: '',
+  seasonStatus: 'active',
+  seasonStartsAt: '',
+  seasonEndsAt: '',
+  collectionId: '',
+  collectionName: '',
+  collectionStatus: 'active',
+  collectionStartsAt: '',
+  collectionEndsAt: '',
+  packId: '',
+  packName: '',
+  packStatus: 'future',
+  packStartsAt: '',
+  packEndsAt: '',
+  rollPriceAmount: 25,
+  rollSize: 2,
+  rarityTableVersion: '',
+  rarityWeightsJson: prettyJson({ common: 70, rare: 25, epic: 5 }, {}),
+  slotsJson: prettyJson([
+    { rarityWeights: { common: 1 } },
+    { rarityWeights: { rare: 1 } }
+  ], []),
+  guaranteesJson: '[]',
+  pityRulesJson: '[]',
+  duplicatePolicyJson: prettyJson({ mode: 'unowned_only' }, {}),
+  burnRulesJson: '[]',
+  metadataJson: '{}',
+  reason: 'gacha_admin_ui',
+  note: ''
+};
+
 async function supportJson(path, { token, actorId, approvalActorId = '', method = 'GET', body = null }) {
   const response = await fetch(path, {
     method,
@@ -51,6 +118,7 @@ export const SupportAdminScreen = {
   data() {
     const credentials = readStoredCredentials();
     return {
+      activeAdminTab: 'support',
       token: credentials.token || '',
       actorId: credentials.actorId || '',
       approvalActorId: credentials.approvalActorId || '',
@@ -81,7 +149,13 @@ export const SupportAdminScreen = {
         clawback: true,
         reason: 'support_refund',
         note: ''
-      }
+      },
+      gachaCatalog: null,
+      gachaLoading: false,
+      gachaActionLoading: false,
+      gachaValidation: null,
+      gachaForm: { ...DEFAULT_GACHA_FORM },
+      gachaItemDrafts: [makeDefaultGachaItemDraft()]
     };
   },
   computed: {
@@ -112,6 +186,78 @@ export const SupportAdminScreen = {
     },
     latestWebhookEvents() {
       return (this.lookup?.paymentWebhookEvents || []).slice(0, 6);
+    },
+    gachaSeasons() {
+      return this.gachaCatalog?.seasons || [];
+    },
+    gachaCollections() {
+      return this.gachaCatalog?.collections || [];
+    },
+    gachaPacks() {
+      return this.gachaCatalog?.packs || [];
+    },
+    gachaAssetOptions() {
+      return this.gachaCatalog?.assetOptions || [];
+    },
+    selectedGachaPack() {
+      return this.gachaPacks.find((pack) => pack.id === this.gachaForm.packId) || null;
+    },
+    selectedGachaPackItems() {
+      const packId = this.gachaForm.packId;
+      return (this.gachaCatalog?.items || []).filter((item) => item.packId === packId);
+    },
+    filteredGachaCollections() {
+      const seasonId = this.gachaForm.seasonId;
+      return this.gachaCollections.filter((collection) => !seasonId || collection.seasonId === seasonId);
+    },
+    gachaValidationResult() {
+      return this.gachaValidation?.validation || this.selectedGachaPack?.validation || null;
+    },
+    gachaValidationIssues() {
+      const validation = this.gachaValidationResult;
+      if (!validation) return [];
+      return [
+        ...(validation.errors || []).map((issue) => ({ ...issue, severity: 'error' })),
+        ...(validation.warnings || []).map((issue) => ({ ...issue, severity: 'warning' }))
+      ];
+    },
+    canLoadGachaCatalog() {
+      return this.token.trim() && this.actorId.trim() && !this.gachaLoading;
+    },
+    canSubmitGachaSeason() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaForm.seasonId.trim()
+        && this.gachaForm.seasonName.trim()
+        && !this.gachaActionLoading;
+    },
+    canSubmitGachaCollection() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaForm.seasonId.trim()
+        && this.gachaForm.collectionId.trim()
+        && this.gachaForm.collectionName.trim()
+        && !this.gachaActionLoading;
+    },
+    canSubmitGachaPack() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaForm.seasonId.trim()
+        && this.gachaForm.collectionId.trim()
+        && this.gachaForm.packId.trim()
+        && this.gachaForm.packName.trim()
+        && Number.isInteger(Number(this.gachaForm.rollPriceAmount))
+        && Number(this.gachaForm.rollPriceAmount) > 0
+        && Number.isInteger(Number(this.gachaForm.rollSize))
+        && Number(this.gachaForm.rollSize) > 0
+        && !this.gachaActionLoading;
+    },
+    canSubmitGachaItems() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaForm.packId.trim()
+        && this.gachaItemDrafts.some((item) => item.assetId.trim())
+        && !this.gachaActionLoading;
     },
     assetInstanceOptions() {
       const playerId = this.assetForm.playerId;
@@ -163,6 +309,97 @@ export const SupportAdminScreen = {
   methods: {
     formatDate,
     rowPlayerLabel,
+    localizedName,
+    prettyJson,
+    setAdminTab(tab) {
+      this.activeAdminTab = tab === 'gacha' ? 'gacha' : 'support';
+      if (this.activeAdminTab === 'gacha' && !this.gachaCatalog && this.canLoadGachaCatalog) {
+        this.loadGachaCatalog({ silent: true });
+      }
+    },
+    gachaAssetLabel(asset) {
+      if (!asset) return '';
+      const name = localizedName(asset.name) || asset.assetId;
+      return `${name} · ${asset.rarity || 'common'} · ${asset.assetId}`;
+    },
+    gachaSeasonLabel(season) {
+      if (!season) return '';
+      return `${localizedName(season.name) || season.id} · ${season.status}`;
+    },
+    gachaCollectionLabel(collection) {
+      if (!collection) return '';
+      return `${localizedName(collection.name) || collection.id} · ${collection.status}`;
+    },
+    findGachaAsset(assetId) {
+      return this.gachaAssetOptions.find((asset) => asset.assetId === assetId) || null;
+    },
+    applyGachaAssetOption(index) {
+      const draft = this.gachaItemDrafts[index];
+      if (!draft) return;
+      const asset = this.findGachaAsset(draft.assetId);
+      if (!asset) return;
+      draft.rarity = asset.rarity || draft.rarity || 'common';
+      draft.dropWeight = Number(asset.dropWeight || draft.dropWeight || 1);
+    },
+    addGachaItemDraft() {
+      this.gachaItemDrafts.push(makeDefaultGachaItemDraft());
+    },
+    removeGachaItemDraft(index) {
+      this.gachaItemDrafts.splice(index, 1);
+      if (!this.gachaItemDrafts.length) this.addGachaItemDraft();
+    },
+    fillGachaSeason(season) {
+      if (!season) return;
+      this.gachaForm.seasonId = season.id;
+      this.gachaForm.seasonName = localizedName(season.name);
+      this.gachaForm.seasonStatus = season.status || 'draft';
+      this.gachaForm.seasonStartsAt = season.startsAt || '';
+      this.gachaForm.seasonEndsAt = season.endsAt || '';
+    },
+    fillGachaCollection(collection) {
+      if (!collection) return;
+      this.gachaForm.collectionId = collection.id;
+      this.gachaForm.seasonId = collection.seasonId || this.gachaForm.seasonId;
+      this.gachaForm.collectionName = localizedName(collection.name);
+      this.gachaForm.collectionStatus = collection.status || 'draft';
+      this.gachaForm.collectionStartsAt = collection.startsAt || '';
+      this.gachaForm.collectionEndsAt = collection.endsAt || '';
+    },
+    selectGachaSeasonById(seasonId) {
+      this.fillGachaSeason(this.gachaSeasons.find((season) => season.id === seasonId));
+    },
+    selectGachaCollectionById(collectionId) {
+      this.fillGachaCollection(this.gachaCollections.find((collection) => collection.id === collectionId));
+    },
+    fillGachaPack(pack) {
+      if (!pack) return;
+      this.gachaForm.packId = pack.id;
+      this.gachaForm.seasonId = pack.seasonId || '';
+      this.gachaForm.collectionId = pack.collectionId || '';
+      this.gachaForm.packName = localizedName(pack.name);
+      this.gachaForm.packStatus = pack.status || 'future';
+      this.gachaForm.packStartsAt = pack.startsAt || '';
+      this.gachaForm.packEndsAt = pack.endsAt || '';
+      this.gachaForm.rollPriceAmount = Number(pack.rollPriceAmount || 1);
+      this.gachaForm.rollSize = Number(pack.rollSize || 1);
+      this.gachaForm.rarityTableVersion = pack.rarityTableVersion || '';
+      this.gachaForm.rarityWeightsJson = prettyJson(pack.rarityWeights, null);
+      this.gachaForm.slotsJson = prettyJson(pack.slots, null);
+      this.gachaForm.guaranteesJson = prettyJson(pack.guarantees, null);
+      this.gachaForm.pityRulesJson = prettyJson(pack.pityRules, null);
+      this.gachaForm.duplicatePolicyJson = prettyJson(pack.duplicatePolicy, null);
+      this.gachaForm.burnRulesJson = prettyJson(pack.burnRules, null);
+      this.gachaForm.metadataJson = prettyJson(pack.metadata, {});
+      const items = (this.gachaCatalog?.items || []).filter((item) => item.packId === pack.id);
+      this.gachaItemDrafts = items.length ? items.map((item) => ({
+        assetId: item.assetId,
+        rarity: item.rarity || 'common',
+        dropWeight: Number(item.dropWeight || 1),
+        copyLimit: item.copyLimit == null ? '' : Number(item.copyLimit),
+        metadataJson: prettyJson(item.metadata, {})
+      })) : [makeDefaultGachaItemDraft()];
+      this.gachaValidation = { validation: pack.validation };
+    },
     assetInstanceLabel(asset) {
       if (!asset) return '';
       return `${asset.assetId} · ${asset.status} · ${asset.id}`;
@@ -205,6 +442,72 @@ export const SupportAdminScreen = {
         body
       });
     },
+    gachaReasonPayload() {
+      return {
+        reason: this.gachaForm.reason.trim() || 'gacha_admin_ui',
+        note: this.gachaForm.note.trim()
+      };
+    },
+    buildGachaSeasonPayload() {
+      return {
+        id: this.gachaForm.seasonId.trim(),
+        name: { en: this.gachaForm.seasonName.trim() },
+        status: this.gachaForm.seasonStatus,
+        startsAt: nullableText(this.gachaForm.seasonStartsAt),
+        endsAt: nullableText(this.gachaForm.seasonEndsAt),
+        metadata: {},
+        ...this.gachaReasonPayload()
+      };
+    },
+    buildGachaCollectionPayload() {
+      return {
+        id: this.gachaForm.collectionId.trim(),
+        seasonId: this.gachaForm.seasonId.trim(),
+        name: { en: this.gachaForm.collectionName.trim() },
+        status: this.gachaForm.collectionStatus,
+        startsAt: nullableText(this.gachaForm.collectionStartsAt),
+        endsAt: nullableText(this.gachaForm.collectionEndsAt),
+        metadata: {},
+        ...this.gachaReasonPayload()
+      };
+    },
+    buildGachaPackPayload() {
+      return {
+        id: this.gachaForm.packId.trim(),
+        seasonId: this.gachaForm.seasonId.trim(),
+        collectionId: this.gachaForm.collectionId.trim(),
+        name: { en: this.gachaForm.packName.trim() },
+        status: this.gachaForm.packStatus,
+        startsAt: nullableText(this.gachaForm.packStartsAt),
+        endsAt: nullableText(this.gachaForm.packEndsAt),
+        rollPriceCurrencyCode: 'soft_coin',
+        rollPriceAmount: Number(this.gachaForm.rollPriceAmount),
+        rollSize: Number(this.gachaForm.rollSize),
+        rarityTableVersion: nullableText(this.gachaForm.rarityTableVersion),
+        rarityWeights: parseJsonInput(this.gachaForm.rarityWeightsJson, null, 'Rarity weights'),
+        slots: parseJsonInput(this.gachaForm.slotsJson, null, 'Slots'),
+        guarantees: parseJsonInput(this.gachaForm.guaranteesJson, null, 'Guarantees'),
+        pityRules: parseJsonInput(this.gachaForm.pityRulesJson, null, 'Pity rules'),
+        duplicatePolicy: parseJsonInput(this.gachaForm.duplicatePolicyJson, null, 'Duplicate policy'),
+        burnRules: parseJsonInput(this.gachaForm.burnRulesJson, null, 'Burn rules'),
+        metadata: parseJsonInput(this.gachaForm.metadataJson, {}, 'Pack metadata'),
+        ...this.gachaReasonPayload()
+      };
+    },
+    buildGachaItemPayload() {
+      return this.gachaItemDrafts
+        .filter((item) => item.assetId.trim())
+        .map((item, index) => ({
+          assetId: item.assetId.trim(),
+          rarity: item.rarity,
+          dropWeight: Number(item.dropWeight),
+          ...(item.copyLimit === '' || item.copyLimit === null || item.copyLimit === undefined
+            ? {}
+            : { copyLimit: Number(item.copyLimit) }),
+          itemOrder: index,
+          metadata: parseJsonInput(item.metadataJson, {}, `Item ${index + 1} metadata`)
+        }));
+    },
     rememberCredentials() {
       writeStoredCredentials({
         token: this.token.trim(),
@@ -230,6 +533,168 @@ export const SupportAdminScreen = {
         this.error = error.message;
       } finally {
         this.loading = false;
+      }
+    },
+    async loadGachaCatalog({ silent = false } = {}) {
+      if (!this.canLoadGachaCatalog) return;
+      this.gachaLoading = true;
+      this.error = '';
+      if (!silent) this.status = '';
+      this.rememberCredentials();
+      const previousPackId = this.gachaForm.packId;
+      try {
+        this.gachaCatalog = await this.supportRequest('/api/admin/gacha/catalog');
+        const selectedPack = this.gachaPacks.find((pack) => pack.id === previousPackId) || this.gachaPacks[0] || null;
+        if (selectedPack) this.fillGachaPack(selectedPack);
+        if (!this.gachaForm.seasonId && this.gachaSeasons[0]) this.fillGachaSeason(this.gachaSeasons[0]);
+        if (!this.gachaForm.collectionId && this.gachaCollections[0]) this.fillGachaCollection(this.gachaCollections[0]);
+        if (!silent) this.status = 'Gacha catalog loaded.';
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaLoading = false;
+      }
+    },
+    async submitGachaSeason() {
+      if (!this.canSubmitGachaSeason) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const payload = this.buildGachaSeasonPayload();
+        const exists = this.gachaSeasons.some((season) => season.id === payload.id);
+        const data = await this.supportRequest(exists
+          ? `/api/admin/gacha/seasons/${encodeURIComponent(payload.id)}`
+          : '/api/admin/gacha/seasons', {
+          method: exists ? 'PATCH' : 'POST',
+          body: payload
+        });
+        this.status = exists ? 'Gacha season updated.' : 'Gacha season created.';
+        this.fillGachaSeason(data.season);
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async submitGachaCollection() {
+      if (!this.canSubmitGachaCollection) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const payload = this.buildGachaCollectionPayload();
+        const exists = this.gachaCollections.some((collection) => collection.id === payload.id);
+        const data = await this.supportRequest(exists
+          ? `/api/admin/gacha/collections/${encodeURIComponent(payload.id)}`
+          : '/api/admin/gacha/collections', {
+          method: exists ? 'PATCH' : 'POST',
+          body: payload
+        });
+        this.status = exists ? 'Gacha collection updated.' : 'Gacha collection created.';
+        this.fillGachaCollection(data.collection);
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async submitGachaPack() {
+      if (!this.canSubmitGachaPack) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const payload = this.buildGachaPackPayload();
+        const exists = this.gachaPacks.some((pack) => pack.id === payload.id);
+        const data = await this.supportRequest(exists
+          ? `/api/admin/gacha/packs/${encodeURIComponent(payload.id)}`
+          : '/api/admin/gacha/packs', {
+          method: exists ? 'PATCH' : 'POST',
+          body: payload
+        });
+        this.status = data.cloned
+          ? `Approved pack cloned to draft ${data.pack.id}.`
+          : (exists ? 'Gacha pack updated.' : 'Gacha pack created.');
+        this.fillGachaPack(data.pack);
+        this.gachaValidation = { validation: data.validation };
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async submitGachaItems() {
+      if (!this.canSubmitGachaItems) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const items = this.buildGachaItemPayload();
+        const data = await this.supportRequest(`/api/admin/gacha/packs/${encodeURIComponent(this.gachaForm.packId.trim())}/items`, {
+          method: 'PUT',
+          body: {
+            items,
+            cloneDraft: true,
+            ...this.gachaReasonPayload()
+          }
+        });
+        if (data.packId) this.gachaForm.packId = data.packId;
+        this.status = data.cloned
+          ? `Items saved to cloned draft ${data.packId}.`
+          : 'Gacha pack items saved.';
+        this.gachaValidation = { validation: data.validation };
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async validateGachaPack() {
+      if (!this.gachaForm.packId.trim() || !this.canLoadGachaCatalog) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        this.gachaValidation = await this.supportRequest(`/api/admin/gacha/packs/${encodeURIComponent(this.gachaForm.packId.trim())}/validation`);
+        this.status = this.gachaValidation.validation?.ok ? 'Gacha pack validation passed.' : 'Gacha pack validation found issues.';
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async transitionGachaPack(action) {
+      if (!this.gachaForm.packId.trim() || !this.canLoadGachaCatalog) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const data = await this.supportRequest(`/api/admin/gacha/packs/${encodeURIComponent(this.gachaForm.packId.trim())}/transition`, {
+          method: 'POST',
+          body: {
+            action,
+            ...this.gachaReasonPayload()
+          }
+        });
+        this.status = `Gacha pack ${action} applied.`;
+        this.fillGachaPack(data.pack);
+        this.gachaValidation = { validation: data.validation };
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
       }
     },
     async submitWalletAction() {
@@ -326,6 +791,12 @@ export const SupportAdminScreen = {
         <p v-if="error" class="support-admin-message support-admin-message--error" data-testid="support-admin-error">{{ error }}</p>
       </header>
 
+      <nav class="support-admin-tabs" data-testid="support-admin-tabs" aria-label="Admin console areas">
+        <button type="button" data-testid="support-admin-support-tab" :class="{ active: activeAdminTab === 'support' }" @click="setAdminTab('support')">Support</button>
+        <button type="button" data-testid="support-admin-gacha-tab" :class="{ active: activeAdminTab === 'gacha' }" @click="setAdminTab('gacha')">Gacha</button>
+      </nav>
+
+      <template v-if="activeAdminTab === 'support'">
       <section class="panel support-admin-panel support-admin-lookup">
         <label>
           <span>Token</span>
@@ -601,6 +1072,315 @@ export const SupportAdminScreen = {
           </div>
         </section>
       </div>
+      </template>
+
+      <template v-else>
+        <section class="panel support-admin-panel support-admin-lookup support-admin-gacha-auth" data-testid="gacha-admin-auth">
+          <label>
+            <span>Token</span>
+            <input class="support-admin-input" data-testid="gacha-token" type="password" v-model="token" autocomplete="off" />
+          </label>
+          <label>
+            <span>Actor</span>
+            <input class="support-admin-input" data-testid="gacha-actor" v-model="actorId" autocomplete="off" />
+          </label>
+          <label>
+            <span>Approval</span>
+            <input class="support-admin-input" data-testid="gacha-approval-actor" v-model="approvalActorId" autocomplete="off" />
+          </label>
+          <button class="primary support-admin-submit" data-testid="gacha-load-catalog" type="button" :disabled="!canLoadGachaCatalog" @click="loadGachaCatalog()">
+            {{ gachaLoading ? 'Loading' : 'Load Catalog' }}
+          </button>
+        </section>
+
+        <section v-if="gachaCatalog" class="panel support-admin-panel" data-testid="gacha-catalog">
+          <h3>Gacha Catalog</h3>
+          <dl class="support-admin-metrics support-admin-metrics--gacha">
+            <div><dt>Seasons</dt><dd>{{ gachaSeasons.length }}</dd></div>
+            <div><dt>Collections</dt><dd>{{ gachaCollections.length }}</dd></div>
+            <div><dt>Packs</dt><dd>{{ gachaPacks.length }}</dd></div>
+            <div><dt>Assets</dt><dd>{{ gachaAssetOptions.length }}</dd></div>
+          </dl>
+          <div class="support-admin-table-wrap">
+            <table class="support-admin-table support-admin-gacha-table" data-testid="gacha-packs-table">
+              <thead>
+                <tr><th>Pack</th><th>Status</th><th>Review</th><th>Items</th><th>Price</th><th>Valid</th><th>Action</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="pack in gachaPacks" :key="pack.id" :data-pack-id="pack.id" :class="{ active: gachaForm.packId === pack.id }">
+                  <td><strong>{{ localizedName(pack.name) || pack.id }}</strong><small>{{ pack.id }}</small></td>
+                  <td>{{ pack.status }}</td>
+                  <td>{{ pack.reviewStatus }}</td>
+                  <td>{{ pack.itemCount || 0 }}</td>
+                  <td>{{ pack.rollPriceAmount }} {{ pack.rollPriceCurrencyCode }}</td>
+                  <td>
+                    <span class="support-admin-badge" :class="pack.validation?.ok ? 'support-admin-badge--ok' : 'support-admin-badge--warn'">
+                      {{ pack.validation?.ok ? 'ok' : 'needs work' }}
+                    </span>
+                  </td>
+                  <td><button class="support-admin-mini-button" type="button" data-testid="gacha-select-pack" @click="fillGachaPack(pack)">Edit</button></td>
+                </tr>
+                <tr v-if="!gachaPacks.length"><td colspan="7">No database gacha packs yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <datalist id="gacha-asset-options">
+          <option v-for="asset in gachaAssetOptions" :key="asset.assetId" :value="asset.assetId">{{ gachaAssetLabel(asset) }}</option>
+        </datalist>
+
+        <div class="support-admin-columns support-admin-gacha-columns">
+          <section class="panel support-admin-panel support-admin-action-form" data-testid="gacha-season-form">
+            <h3>Season</h3>
+            <label>
+              <span>Existing</span>
+              <select class="support-admin-input" data-testid="gacha-season-existing" @change="selectGachaSeasonById($event.target.value)">
+                <option value="">Select season</option>
+                <option v-for="season in gachaSeasons" :key="season.id" :value="season.id">{{ gachaSeasonLabel(season) }}</option>
+              </select>
+            </label>
+            <label>
+              <span>ID</span>
+              <input class="support-admin-input" data-testid="gacha-season-id" v-model="gachaForm.seasonId" />
+            </label>
+            <label>
+              <span>Name</span>
+              <input class="support-admin-input" data-testid="gacha-season-name" v-model="gachaForm.seasonName" />
+            </label>
+            <label>
+              <span>Status</span>
+              <select class="support-admin-input" data-testid="gacha-season-status" v-model="gachaForm.seasonStatus">
+                <option value="draft">draft</option>
+                <option value="future">future</option>
+                <option value="active">active</option>
+                <option value="expired">expired</option>
+                <option value="disabled">disabled</option>
+              </select>
+            </label>
+            <div class="support-admin-inline-fields">
+              <label>
+                <span>Starts</span>
+                <input class="support-admin-input" data-testid="gacha-season-starts" v-model="gachaForm.seasonStartsAt" placeholder="2026-08-01T00:00:00Z" />
+              </label>
+              <label>
+                <span>Ends</span>
+                <input class="support-admin-input" data-testid="gacha-season-ends" v-model="gachaForm.seasonEndsAt" placeholder="2026-09-01T00:00:00Z" />
+              </label>
+            </div>
+            <button class="primary support-admin-submit" data-testid="gacha-save-season" type="button" :disabled="!canSubmitGachaSeason" @click="submitGachaSeason">
+              {{ gachaActionLoading ? 'Saving' : 'Save Season' }}
+            </button>
+          </section>
+
+          <section class="panel support-admin-panel support-admin-action-form" data-testid="gacha-collection-form">
+            <h3>Collection</h3>
+            <label>
+              <span>Existing</span>
+              <select class="support-admin-input" data-testid="gacha-collection-existing" @change="selectGachaCollectionById($event.target.value)">
+                <option value="">Select collection</option>
+                <option v-for="collection in gachaCollections" :key="collection.id" :value="collection.id">{{ gachaCollectionLabel(collection) }}</option>
+              </select>
+            </label>
+            <label>
+              <span>ID</span>
+              <input class="support-admin-input" data-testid="gacha-collection-id" v-model="gachaForm.collectionId" />
+            </label>
+            <label>
+              <span>Name</span>
+              <input class="support-admin-input" data-testid="gacha-collection-name" v-model="gachaForm.collectionName" />
+            </label>
+            <label>
+              <span>Status</span>
+              <select class="support-admin-input" data-testid="gacha-collection-status" v-model="gachaForm.collectionStatus">
+                <option value="draft">draft</option>
+                <option value="future">future</option>
+                <option value="active">active</option>
+                <option value="expired">expired</option>
+                <option value="disabled">disabled</option>
+              </select>
+            </label>
+            <div class="support-admin-inline-fields">
+              <label>
+                <span>Starts</span>
+                <input class="support-admin-input" data-testid="gacha-collection-starts" v-model="gachaForm.collectionStartsAt" />
+              </label>
+              <label>
+                <span>Ends</span>
+                <input class="support-admin-input" data-testid="gacha-collection-ends" v-model="gachaForm.collectionEndsAt" />
+              </label>
+            </div>
+            <button class="primary support-admin-submit" data-testid="gacha-save-collection" type="button" :disabled="!canSubmitGachaCollection" @click="submitGachaCollection">
+              {{ gachaActionLoading ? 'Saving' : 'Save Collection' }}
+            </button>
+          </section>
+        </div>
+
+        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-action-form" data-testid="gacha-pack-form">
+          <h3>Pack</h3>
+          <div class="support-admin-gacha-pack-grid">
+            <label>
+              <span>ID</span>
+              <input class="support-admin-input" data-testid="gacha-pack-id" v-model="gachaForm.packId" />
+            </label>
+            <label>
+              <span>Name</span>
+              <input class="support-admin-input" data-testid="gacha-pack-name" v-model="gachaForm.packName" />
+            </label>
+            <label>
+              <span>Season</span>
+              <select class="support-admin-input" data-testid="gacha-pack-season" v-model="gachaForm.seasonId">
+                <option value="">Select season</option>
+                <option v-for="season in gachaSeasons" :key="season.id" :value="season.id">{{ localizedName(season.name) || season.id }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Collection</span>
+              <select class="support-admin-input" data-testid="gacha-pack-collection" v-model="gachaForm.collectionId">
+                <option value="">Select collection</option>
+                <option v-for="collection in filteredGachaCollections" :key="collection.id" :value="collection.id">{{ localizedName(collection.name) || collection.id }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Status</span>
+              <select class="support-admin-input" data-testid="gacha-pack-status" v-model="gachaForm.packStatus">
+                <option value="future">future</option>
+                <option value="active">active</option>
+                <option value="expired">expired</option>
+                <option value="disabled">disabled</option>
+              </select>
+            </label>
+            <label>
+              <span>Price</span>
+              <input class="support-admin-input" data-testid="gacha-pack-price" type="number" min="1" step="1" v-model.number="gachaForm.rollPriceAmount" />
+            </label>
+            <label>
+              <span>Roll Size</span>
+              <input class="support-admin-input" data-testid="gacha-pack-roll-size" type="number" min="1" max="10" step="1" v-model.number="gachaForm.rollSize" />
+            </label>
+            <label>
+              <span>Version</span>
+              <input class="support-admin-input" data-testid="gacha-pack-version" v-model="gachaForm.rarityTableVersion" />
+            </label>
+          </div>
+          <div class="support-admin-inline-fields">
+            <label>
+              <span>Starts</span>
+              <input class="support-admin-input" data-testid="gacha-pack-starts" v-model="gachaForm.packStartsAt" />
+            </label>
+            <label>
+              <span>Ends</span>
+              <input class="support-admin-input" data-testid="gacha-pack-ends" v-model="gachaForm.packEndsAt" />
+            </label>
+          </div>
+          <div class="support-admin-gacha-json-grid">
+            <label>
+              <span>Rarity Weights JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-rarity-weights" rows="5" v-model="gachaForm.rarityWeightsJson"></textarea>
+            </label>
+            <label>
+              <span>Slots JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-slots" rows="5" v-model="gachaForm.slotsJson"></textarea>
+            </label>
+            <label>
+              <span>Guarantees JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-guarantees" rows="5" v-model="gachaForm.guaranteesJson"></textarea>
+            </label>
+            <label>
+              <span>Pity JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-pity" rows="5" v-model="gachaForm.pityRulesJson"></textarea>
+            </label>
+            <label>
+              <span>Duplicate Policy JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-duplicate-policy" rows="5" v-model="gachaForm.duplicatePolicyJson"></textarea>
+            </label>
+            <label>
+              <span>Burn Rules JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-burn-rules" rows="5" v-model="gachaForm.burnRulesJson"></textarea>
+            </label>
+            <label>
+              <span>Metadata JSON</span>
+              <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-pack-metadata" rows="5" v-model="gachaForm.metadataJson"></textarea>
+            </label>
+          </div>
+          <div class="support-admin-inline-fields">
+            <label>
+              <span>Reason</span>
+              <input class="support-admin-input" data-testid="gacha-action-reason" v-model="gachaForm.reason" />
+            </label>
+            <label>
+              <span>Note</span>
+              <input class="support-admin-input" data-testid="gacha-action-note" v-model="gachaForm.note" />
+            </label>
+          </div>
+          <div class="support-admin-gacha-actions">
+            <button class="primary support-admin-submit" data-testid="gacha-save-pack" type="button" :disabled="!canSubmitGachaPack" @click="submitGachaPack">
+              {{ gachaActionLoading ? 'Saving' : 'Save Pack' }}
+            </button>
+            <button class="support-admin-secondary-button" data-testid="gacha-validate-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="validateGachaPack">Validate</button>
+            <button class="support-admin-secondary-button" data-testid="gacha-publish-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="transitionGachaPack('publish')">Publish</button>
+            <button class="support-admin-secondary-button" data-testid="gacha-disable-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="transitionGachaPack('disable')">Disable</button>
+            <button class="support-admin-secondary-button" data-testid="gacha-expire-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="transitionGachaPack('expire')">Expire</button>
+          </div>
+        </section>
+
+        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-action-form" data-testid="gacha-items-form">
+          <h3>Pack Items</h3>
+          <div class="support-admin-gacha-items">
+            <div class="support-admin-gacha-item-row" v-for="(item, index) in gachaItemDrafts" :key="index">
+              <label>
+                <span>Asset</span>
+                <input class="support-admin-input" data-testid="gacha-item-asset" list="gacha-asset-options" v-model="item.assetId" @change="applyGachaAssetOption(index)" />
+              </label>
+              <label>
+                <span>Rarity</span>
+                <select class="support-admin-input" data-testid="gacha-item-rarity" v-model="item.rarity">
+                  <option value="common">common</option>
+                  <option value="rare">rare</option>
+                  <option value="epic">epic</option>
+                  <option value="legendary">legendary</option>
+                  <option value="secret">secret</option>
+                </select>
+              </label>
+              <label>
+                <span>Weight</span>
+                <input class="support-admin-input" data-testid="gacha-item-weight" type="number" min="1" step="1" v-model.number="item.dropWeight" />
+              </label>
+              <label>
+                <span>Copy Cap</span>
+                <input class="support-admin-input" data-testid="gacha-item-copy-limit" type="number" min="1" step="1" v-model="item.copyLimit" />
+              </label>
+              <label>
+                <span>Metadata</span>
+                <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-item-metadata" rows="2" v-model="item.metadataJson"></textarea>
+              </label>
+              <button class="support-admin-icon-button" type="button" :aria-label="'Remove item ' + (index + 1)" @click="removeGachaItemDraft(index)">X</button>
+            </div>
+          </div>
+          <div class="support-admin-gacha-actions">
+            <button class="support-admin-secondary-button" data-testid="gacha-add-item" type="button" @click="addGachaItemDraft">Add Item</button>
+            <button class="primary support-admin-submit" data-testid="gacha-save-items" type="button" :disabled="!canSubmitGachaItems" @click="submitGachaItems">
+              {{ gachaActionLoading ? 'Saving' : 'Save Items' }}
+            </button>
+          </div>
+        </section>
+
+        <section v-if="gachaValidationResult" class="panel support-admin-panel" data-testid="gacha-validation">
+          <h3>Validation</h3>
+          <p class="support-admin-balance">
+            Result:
+            <strong>{{ gachaValidationResult.ok ? 'ok' : 'needs work' }}</strong>
+          </p>
+          <ul class="support-admin-gacha-issues">
+            <li v-for="issue in gachaValidationIssues" :key="issue.severity + issue.code + issue.message" :class="'support-admin-gacha-issue--' + issue.severity">
+              <strong>{{ issue.severity }}</strong>
+              <span>{{ issue.code }} · {{ issue.message }}</span>
+            </li>
+            <li v-if="!gachaValidationIssues.length">No validation issues.</li>
+          </ul>
+          <pre v-if="gachaValidation?.preview" class="support-admin-json-preview" data-testid="gacha-preview-json">{{ prettyJson(gachaValidation.preview, {}) }}</pre>
+        </section>
+      </template>
     </section>
   `
 };

@@ -573,6 +573,61 @@ Step 1: Open Settings
 
 ---
 
+## Flow H: Support Admin Gacha Authoring
+
+E2E: support-admin-ui.spec.js tests Req 14-F.
+Screenshots: screenshots/02i-support-admin-gacha-desktop.png,
+screenshots/02i-support-admin-gacha-mobile.png
+
+```
+Step 1: Open Gacha Tab
+  Screen: supportAdmin → SupportAdminScreen.js
+  Above the fold (mobile):
+    - Support/Gacha tab switch
+    - Token, actor, approval inputs
+    - Load Catalog button
+  Desktop note: Gacha catalog and top authoring forms use two-column admin
+    layout; season and collection panels align across the top row.
+  Sees:
+    - Token-gated admin credentials
+    - Gacha tab selected
+  Action: Enter token + actor, click Load Catalog
+  Expected:
+    - [Req 14-F] `/api/admin/gacha/catalog` returns seasons, collections,
+      packs, items, and asset picker options
+    - Catalog metrics and pack table render without horizontal overflow
+
+Step 2: Author Season, Collection, Pack, And Items
+  Sees:
+    - Season form with id/name/status/date fields
+    - Collection form with id/name/status/date fields
+    - Pack form with id/name/status/price/roll-size/date fields
+    - Rule JSON editors for rarity weights, slots, guarantees, pity,
+      duplicate policy, burn rules, and metadata
+    - Pack item rows with asset id picker, rarity, weight, copy cap, metadata
+  Action:
+    - Save season
+    - Save collection
+    - Save pack
+    - Add two asset rows and save items
+  Expected:
+    - Pack appears in the catalog table
+    - Validation panel reports item errors before items are saved
+    - Saved items refresh the catalog and validation state
+
+Step 3: Validate And Publish
+  Sees:
+    - Validate, Publish, Disable, and Expire controls
+    - Validation issue list
+  Action: Click Validate, then Publish
+  Expected:
+    - Validation result is ok with no issues
+    - Published pack status is active and review status is approved
+    - Operator action is audited by the backend support action path
+```
+
+---
+
 ## Screen Inventory (complete)
 
 | Screen ID | Component | Entry points |
@@ -588,6 +643,7 @@ Step 1: Open Settings
 | `friends` | FriendsScreen.js | Home |
 | `leaderboard` | LeaderboardScreen.js | Home |
 | `settings` | SettingsScreen.js | Menu |
+| `supportAdmin` | SupportAdminScreen.js | `/support-admin` internal route |
 | `wiki` | WikiScreen.js | Menu |
 | `wiki-detail` | WikiDetailScreen.js | Wiki entry click |
 | `recipes` | RecipesScreen.js | Menu |

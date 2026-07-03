@@ -158,6 +158,8 @@ test('[Req 14-F] gacha admin API requires token, actor, and gacha operator role'
       .get('/api/admin/gacha/catalog')
       .set(headersFor('gacha_operator_api'));
     assert.equal(operator.status, 200);
+    assert.ok(Array.isArray(operator.body.data.assetOptions));
+    assert.ok(operator.body.data.assetOptions.some((asset) => asset.assetId === 'portrait.axilin.1'));
 
     const admin = await request(app)
       .get('/api/admin/gacha/catalog')

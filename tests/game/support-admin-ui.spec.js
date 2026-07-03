@@ -39,6 +39,33 @@ async function captureSupportConsole(page, name) {
   await captureScreenshot(page, screenshotDir, name);
 }
 
+async function openGachaAdmin(page, baseURL) {
+  await page.goto(`${baseURL}/support-admin`);
+  await expect(page.getByTestId('support-admin-screen')).toBeVisible();
+  await page.getByTestId('support-admin-gacha-tab').click();
+  await expect(page.getByTestId('gacha-admin-auth')).toBeVisible();
+  await page.getByTestId('gacha-token').fill('e2e-support');
+  await page.getByTestId('gacha-actor').fill('e2e-gacha-ui');
+  await page.getByTestId('gacha-load-catalog').click();
+  await expect(page.getByTestId('gacha-catalog')).toBeVisible();
+}
+
+async function captureGachaConsole(page, name) {
+  await expect(page.getByTestId('support-admin-screen')).toBeVisible();
+  await expect(page.getByTestId('gacha-catalog')).toBeVisible();
+  await expect(page.getByTestId('gacha-pack-form')).toBeVisible();
+  await expect(page.getByTestId('gacha-items-form')).toBeVisible();
+  await expect(page.getByTestId('gacha-validation')).toBeVisible();
+  await assertImagesLoaded(page);
+  await assertNoHorizontalOverflow(page);
+  await captureScreenshot(page, screenshotDir, name);
+}
+
+async function replaceField(locator, value) {
+  await locator.fill('');
+  await locator.fill(value);
+}
+
 async function createCompletedTelegramPurchase(request, sessionKey) {
   const intentResponse = await request.post('/api/wallet/purchase-intents', {
     headers: {
@@ -183,4 +210,68 @@ test('[Req 4-Z, 14-F] support admin UI can manage assets and refund purchases', 
   await captureSupportConsole(page, '02h-support-admin-ops-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);
   await captureSupportConsole(page, '02h-support-admin-ops-mobile.png');
+});
+
+test('[Req 14-F] support admin gacha tab can author, validate, and publish a database pack', async ({ page, request, baseURL }) => {
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await resetDevDb(request);
+  const player = await createSession(request, {
+    telegramId: 9303,
+    username: 'support_gacha_ui',
+    name: 'Support Gacha UI',
+    lang: 'en'
+  });
+  await installSession(page, player.sessionKey);
+
+  await openGachaAdmin(page, baseURL);
+  await expect(page.getByTestId('gacha-catalog')).toContainText('Assets');
+
+  await page.getByTestId('gacha-season-id').fill('e2e_gacha_season');
+  await page.getByTestId('gacha-season-name').fill('E2E Gacha Season');
+  await page.getByTestId('gacha-save-season').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha season created.');
+
+  await page.getByTestId('gacha-collection-id').fill('e2e_gacha_collection');
+  await page.getByTestId('gacha-collection-name').fill('E2E Gacha Collection');
+  await page.getByTestId('gacha-save-collection').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha collection created.');
+
+  await page.getByTestId('gacha-pack-id').fill('e2e_gacha_pack');
+  await page.getByTestId('gacha-pack-name').fill('E2E Gacha Pack');
+  await page.getByTestId('gacha-pack-price').fill('33');
+  await page.getByTestId('gacha-pack-roll-size').fill('2');
+  await page.getByTestId('gacha-save-pack').click();
+  await expect(page.getByTestId('gacha-packs-table')).toContainText('e2e_gacha_pack');
+  await expect(page.getByTestId('gacha-validation')).toContainText('needs work');
+
+  await page.getByTestId('gacha-item-asset').nth(0).fill('portrait.morga.default');
+  await page.getByTestId('gacha-item-rarity').nth(0).selectOption('common');
+  await replaceField(page.getByTestId('gacha-item-weight').nth(0), '100');
+  await page.getByTestId('gacha-add-item').click();
+  await page.getByTestId('gacha-item-asset').nth(1).fill('portrait.axilin.1');
+  await page.getByTestId('gacha-item-rarity').nth(1).selectOption('rare');
+  await replaceField(page.getByTestId('gacha-item-weight').nth(1), '30');
+  await page.getByTestId('gacha-save-items').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack items saved.');
+
+  await page.getByTestId('gacha-validate-pack').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack validation passed.');
+  await expect(page.getByTestId('gacha-validation')).toContainText('ok');
+  await expect(page.getByTestId('gacha-validation')).toContainText('No validation issues.');
+
+  await page.getByTestId('gacha-publish-pack').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack publish applied.');
+  await expect(page.getByTestId('gacha-packs-table')).toContainText('approved');
+  await expect(page.getByTestId('gacha-packs-table')).toContainText('active');
+
+  const seasonBox = await page.getByTestId('gacha-season-form').boundingBox();
+  const collectionBox = await page.getByTestId('gacha-collection-form').boundingBox();
+  expect(seasonBox).toBeTruthy();
+  expect(collectionBox).toBeTruthy();
+  expect(Math.abs(seasonBox.y - collectionBox.y)).toBeLessThan(24);
+  expect(collectionBox.x).toBeGreaterThan(seasonBox.x + seasonBox.width * 0.75);
+
+  await captureGachaConsole(page, '02i-support-admin-gacha-desktop.png');
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await captureGachaConsole(page, '02i-support-admin-gacha-mobile.png');
 });

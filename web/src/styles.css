@@ -6309,6 +6309,30 @@ select {
   margin: 0;
 }
 
+.support-admin-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  width: min(100%, 320px);
+  border: 1px solid rgba(126, 92, 54, 0.24);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.support-admin-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(47, 36, 25, 0.72);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.support-admin-tabs button.active {
+  background: #7f9872;
+  color: #fffaf0;
+}
+
 .support-admin-panel {
   min-width: 0;
   border-radius: 8px;
@@ -6326,6 +6350,10 @@ select {
     auto;
   align-items: end;
   gap: 12px;
+}
+
+.support-admin-gacha-auth {
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
 }
 
 .support-admin-panel label {
@@ -6351,6 +6379,11 @@ select {
   text-transform: none;
 }
 
+.support-admin-input::placeholder {
+  color: rgba(47, 36, 25, 0.38);
+  font-weight: 500;
+}
+
 textarea.support-admin-input {
   resize: vertical;
 }
@@ -6358,6 +6391,14 @@ textarea.support-admin-input {
 .support-admin-input:focus-visible,
 .support-admin-segment button:focus-visible,
 .support-admin-submit:focus-visible {
+  outline: 2px solid rgba(126, 92, 54, 0.45);
+  outline-offset: 2px;
+}
+
+.support-admin-tabs button:focus-visible,
+.support-admin-mini-button:focus-visible,
+.support-admin-secondary-button:focus-visible,
+.support-admin-icon-button:focus-visible {
   outline: 2px solid rgba(126, 92, 54, 0.45);
   outline-offset: 2px;
 }
@@ -6399,6 +6440,10 @@ textarea.support-admin-input {
   margin: 14px 0 0;
 }
 
+.support-admin-metrics--gacha {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .support-admin-metrics div {
   min-width: 0;
   padding: 10px;
@@ -6428,6 +6473,10 @@ textarea.support-admin-input {
   gap: 12px;
   align-items: start;
   min-width: 0;
+}
+
+.support-admin-gacha-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .support-admin-wallet {
@@ -6483,6 +6532,152 @@ textarea.support-admin-input {
   min-width: 0;
   padding-inline: 6px;
   font-size: 0.84rem;
+}
+
+.support-admin-inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.support-admin-gacha-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.support-admin-gacha-json-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.support-admin-code-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.support-admin-gacha-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.support-admin-secondary-button,
+.support-admin-mini-button,
+.support-admin-icon-button {
+  min-height: 38px;
+  border: 1px solid rgba(126, 92, 54, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(47, 36, 25, 0.78);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.support-admin-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.support-admin-mini-button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+.support-admin-icon-button {
+  width: 40px;
+  align-self: end;
+  padding: 0;
+}
+
+.support-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.support-admin-badge--ok {
+  background: rgba(127, 152, 114, 0.18);
+  color: #49653b;
+}
+
+.support-admin-badge--warn {
+  background: rgba(196, 147, 63, 0.18);
+  color: #7a541c;
+}
+
+.support-admin-gacha-table tr.active td {
+  background: rgba(127, 152, 114, 0.12);
+}
+
+.support-admin-gacha-items {
+  display: grid;
+  gap: 10px;
+}
+
+.support-admin-gacha-item-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.4fr) minmax(120px, 0.8fr) 96px 96px minmax(180px, 1fr) 40px;
+  gap: 10px;
+  align-items: end;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(94, 70, 39, 0.1);
+}
+
+.support-admin-gacha-item-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.support-admin-gacha-issues {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.support-admin-gacha-issues li {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  color: rgba(47, 36, 25, 0.78);
+  font-size: 0.84rem;
+}
+
+.support-admin-gacha-issue--error strong {
+  color: var(--error);
+}
+
+.support-admin-gacha-issue--warning strong {
+  color: #7a541c;
+}
+
+.support-admin-json-preview {
+  max-height: 320px;
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 8px;
+  background: rgba(48, 38, 26, 0.08);
+  color: rgba(47, 36, 25, 0.82);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
 }
 
 .support-admin-panel .support-admin-checkbox {
@@ -6553,8 +6748,17 @@ textarea.support-admin-input {
     flex-direction: column;
   }
 
+  .support-admin-tabs {
+    width: 100%;
+  }
+
   .support-admin-lookup,
-  .support-admin-columns {
+  .support-admin-gacha-auth,
+  .support-admin-columns,
+  .support-admin-gacha-columns,
+  .support-admin-gacha-pack-grid,
+  .support-admin-gacha-json-grid,
+  .support-admin-inline-fields {
     grid-template-columns: 1fr;
   }
 
@@ -6564,6 +6768,18 @@ textarea.support-admin-input {
 
   .support-admin-segment--four {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .support-admin-gacha-item-row {
+    grid-template-columns: 1fr;
+  }
+
+  .support-admin-icon-button {
+    width: 100%;
+  }
+
+  .support-admin-gacha-issues li {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -394,7 +394,10 @@ Membership is not stored. It is derived from overlap between item cells and acti
   roles are configured, records audited before/after changes in
   `support_actions`, validates draft packs before approval/publish, and edits
   approved packs through cloned draft revisions except for explicit emergency
-  disable/expire actions. Packs are
+  disable/expire actions. The `/support-admin` console includes a Gacha tab
+  that consumes this API for catalog review, token-gated asset picking, season
+  and collection edits, pack/item authoring, validation, publish, expire, and
+  emergency disable actions without direct SQL. Packs are
   unowned-only by default; packs that set `duplicatePolicy: "allow_duplicates"`
   can grant extra active asset instances for already owned skins, with duplicate
   results marked in roll metadata. Duplicate-enabled packs may define
