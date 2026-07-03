@@ -596,13 +596,13 @@ backlog.
 
 #### G5 - Database/Admin-Managed Seasons And Admin Panel
 
-Status: **Partially implemented 2026-07-03 as G5A.** The shipped slice adds
+Status: **Partially implemented 2026-07-03 through G5B.** G5A added
 database-backed season, collection, pack, and pack-item records behind
 `ASSET_GACHA_DB_PACKS_ENABLED`, plus a runtime loader that lets approved DB
-packs override or extend the static pack fallback. The next required work is
-now a proper operator admin panel before DB-authored paid/gacha seasons are
-used in production. Direct SQL remains acceptable only for tests and emergency
-maintenance, not normal season authoring.
+packs override or extend the static pack fallback. G5B added the token-gated
+backend admin API. The next required work is the operator UI before DB-authored
+paid/gacha seasons are used in production. Direct SQL remains acceptable only
+for tests and emergency maintenance, not normal season authoring.
 
 - Done: database schema now has season, collection, pack, and pack-item tables
   with `review_status`, status/date windows, price, roll size, rarity table,
@@ -612,12 +612,12 @@ maintenance, not normal season authoring.
   remain available for the simulator and static tests.
 - Done: draft or unapproved DB packs stay hidden from runtime odds/bootstrap
   and cannot be rolled.
-- Required next, **G5B - admin backend API**: add a token-gated
+- Done: **G5B - admin backend API** adds a token-gated
   `/api/admin/gacha/*` surface with `gacha_operator` / `admin` roles for
   season, collection, pack, and pack-item CRUD; draft validation using the
   runtime pack validator; review status transitions; cloned draft revisions for
   edits to approved packs; emergency disable/expire actions; and audited
-  before/after change records.
+  before/after change records in `support_actions`.
 - Required next, **G5C - admin UI MVP**: add a `/gacha-admin` page or a
   dedicated support-admin tab where operators can list seasons, open
   collections/packs, edit names/dates/status/price/roll size/items, use an
@@ -2497,9 +2497,13 @@ Additional TODOs for that pass:
    approved DB season/collection/pack/item rows can override or extend static
    packs at runtime, draft packs stay hidden, and rolls/odds/bootstrap can use
    DB-authored pack prices, dates, rarity tables, and item pools.
-37. G5B-G5D proper gacha admin panel. Add a token-gated admin backend and UI
-   for seasons, collections, packs, pack items, rarity/slot/guarantee/pity/
-   duplicate/burn configs, draft validation, review/approval, publish/expire/
-   rollback controls, live-vs-draft preview, roll simulation, asset policy
-   mapping, and audited operator actions before DB-authored paid seasons are
-   managed in production.
+37. G5B proper gacha admin backend API. **Done 2026-07-03:** `/api/admin/gacha/*`
+   is token-gated, role-gated with `gacha_operator` / `admin`, supports season,
+   collection, pack, and pack-item CRUD, validates draft packs, handles
+   review/publish/disable transitions, clones approved packs into draft
+   revisions for edits, and records audited before/after operator actions.
+38. G5C-G5D gacha admin panel UI and safety tooling. Add the operator screen
+   or support-admin tab, structured editors for rarity/slot/guarantee/pity/
+   duplicate/burn configs, live-vs-draft preview, roll simulation, asset policy
+   mapping, release checklist, screenshots, and UI/e2e coverage before
+   DB-authored paid seasons are managed in production.

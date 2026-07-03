@@ -388,7 +388,13 @@ Membership is not stored. It is derived from overlap between item cells and acti
   random skins from a configured pack when env-gated gacha is enabled. Packs can
   come from the static fallback config or, when `ASSET_GACHA_DB_PACKS_ENABLED`
   is enabled, from approved database-managed season/collection/pack/item rows;
-  draft or unapproved database packs are not player-visible. Packs are
+  draft or unapproved database packs are not player-visible. The token-gated
+  `/api/admin/gacha/*` API is the operator surface for DB-managed gacha data:
+  it requires an admin actor with `gacha_operator` or `admin` role when operator
+  roles are configured, records audited before/after changes in
+  `support_actions`, validates draft packs before approval/publish, and edits
+  approved packs through cloned draft revisions except for explicit emergency
+  disable/expire actions. Packs are
   unowned-only by default; packs that set `duplicatePolicy: "allow_duplicates"`
   can grant extra active asset instances for already owned skins, with duplicate
   results marked in roll metadata. Duplicate-enabled packs may define

@@ -1,0 +1,336 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import request from 'supertest';
+import { createApp } from '../../app/server/create-app.js';
+import { query } from '../../app/server/db.js';
+import {
+  getPackOddsForRuntime,
+  portraitAssetId
+} from '../../app/server/services/asset-service.js';
+import { freshDb } from './helpers.js';
+
+async function withEnv(overrides, work) {
+  const previous = {};
+  for (const key of Object.keys(overrides)) {
+    previous[key] = process.env[key];
+    process.env[key] = overrides[key];
+  }
+  try {
+    return await work();
+  } finally {
+    for (const key of Object.keys(overrides)) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  }
+}
+
+const gachaHeaders = {
+  authorization: 'Bearer support-test-token',
+  'x-support-actor-id': 'gacha-admin-api'
+};
+
+function headersFor(actorId) {
+  return {
+    ...gachaHeaders,
+    'x-support-actor-id': actorId
+  };
+}
+
+async function createAdminSeasonAndCollection(app, {
+  seasonId = 'admin_season_1',
+  collectionId = 'admin_collection_1'
+} = {}) {
+  const season = await request(app)
+    .post('/api/admin/gacha/seasons')
+    .set(gachaHeaders)
+    .send({
+      id: seasonId,
+      name: { en: 'Admin Season' },
+      status: 'active',
+      reason: 'test_admin_season'
+    });
+  assert.equal(season.status, 200);
+
+  const collection = await request(app)
+    .post('/api/admin/gacha/collections')
+    .set(gachaHeaders)
+    .send({
+      id: collectionId,
+      seasonId,
+      name: { en: 'Admin Collection' },
+      status: 'active',
+      reason: 'test_admin_collection'
+    });
+  assert.equal(collection.status, 200);
+  return { seasonId, collectionId };
+}
+
+async function createValidAdminPack(app, {
+  packId = 'admin_runtime_pack',
+  seasonId = 'admin_season_1',
+  collectionId = 'admin_collection_1',
+  price = 21
+} = {}) {
+  await createAdminSeasonAndCollection(app, { seasonId, collectionId });
+  const commonA = portraitAssetId('thalla', '1');
+  const rareA = portraitAssetId('axilin', '2');
+  const pack = await request(app)
+    .post('/api/admin/gacha/packs')
+    .set(gachaHeaders)
+    .send({
+      id: packId,
+      seasonId,
+      collectionId,
+      name: { en: 'Admin Runtime Pack' },
+      status: 'active',
+      rollPriceAmount: price,
+      rollSize: 2,
+      slots: [
+        { rarityWeights: { common: 1 } },
+        { rarityWeights: { rare: 1 } }
+      ],
+      reason: 'test_admin_pack'
+    });
+  assert.equal(pack.status, 200);
+
+  const items = await request(app)
+    .put(`/api/admin/gacha/packs/${packId}/items`)
+    .set(gachaHeaders)
+    .send({
+      reason: 'test_admin_pack_items',
+      items: [
+        { assetId: commonA, rarity: 'common', dropWeight: 100 },
+        { assetId: rareA, rarity: 'rare', dropWeight: 10 }
+      ]
+    });
+  assert.equal(items.status, 200);
+  assert.equal(items.body.data.validation.ok, true);
+
+  const publish = await request(app)
+    .post(`/api/admin/gacha/packs/${packId}/transition`)
+    .set(gachaHeaders)
+    .send({
+      action: 'publish',
+      reason: 'test_admin_publish'
+    });
+  assert.equal(publish.status, 200);
+  assert.equal(publish.body.data.pack.reviewStatus, 'approved');
+  assert.equal(publish.body.data.pack.status, 'active');
+  return { packId, commonA, rareA };
+}
+
+test('[Req 14-F] gacha admin API requires token, actor, and gacha operator role', async () => {
+  await freshDb();
+  const app = await createApp();
+
+  const missingConfig = await request(app)
+    .get('/api/admin/gacha/catalog')
+    .set('x-support-actor-id', 'gacha-admin-api');
+  assert.equal(missingConfig.status, 503);
+
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    SUPPORT_ADMIN_OPERATORS_JSON: JSON.stringify({
+      support_viewer_api: ['support_viewer'],
+      gacha_operator_api: ['gacha_operator'],
+      gacha_admin_api: ['admin']
+    })
+  }, async () => {
+    const missingActor = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set('authorization', 'Bearer support-test-token');
+    assert.equal(missingActor.status, 400);
+
+    const unknown = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set(headersFor('unknown_gacha_api'));
+    assert.equal(unknown.status, 403);
+    assert.equal(unknown.body.requiredRole, 'gacha_operator');
+
+    const viewer = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set(headersFor('support_viewer_api'));
+    assert.equal(viewer.status, 403);
+    assert.equal(viewer.body.requiredRole, 'gacha_operator');
+
+    const operator = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set(headersFor('gacha_operator_api'));
+    assert.equal(operator.status, 200);
+
+    const admin = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set(headersFor('gacha_admin_api'));
+    assert.equal(admin.status, 200);
+  });
+});
+
+test('[Req 14-F] gacha admin API can author, validate, publish, and audit a database pack', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    ASSET_GACHA_DB_PACKS_ENABLED: 'true'
+  }, async () => {
+    await freshDb();
+    const app = await createApp();
+    const { seasonId, collectionId } = await createAdminSeasonAndCollection(app);
+    const packId = 'admin_author_pack';
+    const commonA = portraitAssetId('thalla', '1');
+    const rareA = portraitAssetId('axilin', '2');
+
+    const pack = await request(app)
+      .post('/api/admin/gacha/packs')
+      .set(gachaHeaders)
+      .send({
+        id: packId,
+        seasonId,
+        collectionId,
+        name: { en: 'Author Pack' },
+        status: 'active',
+        rollPriceAmount: 31,
+        rollSize: 2,
+        slots: [
+          { rarityWeights: { common: 1 } },
+          { rarityWeights: { rare: 1 } }
+        ],
+        reason: 'test_author_pack'
+      });
+    assert.equal(pack.status, 200);
+    assert.equal(pack.body.data.validation.ok, false);
+    assert.ok(pack.body.data.validation.errors.some((issue) => issue.code === 'items_missing'));
+
+    const directApproval = await request(app)
+      .patch(`/api/admin/gacha/packs/${packId}`)
+      .set(gachaHeaders)
+      .send({ reviewStatus: 'approved', reason: 'test_direct_approval_rejected' });
+    assert.equal(directApproval.status, 400);
+    assert.match(directApproval.body.error, /transition action/i);
+
+    const items = await request(app)
+      .put(`/api/admin/gacha/packs/${packId}/items`)
+      .set(gachaHeaders)
+      .send({
+        reason: 'test_author_items',
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 100 },
+          { assetId: rareA, rarity: 'rare', dropWeight: 10, copyLimit: 2 }
+        ]
+      });
+    assert.equal(items.status, 200);
+    assert.equal(items.body.data.validation.ok, true);
+
+    const validation = await request(app)
+      .get(`/api/admin/gacha/packs/${packId}/validation`)
+      .set(gachaHeaders);
+    assert.equal(validation.status, 200);
+    assert.equal(validation.body.data.validation.ok, true);
+    assert.equal(validation.body.data.preview.items.length, 2);
+
+    const publish = await request(app)
+      .post(`/api/admin/gacha/packs/${packId}/transition`)
+      .set(gachaHeaders)
+      .send({ action: 'publish', reason: 'test_author_publish' });
+    assert.equal(publish.status, 200);
+    assert.equal(publish.body.data.pack.reviewStatus, 'approved');
+    assert.equal(publish.body.data.pack.status, 'active');
+
+    const odds = await getPackOddsForRuntime(packId);
+    assert.equal(odds.source, 'database');
+    assert.equal(odds.rollPriceAmount, 31);
+    assert.equal(odds.validation.ok, true);
+
+    const catalog = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set(gachaHeaders);
+    assert.equal(catalog.status, 200);
+    assert.ok(catalog.body.data.packs.some((row) => row.id === packId && row.validation.ok));
+
+    const actions = await query(
+      `SELECT action_type, target_type, target_id, result_json
+       FROM support_actions
+       WHERE target_id = $1
+       ORDER BY created_at ASC`,
+      [packId]
+    );
+    const actionTypes = actions.rows.map((row) => row.action_type);
+    assert.ok(actionTypes.includes('gacha_pack_create'));
+    assert.ok(actionTypes.includes('gacha_pack_items_replace'));
+    assert.ok(actionTypes.includes('gacha_pack_publish'));
+    assert.ok(actions.rows.every((row) => row.target_type === 'gacha_pack'));
+    assert.ok(actions.rows.some((row) => JSON.parse(row.result_json).after?.reviewStatus === 'approved'));
+  });
+});
+
+test('[Req 14-F] gacha admin API clones approved packs for edits and supports emergency disable', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    ASSET_GACHA_DB_PACKS_ENABLED: 'true'
+  }, async () => {
+    await freshDb();
+    const app = await createApp();
+    const { packId } = await createValidAdminPack(app, {
+      packId: 'admin_clone_pack',
+      seasonId: 'admin_clone_season',
+      collectionId: 'admin_clone_collection',
+      price: 19
+    });
+
+    const cloneEdit = await request(app)
+      .patch(`/api/admin/gacha/packs/${packId}`)
+      .set(gachaHeaders)
+      .send({
+        rollPriceAmount: 77,
+        name: { en: 'Draft Clone Pack' },
+        reason: 'test_clone_edit'
+      });
+    assert.equal(cloneEdit.status, 200);
+    assert.equal(cloneEdit.body.data.cloned, true);
+    assert.equal(cloneEdit.body.data.clonedFromPackId, packId);
+    assert.notEqual(cloneEdit.body.data.pack.id, packId);
+    assert.equal(cloneEdit.body.data.pack.reviewStatus, 'draft');
+    assert.equal(cloneEdit.body.data.pack.rollPriceAmount, 77);
+    assert.equal(cloneEdit.body.data.pack.metadata.basePackId, packId);
+
+    const originalOdds = await getPackOddsForRuntime(packId);
+    assert.equal(originalOdds.rollPriceAmount, 19);
+    assert.equal(originalOdds.reviewStatus, 'approved');
+
+    const cloneActionRows = await query(
+      `SELECT action_type, target_type, target_id, result_json
+       FROM support_actions
+       WHERE action_type = 'gacha_pack_clone_draft'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      []
+    );
+    assert.equal(cloneActionRows.rowCount, 1);
+    assert.equal(cloneActionRows.rows[0].target_type, 'gacha_pack');
+    assert.equal(cloneActionRows.rows[0].target_id, packId);
+    assert.equal(JSON.parse(cloneActionRows.rows[0].result_json).draftPackId, cloneEdit.body.data.pack.id);
+
+    const rejectedInPlace = await request(app)
+      .patch(`/api/admin/gacha/packs/${packId}`)
+      .set(gachaHeaders)
+      .send({
+        cloneDraft: false,
+        rollPriceAmount: 88,
+        reason: 'test_reject_in_place'
+      });
+    assert.equal(rejectedInPlace.status, 400);
+    assert.match(rejectedInPlace.body.error, /cloned draft/i);
+
+    const disable = await request(app)
+      .post(`/api/admin/gacha/packs/${packId}/transition`)
+      .set(gachaHeaders)
+      .send({ action: 'disable', reason: 'test_emergency_disable' });
+    assert.equal(disable.status, 200);
+    assert.equal(disable.body.data.pack.id, packId);
+    assert.equal(disable.body.data.pack.status, 'disabled');
+    assert.equal(disable.body.data.pack.reviewStatus, 'approved');
+
+    await assert.rejects(
+      () => getPackOddsForRuntime(packId),
+      (err) => err.statusCode === 404 && /unknown asset pack/i.test(err.message)
+    );
+  });
+});

@@ -77,6 +77,21 @@ import {
   supportRevokeAsset,
   supportUnfreezeAsset
 } from './services/support-ops-service.js';
+import {
+  createGachaCollection,
+  createGachaPack,
+  createGachaPackItem,
+  createGachaSeason,
+  deleteGachaPackItem,
+  listGachaAdminCatalog,
+  replaceGachaPackItems,
+  transitionGachaPack,
+  updateGachaCollection,
+  updateGachaPack,
+  updateGachaPackItem,
+  updateGachaSeason,
+  validateGachaAdminPack
+} from './services/gacha-admin-service.js';
 import * as readyManager from './services/ready-manager.js';
 import * as sseManager from './services/sse-manager.js';
 import { log, requestLogger } from './lib/obs.js';
@@ -239,7 +254,8 @@ function normalizeSupportRole(role) {
     approver: 'support_approver',
     wallet: 'wallet_operator',
     asset: 'asset_operator',
-    refund: 'refund_operator'
+    refund: 'refund_operator',
+    gacha: 'gacha_operator'
   };
   return aliases[normalized] || normalized;
 }
@@ -650,6 +666,7 @@ const ERROR_STATUS_MAP = [
   ['required', 400],
   ['requires', 400],
   ['must be', 400],
+  ['must use', 400],
   ['unavailable', 403],
   ['disabled', 403],
   ['expired', 410],
@@ -1148,6 +1165,260 @@ export async function createApp() {
           clawback: req.body.clawback !== false,
           reason: req.body.reason,
           note: req.body.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.get(
+    '/api/admin/gacha/catalog',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    supportAdminRateLimit,
+    asyncRoute(async (_req, res) => {
+      res.json({ success: true, data: await listGachaAdminCatalog() });
+    })
+  );
+
+  app.post(
+    '/api/admin/gacha/seasons',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await createGachaSeason({
+          actorId: req.supportActorId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.patch(
+    '/api/admin/gacha/seasons/:seasonId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await updateGachaSeason({
+          actorId: req.supportActorId,
+          seasonId: req.params.seasonId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/gacha/collections',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await createGachaCollection({
+          actorId: req.supportActorId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.patch(
+    '/api/admin/gacha/collections/:collectionId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await updateGachaCollection({
+          actorId: req.supportActorId,
+          collectionId: req.params.collectionId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/gacha/packs',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await createGachaPack({
+          actorId: req.supportActorId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.patch(
+    '/api/admin/gacha/packs/:packId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await updateGachaPack({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.get(
+    '/api/admin/gacha/packs/:packId/validation',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await validateGachaAdminPack({ packId: req.params.packId })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/gacha/packs/:packId/transition',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await transitionGachaPack({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          action: req.body?.action,
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.put(
+    '/api/admin/gacha/packs/:packId/items',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await replaceGachaPackItems({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          items: req.body?.items,
+          cloneDraft: req.body?.cloneDraft,
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.post(
+    '/api/admin/gacha/packs/:packId/items',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await createGachaPackItem({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.patch(
+    '/api/admin/gacha/packs/:packId/items/:itemId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await updateGachaPackItem({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          itemId: req.params.itemId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.delete(
+    '/api/admin/gacha/packs/:packId/items/:itemId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await deleteGachaPackItem({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          itemId: req.params.itemId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
           evidence: supportEvidence(req)
         })
       });
