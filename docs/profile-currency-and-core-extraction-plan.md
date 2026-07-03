@@ -307,6 +307,11 @@ but it is now backlog unless a paid pilot is being prepared.
 - Put complex seasonal packs, advanced pity scopes, duplicate burning, and player
   trading into the gacha roadmap backlog instead of mixing them into the first
   pass.
+- 2026-07-03 adjustment: database-backed gacha config now needs a proper
+  internal admin panel, not direct SQL or ad hoc fixtures. Operators must be
+  able to create, validate, review, approve, publish, expire, and roll back
+  seasons, collections, packs, pack items, rarity tables, and acquisition
+  policy mappings safely.
 
 #### G1 - Simple Seasonal Gacha Pack
 
@@ -589,14 +594,15 @@ backlog.
   disclosure, and advanced duplicate-rate simulation before paid duplicate
   packs.
 
-#### G5 - Database/Admin-Managed Seasons
+#### G5 - Database/Admin-Managed Seasons And Admin Panel
 
 Status: **Partially implemented 2026-07-03 as G5A.** The shipped slice adds
 database-backed season, collection, pack, and pack-item records behind
 `ASSET_GACHA_DB_PACKS_ENABLED`, plus a runtime loader that lets approved DB
-packs override or extend the static pack fallback. Full admin authoring UI,
-rollback tooling, richer season-scoped pity, and operational launch workflow
-remain backlog.
+packs override or extend the static pack fallback. The next required work is
+now a proper operator admin panel before DB-authored paid/gacha seasons are
+used in production. Direct SQL remains acceptable only for tests and emergency
+maintenance, not normal season authoring.
 
 - Done: database schema now has season, collection, pack, and pack-item tables
   with `review_status`, status/date windows, price, roll size, rarity table,
@@ -606,10 +612,32 @@ remain backlog.
   remain available for the simulator and static tests.
 - Done: draft or unapproved DB packs stay hidden from runtime odds/bootstrap
   and cannot be rolled.
-- Backlog: internal admin CRUD/review UI, migration/rollback scripts for live
-  season corrections, richer season/collection-scoped pity state, default
-  authoring fixtures, DB-managed acquisition-policy/catalog mapping for
-  DB-only pack assets, and operator audit/runbook coverage.
+- Required next, **G5B - admin backend API**: add a token-gated
+  `/api/admin/gacha/*` surface with `gacha_operator` / `admin` roles for
+  season, collection, pack, and pack-item CRUD; draft validation using the
+  runtime pack validator; review status transitions; cloned draft revisions for
+  edits to approved packs; emergency disable/expire actions; and audited
+  before/after change records.
+- Required next, **G5C - admin UI MVP**: add a `/gacha-admin` page or a
+  dedicated support-admin tab where operators can list seasons, open
+  collections/packs, edit names/dates/status/price/roll size/items, use an
+  asset picker, edit structured rarity/slot/guarantee/pity/duplicate/burn
+  rules, validate a draft, approve it, publish it, expire it, and see errors
+  without touching SQL.
+- Required next, **G5D - preview and safety tooling**: add live-vs-draft diff,
+  player-facing pack preview, odds preview, roll simulation, duplicate/copy-cap
+  warnings, DB-managed acquisition-policy mapping for DB-only pack assets, and
+  a release checklist that blocks publish when required assets, prices, dates,
+  or disclosure copy are missing.
+- Required launch controls: the admin panel must keep Mushroom Battles direct
+  skin buying available when gacha is off, keep draft/unapproved packs hidden,
+  make approved-row changes auditable, and provide a rollback path that can
+  disable a bad pack without deleting ownership or roll history.
+- Backlog after the admin MVP: migration/rollback scripts for live season
+  corrections, richer season/collection-scoped pity state, import/export
+  fixtures, CSV/JSON bulk item editing, staff permissions beyond the first
+  operator role, operator runbooks, scheduled activation alerts, and deeper
+  marketplace/NFT-set tooling.
 
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
@@ -2461,10 +2489,17 @@ Additional TODOs for that pass:
    targets.
 35. Gacha roadmap backlog after G4B: season/collection-scoped pity, secret
    rarity policy, dust/shard and richer target-complete rewards,
-   remaining database/admin-managed season tooling, marketplace/trading,
-   NFT-set policy decisions, and expanded disclosure/simulation work for
+   proper gacha admin panel, remaining database/admin-managed season tooling,
+   marketplace/trading, NFT-set policy decisions, and expanded
+   disclosure/simulation work for
    duplicate-enabled paid packs.
 36. G5A database-backed gacha pack runtime foundation. **Done 2026-07-03:**
    approved DB season/collection/pack/item rows can override or extend static
    packs at runtime, draft packs stay hidden, and rolls/odds/bootstrap can use
    DB-authored pack prices, dates, rarity tables, and item pools.
+37. G5B-G5D proper gacha admin panel. Add a token-gated admin backend and UI
+   for seasons, collections, packs, pack items, rarity/slot/guarantee/pity/
+   duplicate/burn configs, draft validation, review/approval, publish/expire/
+   rollback controls, live-vs-draft preview, roll simulation, asset policy
+   mapping, and audited operator actions before DB-authored paid seasons are
+   managed in production.
