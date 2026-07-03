@@ -1,7 +1,10 @@
+import crypto from 'crypto';
 import { query, withTransaction } from '../db.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 import {
   getAssetCatalog,
+  resolveAssetPackRollCandidates,
+  selectAssetPackRollResults,
   shapeAssetPack,
   validateAssetPack
 } from './asset-service.js';
@@ -216,6 +219,305 @@ function rowPackToRuntimePack(row, itemRows = []) {
     if (parsed !== undefined && parsed !== null) pack[key] = parsed;
   }
   return pack;
+}
+
+function catalogAssetOptions() {
+  return getAssetCatalog().map((asset) => ({
+    assetId: asset.assetId,
+    mushroomId: asset.mushroomId,
+    portraitId: asset.portraitId,
+    name: asset.name,
+    rarity: asset.rarity,
+    dropWeight: asset.dropWeight,
+    price: asset.price,
+    currencyCode: asset.currencyCode,
+    acquisitionMode: asset.acquisitionMode,
+    packId: asset.packId
+  }));
+}
+
+function checklistIssue(code, message, severity = 'blocker', details = {}) {
+  return { code, message, severity, ...details };
+}
+
+function hasLocalizedCopy(value) {
+  if (!value) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.values(value).some((entry) => typeof entry === 'string' && entry.trim());
+}
+
+function disclosureCopy(metadata = {}) {
+  if (!metadata || typeof metadata !== 'object') return null;
+  return metadata.disclosure || metadata.oddsDisclosure || metadata.description || null;
+}
+
+function duplicatePolicyMode(policy) {
+  if (policy === true || policy === 'allow_duplicates' || policy === 'copies') return 'allow_duplicates';
+  if (policy && typeof policy === 'object') return policy.mode || null;
+  return null;
+}
+
+function duplicateCopyCap(policy) {
+  if (!policy || typeof policy !== 'object') return null;
+  return Number.isInteger(Number(policy.maxCopiesPerAsset)) ? Number(policy.maxCopiesPerAsset) : null;
+}
+
+function createChecklist({ runtimePack, validation, seasonRow = null, collectionRow = null }) {
+  const blockers = [];
+  const warnings = [];
+  const passed = [];
+  const metadata = runtimePack.metadata || {};
+  const catalog = new Map(getAssetCatalog().map((asset) => [asset.assetId, asset]));
+
+  if (validation.ok) passed.push(checklistIssue('runtime_validation_ok', 'Runtime pack validation passes.', 'pass'));
+  else blockers.push(checklistIssue(
+    'runtime_validation_failed',
+    'Runtime pack validation must pass before approval or publish.',
+    'blocker',
+    { errorCodes: validation.errors.map((issue) => issue.code) }
+  ));
+
+  if (runtimePack.startsAt) passed.push(checklistIssue('pack_starts_at_present', 'Pack start date is set.', 'pass'));
+  else blockers.push(checklistIssue('pack_starts_at_missing', 'Pack start date is required for release.'));
+
+  if (runtimePack.endsAt) passed.push(checklistIssue('pack_ends_at_present', 'Pack end date is set.', 'pass'));
+  else blockers.push(checklistIssue('pack_ends_at_missing', 'Pack end date is required for release.'));
+
+  if (hasLocalizedCopy(disclosureCopy(metadata))) {
+    passed.push(checklistIssue('disclosure_copy_present', 'Player-facing disclosure copy is present.', 'pass'));
+  } else {
+    blockers.push(checklistIssue(
+      'disclosure_copy_missing',
+      'Pack metadata must include disclosure, oddsDisclosure, or description copy before release.'
+    ));
+  }
+
+  if (Number.isInteger(Number(runtimePack.rollPriceAmount)) && Number(runtimePack.rollPriceAmount) > 0) {
+    passed.push(checklistIssue('price_present', 'Pack roll price is a positive wallet amount.', 'pass'));
+  } else {
+    blockers.push(checklistIssue('price_missing_or_invalid', 'Pack roll price must be a positive wallet amount.'));
+  }
+  if (runtimePack.rollPriceCurrencyCode === WALLET_CURRENCY_CODE) {
+    passed.push(checklistIssue('currency_ok', `Pack currency is ${WALLET_CURRENCY_CODE}.`, 'pass'));
+  } else {
+    blockers.push(checklistIssue('currency_unsupported', `Pack currency must be ${WALLET_CURRENCY_CODE}.`));
+  }
+
+  if (seasonRow && !['active', 'future'].includes(seasonRow.status)) {
+    warnings.push(checklistIssue(
+      'season_not_release_ready',
+      `Season status is ${seasonRow.status}; active/future is expected before release.`,
+      'warning'
+    ));
+  }
+  if (collectionRow && !['active', 'future'].includes(collectionRow.status)) {
+    warnings.push(checklistIssue(
+      'collection_not_release_ready',
+      `Collection status is ${collectionRow.status}; active/future is expected before release.`,
+      'warning'
+    ));
+  }
+
+  const policyMode = duplicatePolicyMode(runtimePack.duplicatePolicy);
+  if (policyMode === 'allow_duplicates') {
+    const packCap = duplicateCopyCap(runtimePack.duplicatePolicy);
+    const uncappedItems = (runtimePack.items || []).filter((item) =>
+      item.copyLimit === undefined || item.copyLimit === null
+    );
+    if (!packCap && uncappedItems.length) {
+      warnings.push(checklistIssue(
+        'duplicate_copy_cap_missing',
+        'Duplicate-enabled packs should define a pack copy cap or item copy caps.',
+        'warning',
+        { assetIds: uncappedItems.map((item) => item.assetId) }
+      ));
+    }
+  }
+
+  const policyRecommendations = [];
+  for (const item of runtimePack.items || []) {
+    const asset = catalog.get(item.assetId);
+    if (!asset) continue;
+    const alreadyMapped = asset.packId === runtimePack.id &&
+      (asset.acquisitionMode === 'gacha' || asset.acquisitionMode === 'both');
+    if (!alreadyMapped) {
+      policyRecommendations.push({
+        assetId: item.assetId,
+        current: {
+          acquisitionMode: asset.acquisitionMode,
+          packId: asset.packId
+        },
+        recommended: {
+          acquisitionMode: 'gacha',
+          packId: runtimePack.id
+        }
+      });
+    }
+  }
+  if (policyRecommendations.length) {
+    warnings.push(checklistIssue(
+      'asset_policy_mapping_recommended',
+      'Some pack assets are not mapped to this DB pack in the asset acquisition policy.',
+      'warning',
+      {
+        recommendations: policyRecommendations,
+        recommendedPolicyJson: Object.fromEntries(policyRecommendations.map((entry) => [
+          entry.assetId,
+          entry.recommended
+        ]))
+      }
+    ));
+  } else if ((runtimePack.items || []).length) {
+    passed.push(checklistIssue('asset_policy_mapping_ok', 'Pack assets are mapped to this pack policy.', 'pass'));
+  }
+
+  return {
+    ok: blockers.length === 0,
+    blockers,
+    warnings,
+    passed
+  };
+}
+
+function normalizePreviewTrials(value) {
+  const trials = Number(value || 1000);
+  if (!Number.isInteger(trials) || trials <= 0) throw new Error('Gacha preview trials must be a positive integer');
+  return Math.min(trials, 100000);
+}
+
+function createPreviewRng(seedInput) {
+  const digest = crypto.createHash('sha256').update(String(seedInput || 'gacha-admin-preview')).digest();
+  let state = digest.readUInt32LE(0);
+  return () => {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function simulateRuntimePack(runtimePack, { trials = 1000, seed = null } = {}) {
+  const trialCount = normalizePreviewTrials(trials);
+  const seedValue = seed || `${runtimePack.id}:${runtimePack.updatedAt || runtimePack.rarityTableVersion || 'draft'}:${trialCount}`;
+  const rng = createPreviewRng(seedValue);
+  const candidates = resolveAssetPackRollCandidates(runtimePack, { ownedAssetIds: [] });
+  const counts = new Map(candidates.map((candidate) => [candidate.assetId, 0]));
+  const rarityCounts = new Map();
+  let totalSelections = 0;
+
+  if (candidates.length) {
+    for (let trial = 0; trial < trialCount; trial += 1) {
+      const selected = selectAssetPackRollResults(candidates, runtimePack, { rng });
+      for (const item of selected) {
+        counts.set(item.assetId, (counts.get(item.assetId) || 0) + 1);
+        const rarity = item.rarity || 'common';
+        rarityCounts.set(rarity, (rarityCounts.get(rarity) || 0) + 1);
+        totalSelections += 1;
+      }
+    }
+  }
+
+  const weightedCandidateCount = candidates.filter((candidate) => Number(candidate.dropWeight || 0) > 0).length;
+  return {
+    trials: trialCount,
+    seed: seedValue,
+    candidateCount: candidates.length,
+    weightedCandidateCount,
+    averageItemsPerRoll: totalSelections / trialCount,
+    rollable: candidates.length > 0 && weightedCandidateCount > 0,
+    raritySummary: [...rarityCounts.entries()].map(([rarity, observedCount]) => ({
+      rarity,
+      observedCount,
+      observedPerRoll: observedCount / trialCount
+    })).sort((a, b) => b.observedPerRoll - a.observedPerRoll || a.rarity.localeCompare(b.rarity)),
+    items: candidates.map((candidate) => {
+      const observedCount = counts.get(candidate.assetId) || 0;
+      return {
+        assetId: candidate.assetId,
+        rarity: candidate.rarity || candidate.asset?.rarity || null,
+        dropWeight: Number(candidate.dropWeight || 0),
+        observedCount,
+        observedPerRoll: observedCount / trialCount,
+        asset: candidate.asset ? {
+          name: candidate.asset.name,
+          slot: candidate.asset.slot,
+          targetType: candidate.asset.targetType,
+          targetId: candidate.asset.targetId,
+          variantId: candidate.asset.variantId
+        } : null
+      };
+    }).sort((a, b) => b.observedPerRoll - a.observedPerRoll || a.assetId.localeCompare(b.assetId))
+  };
+}
+
+function packSnapshot(runtimePack) {
+  return {
+    id: runtimePack.id,
+    seasonId: runtimePack.seasonId,
+    collectionId: runtimePack.collectionId,
+    name: runtimePack.name,
+    status: runtimePack.status,
+    startsAt: runtimePack.startsAt,
+    endsAt: runtimePack.endsAt,
+    rollPriceAmount: runtimePack.rollPriceAmount,
+    rollSize: runtimePack.rollSize,
+    rarityWeights: runtimePack.rarityWeights || null,
+    slots: runtimePack.slots || null,
+    guarantees: runtimePack.guarantees || null,
+    pityRules: runtimePack.pityRules || null,
+    duplicatePolicy: runtimePack.duplicatePolicy || null,
+    burnRules: runtimePack.burnRules || null,
+    metadata: runtimePack.metadata || {},
+    items: [...(runtimePack.items || [])].sort((a, b) => a.assetId.localeCompare(b.assetId))
+  };
+}
+
+function diffValues(before, after) {
+  const keys = new Set([...Object.keys(before || {}), ...Object.keys(after || {})]);
+  const changed = [];
+  for (const key of keys) {
+    const beforeValue = before?.[key];
+    const afterValue = after?.[key];
+    if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
+      changed.push({ field: key, before: beforeValue ?? null, after: afterValue ?? null });
+    }
+  }
+  return changed;
+}
+
+async function draftDiffForPack(client, runtimePack) {
+  const basePackId = runtimePack.metadata?.basePackId || runtimePack.metadata?.clonedFromPackId || null;
+  if (!basePackId || basePackId === runtimePack.id) return null;
+  const baseRow = await findOne(client, 'asset_gacha_packs', basePackId);
+  if (!baseRow) {
+    return { basePackId, missingBase: true, changedFields: [], addedItems: [], removedItems: [], changedItems: [] };
+  }
+  const baseRuntime = rowPackToRuntimePack(baseRow, await selectPackItems(client, basePackId));
+  const baseSnapshot = packSnapshot(baseRuntime);
+  const draftSnapshot = packSnapshot(runtimePack);
+  const baseItems = new Map(baseSnapshot.items.map((item) => [item.assetId, item]));
+  const draftItems = new Map(draftSnapshot.items.map((item) => [item.assetId, item]));
+  const addedItems = [...draftItems.keys()].filter((assetId) => !baseItems.has(assetId));
+  const removedItems = [...baseItems.keys()].filter((assetId) => !draftItems.has(assetId));
+  const changedItems = [...draftItems.keys()]
+    .filter((assetId) => baseItems.has(assetId))
+    .map((assetId) => ({
+      assetId,
+      changes: diffValues(baseItems.get(assetId), draftItems.get(assetId))
+    }))
+    .filter((entry) => entry.changes.length);
+  const { items: _baseItems, ...baseFields } = baseSnapshot;
+  const { items: _draftItems, ...draftFields } = draftSnapshot;
+  return {
+    basePackId,
+    missingBase: false,
+    changedFields: diffValues(baseFields, draftFields),
+    addedItems,
+    removedItems,
+    changedItems
+  };
 }
 
 async function insertAdminAction(client, {
@@ -459,6 +761,34 @@ async function validationForPackRow(client, packRow) {
   };
 }
 
+function assetPolicyRecommendationsFromChecklist(releaseChecklist) {
+  return (releaseChecklist.warnings || [])
+    .find((issue) => issue.code === 'asset_policy_mapping_recommended')
+    ?.recommendations || [];
+}
+
+async function previewForPackRow(client, packRow, { trials = 1000, seed = null } = {}) {
+  const { runtimePack, validation, shapedPack } = await validationForPackRow(client, packRow);
+  const seasonRow = await findOne(client, 'asset_gacha_seasons', packRow.season_id);
+  const collectionRow = await findOne(client, 'asset_gacha_collections', packRow.collection_id);
+  const releaseChecklist = createChecklist({
+    runtimePack,
+    validation,
+    seasonRow,
+    collectionRow
+  });
+  return {
+    pack: rowToPack(packRow),
+    runtimePack,
+    validation,
+    preview: shapedPack,
+    releaseChecklist,
+    assetPolicyRecommendations: assetPolicyRecommendationsFromChecklist(releaseChecklist),
+    simulation: validation.ok ? simulateRuntimePack(runtimePack, { trials, seed }) : null,
+    diff: await draftDiffForPack(client, runtimePack)
+  };
+}
+
 async function cloneApprovedPackDraft(client, packRow, {
   actorId,
   reason,
@@ -567,30 +897,28 @@ export async function listGachaAdminCatalog() {
     rows.push(item);
     itemsByPack.set(item.pack_id, rows);
   }
+  const seasonsById = new Map(seasons.rows.map((row) => [row.id, row]));
+  const collectionsById = new Map(collections.rows.map((row) => [row.id, row]));
   return {
     seasons: seasons.rows.map(rowToSeason),
     collections: collections.rows.map(rowToCollection),
     packs: packs.rows.map((row) => {
       const runtimePack = rowPackToRuntimePack(row, itemsByPack.get(row.id) || []);
+      const validation = validateAssetPack(runtimePack);
       return {
         ...rowToPack(row),
-        validation: validateAssetPack(runtimePack),
+        validation,
+        releaseChecklist: createChecklist({
+          runtimePack,
+          validation,
+          seasonRow: seasonsById.get(row.season_id) || null,
+          collectionRow: collectionsById.get(row.collection_id) || null
+        }),
         itemCount: runtimePack.items.length
       };
     }),
     items: items.rows.map(rowToPackItem),
-    assetOptions: getAssetCatalog().map((asset) => ({
-      assetId: asset.assetId,
-      mushroomId: asset.mushroomId,
-      portraitId: asset.portraitId,
-      name: asset.name,
-      rarity: asset.rarity,
-      dropWeight: asset.dropWeight,
-      price: asset.price,
-      currencyCode: asset.currencyCode,
-      acquisitionMode: asset.acquisitionMode,
-      packId: asset.packId
-    }))
+    assetOptions: catalogAssetOptions()
   };
 }
 
@@ -983,13 +1311,21 @@ export async function replaceGachaPackItems({ actorId, packId, items = [], reaso
 
 export async function validateGachaAdminPack({ packId } = {}) {
   const row = await requireRow({ query }, 'asset_gacha_packs', packId, 'gacha pack');
-  const { runtimePack, validation, shapedPack } = await validationForPackRow({ query }, row);
+  const preview = await previewForPackRow({ query }, row, { trials: 1000 });
   return {
-    pack: rowToPack(row),
-    runtimePack,
-    validation,
-    preview: shapedPack
+    pack: preview.pack,
+    runtimePack: preview.runtimePack,
+    validation: preview.validation,
+    preview: preview.preview,
+    releaseChecklist: preview.releaseChecklist,
+    assetPolicyRecommendations: preview.assetPolicyRecommendations,
+    diff: preview.diff
   };
+}
+
+export async function previewGachaAdminPack({ packId, trials = 1000, seed = null } = {}) {
+  const row = await requireRow({ query }, 'asset_gacha_packs', packId, 'gacha pack');
+  return previewForPackRow({ query }, row, { trials, seed });
 }
 
 export async function transitionGachaPack({ actorId, packId, action, reason, note = '', evidence = {} } = {}) {
@@ -1003,9 +1339,13 @@ export async function transitionGachaPack({ actorId, packId, action, reason, not
     const before = rowToPack(beforeRow);
     const fields = {};
     const now = nowIso();
-    let validation = (await validationForPackRow(client, beforeRow)).validation;
+    let preview = await previewForPackRow(client, beforeRow, { trials: 1000 });
+    let validation = preview.validation;
     if (['approve', 'publish'].includes(normalizedAction) && !validation.ok) {
       throw new Error(`Gacha pack validation failed: ${validation.errors.map((issue) => issue.code).join(', ')}`);
+    }
+    if (['approve', 'publish'].includes(normalizedAction) && !preview.releaseChecklist.ok) {
+      throw new Error(`Gacha pack release checklist failed: ${preview.releaseChecklist.blockers.map((issue) => issue.code).join(', ')}`);
     }
     switch (normalizedAction) {
       case 'submit_review':
@@ -1051,7 +1391,8 @@ export async function transitionGachaPack({ actorId, packId, action, reason, not
     }
     await applyUpdate(client, 'asset_gacha_packs', packId, fields);
     const afterRow = await requireRow(client, 'asset_gacha_packs', packId, 'gacha pack');
-    validation = (await validationForPackRow(client, afterRow)).validation;
+    preview = await previewForPackRow(client, afterRow, { trials: 1000 });
+    validation = preview.validation;
     const after = rowToPack(afterRow);
     const audit = await insertAdminAction(client, {
       actorId: actor,
@@ -1061,8 +1402,17 @@ export async function transitionGachaPack({ actorId, packId, action, reason, not
       reason: actionReason,
       note: actionNote,
       evidence: actionEvidence,
-      result: { before, after, validation }
+      result: { before, after, validation, releaseChecklist: preview.releaseChecklist }
     });
-    return { pack: after, validation, action: audit };
+    return {
+      pack: after,
+      validation,
+      releaseChecklist: preview.releaseChecklist,
+      preview: preview.preview,
+      simulation: preview.simulation,
+      assetPolicyRecommendations: preview.assetPolicyRecommendations,
+      diff: preview.diff,
+      action: audit
+    };
   });
 }

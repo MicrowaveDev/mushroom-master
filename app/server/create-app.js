@@ -84,6 +84,7 @@ import {
   createGachaSeason,
   deleteGachaPackItem,
   listGachaAdminCatalog,
+  previewGachaAdminPack,
   replaceGachaPackItems,
   transitionGachaPack,
   updateGachaCollection,
@@ -663,6 +664,8 @@ const ERROR_STATUS_MAP = [
   ['already', 409],
   ['limit reached', 429],
   ['not enough', 400],
+  ['gacha pack validation failed', 400],
+  ['gacha pack release checklist failed', 400],
   ['required', 400],
   ['requires', 400],
   ['must be', 400],
@@ -1313,6 +1316,23 @@ export async function createApp() {
       res.json({
         success: true,
         data: await validateGachaAdminPack({ packId: req.params.packId })
+      });
+    })
+  );
+
+  app.get(
+    '/api/admin/gacha/packs/:packId/preview',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await previewGachaAdminPack({
+          packId: req.params.packId,
+          trials: req.query.trials,
+          seed: req.query.seed
+        })
       });
     })
   );

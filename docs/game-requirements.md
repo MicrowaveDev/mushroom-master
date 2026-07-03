@@ -397,7 +397,13 @@ Membership is not stored. It is derived from overlap between item cells and acti
   disable/expire actions. The `/support-admin` console includes a Gacha tab
   that consumes this API for catalog review, token-gated asset picking, season
   and collection edits, pack/item authoring, validation, publish, expire, and
-  emergency disable actions without direct SQL. Packs are
+  emergency disable actions without direct SQL. The Gacha tab and
+  `/api/admin/gacha/packs/:packId/preview` also expose the release checklist,
+  odds preview, deterministic roll simulation, DB asset-acquisition policy
+  recommendations, and live/draft diff for cloned draft packs. Approval/publish
+  is blocked when runtime validation fails or when required release checklist
+  blockers are present, including missing pack dates, unsupported currency,
+  missing positive price, or missing player-facing disclosure copy. Packs are
   unowned-only by default; packs that set `duplicatePolicy: "allow_duplicates"`
   can grant extra active asset instances for already owned skins, with duplicate
   results marked in roll metadata. Duplicate-enabled packs may define

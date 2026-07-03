@@ -48,6 +48,8 @@ async function createAdminSeasonAndCollection(app, {
       id: seasonId,
       name: { en: 'Admin Season' },
       status: 'active',
+      startsAt: '2026-08-01T00:00:00.000Z',
+      endsAt: '2026-09-01T00:00:00.000Z',
       reason: 'test_admin_season'
     });
   assert.equal(season.status, 200);
@@ -60,6 +62,8 @@ async function createAdminSeasonAndCollection(app, {
       seasonId,
       name: { en: 'Admin Collection' },
       status: 'active',
+      startsAt: '2026-08-01T00:00:00.000Z',
+      endsAt: '2026-09-01T00:00:00.000Z',
       reason: 'test_admin_collection'
     });
   assert.equal(collection.status, 200);
@@ -84,12 +88,17 @@ async function createValidAdminPack(app, {
       collectionId,
       name: { en: 'Admin Runtime Pack' },
       status: 'active',
+      startsAt: '2026-08-01T00:00:00.000Z',
+      endsAt: '2026-09-01T00:00:00.000Z',
       rollPriceAmount: price,
       rollSize: 2,
       slots: [
         { rarityWeights: { common: 1 } },
         { rarityWeights: { rare: 1 } }
       ],
+      metadata: {
+        disclosure: { en: 'Contains two cosmetic portraits with one rare slot.' }
+      },
       reason: 'test_admin_pack'
     });
   assert.equal(pack.status, 200);
@@ -189,12 +198,17 @@ test('[Req 14-F] gacha admin API can author, validate, publish, and audit a data
         collectionId,
         name: { en: 'Author Pack' },
         status: 'active',
+        startsAt: '2026-08-01T00:00:00.000Z',
+        endsAt: '2026-09-01T00:00:00.000Z',
         rollPriceAmount: 31,
         rollSize: 2,
         slots: [
           { rarityWeights: { common: 1 } },
           { rarityWeights: { rare: 1 } }
         ],
+        metadata: {
+          disclosure: { en: 'Contains two cosmetic portraits with a guaranteed rare slot.' }
+        },
         reason: 'test_author_pack'
       });
     assert.equal(pack.status, 200);
@@ -207,6 +221,40 @@ test('[Req 14-F] gacha admin API can author, validate, publish, and audit a data
       .send({ reviewStatus: 'approved', reason: 'test_direct_approval_rejected' });
     assert.equal(directApproval.status, 400);
     assert.match(directApproval.body.error, /transition action/i);
+
+    const blockedPackId = 'admin_release_blocked_pack';
+    const blockedPack = await request(app)
+      .post('/api/admin/gacha/packs')
+      .set(gachaHeaders)
+      .send({
+        id: blockedPackId,
+        seasonId,
+        collectionId,
+        name: { en: 'Release Blocked Pack' },
+        status: 'active',
+        rollPriceAmount: 11,
+        rollSize: 1,
+        reason: 'test_release_blocked_pack'
+      });
+    assert.equal(blockedPack.status, 200);
+    const blockedItems = await request(app)
+      .put(`/api/admin/gacha/packs/${blockedPackId}/items`)
+      .set(gachaHeaders)
+      .send({
+        reason: 'test_release_blocked_items',
+        items: [
+          { assetId: commonA, rarity: 'common', dropWeight: 100 }
+        ]
+      });
+    assert.equal(blockedItems.status, 200);
+    assert.equal(blockedItems.body.data.validation.ok, true);
+    const blockedPublish = await request(app)
+      .post(`/api/admin/gacha/packs/${blockedPackId}/transition`)
+      .set(gachaHeaders)
+      .send({ action: 'publish', reason: 'test_release_blocked_publish' });
+    assert.equal(blockedPublish.status, 400);
+    assert.match(blockedPublish.body.error, /release checklist failed/i);
+    assert.match(blockedPublish.body.error, /pack_starts_at_missing/);
 
     const items = await request(app)
       .put(`/api/admin/gacha/packs/${packId}/items`)
@@ -226,7 +274,20 @@ test('[Req 14-F] gacha admin API can author, validate, publish, and audit a data
       .set(gachaHeaders);
     assert.equal(validation.status, 200);
     assert.equal(validation.body.data.validation.ok, true);
+    assert.equal(validation.body.data.releaseChecklist.ok, true);
+    assert.ok(validation.body.data.releaseChecklist.passed.some((issue) => issue.code === 'price_present'));
+    assert.ok(validation.body.data.releaseChecklist.passed.some((issue) => issue.code === 'currency_ok'));
+    assert.ok(validation.body.data.releaseChecklist.warnings.some((issue) => issue.code === 'asset_policy_mapping_recommended'));
     assert.equal(validation.body.data.preview.items.length, 2);
+
+    const preview = await request(app)
+      .get(`/api/admin/gacha/packs/${packId}/preview?trials=250`)
+      .set(gachaHeaders);
+    assert.equal(preview.status, 200);
+    assert.equal(preview.body.data.releaseChecklist.ok, true);
+    assert.equal(preview.body.data.simulation.trials, 250);
+    assert.equal(preview.body.data.simulation.candidateCount, 2);
+    assert.ok(preview.body.data.assetPolicyRecommendations.length >= 1);
 
     const publish = await request(app)
       .post(`/api/admin/gacha/packs/${packId}/transition`)

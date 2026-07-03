@@ -154,6 +154,8 @@ export const SupportAdminScreen = {
       gachaLoading: false,
       gachaActionLoading: false,
       gachaValidation: null,
+      gachaPreview: null,
+      gachaSimulationTrials: 1000,
       gachaForm: { ...DEFAULT_GACHA_FORM },
       gachaItemDrafts: [makeDefaultGachaItemDraft()]
     };
@@ -220,6 +222,72 @@ export const SupportAdminScreen = {
         ...(validation.errors || []).map((issue) => ({ ...issue, severity: 'error' })),
         ...(validation.warnings || []).map((issue) => ({ ...issue, severity: 'warning' }))
       ];
+    },
+    gachaReleaseChecklist() {
+      return this.gachaPreview?.releaseChecklist || this.selectedGachaPack?.releaseChecklist || null;
+    },
+    gachaReleaseItems() {
+      const checklist = this.gachaReleaseChecklist;
+      if (!checklist) return [];
+      return [
+        ...(checklist.blockers || []),
+        ...(checklist.warnings || []),
+        ...(checklist.passed || [])
+      ];
+    },
+    gachaReleaseBlockers() {
+      return this.gachaReleaseChecklist?.blockers || [];
+    },
+    gachaReleaseWarnings() {
+      return this.gachaReleaseChecklist?.warnings || [];
+    },
+    gachaOddsItems() {
+      return this.gachaPreview?.preview?.items || this.gachaValidation?.preview?.items || [];
+    },
+    gachaRaritySummary() {
+      return this.gachaPreview?.preview?.raritySummary || this.gachaValidation?.preview?.raritySummary || [];
+    },
+    gachaSimulation() {
+      return this.gachaPreview?.simulation || null;
+    },
+    gachaSimulationItems() {
+      return (this.gachaSimulation?.items || []).slice(0, 8);
+    },
+    gachaDraftDiff() {
+      return this.gachaPreview?.diff || this.gachaValidation?.diff || null;
+    },
+    gachaDraftDiffRows() {
+      const diff = this.gachaDraftDiff;
+      if (!diff || diff.missingBase) return [];
+      return [
+        ...(diff.changedFields || []).map((change) => ({
+          type: 'field',
+          field: change.field,
+          before: change.before,
+          after: change.after
+        })),
+        ...(diff.addedItems || []).map((assetId) => ({
+          type: 'item_added',
+          field: assetId,
+          before: null,
+          after: assetId
+        })),
+        ...(diff.removedItems || []).map((assetId) => ({
+          type: 'item_removed',
+          field: assetId,
+          before: assetId,
+          after: null
+        })),
+        ...(diff.changedItems || []).map((entry) => ({
+          type: 'item_changed',
+          field: entry.assetId,
+          before: entry.changes.map((change) => change.before),
+          after: entry.changes.map((change) => change.after)
+        }))
+      ];
+    },
+    gachaAssetPolicyRecommendations() {
+      return this.gachaPreview?.assetPolicyRecommendations || this.gachaValidation?.assetPolicyRecommendations || [];
     },
     canLoadGachaCatalog() {
       return this.token.trim() && this.actorId.trim() && !this.gachaLoading;
@@ -311,6 +379,15 @@ export const SupportAdminScreen = {
     rowPlayerLabel,
     localizedName,
     prettyJson,
+    formatPercent(value) {
+      const numeric = Number(value || 0);
+      return `${(numeric * 100).toFixed(numeric > 0 && numeric < 0.01 ? 2 : 1)}%`;
+    },
+    compactJson(value) {
+      if (value === null || value === undefined) return '-';
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+      return JSON.stringify(value);
+    },
     setAdminTab(tab) {
       this.activeAdminTab = tab === 'gacha' ? 'gacha' : 'support';
       if (this.activeAdminTab === 'gacha' && !this.gachaCatalog && this.canLoadGachaCatalog) {
@@ -399,6 +476,9 @@ export const SupportAdminScreen = {
         metadataJson: prettyJson(item.metadata, {})
       })) : [makeDefaultGachaItemDraft()];
       this.gachaValidation = { validation: pack.validation };
+      this.gachaPreview = pack.releaseChecklist
+        ? { releaseChecklist: pack.releaseChecklist, validation: pack.validation }
+        : null;
     },
     assetInstanceLabel(asset) {
       if (!asset) return '';
@@ -623,6 +703,7 @@ export const SupportAdminScreen = {
           : (exists ? 'Gacha pack updated.' : 'Gacha pack created.');
         this.fillGachaPack(data.pack);
         this.gachaValidation = { validation: data.validation };
+        this.gachaPreview = null;
         await this.loadGachaCatalog({ silent: true });
       } catch (error) {
         this.error = error.message;
@@ -651,6 +732,7 @@ export const SupportAdminScreen = {
           ? `Items saved to cloned draft ${data.packId}.`
           : 'Gacha pack items saved.';
         this.gachaValidation = { validation: data.validation };
+        this.gachaPreview = null;
         await this.loadGachaCatalog({ silent: true });
       } catch (error) {
         this.error = error.message;
@@ -665,8 +747,14 @@ export const SupportAdminScreen = {
       this.status = '';
       this.rememberCredentials();
       try {
-        this.gachaValidation = await this.supportRequest(`/api/admin/gacha/packs/${encodeURIComponent(this.gachaForm.packId.trim())}/validation`);
-        this.status = this.gachaValidation.validation?.ok ? 'Gacha pack validation passed.' : 'Gacha pack validation found issues.';
+        const params = new URLSearchParams({
+          trials: String(this.gachaSimulationTrials || 1000)
+        });
+        this.gachaPreview = await this.supportRequest(`/api/admin/gacha/packs/${encodeURIComponent(this.gachaForm.packId.trim())}/preview?${params.toString()}`);
+        this.gachaValidation = this.gachaPreview;
+        this.status = this.gachaPreview.releaseChecklist?.ok
+          ? 'Gacha release preview passed.'
+          : 'Gacha release preview found blockers or warnings.';
       } catch (error) {
         this.error = error.message;
       } finally {
@@ -691,6 +779,17 @@ export const SupportAdminScreen = {
         this.fillGachaPack(data.pack);
         this.gachaValidation = { validation: data.validation };
         await this.loadGachaCatalog({ silent: true });
+        this.gachaPreview = data.releaseChecklist
+          ? {
+            releaseChecklist: data.releaseChecklist,
+            validation: data.validation,
+            preview: data.preview,
+            simulation: data.simulation,
+            assetPolicyRecommendations: data.assetPolicyRecommendations,
+            diff: data.diff
+          }
+          : null;
+        this.gachaValidation = this.gachaPreview || { validation: data.validation };
       } catch (error) {
         this.error = error.message;
       } finally {
@@ -1104,7 +1203,7 @@ export const SupportAdminScreen = {
           <div class="support-admin-table-wrap">
             <table class="support-admin-table support-admin-gacha-table" data-testid="gacha-packs-table">
               <thead>
-                <tr><th>Pack</th><th>Status</th><th>Review</th><th>Items</th><th>Price</th><th>Valid</th><th>Action</th></tr>
+                <tr><th>Pack</th><th>Status</th><th>Review</th><th>Items</th><th>Price</th><th>Release</th><th>Action</th></tr>
               </thead>
               <tbody>
                 <tr v-for="pack in gachaPacks" :key="pack.id" :data-pack-id="pack.id" :class="{ active: gachaForm.packId === pack.id }">
@@ -1114,9 +1213,10 @@ export const SupportAdminScreen = {
                   <td>{{ pack.itemCount || 0 }}</td>
                   <td>{{ pack.rollPriceAmount }} {{ pack.rollPriceCurrencyCode }}</td>
                   <td>
-                    <span class="support-admin-badge" :class="pack.validation?.ok ? 'support-admin-badge--ok' : 'support-admin-badge--warn'">
-                      {{ pack.validation?.ok ? 'ok' : 'needs work' }}
+                    <span class="support-admin-badge" :class="pack.releaseChecklist?.ok ? 'support-admin-badge--ok' : 'support-admin-badge--warn'">
+                      {{ pack.releaseChecklist?.ok ? 'ready' : 'blocked' }}
                     </span>
+                    <small v-if="pack.releaseChecklist?.blockers?.length">{{ pack.releaseChecklist.blockers.length }} blockers</small>
                   </td>
                   <td><button class="support-admin-mini-button" type="button" data-testid="gacha-select-pack" @click="fillGachaPack(pack)">Edit</button></td>
                 </tr>
@@ -1314,10 +1414,14 @@ export const SupportAdminScreen = {
             </label>
           </div>
           <div class="support-admin-gacha-actions">
+            <label class="support-admin-compact-label">
+              <span>Trials</span>
+              <input class="support-admin-input" data-testid="gacha-preview-trials" type="number" min="100" max="100000" step="100" v-model.number="gachaSimulationTrials" />
+            </label>
             <button class="primary support-admin-submit" data-testid="gacha-save-pack" type="button" :disabled="!canSubmitGachaPack" @click="submitGachaPack">
               {{ gachaActionLoading ? 'Saving' : 'Save Pack' }}
             </button>
-            <button class="support-admin-secondary-button" data-testid="gacha-validate-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="validateGachaPack">Validate</button>
+            <button class="support-admin-secondary-button" data-testid="gacha-validate-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="validateGachaPack">Preview</button>
             <button class="support-admin-secondary-button" data-testid="gacha-publish-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="transitionGachaPack('publish')">Publish</button>
             <button class="support-admin-secondary-button" data-testid="gacha-disable-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="transitionGachaPack('disable')">Disable</button>
             <button class="support-admin-secondary-button" data-testid="gacha-expire-pack" type="button" :disabled="!gachaForm.packId || gachaActionLoading" @click="transitionGachaPack('expire')">Expire</button>
@@ -1378,7 +1482,110 @@ export const SupportAdminScreen = {
             </li>
             <li v-if="!gachaValidationIssues.length">No validation issues.</li>
           </ul>
-          <pre v-if="gachaValidation?.preview" class="support-admin-json-preview" data-testid="gacha-preview-json">{{ prettyJson(gachaValidation.preview, {}) }}</pre>
+        </section>
+
+        <section v-if="gachaReleaseChecklist" class="panel support-admin-panel" data-testid="gacha-release-checklist">
+          <h3>Release Checklist</h3>
+          <p class="support-admin-balance">
+            Result:
+            <strong>{{ gachaReleaseChecklist.ok ? 'ready' : 'blocked' }}</strong>
+          </p>
+          <ul class="support-admin-gacha-issues">
+            <li v-for="issue in gachaReleaseItems" :key="issue.severity + issue.code" :class="'support-admin-gacha-issue--' + issue.severity">
+              <strong>{{ issue.severity }}</strong>
+              <span>{{ issue.code }} · {{ issue.message }}</span>
+            </li>
+          </ul>
+        </section>
+
+        <section v-if="gachaRaritySummary.length || gachaOddsItems.length" class="panel support-admin-panel" data-testid="gacha-odds-preview">
+          <h3>Odds Preview</h3>
+          <div class="support-admin-table-wrap">
+            <table class="support-admin-table support-admin-compact-table">
+              <thead><tr><th>Rarity</th><th>Expected</th><th>Items</th><th>Weight</th></tr></thead>
+              <tbody>
+                <tr v-for="rarity in gachaRaritySummary" :key="rarity.rarity">
+                  <td>{{ rarity.rarity }}</td>
+                  <td>{{ formatPercent(rarity.probability ?? rarity.expectedPerOpen ?? 0) }}</td>
+                  <td>{{ rarity.count }}</td>
+                  <td>{{ rarity.dropWeight || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="support-admin-table-wrap">
+            <table class="support-admin-table support-admin-compact-table">
+              <thead><tr><th>Asset</th><th>Rarity</th><th>Weight</th><th>Expected</th><th>Copy Cap</th></tr></thead>
+              <tbody>
+                <tr v-for="item in gachaOddsItems.slice(0, 8)" :key="item.assetId">
+                  <td>{{ item.assetId }}</td>
+                  <td>{{ item.rarity }}</td>
+                  <td>{{ item.dropWeight }}</td>
+                  <td>{{ formatPercent(item.probability || 0) }}</td>
+                  <td>{{ item.copyLimit ?? '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section v-if="gachaSimulation" class="panel support-admin-panel" data-testid="gacha-simulation">
+          <h3>Roll Simulation</h3>
+          <dl class="support-admin-metrics support-admin-metrics--gacha">
+            <div><dt>Trials</dt><dd>{{ gachaSimulation.trials }}</dd></div>
+            <div><dt>Candidates</dt><dd>{{ gachaSimulation.candidateCount }}</dd></div>
+            <div><dt>Weighted</dt><dd>{{ gachaSimulation.weightedCandidateCount }}</dd></div>
+            <div><dt>Avg Items</dt><dd>{{ Number(gachaSimulation.averageItemsPerRoll || 0).toFixed(2) }}</dd></div>
+          </dl>
+          <div class="support-admin-table-wrap">
+            <table class="support-admin-table support-admin-compact-table">
+              <thead><tr><th>Asset</th><th>Rarity</th><th>Weight</th><th>Observed / roll</th><th>Observed</th></tr></thead>
+              <tbody>
+                <tr v-for="item in gachaSimulationItems" :key="item.assetId">
+                  <td>{{ item.assetId }}</td>
+                  <td>{{ item.rarity }}</td>
+                  <td>{{ item.dropWeight }}</td>
+                  <td>{{ formatPercent(item.observedPerRoll || 0) }}</td>
+                  <td>{{ item.observedCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section v-if="gachaAssetPolicyRecommendations.length" class="panel support-admin-panel" data-testid="gacha-policy-recommendations">
+          <h3>Asset Policy Mapping</h3>
+          <div class="support-admin-table-wrap">
+            <table class="support-admin-table support-admin-compact-table">
+              <thead><tr><th>Asset</th><th>Current</th><th>Recommended</th></tr></thead>
+              <tbody>
+                <tr v-for="entry in gachaAssetPolicyRecommendations" :key="entry.assetId">
+                  <td>{{ entry.assetId }}</td>
+                  <td>{{ compactJson(entry.current) }}</td>
+                  <td>{{ compactJson(entry.recommended) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section v-if="gachaDraftDiff" class="panel support-admin-panel" data-testid="gacha-draft-diff">
+          <h3>Live/Draft Diff</h3>
+          <p v-if="gachaDraftDiff.missingBase" class="support-admin-balance">Base pack {{ gachaDraftDiff.basePackId }} was not found.</p>
+          <p v-else-if="!gachaDraftDiffRows.length" class="support-admin-balance">No live/draft changes detected.</p>
+          <div v-else class="support-admin-table-wrap">
+            <table class="support-admin-table support-admin-compact-table">
+              <thead><tr><th>Type</th><th>Field</th><th>Before</th><th>After</th></tr></thead>
+              <tbody>
+                <tr v-for="row in gachaDraftDiffRows" :key="row.type + row.field">
+                  <td>{{ row.type }}</td>
+                  <td>{{ row.field }}</td>
+                  <td>{{ compactJson(row.before) }}</td>
+                  <td>{{ compactJson(row.after) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </template>
     </section>

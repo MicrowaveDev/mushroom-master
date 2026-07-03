@@ -617,11 +617,19 @@ Step 2: Author Season, Collection, Pack, And Items
 
 Step 3: Validate And Publish
   Sees:
-    - Validate, Publish, Disable, and Expire controls
+    - Preview, Publish, Disable, and Expire controls
     - Validation issue list
-  Action: Click Validate, then Publish
+    - Release Checklist panel
+    - Odds Preview and Roll Simulation panels
+    - Asset Policy Mapping recommendations
+    - Live/Draft Diff panel when editing from a cloned draft
+  Action: Click Preview, then Publish
   Expected:
     - Validation result is ok with no issues
+    - Release checklist reports ready; blockers prevent publish and show the
+      missing release fields
+    - Odds preview and roll simulation render without horizontal overflow on
+      desktop and mobile
     - Published pack status is active and review status is approved
     - Operator action is audited by the backend support action path
 ```

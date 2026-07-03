@@ -44,6 +44,14 @@ test('[regression] validateCoinBudget: budget exceeded maps to 400', () => {
   assert.equal(mapErrorToStatus('Loadout exceeds 5-coin budget (cost 7)'), 400);
 });
 
+test('[Req 14-F] gacha release gates map to 400', () => {
+  assert.equal(mapErrorToStatus('Gacha pack validation failed: no_items'), 400);
+  assert.equal(
+    mapErrorToStatus('Gacha pack release checklist failed: disclosure_copy_missing'),
+    400
+  );
+});
+
 test('unknown application errors still fall through to 500', () => {
   assert.equal(mapErrorToStatus('Database connection lost'), 500);
   assert.equal(mapErrorToStatus('ECONNREFUSED'), 500);

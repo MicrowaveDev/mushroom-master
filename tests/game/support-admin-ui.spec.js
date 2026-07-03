@@ -228,11 +228,15 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
 
   await page.getByTestId('gacha-season-id').fill('e2e_gacha_season');
   await page.getByTestId('gacha-season-name').fill('E2E Gacha Season');
+  await page.getByTestId('gacha-season-starts').fill('2026-08-01T00:00:00.000Z');
+  await page.getByTestId('gacha-season-ends').fill('2026-09-01T00:00:00.000Z');
   await page.getByTestId('gacha-save-season').click();
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha season created.');
 
   await page.getByTestId('gacha-collection-id').fill('e2e_gacha_collection');
   await page.getByTestId('gacha-collection-name').fill('E2E Gacha Collection');
+  await page.getByTestId('gacha-collection-starts').fill('2026-08-01T00:00:00.000Z');
+  await page.getByTestId('gacha-collection-ends').fill('2026-09-01T00:00:00.000Z');
   await page.getByTestId('gacha-save-collection').click();
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha collection created.');
 
@@ -240,6 +244,11 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await page.getByTestId('gacha-pack-name').fill('E2E Gacha Pack');
   await page.getByTestId('gacha-pack-price').fill('33');
   await page.getByTestId('gacha-pack-roll-size').fill('2');
+  await page.getByTestId('gacha-pack-starts').fill('2026-08-01T00:00:00.000Z');
+  await page.getByTestId('gacha-pack-ends').fill('2026-09-01T00:00:00.000Z');
+  await page.getByTestId('gacha-pack-metadata').fill(JSON.stringify({
+    disclosure: { en: 'Contains two cosmetic portraits with one rare slot.' }
+  }, null, 2));
   await page.getByTestId('gacha-save-pack').click();
   await expect(page.getByTestId('gacha-packs-table')).toContainText('e2e_gacha_pack');
   await expect(page.getByTestId('gacha-validation')).toContainText('needs work');
@@ -255,9 +264,13 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack items saved.');
 
   await page.getByTestId('gacha-validate-pack').click();
-  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack validation passed.');
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha release preview passed.');
   await expect(page.getByTestId('gacha-validation')).toContainText('ok');
   await expect(page.getByTestId('gacha-validation')).toContainText('No validation issues.');
+  await expect(page.getByTestId('gacha-release-checklist')).toContainText('ready');
+  await expect(page.getByTestId('gacha-odds-preview')).toContainText('rare');
+  await expect(page.getByTestId('gacha-simulation')).toContainText('Trials');
+  await expect(page.getByTestId('gacha-policy-recommendations')).toContainText('portrait.axilin.1');
 
   await page.getByTestId('gacha-publish-pack').click();
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack publish applied.');
