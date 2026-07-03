@@ -53,6 +53,9 @@ const chibiMotionMarksRejectedCandidateSha256 = 'd5963832fa5406f6fef356be145061f
 const chibiAnimeRejectedSourcePath = '.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_fresh_2026-07-02_bjd_littlegirl_512x256_quant20_rgba.states.source.png';
 const chibiAnimeRejectedSourceSha256 = '1f97d423792a5396a4b325d7c4d4f08d7e33d7b254d1ea57d39fe75133af8f70';
 const chibiAnimeRejectedCandidateSha256 = '7bcd69287d4662b691f487262837899f06da83eb4530c230bff5195f21f6e26b';
+const chibiAttempt3RejectedSourcePath = '.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_2026-07-02_attempt3_512x256_quant18_rgba.states.source.png';
+const chibiAttempt3RejectedSourceSha256 = '4e16302ceecddeee282f580a145ded1ecec4bd1805e6909e0e63d5f631e4c58d';
+const chibiAttempt3RejectedCandidateSha256 = '043a3c4fb0c4d6811461522d9aee574137b5955443393eda4e8312edda2e1c93';
 const chromaKeyScript = path.join(
   process.env.CODEX_HOME || path.join(process.env.HOME || '', '.codex'),
   'skills/.system/imagegen/scripts/remove_chroma_key.py'
@@ -1542,6 +1545,9 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, new RegExp(chibiAnimeRejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(result.stdout, new RegExp(chibiAnimeRejectedSourceSha256));
   assert.match(result.stdout, new RegExp(chibiAnimeRejectedCandidateSha256));
+  assert.match(result.stdout, new RegExp(chibiAttempt3RejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(result.stdout, new RegExp(chibiAttempt3RejectedSourceSha256));
+  assert.match(result.stdout, new RegExp(chibiAttempt3RejectedCandidateSha256));
   assert.match(result.stdout, /old mushroom monk|beige mascot pawn/);
   assert.match(result.stdout, /youthful little-girl/);
   assert.match(result.stdout, /skull-mask|hollow pin-dot/);
@@ -1553,6 +1559,9 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, /character-only/);
   assert.match(result.stdout, /missing fresh authored-source capability/);
   assert.match(result.stdout, /clean blocker is not production-ready output/);
+  assert.match(result.stdout, /better than older rejected lineages|better than older old-monk\/skull-mask\/anime failures|better than old-monk\/skull-mask\/anime failures/);
+  assert.match(result.stdout, /visual fail checks must not be flipped|flip fail visual checks to pass/);
+  assert.match(result.stdout, /mechanical validators/);
   assert.match(result.stdout, /do not split, produce a candidate, generate evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs while the sourceGate is blocked/);
   assert.match(result.stdout, /Stop here while sourceGate is blocked; do not run split, producer, validation, evidence, preview, or verdict commands/);
   assert.match(result.stdout, /Report the blocked source path\/hash, failed reference proxy hash, failed palette counts/);
@@ -1704,6 +1713,9 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.details, new RegExp(chibiAnimeRejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(prompt.details, new RegExp(chibiAnimeRejectedSourceSha256));
   assert.match(prompt.details, new RegExp(chibiAnimeRejectedCandidateSha256));
+  assert.match(prompt.details, new RegExp(chibiAttempt3RejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(prompt.details, new RegExp(chibiAttempt3RejectedSourceSha256));
+  assert.match(prompt.details, new RegExp(chibiAttempt3RejectedCandidateSha256));
   assert.match(prompt.details, /old mushroom monk or beige mascot pawn/);
   assert.match(prompt.details, /youthful little-girl/);
   assert.match(prompt.details, /liked Thalla reference is the primary positive style target/);
@@ -1722,6 +1734,10 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.details, /human hair, bangs, or wig locks/);
   assert.match(prompt.details, /brooch, medallion, clasp/);
   assert.match(prompt.details, /1774x887 sheet/);
+  assert.match(prompt.details, /only improves over older rejected failures/);
+  assert.match(prompt.details, /tiny uniform mascot\/token read/);
+  assert.match(prompt.details, /upgrade needs_regen to needs_review/);
+  assert.match(prompt.details, /validators, palette\/alpha\/readability passes/);
   assert.match(prompt.details, /character-only/);
   assert.match(prompt.details, /no detached motion\/action lines, squiggle marks, speed lines/);
   assert.match(prompt.details, /missing fresh authored-source capability/);
@@ -1738,6 +1754,8 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.constraints, new RegExp(chibiMotionMarksRejectedCandidateSha256));
   assert.match(prompt.constraints, new RegExp(chibiAnimeRejectedSourceSha256));
   assert.match(prompt.constraints, new RegExp(chibiAnimeRejectedCandidateSha256));
+  assert.match(prompt.constraints, new RegExp(chibiAttempt3RejectedSourceSha256));
+  assert.match(prompt.constraints, new RegExp(chibiAttempt3RejectedCandidateSha256));
   assert.match(prompt.constraints, /No elderly monk/);
   assert.match(prompt.constraints, /no beige mascot pawn/);
   assert.match(prompt.constraints, /no skull-mask face/);
@@ -1751,6 +1769,8 @@ test('[home-field] Thalla chibi prompt details persist the local-source default 
   assert.match(prompt.constraints, /no visible hair\/bangs\/wig fringe under the mushroom cap/);
   assert.match(prompt.constraints, /no brooch\/medallion\/clasp-like chest ornament/);
   assert.match(prompt.constraints, /no charm-destroying quantization/);
+  assert.match(prompt.constraints, /no relative-improvement-only style approval/);
+  assert.match(prompt.constraints, /no tiny uniform mascot\/token read/);
   assert.match(prompt.constraints, /no hard toy-like palette repair/);
   assert.match(prompt.constraints, /youthful little-girl BJD-inspired chibi doll read/);
   assert.match(prompt.constraints, /compact visible oval\/almond doll eyes/);
@@ -1810,12 +1830,17 @@ test('[home-field] chibi proof launcher carries explicit local-source workflow',
   assert.match(prompt, /hollow pin-dot eyes/);
   assert.match(prompt, new RegExp(chibiAnimeRejectedSourceSha256));
   assert.match(prompt, new RegExp(chibiAnimeRejectedCandidateSha256));
+  assert.match(prompt, new RegExp(chibiAttempt3RejectedSourceSha256));
+  assert.match(prompt, new RegExp(chibiAttempt3RejectedCandidateSha256));
   assert.match(prompt, /cute-but-generic anime regression/);
   assert.match(prompt, /large glossy\/white anime eyes/);
   assert.match(prompt, /hair\/bangs or wig fringe/);
   assert.match(prompt, /brooch\/medallion-like ornament/);
   assert.match(prompt, /1774x887/);
   assert.match(prompt, /old mushroom monk\/beige mascot pawn/);
+  assert.match(prompt, /only improved over older rejected failures/);
+  assert.match(prompt, /tiny uniform mascot\/token read/);
+  assert.match(prompt, /upgrade `needs_regen` or failed visual checks/);
   assert.match(prompt, /missing fresh authored-source capability/);
   assert.match(prompt, /clean block as a healthy production-ready image run/);
   assert.match(prompt, /default local-source run must use `npm run game:home-field:preflight-chibi-proof -- --source=<queue localSourceMode\.sourcePath>`/);
@@ -1874,6 +1899,11 @@ test('[home-field] imagegen requirements keep fallback methods out of default qu
   assert.match(requirements, /visible hair\/bangs\/wig fringe/);
   assert.match(requirements, /brooch\/medallion\/clasp-like chest ornament/);
   assert.match(requirements, /high-res polished turnaround normalized down to `512x256`/);
+  assert.match(requirements, /better than older rejected lineages/);
+  assert.match(requirements, /positive references as an absolute target/);
+  assert.match(requirements, /upgrade `needs_regen` to `needs_review`/);
+  assert.match(requirements, /flip visual fail checks to pass/);
+  assert.match(requirements, /self-authored `needs_review` prose/);
   assert.match(requirements, /detached motion\/action lines/);
   assert.match(requirements, /squiggle marks/);
   assert.match(requirements, /character-only/);
@@ -1933,13 +1963,17 @@ test('[home-field] repo agent instructions distinguish sourceGate blockers from 
   assert.match(agents, /sourceGateRecovery/);
   assert.match(agents, /sourceGateRecovery\.exhaustedRepairSources/);
   assert.match(agents, /user-rejected style sources/);
-  assert.match(agents, /old mushroom monk, beige mascot pawn, elderly gnome, faceless mushroom-token, skull-mask, hollow pin-dot-eye, blank-mask, detached motion\/squiggle-mark, or cute-but-generic anime reads/);
+  assert.match(agents, /old mushroom monk, beige mascot pawn, elderly gnome, faceless mushroom-token, skull-mask, hollow pin-dot-eye, blank-mask, detached motion\/squiggle-mark, cute-but-generic anime, or tiny uniform mascot\/token reads/);
   assert.match(agents, /youthful little-girl mushroom-elf chibi/);
   assert.match(agents, /compact visible oval\/almond doll eyes/);
   assert.match(agents, /large glossy\/white anime eyes/);
   assert.match(agents, /visible hair\/bangs\/wig fringe under the mushroom cap/);
   assert.match(agents, /brooch\/medallion\/clasp-like chest ornament/);
   assert.match(agents, /polished high-res anime turnaround normalized down to `512x256`/);
+  assert.match(agents, /better than older rejected lineages/);
+  assert.match(agents, /tiny mascot\/token/);
+  assert.match(agents, /Do not flip failed visual checks to pass/);
+  assert.match(agents, /upgrade `needs_regen` to `needs_review`/);
   assert.match(agents, /detached motion\/squiggle-mark/);
   assert.match(agents, /character-only/);
   assert.match(agents, /no detached motion\/action lines/);
@@ -2176,12 +2210,17 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /character-only/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /raw generated source, repaired source, final candidate, and the two positive references/.test(action)));
   assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /doll-face warmth/.test(action)));
-  assert.equal(item.sourceGateRecovery.exhaustedRepairSources.length, 5);
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /better than older rejected lineages/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /absolute target/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /upgrade needs_regen to needs_review/.test(action)));
+  assert.ok(item.sourceGateRecovery.requiredActions.some((action) => /mechanical validators/.test(action)));
+  assert.equal(item.sourceGateRecovery.exhaustedRepairSources.length, 6);
   const exhaustedRepairSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiExhaustedRepairSourcePath);
   const styleRejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiStyleRejectedSourcePath);
   const maskRejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiMaskRejectedSourcePath);
   const motionMarksRejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiMotionMarksRejectedSourcePath);
   const animeRejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiAnimeRejectedSourcePath);
+  const attempt3RejectedSource = item.sourceGateRecovery.exhaustedRepairSources.find((source) => source.path === chibiAttempt3RejectedSourcePath);
   assert.ok(exhaustedRepairSource, 'expected exhausted palette-repair source');
   assert.equal(exhaustedRepairSource.sourceSha256, chibiExhaustedRepairSourceSha256);
   assert.equal(exhaustedRepairSource.candidateSha256, chibiExhaustedRepairCandidateSha256);
@@ -2220,6 +2259,15 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.match(animeRejectedSource.reason, /visible hair\/bangs or wig fringe/);
   assert.match(animeRejectedSource.reason, /brooch\/medallion-like status ornament/);
   assert.match(animeRejectedSource.reason, /not production-ready/);
+  assert.ok(attempt3RejectedSource, 'expected relative-improvement attempt3 rejected source');
+  assert.equal(attempt3RejectedSource.sourceSha256, chibiAttempt3RejectedSourceSha256);
+  assert.equal(attempt3RejectedSource.candidateSha256, chibiAttempt3RejectedCandidateSha256);
+  assert.equal(attempt3RejectedSource.verdict, 'needs_regen');
+  assert.match(attempt3RejectedSource.rollout, /codex-019f252f/);
+  assert.match(attempt3RejectedSource.reason, /real style regression/);
+  assert.match(attempt3RejectedSource.reason, /better than older old-monk\/skull-mask\/anime failures/);
+  assert.match(attempt3RejectedSource.reason, /tiny uniform mascot\/token read/);
+  assert.match(attempt3RejectedSource.reason, /visual fail checks must not be flipped to pass/);
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /new source path and sha256/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /must not match .*exhausted repair source\/candidate hash/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /youthful little-girl Thalla chibi/.test(criterion)));
@@ -2238,6 +2286,8 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /repair experiment/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /visual review clears the original source defects/.test(criterion)));
   assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /production-ready candidate output from an intentional blocker/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /merely an improvement over older rejected lineages/.test(criterion)));
+  assert.ok(item.sourceGateRecovery.successCriteria.some((criterion) => /mechanical validators alone cannot upgrade/.test(criterion)));
   assert.ok(item.agentInstructions.some((instruction) => /existing Thalla Home Field chibi Stage 1 source hash as blocked/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /Follow app\/shared\/home-field\/RUN_CHIBI_PROOF_PROMPT\.md exactly/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /sourceGateRecovery\.copyablePrompt/.test(instruction)));
@@ -2263,6 +2313,9 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiAnimeRejectedSourcePath)));
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiAnimeRejectedSourceSha256)));
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiAnimeRejectedCandidateSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiAttempt3RejectedSourcePath)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiAttempt3RejectedSourceSha256)));
+  assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiAttempt3RejectedCandidateSha256)));
   assert.ok(item.agentInstructions.some((instruction) => /youthful little-girl mushroom-elf chibi/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /oval\/almond doll eyes/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /old monk, beige mascot pawn, elderly gnome, faceless mushroom-token/.test(instruction)));
@@ -2271,6 +2324,9 @@ test('[home-field] structured generation queue encodes Thalla chibi gates', () =
   assert.ok(item.agentInstructions.some((instruction) => instruction.includes(chibiCharmBaselineCandidateSha256)));
   assert.ok(item.agentInstructions.some((instruction) => /baseline to beat, not as approval/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /charm survived palette repair/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /relative comparison to older rejected lineages/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /upgrade needs_regen to needs_review/.test(instruction)));
+  assert.ok(item.agentInstructions.some((instruction) => /tiny uniform mascot\/token read/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /detached motion\/action lines, squiggle marks, speed lines/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /needs_regen even if palette, alpha, animation, and readability validators pass/.test(instruction)));
   assert.ok(item.agentInstructions.some((instruction) => /merely cute generic anime\/chibi/.test(instruction)));
@@ -2436,6 +2492,10 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /detached motion\/action lines, squiggle marks, speed lines/);
   assert.match(result.stdout, /character-only/);
   assert.match(result.stdout, /Do not stop only because no replacement source already exists/);
+  assert.match(result.stdout, /better than older rejected lineages/);
+  assert.match(result.stdout, /absolute target/);
+  assert.match(result.stdout, /upgrade needs_regen to needs_review/);
+  assert.match(result.stdout, /mechanical validators/);
   assert.match(result.stdout, /do not use the blocked queue source hash/);
   assert.match(result.stdout, /--source=<new-source-png>/);
   assert.match(result.stdout, /repair experiment/);
@@ -2469,6 +2529,12 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /large glossy\/white eyes/);
   assert.match(result.stdout, /visible hair\/bangs or wig fringe/);
   assert.match(result.stdout, /brooch\/medallion-like status ornament/);
+  assert.match(result.stdout, new RegExp(`path: ${chibiAttempt3RejectedSourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  assert.match(result.stdout, new RegExp(`source sha256: ${chibiAttempt3RejectedSourceSha256}`));
+  assert.match(result.stdout, new RegExp(`candidate sha256: ${chibiAttempt3RejectedCandidateSha256}`));
+  assert.match(result.stdout, /real style regression/);
+  assert.match(result.stdout, /tiny uniform mascot\/token read/);
+  assert.match(result.stdout, /visual fail checks must not be flipped to pass/);
   assert.match(result.stdout, /must not match the blocked source hash or any exhausted repair source\/candidate hash/);
   assert.match(result.stdout, /liked Thalla reference/);
   assert.match(result.stdout, /visible oval\/almond eyes/);
@@ -2489,6 +2555,8 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /flat toy, hard icon, or generic mascot/);
   assert.match(result.stdout, /visual review clears the original source defects/);
   assert.match(result.stdout, /production-ready candidate output from an intentional blocker/);
+  assert.match(result.stdout, /merely an improvement over older rejected lineages/);
+  assert.match(result.stdout, /mechanical validators alone cannot upgrade/);
   assert.match(result.stdout, /required actions:/);
   assert.match(result.stdout, /success criteria:/);
   assert.match(result.stdout, /Agent instructions:/);
@@ -2517,6 +2585,9 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, /Do not rerun the cute-but-user-rejected anime recovery source/);
   assert.match(result.stdout, new RegExp(chibiAnimeRejectedSourceSha256));
   assert.match(result.stdout, new RegExp(chibiAnimeRejectedCandidateSha256));
+  assert.match(result.stdout, /Do not rerun the attempt3 SourceGate recovery source/);
+  assert.match(result.stdout, new RegExp(chibiAttempt3RejectedSourceSha256));
+  assert.match(result.stdout, new RegExp(chibiAttempt3RejectedCandidateSha256));
   assert.match(result.stdout, /youthful little-girl mushroom-elf chibi/);
   assert.match(result.stdout, /oval\/almond doll eyes/);
   assert.match(result.stdout, /skull-mask face, hollow pin-dot eyes, blank mask face/);
@@ -2530,6 +2601,8 @@ test('[home-field] generation queue printer exposes local-source defaults withou
   assert.match(result.stdout, new RegExp(chibiCharmBaselineCandidateSha256));
   assert.match(result.stdout, /baseline to beat, not as approval/);
   assert.match(result.stdout, /charm survived palette repair/);
+  assert.match(result.stdout, /relative comparison to older rejected lineages/);
+  assert.match(result.stdout, /self-authored needs_review reason/);
   assert.match(result.stdout, /same needs_regen verdict/);
   assert.match(result.stdout, /If a palette-cleanup or repair method is intentionally adopted/);
   assert.match(result.stdout, /Treat styleReferences as visual review references only/);

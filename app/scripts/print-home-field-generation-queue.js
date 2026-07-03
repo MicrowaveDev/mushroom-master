@@ -235,6 +235,12 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   if (!/passing palette\/count scripts alone is not production-ready/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject palette-only production readiness`);
   }
+  if (!/better than older rejected lineages/i.test(requiredText) || !/absolute target/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject relative-improvement-only visual approval`);
+  }
+  if (!/upgrade needs_regen to needs_review/i.test(requiredText) || !/mechanical validators/i.test(requiredText)) {
+    issues.push(`${itemId}: sourceGateRecovery.requiredActions must prevent validator-only upgrades from needs_regen to needs_review`);
+  }
   if (!/generic anime/i.test(requiredText) || !/glossy\/white anime eyes/i.test(requiredText)) {
     issues.push(`${itemId}: sourceGateRecovery.requiredActions must reject cute-but-generic anime styling and glossy anime eyes`);
   }
@@ -261,6 +267,12 @@ function validateSourceGateRecovery(issues, itemId, recovery, queueCommand) {
   }
   if (!/production-ready candidate output from an intentional blocker/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must distinguish production-ready output from a blocker`);
+  }
+  if (!/merely an improvement over older rejected lineages/i.test(criteriaText) || !/positive references/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject relative-improvement-only candidates`);
+  }
+  if (!/mechanical validators alone cannot upgrade/i.test(criteriaText)) {
+    issues.push(`${itemId}: sourceGateRecovery.successCriteria must prevent validator-only verdict upgrades`);
   }
   if (!/detached motion\/action\/squiggle\/speed-line marks/i.test(criteriaText) || !/character-only/i.test(criteriaText)) {
     issues.push(`${itemId}: sourceGateRecovery.successCriteria must reject detached non-character marks`);

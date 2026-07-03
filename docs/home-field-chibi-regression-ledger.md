@@ -921,6 +921,22 @@ The active Stage 1 contract is:
 - prompt helper, static prompt JSON, runbook, requirements, style reference, candidate contract, agent flow, and repo agent instructions now carry the same rejection language;
 - tests assert the new exhausted hash pair and queue/prompt language.
 
+### 60. Relative Improvement Was Mistaken For Style Recovery
+
+**Symptom:** Rollout `codex-019f252f-8b6d-7660-a146-dd2152a3f0cd` followed the queue-only SourceGate recovery path, generated fresh imagegen attempt3, normalized raw `1774x887` output into `.agent/home-field-workspace/supplied/thalla_sourcegate_recovery_2026-07-02_attempt3_512x256_quant18_rgba.states.source.png`, repaired alpha, passed mechanical/palette/evidence/preview gates, and recorded `needs_review`. The repaired source sha256 was `4e16302ceecddeee282f580a145ded1ecec4bd1805e6909e0e63d5f631e4c58d`; the candidate sha256 was `043a3c4fb0c4d6811461522d9aee574137b5955443393eda4e8312edda2e1c93`. The user called it a real style regression.
+
+**What was correct:** The worker ran the queue script, used the printed SourceGate recovery section, created a fresh non-exhausted candidate-only source, left app-facing PNGs untouched, and ran the mechanical validation pipeline.
+
+**What was wrong in the flow:** The final visual review used relative language: the candidate was described as preserving charm "better than prior old-monk/skull-mask/anime failures." That is not the acceptance bar. The attempt3 sheet is cleaner than several rejected lineages, but it still misses the old liked reference's soft little-girl charm, rounded-cheek BJD face, visible doll eyes, and warm field-sprite appeal; after repair it reads like a tiny uniform mascot/token. The worker then treated existing failed review fields as stale and upgraded them to pass because validators and its own `needs_review` prose looked consistent.
+
+**Guardrails added:**
+
+- the attempt3 source/candidate hash pair is listed under `sourceGateRecovery.exhaustedRepairSources` as `needs_regen`;
+- `docs/home-field-asset-review.json` demotes the candidate from `needs_review` to `needs_regen` with style, stage, identity, and detail-budget checks failed;
+- queue recovery required actions, success criteria, and agent instructions now reject relative-improvement-only approval and forbid validator-only upgrades from `needs_regen`/failed visual checks to `needs_review`;
+- prompt helper, static prompt JSON, requirements, style reference, agent flow, and repo agent instructions now require absolute comparison to the positive references before clearing a style failure;
+- tests assert the new exhausted hash pair, queue-printer output, and the no-upgrade rule.
+
 ## Decision Rules Going Forward
 
 1. Do not weaken preflight just to see an image in chat. The chibi proof is a file pipeline.
@@ -971,3 +987,4 @@ The active Stage 1 contract is:
 46. Do not let palette repair, quantization, resize repair, or chroma repair win by flattening the liked-reference charm. Compare raw generated source, repaired source, final candidate, and positive references; if repair erases soft doll-face warmth, rounded cheeks, compact visible oval/almond eyes, or cute expression, record `needs_regen` even if palette audits pass.
 47. Do not accept detached motion/action lines, squiggle marks, speed lines, punctuation-like accents, text marks, stray specks, baked shadows, or floor/background pieces in chibi state frames. Stage 1 sheets must be character-only; if the marks are baked into the source or candidate, record `needs_regen` even when style, palette, alpha, animation, and readability gates pass.
 48. Do not accept a Thalla source merely because it is cute, mechanically clean, and palette-compliant. Reject cute generic anime/chibi character sheets, large glossy/white eyes, visible hair/bangs/wig fringe under the mushroom cap, brooch/medallion/clasp ornament, or oversized polished turnaround art normalized down to `512x256`; those are style failures against the old liked little-girl field-sprite reference.
+49. Do not accept a Thalla source merely because it is better than older rejected lineages. The candidate must match the positive references on an absolute basis. Do not flip failed visual checks to pass or upgrade `needs_regen` to `needs_review` from mechanical validators, palette/alpha/readability passes, or self-authored `needs_review` prose.
