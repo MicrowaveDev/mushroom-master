@@ -47,16 +47,14 @@ async function openGachaAdmin(page, baseURL) {
   await page.getByTestId('gacha-token').fill('e2e-support');
   await page.getByTestId('gacha-actor').fill('e2e-gacha-ui');
   await page.getByTestId('gacha-load-catalog').click();
-  await expect(page.getByTestId('gacha-catalog')).toBeVisible();
+  await expect(page.getByTestId('gacha-season-plan')).toBeVisible();
+  await expect(page.getByTestId('gacha-advanced-tools')).toBeVisible();
 }
 
 async function captureGachaConsole(page, name) {
   await expect(page.getByTestId('support-admin-screen')).toBeVisible();
-  await expect(page.getByTestId('gacha-catalog')).toBeVisible();
-  await expect(page.getByTestId('gacha-fixture-panel')).toBeVisible();
-  await expect(page.getByTestId('gacha-pack-form')).toBeVisible();
-  await expect(page.getByTestId('gacha-items-form')).toBeVisible();
-  await expect(page.getByTestId('gacha-validation')).toBeVisible();
+  await expect(page.getByTestId('gacha-season-plan')).toBeVisible();
+  await expect(page.getByTestId('gacha-advanced-tools')).toBeVisible();
   await assertImagesLoaded(page);
   await assertNoHorizontalOverflow(page);
   await captureScreenshot(page, screenshotDir, name);
@@ -225,6 +223,7 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await installSession(page, player.sessionKey);
 
   await openGachaAdmin(page, baseURL);
+  await page.getByTestId('gacha-advanced-tools').locator('summary').click();
   await expect(page.getByTestId('gacha-catalog')).toContainText('Assets');
 
   await page.getByTestId('gacha-season-id').fill('e2e_gacha_season');
@@ -233,6 +232,25 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await page.getByTestId('gacha-season-ends').fill('2026-09-01T00:00:00.000Z');
   await page.getByTestId('gacha-save-season').click();
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha season created.');
+
+  await page.getByTestId('gacha-plan-season').selectOption('e2e_gacha_season');
+  await page.getByTestId('gacha-plan-character').selectOption('thalla');
+  await page.getByTestId('gacha-plan-rarity').selectOption('common');
+  await replaceField(page.getByTestId('gacha-plan-weight'), '75');
+  await page.getByTestId('gacha-plan-file-input').setInputFiles(path.join(repoRoot, 'web/public/portraits/thalla/1.jpg'));
+  await page.getByTestId('gacha-plan-upload').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha plan image uploaded.');
+  await expect(page.getByTestId('gacha-plan-items')).toContainText('planned_portrait.thalla');
+  await expect(page.getByTestId('gacha-plan-coverage')).toContainText('1 / 5');
+  await expect(page.getByTestId('gacha-plan-item-chance').first()).toContainText('100.0%');
+
+  await page.getByTestId('gacha-plan-item-character').first().selectOption('axilin');
+  await page.getByTestId('gacha-plan-item-rarity').first().selectOption('rare');
+  await replaceField(page.getByTestId('gacha-plan-item-weight').first(), '25');
+  await page.getByTestId('gacha-plan-item-status').first().selectOption('ready');
+  await page.getByTestId('gacha-plan-item-save').first().click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha plan item updated.');
+  await expect(page.getByTestId('gacha-plan-items')).toContainText('Axilin');
 
   await page.getByTestId('gacha-collection-id').fill('e2e_gacha_collection');
   await page.getByTestId('gacha-collection-name').fill('E2E Gacha Collection');
@@ -296,6 +314,8 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   expect(Math.abs(seasonBox.y - collectionBox.y)).toBeLessThan(24);
   expect(collectionBox.x).toBeGreaterThan(seasonBox.x + seasonBox.width * 0.75);
 
+  await page.getByTestId('gacha-advanced-tools').locator('summary').click();
+  await expect(page.getByTestId('gacha-catalog')).not.toBeVisible();
   await captureGachaConsole(page, '02i-support-admin-gacha-desktop.png');
   await page.setViewportSize(MOBILE_VIEWPORT);
   await captureGachaConsole(page, '02i-support-admin-gacha-mobile.png');

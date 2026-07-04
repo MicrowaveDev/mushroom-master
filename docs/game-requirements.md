@@ -404,6 +404,11 @@ Membership is not stored. It is derived from overlap between item cells and acti
   is blocked when runtime validation fails or when required release checklist
   blockers are present, including missing pack dates, unsupported currency,
   missing positive price, or missing player-facing disclosure copy.
+  The Gacha tab's default operator path is a simple season-plan panel:
+  operators upload image files, assign each image to a mushroom character,
+  choose rarity and chance weight per image, review per-character coverage
+  against the configured content target, and save audited plan-item edits before
+  using advanced pack authoring controls.
   `/api/admin/gacha/export` and `/api/admin/gacha/import` provide JSON fixture
   movement for DB-authored gacha data; imports default to dry-run and require
   `allowApproved: true` before preserving approved pack review status, with the

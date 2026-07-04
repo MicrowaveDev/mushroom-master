@@ -7,7 +7,8 @@ const backendOrigin = process.env.VITE_BACKEND_ORIGIN || 'http://127.0.0.1:3021'
 
 const proxy = {
   '/api': backendOrigin,
-  '/data': backendOrigin
+  '/data': backendOrigin,
+  '/gacha-plan': backendOrigin
 };
 
 export default defineConfig({

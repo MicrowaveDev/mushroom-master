@@ -637,18 +637,24 @@ emergency maintenance, not normal season authoring.
   skin buying available when gacha is off, keep draft/unapproved packs hidden,
   make approved-row changes auditable, and provide a rollback path that can
   disable a bad pack without deleting ownership or roll history.
-- In progress: **G5E - admin hardening** now starts with JSON fixture
-  import/export. `/api/admin/gacha/export` returns a versioned
+- In progress: **G5E - admin hardening** now covers JSON fixture
+  import/export and the first simplified season-plan authoring lane.
+  `/api/admin/gacha/export` returns a versioned
   `gacha-admin-fixture/v1` payload for DB-authored seasons, collections, packs,
   and nested items. `/api/admin/gacha/import` defaults to dry-run, can apply
   upsert/replace-item fixtures through the support-admin approval path, audits
   applied imports as `gacha_fixture_import`, and requires `allowApproved=true`
   plus validation/release-checklist success before preserving approved pack
-  status.
-- Backlog after the G5E fixture slice: migration/rollback scripts for live
-  season corrections, richer season/collection-scoped pity state, CSV/JSON bulk
-  item editing beyond full-fixture replacement, staff permissions beyond the
-  first operator role, operator runbooks, scheduled activation alerts, richer
+  status. `/api/admin/gacha/plan-items` stores uploaded planning images under
+  `/gacha-plan`, binds each image to a mushroom character, rarity, chance
+  weight, and status, returns per-character season coverage in the catalog, and
+  audits `gacha_plan_item_create/update/delete` actions. The Support Admin
+  Gacha tab now opens on this simple plan workflow before advanced pack CRUD.
+- Backlog after the G5E admin slices: convert approved season-plan images into
+  runtime catalog assets/pack items, bulk CSV/item editing beyond full-fixture
+  replacement, migration/rollback scripts for live season corrections, richer
+  season/collection-scoped pity state, staff permissions beyond the first
+  operator role, operator runbooks, scheduled activation alerts, richer
   paid-pack jurisdiction/odds disclosure review, and deeper marketplace/NFT-set
   tooling.
 
@@ -2528,8 +2534,12 @@ Additional TODOs for that pass:
 40. G5E gacha admin hardening backlog. **Started 2026-07-04:** versioned JSON
    fixture export/import now covers DB seasons, collections, packs, and nested
    items with dry-run, audited apply, approved-pack preservation guardrails, and
-   validation/release-checklist gates. Remaining: bulk CSV/item editing,
-   migration and rollback scripts for live corrections, scheduled
-   activation/expiry alerts, richer disclosure review by jurisdiction/provider,
-   staff permission tiers, and marketplace/NFT-set operations before
-   non-engineering operators manage paid seasons unaided.
+   validation/release-checklist gates. This slice also adds a simple
+   season-plan main tab for uploaded images, character assignment,
+   rarity/chance-weight edits, per-character content coverage, and audited plan
+   item create/update/delete actions. Remaining: convert approved plan images
+   into runtime catalog assets/pack items, bulk CSV/item editing, migration and
+   rollback scripts for live corrections, scheduled activation/expiry alerts,
+   richer disclosure review by jurisdiction/provider, staff permission tiers,
+   and marketplace/NFT-set operations before non-engineering operators manage
+   paid seasons unaided.

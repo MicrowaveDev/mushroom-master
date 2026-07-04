@@ -30,6 +30,8 @@ const gachaHeaders = {
   'x-support-actor-id': 'gacha-admin-api'
 };
 
+const tinyPngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p94AAAAASUVORK5CYII=';
+
 function headersFor(actorId) {
   return {
     ...gachaHeaders,
@@ -174,6 +176,88 @@ test('[Req 14-F] gacha admin API requires token, actor, and gacha operator role'
       .get('/api/admin/gacha/catalog')
       .set(headersFor('gacha_admin_api'));
     assert.equal(admin.status, 200);
+  });
+});
+
+test('[Req 14-F] gacha admin API uploads, edits, reviews, and audits season plan images', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token'
+  }, async () => {
+    await freshDb();
+    const app = await createApp();
+    const { seasonId } = await createAdminSeasonAndCollection(app, {
+      seasonId: 'admin_plan_season',
+      collectionId: 'admin_plan_collection'
+    });
+
+    const created = await request(app)
+      .post('/api/admin/gacha/plan-items')
+      .set(gachaHeaders)
+      .send({
+        seasonId,
+        characterId: 'thalla',
+        rarity: 'common',
+        dropWeight: 75,
+        fileName: 'thalla-plan.png',
+        imageData: tinyPngDataUrl,
+        reason: 'test_plan_upload'
+      });
+    assert.equal(created.status, 200);
+    assert.equal(created.body.data.item.seasonId, seasonId);
+    assert.equal(created.body.data.item.characterId, 'thalla');
+    assert.equal(created.body.data.item.dropWeight, 75);
+    assert.match(created.body.data.item.imagePath, /^\/gacha-plan\/admin_plan_season\/gachaplan_/);
+
+    const image = await request(app).get(created.body.data.item.imagePath);
+    assert.equal(image.status, 200);
+    assert.equal(image.headers['content-type'], 'image/png');
+
+    const catalog = await request(app)
+      .get('/api/admin/gacha/catalog')
+      .set(gachaHeaders);
+    assert.equal(catalog.status, 200);
+    assert.equal(catalog.body.data.planItems.length, 1);
+    assert.equal(catalog.body.data.planSummary.targetPerCharacter, 5);
+    const seasonPlan = catalog.body.data.planSummary.seasons.find((row) => row.seasonId === seasonId);
+    assert.equal(seasonPlan.total, 1);
+    assert.equal(seasonPlan.characters.find((row) => row.characterId === 'thalla').missing, 4);
+
+    const itemId = created.body.data.item.id;
+    const updated = await request(app)
+      .patch(`/api/admin/gacha/plan-items/${itemId}`)
+      .set(gachaHeaders)
+      .send({
+        characterId: 'axilin',
+        rarity: 'rare',
+        dropWeight: 25,
+        status: 'ready',
+        reason: 'test_plan_update'
+      });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.data.item.characterId, 'axilin');
+    assert.equal(updated.body.data.item.rarity, 'rare');
+    assert.equal(updated.body.data.item.status, 'ready');
+
+    const removed = await request(app)
+      .delete(`/api/admin/gacha/plan-items/${itemId}`)
+      .set(gachaHeaders)
+      .send({ reason: 'test_plan_delete' });
+    assert.equal(removed.status, 200);
+    assert.equal(removed.body.data.item.id, itemId);
+
+    const actions = await query(
+      `SELECT action_type, target_type, target_id
+       FROM support_actions
+       WHERE target_type = 'gacha_plan_item'
+       ORDER BY created_at ASC`,
+      []
+    );
+    assert.deepEqual(actions.rows.map((row) => row.action_type), [
+      'gacha_plan_item_create',
+      'gacha_plan_item_update',
+      'gacha_plan_item_delete'
+    ]);
+    assert.ok(actions.rows.every((row) => row.target_id === itemId));
   });
 });
 

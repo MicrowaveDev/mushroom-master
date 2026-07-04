@@ -42,6 +42,7 @@ import defineAssetGachaSeason from './AssetGachaSeason.js';
 import defineAssetGachaCollection from './AssetGachaCollection.js';
 import defineAssetGachaPack from './AssetGachaPack.js';
 import defineAssetGachaPackItem from './AssetGachaPackItem.js';
+import defineAssetGachaPlanItem from './AssetGachaPlanItem.js';
 import defineMutationClaim from './MutationClaim.js';
 import definePaymentWebhookEvent from './PaymentWebhookEvent.js';
 import defineProviderSettlementImport from './ProviderSettlementImport.js';
@@ -87,6 +88,7 @@ export function initModels(sequelize) {
   const AssetGachaCollection = defineAssetGachaCollection(sequelize);
   const AssetGachaPack = defineAssetGachaPack(sequelize);
   const AssetGachaPackItem = defineAssetGachaPackItem(sequelize);
+  const AssetGachaPlanItem = defineAssetGachaPlanItem(sequelize);
   const MutationClaim = defineMutationClaim(sequelize);
   const PaymentWebhookEvent = definePaymentWebhookEvent(sequelize);
   const ProviderSettlementImport = defineProviderSettlementImport(sequelize);
@@ -122,6 +124,8 @@ export function initModels(sequelize) {
   AssetGachaPack.belongsTo(AssetGachaCollection, { foreignKey: 'collection_id' });
   AssetGachaPack.hasMany(AssetGachaPackItem, { foreignKey: 'pack_id' });
   AssetGachaPackItem.belongsTo(AssetGachaPack, { foreignKey: 'pack_id' });
+  AssetGachaSeason.hasMany(AssetGachaPlanItem, { foreignKey: 'season_id' });
+  AssetGachaPlanItem.belongsTo(AssetGachaSeason, { foreignKey: 'season_id' });
 
   Battle.hasMany(BattleSnapshot, { foreignKey: 'battle_id' });
   Battle.hasMany(BattleEvent, { foreignKey: 'battle_id' });
@@ -178,6 +182,7 @@ export function initModels(sequelize) {
     AssetGachaCollection,
     AssetGachaPack,
     AssetGachaPackItem,
+    AssetGachaPlanItem,
     MutationClaim,
     PaymentWebhookEvent,
     ProviderSettlementImport,

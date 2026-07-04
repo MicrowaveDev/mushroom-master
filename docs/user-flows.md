@@ -594,12 +594,39 @@ Step 1: Open Gacha Tab
   Action: Enter token + actor, click Load Catalog
   Expected:
     - [Req 14-F] `/api/admin/gacha/catalog` returns seasons, collections,
-      packs, items, and asset picker options
-    - Catalog metrics and pack table render without horizontal overflow
-    - Fixture Import / Export panel is available for JSON dry-runs and applied
-      imports
+      packs, items, season-plan image rows, plan coverage, and asset picker
+      options
+    - The Season Plan panel is the first gacha authoring surface and renders
+      without horizontal overflow
+    - Advanced catalog metrics, pack table, and Fixture Import / Export remain
+      available from the collapsed Advanced Catalog Tools section
 
-Step 2: Author Season, Collection, Pack, And Items
+Step 2: Upload And Tune Season Plan Images
+  Sees:
+    - Season selector
+    - File upload control for one or more images
+    - Character selector
+    - Rarity selector
+    - Chance weight input
+    - Per-character coverage tiles showing count, target, and missing content
+    - Uploaded image rows with thumbnail, character, rarity, weight, status,
+      calculated chance, Save, and Remove controls
+  Action:
+    - Select a season
+    - Upload one or more images
+    - Choose the mushroom character for the images
+    - Adjust rarity, status, and weight on an uploaded row
+    - Save the row
+  Expected:
+    - [Req 14-F] `/api/admin/gacha/plan-items` stores uploaded images as
+      season-plan rows and writes an audited `gacha_plan_item_create`
+      support action
+    - Updating a row writes an audited `gacha_plan_item_update` support action
+    - Coverage immediately shows which characters have enough planned content
+      and which are still missing images
+    - Per-image chance is derived from the selected season plan's total weight
+
+Step 3: Author Season, Collection, Pack, And Items
   Sees:
     - Season form with id/name/status/date fields
     - Collection form with id/name/status/date fields
@@ -617,7 +644,7 @@ Step 2: Author Season, Collection, Pack, And Items
     - Validation panel reports item errors before items are saved
     - Saved items refresh the catalog and validation state
 
-Step 3: Validate And Publish
+Step 4: Validate And Publish
   Sees:
     - Preview, Publish, Disable, and Expire controls
     - Validation issue list
@@ -635,7 +662,7 @@ Step 3: Validate And Publish
     - Published pack status is active and review status is approved
     - Operator action is audited by the backend support action path
 
-Step 4: Export And Import Fixture
+Step 5: Export And Import Fixture
   Sees:
     - Fixture JSON textarea
     - Dry run toggle

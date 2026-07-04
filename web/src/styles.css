@@ -6339,6 +6339,37 @@ select {
   box-shadow: none;
 }
 
+.support-admin-panel--flat {
+  padding-top: 14px;
+  border-top: 1px solid rgba(94, 70, 39, 0.1);
+  border-radius: 0;
+}
+
+.support-admin-advanced {
+  display: grid;
+  gap: 14px;
+}
+
+.support-admin-advanced > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.support-admin-advanced > summary::after {
+  content: "+";
+  color: rgba(47, 36, 25, 0.62);
+  font-size: 1.2rem;
+}
+
+.support-admin-advanced[open] > summary::after {
+  content: "-";
+}
+
 .support-admin-lookup {
   display: grid;
   grid-template-columns:
@@ -6487,6 +6518,143 @@ textarea.support-admin-input {
 .support-admin-action-form {
   display: grid;
   gap: 12px;
+}
+
+.support-admin-section-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-admin-section-header h3,
+.support-admin-section-header p {
+  margin: 0;
+}
+
+.support-admin-section-header p {
+  color: rgba(47, 36, 25, 0.62);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.support-admin-plan {
+  display: grid;
+  gap: 14px;
+}
+
+.support-admin-plan-season {
+  width: min(280px, 100%);
+}
+
+.support-admin-plan-coverage {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.support-admin-plan-character {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(196, 147, 63, 0.14);
+  color: rgba(47, 36, 25, 0.78);
+}
+
+.support-admin-plan-character--ready {
+  background: rgba(127, 152, 114, 0.16);
+}
+
+.support-admin-plan-character strong,
+.support-admin-plan-character span,
+.support-admin-plan-character small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.support-admin-plan-character span {
+  color: var(--ink);
+  font-size: 1.28rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.support-admin-plan-character small {
+  color: rgba(47, 36, 25, 0.58);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.support-admin-plan-upload {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(150px, 1fr) minmax(120px, 0.7fr) 120px auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.support-admin-plan-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.support-admin-plan-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding-top: 10px;
+  border-top: 1px solid rgba(94, 70, 39, 0.1);
+}
+
+.support-admin-plan-item img {
+  width: 96px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.support-admin-plan-item-fields {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.support-admin-plan-item-fields strong,
+.support-admin-plan-item-fields small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.support-admin-plan-item-fields small {
+  color: rgba(47, 36, 25, 0.56);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.support-admin-plan-edit-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(110px, 0.8fr) 96px minmax(110px, 0.8fr);
+  gap: 8px;
+}
+
+.support-admin-plan-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.support-admin-plan-item-actions span {
+  min-width: 76px;
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .support-admin-balance {
@@ -6798,6 +6966,7 @@ textarea.support-admin-input {
 
   .support-admin-lookup,
   .support-admin-gacha-auth,
+  .support-admin-plan-upload,
   .support-admin-columns,
   .support-admin-gacha-columns,
   .support-admin-gacha-pack-grid,
@@ -6806,8 +6975,27 @@ textarea.support-admin-input {
     grid-template-columns: 1fr;
   }
 
+  .support-admin-section-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .support-admin-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .support-admin-plan-coverage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .support-admin-plan-item,
+  .support-admin-plan-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .support-admin-plan-item img {
+    width: 100%;
+    max-width: 220px;
   }
 
   .support-admin-segment--four {

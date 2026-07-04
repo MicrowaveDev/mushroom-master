@@ -47,6 +47,15 @@ function parseJsonInput(value, fallback, label) {
   }
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
+
 function nullableText(value) {
   const trimmed = String(value || '').trim();
   return trimmed || null;
@@ -160,6 +169,15 @@ export const SupportAdminScreen = {
       gachaFixtureDryRun: true,
       gachaFixtureAllowApproved: false,
       gachaFixtureResult: null,
+      gachaAdvancedOpen: false,
+      gachaPlanForm: {
+        seasonId: '',
+        characterId: '',
+        rarity: 'common',
+        dropWeight: 100,
+        status: 'planned',
+        files: []
+      },
       gachaForm: { ...DEFAULT_GACHA_FORM },
       gachaItemDrafts: [makeDefaultGachaItemDraft()]
     };
@@ -204,6 +222,40 @@ export const SupportAdminScreen = {
     },
     gachaAssetOptions() {
       return this.gachaCatalog?.assetOptions || [];
+    },
+    gachaPlanItems() {
+      return this.gachaCatalog?.planItems || [];
+    },
+    gachaPlanCharacters() {
+      return this.gachaCatalog?.planCharacters || [];
+    },
+    gachaSelectedPlanItems() {
+      const seasonId = this.gachaPlanForm.seasonId || this.gachaForm.seasonId;
+      return this.gachaPlanItems.filter((item) => item.seasonId === seasonId && item.status !== 'archived');
+    },
+    gachaPlanTotalWeight() {
+      return this.gachaSelectedPlanItems.reduce((sum, item) => sum + Math.max(0, Number(item.dropWeight || 0)), 0);
+    },
+    gachaPlanCoverage() {
+      const target = this.gachaCatalog?.planSummary?.targetPerCharacter || 5;
+      const byCharacter = new Map();
+      for (const item of this.gachaSelectedPlanItems) {
+        const row = byCharacter.get(item.characterId) || { count: 0, readyCount: 0, totalWeight: 0 };
+        row.count += 1;
+        if (item.status === 'ready') row.readyCount += 1;
+        row.totalWeight += Math.max(0, Number(item.dropWeight || 0));
+        byCharacter.set(item.characterId, row);
+      }
+      return this.gachaPlanCharacters.map((character) => {
+        const row = byCharacter.get(character.id) || { count: 0, readyCount: 0, totalWeight: 0 };
+        return {
+          ...character,
+          ...row,
+          target,
+          missing: Math.max(0, target - row.count),
+          enough: row.count >= target
+        };
+      });
     },
     selectedGachaPack() {
       return this.gachaPacks.find((pack) => pack.id === this.gachaForm.packId) || null;
@@ -308,6 +360,16 @@ export const SupportAdminScreen = {
         && this.gachaFixtureJson.trim()
         && !this.gachaActionLoading;
     },
+    canUploadGachaPlanItems() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaPlanForm.seasonId.trim()
+        && this.gachaPlanForm.characterId.trim()
+        && this.gachaPlanForm.files.length
+        && Number.isInteger(Number(this.gachaPlanForm.dropWeight))
+        && Number(this.gachaPlanForm.dropWeight) > 0
+        && !this.gachaActionLoading;
+    },
     canSubmitGachaSeason() {
       return this.token.trim()
         && this.actorId.trim()
@@ -399,6 +461,11 @@ export const SupportAdminScreen = {
       const numeric = Number(value || 0);
       return `${(numeric * 100).toFixed(numeric > 0 && numeric < 0.01 ? 2 : 1)}%`;
     },
+    formatGachaPlanChance(item) {
+      const total = this.gachaPlanTotalWeight;
+      if (!total) return '0.0%';
+      return this.formatPercent(Math.max(0, Number(item.dropWeight || 0)) / total);
+    },
     compactJson(value) {
       if (value === null || value === undefined) return '-';
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
@@ -414,6 +481,9 @@ export const SupportAdminScreen = {
       if (!asset) return '';
       const name = localizedName(asset.name) || asset.assetId;
       return `${name} · ${asset.rarity || 'common'} · ${asset.assetId}`;
+    },
+    gachaPlanCharacterLabel(characterId) {
+      return this.gachaPlanCharacters.find((character) => character.id === characterId)?.label || characterId;
     },
     gachaSeasonLabel(season) {
       if (!season) return '';
@@ -433,6 +503,9 @@ export const SupportAdminScreen = {
       if (!asset) return;
       draft.rarity = asset.rarity || draft.rarity || 'common';
       draft.dropWeight = Number(asset.dropWeight || draft.dropWeight || 1);
+    },
+    handleGachaPlanFiles(event) {
+      this.gachaPlanForm.files = Array.from(event.target.files || []);
     },
     addGachaItemDraft() {
       this.gachaItemDrafts.push(makeDefaultGachaItemDraft());
@@ -644,6 +717,8 @@ export const SupportAdminScreen = {
         if (selectedPack) this.fillGachaPack(selectedPack);
         if (!this.gachaForm.seasonId && this.gachaSeasons[0]) this.fillGachaSeason(this.gachaSeasons[0]);
         if (!this.gachaForm.collectionId && this.gachaCollections[0]) this.fillGachaCollection(this.gachaCollections[0]);
+        if (!this.gachaPlanForm.seasonId && this.gachaSeasons[0]) this.gachaPlanForm.seasonId = this.gachaSeasons[0].id;
+        if (!this.gachaPlanForm.characterId && this.gachaPlanCharacters[0]) this.gachaPlanForm.characterId = this.gachaPlanCharacters[0].id;
         if (!silent) this.status = 'Gacha catalog loaded.';
       } catch (error) {
         this.error = error.message;
@@ -668,6 +743,86 @@ export const SupportAdminScreen = {
         });
         this.status = exists ? 'Gacha season updated.' : 'Gacha season created.';
         this.fillGachaSeason(data.season);
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async uploadGachaPlanImages() {
+      if (!this.canUploadGachaPlanItems) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const files = [...this.gachaPlanForm.files];
+        for (const file of files) {
+          const imageData = await fileToDataUrl(file);
+          await this.supportRequest('/api/admin/gacha/plan-items', {
+            method: 'POST',
+            body: {
+              seasonId: this.gachaPlanForm.seasonId.trim(),
+              characterId: this.gachaPlanForm.characterId.trim(),
+              rarity: this.gachaPlanForm.rarity,
+              dropWeight: Number(this.gachaPlanForm.dropWeight),
+              status: this.gachaPlanForm.status,
+              fileName: file.name,
+              imageData,
+              ...this.gachaReasonPayload()
+            }
+          });
+        }
+        this.gachaPlanForm.files = [];
+        const input = this.$refs.gachaPlanFileInput;
+        if (input) input.value = '';
+        this.status = files.length === 1 ? 'Gacha plan image uploaded.' : `${files.length} gacha plan images uploaded.`;
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async updateGachaPlanItem(item) {
+      if (!item?.id || !this.canLoadGachaCatalog) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        await this.supportRequest(`/api/admin/gacha/plan-items/${encodeURIComponent(item.id)}`, {
+          method: 'PATCH',
+          body: {
+            seasonId: item.seasonId,
+            characterId: item.characterId,
+            rarity: item.rarity,
+            dropWeight: Number(item.dropWeight),
+            status: item.status,
+            ...this.gachaReasonPayload()
+          }
+        });
+        this.status = 'Gacha plan item updated.';
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async deleteGachaPlanItem(item) {
+      if (!item?.id || !this.canLoadGachaCatalog) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        await this.supportRequest(`/api/admin/gacha/plan-items/${encodeURIComponent(item.id)}`, {
+          method: 'DELETE',
+          body: this.gachaReasonPayload()
+        });
+        this.status = 'Gacha plan item removed.';
         await this.loadGachaCatalog({ silent: true });
       } catch (error) {
         this.error = error.message;
@@ -1251,7 +1406,110 @@ export const SupportAdminScreen = {
           </button>
         </section>
 
-        <section v-if="gachaCatalog" class="panel support-admin-panel" data-testid="gacha-catalog">
+        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-plan" data-testid="gacha-season-plan">
+          <header class="support-admin-section-header">
+            <div>
+              <h3>Season Plan</h3>
+              <p>{{ gachaSelectedPlanItems.length }} images · {{ gachaPlanTotalWeight }} total weight</p>
+            </div>
+            <label class="support-admin-compact-label support-admin-plan-season">
+              <span>Season</span>
+              <select class="support-admin-input" data-testid="gacha-plan-season" v-model="gachaPlanForm.seasonId">
+                <option value="">Select season</option>
+                <option v-for="season in gachaSeasons" :key="season.id" :value="season.id">{{ localizedName(season.name) || season.id }}</option>
+              </select>
+            </label>
+          </header>
+
+          <div class="support-admin-plan-coverage" data-testid="gacha-plan-coverage">
+            <article v-for="character in gachaPlanCoverage" :key="character.id" class="support-admin-plan-character" :class="{ 'support-admin-plan-character--ready': character.enough }">
+              <strong>{{ character.label }}</strong>
+              <span>{{ character.count }} / {{ character.target }}</span>
+              <small>{{ character.enough ? 'enough' : character.missing + ' missing' }}</small>
+            </article>
+          </div>
+
+          <section class="support-admin-plan-upload" data-testid="gacha-plan-upload-form">
+            <label>
+              <span>Images</span>
+              <input ref="gachaPlanFileInput" class="support-admin-input" data-testid="gacha-plan-file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple @change="handleGachaPlanFiles" />
+            </label>
+            <label>
+              <span>Character</span>
+              <select class="support-admin-input" data-testid="gacha-plan-character" v-model="gachaPlanForm.characterId">
+                <option v-for="character in gachaPlanCharacters" :key="character.id" :value="character.id">{{ character.label }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Rarity</span>
+              <select class="support-admin-input" data-testid="gacha-plan-rarity" v-model="gachaPlanForm.rarity">
+                <option value="common">common</option>
+                <option value="rare">rare</option>
+                <option value="epic">epic</option>
+                <option value="legendary">legendary</option>
+                <option value="secret">secret</option>
+              </select>
+            </label>
+            <label>
+              <span>Chance Weight</span>
+              <input class="support-admin-input" data-testid="gacha-plan-weight" type="number" min="1" step="1" v-model.number="gachaPlanForm.dropWeight" />
+            </label>
+            <button class="primary support-admin-submit" data-testid="gacha-plan-upload" type="button" :disabled="!canUploadGachaPlanItems" @click="uploadGachaPlanImages">
+              {{ gachaActionLoading ? 'Uploading' : 'Upload' }}
+            </button>
+          </section>
+
+          <div class="support-admin-plan-grid" data-testid="gacha-plan-items">
+            <article v-for="item in gachaSelectedPlanItems" :key="item.id" class="support-admin-plan-item">
+              <img :src="item.imagePath" :alt="item.assetId" data-testid="gacha-plan-thumb" />
+              <div class="support-admin-plan-item-fields">
+                <strong>{{ gachaPlanCharacterLabel(item.characterId) }}</strong>
+                <small>{{ item.assetId }}</small>
+                <div class="support-admin-plan-edit-row">
+                  <label>
+                    <span>Character</span>
+                    <select class="support-admin-input" data-testid="gacha-plan-item-character" v-model="item.characterId">
+                      <option v-for="character in gachaPlanCharacters" :key="character.id" :value="character.id">{{ character.label }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Rarity</span>
+                    <select class="support-admin-input" data-testid="gacha-plan-item-rarity" v-model="item.rarity">
+                      <option value="common">common</option>
+                      <option value="rare">rare</option>
+                      <option value="epic">epic</option>
+                      <option value="legendary">legendary</option>
+                      <option value="secret">secret</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Weight</span>
+                    <input class="support-admin-input" data-testid="gacha-plan-item-weight" type="number" min="1" step="1" v-model.number="item.dropWeight" />
+                  </label>
+                  <label>
+                    <span>Status</span>
+                    <select class="support-admin-input" data-testid="gacha-plan-item-status" v-model="item.status">
+                      <option value="planned">planned</option>
+                      <option value="ready">ready</option>
+                      <option value="rejected">rejected</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="support-admin-plan-item-actions">
+                  <span data-testid="gacha-plan-item-chance">{{ formatGachaPlanChance(item) }}</span>
+                  <button class="support-admin-secondary-button" type="button" data-testid="gacha-plan-item-save" :disabled="gachaActionLoading" @click="updateGachaPlanItem(item)">Save</button>
+                  <button class="support-admin-mini-button" type="button" data-testid="gacha-plan-item-delete" :disabled="gachaActionLoading" @click="deleteGachaPlanItem(item)">Remove</button>
+                </div>
+              </div>
+            </article>
+            <p v-if="!gachaSelectedPlanItems.length" class="support-admin-balance">No images in this season plan.</p>
+          </div>
+        </section>
+
+        <details v-if="gachaCatalog" class="panel support-admin-panel support-admin-advanced" data-testid="gacha-advanced-tools" :open="gachaAdvancedOpen" @toggle="gachaAdvancedOpen = $event.target.open">
+          <summary>Advanced Catalog Tools</summary>
+
+        <section class="support-admin-panel support-admin-panel--flat" data-testid="gacha-catalog">
           <h3>Gacha Catalog</h3>
           <dl class="support-admin-metrics support-admin-metrics--gacha">
             <div><dt>Seasons</dt><dd>{{ gachaSeasons.length }}</dd></div>
@@ -1285,7 +1543,7 @@ export const SupportAdminScreen = {
           </div>
         </section>
 
-        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-action-form" data-testid="gacha-fixture-panel">
+        <section class="support-admin-panel support-admin-panel--flat support-admin-action-form" data-testid="gacha-fixture-panel">
           <h3>Fixture Import / Export</h3>
           <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-fixture-json" rows="6" v-model="gachaFixtureJson"></textarea>
           <div class="support-admin-gacha-actions support-admin-fixture-actions">
@@ -1328,7 +1586,7 @@ export const SupportAdminScreen = {
         </datalist>
 
         <div class="support-admin-columns support-admin-gacha-columns">
-          <section class="panel support-admin-panel support-admin-action-form" data-testid="gacha-season-form">
+          <section class="support-admin-panel support-admin-panel--flat support-admin-action-form" data-testid="gacha-season-form">
             <h3>Season</h3>
             <label>
               <span>Existing</span>
@@ -1370,7 +1628,7 @@ export const SupportAdminScreen = {
             </button>
           </section>
 
-          <section class="panel support-admin-panel support-admin-action-form" data-testid="gacha-collection-form">
+          <section class="support-admin-panel support-admin-panel--flat support-admin-action-form" data-testid="gacha-collection-form">
             <h3>Collection</h3>
             <label>
               <span>Existing</span>
@@ -1413,7 +1671,7 @@ export const SupportAdminScreen = {
           </section>
         </div>
 
-        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-action-form" data-testid="gacha-pack-form">
+        <section class="support-admin-panel support-admin-panel--flat support-admin-action-form" data-testid="gacha-pack-form">
           <h3>Pack</h3>
           <div class="support-admin-gacha-pack-grid">
             <label>
@@ -1525,7 +1783,7 @@ export const SupportAdminScreen = {
           </div>
         </section>
 
-        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-action-form" data-testid="gacha-items-form">
+        <section class="support-admin-panel support-admin-panel--flat support-admin-action-form" data-testid="gacha-items-form">
           <h3>Pack Items</h3>
           <div class="support-admin-gacha-items">
             <div class="support-admin-gacha-item-row" v-for="(item, index) in gachaItemDrafts" :key="index">
@@ -1566,7 +1824,7 @@ export const SupportAdminScreen = {
           </div>
         </section>
 
-        <section v-if="gachaValidationResult" class="panel support-admin-panel" data-testid="gacha-validation">
+        <section v-if="gachaValidationResult" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-validation">
           <h3>Validation</h3>
           <p class="support-admin-balance">
             Result:
@@ -1581,7 +1839,7 @@ export const SupportAdminScreen = {
           </ul>
         </section>
 
-        <section v-if="gachaReleaseChecklist" class="panel support-admin-panel" data-testid="gacha-release-checklist">
+        <section v-if="gachaReleaseChecklist" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-release-checklist">
           <h3>Release Checklist</h3>
           <p class="support-admin-balance">
             Result:
@@ -1595,7 +1853,7 @@ export const SupportAdminScreen = {
           </ul>
         </section>
 
-        <section v-if="gachaRaritySummary.length || gachaOddsItems.length" class="panel support-admin-panel" data-testid="gacha-odds-preview">
+        <section v-if="gachaRaritySummary.length || gachaOddsItems.length" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-odds-preview">
           <h3>Odds Preview</h3>
           <div class="support-admin-table-wrap">
             <table class="support-admin-table support-admin-compact-table">
@@ -1626,7 +1884,7 @@ export const SupportAdminScreen = {
           </div>
         </section>
 
-        <section v-if="gachaSimulation" class="panel support-admin-panel" data-testid="gacha-simulation">
+        <section v-if="gachaSimulation" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-simulation">
           <h3>Roll Simulation</h3>
           <dl class="support-admin-metrics support-admin-metrics--gacha">
             <div><dt>Trials</dt><dd>{{ gachaSimulation.trials }}</dd></div>
@@ -1650,7 +1908,7 @@ export const SupportAdminScreen = {
           </div>
         </section>
 
-        <section v-if="gachaAssetPolicyRecommendations.length" class="panel support-admin-panel" data-testid="gacha-policy-recommendations">
+        <section v-if="gachaAssetPolicyRecommendations.length" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-policy-recommendations">
           <h3>Asset Policy Mapping</h3>
           <div class="support-admin-table-wrap">
             <table class="support-admin-table support-admin-compact-table">
@@ -1666,7 +1924,7 @@ export const SupportAdminScreen = {
           </div>
         </section>
 
-        <section v-if="gachaDraftDiff" class="panel support-admin-panel" data-testid="gacha-draft-diff">
+        <section v-if="gachaDraftDiff" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-draft-diff">
           <h3>Live/Draft Diff</h3>
           <p v-if="gachaDraftDiff.missingBase" class="support-admin-balance">Base pack {{ gachaDraftDiff.basePackId }} was not found.</p>
           <p v-else-if="!gachaDraftDiffRows.length" class="support-admin-balance">No live/draft changes detected.</p>
@@ -1684,6 +1942,7 @@ export const SupportAdminScreen = {
             </table>
           </div>
         </section>
+        </details>
       </template>
     </section>
   `

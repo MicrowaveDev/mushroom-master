@@ -1,5 +1,9 @@
 import crypto from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+import { repoRoot } from '../../shared/repo-root.js';
 import { query, withTransaction } from '../db.js';
+import { PORTRAIT_VARIANTS } from '../game-data.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 import {
   getAssetCatalog,
@@ -13,6 +17,15 @@ import { WALLET_CURRENCY_CODE } from './wallet-service.js';
 const SEASON_STATUSES = new Set(['draft', 'active', 'future', 'expired', 'disabled']);
 const PACK_STATUSES = new Set(['active', 'future', 'expired', 'disabled']);
 const REVIEW_STATUSES = new Set(['draft', 'in_review', 'approved', 'rejected']);
+const PLAN_ITEM_STATUSES = new Set(['planned', 'ready', 'rejected', 'archived']);
+const ASSET_RARITIES = new Set(['common', 'rare', 'epic', 'legendary', 'secret']);
+const PLAN_IMAGE_MIME_EXTENSIONS = new Map([
+  ['image/png', 'png'],
+  ['image/jpeg', 'jpg'],
+  ['image/webp', 'webp']
+]);
+const GACHA_PLAN_TARGET_PER_CHARACTER = 5;
+const MAX_GACHA_PLAN_IMAGE_BYTES = 1_500_000;
 const ITEM_FIELDS = new Set(['asset_id', 'rarity', 'drop_weight', 'copy_limit', 'item_order', 'metadata_json']);
 const GACHA_FIXTURE_SCHEMA_VERSION = 'gacha-admin-fixture/v1';
 
@@ -63,6 +76,12 @@ function positiveInteger(value, label, fallback = null) {
 function optionalPositiveInteger(value, label) {
   if (value === undefined || value === null || value === '') return null;
   return positiveInteger(value, label);
+}
+
+function normalizeRarity(value, fallback = 'common') {
+  const normalized = String(value || fallback || '').trim();
+  if (!ASSET_RARITIES.has(normalized)) throw new Error('Gacha plan item rarity is invalid');
+  return normalized;
 }
 
 function normalizeStatus(value, allowed, label, fallback = null) {
@@ -181,6 +200,26 @@ function rowToPackItem(row) {
   };
 }
 
+function rowToPlanItem(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    seasonId: row.season_id,
+    characterId: row.character_id,
+    assetId: row.asset_id,
+    imagePath: row.image_path,
+    fileName: row.file_name || null,
+    mimeType: row.mime_type,
+    rarity: row.rarity,
+    dropWeight: Number(row.drop_weight),
+    status: row.status,
+    metadata: parseJson(row.metadata_json, {}),
+    createdBy: row.created_by || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 function rowPackToRuntimePack(row, itemRows = []) {
   const pack = {
     id: row.id,
@@ -235,6 +274,174 @@ function catalogAssetOptions() {
     acquisitionMode: asset.acquisitionMode,
     packId: asset.packId
   }));
+}
+
+function planCharacterOptions() {
+  return Object.keys(PORTRAIT_VARIANTS).map((characterId) => ({
+    id: characterId,
+    label: characterId[0].toUpperCase() + characterId.slice(1)
+  }));
+}
+
+function assertKnownCharacter(characterId) {
+  const normalized = requiredText(characterId, 'Gacha plan item character');
+  if (!PORTRAIT_VARIANTS[normalized]) throw new Error('Gacha plan item character is invalid');
+  return normalized;
+}
+
+function gachaPlanPublicRoot() {
+  return process.env.GACHA_PLAN_PUBLIC_ROOT
+    ? path.resolve(process.env.GACHA_PLAN_PUBLIC_ROOT)
+    : path.join(repoRoot, 'web/public/gacha-plan');
+}
+
+function safePathSegment(value, label) {
+  const normalized = requiredText(value, label);
+  if (!/^[a-zA-Z0-9._-]+$/.test(normalized)) throw new Error(`${label} contains unsupported characters`);
+  return normalized;
+}
+
+function assertImageSignature(buffer, mimeType) {
+  if (mimeType === 'image/png') {
+    const png = Buffer.from([0x89, 0x50, 0x4E, 0x47]);
+    if (!buffer.subarray(0, 4).equals(png)) throw new Error('Gacha plan image data is invalid');
+  }
+  if (mimeType === 'image/jpeg') {
+    if (buffer[0] !== 0xFF || buffer[1] !== 0xD8) throw new Error('Gacha plan image data is invalid');
+  }
+  if (mimeType === 'image/webp') {
+    if (buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WEBP') {
+      throw new Error('Gacha plan image data is invalid');
+    }
+  }
+}
+
+function decodePlanImage(imageData) {
+  const raw = requiredText(imageData, 'Gacha plan imageData');
+  const match = raw.match(/^data:(image\/(?:png|jpeg|webp));base64,([\s\S]+)$/);
+  if (!match) throw new Error('Gacha plan imageData must be a png, jpeg, or webp data URL');
+  const mimeType = match[1];
+  const extension = PLAN_IMAGE_MIME_EXTENSIONS.get(mimeType);
+  if (!extension) throw new Error('Gacha plan image type is unsupported');
+  const buffer = Buffer.from(match[2].replace(/\s/g, ''), 'base64');
+  if (!buffer.length) throw new Error('Gacha plan image data is required');
+  if (buffer.length > MAX_GACHA_PLAN_IMAGE_BYTES) {
+    throw new Error(`Gacha plan image exceeds ${MAX_GACHA_PLAN_IMAGE_BYTES} bytes`);
+  }
+  assertImageSignature(buffer, mimeType);
+  return { buffer, mimeType, extension };
+}
+
+function planAssetId(characterId, itemId) {
+  return `planned_portrait.${characterId}.${itemId}`;
+}
+
+async function writePlanImageFile({ seasonId, itemId, imageData }) {
+  const { buffer, mimeType, extension } = decodePlanImage(imageData);
+  const safeSeasonId = safePathSegment(seasonId, 'Gacha season id');
+  const safeItemId = safePathSegment(itemId, 'Gacha plan item id');
+  const relativePath = `/gacha-plan/${safeSeasonId}/${safeItemId}.${extension}`;
+  const absolutePath = path.join(gachaPlanPublicRoot(), safeSeasonId, `${safeItemId}.${extension}`);
+  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  await fs.writeFile(absolutePath, buffer);
+  return { imagePath: relativePath, mimeType, absolutePath };
+}
+
+async function deletePlanImageFile(imagePath) {
+  const normalized = String(imagePath || '');
+  if (!normalized.startsWith('/gacha-plan/')) return;
+  const root = gachaPlanPublicRoot();
+  const absolutePath = path.resolve(root, normalized.replace(/^\/gacha-plan\//, ''));
+  if (!absolutePath.startsWith(path.resolve(root) + path.sep)) return;
+  await fs.rm(absolutePath, { force: true }).catch(() => {});
+}
+
+function planItemInsertPayload(payload = {}, actorId) {
+  const now = nowIso();
+  const id = optionalText(payload.id) || createId('gachaplan');
+  const characterId = assertKnownCharacter(payload.characterId ?? payload.character_id);
+  return {
+    id,
+    season_id: requiredText(payload.seasonId ?? payload.season_id, 'Gacha plan item seasonId'),
+    character_id: characterId,
+    asset_id: optionalText(payload.assetId ?? payload.asset_id) || planAssetId(characterId, id),
+    image_path: requiredText(payload.imagePath ?? payload.image_path, 'Gacha plan item imagePath'),
+    file_name: optionalText(payload.fileName ?? payload.file_name),
+    mime_type: requiredText(payload.mimeType ?? payload.mime_type, 'Gacha plan item mimeType'),
+    rarity: normalizeRarity(payload.rarity),
+    drop_weight: positiveInteger(payload.dropWeight ?? payload.drop_weight, 'Gacha plan item dropWeight', 100),
+    status: normalizeStatus(payload.status || 'planned', PLAN_ITEM_STATUSES, 'Gacha plan item'),
+    metadata_json: jsonText(payload.metadata ?? payload.metadataJson, {}),
+    created_by: actorId,
+    created_at: now,
+    updated_at: now
+  };
+}
+
+function planItemUpdateFields(payload = {}) {
+  const fields = {};
+  if (payload.seasonId !== undefined || payload.season_id !== undefined) fields.season_id = requiredText(payload.seasonId ?? payload.season_id, 'Gacha plan item seasonId');
+  if (payload.characterId !== undefined || payload.character_id !== undefined) fields.character_id = assertKnownCharacter(payload.characterId ?? payload.character_id);
+  if (payload.assetId !== undefined || payload.asset_id !== undefined) fields.asset_id = requiredText(payload.assetId ?? payload.asset_id, 'Gacha plan item assetId');
+  if (payload.rarity !== undefined) fields.rarity = normalizeRarity(payload.rarity);
+  if (payload.dropWeight !== undefined || payload.drop_weight !== undefined) fields.drop_weight = positiveInteger(payload.dropWeight ?? payload.drop_weight, 'Gacha plan item dropWeight');
+  if (payload.status !== undefined) fields.status = normalizeStatus(payload.status, PLAN_ITEM_STATUSES, 'Gacha plan item');
+  if (payload.metadata !== undefined || payload.metadataJson !== undefined) fields.metadata_json = jsonText(payload.metadata ?? payload.metadataJson, {});
+  return fields;
+}
+
+function summarizeGachaPlanItems(planItems = []) {
+  const targetPerCharacter = Number(process.env.GACHA_PLAN_TARGET_PER_CHARACTER || GACHA_PLAN_TARGET_PER_CHARACTER);
+  const target = Number.isInteger(targetPerCharacter) && targetPerCharacter > 0
+    ? targetPerCharacter
+    : GACHA_PLAN_TARGET_PER_CHARACTER;
+  const bySeason = new Map();
+  for (const item of planItems) {
+    const season = bySeason.get(item.seasonId) || {
+      seasonId: item.seasonId,
+      total: 0,
+      totalWeight: 0,
+      characters: Object.fromEntries(planCharacterOptions().map((character) => [
+        character.id,
+        {
+          characterId: character.id,
+          label: character.label,
+          count: 0,
+          readyCount: 0,
+          target,
+          missing: target,
+          enough: false,
+          totalWeight: 0
+        }
+      ]))
+    };
+    const row = season.characters[item.characterId] || {
+      characterId: item.characterId,
+      label: item.characterId,
+      count: 0,
+      readyCount: 0,
+      target,
+      missing: target,
+      enough: false,
+      totalWeight: 0
+    };
+    row.count += 1;
+    if (item.status === 'ready') row.readyCount += 1;
+    row.totalWeight += Math.max(0, Number(item.dropWeight || 0));
+    row.missing = Math.max(0, target - row.count);
+    row.enough = row.count >= target;
+    season.characters[item.characterId] = row;
+    season.total += 1;
+    season.totalWeight += Math.max(0, Number(item.dropWeight || 0));
+    bySeason.set(item.seasonId, season);
+  }
+  return {
+    targetPerCharacter: target,
+    seasons: [...bySeason.values()].map((season) => ({
+      ...season,
+      characters: Object.values(season.characters)
+    }))
+  };
 }
 
 function checklistIssue(code, message, severity = 'blocker', details = {}) {
@@ -1086,11 +1293,12 @@ async function editablePackRow(client, packId, options) {
 }
 
 export async function listGachaAdminCatalog() {
-  const [seasons, collections, packs, items] = await Promise.all([
+  const [seasons, collections, packs, items, planItems] = await Promise.all([
     query(`SELECT * FROM asset_gacha_seasons ORDER BY starts_at ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_collections ORDER BY season_id ASC, starts_at ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_packs ORDER BY season_id ASC, collection_id ASC, starts_at ASC, id ASC`),
-    query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`)
+    query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`),
+    query(`SELECT * FROM asset_gacha_plan_items ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`)
   ]);
   const itemsByPack = new Map();
   for (const item of items.rows) {
@@ -1100,6 +1308,7 @@ export async function listGachaAdminCatalog() {
   }
   const seasonsById = new Map(seasons.rows.map((row) => [row.id, row]));
   const collectionsById = new Map(collections.rows.map((row) => [row.id, row]));
+  const shapedPlanItems = planItems.rows.map(rowToPlanItem);
   return {
     seasons: seasons.rows.map(rowToSeason),
     collections: collections.rows.map(rowToCollection),
@@ -1119,6 +1328,9 @@ export async function listGachaAdminCatalog() {
       };
     }),
     items: items.rows.map(rowToPackItem),
+    planItems: shapedPlanItems,
+    planSummary: summarizeGachaPlanItems(shapedPlanItems),
+    planCharacters: planCharacterOptions(),
     assetOptions: catalogAssetOptions()
   };
 }
@@ -1319,6 +1531,122 @@ export async function importGachaAdminFixture({
       action
     };
   });
+}
+
+export async function createGachaPlanItem({ actorId, payload = {}, reason, note = '', evidence = {} } = {}) {
+  const actor = normalizeActor(actorId);
+  const actionReason = normalizeReason(reason || payload.reason, 'gacha_plan_item_create');
+  const actionNote = normalizeNote(note || payload.note);
+  const actionEvidence = normalizeEvidence(evidence);
+  const itemId = optionalText(payload.id) || createId('gachaplan');
+  const seasonId = requiredText(payload.seasonId ?? payload.season_id, 'Gacha plan item seasonId');
+  const file = await writePlanImageFile({
+    seasonId,
+    itemId,
+    imageData: payload.imageData ?? payload.image_data
+  });
+  try {
+    return await withTransaction(async (client) => {
+      await requireRow(client, 'asset_gacha_seasons', seasonId, 'gacha season');
+      await ensureIdUnused(client, 'asset_gacha_plan_items', itemId, 'Gacha plan item');
+      const row = planItemInsertPayload({
+        ...payload,
+        id: itemId,
+        seasonId,
+        imagePath: file.imagePath,
+        mimeType: file.mimeType
+      }, actor);
+      await client.query(
+        `INSERT INTO asset_gacha_plan_items
+         (id, season_id, character_id, asset_id, image_path, file_name, mime_type,
+          rarity, drop_weight, status, metadata_json, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        [
+          row.id,
+          row.season_id,
+          row.character_id,
+          row.asset_id,
+          row.image_path,
+          row.file_name,
+          row.mime_type,
+          row.rarity,
+          row.drop_weight,
+          row.status,
+          row.metadata_json,
+          row.created_by,
+          row.created_at,
+          row.updated_at
+        ]
+      );
+      const item = rowToPlanItem(await requireRow(client, 'asset_gacha_plan_items', row.id, 'gacha plan item'));
+      const action = await insertAdminAction(client, {
+        actorId: actor,
+        actionType: 'gacha_plan_item_create',
+        targetType: 'gacha_plan_item',
+        targetId: row.id,
+        reason: actionReason,
+        note: actionNote,
+        evidence: actionEvidence,
+        result: { before: null, after: item }
+      });
+      return { item, action };
+    });
+  } catch (error) {
+    await fs.rm(file.absolutePath, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+export async function updateGachaPlanItem({ actorId, itemId, payload = {}, reason, note = '', evidence = {} } = {}) {
+  const actor = normalizeActor(actorId);
+  const actionReason = normalizeReason(reason || payload.reason, 'gacha_plan_item_update');
+  const actionNote = normalizeNote(note || payload.note);
+  const actionEvidence = normalizeEvidence(evidence);
+  return withTransaction(async (client) => {
+    const beforeRow = await requireRow(client, 'asset_gacha_plan_items', itemId, 'gacha plan item');
+    const before = rowToPlanItem(beforeRow);
+    const fields = planItemUpdateFields(payload);
+    if (fields.season_id) await requireRow(client, 'asset_gacha_seasons', fields.season_id, 'gacha season');
+    await applyUpdate(client, 'asset_gacha_plan_items', itemId, fields);
+    const after = rowToPlanItem(await requireRow(client, 'asset_gacha_plan_items', itemId, 'gacha plan item'));
+    const action = await insertAdminAction(client, {
+      actorId: actor,
+      actionType: 'gacha_plan_item_update',
+      targetType: 'gacha_plan_item',
+      targetId: itemId,
+      status: Object.keys(fields).length ? 'applied' : 'noop',
+      reason: actionReason,
+      note: actionNote,
+      evidence: actionEvidence,
+      result: { before, after }
+    });
+    return { item: after, action };
+  });
+}
+
+export async function deleteGachaPlanItem({ actorId, itemId, payload = {}, reason, note = '', evidence = {} } = {}) {
+  const actor = normalizeActor(actorId);
+  const actionReason = normalizeReason(reason || payload.reason, 'gacha_plan_item_delete');
+  const actionNote = normalizeNote(note || payload.note);
+  const actionEvidence = normalizeEvidence(evidence);
+  const result = await withTransaction(async (client) => {
+    const beforeRow = await requireRow(client, 'asset_gacha_plan_items', itemId, 'gacha plan item');
+    const before = rowToPlanItem(beforeRow);
+    await client.query(`DELETE FROM asset_gacha_plan_items WHERE id = $1`, [itemId]);
+    const action = await insertAdminAction(client, {
+      actorId: actor,
+      actionType: 'gacha_plan_item_delete',
+      targetType: 'gacha_plan_item',
+      targetId: itemId,
+      reason: actionReason,
+      note: actionNote,
+      evidence: actionEvidence,
+      result: { before, after: null }
+    });
+    return { item: before, action };
+  });
+  await deletePlanImageFile(result.item.imagePath);
+  return result;
 }
 
 export async function createGachaSeason({ actorId, payload = {}, reason, note = '', evidence = {} } = {}) {

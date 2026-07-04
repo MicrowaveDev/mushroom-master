@@ -81,7 +81,9 @@ import {
   createGachaCollection,
   createGachaPack,
   createGachaPackItem,
+  createGachaPlanItem,
   createGachaSeason,
+  deleteGachaPlanItem,
   deleteGachaPackItem,
   exportGachaAdminFixture,
   importGachaAdminFixture,
@@ -92,6 +94,7 @@ import {
   updateGachaCollection,
   updateGachaPack,
   updateGachaPackItem,
+  updateGachaPlanItem,
   updateGachaSeason,
   validateGachaAdminPack
 } from './services/gacha-admin-service.js';
@@ -106,6 +109,12 @@ import { repoRoot } from '../shared/repo-root.js';
 
 const webDist = path.join(repoRoot, 'web/dist');
 const webPublic = path.join(repoRoot, 'web/public');
+
+function gachaPlanPublicRoot() {
+  return process.env.GACHA_PLAN_PUBLIC_ROOT
+    ? path.resolve(process.env.GACHA_PLAN_PUBLIC_ROOT)
+    : path.join(webPublic, 'gacha-plan');
+}
 
 // Walk a directory tree returning the most-recent mtime any file under it
 // carries. Used by the dist staleness check below.
@@ -1219,6 +1228,68 @@ export async function createApp() {
   );
 
   app.post(
+    '/api/admin/gacha/plan-items',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await createGachaPlanItem({
+          actorId: req.supportActorId,
+          payload: req.body,
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.patch(
+    '/api/admin/gacha/plan-items/:itemId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await updateGachaPlanItem({
+          actorId: req.supportActorId,
+          itemId: req.params.itemId,
+          payload: req.body,
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.delete(
+    '/api/admin/gacha/plan-items/:itemId',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await deleteGachaPlanItem({
+          actorId: req.supportActorId,
+          itemId: req.params.itemId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.post(
     '/api/admin/gacha/seasons',
     requireSupportAdmin,
     requireSupportAdminRole('gacha_operator'),
@@ -2118,6 +2189,14 @@ export async function createApp() {
       next();
     },
     express.static(path.join(webPublic, 'portraits'))
+  );
+  app.use(
+    '/gacha-plan',
+    (_req, res, next) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      next();
+    },
+    express.static(gachaPlanPublicRoot())
   );
   app.get('/marketing/social-preview.png', (_req, res) => {
     res.redirect(301, '/marketing/social-preview.jpg');
