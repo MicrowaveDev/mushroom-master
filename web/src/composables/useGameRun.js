@@ -1,4 +1,4 @@
-import { apiJson } from '../api.js';
+import { createMushroomGameApiClient } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
@@ -11,6 +11,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     notify: typeof feedback.notify === 'function' ? feedback.notify : () => {},
     selectionChanged: typeof feedback.selectionChanged === 'function' ? feedback.selectionChanged : () => {}
   };
+
+  function gameApi() {
+    return createMushroomGameApiClient(state.sessionKey);
+  }
 
   function buildLoadoutPayloadItems() {
     const rotationForRowId = (rowId) => {
@@ -98,7 +102,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     state.startingRun = true;
     try {
       state.error = '';
-      const data = await apiJson('/api/game-run/start', { method: 'POST', body: JSON.stringify({ mode }) }, state.sessionKey);
+      const data = await gameApi().postRoute('gameRunStart', {}, { mode });
       const run = {
         ...data,
         loadoutItems: data.loadoutItems || []
@@ -131,12 +135,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     try {
       state.error = '';
       if (state.bootstrap?.activeMushroomId) {
-        await apiJson('/api/artifact-loadout', {
+        const api = gameApi();
+        await api.request(api.routePath('artifactLoadout'), {
           method: 'PUT',
-          body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() })
-        }, state.sessionKey);
+          body: { mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() }
+        });
       }
-      const data = await apiJson(`/api/game-run/${state.gameRun.id}/ready`, { method: 'POST' }, state.sessionKey);
+      const api = gameApi();
+      const data = await api.request(api.routePath('gameRunReady', { gameRunId: state.gameRun.id }), {
+        method: 'POST'
+      });
       haptics.impact('medium');
       if (data.waiting) return;
       const previousRounds = Array.isArray(state.gameRunRounds)
@@ -230,7 +238,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   async function loadRunShopOffer() {
     if (!state.gameRun) return;
     try {
-      const data = await apiJson(`/api/game-run/${state.gameRun.id}`, {}, state.sessionKey);
+      const data = await gameApi().getRoute('gameRun', { gameRunId: state.gameRun.id });
       if (data.shopOffer) state.gameRunShopOffer = data.shopOffer;
     } catch { /* ignore */ }
   }
@@ -239,7 +247,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     if (!runId) return;
     try {
       state.error = '';
-      const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
+      const data = await gameApi().getRoute('gameRun', { gameRunId: runId });
       state.gameRunSummary = data;
       goTo('runSummary', { gameRunId: runId }, options.routeOptions || {});
     } catch (error) {
@@ -251,7 +259,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     if (!runId) return;
     try {
       state.error = '';
-      const data = await apiJson(`/api/game-run/${runId}`, {}, state.sessionKey);
+      const data = await gameApi().getRoute('gameRun', { gameRunId: runId });
       if (data.status !== 'completed' && data.status !== 'abandoned') {
         state.gameRun = data;
         state.gameRunResult = null;
@@ -323,7 +331,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     try {
       state.actionInFlight = true;
       state.error = '';
-      const data = await apiJson(`/api/game-run/${state.gameRun.id}/abandon`, { method: 'POST' }, state.sessionKey);
+      const api = gameApi();
+      const data = await api.request(api.routePath('gameRunAbandon', { gameRunId: state.gameRun.id }), {
+        method: 'POST'
+      });
       state.abandonConfirmOpen = false;
       state.gameRun = {
         id: data.id,
@@ -367,7 +378,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     if (!state.gameRun) return;
     try {
       state.error = '';
-      const data = await apiJson(`/api/game-run/${state.gameRun.id}/refresh-shop`, { method: 'POST' }, state.sessionKey);
+      const api = gameApi();
+      const data = await api.request(api.routePath('gameRunRefreshShop', { gameRunId: state.gameRun.id }), {
+        method: 'POST'
+      });
       state.gameRunShopOffer = data.shopOffer;
       state.gameRunRefreshCount = data.refreshCount;
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
@@ -398,11 +412,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       const payload = rowId
         ? { id: rowId, artifactId: artifactIdFallback }
         : { artifactId: artifactIdFallback };
-      const data = await apiJson(
-        `/api/game-run/${state.gameRun.id}/sell`,
-        { method: 'POST', body: JSON.stringify(payload) },
-        state.sessionKey
-      );
+      const data = await gameApi().postRoute('gameRunSell', { gameRunId: state.gameRun.id }, payload);
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
 
       // The server's response always includes the row id that was deleted.
@@ -493,7 +503,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     }
     try {
       state.error = '';
-      const data = await apiJson(`/api/game-run/${state.gameRun.id}/buy`, { method: 'POST', body: JSON.stringify({ artifactId }) }, state.sessionKey);
+      const data = await gameApi().postRoute('gameRunBuy', { gameRunId: state.gameRun.id }, { artifactId });
       state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
       state.gameRunShopOffer = data.shopOffer;
       // The server returns the newly-inserted row id so the container slot
@@ -549,10 +559,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   async function persistRunLoadout() {
     if (!state.gameRun || !state.bootstrap?.activeMushroomId) return;
     try {
-      await apiJson('/api/artifact-loadout', {
+      const api = gameApi();
+      await api.request(api.routePath('artifactLoadout'), {
         method: 'PUT',
-        body: JSON.stringify({ mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() })
-      }, state.sessionKey);
+        body: { mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() }
+      });
     } catch { /* best-effort persist */ }
   }
 

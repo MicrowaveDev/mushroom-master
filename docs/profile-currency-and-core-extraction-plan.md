@@ -2769,6 +2769,12 @@ verification remains raw because it has a special `{ success, needsBotAuth }`
 contract; bootstrap state projection, cache ownership, navigation effects,
 runtime state ownership, and product copy stay local.
 
+The route-client adoption lane is now complete enough for the current
+extraction phase: Mushroom game-run start/readiness/loadout/shop/buy/sell/read
+and abandon routes also use the local route map with the shared route-adapter
+client. Run state projection, placement payload shaping, replay loading,
+haptics, runtime state ownership, and product copy stay local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3435,3 +3441,13 @@ that game.
    copy stay local. Next candidates are game-run route-client adoption, more
    asset inventory/equipment DTO shapers, and neutral Vue composables/components
    only after route contracts stabilize.
+64. Phase 8AE game-run route-client adoption.
+   **Implemented 2026-07-04:** Mushroom added game-run start/readiness/read,
+   abandon, refresh-shop, buy, sell, and artifact-loadout route names to its
+   local route map and moved the corresponding `useGameRun` transport calls
+   through the shared core route-adapter client. This closes the active
+   route-client lane enough for the current extraction phase. Run state
+   projection, placement payload shaping, replay loading, haptics, runtime state
+   ownership, and product copy stay local. Next candidates are more asset
+   inventory/equipment DTO shapers and headless services/composables before
+   neutral Vue components move.
