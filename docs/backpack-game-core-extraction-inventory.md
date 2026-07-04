@@ -28,12 +28,14 @@ reusable domain rules should move into core behind explicit adapters.
 - seventh slice: `src/loadout-validation.js`, tested by
   `tests/loadout-validation.test.js`
 - eighth slice: `src/rng.js`, tested by `tests/rng.test.js`
+- ninth slice: `src/asset-gacha.js`, tested by
+  `tests/asset-gacha.test.js`
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
-- latest extraction commit: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `300583b`
-  (`Clarify core runtime baseline notes`; documentation/package notes only)
+- latest typed package baseline: `d5fb481` (`Add package type declarations`)
+- latest consumed core commit: `f47ff96`
+  (`Add reusable asset gacha core`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -475,22 +477,27 @@ Use that integration to drive the next reusable API cleanup instead of waiting
 for an abstract second game. The package now ships TypeScript declarations for
 the root export and every subpath export.
 
+Implementation finding on 2026-07-04: start Phase 8I with the combined
+`asset-gacha` module before wallet-accounting. The asset/gacha seam is mostly
+pure over catalogs, ownership snapshots, time, and RNG, while wallet accounting
+touches ledger persistence and provider-settlement state.
+
 Next planned domain slices:
 
-1. **Asset policy:** catalog normalization, acquisition-mode filtering,
-   direct-buy availability, gacha-mode direct-buy blocking, purchase candidate
-   shaping, and equipment-state transition helpers.
-2. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
-   that operate on passed snapshots; no DB writes or provider callbacks.
-3. **Gacha pack validation:** pack/item/status/date/price/currency validation,
-   release checklist helpers, and authoring diagnostics over plain objects.
-4. **Gacha rolling:** candidate filtering, weighted slot selection, guarantee
-   and pity helpers, duplicate copy-cap filtering, burn target selection, and
-   roll evidence shaping over an injected RNG.
-5. **Gacha simulation:** deterministic odds simulation over the same roll core
-   so admin preview, CLI tools, and tests share one model.
-6. **Gacha admin validation:** fixture shape checks, planned asset promotion
+1. **Asset-gacha core slice:** catalog/acquisition policy helpers,
+   pack/item/status/date/price/currency validation, direct-buy blocking,
+   candidate filtering, weighted slot selection, guarantee and pity helpers,
+   duplicate copy-cap filtering, burn target selection, roll evidence shaping,
+   and pack UI shaping over plain objects. **Implemented 2026-07-04 in
+   `src/asset-gacha.js`; Mushroom adapter wiring delegates to it.**
+2. **Gacha simulation:** deterministic odds simulation over the same roll core
+   so admin preview, CLI tools, and tests share one model if it is not fully
+   folded into `asset-gacha`.
+3. **Gacha admin validation:** fixture shape checks, planned asset promotion
    invariants, and plan-item asset-id/linked-character rules as pure helpers.
+4. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
+   that operate on passed snapshots; no DB writes or provider callbacks. Do this
+   after the shared gacha seam is stable in Mushroom.
 
 Do not extract payment providers, DB models, Telegram routes, lore/portrait
 catalogs, uploaded image storage, support/admin UI, adult-content gates, or

@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `300583b1c8825df9f6cf45f2532e5eeea2c74df3`
-- core short SHA: `300583b`
-- core commit: `Clarify core runtime baseline notes`
+- core SHA: `f47ff96b6700a2921edd0557ffa73c4f03def450`
+- core short SHA: `f47ff96`
+- core commit: `Add reusable asset gacha core`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: `5e5e7cf` (`Document backpack core update trail`)
+- game pointer commit: this commit (`Use shared asset gacha core`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,6 +30,7 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-04 | this commit | `f47ff96` | Reusable asset/gacha policy helpers | Mushroom gacha acquisition, pack validation, roll selection, pity/guarantee, duplicate burn, and pack shaping now delegate through the core adapter. |
 | 2026-07-02 | `5e5e7cf` | `300583b` | Core changelog and package release notes | Documentation/package baseline only; runtime/API baseline remains `d5fb481`. |
 | 2026-07-02 | `5fa7d7b` | `d5fb481` | Type declarations and export metadata | Current baseline for typed consumers. |
 | 2026-07-02 | `634d242` | `13e6e0c` | Reusable RNG helpers | Mushroom kept string-seed hashing local and imported numeric RNG/shuffle helpers from core. |
