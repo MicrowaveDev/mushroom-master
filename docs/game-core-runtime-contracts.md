@@ -319,7 +319,10 @@ shaping moved in core commit `41a3ad5`; games still own stat labels, visual
 role classes, product copy, catalog semantics, and final UI composition.
 Artifact grid utility shaping moved in core commit `725ffab`; games still own
 placement state, visual preview composition, drag/drop actions, product
-rendering, and gameplay mutation logic.
+rendering, and gameplay mutation logic. Canonical preview-orientation shaping
+moved in core commit `786d41c`; preview-only surfaces can keep non-bag bitmap
+dimensions canonical while placement flows continue to use placement-preferred
+orientation.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

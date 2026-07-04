@@ -1,5 +1,5 @@
+import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
-import { getBagShape } from '../../../app/shared/bag-shape.js';
 import { ArtifactGridBoard } from '../components/ArtifactGridBoard.js';
 import { ArtifactStatSummary } from '../components/ArtifactStatSummary.js';
 import { FusionReveal } from '../components/prep/FusionReveal.js';
@@ -54,16 +54,7 @@ export const FusionAnimationLabScreen = {
       return artifact?.description?.[this.state.lang] || artifact?.description?.en || '';
     },
     previewOrientation(artifact) {
-      if (!artifact) return { width: 1, height: 1 };
-      if (artifact.family === 'bag') {
-        const shape = getBagShape(artifact);
-        return { width: shape[0]?.length || 1, height: shape.length || 1 };
-      }
-      if (artifact.shape) {
-        const shape = artifact.shape;
-        return { width: shape[0]?.length || artifact.width || 1, height: shape.length || artifact.height || 1 };
-      }
-      return { width: artifact.width || 1, height: artifact.height || 1 };
+      return artifactPreviewOrientation(artifact);
     },
     previewItem(artifact) {
       const orientation = this.previewOrientation(artifact);

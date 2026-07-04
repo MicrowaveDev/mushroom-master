@@ -1,4 +1,4 @@
-import { preferredArtifactOrientation } from '@microwavedev/backpack-game-core/client-view-model';
+import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
 import { AchievementBadge } from './AchievementBadge.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { ArtifactStatSummary } from './ArtifactStatSummary.js';
@@ -46,7 +46,7 @@ export const HomeSocialSidebar = {
       return artifact?.description?.[this.state.lang] || artifact?.description?.en || '';
     },
     previewOrientation(artifact) {
-      return preferredArtifactOrientation(artifact);
+      return artifactPreviewOrientation(artifact);
     },
     previewItem(artifact) {
       const orientation = this.previewOrientation(artifact);

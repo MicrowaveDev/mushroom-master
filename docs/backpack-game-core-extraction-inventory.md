@@ -60,6 +60,11 @@ copy, theme, and API adapters.
   now also provides occupied-cell value maps and preferred artifact preview
   orientation for rectangular and shape-bearing artifacts, tested by
   `tests/client-view-model.test.js`
+- canonical artifact preview orientation slice: `src/client-view-model.js` now
+  also distinguishes placement-preferred orientation from canonical preview
+  orientation, so non-bag bitmap previews keep authored dimensions while shaped
+  and legacy bags still use derived preview footprints, tested by
+  `tests/client-view-model.test.js`
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
@@ -83,8 +88,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `725ffab`
-  (`Add artifact grid view-model helpers`)
+- latest consumed core commit: `786d41c`
+  (`Add canonical artifact preview orientation helper`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -625,7 +630,8 @@ client view-model helper slice moved in core commit `578279d`, wallet/roll
 feedback view-model shaping moved in core commit `cf7c680`, and grid-cell
 classification moved in core commit `f403553`. Artifact stat total/text DTO
 shaping moved in core commit `41a3ad5`, and artifact grid utility shaping moved
-in core commit `725ffab`.
+in core commit `725ffab`. Canonical preview-orientation shaping moved in core
+commit `786d41c`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -703,6 +709,13 @@ Next planned domain slices:
     delegates `buildOccupancy` and `preferredOrientation` while keeping
     placement state, visual previews, drag/drop actions, and product rendering
     local.**
+13. **Canonical artifact preview orientation helper:** preview-only orientation
+    for artifact cards, inventory chips, catalog boards, and fusion previews
+    where non-bag bitmaps should keep authored dimensions while shaped and
+    legacy bags use derived preview footprints. **Implemented 2026-07-04 in
+    core commit `786d41c`; Mushroom delegates shop, backpack, social, catalog,
+    and fusion preview orientation through this helper while keeping
+    placement-preferred orientation in placement flows.**
 
 Next planned frontend slices:
 
@@ -714,7 +727,8 @@ Next planned frontend slices:
    implemented 2026-07-04** with grid-cell classification helpers. **Fifth
    slice implemented 2026-07-04** with artifact stat total/text helpers.
    **Sixth slice implemented 2026-07-04** with occupied-cell map and preferred
-   preview-orientation helpers. Continue
+   preview-orientation helpers. **Seventh slice implemented 2026-07-04** with
+   canonical preview orientation for bitmap/card surfaces. Continue
    with DTO shapers, error/status normalization, asset inventory/equipment response
    shapers, and headless view-model
    contracts before page/component extraction. Do not move the full Mushroom API

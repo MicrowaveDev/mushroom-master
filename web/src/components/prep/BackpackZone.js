@@ -1,5 +1,5 @@
+import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
-import { getBagShape } from '../../../../app/shared/bag-shape.js';
 
 export const BackpackZone = {
   name: 'BackpackZone',
@@ -11,16 +11,7 @@ export const BackpackZone = {
   emits: ['auto-place', 'container-dragover', 'container-drop'],
   methods: {
     previewOrientation(artifact) {
-      if (!artifact) return { width: 1, height: 1 };
-      // Match shop previews: artifact bitmaps are authored in canonical
-      // footprint space, so non-shaped artifacts should not be rotated or
-      // squashed while waiting in the backpack.
-      if (artifact.family === 'bag') {
-        const shape = getBagShape(artifact);
-        return { width: shape[0]?.length || 1, height: shape.length || 1 };
-      }
-      if (!artifact.shape) return { width: artifact.width, height: artifact.height };
-      return this.preferredOrientation(artifact);
+      return artifactPreviewOrientation(artifact);
     },
     previewItem(artifact) {
       const orientation = this.previewOrientation(artifact);

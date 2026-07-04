@@ -62,7 +62,8 @@
 > acquisition-policy cleanup now shares paid/free default and per-asset override
 > resolution, and client view-model helper slices now share pack summary/label,
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
-> artifact stat total/text shaping, and artifact grid utility shaping. Product DB schemas,
+> artifact stat total/text shaping, artifact grid utility shaping, and
+> canonical preview-orientation shaping. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -100,7 +101,8 @@ helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
 helpers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
-view-model helpers, and artifact grid utility helpers. The package ships TypeScript
+view-model helpers, artifact grid utility helpers, and canonical artifact
+preview helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2452,7 +2454,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `725ffab`; typed package baseline remains `d5fb481`.
+   `786d41c`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2703,6 +2705,12 @@ preview orientation now run through `client-view-model` for rectangular and
 shape-bearing artifacts. Mushroom keeps placement state, visual preview
 composition, drag/drop actions, product rendering, and gameplay mutation logic
 local.
+
+The next completed frontend/client cleanup is canonical artifact preview
+orientation, landed in core commit `786d41c`: preview-only surfaces now use a
+separate helper so non-bag bitmap previews keep authored dimensions, while
+shape-bearing and legacy bags still get derived preview footprints. Mushroom
+keeps placement-preferred orientation for placement flows.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -3285,3 +3293,10 @@ that game.
    product rendering, and gameplay mutation logic local. Meat consumes the
    preferred-orientation helper for shop metadata while leaving placement
    ordering unchanged.
+56. Phase 8W canonical artifact preview-orientation cleanup. **Implemented
+   2026-07-04:** core commit `786d41c` added `artifactPreviewOrientation` so
+   preview-only surfaces can keep non-bag bitmap dimensions canonical while
+   shaped and legacy bags still use derived preview footprints. Mushroom's shop
+   zone, backpack zone, home social sidebar, catalog browser, and fusion
+   animation lab delegate preview orientation through this helper. Placement
+   flows still use the placement-preferred orientation helper.
