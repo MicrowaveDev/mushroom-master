@@ -650,8 +650,13 @@ emergency maintenance, not normal season authoring.
   weight, and status, returns per-character season coverage in the catalog, and
   audits `gacha_plan_item_create/update/delete` actions. The Support Admin
   Gacha tab now opens on this simple plan workflow before advanced pack CRUD.
-- Backlog after the G5E admin slices: convert approved season-plan images into
-  runtime catalog assets/pack items, bulk CSV/item editing beyond full-fixture
+  Ready plan images can now be promoted into a selected pack through audited
+  `gacha_plan_promote_pack_items` actions; runtime DB packs, odds, rolls,
+  bootstrap catalog projection, and portrait equipment can resolve those
+  promoted plan assets. Support asset grant/revoke/freeze/unfreeze paths also
+  resolve the runtime catalog so promoted plan assets are operable in support
+  workflows.
+- Backlog after the G5E admin slices: bulk CSV/item editing beyond full-fixture
   replacement, migration/rollback scripts for live season corrections, richer
   season/collection-scoped pity state, staff permissions beyond the first
   operator role, operator runbooks, scheduled activation alerts, richer
@@ -2537,9 +2542,10 @@ Additional TODOs for that pass:
    validation/release-checklist gates. This slice also adds a simple
    season-plan main tab for uploaded images, character assignment,
    rarity/chance-weight edits, per-character content coverage, and audited plan
-   item create/update/delete actions. Remaining: convert approved plan images
-   into runtime catalog assets/pack items, bulk CSV/item editing, migration and
-   rollback scripts for live corrections, scheduled activation/expiry alerts,
-   richer disclosure review by jurisdiction/provider, staff permission tiers,
-   and marketplace/NFT-set operations before non-engineering operators manage
-   paid seasons unaided.
+   item create/update/delete actions. **Updated 2026-07-04:** ready plan images
+   can be promoted into DB pack items and resolved by runtime odds, rolls,
+   bootstrap catalog projection, and portrait equipment. Remaining: bulk
+   CSV/item editing, migration and rollback scripts for live corrections,
+   scheduled activation/expiry alerts, richer disclosure review by
+   jurisdiction/provider, staff permission tiers, and marketplace/NFT-set
+   operations before non-engineering operators manage paid seasons unaided.

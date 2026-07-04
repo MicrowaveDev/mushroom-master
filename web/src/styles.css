@@ -6595,6 +6595,34 @@ textarea.support-admin-input {
   align-items: end;
 }
 
+.support-admin-plan-promote {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.45fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid rgba(94, 70, 39, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.support-admin-plan-promote > div {
+  display: grid;
+  gap: 2px;
+}
+
+.support-admin-plan-promote strong {
+  color: var(--ink);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.support-admin-plan-promote span {
+  color: rgba(47, 36, 25, 0.62);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .support-admin-plan-grid {
   display: grid;
   gap: 10px;
@@ -6967,6 +6995,7 @@ textarea.support-admin-input {
   .support-admin-lookup,
   .support-admin-gacha-auth,
   .support-admin-plan-upload,
+  .support-admin-plan-promote,
   .support-admin-columns,
   .support-admin-gacha-columns,
   .support-admin-gacha-pack-grid,

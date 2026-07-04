@@ -608,6 +608,7 @@ Step 2: Upload And Tune Season Plan Images
     - Character selector
     - Rarity selector
     - Chance weight input
+    - Target pack selector
     - Per-character coverage tiles showing count, target, and missing content
     - Uploaded image rows with thumbnail, character, rarity, weight, status,
       calculated chance, Save, and Remove controls
@@ -617,11 +618,16 @@ Step 2: Upload And Tune Season Plan Images
     - Choose the mushroom character for the images
     - Adjust rarity, status, and weight on an uploaded row
     - Save the row
+    - Select a target pack for the same season
+    - Add ready images to that pack
   Expected:
     - [Req 14-F] `/api/admin/gacha/plan-items` stores uploaded images as
       season-plan rows and writes an audited `gacha_plan_item_create`
       support action
     - Updating a row writes an audited `gacha_plan_item_update` support action
+    - Promoting ready rows writes audited `gacha_plan_promote_pack_items`
+      support action and creates or updates DB pack items whose asset ids point
+      at runtime-ready season-plan portrait assets
     - Coverage immediately shows which characters have enough planned content
       and which are still missing images
     - Per-image chance is derived from the selected season plan's total weight

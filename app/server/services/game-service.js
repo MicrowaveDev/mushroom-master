@@ -9,6 +9,7 @@ import {
   directBuyPolicy,
   getAssetCatalog,
   getAssetPacksForPlayer,
+  getRuntimeAssetCatalog,
   isAssetGachaEnabled
 } from './asset-service.js';
 
@@ -57,6 +58,7 @@ export {
   equipAsset,
   equipPortrait,
   getAssetCatalog,
+  getRuntimeAssetCatalog,
   getPackOdds,
   getPackOddsForRuntime,
   purchaseAsset,
@@ -81,12 +83,13 @@ export async function getBootstrap(playerId) {
     getBattleHistory(playerId, 10),
     getGameRunHistory(playerId, 10)
   ]);
-  const [dailyUsage, activeGameRuns] = await Promise.all([
+  const [dailyUsage, activeGameRuns, runtimeAssetCatalog] = await Promise.all([
     query(
       `SELECT battle_starts FROM daily_rate_limits WHERE player_id = $1 AND day_key = $2`,
       [playerId, dayKey(new Date())]
     ),
-    getActiveGameRuns(playerId)
+    getActiveGameRuns(playerId),
+    getRuntimeAssetCatalog()
   ]);
   const legacyActiveRun = activeGameRuns.find((run) => !run.mushroomId && run.mode === 'solo') || null;
   const normalizedActiveGameRuns = activeGameRuns.map((run) => (
@@ -114,7 +117,7 @@ export async function getBootstrap(playerId) {
     battleHistory: history,
     gameRunHistory: runHistory,
     homeField: getHomeFieldConfig(),
-    assetCatalog: getAssetCatalog(),
+    assetCatalog: runtimeAssetCatalog,
     assetPacks,
     assetAcquisition: {
       gachaEnabled: isAssetGachaEnabled(),

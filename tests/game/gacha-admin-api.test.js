@@ -4,10 +4,15 @@ import request from 'supertest';
 import { createApp } from '../../app/server/create-app.js';
 import { query } from '../../app/server/db.js';
 import {
+  equipAsset,
   getPackOddsForRuntime,
-  portraitAssetId
+  portraitAssetId,
+  rollAssetPack
 } from '../../app/server/services/asset-service.js';
-import { freshDb } from './helpers.js';
+import { getPlayerState, selectActiveMushroom } from '../../app/server/services/game-service.js';
+import { supportGrantAsset } from '../../app/server/services/support-ops-service.js';
+import { grantCurrencyForPlayer } from '../../app/server/services/wallet-service.js';
+import { createPlayer, freshDb } from './helpers.js';
 
 async function withEnv(overrides, work) {
   const previous = {};
@@ -258,6 +263,137 @@ test('[Req 14-F] gacha admin API uploads, edits, reviews, and audits season plan
       'gacha_plan_item_delete'
     ]);
     assert.ok(actions.rows.every((row) => row.target_id === itemId));
+  });
+});
+
+test('[Req 14-F] gacha admin API promotes ready season plan images into runtime pack assets', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    ASSET_GACHA_ENABLED: 'true',
+    ASSET_GACHA_DB_PACKS_ENABLED: 'true'
+  }, async () => {
+    await freshDb();
+    const app = await createApp();
+    const { seasonId, collectionId } = await createAdminSeasonAndCollection(app, {
+      seasonId: 'admin_promote_season',
+      collectionId: 'admin_promote_collection'
+    });
+
+    const uploaded = await request(app)
+      .post('/api/admin/gacha/plan-items')
+      .set(gachaHeaders)
+      .send({
+        seasonId,
+        characterId: 'thalla',
+        rarity: 'rare',
+        dropWeight: 33,
+        status: 'ready',
+        fileName: 'thalla-promoted.png',
+        imageData: tinyPngDataUrl,
+        reason: 'test_plan_promote_upload'
+      });
+    assert.equal(uploaded.status, 200);
+    const planItem = uploaded.body.data.item;
+
+    const packId = 'admin_promote_pack';
+    const pack = await request(app)
+      .post('/api/admin/gacha/packs')
+      .set(gachaHeaders)
+      .send({
+        id: packId,
+        seasonId,
+        collectionId,
+        name: { en: 'Promoted Plan Pack' },
+        status: 'active',
+        startsAt: '2026-01-01T00:00:00.000Z',
+        endsAt: '2027-01-01T00:00:00.000Z',
+        rollPriceAmount: 17,
+        rollSize: 1,
+        metadata: {
+          disclosure: { en: 'Contains promoted season-plan portraits.' }
+        },
+        reason: 'test_plan_promote_pack'
+      });
+    assert.equal(pack.status, 200);
+    assert.equal(pack.body.data.validation.ok, false);
+
+    const promoted = await request(app)
+      .post(`/api/admin/gacha/packs/${packId}/promote-plan-items`)
+      .set(gachaHeaders)
+      .send({
+        seasonId,
+        planItemIds: [planItem.id],
+        reason: 'test_plan_promote'
+      });
+    assert.equal(promoted.status, 200);
+    assert.equal(promoted.body.data.inserted.length, 1);
+    assert.equal(promoted.body.data.inserted[0].assetId, planItem.assetId);
+    assert.equal(promoted.body.data.validation.ok, true);
+
+    const storedPlan = await query(`SELECT metadata_json FROM asset_gacha_plan_items WHERE id = $1`, [planItem.id]);
+    const planMetadata = JSON.parse(storedPlan.rows[0].metadata_json);
+    assert.deepEqual(planMetadata.promotedPackIds, [packId]);
+    assert.equal(planMetadata.promotedPackItemIds[packId], promoted.body.data.inserted[0].id);
+
+    const publish = await request(app)
+      .post(`/api/admin/gacha/packs/${packId}/transition`)
+      .set(gachaHeaders)
+      .send({
+        action: 'publish',
+        reason: 'test_plan_promote_publish'
+      });
+    assert.equal(publish.status, 200);
+    assert.equal(publish.body.data.pack.reviewStatus, 'approved');
+
+    const odds = await getPackOddsForRuntime(packId);
+    assert.equal(odds.validation.ok, true);
+    assert.equal(odds.items[0].asset.assetId, planItem.assetId);
+    assert.equal(odds.items[0].asset.path, planItem.imagePath);
+
+    const session = await createPlayer({ username: 'promoted_plan_player' });
+    await selectActiveMushroom(session.player.id, 'thalla');
+    await grantCurrencyForPlayer({
+      playerId: session.player.id,
+      currencyCode: 'soft_coin',
+      amount: 25,
+      reason: 'test_plan_promote_wallet',
+      sourceType: 'test',
+      sourceId: 'plan-promote'
+    });
+
+    const roll = await rollAssetPack(session.player.id, packId, { rng: () => 0.1 });
+    assert.equal(roll.rollResult.assetId, planItem.assetId);
+    assert.equal(roll.rollResult.assetPath, planItem.imagePath);
+
+    const equip = await equipAsset(session.player.id, planItem.assetId);
+    assert.equal(equip.targetId, 'thalla');
+    assert.equal(equip.path, planItem.imagePath);
+
+    const state = await getPlayerState(session.player.id);
+    const promotedPortrait = state.progression.thalla.portraits.find((portrait) => portrait.assetId === planItem.assetId);
+    assert.equal(promotedPortrait.owned, true);
+    assert.equal(promotedPortrait.active, true);
+    assert.equal(promotedPortrait.path, planItem.imagePath);
+
+    const supportSession = await createPlayer({ username: 'promoted_plan_support_player' });
+    const supportGrant = await supportGrantAsset({
+      actorId: 'support-admin',
+      playerId: supportSession.player.id,
+      assetId: planItem.assetId,
+      reason: 'test_plan_promote_support_grant'
+    });
+    assert.equal(supportGrant.asset.assetId, planItem.assetId);
+    assert.equal(supportGrant.instance.assetId, planItem.assetId);
+
+    const actions = await query(
+      `SELECT action_type, target_type, target_id
+       FROM support_actions
+       WHERE action_type = 'gacha_plan_promote_pack_items'`,
+      []
+    );
+    assert.equal(actions.rowCount, 1);
+    assert.equal(actions.rows[0].target_type, 'gacha_pack');
+    assert.equal(actions.rows[0].target_id, packId);
   });
 });
 

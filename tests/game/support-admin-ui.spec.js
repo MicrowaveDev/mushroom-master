@@ -282,12 +282,17 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await page.getByTestId('gacha-save-items').click();
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack items saved.');
 
+  await page.getByTestId('gacha-plan-promote-pack').selectOption('e2e_gacha_pack');
+  await page.getByTestId('gacha-plan-promote').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('1 plan images added to pack.');
+
   await page.getByTestId('gacha-validate-pack').click();
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha release preview passed.');
   await expect(page.getByTestId('gacha-validation')).toContainText('ok');
   await expect(page.getByTestId('gacha-validation')).toContainText('No validation issues.');
   await expect(page.getByTestId('gacha-release-checklist')).toContainText('ready');
   await expect(page.getByTestId('gacha-odds-preview')).toContainText('rare');
+  await expect(page.getByTestId('gacha-odds-preview')).toContainText('planned_portrait.thalla');
   await expect(page.getByTestId('gacha-simulation')).toContainText('Trials');
   await expect(page.getByTestId('gacha-policy-recommendations')).toContainText('portrait.axilin.1');
 

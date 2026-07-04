@@ -6,7 +6,7 @@ import {
   WALLET_CURRENCY_CODE
 } from './wallet-service.js';
 import {
-  getAssetById,
+  getRuntimeAssetById,
   parsePortraitAssetId
 } from './asset-service.js';
 
@@ -158,7 +158,7 @@ async function resolveSupportAssetTarget(client, {
     throw new Error(`Support asset ${actionName} requires assetId or assetInstanceId`);
   }
 
-  const asset = getAssetById(resolvedAssetId);
+  const asset = await getRuntimeAssetById(resolvedAssetId, { client });
   if (!asset) throw new Error('Unknown asset');
 
   return {
@@ -328,15 +328,15 @@ export async function supportGrantAsset({
   evidence = {}
 } = {}) {
   const actor = normalizeActor(actorId);
-  const asset = getAssetById(assetId);
   if (!playerId) throw new Error('Support asset grant requires playerId');
-  if (!asset) throw new Error('Unknown asset');
   const actionId = createId('support');
   const actionReason = normalizeReason(reason);
   const actionNote = normalizeNote(note);
   const actionEvidence = normalizeEvidence(evidence);
 
   return withTransaction(async (client) => {
+    const asset = await getRuntimeAssetById(assetId, { client });
+    if (!asset) throw new Error('Unknown asset');
     const existing = await activeAssetInstance(client, playerId, asset.assetId);
     let instance = rowToAssetInstance(existing);
     let alreadyOwned = Boolean(existing);

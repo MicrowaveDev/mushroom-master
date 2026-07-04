@@ -176,6 +176,7 @@ export const SupportAdminScreen = {
         rarity: 'common',
         dropWeight: 100,
         status: 'planned',
+        promotePackId: '',
         files: []
       },
       gachaForm: { ...DEFAULT_GACHA_FORM },
@@ -232,6 +233,16 @@ export const SupportAdminScreen = {
     gachaSelectedPlanItems() {
       const seasonId = this.gachaPlanForm.seasonId || this.gachaForm.seasonId;
       return this.gachaPlanItems.filter((item) => item.seasonId === seasonId && item.status !== 'archived');
+    },
+    gachaPlanReadyItems() {
+      return this.gachaSelectedPlanItems.filter((item) => item.status === 'ready');
+    },
+    gachaPlanPacks() {
+      const seasonId = this.gachaPlanForm.seasonId || this.gachaForm.seasonId;
+      return this.gachaPacks.filter((pack) => !seasonId || pack.seasonId === seasonId);
+    },
+    gachaPlanSelectedPack() {
+      return this.gachaPlanPacks.find((pack) => pack.id === this.gachaPlanForm.promotePackId) || null;
     },
     gachaPlanTotalWeight() {
       return this.gachaSelectedPlanItems.reduce((sum, item) => sum + Math.max(0, Number(item.dropWeight || 0)), 0);
@@ -368,6 +379,14 @@ export const SupportAdminScreen = {
         && this.gachaPlanForm.files.length
         && Number.isInteger(Number(this.gachaPlanForm.dropWeight))
         && Number(this.gachaPlanForm.dropWeight) > 0
+        && !this.gachaActionLoading;
+    },
+    canPromoteGachaPlanItems() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaPlanForm.seasonId.trim()
+        && this.gachaPlanSelectedPack
+        && this.gachaPlanReadyItems.length
         && !this.gachaActionLoading;
     },
     canSubmitGachaSeason() {
@@ -719,6 +738,7 @@ export const SupportAdminScreen = {
         if (!this.gachaForm.collectionId && this.gachaCollections[0]) this.fillGachaCollection(this.gachaCollections[0]);
         if (!this.gachaPlanForm.seasonId && this.gachaSeasons[0]) this.gachaPlanForm.seasonId = this.gachaSeasons[0].id;
         if (!this.gachaPlanForm.characterId && this.gachaPlanCharacters[0]) this.gachaPlanForm.characterId = this.gachaPlanCharacters[0].id;
+        if (!this.gachaPlanSelectedPack && this.gachaPlanPacks[0]) this.gachaPlanForm.promotePackId = this.gachaPlanPacks[0].id;
         if (!silent) this.status = 'Gacha catalog loaded.';
       } catch (error) {
         this.error = error.message;
@@ -823,6 +843,33 @@ export const SupportAdminScreen = {
           body: this.gachaReasonPayload()
         });
         this.status = 'Gacha plan item removed.';
+        await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async promoteGachaPlanItems() {
+      if (!this.canPromoteGachaPlanItems) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const data = await this.supportRequest(`/api/admin/gacha/packs/${encodeURIComponent(this.gachaPlanForm.promotePackId)}/promote-plan-items`, {
+          method: 'POST',
+          body: {
+            seasonId: this.gachaPlanForm.seasonId,
+            planItemIds: this.gachaPlanReadyItems.map((item) => item.id),
+            ...this.gachaReasonPayload()
+          }
+        });
+        const count = (data.inserted || []).length + (data.updated || []).length;
+        this.status = data.cloned
+          ? `${count} plan images added to draft pack ${data.packId}.`
+          : `${count} plan images added to pack.`;
+        this.gachaForm.packId = data.packId || this.gachaPlanForm.promotePackId;
         await this.loadGachaCatalog({ silent: true });
       } catch (error) {
         this.error = error.message;
@@ -1456,6 +1503,23 @@ export const SupportAdminScreen = {
             </label>
             <button class="primary support-admin-submit" data-testid="gacha-plan-upload" type="button" :disabled="!canUploadGachaPlanItems" @click="uploadGachaPlanImages">
               {{ gachaActionLoading ? 'Uploading' : 'Upload' }}
+            </button>
+          </section>
+
+          <section class="support-admin-plan-promote" data-testid="gacha-plan-promote-form">
+            <div>
+              <strong>{{ gachaPlanReadyItems.length }}</strong>
+              <span>ready images</span>
+            </div>
+            <label>
+              <span>Target Pack</span>
+              <select class="support-admin-input" data-testid="gacha-plan-promote-pack" v-model="gachaPlanForm.promotePackId">
+                <option value="">Select pack</option>
+                <option v-for="pack in gachaPlanPacks" :key="pack.id" :value="pack.id">{{ localizedName(pack.name) || pack.id }} · {{ pack.reviewStatus }}</option>
+              </select>
+            </label>
+            <button class="support-admin-secondary-button" data-testid="gacha-plan-promote" type="button" :disabled="!canPromoteGachaPlanItems" @click="promoteGachaPlanItems">
+              {{ gachaActionLoading ? 'Adding' : 'Add Ready To Pack' }}
             </button>
           </section>
 

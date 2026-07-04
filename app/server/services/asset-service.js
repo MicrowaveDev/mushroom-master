@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { query, withTransaction } from '../db.js';
 import {
   PORTRAIT_VARIANTS,
+  portraitVariantsForResponse,
   portraitUrl
 } from '../game-data.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
@@ -103,9 +104,17 @@ export function portraitAssetId(mushroomId, portraitId = 'default') {
 }
 
 export function parsePortraitAssetId(assetId) {
-  const match = String(assetId || '').match(/^portrait\.([^.]+)\.(.+)$/);
-  if (!match) return null;
-  return { mushroomId: match[1], portraitId: match[2] };
+  const portraitMatch = String(assetId || '').match(/^portrait\.([^.]+)\.(.+)$/);
+  if (portraitMatch) return { mushroomId: portraitMatch[1], portraitId: portraitMatch[2] };
+  const planMatch = String(assetId || '').match(/^planned_portrait\.([^.]+)\.(.+)$/);
+  if (planMatch) {
+    return {
+      mushroomId: planMatch[1],
+      portraitId: planPortraitVariantId(planMatch[2]),
+      planItemId: planMatch[2]
+    };
+  }
+  return null;
 }
 
 export function getAssetCatalog() {
@@ -139,6 +148,109 @@ export function getAssetCatalog() {
 
 export function getAssetById(assetId) {
   return getAssetCatalog().find((asset) => asset.assetId === assetId) || null;
+}
+
+function planPortraitVariantId(planItemId) {
+  return `plan_${String(planItemId || '').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
+function assetByIdFromCatalog(catalog, assetId) {
+  return (catalog || []).find((asset) => asset.assetId === assetId) || null;
+}
+
+function planAssetName(row, metadata = {}) {
+  if (metadata.name && typeof metadata.name === 'object') return metadata.name;
+  const character = String(row.character_id || '').trim();
+  const label = character ? character[0].toUpperCase() + character.slice(1) : 'Character';
+  const fallback = row.file_name
+    ? `${label} ${String(row.file_name).replace(/\.[^.]+$/, '')}`
+    : `${label} season portrait`;
+  return { en: fallback, ru: fallback };
+}
+
+function rowToPlanAsset(row, packIds = []) {
+  const metadata = parseJson(row.metadata_json, {});
+  return {
+    assetId: row.asset_id,
+    slot: 'portrait',
+    targetType: 'character',
+    targetId: row.character_id,
+    variantId: planPortraitVariantId(row.id),
+    name: planAssetName(row, metadata),
+    path: row.image_path,
+    price: null,
+    currencyCode: WALLET_CURRENCY_CODE,
+    acquisitionMode: 'gacha',
+    packId: metadata.primaryPackId || packIds[0] || null,
+    packIds,
+    rarity: row.rarity || 'common',
+    dropWeight: Number(row.drop_weight || 1),
+    maxCopiesPerPlayer: 1,
+    source: 'gacha_plan',
+    planItemId: row.id,
+    status: row.status
+  };
+}
+
+export async function getRuntimeAssetCatalog({ client = null } = {}) {
+  const staticAssets = getAssetCatalog();
+  const planRows = await runAssetCatalogQuery(
+    client,
+    `SELECT *
+     FROM asset_gacha_plan_items
+     WHERE status = 'ready'
+     ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`,
+    []
+  );
+  if (!planRows.rowCount) return staticAssets;
+
+  const assetIds = planRows.rows.map((row) => row.asset_id);
+  const placeholders = assetIds.map((_, index) => `$${index + 1}`).join(', ');
+  const packLinks = await runAssetCatalogQuery(
+    client,
+    `SELECT asset_id, pack_id
+     FROM asset_gacha_pack_items
+     WHERE asset_id IN (${placeholders})
+     ORDER BY pack_id ASC`,
+    assetIds
+  );
+  const packIdsByAssetId = new Map();
+  for (const row of packLinks.rows) {
+    const list = packIdsByAssetId.get(row.asset_id) || [];
+    list.push(row.pack_id);
+    packIdsByAssetId.set(row.asset_id, list);
+  }
+
+  return [
+    ...staticAssets,
+    ...planRows.rows.map((row) => rowToPlanAsset(row, packIdsByAssetId.get(row.asset_id) || []))
+  ];
+}
+
+export async function getRuntimeAssetById(assetId, { client = null } = {}) {
+  return assetByIdFromCatalog(await getRuntimeAssetCatalog({ client }), assetId);
+}
+
+export async function getRuntimePortraitVariantsForResponse({ client = null } = {}) {
+  const variantsByCharacter = portraitVariantsForResponse();
+  const runtimeCatalog = await getRuntimeAssetCatalog({ client });
+  for (const asset of runtimeCatalog) {
+    if (asset.source !== 'gacha_plan' || asset.slot !== 'portrait' || asset.targetType !== 'character') continue;
+    const list = variantsByCharacter[asset.targetId] || [];
+    if (list.some((variant) => variant.id === asset.variantId)) continue;
+    list.push({
+      id: asset.variantId,
+      cost: asset.price,
+      path: asset.path,
+      name: asset.name,
+      source: asset.source,
+      assetId: asset.assetId,
+      rarity: asset.rarity,
+      packId: asset.packId
+    });
+    variantsByCharacter[asset.targetId] = list;
+  }
+  return variantsByCharacter;
 }
 
 function configuredRollPriceAmount() {
@@ -536,8 +648,8 @@ export function validateAssetPack(pack, {
   };
 }
 
-function packAvailability(pack, now = new Date()) {
-  const validation = validateAssetPack(pack);
+function packAvailability(pack, now = new Date(), catalog = getAssetCatalog()) {
+  const validation = validateAssetPack(pack, { catalog });
   if (!validation.ok) return 'invalid';
   if (pack.status === 'disabled') return 'disabled';
   if (pack.status === 'future') return 'future';
@@ -596,11 +708,11 @@ function summarizeSlotRarities(pack, items) {
     .sort((a, b) => b.expectedPerOpen - a.expectedPerOpen || a.rarity.localeCompare(b.rarity));
 }
 
-function assetRarityForPack(pack, assetId, metadataItem = null) {
+function assetRarityForPack(pack, assetId, metadataItem = null, catalog = getAssetCatalog()) {
   if (metadataItem?.rarity) return metadataItem.rarity;
   const packItem = (pack?.items || []).find((item) => item.assetId === assetId);
   if (packItem?.rarity) return packItem.rarity;
-  return getAssetById(assetId)?.rarity || 'common';
+  return assetByIdFromCatalog(catalog, assetId)?.rarity || 'common';
 }
 
 function rowResultAssetIds(row) {
@@ -744,15 +856,17 @@ export function shapeAssetPack(pack, {
   now = new Date(),
   rollHistory = [],
   activeAssetRows = [],
-  equippedAssetInstanceIds = []
+  equippedAssetInstanceIds = [],
+  catalog = getAssetCatalog()
 } = {}) {
+  const catalogById = new Map(catalog.map((asset) => [asset.assetId, asset]));
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
   const equippedIds = equippedAssetInstanceIds instanceof Set
     ? equippedAssetInstanceIds
     : new Set(equippedAssetInstanceIds);
   const copyCounts = activeCopyCounts(activeAssetRows);
-  const validation = validateAssetPack(pack);
-  const availability = packAvailability(pack, now);
+  const validation = validateAssetPack(pack, { catalog });
+  const availability = packAvailability(pack, now, catalog);
   const duplicatePolicy = normalizedDuplicatePolicy(pack);
   const totalWeight = (pack.items || []).reduce((sum, item) => sum + Math.max(0, Number(item.dropWeight || 0)), 0);
   const items = (pack.items || []).map((item) => {
@@ -765,7 +879,7 @@ export function shapeAssetPack(pack, {
       copyLimit,
       copyCapped: copyLimitReached(ownedCopies, copyLimit),
       probability: totalWeight > 0 ? Math.max(0, Number(item.dropWeight || 0)) / totalWeight : 0,
-      ...(includeAssets ? { asset: getAssetById(item.assetId) } : {})
+      ...(includeAssets ? { asset: catalogById.get(item.assetId) || null } : {})
     };
   });
   const rollSize = assetPackRollSize(pack);
@@ -961,8 +1075,9 @@ export async function getRuntimeAssetPack(packId, { client = null } = {}) {
 }
 
 export async function getAssetPacksForPlayer(playerId) {
-  const [packs, ownedRows, rollRows, equippedRows] = await Promise.all([
+  const [packs, catalog, ownedRows, rollRows, equippedRows] = await Promise.all([
     getRuntimeAssetPacks(),
+    getRuntimeAssetCatalog(),
     query(
       `SELECT * FROM player_asset_instances
        WHERE player_id = $1 AND status = 'active'`,
@@ -987,12 +1102,13 @@ export async function getAssetPacksForPlayer(playerId) {
     ownedAssetIds,
     activeAssetRows: ownedRows.rows,
     equippedAssetInstanceIds,
-    rollHistory: rollRows.rows.filter((row) => row.pack_id === pack.id)
+    rollHistory: rollRows.rows.filter((row) => row.pack_id === pack.id),
+    catalog
   }));
 }
 
-function packIsActive(pack, now = new Date()) {
-  return packAvailability(pack, now) === 'active';
+function packIsActive(pack, now = new Date(), catalog = getAssetCatalog()) {
+  return packAvailability(pack, now, catalog) === 'active';
 }
 
 export function assetPolicy(asset) {
@@ -1122,11 +1238,22 @@ export function shapePortraitVariant({
   mushroomId,
   variant,
   cosmeticState,
-  activePortraitId = 'default'
+  activePortraitId = 'default',
+  catalog = getAssetCatalog()
 }) {
-  const asset = getAssetById(portraitAssetId(mushroomId, variant.id));
+  const asset = assetByIdFromCatalog(catalog, variant.assetId || portraitAssetId(mushroomId, variant.id));
+  if (!asset) return null;
   const owned = asset.price === 0 || cosmeticState.ownedAssetIds.has(asset.assetId);
-  const policy = assetPolicy(asset);
+  const policy = asset.source === 'gacha_plan'
+    ? {
+      acquisitionMode: asset.acquisitionMode,
+      purchaseAvailable: false,
+      rollAvailable: false,
+      gachaEnabled: isAssetGachaEnabled(),
+      directBuyPolicy: directBuyPolicy(),
+      activePackId: asset.packId || null
+    }
+    : assetPolicy(asset);
   return {
     ...variant,
     assetId: asset.assetId,
@@ -1153,6 +1280,18 @@ export async function resolveEquippedPortraitId(client, playerId, mushroomId) {
   );
   const parsed = equipped.rowCount ? parsePortraitAssetId(equipped.rows[0].asset_id) : null;
   if (parsed?.mushroomId === mushroomId) return parsed.portraitId;
+  if (equipped.rowCount) {
+    const dynamic = await client.query(
+      `SELECT id
+       FROM asset_gacha_plan_items
+       WHERE asset_id = $1
+         AND character_id = $2
+         AND status = 'ready'
+       LIMIT 1`,
+      [equipped.rows[0].asset_id, mushroomId]
+    );
+    if (dynamic.rowCount) return planPortraitVariantId(dynamic.rows[0].id);
+  }
 
   const legacy = await client.query(
     `SELECT active_portrait FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
@@ -1164,7 +1303,7 @@ export async function resolveEquippedPortraitId(client, playerId, mushroomId) {
 export async function purchaseAsset(playerId, assetId, {
   idempotencyKey = null
 } = {}) {
-  const asset = getAssetById(assetId);
+  const asset = await getRuntimeAssetById(assetId);
   if (!asset) throw httpError('Unknown asset', 404);
   const policy = assetPolicy(asset);
   if (!policy.purchaseAvailable) {
@@ -1225,7 +1364,7 @@ export async function purchaseAsset(playerId, assetId, {
 }
 
 export async function equipAsset(playerId, assetId) {
-  const asset = getAssetById(assetId);
+  const asset = await getRuntimeAssetById(assetId);
   if (!asset) throw httpError('Unknown asset', 404);
   if (asset.slot !== 'portrait' || asset.targetType !== 'character') {
     throw httpError('Unsupported asset equipment slot', 400);
@@ -1233,7 +1372,7 @@ export async function equipAsset(playerId, assetId) {
 
   return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
     let instance = null;
-    if (asset.price > 0) {
+    if (asset.price !== 0) {
       instance = await activeAssetInstance(client, playerId, asset.assetId);
       if (!instance) throw httpError('Asset is not owned', 403);
     }
@@ -1439,8 +1578,10 @@ export function resolveAssetPackRollCandidates(pack, {
   ownedAssetIds = [],
   activeAssetRows = [],
   copyCounts = null,
-  includeOwned = normalizedDuplicatePolicy(pack).enabled
+  includeOwned = normalizedDuplicatePolicy(pack).enabled,
+  catalog = getAssetCatalog()
 } = {}) {
+  const catalogById = new Map(catalog.map((asset) => [asset.assetId, asset]));
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
   const duplicatePolicy = normalizedDuplicatePolicy(pack);
   const activeCounts = normalizeCopyCountsInput({ activeAssetRows, copyCounts, ownedAssetIds: owned });
@@ -1453,7 +1594,7 @@ export function resolveAssetPackRollCandidates(pack, {
         ownedCopies,
         copyLimit,
         copyCapped: copyLimitReached(ownedCopies, copyLimit),
-        asset: getAssetById(item.assetId)
+        asset: catalogById.get(item.assetId) || null
       };
     })
     .filter((item) => {
@@ -1501,16 +1642,17 @@ function shapeAssetRollResult(roll, {
   pack = null,
   instance = null,
   rarity = null,
-  items = null
+  items = null,
+  catalog = getAssetCatalog()
 } = {}) {
-  const selectedAsset = asset || getAssetById(roll.selectedAssetId || roll.resultAssetIds?.[0]);
+  const selectedAsset = asset || assetByIdFromCatalog(catalog, roll.selectedAssetId || roll.resultAssetIds?.[0]);
   const selectedPack = pack || getAssetPack(roll.packId);
   const metadataItems = Array.isArray(roll.metadata?.results) ? roll.metadata.results : [];
   const resultItems = Array.isArray(items)
     ? items
     : (roll.resultAssetIds || []).map((assetId, index) => {
       const metadataItem = metadataItems.find((entry) => entry.assetId === assetId) || metadataItems[index] || {};
-      const itemAsset = getAssetById(assetId);
+      const itemAsset = assetByIdFromCatalog(catalog, assetId);
       return {
         slotIndex: Number.isInteger(Number(metadataItem.slotIndex)) ? Number(metadataItem.slotIndex) : index,
         assetId,
@@ -1559,20 +1701,21 @@ function rowToBurnExchange(row) {
 
 function shapeAssetBurnResult(exchange, {
   pack = null,
-  items = null
+  items = null,
+  catalog = getAssetCatalog()
 } = {}) {
   const selectedPack = pack || getAssetPack(exchange.packId);
   const resultItems = Array.isArray(items)
     ? items
     : (exchange.resultAssetIds || []).map((assetId, index) => {
-      const itemAsset = getAssetById(assetId);
+      const itemAsset = assetByIdFromCatalog(catalog, assetId);
       return {
         slotIndex: index,
         assetId,
         assetName: itemAsset?.name || null,
         assetPath: itemAsset?.path || null,
-        rarity: assetRarityForPack(selectedPack, assetId),
-        selectedRarity: assetRarityForPack(selectedPack, assetId),
+        rarity: assetRarityForPack(selectedPack, assetId, null, catalog),
+        selectedRarity: assetRarityForPack(selectedPack, assetId, null, catalog),
         duplicateCopy: Boolean(exchange.metadata?.duplicateAssetIds?.includes(assetId)),
         resultInstanceId: exchange.resultInstanceIds?.[index] || null
       };
@@ -1597,8 +1740,10 @@ function shapeAssetBurnResult(exchange, {
 function burnTargetCandidates(pack, rule, {
   ownedAssetIds = new Set(),
   copyCounts = new Map(),
-  selectedAssetIds = new Set()
+  selectedAssetIds = new Set(),
+  catalog = getAssetCatalog()
 } = {}) {
+  const catalogById = new Map(catalog.map((asset) => [asset.assetId, asset]));
   const duplicatePolicy = normalizedDuplicatePolicy(pack);
   return (pack?.items || [])
     .filter((item) => rarityAtLeast(item.rarity, rule.targetMinRarity))
@@ -1611,7 +1756,7 @@ function burnTargetCandidates(pack, rule, {
         ownedCopies,
         copyLimit,
         copyCapped: copyLimitReached(ownedCopies, copyLimit),
-        asset: getAssetById(item.assetId)
+        asset: catalogById.get(item.assetId) || null
       };
     })
     .filter((item) => item.asset && !item.copyCapped);
@@ -1620,7 +1765,8 @@ function burnTargetCandidates(pack, rule, {
 function selectBurnTargets(pack, rule, rng, {
   ownedAssetIds = [],
   activeAssetRows = [],
-  copyCounts = null
+  copyCounts = null,
+  catalog = getAssetCatalog()
 } = {}) {
   const selected = [];
   const owned = ownedAssetIds instanceof Set ? new Set(ownedAssetIds) : new Set(ownedAssetIds);
@@ -1630,7 +1776,8 @@ function selectBurnTargets(pack, rule, rng, {
     const candidates = burnTargetCandidates(pack, rule, {
       ownedAssetIds: owned,
       copyCounts: activeCounts,
-      selectedAssetIds
+      selectedAssetIds,
+      catalog
     });
     const unownedCandidates = candidates.filter((candidate) => !owned.has(candidate.assetId));
     const pool = rule.targetDuplicatePolicy === 'unowned_only'
@@ -1664,11 +1811,12 @@ export async function burnAssetPackDuplicates(playerId, packId, {
   if (!isAssetGachaEnabled()) throw httpError('Asset gacha is disabled', 403);
   const pack = await getRuntimeAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
-  const validation = validateAssetPack(pack);
+  const catalog = await getRuntimeAssetCatalog();
+  const validation = validateAssetPack(pack, { catalog });
   if (!validation.ok) {
     throw httpError(`Asset pack configuration is invalid: ${validation.errors.map((issue) => issue.code).join(', ')}`, 400);
   }
-  if (!packIsActive(pack)) throw httpError('Asset pack is not active', 403);
+  if (!packIsActive(pack, new Date(), catalog)) throw httpError('Asset pack is not active', 403);
   const rules = normalizedBurnRules(pack);
   const rule = ruleId
     ? rules.find((candidate) => candidate.id === ruleId)
@@ -1688,7 +1836,7 @@ export async function burnAssetPackDuplicates(playerId, packId, {
           const exchange = rowToBurnExchange(existing.rows[0]);
           return {
             exchange,
-            burnResult: shapeAssetBurnResult(exchange, { pack }),
+            burnResult: shapeAssetBurnResult(exchange, { pack, catalog }),
             alreadyProcessed: true
           };
         }
@@ -1748,7 +1896,8 @@ export async function burnAssetPackDuplicates(playerId, packId, {
       const ownedAfterBurn = new Set(activeAfterBurnRows.rows.map((row) => row.asset_id));
       const targetItems = selectBurnTargets(pack, rule, rng, {
         ownedAssetIds: ownedAfterBurn,
-        activeAssetRows: activeAfterBurnRows.rows
+        activeAssetRows: activeAfterBurnRows.rows,
+        catalog
       });
       if (targetItems.length < rule.targetCount) {
         throw httpError('Asset burn target pool is unavailable', 400);
@@ -1824,7 +1973,7 @@ export async function burnAssetPackDuplicates(playerId, packId, {
       }));
       return {
         exchange,
-        burnResult: shapeAssetBurnResult(exchange, { pack, items: resultItems }),
+        burnResult: shapeAssetBurnResult(exchange, { pack, items: resultItems, catalog }),
         assets: insertedItems.map((item) => item.asset),
         instances: insertedItems.map((item) => item.instance),
         alreadyProcessed: false
@@ -1840,11 +1989,12 @@ export async function rollAssetPack(playerId, packId, {
   if (!isAssetGachaEnabled()) throw httpError('Asset gacha is disabled', 403);
   const pack = await getRuntimeAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
-  const validation = validateAssetPack(pack);
+  const catalog = await getRuntimeAssetCatalog();
+  const validation = validateAssetPack(pack, { catalog });
   if (!validation.ok) {
     throw httpError(`Asset pack configuration is invalid: ${validation.errors.map((issue) => issue.code).join(', ')}`, 400);
   }
-  if (!packIsActive(pack)) throw httpError('Asset pack is not active', 403);
+  if (!packIsActive(pack, new Date(), catalog)) throw httpError('Asset pack is not active', 403);
 
   return withMutationClaim('asset_roll', `${playerId}:${pack.id}`, () =>
     withWalletMutationLock(playerId, () => withTransaction(async (client) => {
@@ -1859,7 +2009,7 @@ export async function rollAssetPack(playerId, packId, {
           const roll = rowToRoll(existing.rows[0]);
           return {
             roll,
-            rollResult: shapeAssetRollResult(roll, { pack }),
+            rollResult: shapeAssetRollResult(roll, { pack, catalog }),
             alreadyProcessed: true
           };
         }
@@ -1874,7 +2024,8 @@ export async function rollAssetPack(playerId, packId, {
       const duplicatePolicy = normalizedDuplicatePolicy(pack);
       const candidates = resolveAssetPackRollCandidates(pack, {
         ownedAssetIds: owned,
-        activeAssetRows: ownedRows.rows
+        activeAssetRows: ownedRows.rows,
+        catalog
       });
 
       if (!candidates.length) {
@@ -2041,7 +2192,8 @@ export async function rollAssetPack(playerId, packId, {
           pack,
           instance: insertedItems[0]?.instance || null,
           rarity: insertedItems[0]?.rarity || null,
-          items: resultItems
+          items: resultItems,
+          catalog
         }),
         asset: insertedItems[0]?.asset || null,
         instance: insertedItems[0]?.instance || null,
@@ -2063,5 +2215,6 @@ export function getPackOdds(packId) {
 export async function getPackOddsForRuntime(packId) {
   const pack = await getRuntimeAssetPack(packId);
   if (!pack) throw httpError('Unknown asset pack', 404);
-  return shapeAssetPack(pack, { includeAssets: true });
+  const catalog = await getRuntimeAssetCatalog();
+  return shapeAssetPack(pack, { includeAssets: true, catalog });
 }

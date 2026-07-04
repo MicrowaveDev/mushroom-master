@@ -408,7 +408,9 @@ Membership is not stored. It is derived from overlap between item cells and acti
   operators upload image files, assign each image to a mushroom character,
   choose rarity and chance weight per image, review per-character coverage
   against the configured content target, and save audited plan-item edits before
-  using advanced pack authoring controls.
+  using advanced pack authoring controls. Ready plan images can be promoted into
+  a selected pack as runtime pack items; the promotion is audited and DB-backed
+  rolls can grant and equip those promoted portrait assets.
   `/api/admin/gacha/export` and `/api/admin/gacha/import` provide JSON fixture
   movement for DB-authored gacha data; imports default to dry-run and require
   `allowApproved: true` before preserving approved pack review status, with the

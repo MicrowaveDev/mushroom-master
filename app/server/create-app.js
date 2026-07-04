@@ -57,7 +57,7 @@ import {
   switchPreset,
   createPurchaseIntent,
   equipAsset,
-  getAssetCatalog,
+  getRuntimeAssetCatalog,
   getPackOddsForRuntime,
   getPaymentSupportLinks,
   getWalletBundles,
@@ -89,6 +89,7 @@ import {
   importGachaAdminFixture,
   listGachaAdminCatalog,
   previewGachaAdminPack,
+  promoteGachaPlanItemsToPack,
   replaceGachaPackItems,
   transitionGachaPack,
   updateGachaCollection,
@@ -1486,6 +1487,27 @@ export async function createApp() {
   );
 
   app.post(
+    '/api/admin/gacha/packs/:packId/promote-plan-items',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await promoteGachaPlanItemsToPack({
+          actorId: req.supportActorId,
+          packId: req.params.packId,
+          payload: req.body || {},
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
+    })
+  );
+
+  app.put(
     '/api/admin/gacha/packs/:packId/items',
     requireSupportAdmin,
     requireSupportAdminRole('gacha_operator'),
@@ -1555,7 +1577,7 @@ export async function createApp() {
     requireAuth,
     assetCatalogRateLimit,
     asyncRoute(async (_req, res) => {
-      res.json({ success: true, data: getAssetCatalog() });
+      res.json({ success: true, data: await getRuntimeAssetCatalog() });
     })
   );
 

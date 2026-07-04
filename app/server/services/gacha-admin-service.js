@@ -7,6 +7,7 @@ import { PORTRAIT_VARIANTS } from '../game-data.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 import {
   getAssetCatalog,
+  getRuntimeAssetCatalog,
   resolveAssetPackRollCandidates,
   selectAssetPackRollResults,
   shapeAssetPack,
@@ -261,8 +262,8 @@ function rowPackToRuntimePack(row, itemRows = []) {
   return pack;
 }
 
-function catalogAssetOptions() {
-  return getAssetCatalog().map((asset) => ({
+function catalogAssetOptions(catalog = getAssetCatalog()) {
+  return catalog.map((asset) => ({
     assetId: asset.assetId,
     mushroomId: asset.mushroomId,
     portraitId: asset.portraitId,
@@ -471,12 +472,12 @@ function duplicateCopyCap(policy) {
   return Number.isInteger(Number(policy.maxCopiesPerAsset)) ? Number(policy.maxCopiesPerAsset) : null;
 }
 
-function createChecklist({ runtimePack, validation, seasonRow = null, collectionRow = null }) {
+function createChecklist({ runtimePack, validation, seasonRow = null, collectionRow = null, catalog = getAssetCatalog() }) {
   const blockers = [];
   const warnings = [];
   const passed = [];
   const metadata = runtimePack.metadata || {};
-  const catalog = new Map(getAssetCatalog().map((asset) => [asset.assetId, asset]));
+  const catalogById = new Map(catalog.map((asset) => [asset.assetId, asset]));
 
   if (validation.ok) passed.push(checklistIssue('runtime_validation_ok', 'Runtime pack validation passes.', 'pass'));
   else blockers.push(checklistIssue(
@@ -545,7 +546,7 @@ function createChecklist({ runtimePack, validation, seasonRow = null, collection
 
   const policyRecommendations = [];
   for (const item of runtimePack.items || []) {
-    const asset = catalog.get(item.assetId);
+    const asset = catalogById.get(item.assetId);
     if (!asset) continue;
     const alreadyMapped = asset.packId === runtimePack.id &&
       (asset.acquisitionMode === 'gacha' || asset.acquisitionMode === 'both');
@@ -606,11 +607,11 @@ function createPreviewRng(seedInput) {
   };
 }
 
-function simulateRuntimePack(runtimePack, { trials = 1000, seed = null } = {}) {
+function simulateRuntimePack(runtimePack, { trials = 1000, seed = null, catalog = getAssetCatalog() } = {}) {
   const trialCount = normalizePreviewTrials(trials);
   const seedValue = seed || `${runtimePack.id}:${runtimePack.updatedAt || runtimePack.rarityTableVersion || 'draft'}:${trialCount}`;
   const rng = createPreviewRng(seedValue);
-  const candidates = resolveAssetPackRollCandidates(runtimePack, { ownedAssetIds: [] });
+  const candidates = resolveAssetPackRollCandidates(runtimePack, { ownedAssetIds: [], catalog });
   const counts = new Map(candidates.map((candidate) => [candidate.assetId, 0]));
   const rarityCounts = new Map();
   let totalSelections = 0;
@@ -969,10 +970,12 @@ async function applyUpdate(client, table, id, fields) {
 async function validationForPackRow(client, packRow) {
   const items = await selectPackItems(client, packRow.id);
   const runtimePack = rowPackToRuntimePack(packRow, items);
+  const catalog = await getRuntimeAssetCatalog({ client });
   return {
     runtimePack,
-    validation: validateAssetPack(runtimePack),
-    shapedPack: shapeAssetPack(runtimePack, { includeAssets: true })
+    validation: validateAssetPack(runtimePack, { catalog }),
+    shapedPack: shapeAssetPack(runtimePack, { includeAssets: true, catalog }),
+    catalog
   };
 }
 
@@ -998,6 +1001,7 @@ function normalizeGachaFixture(input = {}) {
   }
   const seasons = normalizeFixtureArray(fixture.seasons, 'Gacha fixture seasons');
   const collections = normalizeFixtureArray(fixture.collections, 'Gacha fixture collections');
+  const planItems = normalizeFixtureArray(fixture.planItems, 'Gacha fixture planItems');
   const flatItems = normalizeFixtureArray(fixture.items, 'Gacha fixture items');
   const flatItemsByPack = new Map();
   for (const item of flatItems) {
@@ -1015,11 +1019,13 @@ function normalizeGachaFixture(input = {}) {
   });
   assertUniqueFixtureIds(seasons, 'Gacha season');
   assertUniqueFixtureIds(collections, 'Gacha collection');
+  assertUniqueFixtureIds(planItems, 'Gacha plan item');
   assertUniqueFixtureIds(packs, 'Gacha pack');
   return {
     schemaVersion: fixture.schemaVersion || GACHA_FIXTURE_SCHEMA_VERSION,
     seasons,
     collections,
+    planItems,
     packs
   };
 }
@@ -1132,14 +1138,88 @@ async function insertFixturePackItemRow(client, row) {
   );
 }
 
-function fixturePackResult(packRow, itemRows, { seasonRow, collectionRow }) {
+async function insertFixturePlanItemRow(client, row) {
+  await client.query(
+    `INSERT INTO asset_gacha_plan_items
+     (id, season_id, character_id, asset_id, image_path, file_name, mime_type,
+      rarity, drop_weight, status, metadata_json, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+    [
+      row.id,
+      row.season_id,
+      row.character_id,
+      row.asset_id,
+      row.image_path,
+      row.file_name,
+      row.mime_type,
+      row.rarity,
+      row.drop_weight,
+      row.status,
+      row.metadata_json,
+      row.created_by,
+      row.created_at,
+      row.updated_at
+    ]
+  );
+}
+
+function planItemFixtureUpdateFields(payload = {}) {
+  const fields = planItemUpdateFields(payload);
+  if (payload.imagePath !== undefined || payload.image_path !== undefined) fields.image_path = requiredText(payload.imagePath ?? payload.image_path, 'Gacha plan item imagePath');
+  if (payload.fileName !== undefined || payload.file_name !== undefined) fields.file_name = optionalText(payload.fileName ?? payload.file_name);
+  if (payload.mimeType !== undefined || payload.mime_type !== undefined) fields.mime_type = requiredText(payload.mimeType ?? payload.mime_type, 'Gacha plan item mimeType');
+  return fields;
+}
+
+function planCatalogAssetFromRow(row, catalog = []) {
+  if (row.status !== 'ready') return null;
+  const existing = catalog.find((asset) => asset.assetId === row.asset_id);
+  if (existing) return null;
+  const metadata = parseJson(row.metadata_json, {});
+  const packIds = Object.keys(metadata.promotedPackItemIds || {});
+  const characterLabel = row.character_id
+    ? row.character_id[0].toUpperCase() + row.character_id.slice(1)
+    : 'Character';
+  return {
+    assetId: row.asset_id,
+    slot: 'portrait',
+    targetType: 'character',
+    targetId: row.character_id,
+    variantId: `plan_${String(row.id || '').replace(/[^a-zA-Z0-9_-]/g, '_')}`,
+    name: metadata.name || { en: `${characterLabel} season portrait`, ru: `${characterLabel} season portrait` },
+    path: row.image_path,
+    price: null,
+    currencyCode: WALLET_CURRENCY_CODE,
+    acquisitionMode: 'gacha',
+    packId: metadata.primaryPackId || metadata.lastPromotedPackId || packIds[0] || null,
+    packIds,
+    rarity: row.rarity || 'common',
+    dropWeight: Number(row.drop_weight || 1),
+    maxCopiesPerPlayer: 1,
+    source: 'gacha_plan',
+    planItemId: row.id,
+    status: row.status
+  };
+}
+
+function catalogWithFixturePlanRows(catalog, planRows) {
+  const merged = [...catalog];
+  for (const row of planRows) {
+    const asset = planCatalogAssetFromRow(row, merged);
+    if (asset) merged.push(asset);
+  }
+  return merged;
+}
+
+function fixturePackResult(packRow, itemRows, { seasonRow, collectionRow, catalog }) {
   const runtimePack = rowPackToRuntimePack(packRow, itemRows);
-  const validation = validateAssetPack(runtimePack);
+  const validation = validateAssetPack(runtimePack, { catalog });
   const releaseChecklist = createChecklist({
     runtimePack,
     validation,
     seasonRow,
-    collectionRow
+    collectionRow,
+    catalog
   });
   return {
     packId: packRow.id,
@@ -1160,13 +1240,14 @@ function assertApprovedImportReady(result) {
 }
 
 async function selectFixturePackRows(client) {
-  const [seasons, collections, packs, items] = await Promise.all([
+  const [seasons, collections, packs, items, planItems] = await Promise.all([
     client.query(`SELECT * FROM asset_gacha_seasons ORDER BY starts_at ASC, id ASC`),
     client.query(`SELECT * FROM asset_gacha_collections ORDER BY season_id ASC, starts_at ASC, id ASC`),
     client.query(`SELECT * FROM asset_gacha_packs ORDER BY season_id ASC, collection_id ASC, starts_at ASC, id ASC`),
-    client.query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`)
+    client.query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`),
+    client.query(`SELECT * FROM asset_gacha_plan_items ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`)
   ]);
-  return { seasons: seasons.rows, collections: collections.rows, packs: packs.rows, items: items.rows };
+  return { seasons: seasons.rows, collections: collections.rows, packs: packs.rows, items: items.rows, planItems: planItems.rows };
 }
 
 function assetPolicyRecommendationsFromChecklist(releaseChecklist) {
@@ -1176,14 +1257,15 @@ function assetPolicyRecommendationsFromChecklist(releaseChecklist) {
 }
 
 async function previewForPackRow(client, packRow, { trials = 1000, seed = null } = {}) {
-  const { runtimePack, validation, shapedPack } = await validationForPackRow(client, packRow);
+  const { runtimePack, validation, shapedPack, catalog } = await validationForPackRow(client, packRow);
   const seasonRow = await findOne(client, 'asset_gacha_seasons', packRow.season_id);
   const collectionRow = await findOne(client, 'asset_gacha_collections', packRow.collection_id);
   const releaseChecklist = createChecklist({
     runtimePack,
     validation,
     seasonRow,
-    collectionRow
+    collectionRow,
+    catalog
   });
   return {
     pack: rowToPack(packRow),
@@ -1192,7 +1274,7 @@ async function previewForPackRow(client, packRow, { trials = 1000, seed = null }
     preview: shapedPack,
     releaseChecklist,
     assetPolicyRecommendations: assetPolicyRecommendationsFromChecklist(releaseChecklist),
-    simulation: validation.ok ? simulateRuntimePack(runtimePack, { trials, seed }) : null,
+    simulation: validation.ok ? simulateRuntimePack(runtimePack, { trials, seed, catalog }) : null,
     diff: await draftDiffForPack(client, runtimePack)
   };
 }
@@ -1293,12 +1375,13 @@ async function editablePackRow(client, packId, options) {
 }
 
 export async function listGachaAdminCatalog() {
-  const [seasons, collections, packs, items, planItems] = await Promise.all([
+  const [seasons, collections, packs, items, planItems, runtimeCatalog] = await Promise.all([
     query(`SELECT * FROM asset_gacha_seasons ORDER BY starts_at ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_collections ORDER BY season_id ASC, starts_at ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_packs ORDER BY season_id ASC, collection_id ASC, starts_at ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`),
-    query(`SELECT * FROM asset_gacha_plan_items ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`)
+    query(`SELECT * FROM asset_gacha_plan_items ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`),
+    getRuntimeAssetCatalog()
   ]);
   const itemsByPack = new Map();
   for (const item of items.rows) {
@@ -1314,7 +1397,7 @@ export async function listGachaAdminCatalog() {
     collections: collections.rows.map(rowToCollection),
     packs: packs.rows.map((row) => {
       const runtimePack = rowPackToRuntimePack(row, itemsByPack.get(row.id) || []);
-      const validation = validateAssetPack(runtimePack);
+      const validation = validateAssetPack(runtimePack, { catalog: runtimeCatalog });
       return {
         ...rowToPack(row),
         validation,
@@ -1322,7 +1405,8 @@ export async function listGachaAdminCatalog() {
           runtimePack,
           validation,
           seasonRow: seasonsById.get(row.season_id) || null,
-          collectionRow: collectionsById.get(row.collection_id) || null
+          collectionRow: collectionsById.get(row.collection_id) || null,
+          catalog: runtimeCatalog
         }),
         itemCount: runtimePack.items.length
       };
@@ -1331,7 +1415,7 @@ export async function listGachaAdminCatalog() {
     planItems: shapedPlanItems,
     planSummary: summarizeGachaPlanItems(shapedPlanItems),
     planCharacters: planCharacterOptions(),
-    assetOptions: catalogAssetOptions()
+    assetOptions: catalogAssetOptions(runtimeCatalog)
   };
 }
 
@@ -1354,11 +1438,13 @@ export async function exportGachaAdminFixture() {
     counts: {
       seasons: rows.seasons.length,
       collections: rows.collections.length,
+      planItems: rows.planItems.length,
       packs: rows.packs.length,
       items: rows.items.length
     },
     seasons: rows.seasons.map(rowToSeason),
     collections: rows.collections.map(rowToCollection),
+    planItems: rows.planItems.map(rowToPlanItem),
     packs
   };
 }
@@ -1382,6 +1468,7 @@ export async function importGachaAdminFixture({
     const operations = [];
     const seasonRows = new Map();
     const collectionRows = new Map();
+    const planRows = new Map();
     const packRows = new Map();
     const itemRowsByPack = new Map();
 
@@ -1422,6 +1509,28 @@ export async function importGachaAdminFixture({
         if (shouldWrite) await insertFixtureCollectionRow(client, row);
         collectionRows.set(row.id, row);
         operations.push({ type: 'collection', id: row.id, action: 'create' });
+      }
+    }
+
+    for (const planItem of normalizedFixture.planItems) {
+      const row = planItemInsertPayload(planItem, actor);
+      if (!seasonRows.has(row.season_id)) await requireRow(client, 'asset_gacha_seasons', row.season_id, 'gacha season');
+      const existing = await findOne(client, 'asset_gacha_plan_items', row.id);
+      if (existing) {
+        const fields = planItemFixtureUpdateFields(planItem);
+        if (fields.season_id && !seasonRows.has(fields.season_id)) {
+          await requireRow(client, 'asset_gacha_seasons', fields.season_id, 'gacha season');
+        }
+        if (shouldWrite) await applyUpdate(client, 'asset_gacha_plan_items', row.id, fields);
+        const after = shouldWrite
+          ? await requireRow(client, 'asset_gacha_plan_items', row.id, 'gacha plan item')
+          : mergeRowFields(existing, fields);
+        planRows.set(row.id, after);
+        operations.push({ type: 'plan_item', id: row.id, action: Object.keys(fields).length ? 'update' : 'noop' });
+      } else {
+        if (shouldWrite) await insertFixturePlanItemRow(client, row);
+        planRows.set(row.id, row);
+        operations.push({ type: 'plan_item', id: row.id, action: 'create' });
       }
     }
 
@@ -1492,7 +1601,8 @@ export async function importGachaAdminFixture({
       const packRow = packRows.get(packId) || await requireRow(client, 'asset_gacha_packs', packId, 'gacha pack');
       const seasonRow = seasonRows.get(packRow.season_id) || await findOne(client, 'asset_gacha_seasons', packRow.season_id);
       const collectionRow = collectionRows.get(packRow.collection_id) || await findOne(client, 'asset_gacha_collections', packRow.collection_id);
-      const result = fixturePackResult(packRow, itemRowsByPack.get(packId) || [], { seasonRow, collectionRow });
+      const catalog = catalogWithFixturePlanRows(await getRuntimeAssetCatalog({ client }), [...planRows.values()]);
+      const result = fixturePackResult(packRow, itemRowsByPack.get(packId) || [], { seasonRow, collectionRow, catalog });
       assertApprovedImportReady(result);
       packResults.push(result);
     }
@@ -2035,6 +2145,190 @@ export async function replaceGachaPackItems({ actorId, packId, items = [], reaso
       result: { before, after: inserted, validation, clonedFromPackId: editable.cloned ? packId : null }
     });
     return { items: inserted, packId: editable.row.id, validation, action, cloned: editable.cloned, clonedFromPackId: editable.cloned ? packId : null, cloneAction: editable.cloneAction };
+  });
+}
+
+function normalizedPlanItemIds(value) {
+  if (value === undefined || value === null || value === '') return [];
+  if (!Array.isArray(value)) throw new Error('Gacha plan item ids must be an array');
+  return value.map((id) => requiredText(id, 'Gacha plan item id'));
+}
+
+async function selectReadyPlanItemsForPromotion(client, {
+  seasonId,
+  planItemIds = []
+}) {
+  const ids = normalizedPlanItemIds(planItemIds);
+  const params = [seasonId];
+  let filter = '';
+  if (ids.length) {
+    const placeholders = ids.map((_, index) => `$${index + 2}`).join(', ');
+    filter = ` AND id IN (${placeholders})`;
+    params.push(...ids);
+  }
+  const result = await client.query(
+    `SELECT *
+     FROM asset_gacha_plan_items
+     WHERE season_id = $1
+       AND status = 'ready'
+       ${filter}
+     ORDER BY character_id ASC, created_at ASC, id ASC`,
+    params
+  );
+  if (ids.length && result.rowCount !== ids.length) {
+    throw new Error('Some gacha plan items are unknown, not ready, or belong to a different season');
+  }
+  if (!result.rowCount) throw new Error('No ready gacha plan items are available for this season');
+  return result.rows;
+}
+
+function promotionPackItemMetadata(planRow, packRow, existingMetadata = {}) {
+  return {
+    ...existingMetadata,
+    source: 'gacha_plan',
+    sourcePlanItemId: planRow.id,
+    sourceSeasonId: planRow.season_id,
+    characterId: planRow.character_id,
+    imagePath: planRow.image_path,
+    fileName: planRow.file_name || null,
+    mimeType: planRow.mime_type,
+    promotedToPackId: packRow.id
+  };
+}
+
+function promotedPlanMetadata(planRow, packItem, packRow) {
+  const metadata = parseJson(planRow.metadata_json, {});
+  const promotedPackIds = Array.from(new Set([...(metadata.promotedPackIds || []), packRow.id]));
+  const promotedPackItemIds = {
+    ...(metadata.promotedPackItemIds || {}),
+    [packRow.id]: packItem.id
+  };
+  return {
+    ...metadata,
+    promotedPackIds,
+    promotedPackItemIds,
+    lastPromotedAt: nowIso(),
+    lastPromotedPackId: packRow.id,
+    lastPromotedPackItemId: packItem.id
+  };
+}
+
+export async function promoteGachaPlanItemsToPack({ actorId, packId, payload = {}, reason, note = '', evidence = {} } = {}) {
+  const actor = normalizeActor(actorId);
+  const actionReason = normalizeReason(reason || payload.reason, 'gacha_plan_promote_pack_items');
+  const actionNote = normalizeNote(note || payload.note);
+  const actionEvidence = normalizeEvidence(evidence);
+  return withTransaction(async (client) => {
+    const editable = await editablePackRow(client, packId, {
+      actorId: actor,
+      allowClone: payload.cloneDraft !== false,
+      reason: actionReason,
+      note: actionNote,
+      evidence: actionEvidence
+    });
+    const targetSeasonId = requiredText(payload.seasonId ?? payload.season_id ?? editable.row.season_id, 'Gacha plan promotion seasonId');
+    if (targetSeasonId !== editable.row.season_id) {
+      throw new Error('Gacha plan promotion season must match the selected pack season');
+    }
+    const planRows = await selectReadyPlanItemsForPromotion(client, {
+      seasonId: targetSeasonId,
+      planItemIds: payload.planItemIds ?? payload.plan_item_ids
+    });
+    const before = (await selectPackItems(client, editable.row.id)).map(rowToPackItem);
+    const existingByAssetId = new Map(before.map((item) => [item.assetId, item]));
+    let nextOrder = before.reduce((max, item) => Math.max(max, Number(item.itemOrder || 0)), -1) + 1;
+    const inserted = [];
+    const updated = [];
+    for (const planRow of planRows) {
+      const existing = existingByAssetId.get(planRow.asset_id);
+      if (existing) {
+        const metadata = promotionPackItemMetadata(planRow, editable.row, existing.metadata || {});
+        await client.query(
+          `UPDATE asset_gacha_pack_items
+           SET rarity = $2,
+               drop_weight = $3,
+               metadata_json = $4,
+               updated_at = $5
+           WHERE id = $1`,
+          [
+            existing.id,
+            planRow.rarity,
+            planRow.drop_weight,
+            JSON.stringify(metadata),
+            nowIso()
+          ]
+        );
+        const after = rowToPackItem(await requireRow(client, 'asset_gacha_pack_items', existing.id, 'gacha pack item'));
+        updated.push(after);
+        await client.query(
+          `UPDATE asset_gacha_plan_items
+           SET metadata_json = $2,
+               updated_at = $3
+           WHERE id = $1`,
+          [planRow.id, JSON.stringify(promotedPlanMetadata(planRow, after, editable.row)), nowIso()]
+        );
+        continue;
+      }
+
+      const row = itemInsertPayload({
+        assetId: planRow.asset_id,
+        rarity: planRow.rarity,
+        dropWeight: planRow.drop_weight,
+        itemOrder: nextOrder,
+        metadata: promotionPackItemMetadata(planRow, editable.row)
+      }, editable.row.id);
+      nextOrder += 1;
+      await client.query(
+        `INSERT INTO asset_gacha_pack_items
+         (id, pack_id, asset_id, rarity, drop_weight, copy_limit, item_order, metadata_json, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [row.id, row.pack_id, row.asset_id, row.rarity, row.drop_weight, row.copy_limit, row.item_order, row.metadata_json, row.created_at, row.updated_at]
+      );
+      const insertedItem = rowToPackItem(await requireRow(client, 'asset_gacha_pack_items', row.id, 'gacha pack item'));
+      inserted.push(insertedItem);
+      await client.query(
+        `UPDATE asset_gacha_plan_items
+         SET metadata_json = $2,
+             updated_at = $3
+         WHERE id = $1`,
+        [planRow.id, JSON.stringify(promotedPlanMetadata(planRow, insertedItem, editable.row)), nowIso()]
+      );
+    }
+    const after = (await selectPackItems(client, editable.row.id)).map(rowToPackItem);
+    const validation = (await validationForPackRow(client, await requireRow(client, 'asset_gacha_packs', editable.row.id, 'gacha pack'))).validation;
+    if (!validation.ok) {
+      throw new Error(`Gacha pack validation failed after plan promotion: ${validation.errors.map((issue) => issue.code).join(', ')}`);
+    }
+    const action = await insertAdminAction(client, {
+      actorId: actor,
+      actionType: 'gacha_plan_promote_pack_items',
+      targetType: 'gacha_pack',
+      targetId: editable.row.id,
+      reason: actionReason,
+      note: actionNote,
+      evidence: actionEvidence,
+      result: {
+        before,
+        after,
+        inserted,
+        updated,
+        planItemIds: planRows.map((row) => row.id),
+        validation,
+        clonedFromPackId: editable.cloned ? packId : null
+      }
+    });
+    return {
+      pack: rowToPack(editable.row),
+      packId: editable.row.id,
+      items: after,
+      inserted,
+      updated,
+      validation,
+      action,
+      cloned: editable.cloned,
+      clonedFromPackId: editable.cloned ? packId : null,
+      cloneAction: editable.cloneAction
+    };
   });
 }
 

@@ -3,7 +3,6 @@ import {
   getMushroomById,
   getTier,
   mushrooms,
-  portraitVariantsForResponse,
   STARTER_PRESET_VARIANTS
 } from '../game-data.js';
 import {
@@ -16,6 +15,8 @@ import { createBotGhostSnapshot } from './bot-loadout.js';
 import {
   equipPortrait,
   getPlayerCosmeticState,
+  getRuntimeAssetCatalog,
+  getRuntimePortraitVariantsForResponse,
   parsePortraitAssetId,
   shapePortraitVariant
 } from './asset-service.js';
@@ -61,9 +62,10 @@ export async function getPlayerState(playerId) {
   }
 
   const player = rowToPlayerProfile(playerResult.rows[0]);
-  const [wallet, cosmeticState] = await Promise.all([
+  const [wallet, cosmeticState, runtimeAssetCatalog] = await Promise.all([
     getWalletState(playerId),
-    getPlayerCosmeticState(playerId)
+    getPlayerCosmeticState(playerId),
+    getRuntimeAssetCatalog()
   ]);
   player.spore = wallet.balance;
   const settings = settingsResult.rowCount
@@ -84,7 +86,7 @@ export async function getPlayerState(playerId) {
   // Pull portrait variants with mtime-stamped URLs once per request — any
   // portrait file replaced on disk between requests shows up on the next
   // /api/bootstrap without a server restart.
-  const freshPortraitVariants = portraitVariantsForResponse();
+  const freshPortraitVariants = await getRuntimePortraitVariantsForResponse();
 
   const battleStatsByMushroom = new Map(
     perMushroomBattleStatsResult.rows.map((row) => [row.mushroom_id, {
@@ -135,8 +137,9 @@ export async function getPlayerState(playerId) {
             mushroomId: row.mushroom_id,
             variant: v,
             cosmeticState,
-            activePortraitId
-          })),
+            activePortraitId,
+            catalog: runtimeAssetCatalog
+          })).filter(Boolean),
           activePreset: activePresetId,
           presets: presetVariants.map(v => ({ ...v, unlocked: level >= v.requiredLevel }))
         }
