@@ -11,7 +11,7 @@ import {
   bagRowEntryFor,
   classifyCell,
   occupiedCellKeys
-} from '../../web/src/helpers/grid-cell-classification.js';
+} from '@microwavedev/backpack-game-core/client-view-model';
 
 const BASE_INV = { cols: 3, rows: 3 };
 

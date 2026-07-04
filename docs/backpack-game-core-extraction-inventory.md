@@ -48,6 +48,10 @@ copy, theme, and API adapters.
   now also provides wallet balance/bundle/status/support shaping and asset
   roll-result/problem feedback shaping over product-provided labels, tested by
   `tests/client-view-model.test.js`
+- grid-cell classification client view-model slice: `src/client-view-model.js`
+  now also provides slot-first bag row lookup, grid-cell classification, and
+  occupied-footprint key generation for shared backpack board rendering,
+  tested by `tests/client-view-model.test.js`
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
@@ -71,8 +75,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `cf7c680`
-  (`Add wallet and roll feedback view-model helpers`)
+- latest consumed core commit: `f403553`
+  (`Add grid cell classification view-model helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -609,8 +613,9 @@ commit `8345448`, the gacha simulation helper moved in core commit `b3da379`,
 the wallet accounting helper moved in core commit `af520f0`, and the profile
 asset state helper moved in core commit `6ae688b`. Asset catalog acquisition
 default/override policy moved in core commit `77b1d7b`, the first asset/gacha
-client view-model helper slice moved in core commit `578279d`, and wallet/roll
-feedback view-model shaping moved in core commit `cf7c680`.
+client view-model helper slice moved in core commit `578279d`, wallet/roll
+feedback view-model shaping moved in core commit `cf7c680`, and grid-cell
+classification moved in core commit `f403553`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -671,6 +676,11 @@ Next planned domain slices:
    **Implemented 2026-07-04 in core commit `cf7c680`; Mushroom delegates home
    wallet and pack-feedback shaping while keeping surface detection,
    localization, emitted actions, routes, and visual composition local.**
+10. **Grid-cell classification view-model helpers:** slot-first bag row lookup,
+    grid cell role classification, and occupied footprint key generation for
+    backpack board rendering. **Implemented 2026-07-04 in core commit
+    `f403553`; Mushroom delegates artifact-grid lookup rules while keeping
+    visual classes, overlays, drag/drop events, and layout constants local.**
 
 Next planned frontend slices:
 
@@ -678,8 +688,9 @@ Next planned frontend slices:
    route-adapter client and shared `client-view-model` loadout projection.
    **Second slice implemented 2026-07-04** with asset pack summary/label
    helpers for gacha UI state. **Third slice implemented 2026-07-04** with
-   wallet purchase-surface and asset roll-feedback helpers. Continue with DTO
-   shapers, error/status normalization, asset inventory/equipment response
+   wallet purchase-surface and asset roll-feedback helpers. **Fourth slice
+   implemented 2026-07-04** with grid-cell classification helpers. Continue
+   with DTO shapers, error/status normalization, asset inventory/equipment response
    shapers, and headless view-model
    contracts before page/component extraction. Do not move the full Mushroom API
    client into core yet; keep product routes behind injected adapters.

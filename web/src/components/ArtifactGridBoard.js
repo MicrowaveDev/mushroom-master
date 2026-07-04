@@ -2,7 +2,7 @@ import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../con
 import {
   bagRowEntryFor as bagRowEntryForLookup,
   occupiedCellKeys
-} from '../helpers/grid-cell-classification.js';
+} from '@microwavedev/backpack-game-core/client-view-model';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
 function bagWatermarkOffset(artifactId, rotation) {

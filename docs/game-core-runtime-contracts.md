@@ -312,7 +312,9 @@ frontend gacha UIs moved in core commit `578279d` through
 assembly moved in core commit `cf7c680` through `client-view-model`; games
 still own env/config parsing, product pack ids, portrait URLs, catalog
 assembly, runtime pack lookup, surface detection, localization, route actions,
-and page composition.
+and page composition. Grid-cell classification for backpack board rendering
+moved in core commit `f403553`; games still own visual classes, overlays,
+drag/drop events, and layout constants.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

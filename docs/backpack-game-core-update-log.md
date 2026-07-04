@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `cf7c6807d020363f9b9dd3155e51bed8864ce098`
-- core short SHA: `cf7c680`
-- core commit: `Add wallet and roll feedback view-model helpers`
+- core SHA: `f403553d7073825f35b869ce5a42873224a50edc`
+- core short SHA: `f403553`
+- core commit: `Add grid cell classification view-model helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core wallet and roll feedback helpers`)
+- game pointer commit: this commit (`Use core grid cell classification helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `cf7c680` | Wallet and roll feedback view-model helpers | Added `client-view-model` helpers for wallet purchase surface balance/bundle/status/support shaping and asset roll-result/problem feedback assembly. Mushroom uses them in the home wallet and pack feedback UI while keeping Telegram/web surface detection, localization, route actions, and UI composition local. |
+| 2026-07-04 | this commit | `f403553` | Grid cell classification view-model helpers | Added `client-view-model` helpers for slot-first bag row lookup, grid cell classification, and occupied footprint key generation. Mushroom's artifact grid board imports the shared helpers while keeping visual classes, overlays, events, and board layout local. |
+| 2026-07-04 | `f3786ad` | `cf7c680` | Wallet and roll feedback view-model helpers | Added `client-view-model` helpers for wallet purchase surface balance/bundle/status/support shaping and asset roll-result/problem feedback assembly. Mushroom uses them in the home wallet and pack feedback UI while keeping Telegram/web surface detection, localization, route actions, and UI composition local. |
 | 2026-07-04 | `779aaab` | `578279d` | Asset pack client view-model helpers | Added `client-view-model` helpers for asset pack rarity odds, guarantee/pity/duplicate copy text, active/availability labels, and roll-pack summaries over product-provided labels. Mushroom uses the helper in the home skin picker while keeping localization, selected-character state, runtime bootstrap data, routes, and UI composition local. |
 | 2026-07-04 | `84d8fae` | `77b1d7b` | Asset catalog acquisition policy helper | Added `resolveAssetCatalogAcquisitionPolicy` through `asset-gacha` / `modules/gacha` so paid/free default acquisition modes, per-asset overrides, explicit `packId: null`, and default pack assignment are shared. Mushroom keeps env parsing, `PORTRAIT_PACK_ID`, product catalog assembly, runtime pack lookup, and direct-buy/roll execution local. |
 | 2026-07-04 | `6f997ff` | `6ae688b` | Profile asset state helpers | Added `profile-asset-state`, `modules/assets`, and `modules/assets/profile-state` for profile asset ownership/equipment row shaping, equip validation, direct-purchase spend parameters, instance drafts, and portrait variant projection. Mushroom asset service delegates these pure helpers while keeping runtime catalogs, SQL lifecycle, gacha roll/burn lifecycle, support actions, paid rollback behavior, and the `player_mushrooms.active_portrait` mirror local. |

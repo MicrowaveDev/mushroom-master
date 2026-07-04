@@ -61,7 +61,8 @@
 > profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
 > resolution, and client view-model helper slices now share pack summary/label,
-> wallet purchase-surface, and asset roll-feedback shaping. Product DB schemas,
+> wallet purchase-surface, asset roll-feedback, and grid-cell classification
+> shaping. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -98,7 +99,7 @@ shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
 helpers, asset pack client view-model helpers, and wallet/roll feedback
-view-model helpers. The package ships TypeScript
+view-model helpers, and grid-cell classification helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2450,7 +2451,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `cf7c680`; typed package baseline remains `d5fb481`.
+   `f403553`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2681,6 +2682,12 @@ link shaping, and asset roll-result/problem feedback assembly now run through
 `client-view-model` over passed labels. Mushroom keeps Telegram/web surface
 detection, emitted route actions, localization strings, runtime state, and
 visual composition local.
+
+The next completed frontend/client slice is grid-cell classification, landed
+in core commit `f403553`: slot-first bag row lookup, grid cell role
+classification, and occupied footprint key generation now run through
+`client-view-model`. Mushroom keeps visual classes, overlays, drag/drop
+events, layout constants, and final board composition local.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -3235,3 +3242,12 @@ that game.
    UI composition local. Meat consumes the same helpers through a contract
    smoke test. Next frontend candidate from the sub-agent audit is grid-cell
    classification, followed by artifact stat DTO helpers.
+53. Phase 8T grid-cell classification view-model helper extraction.
+   **Implemented 2026-07-04:** core commit `f403553` added
+   `client-view-model` helpers for slot-first bag row lookup, grid cell role
+   classification, and occupied footprint keys. Mushroom's artifact grid board
+   and the grid classification tests now consume the shared helpers while
+   keeping visual classes, overlays, drag/drop events, layout constants, and
+   final board composition local. Meat consumes the same helpers through a
+   contract smoke test. Next frontend candidate from the sub-agent audit is
+   artifact stat DTO helpers.
