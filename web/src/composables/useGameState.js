@@ -1,4 +1,9 @@
 import { computed, nextTick } from 'vue/dist/vue.esm-bundler.js';
+import {
+  formatArtifactBonusEntries,
+  formatLoadoutStatsText as formatCoreLoadoutStatsText,
+  formatStatDelta as formatCoreStatDelta
+} from '@microwavedev/backpack-game-core/client-view-model';
 import { messages } from '../i18n.js';
 import { apiJson, parseStartParams, setScreenQuery } from '../api.js';
 import { deriveTotals, getArtifactPrice, buildOccupancy, preferredOrientation } from '../artifacts/grid.js';
@@ -238,41 +243,29 @@ export function useGameState(state, options = {}) {
     }
   }
 
-  function formatArtifactBonus(artifact) {
-    if (!artifact?.bonus) return [];
-    const labels = state.lang === 'ru'
+  function artifactStatLabels() {
+    return state.lang === 'ru'
       ? { damage: 'Урон', armor: 'Броня', speed: 'Скорость', stunChance: 'Оглушение' }
       : { damage: 'Damage', armor: 'Armor', speed: 'Speed', stunChance: 'Stun' };
-    const result = [];
-    for (const [key, raw] of Object.entries(artifact.bonus)) {
-      const value = Number(raw);
-      if (!Number.isFinite(value) || value === 0) continue;
-      const sign = value > 0 ? '+' : '';
-      const suffix = key === 'stunChance' ? '%' : '';
-      result.push({ key, label: labels[key] || key, value: `${sign}${value}${suffix}`, positive: value > 0 });
-    }
-    return result;
+  }
+
+  function formatArtifactBonus(artifact) {
+    return formatArtifactBonusEntries(artifact, {
+      labels: artifactStatLabels()
+    });
   }
 
   function formatDelta(value) {
-    if (value == null) return '';
-    const n = Number(value);
-    if (!Number.isFinite(n) || n === 0) return n === 0 ? '0' : '';
-    return n > 0 ? '+' + n : String(n);
+    return formatCoreStatDelta(value);
   }
 
   function loadoutStatsText(loadout) {
     if (!loadout?.items?.length) return '';
-    const totals = deriveTotals(loadout.items, state.bootstrap?.artifacts || []);
-    const labels = state.lang === 'ru'
-      ? { damage: 'Урон', armor: 'Броня', speed: 'Скорость', stunChance: 'Оглушение' }
-      : { damage: 'Damage', armor: 'Armor', speed: 'Speed', stunChance: 'Stun' };
-    const parts = [];
-    if (totals.damage) parts.push(`${labels.damage} ${formatDelta(totals.damage)}`);
-    if (totals.armor) parts.push(`${labels.armor} ${formatDelta(totals.armor)}`);
-    if (totals.speed) parts.push(`${labels.speed} ${formatDelta(totals.speed)}`);
-    if (totals.stunChance) parts.push(`${labels.stunChance} ${formatDelta(totals.stunChance)}%`);
-    return parts.join(' / ');
+    return formatCoreLoadoutStatsText({
+      items: loadout.items,
+      artifacts: state.bootstrap?.artifacts || [],
+      labels: artifactStatLabels()
+    });
   }
 
   function replayBubbleStyle(mushroomId, portraitId = 'default') {

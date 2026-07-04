@@ -1,3 +1,4 @@
+import { formatArtifactBonusEntries } from '@microwavedev/backpack-game-core/client-view-model';
 import { ARTIFACT_ROLE_CLASSES } from '../../../app/shared/artifact-visual-classification.js';
 
 const STAT_DEFINITIONS = [
@@ -37,28 +38,27 @@ export const ArtifactStatSummary = {
       const source = this.totals || this.artifact?.bonus;
       if (!source) return [];
       const lang = this.lang === 'en' ? 'en' : 'ru';
-      return STAT_DEFINITIONS
-        .map((item) => {
-          const value = Number(source[item.sourceKey] || 0);
+      const definitionsByKey = new Map(STAT_DEFINITIONS.map((item) => [item.sourceKey, item]));
+      return formatArtifactBonusEntries(source, {
+        labels: STAT_LABELS[lang],
+        statKeys: STAT_DEFINITIONS.map((item) => item.sourceKey),
+        includeZeroes: this.includeZeroes
+      })
+        .map((entry) => {
+          const item = definitionsByKey.get(entry.key);
+          const value = entry.numericValue;
           return {
             ...item,
             value,
             role: item.roleId ? ARTIFACT_ROLE_CLASSES[item.roleId] : null,
-            label: STAT_LABELS[lang][item.id],
-            text: this.formatStatValue(value, item.suffix),
+            label: entry.label,
+            text: entry.value,
             sign: value > 0 ? 'positive' : value < 0 ? 'negative' : 'zero'
           };
-        })
-        .filter((item) => this.includeZeroes || item.value !== 0);
+        });
     },
     summaryClass() {
       return this.variant ? `artifact-stat-summary--${this.variant}` : '';
-    }
-  },
-  methods: {
-    formatStatValue(value, suffix = '') {
-      const n = Number(value) || 0;
-      return `${n > 0 ? '+' : ''}${n}${suffix}`;
     }
   },
   template: `

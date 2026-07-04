@@ -1,3 +1,4 @@
+import { sumArtifactBonuses } from '@microwavedev/backpack-game-core/client-view-model';
 import { SHOP_OFFER_SIZE } from '../constants.js';
 
 export function buildOccupancy(items) {
@@ -13,21 +14,9 @@ export function buildOccupancy(items) {
 }
 
 export function deriveTotals(items, artifacts) {
-  const byId = Object.fromEntries(artifacts.map((item) => [item.id, item]));
-  return items.reduce(
-    (acc, item) => {
-      const artifact = byId[item.artifactId];
-      if (!artifact) {
-        return acc;
-      }
-      acc.damage += artifact.bonus.damage || 0;
-      acc.armor += artifact.bonus.armor || 0;
-      acc.speed += artifact.bonus.speed || 0;
-      acc.stunChance += artifact.bonus.stunChance || 0;
-      return acc;
-    },
-    { damage: 0, armor: 0, speed: 0, stunChance: 0 }
-  );
+  return sumArtifactBonuses(items, artifacts, {
+    statKeys: ['damage', 'armor', 'speed', 'stunChance']
+  });
 }
 
 export function getArtifactPrice(artifact) {

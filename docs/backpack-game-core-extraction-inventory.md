@@ -52,6 +52,10 @@ copy, theme, and API adapters.
   now also provides slot-first bag row lookup, grid-cell classification, and
   occupied-footprint key generation for shared backpack board rendering,
   tested by `tests/client-view-model.test.js`
+- artifact stat client view-model slice: `src/client-view-model.js` now also
+  provides stat total summing, signed delta formatting, bonus-entry DTO
+  shaping, and loadout stat text composition over product-provided stat labels,
+  stat order, and suffixes, tested by `tests/client-view-model.test.js`
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
@@ -75,8 +79,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `f403553`
-  (`Add grid cell classification view-model helpers`)
+- latest consumed core commit: `41a3ad5`
+  (`Add artifact stat view-model helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -615,7 +619,8 @@ asset state helper moved in core commit `6ae688b`. Asset catalog acquisition
 default/override policy moved in core commit `77b1d7b`, the first asset/gacha
 client view-model helper slice moved in core commit `578279d`, wallet/roll
 feedback view-model shaping moved in core commit `cf7c680`, and grid-cell
-classification moved in core commit `f403553`.
+classification moved in core commit `f403553`. Artifact stat total/text DTO
+shaping moved in core commit `41a3ad5`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -681,6 +686,12 @@ Next planned domain slices:
     backpack board rendering. **Implemented 2026-07-04 in core commit
     `f403553`; Mushroom delegates artifact-grid lookup rules while keeping
     visual classes, overlays, drag/drop events, and layout constants local.**
+11. **Artifact stat view-model helpers:** stat total summing, signed delta
+    formatting, bonus-entry DTO shaping, and loadout stat text composition over
+    passed labels/stat order/suffixes. **Implemented 2026-07-04 in core commit
+    `41a3ad5`; Mushroom delegates `deriveTotals`, artifact bonus labels,
+    loadout stat text, and stat chips while keeping product stat labels,
+    visual role classes, copy, and final UI composition local.**
 
 Next planned frontend slices:
 
@@ -689,7 +700,8 @@ Next planned frontend slices:
    **Second slice implemented 2026-07-04** with asset pack summary/label
    helpers for gacha UI state. **Third slice implemented 2026-07-04** with
    wallet purchase-surface and asset roll-feedback helpers. **Fourth slice
-   implemented 2026-07-04** with grid-cell classification helpers. Continue
+   implemented 2026-07-04** with grid-cell classification helpers. **Fifth
+   slice implemented 2026-07-04** with artifact stat total/text helpers. Continue
    with DTO shapers, error/status normalization, asset inventory/equipment response
    shapers, and headless view-model
    contracts before page/component extraction. Do not move the full Mushroom API

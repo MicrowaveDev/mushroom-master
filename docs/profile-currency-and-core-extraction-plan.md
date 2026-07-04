@@ -61,8 +61,8 @@
 > profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
 > resolution, and client view-model helper slices now share pack summary/label,
-> wallet purchase-surface, asset roll-feedback, and grid-cell classification
-> shaping. Product DB schemas,
+> wallet purchase-surface, asset roll-feedback, grid-cell classification, and
+> artifact stat total/text shaping. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -98,8 +98,9 @@ simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
-helpers, asset pack client view-model helpers, and wallet/roll feedback
-view-model helpers, and grid-cell classification helpers. The package ships TypeScript
+helpers, asset pack client view-model helpers, wallet/roll feedback
+view-model helpers, grid-cell classification helpers, and artifact stat
+view-model helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2451,7 +2452,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `f403553`; typed package baseline remains `d5fb481`.
+   `41a3ad5`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2688,6 +2689,13 @@ in core commit `f403553`: slot-first bag row lookup, grid cell role
 classification, and occupied footprint key generation now run through
 `client-view-model`. Mushroom keeps visual classes, overlays, drag/drop
 events, layout constants, and final board composition local.
+
+The next completed frontend/client slice is artifact stat view-model shaping,
+landed in core commit `41a3ad5`: stat total summing, signed delta formatting,
+bonus-entry DTO shaping, and loadout stat text composition now run through
+`client-view-model` over passed stat labels, order, and suffixes. Mushroom keeps
+product stat labels, visual role classes, inline/chip UI composition, and
+artifact catalog semantics local.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -3251,3 +3259,13 @@ that game.
    final board composition local. Meat consumes the same helpers through a
    contract smoke test. Next frontend candidate from the sub-agent audit is
    artifact stat DTO helpers.
+54. Phase 8U artifact stat view-model helper extraction. **Implemented
+   2026-07-04:** core commit `41a3ad5` added `client-view-model` helpers for
+   stat total summing, signed delta formatting, bonus-entry DTO shaping, and
+   loadout stat text composition over product-provided labels, stat order, and
+   suffixes. Mushroom delegates `deriveTotals`, artifact bonus labels, loadout
+   stat text, and stat chips while keeping product stat labels, visual role
+   classes, copy, and UI composition local. Meat consumes the same helpers
+   through its `formatBonus` wrapper and contract smoke test. Next frontend
+   candidates remain response/status DTO shapers and headless services before
+   moving neutral Vue components.
