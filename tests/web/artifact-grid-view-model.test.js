@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/grid.js';
+import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 
 test('[artifact-grid] builds occupied cell maps through the shared core helper', () => {
   const occupied = buildOccupancy([
@@ -21,4 +22,10 @@ test('[artifact-grid] preserves shaped-bag preview orientation through the share
     height: 1,
     shape: [[1], [1], [1], [1]]
   }), { width: 1, height: 4 });
+});
+
+test('[artifact-grid] home preview method shares core orientation rules', () => {
+  const artifact = { id: 'mycelium_vine', family: 'bag', width: 4, height: 1, shape: [[1], [1], [1], [1]] };
+
+  assert.deepEqual(HomeSocialSidebar.methods.previewOrientation(artifact), { width: 1, height: 4 });
 });
