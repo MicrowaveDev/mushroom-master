@@ -1,6 +1,6 @@
 # Profile Currency And Core Extraction Plan
 
-> **Reading guide (updated 2026-07-02 post-implementation review).** This document
+> **Reading guide (updated 2026-07-04 multi-game core revision).** This document
 > is a historical ship record plus forward plan, not a live status board. The
 > shipped, test-backed foundation is Phases **1-5, 6A-6C, 7, 7A, and 7B**.
 > Phase **6A-6C** shipped as a compatibility-safe neutral naming pass:
@@ -14,7 +14,11 @@
 > backlog. Code movement into `backpack-game-core` has started
 > with bag-shape, first grid-geometry primitives, fusion matching, and shop-offer
 > generation; broader extraction should continue one pure or adapterized cluster
-> at a time. Shipped
+> at a time. The 2026-07-04 direction changes the next core lane: the second
+> consumer is now planned as `git@github.com:nuclear-pancakes/meat-master.git`,
+> and reusable asset/gacha/wallet-domain rules should move into
+> `backpack-game-core` behind adapters rather than staying Mushroom-only.
+> Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
 > `tests/game/wallet-assets.test.js`, and the current reference doc
@@ -35,7 +39,13 @@
 > moved deterministic numeric RNG and shuffle helpers into
 > `backpack-game-core` while keeping Mushroom string-seed hashing local.
 > **Phase 8H** added TypeScript declarations for the root and subpath package
-> exports so another game can integrate with typed provider hooks.
+> exports so another game can integrate with typed provider hooks. **Phase 8I**
+> is the new planned domain-core extraction lane for reusable wallet accounting
+> primitives, asset ownership/equipment policy, direct-buy policy, gacha pack
+> validation, roll selection, duplicate/burn rules, pity/guarantee helpers,
+> odds simulation, and admin-safe validation helpers. Product DB schemas,
+> payment-provider adapters, Telegram routes, content catalogs, artwork, and
+> support/admin UIs remain game-local adapters.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, and 8H
@@ -54,6 +64,7 @@ cases.
 **Created:** 2026-06-22
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
+**Next consumer repo:** `git@github.com:nuclear-pancakes/meat-master.git`
 
 `backpack-game-core` now has `main` commits with the extracted bag-shape
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
@@ -136,6 +147,11 @@ bullet below):
 - Type declarations are shipped: `backpack-game-core` has `.d.ts` files for
   the root export and every subpath export, and `tests/package-types.test.js`
   guards that each package export has matching JS and declaration targets.
+- New multi-game target identified: `meat-master` should become the second
+  core consumer. That changes the next extraction goal from "wait for another
+  game" to "pull reusable wallet/asset/gacha domain behavior into core behind
+  persistence/payment/catalog adapters, then bootstrap `meat-master` from that
+  core plus a small product-specific data/art layer."
 
 Phase 7A closed the code-level paid-economy hardening gaps found on
 2026-06-23: wallet debits now use atomic updates, wallet mutations are
@@ -165,10 +181,11 @@ operational runbooks plus tooling for post-completion refunds, reversals,
 chargebacks/disputes, late crypto payments, overpayments, and support
 investigations.
 
-Next local lane after Phase 8H moved through G1 and G2: the gacha path now has a
-simple static pack lane plus static multi-slot pack support. The second
-`backpack-game-core` consumer remains blocked until a real backpack/grid game
-target exists. Deferred beyond the current static gacha lane:
+Next local lane after Phase 8H moved through G1-G5E: the gacha path now has a
+database-backed admin/runtime lane, promoted plan assets, duplicate/burn
+support, runtime odds simulation, and support tooling. The second
+`backpack-game-core` consumer target now exists: `meat-master`. Deferred beyond
+the current lane:
 optional Phase 6D database renames / physical removal of legacy compatibility
 fields, marketplace trading, database-managed pack catalogs, an expanded
 terms/support frontend, provider
@@ -1851,9 +1868,9 @@ Status: **Phase 8A-8H complete for the current Mushroom consumer.** Phase 6A-6C
 made the currency / XP vocabulary clean enough for a reusable boundary, the
 runtime contract reference and extraction inventory exist, the first pure and
 adapterized clusters are in `backpack-game-core`, and Mushroom now consumes the
-core through a nested submodule. The next extraction proof should come from a
-real second backpack/grid game consumer; do not invent an unrelated consumer
-only to mark reuse complete.
+core through a nested submodule. The next extraction proof now has a concrete
+target, `meat-master`; let that integration drive API cleanup instead of
+inventing an unrelated consumer only to mark reuse complete.
 
 Only continue extracting after the currency names above are clean enough that
 the core package does not inherit Mushroom-specific vocabulary, and only move a
@@ -2224,8 +2241,9 @@ sequence while the reusable package stays browser-safe.
 #### Non-Goals
 
 - Do not change shop, bot, ghost, or battle seed strings.
-- Do not move secure gacha RNG into core; asset/gacha randomness remains
-  product economy code.
+- Do not move secure paid-roll RNG source selection into core; games inject the
+  runtime RNG. Reusable gacha roll selection and simulation helpers can move to
+  core in Phase 8I.
 - Do not expose payment, wallet, or asset acquisition policy through this
   helper.
 
@@ -2403,10 +2421,174 @@ Additional TODOs for that pass:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
    `300583b`; runtime/API baseline remains `d5fb481`.
-8. Blocked pending product target: integrate a second backpack-style game
-   consumer. A 2026-07-02 hub search found no other current repo with a
-   backpack/grid loadout mechanic; do not add this package to unrelated
-   card/save inventories only to prove reuse.
+8. Updated 2026-07-04: second consumer target identified as
+   `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
+   `meat-master` integration to drive API cleanup instead of adding the package
+   to unrelated repos only to prove reuse.
+
+### Phase 8I - Multi-Game Core Domain Extraction
+
+Status: **Planned.** The prior extraction intentionally kept wallet, asset, and
+gacha behavior local because only Mushroom Battles consumed the package. The new
+target consumer, `git@github.com:nuclear-pancakes/meat-master.git`, makes that
+boundary too narrow: reusable gacha and game-domain rules should move to
+`backpack-game-core`, while each game keeps its own persistence, payment
+providers, routes, catalogs, art, copy, compliance gates, and admin UI.
+
+#### Source Of Truth For This Revision
+
+- User request, 2026-07-04: move all reusable gacha and game-core functionality
+  to the core repo, consume that core as a submodule in Mushroom Battles, and
+  make `meat-master` another playable game using the same core.
+- `meat-master` should have two attractive adult female bikini characters,
+  starter bags/artifacts copied or adapted from Mushroom Battles, and enough
+  product data/UI wiring to be playable.
+- Mushroom Battles must keep the current simple direct-buy skin lane available
+  when gacha is off.
+- The shared core must not become Mushroom-specific or Meat-specific. Product
+  identity, character lore, explicit content policy, artwork, payment-provider
+  integrations, Telegram Mini App details, database migrations, and operator UI
+  stay outside the core.
+- Success means both games import the same package APIs for backpack mechanics,
+  asset acquisition policy, and gacha outcome logic, with product adapters
+  proving the same rules under different character/catalog data.
+
+#### Core Boundary
+
+Move into `backpack-game-core`:
+
+- asset catalog normalization, eligibility filtering, direct-buy availability,
+  and acquisition-mode policy;
+- profile asset instance/equipment state transitions as pure or adapter-driven
+  functions;
+- wallet accounting primitives: balance deltas, idempotent mutation outcome
+  shaping, refund/reversal classification, and insufficient-balance checks;
+- gacha pack/item validation, active/future/expired visibility rules, direct-buy
+  blocking rules, roll candidate selection, weighted slot selection, duplicate
+  copy-cap handling, duplicate burn target selection, pity/guarantee helpers,
+  and odds/simulation helpers;
+- admin-safe validation helpers for pack release checklist, fixture shape,
+  planned asset promotion rules, and plan-item asset-id/character-link
+  invariants.
+
+Keep in each game repo:
+
+- SQL schemas, migrations, repositories, Express routes, auth, rate limits,
+  idempotency storage, support-action persistence, and audit-log storage;
+- payment processors, Telegram Stars, BTCPay/NOWPayments adapters, provider
+  webhook signatures, invoice lookup, tax/accounting exports, and content-policy
+  compliance gates;
+- product catalogs, character ids, ability hooks, portrait/skin art, adult
+  content presentation, localization, UI screens, admin panels, and generated
+  images;
+- secure RNG source selection for paid rolls. Core can accept an injected RNG,
+  but game services decide whether it is deterministic for simulation or
+  cryptographically secure for paid runtime rolls.
+
+#### Implementation Steps
+
+1. Done for the planning pass: update `docs/game-core-runtime-contracts.md` and
+   `docs/backpack-game-core-extraction-inventory.md` with the new domain-core
+   split before moving code.
+2. Add core modules in small slices:
+   - `asset-policy`
+   - `wallet-accounting`
+   - `gacha-pack-validation`
+   - `gacha-roll`
+   - `gacha-duplicates`
+   - `gacha-simulation`
+   - `gacha-admin-validation`
+3. Port focused unit tests from Mushroom into `backpack-game-core` first,
+   replacing Mushroom fixture data with neutral sample catalogs.
+4. Refactor Mushroom services to call the core modules through thin adapters,
+   keeping current route payloads and database tables stable.
+5. Verify Mushroom behavior after each slice with the smallest relevant test
+   set, then run the wallet/gacha/admin bundle before moving the next slice.
+6. Update `vendor/backpack-game-core/CHANGELOG.md`,
+   `docs/backpack-game-core-update-log.md`, and the nested core pointer after
+   each core commit.
+7. Only after Mushroom is stable on the extracted domain APIs, use those APIs to
+   bootstrap `meat-master`.
+
+#### Validation
+
+- `backpack-game-core`: `npm test` and `npm pack --dry-run`.
+- `mushroom-master`: `npm run game:core:check`, targeted wallet/asset/gacha
+  tests, gacha admin API tests, gacha simulation tests, and `npm run game:build`.
+- For any UI surface touched by adapter changes, run the relevant Mushroom
+  Playwright screenshots/e2e flow from the repo instructions.
+
+#### Rollback
+
+- Keep each core domain slice independently revertible.
+- If Mushroom integration fails, revert only the Mushroom adapter and nested
+  submodule pointer to the last known-good core SHA while keeping the core
+  commit for repair unless it contains secrets or generated junk.
+- Do not mutate existing wallet, roll, ownership, or support-audit rows during
+  extraction. Schema changes belong in a separate explicitly reviewed phase.
+
+### Phase 11 - Add `meat-master` As A Second Core Consumer
+
+Status: **Planned.** `meat-master` is not currently present in the hub
+submodule list. Treat it as the first proof that the shared core can support a
+new game without copying Mushroom service logic.
+
+#### Repository And Dependency Setup
+
+1. Add `git@github.com:nuclear-pancakes/meat-master.git` to the hub only after
+   confirming the desired hub path and branch policy. If it becomes a hub
+   submodule, update `SUBMODULES.md`, `submodules.manifest.json`, and helper
+   metadata in the same hub commit.
+2. Add `git@github.com:MicrowaveDev/backpack-game-core.git` as a nested
+   `meat-master` submodule at `vendor/backpack-game-core`.
+3. Consume the core through `file:vendor/backpack-game-core` with imports kept
+   on `@microwavedev/backpack-game-core`.
+4. Add the same missing-core guard pattern Mushroom uses, adjusted for the new
+   package scripts.
+
+#### Playable Vertical Slice
+
+1. Copy only the minimum starter data needed to make the loop playable:
+   starter bag shapes, initial artifact definitions, grid constants, balance
+   defaults, and a tiny static shop/gacha fixture.
+2. Copy Mushroom bitmap assets only as temporary starter assets when licensing
+   and product identity allow it. Prefer renaming ids and documenting them as
+   placeholders until Meat-specific art exists.
+3. Create two adult female bikini/swimsuit characters with product-local ids,
+   portraits, display names, starter presets, and combat/stat hooks. They must
+   be clearly adult characters; avoid childlike proportions, school framing, or
+   explicit sexual content.
+4. Wire the minimum screens/API needed for a playable loop:
+   character select or home entry, start run, shop/bag placement, battle
+   resolve/replay, reward wallet grant, skin/asset inventory, and optional
+   simple gacha roll.
+5. Keep copy, art paths, content-rating labels, and any adult-content gate in
+   `meat-master`, not in the shared core.
+6. Add smoke tests that prove `meat-master` imports the core, starts a run with
+   each character, validates a starter bag/loadout, resolves one battle, grants
+   wallet currency, and can roll or buy one cosmetic asset.
+
+#### Asset Seeding Checklist
+
+- Source Mushroom starter artifacts and bags from stable catalog data, not from
+  ad hoc screenshots.
+- Copy app-facing PNGs plus their metadata/provenance when available.
+- Rename copied ids to avoid future cross-game collisions.
+- Mark copied assets as `placeholder` or `starter_port` in Meat metadata until
+  product-specific art review replaces them.
+- Keep Mushroom lore, mushroom names, and Mycelium-specific copy out of
+  `meat-master`.
+
+#### Cross-Game Guardrails
+
+- The core package should not import from either game.
+- Both games must pass product fixtures into the same core APIs.
+- No Mushroom-only behavior should be introduced to core just to make the port
+  fast. If Meat needs a different rule, make it configurable through explicit
+  adapters or keep it game-local.
+- Adult/sexual-content payment and platform policy stays per game. The core can
+  expose policy flags and acquisition rules, but it must not decide whether a
+  provider accepts a game.
 
 ## Risks And Guardrails
 
@@ -2417,11 +2599,14 @@ Additional TODOs for that pass:
 - Do not move Sequelize models into the core package. The core should not know
   which product owns persistence.
 - Keep Mushroom ability logic product-specific through the battle hook adapter.
+- Move reusable gacha and asset-acquisition rules into core, but keep product
+  catalogs, database rows, routes, admin UI, and support-audit persistence in
+  the game repos.
 - Do not let "profile wallet coins" and "run shop coins" share one field or
   service method. They have different lifetimes, spend targets, and refund
   rules.
 - Do not wire gacha to a product-specific route shape. Keep it as an asset
-  acquisition service that Mushroom Battles can use or disable.
+  acquisition service that Mushroom Battles and Meat can use or disable.
 - Keep payment-provider code out of wallet accounting. Provider callbacks prove
   payment; wallet services grant/spend balances.
 - Do not allow direct client-supplied rarity, result asset id, or payment status
@@ -2498,8 +2683,8 @@ Additional TODOs for that pass:
 27. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
 28. Integrate a second backpack-style game consumer after a real target exists.
-   **Blocked as of 2026-07-02: hub search found no other current backpack/grid
-   loadout consumer.**
+   **Updated 2026-07-04:** target is
+   `git@github.com:nuclear-pancakes/meat-master.git`; see Phase 11.
 29. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
 30. G1 simple seasonal gacha pack. Keep it static-config, one-result,
@@ -2572,3 +2757,15 @@ Additional TODOs for that pass:
    corrections, scheduled activation/expiry alerts, richer disclosure review by
    jurisdiction/provider, staff permission tiers, and marketplace/NFT-set
    operations before non-engineering operators manage paid seasons unaided.
+41. Phase 8I multi-game domain-core extraction. Move reusable wallet
+   accounting primitives, asset ownership/equipment policy, direct-buy policy,
+   gacha validation, roll selection, duplicate/burn, pity/guarantee, simulation,
+   and admin-safe validation helpers into `backpack-game-core` behind adapters.
+   Keep DB schemas, payments, Telegram, product catalogs, art, compliance, and
+   admin UI in each game.
+42. Phase 11 `meat-master` consumer. Add
+   `git@github.com:nuclear-pancakes/meat-master.git` as the second game target,
+   consume `backpack-game-core` as a nested submodule, seed a playable vertical
+   slice from starter bags/artifacts, create two clearly adult bikini/swimsuit
+   female characters, and verify run/shop/battle/wallet/asset or gacha smoke
+   flows.

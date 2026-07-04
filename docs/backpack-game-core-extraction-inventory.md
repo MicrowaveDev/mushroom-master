@@ -3,8 +3,12 @@
 **Status:** Ongoing reusable-core extraction after the Phase 6A-6C neutral
 naming pass and the first package type-declaration pass.
 
-This document chooses the first extraction slice and records why other modules
-wait. It should be updated after each cluster moves.
+This document chooses extraction slices and records why other modules wait. It
+should be updated after each cluster moves. The 2026-07-04 multi-game revision
+identifies `git@github.com:nuclear-pancakes/meat-master.git` as the next core
+consumer, so wallet/assets/gacha should no longer be treated as entirely
+Mushroom-local: product persistence and payment adapters stay local, but
+reusable domain rules should move into core behind explicit adapters.
 
 ## Current Core Repo State
 
@@ -47,6 +51,10 @@ core SHA to game-commit mapping is tracked in
 - **Adapter-needed:** useful mechanics exist, but product catalogs, product
   eligibility, abilities, or persistence must be passed in by
   `mushroom-master`.
+- **Domain-core candidate:** wallet, asset, or gacha rules are reusable across
+  games if core receives persistence snapshots, catalog data, time, RNG, and
+  policy through arguments/adapters. DB schemas, routes, payment processors,
+  auth, support-action persistence, and UI stay in the game repo.
 - **Product-specific:** keep in `mushroom-master`.
 
 ## Candidate Matrix
@@ -65,7 +73,11 @@ core SHA to game-commit mapping is tracked in
 | Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Product-specific | DB transactions, run locks, persisted shop states, run currency, refunds, and loadout rows stay in product service code. |
 | Bot loadout generation | `backpack-game-core/src/backpack-loadout.js`; Mushroom wrapper in `app/server/services/bot-loadout.js` | Extracted with product providers | Core owns weighted-pick, first-fit bag placement, rectangular item placement, occupied-cell tracking, and retry orchestration. Mushroom passes artifacts, affinities, presets, prices, grid constants, RNG, validation, and keeps ghost snapshot/portrait glue local. |
 | Battle simulation | `backpack-game-core/src/battle-simulation.js`; Mushroom adapter in `app/server/services/battle-engine.js` | Extracted with product hooks | Core owns deterministic 1v1 turn loop, action/skip event sequencing, HP/stun flow, speed/base-speed tiebreak fallback, step-cap winner resolution, and result shaping. Mushroom passes combatant derivation, active/passive ability hooks, Morga/Kirt tiebreak hooks, artifact attribution/effect metadata, narration labels, constants, and seeded RNG. |
-| Wallet / payment / assets / gacha | `app/server/services/wallet-service.js`, `app/server/services/asset-service.js`, models, routes | Product-specific | Payment providers, ledgers, profile assets, webhooks, compliance, and Mushroom skin catalog are not reusable backpack mechanics. |
+| Wallet accounting primitives | `app/server/services/wallet-service.js`, wallet tests | Domain-core candidate | Balance delta shaping, insufficient-balance checks, idempotent mutation result semantics, refund/reversal classification, and ledger invariant helpers can be reusable when persistence and provider evidence are injected. SQL rows, locks, mirrors, support actions, and payment callbacks stay local. |
+| Payment providers and purchase webhooks | `app/server/services/provider-settlement-*`, `bot-gateway.js`, payment routes | Product-specific | Telegram Stars, BTCPay, NOWPayments, provider signatures, invoice lookups, tax/accounting, adult-content policy, and settlement records are game/ops concerns, not backpack mechanics. |
+| Asset catalog, ownership, equipment, and direct-buy policy | `app/server/services/asset-service.js`, profile asset tables, runtime catalogs | Domain-core candidate | Catalog normalization, purchase availability, acquisition modes, profile-owned instance/equipment transitions, direct-buy blocking under gacha, and runtime catalog filtering are reusable if product catalogs, current ownership, wallet spend hooks, and persistence are supplied by the game. |
+| Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `app/server/services/asset-service.js`, `gacha-simulation-service.js`, admin validation helpers | Domain-core candidate | Pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, and result evidence can be shared. Secure RNG source, wallet debit transaction, asset grant persistence, pack storage, and operator audit records stay local. |
+| Gacha admin UI and season-plan image storage | `app/server/services/gacha-admin-service.js`, `/support-admin`, `/gacha-plan` assets | Adapter-needed / product-specific split | Fixture shape validation, release checklist, promoted-plan asset invariants, and pack validation can become core helpers. Image upload/storage, Support Admin forms, token-gated routes, support actions, and product copy stay local. |
 
 ## Chosen First Slice
 
@@ -457,22 +469,34 @@ integration commit.
 ## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, Battle Simulation, Loadout Validation, And RNG
 
 After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
-bot-loadout, battle-simulation, loadout-validation, and RNG slices, there is no
-obvious next mechanics cluster to move without another game's concrete
-requirements. The package now ships TypeScript declarations for the root export
-and every subpath export.
+bot-loadout, battle-simulation, loadout-validation, and RNG slices, the next
+consumer target is now concrete: `git@github.com:nuclear-pancakes/meat-master.git`.
+Use that integration to drive the next reusable API cleanup instead of waiting
+for an abstract second game. The package now ships TypeScript declarations for
+the root export and every subpath export.
 
-Post-implementation review on 2026-07-02 found no second hub game with a
-backpack/grid loadout surface. Existing `inventory` matches outside
-`mushroom-master` are card/save inventories or unrelated operational
-inventories, not consumers for this package. The next practical consumer step is
-therefore blocked on identifying or creating a real backpack-style game target;
-do not add the package to another repo just to prove reuse. Until then, keep
-the package release trail current through `docs/backpack-game-core-update-log.md`
-and the core `CHANGELOG.md`.
+Next planned domain slices:
 
-Do not extract wallet, assets, gacha, payment providers, DB models, Telegram
-routes, lore/portrait catalogs, or home-field code into `backpack-game-core`.
+1. **Asset policy:** catalog normalization, acquisition-mode filtering,
+   direct-buy availability, gacha-mode direct-buy blocking, purchase candidate
+   shaping, and equipment-state transition helpers.
+2. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
+   that operate on passed snapshots; no DB writes or provider callbacks.
+3. **Gacha pack validation:** pack/item/status/date/price/currency validation,
+   release checklist helpers, and authoring diagnostics over plain objects.
+4. **Gacha rolling:** candidate filtering, weighted slot selection, guarantee
+   and pity helpers, duplicate copy-cap filtering, burn target selection, and
+   roll evidence shaping over an injected RNG.
+5. **Gacha simulation:** deterministic odds simulation over the same roll core
+   so admin preview, CLI tools, and tests share one model.
+6. **Gacha admin validation:** fixture shape checks, planned asset promotion
+   invariants, and plan-item asset-id/linked-character rules as pure helpers.
+
+Do not extract payment providers, DB models, Telegram routes, lore/portrait
+catalogs, uploaded image storage, support/admin UI, adult-content gates, or
+home-field code into `backpack-game-core`. Those stay product-local. Core
+should accept catalogs, ownership snapshots, wallet snapshots, time, RNG, and
+policy config as inputs.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 
@@ -505,5 +529,6 @@ that local checkout, instead of relying only on a remote Git SHA dependency.
 2. Done: add release/update notes for the core pointer SHA used by each game
    commit in `docs/backpack-game-core-update-log.md` and core package notes in
    `vendor/backpack-game-core/CHANGELOG.md`.
-3. Blocked pending product input: integrate a second backpack-style game
-   consumer and let that concrete integration drive API cleanup.
+3. Updated 2026-07-04: integrate
+   `git@github.com:nuclear-pancakes/meat-master.git` as the second
+   backpack-style consumer and let that concrete integration drive API cleanup.

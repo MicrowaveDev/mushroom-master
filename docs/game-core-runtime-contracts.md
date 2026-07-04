@@ -172,16 +172,21 @@ Test anchors:
 
 Future direction:
 
-- Seasonal packs, multi-item rolls, rarity guarantees, duplicate burn/exchange,
-  trading, marketplace listings, and database-managed collections remain
-  deferred. The current MVP must not block those designs, but they are not
-  part of the first reusable core extraction.
+- The current Mushroom implementation already includes later gacha slices
+  beyond the original MVP: static/database packs, multi-item rolls, duplicate
+  copy caps, duplicate burn/exchange, runtime simulation, and admin pack
+  validation. The 2026-07-04 multi-game plan moves reusable asset/gacha rules
+  into `backpack-game-core` behind adapters so `meat-master` can share them.
+  Trading, marketplace listings, and full NFT-set operations remain deferred.
 
 Non-core boundary:
 
-- Asset ownership, profile wallet spends, gacha pack policy, payment-funded
-  rolls, portrait URLs, and Mushroom-specific skin catalogs stay in product
-  code or adapters.
+- Product persistence, payment-funded roll transactions, secure runtime RNG
+  source selection, portrait URLs, admin UI, uploaded image storage, and
+  Mushroom-specific skin catalogs stay in product code or adapters. Reusable
+  asset ownership/equipment transitions, direct-buy policy, pack validation,
+  roll selection, duplicate/burn, pity/guarantee, and simulation rules are
+  planned core-domain candidates.
 
 ## Candidate Reusable Mechanics
 
@@ -194,6 +199,10 @@ These mechanics are closest to the reusable core boundary:
 - pure fusion matching with recipes/catalog policy injected
 - shop offer generation with item pools and eligibility hooks injected
 - battle simulation with combatant, ability, attribution, and narration hooks
+- asset acquisition policy with catalogs, ownership snapshots, wallet snapshots,
+  and purchase/gacha mode config injected
+- gacha pack validation, roll selection, duplicate/burn, pity/guarantee, and
+  simulation over injected RNG and ownership state
 
 These mechanics need adapters before extraction:
 
@@ -206,6 +215,10 @@ These mechanics need adapters before extraction:
   local
 - full battle-service integration that records snapshots/events, applies run
   rewards, rating, and round transitions
+- wallet accounting helpers that must receive persisted wallet snapshots and
+  idempotency state from a game repository
+- gacha runtime integration that must receive secure RNG, wallet debit, asset
+  grant, roll history, and audit persistence from a game repository
 
 These are product-specific and must stay out of `backpack-game-core`:
 
