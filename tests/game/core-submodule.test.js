@@ -16,7 +16,10 @@ import {
   validateAssetGachaPack
 } from '@microwavedev/backpack-game-core/modules/gacha';
 import { applyWalletBalanceDelta } from '@microwavedev/backpack-game-core/modules/wallet';
-import { createProfileAssetState } from '@microwavedev/backpack-game-core/modules/assets';
+import {
+  createProfileAssetState,
+  shapeProfileAssetTargetVariants
+} from '@microwavedev/backpack-game-core/modules/assets';
 import { checkBackpackGameCoreSubmodule } from '../../app/scripts/check-backpack-game-core-submodule.js';
 
 test('[core-submodule] backpack-game-core nested submodule is initialized', () => {
@@ -48,6 +51,11 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(createProfileAssetState({
     instances: [{ asset_id: 'portrait.axilin.1', status: 'active' }]
   }).ownedAssetIds.has('portrait.axilin.1'), true);
+  assert.equal(shapeProfileAssetTargetVariants({
+    variants: [{ id: '1', assetId: 'portrait.axilin.1' }],
+    catalog: [{ assetId: 'portrait.axilin.1', price: 500 }],
+    activeVariantId: '1'
+  })[0].active, true);
   assert.equal(resolveAssetCatalogAcquisitionPolicy({
     assetId: 'portrait.axilin.1',
     price: 500

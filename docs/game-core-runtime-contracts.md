@@ -329,6 +329,10 @@ copy, and final UI state remain local. Asset gacha roll/burn result DTO
 shaping moved in core commit `9b7b505`; persisted roll/exchange rows can shape
 replay-safe browser payloads through `modules/gacha` while SQL, wallet spends,
 asset grants, RNG, idempotency, and route ownership remain local.
+Profile asset target-variant response shaping moved in core commit `0f8beee`;
+games can share inventory/equipment variant list projection while injecting
+product asset-id and policy adapters; runtime catalog/equipment resolution
+remains local.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

@@ -60,7 +60,8 @@
 > gacha admin-validation, gacha simulation, wallet-accounting, and
 > profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
-> resolution, asset gacha roll/burn result DTO shaping is shared, and client
+> resolution, asset gacha roll/burn result DTO shaping is shared, profile asset
+> target-variant response shaping is shared, and client
 > view-model helper slices now share pack summary/label,
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
 > artifact stat total/text shaping, artifact grid utility shaping, and
@@ -101,7 +102,8 @@ simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
-helpers, asset gacha roll/burn result DTO shapers, asset pack client view-model helpers, wallet/roll feedback
+helpers, asset gacha roll/burn result DTO shapers, profile asset
+target-variant list shapers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
 preview helpers, plus wallet and asset-roll status normalization helpers. The package ships TypeScript
@@ -2728,6 +2730,14 @@ exchange rows now normalize through `modules/gacha`, and replay-safe
 Mushroom keeps SQL queries, wallet spends, asset grants, secure RNG,
 idempotency, route payload ownership, and product error handling local.
 
+The next completed asset inventory/equipment response cleanup is profile asset
+target-variant list shaping, landed in core commit `0f8beee`: progression
+portrait variants now project through `modules/assets` over injected catalog,
+ownership state, active ids, asset-id adapters, and product policy adapters.
+Mushroom keeps portrait id convention, runtime catalog assembly, gacha-plan
+policy, active/equipment resolution, product routes, and route payload ownership
+local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3336,3 +3346,14 @@ that game.
    helpers through a core contract smoke test. Next domain candidates are
    asset inventory/equipment response shapers and headless gacha/wallet service
    adapters before broader Vue component extraction.
+59. Phase 8Z profile asset target-variant response shaping. **Implemented
+   2026-07-04:** core commit `0f8beee` added `modules/assets` helpers for
+   target-variant list projection over injected variants, catalog snapshots,
+   profile asset state, active ids, asset-id adapters, and product policy
+   adapters. Mushroom uses it for progression portrait lists while keeping
+   portrait asset id convention, runtime catalog construction, gacha-plan
+   policy, active/equipment resolution, product routes, and HTTP payload
+   ownership local. Meat consumes the helper through a core contract smoke
+   test. Next candidates are headless gacha/wallet service adapters,
+   additional asset inventory/equipment DTO shapers, and neutral Vue
+   composables/components only after the service contracts stabilize.

@@ -92,12 +92,16 @@ copy, theme, and API adapters.
   paid/free equipment validation, direct-purchase spend mutation shaping,
   acquisition-source selection, instance draft rows, and portrait variant
   projection over injected catalog/policy snapshots
+- profile asset target-variant response slice: `src/profile-asset-state.js`
+  and `modules/assets` now also provide target-variant list projection over
+  injected variants, catalogs, ownership state, active ids, asset-id adapters,
+  and product policy adapters, tested by `tests/profile-asset-state.test.js`
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `9b7b505`
-  (`Add asset gacha result DTO shapers`)
+- latest consumed core commit: `0f8beee`
+  (`Add profile asset target variant shaper`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -641,7 +645,8 @@ shaping moved in core commit `41a3ad5`, and artifact grid utility shaping moved
 in core commit `725ffab`. Canonical preview-orientation shaping moved in core
 commit `786d41c`, and wallet/asset-roll client status normalization moved in
 core commit `f387670`. Asset gacha roll/burn result DTO shaping moved in core
-commit `9b7b505`.
+commit `9b7b505`, and profile asset target-variant response shaping moved in
+core commit `0f8beee`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -738,6 +743,12 @@ Next planned domain slices:
     `9b7b505`; Mushroom delegates roll and burn result payload shaping while
     keeping SQL queries, wallet spends, asset grants, secure RNG, idempotency,
     and route payload ownership local.**
+16. **Profile asset target-variant response shaping:** list projection over
+    catalog/state/policy adapters for inventory and equipment variant surfaces.
+    **Implemented 2026-07-04 in core commit `0f8beee`; Mushroom delegates
+    progression portrait list shaping while keeping portrait id convention,
+    runtime catalog, gacha-plan policy, active/equipment resolution, and
+    product routes local.**
 
 Next planned frontend slices:
 
@@ -752,10 +763,11 @@ Next planned frontend slices:
    preview-orientation helpers. **Seventh slice implemented 2026-07-04** with
    canonical preview orientation for bitmap/card surfaces. **Eighth slice
    implemented 2026-07-04** with wallet purchase-intent, Telegram invoice, and
-   asset-roll error status normalization. Continue with DTO shapers, asset
-   inventory/equipment response shapers, and headless view-model contracts
-   before page/component extraction. Do not move the full Mushroom API
-   client into core yet; keep product routes behind injected adapters.
+   asset-roll error status normalization. **First asset inventory/equipment
+   response shaper implemented 2026-07-04** with target-variant list projection.
+   Continue with headless view-model contracts and service adapters before
+   page/component extraction. Do not move the full Mushroom API client into
+   core yet; keep product routes behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay
    view model, wallet/asset catalog state, gacha pack state, and admin

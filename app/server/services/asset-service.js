@@ -28,7 +28,7 @@ import {
   normalizeProfileAssetInstanceRow,
   profileAssetAcquisitionSource,
   profileAssetInstanceDraftToRow,
-  profileAssetIsOwned,
+  shapeProfileAssetTargetVariants,
   shapeProfileAssetVariant,
   validateProfileAssetEquipment
 } from '@microwavedev/backpack-game-core/modules/assets';
@@ -700,25 +700,40 @@ export function shapePortraitVariant({
   activePortraitId = 'default',
   catalog = getAssetCatalog()
 }) {
-  const asset = assetByIdFromCatalog(catalog, variant.assetId || portraitAssetId(mushroomId, variant.id));
-  if (!asset) return null;
-  const owned = profileAssetIsOwned(asset, cosmeticState);
-  const policy = asset.source === 'gacha_plan'
-    ? {
-      acquisitionMode: asset.acquisitionMode,
-      purchaseAvailable: false,
-      rollAvailable: false,
-      gachaEnabled: isAssetGachaEnabled(),
-      directBuyPolicy: directBuyPolicy(),
-      activePackId: asset.packId || null
-    }
-    : assetPolicy(asset);
-  return shapeProfileAssetVariant({
-    variant,
-    asset,
-    owned,
-    active: activePortraitId === variant.id,
-    policy
+  return shapePortraitVariantsForCharacter({
+    mushroomId,
+    variants: [variant],
+    cosmeticState,
+    activePortraitId,
+    catalog
+  })[0] || null;
+}
+
+export function shapePortraitVariantsForCharacter({
+  mushroomId,
+  variants = [],
+  cosmeticState,
+  activePortraitId = 'default',
+  catalog = getAssetCatalog()
+}) {
+  return shapeProfileAssetTargetVariants({
+    variants,
+    target: { slot: 'portrait', targetType: 'character', targetId: mushroomId },
+    state: cosmeticState,
+    catalog,
+    activeVariantId: activePortraitId,
+    assetIdForVariant: (variant, target) => variant.assetId || portraitAssetId(target.targetId, variant.id),
+    policyForAsset: (asset) => asset.source === 'gacha_plan'
+      ? {
+        acquisitionMode: asset.acquisitionMode,
+        purchaseAvailable: false,
+        rollAvailable: false,
+        gachaEnabled: isAssetGachaEnabled(),
+        directBuyPolicy: directBuyPolicy(),
+        activePackId: asset.packId || null
+      }
+      : assetPolicy(asset),
+    shapeVariant: shapeProfileAssetVariant
   });
 }
 

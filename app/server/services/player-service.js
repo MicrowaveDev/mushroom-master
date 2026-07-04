@@ -18,7 +18,7 @@ import {
   getRuntimeAssetCatalog,
   getRuntimePortraitVariantsForResponse,
   parsePortraitAssetId,
-  shapePortraitVariant
+  shapePortraitVariantsForCharacter
 } from './asset-service.js';
 import { getWalletState } from './wallet-service.js';
 
@@ -133,13 +133,13 @@ export async function getPlayerState(playerId) {
           characterXp,
           currentLevelCharacterXp: levelInfo.current,
           nextLevelCharacterXp: levelInfo.next,
-          portraits: portraitVariants.map(v => shapePortraitVariant({
+          portraits: shapePortraitVariantsForCharacter({
             mushroomId: row.mushroom_id,
-            variant: v,
+            variants: portraitVariants,
             cosmeticState,
             activePortraitId,
             catalog: runtimeAssetCatalog
-          })).filter(Boolean),
+          }),
           activePreset: activePresetId,
           presets: presetVariants.map(v => ({ ...v, unlocked: level >= v.requiredLevel }))
         }
