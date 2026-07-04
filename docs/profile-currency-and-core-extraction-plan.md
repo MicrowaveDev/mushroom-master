@@ -73,14 +73,17 @@
 > next-action decisions, and roll/burn refresh decisions. The first run-shop
 > response patch helper slice now shares refresh-shop, buy, and sell state
 > projection, and the broader game-run response patch helper slice now shares
-> start, ready, round-transition, and completion projection. Mushroom live
+> start, ready, round-transition, and completion projection. Replay playback
+> state now shares speed selection, long-battle boost, autoplay delay, tick
+> advancement, load/set-speed patches, and timeline shaping. Mushroom live
 > frontend transport now routes through the shared client while keeping product
 > route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
 > are **not more route plumbing**; they are remaining headless service state
-> machines, replay/admin view models, and later neutral UI primitives.
+> machines, gacha admin draft-diff/view models, and later neutral UI
+> primitives.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
@@ -2822,6 +2825,12 @@ state projection. Mushroom now consumes them in `useGameRun` while keeping
 routes, loadout projection, bootstrap updates, replay loading, navigation,
 haptics, and product copy local.
 
+Implemented as the next slice: core commit `ee2a275` added replay playback
+state helpers for speed selection, long-battle boost, autoplay delay, tick
+advancement, load/set-speed patches, and timeline shaping. Mushroom now
+consumes them in `useReplay` while keeping timers, route calls, settings
+persistence, event formatting, navigation, Vue computed wrappers, and UI local.
+
 Move next:
 
 - **Remaining headless wallet/gacha state services:** browser-safe helpers for
@@ -2829,9 +2838,10 @@ Move next:
   broader route-client orchestration over injected clients and copy/policy
   adapters. Telegram invoice opening, web checkout opening, and refresh
   callbacks stay product-local.
-- **Replay/admin view models:** replay playback state, gacha admin release
-  summaries, season-plan coverage, odds-preview table DTOs, pack diff DTOs,
-  and plan-item editor validation state.
+- **Gacha admin draft-diff DTO helpers:** move pack snapshot/draft diff and
+  diff-row shaping into core while Mushroom keeps DB lookup, base-pack metadata
+  resolution, support audit rows, product copy, `compactJson`, routes, and UI
+  layout local.
 
 Move later, after the above contracts are stable:
 
@@ -3551,7 +3561,7 @@ that game.
    wallet/gacha state services; replay playback state, gacha/admin view
    models, and neutral Vue primitives after contracts are stable. The
    run-shop/game-run response patch helper slices are fulfilled by Phases
-   8AJ-8AK. Do not
+   8AJ-8AK, and replay playback state is fulfilled by Phase 8AL. Do not
    move whole Mushroom services, pages, Express routes, DB schemas, payment
    providers, route maps, catalogs, artwork, support operations, haptics, or
    secure paid-roll RNG selection into core.
@@ -3564,9 +3574,10 @@ that game.
    still exist, while keeping runtime catalogs, SQL mutations, wallet spends,
    secure RNG, mutation claims, support actions, and route payload ownership
    local. Next candidates are headless wallet/gacha state services (started by
-   Phase 8AI), replay playback state, gacha/admin view models, and neutral Vue
-   primitives after contracts stabilize; the run-shop/game-run response patch
-   helper slices are fulfilled by Phases 8AJ-8AK.
+   Phase 8AI), gacha/admin view models, and neutral Vue primitives after
+   contracts stabilize; the run-shop/game-run response patch helper slices are
+   fulfilled by Phases 8AJ-8AK, and replay playback state is fulfilled by Phase
+   8AL.
 68. Phase 8AI headless wallet/gacha state helper extraction.
    **Implemented 2026-07-04:** core commit `5ee7ee8` added
    `client-view-model` helpers for wallet bundle loading state, wallet
@@ -3576,9 +3587,9 @@ that game.
    generation, Telegram invoice opening, web checkout opening, bootstrap
    refresh callbacks, runtime state ownership, and product copy local. Next
    candidates are remaining headless wallet/gacha orchestration helpers,
-   replay playback state, gacha/admin view models, and neutral Vue primitives
-   after contracts stabilize; the broader game-run response patch helper slice
-   is fulfilled by Phase 8AK.
+   gacha/admin view models, and neutral Vue primitives after contracts
+   stabilize; replay playback state is fulfilled by Phase 8AL, and the broader
+   game-run response patch helper slice is fulfilled by Phase 8AK.
 69. Phase 8AJ run-shop response patch helper extraction.
    **Implemented 2026-07-04:** core commit `f4734ea` added
    `client-view-model` helpers for refresh-shop, buy, and sell response state
@@ -3587,9 +3598,10 @@ that game.
    payload construction, placement payload construction, haptics, replay
    loading, runtime state ownership, route names, and product copy local. Next
    candidates are remaining headless wallet/gacha orchestration helpers,
-   replay playback state, gacha/admin view models, and neutral Vue primitives
-   after contracts stabilize; start/ready/round-transition/completion response
-   patch helpers are fulfilled by Phase 8AK.
+   gacha/admin view models, and neutral Vue primitives after contracts
+   stabilize; replay playback state is fulfilled by Phase 8AL, and
+   start/ready/round-transition/completion response patch helpers are fulfilled
+   by Phase 8AK.
 70. Phase 8AK game-run response patch helper extraction.
    **Implemented 2026-07-04:** core commit `2092663` added
    `client-view-model` helpers for game-run start, ready, round-transition,
@@ -3597,6 +3609,17 @@ that game.
    delegates those state patches through core while keeping routes, loadout
    projection, bootstrap updates, replay loading, navigation, haptics, runtime
    state ownership, and product copy local. Next candidates are remaining
-   headless wallet/gacha orchestration helpers, replay playback state,
-   gacha/admin view models, and neutral Vue primitives after contracts
-   stabilize.
+   headless wallet/gacha orchestration helpers, gacha/admin view models, and
+   neutral Vue primitives after contracts stabilize; replay playback state is
+   fulfilled by Phase 8AL.
+71. Phase 8AL replay playback state helper extraction.
+   **Implemented 2026-07-04:** core commit `ee2a275` added
+   `client-view-model` helpers for replay speed selection, long-battle boost,
+   autoplay delay, tick advancement, load/set-speed state patches, and replay
+   timeline shaping. Mushroom's replay composable now delegates those state
+   decisions through core while keeping timers, API routes, settings
+   persistence, event formatting/localization, navigation, Vue computed
+   wrappers, runtime state ownership, and UI local. Next candidates are gacha
+   admin draft-diff DTO helpers, remaining headless wallet/gacha orchestration
+   helpers, broader gacha/admin view models, and neutral Vue primitives after
+   contracts stabilize.

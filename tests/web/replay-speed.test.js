@@ -5,7 +5,7 @@ import {
   LONG_BATTLE_SPEED_BOOST_3X_INDEX,
   LONG_BATTLE_SPEED_BOOST_4X_INDEX,
   replayLongBattleSpeedBoost
-} from '../../web/src/composables/useReplay.js';
+} from '@microwavedev/backpack-game-core/client-view-model';
 
 test('long battle replay speed boost stays off for short battles', () => {
   assert.equal(replayLongBattleSpeedBoost(30, 29), 1);

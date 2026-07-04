@@ -92,6 +92,11 @@ copy, theme, and API adapters.
   projection helpers while games keep routes, loadout projection, bootstrap
   updates, replay loading, navigation, haptics, and product copy local, tested
   by `tests/client-view-model.test.js`
+- replay playback state helper slice: `src/client-view-model.js` now also
+  provides speed selection, long-battle boost, autoplay delay, tick
+  advancement, load/set-speed patches, and timeline shaping while games keep
+  timers, routes, settings persistence, event formatting, navigation, Vue
+  computed wrappers, and UI local, tested by `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -128,8 +133,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `2092663`
-  (`Add game run response patch helpers`)
+- latest consumed core commit: `ee2a275`
+  (`Add replay playback state helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -890,11 +895,12 @@ needed in core right now. Whole Mushroom services and pages are still too
 product-coupled. The asset inventory/equipment DTO lane is covered by core
 commit `458d4bb`, and the first headless wallet/gacha state helper slice is
 covered by core commit `5ee7ee8`. The first run-shop response patch helper
-slice is covered by core commit `f4734ea`, and the broader game-run response
-patch helper slice is covered by core commit `2092663`. The next useful
-extractions are remaining headless wallet/gacha orchestration helpers, replay
-playback state, gacha/admin view models, and later UI primitives that both
-Mushroom and Meat can consume without inheriting Mushroom persistence,
+slice is covered by core commit `f4734ea`, the broader game-run response patch
+helper slice is covered by core commit `2092663`, and replay playback state is
+covered by core commit `ee2a275`. The next useful extraction is the gacha admin
+pack draft-diff DTO helper slice, followed by remaining headless wallet/gacha
+orchestration helpers, broader admin view models, and later UI primitives that
+both Mushroom and Meat can consume without inheriting Mushroom persistence,
 Telegram, payment, catalog, art, support, haptics, or page-composition rules.
 
 ## Next Infrastructure Slice: Core Submodule Consumption

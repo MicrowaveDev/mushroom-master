@@ -2,70 +2,56 @@ import { computed } from 'vue/dist/vue.esm-bundler.js';
 import { createMushroomGameApiClient } from '../api.js';
 import { formatReplayEvent } from '../replay/format.js';
 import { readReplayDelay } from '../constants.js';
+import {
+  LONG_BATTLE_SPEED_BOOST_2X_INDEX,
+  LONG_BATTLE_SPEED_BOOST_3X_INDEX,
+  LONG_BATTLE_SPEED_BOOST_4X_INDEX,
+  preferredReplaySpeed as corePreferredReplaySpeed,
+  replayAdvanceTickViewState,
+  replayAutoplayDelayViewState,
+  replayLoadResultViewState,
+  replayLongBattleSpeedBoost,
+  replaySetSpeedViewState,
+  replayTimelineViewState
+} from '@microwavedev/backpack-game-core/client-view-model';
 
 const DEFAULT_REPLAY_AUTOPLAY_MS = readReplayDelay(import.meta.env?.VITE_REPLAY_AUTOPLAY_MS, 1200);
 const DEFAULT_REPLAY_AUTOPLAY_FAST_MS = readReplayDelay(import.meta.env?.VITE_REPLAY_AUTOPLAY_FAST_MS, 600);
-export const LONG_BATTLE_SPEED_BOOST_2X_INDEX = 45;
-export const LONG_BATTLE_SPEED_BOOST_3X_INDEX = 90;
-export const LONG_BATTLE_SPEED_BOOST_4X_INDEX = 120;
-
-export function replayLongBattleSpeedBoost(eventCount, replayIndex) {
-  const count = Number(eventCount) || 0;
-  const index = Number(replayIndex) || 0;
-  if (count <= LONG_BATTLE_SPEED_BOOST_2X_INDEX || index < LONG_BATTLE_SPEED_BOOST_2X_INDEX) return 1;
-  if (count > LONG_BATTLE_SPEED_BOOST_4X_INDEX && index >= LONG_BATTLE_SPEED_BOOST_4X_INDEX) return 4;
-  if (count > LONG_BATTLE_SPEED_BOOST_3X_INDEX && index >= LONG_BATTLE_SPEED_BOOST_3X_INDEX) return 3;
-  return 2;
-}
+export {
+  LONG_BATTLE_SPEED_BOOST_2X_INDEX,
+  LONG_BATTLE_SPEED_BOOST_3X_INDEX,
+  LONG_BATTLE_SPEED_BOOST_4X_INDEX,
+  replayLongBattleSpeedBoost
+};
 
 export function useReplay(state, goTo, getMushroom) {
   function gameApi() {
     return createMushroomGameApiClient(state.sessionKey);
   }
 
-  const activeEvent = computed(() => state.currentBattle?.events?.[state.replayIndex] || null);
-  const activeReplayDisplay = computed(() =>
-    formatReplayEvent(
-      activeEvent.value,
+  function formatDisplay(event) {
+    return formatReplayEvent(
+      event,
       state.currentBattle,
       (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en,
       (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang],
       state.lang
-    )
-  );
-  const replayFinished = computed(() => {
-    if (!state.currentBattle?.events?.length) return false;
-    return state.replayIndex >= state.currentBattle.events.length - 1;
-  });
-  const activeSpeech = computed(() => {
-    if (!activeReplayDisplay.value?.speechSide || !activeReplayDisplay.value?.speechText) return null;
-    return {
-      side: activeReplayDisplay.value.speechSide,
-      narration: activeReplayDisplay.value.speechText,
-      parts: activeReplayDisplay.value.speechParts || []
-    };
-  });
-  const battleStatusText = computed(() => activeReplayDisplay.value?.statusText || '');
-  const visibleReplayEvents = computed(() => {
-    if (!state.currentBattle?.events?.length) return [];
-    return state.currentBattle.events
-      .slice(0, state.replayIndex + 1)
-      .map((event, index) => ({
-        ...event,
-        replayIndex: index,
-        display: formatReplayEvent(
-          event, state.currentBattle,
-          (mushroomId) => getMushroom(mushroomId)?.name?.[state.lang] || getMushroom(mushroomId)?.name?.en,
-          (mushroomId) => getMushroom(mushroomId)?.active?.name?.[state.lang],
-          state.lang
-        )
-      }))
-      .reverse();
-  });
-  const activeReplayState = computed(() => activeEvent.value?.state || null);
-  const longBattleSpeedBoost = computed(() =>
-    replayLongBattleSpeedBoost(state.currentBattle?.events?.length || 0, state.replayIndex)
-  );
+    );
+  }
+
+  const replayTimeline = computed(() => replayTimelineViewState({
+    battle: state.currentBattle,
+    replayIndex: state.replayIndex,
+    formatEvent: formatDisplay
+  }));
+  const activeEvent = computed(() => replayTimeline.value.activeEvent);
+  const activeReplayDisplay = computed(() => replayTimeline.value.activeDisplay);
+  const replayFinished = computed(() => replayTimeline.value.replayFinished);
+  const activeSpeech = computed(() => replayTimeline.value.activeSpeech);
+  const battleStatusText = computed(() => replayTimeline.value.battleStatusText);
+  const visibleReplayEvents = computed(() => replayTimeline.value.visibleReplayEvents);
+  const activeReplayState = computed(() => replayTimeline.value.activeReplayState);
+  const longBattleSpeedBoost = computed(() => replayTimeline.value.longBattleSpeedBoost);
 
   function stopReplay() {
     if (state.replayTimer) {
@@ -75,26 +61,27 @@ export function useReplay(state, goTo, getMushroom) {
   }
 
   function preferredReplaySpeed() {
-    const fromSettings = Number(state.bootstrap?.settings?.replaySpeed);
-    return [2, 4, 8].includes(fromSettings) ? fromSettings : 2;
+    return corePreferredReplaySpeed(state.bootstrap?.settings);
   }
 
   function autoplayReplay() {
     stopReplay();
-    const selectedSpeed = state.replaySpeed || preferredReplaySpeed();
-    const boost = replayLongBattleSpeedBoost(state.currentBattle?.events?.length || 0, state.replayIndex);
-    const speed = selectedSpeed * boost;
-    const baseDelay = state.bootstrap?.settings?.battleSpeed === '2x'
-      ? DEFAULT_REPLAY_AUTOPLAY_FAST_MS
-      : DEFAULT_REPLAY_AUTOPLAY_MS;
-    const delay = Math.max(50, Math.round(baseDelay / speed));
+    const { delay } = replayAutoplayDelayViewState({
+      eventCount: state.currentBattle?.events?.length || 0,
+      replayIndex: state.replayIndex,
+      replaySpeed: state.replaySpeed || preferredReplaySpeed(),
+      settings: state.bootstrap?.settings || null,
+      defaultDelayMs: DEFAULT_REPLAY_AUTOPLAY_MS,
+      fastDelayMs: DEFAULT_REPLAY_AUTOPLAY_FAST_MS
+    });
     state.replayTimer = window.setInterval(() => {
-      if (!state.currentBattle) { stopReplay(); return; }
-      if (state.replayIndex >= state.currentBattle.events.length - 1) { stopReplay(); return; }
-      const previousBoost = replayLongBattleSpeedBoost(state.currentBattle.events.length, state.replayIndex);
-      state.replayIndex += 1;
-      const nextBoost = replayLongBattleSpeedBoost(state.currentBattle.events.length, state.replayIndex);
-      if (nextBoost !== previousBoost && state.replayIndex < state.currentBattle.events.length - 1) {
+      const tick = replayAdvanceTickViewState({
+        battle: state.currentBattle,
+        replayIndex: state.replayIndex
+      });
+      if (tick.shouldStop) { stopReplay(); return; }
+      state.replayIndex = tick.replayIndex;
+      if (tick.shouldRestartTimer) {
         autoplayReplay();
       }
     }, delay);
@@ -102,7 +89,6 @@ export function useReplay(state, goTo, getMushroom) {
 
   function persistReplaySpeed(speed) {
     if (!state.sessionKey || !state.bootstrap?.settings) return;
-    state.bootstrap.settings.replaySpeed = speed;
     gameApi().postRoute('settings', {}, {
       lang: state.bootstrap.settings.lang,
       reducedMotion: state.bootstrap.settings.reducedMotion,
@@ -112,8 +98,16 @@ export function useReplay(state, goTo, getMushroom) {
   }
 
   function setReplaySpeed(speed) {
-    state.replaySpeed = speed;
-    persistReplaySpeed(speed);
+    const viewState = replaySetSpeedViewState(speed, {
+      settings: state.bootstrap?.settings || null
+    });
+    state.replaySpeed = viewState.replaySpeed;
+    if (state.bootstrap?.settings && viewState.settings) {
+      state.bootstrap.settings = viewState.settings;
+    }
+    if (viewState.shouldPersist) {
+      persistReplaySpeed(viewState.replaySpeed);
+    }
     if (state.replayTimer) {
       autoplayReplay();
     }
@@ -121,9 +115,13 @@ export function useReplay(state, goTo, getMushroom) {
 
   async function loadReplay(battleId, options = {}) {
     try {
-      state.currentBattle = options.battle || await gameApi().getRoute('battle', { battleId });
-      state.replayIndex = 0;
-      state.replaySpeed = preferredReplaySpeed();
+      const battle = options.battle || await gameApi().getRoute('battle', { battleId });
+      const viewState = replayLoadResultViewState(battle, {
+        settings: state.bootstrap?.settings || null
+      });
+      state.currentBattle = viewState.currentBattle;
+      state.replayIndex = viewState.replayIndex;
+      state.replaySpeed = viewState.replaySpeed;
       // Allow signalReady() to pre-fetch the replay payload without navigating
       // away from the round-result screen. The replay screen is opt-in
       // (Flow B Step 4) — autoplay only starts when the user actually opens it.

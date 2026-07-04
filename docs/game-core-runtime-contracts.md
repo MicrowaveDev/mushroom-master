@@ -359,6 +359,11 @@ Game-run response patch helper shaping moved in core commit `2092663`; games
 can share start, ready, round-transition, and completion response state
 projection while routes, loadout projection, bootstrap updates, replay
 loading, navigation, haptics, and product copy stay local.
+Replay playback state shaping moved in core commit `ee2a275`; games can share
+speed selection, long-battle boost, autoplay delay, tick advancement,
+load/set-speed patches, and replay timeline shaping while timers, routes,
+settings persistence, event formatting, navigation, Vue computed wrappers, and
+UI stay local.
 Client response-envelope unwrapping moved in core commit `b56ad91`; games can
 use the shared route-adapter client against existing `{ success, data, error }`
 payloads while route maps, auth/session headers, idempotency keys, checkout
@@ -368,7 +373,8 @@ uses the shared route-adapter client, so the next core boundary should move
 DTO/state helpers rather than more route plumbing. Profile asset/equipment
 result shapers and the first headless wallet/gacha state helpers are now in
 core, and the run-shop/game-run response patch helper slices are also in
-core; prioritize remaining headless orchestration, replay state, and
+core. Replay playback state is also in core; prioritize the gacha admin
+draft-diff DTO helper slice, remaining headless orchestration, and broader
 admin/view-model helpers next. Keep whole services, Express routes,
 persistence, payment/webhook providers, runtime catalogs, route maps, artwork,
 support operations, haptics, page assembly, and secure paid-roll RNG selection
