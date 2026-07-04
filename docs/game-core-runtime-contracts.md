@@ -333,6 +333,10 @@ Profile asset target-variant response shaping moved in core commit `0f8beee`;
 games can share inventory/equipment variant list projection while injecting
 product asset-id and policy adapters; runtime catalog/equipment resolution
 remains local.
+Wallet and asset-roll mutation view-state shaping moved in core commit
+`fc53abc`; games can share opening/success/failure reducer contracts while API
+routes, idempotency-key generation, checkout side effects, refresh hooks, and
+copy remain local.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

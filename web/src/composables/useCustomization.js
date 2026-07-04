@@ -1,6 +1,11 @@
 import {
-  assetRollStatusFromError,
-  walletPurchaseStatusFromIntent,
+  assetRollErrorViewState,
+  assetRollPendingViewState,
+  assetRollResultViewState,
+  walletPurchaseCheckoutViewState,
+  walletPurchaseErrorViewState,
+  walletPurchaseIntentViewState,
+  walletPurchaseOpeningViewState,
   walletPurchaseStatusFromTelegramInvoice
 } from '@microwavedev/backpack-game-core/client-view-model';
 import { apiJson } from '../api.js';
@@ -17,6 +22,13 @@ export function useCustomization(state, refreshBootstrap) {
 
   function defaultPaymentSurface() {
     return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
+  }
+
+  function applyAssetRollViewState(viewState) {
+    state.assetRollStatus = viewState.status;
+    state.assetRollResult = viewState.result;
+    state.assetRollErrorMessage = viewState.errorMessage;
+    if (viewState.globalErrorMessage) state.error = viewState.globalErrorMessage;
   }
 
   async function switchPortrait({ mushroomId, portraitId }) {
@@ -57,55 +69,51 @@ export function useCustomization(state, refreshBootstrap) {
   }
 
   async function rollAssetPack({ packId }) {
-    state.assetRollStatus = 'rolling';
-    state.assetRollResult = null;
-    state.assetRollErrorMessage = '';
+    applyAssetRollViewState(assetRollPendingViewState({ status: 'rolling' }));
     try {
       const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/roll`, {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('asset-roll') }
       }, state.sessionKey);
-      if (result?.roll) {
-        state.assetRollResult = result.rollResult || null;
-        state.assetRollStatus = 'success';
+      const viewState = assetRollResultViewState(result, {
+        successKey: 'roll',
+        resultKey: 'rollResult',
+        successStatus: 'success',
+        failureMessage: 'Failed to roll pack'
+      });
+      applyAssetRollViewState(viewState);
+      if (viewState.status === 'success') {
         await refreshBootstrap();
-      } else {
-        state.assetRollStatus = 'failed';
-        state.assetRollErrorMessage = 'Failed to roll pack';
       }
     } catch (error) {
-      state.assetRollStatus = assetRollStatusFromError(error);
-      state.assetRollErrorMessage = error.message || 'Failed to roll pack';
-      if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
-        state.error = state.assetRollErrorMessage;
-      }
+      applyAssetRollViewState(assetRollErrorViewState(error, {
+        fallbackMessage: 'Failed to roll pack'
+      }));
     }
   }
 
   async function burnAssetPack({ packId, ruleId = null }) {
-    state.assetRollStatus = 'burning';
-    state.assetRollResult = null;
-    state.assetRollErrorMessage = '';
+    applyAssetRollViewState(assetRollPendingViewState({ status: 'burning' }));
     try {
       const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/burn`, {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('asset-burn') },
         body: JSON.stringify({ ruleId })
       }, state.sessionKey);
-      if (result?.exchange) {
-        state.assetRollResult = result.burnResult || null;
-        state.assetRollStatus = 'burned';
+      const viewState = assetRollResultViewState(result, {
+        successKey: 'exchange',
+        resultKey: 'burnResult',
+        successStatus: 'burned',
+        failureMessage: 'Failed to burn duplicates'
+      });
+      applyAssetRollViewState(viewState);
+      if (viewState.status === 'burned') {
         await refreshBootstrap();
-      } else {
-        state.assetRollStatus = 'failed';
-        state.assetRollErrorMessage = 'Failed to burn duplicates';
       }
     } catch (error) {
-      state.assetRollStatus = assetRollStatusFromError(error);
-      state.assetRollErrorMessage = error.message || 'Failed to burn duplicates';
-      if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
-        state.error = state.assetRollErrorMessage;
-      }
+      applyAssetRollViewState(assetRollErrorViewState(error, {
+        fallbackMessage: 'Failed to burn duplicates'
+      }));
     }
   }
 
@@ -129,22 +137,28 @@ export function useCustomization(state, refreshBootstrap) {
     surface = defaultPaymentSurface()
   } = {}) {
     try {
-      state.walletPurchaseStatus = 'opening';
+      state.walletPurchaseStatus = walletPurchaseOpeningViewState().status;
       const result = await apiJson('/api/wallet/purchase-intents', {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
         body: JSON.stringify({ bundleId, provider, surface })
       }, state.sessionKey);
-      const intentStatus = walletPurchaseStatusFromIntent(result);
-      if (intentStatus) {
-        state.walletPurchaseStatus = intentStatus;
-        if (intentStatus === 'confirmed') await refreshBootstrap();
+      const intentViewState = walletPurchaseIntentViewState(result);
+      if (intentViewState.handled) {
+        state.walletPurchaseStatus = intentViewState.status;
+        if (intentViewState.shouldRefresh) await refreshBootstrap();
         return;
       }
       const checkout = result?.checkout || {};
       const telegramInvoice = checkout.invoiceLink && globalThis.Telegram?.WebApp?.openInvoice;
+      const webCheckout = checkout.checkoutUrl && typeof window !== 'undefined';
+      const checkoutViewState = walletPurchaseCheckoutViewState({
+        checkout,
+        hasTelegramInvoice: Boolean(telegramInvoice),
+        hasWebCheckout: Boolean(webCheckout)
+      });
       if (telegramInvoice) {
-        state.walletPurchaseStatus = 'opened';
+        state.walletPurchaseStatus = checkoutViewState.status;
         globalThis.Telegram.WebApp.openInvoice(checkout.invoiceLink, async (status) => {
           const invoiceStatus = walletPurchaseStatusFromTelegramInvoice(status);
           state.walletPurchaseStatus = invoiceStatus;
@@ -154,18 +168,17 @@ export function useCustomization(state, refreshBootstrap) {
         });
         return;
       }
-      if (checkout.checkoutUrl && typeof window !== 'undefined') {
+      if (webCheckout) {
         window.open(checkout.checkoutUrl, '_blank', 'noopener,noreferrer');
-        state.walletPurchaseStatus = 'opened';
+        state.walletPurchaseStatus = checkoutViewState.status;
         return;
       }
-      state.walletPurchaseStatus = 'failed';
-      state.error = checkout.setupRequired
-        ? 'Wallet purchases are not configured yet'
-        : 'Payment checkout is not available';
+      state.walletPurchaseStatus = checkoutViewState.status;
+      state.error = checkoutViewState.errorMessage;
     } catch (error) {
-      state.walletPurchaseStatus = 'failed';
-      state.error = error.message || 'Failed to start wallet purchase';
+      const viewState = walletPurchaseErrorViewState(error);
+      state.walletPurchaseStatus = viewState.status;
+      state.error = viewState.errorMessage;
     }
   }
 

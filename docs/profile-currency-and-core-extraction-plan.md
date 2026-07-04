@@ -66,7 +66,7 @@
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
 > artifact stat total/text shaping, artifact grid utility shaping, and
 > canonical preview-orientation shaping, plus wallet/asset-roll status
-> normalization. Product DB schemas,
+> normalization and wallet/asset-roll mutation view-state reducers. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -106,7 +106,8 @@ helpers, asset gacha roll/burn result DTO shapers, profile asset
 target-variant list shapers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
-preview helpers, plus wallet and asset-roll status normalization helpers. The package ships TypeScript
+preview helpers, plus wallet and asset-roll status normalization and mutation
+view-state helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2738,6 +2739,13 @@ Mushroom keeps portrait id convention, runtime catalog assembly, gacha-plan
 policy, active/equipment resolution, product routes, and route payload ownership
 local.
 
+The next completed frontend/client cleanup is wallet and asset-roll mutation
+view-state shaping, landed in core commit `fc53abc`: opening, success, failure,
+checkout-unavailable, and global-error transition DTOs now run through
+`client-view-model`. Mushroom keeps API routes, idempotency-key generation,
+Telegram/web checkout opening, invoice callbacks, bootstrap refresh hooks,
+runtime state ownership, and product copy local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3357,3 +3365,15 @@ that game.
    test. Next candidates are headless gacha/wallet service adapters,
    additional asset inventory/equipment DTO shapers, and neutral Vue
    composables/components only after the service contracts stabilize.
+60. Phase 8AA wallet and asset-roll mutation view-state helper extraction.
+   **Implemented 2026-07-04:** core commit `fc53abc` added
+   `client-view-model` helpers for headless wallet purchase and asset
+   roll/burn opening, success, failure, checkout-unavailable, refresh, and
+   global-error state decisions. Mushroom's customization composable now uses
+   those reducers while keeping API route calls, idempotency-key generation,
+   Telegram invoice opening, web checkout opening, invoice callbacks, bootstrap
+   refresh, runtime state ownership, and product copy local. Meat consumes the
+   helpers through a core contract smoke test. Next candidates are route-client
+   adapter adoption for these flows, additional asset inventory/equipment DTO
+   shapers, and neutral Vue composables/components only after route contracts
+   are stable.

@@ -69,6 +69,11 @@ copy, theme, and API adapters.
   now also provides shared wallet intent, Telegram invoice, and asset-roll
   error status normalization helpers for browser/client flows, tested by
   `tests/client-view-model.test.js`
+- wallet and asset-roll mutation view-state slice: `src/client-view-model.js`
+  now also provides headless opening/success/failure state reducers for wallet
+  purchases, asset pack rolls, and duplicate burns while games keep routes,
+  checkout side effects, refresh hooks, and copy local, tested by
+  `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -100,8 +105,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `0f8beee`
-  (`Add profile asset target variant shaper`)
+- latest consumed core commit: `fc53abc`
+  (`Add wallet and roll mutation view-state helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -646,7 +651,8 @@ in core commit `725ffab`. Canonical preview-orientation shaping moved in core
 commit `786d41c`, and wallet/asset-roll client status normalization moved in
 core commit `f387670`. Asset gacha roll/burn result DTO shaping moved in core
 commit `9b7b505`, and profile asset target-variant response shaping moved in
-core commit `0f8beee`.
+core commit `0f8beee`. Wallet and asset-roll mutation view-state shaping moved
+in core commit `fc53abc`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -765,7 +771,8 @@ Next planned frontend slices:
    implemented 2026-07-04** with wallet purchase-intent, Telegram invoice, and
    asset-roll error status normalization. **First asset inventory/equipment
    response shaper implemented 2026-07-04** with target-variant list projection.
-   Continue with headless view-model contracts and service adapters before
+   **Ninth slice implemented 2026-07-04** with headless wallet/asset-roll
+   mutation view-state reducers. Continue with service adapters before
    page/component extraction. Do not move the full Mushroom API client into
    core yet; keep product routes behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API
