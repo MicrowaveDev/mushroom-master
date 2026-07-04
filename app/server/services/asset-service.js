@@ -15,7 +15,7 @@ import {
   selectAssetGachaRollResults,
   shapeAssetGachaPack,
   validateAssetGachaPack
-} from '@microwavedev/backpack-game-core/asset-gacha';
+} from '@microwavedev/backpack-game-core/modules/gacha';
 import { query, withTransaction } from '../db.js';
 import {
   PORTRAIT_VARIANTS,

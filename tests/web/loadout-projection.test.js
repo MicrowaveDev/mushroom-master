@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { projectLoadoutItems, prepareGridProps } from '../../web/src/composables/loadout-projection.js';
+import { projectLoadoutItems, prepareGridProps } from '@microwavedev/backpack-game-core/client-view-model';
 
 const BAG_IDS = new Set(['starter_bag', 'moss_pouch', 'amber_satchel']);
 
@@ -107,7 +107,7 @@ test('[grid-props] returns items + bagRows + totalRows for flat loadout', () => 
     row({ id: 'starter', artifactId: 'starter_bag', x: 0, y: 0, width: 3, height: 3, active: true }),
     row({ id: 'moss', artifactId: 'moss_pouch', x: 3, y: 0, width: 1, height: 2, active: true }),
     row({ id: 'span', artifactId: 'glass_cap', x: 2, y: 0, width: 2, height: 1 })
-  ], BAG_IDS, getArtifact);
+  ], BAG_IDS, getArtifact, { columns: 6, minRows: 6 });
 
   assert.deepEqual(result.items.map((i) => i.id), ['span']);
   assert.ok(result.bagRows.some((r) => r.artifactId === 'starter_bag' && r.row === 0));
@@ -116,7 +116,7 @@ test('[grid-props] returns items + bagRows + totalRows for flat loadout', () => 
 });
 
 test('[grid-props] empty loadout returns no items, no bagRows, BAG_ROWS floor', () => {
-  const result = prepareGridProps([], BAG_IDS, getArtifact);
+  const result = prepareGridProps([], BAG_IDS, getArtifact, { columns: 6, minRows: 6 });
   assert.equal(result.items.length, 0);
   assert.equal(result.bagRows.length, 0);
   assert.equal(result.totalRows, 6);
@@ -125,7 +125,7 @@ test('[grid-props] empty loadout returns no items, no bagRows, BAG_ROWS floor', 
 test('[grid-props] bag rows themselves are layout, not pieces', () => {
   const result = prepareGridProps([
     row({ id: 'starter', artifactId: 'starter_bag', x: 0, y: 0, width: 3, height: 3, active: true })
-  ], BAG_IDS, getArtifact);
+  ], BAG_IDS, getArtifact, { columns: 6, minRows: 6 });
   assert.equal(result.items.length, 0);
   assert.ok(result.bagRows.length > 0);
 });

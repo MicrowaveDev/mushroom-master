@@ -1,14 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  BackpackGameClient,
   createLoadoutValidator,
   createSeededRng,
   getEffectiveShape,
   generateShopOffer,
+  prepareGridProps,
   pieceCells,
   shuffleWithRng,
   simulateBattle
 } from '@microwavedev/backpack-game-core';
+import { validateAssetGachaPack } from '@microwavedev/backpack-game-core/modules/gacha';
 import { checkBackpackGameCoreSubmodule } from '../../app/scripts/check-backpack-game-core-submodule.js';
 
 test('[core-submodule] backpack-game-core nested submodule is initialized', () => {
@@ -22,10 +25,13 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(typeof getEffectiveShape, 'function');
   assert.equal(typeof createLoadoutValidator, 'function');
   assert.equal(typeof createSeededRng, 'function');
+  assert.equal(typeof BackpackGameClient, 'function');
   assert.equal(typeof generateShopOffer, 'function');
+  assert.equal(typeof prepareGridProps, 'function');
   assert.equal(typeof pieceCells, 'function');
   assert.equal(typeof shuffleWithRng, 'function');
   assert.equal(typeof simulateBattle, 'function');
+  assert.equal(typeof validateAssetGachaPack, 'function');
 
   assert.deepEqual(getEffectiveShape({ width: 1, height: 1 }, false), [[1]]);
   assert.deepEqual(pieceCells({ x: 0, y: 0, width: 1, height: 2 }), ['0:0', '0:1']);

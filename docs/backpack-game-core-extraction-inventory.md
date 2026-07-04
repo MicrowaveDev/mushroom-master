@@ -33,12 +33,17 @@ copy, theme, and API adapters.
 - eighth slice: `src/rng.js`, tested by `tests/rng.test.js`
 - ninth slice: `src/asset-gacha.js`, tested by
   `tests/asset-gacha.test.js`
+- layered architecture slice: public module facades under `src/modules/*`,
+  route-adapter client primitives in `src/client/index.js`, and frontend
+  loadout projection helpers in `src/client-view-model.js`, tested by
+  `tests/module-exports.test.js`, `tests/client.test.js`, and
+  `tests/client-view-model.test.js`
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `f47ff96`
-  (`Add reusable asset gacha core`)
+- latest consumed core commit: `3e3d5d6`
+  (`Add layered module and client exports`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 

@@ -31,6 +31,9 @@
 > adapter prep, and validation review in parallel, while keeping only
 > integration-sensitive steps such as installs, builds, Playwright, submodule
 > pointer changes, commits, and pushes in a lead-owned queue.
+> Latest implementation pass added the first concrete architecture slice:
+> stable module facades, a route-adapter client layer, shared loadout
+> view-model helpers, and Mushroom/Meat consumer adoption of those public paths.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -2438,7 +2441,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `f47ff96`; typed package baseline remains `d5fb481`.
+   `3e3d5d6`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -3052,7 +3055,9 @@ that game.
    and deterministic battle smoke flows. Remaining: backend persistence,
    wallet reward grants, asset inventory/equipment, payment policy, and optional
    simple gacha buy/roll flows for Meat.
-43. Phase 8J full-stack shared UI extraction. Extract reusable frontend
+43. Phase 8J full-stack shared UI extraction. **Started 2026-07-04:** shared
+   `client-view-model` helpers now project flat loadout rows into grid props
+   from core and are consumed by Mushroom and Meat. Continue extracting reusable
    services/composables first, then neutral Vue components, then optional page
    shells for flows shared by Mushroom and Meat. Candidate flows: bootstrap,
    shop/backpack prep, battle replay, asset inventory/equipment, gacha pack
@@ -3060,14 +3065,14 @@ that game.
    route shells, auth, localization, adult-content policy, images, and themes
    local. Add core-level component/composable tests plus Mushroom screenshot/e2e
    coverage and Meat build/test coverage for each adopted slice.
-44. Phase 8K Geesome-inspired package/module split. Before broader backend or
-   Vue movement, formalize the core repo into stable layers: pure core modules,
-   client/contracts, Vue composables/components, and optional route-binding
-   helpers. Use Geesome's module and UI-service shape as the precedent, but add
-   explicit package `exports`, `.d.ts` coverage, peer dependency boundaries,
-   and consumer contract tests so Mushroom and Meat do not depend on private
-   file paths.
-45. Phase 8L sub-agent execution setup. Before implementing Phase 8K/8J slices,
+44. Phase 8K Geesome-inspired package/module split. **Implemented first slice
+   2026-07-04:** core now exposes public `modules/gacha`, `modules/shop`,
+   `modules/loadout`, `modules/battle`, `modules/fusion`, `client`, and
+   `client-view-model` exports with `.d.ts` coverage and consumer tests.
+   Continue using Geesome's module and UI-service shape as the precedent for
+   deeper backend modules and future Vue components.
+45. Phase 8L sub-agent execution setup. **Used 2026-07-04 for the first
+   architecture slice.** Before implementing later Phase 8K/8J slices,
    split work into bounded sub-agent briefs: architecture audit, core backend
    module, client/contracts, Vue shared UI, Mushroom adapter, Meat adapter, and
    validation/review. Optimize for maximum throughput with parallel discovery,
