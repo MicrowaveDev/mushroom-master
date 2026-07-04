@@ -104,7 +104,12 @@ copy, theme, and API adapters.
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
-  projection, promotion metadata, and plan coverage summaries
+  projection, promotion metadata, plan coverage summaries, pack snapshots, and
+  live/draft diff DTOs
+- gacha admin frontend diff-row slice: `src/client-view-model.js` now also
+  provides live/draft diff table row shaping for admin panels while games keep
+  page layout, copy, auth, and API calls local, tested by
+  `tests/client-view-model.test.js`
 - gacha simulation slice: `src/modules/gacha/simulation.js`, tested by
   `tests/gacha-simulation.test.js`, covers deterministic odds simulation over
   injected packs, catalogs, ownership snapshots, copy counts, pity state, seed,
@@ -133,8 +138,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `ee2a275`
-  (`Add replay playback state helpers`)
+- latest consumed core commit: `c850a14`
+  (`Add gacha admin draft diff helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -897,11 +902,12 @@ commit `458d4bb`, and the first headless wallet/gacha state helper slice is
 covered by core commit `5ee7ee8`. The first run-shop response patch helper
 slice is covered by core commit `f4734ea`, the broader game-run response patch
 helper slice is covered by core commit `2092663`, and replay playback state is
-covered by core commit `ee2a275`. The next useful extraction is the gacha admin
-pack draft-diff DTO helper slice, followed by remaining headless wallet/gacha
-orchestration helpers, broader admin view models, and later UI primitives that
-both Mushroom and Meat can consume without inheriting Mushroom persistence,
-Telegram, payment, catalog, art, support, haptics, or page-composition rules.
+covered by core commit `ee2a275`. Gacha admin pack draft-diff DTOs and diff
+table rows are covered by core commit `c850a14`. The next useful extractions
+are remaining headless wallet/gacha orchestration helpers, broader admin view
+models, and later UI primitives that both Mushroom and Meat can consume without
+inheriting Mushroom persistence, Telegram, payment, catalog, art, support,
+haptics, or page-composition rules.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 

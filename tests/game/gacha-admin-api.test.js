@@ -611,6 +611,7 @@ test('[Req 14-F] gacha admin API clones approved packs for edits and supports em
       .patch(`/api/admin/gacha/packs/${packId}`)
       .set(gachaHeaders)
       .send({
+        rollPriceCurrencyCode: 'premium_coin',
         rollPriceAmount: 77,
         name: { en: 'Draft Clone Pack' },
         reason: 'test_clone_edit'
@@ -620,12 +621,32 @@ test('[Req 14-F] gacha admin API clones approved packs for edits and supports em
     assert.equal(cloneEdit.body.data.clonedFromPackId, packId);
     assert.notEqual(cloneEdit.body.data.pack.id, packId);
     assert.equal(cloneEdit.body.data.pack.reviewStatus, 'draft');
+    assert.equal(cloneEdit.body.data.pack.rollPriceCurrencyCode, 'premium_coin');
     assert.equal(cloneEdit.body.data.pack.rollPriceAmount, 77);
     assert.equal(cloneEdit.body.data.pack.metadata.basePackId, packId);
+    const draftPackId = cloneEdit.body.data.pack.id;
 
     const originalOdds = await getPackOddsForRuntime(packId);
     assert.equal(originalOdds.rollPriceAmount, 19);
     assert.equal(originalOdds.reviewStatus, 'approved');
+
+    const clonePreview = await request(app)
+      .get(`/api/admin/gacha/packs/${draftPackId}/preview`)
+      .set(gachaHeaders);
+    assert.equal(clonePreview.status, 200);
+    const draftDiff = clonePreview.body.data.diff;
+    assert.equal(draftDiff.basePackId, packId);
+    assert.equal(draftDiff.missingBase, false);
+    assert.ok(draftDiff.changedFields.some((change) => (
+      change.field === 'rollPriceAmount' &&
+      change.before === 19 &&
+      change.after === 77
+    )));
+    assert.ok(draftDiff.changedFields.some((change) => (
+      change.field === 'rollPriceCurrencyCode' &&
+      change.before === 'soft_coin' &&
+      change.after === 'premium_coin'
+    )));
 
     const cloneActionRows = await query(
       `SELECT action_type, target_type, target_id, result_json

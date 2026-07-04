@@ -6,6 +6,7 @@ import {
 } from '@microwavedev/backpack-game-core/modules/gacha/simulation';
 import {
   DEFAULT_GACHA_ADMIN_FIXTURE_SCHEMA_VERSION,
+  buildGachaAdminPackDraftDiff,
   catalogWithGachaAdminPlanRows,
   createGachaAdminReleaseChecklist,
   gachaAdminAssetPolicyRecommendationsFromChecklist,
@@ -512,72 +513,15 @@ function simulateRuntimePack(runtimePack, { trials = 1000, seed = null, catalog 
   });
 }
 
-function packSnapshot(runtimePack) {
-  return {
-    id: runtimePack.id,
-    seasonId: runtimePack.seasonId,
-    collectionId: runtimePack.collectionId,
-    name: runtimePack.name,
-    status: runtimePack.status,
-    startsAt: runtimePack.startsAt,
-    endsAt: runtimePack.endsAt,
-    rollPriceAmount: runtimePack.rollPriceAmount,
-    rollSize: runtimePack.rollSize,
-    rarityWeights: runtimePack.rarityWeights || null,
-    slots: runtimePack.slots || null,
-    guarantees: runtimePack.guarantees || null,
-    pityRules: runtimePack.pityRules || null,
-    duplicatePolicy: runtimePack.duplicatePolicy || null,
-    burnRules: runtimePack.burnRules || null,
-    metadata: runtimePack.metadata || {},
-    items: [...(runtimePack.items || [])].sort((a, b) => a.assetId.localeCompare(b.assetId))
-  };
-}
-
-function diffValues(before, after) {
-  const keys = new Set([...Object.keys(before || {}), ...Object.keys(after || {})]);
-  const changed = [];
-  for (const key of keys) {
-    const beforeValue = before?.[key];
-    const afterValue = after?.[key];
-    if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
-      changed.push({ field: key, before: beforeValue ?? null, after: afterValue ?? null });
-    }
-  }
-  return changed;
-}
-
 async function draftDiffForPack(client, runtimePack) {
   const basePackId = runtimePack.metadata?.basePackId || runtimePack.metadata?.clonedFromPackId || null;
   if (!basePackId || basePackId === runtimePack.id) return null;
   const baseRow = await findOne(client, 'asset_gacha_packs', basePackId);
   if (!baseRow) {
-    return { basePackId, missingBase: true, changedFields: [], addedItems: [], removedItems: [], changedItems: [] };
+    return buildGachaAdminPackDraftDiff({ draftPack: runtimePack, basePackId });
   }
   const baseRuntime = rowPackToRuntimePack(baseRow, await selectPackItems(client, basePackId));
-  const baseSnapshot = packSnapshot(baseRuntime);
-  const draftSnapshot = packSnapshot(runtimePack);
-  const baseItems = new Map(baseSnapshot.items.map((item) => [item.assetId, item]));
-  const draftItems = new Map(draftSnapshot.items.map((item) => [item.assetId, item]));
-  const addedItems = [...draftItems.keys()].filter((assetId) => !baseItems.has(assetId));
-  const removedItems = [...baseItems.keys()].filter((assetId) => !draftItems.has(assetId));
-  const changedItems = [...draftItems.keys()]
-    .filter((assetId) => baseItems.has(assetId))
-    .map((assetId) => ({
-      assetId,
-      changes: diffValues(baseItems.get(assetId), draftItems.get(assetId))
-    }))
-    .filter((entry) => entry.changes.length);
-  const { items: _baseItems, ...baseFields } = baseSnapshot;
-  const { items: _draftItems, ...draftFields } = draftSnapshot;
-  return {
-    basePackId,
-    missingBase: false,
-    changedFields: diffValues(baseFields, draftFields),
-    addedItems,
-    removedItems,
-    changedItems
-  };
+  return buildGachaAdminPackDraftDiff({ basePack: baseRuntime, draftPack: runtimePack, basePackId });
 }
 
 async function insertAdminAction(client, {

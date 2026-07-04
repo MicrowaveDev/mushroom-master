@@ -1,3 +1,5 @@
+import { gachaAdminDraftDiffRows } from '@microwavedev/backpack-game-core/client-view-model';
+
 const SUPPORT_ADMIN_STORAGE_KEY = 'supportAdminCredentials';
 
 function readStoredCredentials() {
@@ -324,34 +326,7 @@ export const SupportAdminScreen = {
       return this.gachaPreview?.diff || this.gachaValidation?.diff || null;
     },
     gachaDraftDiffRows() {
-      const diff = this.gachaDraftDiff;
-      if (!diff || diff.missingBase) return [];
-      return [
-        ...(diff.changedFields || []).map((change) => ({
-          type: 'field',
-          field: change.field,
-          before: change.before,
-          after: change.after
-        })),
-        ...(diff.addedItems || []).map((assetId) => ({
-          type: 'item_added',
-          field: assetId,
-          before: null,
-          after: assetId
-        })),
-        ...(diff.removedItems || []).map((assetId) => ({
-          type: 'item_removed',
-          field: assetId,
-          before: assetId,
-          after: null
-        })),
-        ...(diff.changedItems || []).map((entry) => ({
-          type: 'item_changed',
-          field: entry.assetId,
-          before: entry.changes.map((change) => change.before),
-          after: entry.changes.map((change) => change.after)
-        }))
-      ];
+      return gachaAdminDraftDiffRows(this.gachaDraftDiff);
     },
     gachaAssetPolicyRecommendations() {
       return this.gachaPreview?.assetPolicyRecommendations || this.gachaValidation?.assetPolicyRecommendations || [];

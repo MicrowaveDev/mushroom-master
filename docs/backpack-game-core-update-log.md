@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `ee2a2757e240f163e98a31eec8d4d7103f085bfc`
-- core short SHA: `ee2a275`
-- core commit: `Add replay playback state helpers`
+- core SHA: `c850a14f206b7213931cf98920c8be41eadd8627`
+- core short SHA: `c850a14`
+- core commit: `Add gacha admin draft diff helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core replay playback state helpers`)
+- game pointer commit: this commit (`Use core gacha admin draft diff helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `ee2a275` | Replay playback state helpers | Mushroom replay composable delegates speed selection, long-battle boost, autoplay delay, tick advancement, load/set-speed patches, and replay timeline shaping through `client-view-model`. Timers, routes, settings persistence, event formatting, navigation, Vue computed wrappers, and UI stay local. |
+| 2026-07-04 | this commit | `c850a14` | Gacha admin draft diff helpers | Mushroom gacha admin preview delegates pack snapshots and live/draft diff DTOs through `modules/gacha/admin-validation`, and the support admin table rows through `client-view-model`. DB reads, token/role checks, audit logs, upload/storage, product copy, and page layout stay local. |
+| 2026-07-04 | `8c35799` | `ee2a275` | Replay playback state helpers | Mushroom replay composable delegates speed selection, long-battle boost, autoplay delay, tick advancement, load/set-speed patches, and replay timeline shaping through `client-view-model`. Timers, routes, settings persistence, event formatting, navigation, Vue computed wrappers, and UI stay local. |
 | 2026-07-04 | `229cc22` | `2092663` | Game-run response patch helpers | Mushroom game-run composable delegates start, ready, round-transition, and completion response state projection through `client-view-model`. Routes, loadout projection, bootstrap updates, replay loading, navigation, haptics, and product copy stay local. |
 | 2026-07-04 | `fb7e89b` | `f4734ea` | Run-shop response patch helpers | Mushroom game-run composable delegates refresh-shop, buy, and sell response state projection through `client-view-model`. API calls, price guards, placement payload construction, row-id sell payloads, haptics, replay loading, route names, and product copy stay local. |
 | 2026-07-04 | `46d7a22` | `5ee7ee8` | Headless wallet/gacha state helpers | Mushroom customization delegates wallet bundle loading states, wallet checkout next-action decisions, and roll/burn refresh decisions through `client-view-model`. API calls, Telegram/web checkout side effects, bootstrap refresh callbacks, route names, and product copy stay local. |

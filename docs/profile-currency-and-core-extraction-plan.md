@@ -75,15 +75,15 @@
 > projection, and the broader game-run response patch helper slice now shares
 > start, ready, round-transition, and completion projection. Replay playback
 > state now shares speed selection, long-battle boost, autoplay delay, tick
-> advancement, load/set-speed patches, and timeline shaping. Mushroom live
-> frontend transport now routes through the shared client while keeping product
-> route names local.
+> advancement, load/set-speed patches, and timeline shaping. Gacha admin
+> draft-diff DTOs and diff table rows are shared. Mushroom live frontend
+> transport now routes through the shared client while keeping product route
+> names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
 > are **not more route plumbing**; they are remaining headless service state
-> machines, gacha admin draft-diff/view models, and later neutral UI
-> primitives.
+> machines, broader gacha admin view models, and later neutral UI primitives.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
@@ -2838,18 +2838,13 @@ Move next:
   broader route-client orchestration over injected clients and copy/policy
   adapters. Telegram invoice opening, web checkout opening, and refresh
   callbacks stay product-local.
-- **Gacha admin draft-diff DTO helpers:** move pack snapshot/draft diff and
-  diff-row shaping into core while Mushroom keeps DB lookup, base-pack metadata
-  resolution, support audit rows, product copy, `compactJson`, routes, and UI
-  layout local.
+- **Broader gacha admin view models:** release checklist summaries,
+  season-plan coverage matrix, odds-preview table DTOs, and plan-item editor
+  validation state. Pack snapshot/draft diff and diff-row shaping are already
+  in core via Phase 8AM.
 
 Move later, after the above contracts are stable:
 
-- **Replay playback state machine:** timer/index/speed/long-battle boost logic
-  over injected clock functions and product replay-format adapters.
-- **Gacha/admin UI view models:** release checklist summaries, season-plan
-  coverage matrix, odds-preview table DTOs, pack diff DTOs, and plan-item editor
-  validation state.
 - **Neutral Vue primitives:** backpack grid, artifact tile, wallet badge, asset
   picker, gacha pack card, odds table, roll result modal, battle log/timeline,
   and admin checklist components. These should come after Meat has enough
@@ -3619,7 +3614,17 @@ that game.
    timeline shaping. Mushroom's replay composable now delegates those state
    decisions through core while keeping timers, API routes, settings
    persistence, event formatting/localization, navigation, Vue computed
-   wrappers, runtime state ownership, and UI local. Next candidates are gacha
-   admin draft-diff DTO helpers, remaining headless wallet/gacha orchestration
-   helpers, broader gacha/admin view models, and neutral Vue primitives after
-   contracts stabilize.
+   wrappers, runtime state ownership, and UI local. Gacha admin draft-diff DTO
+   helpers are fulfilled by Phase 8AM; next candidates are remaining headless
+   wallet/gacha orchestration helpers, broader gacha/admin view models, and
+   neutral Vue primitives after contracts stabilize.
+72. Phase 8AM gacha admin draft-diff helper extraction.
+   **Implemented 2026-07-04:** core commit `c850a14` added
+   `modules/gacha/admin-validation` helpers for pack snapshots and live/draft
+   diff DTOs, plus `client-view-model` diff table-row shaping for admin
+   panels. Mushroom's gacha admin preview now delegates the pure diff to core
+   and the support admin page delegates the row projection while keeping DB
+   reads, token/role checks, audit logs, upload/storage, product copy, page
+   layout, and admin routes local. Next candidates are remaining headless
+   wallet/gacha orchestration helpers, broader gacha/admin view models, and
+   neutral Vue primitives after contracts stabilize.
