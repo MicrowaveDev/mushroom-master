@@ -1,4 +1,11 @@
-import { gachaAdminDraftDiffRows } from '@microwavedev/backpack-game-core/client-view-model';
+import {
+  gachaAdminDraftDiffRows,
+  gachaAdminPlanChanceText,
+  gachaAdminPlanCoverageRows,
+  gachaAdminPlanTotalWeight,
+  gachaAdminReleaseChecklistRows,
+  gachaAdminValidationIssueRows
+} from '@microwavedev/backpack-game-core/client-view-model';
 
 const SUPPORT_ADMIN_STORAGE_KEY = 'supportAdminCredentials';
 
@@ -247,27 +254,12 @@ export const SupportAdminScreen = {
       return this.gachaPlanPacks.find((pack) => pack.id === this.gachaPlanForm.promotePackId) || null;
     },
     gachaPlanTotalWeight() {
-      return this.gachaSelectedPlanItems.reduce((sum, item) => sum + Math.max(0, Number(item.dropWeight || 0)), 0);
+      return gachaAdminPlanTotalWeight(this.gachaSelectedPlanItems);
     },
     gachaPlanCoverage() {
-      const target = this.gachaCatalog?.planSummary?.targetPerCharacter || 5;
-      const byCharacter = new Map();
-      for (const item of this.gachaSelectedPlanItems) {
-        const row = byCharacter.get(item.characterId) || { count: 0, readyCount: 0, totalWeight: 0 };
-        row.count += 1;
-        if (item.status === 'ready') row.readyCount += 1;
-        row.totalWeight += Math.max(0, Number(item.dropWeight || 0));
-        byCharacter.set(item.characterId, row);
-      }
-      return this.gachaPlanCharacters.map((character) => {
-        const row = byCharacter.get(character.id) || { count: 0, readyCount: 0, totalWeight: 0 };
-        return {
-          ...character,
-          ...row,
-          target,
-          missing: Math.max(0, target - row.count),
-          enough: row.count >= target
-        };
+      return gachaAdminPlanCoverageRows(this.gachaSelectedPlanItems, {
+        characters: this.gachaPlanCharacters,
+        targetPerCharacter: this.gachaCatalog?.planSummary?.targetPerCharacter || 5
       });
     },
     selectedGachaPack() {
@@ -285,24 +277,13 @@ export const SupportAdminScreen = {
       return this.gachaValidation?.validation || this.selectedGachaPack?.validation || null;
     },
     gachaValidationIssues() {
-      const validation = this.gachaValidationResult;
-      if (!validation) return [];
-      return [
-        ...(validation.errors || []).map((issue) => ({ ...issue, severity: 'error' })),
-        ...(validation.warnings || []).map((issue) => ({ ...issue, severity: 'warning' }))
-      ];
+      return gachaAdminValidationIssueRows(this.gachaValidationResult);
     },
     gachaReleaseChecklist() {
       return this.gachaPreview?.releaseChecklist || this.selectedGachaPack?.releaseChecklist || null;
     },
     gachaReleaseItems() {
-      const checklist = this.gachaReleaseChecklist;
-      if (!checklist) return [];
-      return [
-        ...(checklist.blockers || []),
-        ...(checklist.warnings || []),
-        ...(checklist.passed || [])
-      ];
+      return gachaAdminReleaseChecklistRows(this.gachaReleaseChecklist);
     },
     gachaReleaseBlockers() {
       return this.gachaReleaseChecklist?.blockers || [];
@@ -456,9 +437,7 @@ export const SupportAdminScreen = {
       return `${(numeric * 100).toFixed(numeric > 0 && numeric < 0.01 ? 2 : 1)}%`;
     },
     formatGachaPlanChance(item) {
-      const total = this.gachaPlanTotalWeight;
-      if (!total) return '0.0%';
-      return this.formatPercent(Math.max(0, Number(item.dropWeight || 0)) / total);
+      return gachaAdminPlanChanceText(item, { totalWeight: this.gachaPlanTotalWeight });
     },
     compactJson(value) {
       if (value === null || value === undefined) return '-';

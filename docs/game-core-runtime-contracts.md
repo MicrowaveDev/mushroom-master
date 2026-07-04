@@ -373,13 +373,15 @@ uses the shared route-adapter client, so the next core boundary should move
 DTO/state helpers rather than more route plumbing. Profile asset/equipment
 result shapers and the first headless wallet/gacha state helpers are now in
 core, and the run-shop/game-run response patch helper slices are also in
-core. Replay playback state is also in core. Gacha admin draft-diff DTOs and
-diff table-row shaping are now in core while DB reads, auth, audit logs,
-upload/storage, copy, and page layout stay product-local. Prioritize remaining
-headless orchestration and broader admin/view-model helpers next. Keep whole
-services, Express routes, persistence, payment/webhook providers, runtime
-catalogs, route maps, artwork, support operations, haptics, page assembly, and
-secure paid-roll RNG selection inside product repos.
+core. Replay playback state is also in core. Gacha admin draft-diff DTOs, diff
+table-row shaping, validation issue rows, release checklist rows, and
+season-plan coverage/chance shaping are now in core while DB reads, auth, audit
+logs, upload/storage, copy, and page layout stay product-local. Prioritize
+remaining headless orchestration and smaller admin row shapers such as fixture
+operation and odds rows next. Keep whole services, Express routes, persistence,
+payment/webhook providers, runtime catalogs, route maps, artwork, support
+operations, haptics, page assembly, and secure paid-roll RNG selection inside
+product repos.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`
