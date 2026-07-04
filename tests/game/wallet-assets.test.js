@@ -1192,6 +1192,8 @@ test('[Req 4-Y, 14-F] direct asset purchase waits for an active database mutatio
       assert.equal(releaseError, null);
       assert.equal(purchase.asset.assetId, assetId);
       assert.equal(purchase.alreadyOwned, false);
+      assert.equal(purchase.status, 'purchased');
+      assert.equal(purchase.instance.asset.assetId, assetId);
       assert.equal((await getWalletState(player.id)).balance, 0);
     } finally {
       clearTimeout(releaseClaim);
@@ -1250,8 +1252,13 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
     assert.equal(first.rollResult.assetId, portraitAssetId('thalla', '1'));
     assert.equal(first.rollResult.packId, odds.id);
     assert.equal(first.rollResult.rarity, 'rare');
+    assert.equal(first.instance.assetId, first.rollResult.assetId);
+    assert.equal(first.instances[0].asset.assetId, first.rollResult.assetId);
     const equipped = await equipAsset(player.id, first.rollResult.assetId);
     assert.equal(equipped.targetId, 'thalla');
+    assert.equal(equipped.portraitId, '1');
+    assert.equal(equipped.targetKey, 'portrait:character:thalla');
+    assert.equal(equipped.instance.id, first.rollResult.resultInstanceId);
     const equippedRow = await query(
       `SELECT asset_id, asset_instance_id
        FROM player_equipped_assets
@@ -1270,6 +1277,7 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
     assert.equal(replay.alreadyProcessed, true, 'same roll idempotency key should replay the first roll');
     assert.deepEqual(replay.roll.resultAssetIds, first.roll.resultAssetIds);
     assert.equal(replay.rollResult.assetId, first.rollResult.assetId);
+    assert.equal(replay.instances[0].id, first.instances[0].id);
 
     for (let i = 2; i <= odds.items.length; i += 1) {
       await rollAssetPack(player.id, odds.id, { idempotencyKey: `roll-${i}`, rng: () => 0 });
@@ -1676,6 +1684,8 @@ test('[Req 14-F] duplicate burn exchanges spare copies for a random rare pack it
     assert.deepEqual(burn.exchange.resultAssetIds, [rareA]);
     assert.equal(burn.burnResult.assetId, rareA);
     assert.equal(burn.burnResult.items[0].rarity, 'rare');
+    assert.equal(burn.instances[0].assetId, rareA);
+    assert.equal(burn.instances[0].asset.assetId, rareA);
 
     const replay = await burnAssetPackDuplicates(player.id, odds.id, {
       ruleId: 'two_common_to_rare',
@@ -1687,6 +1697,7 @@ test('[Req 14-F] duplicate burn exchanges spare copies for a random rare pack it
     assert.deepEqual(replay.exchange.resultAssetIds, [rareA]);
     assert.equal(replay.burnResult.resultInstanceId, burn.burnResult.resultInstanceId);
     assert.deepEqual(replay.burnResult.sourceAssetInstanceIds, burn.burnResult.sourceAssetInstanceIds);
+    assert.equal(replay.instances[0].id, burn.instances[0].id);
 
     const rows = await query(
       `SELECT asset_id, status, COUNT(*) AS count

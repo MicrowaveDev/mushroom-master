@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `b56ad91d6068bc6036a1c5689ccff175c99a106e`
-- core short SHA: `b56ad91`
-- core commit: `Add client response envelope unwrapping`
+- core SHA: `458d4bba65f1740e5b3b713f1515556722c22b61`
+- core short SHA: `458d4bb`
+- core commit: `Add profile asset result DTO shapers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core route client for replay dev flows`)
+- game pointer commit: this commit (`Use core profile asset result DTO shapers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,6 +30,7 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-04 | this commit | `458d4bb` | Profile asset result DTO shapers | Mushroom direct-buy/equip responses and roll/burn grant instance summaries now delegate through `modules/assets`, including idempotent replay summaries where instance rows are still active. Runtime catalogs, SQL mutations, wallet spends, RNG, mutation claims, and route ownership stay local. |
 | 2026-07-04 | this commit | `b56ad91` | Consumer route-client adoption | Mushroom replay and dev-tool routes now use the local route map plus shared core route-adapter client, and the legacy `apiJson` helper was removed from live code. Replay state, timers, dev fixtures, and product copy stay local. |
 | 2026-07-04 | `715d7b2` | `b56ad91` | Consumer route-client adoption | Mushroom game-run start/load/readiness/shop/buy/sell/abandon/loadout routes now use the local route map plus shared core route-adapter client while keeping run state projection, placement payload shaping, replay loading, haptics, and product copy local. |
 | 2026-07-04 | `0bbfcd9` | `b56ad91` | Consumer route-client adoption | Mushroom auth/bootstrap/settings routes now use the local route map plus shared core route-adapter client while keeping auth-code verification, bootstrap state projection, cache ownership, navigation effects, and product copy local. |

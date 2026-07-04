@@ -198,6 +198,10 @@ Future direction:
   projection now live in `profile-asset-state` / `modules/assets`; Mushroom
   still supplies runtime catalogs, SQL rows, wallet spend execution, roll/burn
   grants, support actions, and compatibility mirrors.
+  Purchase/equip response DTOs plus granted-instance summaries for direct-buy,
+  roll, burn, and idempotent replay paths now also live in `modules/assets`
+  over injected rows/catalog snapshots; Mushroom still owns the mutations that
+  create those rows and the route payload assembly around them.
   The same plan now treats reusable Vue frontend modules as core candidates:
   shared services, composables, view-model shapers, components, and optional
   page shells can move to the package when product routes, copy, theme, art,
@@ -333,6 +337,11 @@ Profile asset target-variant response shaping moved in core commit `0f8beee`;
 games can share inventory/equipment variant list projection while injecting
 product asset-id and policy adapters; runtime catalog/equipment resolution
 remains local.
+Profile asset result DTO shaping moved in core commit `458d4bb`; games can
+share asset records, instance/equipment summaries, purchase results, equip
+results, and grant summaries while persistence, wallet spends, RNG,
+idempotency storage, runtime catalogs, and product route payload ownership stay
+local.
 Wallet and asset-roll mutation view-state shaping moved in core commit
 `fc53abc`; games can share opening/success/failure reducer contracts while API
 routes, idempotency-key generation, checkout side effects, refresh hooks, and
@@ -343,9 +352,9 @@ payloads while route maps, auth/session headers, idempotency keys, checkout
 side effects, and refresh behavior remain local.
 Post-route-client review on 2026-07-04: live Mushroom frontend transport now
 uses the shared route-adapter client, so the next core boundary should move
-DTO/state helpers rather than more route plumbing. Prioritize profile
-asset/equipment result shapers, headless wallet/gacha state reducers, and
-run-shop response patch helpers. Keep whole services, Express routes,
+DTO/state helpers rather than more route plumbing. Profile asset/equipment
+result shapers are now in core; prioritize headless wallet/gacha state
+reducers and run-shop response patch helpers next. Keep whole services, Express routes,
 persistence, payment/webhook providers, runtime catalogs, route maps, artwork,
 support operations, haptics, page assembly, and secure paid-roll RNG selection
 inside product repos.

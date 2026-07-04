@@ -105,12 +105,17 @@ copy, theme, and API adapters.
   and `modules/assets` now also provide target-variant list projection over
   injected variants, catalogs, ownership state, active ids, asset-id adapters,
   and product policy adapters, tested by `tests/profile-asset-state.test.js`
+- profile asset result DTO slice: `src/profile-asset-state.js` and
+  `modules/assets` now also provide asset record, owned-instance summary,
+  equipped-target summary, purchase result, equip result, and grant summary DTO
+  shapers over injected rows/catalog snapshots, tested by
+  `tests/profile-asset-state.test.js`
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `b56ad91`
-  (`Add client response envelope unwrapping`)
+- latest consumed core commit: `458d4bb`
+  (`Add profile asset result DTO shapers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -231,7 +236,7 @@ Maximum-efficiency constraints:
 | Battle simulation | `backpack-game-core/src/battle-simulation.js`; Mushroom adapter in `app/server/services/battle-engine.js` | Extracted with product hooks | Core owns deterministic 1v1 turn loop, action/skip event sequencing, HP/stun flow, speed/base-speed tiebreak fallback, step-cap winner resolution, and result shaping. Mushroom passes combatant derivation, active/passive ability hooks, Morga/Kirt tiebreak hooks, artifact attribution/effect metadata, narration labels, constants, and seeded RNG. |
 | Wallet accounting primitives | `app/server/services/wallet-service.js`, wallet tests | Domain-core candidate | Balance delta shaping, insufficient-balance checks, idempotent mutation result semantics, refund/reversal classification, and ledger invariant helpers can be reusable when persistence and provider evidence are injected. SQL rows, locks, mirrors, support actions, and payment callbacks stay local. |
 | Payment providers and purchase webhooks | `app/server/services/provider-settlement-*`, `bot-gateway.js`, payment routes | Product-specific | Telegram Stars, BTCPay, NOWPayments, provider signatures, invoice lookups, tax/accounting, adult-content policy, and settlement records are game/ops concerns, not backpack mechanics. |
-| Asset catalog, ownership, equipment, and direct-buy policy | `backpack-game-core/src/profile-asset-state.js`; Mushroom adapter in `app/server/services/asset-service.js`; profile asset tables and runtime catalogs | Partially extracted domain-core candidate | Core now owns reusable profile asset state shaping, ownership maps, equip validation, purchase spend parameters, instance drafts, and portrait variant projection over injected rows/catalog policy. Runtime catalog lookup, SQL row lifecycle, support actions, gacha roll/burn grants, paid rollback behavior, direct-buy policy composition, and compatibility mirrors stay in the game. |
+| Asset catalog, ownership, equipment, and direct-buy policy | `backpack-game-core/src/profile-asset-state.js`; Mushroom adapter in `app/server/services/asset-service.js`; profile asset tables and runtime catalogs | Partially extracted domain-core candidate | Core now owns reusable profile asset state shaping, ownership maps, equip validation, purchase spend parameters, instance drafts, portrait variant projection, purchase/equip result DTOs, and grant summaries over injected rows/catalog policy. Runtime catalog lookup, SQL row lifecycle, support actions, gacha roll/burn grants, paid rollback behavior, direct-buy policy composition, and compatibility mirrors stay in the game. |
 | Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `app/server/services/asset-service.js`, `gacha-simulation-service.js`, admin validation helpers | Domain-core candidate | Pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, and result evidence can be shared. Secure RNG source, wallet debit transaction, asset grant persistence, pack storage, and operator audit records stay local. |
 | Shared frontend DTO/view-model shaping | `web/src/composables/useGameState.js`, `web/src/artifacts/grid.js`, asset/gacha response shapers | Frontend-core candidate | Browser-safe transforms for loadout totals, shop state, battle/replay state, wallet/asset catalog state, gacha pack state, validation summaries, and odds preview can be shared if they receive neutral payloads and catalog/config adapters. |
 | Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
@@ -661,7 +666,11 @@ commit `b56ad91`, and Mushroom customization wallet/gacha routes,
 social/wiki-detail routes, auth/bootstrap/settings routes, and game-run routes
 now use the shared route-adapter client. Replay/dev-tool routes followed in the
 final route-client cleanup, and the legacy `apiJson` helper was removed from
-live code.
+live code. Profile asset purchase/equip/grant result DTO shaping moved in core
+commit `458d4bb`; Mushroom delegates direct-buy, equip, roll-grant, burn-grant,
+and idempotent replay instance summaries through `modules/assets` while keeping
+runtime catalogs, SQL queries, wallet spends, RNG, mutation claims, and route
+payload ownership local.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -764,6 +773,13 @@ Next planned domain slices:
     progression portrait list shaping while keeping portrait id convention,
     runtime catalog, gacha-plan policy, active/equipment resolution, and
     product routes local.**
+17. **Profile asset result DTO shaping:** asset record, owned-instance summary,
+    equipped-target summary, purchase result, equip result, and grant summary
+    shapers over injected rows/catalog snapshots. **Implemented 2026-07-04 in
+    core commit `458d4bb`; Mushroom delegates direct-buy/equip response
+    shaping and roll/burn grant instance summaries while keeping runtime
+    catalog lookup, SQL lifecycle, wallet spends, RNG, mutation claims, and
+    route payload ownership local.**
 
 Next planned frontend slices:
 
@@ -794,12 +810,11 @@ Next planned frontend slices:
    headless services before page/component extraction. Do not move the full
    Mushroom API client into core yet; keep product routes behind injected
    adapters.
-2. **Post-route-client priority:** move asset inventory/equipment DTO shapers
-   next: purchase result DTOs, equip result DTOs, owned-instance summaries,
-   equipped-target summaries, and duplicate-grant summaries over injected
-   catalog/state/policy adapters. Core already owns row normalization,
-   ownership maps, equipment validation, purchase spend mutation shaping, and
-   target-variant list projection; this is the cleanest next seam.
+2. **Post-route-client asset DTO cleanup:** **Implemented 2026-07-04 in core
+   commit `458d4bb`.** Purchase result DTOs, equip result DTOs,
+   owned-instance summaries, equipped-target summaries, and duplicate-grant
+   summaries now live in `modules/assets`; Mushroom consumes them from the
+   asset service while keeping persistence and product policy local.
 3. **Headless wallet/gacha services:** move browser-safe reducers for bundle
    loading, purchase-intent transitions, pack list loading, roll/burn mutation
    lifecycle, duplicate-burn availability, and odds-preview state. These should
@@ -841,9 +856,11 @@ inputs.
 
 Post-route-client review finding on 2026-07-04: no additional route plumbing is
 needed in core right now. Whole Mushroom services and pages are still too
-product-coupled. The next useful extractions are DTO/state helpers that both
-Mushroom and Meat can consume without inheriting Mushroom persistence,
-Telegram, payment, catalog, art, support, haptics, or page-composition rules.
+product-coupled. The asset inventory/equipment DTO lane is now covered by core
+commit `458d4bb`. The next useful extractions are headless wallet/gacha state
+helpers and run-shop response patch helpers that both Mushroom and Meat can
+consume without inheriting Mushroom persistence, Telegram, payment, catalog,
+art, support, haptics, or page-composition rules.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 

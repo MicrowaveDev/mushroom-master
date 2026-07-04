@@ -61,7 +61,8 @@
 > profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
 > resolution, asset gacha roll/burn result DTO shaping is shared, profile asset
-> target-variant response shaping is shared, and client
+> target-variant response shaping and purchase/equip/grant result DTO shaping
+> are shared, and client
 > view-model helper slices now share pack summary/label,
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
 > artifact stat total/text shaping, artifact grid utility shaping, and
@@ -72,8 +73,8 @@
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
-> are **not more route plumbing**; they are asset/equipment DTO shapers,
-> headless service state machines, and later neutral UI primitives. **Phase
+> are **not more route plumbing**; they are headless service state machines,
+> run-shop response patch helpers, and later neutral UI primitives. **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
 
@@ -106,7 +107,8 @@ shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
 helpers, asset gacha roll/burn result DTO shapers, profile asset
-target-variant list shapers, asset pack client view-model helpers, wallet/roll feedback
+target-variant list shapers, profile asset purchase/equip/grant result DTO
+shapers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
 preview helpers, plus wallet and asset-roll status normalization and mutation
@@ -2786,14 +2788,15 @@ Post-route-client extraction review on 2026-07-04: yes, more should still move
 to `backpack-game-core`, but the next moves should be narrower than whole
 Mushroom services or pages.
 
+Implemented after this review: core commit `458d4bb` added profile asset
+record, owned-instance summary, equipped-target summary, purchase result, equip
+result, and grant summary DTO shapers. Mushroom now consumes them for direct
+asset buys, equipment changes, roll/burn grants, and idempotent replay
+summaries while keeping SQL, wallet spends, RNG, catalogs, mutation claims, and
+route ownership local.
+
 Move next:
 
-- **Asset inventory/equipment DTO shapers:** purchase result DTOs, equip result
-  DTOs, owned-instance summaries, equipped-target summaries, and duplicate
-  grant summaries over injected catalog/state/policy adapters. Core already has
-  row normalization, ownership maps, equipment validation, spend mutation
-  shaping, and target-variant list projection; these shapers are the natural
-  next backend/client boundary.
 - **Headless wallet/gacha state services:** browser-safe reducers for bundle
   loading, purchase-intent transitions, pack list loading, roll/burn mutation
   lifecycle, duplicate-burn availability, and odds-preview state. They should
@@ -3434,8 +3437,8 @@ that game.
    transactions, wallet mutation, secure RNG, idempotency claims, asset grants,
    runtime catalog lookup, and HTTP route behavior local. Meat consumes the
    helpers through a core contract smoke test. Next domain candidates are
-   asset inventory/equipment response shapers and headless gacha/wallet service
-   adapters before broader Vue component extraction.
+   headless gacha/wallet service adapters and run-shop response patch helpers
+   before broader Vue component extraction.
 59. Phase 8Z profile asset target-variant response shaping. **Implemented
    2026-07-04:** core commit `0f8beee` added `modules/assets` helpers for
    target-variant list projection over injected variants, catalog snapshots,
@@ -3444,9 +3447,9 @@ that game.
    portrait asset id convention, runtime catalog construction, gacha-plan
    policy, active/equipment resolution, product routes, and HTTP payload
    ownership local. Meat consumes the helper through a core contract smoke
-   test. Next candidates are headless gacha/wallet service adapters,
-   additional asset inventory/equipment DTO shapers, and neutral Vue
-   composables/components only after the service contracts stabilize.
+   test. Next candidates are headless gacha/wallet service adapters, run-shop
+   response patch helpers, and neutral Vue composables/components only after
+   the service contracts stabilize.
 60. Phase 8AA wallet and asset-roll mutation view-state helper extraction.
    **Implemented 2026-07-04:** core commit `fc53abc` added
    `client-view-model` helpers for headless wallet purchase and asset
@@ -3456,9 +3459,8 @@ that game.
    Telegram invoice opening, web checkout opening, invoice callbacks, bootstrap
    refresh, runtime state ownership, and product copy local. Meat consumes the
    helpers through a core contract smoke test. Next candidates are route-client
-   adapter adoption for these flows, additional asset inventory/equipment DTO
-   shapers, and neutral Vue composables/components only after route contracts
-   are stable.
+   adapter adoption for these flows, run-shop response patch helpers, and
+   neutral Vue composables/components only after route contracts are stable.
 61. Phase 8AB route-client response-envelope and customization adoption.
    **Implemented 2026-07-04:** core commit `b56ad91` added optional
    `{ success, data, error }` envelope unwrapping to `client`, including
@@ -3470,9 +3472,9 @@ that game.
    opening, web checkout opening, invoice callbacks, bootstrap refresh, runtime
    state ownership, and product copy stay local. Meat consumes the envelope
    option through a core contract smoke test. Next candidates are additional
-   route-client adoption for bootstrap/social/game-run flows, more asset
-   inventory/equipment DTO shapers, and neutral Vue composables/components only
-   after route contracts stabilize.
+   route-client adoption for bootstrap/social/game-run flows, headless
+   services/composables, and neutral Vue components only after route contracts
+   stabilize.
 62. Phase 8AC social/wiki route-client adoption.
    **Implemented 2026-07-04:** Mushroom added social and wiki-detail route
    names to its local route map and moved add-friend, challenge create/load,
@@ -3481,8 +3483,8 @@ that game.
    `b56ad91`; core did not need another change. Route ownership, session header
    policy, navigation effects, replay autoplay, runtime state ownership, and
    product copy stay local. Next candidates are bootstrap/game-run route-client
-   adoption, more asset inventory/equipment DTO shapers, and neutral Vue
-   composables/components only after route contracts stabilize.
+   adoption, headless services/composables, and neutral Vue components only
+   after route contracts stabilize.
 63. Phase 8AD auth/bootstrap route-client adoption.
    **Implemented 2026-07-04:** Mushroom added app-config, catalog,
    bootstrap, leaderboard, wiki-home, settings, Telegram code start, browser
@@ -3491,9 +3493,9 @@ that game.
    core route-adapter client. Telegram auth-code verification stays raw because
    it returns the special bot-auth polling shape. Bootstrap state projection,
    cache ownership, navigation effects, runtime state ownership, and product
-   copy stay local. Next candidates are game-run route-client adoption, more
-   asset inventory/equipment DTO shapers, and neutral Vue composables/components
-   only after route contracts stabilize.
+   copy stay local. Next candidates are game-run route-client adoption,
+   headless services/composables, and neutral Vue components only after route
+   contracts stabilize.
 64. Phase 8AE game-run route-client adoption.
    **Implemented 2026-07-04:** Mushroom added game-run start/readiness/read,
    abandon, refresh-shop, buy, sell, and artifact-loadout route names to its
@@ -3501,23 +3503,35 @@ that game.
    through the shared core route-adapter client. This closes the active
    route-client lane enough for the current extraction phase. Run state
    projection, placement payload shaping, replay loading, haptics, runtime state
-   ownership, and product copy stay local. Next candidates are more asset
-   inventory/equipment DTO shapers and headless services/composables before
-   neutral Vue components move.
+   ownership, and product copy stay local. Next candidates are headless
+   services/composables and run-shop response patch helpers before neutral Vue
+   components move.
 65. Phase 8AF replay/dev route-client cleanup.
    **Implemented 2026-07-04:** Mushroom replay settings persistence, battle
    replay loading, local lab narration, and dev inventory-review routes now use
    the shared core route-adapter client through local route names. The unused
    `apiJson` helper was removed from live frontend code. Replay timers/state,
    dev fixtures, runtime state ownership, and product copy stay local. Next
-   candidates are asset inventory/equipment DTO shapers and headless
-   services/composables before neutral Vue components move.
+   candidates are headless services/composables and run-shop response patch
+   helpers before neutral Vue components move.
 66. Phase 8AG post-route-client core-move review.
    **Plan adjusted 2026-07-04:** the active route-client lane is complete for
    live Mushroom frontend code. The next core moves should be, in order:
-   asset inventory/equipment DTO shapers; headless wallet/gacha state services;
-   run-shop mutation view-model helpers; then replay playback state, gacha/admin
-   view models, and neutral Vue primitives after contracts are stable. Do not
+   asset inventory/equipment DTO shapers (fulfilled by Phase 8AH); headless
+   wallet/gacha state services; run-shop mutation view-model helpers; then
+   replay playback state, gacha/admin view models, and neutral Vue primitives
+   after contracts are stable. Do not
    move whole Mushroom services, pages, Express routes, DB schemas, payment
    providers, route maps, catalogs, artwork, support operations, haptics, or
    secure paid-roll RNG selection into core.
+67. Phase 8AH profile asset result DTO shaper extraction.
+   **Implemented 2026-07-04:** core commit `458d4bb` added `modules/assets`
+   helpers for asset records, owned-instance summaries, equipped-target
+   summaries, purchase results, equip results, and grant summaries. Mushroom's
+   asset service now delegates direct-buy/equip response shaping and roll/burn
+   grant instance summaries, including idempotent replay summaries when rows
+   still exist, while keeping runtime catalogs, SQL mutations, wallet spends,
+   secure RNG, mutation claims, support actions, and route payload ownership
+   local. Next candidates are headless wallet/gacha state services, run-shop
+   mutation view-model helpers, replay playback state, gacha/admin view models,
+   and neutral Vue primitives after contracts stabilize.

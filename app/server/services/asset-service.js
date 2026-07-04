@@ -28,6 +28,9 @@ import {
   normalizeProfileAssetInstanceRow,
   profileAssetAcquisitionSource,
   profileAssetInstanceDraftToRow,
+  shapeProfileAssetEquipResult,
+  shapeProfileAssetGrantSummaries,
+  shapeProfileAssetPurchaseResult,
   shapeProfileAssetTargetVariants,
   shapeProfileAssetVariant,
   validateProfileAssetEquipment
@@ -674,6 +677,36 @@ function rowToAssetInstance(row) {
   return normalizeProfileAssetInstanceRow(row);
 }
 
+function shapeGrantedAssetInstances(instances, catalog) {
+  return shapeProfileAssetGrantSummaries({ instances, catalog });
+}
+
+function rollResultInstanceIds(roll) {
+  const metadataIds = Array.isArray(roll?.metadata?.results)
+    ? roll.metadata.results.map((item) => item?.instanceId || null).filter(Boolean)
+    : [];
+  if (roll?.resultInstanceId && !metadataIds.includes(roll.resultInstanceId)) {
+    metadataIds.unshift(roll.resultInstanceId);
+  }
+  return metadataIds;
+}
+
+async function assetInstanceRowsByIds(client, instanceIds = []) {
+  const ids = [...new Set((instanceIds || []).filter(Boolean))];
+  if (!ids.length) return [];
+  const placeholders = ids.map((_, index) => `$${index + 1}`).join(', ');
+  const result = await client.query(
+    `SELECT * FROM player_asset_instances WHERE id IN (${placeholders})`,
+    ids
+  );
+  const byId = new Map(result.rows.map((row) => [row.id, row]));
+  return ids.map((id) => byId.get(id)).filter(Boolean);
+}
+
+function assetsByIds(assetIds, catalog) {
+  return (assetIds || []).map((assetId) => assetByIdFromCatalog(catalog, assetId)).filter(Boolean);
+}
+
 export async function getPlayerCosmeticState(playerId) {
   const [instances, equipped] = await Promise.all([
     query(
@@ -780,12 +813,12 @@ export async function purchaseAsset(playerId, assetId, {
     withWalletMutationLock(playerId, () => withTransaction(async (client) => {
       const existing = await activeAssetInstance(client, playerId, asset.assetId);
       if (existing) {
-        return {
+        return shapeProfileAssetPurchaseResult({
           asset,
           instance: rowToAssetInstance(existing),
           alreadyOwned: true,
           transaction: null
-        };
+        });
       }
 
       let transaction = null;
@@ -807,12 +840,12 @@ export async function purchaseAsset(playerId, assetId, {
         }
       });
 
-      return {
+      return shapeProfileAssetPurchaseResult({
         asset,
         instance: rowToAssetInstance(inserted.row),
         alreadyOwned: inserted.alreadyOwned,
         transaction
-      };
+      });
     }))
   );
 }
@@ -844,6 +877,7 @@ export async function equipAsset(playerId, assetId) {
       [playerId, asset.slot, asset.targetType, asset.targetId]
     );
     const now = nowIso();
+    let equipmentId = existing.rows[0]?.id || null;
     if (existing.rowCount) {
       await client.query(
         `UPDATE player_equipped_assets
@@ -852,12 +886,13 @@ export async function equipAsset(playerId, assetId) {
         [existing.rows[0].id, validation.assetInstanceId || null, asset.assetId, now]
       );
     } else {
+      equipmentId = createId('equip');
       await client.query(
         `INSERT INTO player_equipped_assets
          (id, player_id, slot, target_type, target_id, asset_instance_id, asset_id, equipped_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
-          createId('equip'),
+          equipmentId,
           playerId,
           asset.slot,
           asset.targetType,
@@ -874,11 +909,23 @@ export async function equipAsset(playerId, assetId) {
       [asset.variantId, playerId, asset.targetId]
     );
 
+    const shaped = shapeProfileAssetEquipResult({
+      asset,
+      validation,
+      equipment: {
+        id: equipmentId,
+        playerId,
+        slot: asset.slot,
+        targetType: asset.targetType,
+        targetId: asset.targetId,
+        assetInstanceId: validation.assetInstanceId || null,
+        assetId: asset.assetId,
+        equippedAt: now
+      }
+    });
     return {
-      assetId: asset.assetId,
-      portraitId: asset.variantId,
-      path: asset.path,
-      targetId: asset.targetId
+      ...shaped,
+      portraitId: shaped.variantId
     };
   }));
 }
@@ -984,9 +1031,16 @@ export async function burnAssetPackDuplicates(playerId, packId, {
         );
         if (existing.rowCount) {
           const exchange = rowToBurnExchange(existing.rows[0]);
+          const instances = shapeGrantedAssetInstances(
+            await assetInstanceRowsByIds(client, exchange.resultInstanceIds),
+            catalog
+          );
+          const assets = assetsByIds(exchange.resultAssetIds, catalog);
           return {
             exchange,
             burnResult: shapeAssetBurnResult(exchange, { pack, catalog }),
+            assets,
+            instances,
             alreadyProcessed: true
           };
         }
@@ -1111,6 +1165,7 @@ export async function burnAssetPackDuplicates(playerId, packId, {
 
       const exchangeRow = await client.query(`SELECT * FROM asset_burn_exchanges WHERE id = $1`, [exchangeId]);
       const exchange = rowToBurnExchange(exchangeRow.rows[0]);
+      const instanceSummaries = shapeGrantedAssetInstances(insertedItems.map((item) => item.instance), catalog);
       const resultItems = insertedItems.map((item) => ({
         slotIndex: item.slotIndex,
         assetId: item.assetId,
@@ -1125,7 +1180,7 @@ export async function burnAssetPackDuplicates(playerId, packId, {
         exchange,
         burnResult: shapeAssetBurnResult(exchange, { pack, items: resultItems, catalog }),
         assets: insertedItems.map((item) => item.asset),
-        instances: insertedItems.map((item) => item.instance),
+        instances: instanceSummaries,
         alreadyProcessed: false
       };
     }))
@@ -1157,9 +1212,18 @@ export async function rollAssetPack(playerId, packId, {
         );
         if (existing.rowCount) {
           const roll = rowToRoll(existing.rows[0]);
+          const instances = shapeGrantedAssetInstances(
+            await assetInstanceRowsByIds(client, rollResultInstanceIds(roll)),
+            catalog
+          );
+          const assets = assetsByIds(roll.resultAssetIds, catalog);
           return {
             roll,
             rollResult: shapeAssetRollResult(roll, { pack, catalog }),
+            asset: assets[0] || null,
+            instance: instances[0] || null,
+            assets,
+            instances,
             alreadyProcessed: true
           };
         }
@@ -1335,20 +1399,21 @@ export async function rollAssetPack(playerId, packId, {
 
       const rollRow = await client.query(`SELECT * FROM asset_rolls WHERE id = $1`, [rollId]);
       const roll = rowToRoll(rollRow.rows[0]);
+      const instanceSummaries = shapeGrantedAssetInstances(insertedItems.map((item) => item.instance), catalog);
       return {
         roll,
         rollResult: shapeAssetRollResult(roll, {
           asset: insertedItems[0]?.asset || null,
           pack,
-          instance: insertedItems[0]?.instance || null,
+          instance: instanceSummaries[0] || insertedItems[0]?.instance || null,
           rarity: insertedItems[0]?.rarity || null,
           items: resultItems,
           catalog
         }),
         asset: insertedItems[0]?.asset || null,
-        instance: insertedItems[0]?.instance || null,
+        instance: instanceSummaries[0] || null,
         assets: insertedItems.map((item) => item.asset),
-        instances: insertedItems.map((item) => item.instance),
+        instances: instanceSummaries,
         transaction,
         alreadyProcessed: false
       };
