@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `3e3d5d6ebd52dac9120bce48cb67f890503d827a`
-- core short SHA: `3e3d5d6`
-- core commit: `Add layered module and client exports`
+- core SHA: `83454488345d2e87325c87a147ee915ebe788d9c`
+- core short SHA: `8345448`
+- core commit: `Add gacha admin validation helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use layered backpack core exports`)
+- game pointer commit: this commit (`Use core gacha admin validation helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `3e3d5d6` | Layered module/client exports | Added public module facades for gacha, shop, loadout, battle, and fusion, plus route-adapter client and shared loadout view-model helpers. Mushroom now imports gacha through `modules/gacha` and uses the shared projection helper through a compatibility wrapper. |
+| 2026-07-04 | this commit | `8345448` | Gacha admin validation helpers | Added `modules/gacha/admin-validation` for release checklist, fixture normalization, plan-item asset-id invariants, season-plan catalog projection, promotion metadata, and plan coverage summaries. Mushroom gacha admin service now delegates through DB-aware wrappers while keeping transactions, audit logs, uploads, permissions, and route payloads local. |
+| 2026-07-04 | `5c78a00` | `3e3d5d6` | Layered module/client exports | Added public module facades for gacha, shop, loadout, battle, and fusion, plus route-adapter client and shared loadout view-model helpers. Mushroom now imports gacha through `modules/gacha` and uses the shared projection helper through a compatibility wrapper. |
 | 2026-07-04 | `7b35440` | `f47ff96` | Reusable asset/gacha policy helpers | Mushroom gacha acquisition, pack validation, roll selection, pity/guarantee, duplicate burn, and pack shaping now delegate through the core adapter. |
 | 2026-07-02 | `5e5e7cf` | `300583b` | Core changelog and package release notes | Documentation/package baseline only; runtime/API baseline remains `d5fb481`. |
 | 2026-07-02 | `5fa7d7b` | `d5fb481` | Type declarations and export metadata | Current baseline for typed consumers. |

@@ -702,6 +702,24 @@ test('[Req 14-F] gacha admin API exports, dry-runs, imports, and audits JSON fix
     assert.equal(blockedApproved.status, 400);
     assert.match(blockedApproved.body.error, /allowApproved=true/);
 
+    const releaseBlockedFixture = structuredClone(exported.body.data);
+    releaseBlockedFixture.packs[0].startsAt = null;
+    releaseBlockedFixture.packs[0].endsAt = null;
+    releaseBlockedFixture.packs[0].metadata = {};
+    const blockedRelease = await request(app)
+      .post('/api/admin/gacha/import')
+      .set(gachaHeaders)
+      .send({
+        fixture: releaseBlockedFixture,
+        dryRun: true,
+        allowApproved: true,
+        reason: 'test_fixture_import_release_blocked'
+      });
+    assert.equal(blockedRelease.status, 400);
+    assert.match(blockedRelease.body.error, /release checklist/i);
+    assert.match(blockedRelease.body.error, /pack_starts_at_missing/);
+    assert.match(blockedRelease.body.error, /disclosure_copy_missing/);
+
     const dryRun = await request(app)
       .post('/api/admin/gacha/import')
       .set(gachaHeaders)

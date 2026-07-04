@@ -2441,7 +2441,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `3e3d5d6`; typed package baseline remains `d5fb481`.
+   `8345448`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2619,14 +2619,14 @@ Mushroom plus Meat consume those public paths. The next work should therefore
 move one real reusable behavior cluster at a time through those exports instead
 of moving whole Mushroom services wholesale.
 
-The highest-leverage next backend slice is `gacha-admin-validation`: pure pack
-release checklist helpers, fixture import/export shape validation, planned
-asset promotion invariants, plan-item asset-id/character-link rules, and
-runtime catalog visibility rules. This is safer than wallet or asset ownership
-because the current logic is mostly deterministic over plain rows/catalog
-snapshots, while wallet and asset modules still touch ledgers, idempotency,
-provider evidence, DB row lifecycle, support actions, and paid rollback
-semantics.
+The highest-leverage backend slice after facades was `gacha-admin-validation`,
+and it landed in core commit `8345448`: pure pack release checklist helpers,
+fixture import/export shape validation, planned asset promotion metadata,
+plan-item asset-id/character-link rules, season-plan catalog projection, and
+plan coverage summaries. This was safer than wallet or asset ownership because
+the logic is mostly deterministic over plain rows/catalog snapshots, while
+wallet and asset modules still touch ledgers, idempotency, provider evidence,
+DB row lifecycle, support actions, and paid rollback semantics.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -2748,17 +2748,17 @@ Throughput rules:
    slice. Core now exposes public `modules/gacha`, `modules/shop`,
    `modules/loadout`, `modules/battle`, `modules/fusion`, `client`, and
    `client-view-model` subpaths with declarations and consumer tests.
-4. Next: move `gacha-admin-validation` helpers into core:
+4. Done 2026-07-04: move `gacha-admin-validation` helpers into core:
    - release checklist evaluation and issue grouping,
    - fixture shape and duplicate-id validation over neutral rows,
    - planned asset promotion preflight checks,
    - plan-item generated asset-id, linked-character, and immutability rules,
    - runtime catalog visibility checks for hidden ready-plan assets versus
      approved player-visible pack assets.
-5. Wire Mushroom gacha admin service through thin adapters around those helpers
+5. Done 2026-07-04: wire Mushroom gacha admin service through thin adapters around those helpers
    while keeping DB transactions, audit logs, operator auth, file upload,
    storage, route payloads, and error wording stable in Mushroom.
-6. Add focused neutral core tests for the new helpers, then rerun Mushroom
+6. Done 2026-07-04: add focused neutral core tests for the new helpers, then rerun Mushroom
    gacha admin API, runtime gacha simulation, and core-submodule tests.
 7. Then add follow-up core modules or submodules in small slices:
    - `gacha-simulation` only for remaining simulation logic not already folded
@@ -3106,11 +3106,13 @@ that game.
    contract-first core work, parallel consumer adapters, a lead-owned
    integration queue, and serial commit/pointer updates. Treat local machine
    resource limits as scheduling constraints, not as the goal.
-46. Phase 8M first real module movement after facades. **Next:** create a core
-   `modules/gacha/admin-validation` slice for release checklist helpers,
-   fixture shape checks, planned asset promotion preflight, plan-item
-   asset-id/character-link invariants, and runtime catalog visibility checks.
-   Then adapt Mushroom's gacha admin service to call it through DB-aware
-   wrappers and rerun core tests plus Mushroom gacha-admin/gacha-simulation
-   coverage. Defer wallet, asset ownership, full API client extraction, and Vue
-   page/component movement until this slice is stable.
+46. Phase 8M first real module movement after facades. **Implemented
+   2026-07-04:** core commit `8345448` added
+   `modules/gacha/admin-validation` for release checklist helpers, fixture
+   shape checks, plan-item asset-id/character-link invariants, season-plan
+   catalog projection, promotion metadata, and plan coverage summaries.
+   Mushroom now calls it through DB-aware wrappers and keeps transactions,
+   audit logs, uploads, permissions, route payloads, and error handling local.
+   Defer wallet, asset ownership, full API client extraction, and Vue
+   page/component movement until this slice stays stable under broader
+   consumer validation.

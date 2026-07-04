@@ -38,12 +38,16 @@ copy, theme, and API adapters.
   loadout projection helpers in `src/client-view-model.js`, tested by
   `tests/module-exports.test.js`, `tests/client.test.js`, and
   `tests/client-view-model.test.js`
+- gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
+  tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
+  fixture normalization, plan-item asset-id invariants, season-plan catalog
+  projection, promotion metadata, and plan coverage summaries
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `3e3d5d6`
-  (`Add layered module and client exports`)
+- latest consumed core commit: `8345448`
+  (`Add gacha admin validation helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -575,12 +579,12 @@ pure over catalogs, ownership snapshots, time, and RNG, while wallet accounting
 touches ledger persistence and provider-settlement state.
 
 Post-implementation review on 2026-07-04: the package/module architecture pass
-landed in core commit `3e3d5d6`. `modules/gacha`, `modules/shop`,
-`modules/loadout`, `modules/battle`, `modules/fusion`, `client`, and
-`client-view-model` are now public import lanes with declarations and consumer
-coverage. The next extraction should move real helper logic through those lanes,
-starting with gacha admin validation, instead of adding another facade-only
-slice.
+landed in core commit `3e3d5d6`, and the first real helper movement landed in
+core commit `8345448`. `modules/gacha`, `modules/shop`, `modules/loadout`,
+`modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
+public import lanes with declarations and consumer coverage. Future extraction
+should keep moving one reusable behavior cluster at a time through those lanes
+instead of adding facade-only slices.
 
 Next planned domain slices:
 
@@ -593,13 +597,15 @@ Next planned domain slices:
    duplicate copy-cap filtering, burn target selection, roll evidence shaping,
    and pack UI shaping over plain objects. **Implemented 2026-07-04 in
    `src/asset-gacha.js`; Mushroom adapter wiring delegates to it.**
-3. **Gacha admin validation/release checklist:** next active slice. Move pure
+3. **Gacha admin validation/release checklist:** first real module-movement
+   slice after facades. Move pure
    fixture shape checks, duplicate-id checks, pack release checklist issue
    grouping, planned asset promotion preflight, plan-item generated asset-id
    immutability, linked-character rules, and runtime catalog visibility checks
    into `modules/gacha/admin-validation` over neutral row/catalog snapshots.
-   Keep DB transactions, audit rows, operator permissions, upload/storage,
-   route payloads, and product error wording in Mushroom.
+   **Implemented 2026-07-04 in core commit `8345448`; Mushroom delegates through
+   DB-aware wrappers.** Keep DB transactions, audit rows, operator permissions,
+   upload/storage, route payloads, and product error wording in Mushroom.
 4. **Gacha simulation:** deterministic odds simulation over the same roll core
    so admin preview, CLI tools, and tests share one model if it is not fully
    folded into `asset-gacha` or the admin-validation slice.
