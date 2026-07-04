@@ -662,6 +662,15 @@ emergency maintenance, not normal season authoring.
   operator role, operator runbooks, scheduled activation alerts, richer
   paid-pack jurisdiction/odds disclosure review, and deeper marketplace/NFT-set
   tooling.
+- Post-implementation findings to fold into the next G5E/G5F slice:
+  split admin/full runtime-catalog projection from public/player projection so
+  ready-but-unpromoted plan assets cannot appear on player-facing surfaces
+  unless that visibility is explicitly intended; generalize the standalone
+  odds-simulation CLI/service from static packs to DB-backed runtime packs and
+  promoted plan assets; and decide the asset-id contract for plan-item character
+  edits, either by treating planned `asset_id` values as opaque immutable ids or
+  by syncing the character-scoped prefix before promotion and blocking unsafe
+  edits after promotion.
 
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
@@ -692,8 +701,10 @@ emergency maintenance, not normal season authoring.
 
 Local weighted-odds simulation exists for one-result and static multi-slot
 unowned packs via `simulateAssetPackOdds`, `npm run game:gacha:simulate`, and
-focused tests as of 2026-07-02. Extend that simulation at each roadmap phase
-instead of waiting until the end.
+focused tests as of 2026-07-02. Admin DB-pack preview now uses runtime-catalog
+simulation for DB-authored packs, but the standalone CLI/service still needs a
+runtime-pack mode for DB packs and promoted plan assets. Extend that simulation
+at each roadmap phase instead of waiting until the end.
 
 ### 6. Frontend And E2E Coverage Still Missing
 
@@ -2544,7 +2555,10 @@ Additional TODOs for that pass:
    rarity/chance-weight edits, per-character content coverage, and audited plan
    item create/update/delete actions. **Updated 2026-07-04:** ready plan images
    can be promoted into DB pack items and resolved by runtime odds, rolls,
-   bootstrap catalog projection, and portrait equipment. Remaining: bulk
+   bootstrap catalog projection, portrait equipment, and support asset
+   operations. Remaining: public-vs-admin catalog visibility gates for
+   unpromoted ready plan assets, DB-runtime mode for the standalone odds
+   simulator, explicit asset-id rules for plan-item character edits, bulk
    CSV/item editing, migration and rollback scripts for live corrections,
    scheduled activation/expiry alerts, richer disclosure review by
    jurisdiction/provider, staff permission tiers, and marketplace/NFT-set
