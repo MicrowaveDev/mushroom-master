@@ -322,7 +322,10 @@ placement state, visual preview composition, drag/drop actions, product
 rendering, and gameplay mutation logic. Canonical preview-orientation shaping
 moved in core commit `786d41c`; preview-only surfaces can keep non-bag bitmap
 dimensions canonical while placement flows continue to use placement-preferred
-orientation.
+orientation. Wallet and asset-roll status normalization moved in core commit
+`f387670`; product UIs can share purchase-intent, Telegram invoice, and
+roll/burn error status vocabulary while provider routes, checkout opening,
+copy, and final UI state remain local.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

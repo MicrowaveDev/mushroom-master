@@ -63,7 +63,8 @@
 > resolution, and client view-model helper slices now share pack summary/label,
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
 > artifact stat total/text shaping, artifact grid utility shaping, and
-> canonical preview-orientation shaping. Product DB schemas,
+> canonical preview-orientation shaping, plus wallet/asset-roll status
+> normalization. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -102,7 +103,7 @@ helpers, reusable profile asset state helpers, asset catalog acquisition policy
 helpers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
-preview helpers. The package ships TypeScript
+preview helpers, plus wallet and asset-roll status normalization helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2712,6 +2713,13 @@ separate helper so non-bag bitmap previews keep authored dimensions, while
 shape-bearing and legacy bags still get derived preview footprints. Mushroom
 keeps placement-preferred orientation for placement flows.
 
+The next completed frontend/client cleanup is wallet and asset-roll status
+normalization, landed in core commit `f387670`: purchase-intent statuses,
+Telegram invoice callback statuses, and roll/burn error messages now map to
+the shared client status vocabulary through `client-view-model`. Mushroom keeps
+route actions, provider checkout opening, localization, runtime state, and UI
+composition local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3300,3 +3308,13 @@ that game.
    zone, backpack zone, home social sidebar, catalog browser, and fusion
    animation lab delegate preview orientation through this helper. Placement
    flows still use the placement-preferred orientation helper.
+57. Phase 8X wallet and asset-roll status normalization. **Implemented
+   2026-07-04:** core commit `f387670` added `client-view-model` helpers for
+   wallet purchase-intent status, Telegram invoice callback status, and
+   asset-roll error status mapping. Mushroom customization checkout and
+   roll/burn flows now delegate these mappings through core while keeping API
+   routes, Telegram/web checkout opening, localization, runtime state, and
+   final UI composition local. Meat consumes the helpers through its core
+   contract smoke test. Next frontend candidates remain asset
+   inventory/equipment response shapers and headless services/composables
+   before neutral Vue components move.

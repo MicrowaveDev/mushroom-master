@@ -65,6 +65,10 @@ copy, theme, and API adapters.
   orientation, so non-bag bitmap previews keep authored dimensions while shaped
   and legacy bags still use derived preview footprints, tested by
   `tests/client-view-model.test.js`
+- wallet and asset-roll status normalization slice: `src/client-view-model.js`
+  now also provides shared wallet intent, Telegram invoice, and asset-roll
+  error status normalization helpers for browser/client flows, tested by
+  `tests/client-view-model.test.js`
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
@@ -88,8 +92,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `786d41c`
-  (`Add canonical artifact preview orientation helper`)
+- latest consumed core commit: `f387670`
+  (`Add wallet and roll status view-model helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -631,7 +635,8 @@ feedback view-model shaping moved in core commit `cf7c680`, and grid-cell
 classification moved in core commit `f403553`. Artifact stat total/text DTO
 shaping moved in core commit `41a3ad5`, and artifact grid utility shaping moved
 in core commit `725ffab`. Canonical preview-orientation shaping moved in core
-commit `786d41c`.
+commit `786d41c`, and wallet/asset-roll client status normalization moved in
+core commit `f387670`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -716,6 +721,12 @@ Next planned domain slices:
     core commit `786d41c`; Mushroom delegates shop, backpack, social, catalog,
     and fusion preview orientation through this helper while keeping
     placement-preferred orientation in placement flows.**
+14. **Wallet and asset-roll status normalization:** browser-safe helpers for
+    wallet purchase-intent status, Telegram invoice callback status, and
+    asset-roll error status mapping. **Implemented 2026-07-04 in core commit
+    `f387670`; Mushroom delegates customization checkout and pack roll/burn
+    status mapping while keeping route actions, Telegram/web opening,
+    localization, and final UI composition local.**
 
 Next planned frontend slices:
 
@@ -728,10 +739,11 @@ Next planned frontend slices:
    slice implemented 2026-07-04** with artifact stat total/text helpers.
    **Sixth slice implemented 2026-07-04** with occupied-cell map and preferred
    preview-orientation helpers. **Seventh slice implemented 2026-07-04** with
-   canonical preview orientation for bitmap/card surfaces. Continue
-   with DTO shapers, error/status normalization, asset inventory/equipment response
-   shapers, and headless view-model
-   contracts before page/component extraction. Do not move the full Mushroom API
+   canonical preview orientation for bitmap/card surfaces. **Eighth slice
+   implemented 2026-07-04** with wallet purchase-intent, Telegram invoice, and
+   asset-roll error status normalization. Continue with DTO shapers, asset
+   inventory/equipment response shapers, and headless view-model contracts
+   before page/component extraction. Do not move the full Mushroom API
    client into core yet; keep product routes behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay

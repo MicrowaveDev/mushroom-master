@@ -1,3 +1,8 @@
+import {
+  assetRollStatusFromError,
+  walletPurchaseStatusFromIntent,
+  walletPurchaseStatusFromTelegramInvoice
+} from '@microwavedev/backpack-game-core/client-view-model';
 import { apiJson } from '../api.js';
 
 /**
@@ -12,38 +17,6 @@ export function useCustomization(state, refreshBootstrap) {
 
   function defaultPaymentSurface() {
     return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
-  }
-
-  function statusFromWalletIntent(intent) {
-    const status = String(intent?.status || '').toLowerCase();
-    const checkoutStatus = String(intent?.checkoutStatus || '').toLowerCase();
-    if (status === 'completed') return 'confirmed';
-    if (status === 'expired' || checkoutStatus === 'expired') return 'expired';
-    if (['failed', 'cancelled', 'refunded', 'reversed', 'chargeback'].includes(status) || checkoutStatus === 'failed') {
-      return 'failed';
-    }
-    return '';
-  }
-
-  function statusFromTelegramInvoice(status) {
-    const normalized = String(status || '').toLowerCase();
-    if (normalized === 'paid') return 'confirmed';
-    if (normalized === 'pending') return 'pending';
-    if (normalized === 'expired') return 'expired';
-    if (['failed', 'cancelled'].includes(normalized)) return 'failed';
-    return 'failed';
-  }
-
-  function statusFromAssetRollError(error) {
-    const message = String(error?.message || '').toLowerCase();
-    if (message.includes('no unowned assets')) return 'complete';
-    if (message.includes('no rollable assets')) return 'complete';
-    if (message.includes('duplicate assets')) return 'burn_unavailable';
-    if (message.includes('insufficient') || message.includes('not enough')) return 'insufficient';
-    if (message.includes('disabled')) return 'disabled';
-    if (message.includes('not active') || message.includes('inactive') || message.includes('expired')) return 'unavailable';
-    if (message.includes('configuration is invalid')) return 'invalid';
-    return 'failed';
   }
 
   async function switchPortrait({ mushroomId, portraitId }) {
@@ -101,7 +74,7 @@ export function useCustomization(state, refreshBootstrap) {
         state.assetRollErrorMessage = 'Failed to roll pack';
       }
     } catch (error) {
-      state.assetRollStatus = statusFromAssetRollError(error);
+      state.assetRollStatus = assetRollStatusFromError(error);
       state.assetRollErrorMessage = error.message || 'Failed to roll pack';
       if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
         state.error = state.assetRollErrorMessage;
@@ -128,7 +101,7 @@ export function useCustomization(state, refreshBootstrap) {
         state.assetRollErrorMessage = 'Failed to burn duplicates';
       }
     } catch (error) {
-      state.assetRollStatus = statusFromAssetRollError(error);
+      state.assetRollStatus = assetRollStatusFromError(error);
       state.assetRollErrorMessage = error.message || 'Failed to burn duplicates';
       if (state.assetRollStatus === 'failed' || state.assetRollStatus === 'invalid') {
         state.error = state.assetRollErrorMessage;
@@ -162,7 +135,7 @@ export function useCustomization(state, refreshBootstrap) {
         headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
         body: JSON.stringify({ bundleId, provider, surface })
       }, state.sessionKey);
-      const intentStatus = statusFromWalletIntent(result);
+      const intentStatus = walletPurchaseStatusFromIntent(result);
       if (intentStatus) {
         state.walletPurchaseStatus = intentStatus;
         if (intentStatus === 'confirmed') await refreshBootstrap();
@@ -173,7 +146,7 @@ export function useCustomization(state, refreshBootstrap) {
       if (telegramInvoice) {
         state.walletPurchaseStatus = 'opened';
         globalThis.Telegram.WebApp.openInvoice(checkout.invoiceLink, async (status) => {
-          const invoiceStatus = statusFromTelegramInvoice(status);
+          const invoiceStatus = walletPurchaseStatusFromTelegramInvoice(status);
           state.walletPurchaseStatus = invoiceStatus;
           if (invoiceStatus === 'confirmed') {
             await refreshBootstrap();
