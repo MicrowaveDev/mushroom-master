@@ -1,11 +1,14 @@
 import crypto from 'crypto';
 import {
   chooseWeightedAssetCandidate,
-  getAssetById,
+  getAssetCatalog,
   getAssetPack,
   getPackOdds,
+  getRuntimeAssetCatalog,
+  getRuntimeAssetPack,
   resolveAssetPackRollCandidates,
-  selectAssetPackRollResults
+  selectAssetPackRollResults,
+  shapeAssetPack
 } from './asset-service.js';
 
 function httpError(message, statusCode = 400) {
@@ -83,26 +86,29 @@ function summarizeRarities(items, trials) {
   return Array.from(byRarity.values());
 }
 
-export function simulateAssetPackOdds(packId, {
+function assetByIdFromCatalog(catalog, assetId) {
+  return (catalog || []).find((asset) => asset.assetId === assetId) || null;
+}
+
+function simulateResolvedAssetPackOdds(pack, {
+  catalog,
+  odds,
   trials = 10_000,
   seed = null,
   rng = null,
   ownedAssetIds = [],
   ownedCopyCounts = null,
-  pityState = []
+  pityState = [],
+  source = 'static'
 } = {}) {
-  const pack = getAssetPack(packId);
-  if (!pack) throw httpError('Unknown asset pack', 404);
-
   const trialCount = normalizeTrials(trials);
   const seedValue = seed || `${pack.id}:${trialCount}`;
   const random = rng || createSimulationRng(seedValue);
-  const odds = getPackOdds(pack.id);
   const owned = ownedAssetIds instanceof Set ? ownedAssetIds : new Set(ownedAssetIds);
   const warnings = [];
 
   const missingAssetIds = pack.items
-    .filter((item) => !getAssetById(item.assetId))
+    .filter((item) => !assetByIdFromCatalog(catalog, item.assetId))
     .map((item) => item.assetId);
   if (missingAssetIds.length) {
     warnings.push(warning(
@@ -114,7 +120,7 @@ export function simulateAssetPackOdds(packId, {
 
   const duplicatesEnabled = duplicatePolicyEnabled(pack);
   const ownedPackAssetIds = pack.items
-    .filter((item) => owned.has(item.assetId) && getAssetById(item.assetId) && !duplicatesEnabled)
+    .filter((item) => owned.has(item.assetId) && assetByIdFromCatalog(catalog, item.assetId) && !duplicatesEnabled)
     .map((item) => item.assetId);
   if (ownedPackAssetIds.length) {
     warnings.push(warning(
@@ -125,7 +131,7 @@ export function simulateAssetPackOdds(packId, {
   }
   const includedOwnedAssetIds = duplicatesEnabled
     ? pack.items
-      .filter((item) => owned.has(item.assetId) && getAssetById(item.assetId))
+      .filter((item) => owned.has(item.assetId) && assetByIdFromCatalog(catalog, item.assetId))
       .map((item) => item.assetId)
     : [];
   if (includedOwnedAssetIds.length) {
@@ -138,7 +144,8 @@ export function simulateAssetPackOdds(packId, {
 
   const candidates = resolveAssetPackRollCandidates(pack, {
     ownedAssetIds: owned,
-    copyCounts: ownedCopyCounts
+    copyCounts: ownedCopyCounts,
+    catalog
   });
   const guaranteeRules = configuredGuarantees(pack);
   const pityRules = configuredPityRules(pack);
@@ -206,6 +213,7 @@ export function simulateAssetPackOdds(packId, {
 
   return {
     packId: pack.id,
+    source,
     seasonId: pack.seasonId,
     collectionId: pack.collectionId,
     name: pack.name,
@@ -244,4 +252,30 @@ export function simulateAssetPackOdds(packId, {
     raritySummary: summarizeRarities(items, trialCount),
     items
   };
+}
+
+export function simulateAssetPackOdds(packId, options = {}) {
+  const pack = getAssetPack(packId);
+  if (!pack) throw httpError('Unknown asset pack', 404);
+  return simulateResolvedAssetPackOdds(pack, {
+    ...options,
+    catalog: getAssetCatalog(),
+    odds: getPackOdds(pack.id),
+    source: 'static'
+  });
+}
+
+export async function simulateRuntimeAssetPackOdds(packId, {
+  planAssetVisibility = 'runtime',
+  ...options
+} = {}) {
+  const pack = await getRuntimeAssetPack(packId);
+  if (!pack) throw httpError('Unknown asset pack', 404);
+  const catalog = await getRuntimeAssetCatalog({ planAssetVisibility });
+  return simulateResolvedAssetPackOdds(pack, {
+    ...options,
+    catalog,
+    odds: shapeAssetPack(pack, { includeAssets: true, catalog }),
+    source: pack.source || 'runtime'
+  });
 }

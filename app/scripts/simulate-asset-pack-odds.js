@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import { simulateAssetPackOdds } from '../server/services/gacha-simulation-service.js';
+import {
+  simulateAssetPackOdds,
+  simulateRuntimeAssetPackOdds
+} from '../server/services/gacha-simulation-service.js';
 
 function argValue(name, fallback = null) {
   const prefix = `${name}=`;
@@ -15,12 +18,18 @@ function parseCsv(value) {
     .filter(Boolean);
 }
 
+function hasFlag(name) {
+  return process.argv.slice(2).includes(name);
+}
+
 function usage() {
   return [
     'Usage:',
     '  npm run game:gacha:simulate -- [--pack=season_1_portraits] [--trials=10000] [--seed=season-review] [--owned=assetId,assetId]',
+    '  npm run game:gacha:simulate -- --runtime --pack=<approved_db_pack_id> [--trials=10000] [--seed=season-review] [--owned=assetId,assetId]',
     '',
-    'Prints JSON with configured odds, simulated observed odds, rarity summary, and authoring warnings.'
+    'Prints JSON with configured odds, simulated observed odds, rarity summary, and authoring warnings.',
+    'Use --runtime for approved DB-backed packs and promoted plan assets. Use --plan-visibility=all only for admin draft diagnostics.'
   ].join('\n');
 }
 
@@ -31,11 +40,17 @@ if (process.argv.includes('--help') || process.argv.includes('help')) {
 }
 
 try {
-  const result = simulateAssetPackOdds(argValue('--pack', 'season_1_portraits'), {
+  const options = {
     trials: Number(argValue('--trials', '10000')),
     seed: argValue('--seed'),
     ownedAssetIds: parseCsv(argValue('--owned'))
-  });
+  };
+  const result = hasFlag('--runtime')
+    ? await simulateRuntimeAssetPackOdds(argValue('--pack', 'season_1_portraits'), {
+      ...options,
+      planAssetVisibility: argValue('--plan-visibility', 'runtime')
+    })
+    : simulateAssetPackOdds(argValue('--pack', 'season_1_portraits'), options);
   // eslint-disable-next-line no-console
   console.log(JSON.stringify(result, null, 2));
 } catch (err) {

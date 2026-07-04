@@ -665,12 +665,13 @@ emergency maintenance, not normal season authoring.
 - Post-implementation findings to fold into the next G5E/G5F slice:
   ✅ public/player runtime catalogs now include plan assets only when they are
   linked through approved player-visible DB packs, while admin tooling opts into
-  the full ready-plan catalog for draft validation and authoring. Remaining:
-  generalize the standalone odds-simulation CLI/service from static packs to
-  DB-backed runtime packs and promoted plan assets; and decide the asset-id
-  contract for plan-item character edits, either by treating planned `asset_id`
-  values as opaque immutable ids or by syncing the character-scoped prefix
-  before promotion and blocking unsafe edits after promotion.
+  the full ready-plan catalog for draft validation and authoring. ✅ The
+  standalone odds-simulation CLI/service now has a runtime mode for approved
+  DB-backed packs and promoted plan assets (`--runtime --pack=<packId>`).
+  Remaining: decide the asset-id contract for plan-item character edits, either
+  by treating planned `asset_id` values as opaque immutable ids or by syncing
+  the character-scoped prefix before promotion and blocking unsafe edits after
+  promotion.
 
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
@@ -701,10 +702,11 @@ emergency maintenance, not normal season authoring.
 
 Local weighted-odds simulation exists for one-result and static multi-slot
 unowned packs via `simulateAssetPackOdds`, `npm run game:gacha:simulate`, and
-focused tests as of 2026-07-02. Admin DB-pack preview now uses runtime-catalog
-simulation for DB-authored packs, but the standalone CLI/service still needs a
-runtime-pack mode for DB packs and promoted plan assets. Extend that simulation
-at each roadmap phase instead of waiting until the end.
+focused tests as of 2026-07-02. Admin DB-pack preview uses runtime-catalog
+simulation for DB-authored packs, and the standalone CLI/service can now run
+approved DB-backed runtime packs and promoted plan assets with
+`npm run game:gacha:simulate -- --runtime --pack=<packId>`. Extend that
+simulation at each roadmap phase instead of waiting until the end.
 
 ### 6. Frontend And E2E Coverage Still Missing
 
@@ -2559,9 +2561,11 @@ Additional TODOs for that pass:
    operations. **Updated 2026-07-04:** public/player runtime catalogs now hide
    ready plan assets until they are linked through approved player-visible DB
    packs; admin validation and authoring can still use the full ready-plan
-   catalog. Remaining: DB-runtime mode for the standalone odds simulator,
-   explicit asset-id rules for plan-item character edits, bulk CSV/item editing,
-   migration and rollback scripts for live corrections, scheduled
-   activation/expiry alerts, richer disclosure review by jurisdiction/provider,
-   staff permission tiers, and marketplace/NFT-set operations before
-   non-engineering operators manage paid seasons unaided.
+   catalog. **Updated 2026-07-04:** `simulateRuntimeAssetPackOdds` and
+   `npm run game:gacha:simulate -- --runtime --pack=<packId>` cover approved
+   DB-backed packs and promoted plan assets. Remaining: explicit asset-id rules
+   for plan-item character edits, bulk CSV/item editing, migration and rollback
+   scripts for live corrections, scheduled activation/expiry alerts, richer
+   disclosure review by jurisdiction/provider, staff permission tiers, and
+   marketplace/NFT-set operations before non-engineering operators manage paid
+   seasons unaided.

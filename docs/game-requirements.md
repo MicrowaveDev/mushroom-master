@@ -404,6 +404,9 @@ Membership is not stored. It is derived from overlap between item cells and acti
   is blocked when runtime validation fails or when required release checklist
   blockers are present, including missing pack dates, unsupported currency,
   missing positive price, or missing player-facing disclosure copy.
+  `npm run game:gacha:simulate -- --runtime --pack=<packId>` runs the same
+  standalone odds simulator against approved DB-backed runtime packs, including
+  promoted plan assets.
   The Gacha tab's default operator path is a simple season-plan panel:
   operators upload image files, assign each image to a mushroom character,
   choose rarity and chance weight per image, review per-character coverage
