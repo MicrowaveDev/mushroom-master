@@ -27,9 +27,10 @@
 > but improve it with typed subpath exports and adapter contracts so Backpack
 > does not inherit Geesome's historical deep-import coupling.
 > The implementation plan now assumes a lead agent plus scoped sub-agents for
-> speed: parallelize read-only audits and disjoint folder edits, but serialize
-> installs, builds, Playwright, submodule pointer changes, commits, and pushes
-> so a local Mac does not waste CPU or fight over shared state.
+> maximum throughput: run audits, contract design, disjoint module work,
+> adapter prep, and validation review in parallel, while keeping only
+> integration-sensitive steps such as installs, builds, Playwright, submodule
+> pointer changes, commits, and pushes in a lead-owned queue.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -2611,10 +2612,11 @@ bucket" and keep Mushroom and Meat integrations predictable.
 #### Sub-Agent Execution Model
 
 Use a lead agent plus scoped sub-agents for the Phase 8K and Phase 8J work. The
-goal is faster implementation on a Mac without running duplicate heavy tasks.
-Sub-agents should receive narrow prompts, disjoint write scopes, and exact
-completion conditions. Their findings are leads, not source of truth; the lead
-agent verifies current files before editing or merging.
+goal is maximum end-to-end throughput, not merely lower local CPU usage.
+Sub-agents should receive narrow prompts, disjoint write scopes, exact
+completion conditions, and permission to work ahead on independent evidence or
+draft patches. Their findings are leads, not source of truth; the lead agent
+verifies current files before editing or merging.
 
 1. **Lead / integrator agent**
    - Owns the source-of-truth plan, dependency order, final file edits that
@@ -2622,9 +2624,11 @@ agent verifies current files before editing or merging.
      pointer updates.
    - May write plan docs, package export maps, integration adapters, and
      update logs after reviewing sub-agent output.
-   - Must serialize `npm install`, `npm ci`, `npm run game:build`,
-     Playwright/screenshot commands, `npm pack --dry-run`, submodule pointer
-     updates, commits, and pushes.
+   - Maintains the dependency graph, assigns work scopes, merges accepted
+     patches, and keeps one authoritative integration checkout.
+   - Serializes only steps that would create shared-state conflicts or wasteful
+     duplicate work: installs, package builds, Playwright/screenshot commands,
+     `npm pack --dry-run`, submodule pointer updates, commits, and pushes.
 2. **Architecture audit agent**
    - Read-only scope: `vendor/backpack-game-core`, Mushroom frontend/backend
      adapters, Meat prototype, and Geesome precedent files.
@@ -2662,19 +2666,46 @@ agent verifies current files before editing or merging.
    - Runs or reviews only the validation tier assigned by the lead, then
      reports exact commands, pass/fail status, and remaining risk.
 
-Mac efficiency rules:
+Maximum-efficiency wave plan:
 
-- Prefer parallel sub-agents for read-only audits, API shape review, fixture
-  design, and disjoint source folders.
-- Do not run multiple package installs, builds, dev servers, Playwright suites,
-  screenshot suites, or image-generation jobs at the same time on one Mac.
-- Run core unit tests before consumer tests, then one consumer's focused tests
-  before the other. Run broad `npm test`, builds, and screenshots only after
-  the narrow checks are green.
-- Keep one dev server or Playwright wrapper owner at a time. Other agents should
-  inspect files or write tests while the heavy command runs.
-- If two agents need the same file, the lead assigns ownership to one agent and
-  the other reports a patch suggestion instead of writing.
+1. **Wave 0 - lead setup:** build the dependency graph, name the shared public
+   contracts, assign file ownership, and decide whether each writer works in
+   the main checkout or a temporary local worktree. Temporary worktrees are only
+   for parallel draft speed; the lead lands final accepted changes back on the
+   required base branch.
+2. **Wave 1 - parallel discovery:** run architecture audit, backend inventory,
+   frontend inventory, Mushroom adapter audit, Meat adapter audit, and
+   validation-plan audit at the same time. Outputs are short briefs with exact
+   files, proposed APIs, risk, and test commands.
+3. **Wave 2 - contract-first core work:** implement public exports, DTOs,
+   module interfaces, neutral fixtures, and package/type tests first. Backend
+   module, client/contracts, and Vue composable agents may work in parallel only
+   when their write scopes are disjoint and based on the same approved contract.
+4. **Wave 3 - parallel consumers:** once a core contract is stable, Mushroom
+   and Meat adapter agents implement against the same core API in parallel.
+   They must not change core internals; missing hooks go back to the lead.
+5. **Wave 4 - lead integration queue:** the lead merges accepted patches,
+   resolves conflicts, updates changelogs/update logs, runs focused tests in
+   dependency order, and updates nested submodule pointers.
+6. **Wave 5 - broad validation:** validation/review agent runs or reviews broad
+   suites after focused tests pass: core `npm test`, package export/type tests,
+   Mushroom focused game tests/build/screenshots, Meat tests/build, then any
+   full e2e pass requested by the changed surface.
+
+Throughput rules:
+
+- Keep every sub-agent unblocked with a read-only or disjoint-write task while
+  the lead is waiting on a heavy command.
+- Use temporary worktrees for concurrent draft implementation only when they
+  reduce idle time and do not bypass the repo's final direct-to-main workflow.
+- Run at most one heavyweight local command class at a time per repo: install,
+  build, dev server, Playwright/e2e, screenshot suite, package pack, or
+  image-generation batch. This is a throughput rule: duplicate heavy commands
+  usually slow total delivery and create confusing evidence.
+- Prefer many short focused validations over one early broad validation. The
+  broad suite runs after the lead has integrated the slice.
+- If two agents need the same file, one owns the edit and the other returns a
+  patch suggestion or review note.
 - Commit order stays serial: core commit and push first, then nested submodule
   pointer and adapter commit in Mushroom or Meat, then hub pointer commit.
 
@@ -3039,7 +3070,7 @@ that game.
 45. Phase 8L sub-agent execution setup. Before implementing Phase 8K/8J slices,
    split work into bounded sub-agent briefs: architecture audit, core backend
    module, client/contracts, Vue shared UI, Mushroom adapter, Meat adapter, and
-   validation/review. Parallelize read-only audits and disjoint edits, but keep
-   installs, builds, Playwright, package packing, submodule pointer updates,
-   commits, and pushes under the lead agent so local Mac resources stay
-   predictable.
+   validation/review. Optimize for maximum throughput with parallel discovery,
+   contract-first core work, parallel consumer adapters, a lead-owned
+   integration queue, and serial commit/pointer updates. Treat local machine
+   resource limits as scheduling constraints, not as the goal.

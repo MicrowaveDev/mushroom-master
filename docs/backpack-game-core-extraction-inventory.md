@@ -100,8 +100,10 @@ Backpack should adopt the useful shape, but not the old coupling:
 
 ## Sub-Agent Implementation Notes
 
-Use sub-agents to speed up the next extraction phases, but keep each assignment
-small enough that it can be merged without file ownership fights.
+Use sub-agents for maximum throughput in the next extraction phases. Keep each
+assignment small enough that it can be integrated quickly, but let agents work
+ahead on independent audits, contract drafts, fixtures, tests, adapters, and
+review while the lead is handling heavy commands or merge decisions.
 
 - **Lead agent:** owns dependency order, final plan edits, integration merge,
   commits, pushes, and all submodule pointer updates.
@@ -123,14 +125,19 @@ small enough that it can be merged without file ownership fights.
 - **Validation/review agent:** verifies sub-agent output against current files,
   runs assigned tests, and reports exact pass/fail evidence.
 
-Mac efficiency constraints:
+Maximum-efficiency constraints:
 
-- Parallelize read-only audits and disjoint file edits.
-- Serialize `npm install`, `npm ci`, package builds, Vite/dev servers,
-  Playwright/e2e, screenshot suites, `npm pack --dry-run`, commits, pushes, and
-  submodule pointer updates.
-- Run narrow tests before broad tests: core module tests, package exports/types,
-  Mushroom focused tests, Meat focused tests, then builds/screenshots.
+- Parallelize read-only audits, contract/API review, fixture design, disjoint
+  module edits, consumer adapter prep, and validation review.
+- Use temporary worktrees for parallel draft implementation when useful, but
+  land final accepted changes through the lead-owned integration checkout and
+  the repo's required base branch.
+- Serialize only shared-state or heavyweight bottlenecks: `npm install`,
+  `npm ci`, package builds, Vite/dev servers, Playwright/e2e, screenshot
+  suites, `npm pack --dry-run`, commits, pushes, and submodule pointer updates.
+- Run the pipeline in throughput waves: discovery, contract-first core work,
+  parallel consumer adapters, lead integration, focused tests, then broad
+  builds/screenshots/e2e.
 - If two sub-agents need the same file, one owns the edit and the other returns
   a review note or patch suggestion.
 
