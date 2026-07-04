@@ -70,14 +70,16 @@
 > normalization, wallet/asset-roll mutation view-state reducers, and optional
 > route-client response-envelope unwrapping. The first headless wallet/gacha
 > state helper slice now shares wallet bundle loading state, checkout
-> next-action decisions, and roll/burn refresh decisions. Mushroom live
-> frontend transport now routes through the shared client while keeping product
-> route names local.
+> next-action decisions, and roll/burn refresh decisions. The first run-shop
+> response patch helper slice now shares refresh-shop, buy, and sell state
+> projection. Mushroom live frontend transport now routes through the shared
+> client while keeping product route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
 > are **not more route plumbing**; they are remaining headless service state
-> machines, run-shop response patch helpers, and later neutral UI primitives.
+> machines, broader game-run response patch helpers, and later neutral UI
+> primitives.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
@@ -2807,6 +2809,12 @@ Mushroom now consumes them in `useCustomization` while keeping API calls,
 Telegram/web checkout side effects, bootstrap refresh callbacks, route names,
 and product copy local.
 
+Implemented as the next slice: core commit `f4734ea` added run-shop response
+patch helpers for refresh-shop, buy, and sell state projection. Mushroom now
+consumes them in `useGameRun` while keeping API calls, price guards, row-id
+sell payload construction, placement payload construction, haptics, replay
+loading, route names, and product copy local.
+
 Move next:
 
 - **Remaining headless wallet/gacha state services:** browser-safe helpers for
@@ -2814,9 +2822,9 @@ Move next:
   broader route-client orchestration over injected clients and copy/policy
   adapters. Telegram invoice opening, web checkout opening, and refresh
   callbacks stay product-local.
-- **Run-shop mutation view-model helpers:** client-side state patch helpers for
-  start/ready/refresh-shop/buy/sell/abandon response application. They can
-  share coin/shop/loadout patch contracts while leaving placement payload
+- **Broader game-run response patch helpers:** client-side state patch helpers
+  for start/ready/abandon and round-transition response application. They can
+  share run/loadout/replay patch contracts while leaving placement payload
   construction, haptics, replay loading, server mutations, and product copy in
   each game.
 
@@ -3448,8 +3456,9 @@ that game.
    transactions, wallet mutation, secure RNG, idempotency claims, asset grants,
    runtime catalog lookup, and HTTP route behavior local. Meat consumes the
    helpers through a core contract smoke test. Next domain candidates are
-   headless gacha/wallet service adapters and run-shop response patch helpers
-   before broader Vue component extraction.
+   headless gacha/wallet service adapters and broader game-run response patch
+   helpers; the initial run-shop response patch helper slice is fulfilled by
+   Phase 8AJ.
 59. Phase 8Z profile asset target-variant response shaping. **Implemented
    2026-07-04:** core commit `0f8beee` added `modules/assets` helpers for
    target-variant list projection over injected variants, catalog snapshots,
@@ -3458,9 +3467,10 @@ that game.
    portrait asset id convention, runtime catalog construction, gacha-plan
    policy, active/equipment resolution, product routes, and HTTP payload
    ownership local. Meat consumes the helper through a core contract smoke
-   test. Next candidates are headless gacha/wallet service adapters, run-shop
-   response patch helpers, and neutral Vue composables/components only after
-   the service contracts stabilize.
+   test. Next candidates are headless gacha/wallet service adapters, broader
+   game-run response patch helpers, and neutral Vue composables/components
+   only after the service contracts stabilize; the initial run-shop response
+   patch helper slice is fulfilled by Phase 8AJ.
 60. Phase 8AA wallet and asset-roll mutation view-state helper extraction.
    **Implemented 2026-07-04:** core commit `fc53abc` added
    `client-view-model` helpers for headless wallet purchase and asset
@@ -3470,8 +3480,10 @@ that game.
    Telegram invoice opening, web checkout opening, invoice callbacks, bootstrap
    refresh, runtime state ownership, and product copy local. Meat consumes the
    helpers through a core contract smoke test. Next candidates are route-client
-   adapter adoption for these flows, run-shop response patch helpers, and
-   neutral Vue composables/components only after route contracts are stable.
+   adapter adoption for these flows, broader game-run response patch helpers,
+   and neutral Vue composables/components only after route contracts are
+   stable; the initial run-shop response patch helper slice is fulfilled by
+   Phase 8AJ.
 61. Phase 8AB route-client response-envelope and customization adoption.
    **Implemented 2026-07-04:** core commit `b56ad91` added optional
    `{ success, data, error }` envelope unwrapping to `client`, including
@@ -3515,23 +3527,26 @@ that game.
    route-client lane enough for the current extraction phase. Run state
    projection, placement payload shaping, replay loading, haptics, runtime state
    ownership, and product copy stay local. Next candidates are headless
-   services/composables and run-shop response patch helpers before neutral Vue
-   components move.
+   services/composables and broader game-run response patch helpers before
+   neutral Vue components move; the initial run-shop response patch helper
+   slice is fulfilled by Phase 8AJ.
 65. Phase 8AF replay/dev route-client cleanup.
    **Implemented 2026-07-04:** Mushroom replay settings persistence, battle
    replay loading, local lab narration, and dev inventory-review routes now use
    the shared core route-adapter client through local route names. The unused
    `apiJson` helper was removed from live frontend code. Replay timers/state,
    dev fixtures, runtime state ownership, and product copy stay local. Next
-   candidates are headless services/composables and run-shop response patch
-   helpers before neutral Vue components move.
+   candidates are headless services/composables and broader game-run response
+   patch helpers before neutral Vue components move; the initial run-shop
+   response patch helper slice is fulfilled by Phase 8AJ.
 66. Phase 8AG post-route-client core-move review.
    **Plan adjusted 2026-07-04:** the active route-client lane is complete for
    live Mushroom frontend code. The next core moves should be, in order:
    asset inventory/equipment DTO shapers (fulfilled by Phase 8AH); headless
-   wallet/gacha state services; run-shop mutation view-model helpers; then
-   replay playback state, gacha/admin view models, and neutral Vue primitives
-   after contracts are stable. Do not
+   wallet/gacha state services; broader game-run response patch helpers (with
+   refresh/buy/sell fulfilled by Phase 8AJ); then replay playback state,
+   gacha/admin view models, and neutral Vue primitives after contracts are
+   stable. Do not
    move whole Mushroom services, pages, Express routes, DB schemas, payment
    providers, route maps, catalogs, artwork, support operations, haptics, or
    secure paid-roll RNG selection into core.
@@ -3544,9 +3559,9 @@ that game.
    still exist, while keeping runtime catalogs, SQL mutations, wallet spends,
    secure RNG, mutation claims, support actions, and route payload ownership
    local. Next candidates are headless wallet/gacha state services (started by
-   Phase 8AI), run-shop mutation view-model helpers, replay playback state,
-   gacha/admin view models, and neutral Vue primitives after contracts
-   stabilize.
+   Phase 8AI), broader game-run response patch helpers (started by Phase 8AJ),
+   replay playback state, gacha/admin view models, and neutral Vue primitives
+   after contracts stabilize.
 68. Phase 8AI headless wallet/gacha state helper extraction.
    **Implemented 2026-07-04:** core commit `5ee7ee8` added
    `client-view-model` helpers for wallet bundle loading state, wallet
@@ -3556,5 +3571,16 @@ that game.
    generation, Telegram invoice opening, web checkout opening, bootstrap
    refresh callbacks, runtime state ownership, and product copy local. Next
    candidates are remaining headless wallet/gacha orchestration helpers,
-   run-shop mutation view-model helpers, replay playback state, gacha/admin
+   broader game-run response patch helpers, replay playback state, gacha/admin
    view models, and neutral Vue primitives after contracts stabilize.
+69. Phase 8AJ run-shop response patch helper extraction.
+   **Implemented 2026-07-04:** core commit `f4734ea` added
+   `client-view-model` helpers for refresh-shop, buy, and sell response state
+   projection. Mushroom's game-run composable now delegates those state
+   patches through core while keeping API calls, price guards, row-id sell
+   payload construction, placement payload construction, haptics, replay
+   loading, runtime state ownership, route names, and product copy local. Next
+   candidates are remaining headless wallet/gacha orchestration helpers,
+   start/ready/abandon and round-transition response patch helpers, replay
+   playback state, gacha/admin view models, and neutral Vue primitives after
+   contracts stabilize.

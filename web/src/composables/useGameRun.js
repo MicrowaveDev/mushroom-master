@@ -3,6 +3,11 @@ import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
 import { calculateSeasonAbandonPenalty, calculateSeasonPoints } from '../../../app/shared/season-levels.js';
+import {
+  runShopBuyResultViewState,
+  runShopRefreshResultViewState,
+  runShopSellResultViewState
+} from '@microwavedev/backpack-game-core/client-view-model';
 import { projectLoadoutItems } from './loadout-projection.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
@@ -382,9 +387,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       const data = await api.request(api.routePath('gameRunRefreshShop', { gameRunId: state.gameRun.id }), {
         method: 'POST'
       });
-      state.gameRunShopOffer = data.shopOffer;
-      state.gameRunRefreshCount = data.refreshCount;
-      state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
+      const viewState = runShopRefreshResultViewState(data, { run: state.gameRun });
+      state.gameRunShopOffer = viewState.shopOffer;
+      state.gameRunRefreshCount = viewState.refreshCount;
+      state.gameRun = viewState.run;
       haptics.selectionChanged();
     } catch (error) {
       state.error = error.message || 'Not enough coins';
@@ -413,77 +419,19 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         ? { id: rowId, artifactId: artifactIdFallback }
         : { artifactId: artifactIdFallback };
       const data = await gameApi().postRoute('gameRunSell', { gameRunId: state.gameRun.id }, payload);
-      state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
-
-      // The server's response always includes the row id that was deleted.
-      const deletedRowId = data.id || rowId || null;
-      const deletedArtifactId = data.artifactId || artifactIdFallback;
-
-      // Prune builderItems: prefer row id, fall back to first-match artifactId.
-      if (deletedRowId) {
-        const idx = state.builderItems.findIndex((i) => i.id === deletedRowId);
-        if (idx >= 0) {
-          state.builderItems = [
-            ...state.builderItems.slice(0, idx),
-            ...state.builderItems.slice(idx + 1)
-          ];
-        }
-      } else {
-        const idx = state.builderItems.findIndex((i) => i.artifactId === deletedArtifactId);
-        if (idx >= 0) {
-          state.builderItems = [
-            ...state.builderItems.slice(0, idx),
-            ...state.builderItems.slice(idx + 1)
-          ];
-        }
-      }
-
-      // Prune containerItems similarly.
-      if (deletedRowId) {
-        const idx = state.containerItems.findIndex((s) => s.id === deletedRowId);
-        if (idx >= 0) {
-          state.containerItems = [
-            ...state.containerItems.slice(0, idx),
-            ...state.containerItems.slice(idx + 1)
-          ];
-        }
-      } else {
-        const idx = state.containerItems.findIndex((s) => s.artifactId === deletedArtifactId);
-        if (idx >= 0) {
-          state.containerItems = [
-            ...state.containerItems.slice(0, idx),
-            ...state.containerItems.slice(idx + 1)
-          ];
-        }
-      }
-
-      // activeBags: same treatment.
-      if (deletedRowId) {
-        const idx = state.activeBags.findIndex((b) => b.id === deletedRowId);
-        if (idx >= 0) {
-          state.activeBags = [
-            ...state.activeBags.slice(0, idx),
-            ...state.activeBags.slice(idx + 1)
-          ];
-        }
-      } else {
-        const idx = state.activeBags.findIndex((b) => b.artifactId === deletedArtifactId);
-        if (idx >= 0) {
-          state.activeBags = [
-            ...state.activeBags.slice(0, idx),
-            ...state.activeBags.slice(idx + 1)
-          ];
-        }
-      }
-
-      // freshPurchases is an artifactId string list (decorative UI).
-      const freshIdx = state.freshPurchases.indexOf(deletedArtifactId);
-      if (freshIdx >= 0) {
-        state.freshPurchases = [
-          ...state.freshPurchases.slice(0, freshIdx),
-          ...state.freshPurchases.slice(freshIdx + 1)
-        ];
-      }
+      const viewState = runShopSellResultViewState(data, {
+        run: state.gameRun,
+        builderItems: state.builderItems,
+        containerItems: state.containerItems,
+        activeBags: state.activeBags,
+        freshPurchases: state.freshPurchases,
+        target
+      });
+      state.gameRun = viewState.run;
+      state.builderItems = viewState.builderItems;
+      state.containerItems = viewState.containerItems;
+      state.activeBags = viewState.activeBags;
+      state.freshPurchases = viewState.freshPurchases;
       haptics.impact('light');
 
     } catch (error) {
@@ -504,13 +452,16 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     try {
       state.error = '';
       const data = await gameApi().postRoute('gameRunBuy', { gameRunId: state.gameRun.id }, { artifactId });
-      state.gameRun = { ...state.gameRun, player: { ...state.gameRun.player, coins: data.coins } };
-      state.gameRunShopOffer = data.shopOffer;
-      // The server returns the newly-inserted row id so the container slot
-      // carries it immediately. Any action taken against this item before
-      // the next bootstrap — place, sell, drag — can target the exact row.
-      state.containerItems = [...state.containerItems, { id: data.id || null, artifactId }];
-      state.freshPurchases = [...state.freshPurchases, artifactId];
+      const viewState = runShopBuyResultViewState(data, {
+        run: state.gameRun,
+        containerItems: state.containerItems,
+        freshPurchases: state.freshPurchases,
+        artifactId
+      });
+      state.gameRun = viewState.run;
+      state.gameRunShopOffer = viewState.shopOffer;
+      state.containerItems = viewState.containerItems;
+      state.freshPurchases = viewState.freshPurchases;
       haptics.impact('light');
 
     } catch (error) {

@@ -351,6 +351,10 @@ games can share wallet bundle loading states, wallet checkout next-action
 decisions, and asset roll/burn refresh decisions while API calls,
 Telegram/web checkout side effects, refresh callbacks, route names, and copy
 stay local.
+Run-shop response patch helper shaping moved in core commit `f4734ea`; games
+can share refresh-shop, buy, and sell response state projection while API
+calls, price guards, row-id sell payloads, placement payload construction,
+haptics, replay loading, route names, and product copy stay local.
 Client response-envelope unwrapping moved in core commit `b56ad91`; games can
 use the shared route-adapter client against existing `{ success, data, error }`
 payloads while route maps, auth/session headers, idempotency keys, checkout
@@ -359,8 +363,9 @@ Post-route-client review on 2026-07-04: live Mushroom frontend transport now
 uses the shared route-adapter client, so the next core boundary should move
 DTO/state helpers rather than more route plumbing. Profile asset/equipment
 result shapers and the first headless wallet/gacha state helpers are now in
-core; prioritize remaining headless orchestration and run-shop response patch
-helpers next. Keep whole services, Express routes,
+core, and the first run-shop response patch helper slice is also in core;
+prioritize remaining headless orchestration and broader game-run response
+patch helpers next. Keep whole services, Express routes,
 persistence, payment/webhook providers, runtime catalogs, route maps, artwork,
 support operations, haptics, page assembly, and secure paid-roll RNG selection
 inside product repos.

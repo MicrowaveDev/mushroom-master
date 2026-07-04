@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `5ee7ee84d87ef516a66549f9e017efef9666731d`
-- core short SHA: `5ee7ee8`
-- core commit: `Add headless wallet gacha state helpers`
+- core SHA: `f4734eac1421f75a4d259974993edffc298ae8fe`
+- core short SHA: `f4734ea`
+- core commit: `Add run shop response patch helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core headless wallet gacha state helpers`)
+- game pointer commit: this commit (`Use core run shop response patch helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `5ee7ee8` | Headless wallet/gacha state helpers | Mushroom customization delegates wallet bundle loading states, wallet checkout next-action decisions, and roll/burn refresh decisions through `client-view-model`. API calls, Telegram/web checkout side effects, bootstrap refresh callbacks, route names, and product copy stay local. |
+| 2026-07-04 | this commit | `f4734ea` | Run-shop response patch helpers | Mushroom game-run composable delegates refresh-shop, buy, and sell response state projection through `client-view-model`. API calls, price guards, placement payload construction, row-id sell payloads, haptics, replay loading, route names, and product copy stay local. |
+| 2026-07-04 | `46d7a22` | `5ee7ee8` | Headless wallet/gacha state helpers | Mushroom customization delegates wallet bundle loading states, wallet checkout next-action decisions, and roll/burn refresh decisions through `client-view-model`. API calls, Telegram/web checkout side effects, bootstrap refresh callbacks, route names, and product copy stay local. |
 | 2026-07-04 | `9c848fe` | `458d4bb` | Profile asset result DTO shapers | Mushroom direct-buy/equip responses and roll/burn grant instance summaries now delegate through `modules/assets`, including idempotent replay summaries where instance rows are still active. Runtime catalogs, SQL mutations, wallet spends, RNG, mutation claims, and route ownership stay local. |
 | 2026-07-04 | `880322b` | `b56ad91` | Consumer route-client adoption | Mushroom replay and dev-tool routes now use the local route map plus shared core route-adapter client, and the legacy `apiJson` helper was removed from live code. Replay state, timers, dev fixtures, and product copy stay local. |
 | 2026-07-04 | `715d7b2` | `b56ad91` | Consumer route-client adoption | Mushroom game-run start/load/readiness/shop/buy/sell/abandon/loadout routes now use the local route map plus shared core route-adapter client while keeping run state projection, placement payload shaping, replay loading, haptics, and product copy local. |

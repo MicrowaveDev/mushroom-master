@@ -106,6 +106,8 @@ test('useGameRun routes run mutations through the shared route client', async ()
     await gameRun.signalReady();
     await gameRun.refreshRunShop();
     await gameRun.buyRunShopItem('blade');
+    state.containerItems = [...state.containerItems, { id: 'row_blade_duplicate', artifactId: 'blade' }];
+    state.freshPurchases = [...state.freshPurchases, 'blade'];
     await gameRun.sellRunItemAction({ id: 'row_blade', artifactId: 'blade' });
   } finally {
     globalThis.fetch = previousFetch;
@@ -114,8 +116,8 @@ test('useGameRun routes run mutations through the shared route client', async ()
   assert.equal(state.gameRun.id, 'run_1');
   assert.equal(state.gameRun.player.coins, 4);
   assert.deepEqual(state.gameRunShopOffer, []);
-  assert.deepEqual(state.containerItems, []);
-  assert.deepEqual(state.freshPurchases, []);
+  assert.deepEqual(state.containerItems, [{ id: 'row_blade_duplicate', artifactId: 'blade' }]);
+  assert.deepEqual(state.freshPurchases, ['blade']);
   assert.equal(impactCount, 3);
   assert.equal(selectionCount, 1);
   assert.deepEqual(navigation, [

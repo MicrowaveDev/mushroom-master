@@ -83,6 +83,10 @@ copy, theme, and API adapters.
   and asset roll/burn mutation refresh decisions while games keep API calls,
   checkout side effects, refresh hooks, and copy local, tested by
   `tests/client-view-model.test.js`
+- run-shop response patch helper slice: `src/client-view-model.js` now also
+  provides refresh-shop, buy, and sell response state projection helpers while
+  games keep API calls, price guards, placement payloads, haptics, replay
+  loading, and product copy local, tested by `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -119,8 +123,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `5ee7ee8`
-  (`Add headless wallet gacha state helpers`)
+- latest consumed core commit: `f4734ea`
+  (`Add run shop response patch helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -817,10 +821,11 @@ Next planned frontend slices:
    2026-07-04** with replay/dev-tool route adoption and removal of the legacy
    `apiJson` helper from live code. **First headless wallet/gacha state helper
    slice implemented 2026-07-04** with wallet bundle loading state, checkout
-   next-action, and roll/burn refresh-decision helpers. Continue with remaining
-   headless services before page/component extraction. Do not move the full
-   Mushroom API client into core yet; keep product routes behind injected
-   adapters.
+   next-action, and roll/burn refresh-decision helpers. **First run-shop
+   response patch helper slice implemented 2026-07-04** with refresh-shop,
+   buy, and sell state projection helpers. Continue with remaining headless
+   services before page/component extraction. Do not move the full Mushroom API
+   client into core yet; keep product routes behind injected adapters.
 2. **Post-route-client asset DTO cleanup:** **Implemented 2026-07-04 in core
    commit `458d4bb`.** Purchase result DTOs, equip result DTOs,
    owned-instance summaries, equipped-target summaries, and duplicate-grant
@@ -834,10 +839,14 @@ Next planned frontend slices:
    local. Remaining headless service candidates: pack list loading, duplicate
    burn availability, odds-preview state, and broader API-client orchestration
    over injected route clients and product copy/policy adapters.
-4. **Run-shop mutation view-model helpers:** move response-application helpers
-   for start/ready/refresh-shop/buy/sell/abandon once their state patch
-   contracts are stable. Keep placement payload construction, haptics, replay
-   loading, server mutations, and product copy local.
+4. **Run-shop mutation view-model helpers:** **First slice implemented
+   2026-07-04 in core commit `f4734ea`.** Refresh-shop, buy, and sell response
+   patch helpers now live in `client-view-model`; Mushroom keeps API calls,
+   price guards, row-id sell payload construction, placement payload
+   construction, haptics, replay loading, server mutations, route names, and
+   product copy local. Remaining run-shop candidates: start/ready/abandon and
+   round-transition response patch helpers once their state contracts are
+   stable.
 5. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay
    view model, wallet/asset catalog state, gacha pack state, and admin
@@ -871,11 +880,12 @@ Post-route-client review finding on 2026-07-04: no additional route plumbing is
 needed in core right now. Whole Mushroom services and pages are still too
 product-coupled. The asset inventory/equipment DTO lane is covered by core
 commit `458d4bb`, and the first headless wallet/gacha state helper slice is
-covered by core commit `5ee7ee8`. The next useful extractions are remaining
-headless wallet/gacha orchestration helpers, run-shop response patch helpers,
-and later replay/admin/UI view models that both Mushroom and Meat can consume
-without inheriting Mushroom persistence, Telegram, payment, catalog, art,
-support, haptics, or page-composition rules.
+covered by core commit `5ee7ee8`. The first run-shop response patch helper
+slice is covered by core commit `f4734ea`. The next useful extractions are
+remaining headless wallet/gacha orchestration helpers, broader game-run
+response patch helpers, and later replay/admin/UI view models that both
+Mushroom and Meat can consume without inheriting Mushroom persistence,
+Telegram, payment, catalog, art, support, haptics, or page-composition rules.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 
