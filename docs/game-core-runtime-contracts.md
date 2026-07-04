@@ -177,16 +177,22 @@ Future direction:
   copy caps, duplicate burn/exchange, runtime simulation, and admin pack
   validation. The 2026-07-04 multi-game plan moves reusable asset/gacha rules
   into `backpack-game-core` behind adapters so `meat-master` can share them.
-  Trading, marketplace listings, and full NFT-set operations remain deferred.
+  The same plan now treats reusable Vue frontend modules as core candidates:
+  shared services, composables, view-model shapers, components, and optional
+  page shells can move to the package when product routes, copy, theme, art,
+  auth, and API adapters stay in each game. Trading, marketplace listings, and
+  full NFT-set operations remain deferred.
 
 Non-core boundary:
 
 - Product persistence, payment-funded roll transactions, secure runtime RNG
-  source selection, portrait URLs, admin UI, uploaded image storage, and
-  Mushroom-specific skin catalogs stay in product code or adapters. Reusable
-  asset ownership/equipment transitions, direct-buy policy, pack validation,
-  roll selection, duplicate/burn, pity/guarantee, and simulation rules are
-  planned core-domain candidates.
+  source selection, portrait URLs, uploaded image storage, route shells, auth,
+  theme, localization, and Mushroom-specific skin catalogs stay in product code
+  or adapters. Product-specific admin screens stay local, but neutral admin
+  validation/checklist/odds/plan-review widgets can become shared Vue modules.
+  Reusable asset ownership/equipment transitions, direct-buy policy, pack
+  validation, roll selection, duplicate/burn, pity/guarantee, simulation rules,
+  and neutral frontend view-model/UI primitives are planned core candidates.
 
 ## Candidate Reusable Mechanics
 
@@ -203,6 +209,14 @@ These mechanics are closest to the reusable core boundary:
   and purchase/gacha mode config injected
 - gacha pack validation, roll selection, duplicate/burn, pity/guarantee, and
   simulation over injected RNG and ownership state
+- frontend DTO/view-model shaping for shop, backpack, battle replay,
+  wallet/assets, gacha packs, odds preview, and admin validation state
+- browser-safe services and Vue composables that receive API clients, product
+  catalogs, route callbacks, copy dictionaries, and theme tokens through
+  adapters
+- neutral Vue components for backpack grids, artifact tiles, shop lists, battle
+  logs, wallet/asset panels, gacha pack cards, roll results, odds tables, and
+  admin validation/checklist panels
 
 These mechanics need adapters before extraction:
 
@@ -219,6 +233,9 @@ These mechanics need adapters before extraction:
   idempotency state from a game repository
 - gacha runtime integration that must receive secure RNG, wallet debit, asset
   grant, roll history, and audit persistence from a game repository
+- Vue page shells that must receive product router/auth wrappers, API clients,
+  localization, visual theme, image resolvers, and feature flags before they can
+  move safely
 
 These are product-specific and must stay out of `backpack-game-core`:
 
@@ -228,21 +245,27 @@ These are product-specific and must stay out of `backpack-game-core`:
   and persistence services
 - wallet/payment providers, webhook verification, refunds/reversals, support,
   terms, and adult-content compliance gates
-- localized UI copy and product visual assets
+- localized UI copy, product route composition, auth shells, CSS themes, and
+  product visual assets
 
 ## Extraction Rule
 
 Code movement into `backpack-game-core` should stay small and evidence-led:
 port focused core tests before changing `mushroom-master` imports, then verify
-the Mushroom adapter/bridge tests. The shipped slices are bag-shape masks,
-rotation, first grid-geometry primitives, fusion matching, shop-offer
-generation, bot-loadout generation, and hookable battle simulation. Full
-placement/loadout validation still belongs in `mushroom-master` until catalog
-access, pricing, bag policy, and validation errors are parameterized. Fusion
-application, run-shop buy/refresh/sell mutations, and battle-service
-persistence/reward integration still belong in `mushroom-master` because they
-write DB rows and touch run currency, rating, snapshots, rewards, or product
-state.
+the Mushroom adapter/bridge tests. Backend slices should keep DB and provider
+I/O behind adapters. Frontend slices should start with browser-safe services and
+Vue composables, then props/events/slots components, then optional page shells.
+Each shared frontend module needs neutral core tests plus the affected Mushroom
+screenshot/e2e coverage and Meat build/test coverage once Meat consumes it.
+
+The shipped slices are bag-shape masks, rotation, first grid-geometry
+primitives, fusion matching, shop-offer generation, bot-loadout generation, and
+hookable battle simulation. Full placement/loadout validation still belongs in
+`mushroom-master` until catalog access, pricing, bag policy, and validation
+errors are parameterized. Fusion application, run-shop buy/refresh/sell
+mutations, and battle-service persistence/reward integration still belong in
+`mushroom-master` because they write DB rows and touch run currency, rating,
+snapshots, rewards, or product state.
 
 ### Planned Bot-Loadout Boundary
 

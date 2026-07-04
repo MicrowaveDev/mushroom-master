@@ -8,7 +8,10 @@ should be updated after each cluster moves. The 2026-07-04 multi-game revision
 adds `git@github.com:nuclear-pancakes/meat-master.git` as the second core
 consumer, so wallet/assets/gacha should no longer be treated as entirely
 Mushroom-local: product persistence and payment adapters stay local, but
-reusable domain rules should move into core behind explicit adapters.
+reusable domain rules should move into core behind explicit adapters. The same
+applies to the Vue frontend: reusable services, composables, components, and
+page view models should move into core behind product-provided data, routing,
+copy, theme, and API adapters.
 
 ## Current Core Repo State
 
@@ -56,7 +59,12 @@ core SHA to game-commit mapping is tracked in
 - **Domain-core candidate:** wallet, asset, or gacha rules are reusable across
   games if core receives persistence snapshots, catalog data, time, RNG, and
   policy through arguments/adapters. DB schemas, routes, payment processors,
-  auth, support-action persistence, and UI stay in the game repo.
+  auth, support-action persistence, and product UI shells stay in the game repo.
+- **Frontend-core candidate:** Vue/browser modules are reusable across games if
+  they receive product catalogs, API clients, copy, theme tokens, routes, and
+  assets through props, slots, composables, or adapter objects. Product stores,
+  route shells, Telegram auth, localization files, image generation, and final
+  page assembly stay local.
 - **Product-specific:** keep in `mushroom-master`.
 
 ## Candidate Matrix
@@ -79,7 +87,11 @@ core SHA to game-commit mapping is tracked in
 | Payment providers and purchase webhooks | `app/server/services/provider-settlement-*`, `bot-gateway.js`, payment routes | Product-specific | Telegram Stars, BTCPay, NOWPayments, provider signatures, invoice lookups, tax/accounting, adult-content policy, and settlement records are game/ops concerns, not backpack mechanics. |
 | Asset catalog, ownership, equipment, and direct-buy policy | `app/server/services/asset-service.js`, profile asset tables, runtime catalogs | Domain-core candidate | Catalog normalization, purchase availability, acquisition modes, profile-owned instance/equipment transitions, direct-buy blocking under gacha, and runtime catalog filtering are reusable if product catalogs, current ownership, wallet spend hooks, and persistence are supplied by the game. |
 | Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `app/server/services/asset-service.js`, `gacha-simulation-service.js`, admin validation helpers | Domain-core candidate | Pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, and result evidence can be shared. Secure RNG source, wallet debit transaction, asset grant persistence, pack storage, and operator audit records stay local. |
-| Gacha admin UI and season-plan image storage | `app/server/services/gacha-admin-service.js`, `/support-admin`, `/gacha-plan` assets | Adapter-needed / product-specific split | Fixture shape validation, release checklist, promoted-plan asset invariants, and pack validation can become core helpers. Image upload/storage, Support Admin forms, token-gated routes, support actions, and product copy stay local. |
+| Shared frontend DTO/view-model shaping | `web/src/composables/useGameState.js`, `web/src/artifacts/grid.js`, asset/gacha response shapers | Frontend-core candidate | Browser-safe transforms for loadout totals, shop state, battle/replay state, wallet/asset catalog state, gacha pack state, validation summaries, and odds preview can be shared if they receive neutral payloads and catalog/config adapters. |
+| Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
+| Battle replay/log UI | Mushroom replay components/pages and Meat battle panel | Frontend-core candidate | Battle timeline rendering, event filtering, combatant stat panels, outcome badges, and playback state are reusable over core battle events. Product narration text, character art, share routes, and replay persistence stay local. |
+| Wallet, asset inventory, and gacha UI | Mushroom asset/portrait/gacha screens, support asset widgets, Meat future inventory/gacha screens | Frontend-core candidate | Wallet balance display, asset inventory/equipment panels, gacha pack cards, roll result modals, duplicate/burn state panels, odds tables, and asset policy labels can be shared with product API/copy/theme adapters. Payment provider selection, adult-content gates, and purchase routes stay local. |
+| Gacha admin UI and season-plan image storage | `app/server/services/gacha-admin-service.js`, `/support-admin`, `/gacha-plan` assets | Adapter-needed / product-specific split | Fixture shape validation, release checklist, promoted-plan asset invariants, pack validation, season-plan coverage summaries, validation panels, odds/diff tables, and neutral plan review components can become core helpers/UI. Image upload/storage, token-gated routes, support actions, operator permissions, and product copy stay local. |
 
 ## Chosen First Slice
 
@@ -500,11 +512,36 @@ Next planned domain slices:
    that operate on passed snapshots; no DB writes or provider callbacks. Do this
    after the shared gacha seam is stable in Mushroom.
 
+Next planned frontend slices:
+
+1. **Frontend services/composables:** move browser-safe state machines and API
+   adapter factories first: bootstrap loader, shop/backpack state, battle
+   replay view model, wallet/asset catalog state, gacha pack state, and admin
+   validation/odds preview state. These should be plain JS or Vue composables
+   with neutral fixtures before component extraction.
+2. **Backpack UI primitives:** extract backpack grid, artifact tile/card,
+   shop offer list, budget badge, placement preview, and core structural styles
+   behind props/events/slots.
+3. **Battle UI primitives:** extract battle log, replay timeline, combatant
+   stat strips, outcome badges, and playback controls over core battle events.
+4. **Asset/gacha UI primitives:** extract wallet balance badge, asset inventory
+   panel, equipment picker, gacha pack card, roll result modal, odds table,
+   duplicate/burn summary, and asset acquisition labels.
+5. **Admin gacha UI primitives:** extract validation issue lists, release
+   checklist, season-plan coverage grid, odds preview, pack diff, and plan item
+   editor widgets only after their backend/view-model contracts are stable.
+6. **Optional page shells:** extract page-level prep/shop, battle replay,
+   asset inventory, gacha packs, and admin season-plan shells only when they can
+   receive product route/auth/copy/theme/API adapters and stay useful to both
+   games.
+
 Do not extract payment providers, DB models, Telegram routes, lore/portrait
-catalogs, uploaded image storage, support/admin UI, adult-content gates, or
-home-field code into `backpack-game-core`. Those stay product-local. Core
-should accept catalogs, ownership snapshots, wallet snapshots, time, RNG, and
-policy config as inputs.
+catalogs, uploaded image storage, product route shells, product localization,
+adult-content gates, generated images, or home-field code into
+`backpack-game-core`. Those stay product-local. Core should accept catalogs,
+ownership snapshots, wallet snapshots, time, RNG, policy config, API clients,
+copy dictionaries, theme tokens, asset URL resolvers, and route callbacks as
+inputs.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 

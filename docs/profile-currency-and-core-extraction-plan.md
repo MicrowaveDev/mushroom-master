@@ -19,6 +19,9 @@
 > `git@github.com:nuclear-pancakes/meat-master.git`, and reusable
 > asset/gacha/wallet-domain rules should move into
 > `backpack-game-core` behind adapters rather than staying Mushroom-only.
+> That core is now planned as a full-stack shared package: backend modules,
+> shared DTO/view-model shapers, browser-safe services/composables, and Vue
+> components/pages that both Mushroom Battles and Meat Master can consume.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -44,8 +47,10 @@
 > is the new in-progress domain-core extraction lane; the first shared
 > `asset-gacha` slice is implemented, while wallet accounting and deeper admin
 > validation remain backlog. Product DB schemas, payment-provider adapters,
-> Telegram routes, content catalogs, artwork, and support/admin UIs remain
-> game-local adapters. **Phase 11** has an initial playable `meat-master`
+> Telegram routes, content catalogs, artwork, content-policy gates, and final
+> route/page composition remain game-local adapters. Reusable Vue components,
+> composables, page view models, API-client services, and neutral layout pieces
+> are now explicit core candidates. **Phase 11** has an initial playable `meat-master`
 > consumer using the shared core through a nested submodule.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
@@ -2433,19 +2438,24 @@ Additional TODOs for that pass:
 ### Phase 8I - Multi-Game Core Domain Extraction
 
 Status: **In progress.** The prior extraction intentionally kept wallet, asset,
-and gacha behavior local because only Mushroom Battles consumed the package. The
-new target consumer, `git@github.com:nuclear-pancakes/meat-master.git`, makes
-that boundary too narrow: reusable gacha and game-domain rules should move to
-`backpack-game-core`, while each game keeps its own persistence, payment
-providers, routes, catalogs, art, copy, compliance gates, and admin UI. The
-first shared domain slice, `asset-gacha`, is implemented in core and consumed by
-Mushroom through adapter wrappers.
+gacha, and most frontend behavior local because only Mushroom Battles consumed
+the package. The new target consumer,
+`git@github.com:nuclear-pancakes/meat-master.git`, makes that boundary too
+narrow: reusable backend domain modules and reusable Vue frontend modules should
+move to `backpack-game-core`, while each game keeps its own persistence,
+payment providers, route wiring, catalogs, art, copy, compliance gates, and
+product-specific page composition. The first shared backend domain slice,
+`asset-gacha`, is implemented in core and consumed by Mushroom through adapter
+wrappers.
 
 #### Source Of Truth For This Revision
 
 - User request, 2026-07-04: move all reusable gacha and game-core functionality
   to the core repo, consume that core as a submodule in Mushroom Battles, and
   make `meat-master` another playable game using the same core.
+- User clarification, 2026-07-04: the backend has reusable modules that should
+  live in core, and the Vue frontend also has reusable components, pages, and
+  services that should live in core so both games can share them.
 - `meat-master` should have two attractive adult female bikini characters,
   starter bags/artifacts copied or adapted from Mushroom Battles, and enough
   product data/UI wiring to be playable.
@@ -2455,13 +2465,29 @@ Mushroom through adapter wrappers.
   identity, character lore, explicit content policy, artwork, payment-provider
   integrations, Telegram Mini App details, database migrations, and operator UI
   stay outside the core.
-- Success means both games import the same package APIs for backpack mechanics,
-  asset acquisition policy, and gacha outcome logic, with product adapters
-  proving the same rules under different character/catalog data.
+- Success means both games import the same package APIs for backend backpack
+  mechanics, asset acquisition policy, and gacha outcome logic, and also import
+  the same Vue/composable/service APIs for reusable shop, backpack, battle,
+  wallet/asset, and gacha UI flows. Product adapters prove the same rules and
+  screens under different character/catalog/art/copy data.
 
 #### Core Boundary
 
-Move into `backpack-game-core`:
+`backpack-game-core` should become a full-stack shared package, not only a
+backend mechanics package. Treat it as four layers:
+
+1. **Backend domain modules:** pure or adapter-driven modules consumed by
+   Express services in Mushroom and Meat.
+2. **Shared DTO and view-model shapers:** plain JS functions/enums/schemas that
+   normalize backend responses into stable frontend-ready shapes.
+3. **Browser-safe services and Vue composables:** fetch-client factories,
+   state machines, pack/shop/loadout/battle view-model logic, and composables
+   that receive product API clients and catalog/config adapters.
+4. **Vue components and page modules:** neutral presentational components and
+   optional page shells that communicate through props/events/slots and do not
+   import product assets, routes, stores, or copy directly.
+
+Move backend modules into `backpack-game-core`:
 
 - asset catalog normalization, eligibility filtering, direct-buy availability,
   and acquisition-mode policy;
@@ -2477,6 +2503,23 @@ Move into `backpack-game-core`:
   planned asset promotion rules, and plan-item asset-id/character-link
   invariants.
 
+Move Vue/frontend modules into `backpack-game-core` in small layers:
+
+- headless services/composables for bootstrap loading, shop offers, backpack
+  placement, loadout totals, battle replay playback, wallet/asset catalog
+  state, gacha pack state, odds preview, and admin season-plan editing;
+- reusable presentational components such as backpack grids, artifact tiles,
+  shop offer lists, character selectors, battle logs/replay timelines, wallet
+  balance badges, asset inventory/equipment panels, gacha pack cards, roll
+  result modals, odds tables, and admin validation/checklist panels;
+- optional page-level modules for repeated flows such as prep/shop, battle
+  replay, asset inventory, gacha packs, and gacha admin plan review, but only
+  when the page accepts product adapters for routing, auth, copy, art, and API
+  calls;
+- shared CSS tokens or minimal structural styles when they are neutral enough
+  for both games. Game-specific themes, palettes, copy, backgrounds, and
+  character/product imagery stay in the consuming game.
+
 Keep in each game repo:
 
 - SQL schemas, migrations, repositories, Express routes, auth, rate limits,
@@ -2485,8 +2528,8 @@ Keep in each game repo:
   webhook signatures, invoice lookup, tax/accounting exports, and content-policy
   compliance gates;
 - product catalogs, character ids, ability hooks, portrait/skin art, adult
-  content presentation, localization, UI screens, admin panels, and generated
-  images;
+  content presentation, localization strings, final route maps, page assembly,
+  theme overrides, admin permissions, storage backends, and generated images;
 - secure RNG source selection for paid rolls. Core can accept an injected RNG,
   but game services decide whether it is deterministic for simulation or
   cryptographically secure for paid runtime rolls.
@@ -2501,6 +2544,12 @@ ledger persistence, provider settlement, refunds, and idempotent mutation state,
 so it should move only after Mushroom is already stable on the shared gacha
 core.
 
+Frontend finding on 2026-07-04: extract headless browser-safe services and
+Vue composables before extracting full pages. Components with clean props/events
+are next. Page-level modules come last, because Mushroom's Telegram Mini App
+shell, Support Admin auth, localization, and Meat's product theme are
+composition concerns rather than shared mechanics.
+
 #### Implementation Steps
 
 1. Done for the planning pass: update `docs/game-core-runtime-contracts.md` and
@@ -2514,26 +2563,49 @@ core.
    - `gacha-simulation` if it is not folded into `asset-gacha`,
    - `gacha-admin-validation`,
    - `asset-policy` cleanup if it needs a separate public API,
-   - `wallet-accounting` only after the shared gacha seam is stable.
-4. Port focused unit tests from Mushroom into `backpack-game-core` first,
+   - `wallet-accounting` only after the shared gacha seam is stable,
+   - `frontend-services` for shared API clients/view-model shapers/composables,
+   - `vue-backpack-ui` for grid, artifact tile, shop, and battle replay
+     components,
+   - `vue-asset-gacha-ui` for asset inventory, gacha pack, roll result, odds,
+     and admin validation components.
+4. Add a package export strategy before Vue extraction:
+   - keep existing backend/browser-safe JS exports stable,
+   - add Vue as a peer dependency only when the first Vue module moves,
+   - expose source modules through subpath exports such as
+     `@microwavedev/backpack-game-core/vue`,
+     `@microwavedev/backpack-game-core/vue/components`, and
+     `@microwavedev/backpack-game-core/client-services`,
+   - avoid a build step until SFC or style extraction truly requires it.
+5. Port focused unit tests from Mushroom into `backpack-game-core` first,
    replacing Mushroom fixture data with neutral sample catalogs.
-5. Refactor Mushroom services to call the core modules through thin adapters,
-   keeping current route payloads and database tables stable.
-6. Verify Mushroom behavior after each slice with the smallest relevant test
-   set, then run the wallet/gacha/admin bundle before moving the next slice.
-7. Update `vendor/backpack-game-core/CHANGELOG.md`,
+6. Refactor Mushroom backend services to call the core modules through thin
+   adapters, keeping current route payloads and database tables stable.
+7. Refactor Mushroom frontend one surface at a time by replacing local
+   composables/components with core imports while preserving current UI flows
+   and screenshots.
+8. Integrate the same core frontend modules into Meat with product-specific
+   data, copy, theme, and API adapters.
+9. Verify Mushroom behavior after each slice with the smallest relevant test
+   set, then run the wallet/gacha/admin bundle and affected screenshot/e2e
+   coverage before moving the next slice.
+10. Update `vendor/backpack-game-core/CHANGELOG.md`,
    `docs/backpack-game-core-update-log.md`, and the nested core pointer after
    each core commit.
-8. Only after Mushroom is stable on the extracted domain APIs, use those APIs to
-   bootstrap `meat-master`.
+11. Keep Meat pointed at the same core commit and add Meat tests/build coverage
+   for every shared backend or Vue slice it consumes.
 
 #### Validation
 
 - `backpack-game-core`: `npm test` and `npm pack --dry-run`.
+- When Vue modules move into core, add core-level component/composable tests
+  with neutral fixtures before swapping either game to consume them.
 - `mushroom-master`: `npm run game:core:check`, targeted wallet/asset/gacha
   tests, gacha admin API tests, gacha simulation tests, and `npm run game:build`.
 - For any UI surface touched by adapter changes, run the relevant Mushroom
   Playwright screenshots/e2e flow from the repo instructions.
+- `meat-master`: `npm test` and `npm run build` for every consumed core slice;
+  add screenshot/e2e coverage once Meat has persistent routes/screens.
 
 #### Rollback
 
@@ -2541,6 +2613,9 @@ core.
 - If Mushroom integration fails, revert only the Mushroom adapter and nested
   submodule pointer to the last known-good core SHA while keeping the core
   commit for repair unless it contains secrets or generated junk.
+- If frontend extraction fails, revert the consuming game's import swap and
+  nested core pointer first. Keep the core Vue module commit for repair unless
+  it contains bad generated artifacts, secrets, or product-specific assets.
 - Do not mutate existing wallet, roll, ownership, or support-audit rows during
   extraction. Schema changes belong in a separate explicitly reviewed phase.
 
@@ -2604,6 +2679,9 @@ that game.
 
 - The core package should not import from either game.
 - Both games must pass product fixtures into the same core APIs.
+- Shared Vue modules must not import Mushroom or Meat stores, routers, auth,
+  image paths, localization files, or CSS themes directly. They receive those
+  through props, slots, composables, or adapter objects.
 - No Mushroom-only behavior should be introduced to core just to make the port
   fast. If Meat needs a different rule, make it configurable through explicit
   adapters or keep it game-local.
@@ -2621,8 +2699,11 @@ that game.
   which product owns persistence.
 - Keep Mushroom ability logic product-specific through the battle hook adapter.
 - Move reusable gacha and asset-acquisition rules into core, but keep product
-  catalogs, database rows, routes, admin UI, and support-audit persistence in
-  the game repos.
+  catalogs, database rows, routes, admin auth/storage, final page assembly, and
+  support-audit persistence in the game repos.
+- Move reusable Vue components, composables, browser services, and page
+  view-models into core, but keep product route maps, auth shells, themes, art,
+  copy, storage, and final page assembly in the game repos.
 - Do not let "profile wallet coins" and "run shop coins" share one field or
   service method. They have different lifetimes, spend targets, and refund
   rules.
@@ -2785,7 +2866,8 @@ that game.
    and admin-safe validation helpers into `backpack-game-core` behind adapters.
    Wallet accounting primitives remain the next domain slice after the gacha
    seam is stable. Keep DB schemas, payments, Telegram, product catalogs, art,
-   compliance, and admin UI in each game.
+   compliance, admin auth/storage, product route shells, and final page
+   assembly in each game.
 42. Phase 11 `meat-master` consumer. **Initial slice done 2026-07-04:** added
    `git@github.com:nuclear-pancakes/meat-master.git` as the second game target,
    consumed `backpack-game-core` as a nested submodule, seeded a playable Vite
@@ -2794,3 +2876,11 @@ that game.
    and deterministic battle smoke flows. Remaining: backend persistence,
    wallet reward grants, asset inventory/equipment, payment policy, and optional
    simple gacha buy/roll flows for Meat.
+43. Phase 8J full-stack shared UI extraction. Extract reusable frontend
+   services/composables first, then neutral Vue components, then optional page
+   shells for flows shared by Mushroom and Meat. Candidate flows: bootstrap,
+   shop/backpack prep, battle replay, asset inventory/equipment, gacha pack
+   browsing/rolling, odds preview, and admin season-plan validation. Keep game
+   route shells, auth, localization, adult-content policy, images, and themes
+   local. Add core-level component/composable tests plus Mushroom screenshot/e2e
+   coverage and Meat build/test coverage for each adopted slice.
