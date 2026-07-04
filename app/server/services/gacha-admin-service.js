@@ -107,6 +107,12 @@ function normalizeNote(note = '') {
   return String(note || '').trim();
 }
 
+function gachaAdminInputError(message) {
+  const err = new Error(message);
+  err.statusCode = 400;
+  return err;
+}
+
 function rowToSupportAction(row) {
   return {
     id: row.id,
@@ -388,6 +394,76 @@ function planItemUpdateFields(payload = {}) {
   if (payload.dropWeight !== undefined || payload.drop_weight !== undefined) fields.drop_weight = positiveInteger(payload.dropWeight ?? payload.drop_weight, 'Gacha plan item dropWeight');
   if (payload.status !== undefined) fields.status = normalizeStatus(payload.status, PLAN_ITEM_STATUSES, 'Gacha plan item');
   if (payload.metadata !== undefined || payload.metadataJson !== undefined) fields.metadata_json = jsonText(payload.metadata ?? payload.metadataJson, {});
+  return fields;
+}
+
+async function planAssetIdAvailable(client, assetId, itemId) {
+  if (getAssetCatalog().some((asset) => asset.assetId === assetId)) {
+    throw gachaAdminInputError('Gacha plan item generated assetId conflicts with an existing catalog asset');
+  }
+  const existingPlan = await client.query(
+    `SELECT id FROM asset_gacha_plan_items
+     WHERE asset_id = $1 AND id <> $2
+     LIMIT 1`,
+    [assetId, itemId]
+  );
+  if (existingPlan.rowCount) {
+    throw gachaAdminInputError('Gacha plan item generated assetId conflicts with another plan item');
+  }
+  const existingPackItem = await client.query(
+    `SELECT id FROM asset_gacha_pack_items
+     WHERE asset_id = $1
+     LIMIT 1`,
+    [assetId]
+  );
+  if (existingPackItem.rowCount) {
+    throw gachaAdminInputError('Gacha plan item generated assetId conflicts with an existing pack item');
+  }
+}
+
+async function planItemHasPackLink(client, planRow) {
+  const metadata = parseJson(planRow.metadata_json, {});
+  if ((Array.isArray(metadata.promotedPackIds) && metadata.promotedPackIds.length) ||
+    (metadata.promotedPackItemIds && typeof metadata.promotedPackItemIds === 'object' && Object.keys(metadata.promotedPackItemIds).length) ||
+    metadata.lastPromotedPackId) {
+    return true;
+  }
+  const linked = await client.query(
+    `SELECT id FROM asset_gacha_pack_items
+     WHERE asset_id = $1
+     LIMIT 1`,
+    [planRow.asset_id]
+  );
+  return linked.rowCount > 0;
+}
+
+async function applyPlanItemAssetContract(client, beforeRow, fields, payload = {}) {
+  const assetIdProvided = payload.assetId !== undefined || payload.asset_id !== undefined;
+  const requestedAssetId = assetIdProvided
+    ? requiredText(payload.assetId ?? payload.asset_id, 'Gacha plan item assetId')
+    : null;
+  const characterChanging = fields.character_id && fields.character_id !== beforeRow.character_id;
+  const generatedBefore = planAssetId(beforeRow.character_id, beforeRow.id);
+  const generatedAfter = characterChanging ? planAssetId(fields.character_id, beforeRow.id) : null;
+  const canSyncGeneratedId = characterChanging && beforeRow.asset_id === generatedBefore;
+
+  if (characterChanging && await planItemHasPackLink(client, beforeRow)) {
+    throw gachaAdminInputError('Gacha plan item character cannot change after its asset is linked to a pack');
+  }
+
+  if (assetIdProvided) {
+    const allowedGeneratedSync = canSyncGeneratedId && requestedAssetId === generatedAfter;
+    if (requestedAssetId !== beforeRow.asset_id && !allowedGeneratedSync) {
+      throw gachaAdminInputError('Gacha plan item assetId is immutable after creation');
+    }
+    delete fields.asset_id;
+  }
+
+  if (!characterChanging) return fields;
+  if (canSyncGeneratedId) {
+    await planAssetIdAvailable(client, generatedAfter, beforeRow.id);
+    fields.asset_id = generatedAfter;
+  }
   return fields;
 }
 
@@ -1518,6 +1594,7 @@ export async function importGachaAdminFixture({
       const existing = await findOne(client, 'asset_gacha_plan_items', row.id);
       if (existing) {
         const fields = planItemFixtureUpdateFields(planItem);
+        await applyPlanItemAssetContract(client, existing, fields, planItem);
         if (fields.season_id && !seasonRows.has(fields.season_id)) {
           await requireRow(client, 'asset_gacha_seasons', fields.season_id, 'gacha season');
         }
@@ -1719,6 +1796,7 @@ export async function updateGachaPlanItem({ actorId, itemId, payload = {}, reaso
     const beforeRow = await requireRow(client, 'asset_gacha_plan_items', itemId, 'gacha plan item');
     const before = rowToPlanItem(beforeRow);
     const fields = planItemUpdateFields(payload);
+    await applyPlanItemAssetContract(client, beforeRow, fields, payload);
     if (fields.season_id) await requireRow(client, 'asset_gacha_seasons', fields.season_id, 'gacha season');
     await applyUpdate(client, 'asset_gacha_plan_items', itemId, fields);
     const after = rowToPlanItem(await requireRow(client, 'asset_gacha_plan_items', itemId, 'gacha plan item'));

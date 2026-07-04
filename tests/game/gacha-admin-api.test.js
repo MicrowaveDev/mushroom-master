@@ -229,6 +229,7 @@ test('[Req 14-F] gacha admin API uploads, edits, reviews, and audits season plan
     assert.equal(seasonPlan.characters.find((row) => row.characterId === 'thalla').missing, 4);
 
     const itemId = created.body.data.item.id;
+    assert.equal(created.body.data.item.assetId, `planned_portrait.thalla.${itemId}`);
     const updated = await request(app)
       .patch(`/api/admin/gacha/plan-items/${itemId}`)
       .set(gachaHeaders)
@@ -241,8 +242,31 @@ test('[Req 14-F] gacha admin API uploads, edits, reviews, and audits season plan
       });
     assert.equal(updated.status, 200);
     assert.equal(updated.body.data.item.characterId, 'axilin');
+    assert.equal(updated.body.data.item.assetId, `planned_portrait.axilin.${itemId}`);
     assert.equal(updated.body.data.item.rarity, 'rare');
     assert.equal(updated.body.data.item.status, 'ready');
+
+    const assetIdEdit = await request(app)
+      .patch(`/api/admin/gacha/plan-items/${itemId}`)
+      .set(gachaHeaders)
+      .send({
+        assetId: `planned_portrait.thalla.${itemId}`,
+        reason: 'test_plan_asset_id_rejected'
+    });
+    assert.equal(assetIdEdit.status, 400);
+    assert.match(assetIdEdit.body.error, /assetId is immutable/i);
+
+    const syncedBack = await request(app)
+      .patch(`/api/admin/gacha/plan-items/${itemId}`)
+      .set(gachaHeaders)
+      .send({
+        characterId: 'thalla',
+        assetId: `planned_portrait.thalla.${itemId}`,
+        reason: 'test_plan_generated_asset_id_sync'
+      });
+    assert.equal(syncedBack.status, 200);
+    assert.equal(syncedBack.body.data.item.characterId, 'thalla');
+    assert.equal(syncedBack.body.data.item.assetId, `planned_portrait.thalla.${itemId}`);
 
     const removed = await request(app)
       .delete(`/api/admin/gacha/plan-items/${itemId}`)
@@ -260,6 +284,7 @@ test('[Req 14-F] gacha admin API uploads, edits, reviews, and audits season plan
     );
     assert.deepEqual(actions.rows.map((row) => row.action_type), [
       'gacha_plan_item_create',
+      'gacha_plan_item_update',
       'gacha_plan_item_update',
       'gacha_plan_item_delete'
     ]);
@@ -338,6 +363,16 @@ test('[Req 14-F] gacha admin API promotes ready season plan images into runtime 
 
     const draftLinkedPublicCatalog = await getRuntimeAssetCatalog();
     assert.equal(draftLinkedPublicCatalog.some((asset) => asset.assetId === planItem.assetId), false);
+
+    const linkedCharacterEdit = await request(app)
+      .patch(`/api/admin/gacha/plan-items/${planItem.id}`)
+      .set(gachaHeaders)
+      .send({
+        characterId: 'axilin',
+        reason: 'test_plan_linked_character_rejected'
+      });
+    assert.equal(linkedCharacterEdit.status, 400);
+    assert.match(linkedCharacterEdit.body.error, /linked to a pack/i);
 
     const storedPlan = await query(`SELECT metadata_json FROM asset_gacha_plan_items WHERE id = $1`, [planItem.id]);
     const planMetadata = JSON.parse(storedPlan.rows[0].metadata_json);

@@ -668,10 +668,12 @@ emergency maintenance, not normal season authoring.
   the full ready-plan catalog for draft validation and authoring. ✅ The
   standalone odds-simulation CLI/service now has a runtime mode for approved
   DB-backed packs and promoted plan assets (`--runtime --pack=<packId>`).
-  Remaining: decide the asset-id contract for plan-item character edits, either
-  by treating planned `asset_id` values as opaque immutable ids or by syncing
-  the character-scoped prefix before promotion and blocking unsafe edits after
-  promotion.
+  ✅ Direct plan item `asset_id` edits are now rejected after creation; unlinked
+  default generated ids sync when the operator changes character, and character
+  changes are blocked once any pack item links to the plan asset.
+  Remaining: bulk CSV/item editing, migration/rollback scripts, scheduled
+  activation alerts, disclosure review, staff permission tiers, and marketplace
+  operations.
 
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
@@ -2563,9 +2565,10 @@ Additional TODOs for that pass:
    packs; admin validation and authoring can still use the full ready-plan
    catalog. **Updated 2026-07-04:** `simulateRuntimeAssetPackOdds` and
    `npm run game:gacha:simulate -- --runtime --pack=<packId>` cover approved
-   DB-backed packs and promoted plan assets. Remaining: explicit asset-id rules
-   for plan-item character edits, bulk CSV/item editing, migration and rollback
-   scripts for live corrections, scheduled activation/expiry alerts, richer
-   disclosure review by jurisdiction/provider, staff permission tiers, and
-   marketplace/NFT-set operations before non-engineering operators manage paid
-   seasons unaided.
+   DB-backed packs and promoted plan assets. **Updated 2026-07-04:** plan item
+   direct asset-id edits are rejected after creation; unlinked generated ids
+   sync on character changes, and linked plan assets cannot change character.
+   Remaining: bulk CSV/item editing, migration and rollback scripts for live
+   corrections, scheduled activation/expiry alerts, richer disclosure review by
+   jurisdiction/provider, staff permission tiers, and marketplace/NFT-set
+   operations before non-engineering operators manage paid seasons unaided.

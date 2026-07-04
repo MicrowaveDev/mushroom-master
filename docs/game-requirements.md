@@ -416,7 +416,10 @@ Membership is not stored. It is derived from overlap between item cells and acti
   rolls can grant and equip those promoted portrait assets. Ready plan images
   remain admin-only until they are linked through an approved player-visible
   pack; draft-linked or unpromoted plan assets must not appear in player-facing
-  runtime catalogs.
+  runtime catalogs. Direct plan item `assetId` edits are rejected after
+  creation; changing the character before pack linkage syncs the default
+  generated `planned_portrait.<character>.<itemId>` id, while character changes
+  are blocked after any pack item links to that plan asset.
   `/api/admin/gacha/export` and `/api/admin/gacha/import` provide JSON fixture
   movement for DB-authored gacha data; imports default to dry-run and require
   `allowApproved: true` before preserving approved pack review status, with the
