@@ -67,6 +67,37 @@ core SHA to game-commit mapping is tracked in
   page assembly stay local.
 - **Product-specific:** keep in `mushroom-master`.
 
+## Geesome Architecture Review Notes
+
+Reviewed 2026-07-04 for extraction guidance:
+
+- `geesome-libs` is the reusable helper/client layer. It contains the shared
+  client, browser storage helpers, crypto/IPFS helpers, and common functions.
+- `geesome-ui` is a reusable frontend package. It keeps Vue services/plugins,
+  pages, components, directives, assets, and locale together, and injects a
+  shared client into app code through plugin-style wrappers.
+- `geesome-node` is backend-module oriented. Feature folders use explicit
+  `interface.ts`, `index.ts`, and `api.ts` files, with local query helpers,
+  workers, models, migrations, and docs where needed.
+
+Backpack should adopt the useful shape, but not the old coupling:
+
+- Do not copy Geesome's deep import pattern such as
+  `geesome-libs/src/GeesomeClient`. All Backpack consumers should import only
+  package roots or public subpath exports.
+- Treat the core repo as layered shared infrastructure: pure/domain core,
+  client/contracts, Vue composables/components, and optional backend route
+  binding helpers.
+- Introduce a shared `BackpackGameClient` or client factory before moving
+  frontend pages. Mushroom and Meat should inject base URL, auth, storage,
+  fetch implementation, route adapters, copy, theme, and catalog providers.
+- Backend slices should land as feature modules with explicit public
+  interfaces, module factories over product adapters, optional API binding
+  helpers, validation helpers, and module-local tests.
+- Product DB models, migrations, repositories, auth, rate limits, support
+  storage, payment providers, uploaded image storage, and final route/page
+  assembly stay in each game.
+
 ## Candidate Matrix
 
 | Cluster | Current files | Classification | Why |
@@ -497,40 +528,48 @@ touches ledger persistence and provider-settlement state.
 
 Next planned domain slices:
 
-1. **Asset-gacha core slice:** catalog/acquisition policy helpers,
+1. **Package/module architecture pass:** formalize public exports and module
+   layout before broadening extraction. Decide whether to stay with one package
+   plus subpath exports or introduce `packages/core`, `packages/client`, and
+   `packages/vue`; add/update `.d.ts` coverage and consumer import rules.
+2. **Asset-gacha core slice:** catalog/acquisition policy helpers,
    pack/item/status/date/price/currency validation, direct-buy blocking,
    candidate filtering, weighted slot selection, guarantee and pity helpers,
    duplicate copy-cap filtering, burn target selection, roll evidence shaping,
    and pack UI shaping over plain objects. **Implemented 2026-07-04 in
    `src/asset-gacha.js`; Mushroom adapter wiring delegates to it.**
-2. **Gacha simulation:** deterministic odds simulation over the same roll core
+3. **Gacha simulation:** deterministic odds simulation over the same roll core
    so admin preview, CLI tools, and tests share one model if it is not fully
    folded into `asset-gacha`.
-3. **Gacha admin validation:** fixture shape checks, planned asset promotion
+4. **Gacha admin validation:** fixture shape checks, planned asset promotion
    invariants, and plan-item asset-id/linked-character rules as pure helpers.
-4. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
+5. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
    that operate on passed snapshots; no DB writes or provider callbacks. Do this
    after the shared gacha seam is stable in Mushroom.
 
 Next planned frontend slices:
 
-1. **Frontend services/composables:** move browser-safe state machines and API
-   adapter factories first: bootstrap loader, shop/backpack state, battle
-   replay view model, wallet/asset catalog state, gacha pack state, and admin
+1. **Client/contracts layer:** add a shared API client factory, DTO shapers,
+   error/status normalization, and view-model contracts before page/component
+   extraction. This is the Backpack equivalent of Geesome's shared client plus
+   UI service plugin boundary, but with stable exports and typed contracts.
+2. **Frontend services/composables:** move browser-safe state machines and API
+   adapter factories: bootstrap loader, shop/backpack state, battle replay
+   view model, wallet/asset catalog state, gacha pack state, and admin
    validation/odds preview state. These should be plain JS or Vue composables
    with neutral fixtures before component extraction.
-2. **Backpack UI primitives:** extract backpack grid, artifact tile/card,
+3. **Backpack UI primitives:** extract backpack grid, artifact tile/card,
    shop offer list, budget badge, placement preview, and core structural styles
    behind props/events/slots.
-3. **Battle UI primitives:** extract battle log, replay timeline, combatant
+4. **Battle UI primitives:** extract battle log, replay timeline, combatant
    stat strips, outcome badges, and playback controls over core battle events.
-4. **Asset/gacha UI primitives:** extract wallet balance badge, asset inventory
+5. **Asset/gacha UI primitives:** extract wallet balance badge, asset inventory
    panel, equipment picker, gacha pack card, roll result modal, odds table,
    duplicate/burn summary, and asset acquisition labels.
-5. **Admin gacha UI primitives:** extract validation issue lists, release
+6. **Admin gacha UI primitives:** extract validation issue lists, release
    checklist, season-plan coverage grid, odds preview, pack diff, and plan item
    editor widgets only after their backend/view-model contracts are stable.
-6. **Optional page shells:** extract page-level prep/shop, battle replay,
+7. **Optional page shells:** extract page-level prep/shop, battle replay,
    asset inventory, gacha packs, and admin season-plan shells only when they can
    receive product route/auth/copy/theme/API adapters and stay useful to both
    games.

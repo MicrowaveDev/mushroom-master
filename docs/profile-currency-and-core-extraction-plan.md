@@ -19,9 +19,13 @@
 > `git@github.com:nuclear-pancakes/meat-master.git`, and reusable
 > asset/gacha/wallet-domain rules should move into
 > `backpack-game-core` behind adapters rather than staying Mushroom-only.
-> That core is now planned as a full-stack shared package: backend modules,
-> shared DTO/view-model shapers, browser-safe services/composables, and Vue
-> components/pages that both Mushroom Battles and Meat Master can consume.
+> That core is now planned as a full-stack shared repo: backend modules,
+> shared DTO/view-model shapers, browser-safe client services/composables, and
+> Vue components/pages that both Mushroom Battles and Meat Master can consume.
+> A 2026-07-04 Geesome architecture review tightened this direction: copy the
+> layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
+> but improve it with typed subpath exports and adapter contracts so Backpack
+> does not inherit Geesome's historical deep-import coupling.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -2470,22 +2474,66 @@ wrappers.
   the same Vue/composable/service APIs for reusable shop, backpack, battle,
   wallet/asset, and gacha UI flows. Product adapters prove the same rules and
   screens under different character/catalog/art/copy data.
+- Architecture review, 2026-07-04: use Geesome as the closest local precedent.
+  `geesome-libs` keeps reusable client/helpers, `geesome-ui` packages frontend
+  services/pages/components/assets, and `geesome-node` organizes backend
+  features as modules with `interface.ts`, `index.ts`, `api.ts`, models, query
+  helpers, migrations, and workers. Backpack should follow that layered
+  discipline, while avoiding the older Geesome pattern of consumers importing
+  `geesome-libs/src/*` deep paths.
 
 #### Core Boundary
 
-`backpack-game-core` should become a full-stack shared package, not only a
-backend mechanics package. Treat it as four layers:
+`backpack-game-core` should become a full-stack shared repo, not only a backend
+mechanics package. Treat it as four layers that can start as subpath exports in
+one package and split into packages when build/runtime needs justify it:
 
 1. **Backend domain modules:** pure or adapter-driven modules consumed by
    Express services in Mushroom and Meat.
-2. **Shared DTO and view-model shapers:** plain JS functions/enums/schemas that
-   normalize backend responses into stable frontend-ready shapes.
+2. **Shared client/contracts layer:** typed DTOs, response shapers, schemas,
+   and a `BackpackGameClient` or client factory that wraps API calls without
+   owning auth, storage, route prefixes, or product policy.
 3. **Browser-safe services and Vue composables:** fetch-client factories,
    state machines, pack/shop/loadout/battle view-model logic, and composables
    that receive product API clients and catalog/config adapters.
 4. **Vue components and page modules:** neutral presentational components and
    optional page shells that communicate through props/events/slots and do not
    import product assets, routes, stores, or copy directly.
+
+Recommended repo shape after the next architecture pass:
+
+```text
+backpack-game-core/
+  package.json
+  packages/
+    core/      # pure mechanics and domain policy, no Vue or DB
+    client/    # API client, DTO contracts, view-model shapers
+    vue/       # Vue composables/components/page shells, Vue as peer dependency
+  src/         # compatibility facade while the package is still migrating
+```
+
+If the package stays single-package for one or two more slices, expose these
+layers through stable exports such as
+`@microwavedev/backpack-game-core/modules/gacha`,
+`@microwavedev/backpack-game-core/client`, and
+`@microwavedev/backpack-game-core/vue`. Do not allow new consumers to import
+from `src/*`, `packages/*/src/*`, or a nested submodule path directly.
+
+Backend module shape should mirror the useful Geesome pattern:
+
+```text
+modules/<feature>/
+  interface.{js,ts}  # public service contract and DTO types
+  index.{js,ts}      # module factory over product adapters
+  api.{js,ts}        # optional route binding helpers, no Express globals
+  validation.{js,ts} # pure validators where useful
+  *.test.{js,ts}
+```
+
+Use this shape for future `wallet`, `asset`, `gacha`, `gacha-admin`,
+`run-shop`, `loadout`, and `battle` modules. Product games still own database
+models, migrations, repositories, Express app registration, auth, rate limits,
+and audit storage.
 
 Move backend modules into `backpack-game-core`:
 
@@ -2550,6 +2598,12 @@ are next. Page-level modules come last, because Mushroom's Telegram Mini App
 shell, Support Admin auth, localization, and Meat's product theme are
 composition concerns rather than shared mechanics.
 
+Geesome-inspired correction on 2026-07-04: insert a package/module architecture
+pass before the next large extraction. Define the public module layout, client
+factory contract, Vue peer/build policy, and export map first, then move
+services and components into those lanes. This should prevent a flat "core
+bucket" and keep Mushroom and Meat integrations predictable.
+
 #### Implementation Steps
 
 1. Done for the planning pass: update `docs/game-core-runtime-contracts.md` and
@@ -2569,7 +2623,21 @@ composition concerns rather than shared mechanics.
      components,
    - `vue-asset-gacha-ui` for asset inventory, gacha pack, roll result, odds,
      and admin validation components.
-4. Add a package export strategy before Vue extraction:
+4. Add a Geesome-inspired package/module architecture pass before the next large
+   extraction:
+   - decide whether the core repo keeps one npm package with subpath exports or
+     moves to `packages/core`, `packages/client`, and `packages/vue`,
+   - define backend module folders with explicit `interface`, `index`, `api`,
+     validation, and test boundaries,
+   - define a shared `BackpackGameClient` or client factory that receives
+     base URL, auth headers/tokens, storage, fetch implementation, and product
+     route adapters from the consuming game,
+   - define Vue plugin/composable injection points, similar to Geesome's
+     `$geesome` client wrapper, but without copying method reflection or deep
+     imports,
+   - document the package export map and consumer import rules before moving
+     more code.
+5. Add a package export strategy before Vue extraction:
    - keep existing backend/browser-safe JS exports stable,
    - add Vue as a peer dependency only when the first Vue module moves,
    - expose source modules through subpath exports such as
@@ -2577,22 +2645,22 @@ composition concerns rather than shared mechanics.
      `@microwavedev/backpack-game-core/vue/components`, and
      `@microwavedev/backpack-game-core/client-services`,
    - avoid a build step until SFC or style extraction truly requires it.
-5. Port focused unit tests from Mushroom into `backpack-game-core` first,
+6. Port focused unit tests from Mushroom into `backpack-game-core` first,
    replacing Mushroom fixture data with neutral sample catalogs.
-6. Refactor Mushroom backend services to call the core modules through thin
+7. Refactor Mushroom backend services to call the core modules through thin
    adapters, keeping current route payloads and database tables stable.
-7. Refactor Mushroom frontend one surface at a time by replacing local
+8. Refactor Mushroom frontend one surface at a time by replacing local
    composables/components with core imports while preserving current UI flows
    and screenshots.
-8. Integrate the same core frontend modules into Meat with product-specific
+9. Integrate the same core frontend modules into Meat with product-specific
    data, copy, theme, and API adapters.
-9. Verify Mushroom behavior after each slice with the smallest relevant test
+10. Verify Mushroom behavior after each slice with the smallest relevant test
    set, then run the wallet/gacha/admin bundle and affected screenshot/e2e
    coverage before moving the next slice.
-10. Update `vendor/backpack-game-core/CHANGELOG.md`,
+11. Update `vendor/backpack-game-core/CHANGELOG.md`,
    `docs/backpack-game-core-update-log.md`, and the nested core pointer after
    each core commit.
-11. Keep Meat pointed at the same core commit and add Meat tests/build coverage
+12. Keep Meat pointed at the same core commit and add Meat tests/build coverage
    for every shared backend or Vue slice it consumes.
 
 #### Validation
@@ -2884,3 +2952,10 @@ that game.
    route shells, auth, localization, adult-content policy, images, and themes
    local. Add core-level component/composable tests plus Mushroom screenshot/e2e
    coverage and Meat build/test coverage for each adopted slice.
+44. Phase 8K Geesome-inspired package/module split. Before broader backend or
+   Vue movement, formalize the core repo into stable layers: pure core modules,
+   client/contracts, Vue composables/components, and optional route-binding
+   helpers. Use Geesome's module and UI-service shape as the precedent, but add
+   explicit package `exports`, `.d.ts` coverage, peer dependency boundaries,
+   and consumer contract tests so Mushroom and Meat do not depend on private
+   file paths.

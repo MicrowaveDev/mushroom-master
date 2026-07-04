@@ -13,6 +13,22 @@ moving code into `backpack-game-core`.
 - Character XP alias tests: `tests/game/mushroom-progression.test.js`
 - Core extraction plan: `docs/profile-currency-and-core-extraction-plan.md`
 
+## Architecture Precedent
+
+The 2026-07-04 Geesome review is the local model for the next core boundary:
+
+- `geesome-libs` shows the shared client/helper layer.
+- `geesome-ui` shows that reusable frontend services, pages, components,
+  assets, and locale can live outside the product app.
+- `geesome-node` shows backend feature modules with explicit interfaces,
+  module factories, API binding, and module-local helpers.
+
+Backpack should adopt that layering with one correction: public package exports
+and type declarations are mandatory. Mushroom and Meat should not import
+private `src/*` paths, nested submodule paths, or package internals. Frontend
+code should go through a shared client/composable layer that receives product
+auth, storage, routes, copy, theme, and catalog adapters.
+
 ## Currency Ledgers
 
 Mushroom Battles has three separate ledgers. They must not collapse into one
@@ -258,14 +274,22 @@ Vue composables, then props/events/slots components, then optional page shells.
 Each shared frontend module needs neutral core tests plus the affected Mushroom
 screenshot/e2e coverage and Meat build/test coverage once Meat consumes it.
 
+Before broadening backend or Vue extraction, define the module/package boundary:
+pure core modules, shared client/contracts, Vue composables/components, and
+optional route-binding helpers. Each public surface needs stable package
+exports, matching `.d.ts` coverage, neutral fixtures, and consumer contract
+tests in both games when adopted.
+
 The shipped slices are bag-shape masks, rotation, first grid-geometry
-primitives, fusion matching, shop-offer generation, bot-loadout generation, and
-hookable battle simulation. Full placement/loadout validation still belongs in
-`mushroom-master` until catalog access, pricing, bag policy, and validation
-errors are parameterized. Fusion application, run-shop buy/refresh/sell
-mutations, and battle-service persistence/reward integration still belong in
-`mushroom-master` because they write DB rows and touch run currency, rating,
-snapshots, rewards, or product state.
+primitives, fusion matching, shop-offer generation, bot-loadout generation,
+hookable battle simulation, provider-driven loadout validation, deterministic
+numeric RNG/shuffle helpers, and the first asset-gacha policy helpers.
+Mushroom still owns catalog access, pricing, bag/family policy, product
+validation messages, secure paid-roll RNG selection, and all DB integration
+through adapters. Fusion application, run-shop buy/refresh/sell mutations, and
+battle-service persistence/reward integration still belong in `mushroom-master`
+because they write DB rows and touch run currency, rating, snapshots, rewards,
+or product state.
 
 ### Planned Bot-Loadout Boundary
 
