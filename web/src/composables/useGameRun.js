@@ -4,6 +4,10 @@ import { messages } from '../i18n.js';
 import { normalizeRotation } from '../../../app/shared/bag-shape.js';
 import { calculateSeasonAbandonPenalty, calculateSeasonPoints } from '../../../app/shared/season-levels.js';
 import {
+  gameRunCompletionResultViewState,
+  gameRunReadyResultViewState,
+  gameRunRoundTransitionViewState,
+  gameRunStartResultViewState,
   runShopBuyResultViewState,
   runShopRefreshResultViewState,
   runShopSellResultViewState
@@ -108,18 +112,15 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     try {
       state.error = '';
       const data = await gameApi().postRoute('gameRunStart', {}, { mode });
-      const run = {
-        ...data,
-        loadoutItems: data.loadoutItems || []
-      };
-      state.gameRun = run;
-      state.gameRunRounds = [];
-      state.gameRunShopOffer = run.shopOffer || [];
-      state.gameRunRefreshCount = 0;
-      state.gameRunResult = null;
-      state.fusionRevealQueue = [];
-      projectRunLoadout(run);
-      attachActiveRunToBootstrap(run);
+      const viewState = gameRunStartResultViewState(data);
+      state.gameRun = viewState.run;
+      state.gameRunRounds = viewState.rounds;
+      state.gameRunShopOffer = viewState.shopOffer;
+      state.gameRunRefreshCount = viewState.refreshCount;
+      state.gameRunResult = viewState.result;
+      state.fusionRevealQueue = viewState.fusionRevealQueue;
+      projectRunLoadout(viewState.run);
+      attachActiveRunToBootstrap(viewState.run);
       goTo('prep', {}, { skipTransition: !!options.skipTransition });
     } catch (error) {
       state.error = error.message || 'Could not start game run';
@@ -152,40 +153,23 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       });
       haptics.impact('medium');
       if (data.waiting) return;
-      const previousRounds = Array.isArray(state.gameRunRounds)
-        ? state.gameRunRounds
-        : (Array.isArray(state.gameRun?.rounds) ? state.gameRun.rounds : []);
-      const currentRound = data.lastRound || null;
-      const runRounds = currentRound
-        ? [
-            ...previousRounds.filter((round) => round.roundNumber !== currentRound.roundNumber),
-            currentRound
-          ].sort((a, b) => (a.roundNumber || 0) - (b.roundNumber || 0))
-        : previousRounds;
-      state.gameRunResult = { ...data, rounds: data.rounds || runRounds };
-      state.gameRunRounds = runRounds;
-      if (state.gameRun) {
-        state.gameRun = {
-          ...state.gameRun,
-          currentRound: data.currentRound ?? state.gameRun.currentRound,
-          player: data.player || state.gameRun.player,
-          rounds: runRounds
-        };
-      }
-      if (data.status === 'completed' || data.status === 'abandoned') {
-        state.gameRun = { ...state.gameRun, status: data.status, endReason: data.endReason, completionBonus: data.completionBonus || null, rounds: runRounds };
-      }
+      const viewState = gameRunReadyResultViewState(data, {
+        run: state.gameRun,
+        previousRounds: state.gameRunRounds
+      });
+      state.gameRunResult = viewState.result;
+      state.gameRunRounds = viewState.rounds;
+      state.gameRun = viewState.run;
       // Spec: docs/user-flows.md Flow B Step 3 — post-Ready lands directly
       // on the replay screen, which autoplays the battle and then renders
       // an inline rewards card (Spore/Mycelium/Rating) next to the Continue
       // button. There is no separate round-result screen — the player sees
       // the battle happen and gets the rewards in context.
-      const battleId = data.lastRound?.battleId;
-      if (battleId && loadReplay) {
-        await loadReplay(battleId, { battle: data.battle || null });
-      } else if (state.gameRun?.status === 'completed' || state.gameRun?.status === 'abandoned') {
+      if (viewState.shouldLoadReplay && loadReplay) {
+        await loadReplay(viewState.battleId, { battle: viewState.battle });
+      } else if (viewState.shouldShowComplete) {
         // No battleId (shouldn't happen) — fall through to the summary.
-        goTo('runComplete', { gameRunId: data.id || state.gameRun.id });
+        goTo('runComplete', { gameRunId: viewState.completionGameRunId || state.gameRun.id });
       } else {
         goTo('prep');
       }
@@ -199,32 +183,23 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
 
   async function continueToNextRound() {
     if (!state.gameRunResult || !state.gameRun) return;
-    const fusionReveals = Array.isArray(state.gameRunResult.fusions)
-      ? state.gameRunResult.fusions
-      : [];
     const resolvedRun = state.gameRunResult;
-    state.gameRunResult = null;
-    state.gameRunRefreshCount = 0;
+    const viewState = gameRunRoundTransitionViewState(resolvedRun, { run: state.gameRun });
+    state.gameRunResult = viewState.result;
+    state.gameRunRefreshCount = viewState.refreshCount;
 
-    if (Array.isArray(resolvedRun.loadoutItems) && Array.isArray(resolvedRun.shopOffer)) {
+    if (!viewState.shouldRefreshBootstrap) {
       const allArtifacts = state.bootstrap?.artifacts || [];
       const bagsSet = new Set(allArtifacts.filter((a) => a.family === 'bag').map((a) => a.id));
       const artifactById = new Map(allArtifacts.map((a) => [a.id, a]));
-      const projected = projectLoadoutItems(resolvedRun.loadoutItems, bagsSet, (id) => artifactById.get(id));
+      const projected = projectLoadoutItems(viewState.loadoutItems, bagsSet, (id) => artifactById.get(id));
       state.builderItems = projected.builderItems;
       state.containerItems = projected.containerItems;
       state.activeBags = projected.activeBags;
       state.rotatedBags = projected.rotatedBags;
       state.freshPurchases = projected.freshPurchases;
-      state.gameRunShopOffer = resolvedRun.shopOffer;
-      state.gameRun = {
-        ...state.gameRun,
-        status: resolvedRun.status || state.gameRun.status,
-        currentRound: resolvedRun.currentRound ?? state.gameRun.currentRound,
-        player: resolvedRun.player || state.gameRun.player,
-        shopOffer: resolvedRun.shopOffer,
-        loadoutItems: resolvedRun.loadoutItems
-      };
+      state.gameRunShopOffer = viewState.shopOffer;
+      state.gameRun = viewState.run;
       if (state.bootstrap?.activeGameRun?.id === state.gameRun.id) {
         state.bootstrap.activeGameRun = {
           ...state.bootstrap.activeGameRun,
@@ -236,7 +211,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       await refreshBootstrap();
     }
 
-    state.fusionRevealQueue = fusionReveals;
+    state.fusionRevealQueue = viewState.fusionRevealQueue;
     goTo('prep');
   }
 
@@ -271,33 +246,10 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         goTo('prep', {}, options.routeOptions || {});
         return;
       }
-      state.gameRun = {
-        id: data.id,
-        mode: data.mode,
-        status: data.status,
-        currentRound: data.currentRound,
-        startedAt: data.startedAt,
-        endedAt: data.endedAt,
-        endReason: data.endReason,
-        completionBonus: data.completionBonus || null,
-        player: data.player || null
-      };
-      state.gameRunResult = {
-        id: data.id,
-        mode: data.mode,
-        status: data.status,
-        currentRound: data.currentRound,
-        endedAt: data.endedAt,
-        endReason: data.endReason,
-        completionBonus: data.completionBonus || null,
-        season: data.season || null,
-        achievements: data.achievements || [],
-        player: data.player || null,
-        playerResults: data.playerResults || null,
-        lastRound: data.lastRound || null,
-        rounds: data.rounds || []
-      };
-      state.gameRunRounds = data.rounds || [];
+      const viewState = gameRunCompletionResultViewState(data);
+      state.gameRun = viewState.run;
+      state.gameRunResult = viewState.result;
+      state.gameRunRounds = viewState.rounds;
       goTo('runComplete', { gameRunId: data.id }, options.routeOptions || {});
     } catch (error) {
       state.error = error.message || 'Could not load completed run';
@@ -341,34 +293,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
         method: 'POST'
       });
       state.abandonConfirmOpen = false;
-      state.gameRun = {
-        id: data.id,
-        mode: data.mode,
-        status: data.status,
-        currentRound: data.currentRound,
-        startedAt: data.startedAt,
-        endedAt: data.endedAt,
-        endReason: data.endReason,
-        completionBonus: data.completionBonus || null,
-        player: data.player || null
-      };
-      state.gameRunResult = {
-        id: data.id,
-        mode: data.mode,
-        status: data.status,
-        currentRound: data.currentRound,
-        endedAt: data.endedAt,
-        endReason: data.endReason,
-        completionBonus: data.completionBonus || null,
-        season: data.season || null,
-        achievements: data.achievements || [],
-        player: data.player || null,
-        playerResults: data.playerResults || null,
-        lastRound: data.lastRound || null,
-        rounds: data.rounds || []
-      };
-      state.gameRunRounds = data.rounds || [];
-      state.gameRunShopOffer = [];
+      const viewState = gameRunCompletionResultViewState(data);
+      state.gameRun = viewState.run;
+      state.gameRunResult = viewState.result;
+      state.gameRunRounds = viewState.rounds;
+      state.gameRunShopOffer = viewState.shopOffer;
       await refreshBootstrap();
       goTo('runComplete', { gameRunId: data.id });
     } catch (error) {
