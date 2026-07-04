@@ -42,12 +42,16 @@ copy, theme, and API adapters.
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
   projection, promotion metadata, and plan coverage summaries
+- gacha simulation slice: `src/modules/gacha/simulation.js`, tested by
+  `tests/gacha-simulation.test.js`, covers deterministic odds simulation over
+  injected packs, catalogs, ownership snapshots, copy counts, pity state, seed,
+  and RNG
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `8345448`
-  (`Add gacha admin validation helpers`)
+- latest consumed core commit: `b3da379`
+  (`Add gacha simulation helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -579,8 +583,9 @@ pure over catalogs, ownership snapshots, time, and RNG, while wallet accounting
 touches ledger persistence and provider-settlement state.
 
 Post-implementation review on 2026-07-04: the package/module architecture pass
-landed in core commit `3e3d5d6`, and the first real helper movement landed in
-core commit `8345448`. `modules/gacha`, `modules/shop`, `modules/loadout`,
+landed in core commit `3e3d5d6`, the first real helper movement landed in core
+commit `8345448`, and the gacha simulation helper moved in core commit
+`b3da379`. `modules/gacha`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
 should keep moving one reusable behavior cluster at a time through those lanes
@@ -607,8 +612,9 @@ Next planned domain slices:
    DB-aware wrappers.** Keep DB transactions, audit rows, operator permissions,
    upload/storage, route payloads, and product error wording in Mushroom.
 4. **Gacha simulation:** deterministic odds simulation over the same roll core
-   so admin preview, CLI tools, and tests share one model if it is not fully
-   folded into `asset-gacha` or the admin-validation slice.
+   so admin preview, CLI tools, and tests share one model. **Implemented
+   2026-07-04 in core commit `b3da379`; Mushroom admin preview and CLI/runtime
+   simulation now delegate through thin adapters.**
 5. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
    that operate on passed snapshots; no DB writes or provider callbacks. Do this
    after the shared gacha/admin seam is stable in Mushroom.

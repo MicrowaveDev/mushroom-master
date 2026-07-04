@@ -1,6 +1,9 @@
-import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import {
+  normalizeAssetGachaSimulationTrials,
+  simulateAssetGachaPackOdds
+} from '@microwavedev/backpack-game-core/modules/gacha/simulation';
 import {
   DEFAULT_GACHA_ADMIN_FIXTURE_SCHEMA_VERSION,
   catalogWithGachaAdminPlanRows,
@@ -22,8 +25,6 @@ import { createId, nowIso, parseJson } from '../lib/utils.js';
 import {
   getAssetCatalog,
   getRuntimeAssetCatalog,
-  resolveAssetPackRollCandidates,
-  selectAssetPackRollResults,
   shapeAssetPack,
   validateAssetPack
 } from './asset-service.js';
@@ -492,75 +493,23 @@ function createChecklist({ runtimePack, validation, seasonRow = null, collection
 }
 
 function normalizePreviewTrials(value) {
-  const trials = Number(value || 1000);
-  if (!Number.isInteger(trials) || trials <= 0) throw new Error('Gacha preview trials must be a positive integer');
-  return Math.min(trials, 100000);
-}
-
-function createPreviewRng(seedInput) {
-  const digest = crypto.createHash('sha256').update(String(seedInput || 'gacha-admin-preview')).digest();
-  let state = digest.readUInt32LE(0);
-  return () => {
-    state += 0x6D2B79F5;
-    let value = state;
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
+  return normalizeAssetGachaSimulationTrials(value, {
+    defaultTrials: 1000,
+    maxTrials: 100000
+  });
 }
 
 function simulateRuntimePack(runtimePack, { trials = 1000, seed = null, catalog = getAssetCatalog() } = {}) {
   const trialCount = normalizePreviewTrials(trials);
   const seedValue = seed || `${runtimePack.id}:${runtimePack.updatedAt || runtimePack.rarityTableVersion || 'draft'}:${trialCount}`;
-  const rng = createPreviewRng(seedValue);
-  const candidates = resolveAssetPackRollCandidates(runtimePack, { ownedAssetIds: [], catalog });
-  const counts = new Map(candidates.map((candidate) => [candidate.assetId, 0]));
-  const rarityCounts = new Map();
-  let totalSelections = 0;
-
-  if (candidates.length) {
-    for (let trial = 0; trial < trialCount; trial += 1) {
-      const selected = selectAssetPackRollResults(candidates, runtimePack, { rng });
-      for (const item of selected) {
-        counts.set(item.assetId, (counts.get(item.assetId) || 0) + 1);
-        const rarity = item.rarity || 'common';
-        rarityCounts.set(rarity, (rarityCounts.get(rarity) || 0) + 1);
-        totalSelections += 1;
-      }
-    }
-  }
-
-  const weightedCandidateCount = candidates.filter((candidate) => Number(candidate.dropWeight || 0) > 0).length;
-  return {
+  return simulateAssetGachaPackOdds(runtimePack, {
+    catalog,
+    odds: { active: true },
     trials: trialCount,
     seed: seedValue,
-    candidateCount: candidates.length,
-    weightedCandidateCount,
-    averageItemsPerRoll: totalSelections / trialCount,
-    rollable: candidates.length > 0 && weightedCandidateCount > 0,
-    raritySummary: [...rarityCounts.entries()].map(([rarity, observedCount]) => ({
-      rarity,
-      observedCount,
-      observedPerRoll: observedCount / trialCount
-    })).sort((a, b) => b.observedPerRoll - a.observedPerRoll || a.rarity.localeCompare(b.rarity)),
-    items: candidates.map((candidate) => {
-      const observedCount = counts.get(candidate.assetId) || 0;
-      return {
-        assetId: candidate.assetId,
-        rarity: candidate.rarity || candidate.asset?.rarity || null,
-        dropWeight: Number(candidate.dropWeight || 0),
-        observedCount,
-        observedPerRoll: observedCount / trialCount,
-        asset: candidate.asset ? {
-          name: candidate.asset.name,
-          slot: candidate.asset.slot,
-          targetType: candidate.asset.targetType,
-          targetId: candidate.asset.targetId,
-          variantId: candidate.asset.variantId
-        } : null
-      };
-    }).sort((a, b) => b.observedPerRoll - a.observedPerRoll || a.assetId.localeCompare(b.assetId))
-  };
+    source: runtimePack.source || 'database',
+    maxTrials: 100000
+  });
 }
 
 function packSnapshot(runtimePack) {

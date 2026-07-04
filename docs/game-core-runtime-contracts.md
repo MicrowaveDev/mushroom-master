@@ -289,13 +289,14 @@ commits, and pushes. A lead agent must verify each sub-agent finding against
 current files before editing, merging, or reporting completion.
 
 Post-implementation review on 2026-07-04: the first package/module architecture
-slice is complete in core commit `3e3d5d6`, and the first real helper movement
-landed in core commit `8345448` with `modules/gacha/admin-validation`. New
-shared backend logic should continue landing behind public `modules/*` exports,
-and new browser-safe helpers should land behind `client` or `client-view-model`
-style exports. Avoid new consumer imports from deep `src/*` files. Wallet and
-asset ownership remain later because they still couple to persistence and
-provider evidence.
+slice is complete in core commit `3e3d5d6`, the first real helper movement
+landed in core commit `8345448` with `modules/gacha/admin-validation`, and
+gacha odds simulation moved in core commit `b3da379` with
+`modules/gacha/simulation`. New shared backend logic should continue landing
+behind public `modules/*` exports, and new browser-safe helpers should land
+behind `client` or `client-view-model` style exports. Avoid new consumer imports
+from deep `src/*` files. Wallet and asset ownership remain later because they
+still couple to persistence and provider evidence.
 
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,
