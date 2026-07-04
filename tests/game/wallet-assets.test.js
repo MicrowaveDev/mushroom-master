@@ -33,6 +33,7 @@ import {
   getPackOddsForRuntime,
   portraitAssetId,
   burnAssetPackDuplicates,
+  equipAsset,
   purchaseAsset,
   rollAssetPack,
   validateAssetPack
@@ -1230,6 +1231,17 @@ test('[Req 14-F] gacha mode blocks configured direct buys and rolls unowned pack
     assert.equal(first.rollResult.assetId, portraitAssetId('thalla', '1'));
     assert.equal(first.rollResult.packId, odds.id);
     assert.equal(first.rollResult.rarity, 'rare');
+    const equipped = await equipAsset(player.id, first.rollResult.assetId);
+    assert.equal(equipped.targetId, 'thalla');
+    const equippedRow = await query(
+      `SELECT asset_id, asset_instance_id
+       FROM player_equipped_assets
+       WHERE player_id = $1 AND slot = 'portrait' AND target_type = 'character' AND target_id = 'thalla'`,
+      [player.id]
+    );
+    assert.equal(equippedRow.rowCount, 1);
+    assert.equal(equippedRow.rows[0].asset_id, first.rollResult.assetId);
+    assert.equal(equippedRow.rows[0].asset_instance_id, first.rollResult.resultInstanceId);
     const shapedPacks = await getAssetPacksForPlayer(player.id);
     const shapedPack = shapedPacks.find((pack) => pack.id === odds.id);
     assert.equal(shapedPack.ownedCount, 1);

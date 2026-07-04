@@ -16,6 +16,17 @@ import {
   shapeAssetGachaPack,
   validateAssetGachaPack
 } from '@microwavedev/backpack-game-core/modules/gacha';
+import {
+  createProfileAssetInstanceDraft,
+  createProfileAssetPurchaseSpendMutation,
+  createProfileAssetState,
+  normalizeProfileAssetInstanceRow,
+  profileAssetAcquisitionSource,
+  profileAssetInstanceDraftToRow,
+  profileAssetIsOwned,
+  shapeProfileAssetVariant,
+  validateProfileAssetEquipment
+} from '@microwavedev/backpack-game-core/modules/assets';
 import { query, withTransaction } from '../db.js';
 import {
   PORTRAIT_VARIANTS,
@@ -632,7 +643,7 @@ async function insertAssetInstance(client, {
     if (existing) return { row: existing, alreadyOwned: true };
   }
 
-  const row = {
+  const draft = createProfileAssetInstanceDraft({
     id: createId('asset'),
     playerId,
     assetId,
@@ -640,48 +651,29 @@ async function insertAssetInstance(client, {
     acquisitionSourceId,
     acquiredAt: nowIso(),
     metadata
-  };
+  });
   await client.query(
     `INSERT INTO player_asset_instances
      (id, player_id, asset_id, acquisition_source, acquisition_source_id, status, acquired_at, metadata_json)
      VALUES ($1, $2, $3, $4, $5, 'active', $6, $7)`,
     [
-      row.id,
-      row.playerId,
-      row.assetId,
-      row.acquisitionSource,
-      row.acquisitionSourceId,
-      row.acquiredAt,
-      JSON.stringify(row.metadata)
+      draft.id,
+      draft.playerId,
+      draft.assetId,
+      draft.acquisitionSource,
+      draft.acquisitionSourceId,
+      draft.acquiredAt,
+      JSON.stringify(draft.metadata)
     ]
   );
   return {
-    row: {
-      id: row.id,
-      player_id: row.playerId,
-      asset_id: row.assetId,
-      acquisition_source: row.acquisitionSource,
-      acquisition_source_id: row.acquisitionSourceId,
-      status: 'active',
-      acquired_at: row.acquiredAt,
-      metadata_json: JSON.stringify(row.metadata)
-    },
+    row: profileAssetInstanceDraftToRow(draft),
     alreadyOwned: false
   };
 }
 
 function rowToAssetInstance(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    playerId: row.player_id,
-    assetId: row.asset_id,
-    acquisitionSource: row.acquisition_source,
-    acquisitionSourceId: row.acquisition_source_id || null,
-    status: row.status,
-    acquiredAt: row.acquired_at,
-    metadata: parseJson(row.metadata_json, {})
-  };
+  return normalizeProfileAssetInstanceRow(row);
 }
 
 export async function getPlayerCosmeticState(playerId) {
@@ -697,18 +689,10 @@ export async function getPlayerCosmeticState(playerId) {
       [playerId]
     )
   ]);
-  const ownedAssetIds = new Set(instances.rows.map((row) => row.asset_id));
-  const instancesByAssetId = new Map(instances.rows.map((row) => [row.asset_id, rowToAssetInstance(row)]));
-  const equippedByTarget = new Map();
-  for (const row of equipped.rows) {
-    equippedByTarget.set(`${row.slot}:${row.target_type}:${row.target_id || ''}`, {
-      id: row.id,
-      assetId: row.asset_id,
-      assetInstanceId: row.asset_instance_id || null,
-      equippedAt: row.equipped_at
-    });
-  }
-  return { ownedAssetIds, instancesByAssetId, equippedByTarget };
+  return createProfileAssetState({
+    instances: instances.rows,
+    equipped: equipped.rows
+  });
 }
 
 export function shapePortraitVariant({
@@ -720,7 +704,7 @@ export function shapePortraitVariant({
 }) {
   const asset = assetByIdFromCatalog(catalog, variant.assetId || portraitAssetId(mushroomId, variant.id));
   if (!asset) return null;
-  const owned = asset.price === 0 || cosmeticState.ownedAssetIds.has(asset.assetId);
+  const owned = profileAssetIsOwned(asset, cosmeticState);
   const policy = asset.source === 'gacha_plan'
     ? {
       acquisitionMode: asset.acquisitionMode,
@@ -731,21 +715,13 @@ export function shapePortraitVariant({
       activePackId: asset.packId || null
     }
     : assetPolicy(asset);
-  return {
-    ...variant,
-    assetId: asset.assetId,
-    price: asset.price,
-    cost: asset.price,
-    currencyCode: asset.currencyCode,
+  return shapeProfileAssetVariant({
+    variant,
+    asset,
     owned,
-    unlocked: owned,
     active: activePortraitId === variant.id,
-    acquisitionMode: policy.acquisitionMode,
-    purchaseAvailable: policy.purchaseAvailable,
-    rollAvailable: policy.rollAvailable,
-    packId: asset.packId,
-    rarity: asset.rarity
-  };
+    policy
+  });
 }
 
 export async function resolveEquippedPortraitId(client, playerId, mushroomId) {
@@ -801,28 +777,16 @@ export async function purchaseAsset(playerId, assetId, {
 
       let transaction = null;
       if (asset.price > 0) {
-        transaction = await spendCurrency(client, {
+        transaction = await spendCurrency(client, createProfileAssetPurchaseSpendMutation(asset, {
           playerId,
-          currencyCode: asset.currencyCode,
-          amount: asset.price,
-          reason: 'asset_purchase',
-          sourceType: 'asset',
-          sourceId: asset.assetId,
-          idempotencyKey: idempotencyKey
-            ? `asset_purchase:${asset.assetId}:${idempotencyKey}`
-            : `asset_purchase:${asset.assetId}`,
-          metadata: {
-            slot: asset.slot,
-            targetType: asset.targetType,
-            targetId: asset.targetId
-          }
-        });
+          idempotencyKey
+        }));
       }
 
       const inserted = await insertAssetInstance(client, {
         playerId,
         assetId: asset.assetId,
-        acquisitionSource: asset.price > 0 ? 'direct_purchase' : 'free',
+        acquisitionSource: profileAssetAcquisitionSource(asset),
         acquisitionSourceId: transaction?.id || null,
         metadata: {
           price: asset.price,
@@ -843,15 +807,21 @@ export async function purchaseAsset(playerId, assetId, {
 export async function equipAsset(playerId, assetId) {
   const asset = await getRuntimeAssetById(assetId);
   if (!asset) throw httpError('Unknown asset', 404);
-  if (asset.slot !== 'portrait' || asset.targetType !== 'character') {
-    throw httpError('Unsupported asset equipment slot', 400);
-  }
 
   return withWalletMutationLock(playerId, () => withTransaction(async (client) => {
     let instance = null;
     if (asset.price !== 0) {
       instance = await activeAssetInstance(client, playerId, asset.assetId);
-      if (!instance) throw httpError('Asset is not owned', 403);
+    }
+    const validation = validateProfileAssetEquipment({
+      asset,
+      instance: rowToAssetInstance(instance)
+    });
+    if (!validation.ok) {
+      throw httpError(
+        validation.issue.message,
+        validation.issue.code === 'asset_not_owned' ? 403 : 400
+      );
     }
 
     const existing = await client.query(
@@ -866,7 +836,7 @@ export async function equipAsset(playerId, assetId) {
         `UPDATE player_equipped_assets
          SET asset_instance_id = $2, asset_id = $3, equipped_at = $4
          WHERE id = $1`,
-        [existing.rows[0].id, instance?.id || null, asset.assetId, now]
+        [existing.rows[0].id, validation.assetInstanceId || null, asset.assetId, now]
       );
     } else {
       await client.query(
@@ -879,7 +849,7 @@ export async function equipAsset(playerId, assetId) {
           asset.slot,
           asset.targetType,
           asset.targetId,
-          instance?.id || null,
+          validation.assetInstanceId || null,
           asset.assetId,
           now
         ]

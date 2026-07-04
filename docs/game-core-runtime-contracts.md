@@ -193,6 +193,11 @@ Future direction:
   copy caps, duplicate burn/exchange, runtime simulation, and admin pack
   validation. The 2026-07-04 multi-game plan moves reusable asset/gacha rules
   into `backpack-game-core` behind adapters so `meat-master` can share them.
+  Profile asset state shaping, ownership maps, equipment validation,
+  direct-purchase spend parameters, instance draft rows, and portrait variant
+  projection now live in `profile-asset-state` / `modules/assets`; Mushroom
+  still supplies runtime catalogs, SQL rows, wallet spend execution, roll/burn
+  grants, support actions, and compatibility mirrors.
   The same plan now treats reusable Vue frontend modules as core candidates:
   shared services, composables, view-model shapers, components, and optional
   page shells can move to the package when product routes, copy, theme, art,
@@ -206,9 +211,11 @@ Non-core boundary:
   theme, localization, and Mushroom-specific skin catalogs stay in product code
   or adapters. Product-specific admin screens stay local, but neutral admin
   validation/checklist/odds/plan-review widgets can become shared Vue modules.
-  Reusable asset ownership/equipment transitions, direct-buy policy, pack
-  validation, roll selection, duplicate/burn, pity/guarantee, simulation rules,
-  and neutral frontend view-model/UI primitives are planned core candidates.
+  Reusable asset ownership/equipment state helpers, pack validation, roll
+  selection, duplicate/burn, pity/guarantee, simulation rules, and wallet
+  accounting primitives now have core modules; broader direct-buy policy
+  composition, runtime catalog persistence, paid mutation execution, and
+  neutral frontend view-model/UI primitives remain planned core candidates.
 
 ## Candidate Reusable Mechanics
 
@@ -223,6 +230,9 @@ These mechanics are closest to the reusable core boundary:
 - battle simulation with combatant, ability, attribution, and narration hooks
 - asset acquisition policy with catalogs, ownership snapshots, wallet snapshots,
   and purchase/gacha mode config injected
+- profile asset ownership/equipment state shaping, equip validation, purchase
+  spend parameter shaping, and portrait variant projection over injected rows
+  and policy snapshots
 - gacha pack validation, roll selection, duplicate/burn, pity/guarantee, and
   simulation over injected RNG and ownership state
 - frontend DTO/view-model shaping for shop, backpack, battle replay,
@@ -293,12 +303,15 @@ slice is complete in core commit `3e3d5d6`, the first real helper movement
 landed in core commit `8345448` with `modules/gacha/admin-validation`, and
 gacha odds simulation moved in core commit `b3da379` with
 `modules/gacha/simulation`. Wallet accounting moved in core commit `af520f0`
-with `wallet-accounting` and `modules/wallet`. New shared backend logic should
-continue landing behind public `modules/*` exports, and new browser-safe helpers
-should land behind `client` or `client-view-model` style exports. Avoid new
-consumer imports from deep `src/*` files. Asset ownership remains later because
-it still couples to persistence, support actions, paid rollback behavior, and
-product catalogs; provider checkout/callback code stays local.
+with `wallet-accounting` and `modules/wallet`. Profile asset state moved in
+core commit `6ae688b` with `profile-asset-state` and `modules/assets`. New
+shared backend logic should continue landing behind public `modules/*` exports,
+and new browser-safe helpers should land behind `client` or
+`client-view-model` style exports. Avoid new consumer imports from deep `src/*`
+files. Broader asset runtime/catalog lifecycle remains later because it still
+couples to persistence, support actions, paid rollback behavior, gacha
+grant/burn flows, and product catalogs; provider checkout/callback code stays
+local.
 
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,

@@ -56,12 +56,12 @@
 > `backpack-game-core` while keeping Mushroom string-seed hashing local.
 > **Phase 8H** added TypeScript declarations for the root and subpath package
 > exports so another game can integrate with typed provider hooks. **Phase 8I**
-> is the new in-progress domain-core extraction lane; the shared `asset-gacha`,
-> gacha admin-validation, gacha simulation, and wallet-accounting slices are
-> implemented, while profile asset state remains backlog. Product DB schemas,
-> payment-provider adapters, Telegram routes, content catalogs, artwork,
-> content-policy gates, and final route/page composition remain game-local
-> adapters. Reusable Vue components, composables, page view models,
+> is the active domain-core extraction lane; the shared `asset-gacha`,
+> gacha admin-validation, gacha simulation, wallet-accounting, and
+> profile-asset-state slices are implemented. Product DB schemas,
+> payment-provider adapters, Telegram routes, runtime catalogs, artwork,
+> content-policy gates, support operations, and final route/page composition
+> remain game-local adapters. Reusable Vue components, composables, page view models,
 > API-client services, and neutral layout pieces are now explicit core
 > candidates. **Phase 11** has an initial playable `meat-master` consumer using
 > the shared core through a nested submodule.
@@ -92,9 +92,9 @@ helpers, first grid-geometry primitives, fusion matching, and shop-offer
 generation, provider-driven bot-loadout generation, hookable battle
 simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
-helpers, deterministic gacha simulation helpers, and reusable wallet accounting
-helpers. The package ships TypeScript declarations for the root export and
-every subpath export.
+helpers, deterministic gacha simulation helpers, reusable wallet accounting
+helpers, and reusable profile asset state helpers. The package ships TypeScript
+declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
 are historical only.
@@ -2445,7 +2445,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `af520f0`; typed package baseline remains `d5fb481`.
+   `6ae688b`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2462,7 +2462,8 @@ move to `backpack-game-core`, while each game keeps its own persistence,
 payment providers, route wiring, catalogs, art, copy, compliance gates, and
 product-specific page composition. The first shared backend domain slice,
 `asset-gacha`, is implemented in core and consumed by Mushroom through adapter
-wrappers.
+wrappers. Subsequent shared backend slices now include gacha admin validation,
+gacha simulation, wallet accounting, and profile asset state helpers.
 
 #### Source Of Truth For This Revision
 
@@ -2645,6 +2646,15 @@ invariants now run through `modules/wallet`. Mushroom keeps SQL balance rows,
 transaction inserts, keyed locks, `players.spore` mirrors, provider webhooks,
 support actions, settlement imports, and reconciliation queries local.
 
+The next completed backend slice is `profile-asset-state`, landed in core
+commit `6ae688b`: profile asset instance/equipment row shaping, ownership maps,
+paid/free equipment validation, direct-purchase spend mutation shaping,
+acquisition-source selection, instance draft rows, and portrait variant
+projection now run through `modules/assets`. Mushroom keeps runtime catalog
+lookup, SQL row lifecycle, gacha roll/burn grants, support actions, paid
+rollback behavior, route payloads, and the `player_mushrooms.active_portrait`
+compatibility mirror local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -2790,16 +2800,22 @@ Throughput rules:
 10. Done 2026-07-04: wire Mushroom wallet and provider-settlement services
     through the core wallet helpers while keeping SQL, provider callbacks,
     support actions, mirrors, and reconciliation queries local.
-11. Then add follow-up core modules or submodules in small slices:
+11. Done 2026-07-04: move `profile-asset-state` helpers into core: profile
+    asset instance/equipment row shaping, ownership maps, paid/free equipment
+    validation, direct-purchase spend mutation shaping, acquisition-source
+    selection, instance draft rows, and portrait variant projection.
+12. Done 2026-07-04: wire Mushroom asset service through the core profile asset
+    helpers while keeping runtime catalogs, SQL lifecycle, gacha roll/burn
+    grants, support actions, paid rollback behavior, route payloads, and the
+    active-portrait mirror local.
+13. Then add follow-up core modules or submodules in small slices:
    - `asset-policy` cleanup if it needs a separate public API,
-   - `profile-asset-state` only after pure ownership/equipment transitions are
-     separated from DB row lifecycle and support actions,
    - `frontend-services` for shared API clients/view-model shapers/composables,
    - `vue-backpack-ui` for grid, artifact tile, shop, and battle replay
      components,
    - `vue-asset-gacha-ui` for asset inventory, gacha pack, roll result, odds,
      and admin validation components.
-8. Keep the package export strategy conservative:
+14. Keep the package export strategy conservative:
    - use one package plus subpath exports until Vue extraction truly requires a
      package split,
    - keep existing backend/browser-safe JS exports stable,
@@ -2808,22 +2824,22 @@ Throughput rules:
      `@microwavedev/backpack-game-core/vue` and
      `@microwavedev/backpack-game-core/vue/components`,
    - avoid a build step until SFC or style extraction truly requires it.
-9. Port focused unit tests from Mushroom into `backpack-game-core` first,
+15. Port focused unit tests from Mushroom into `backpack-game-core` first,
    replacing Mushroom fixture data with neutral sample catalogs.
-10. Refactor Mushroom backend services to call the core modules through thin
+16. Refactor Mushroom backend services to call the core modules through thin
    adapters, keeping current route payloads and database tables stable.
-11. Refactor Mushroom frontend one surface at a time by replacing local
+17. Refactor Mushroom frontend one surface at a time by replacing local
    composables/components with core imports while preserving current UI flows
    and screenshots.
-12. Integrate the same core frontend modules into Meat with product-specific
+18. Integrate the same core frontend modules into Meat with product-specific
    data, copy, theme, and API adapters.
-13. Verify Mushroom behavior after each slice with the smallest relevant test
+19. Verify Mushroom behavior after each slice with the smallest relevant test
    set, then run the wallet/gacha/admin bundle and affected screenshot/e2e
    coverage before moving the next slice.
-14. Update `vendor/backpack-game-core/CHANGELOG.md`,
+20. Update `vendor/backpack-game-core/CHANGELOG.md`,
    `docs/backpack-game-core-update-log.md`, and the nested core pointer after
    each core commit.
-15. Keep Meat pointed at the same core commit and add Meat tests/build coverage
+21. Keep Meat pointed at the same core commit and add Meat tests/build coverage
    for every shared backend or Vue slice it consumes.
 
 #### Validation
@@ -3098,8 +3114,8 @@ that game.
    after post-implementation review:** the next real backend extraction is
    gacha admin validation/release-checklist logic, followed by gacha
    simulation, then wallet accounting. Wallet accounting is now implemented in
-   core commit `af520f0`; profile-asset-state is the next backend domain
-   candidate.
+   core commit `af520f0`, and profile-asset-state is now implemented in core
+   commit `6ae688b`.
    Keep DB schemas, payments, Telegram, product catalogs, art, compliance,
    admin auth/storage, product route shells, and final page assembly in each
    game.
@@ -3154,5 +3170,15 @@ that game.
    classification, and settlement invariants. Mushroom wallet and
    provider-settlement services now delegate through adapters while keeping DB
    rows, provider callbacks, support actions, mirrors, and reconciliation
-   queries local. Next backend domain candidate is profile-asset-state; full API
-   client extraction and Vue page/component movement remain later.
+   queries local.
+49. Phase 8P profile asset-state extraction. **Implemented 2026-07-04:** core
+   commit `6ae688b` added `profile-asset-state`, `modules/assets`, and
+   `modules/assets/profile-state` for profile asset instance/equipment row
+   shaping, ownership maps, paid/free equipment validation, direct-purchase
+   spend mutation shaping, acquisition-source selection, instance draft rows,
+   and portrait variant projection. Mushroom asset service now delegates
+   through those helpers while keeping runtime catalogs, SQL lifecycle, gacha
+   roll/burn grants, support actions, paid rollback behavior, route payloads,
+   and the active-portrait mirror local. Next backend candidates are focused
+   asset-policy cleanup or client/contracts work; full Vue page/component
+   movement remains later.
