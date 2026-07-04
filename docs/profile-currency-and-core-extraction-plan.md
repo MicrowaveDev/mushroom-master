@@ -57,8 +57,8 @@
 > **Phase 8H** added TypeScript declarations for the root and subpath package
 > exports so another game can integrate with typed provider hooks. **Phase 8I**
 > is the new in-progress domain-core extraction lane; the shared `asset-gacha`,
-> gacha admin-validation, and gacha simulation slices are implemented, while
-> wallet accounting and profile asset state remain backlog. Product DB schemas,
+> gacha admin-validation, gacha simulation, and wallet-accounting slices are
+> implemented, while profile asset state remains backlog. Product DB schemas,
 > payment-provider adapters, Telegram routes, content catalogs, artwork,
 > content-policy gates, and final route/page composition remain game-local
 > adapters. Reusable Vue components, composables, page view models,
@@ -92,8 +92,9 @@ helpers, first grid-geometry primitives, fusion matching, and shop-offer
 generation, provider-driven bot-loadout generation, hookable battle
 simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
-helpers, and deterministic gacha simulation helpers. The package ships
-TypeScript declarations for the root export and every subpath export.
+helpers, deterministic gacha simulation helpers, and reusable wallet accounting
+helpers. The package ships TypeScript declarations for the root export and
+every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
 are historical only.
@@ -2444,7 +2445,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `b3da379`; typed package baseline remains `d5fb481`.
+   `af520f0`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2637,6 +2638,13 @@ The next completed backend slice is `gacha-simulation`, landed in core commit
 copy counts, pity state, seed, and RNG. Mushroom keeps static/runtime pack
 lookup, catalog visibility, CLI wiring, and admin preview payload shaping local.
 
+The next completed backend slice is `wallet-accounting`, landed in core commit
+`af520f0`: profile-wallet delta validation, balance math, purchase
+grant/reversal mutation shaping, purchase status classification, and settlement
+invariants now run through `modules/wallet`. Mushroom keeps SQL balance rows,
+transaction inserts, keyed locks, `players.spore` mirrors, provider webhooks,
+support actions, settlement imports, and reconciliation queries local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -2776,10 +2784,14 @@ Throughput rules:
 8. Done 2026-07-04: wire Mushroom admin preview and CLI/runtime pack odds
    simulation through the core helper while keeping DB/runtime catalog lookup
    and route/CLI payload policy local.
-9. Then add follow-up core modules or submodules in small slices:
+9. Done 2026-07-04: move `wallet-accounting` helpers into core: delta
+   validation, balance math, purchase grant/reversal mutation shaping, purchase
+   status classification, and settlement invariant checks.
+10. Done 2026-07-04: wire Mushroom wallet and provider-settlement services
+    through the core wallet helpers while keeping SQL, provider callbacks,
+    support actions, mirrors, and reconciliation queries local.
+11. Then add follow-up core modules or submodules in small slices:
    - `asset-policy` cleanup if it needs a separate public API,
-   - `wallet-accounting` after the shared gacha/admin/simulation seam is
-     stable,
    - `profile-asset-state` only after pure ownership/equipment transitions are
      separated from DB row lifecycle and support actions,
    - `frontend-services` for shared API clients/view-model shapers/composables,
@@ -3085,8 +3097,9 @@ that game.
    shaping now have a reusable core landing zone behind adapters. **Adjusted
    after post-implementation review:** the next real backend extraction is
    gacha admin validation/release-checklist logic, followed by gacha
-   simulation, not wallet accounting. Wallet accounting primitives move only
-   after the gacha/admin/simulation seam is stable.
+   simulation, then wallet accounting. Wallet accounting is now implemented in
+   core commit `af520f0`; profile-asset-state is the next backend domain
+   candidate.
    Keep DB schemas, payments, Telegram, product catalogs, art, compliance,
    admin auth/storage, product route shells, and final page assembly in each
    game.
@@ -3133,6 +3146,13 @@ that game.
    core commit `b3da379` added `modules/gacha/simulation` for deterministic
    pack odds simulation over injected pack/catalog/ownership/copy/pity state.
    Mushroom admin preview and CLI/runtime odds simulation now delegate through
-   adapters. Next backend domain candidates are wallet-accounting and
-   profile-asset-state; full API client extraction and Vue page/component
-   movement remain later.
+   adapters.
+48. Phase 8O wallet accounting extraction. **Implemented 2026-07-04:** core
+   commit `af520f0` added `wallet-accounting`, `modules/wallet`, and
+   `modules/wallet/accounting` for profile-wallet delta validation, balance
+   math, purchase grant/reversal mutation shaping, purchase status
+   classification, and settlement invariants. Mushroom wallet and
+   provider-settlement services now delegate through adapters while keeping DB
+   rows, provider callbacks, support actions, mirrors, and reconciliation
+   queries local. Next backend domain candidate is profile-asset-state; full API
+   client extraction and Vue page/component movement remain later.

@@ -46,12 +46,17 @@ copy, theme, and API adapters.
   `tests/gacha-simulation.test.js`, covers deterministic odds simulation over
   injected packs, catalogs, ownership snapshots, copy counts, pity state, seed,
   and RNG
+- wallet accounting slice: `src/wallet-accounting.js` plus
+  `src/modules/wallet/*`, tested by `tests/wallet-accounting.test.js`, covers
+  profile-wallet delta validation, balance math, purchase grant/reversal
+  mutation shaping, purchase status classification, and settlement invariants
+  over injected rows/snapshots
 - package declaration pass: `src/*.d.ts`, guarded by
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `b3da379`
-  (`Add gacha simulation helpers`)
+- latest consumed core commit: `af520f0`
+  (`Add wallet accounting helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -584,8 +589,9 @@ touches ledger persistence and provider-settlement state.
 
 Post-implementation review on 2026-07-04: the package/module architecture pass
 landed in core commit `3e3d5d6`, the first real helper movement landed in core
-commit `8345448`, and the gacha simulation helper moved in core commit
-`b3da379`. `modules/gacha`, `modules/shop`, `modules/loadout`,
+commit `8345448`, the gacha simulation helper moved in core commit `b3da379`,
+and the wallet accounting helper moved in core commit `af520f0`.
+`modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
 should keep moving one reusable behavior cluster at a time through those lanes
@@ -615,9 +621,11 @@ Next planned domain slices:
    so admin preview, CLI tools, and tests share one model. **Implemented
    2026-07-04 in core commit `b3da379`; Mushroom admin preview and CLI/runtime
    simulation now delegate through thin adapters.**
-5. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
-   that operate on passed snapshots; no DB writes or provider callbacks. Do this
-   after the shared gacha/admin seam is stable in Mushroom.
+5. **Wallet accounting:** reusable balance-delta, purchase grant/reversal
+   mutation shaping, status classification, and settlement invariant helpers
+   that operate on passed snapshots; no DB writes or provider callbacks.
+   **Implemented 2026-07-04 in core commit `af520f0`; Mushroom wallet and
+   provider-settlement services delegate through adapters.**
 6. **Profile asset state:** reusable ownership/equipment transition checks only
    after pure state transitions are separated from DB row lifecycle, support
    actions, paid rollback behavior, and product-specific asset catalogs.

@@ -1,4 +1,18 @@
 import crypto from 'crypto';
+import {
+  WALLET_PURCHASE_STATUSES as CORE_WALLET_PURCHASE_STATUSES,
+  canRecordWalletPurchaseStatus,
+  createWalletPurchaseGrantMutation,
+  createWalletPurchaseReversalMutation,
+  createWalletTransactionDraft,
+  isWalletPurchaseClawbackStatus,
+  isWalletPurchaseReviewStatus,
+  normalizeWalletCurrencyCode,
+  normalizeWalletGrantAmount,
+  normalizeWalletSpendAmount,
+  validateWalletDelta,
+  walletPurchasePriceMatches
+} from '@microwavedev/backpack-game-core/modules/wallet';
 import { query, withTransaction } from '../db.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 
@@ -27,31 +41,7 @@ const BASE_WALLET_BUNDLES = [
   { id: 'coins_large', walletAmount: 1200, priceUnits: 10 }
 ];
 
-export const WALLET_PURCHASE_STATUSES = new Set([
-  'pending',
-  'completed',
-  'expired',
-  'failed',
-  'refunded',
-  'reversed',
-  'chargeback',
-  'disputed',
-  'underpaid',
-  'overpaid',
-  'cancelled'
-]);
-
-const WALLET_PURCHASE_CLAWBACK_STATUSES = new Set([
-  'refunded',
-  'reversed',
-  'chargeback'
-]);
-
-const WALLET_PURCHASE_POST_COMPLETION_REVIEW_STATUSES = new Set([
-  'disputed',
-  'underpaid',
-  'overpaid'
-]);
+export const WALLET_PURCHASE_STATUSES = new Set(CORE_WALLET_PURCHASE_STATUSES);
 
 const walletMutationLocks = new Map();
 const purchaseIntentLocks = new Map();
@@ -96,7 +86,7 @@ export async function withWalletMutationLock(playerId, work) {
 }
 
 function normalizeCurrencyCode(currencyCode = WALLET_CURRENCY_CODE) {
-  return String(currencyCode || WALLET_CURRENCY_CODE).trim() || WALLET_CURRENCY_CODE;
+  return normalizeWalletCurrencyCode(currencyCode, { defaultCurrencyCode: WALLET_CURRENCY_CODE });
 }
 
 function providerConfig(provider) {
@@ -441,12 +431,12 @@ async function applyCurrencyDelta(client, {
   idempotencyKey = null,
   metadata = {}
 }) {
-  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
-  const amount = Number(delta);
-  if (!Number.isInteger(amount) || amount === 0) {
-    throw httpError('Wallet delta must be a non-zero integer', 400);
-  }
-  if (!reason) throw httpError('Wallet transaction reason is required', 400);
+  const validation = validateWalletDelta({ currencyCode, delta, reason }, {
+    defaultCurrencyCode: WALLET_CURRENCY_CODE
+  });
+  if (!validation.ok) throw httpError(validation.errors[0].message, 400);
+  const normalizedCurrency = validation.currencyCode;
+  const amount = validation.delta;
 
   if (idempotencyKey) {
     const existing = await client.query(
@@ -476,7 +466,10 @@ async function applyCurrencyDelta(client, {
     throw httpError('Not enough wallet balance', 400);
   }
   const balanceAfter = Number(balanceResult.rows[0]?.balance || 0);
-  const transaction = {
+  const {
+    validation: _validation,
+    ...transaction
+  } = createWalletTransactionDraft({
     id: createId('wtx'),
     playerId,
     currencyCode: normalizedCurrency,
@@ -488,7 +481,7 @@ async function applyCurrencyDelta(client, {
     idempotencyKey,
     metadata,
     createdAt: nowIso()
-  };
+  });
 
   await client.query(
     `INSERT INTO player_wallet_transactions
@@ -701,8 +694,8 @@ export async function grantCurrency(client, {
   idempotencyKey = null,
   metadata = {}
 }) {
-  const value = Number(amount);
-  if (!Number.isInteger(value) || value <= 0) {
+  const value = normalizeWalletGrantAmount(amount);
+  if (!Number.isInteger(value)) {
     throw httpError('Wallet grant amount must be a positive integer', 400);
   }
   return applyCurrencyDelta(client, {
@@ -727,8 +720,8 @@ export async function spendCurrency(client, {
   idempotencyKey = null,
   metadata = {}
 }) {
-  const value = Number(amount);
-  if (!Number.isInteger(value) || value <= 0) {
+  const value = normalizeWalletSpendAmount(amount);
+  if (!Number.isInteger(value)) {
     throw httpError('Wallet spend amount must be a positive integer', 400);
   }
   return applyCurrencyDelta(client, {
@@ -1354,11 +1347,13 @@ export async function completePurchaseIntent({
     }
     if (row.status !== 'pending') throw httpError('Wallet purchase is not pending', 409);
 
-    const expectedAmount = Number(row.price_amount || 0);
-    const receivedAmount = priceAmount == null ? expectedAmount : Number(priceAmount);
-    const expectedCurrency = normalizePriceCurrency(row.price_currency);
-    const receivedCurrency = normalizePriceCurrency(priceCurrency) || expectedCurrency;
-    if (receivedAmount !== expectedAmount || receivedCurrency !== expectedCurrency) {
+    const priceCheck = walletPurchasePriceMatches({
+      expectedAmount: row.price_amount,
+      expectedCurrency: row.price_currency,
+      receivedAmount: priceAmount,
+      receivedCurrency: priceCurrency
+    });
+    if (!priceCheck.ok) {
       throw httpError('Invalid wallet purchase amount', 400);
     }
 
@@ -1393,20 +1388,10 @@ export async function completePurchaseIntent({
     }
     const completedRow = updatedIntent.rows[0];
 
-    const transaction = await grantCurrency(client, {
-      playerId: completedRow.player_id,
-      currencyCode: completedRow.currency_code,
-      amount: Number(completedRow.wallet_amount || 0),
-      reason: 'wallet_purchase',
-      sourceType: 'wallet_purchase_intent',
-      sourceId: completedRow.id,
-      idempotencyKey: `wallet_purchase:${completedRow.id}`,
-      metadata: {
-        provider: normalizedProvider,
-        providerInvoiceId: completedRow.provider_invoice_id,
-        providerPaymentId: paymentId
-      }
-    });
+    const transaction = await grantCurrency(client, createWalletPurchaseGrantMutation(completedRow, {
+      provider: normalizedProvider,
+      providerPaymentId: paymentId
+    }));
 
     return {
       intent: rowToPurchaseIntent(completedRow),
@@ -1730,7 +1715,7 @@ async function recordPurchaseIntentStatus({
   status,
   metadata = {}
 } = {}) {
-  if (!WALLET_PURCHASE_STATUSES.has(status) || ['pending', 'completed'].includes(status)) {
+  if (!canRecordWalletPurchaseStatus(status)) {
     throw httpError('Invalid wallet purchase status', 400);
   }
   const normalizedProvider = providerConfig(provider).provider;
@@ -1759,14 +1744,14 @@ async function recordPurchaseIntentStatus({
     if (row.provider !== normalizedProvider) throw httpError('Invalid wallet purchase provider', 400);
 
     if (row.status === 'completed') {
-      if (WALLET_PURCHASE_CLAWBACK_STATUSES.has(status)) {
+      if (isWalletPurchaseClawbackStatus(status)) {
         return recordCompletedPurchaseClawback(client, row, {
           provider: normalizedProvider,
           status,
           metadata
         });
       }
-      if (WALLET_PURCHASE_POST_COMPLETION_REVIEW_STATUSES.has(status)) {
+      if (isWalletPurchaseReviewStatus(status)) {
         return recordCompletedPurchaseReviewStatus(client, row, {
           status,
           metadata
@@ -1889,22 +1874,11 @@ async function recordCompletedPurchaseClawback(client, row, {
   };
 
   try {
-    transaction = await spendCurrency(client, {
-      playerId: row.player_id,
-      currencyCode: row.currency_code,
-      amount: Number(row.wallet_amount || 0),
-      reason: 'wallet_purchase_reversal',
-      sourceType: 'wallet_purchase_intent',
-      sourceId: row.id,
-      idempotencyKey: `wallet_purchase_reversal:${row.id}:${status}`,
-      metadata: {
-        provider,
-        status,
-        providerInvoiceId: row.provider_invoice_id,
-        providerPaymentId: row.provider_payment_id,
-        payload: metadata
-      }
-    });
+    transaction = await spendCurrency(client, createWalletPurchaseReversalMutation(row, {
+      provider,
+      status,
+      payload: metadata
+    }));
     clawback = {
       status: 'completed',
       reason: null,

@@ -292,11 +292,13 @@ Post-implementation review on 2026-07-04: the first package/module architecture
 slice is complete in core commit `3e3d5d6`, the first real helper movement
 landed in core commit `8345448` with `modules/gacha/admin-validation`, and
 gacha odds simulation moved in core commit `b3da379` with
-`modules/gacha/simulation`. New shared backend logic should continue landing
-behind public `modules/*` exports, and new browser-safe helpers should land
-behind `client` or `client-view-model` style exports. Avoid new consumer imports
-from deep `src/*` files. Wallet and asset ownership remain later because they
-still couple to persistence and provider evidence.
+`modules/gacha/simulation`. Wallet accounting moved in core commit `af520f0`
+with `wallet-accounting` and `modules/wallet`. New shared backend logic should
+continue landing behind public `modules/*` exports, and new browser-safe helpers
+should land behind `client` or `client-view-model` style exports. Avoid new
+consumer imports from deep `src/*` files. Asset ownership remains later because
+it still couples to persistence, support actions, paid rollback behavior, and
+product catalogs; provider checkout/callback code stays local.
 
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,

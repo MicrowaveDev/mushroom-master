@@ -1,3 +1,8 @@
+import {
+  walletSettlementMatchesPurchaseStatus,
+  walletSettlementRequiresClawback,
+  walletSettlementRequiresGrant
+} from '@microwavedev/backpack-game-core/modules/wallet';
 import { query, withTransaction } from '../db.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
 import { WALLET_PURCHASE_PROVIDERS } from './wallet-service.js';
@@ -7,11 +12,6 @@ const PROVIDER_UNIT_SCALE = {
   btcpay: 100,
   nowpayments: 100
 };
-
-const COMPLETED_SETTLEMENT_STATUSES = new Set(['completed']);
-const REVERSAL_SETTLEMENT_STATUSES = new Set(['refunded', 'reversed', 'chargeback']);
-const REVIEW_SETTLEMENT_STATUSES = new Set(['disputed', 'underpaid', 'overpaid']);
-const TERMINAL_NON_GRANT_STATUSES = new Set(['expired', 'failed', 'cancelled']);
 
 function httpError(message, statusCode = 400) {
   const err = new Error(message);
@@ -100,14 +100,6 @@ function normalizeSettlementStatus(rawStatus) {
   if (['failed', 'invalid'].includes(status)) return 'failed';
   if (['cancelled', 'canceled'].includes(status)) return 'cancelled';
   return status || 'unknown';
-}
-
-function normalizedIntentStatusMatches(settlementStatus, localStatus) {
-  if (COMPLETED_SETTLEMENT_STATUSES.has(settlementStatus)) return localStatus === 'completed';
-  if (REVERSAL_SETTLEMENT_STATUSES.has(settlementStatus)) return localStatus === settlementStatus;
-  if (REVIEW_SETTLEMENT_STATUSES.has(settlementStatus)) return localStatus === settlementStatus;
-  if (TERMINAL_NON_GRANT_STATUSES.has(settlementStatus)) return localStatus === settlementStatus;
-  return true;
 }
 
 function rowToSettlementImport(row) {
@@ -317,7 +309,7 @@ async function reconcileNormalizedSettlementRecords(records, { client }) {
       continue;
     }
 
-    if (!normalizedIntentStatusMatches(record.settlementStatus, intent.status)) {
+    if (!walletSettlementMatchesPurchaseStatus(record.settlementStatus, intent.status)) {
       categories.providerSettlementStatusMismatches.push(reportIssue(
         record,
         intent,
@@ -347,7 +339,7 @@ async function reconcileNormalizedSettlementRecords(records, { client }) {
       ));
     }
 
-    if (COMPLETED_SETTLEMENT_STATUSES.has(record.settlementStatus)) {
+    if (walletSettlementRequiresGrant(record.settlementStatus)) {
       const walletGrant = await walletTransactionForIntent(client, intent.id, 'wallet_purchase');
       if (!walletGrant) {
         categories.providerCompletedWithoutWalletGrant.push(reportIssue(
@@ -358,7 +350,7 @@ async function reconcileNormalizedSettlementRecords(records, { client }) {
       }
     }
 
-    if (REVERSAL_SETTLEMENT_STATUSES.has(record.settlementStatus)) {
+    if (walletSettlementRequiresClawback(record.settlementStatus)) {
       const walletGrant = await walletTransactionForIntent(client, intent.id, 'wallet_purchase');
       const walletReversal = await walletTransactionForIntent(client, intent.id, 'wallet_purchase_reversal');
       if (walletGrant && !walletReversal) {
