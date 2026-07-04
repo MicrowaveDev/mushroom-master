@@ -54,7 +54,23 @@ test('support admin gacha view model delegates checklist and season-plan rows th
         }
       }]
     },
-    gachaForm: { seasonId: 'season_1', packId: 'pack_1' }
+    gachaForm: { seasonId: 'season_1', packId: 'pack_1' },
+    gachaValidation: {
+      preview: {
+        raritySummary: [{ rarity: 'rare', probability: 0.25, count: 2, dropWeight: 25 }],
+        items: [
+          { assetId: 'skin.a', rarity: 'rare', dropWeight: 25, probability: 0.25, copyLimit: 1 },
+          { assetId: 'skin.b', rarity: 'secret', dropWeight: 1, probability: 0.001 },
+          { assetId: 'skin.c', rarity: 'common', dropWeight: 100, probability: 0.749 },
+          { assetId: 'skin.d', rarity: 'common', dropWeight: 100, probability: 0 },
+          { assetId: 'skin.e', rarity: 'common', dropWeight: 100, probability: 0 },
+          { assetId: 'skin.f', rarity: 'common', dropWeight: 100, probability: 0 },
+          { assetId: 'skin.g', rarity: 'common', dropWeight: 100, probability: 0 },
+          { assetId: 'skin.h', rarity: 'common', dropWeight: 100, probability: 0 },
+          { assetId: 'skin.i', rarity: 'common', dropWeight: 100, probability: 0 }
+        ]
+      }
+    }
   });
 
   assert.equal(vm.gachaPlanTotalWeight, 100);
@@ -72,4 +88,22 @@ test('support admin gacha view model delegates checklist and season-plan rows th
     'policy_warning',
     'price_present'
   ]);
+  assert.deepEqual(vm.gachaRaritySummary, [{
+    rarity: 'rare',
+    probability: 0.25,
+    count: 2,
+    dropWeight: 25,
+    expectedText: '25.0%',
+    dropWeightText: 25
+  }]);
+  assert.equal(vm.gachaOddsItems.length, 8);
+  assert.deepEqual(vm.gachaOddsItems[1], {
+    assetId: 'skin.b',
+    rarity: 'secret',
+    dropWeight: 1,
+    probability: 0.001,
+    expectedText: '0.10%',
+    dropWeightText: 1,
+    copyLimitText: '-'
+  });
 });

@@ -77,15 +77,14 @@
 > state now shares speed selection, long-battle boost, autoplay delay, tick
 > advancement, load/set-speed patches, and timeline shaping. Gacha admin
 > draft-diff DTOs, diff table rows, validation/checklist rows, season-plan
-> coverage rows, chance text, and fixture operation summaries are shared.
-> Mushroom live frontend transport now routes through the shared client while
-> keeping product route names local.
+> coverage rows, chance text, fixture operation summaries, and odds preview
+> table rows are shared. Mushroom live frontend transport now routes through
+> the shared client while keeping product route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
 > are **not more route plumbing**; they are remaining headless service state
-> machines, smaller gacha admin row shapers such as odds rows, and later
-> neutral UI primitives.
+> machines and later neutral UI primitives.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
@@ -3648,5 +3647,15 @@ that game.
    delegates dry-run/applied operation summary counts through core while
    keeping DB transactions, fixture upserts, token/role checks, audit logs,
    route payloads, validation of incoming fields, and product errors local.
-   Next candidates are remaining headless wallet/gacha orchestration helpers,
-   odds row shapers, and neutral Vue primitives after contracts stabilize.
+   Odds row shapers are fulfilled by Phase 8AP; next candidates are remaining
+   headless wallet/gacha orchestration helpers and neutral Vue primitives after
+   contracts stabilize.
+75. Phase 8AP gacha admin odds preview row helper extraction.
+   **Implemented 2026-07-04:** core commit `c5ebe41` added
+   `client-view-model` helpers for rarity and item odds preview table rows,
+   expected-percent text, weight fallback text, copy-cap fallback text, and row
+   limiting. Mushroom's support admin odds preview now delegates those rows
+   through core while keeping preview loading, API calls, simulation services,
+   product copy, and page layout local. Next candidates are remaining headless
+   wallet/gacha orchestration helpers and neutral Vue primitives after
+   contracts stabilize.

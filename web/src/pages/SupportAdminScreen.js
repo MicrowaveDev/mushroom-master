@@ -1,5 +1,7 @@
 import {
   gachaAdminDraftDiffRows,
+  gachaAdminOddsItemRows,
+  gachaAdminOddsRarityRows,
   gachaAdminPlanChanceText,
   gachaAdminPlanCoverageRows,
   gachaAdminPlanTotalWeight,
@@ -291,11 +293,14 @@ export const SupportAdminScreen = {
     gachaReleaseWarnings() {
       return this.gachaReleaseChecklist?.warnings || [];
     },
+    gachaOddsPreview() {
+      return this.gachaPreview?.preview || this.gachaValidation?.preview || null;
+    },
     gachaOddsItems() {
-      return this.gachaPreview?.preview?.items || this.gachaValidation?.preview?.items || [];
+      return gachaAdminOddsItemRows(this.gachaOddsPreview);
     },
     gachaRaritySummary() {
-      return this.gachaPreview?.preview?.raritySummary || this.gachaValidation?.preview?.raritySummary || [];
+      return gachaAdminOddsRarityRows(this.gachaOddsPreview);
     },
     gachaSimulation() {
       return this.gachaPreview?.simulation || null;
@@ -1879,9 +1884,9 @@ export const SupportAdminScreen = {
               <tbody>
                 <tr v-for="rarity in gachaRaritySummary" :key="rarity.rarity">
                   <td>{{ rarity.rarity }}</td>
-                  <td>{{ formatPercent(rarity.probability ?? rarity.expectedPerOpen ?? 0) }}</td>
+                  <td>{{ rarity.expectedText }}</td>
                   <td>{{ rarity.count }}</td>
-                  <td>{{ rarity.dropWeight || '-' }}</td>
+                  <td>{{ rarity.dropWeightText }}</td>
                 </tr>
               </tbody>
             </table>
@@ -1890,12 +1895,12 @@ export const SupportAdminScreen = {
             <table class="support-admin-table support-admin-compact-table">
               <thead><tr><th>Asset</th><th>Rarity</th><th>Weight</th><th>Expected</th><th>Copy Cap</th></tr></thead>
               <tbody>
-                <tr v-for="item in gachaOddsItems.slice(0, 8)" :key="item.assetId">
+                <tr v-for="item in gachaOddsItems" :key="item.assetId">
                   <td>{{ item.assetId }}</td>
                   <td>{{ item.rarity }}</td>
-                  <td>{{ item.dropWeight }}</td>
-                  <td>{{ formatPercent(item.probability || 0) }}</td>
-                  <td>{{ item.copyLimit ?? '-' }}</td>
+                  <td>{{ item.dropWeightText }}</td>
+                  <td>{{ item.expectedText }}</td>
+                  <td>{{ item.copyLimitText }}</td>
                 </tr>
               </tbody>
             </table>

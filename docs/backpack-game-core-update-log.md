@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `497e6f7410513bb5da1f4e0414257846e51aba69`
-- core short SHA: `497e6f7`
-- core commit: `Add gacha admin fixture operation summary helper`
+- core SHA: `c5ebe4159abcddedd93171375bc6d70d8314d388`
+- core short SHA: `c5ebe41`
+- core commit: `Add gacha admin odds preview row helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core gacha admin fixture summary helper`)
+- game pointer commit: this commit (`Use core gacha admin odds preview row helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `497e6f7` | Gacha admin fixture summary helper | Mushroom gacha fixture import delegates dry-run/applied operation summaries through `modules/gacha/admin-validation`. DB transactions, fixture upserts, token/role checks, audit logs, route payloads, and product errors stay local. |
+| 2026-07-04 | this commit | `c5ebe41` | Gacha admin odds preview row helpers | Mushroom support admin delegates rarity/item odds preview table rows through `client-view-model`. Preview loading, API calls, simulation services, product copy, and page layout stay local. |
+| 2026-07-04 | `3df28e2` | `497e6f7` | Gacha admin fixture summary helper | Mushroom gacha fixture import delegates dry-run/applied operation summaries through `modules/gacha/admin-validation`. DB transactions, fixture upserts, token/role checks, audit logs, route payloads, and product errors stay local. |
 | 2026-07-04 | `63a5999` | `7deb088` | Gacha admin view-model row helpers | Mushroom support admin delegates validation issue rows, release checklist rows, season-plan total weight, coverage rows, and chance text through `client-view-model`. Credential storage, API calls, image upload, product copy, and page layout stay local. |
 | 2026-07-04 | `be963d9` | `c850a14` | Gacha admin draft diff helpers | Mushroom gacha admin preview delegates pack snapshots and live/draft diff DTOs through `modules/gacha/admin-validation`, and the support admin table rows through `client-view-model`. DB reads, token/role checks, audit logs, upload/storage, product copy, and page layout stay local. |
 | 2026-07-04 | `8c35799` | `ee2a275` | Replay playback state helpers | Mushroom replay composable delegates speed selection, long-battle boost, autoplay delay, tick advancement, load/set-speed patches, and replay timeline shaping through `client-view-model`. Timers, routes, settings persistence, event formatting, navigation, Vue computed wrappers, and UI stay local. |
