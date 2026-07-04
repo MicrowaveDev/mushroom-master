@@ -70,6 +70,21 @@ test('support admin gacha view model delegates checklist and season-plan rows th
           { assetId: 'skin.i', rarity: 'common', dropWeight: 100, probability: 0 }
         ]
       }
+    },
+    gachaPreview: {
+      simulation: {
+        items: [
+          { assetId: 'skin.a', rarity: 'rare', dropWeight: 25, observedPerRoll: 0.25, observedCount: 250 },
+          { assetId: 'skin.b', rarity: 'secret', observedPerRoll: 0.001, observedCount: 1 }
+        ]
+      }
+    },
+    gachaFixtureResult: {
+      summary: { total: 3 },
+      operations: [
+        { type: 'pack', id: 'pack_1', action: 'update', afterCount: 2 },
+        { type: 'item', id: 'item_1', action: 'noop' }
+      ]
     }
   });
 
@@ -106,4 +121,16 @@ test('support admin gacha view model delegates checklist and season-plan rows th
     dropWeightText: 1,
     copyLimitText: '-'
   });
+  assert.deepEqual(vm.gachaSimulationItems[1], {
+    assetId: 'skin.b',
+    rarity: 'secret',
+    observedPerRoll: 0.001,
+    observedCount: 1,
+    observedPerRollText: '0.10%',
+    dropWeightText: '-'
+  });
+  assert.deepEqual(vm.gachaFixtureOperations, [
+    { type: 'pack', id: 'pack_1', action: 'update', afterCount: 2, afterCountText: 2 },
+    { type: 'item', id: 'item_1', action: 'noop', afterCountText: '-' }
+  ]);
 });

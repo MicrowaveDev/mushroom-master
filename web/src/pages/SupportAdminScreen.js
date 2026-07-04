@@ -1,11 +1,13 @@
 import {
   gachaAdminDraftDiffRows,
+  gachaAdminFixtureOperationRows,
   gachaAdminOddsItemRows,
   gachaAdminOddsRarityRows,
   gachaAdminPlanChanceText,
   gachaAdminPlanCoverageRows,
   gachaAdminPlanTotalWeight,
   gachaAdminReleaseChecklistRows,
+  gachaAdminSimulationItemRows,
   gachaAdminValidationIssueRows
 } from '@microwavedev/backpack-game-core/client-view-model';
 
@@ -306,7 +308,7 @@ export const SupportAdminScreen = {
       return this.gachaPreview?.simulation || null;
     },
     gachaSimulationItems() {
-      return (this.gachaSimulation?.items || []).slice(0, 8);
+      return gachaAdminSimulationItemRows(this.gachaSimulation);
     },
     gachaDraftDiff() {
       return this.gachaPreview?.diff || this.gachaValidation?.diff || null;
@@ -318,7 +320,7 @@ export const SupportAdminScreen = {
       return this.gachaPreview?.assetPolicyRecommendations || this.gachaValidation?.assetPolicyRecommendations || [];
     },
     gachaFixtureOperations() {
-      return (this.gachaFixtureResult?.operations || []).slice(0, 8);
+      return gachaAdminFixtureOperationRows(this.gachaFixtureResult);
     },
     gachaFixtureSummary() {
       return this.gachaFixtureResult?.summary || null;
@@ -1596,7 +1598,7 @@ export const SupportAdminScreen = {
                     <td>{{ operation.type }}</td>
                     <td>{{ operation.id }}</td>
                     <td>{{ operation.action }}</td>
-                    <td>{{ operation.afterCount ?? '-' }}</td>
+                    <td>{{ operation.afterCountText }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1922,8 +1924,8 @@ export const SupportAdminScreen = {
                 <tr v-for="item in gachaSimulationItems" :key="item.assetId">
                   <td>{{ item.assetId }}</td>
                   <td>{{ item.rarity }}</td>
-                  <td>{{ item.dropWeight }}</td>
-                  <td>{{ formatPercent(item.observedPerRoll || 0) }}</td>
+                  <td>{{ item.dropWeightText }}</td>
+                  <td>{{ item.observedPerRollText }}</td>
                   <td>{{ item.observedCount }}</td>
                 </tr>
               </tbody>

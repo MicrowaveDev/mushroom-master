@@ -77,9 +77,10 @@
 > state now shares speed selection, long-battle boost, autoplay delay, tick
 > advancement, load/set-speed patches, and timeline shaping. Gacha admin
 > draft-diff DTOs, diff table rows, validation/checklist rows, season-plan
-> coverage rows, chance text, fixture operation summaries, and odds preview
-> table rows are shared. Mushroom live frontend transport now routes through
-> the shared client while keeping product route names local.
+> coverage rows, chance text, fixture operation summaries, odds preview table
+> rows, fixture operation rows, and simulation item rows are shared. Mushroom
+> live frontend transport now routes through the shared client while keeping
+> product route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
@@ -3659,3 +3660,12 @@ that game.
    product copy, and page layout local. Next candidates are remaining headless
    wallet/gacha orchestration helpers and neutral Vue primitives after
    contracts stabilize.
+76. Phase 8AQ gacha admin fixture/simulation preview row helper extraction.
+   **Implemented 2026-07-04:** core commit `c9d8492` added
+   `client-view-model` helpers for fixture operation rows and simulation item
+   rows, including row limiting, item-count fallback text, observed-per-roll
+   percent text, and drop-weight fallback text. Mushroom's support admin now
+   delegates those preview rows through core while keeping fixture
+   import/export calls, simulation services, product copy, and page layout
+   local. Next candidates are remaining headless wallet/gacha orchestration
+   helpers and neutral Vue primitives after contracts stabilize.

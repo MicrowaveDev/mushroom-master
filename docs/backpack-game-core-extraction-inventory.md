@@ -125,6 +125,11 @@ copy, theme, and API adapters.
   fallback text, copy-cap fallback text, and row limiting while games keep
   preview loading, simulation services, product copy, and page layout local,
   tested by `tests/client-view-model.test.js`
+- gacha admin frontend preview row slice: `src/client-view-model.js` now also
+  provides fixture operation rows and simulation item rows with display fallback
+  fields while games keep fixture import/export calls, simulation services,
+  product copy, and page layout local, tested by
+  `tests/client-view-model.test.js`
 - gacha simulation slice: `src/modules/gacha/simulation.js`, tested by
   `tests/gacha-simulation.test.js`, covers deterministic odds simulation over
   injected packs, catalogs, ownership snapshots, copy counts, pity state, seed,
@@ -153,8 +158,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `c5ebe41`
-  (`Add gacha admin odds preview row helpers`)
+- latest consumed core commit: `c9d8492`
+  (`Add gacha admin preview row helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -921,11 +926,12 @@ covered by core commit `ee2a275`. Gacha admin pack draft-diff DTOs and diff
 table rows are covered by core commit `c850a14`. Gacha admin validation,
 release checklist, and season-plan row shaping is covered by core commit
 `7deb088`. Gacha admin fixture operation summaries are covered by core commit
-`497e6f7`. Gacha admin odds preview rows are covered by core commit `c5ebe41`.
-The next useful extractions are remaining headless wallet/gacha orchestration
-helpers and later UI primitives that both Mushroom and Meat can consume without
-inheriting Mushroom persistence, Telegram, payment, catalog, art, support,
-haptics, or page-composition rules.
+`497e6f7`. Gacha admin odds preview rows are covered by core commit `c5ebe41`,
+and fixture-operation/simulation preview rows are covered by core commit
+`c9d8492`. The next useful extractions are remaining headless wallet/gacha
+orchestration helpers and later UI primitives that both Mushroom and Meat can
+consume without inheriting Mushroom persistence, Telegram, payment, catalog,
+art, support, haptics, or page-composition rules.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 

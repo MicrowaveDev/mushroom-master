@@ -377,12 +377,13 @@ core. Replay playback state is also in core. Gacha admin draft-diff DTOs, diff
 table-row shaping, validation issue rows, release checklist rows, season-plan
 coverage/chance shaping, and fixture operation summaries are now in core while
 DB reads/writes, auth, audit logs, upload/storage, copy, and page layout stay
-product-local. Gacha admin odds preview table rows are also in core while
-preview loading and simulation services stay product-local. Prioritize
-remaining headless orchestration next. Keep whole services, Express routes,
-persistence, payment/webhook providers, runtime catalogs, route maps, artwork,
-support operations, haptics, page assembly, and secure paid-roll RNG selection
-inside product repos.
+product-local. Gacha admin odds preview, fixture operation, and simulation item
+table rows are also in core while preview loading, fixture import/export calls,
+and simulation services stay product-local. Prioritize remaining headless
+orchestration next. Keep whole services, Express routes, persistence,
+payment/webhook providers, runtime catalogs, route maps, artwork, support
+operations, haptics, page assembly, and secure paid-roll RNG selection inside
+product repos.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`
