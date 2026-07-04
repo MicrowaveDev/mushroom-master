@@ -22,7 +22,7 @@ before there is a registry package version or a second backpack-game consumer.
 - core short SHA: `b56ad91`
 - core commit: `Add client response envelope unwrapping`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core route client for social flows`)
+- game pointer commit: this commit (`Use core route client for auth flows`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `b56ad91` | Consumer route-client adoption | Mushroom social and wiki-detail flows now use the same local route map plus shared core route-adapter client while keeping route ownership, session header policy, navigation effects, replay autoplay, and product copy local. |
+| 2026-07-04 | this commit | `b56ad91` | Consumer route-client adoption | Mushroom auth/bootstrap/settings routes now use the local route map plus shared core route-adapter client while keeping auth-code verification, bootstrap state projection, cache ownership, navigation effects, and product copy local. |
+| 2026-07-04 | `eaa1b01` | `b56ad91` | Consumer route-client adoption | Mushroom social and wiki-detail flows now use the same local route map plus shared core route-adapter client while keeping route ownership, session header policy, navigation effects, replay autoplay, and product copy local. |
 | 2026-07-04 | `90b3ef9` | `b56ad91` | Client response envelope unwrapping | Added optional `{ success, data, error }` envelope unwrapping to the shared route-adapter client. Mushroom customization wallet/gacha flows now use a local route map with the core client while keeping route ownership, session header policy, idempotency-key generation, Telegram/web checkout opening, bootstrap refresh, and product copy local. |
 | 2026-07-04 | `24fe884` | `fc53abc` | Wallet and roll mutation view-state helpers | Added headless wallet purchase and asset roll/burn mutation state reducers through `client-view-model`. Mushroom customization delegates opening/success/failure view-state transitions while keeping API routes, idempotency-key generation, Telegram/web checkout opening, bootstrap refresh, and product copy local. |
 | 2026-07-04 | `b7c7729` | `0f8beee` | Profile asset target variant shaper | Added profile asset target-variant list projection through `modules/assets`. Mushroom progression portraits delegate list shaping while keeping portrait asset id convention, runtime catalog, gacha-plan policy, active/equipment resolution, and product routes local. |

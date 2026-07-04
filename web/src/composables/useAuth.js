@@ -1,4 +1,4 @@
-import { apiJson, parseStartParams } from '../api.js';
+import { createMushroomGameApiClient, parseStartParams } from '../api.js';
 import { projectLoadoutItems } from './loadout-projection.js';
 import { useTelegramWebApp } from './useTelegramWebApp.js';
 
@@ -60,6 +60,10 @@ export function extractTelegramInitData({ win = globalThis.window, telegram } = 
 }
 
 export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
+  function gameApi(sessionKey = state.sessionKey) {
+    return createMushroomGameApiClient(sessionKey);
+  }
+
   function navigate(screen, extra = {}, options = {}) {
     if (typeof goTo === 'function') {
       goTo(screen, extra, options);
@@ -187,14 +191,14 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
 
   async function refreshBootstrap() {
     try {
-      state.appConfig = await apiJson('/api/app-config');
+      state.appConfig = await gameApi('').getRoute('appConfig');
     } catch (_error) {
       state.appConfig = { localAiLabEnabled: false, localDevAuthEnabled: false, paymentSupport: {} };
     }
     try {
       const [characters, artifacts] = await Promise.all([
-        apiJson('/api/characters'),
-        apiJson('/api/artifacts')
+        gameApi('').getRoute('characters'),
+        gameApi('').getRoute('artifacts')
       ]);
       state.catalogCounts = {
         mushrooms: characters.mushrooms?.length || 0,
@@ -224,12 +228,12 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     // race the loadoutItems → containerItems projection during cold Vite.
     state.bootstrapReady = false;
     try {
-      const bootstrap = await apiJson('/api/bootstrap', {}, state.sessionKey);
+      const bootstrap = await gameApi().getRoute('bootstrap');
       applyBootstrapData(bootstrap);
       writeCachedBootstrap(state.sessionKey, bootstrap);
-      try { state.friends = await apiJson('/api/friends', {}, state.sessionKey); } catch { state.friends = []; }
-      try { state.leaderboard = await apiJson('/api/leaderboard', {}, state.sessionKey); } catch { state.leaderboard = []; }
-      try { state.wikiHome = await apiJson('/api/wiki/home'); } catch { state.wikiHome = null; }
+      try { state.friends = await gameApi().getRoute('friends'); } catch { state.friends = []; }
+      try { state.leaderboard = await gameApi().getRoute('leaderboard'); } catch { state.leaderboard = []; }
+      try { state.wikiHome = await gameApi('').getRoute('wikiHome'); } catch { state.wikiHome = null; }
       // URL-driven deep link: /game-run/:id loads the active run into prep
       // when the ids match (§2.7 bookmarkable runs).
       const urlParams = parseStartParams();
@@ -345,15 +349,12 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   async function persistPreferredLanguage(sessionKey = state.sessionKey, lang = state.lang, settings = state.bootstrap?.settings || {}) {
     if (!sessionKey) return;
     const preferredLang = writePreferredLanguage(lang);
-    await apiJson('/api/settings', {
-      method: 'POST',
-      body: JSON.stringify({
-        lang: preferredLang,
-        reducedMotion: settings.reducedMotion || false,
-        battleSpeed: settings.battleSpeed || '1x',
-        replaySpeed: settings.replaySpeed || 2
-      })
-    }, sessionKey);
+    await gameApi(sessionKey).postRoute('settings', {}, {
+      lang: preferredLang,
+      reducedMotion: settings.reducedMotion || false,
+      battleSpeed: settings.battleSpeed || '1x',
+      replaySpeed: settings.replaySpeed || 2
+    });
     state.lang = preferredLang;
   }
 
@@ -386,7 +387,8 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   }
 
   async function startTelegramBotCodeLogin() {
-    const data = await apiJson('/api/auth/telegram/code', { method: 'POST' });
+    const api = gameApi('');
+    const data = await api.request(api.routePath('telegramAuthCode'), { method: 'POST' });
     state.authCode = data;
     openTelegramAuthLink(data.botUrl);
     pollTelegramAuthCode(data.privateCode);
@@ -415,10 +417,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       localStorage.setItem(WEB_CLIENT_ID_KEY, clientId);
     }
     try {
-      const data = await apiJson('/api/auth/web', {
-        method: 'POST',
-        body: JSON.stringify({ clientId, lang: state.lang })
-      });
+      const data = await gameApi('').postRoute('webAuth', {}, { clientId, lang: state.lang });
       state.sessionKey = data.sessionKey;
       localStorage.setItem('sessionKey', data.sessionKey);
       state.authCode = null;
@@ -432,7 +431,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     clearAuthPoll();
     try {
       state.error = '';
-      const data = await apiJson('/api/dev/session', { method: 'POST', body: JSON.stringify({}) });
+      const data = await gameApi('').postRoute('devSession', {}, {});
       state.sessionKey = data.sessionKey;
       localStorage.setItem('sessionKey', data.sessionKey);
       await refreshBootstrap();
@@ -447,7 +446,8 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
     state.error = '';
     if (sessionKey) {
       try {
-        await apiJson('/api/auth/logout', { method: 'POST' }, sessionKey);
+        const api = gameApi(sessionKey);
+        await api.request(api.routePath('authLogout'), { method: 'POST' });
       } catch {
         // Local logout should still clear this device even if the session
         // already expired or the network request fails.
@@ -473,7 +473,11 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   async function saveCharacter(mushroomId) {
     try {
       const wasFirstPick = !state.bootstrap?.activeMushroomId;
-      await apiJson('/api/active-character', { method: 'PUT', body: JSON.stringify({ mushroomId }) }, state.sessionKey);
+      const api = gameApi();
+      await api.request(api.routePath('activeCharacter'), {
+        method: 'PUT',
+        body: { mushroomId }
+      });
       // First pick chains immediately into startNewGameRun(). A full bootstrap
       // here briefly re-renders the character list between the click and the
       // round-1 prep redirect, which reads as a route flicker.
@@ -489,15 +493,12 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
   async function saveSettings() {
     try {
       writePreferredLanguage(state.lang);
-      await apiJson('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify({
-          lang: state.lang,
-          reducedMotion: state.bootstrap.settings.reducedMotion,
-          battleSpeed: state.bootstrap.settings.battleSpeed,
-          replaySpeed: state.bootstrap.settings.replaySpeed
-        })
-      }, state.sessionKey);
+      await gameApi().postRoute('settings', {}, {
+        lang: state.lang,
+        reducedMotion: state.bootstrap.settings.reducedMotion,
+        battleSpeed: state.bootstrap.settings.battleSpeed,
+        replaySpeed: state.bootstrap.settings.replaySpeed
+      });
       await refreshBootstrap();
     } catch (error) {
       state.error = error.message || 'Could not save settings';

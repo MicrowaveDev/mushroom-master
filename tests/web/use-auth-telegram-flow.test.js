@@ -26,6 +26,25 @@ function makeState() {
   };
 }
 
+function jsonResponse(payload) {
+  return {
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: {
+      get(name) {
+        return name.toLowerCase() === 'content-type' ? 'application/json' : null;
+      }
+    },
+    async json() {
+      return payload;
+    },
+    async text() {
+      return JSON.stringify(payload);
+    }
+  };
+}
+
 function installBotCodeFetch({ assertPath = true } = {}) {
   const originalFetch = globalThis.fetch;
   const originalOpen = globalThis.open;
@@ -35,18 +54,14 @@ function installBotCodeFetch({ assertPath = true } = {}) {
   globalThis.fetch = async (path, options = {}) => {
     requests.push({ path, options });
     if (assertPath) assert.equal(path, '/api/auth/telegram/code');
-    return {
-      async json() {
-        return {
-          success: true,
-          data: {
-            privateCode: 'private-code',
-            publicCode: 'public-code',
-            botUrl: 'https://t.me/MushroomBattlesBot?start=auth-public-code'
-          }
-        };
+    return jsonResponse({
+      success: true,
+      data: {
+        privateCode: 'private-code',
+        publicCode: 'public-code',
+        botUrl: 'https://t.me/MushroomBattlesBot?start=auth-public-code'
       }
-    };
+    });
   };
   globalThis.open = (url) => opened.push(url);
 
@@ -157,17 +172,9 @@ test('[lang] refreshBootstrap keeps selected local language and persists over st
       '/api/wiki/home': {}
     };
     if (path === '/api/settings') {
-      return {
-        async json() {
-          return { success: true, data: { ok: true } };
-        }
-      };
+      return jsonResponse({ success: true, data: { ok: true } });
     }
-    return {
-      async json() {
-        return { success: true, data: payloads[path] };
-      }
-    };
+    return jsonResponse({ success: true, data: payloads[path] });
   };
 
   try {
@@ -185,6 +192,7 @@ test('[lang] refreshBootstrap keeps selected local language and persists over st
     assert.equal(state.lang, 'ru');
     const settingsRequest = requests.find((request) => request.path === '/api/settings');
     assert.ok(settingsRequest, 'stale server locale should be corrected');
+    assert.equal(settingsRequest.options.headers['X-Session-Key'], 'session-1');
     assert.deepEqual(JSON.parse(settingsRequest.options.body), {
       lang: 'ru',
       reducedMotion: true,
@@ -196,4 +204,37 @@ test('[lang] refreshBootstrap keeps selected local language and persists over st
     globalThis.localStorage = originalLocalStorage;
     globalThis.sessionStorage = originalSessionStorage;
   }
+});
+
+test('[auth-routes] saveCharacter uses the shared route client', async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (path, options = {}) => {
+    requests.push({ path, options });
+    return jsonResponse({ success: true, data: { ok: true } });
+  };
+
+  try {
+    const state = makeState();
+    state.sessionKey = 'session-2';
+    state.bootstrap = {
+      activeMushroomId: null,
+      settings: { lang: 'en', reducedMotion: false, battleSpeed: '1x', replaySpeed: 2 }
+    };
+    const auth = useAuth(state, () => {}, {
+      getWebApp: () => null,
+      applyTelegramTheme() {},
+      syncViewportVars() {}
+    });
+
+    assert.deepEqual(await auth.saveCharacter('thalla'), { wasFirstPick: true });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].path, '/api/active-character');
+  assert.equal(requests[0].options.method, 'PUT');
+  assert.equal(requests[0].options.headers['X-Session-Key'], 'session-2');
+  assert.deepEqual(JSON.parse(requests[0].options.body), { mushroomId: 'thalla' });
 });

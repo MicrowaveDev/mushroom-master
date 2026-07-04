@@ -657,8 +657,9 @@ core commit `f387670`. Asset gacha roll/burn result DTO shaping moved in core
 commit `9b7b505`, and profile asset target-variant response shaping moved in
 core commit `0f8beee`. Wallet and asset-roll mutation view-state shaping moved
 in core commit `fc53abc`. Client response-envelope unwrapping moved in core
-commit `b56ad91`, and Mushroom customization wallet/gacha routes plus
-social/wiki-detail routes now use the shared route-adapter client.
+commit `b56ad91`, and Mushroom customization wallet/gacha routes,
+social/wiki-detail routes, and auth/bootstrap/settings routes now use the
+shared route-adapter client.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -782,9 +783,11 @@ Next planned frontend slices:
    optional response-envelope unwrapping in the shared route client and
    Mushroom customization route-client adoption. **Eleventh consumer slice
    implemented 2026-07-04** with Mushroom social/wiki-detail route-client
-   adoption over the same core client. Continue with bootstrap/game-run service
-   adapters before page/component extraction. Do not move the full Mushroom API
-   client into core yet; keep product routes behind injected adapters.
+   adoption over the same core client. **Twelfth consumer slice implemented
+   2026-07-04** with Mushroom auth/bootstrap/settings route-client adoption.
+   Continue with game-run service adapters before page/component extraction. Do
+   not move the full Mushroom API client into core yet; keep product routes
+   behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay
    view model, wallet/asset catalog state, gacha pack state, and admin

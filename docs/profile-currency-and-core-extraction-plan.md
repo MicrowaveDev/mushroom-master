@@ -2762,6 +2762,13 @@ with the shared route-adapter client. Route ownership, session header policy,
 navigation effects, replay autoplay, runtime state ownership, and product copy
 stay local.
 
+The following consumer-adoption cleanup also stays on core commit `b56ad91`:
+Mushroom auth, bootstrap, settings, session, and active-character routes now use
+the local route map with the shared route-adapter client. Telegram auth-code
+verification remains raw because it has a special `{ success, needsBotAuth }`
+contract; bootstrap state projection, cache ownership, navigation effects,
+runtime state ownership, and product copy stay local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3417,3 +3424,14 @@ that game.
    product copy stay local. Next candidates are bootstrap/game-run route-client
    adoption, more asset inventory/equipment DTO shapers, and neutral Vue
    composables/components only after route contracts stabilize.
+63. Phase 8AD auth/bootstrap route-client adoption.
+   **Implemented 2026-07-04:** Mushroom added app-config, catalog,
+   bootstrap, leaderboard, wiki-home, settings, Telegram code start, browser
+   auth, dev session, logout, and active-character route names to its local
+   route map and moved the corresponding `useAuth` calls through the shared
+   core route-adapter client. Telegram auth-code verification stays raw because
+   it returns the special bot-auth polling shape. Bootstrap state projection,
+   cache ownership, navigation effects, runtime state ownership, and product
+   copy stay local. Next candidates are game-run route-client adoption, more
+   asset inventory/equipment DTO shapers, and neutral Vue composables/components
+   only after route contracts stabilize.
