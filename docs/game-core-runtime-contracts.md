@@ -304,9 +304,12 @@ landed in core commit `8345448` with `modules/gacha/admin-validation`, and
 gacha odds simulation moved in core commit `b3da379` with
 `modules/gacha/simulation`. Wallet accounting moved in core commit `af520f0`
 with `wallet-accounting` and `modules/wallet`. Profile asset state moved in
-core commit `6ae688b` with `profile-asset-state` and `modules/assets`. New
-shared backend logic should continue landing behind public `modules/*` exports,
-and new browser-safe helpers should land behind `client` or
+core commit `6ae688b` with `profile-asset-state` and `modules/assets`. Asset
+catalog acquisition default/override policy moved in core commit `77b1d7b`
+through `asset-gacha` / `modules/gacha`; games still own env/config parsing,
+product pack ids, portrait URLs, catalog assembly, and runtime pack lookup.
+New shared backend logic should continue landing behind public `modules/*`
+exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`
 files. Broader asset runtime/catalog lifecycle remains later because it still
 couples to persistence, support actions, paid rollback behavior, gacha

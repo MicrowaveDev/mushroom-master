@@ -33,6 +33,8 @@ copy, theme, and API adapters.
 - eighth slice: `src/rng.js`, tested by `tests/rng.test.js`
 - ninth slice: `src/asset-gacha.js`, tested by
   `tests/asset-gacha.test.js`
+  - includes asset catalog acquisition default/override resolution through
+    `resolveAssetCatalogAcquisitionPolicy`
 - layered architecture slice: public module facades under `src/modules/*`,
   route-adapter client primitives in `src/client/index.js`, and frontend
   loadout projection helpers in `src/client-view-model.js`, tested by
@@ -61,8 +63,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `6ae688b`
-  (`Add profile asset state helpers`)
+- latest consumed core commit: `77b1d7b`
+  (`Add asset catalog acquisition policy helper`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -597,7 +599,8 @@ Post-implementation review on 2026-07-04: the package/module architecture pass
 landed in core commit `3e3d5d6`, the first real helper movement landed in core
 commit `8345448`, the gacha simulation helper moved in core commit `b3da379`,
 the wallet accounting helper moved in core commit `af520f0`, and the profile
-asset state helper moved in core commit `6ae688b`.
+asset state helper moved in core commit `6ae688b`. Asset catalog acquisition
+default/override policy moved in core commit `77b1d7b`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -640,6 +643,12 @@ Next planned domain slices:
    `6ae688b`; Mushroom delegates through `modules/assets` while keeping
    runtime catalogs, SQL lifecycle, support actions, paid rollback behavior,
    gacha roll/burn lifecycle, and the active-portrait mirror local.**
+7. **Asset catalog acquisition policy cleanup:** reusable paid/free default
+   acquisition-mode resolution, per-asset overrides, explicit `packId: null`,
+   and default pack assignment. **Implemented 2026-07-04 in core commit
+   `77b1d7b`; Mushroom delegates through `modules/gacha` while keeping env
+   parsing, product pack ids, portrait URLs, catalog assembly, runtime pack
+   lookup, and direct-buy/roll execution local.**
 
 Next planned frontend slices:
 

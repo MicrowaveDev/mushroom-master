@@ -28,6 +28,7 @@ import {
   validateTelegramPreCheckout
 } from '../../app/server/services/wallet-service.js';
 import {
+  getAssetCatalog,
   getAssetPacksForPlayer,
   getPackOdds,
   getPackOddsForRuntime,
@@ -116,6 +117,24 @@ async function insertMutationClaim({
   );
   return claimToken;
 }
+
+test('[Req 14-F] asset catalog acquisition policy respects defaults and overrides', async () => {
+  await withEnv({
+    ASSET_CATALOG_DEFAULT_PAID_MODE: 'gacha',
+    ASSET_CATALOG_POLICY_JSON: JSON.stringify({
+      [portraitAssetId('axilin', '1')]: { acquisitionMode: 'direct', packId: null }
+    })
+  }, async () => {
+    const catalog = getAssetCatalog();
+    const gachaDefault = catalog.find((asset) => asset.assetId === portraitAssetId('thalla', '1'));
+    const directOverride = catalog.find((asset) => asset.assetId === portraitAssetId('axilin', '1'));
+
+    assert.equal(gachaDefault.acquisitionMode, 'gacha');
+    assert.equal(gachaDefault.packId, 'season_1_portraits');
+    assert.equal(directOverride.acquisitionMode, 'direct');
+    assert.equal(directOverride.packId, null);
+  });
+});
 
 async function insertDbGachaPack({
   packId,

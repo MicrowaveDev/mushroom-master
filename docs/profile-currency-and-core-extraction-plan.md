@@ -58,7 +58,9 @@
 > exports so another game can integrate with typed provider hooks. **Phase 8I**
 > is the active domain-core extraction lane; the shared `asset-gacha`,
 > gacha admin-validation, gacha simulation, wallet-accounting, and
-> profile-asset-state slices are implemented. Product DB schemas,
+> profile-asset-state slices are implemented, and a focused asset catalog
+> acquisition-policy cleanup now shares paid/free default and per-asset override
+> resolution. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -2445,7 +2447,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `6ae688b`; typed package baseline remains `d5fb481`.
+   `77b1d7b`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2654,6 +2656,12 @@ projection now run through `modules/assets`. Mushroom keeps runtime catalog
 lookup, SQL row lifecycle, gacha roll/burn grants, support actions, paid
 rollback behavior, route payloads, and the `player_mushrooms.active_portrait`
 compatibility mirror local.
+
+The next completed backend cleanup is asset catalog acquisition policy, landed
+in core commit `77b1d7b`: paid/free default acquisition modes, per-asset
+overrides, explicit `packId: null`, and default pack assignment now run through
+`modules/gacha`. Mushroom keeps env parsing, product pack ids, portrait URLs,
+runtime catalog assembly, and direct-buy/roll execution local.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -3179,6 +3187,14 @@ that game.
    and portrait variant projection. Mushroom asset service now delegates
    through those helpers while keeping runtime catalogs, SQL lifecycle, gacha
    roll/burn grants, support actions, paid rollback behavior, route payloads,
-   and the active-portrait mirror local. Next backend candidates are focused
-   asset-policy cleanup or client/contracts work; full Vue page/component
-   movement remains later.
+   and the active-portrait mirror local.
+50. Phase 8Q asset catalog acquisition-policy cleanup. **Implemented
+   2026-07-04:** core commit `77b1d7b` added
+   `resolveAssetCatalogAcquisitionPolicy` through `asset-gacha` /
+   `modules/gacha` for paid/free default acquisition modes, per-asset
+   overrides, explicit `packId: null`, and default pack assignment. Mushroom
+   asset catalog construction delegates to this helper while env parsing,
+   `PORTRAIT_PACK_ID`, portrait URLs, runtime pack lookup, direct-buy/roll
+   execution, SQL lifecycle, support actions, and product route payloads stay
+   local. Next candidates are client/contracts and frontend-services; full Vue
+   page/component movement remains later.

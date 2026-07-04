@@ -10,6 +10,7 @@ import {
   hashAssetGachaCandidatePool,
   normalizeAssetGachaBurnRules,
   normalizeAssetGachaDuplicatePolicy,
+  resolveAssetCatalogAcquisitionPolicy,
   resolveAssetGachaRollCandidates,
   selectAssetGachaBurnTargets,
   selectAssetGachaRollResults,
@@ -120,18 +121,11 @@ function rarityForPortraitVariant(variant) {
 
 function acquisitionPolicyForAsset(assetId, price) {
   const overrides = parseJsonEnv('ASSET_CATALOG_POLICY_JSON', {});
-  const override = overrides[assetId] && typeof overrides[assetId] === 'object' ? overrides[assetId] : {};
-  const configuredDefault = process.env.ASSET_CATALOG_DEFAULT_PAID_MODE;
-  const defaultMode = price > 0 && ['direct', 'gacha', 'both'].includes(configuredDefault)
-    ? configuredDefault
-    : price > 0 ? 'both' : 'direct';
-  const acquisitionMode = ['direct', 'gacha', 'both'].includes(override.acquisitionMode)
-    ? override.acquisitionMode
-    : defaultMode;
-  const packId = Object.hasOwn(override, 'packId')
-    ? override.packId
-    : (price > 0 && acquisitionMode !== 'direct' ? PORTRAIT_PACK_ID : null);
-  return { acquisitionMode, packId };
+  return resolveAssetCatalogAcquisitionPolicy({ assetId, price }, {
+    overrides,
+    defaultPaidMode: process.env.ASSET_CATALOG_DEFAULT_PAID_MODE,
+    defaultPackId: PORTRAIT_PACK_ID
+  });
 }
 
 export function portraitAssetId(mushroomId, portraitId = 'default') {

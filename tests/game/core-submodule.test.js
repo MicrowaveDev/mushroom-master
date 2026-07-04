@@ -11,7 +11,10 @@ import {
   shuffleWithRng,
   simulateBattle
 } from '@microwavedev/backpack-game-core';
-import { validateAssetGachaPack } from '@microwavedev/backpack-game-core/modules/gacha';
+import {
+  resolveAssetCatalogAcquisitionPolicy,
+  validateAssetGachaPack
+} from '@microwavedev/backpack-game-core/modules/gacha';
 import { applyWalletBalanceDelta } from '@microwavedev/backpack-game-core/modules/wallet';
 import { createProfileAssetState } from '@microwavedev/backpack-game-core/modules/assets';
 import { checkBackpackGameCoreSubmodule } from '../../app/scripts/check-backpack-game-core-submodule.js';
@@ -34,6 +37,7 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(typeof shuffleWithRng, 'function');
   assert.equal(typeof simulateBattle, 'function');
   assert.equal(typeof validateAssetGachaPack, 'function');
+  assert.equal(typeof resolveAssetCatalogAcquisitionPolicy, 'function');
   assert.equal(typeof applyWalletBalanceDelta, 'function');
   assert.equal(typeof createProfileAssetState, 'function');
 
@@ -44,6 +48,13 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(createProfileAssetState({
     instances: [{ asset_id: 'portrait.axilin.1', status: 'active' }]
   }).ownedAssetIds.has('portrait.axilin.1'), true);
+  assert.equal(resolveAssetCatalogAcquisitionPolicy({
+    assetId: 'portrait.axilin.1',
+    price: 500
+  }, {
+    defaultPaidMode: 'gacha',
+    defaultPackId: 'season_1_portraits'
+  }).packId, 'season_1_portraits');
 
   const result = simulateBattle({
     left: { side: 'left', name: 'left', maxHealth: 10, currentHealth: 10, attack: 10, speed: 2, defense: 0 },
