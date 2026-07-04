@@ -83,6 +83,8 @@ import {
   createGachaPackItem,
   createGachaSeason,
   deleteGachaPackItem,
+  exportGachaAdminFixture,
+  importGachaAdminFixture,
   listGachaAdminCatalog,
   previewGachaAdminPack,
   replaceGachaPackItems,
@@ -1181,6 +1183,38 @@ export async function createApp() {
     supportAdminRateLimit,
     asyncRoute(async (_req, res) => {
       res.json({ success: true, data: await listGachaAdminCatalog() });
+    })
+  );
+
+  app.get(
+    '/api/admin/gacha/export',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    supportAdminRateLimit,
+    asyncRoute(async (_req, res) => {
+      res.json({ success: true, data: await exportGachaAdminFixture() });
+    })
+  );
+
+  app.post(
+    '/api/admin/gacha/import',
+    requireSupportAdmin,
+    requireSupportAdminRole('gacha_operator'),
+    requireSupportApproval,
+    supportAdminRateLimit,
+    asyncRoute(async (req, res) => {
+      res.json({
+        success: true,
+        data: await importGachaAdminFixture({
+          actorId: req.supportActorId,
+          fixture: req.body?.fixture ?? req.body,
+          dryRun: req.body?.dryRun !== false,
+          allowApproved: req.body?.allowApproved === true,
+          reason: req.body?.reason,
+          note: req.body?.note,
+          evidence: supportEvidence(req)
+        })
+      });
     })
   );
 

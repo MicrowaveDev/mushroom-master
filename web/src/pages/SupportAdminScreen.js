@@ -156,6 +156,10 @@ export const SupportAdminScreen = {
       gachaValidation: null,
       gachaPreview: null,
       gachaSimulationTrials: 1000,
+      gachaFixtureJson: '',
+      gachaFixtureDryRun: true,
+      gachaFixtureAllowApproved: false,
+      gachaFixtureResult: null,
       gachaForm: { ...DEFAULT_GACHA_FORM },
       gachaItemDrafts: [makeDefaultGachaItemDraft()]
     };
@@ -289,8 +293,20 @@ export const SupportAdminScreen = {
     gachaAssetPolicyRecommendations() {
       return this.gachaPreview?.assetPolicyRecommendations || this.gachaValidation?.assetPolicyRecommendations || [];
     },
+    gachaFixtureOperations() {
+      return (this.gachaFixtureResult?.operations || []).slice(0, 8);
+    },
+    gachaFixtureSummary() {
+      return this.gachaFixtureResult?.summary || null;
+    },
     canLoadGachaCatalog() {
       return this.token.trim() && this.actorId.trim() && !this.gachaLoading;
+    },
+    canRunGachaFixtureImport() {
+      return this.token.trim()
+        && this.actorId.trim()
+        && this.gachaFixtureJson.trim()
+        && !this.gachaActionLoading;
     },
     canSubmitGachaSeason() {
       return this.token.trim()
@@ -761,6 +777,49 @@ export const SupportAdminScreen = {
         this.gachaActionLoading = false;
       }
     },
+    async exportGachaFixture() {
+      if (!this.canLoadGachaCatalog) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const fixture = await this.supportRequest('/api/admin/gacha/export');
+        this.gachaFixtureJson = prettyJson(fixture, {});
+        this.gachaFixtureResult = null;
+        this.status = 'Gacha fixture exported.';
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
+    async importGachaFixture({ dryRun = this.gachaFixtureDryRun } = {}) {
+      if (!this.canRunGachaFixtureImport) return;
+      this.gachaActionLoading = true;
+      this.error = '';
+      this.status = '';
+      this.rememberCredentials();
+      try {
+        const fixture = parseJsonInput(this.gachaFixtureJson, {}, 'Gacha fixture');
+        const data = await this.supportRequest('/api/admin/gacha/import', {
+          method: 'POST',
+          body: {
+            fixture,
+            dryRun,
+            allowApproved: this.gachaFixtureAllowApproved,
+            ...this.gachaReasonPayload()
+          }
+        });
+        this.gachaFixtureResult = data;
+        this.status = data.dryRun ? 'Gacha fixture dry run complete.' : 'Gacha fixture import applied.';
+        if (!data.dryRun) await this.loadGachaCatalog({ silent: true });
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.gachaActionLoading = false;
+      }
+    },
     async transitionGachaPack(action) {
       if (!this.gachaForm.packId.trim() || !this.canLoadGachaCatalog) return;
       this.gachaActionLoading = true;
@@ -1224,6 +1283,44 @@ export const SupportAdminScreen = {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section v-if="gachaCatalog" class="panel support-admin-panel support-admin-action-form" data-testid="gacha-fixture-panel">
+          <h3>Fixture Import / Export</h3>
+          <textarea class="support-admin-input support-admin-code-input" data-testid="gacha-fixture-json" rows="6" v-model="gachaFixtureJson"></textarea>
+          <div class="support-admin-gacha-actions support-admin-fixture-actions">
+            <label class="support-admin-checkline">
+              <input type="checkbox" data-testid="gacha-fixture-dry-run-toggle" v-model="gachaFixtureDryRun" />
+              <span>Dry run</span>
+            </label>
+            <label class="support-admin-checkline">
+              <input type="checkbox" data-testid="gacha-fixture-allow-approved" v-model="gachaFixtureAllowApproved" />
+              <span>Preserve approved packs</span>
+            </label>
+            <button class="support-admin-secondary-button" data-testid="gacha-fixture-export" type="button" :disabled="gachaActionLoading" @click="exportGachaFixture">Export</button>
+            <button class="support-admin-secondary-button" data-testid="gacha-fixture-dry-run" type="button" :disabled="!canRunGachaFixtureImport" @click="importGachaFixture({ dryRun: true })">Dry Run</button>
+            <button class="primary support-admin-submit" data-testid="gacha-fixture-import" type="button" :disabled="!canRunGachaFixtureImport" @click="importGachaFixture({ dryRun: false })">Import</button>
+          </div>
+          <section v-if="gachaFixtureResult" class="support-admin-fixture-result" data-testid="gacha-fixture-result">
+            <p class="support-admin-balance">
+              Result:
+              <strong>{{ gachaFixtureResult.dryRun ? 'dry run' : 'applied' }}</strong>
+              · {{ gachaFixtureSummary?.total || 0 }} operations
+            </p>
+            <div class="support-admin-table-wrap">
+              <table class="support-admin-table support-admin-compact-table">
+                <thead><tr><th>Type</th><th>ID</th><th>Action</th><th>Items</th></tr></thead>
+                <tbody>
+                  <tr v-for="operation in gachaFixtureOperations" :key="operation.type + operation.id + operation.action">
+                    <td>{{ operation.type }}</td>
+                    <td>{{ operation.id }}</td>
+                    <td>{{ operation.action }}</td>
+                    <td>{{ operation.afterCount ?? '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
         <datalist id="gacha-asset-options">

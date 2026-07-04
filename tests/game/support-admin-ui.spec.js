@@ -53,6 +53,7 @@ async function openGachaAdmin(page, baseURL) {
 async function captureGachaConsole(page, name) {
   await expect(page.getByTestId('support-admin-screen')).toBeVisible();
   await expect(page.getByTestId('gacha-catalog')).toBeVisible();
+  await expect(page.getByTestId('gacha-fixture-panel')).toBeVisible();
   await expect(page.getByTestId('gacha-pack-form')).toBeVisible();
   await expect(page.getByTestId('gacha-items-form')).toBeVisible();
   await expect(page.getByTestId('gacha-validation')).toBeVisible();
@@ -276,6 +277,17 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await expect(page.getByTestId('support-admin-status')).toContainText('Gacha pack publish applied.');
   await expect(page.getByTestId('gacha-packs-table')).toContainText('approved');
   await expect(page.getByTestId('gacha-packs-table')).toContainText('active');
+
+  await page.getByTestId('gacha-fixture-export').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha fixture exported.');
+  await expect(page.getByTestId('gacha-fixture-json')).toHaveValue(/e2e_gacha_pack/);
+  await page.getByTestId('gacha-fixture-allow-approved').check();
+  await page.getByTestId('gacha-fixture-dry-run').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha fixture dry run complete.');
+  await expect(page.getByTestId('gacha-fixture-result')).toContainText('dry run');
+  await page.getByTestId('gacha-fixture-import').click();
+  await expect(page.getByTestId('support-admin-status')).toContainText('Gacha fixture import applied.');
+  await expect(page.getByTestId('gacha-fixture-result')).toContainText('applied');
 
   const seasonBox = await page.getByTestId('gacha-season-form').boundingBox();
   const collectionBox = await page.getByTestId('gacha-collection-form').boundingBox();

@@ -637,11 +637,20 @@ emergency maintenance, not normal season authoring.
   skin buying available when gacha is off, keep draft/unapproved packs hidden,
   make approved-row changes auditable, and provide a rollback path that can
   disable a bad pack without deleting ownership or roll history.
-- Backlog after the G5D safety MVP: migration/rollback scripts for live season
-  corrections, richer season/collection-scoped pity state, import/export
-  fixtures, CSV/JSON bulk item editing, staff permissions beyond the first
-  operator role, operator runbooks, scheduled activation alerts, richer paid-pack
-  jurisdiction/odds disclosure review, and deeper marketplace/NFT-set tooling.
+- In progress: **G5E - admin hardening** now starts with JSON fixture
+  import/export. `/api/admin/gacha/export` returns a versioned
+  `gacha-admin-fixture/v1` payload for DB-authored seasons, collections, packs,
+  and nested items. `/api/admin/gacha/import` defaults to dry-run, can apply
+  upsert/replace-item fixtures through the support-admin approval path, audits
+  applied imports as `gacha_fixture_import`, and requires `allowApproved=true`
+  plus validation/release-checklist success before preserving approved pack
+  status.
+- Backlog after the G5E fixture slice: migration/rollback scripts for live
+  season corrections, richer season/collection-scoped pity state, CSV/JSON bulk
+  item editing beyond full-fixture replacement, staff permissions beyond the
+  first operator role, operator runbooks, scheduled activation alerts, richer
+  paid-pack jurisdiction/odds disclosure review, and deeper marketplace/NFT-set
+  tooling.
 
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
@@ -2516,8 +2525,11 @@ Additional TODOs for that pass:
    Publish/approve is blocked when validation or required release checklist
    blockers fail, while non-destructive disable/expire remains available for
    emergency rollback.
-40. G5E gacha admin hardening backlog. Add bulk import/export, migration and
-   rollback scripts for live corrections, scheduled activation/expiry alerts,
-   richer disclosure review by jurisdiction/provider, staff permission tiers,
-   and marketplace/NFT-set operations before non-engineering operators manage
-   paid seasons unaided.
+40. G5E gacha admin hardening backlog. **Started 2026-07-04:** versioned JSON
+   fixture export/import now covers DB seasons, collections, packs, and nested
+   items with dry-run, audited apply, approved-pack preservation guardrails, and
+   validation/release-checklist gates. Remaining: bulk CSV/item editing,
+   migration and rollback scripts for live corrections, scheduled
+   activation/expiry alerts, richer disclosure review by jurisdiction/provider,
+   staff permission tiers, and marketplace/NFT-set operations before
+   non-engineering operators manage paid seasons unaided.

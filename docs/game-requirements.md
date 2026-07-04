@@ -403,7 +403,12 @@ Membership is not stored. It is derived from overlap between item cells and acti
   recommendations, and live/draft diff for cloned draft packs. Approval/publish
   is blocked when runtime validation fails or when required release checklist
   blockers are present, including missing pack dates, unsupported currency,
-  missing positive price, or missing player-facing disclosure copy. Packs are
+  missing positive price, or missing player-facing disclosure copy.
+  `/api/admin/gacha/export` and `/api/admin/gacha/import` provide JSON fixture
+  movement for DB-authored gacha data; imports default to dry-run and require
+  `allowApproved: true` before preserving approved pack review status, with the
+  same validation and release checklist gates applied to approved fixture packs.
+  Applied imports create an audited `gacha_fixture_import` support action. Packs are
   unowned-only by default; packs that set `duplicatePolicy: "allow_duplicates"`
   can grant extra active asset instances for already owned skins, with duplicate
   results marked in roll metadata. Duplicate-enabled packs may define

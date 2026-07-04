@@ -397,3 +397,91 @@ test('[Req 14-F] gacha admin API clones approved packs for edits and supports em
     );
   });
 });
+
+test('[Req 14-F] gacha admin API exports, dry-runs, imports, and audits JSON fixtures', async () => {
+  await withEnv({
+    SUPPORT_ADMIN_API_TOKEN: 'support-test-token',
+    ASSET_GACHA_DB_PACKS_ENABLED: 'true'
+  }, async () => {
+    await freshDb();
+    const app = await createApp();
+    const { packId } = await createValidAdminPack(app, {
+      packId: 'admin_fixture_pack',
+      seasonId: 'admin_fixture_season',
+      collectionId: 'admin_fixture_collection',
+      price: 23
+    });
+
+    const exported = await request(app)
+      .get('/api/admin/gacha/export')
+      .set(gachaHeaders);
+    assert.equal(exported.status, 200);
+    assert.equal(exported.body.data.schemaVersion, 'gacha-admin-fixture/v1');
+    assert.equal(exported.body.data.counts.packs, 1);
+    assert.equal(exported.body.data.packs[0].id, packId);
+    assert.equal(exported.body.data.packs[0].reviewStatus, 'approved');
+    assert.equal(exported.body.data.packs[0].items.length, 2);
+
+    const blockedApproved = await request(app)
+      .post('/api/admin/gacha/import')
+      .set(gachaHeaders)
+      .send({
+        fixture: exported.body.data,
+        dryRun: true,
+        reason: 'test_fixture_import_blocked'
+      });
+    assert.equal(blockedApproved.status, 400);
+    assert.match(blockedApproved.body.error, /allowApproved=true/);
+
+    const dryRun = await request(app)
+      .post('/api/admin/gacha/import')
+      .set(gachaHeaders)
+      .send({
+        fixture: exported.body.data,
+        dryRun: true,
+        allowApproved: true,
+        reason: 'test_fixture_import_dry_run'
+      });
+    assert.equal(dryRun.status, 200);
+    assert.equal(dryRun.body.data.dryRun, true);
+    assert.equal(dryRun.body.data.summary.byType.pack, 1);
+    assert.ok(dryRun.body.data.operations.some((operation) => operation.type === 'pack_items' && operation.afterCount === 2));
+
+    const fixture = structuredClone(exported.body.data);
+    fixture.packs[0].rollPriceAmount = 44;
+    fixture.packs[0].metadata = {
+      ...fixture.packs[0].metadata,
+      disclosure: { en: 'Fixture import keeps this approved pack release-ready.' }
+    };
+    const applied = await request(app)
+      .post('/api/admin/gacha/import')
+      .set(gachaHeaders)
+      .send({
+        fixture,
+        dryRun: false,
+        allowApproved: true,
+        reason: 'test_fixture_import_apply'
+      });
+    assert.equal(applied.status, 200);
+    assert.equal(applied.body.data.dryRun, false);
+    assert.ok(applied.body.data.action.id);
+    assert.ok(applied.body.data.packResults.every((result) => result.validation.ok && result.releaseChecklist.ok));
+
+    const odds = await getPackOddsForRuntime(packId);
+    assert.equal(odds.rollPriceAmount, 44);
+    assert.equal(odds.reviewStatus, 'approved');
+
+    const actions = await query(
+      `SELECT action_type, target_type, result_json
+       FROM support_actions
+       WHERE action_type = 'gacha_fixture_import'
+       ORDER BY created_at DESC
+       LIMIT 1`
+    );
+    assert.equal(actions.rowCount, 1);
+    assert.equal(actions.rows[0].target_type, 'gacha_fixture');
+    const result = JSON.parse(actions.rows[0].result_json);
+    assert.equal(result.allowApproved, true);
+    assert.equal(result.summary.byType.pack_items, 1);
+  });
+});

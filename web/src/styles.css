@@ -6576,6 +6576,29 @@ textarea.support-admin-input {
   text-transform: uppercase;
 }
 
+.support-admin-panel .support-admin-checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: auto;
+  min-height: 38px;
+  color: rgba(47, 36, 25, 0.78);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.support-admin-panel .support-admin-checkline input {
+  width: 18px;
+  height: 18px;
+  accent-color: #7f9872;
+}
+
+.support-admin-fixture-result {
+  display: grid;
+  gap: 10px;
+}
+
 .support-admin-secondary-button,
 .support-admin-mini-button,
 .support-admin-icon-button {

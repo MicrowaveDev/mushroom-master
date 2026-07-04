@@ -14,6 +14,7 @@ const SEASON_STATUSES = new Set(['draft', 'active', 'future', 'expired', 'disabl
 const PACK_STATUSES = new Set(['active', 'future', 'expired', 'disabled']);
 const REVIEW_STATUSES = new Set(['draft', 'in_review', 'approved', 'rejected']);
 const ITEM_FIELDS = new Set(['asset_id', 'rarity', 'drop_weight', 'copy_limit', 'item_order', 'metadata_json']);
+const GACHA_FIXTURE_SCHEMA_VERSION = 'gacha-admin-fixture/v1';
 
 function jsonText(value, fallback = {}) {
   if (value === undefined) return fallback === null ? null : JSON.stringify(fallback);
@@ -619,10 +620,13 @@ function collectionInsertPayload(payload = {}, actorId) {
   };
 }
 
-function packInsertPayload(payload = {}, actorId) {
+function packInsertPayload(payload = {}, actorId, {
+  allowApproved = false,
+  approvalError = 'Gacha pack approval must use a transition action'
+} = {}) {
   const now = nowIso();
   const reviewStatus = normalizeStatus(payload.reviewStatus || payload.review_status || 'draft', REVIEW_STATUSES, 'Gacha pack review');
-  if (reviewStatus === 'approved') throw new Error('Gacha pack approval must use a transition action');
+  if (reviewStatus === 'approved' && !allowApproved) throw new Error(approvalError);
   return {
     id: requiredText(payload.id, 'Gacha pack id'),
     season_id: requiredText(payload.seasonId ?? payload.season_id, 'Gacha pack seasonId'),
@@ -644,8 +648,12 @@ function packInsertPayload(payload = {}, actorId) {
     burn_rules_json: jsonText(payload.burnRules ?? payload.burn_rules_json, null),
     metadata_json: jsonText(payload.metadata ?? payload.metadataJson, {}),
     created_by: actorId,
-    reviewed_by: null,
-    reviewed_at: null,
+    reviewed_by: reviewStatus === 'approved'
+      ? (optionalText(payload.reviewedBy ?? payload.reviewed_by) || actorId)
+      : null,
+    reviewed_at: reviewStatus === 'approved'
+      ? (optionalDate(payload.reviewedAt ?? payload.reviewed_at, 'Gacha pack reviewedAt') || now)
+      : null,
     created_at: now,
     updated_at: now
   };
@@ -759,6 +767,199 @@ async function validationForPackRow(client, packRow) {
     validation: validateAssetPack(runtimePack),
     shapedPack: shapeAssetPack(runtimePack, { includeAssets: true })
   };
+}
+
+function normalizeFixtureArray(value, label) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new Error(`${label} must be an array`);
+  return value;
+}
+
+function assertUniqueFixtureIds(rows, label) {
+  const seen = new Set();
+  for (const row of rows) {
+    const id = requiredText(row?.id, `${label} id`);
+    if (seen.has(id)) throw new Error(`${label} fixture contains duplicate id ${id}`);
+    seen.add(id);
+  }
+}
+
+function normalizeGachaFixture(input = {}) {
+  const fixture = input.fixture && typeof input.fixture === 'object' ? input.fixture : input;
+  if (!fixture || typeof fixture !== 'object' || Array.isArray(fixture)) {
+    throw new Error('Gacha fixture must be an object');
+  }
+  const seasons = normalizeFixtureArray(fixture.seasons, 'Gacha fixture seasons');
+  const collections = normalizeFixtureArray(fixture.collections, 'Gacha fixture collections');
+  const flatItems = normalizeFixtureArray(fixture.items, 'Gacha fixture items');
+  const flatItemsByPack = new Map();
+  for (const item of flatItems) {
+    const packId = requiredText(item?.packId ?? item?.pack_id, 'Gacha fixture item packId');
+    const rows = flatItemsByPack.get(packId) || [];
+    rows.push(item);
+    flatItemsByPack.set(packId, rows);
+  }
+  const packs = normalizeFixtureArray(fixture.packs, 'Gacha fixture packs').map((pack) => {
+    const id = requiredText(pack?.id, 'Gacha fixture pack id');
+    const nestedItems = pack.items === undefined
+      ? flatItemsByPack.get(id) || []
+      : normalizeFixtureArray(pack.items, `Gacha fixture pack ${id} items`);
+    return { ...pack, items: nestedItems };
+  });
+  assertUniqueFixtureIds(seasons, 'Gacha season');
+  assertUniqueFixtureIds(collections, 'Gacha collection');
+  assertUniqueFixtureIds(packs, 'Gacha pack');
+  return {
+    schemaVersion: fixture.schemaVersion || GACHA_FIXTURE_SCHEMA_VERSION,
+    seasons,
+    collections,
+    packs
+  };
+}
+
+function packImportUpdateFields(payload = {}, { actorId, allowApproved = false } = {}) {
+  const payloadWithoutReview = { ...payload };
+  delete payloadWithoutReview.reviewStatus;
+  delete payloadWithoutReview.review_status;
+  delete payloadWithoutReview.reviewedBy;
+  delete payloadWithoutReview.reviewed_by;
+  delete payloadWithoutReview.reviewedAt;
+  delete payloadWithoutReview.reviewed_at;
+  delete payloadWithoutReview.items;
+  const fields = packUpdateFields(payloadWithoutReview);
+  if (payload.reviewStatus !== undefined || payload.review_status !== undefined) {
+    const reviewStatus = normalizeStatus(
+      payload.reviewStatus ?? payload.review_status,
+      REVIEW_STATUSES,
+      'Gacha pack review'
+    );
+    if (reviewStatus === 'approved' && !allowApproved) {
+      throw new Error('Approved gacha fixture import requires allowApproved=true');
+    }
+    fields.review_status = reviewStatus;
+    fields.reviewed_by = reviewStatus === 'approved'
+      ? (optionalText(payload.reviewedBy ?? payload.reviewed_by) || actorId)
+      : null;
+    fields.reviewed_at = reviewStatus === 'approved'
+      ? (optionalDate(payload.reviewedAt ?? payload.reviewed_at, 'Gacha pack reviewedAt') || nowIso())
+      : null;
+  }
+  return fields;
+}
+
+function mergeRowFields(row, fields) {
+  return { ...(row || {}), ...(fields || {}), updated_at: nowIso() };
+}
+
+function summarizeFixtureOperations(operations) {
+  return operations.reduce((summary, operation) => {
+    summary.total += 1;
+    summary[operation.action] = (summary[operation.action] || 0) + 1;
+    summary.byType[operation.type] = (summary.byType[operation.type] || 0) + 1;
+    return summary;
+  }, { total: 0, create: 0, update: 0, replace: 0, noop: 0, byType: {} });
+}
+
+async function insertFixtureSeasonRow(client, row) {
+  await client.query(
+    `INSERT INTO asset_gacha_seasons
+     (id, name_json, status, starts_at, ends_at, metadata_json, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [row.id, row.name_json, row.status, row.starts_at, row.ends_at, row.metadata_json, row.created_by, row.created_at, row.updated_at]
+  );
+}
+
+async function insertFixtureCollectionRow(client, row) {
+  await client.query(
+    `INSERT INTO asset_gacha_collections
+     (id, season_id, name_json, status, starts_at, ends_at, metadata_json, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [row.id, row.season_id, row.name_json, row.status, row.starts_at, row.ends_at, row.metadata_json, row.created_by, row.created_at, row.updated_at]
+  );
+}
+
+async function insertFixturePackRow(client, row) {
+  await client.query(
+    `INSERT INTO asset_gacha_packs
+     (id, season_id, collection_id, name_json, status, review_status, starts_at, ends_at,
+      roll_price_currency_code, roll_price_amount, roll_size, rarity_table_version,
+      rarity_weights_json, slots_json, guarantees_json, pity_rules_json, duplicate_policy_json,
+      burn_rules_json, metadata_json, created_by, reviewed_by, reviewed_at, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+      $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
+    [
+      row.id,
+      row.season_id,
+      row.collection_id,
+      row.name_json,
+      row.status,
+      row.review_status,
+      row.starts_at,
+      row.ends_at,
+      row.roll_price_currency_code,
+      row.roll_price_amount,
+      row.roll_size,
+      row.rarity_table_version,
+      row.rarity_weights_json,
+      row.slots_json,
+      row.guarantees_json,
+      row.pity_rules_json,
+      row.duplicate_policy_json,
+      row.burn_rules_json,
+      row.metadata_json,
+      row.created_by,
+      row.reviewed_by,
+      row.reviewed_at,
+      row.created_at,
+      row.updated_at
+    ]
+  );
+}
+
+async function insertFixturePackItemRow(client, row) {
+  await client.query(
+    `INSERT INTO asset_gacha_pack_items
+     (id, pack_id, asset_id, rarity, drop_weight, copy_limit, item_order, metadata_json, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [row.id, row.pack_id, row.asset_id, row.rarity, row.drop_weight, row.copy_limit, row.item_order, row.metadata_json, row.created_at, row.updated_at]
+  );
+}
+
+function fixturePackResult(packRow, itemRows, { seasonRow, collectionRow }) {
+  const runtimePack = rowPackToRuntimePack(packRow, itemRows);
+  const validation = validateAssetPack(runtimePack);
+  const releaseChecklist = createChecklist({
+    runtimePack,
+    validation,
+    seasonRow,
+    collectionRow
+  });
+  return {
+    packId: packRow.id,
+    reviewStatus: packRow.review_status,
+    validation,
+    releaseChecklist
+  };
+}
+
+function assertApprovedImportReady(result) {
+  if (result.reviewStatus !== 'approved') return;
+  if (!result.validation.ok) {
+    throw new Error(`Approved gacha fixture pack ${result.packId} failed validation: ${result.validation.errors.map((issue) => issue.code).join(', ')}`);
+  }
+  if (!result.releaseChecklist.ok) {
+    throw new Error(`Approved gacha fixture pack ${result.packId} failed release checklist: ${result.releaseChecklist.blockers.map((issue) => issue.code).join(', ')}`);
+  }
+}
+
+async function selectFixturePackRows(client) {
+  const [seasons, collections, packs, items] = await Promise.all([
+    client.query(`SELECT * FROM asset_gacha_seasons ORDER BY starts_at ASC, id ASC`),
+    client.query(`SELECT * FROM asset_gacha_collections ORDER BY season_id ASC, starts_at ASC, id ASC`),
+    client.query(`SELECT * FROM asset_gacha_packs ORDER BY season_id ASC, collection_id ASC, starts_at ASC, id ASC`),
+    client.query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`)
+  ]);
+  return { seasons: seasons.rows, collections: collections.rows, packs: packs.rows, items: items.rows };
 }
 
 function assetPolicyRecommendationsFromChecklist(releaseChecklist) {
@@ -922,6 +1123,204 @@ export async function listGachaAdminCatalog() {
   };
 }
 
+export async function exportGachaAdminFixture() {
+  const rows = await selectFixturePackRows({ query });
+  const itemsByPack = new Map();
+  for (const item of rows.items) {
+    const list = itemsByPack.get(item.pack_id) || [];
+    list.push(rowToPackItem(item));
+    itemsByPack.set(item.pack_id, list);
+  }
+  const packs = rows.packs.map((pack) => ({
+    ...rowToPack(pack),
+    items: itemsByPack.get(pack.id) || []
+  }));
+  return {
+    schemaVersion: GACHA_FIXTURE_SCHEMA_VERSION,
+    exportedAt: nowIso(),
+    source: 'database',
+    counts: {
+      seasons: rows.seasons.length,
+      collections: rows.collections.length,
+      packs: rows.packs.length,
+      items: rows.items.length
+    },
+    seasons: rows.seasons.map(rowToSeason),
+    collections: rows.collections.map(rowToCollection),
+    packs
+  };
+}
+
+export async function importGachaAdminFixture({
+  actorId,
+  fixture = {},
+  dryRun = true,
+  allowApproved = false,
+  reason,
+  note = '',
+  evidence = {}
+} = {}) {
+  const actor = normalizeActor(actorId);
+  const normalizedFixture = normalizeGachaFixture(fixture);
+  const actionReason = normalizeReason(reason, 'gacha_fixture_import');
+  const actionNote = normalizeNote(note);
+  const actionEvidence = normalizeEvidence(evidence);
+  const shouldWrite = dryRun === false;
+  return withTransaction(async (client) => {
+    const operations = [];
+    const seasonRows = new Map();
+    const collectionRows = new Map();
+    const packRows = new Map();
+    const itemRowsByPack = new Map();
+
+    for (const season of normalizedFixture.seasons) {
+      const row = seasonInsertPayload(season, actor);
+      const existing = await findOne(client, 'asset_gacha_seasons', row.id);
+      if (existing) {
+        const fields = seasonUpdateFields(season);
+        if (shouldWrite) await applyUpdate(client, 'asset_gacha_seasons', row.id, fields);
+        const after = shouldWrite
+          ? await requireRow(client, 'asset_gacha_seasons', row.id, 'gacha season')
+          : mergeRowFields(existing, fields);
+        seasonRows.set(row.id, after);
+        operations.push({ type: 'season', id: row.id, action: Object.keys(fields).length ? 'update' : 'noop' });
+      } else {
+        if (shouldWrite) await insertFixtureSeasonRow(client, row);
+        seasonRows.set(row.id, row);
+        operations.push({ type: 'season', id: row.id, action: 'create' });
+      }
+    }
+
+    for (const collection of normalizedFixture.collections) {
+      const row = collectionInsertPayload(collection, actor);
+      if (!seasonRows.has(row.season_id)) await requireRow(client, 'asset_gacha_seasons', row.season_id, 'gacha season');
+      const existing = await findOne(client, 'asset_gacha_collections', row.id);
+      if (existing) {
+        const fields = collectionUpdateFields(collection);
+        if (fields.season_id && !seasonRows.has(fields.season_id)) {
+          await requireRow(client, 'asset_gacha_seasons', fields.season_id, 'gacha season');
+        }
+        if (shouldWrite) await applyUpdate(client, 'asset_gacha_collections', row.id, fields);
+        const after = shouldWrite
+          ? await requireRow(client, 'asset_gacha_collections', row.id, 'gacha collection')
+          : mergeRowFields(existing, fields);
+        collectionRows.set(row.id, after);
+        operations.push({ type: 'collection', id: row.id, action: Object.keys(fields).length ? 'update' : 'noop' });
+      } else {
+        if (shouldWrite) await insertFixtureCollectionRow(client, row);
+        collectionRows.set(row.id, row);
+        operations.push({ type: 'collection', id: row.id, action: 'create' });
+      }
+    }
+
+    for (const pack of normalizedFixture.packs) {
+      const row = packInsertPayload(pack, actor, {
+        allowApproved,
+        approvalError: 'Approved gacha fixture import requires allowApproved=true'
+      });
+      if (!seasonRows.has(row.season_id)) await requireRow(client, 'asset_gacha_seasons', row.season_id, 'gacha season');
+      const fixtureCollection = collectionRows.get(row.collection_id);
+      if (fixtureCollection) {
+        if (fixtureCollection.season_id !== row.season_id) {
+          throw new Error('Gacha collection must belong to the selected season');
+        }
+      } else {
+        await validateCollectionSeason(client, row.season_id, row.collection_id);
+      }
+      const existing = await findOne(client, 'asset_gacha_packs', row.id);
+      if (existing) {
+        const fields = packImportUpdateFields(pack, { actorId: actor, allowApproved });
+        const finalSeasonId = fields.season_id || existing.season_id;
+        const finalCollectionId = fields.collection_id || existing.collection_id;
+        if (!seasonRows.has(finalSeasonId)) await requireRow(client, 'asset_gacha_seasons', finalSeasonId, 'gacha season');
+        const finalCollection = collectionRows.get(finalCollectionId);
+        if (finalCollection) {
+          if (finalCollection.season_id !== finalSeasonId) throw new Error('Gacha collection must belong to the selected season');
+        } else if (fields.season_id || fields.collection_id) {
+          await validateCollectionSeason(client, finalSeasonId, finalCollectionId);
+        }
+        if (shouldWrite) await applyUpdate(client, 'asset_gacha_packs', row.id, fields);
+        const after = shouldWrite
+          ? await requireRow(client, 'asset_gacha_packs', row.id, 'gacha pack')
+          : mergeRowFields(existing, fields);
+        packRows.set(row.id, after);
+        operations.push({ type: 'pack', id: row.id, action: Object.keys(fields).length ? 'update' : 'noop' });
+      } else {
+        if (shouldWrite) await insertFixturePackRow(client, row);
+        packRows.set(row.id, row);
+        operations.push({ type: 'pack', id: row.id, action: 'create' });
+      }
+    }
+
+    const packResults = [];
+    for (const pack of normalizedFixture.packs) {
+      const packId = requiredText(pack.id, 'Gacha fixture pack id');
+      const itemPayloads = normalizeFixtureArray(pack.items, `Gacha fixture pack ${packId} items`);
+      const existingItems = await selectPackItems(client, packId);
+      const itemRows = [];
+      for (const [index, item] of itemPayloads.entries()) {
+        itemRows.push(itemInsertPayload({ itemOrder: index, ...item }, packId));
+      }
+      if (shouldWrite) {
+        await client.query(`DELETE FROM asset_gacha_pack_items WHERE pack_id = $1`, [packId]);
+        for (const row of itemRows) {
+          await insertFixturePackItemRow(client, row);
+        }
+        itemRowsByPack.set(packId, await selectPackItems(client, packId));
+      } else {
+        itemRowsByPack.set(packId, itemRows);
+      }
+      operations.push({
+        type: 'pack_items',
+        id: packId,
+        action: 'replace',
+        beforeCount: existingItems.length,
+        afterCount: itemRows.length
+      });
+      const packRow = packRows.get(packId) || await requireRow(client, 'asset_gacha_packs', packId, 'gacha pack');
+      const seasonRow = seasonRows.get(packRow.season_id) || await findOne(client, 'asset_gacha_seasons', packRow.season_id);
+      const collectionRow = collectionRows.get(packRow.collection_id) || await findOne(client, 'asset_gacha_collections', packRow.collection_id);
+      const result = fixturePackResult(packRow, itemRowsByPack.get(packId) || [], { seasonRow, collectionRow });
+      assertApprovedImportReady(result);
+      packResults.push(result);
+    }
+
+    const summary = summarizeFixtureOperations(operations);
+    let action = null;
+    if (shouldWrite) {
+      action = await insertAdminAction(client, {
+        actorId: actor,
+        actionType: 'gacha_fixture_import',
+        targetType: 'gacha_fixture',
+        targetId: null,
+        reason: actionReason,
+        note: actionNote,
+        evidence: actionEvidence,
+        result: {
+          schemaVersion: normalizedFixture.schemaVersion,
+          allowApproved,
+          summary,
+          packResults: packResults.map((result) => ({
+            packId: result.packId,
+            reviewStatus: result.reviewStatus,
+            validationOk: result.validation.ok,
+            releaseReady: result.releaseChecklist.ok
+          }))
+        }
+      });
+    }
+    return {
+      schemaVersion: normalizedFixture.schemaVersion,
+      dryRun: !shouldWrite,
+      allowApproved,
+      summary,
+      operations,
+      packResults,
+      action
+    };
+  });
+}
+
 export async function createGachaSeason({ actorId, payload = {}, reason, note = '', evidence = {} } = {}) {
   const actor = normalizeActor(actorId);
   const actionReason = normalizeReason(reason || payload.reason, 'gacha_season_create');
@@ -1051,7 +1450,7 @@ export async function createGachaPack({ actorId, payload = {}, reason, note = ''
         rarity_weights_json, slots_json, guarantees_json, pity_rules_json, duplicate_policy_json,
         burn_rules_json, metadata_json, created_by, reviewed_by, reviewed_at, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-        $13, $14, $15, $16, $17, $18, $19, $20, NULL, NULL, $21, $22)`,
+        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
       [
         row.id,
         row.season_id,
@@ -1073,6 +1472,8 @@ export async function createGachaPack({ actorId, payload = {}, reason, note = ''
         row.burn_rules_json,
         row.metadata_json,
         row.created_by,
+        row.reviewed_by,
+        row.reviewed_at,
         row.created_at,
         row.updated_at
       ]

@@ -596,6 +596,8 @@ Step 1: Open Gacha Tab
     - [Req 14-F] `/api/admin/gacha/catalog` returns seasons, collections,
       packs, items, and asset picker options
     - Catalog metrics and pack table render without horizontal overflow
+    - Fixture Import / Export panel is available for JSON dry-runs and applied
+      imports
 
 Step 2: Author Season, Collection, Pack, And Items
   Sees:
@@ -632,6 +634,22 @@ Step 3: Validate And Publish
       desktop and mobile
     - Published pack status is active and review status is approved
     - Operator action is audited by the backend support action path
+
+Step 4: Export And Import Fixture
+  Sees:
+    - Fixture JSON textarea
+    - Dry run toggle
+    - Preserve approved packs toggle
+    - Export, Dry Run, and Import controls
+  Action: Export current catalog, dry-run the fixture, then import it
+  Expected:
+    - [Req 14-F] Export returns a versioned `gacha-admin-fixture/v1` JSON body
+    - Dry-run reports planned season/collection/pack/item operations without
+      mutating rows
+    - Applied import refreshes the catalog and writes an audited
+      `gacha_fixture_import` support action
+    - Approved pack fixture imports require explicit preserve-approved mode and
+      must pass validation plus the release checklist
 ```
 
 ---
