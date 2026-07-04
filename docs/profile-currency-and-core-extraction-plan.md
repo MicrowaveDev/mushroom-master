@@ -26,6 +26,10 @@
 > layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
 > but improve it with typed subpath exports and adapter contracts so Backpack
 > does not inherit Geesome's historical deep-import coupling.
+> The implementation plan now assumes a lead agent plus scoped sub-agents for
+> speed: parallelize read-only audits and disjoint folder edits, but serialize
+> installs, builds, Playwright, submodule pointer changes, commits, and pushes
+> so a local Mac does not waste CPU or fight over shared state.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -2604,6 +2608,76 @@ factory contract, Vue peer/build policy, and export map first, then move
 services and components into those lanes. This should prevent a flat "core
 bucket" and keep Mushroom and Meat integrations predictable.
 
+#### Sub-Agent Execution Model
+
+Use a lead agent plus scoped sub-agents for the Phase 8K and Phase 8J work. The
+goal is faster implementation on a Mac without running duplicate heavy tasks.
+Sub-agents should receive narrow prompts, disjoint write scopes, and exact
+completion conditions. Their findings are leads, not source of truth; the lead
+agent verifies current files before editing or merging.
+
+1. **Lead / integrator agent**
+   - Owns the source-of-truth plan, dependency order, final file edits that
+     cross boundaries, commit/push sequence, and hub or nested submodule
+     pointer updates.
+   - May write plan docs, package export maps, integration adapters, and
+     update logs after reviewing sub-agent output.
+   - Must serialize `npm install`, `npm ci`, `npm run game:build`,
+     Playwright/screenshot commands, `npm pack --dry-run`, submodule pointer
+     updates, commits, and pushes.
+2. **Architecture audit agent**
+   - Read-only scope: `vendor/backpack-game-core`, Mushroom frontend/backend
+     adapters, Meat prototype, and Geesome precedent files.
+   - Output: proposed package/module map, public export list, and migration
+     order. No writes.
+3. **Core backend module agent**
+   - Write scope: only the assigned core module folder and its tests, such as
+     `modules/gacha`, `modules/wallet`, or `modules/loadout`.
+   - Must not edit game DB models, Express app wiring, payment providers,
+     Vue files, or submodule pointers.
+   - Completion: neutral core tests pass for the assigned module.
+4. **Client/contracts agent**
+   - Write scope: core client/DTO/view-model layer and matching type
+     declarations.
+   - Must not edit Vue components or game routes.
+   - Completion: package export/type tests pass and consumer-facing DTO shapes
+     are documented.
+5. **Vue shared UI agent**
+   - Write scope: shared composables/components/page-shell candidates only
+     after the client/contracts layer is stable.
+   - Must not import Mushroom or Meat stores, routers, auth, image paths,
+     localization files, or CSS themes directly.
+   - Completion: neutral component/composable tests pass with fixture adapters.
+6. **Mushroom adapter agent**
+   - Write scope: Mushroom thin adapters for one adopted core slice and the
+     focused Mushroom tests/screenshots for that slice.
+   - Must not edit core internals while adapting; report missing core hooks to
+     the lead instead.
+7. **Meat adapter agent**
+   - Write scope: Meat adapters/tests for the same adopted core slice.
+   - Must keep product copy, art, theme, adult-content gate, and catalog data
+     local to Meat.
+8. **Validation/review agent**
+   - Read-only except for approved test snapshot or docs evidence updates.
+   - Runs or reviews only the validation tier assigned by the lead, then
+     reports exact commands, pass/fail status, and remaining risk.
+
+Mac efficiency rules:
+
+- Prefer parallel sub-agents for read-only audits, API shape review, fixture
+  design, and disjoint source folders.
+- Do not run multiple package installs, builds, dev servers, Playwright suites,
+  screenshot suites, or image-generation jobs at the same time on one Mac.
+- Run core unit tests before consumer tests, then one consumer's focused tests
+  before the other. Run broad `npm test`, builds, and screenshots only after
+  the narrow checks are green.
+- Keep one dev server or Playwright wrapper owner at a time. Other agents should
+  inspect files or write tests while the heavy command runs.
+- If two agents need the same file, the lead assigns ownership to one agent and
+  the other reports a patch suggestion instead of writing.
+- Commit order stays serial: core commit and push first, then nested submodule
+  pointer and adapter commit in Mushroom or Meat, then hub pointer commit.
+
 #### Implementation Steps
 
 1. Done for the planning pass: update `docs/game-core-runtime-contracts.md` and
@@ -2635,6 +2709,9 @@ bucket" and keep Mushroom and Meat integrations predictable.
    - define Vue plugin/composable injection points, similar to Geesome's
      `$geesome` client wrapper, but without copying method reflection or deep
      imports,
+   - assign architecture audit, backend module, client/contracts, Vue UI,
+     Mushroom adapter, Meat adapter, and validation sub-agents with disjoint
+     write scopes,
    - document the package export map and consumer import rules before moving
      more code.
 5. Add a package export strategy before Vue extraction:
@@ -2959,3 +3036,10 @@ that game.
    explicit package `exports`, `.d.ts` coverage, peer dependency boundaries,
    and consumer contract tests so Mushroom and Meat do not depend on private
    file paths.
+45. Phase 8L sub-agent execution setup. Before implementing Phase 8K/8J slices,
+   split work into bounded sub-agent briefs: architecture audit, core backend
+   module, client/contracts, Vue shared UI, Mushroom adapter, Meat adapter, and
+   validation/review. Parallelize read-only audits and disjoint edits, but keep
+   installs, builds, Playwright, package packing, submodule pointer updates,
+   commits, and pushes under the lead agent so local Mac resources stay
+   predictable.

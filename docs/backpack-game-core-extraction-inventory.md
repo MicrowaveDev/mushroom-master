@@ -98,6 +98,42 @@ Backpack should adopt the useful shape, but not the old coupling:
   storage, payment providers, uploaded image storage, and final route/page
   assembly stay in each game.
 
+## Sub-Agent Implementation Notes
+
+Use sub-agents to speed up the next extraction phases, but keep each assignment
+small enough that it can be merged without file ownership fights.
+
+- **Lead agent:** owns dependency order, final plan edits, integration merge,
+  commits, pushes, and all submodule pointer updates.
+- **Architecture audit agent:** read-only review of Geesome precedent, current
+  core exports, Mushroom adapters, and Meat prototype. Produces a package/module
+  map and migration order.
+- **Core module agent:** writes one assigned core module folder plus tests.
+  Does not touch game adapters, payment code, DB models, Vue files, or pointers.
+- **Client/contracts agent:** writes the API client, DTO shapers, type
+  declarations, and package export tests. Does not touch product routes or Vue
+  components.
+- **Vue UI agent:** writes shared composables/components only after client
+  contracts are stable. It must use props/events/slots/adapters and avoid
+  direct product imports.
+- **Mushroom adapter agent:** adapts Mushroom to one consumed core slice and
+  updates focused Mushroom tests/screenshots for that slice.
+- **Meat adapter agent:** adapts Meat to the same consumed core slice and keeps
+  product art, copy, theme, content gating, and catalogs local.
+- **Validation/review agent:** verifies sub-agent output against current files,
+  runs assigned tests, and reports exact pass/fail evidence.
+
+Mac efficiency constraints:
+
+- Parallelize read-only audits and disjoint file edits.
+- Serialize `npm install`, `npm ci`, package builds, Vite/dev servers,
+  Playwright/e2e, screenshot suites, `npm pack --dry-run`, commits, pushes, and
+  submodule pointer updates.
+- Run narrow tests before broad tests: core module tests, package exports/types,
+  Mushroom focused tests, Meat focused tests, then builds/screenshots.
+- If two sub-agents need the same file, one owns the edit and the other returns
+  a review note or patch suggestion.
+
 ## Candidate Matrix
 
 | Cluster | Current files | Classification | Why |

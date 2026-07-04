@@ -280,6 +280,12 @@ optional route-binding helpers. Each public surface needs stable package
 exports, matching `.d.ts` coverage, neutral fixtures, and consumer contract
 tests in both games when adopted.
 
+Delegated implementation should use bounded sub-agents. Parallelize read-only
+audits and disjoint module/component edits, but serialize installs, builds,
+dev servers, Playwright/screenshot runs, package packing, submodule pointer
+updates, commits, and pushes. A lead agent must verify each sub-agent finding
+against current files before editing, merging, or reporting completion.
+
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,
 hookable battle simulation, provider-driven loadout validation, deterministic
