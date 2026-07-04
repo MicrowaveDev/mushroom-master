@@ -574,33 +574,49 @@ Implementation finding on 2026-07-04: start Phase 8I with the combined
 pure over catalogs, ownership snapshots, time, and RNG, while wallet accounting
 touches ledger persistence and provider-settlement state.
 
+Post-implementation review on 2026-07-04: the package/module architecture pass
+landed in core commit `3e3d5d6`. `modules/gacha`, `modules/shop`,
+`modules/loadout`, `modules/battle`, `modules/fusion`, `client`, and
+`client-view-model` are now public import lanes with declarations and consumer
+coverage. The next extraction should move real helper logic through those lanes,
+starting with gacha admin validation, instead of adding another facade-only
+slice.
+
 Next planned domain slices:
 
-1. **Package/module architecture pass:** formalize public exports and module
-   layout before broadening extraction. Decide whether to stay with one package
-   plus subpath exports or introduce `packages/core`, `packages/client`, and
-   `packages/vue`; add/update `.d.ts` coverage and consumer import rules.
+1. **Package/module architecture pass:** **Implemented 2026-07-04 in core
+   commit `3e3d5d6`.** Continue with one package plus public subpath exports
+   until Vue extraction or build tooling makes a package split necessary.
 2. **Asset-gacha core slice:** catalog/acquisition policy helpers,
    pack/item/status/date/price/currency validation, direct-buy blocking,
    candidate filtering, weighted slot selection, guarantee and pity helpers,
    duplicate copy-cap filtering, burn target selection, roll evidence shaping,
    and pack UI shaping over plain objects. **Implemented 2026-07-04 in
    `src/asset-gacha.js`; Mushroom adapter wiring delegates to it.**
-3. **Gacha simulation:** deterministic odds simulation over the same roll core
+3. **Gacha admin validation/release checklist:** next active slice. Move pure
+   fixture shape checks, duplicate-id checks, pack release checklist issue
+   grouping, planned asset promotion preflight, plan-item generated asset-id
+   immutability, linked-character rules, and runtime catalog visibility checks
+   into `modules/gacha/admin-validation` over neutral row/catalog snapshots.
+   Keep DB transactions, audit rows, operator permissions, upload/storage,
+   route payloads, and product error wording in Mushroom.
+4. **Gacha simulation:** deterministic odds simulation over the same roll core
    so admin preview, CLI tools, and tests share one model if it is not fully
-   folded into `asset-gacha`.
-4. **Gacha admin validation:** fixture shape checks, planned asset promotion
-   invariants, and plan-item asset-id/linked-character rules as pure helpers.
+   folded into `asset-gacha` or the admin-validation slice.
 5. **Wallet accounting:** reusable balance-delta and idempotency outcome helpers
    that operate on passed snapshots; no DB writes or provider callbacks. Do this
-   after the shared gacha seam is stable in Mushroom.
+   after the shared gacha/admin seam is stable in Mushroom.
+6. **Profile asset state:** reusable ownership/equipment transition checks only
+   after pure state transitions are separated from DB row lifecycle, support
+   actions, paid rollback behavior, and product-specific asset catalogs.
 
 Next planned frontend slices:
 
-1. **Client/contracts layer:** add a shared API client factory, DTO shapers,
-   error/status normalization, and view-model contracts before page/component
-   extraction. This is the Backpack equivalent of Geesome's shared client plus
-   UI service plugin boundary, but with stable exports and typed contracts.
+1. **Client/contracts layer:** **First slice implemented 2026-07-04** with the
+   route-adapter client and shared `client-view-model` loadout projection.
+   Continue with DTO shapers, error/status normalization, and view-model
+   contracts before page/component extraction. Do not move the full Mushroom API
+   client into core yet; keep product routes behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay
    view model, wallet/asset catalog state, gacha pack state, and admin

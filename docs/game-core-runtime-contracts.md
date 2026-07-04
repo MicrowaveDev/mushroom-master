@@ -288,6 +288,15 @@ servers, Playwright/screenshot runs, package packing, submodule pointer updates,
 commits, and pushes. A lead agent must verify each sub-agent finding against
 current files before editing, merging, or reporting completion.
 
+Post-implementation review on 2026-07-04: the first package/module architecture
+slice is complete in core commit `3e3d5d6`. New shared backend logic should now
+land behind public `modules/*` exports, and new browser-safe helpers should land
+behind `client` or `client-view-model` style exports. Avoid new consumer imports
+from deep `src/*` files. The next backend candidate is a pure
+`modules/gacha/admin-validation` slice for release checklist, fixture,
+plan-item, promotion, and runtime visibility helpers; wallet and asset ownership
+remain later because they still couple to persistence and provider evidence.
+
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,
 hookable battle simulation, provider-driven loadout validation, deterministic

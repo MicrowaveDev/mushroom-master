@@ -2612,6 +2612,29 @@ factory contract, Vue peer/build policy, and export map first, then move
 services and components into those lanes. This should prevent a flat "core
 bucket" and keep Mushroom and Meat integrations predictable.
 
+Post-implementation review on 2026-07-04: the package/module architecture pass
+is now the first shipped slice, not a future blocker. Core commit `3e3d5d6`
+exposes layered `modules/*`, `client`, and `client-view-model` exports, and
+Mushroom plus Meat consume those public paths. The next work should therefore
+move one real reusable behavior cluster at a time through those exports instead
+of moving whole Mushroom services wholesale.
+
+The highest-leverage next backend slice is `gacha-admin-validation`: pure pack
+release checklist helpers, fixture import/export shape validation, planned
+asset promotion invariants, plan-item asset-id/character-link rules, and
+runtime catalog visibility rules. This is safer than wallet or asset ownership
+because the current logic is mostly deterministic over plain rows/catalog
+snapshots, while wallet and asset modules still touch ledgers, idempotency,
+provider evidence, DB row lifecycle, support actions, and paid rollback
+semantics.
+
+Frontend post-review on 2026-07-04: keep the core client route-adapter based
+and do not extract the full Mushroom API client or full Vue pages yet. The next
+frontend slices should stay close to DTO/view-model shaping and headless
+services adjacent to `client-view-model`; neutral Vue components and page
+shells come later, after the shared client contracts are stable and Meat has a
+backend surface that can consume them.
+
 #### Sub-Agent Execution Model
 
 Use a lead agent plus scoped sub-agents for the Phase 8K and Phase 8J work. The
@@ -2717,61 +2740,63 @@ Throughput rules:
 1. Done for the planning pass: update `docs/game-core-runtime-contracts.md` and
    `docs/backpack-game-core-extraction-inventory.md` with the new domain-core
    split before moving code.
-2. Started 2026-07-04: add the first core module,
-   `asset-gacha`, as the shared pure domain slice for asset acquisition policy,
-   pack validation, roll candidate filtering, weighted roll selection,
-   duplicate/burn target selection, pity helpers, and UI pack shaping.
-3. Then add follow-up core modules or submodules in small slices:
-   - `gacha-simulation` if it is not folded into `asset-gacha`,
-   - `gacha-admin-validation`,
+2. Done 2026-07-04: add `asset-gacha` as the first shared pure domain slice for
+   asset acquisition policy, pack validation, roll candidate filtering,
+   weighted roll selection, duplicate/burn target selection, pity helpers, and
+   UI pack shaping.
+3. Done 2026-07-04: land the Geesome-inspired package/module architecture
+   slice. Core now exposes public `modules/gacha`, `modules/shop`,
+   `modules/loadout`, `modules/battle`, `modules/fusion`, `client`, and
+   `client-view-model` subpaths with declarations and consumer tests.
+4. Next: move `gacha-admin-validation` helpers into core:
+   - release checklist evaluation and issue grouping,
+   - fixture shape and duplicate-id validation over neutral rows,
+   - planned asset promotion preflight checks,
+   - plan-item generated asset-id, linked-character, and immutability rules,
+   - runtime catalog visibility checks for hidden ready-plan assets versus
+     approved player-visible pack assets.
+5. Wire Mushroom gacha admin service through thin adapters around those helpers
+   while keeping DB transactions, audit logs, operator auth, file upload,
+   storage, route payloads, and error wording stable in Mushroom.
+6. Add focused neutral core tests for the new helpers, then rerun Mushroom
+   gacha admin API, runtime gacha simulation, and core-submodule tests.
+7. Then add follow-up core modules or submodules in small slices:
+   - `gacha-simulation` only for remaining simulation logic not already folded
+     into `asset-gacha`,
    - `asset-policy` cleanup if it needs a separate public API,
-   - `wallet-accounting` only after the shared gacha seam is stable,
+   - `wallet-accounting` only after the shared gacha/admin seam is stable,
+   - `profile-asset-state` only after pure ownership/equipment transitions are
+     separated from DB row lifecycle and support actions,
    - `frontend-services` for shared API clients/view-model shapers/composables,
    - `vue-backpack-ui` for grid, artifact tile, shop, and battle replay
      components,
    - `vue-asset-gacha-ui` for asset inventory, gacha pack, roll result, odds,
      and admin validation components.
-4. Add a Geesome-inspired package/module architecture pass before the next large
-   extraction:
-   - decide whether the core repo keeps one npm package with subpath exports or
-     moves to `packages/core`, `packages/client`, and `packages/vue`,
-   - define backend module folders with explicit `interface`, `index`, `api`,
-     validation, and test boundaries,
-   - define a shared `BackpackGameClient` or client factory that receives
-     base URL, auth headers/tokens, storage, fetch implementation, and product
-     route adapters from the consuming game,
-   - define Vue plugin/composable injection points, similar to Geesome's
-     `$geesome` client wrapper, but without copying method reflection or deep
-     imports,
-   - assign architecture audit, backend module, client/contracts, Vue UI,
-     Mushroom adapter, Meat adapter, and validation sub-agents with disjoint
-     write scopes,
-   - document the package export map and consumer import rules before moving
-     more code.
-5. Add a package export strategy before Vue extraction:
+8. Keep the package export strategy conservative:
+   - use one package plus subpath exports until Vue extraction truly requires a
+     package split,
    - keep existing backend/browser-safe JS exports stable,
    - add Vue as a peer dependency only when the first Vue module moves,
-   - expose source modules through subpath exports such as
-     `@microwavedev/backpack-game-core/vue`,
-     `@microwavedev/backpack-game-core/vue/components`, and
-     `@microwavedev/backpack-game-core/client-services`,
+   - expose Vue modules through subpath exports such as
+     `@microwavedev/backpack-game-core/vue` and
+     `@microwavedev/backpack-game-core/vue/components`,
    - avoid a build step until SFC or style extraction truly requires it.
-6. Port focused unit tests from Mushroom into `backpack-game-core` first,
+9. Port focused unit tests from Mushroom into `backpack-game-core` first,
    replacing Mushroom fixture data with neutral sample catalogs.
-7. Refactor Mushroom backend services to call the core modules through thin
+10. Refactor Mushroom backend services to call the core modules through thin
    adapters, keeping current route payloads and database tables stable.
-8. Refactor Mushroom frontend one surface at a time by replacing local
+11. Refactor Mushroom frontend one surface at a time by replacing local
    composables/components with core imports while preserving current UI flows
    and screenshots.
-9. Integrate the same core frontend modules into Meat with product-specific
+12. Integrate the same core frontend modules into Meat with product-specific
    data, copy, theme, and API adapters.
-10. Verify Mushroom behavior after each slice with the smallest relevant test
+13. Verify Mushroom behavior after each slice with the smallest relevant test
    set, then run the wallet/gacha/admin bundle and affected screenshot/e2e
    coverage before moving the next slice.
-11. Update `vendor/backpack-game-core/CHANGELOG.md`,
+14. Update `vendor/backpack-game-core/CHANGELOG.md`,
    `docs/backpack-game-core-update-log.md`, and the nested core pointer after
    each core commit.
-12. Keep Meat pointed at the same core commit and add Meat tests/build coverage
+15. Keep Meat pointed at the same core commit and add Meat tests/build coverage
    for every shared backend or Vue slice it consumes.
 
 #### Validation
@@ -3040,13 +3065,15 @@ that game.
    jurisdiction/provider, staff permission tiers, and marketplace/NFT-set
    operations before non-engineering operators manage paid seasons unaided.
 41. Phase 8I multi-game domain-core extraction. **Started 2026-07-04 with the
-   `asset-gacha` core slice:** move direct-buy policy, gacha validation, roll
-   selection, duplicate/burn, pity/guarantee, simulation-facing pack shaping,
-   and admin-safe validation helpers into `backpack-game-core` behind adapters.
-   Wallet accounting primitives remain the next domain slice after the gacha
-   seam is stable. Keep DB schemas, payments, Telegram, product catalogs, art,
-   compliance, admin auth/storage, product route shells, and final page
-   assembly in each game.
+   `asset-gacha` core slice:** direct-buy policy, gacha validation, roll
+   selection, duplicate/burn, pity/guarantee, and simulation-facing pack
+   shaping now have a reusable core landing zone behind adapters. **Adjusted
+   after post-implementation review:** the next real backend extraction is
+   gacha admin validation/release-checklist logic, not wallet accounting.
+   Wallet accounting primitives move only after the gacha/admin seam is stable.
+   Keep DB schemas, payments, Telegram, product catalogs, art, compliance,
+   admin auth/storage, product route shells, and final page assembly in each
+   game.
 42. Phase 11 `meat-master` consumer. **Initial slice done 2026-07-04:** added
    `git@github.com:nuclear-pancakes/meat-master.git` as the second game target,
    consumed `backpack-game-core` as a nested submodule, seeded a playable Vite
@@ -3079,3 +3106,11 @@ that game.
    contract-first core work, parallel consumer adapters, a lead-owned
    integration queue, and serial commit/pointer updates. Treat local machine
    resource limits as scheduling constraints, not as the goal.
+46. Phase 8M first real module movement after facades. **Next:** create a core
+   `modules/gacha/admin-validation` slice for release checklist helpers,
+   fixture shape checks, planned asset promotion preflight, plan-item
+   asset-id/character-link invariants, and runtime catalog visibility checks.
+   Then adapt Mushroom's gacha admin service to call it through DB-aware
+   wrappers and rerun core tests plus Mushroom gacha-admin/gacha-simulation
+   coverage. Defer wallet, asset ownership, full API client extraction, and Vue
+   page/component movement until this slice is stable.
