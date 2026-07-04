@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `41a3ad59fb35b6dffce1a977434e9a5f66555a91`
-- core short SHA: `41a3ad5`
-- core commit: `Add artifact stat view-model helpers`
+- core SHA: `725ffab73bff6bfb18f8257aa5f6aa68815d0cec`
+- core short SHA: `725ffab`
+- core commit: `Add artifact grid view-model helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core artifact stat view-model helpers`)
+- game pointer commit: this commit (`Use core artifact grid view-model helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `41a3ad5` | Artifact stat view-model helpers | Added `client-view-model` helpers for stat total summing, signed delta formatting, bonus-entry DTO shaping, and loadout stat text composition. Mushroom delegates `deriveTotals`, artifact bonus labels, loadout stat text, and stat chips while keeping product stat labels, visual role classes, and UI composition local. |
+| 2026-07-04 | this commit | `725ffab` | Artifact grid view-model helpers | Added `client-view-model` helpers for occupied-cell value maps and preferred artifact preview orientation. Mushroom delegates `buildOccupancy` and `preferredOrientation` while keeping placement state, visual previews, drag/drop actions, and product rendering local. |
+| 2026-07-04 | `a672a73` | `41a3ad5` | Artifact stat view-model helpers | Added `client-view-model` helpers for stat total summing, signed delta formatting, bonus-entry DTO shaping, and loadout stat text composition. Mushroom delegates `deriveTotals`, artifact bonus labels, loadout stat text, and stat chips while keeping product stat labels, visual role classes, and UI composition local. |
 | 2026-07-04 | `42bf0be` | `f403553` | Grid cell classification view-model helpers | Added `client-view-model` helpers for slot-first bag row lookup, grid cell classification, and occupied footprint key generation. Mushroom's artifact grid board imports the shared helpers while keeping visual classes, overlays, events, and board layout local. |
 | 2026-07-04 | `f3786ad` | `cf7c680` | Wallet and roll feedback view-model helpers | Added `client-view-model` helpers for wallet purchase surface balance/bundle/status/support shaping and asset roll-result/problem feedback assembly. Mushroom uses them in the home wallet and pack feedback UI while keeping Telegram/web surface detection, localization, route actions, and UI composition local. |
 | 2026-07-04 | `779aaab` | `578279d` | Asset pack client view-model helpers | Added `client-view-model` helpers for asset pack rarity odds, guarantee/pity/duplicate copy text, active/availability labels, and roll-pack summaries over product-provided labels. Mushroom uses the helper in the home skin picker while keeping localization, selected-character state, runtime bootstrap data, routes, and UI composition local. |

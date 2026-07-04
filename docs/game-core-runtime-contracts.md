@@ -317,6 +317,9 @@ moved in core commit `f403553`; games still own visual classes, overlays,
 drag/drop events, and layout constants. Artifact stat total/text view-model
 shaping moved in core commit `41a3ad5`; games still own stat labels, visual
 role classes, product copy, catalog semantics, and final UI composition.
+Artifact grid utility shaping moved in core commit `725ffab`; games still own
+placement state, visual preview composition, drag/drop actions, product
+rendering, and gameplay mutation logic.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`
