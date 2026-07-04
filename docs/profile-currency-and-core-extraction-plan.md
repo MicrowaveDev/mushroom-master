@@ -60,8 +60,8 @@
 > gacha admin-validation, gacha simulation, wallet-accounting, and
 > profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
-> resolution, and the first asset/gacha client view-model helper slice shares
-> pack summary/label shaping. Product DB schemas,
+> resolution, and client view-model helper slices now share pack summary/label,
+> wallet purchase-surface, and asset roll-feedback shaping. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -97,7 +97,8 @@ simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
-helpers, and asset pack client view-model helpers. The package ships TypeScript
+helpers, asset pack client view-model helpers, and wallet/roll feedback
+view-model helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2449,7 +2450,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `578279d`; typed package baseline remains `d5fb481`.
+   `cf7c680`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2672,6 +2673,14 @@ summary shaping now run through `client-view-model` over passed packs,
 portraits, ownership ids, copy templates, and rarity-label callbacks. Mushroom
 keeps localization strings, selected-character state, runtime bootstrap data,
 routes, actions, and visual composition local.
+
+The next completed frontend/client slice is wallet and roll feedback
+view-model shaping, landed in core commit `cf7c680`: wallet balance fallback,
+bundle filtering by surface, bundle price formatting, purchase status/support
+link shaping, and asset roll-result/problem feedback assembly now run through
+`client-view-model` over passed labels. Mushroom keeps Telegram/web surface
+detection, emitted route actions, localization strings, runtime state, and
+visual composition local.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -3217,3 +3226,12 @@ that game.
    consumes the same helper through a contract smoke test. Next frontend
    candidates are wallet/asset DTO shapers and headless services/composables;
    full Vue page/component movement remains later.
+52. Phase 8S wallet and roll-feedback view-model helper extraction.
+   **Implemented 2026-07-04:** core commit `cf7c680` added
+   `client-view-model` helpers for wallet purchase surface shaping and asset
+   roll feedback assembly. Mushroom's home wallet and pack feedback UI now
+   delegate the neutral shaping to core while keeping product copy,
+   Telegram/web surface detection, emitted route actions, runtime state, and
+   UI composition local. Meat consumes the same helpers through a contract
+   smoke test. Next frontend candidate from the sub-agent audit is grid-cell
+   classification, followed by artifact stat DTO helpers.

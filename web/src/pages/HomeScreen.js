@@ -2,6 +2,9 @@ import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
 import { getNextRunAchievementHint, getRunAchievementsByIds } from '../../../app/shared/run-achievements.js';
 import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
 import {
+  formatWalletBundlePrice as formatCoreWalletBundlePrice,
+  summarizeAssetRollFeedback,
+  summarizeWalletPurchaseSurface,
   summarizeAssetRollPacks
 } from '@microwavedev/backpack-game-core/client-view-model';
 import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
@@ -74,17 +77,10 @@ export const HomeScreen = {
       return this.t[`walletProvider_${provider}`] || provider;
     },
     formatWalletBundlePrice(bundle) {
-      const amount = Number(bundle.priceAmount || 0);
-      const currency = bundle.priceCurrency || '';
-      if (currency === 'USD') return `$${(amount / 100).toFixed(2)}`;
-      return `${amount} ${currency}`;
+      return formatCoreWalletBundlePrice(bundle);
     },
     paymentSupportEntries() {
-      const support = this.state.appConfig?.paymentSupport || {};
-      return [
-        support.supportUrl ? { label: this.t.walletSupport, url: support.supportUrl } : null,
-        support.termsUrl ? { label: this.t.walletTerms, url: support.termsUrl } : null
-      ].filter(Boolean);
+      return this.walletPurchaseSurface.supportEntries;
     },
     localizedName(value) {
       if (value && typeof value === 'object') return value[this.state.lang] || value.en || Object.values(value)[0] || '';
@@ -127,30 +123,6 @@ export const HomeScreen = {
       if (portrait.rollAvailable && portrait.packId) {
         this.$emit('roll-asset-pack', { packId: portrait.packId });
       }
-    },
-    assetRollResultName() {
-      const firstItem = Array.isArray(this.state.assetRollResult?.items)
-        ? this.state.assetRollResult.items[0]
-        : null;
-      return this.localizedName(firstItem?.assetName || this.state.assetRollResult?.assetName) ||
-        firstItem?.assetId ||
-        this.state.assetRollResult?.assetId ||
-        '';
-    },
-    assetRollResultItemsText() {
-      const items = Array.isArray(this.state.assetRollResult?.items)
-        ? this.state.assetRollResult.items
-        : [];
-      const named = items
-        .map((item) => {
-          const name = this.localizedName(item.assetName) || item.assetId || '';
-          const rarity = this.rarityLabel(item.rarity);
-          return [name, rarity].filter(Boolean).join(' · ');
-        })
-        .filter(Boolean);
-      if (!named.length) return '';
-      if (named.length <= 3) return named.join(' | ');
-      return `${named.slice(0, 3).join(' | ')} +${named.length - 3}`;
     },
     focusMushroom(mushroom) {
       this.selectedMushroomId = mushroom.id;
@@ -262,79 +234,73 @@ export const HomeScreen = {
       return entry?.rank || null;
     },
     walletBalance() {
-      return this.state.bootstrap?.wallet?.balances?.soft_coin ?? this.state.bootstrap?.player?.spore ?? 0;
+      return this.walletPurchaseSurface.balance;
     },
     walletSurface() {
       return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
     },
     walletBundles() {
-      if (this.state.walletBundlesSurface !== this.walletSurface) return [];
-      return Array.isArray(this.state.walletBundles) ? this.state.walletBundles : [];
+      return this.walletPurchaseSurface.bundles;
     },
     walletPurchaseStatusText() {
-      if (!this.state.walletPurchaseStatus) return '';
-      return this.t[`walletPayment_${this.state.walletPurchaseStatus}`] || '';
+      return this.walletPurchaseSurface.statusText;
+    },
+    walletPurchaseSurface() {
+      return summarizeWalletPurchaseSurface({
+        wallet: this.state.bootstrap?.wallet,
+        player: this.state.bootstrap?.player,
+        bundles: this.state.walletBundles,
+        bundleSurface: this.state.walletBundlesSurface,
+        surface: this.walletSurface,
+        status: this.state.walletPurchaseStatus,
+        support: this.state.appConfig?.paymentSupport || {},
+        labels: {
+          support: this.t.walletSupport,
+          terms: this.t.walletTerms,
+          status: {
+            opening: this.t.walletPayment_opening,
+            opened: this.t.walletPayment_opened,
+            pending: this.t.walletPayment_pending,
+            confirmed: this.t.walletPayment_confirmed,
+            expired: this.t.walletPayment_expired,
+            failed: this.t.walletPayment_failed
+          }
+        }
+      });
     },
     assetRollFeedback() {
       const status = this.state.assetRollStatus;
       if (!status) return null;
-      if (status === 'rolling') {
-        return {
-          status,
-          title: this.t.portraitRollOpeningTitle,
-          text: this.t.portraitRollOpening
-        };
-      }
-      if (status === 'burning') {
-        return {
-          status,
-          title: this.t.portraitBurnOpeningTitle,
-          text: this.t.portraitBurnOpening
-        };
-      }
-      if (status === 'success' && this.state.assetRollResult) {
-        const rarity = this.rarityLabel(this.state.assetRollResult.rarity);
-        const count = Number(this.state.assetRollResult.count || this.state.assetRollResult.items?.length || 1);
-        if (count > 1) {
-          return {
-            status,
-            title: this.t.portraitRollResultsTitle.replace('{count}', count),
-            text: this.assetRollResultItemsText()
-          };
-        }
-        return {
-          status,
-          title: this.t.portraitRollResultTitle,
-          text: this.t.portraitRollResult
-            .replace('{asset}', this.assetRollResultName())
-            .replace('{rarity}', rarity)
-        };
-      }
-      if (status === 'burned' && this.state.assetRollResult) {
-        const rarity = this.rarityLabel(this.state.assetRollResult.rarity);
-        return {
-          status: 'success',
-          title: this.t.portraitBurnResultTitle,
-          text: this.t.portraitBurnResult
-            .replace('{asset}', this.assetRollResultName())
-            .replace('{rarity}', rarity)
-        };
-      }
-      const key = {
-        complete: 'portraitRollErrorComplete',
-        burn_unavailable: 'portraitBurnErrorUnavailable',
-        insufficient: 'portraitRollErrorInsufficient',
-        unavailable: 'portraitRollErrorUnavailable',
-        disabled: 'portraitRollErrorDisabled',
-        invalid: 'portraitRollErrorInvalid',
-        failed: 'portraitRollErrorFailed'
-      }[status];
-      if (!key) return null;
-      return {
-        status,
-        title: this.t.portraitRollProblemTitle,
-        text: this.t[key] || this.state.assetRollErrorMessage || ''
+      const errors = {
+        complete: this.t.portraitRollErrorComplete,
+        burn_unavailable: this.t.portraitBurnErrorUnavailable,
+        insufficient: this.t.portraitRollErrorInsufficient,
+        unavailable: this.t.portraitRollErrorUnavailable,
+        disabled: this.t.portraitRollErrorDisabled,
+        invalid: this.t.portraitRollErrorInvalid,
+        failed: this.t.portraitRollErrorFailed
       };
+      if (!['rolling', 'burning', 'success', 'burned'].includes(status) && !errors[status]) return null;
+      return summarizeAssetRollFeedback({
+        status,
+        result: this.state.assetRollResult,
+        errorMessage: this.state.assetRollErrorMessage,
+        localizeName: (value) => this.localizedName(value),
+        rarityLabel: (rarity) => this.rarityLabel(rarity),
+        labels: {
+          openingTitle: this.t.portraitRollOpeningTitle,
+          openingText: this.t.portraitRollOpening,
+          burnOpeningTitle: this.t.portraitBurnOpeningTitle,
+          burnOpeningText: this.t.portraitBurnOpening,
+          multiResultTitleTemplate: this.t.portraitRollResultsTitle,
+          resultTitle: this.t.portraitRollResultTitle,
+          resultTemplate: this.t.portraitRollResult,
+          burnResultTitle: this.t.portraitBurnResultTitle,
+          burnResultTemplate: this.t.portraitBurnResult,
+          problemTitle: this.t.portraitRollProblemTitle,
+          errors
+        }
+      });
     },
     rollPackSummaries() {
       if (!this.selectedMushroom) return [];
