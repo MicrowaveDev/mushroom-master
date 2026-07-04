@@ -663,14 +663,14 @@ emergency maintenance, not normal season authoring.
   paid-pack jurisdiction/odds disclosure review, and deeper marketplace/NFT-set
   tooling.
 - Post-implementation findings to fold into the next G5E/G5F slice:
-  split admin/full runtime-catalog projection from public/player projection so
-  ready-but-unpromoted plan assets cannot appear on player-facing surfaces
-  unless that visibility is explicitly intended; generalize the standalone
-  odds-simulation CLI/service from static packs to DB-backed runtime packs and
-  promoted plan assets; and decide the asset-id contract for plan-item character
-  edits, either by treating planned `asset_id` values as opaque immutable ids or
-  by syncing the character-scoped prefix before promotion and blocking unsafe
-  edits after promotion.
+  ✅ public/player runtime catalogs now include plan assets only when they are
+  linked through approved player-visible DB packs, while admin tooling opts into
+  the full ready-plan catalog for draft validation and authoring. Remaining:
+  generalize the standalone odds-simulation CLI/service from static packs to
+  DB-backed runtime packs and promoted plan assets; and decide the asset-id
+  contract for plan-item character edits, either by treating planned `asset_id`
+  values as opaque immutable ids or by syncing the character-scoped prefix
+  before promotion and blocking unsafe edits after promotion.
 
 - Move packs, seasons, collections, rarity tables, dates, and prices out of
   static config into database-managed records.
@@ -2556,10 +2556,12 @@ Additional TODOs for that pass:
    item create/update/delete actions. **Updated 2026-07-04:** ready plan images
    can be promoted into DB pack items and resolved by runtime odds, rolls,
    bootstrap catalog projection, portrait equipment, and support asset
-   operations. Remaining: public-vs-admin catalog visibility gates for
-   unpromoted ready plan assets, DB-runtime mode for the standalone odds
-   simulator, explicit asset-id rules for plan-item character edits, bulk
-   CSV/item editing, migration and rollback scripts for live corrections,
-   scheduled activation/expiry alerts, richer disclosure review by
-   jurisdiction/provider, staff permission tiers, and marketplace/NFT-set
-   operations before non-engineering operators manage paid seasons unaided.
+   operations. **Updated 2026-07-04:** public/player runtime catalogs now hide
+   ready plan assets until they are linked through approved player-visible DB
+   packs; admin validation and authoring can still use the full ready-plan
+   catalog. Remaining: DB-runtime mode for the standalone odds simulator,
+   explicit asset-id rules for plan-item character edits, bulk CSV/item editing,
+   migration and rollback scripts for live corrections, scheduled
+   activation/expiry alerts, richer disclosure review by jurisdiction/provider,
+   staff permission tiers, and marketplace/NFT-set operations before
+   non-engineering operators manage paid seasons unaided.

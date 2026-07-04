@@ -410,7 +410,10 @@ Membership is not stored. It is derived from overlap between item cells and acti
   against the configured content target, and save audited plan-item edits before
   using advanced pack authoring controls. Ready plan images can be promoted into
   a selected pack as runtime pack items; the promotion is audited and DB-backed
-  rolls can grant and equip those promoted portrait assets.
+  rolls can grant and equip those promoted portrait assets. Ready plan images
+  remain admin-only until they are linked through an approved player-visible
+  pack; draft-linked or unpromoted plan assets must not appear in player-facing
+  runtime catalogs.
   `/api/admin/gacha/export` and `/api/admin/gacha/import` provide JSON fixture
   movement for DB-authored gacha data; imports default to dry-run and require
   `allowApproved: true` before preserving approved pack review status, with the

@@ -6,6 +6,7 @@ import { query } from '../../app/server/db.js';
 import {
   equipAsset,
   getPackOddsForRuntime,
+  getRuntimeAssetCatalog,
   portraitAssetId,
   rollAssetPack
 } from '../../app/server/services/asset-service.js';
@@ -295,6 +296,11 @@ test('[Req 14-F] gacha admin API promotes ready season plan images into runtime 
     assert.equal(uploaded.status, 200);
     const planItem = uploaded.body.data.item;
 
+    const unpromotedPublicCatalog = await getRuntimeAssetCatalog();
+    assert.equal(unpromotedPublicCatalog.some((asset) => asset.assetId === planItem.assetId), false);
+    const unpromotedAdminCatalog = await getRuntimeAssetCatalog({ planAssetVisibility: 'all' });
+    assert.equal(unpromotedAdminCatalog.some((asset) => asset.assetId === planItem.assetId), true);
+
     const packId = 'admin_promote_pack';
     const pack = await request(app)
       .post('/api/admin/gacha/packs')
@@ -330,6 +336,9 @@ test('[Req 14-F] gacha admin API promotes ready season plan images into runtime 
     assert.equal(promoted.body.data.inserted[0].assetId, planItem.assetId);
     assert.equal(promoted.body.data.validation.ok, true);
 
+    const draftLinkedPublicCatalog = await getRuntimeAssetCatalog();
+    assert.equal(draftLinkedPublicCatalog.some((asset) => asset.assetId === planItem.assetId), false);
+
     const storedPlan = await query(`SELECT metadata_json FROM asset_gacha_plan_items WHERE id = $1`, [planItem.id]);
     const planMetadata = JSON.parse(storedPlan.rows[0].metadata_json);
     assert.deepEqual(planMetadata.promotedPackIds, [packId]);
@@ -344,6 +353,11 @@ test('[Req 14-F] gacha admin API promotes ready season plan images into runtime 
       });
     assert.equal(publish.status, 200);
     assert.equal(publish.body.data.pack.reviewStatus, 'approved');
+
+    const publishedPublicCatalog = await getRuntimeAssetCatalog();
+    const publishedAsset = publishedPublicCatalog.find((asset) => asset.assetId === planItem.assetId);
+    assert.equal(publishedAsset.path, planItem.imagePath);
+    assert.deepEqual(publishedAsset.packIds, [packId]);
 
     const odds = await getPackOddsForRuntime(packId);
     assert.equal(odds.validation.ok, true);

@@ -970,7 +970,7 @@ async function applyUpdate(client, table, id, fields) {
 async function validationForPackRow(client, packRow) {
   const items = await selectPackItems(client, packRow.id);
   const runtimePack = rowPackToRuntimePack(packRow, items);
-  const catalog = await getRuntimeAssetCatalog({ client });
+  const catalog = await getRuntimeAssetCatalog({ client, planAssetVisibility: 'all' });
   return {
     runtimePack,
     validation: validateAssetPack(runtimePack, { catalog }),
@@ -1381,7 +1381,7 @@ export async function listGachaAdminCatalog() {
     query(`SELECT * FROM asset_gacha_packs ORDER BY season_id ASC, collection_id ASC, starts_at ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_pack_items ORDER BY pack_id ASC, item_order ASC, id ASC`),
     query(`SELECT * FROM asset_gacha_plan_items ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`),
-    getRuntimeAssetCatalog()
+    getRuntimeAssetCatalog({ planAssetVisibility: 'all' })
   ]);
   const itemsByPack = new Map();
   for (const item of items.rows) {
@@ -1601,7 +1601,10 @@ export async function importGachaAdminFixture({
       const packRow = packRows.get(packId) || await requireRow(client, 'asset_gacha_packs', packId, 'gacha pack');
       const seasonRow = seasonRows.get(packRow.season_id) || await findOne(client, 'asset_gacha_seasons', packRow.season_id);
       const collectionRow = collectionRows.get(packRow.collection_id) || await findOne(client, 'asset_gacha_collections', packRow.collection_id);
-      const catalog = catalogWithFixturePlanRows(await getRuntimeAssetCatalog({ client }), [...planRows.values()]);
+      const catalog = catalogWithFixturePlanRows(
+        await getRuntimeAssetCatalog({ client, planAssetVisibility: 'all' }),
+        [...planRows.values()]
+      );
       const result = fixturePackResult(packRow, itemRowsByPack.get(packId) || [], { seasonRow, collectionRow, catalog });
       assertApprovedImportReady(result);
       packResults.push(result);

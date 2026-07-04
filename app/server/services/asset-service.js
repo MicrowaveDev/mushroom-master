@@ -192,15 +192,70 @@ function rowToPlanAsset(row, packIds = []) {
   };
 }
 
-export async function getRuntimeAssetCatalog({ client = null } = {}) {
+function normalizePlanAssetVisibility(value) {
+  if (value === 'all' || value === 'admin') return 'all';
+  return 'runtime';
+}
+
+function visiblePlanRowsQuery(planAssetVisibility) {
+  if (planAssetVisibility === 'all') {
+    return {
+      text: `SELECT *
+       FROM asset_gacha_plan_items
+       WHERE status = 'ready'
+       ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`,
+      params: []
+    };
+  }
+  return {
+    text: `SELECT *
+     FROM asset_gacha_plan_items pi
+     WHERE pi.status = 'ready'
+       AND EXISTS (
+         SELECT 1
+         FROM asset_gacha_pack_items item
+         JOIN asset_gacha_packs p ON p.id = item.pack_id
+         JOIN asset_gacha_seasons s ON s.id = p.season_id
+         JOIN asset_gacha_collections c ON c.id = p.collection_id
+         WHERE item.asset_id = pi.asset_id
+           AND p.review_status = 'approved'
+           AND p.status IN ('active', 'future', 'expired')
+           AND s.status IN ('active', 'future', 'expired')
+           AND c.status IN ('active', 'future', 'expired')
+       )
+     ORDER BY pi.season_id ASC, pi.character_id ASC, pi.created_at ASC, pi.id ASC`,
+    params: []
+  };
+}
+
+function visiblePlanPackLinksQuery(placeholders, planAssetVisibility) {
+  if (planAssetVisibility === 'all') {
+    return `SELECT DISTINCT asset_id, pack_id
+     FROM asset_gacha_pack_items
+     WHERE asset_id IN (${placeholders})
+     ORDER BY pack_id ASC`;
+  }
+  return `SELECT DISTINCT item.asset_id, item.pack_id
+   FROM asset_gacha_pack_items item
+   JOIN asset_gacha_packs p ON p.id = item.pack_id
+   JOIN asset_gacha_seasons s ON s.id = p.season_id
+   JOIN asset_gacha_collections c ON c.id = p.collection_id
+   WHERE item.asset_id IN (${placeholders})
+     AND p.review_status = 'approved'
+     AND p.status IN ('active', 'future', 'expired')
+     AND s.status IN ('active', 'future', 'expired')
+     AND c.status IN ('active', 'future', 'expired')
+   ORDER BY item.pack_id ASC`;
+}
+
+export async function getRuntimeAssetCatalog({ client = null, planAssetVisibility = 'runtime' } = {}) {
   const staticAssets = getAssetCatalog();
+  const visibility = normalizePlanAssetVisibility(planAssetVisibility);
+  const planRowsQuery = visiblePlanRowsQuery(visibility);
   const planRows = await runAssetCatalogQuery(
     client,
-    `SELECT *
-     FROM asset_gacha_plan_items
-     WHERE status = 'ready'
-     ORDER BY season_id ASC, character_id ASC, created_at ASC, id ASC`,
-    []
+    planRowsQuery.text,
+    planRowsQuery.params
   );
   if (!planRows.rowCount) return staticAssets;
 
@@ -208,10 +263,7 @@ export async function getRuntimeAssetCatalog({ client = null } = {}) {
   const placeholders = assetIds.map((_, index) => `$${index + 1}`).join(', ');
   const packLinks = await runAssetCatalogQuery(
     client,
-    `SELECT asset_id, pack_id
-     FROM asset_gacha_pack_items
-     WHERE asset_id IN (${placeholders})
-     ORDER BY pack_id ASC`,
+    visiblePlanPackLinksQuery(placeholders, visibility),
     assetIds
   );
   const packIdsByAssetId = new Map();
@@ -227,13 +279,13 @@ export async function getRuntimeAssetCatalog({ client = null } = {}) {
   ];
 }
 
-export async function getRuntimeAssetById(assetId, { client = null } = {}) {
-  return assetByIdFromCatalog(await getRuntimeAssetCatalog({ client }), assetId);
+export async function getRuntimeAssetById(assetId, { client = null, planAssetVisibility = 'runtime' } = {}) {
+  return assetByIdFromCatalog(await getRuntimeAssetCatalog({ client, planAssetVisibility }), assetId);
 }
 
-export async function getRuntimePortraitVariantsForResponse({ client = null } = {}) {
+export async function getRuntimePortraitVariantsForResponse({ client = null, planAssetVisibility = 'runtime' } = {}) {
   const variantsByCharacter = portraitVariantsForResponse();
-  const runtimeCatalog = await getRuntimeAssetCatalog({ client });
+  const runtimeCatalog = await getRuntimeAssetCatalog({ client, planAssetVisibility });
   for (const asset of runtimeCatalog) {
     if (asset.source !== 'gacha_plan' || asset.slot !== 'portrait' || asset.targetType !== 'character') continue;
     const list = variantsByCharacter[asset.targetId] || [];
