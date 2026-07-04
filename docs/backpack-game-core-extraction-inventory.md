@@ -40,6 +40,10 @@ copy, theme, and API adapters.
   loadout projection helpers in `src/client-view-model.js`, tested by
   `tests/module-exports.test.js`, `tests/client.test.js`, and
   `tests/client-view-model.test.js`
+- asset pack client view-model slice: `src/client-view-model.js` now also
+  provides rarity odds text, guarantee/pity/duplicate text, active/availability
+  labels, and roll-pack summary helpers over product-provided labels/catalogs,
+  tested by `tests/client-view-model.test.js`
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
@@ -63,8 +67,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `77b1d7b`
-  (`Add asset catalog acquisition policy helper`)
+- latest consumed core commit: `578279d`
+  (`Add asset pack client view-model helpers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -600,7 +604,8 @@ landed in core commit `3e3d5d6`, the first real helper movement landed in core
 commit `8345448`, the gacha simulation helper moved in core commit `b3da379`,
 the wallet accounting helper moved in core commit `af520f0`, and the profile
 asset state helper moved in core commit `6ae688b`. Asset catalog acquisition
-default/override policy moved in core commit `77b1d7b`.
+default/override policy moved in core commit `77b1d7b`, and the first
+asset/gacha client view-model helper slice moved in core commit `578279d`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -649,12 +654,20 @@ Next planned domain slices:
    `77b1d7b`; Mushroom delegates through `modules/gacha` while keeping env
    parsing, product pack ids, portrait URLs, catalog assembly, runtime pack
    lookup, and direct-buy/roll execution local.**
+8. **Asset pack client view-model helpers:** browser-safe rarity odds text,
+   guarantee/pity/duplicate labels, active/availability labels, and roll-pack
+   summary shaping over passed pack/catalog snapshots and product copy.
+   **Implemented 2026-07-04 in core commit `578279d`; Mushroom delegates the
+   home skin-picker pack summary while keeping localization, runtime bootstrap
+   state, selected character state, routes, and visual composition local.**
 
 Next planned frontend slices:
 
 1. **Client/contracts layer:** **First slice implemented 2026-07-04** with the
    route-adapter client and shared `client-view-model` loadout projection.
-   Continue with DTO shapers, error/status normalization, and view-model
+   **Second slice implemented 2026-07-04** with asset pack summary/label
+   helpers for gacha UI state. Continue with DTO shapers, error/status
+   normalization, wallet/asset response shapers, and headless view-model
    contracts before page/component extraction. Do not move the full Mushroom API
    client into core yet; keep product routes behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API

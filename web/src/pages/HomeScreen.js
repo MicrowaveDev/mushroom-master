@@ -1,6 +1,9 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
 import { getNextRunAchievementHint, getRunAchievementsByIds } from '../../../app/shared/run-achievements.js';
 import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
+import {
+  summarizeAssetRollPacks
+} from '@microwavedev/backpack-game-core/client-view-model';
 import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
 import { AchievementBadge } from '../components/AchievementBadge.js';
 import { HomeSocialSidebar } from '../components/HomeSocialSidebar.js';
@@ -92,87 +95,6 @@ export const HomeScreen = {
     },
     rarityLabel(rarity) {
       return this.t[`rarity_${rarity}`] || rarity || '';
-    },
-    rarityOddsText(pack) {
-      const summary = Array.isArray(pack?.raritySummary) && pack.raritySummary.length
-        ? pack.raritySummary
-        : null;
-      if (summary) {
-        return summary
-          .map((entry) => `${this.rarityLabel(entry.rarity)} ${Math.round(Number(entry.probability || 0) * 100)}%`)
-          .join(' · ');
-      }
-      const items = Array.isArray(pack?.items) ? pack.items : [];
-      const total = items.reduce((sum, item) => sum + Number(item.dropWeight || 0), 0);
-      if (!total) return '';
-      const grouped = items.reduce((acc, item) => {
-        const rarity = item.rarity || 'common';
-        acc[rarity] = (acc[rarity] || 0) + Number(item.dropWeight || 0);
-        return acc;
-      }, {});
-      return Object.entries(grouped)
-        .sort((a, b) => b[1] - a[1])
-        .map(([rarity, weight]) => `${this.rarityLabel(rarity)} ${Math.round((weight / total) * 100)}%`)
-        .join(' · ');
-    },
-    packGuaranteeText(pack) {
-      const rules = Array.isArray(pack?.guarantees?.rules) ? pack.guarantees.rules : [];
-      return rules
-        .filter((rule) => Number(rule.count || 0) > 0 && rule.minRarity)
-        .map((rule) => this.t.portraitPackGuarantee
-          .replace('{count}', rule.count)
-          .replace('{rarity}', this.rarityLabel(rule.minRarity)))
-        .join(' · ');
-    },
-    packPityText(pack) {
-      const rules = Array.isArray(pack?.pity?.rules) ? pack.pity.rules : [];
-      return rules
-        .filter((rule) => Number(rule.threshold || 0) > 0 && rule.minRarity)
-        .map((rule) => {
-          const key = rule.active ? 'portraitPackPityReady' : 'portraitPackPity';
-          return this.t[key]
-            .replace('{rarity}', this.rarityLabel(rule.minRarity))
-            .replace('{count}', rule.remaining || rule.threshold);
-        })
-        .join(' · ');
-    },
-    packDuplicateText(pack) {
-      if (!pack?.duplicatePolicy?.enabled) return '';
-      return this.t.portraitPackDuplicateCopies.replace('{count}', Number(pack.duplicateCopies || 0));
-    },
-    packIsActive(pack) {
-      if (!pack) return false;
-      if (pack.availability) return pack.availability === 'active';
-      if (pack.active === false || (pack.status && pack.status !== 'active')) return false;
-      const now = Date.now();
-      const startsAt = pack.startsAt ? new Date(pack.startsAt).getTime() : null;
-      const endsAt = pack.endsAt ? new Date(pack.endsAt).getTime() : null;
-      if (startsAt && startsAt > now) return false;
-      if (endsAt && endsAt <= now) return false;
-      return true;
-    },
-    packAvailabilityLabel(pack) {
-      if (this.packIsActive(pack)) return '';
-      if (pack?.availability === 'invalid') return this.t.portraitPackInvalid;
-      if (pack?.availability === 'disabled') return this.t.portraitPackUnavailable;
-      if (pack?.availability === 'future') return this.t.portraitPackFuture;
-      if (pack?.availability === 'expired') return this.t.portraitPackExpired;
-      const now = Date.now();
-      const startsAt = pack?.startsAt ? new Date(pack.startsAt).getTime() : null;
-      const endsAt = pack?.endsAt ? new Date(pack.endsAt).getTime() : null;
-      if (startsAt && startsAt > now) return this.t.portraitPackFuture;
-      if (endsAt && endsAt <= now) return this.t.portraitPackExpired;
-      return this.t.portraitPackUnavailable;
-    },
-    packOwnedCount(pack) {
-      if (Number.isFinite(Number(pack?.ownedCount))) return Number(pack.ownedCount);
-      const owned = new Set();
-      for (const progression of Object.values(this.state.bootstrap?.progression || {})) {
-        for (const portrait of progression?.portraits || []) {
-          if (portrait.owned && portrait.assetId) owned.add(portrait.assetId);
-        }
-      }
-      return (pack?.items || []).filter((item) => owned.has(item.assetId)).length;
     },
     portraitPriceAmount(portrait) {
       if (portrait.purchaseAvailable) return portrait.price || portrait.cost || 0;
@@ -416,60 +338,30 @@ export const HomeScreen = {
     },
     rollPackSummaries() {
       if (!this.selectedMushroom) return [];
-      const selectedAssetIds = new Set(this.selectedMushroom.portraits
-        .map((portrait) => portrait.assetId)
-        .filter(Boolean));
-      const packIds = new Set(this.selectedMushroom.portraits
-        .filter((portrait) => portrait.packId && (!portrait.unlocked || portrait.rollAvailable))
-        .map((portrait) => portrait.packId));
-      for (const pack of this.state.bootstrap?.assetPacks || []) {
-        if ((pack.items || []).some((item) => selectedAssetIds.has(item.assetId))) {
-          packIds.add(pack.id);
+      const ownedAssetIds = new Set();
+      for (const progression of Object.values(this.state.bootstrap?.progression || {})) {
+        for (const portrait of progression?.portraits || []) {
+          if (portrait.owned && portrait.assetId) ownedAssetIds.add(portrait.assetId);
         }
       }
-      return [...packIds]
-        .map((packId) => this.assetPacksById[packId])
-        .filter(Boolean)
-        .map((pack) => {
-          const total = Number.isFinite(Number(pack.totalItems)) ? Number(pack.totalItems) : (pack.items?.length || 0);
-          const owned = this.packOwnedCount(pack);
-          const left = Number.isFinite(Number(pack.remainingCount))
-            ? Number(pack.remainingCount)
-            : Math.max(0, total - owned);
-          const duplicateEnabled = Boolean(pack.duplicatePolicy?.enabled);
-          const burnRules = Array.isArray(pack?.burn?.rules) ? pack.burn.rules : [];
-          const readyBurnRule = burnRules.find((rule) => rule.ready) || burnRules[0] || null;
-          const rollableCount = Number.isFinite(Number(pack.rollableCount))
-            ? Number(pack.rollableCount)
-            : duplicateEnabled ? total : left;
-          const complete = Boolean(pack.complete) || (!duplicateEnabled && left <= 0);
-          return {
-            id: pack.id,
-            name: this.packName(pack),
-            total,
-            owned,
-            left,
-            rollSize: Number(pack.rollSize || 1),
-            nextRollItemCount: Number(pack.nextRollItemCount || Math.min(Number(pack.rollSize || 1), rollableCount)),
-            active: this.packIsActive(pack),
-            availabilityLabel: this.packAvailabilityLabel(pack),
-            price: pack.rollPriceAmount || 0,
-            complete,
-            duplicateEnabled,
-            uniqueComplete: Boolean(pack.uniqueComplete),
-            copyComplete: Boolean(pack.copyComplete),
-            duplicateCopies: Number(pack.duplicateCopies || 0),
-            canRoll: this.packIsActive(pack) && !complete && rollableCount > 0,
-            canBurn: this.packIsActive(pack) && Boolean(readyBurnRule?.ready),
-            burnRuleId: readyBurnRule?.id || null,
-            burnCost: Number(readyBurnRule?.sourceCount || 0),
-            burnRarity: readyBurnRule?.sourceRarity ? this.rarityLabel(readyBurnRule.sourceRarity) : '',
-            odds: this.rarityOddsText(pack),
-            guaranteeText: this.packGuaranteeText(pack),
-            pityText: this.packPityText(pack),
-            duplicateText: this.packDuplicateText(pack)
-          };
-        });
+      return summarizeAssetRollPacks({
+        portraits: this.selectedMushroom.portraits || [],
+        packs: this.state.bootstrap?.assetPacks || [],
+        ownedAssetIds,
+        packName: (pack) => this.packName(pack),
+        rarityLabel: (rarity) => this.rarityLabel(rarity),
+        labels: {
+          invalid: this.t.portraitPackInvalid,
+          disabled: this.t.portraitPackUnavailable,
+          unavailable: this.t.portraitPackUnavailable,
+          future: this.t.portraitPackFuture,
+          expired: this.t.portraitPackExpired,
+          guaranteeTemplate: this.t.portraitPackGuarantee,
+          pityTemplate: this.t.portraitPackPity,
+          pityReadyTemplate: this.t.portraitPackPityReady,
+          duplicateTemplate: this.t.portraitPackDuplicateCopies
+        }
+      });
     },
     assetPacksById() {
       return Object.fromEntries((this.state.bootstrap?.assetPacks || []).map((pack) => [pack.id, pack]));

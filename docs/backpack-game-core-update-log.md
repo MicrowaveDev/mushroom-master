@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `77b1d7b0034ccead951d40579258f2793da7d7f1`
-- core short SHA: `77b1d7b`
-- core commit: `Add asset catalog acquisition policy helper`
+- core SHA: `578279d68e07d8d56783663d169c9f968af0dd97`
+- core short SHA: `578279d`
+- core commit: `Add asset pack client view-model helpers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core asset catalog acquisition policy helper`)
+- game pointer commit: this commit (`Use core asset pack view-model helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `77b1d7b` | Asset catalog acquisition policy helper | Added `resolveAssetCatalogAcquisitionPolicy` through `asset-gacha` / `modules/gacha` so paid/free default acquisition modes, per-asset overrides, explicit `packId: null`, and default pack assignment are shared. Mushroom keeps env parsing, `PORTRAIT_PACK_ID`, product catalog assembly, runtime pack lookup, and direct-buy/roll execution local. |
+| 2026-07-04 | this commit | `578279d` | Asset pack client view-model helpers | Added `client-view-model` helpers for asset pack rarity odds, guarantee/pity/duplicate copy text, active/availability labels, and roll-pack summaries over product-provided labels. Mushroom uses the helper in the home skin picker while keeping localization, selected-character state, runtime bootstrap data, routes, and UI composition local. |
+| 2026-07-04 | `84d8fae` | `77b1d7b` | Asset catalog acquisition policy helper | Added `resolveAssetCatalogAcquisitionPolicy` through `asset-gacha` / `modules/gacha` so paid/free default acquisition modes, per-asset overrides, explicit `packId: null`, and default pack assignment are shared. Mushroom keeps env parsing, `PORTRAIT_PACK_ID`, product catalog assembly, runtime pack lookup, and direct-buy/roll execution local. |
 | 2026-07-04 | `6f997ff` | `6ae688b` | Profile asset state helpers | Added `profile-asset-state`, `modules/assets`, and `modules/assets/profile-state` for profile asset ownership/equipment row shaping, equip validation, direct-purchase spend parameters, instance drafts, and portrait variant projection. Mushroom asset service delegates these pure helpers while keeping runtime catalogs, SQL lifecycle, gacha roll/burn lifecycle, support actions, paid rollback behavior, and the `player_mushrooms.active_portrait` mirror local. |
 | 2026-07-04 | `03b7bfb` | `af520f0` | Wallet accounting helpers | Added `wallet-accounting`, `modules/wallet`, and `modules/wallet/accounting` for profile-wallet delta validation, balance math, purchase grant/reversal mutation shaping, purchase status classification, and settlement invariants. Mushroom wallet and provider-settlement services delegate to those pure helpers while keeping SQL, locks, provider callbacks, support actions, mirrors, and reconciliation queries local. |
 | 2026-07-04 | `ed7068e` | `b3da379` | Gacha simulation helpers | Added `modules/gacha/simulation` for deterministic pack odds simulation over injected packs, catalogs, ownership snapshots, copy counts, pity state, seed, and RNG. Mushroom admin preview and CLI/runtime odds simulation delegate through thin adapters while static/runtime pack lookup and catalog visibility stay local. |

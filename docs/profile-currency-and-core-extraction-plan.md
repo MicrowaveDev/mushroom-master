@@ -58,9 +58,10 @@
 > exports so another game can integrate with typed provider hooks. **Phase 8I**
 > is the active domain-core extraction lane; the shared `asset-gacha`,
 > gacha admin-validation, gacha simulation, wallet-accounting, and
-> profile-asset-state slices are implemented, and a focused asset catalog
+> profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
-> resolution. Product DB schemas,
+> resolution, and the first asset/gacha client view-model helper slice shares
+> pack summary/label shaping. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -69,7 +70,7 @@
 > the shared core through a nested submodule.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
-8D, 8E, 8F, 8G, 8H, the first Phase 8I slices, and the initial Phase 11
+8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
 consumer
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
@@ -77,7 +78,7 @@ compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 on 2026-07-01; Phase 8A-8D extraction on 2026-07-01; Phase 8E battle-loop
 extraction, Phase 8F loadout-validation extraction, and Phase 8G RNG helper
 extraction on 2026-07-02; Phase 8H type declarations on 2026-07-02; first
-Phase 8I slices on 2026-07-04). Phase 6D remains an optional database-breaking rename and
+Phase 8I/8J slices on 2026-07-04). Phase 6D remains an optional database-breaking rename and
 should only happen after external consumers no longer depend on raw legacy
 column names.
 Real-money rollout still requires provider sandbox/live validation,
@@ -95,7 +96,8 @@ generation, provider-driven bot-loadout generation, hookable battle
 simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
-helpers, and reusable profile asset state helpers. The package ships TypeScript
+helpers, reusable profile asset state helpers, asset catalog acquisition policy
+helpers, and asset pack client view-model helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2447,7 +2449,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `77b1d7b`; typed package baseline remains `d5fb481`.
+   `578279d`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -2662,6 +2664,14 @@ in core commit `77b1d7b`: paid/free default acquisition modes, per-asset
 overrides, explicit `packId: null`, and default pack assignment now run through
 `modules/gacha`. Mushroom keeps env parsing, product pack ids, portrait URLs,
 runtime catalog assembly, and direct-buy/roll execution local.
+
+The next completed frontend/client slice is asset pack client view-model
+shaping, landed in core commit `578279d`: rarity odds text,
+guarantee/pity/duplicate labels, active/availability labels, and roll-pack
+summary shaping now run through `client-view-model` over passed packs,
+portraits, ownership ids, copy templates, and rarity-label callbacks. Mushroom
+keeps localization strings, selected-character state, runtime bootstrap data,
+routes, actions, and visual composition local.
 
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
@@ -3198,3 +3208,12 @@ that game.
    execution, SQL lifecycle, support actions, and product route payloads stay
    local. Next candidates are client/contracts and frontend-services; full Vue
    page/component movement remains later.
+51. Phase 8R asset/gacha client view-model helper extraction. **Implemented
+   2026-07-04:** core commit `578279d` added `client-view-model` helpers for
+   asset pack rarity odds, guarantee/pity/duplicate text, active/availability
+   labels, and roll-pack summaries. Mushroom's home skin picker now delegates
+   pack summary shaping to core while keeping product copy, selected character
+   state, bootstrap payloads, route actions, and UI composition local. Meat
+   consumes the same helper through a contract smoke test. Next frontend
+   candidates are wallet/asset DTO shapers and headless services/composables;
+   full Vue page/component movement remains later.
