@@ -5,7 +5,7 @@ naming pass and the first package type-declaration pass.
 
 This document chooses extraction slices and records why other modules wait. It
 should be updated after each cluster moves. The 2026-07-04 multi-game revision
-identifies `git@github.com:nuclear-pancakes/meat-master.git` as the next core
+adds `git@github.com:nuclear-pancakes/meat-master.git` as the second core
 consumer, so wallet/assets/gacha should no longer be treated as entirely
 Mushroom-local: product persistence and payment adapters stay local, but
 reusable domain rules should move into core behind explicit adapters.
@@ -471,11 +471,12 @@ integration commit.
 ## Next Slices After Bag Shape, Grid Geometry, Fusion, Shop Offer, Bot Loadout, Battle Simulation, Loadout Validation, And RNG
 
 After the shipped bag-shape, grid-geometry, fusion-matching, shop-offer,
-bot-loadout, battle-simulation, loadout-validation, and RNG slices, the next
-consumer target is now concrete: `git@github.com:nuclear-pancakes/meat-master.git`.
-Use that integration to drive the next reusable API cleanup instead of waiting
-for an abstract second game. The package now ships TypeScript declarations for
-the root export and every subpath export.
+bot-loadout, battle-simulation, loadout-validation, RNG, and asset-gacha
+slices, the second consumer target is concrete and bootstrapped:
+`git@github.com:nuclear-pancakes/meat-master.git`. Use that integration to
+drive the next reusable API cleanup instead of waiting for an abstract second
+game. The package ships TypeScript declarations for the root export and every
+subpath export.
 
 Implementation finding on 2026-07-04: start Phase 8I with the combined
 `asset-gacha` module before wallet-accounting. The asset/gacha seam is mostly
@@ -536,6 +537,7 @@ that local checkout, instead of relying only on a remote Git SHA dependency.
 2. Done: add release/update notes for the core pointer SHA used by each game
    commit in `docs/backpack-game-core-update-log.md` and core package notes in
    `vendor/backpack-game-core/CHANGELOG.md`.
-3. Updated 2026-07-04: integrate
+3. Done for the initial slice on 2026-07-04: integrate
    `git@github.com:nuclear-pancakes/meat-master.git` as the second
-   backpack-style consumer and let that concrete integration drive API cleanup.
+   backpack-style consumer with a nested core submodule and a playable local
+   backpack battle prototype. Let that concrete integration drive API cleanup.

@@ -15,8 +15,9 @@
 > with bag-shape, first grid-geometry primitives, fusion matching, and shop-offer
 > generation; broader extraction should continue one pure or adapterized cluster
 > at a time. The 2026-07-04 direction changes the next core lane: the second
-> consumer is now planned as `git@github.com:nuclear-pancakes/meat-master.git`,
-> and reusable asset/gacha/wallet-domain rules should move into
+> consumer has been bootstrapped as
+> `git@github.com:nuclear-pancakes/meat-master.git`, and reusable
+> asset/gacha/wallet-domain rules should move into
 > `backpack-game-core` behind adapters rather than staying Mushroom-only.
 > Shipped
 > runtime contracts (wallet ledger, purchase
@@ -40,15 +41,16 @@
 > `backpack-game-core` while keeping Mushroom string-seed hashing local.
 > **Phase 8H** added TypeScript declarations for the root and subpath package
 > exports so another game can integrate with typed provider hooks. **Phase 8I**
-> is the new planned domain-core extraction lane for reusable wallet accounting
-> primitives, asset ownership/equipment policy, direct-buy policy, gacha pack
-> validation, roll selection, duplicate/burn rules, pity/guarantee helpers,
-> odds simulation, and admin-safe validation helpers. Product DB schemas,
-> payment-provider adapters, Telegram routes, content catalogs, artwork, and
-> support/admin UIs remain game-local adapters.
+> is the new in-progress domain-core extraction lane; the first shared
+> `asset-gacha` slice is implemented, while wallet accounting and deeper admin
+> validation remain backlog. Product DB schemas, payment-provider adapters,
+> Telegram routes, content catalogs, artwork, and support/admin UIs remain
+> game-local adapters. **Phase 11** has an initial playable `meat-master`
+> consumer using the shared core through a nested submodule.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
-8D, 8E, 8F, 8G, and 8H
+8D, 8E, 8F, 8G, 8H, the first Phase 8I slice, and the initial Phase 11
+consumer
 implemented as the Mushroom Battles
 compatibility foundation (Phases 1-5 and 7 on 2026-06-22; Phase 7A hardening on
 2026-06-23; Phase 7B paid-readiness/UI hardening and Phase 6A-6C neutral naming
@@ -64,15 +66,17 @@ cases.
 **Created:** 2026-06-22
 **Primary repo:** `mushroom-master`
 **Target reusable core repo:** `git@github.com:MicrowaveDev/backpack-game-core.git`
-**Next consumer repo:** `git@github.com:nuclear-pancakes/meat-master.git`
+**Second consumer repo:** `git@github.com:nuclear-pancakes/meat-master.git`
 
 `backpack-game-core` now has `main` commits with the extracted bag-shape
 helpers, first grid-geometry primitives, fusion matching, and shop-offer
 generation, provider-driven bot-loadout generation, hookable battle
-simulation, provider-driven loadout validation, and browser-safe numeric RNG /
-shuffle helpers. The package now ships TypeScript declarations for the root
-export and every subpath export. Earlier notes that treated the target repo as
-empty are historical only.
+simulation, provider-driven loadout validation, browser-safe numeric RNG /
+shuffle helpers, and reusable asset/gacha policy helpers. The package ships
+TypeScript declarations for the root export and every subpath export.
+`meat-master` now consumes it as a nested submodule for a first playable
+backpack battle prototype. Earlier notes that treated the target repo as empty
+are historical only.
 
 ## Implementation Status
 
@@ -2542,44 +2546,48 @@ core.
 
 ### Phase 11 - Add `meat-master` As A Second Core Consumer
 
-Status: **Planned.** `meat-master` is not currently present in the hub
-submodule list. Treat it as the first proof that the shared core can support a
-new game without copying Mushroom service logic.
+Status: **Initial slice implemented 2026-07-04.** `meat-master` is now present
+as a hub submodule, has its own nested `vendor/backpack-game-core` submodule,
+and ships a Vite-based playable backpack battle prototype. This proves the
+shared core can support a new game without copying Mushroom service logic, but
+wallet, asset inventory, payment, and gacha runtime flows remain backlog for
+that game.
 
 #### Repository And Dependency Setup
 
-1. Add `git@github.com:nuclear-pancakes/meat-master.git` to the hub only after
-   confirming the desired hub path and branch policy. If it becomes a hub
-   submodule, update `SUBMODULES.md`, `submodules.manifest.json`, and helper
-   metadata in the same hub commit.
-2. Add `git@github.com:MicrowaveDev/backpack-game-core.git` as a nested
+1. Done: add `git@github.com:nuclear-pancakes/meat-master.git` to the hub at
+   `meat-master` and update `SUBMODULES.md`, `submodules.manifest.json`,
+   `.gitmodules`, and hub instructions.
+2. Done: add `git@github.com:MicrowaveDev/backpack-game-core.git` as a nested
    `meat-master` submodule at `vendor/backpack-game-core`.
-3. Consume the core through `file:vendor/backpack-game-core` with imports kept
+3. Done: consume the core through `file:vendor/backpack-game-core` with imports kept
    on `@microwavedev/backpack-game-core`.
-4. Add the same missing-core guard pattern Mushroom uses, adjusted for the new
-   package scripts.
+4. Done for the initial slice: `npm test` imports the package through the local
+   dependency and fails if the nested core is missing. Add a dedicated
+   missing-core guard script later if Meat grows CI/deploy bootstrapping.
 
 #### Playable Vertical Slice
 
-1. Copy only the minimum starter data needed to make the loop playable:
+1. Done: copy only the minimum starter data needed to make the loop playable:
    starter bag shapes, initial artifact definitions, grid constants, balance
-   defaults, and a tiny static shop/gacha fixture.
-2. Copy Mushroom bitmap assets only as temporary starter assets when licensing
-   and product identity allow it. Prefer renaming ids and documenting them as
-   placeholders until Meat-specific art exists.
-3. Create two adult female bikini/swimsuit characters with product-local ids,
+   defaults, and a tiny static shop.
+2. Done: copy a small set of Mushroom starter artifact PNGs as temporary
+   starter assets. Add explicit provenance/replacement metadata before larger
+   content seeding.
+3. Done: create two adult female bikini/swimsuit characters with product-local ids,
    portraits, display names, starter presets, and combat/stat hooks. They must
    be clearly adult characters; avoid childlike proportions, school framing, or
    explicit sexual content.
-4. Wire the minimum screens/API needed for a playable loop:
-   character select or home entry, start run, shop/bag placement, battle
-   resolve/replay, reward wallet grant, skin/asset inventory, and optional
-   simple gacha roll.
+4. Done for local prototype: character select, shop, bag placement, auto-pack,
+   and battle resolve run in the first screen. Remaining: backend API, replay
+   persistence, reward wallet grant, skin/asset inventory, and optional simple
+   gacha roll.
 5. Keep copy, art paths, content-rating labels, and any adult-content gate in
    `meat-master`, not in the shared core.
-6. Add smoke tests that prove `meat-master` imports the core, starts a run with
-   each character, validates a starter bag/loadout, resolves one battle, grants
-   wallet currency, and can roll or buy one cosmetic asset.
+6. Done for initial slice: smoke tests prove `meat-master` imports the core,
+   validates a starter bag/loadout, and resolves one deterministic battle.
+   Remaining: backend smoke coverage for wallet grants and buy/roll cosmetic
+   asset flows once those systems exist in Meat.
 
 #### Asset Seeding Checklist
 
@@ -2696,8 +2704,9 @@ new game without copying Mushroom service logic.
 27. Add hub metadata for `backpack-game-core` only if it should also be tracked
    as a top-level hub repo in addition to the nested game submodule.
 28. Integrate a second backpack-style game consumer after a real target exists.
-   **Updated 2026-07-04:** target is
-   `git@github.com:nuclear-pancakes/meat-master.git`; see Phase 11.
+   **Initial slice done 2026-07-04:** `meat-master` now consumes
+   `backpack-game-core` as a nested submodule and has a playable local
+   backpack battle prototype; see Phase 11.
 29. Optional Phase 6D database rename only if raw legacy column names become a
    real extraction or analytics blocker.
 30. G1 simple seasonal gacha pack. Keep it static-config, one-result,
@@ -2777,9 +2786,11 @@ new game without copying Mushroom service logic.
    Wallet accounting primitives remain the next domain slice after the gacha
    seam is stable. Keep DB schemas, payments, Telegram, product catalogs, art,
    compliance, and admin UI in each game.
-42. Phase 11 `meat-master` consumer. Add
+42. Phase 11 `meat-master` consumer. **Initial slice done 2026-07-04:** added
    `git@github.com:nuclear-pancakes/meat-master.git` as the second game target,
-   consume `backpack-game-core` as a nested submodule, seed a playable vertical
-   slice from starter bags/artifacts, create two clearly adult bikini/swimsuit
-   female characters, and verify run/shop/battle/wallet/asset or gacha smoke
-   flows.
+   consumed `backpack-game-core` as a nested submodule, seeded a playable Vite
+   vertical slice from starter bags/artifacts, created two clearly adult
+   swimsuit female characters, and verified core import, loadout validation,
+   and deterministic battle smoke flows. Remaining: backend persistence,
+   wallet reward grants, asset inventory/equipment, payment policy, and optional
+   simple gacha buy/roll flows for Meat.
