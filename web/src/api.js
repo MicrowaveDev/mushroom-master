@@ -52,6 +52,9 @@ export const MUSHROOM_GAME_API_ROUTES = {
   gameRunSell: '/api/game-run/:gameRunId/sell',
   gameRunBuy: '/api/game-run/:gameRunId/buy',
   artifactLoadout: '/api/artifact-loadout',
+  battle: '/api/battles/:battleId',
+  localBattleNarration: '/api/local-tests/battle-narration',
+  devInventoryReview: '/api/dev/inventory-review',
   switchPortrait: '/api/mushroom/:mushroomId/portrait',
   switchPreset: '/api/mushroom/:mushroomId/preset',
   purchaseAsset: '/api/assets/:assetId/purchase',
@@ -128,29 +131,4 @@ export function setScreenQuery(screen, extra = {}, options = {}) {
   if (window.location.pathname === path) return;
   const method = options.replaceHistory ? 'replaceState' : 'pushState';
   window.history[method]({}, '', path);
-}
-
-export function apiHeaders(sessionKey) {
-  return sessionKey
-    ? {
-        'Content-Type': 'application/json',
-        'X-Session-Key': sessionKey
-      }
-    : { 'Content-Type': 'application/json' };
-}
-
-export async function apiJson(path, options = {}, sessionKey = '') {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {}),
-      ...(sessionKey ? { 'X-Session-Key': sessionKey } : {})
-    }
-  });
-  const json = await response.json();
-  if (!json.success) {
-    throw new Error(json.error || 'Request failed');
-  }
-  return json.data;
 }

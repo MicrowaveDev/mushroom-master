@@ -22,7 +22,7 @@ before there is a registry package version or a second backpack-game consumer.
 - core short SHA: `b56ad91`
 - core commit: `Add client response envelope unwrapping`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core route client for game runs`)
+- game pointer commit: this commit (`Use core route client for replay dev flows`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `b56ad91` | Consumer route-client adoption | Mushroom game-run start/load/readiness/shop/buy/sell/abandon/loadout routes now use the local route map plus shared core route-adapter client while keeping run state projection, placement payload shaping, replay loading, haptics, and product copy local. |
+| 2026-07-04 | this commit | `b56ad91` | Consumer route-client adoption | Mushroom replay and dev-tool routes now use the local route map plus shared core route-adapter client, and the legacy `apiJson` helper was removed from live code. Replay state, timers, dev fixtures, and product copy stay local. |
+| 2026-07-04 | `715d7b2` | `b56ad91` | Consumer route-client adoption | Mushroom game-run start/load/readiness/shop/buy/sell/abandon/loadout routes now use the local route map plus shared core route-adapter client while keeping run state projection, placement payload shaping, replay loading, haptics, and product copy local. |
 | 2026-07-04 | `0bbfcd9` | `b56ad91` | Consumer route-client adoption | Mushroom auth/bootstrap/settings routes now use the local route map plus shared core route-adapter client while keeping auth-code verification, bootstrap state projection, cache ownership, navigation effects, and product copy local. |
 | 2026-07-04 | `eaa1b01` | `b56ad91` | Consumer route-client adoption | Mushroom social and wiki-detail flows now use the same local route map plus shared core route-adapter client while keeping route ownership, session header policy, navigation effects, replay autoplay, and product copy local. |
 | 2026-07-04 | `90b3ef9` | `b56ad91` | Client response envelope unwrapping | Added optional `{ success, data, error }` envelope unwrapping to the shared route-adapter client. Mushroom customization wallet/gacha flows now use a local route map with the core client while keeping route ownership, session header policy, idempotency-key generation, Telegram/web checkout opening, bootstrap refresh, and product copy local. |

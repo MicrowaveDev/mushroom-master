@@ -5,7 +5,7 @@ import {
   formatStatDelta as formatCoreStatDelta
 } from '@microwavedev/backpack-game-core/client-view-model';
 import { messages } from '../i18n.js';
-import { apiJson, parseStartParams, setScreenQuery } from '../api.js';
+import { parseStartParams, setScreenQuery } from '../api.js';
 import { deriveTotals, getArtifactPrice, buildOccupancy, preferredOrientation } from '../artifacts/grid.js';
 import { renderArtifactFigure } from '../artifacts/render.js';
 import { replayPortraitConfig } from '../replay-portrait-config.js';

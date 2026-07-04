@@ -1,5 +1,5 @@
 import { computed } from 'vue/dist/vue.esm-bundler.js';
-import { apiJson } from '../api.js';
+import { createMushroomGameApiClient } from '../api.js';
 import { formatReplayEvent } from '../replay/format.js';
 import { readReplayDelay } from '../constants.js';
 
@@ -19,6 +19,10 @@ export function replayLongBattleSpeedBoost(eventCount, replayIndex) {
 }
 
 export function useReplay(state, goTo, getMushroom) {
+  function gameApi() {
+    return createMushroomGameApiClient(state.sessionKey);
+  }
+
   const activeEvent = computed(() => state.currentBattle?.events?.[state.replayIndex] || null);
   const activeReplayDisplay = computed(() =>
     formatReplayEvent(
@@ -99,15 +103,12 @@ export function useReplay(state, goTo, getMushroom) {
   function persistReplaySpeed(speed) {
     if (!state.sessionKey || !state.bootstrap?.settings) return;
     state.bootstrap.settings.replaySpeed = speed;
-    apiJson('/api/settings', {
-      method: 'POST',
-      body: JSON.stringify({
-        lang: state.bootstrap.settings.lang,
-        reducedMotion: state.bootstrap.settings.reducedMotion,
-        battleSpeed: state.bootstrap.settings.battleSpeed,
-        replaySpeed: speed
-      })
-    }, state.sessionKey).catch(() => {});
+    gameApi().postRoute('settings', {}, {
+      lang: state.bootstrap.settings.lang,
+      reducedMotion: state.bootstrap.settings.reducedMotion,
+      battleSpeed: state.bootstrap.settings.battleSpeed,
+      replaySpeed: speed
+    }).catch(() => {});
   }
 
   function setReplaySpeed(speed) {
@@ -120,7 +121,7 @@ export function useReplay(state, goTo, getMushroom) {
 
   async function loadReplay(battleId, options = {}) {
     try {
-      state.currentBattle = options.battle || await apiJson(`/api/battles/${battleId}`, {}, state.sessionKey);
+      state.currentBattle = options.battle || await gameApi().getRoute('battle', { battleId });
       state.replayIndex = 0;
       state.replaySpeed = preferredReplaySpeed();
       // Allow signalReady() to pre-fetch the replay payload without navigating

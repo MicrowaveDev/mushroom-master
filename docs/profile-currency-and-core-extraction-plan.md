@@ -2775,6 +2775,11 @@ and abandon routes also use the local route map with the shared route-adapter
 client. Run state projection, placement payload shaping, replay loading,
 haptics, runtime state ownership, and product copy stay local.
 
+The final cleanup for that lane moved replay and dev-tool routes to the same
+shared route-adapter client and removed the legacy `apiJson` helper from live
+frontend code. Replay timers/state, dev fixtures, runtime state ownership, and
+product copy stay local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3451,3 +3456,11 @@ that game.
    ownership, and product copy stay local. Next candidates are more asset
    inventory/equipment DTO shapers and headless services/composables before
    neutral Vue components move.
+65. Phase 8AF replay/dev route-client cleanup.
+   **Implemented 2026-07-04:** Mushroom replay settings persistence, battle
+   replay loading, local lab narration, and dev inventory-review routes now use
+   the shared core route-adapter client through local route names. The unused
+   `apiJson` helper was removed from live frontend code. Replay timers/state,
+   dev fixtures, runtime state ownership, and product copy stay local. Next
+   candidates are asset inventory/equipment DTO shapers and headless
+   services/composables before neutral Vue components move.
