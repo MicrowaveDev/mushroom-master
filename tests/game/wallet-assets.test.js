@@ -1476,6 +1476,7 @@ test('[Req 14-F] multi-item gacha pack spends once and grants slot-weighted unow
     assert.equal(replay.alreadyProcessed, true);
     assert.deepEqual(replay.roll.resultAssetIds, first.roll.resultAssetIds);
     assert.deepEqual(replay.rollResult.items.map((item) => item.assetId), first.rollResult.items.map((item) => item.assetId));
+    assert.deepEqual(replay.rollResult.items.map((item) => item.resultInstanceId), first.rollResult.items.map((item) => item.resultInstanceId));
     assert.equal((await getWalletState(player.id)).balance, 90, 'idempotent replay does not spend twice');
 
     const shapedPacks = await getAssetPacksForPlayer(player.id);
@@ -1684,6 +1685,8 @@ test('[Req 14-F] duplicate burn exchanges spare copies for a random rare pack it
     assert.equal(replay.alreadyProcessed, true);
     assert.equal(replay.exchange.id, burn.exchange.id);
     assert.deepEqual(replay.exchange.resultAssetIds, [rareA]);
+    assert.equal(replay.burnResult.resultInstanceId, burn.burnResult.resultInstanceId);
+    assert.deepEqual(replay.burnResult.sourceAssetInstanceIds, burn.burnResult.sourceAssetInstanceIds);
 
     const rows = await query(
       `SELECT asset_id, status, COUNT(*) AS count

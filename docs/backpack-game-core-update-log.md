@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `f387670829230094a60ad404bb7ebf57df564713`
-- core short SHA: `f387670`
-- core commit: `Add wallet and roll status view-model helpers`
+- core SHA: `9b7b505e7d6326842a97825725ac19e526a5ede6`
+- core short SHA: `9b7b505`
+- core commit: `Add asset gacha result DTO shapers`
 - runtime/API baseline: `d5fb481` (`Add package type declarations`)
-- game pointer commit: this commit (`Use core wallet and roll status helpers`)
+- game pointer commit: this commit (`Use core asset gacha result DTO shapers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-04 | this commit | `f387670` | Wallet and roll status view-model helpers | Added wallet purchase-intent, Telegram invoice, and asset-roll error status normalization helpers. Mushroom customization checkout and pack roll/burn flows delegate status mapping through core while keeping product routes, Telegram/web checkout opening, localization, and final UI composition local. |
+| 2026-07-04 | this commit | `9b7b505` | Asset gacha result DTO shapers | Added persisted asset roll and duplicate-burn row normalizers plus roll/burn result DTO shapers through `modules/gacha`. Mushroom delegates roll and burn response shaping while keeping SQL queries, wallet spends, asset grants, RNG, idempotency, and route payload ownership local. |
+| 2026-07-04 | `426abc1` | `f387670` | Wallet and roll status view-model helpers | Added wallet purchase-intent, Telegram invoice, and asset-roll error status normalization helpers. Mushroom customization checkout and pack roll/burn flows delegate status mapping through core while keeping product routes, Telegram/web checkout opening, localization, and final UI composition local. |
 | 2026-07-04 | `458140b` | `786d41c` | Canonical artifact preview orientation helper | Added `artifactPreviewOrientation` for preview-only surfaces that must preserve non-bag canonical bitmap dimensions while still deriving shaped/legacy bag preview dimensions. Mushroom delegates shop, backpack, social, catalog, and fusion preview orientation through this helper while keeping placement-preferred orientation local to placement flows. |
 | 2026-07-04 | `fab895c` | `725ffab` | Artifact grid view-model helpers | Added `client-view-model` helpers for occupied-cell value maps and preferred artifact preview orientation. Mushroom delegates `buildOccupancy` and `preferredOrientation` while keeping placement state, visual previews, drag/drop actions, and product rendering local. |
 | 2026-07-04 | `a672a73` | `41a3ad5` | Artifact stat view-model helpers | Added `client-view-model` helpers for stat total summing, signed delta formatting, bonus-entry DTO shaping, and loadout stat text composition. Mushroom delegates `deriveTotals`, artifact bonus labels, loadout stat text, and stat chips while keeping product stat labels, visual role classes, and UI composition local. |

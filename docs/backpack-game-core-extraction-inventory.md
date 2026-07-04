@@ -69,6 +69,10 @@ copy, theme, and API adapters.
   now also provides shared wallet intent, Telegram invoice, and asset-roll
   error status normalization helpers for browser/client flows, tested by
   `tests/client-view-model.test.js`
+- asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
+  also provide persisted roll/burn row normalizers and replay-safe roll/burn
+  result DTO shapers over injected pack/catalog/items, tested by
+  `tests/asset-gacha.test.js`
 - gacha admin validation slice: `src/modules/gacha/admin-validation.js`,
   tested by `tests/gacha-admin-validation.test.js`, covers release checklist,
   fixture normalization, plan-item asset-id invariants, season-plan catalog
@@ -92,8 +96,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `f387670`
-  (`Add wallet and roll status view-model helpers`)
+- latest consumed core commit: `9b7b505`
+  (`Add asset gacha result DTO shapers`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -636,7 +640,8 @@ classification moved in core commit `f403553`. Artifact stat total/text DTO
 shaping moved in core commit `41a3ad5`, and artifact grid utility shaping moved
 in core commit `725ffab`. Canonical preview-orientation shaping moved in core
 commit `786d41c`, and wallet/asset-roll client status normalization moved in
-core commit `f387670`.
+core commit `f387670`. Asset gacha roll/burn result DTO shaping moved in core
+commit `9b7b505`.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -727,6 +732,12 @@ Next planned domain slices:
     `f387670`; Mushroom delegates customization checkout and pack roll/burn
     status mapping while keeping route actions, Telegram/web opening,
     localization, and final UI composition local.**
+15. **Asset gacha roll/burn result DTO shaping:** persisted roll and duplicate
+    burn exchange row normalizers plus replay-safe result DTO shapers over
+    injected pack/catalog/items. **Implemented 2026-07-04 in core commit
+    `9b7b505`; Mushroom delegates roll and burn result payload shaping while
+    keeping SQL queries, wallet spends, asset grants, secure RNG, idempotency,
+    and route payload ownership local.**
 
 Next planned frontend slices:
 

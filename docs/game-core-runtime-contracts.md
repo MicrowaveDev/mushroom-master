@@ -325,7 +325,10 @@ dimensions canonical while placement flows continue to use placement-preferred
 orientation. Wallet and asset-roll status normalization moved in core commit
 `f387670`; product UIs can share purchase-intent, Telegram invoice, and
 roll/burn error status vocabulary while provider routes, checkout opening,
-copy, and final UI state remain local.
+copy, and final UI state remain local. Asset gacha roll/burn result DTO
+shaping moved in core commit `9b7b505`; persisted roll/exchange rows can shape
+replay-safe browser payloads through `modules/gacha` while SQL, wallet spends,
+asset grants, RNG, idempotency, and route ownership remain local.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

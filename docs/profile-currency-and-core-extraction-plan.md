@@ -60,7 +60,8 @@
 > gacha admin-validation, gacha simulation, wallet-accounting, and
 > profile-asset-state slices are implemented, a focused asset catalog
 > acquisition-policy cleanup now shares paid/free default and per-asset override
-> resolution, and client view-model helper slices now share pack summary/label,
+> resolution, asset gacha roll/burn result DTO shaping is shared, and client
+> view-model helper slices now share pack summary/label,
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
 > artifact stat total/text shaping, artifact grid utility shaping, and
 > canonical preview-orientation shaping, plus wallet/asset-roll status
@@ -100,7 +101,7 @@ simulation, provider-driven loadout validation, browser-safe numeric RNG /
 shuffle helpers, reusable asset/gacha policy helpers, gacha admin validation
 helpers, deterministic gacha simulation helpers, reusable wallet accounting
 helpers, reusable profile asset state helpers, asset catalog acquisition policy
-helpers, asset pack client view-model helpers, wallet/roll feedback
+helpers, asset gacha roll/burn result DTO shapers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
 preview helpers, plus wallet and asset-roll status normalization helpers. The package ships TypeScript
@@ -2720,6 +2721,13 @@ the shared client status vocabulary through `client-view-model`. Mushroom keeps
 route actions, provider checkout opening, localization, runtime state, and UI
 composition local.
 
+The next completed backend/domain cleanup is asset gacha roll/burn result DTO
+shaping, landed in core commit `9b7b505`: persisted roll and duplicate-burn
+exchange rows now normalize through `modules/gacha`, and replay-safe
+`rollResult` / `burnResult` payloads are shaped over injected pack/catalog/items.
+Mushroom keeps SQL queries, wallet spends, asset grants, secure RNG,
+idempotency, route payload ownership, and product error handling local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3318,3 +3326,13 @@ that game.
    contract smoke test. Next frontend candidates remain asset
    inventory/equipment response shapers and headless services/composables
    before neutral Vue components move.
+58. Phase 8Y asset gacha result DTO shaper extraction. **Implemented
+   2026-07-04:** core commit `9b7b505` added `modules/gacha` helpers for
+   persisted asset roll rows, duplicate-burn exchange rows, and replay-safe
+   roll/burn result DTO payloads. Mushroom's asset service now delegates
+   `rollResult` and `burnResult` shaping through core while keeping DB
+   transactions, wallet mutation, secure RNG, idempotency claims, asset grants,
+   runtime catalog lookup, and HTTP route behavior local. Meat consumes the
+   helpers through a core contract smoke test. Next domain candidates are
+   asset inventory/equipment response shapers and headless gacha/wallet service
+   adapters before broader Vue component extraction.
