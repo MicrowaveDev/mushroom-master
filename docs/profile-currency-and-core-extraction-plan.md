@@ -77,14 +77,15 @@
 > state now shares speed selection, long-battle boost, autoplay delay, tick
 > advancement, load/set-speed patches, and timeline shaping. Gacha admin
 > draft-diff DTOs, diff table rows, validation/checklist rows, season-plan
-> coverage rows, and chance text are shared. Mushroom live frontend transport
-> now routes through the shared client while keeping product route names local.
+> coverage rows, chance text, and fixture operation summaries are shared.
+> Mushroom live frontend transport now routes through the shared client while
+> keeping product route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
 > are **not more route plumbing**; they are remaining headless service state
-> machines, smaller gacha admin row shapers such as fixture operation and odds
-> rows, and later neutral UI primitives.
+> machines, smaller gacha admin row shapers such as odds rows, and later
+> neutral UI primitives.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
@@ -3627,9 +3628,9 @@ that game.
    and the support admin page delegates the row projection while keeping DB
    reads, token/role checks, audit logs, upload/storage, product copy, page
    layout, and admin routes local. Checklist/plan row helpers are fulfilled by
-   Phase 8AN; next candidates are remaining headless wallet/gacha orchestration
-   helpers, fixture operation/odds row shapers, and neutral Vue primitives
-   after contracts stabilize.
+   Phase 8AN and fixture operation summaries are fulfilled by Phase 8AO; next
+   candidates are remaining headless wallet/gacha orchestration helpers, odds
+   row shapers, and neutral Vue primitives after contracts stabilize.
 73. Phase 8AN gacha admin checklist and season-plan row helper extraction.
    **Implemented 2026-07-04:** core commit `7deb088` added
    `client-view-model` helpers for validation issue rows, release checklist
@@ -3637,6 +3638,15 @@ that game.
    support admin page now delegates those computed DTOs through core while
    keeping credential storage, API calls, upload/data-url handling, product
    copy, JSON textarea parsing, Vue form mutation, page layout, and admin
-   routes local. Next candidates are remaining headless wallet/gacha
-   orchestration helpers, fixture operation/odds row shapers, and neutral Vue
-   primitives after contracts stabilize.
+   routes local. Fixture operation summaries are fulfilled by Phase 8AO; next
+   candidates are remaining headless wallet/gacha orchestration helpers, odds
+   row shapers, and neutral Vue primitives after contracts stabilize.
+74. Phase 8AO gacha admin fixture operation summary helper extraction.
+   **Implemented 2026-07-04:** core commit `497e6f7` added
+   `modules/gacha/admin-validation` helper
+   `summarizeGachaAdminFixtureOperations`. Mushroom's fixture import now
+   delegates dry-run/applied operation summary counts through core while
+   keeping DB transactions, fixture upserts, token/role checks, audit logs,
+   route payloads, validation of incoming fields, and product errors local.
+   Next candidates are remaining headless wallet/gacha orchestration helpers,
+   odds row shapers, and neutral Vue primitives after contracts stabilize.

@@ -17,6 +17,7 @@ import {
   normalizeGachaAdminFixture,
   normalizeGachaAdminPlanItemIds,
   resolveGachaAdminPlanItemAssetContract,
+  summarizeGachaAdminFixtureOperations,
   summarizeGachaAdminPlanItems
 } from '@microwavedev/backpack-game-core/modules/gacha/admin-validation';
 import { repoRoot } from '../../shared/repo-root.js';
@@ -818,15 +819,6 @@ function mergeRowFields(row, fields) {
   return { ...(row || {}), ...(fields || {}), updated_at: nowIso() };
 }
 
-function summarizeFixtureOperations(operations) {
-  return operations.reduce((summary, operation) => {
-    summary.total += 1;
-    summary[operation.action] = (summary[operation.action] || 0) + 1;
-    summary.byType[operation.type] = (summary.byType[operation.type] || 0) + 1;
-    return summary;
-  }, { total: 0, create: 0, update: 0, replace: 0, noop: 0, byType: {} });
-}
-
 async function insertFixtureSeasonRow(client, row) {
   await client.query(
     `INSERT INTO asset_gacha_seasons
@@ -1336,7 +1328,7 @@ export async function importGachaAdminFixture({
       packResults.push(result);
     }
 
-    const summary = summarizeFixtureOperations(operations);
+    const summary = summarizeGachaAdminFixtureOperations(operations);
     let action = null;
     if (shouldWrite) {
       action = await insertAdminAction(client, {
