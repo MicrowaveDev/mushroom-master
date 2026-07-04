@@ -25,6 +25,13 @@ const ROUTE_SCREENS = Object.fromEntries(
 );
 
 export const MUSHROOM_GAME_API_ROUTES = {
+  friends: '/api/friends',
+  friendsAddByCode: '/api/friends/add-by-code',
+  friendChallenges: '/api/friends/challenges',
+  friendChallenge: '/api/friends/challenges/:challengeId',
+  friendChallengeAccept: '/api/friends/challenges/:challengeId/accept',
+  friendChallengeDecline: '/api/friends/challenges/:challengeId/decline',
+  wikiEntry: '/api/wiki/:section/:slug',
   switchPortrait: '/api/mushroom/:mushroomId/portrait',
   switchPreset: '/api/mushroom/:mushroomId/preset',
   purchaseAsset: '/api/assets/:assetId/purchase',

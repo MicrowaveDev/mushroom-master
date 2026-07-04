@@ -2756,6 +2756,12 @@ session header policy, idempotency-key generation, Telegram/web checkout
 opening, invoice callbacks, bootstrap refresh hooks, runtime state ownership,
 and product copy local.
 
+The next completed consumer-adoption cleanup keeps using core commit
+`b56ad91`: Mushroom social and wiki-detail flows now use the local route map
+with the shared route-adapter client. Route ownership, session header policy,
+navigation effects, replay autoplay, runtime state ownership, and product copy
+stay local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3401,3 +3407,13 @@ that game.
    route-client adoption for bootstrap/social/game-run flows, more asset
    inventory/equipment DTO shapers, and neutral Vue composables/components only
    after route contracts stabilize.
+62. Phase 8AC social/wiki route-client adoption.
+   **Implemented 2026-07-04:** Mushroom added social and wiki-detail route
+   names to its local route map and moved add-friend, challenge create/load,
+   challenge accept/decline, and wiki-entry loading through the shared core
+   route-adapter client. This is a consumer-only adoption over core commit
+   `b56ad91`; core did not need another change. Route ownership, session header
+   policy, navigation effects, replay autoplay, runtime state ownership, and
+   product copy stay local. Next candidates are bootstrap/game-run route-client
+   adoption, more asset inventory/equipment DTO shapers, and neutral Vue
+   composables/components only after route contracts stabilize.
