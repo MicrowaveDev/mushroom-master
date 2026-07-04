@@ -337,6 +337,10 @@ Wallet and asset-roll mutation view-state shaping moved in core commit
 `fc53abc`; games can share opening/success/failure reducer contracts while API
 routes, idempotency-key generation, checkout side effects, refresh hooks, and
 copy remain local.
+Client response-envelope unwrapping moved in core commit `b56ad91`; games can
+use the shared route-adapter client against existing `{ success, data, error }`
+payloads while route maps, auth/session headers, idempotency keys, checkout
+side effects, and refresh behavior remain local.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`

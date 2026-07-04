@@ -8,7 +8,7 @@ import {
   walletPurchaseOpeningViewState,
   walletPurchaseStatusFromTelegramInvoice
 } from '@microwavedev/backpack-game-core/client-view-model';
-import { apiJson } from '../api.js';
+import { createMushroomGameApiClient } from '../api.js';
 
 /**
  * Mushroom customization: portrait + preset switching.
@@ -24,6 +24,10 @@ export function useCustomization(state, refreshBootstrap) {
     return globalThis.Telegram?.WebApp ? 'telegram_mini_app' : 'web';
   }
 
+  function gameApi() {
+    return createMushroomGameApiClient(state.sessionKey);
+  }
+
   function applyAssetRollViewState(viewState) {
     state.assetRollStatus = viewState.status;
     state.assetRollResult = viewState.result;
@@ -33,10 +37,11 @@ export function useCustomization(state, refreshBootstrap) {
 
   async function switchPortrait({ mushroomId, portraitId }) {
     try {
-      const result = await apiJson(`/api/mushroom/${mushroomId}/portrait`, {
+      const api = gameApi();
+      const result = await api.request(api.routePath('switchPortrait', { mushroomId }), {
         method: 'PUT',
-        body: JSON.stringify({ portraitId })
-      }, state.sessionKey);
+        body: { portraitId }
+      });
       if (result?.success) await refreshBootstrap();
     } catch (error) {
       state.error = error.message || 'Failed to switch portrait';
@@ -45,10 +50,11 @@ export function useCustomization(state, refreshBootstrap) {
 
   async function switchPreset({ mushroomId, presetId }) {
     try {
-      const result = await apiJson(`/api/mushroom/${mushroomId}/preset`, {
+      const api = gameApi();
+      const result = await api.request(api.routePath('switchPreset', { mushroomId }), {
         method: 'PUT',
-        body: JSON.stringify({ presetId })
-      }, state.sessionKey);
+        body: { presetId }
+      });
       if (result?.success) await refreshBootstrap();
     } catch (error) {
       state.error = error.message || 'Failed to switch preset';
@@ -57,11 +63,11 @@ export function useCustomization(state, refreshBootstrap) {
 
   async function purchasePortrait({ assetId }) {
     try {
-      const result = await apiJson(`/api/assets/${encodeURIComponent(assetId)}/purchase`, {
+      const api = gameApi();
+      const result = await api.postRoute('purchaseAsset', { assetId }, { equip: true }, {
         method: 'POST',
-        headers: { 'Idempotency-Key': mutationKey('portrait-purchase') },
-        body: JSON.stringify({ equip: true })
-      }, state.sessionKey);
+        headers: { 'Idempotency-Key': mutationKey('portrait-purchase') }
+      });
       if (result?.purchase) await refreshBootstrap();
     } catch (error) {
       state.error = error.message || 'Failed to purchase portrait';
@@ -71,10 +77,11 @@ export function useCustomization(state, refreshBootstrap) {
   async function rollAssetPack({ packId }) {
     applyAssetRollViewState(assetRollPendingViewState({ status: 'rolling' }));
     try {
-      const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/roll`, {
+      const api = gameApi();
+      const result = await api.request(api.routePath('assetPackRoll', { packId }), {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('asset-roll') }
-      }, state.sessionKey);
+      });
       const viewState = assetRollResultViewState(result, {
         successKey: 'roll',
         resultKey: 'rollResult',
@@ -95,11 +102,10 @@ export function useCustomization(state, refreshBootstrap) {
   async function burnAssetPack({ packId, ruleId = null }) {
     applyAssetRollViewState(assetRollPendingViewState({ status: 'burning' }));
     try {
-      const result = await apiJson(`/api/assets/packs/${encodeURIComponent(packId)}/burn`, {
-        method: 'POST',
+      const api = gameApi();
+      const result = await api.postRoute('assetPackBurn', { packId }, { ruleId }, {
         headers: { 'Idempotency-Key': mutationKey('asset-burn') },
-        body: JSON.stringify({ ruleId })
-      }, state.sessionKey);
+      });
       const viewState = assetRollResultViewState(result, {
         successKey: 'exchange',
         resultKey: 'burnResult',
@@ -120,8 +126,7 @@ export function useCustomization(state, refreshBootstrap) {
   async function loadWalletBundles({ surface = defaultPaymentSurface() } = {}) {
     state.walletBundlesLoading = true;
     try {
-      const search = new URLSearchParams({ surface });
-      const result = await apiJson(`/api/wallet/bundles?${search.toString()}`, {}, state.sessionKey);
+      const result = await gameApi().getRoute('walletBundles', {}, { query: { surface } });
       state.walletBundles = Array.isArray(result) ? result : [];
       state.walletBundlesSurface = surface;
     } catch (error) {
@@ -138,11 +143,9 @@ export function useCustomization(state, refreshBootstrap) {
   } = {}) {
     try {
       state.walletPurchaseStatus = walletPurchaseOpeningViewState().status;
-      const result = await apiJson('/api/wallet/purchase-intents', {
-        method: 'POST',
+      const result = await gameApi().postRoute('walletPurchaseIntents', {}, { bundleId, provider, surface }, {
         headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
-        body: JSON.stringify({ bundleId, provider, surface })
-      }, state.sessionKey);
+      });
       const intentViewState = walletPurchaseIntentViewState(result);
       if (intentViewState.handled) {
         state.walletPurchaseStatus = intentViewState.status;

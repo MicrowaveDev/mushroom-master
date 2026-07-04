@@ -1,3 +1,5 @@
+import { createBackpackGameClient } from '@microwavedev/backpack-game-core/client';
+
 // Route mapping: internal Vue screen ids stay stable, while public URL paths
 // use lowercase separated words (`run-complete`, `run-summary`, `game-run`).
 // Screens listed here support `/path/:param` deep links.
@@ -21,6 +23,36 @@ const SCREEN_ROUTES = {
 const ROUTE_SCREENS = Object.fromEntries(
   Object.entries(SCREEN_ROUTES).map(([screen, route]) => [route, screen])
 );
+
+export const MUSHROOM_GAME_API_ROUTES = {
+  switchPortrait: '/api/mushroom/:mushroomId/portrait',
+  switchPreset: '/api/mushroom/:mushroomId/preset',
+  purchaseAsset: '/api/assets/:assetId/purchase',
+  assetPackRoll: '/api/assets/packs/:packId/roll',
+  assetPackBurn: '/api/assets/packs/:packId/burn',
+  walletBundles: '/api/wallet/bundles',
+  walletPurchaseIntents: '/api/wallet/purchase-intents'
+};
+
+export function createMushroomGameApiClient(sessionKey = '', options = {}) {
+  const {
+    routes = {},
+    getAuthHeaders,
+    unwrapDataEnvelope = true,
+    ...clientOptions
+  } = options;
+  return createBackpackGameClient({
+    ...clientOptions,
+    unwrapDataEnvelope,
+    routes: {
+      ...MUSHROOM_GAME_API_ROUTES,
+      ...routes
+    },
+    getAuthHeaders: getAuthHeaders || (() => (
+      sessionKey ? { 'X-Session-Key': sessionKey } : {}
+    ))
+  });
+}
 
 export function parseStartParams() {
   const path = window.location.pathname.replace(/^\/+/, '');

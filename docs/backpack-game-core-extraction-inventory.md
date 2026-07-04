@@ -40,6 +40,10 @@ copy, theme, and API adapters.
   loadout projection helpers in `src/client-view-model.js`, tested by
   `tests/module-exports.test.js`, `tests/client.test.js`, and
   `tests/client-view-model.test.js`
+- client envelope adapter slice: `src/client/index.js` now supports optional
+  `{ success, data, error }` response-envelope unwrapping so product apps can
+  adopt the shared route client without changing backend payload contracts,
+  tested by `tests/client.test.js`
 - asset pack client view-model slice: `src/client-view-model.js` now also
   provides rarity odds text, guarantee/pity/duplicate text, active/availability
   labels, and roll-pack summary helpers over product-provided labels/catalogs,
@@ -105,8 +109,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `fc53abc`
-  (`Add wallet and roll mutation view-state helpers`)
+- latest consumed core commit: `b56ad91`
+  (`Add client response envelope unwrapping`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -652,7 +656,9 @@ commit `786d41c`, and wallet/asset-roll client status normalization moved in
 core commit `f387670`. Asset gacha roll/burn result DTO shaping moved in core
 commit `9b7b505`, and profile asset target-variant response shaping moved in
 core commit `0f8beee`. Wallet and asset-roll mutation view-state shaping moved
-in core commit `fc53abc`.
+in core commit `fc53abc`. Client response-envelope unwrapping moved in core
+commit `b56ad91`, and Mushroom customization wallet/gacha routes now use the
+shared route-adapter client.
 `modules/gacha`, `modules/wallet`, `modules/shop`, `modules/loadout`,
 `modules/battle`, `modules/fusion`, `client`, and `client-view-model` are now
 public import lanes with declarations and consumer coverage. Future extraction
@@ -772,9 +778,11 @@ Next planned frontend slices:
    asset-roll error status normalization. **First asset inventory/equipment
    response shaper implemented 2026-07-04** with target-variant list projection.
    **Ninth slice implemented 2026-07-04** with headless wallet/asset-roll
-   mutation view-state reducers. Continue with service adapters before
-   page/component extraction. Do not move the full Mushroom API client into
-   core yet; keep product routes behind injected adapters.
+   mutation view-state reducers. **Tenth slice implemented 2026-07-04** with
+   optional response-envelope unwrapping in the shared route client and
+   Mushroom customization route-client adoption. Continue with more service
+   adapters before page/component extraction. Do not move the full Mushroom API
+   client into core yet; keep product routes behind injected adapters.
 2. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay
    view model, wallet/asset catalog state, gacha pack state, and admin

@@ -66,7 +66,8 @@
 > wallet purchase-surface, asset roll-feedback, grid-cell classification,
 > artifact stat total/text shaping, artifact grid utility shaping, and
 > canonical preview-orientation shaping, plus wallet/asset-roll status
-> normalization and wallet/asset-roll mutation view-state reducers. Product DB schemas,
+> normalization, wallet/asset-roll mutation view-state reducers, and optional
+> route-client response-envelope unwrapping. Product DB schemas,
 > payment-provider adapters, Telegram routes, runtime catalogs, artwork,
 > content-policy gates, support operations, and final route/page composition
 > remain game-local adapters. Reusable Vue components, composables, page view models,
@@ -107,7 +108,7 @@ target-variant list shapers, asset pack client view-model helpers, wallet/roll f
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
 preview helpers, plus wallet and asset-roll status normalization and mutation
-view-state helpers. The package ships TypeScript
+view-state helpers, and optional route-client response-envelope unwrapping. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2746,6 +2747,15 @@ checkout-unavailable, and global-error transition DTOs now run through
 Telegram/web checkout opening, invoice callbacks, bootstrap refresh hooks,
 runtime state ownership, and product copy local.
 
+The next completed client/contracts cleanup is response-envelope unwrapping,
+landed in core commit `b56ad91`: the shared route-adapter client can unwrap
+existing `{ success, data, error }` backend payloads and throw structured
+client errors for `success: false`. Mushroom customization wallet/gacha flows
+now use a local route map with the core client while keeping route ownership,
+session header policy, idempotency-key generation, Telegram/web checkout
+opening, invoice callbacks, bootstrap refresh hooks, runtime state ownership,
+and product copy local.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3377,3 +3387,17 @@ that game.
    adapter adoption for these flows, additional asset inventory/equipment DTO
    shapers, and neutral Vue composables/components only after route contracts
    are stable.
+61. Phase 8AB route-client response-envelope and customization adoption.
+   **Implemented 2026-07-04:** core commit `b56ad91` added optional
+   `{ success, data, error }` envelope unwrapping to `client`, including
+   structured errors for `success: false`. Mushroom now exposes a local
+   customization route map and uses the core route-adapter client for portrait
+   switching, preset switching, direct portrait purchase, wallet bundle
+   loading, wallet purchase intents, pack rolls, and duplicate burns. Route
+   names, session header policy, idempotency-key generation, Telegram invoice
+   opening, web checkout opening, invoice callbacks, bootstrap refresh, runtime
+   state ownership, and product copy stay local. Meat consumes the envelope
+   option through a core contract smoke test. Next candidates are additional
+   route-client adoption for bootstrap/social/game-run flows, more asset
+   inventory/equipment DTO shapers, and neutral Vue composables/components only
+   after route contracts stabilize.
