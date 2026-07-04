@@ -1,10 +1,12 @@
 import {
-  assetRollErrorViewState,
+  assetRollMutationErrorViewState,
+  assetRollMutationResultViewState,
   assetRollPendingViewState,
-  assetRollResultViewState,
-  walletPurchaseCheckoutViewState,
+  walletBundlesErrorViewState,
+  walletBundlesLoadedViewState,
+  walletBundlesLoadingViewState,
   walletPurchaseErrorViewState,
-  walletPurchaseIntentViewState,
+  walletPurchaseNextAction,
   walletPurchaseOpeningViewState,
   walletPurchaseStatusFromTelegramInvoice
 } from '@microwavedev/backpack-game-core/client-view-model';
@@ -33,6 +35,13 @@ export function useCustomization(state, refreshBootstrap) {
     state.assetRollResult = viewState.result;
     state.assetRollErrorMessage = viewState.errorMessage;
     if (viewState.globalErrorMessage) state.error = viewState.globalErrorMessage;
+  }
+
+  function applyWalletBundlesViewState(viewState) {
+    state.walletBundlesLoading = viewState.loading;
+    state.walletBundles = viewState.bundles;
+    state.walletBundlesSurface = viewState.surface;
+    if (viewState.errorMessage) state.error = viewState.errorMessage;
   }
 
   async function switchPortrait({ mushroomId, portraitId }) {
@@ -82,18 +91,18 @@ export function useCustomization(state, refreshBootstrap) {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('asset-roll') }
       });
-      const viewState = assetRollResultViewState(result, {
+      const viewState = assetRollMutationResultViewState(result, {
         successKey: 'roll',
         resultKey: 'rollResult',
         successStatus: 'success',
         failureMessage: 'Failed to roll pack'
       });
       applyAssetRollViewState(viewState);
-      if (viewState.status === 'success') {
+      if (viewState.shouldRefresh) {
         await refreshBootstrap();
       }
     } catch (error) {
-      applyAssetRollViewState(assetRollErrorViewState(error, {
+      applyAssetRollViewState(assetRollMutationErrorViewState(error, {
         fallbackMessage: 'Failed to roll pack'
       }));
     }
@@ -106,33 +115,33 @@ export function useCustomization(state, refreshBootstrap) {
       const result = await api.postRoute('assetPackBurn', { packId }, { ruleId }, {
         headers: { 'Idempotency-Key': mutationKey('asset-burn') },
       });
-      const viewState = assetRollResultViewState(result, {
+      const viewState = assetRollMutationResultViewState(result, {
         successKey: 'exchange',
         resultKey: 'burnResult',
         successStatus: 'burned',
         failureMessage: 'Failed to burn duplicates'
       });
       applyAssetRollViewState(viewState);
-      if (viewState.status === 'burned') {
+      if (viewState.shouldRefresh) {
         await refreshBootstrap();
       }
     } catch (error) {
-      applyAssetRollViewState(assetRollErrorViewState(error, {
+      applyAssetRollViewState(assetRollMutationErrorViewState(error, {
         fallbackMessage: 'Failed to burn duplicates'
       }));
     }
   }
 
   async function loadWalletBundles({ surface = defaultPaymentSurface() } = {}) {
-    state.walletBundlesLoading = true;
+    applyWalletBundlesViewState(walletBundlesLoadingViewState({ surface }));
     try {
       const result = await gameApi().getRoute('walletBundles', {}, { query: { surface } });
-      state.walletBundles = Array.isArray(result) ? result : [];
-      state.walletBundlesSurface = surface;
+      applyWalletBundlesViewState(walletBundlesLoadedViewState(result, { surface }));
     } catch (error) {
-      state.error = error.message || 'Failed to load wallet bundles';
-    } finally {
-      state.walletBundlesLoading = false;
+      applyWalletBundlesViewState(walletBundlesErrorViewState(error, {
+        surface,
+        bundles: state.walletBundles
+      }));
     }
   }
 
@@ -146,23 +155,20 @@ export function useCustomization(state, refreshBootstrap) {
       const result = await gameApi().postRoute('walletPurchaseIntents', {}, { bundleId, provider, surface }, {
         headers: { 'Idempotency-Key': mutationKey('wallet-purchase') },
       });
-      const intentViewState = walletPurchaseIntentViewState(result);
-      if (intentViewState.handled) {
-        state.walletPurchaseStatus = intentViewState.status;
-        if (intentViewState.shouldRefresh) await refreshBootstrap();
-        return;
-      }
       const checkout = result?.checkout || {};
       const telegramInvoice = checkout.invoiceLink && globalThis.Telegram?.WebApp?.openInvoice;
       const webCheckout = checkout.checkoutUrl && typeof window !== 'undefined';
-      const checkoutViewState = walletPurchaseCheckoutViewState({
-        checkout,
+      const nextAction = walletPurchaseNextAction(result, {
         hasTelegramInvoice: Boolean(telegramInvoice),
         hasWebCheckout: Boolean(webCheckout)
       });
-      if (telegramInvoice) {
-        state.walletPurchaseStatus = checkoutViewState.status;
-        globalThis.Telegram.WebApp.openInvoice(checkout.invoiceLink, async (status) => {
+      state.walletPurchaseStatus = nextAction.status;
+      if (nextAction.shouldRefresh) {
+        await refreshBootstrap();
+        return;
+      }
+      if (nextAction.action === 'telegram_invoice') {
+        globalThis.Telegram.WebApp.openInvoice(nextAction.invoiceLink, async (status) => {
           const invoiceStatus = walletPurchaseStatusFromTelegramInvoice(status);
           state.walletPurchaseStatus = invoiceStatus;
           if (invoiceStatus === 'confirmed') {
@@ -171,13 +177,11 @@ export function useCustomization(state, refreshBootstrap) {
         });
         return;
       }
-      if (webCheckout) {
-        window.open(checkout.checkoutUrl, '_blank', 'noopener,noreferrer');
-        state.walletPurchaseStatus = checkoutViewState.status;
+      if (nextAction.action === 'web_checkout') {
+        window.open(nextAction.checkoutUrl, '_blank', 'noopener,noreferrer');
         return;
       }
-      state.walletPurchaseStatus = checkoutViewState.status;
-      state.error = checkoutViewState.errorMessage;
+      state.error = nextAction.errorMessage;
     } catch (error) {
       const viewState = walletPurchaseErrorViewState(error);
       state.walletPurchaseStatus = viewState.status;

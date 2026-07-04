@@ -61,3 +61,68 @@ test('useCustomization rolls asset packs through the shared route client', async
   assert.deepEqual(state.assetRollResult, { assetId: 'portrait.axilin.1', rarity: 'rare' });
   assert.equal(refreshCount, 1);
 });
+
+test('useCustomization loads wallet bundles and opens web checkout through shared state helpers', async () => {
+  const previousFetch = globalThis.fetch;
+  const previousWindow = globalThis.window;
+  const calls = [];
+  const opened = [];
+  const state = {
+    sessionKey: 'session_wallet',
+    walletBundles: [],
+    walletBundlesLoading: false,
+    walletBundlesSurface: '',
+    walletPurchaseStatus: '',
+    error: ''
+  };
+  globalThis.window = {
+    open(url, target, features) {
+      opened.push({ url, target, features });
+    }
+  };
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (url.startsWith('/api/wallet/bundles')) {
+      return jsonResponse({
+        success: true,
+        data: [{ id: 'coins_small', provider: 'btcpay' }]
+      });
+    }
+    return jsonResponse({
+      success: true,
+      data: {
+        checkout: { checkoutUrl: 'https://checkout.example/pay' }
+      }
+    });
+  };
+
+  try {
+    const customization = useCustomization(state, async () => {});
+    await customization.loadWalletBundles({ surface: 'web' });
+    await customization.purchaseWalletCoins({
+      bundleId: 'coins_small',
+      provider: 'btcpay',
+      surface: 'web'
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = previousWindow;
+    }
+  }
+
+  assert.equal(calls[0].url, '/api/wallet/bundles?surface=web');
+  assert.equal(state.walletBundlesLoading, false);
+  assert.deepEqual(state.walletBundles, [{ id: 'coins_small', provider: 'btcpay' }]);
+  assert.equal(state.walletBundlesSurface, 'web');
+  assert.equal(calls[1].url, '/api/wallet/purchase-intents');
+  assert.equal(JSON.parse(calls[1].init.body).provider, 'btcpay');
+  assert.equal(state.walletPurchaseStatus, 'opened');
+  assert.deepEqual(opened, [{
+    url: 'https://checkout.example/pay',
+    target: '_blank',
+    features: 'noopener,noreferrer'
+  }]);
+});

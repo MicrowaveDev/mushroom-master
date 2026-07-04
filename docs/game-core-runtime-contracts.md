@@ -346,6 +346,11 @@ Wallet and asset-roll mutation view-state shaping moved in core commit
 `fc53abc`; games can share opening/success/failure reducer contracts while API
 routes, idempotency-key generation, checkout side effects, refresh hooks, and
 copy remain local.
+Headless wallet/gacha state helper shaping moved in core commit `5ee7ee8`;
+games can share wallet bundle loading states, wallet checkout next-action
+decisions, and asset roll/burn refresh decisions while API calls,
+Telegram/web checkout side effects, refresh callbacks, route names, and copy
+stay local.
 Client response-envelope unwrapping moved in core commit `b56ad91`; games can
 use the shared route-adapter client against existing `{ success, data, error }`
 payloads while route maps, auth/session headers, idempotency keys, checkout
@@ -353,8 +358,9 @@ side effects, and refresh behavior remain local.
 Post-route-client review on 2026-07-04: live Mushroom frontend transport now
 uses the shared route-adapter client, so the next core boundary should move
 DTO/state helpers rather than more route plumbing. Profile asset/equipment
-result shapers are now in core; prioritize headless wallet/gacha state
-reducers and run-shop response patch helpers next. Keep whole services, Express routes,
+result shapers and the first headless wallet/gacha state helpers are now in
+core; prioritize remaining headless orchestration and run-shop response patch
+helpers next. Keep whole services, Express routes,
 persistence, payment/webhook providers, runtime catalogs, route maps, artwork,
 support operations, haptics, page assembly, and secure paid-roll RNG selection
 inside product repos.

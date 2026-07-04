@@ -68,13 +68,17 @@
 > artifact stat total/text shaping, artifact grid utility shaping, and
 > canonical preview-orientation shaping, plus wallet/asset-roll status
 > normalization, wallet/asset-roll mutation view-state reducers, and optional
-> route-client response-envelope unwrapping. Mushroom live frontend transport
-> now routes through the shared client while keeping product route names local.
+> route-client response-envelope unwrapping. The first headless wallet/gacha
+> state helper slice now shares wallet bundle loading state, checkout
+> next-action decisions, and roll/burn refresh decisions. Mushroom live
+> frontend transport now routes through the shared client while keeping product
+> route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The next core candidates
-> are **not more route plumbing**; they are headless service state machines,
-> run-shop response patch helpers, and later neutral UI primitives. **Phase
+> are **not more route plumbing**; they are remaining headless service state
+> machines, run-shop response patch helpers, and later neutral UI primitives.
+> **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
 > through a nested submodule.
 
@@ -112,7 +116,8 @@ shapers, asset pack client view-model helpers, wallet/roll feedback
 view-model helpers, grid-cell classification helpers, artifact stat
 view-model helpers, artifact grid utility helpers, and canonical artifact
 preview helpers, plus wallet and asset-roll status normalization and mutation
-view-state helpers, and optional route-client response-envelope unwrapping. The package ships TypeScript
+view-state helpers, optional route-client response-envelope unwrapping, and the
+first headless wallet/gacha state helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
 backpack battle prototype. Earlier notes that treated the target repo as empty
@@ -2795,14 +2800,20 @@ asset buys, equipment changes, roll/burn grants, and idempotent replay
 summaries while keeping SQL, wallet spends, RNG, catalogs, mutation claims, and
 route ownership local.
 
+Implemented as the next slice: core commit `5ee7ee8` added headless
+wallet/gacha state helpers for wallet bundle loading, wallet checkout
+next-action decisions, and asset roll/burn mutation refresh decisions.
+Mushroom now consumes them in `useCustomization` while keeping API calls,
+Telegram/web checkout side effects, bootstrap refresh callbacks, route names,
+and product copy local.
+
 Move next:
 
-- **Headless wallet/gacha state services:** browser-safe reducers for bundle
-  loading, purchase-intent transitions, pack list loading, roll/burn mutation
-  lifecycle, duplicate-burn availability, and odds-preview state. They should
-  accept an injected route client plus copy/policy adapters and return plain
-  state patches or DTOs; Telegram invoice opening, web checkout opening, and
-  refresh callbacks stay product-local.
+- **Remaining headless wallet/gacha state services:** browser-safe helpers for
+  pack list loading, duplicate-burn availability, odds-preview state, and
+  broader route-client orchestration over injected clients and copy/policy
+  adapters. Telegram invoice opening, web checkout opening, and refresh
+  callbacks stay product-local.
 - **Run-shop mutation view-model helpers:** client-side state patch helpers for
   start/ready/refresh-shop/buy/sell/abandon response application. They can
   share coin/shop/loadout patch contracts while leaving placement payload
@@ -3532,6 +3543,18 @@ that game.
    grant instance summaries, including idempotent replay summaries when rows
    still exist, while keeping runtime catalogs, SQL mutations, wallet spends,
    secure RNG, mutation claims, support actions, and route payload ownership
-   local. Next candidates are headless wallet/gacha state services, run-shop
-   mutation view-model helpers, replay playback state, gacha/admin view models,
-   and neutral Vue primitives after contracts stabilize.
+   local. Next candidates are headless wallet/gacha state services (started by
+   Phase 8AI), run-shop mutation view-model helpers, replay playback state,
+   gacha/admin view models, and neutral Vue primitives after contracts
+   stabilize.
+68. Phase 8AI headless wallet/gacha state helper extraction.
+   **Implemented 2026-07-04:** core commit `5ee7ee8` added
+   `client-view-model` helpers for wallet bundle loading state, wallet
+   checkout next-action decisions, and roll/burn mutation refresh decisions.
+   Mushroom's customization composable now delegates those state decisions
+   through core while keeping API calls, route names, idempotency-key
+   generation, Telegram invoice opening, web checkout opening, bootstrap
+   refresh callbacks, runtime state ownership, and product copy local. Next
+   candidates are remaining headless wallet/gacha orchestration helpers,
+   run-shop mutation view-model helpers, replay playback state, gacha/admin
+   view models, and neutral Vue primitives after contracts stabilize.
