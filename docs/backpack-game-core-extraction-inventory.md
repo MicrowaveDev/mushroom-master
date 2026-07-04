@@ -794,23 +794,39 @@ Next planned frontend slices:
    headless services before page/component extraction. Do not move the full
    Mushroom API client into core yet; keep product routes behind injected
    adapters.
-2. **Frontend services/composables:** move browser-safe state machines and API
+2. **Post-route-client priority:** move asset inventory/equipment DTO shapers
+   next: purchase result DTOs, equip result DTOs, owned-instance summaries,
+   equipped-target summaries, and duplicate-grant summaries over injected
+   catalog/state/policy adapters. Core already owns row normalization,
+   ownership maps, equipment validation, purchase spend mutation shaping, and
+   target-variant list projection; this is the cleanest next seam.
+3. **Headless wallet/gacha services:** move browser-safe reducers for bundle
+   loading, purchase-intent transitions, pack list loading, roll/burn mutation
+   lifecycle, duplicate-burn availability, and odds-preview state. These should
+   consume injected route clients and product copy/policy adapters. Telegram
+   invoice opening, web checkout opening, bootstrap refresh callbacks, and
+   product error copy stay local.
+4. **Run-shop mutation view-model helpers:** move response-application helpers
+   for start/ready/refresh-shop/buy/sell/abandon once their state patch
+   contracts are stable. Keep placement payload construction, haptics, replay
+   loading, server mutations, and product copy local.
+5. **Frontend services/composables:** move browser-safe state machines and API
    adapter factories: bootstrap loader, shop/backpack state, battle replay
    view model, wallet/asset catalog state, gacha pack state, and admin
    validation/odds preview state. These should be plain JS or Vue composables
    with neutral fixtures before component extraction.
-3. **Backpack UI primitives:** extract backpack grid, artifact tile/card,
+6. **Backpack UI primitives:** extract backpack grid, artifact tile/card,
    shop offer list, budget badge, placement preview, and core structural styles
    behind props/events/slots.
-4. **Battle UI primitives:** extract battle log, replay timeline, combatant
+7. **Battle UI primitives:** extract battle log, replay timeline, combatant
    stat strips, outcome badges, and playback controls over core battle events.
-5. **Asset/gacha UI primitives:** extract wallet balance badge, asset inventory
+8. **Asset/gacha UI primitives:** extract wallet balance badge, asset inventory
    panel, equipment picker, gacha pack card, roll result modal, odds table,
    duplicate/burn summary, and asset acquisition labels.
-6. **Admin gacha UI primitives:** extract validation issue lists, release
+9. **Admin gacha UI primitives:** extract validation issue lists, release
    checklist, season-plan coverage grid, odds preview, pack diff, and plan item
    editor widgets only after their backend/view-model contracts are stable.
-7. **Optional page shells:** extract page-level prep/shop, battle replay,
+10. **Optional page shells:** extract page-level prep/shop, battle replay,
    asset inventory, gacha packs, and admin season-plan shells only when they can
    receive product route/auth/copy/theme/API adapters and stay useful to both
    games.
@@ -822,6 +838,12 @@ adult-content gates, generated images, or home-field code into
 ownership snapshots, wallet snapshots, time, RNG, policy config, API clients,
 copy dictionaries, theme tokens, asset URL resolvers, and route callbacks as
 inputs.
+
+Post-route-client review finding on 2026-07-04: no additional route plumbing is
+needed in core right now. Whole Mushroom services and pages are still too
+product-coupled. The next useful extractions are DTO/state helpers that both
+Mushroom and Meat can consume without inheriting Mushroom persistence,
+Telegram, payment, catalog, art, support, haptics, or page-composition rules.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 

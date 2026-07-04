@@ -67,13 +67,15 @@
 > artifact stat total/text shaping, artifact grid utility shaping, and
 > canonical preview-orientation shaping, plus wallet/asset-roll status
 > normalization, wallet/asset-roll mutation view-state reducers, and optional
-> route-client response-envelope unwrapping. Product DB schemas,
-> payment-provider adapters, Telegram routes, runtime catalogs, artwork,
-> content-policy gates, support operations, and final route/page composition
-> remain game-local adapters. Reusable Vue components, composables, page view models,
-> API-client services, and neutral layout pieces are now explicit core
-> candidates. **Phase 11** has an initial playable `meat-master` consumer using
-> the shared core through a nested submodule.
+> route-client response-envelope unwrapping. Mushroom live frontend transport
+> now routes through the shared client while keeping product route names local.
+> Product DB schemas, payment-provider adapters, Telegram routes, runtime
+> catalogs, artwork, content-policy gates, support operations, and final
+> route/page composition remain game-local adapters. The next core candidates
+> are **not more route plumbing**; they are asset/equipment DTO shapers,
+> headless service state machines, and later neutral UI primitives. **Phase
+> 11** has an initial playable `meat-master` consumer using the shared core
+> through a nested submodule.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
@@ -2780,6 +2782,52 @@ shared route-adapter client and removed the legacy `apiJson` helper from live
 frontend code. Replay timers/state, dev fixtures, runtime state ownership, and
 product copy stay local.
 
+Post-route-client extraction review on 2026-07-04: yes, more should still move
+to `backpack-game-core`, but the next moves should be narrower than whole
+Mushroom services or pages.
+
+Move next:
+
+- **Asset inventory/equipment DTO shapers:** purchase result DTOs, equip result
+  DTOs, owned-instance summaries, equipped-target summaries, and duplicate
+  grant summaries over injected catalog/state/policy adapters. Core already has
+  row normalization, ownership maps, equipment validation, spend mutation
+  shaping, and target-variant list projection; these shapers are the natural
+  next backend/client boundary.
+- **Headless wallet/gacha state services:** browser-safe reducers for bundle
+  loading, purchase-intent transitions, pack list loading, roll/burn mutation
+  lifecycle, duplicate-burn availability, and odds-preview state. They should
+  accept an injected route client plus copy/policy adapters and return plain
+  state patches or DTOs; Telegram invoice opening, web checkout opening, and
+  refresh callbacks stay product-local.
+- **Run-shop mutation view-model helpers:** client-side state patch helpers for
+  start/ready/refresh-shop/buy/sell/abandon response application. They can
+  share coin/shop/loadout patch contracts while leaving placement payload
+  construction, haptics, replay loading, server mutations, and product copy in
+  each game.
+
+Move later, after the above contracts are stable:
+
+- **Replay playback state machine:** timer/index/speed/long-battle boost logic
+  over injected clock functions and product replay-format adapters.
+- **Gacha/admin UI view models:** release checklist summaries, season-plan
+  coverage matrix, odds-preview table DTOs, pack diff DTOs, and plan-item editor
+  validation state.
+- **Neutral Vue primitives:** backpack grid, artifact tile, wallet badge, asset
+  picker, gacha pack card, odds table, roll result modal, battle log/timeline,
+  and admin checklist components. These should come after Meat has enough
+  equivalent surfaces to verify prop/event boundaries.
+
+Keep local for now:
+
+- SQL schemas, repositories, Express routes, auth/session policy, rate limits,
+  idempotency storage, support-action/audit persistence, and route maps.
+- Payment providers, Telegram Stars, crypto checkout/webhook adapters, provider
+  signatures, refund/tax/compliance handling, and adult-content gates.
+- Runtime catalogs, character ids, portrait/skin art, localization, generated
+  images, page assembly, final CSS themes, haptics, secure paid-roll RNG
+  selection, and product-specific support/admin permissions.
+
 Frontend post-review on 2026-07-04: keep the core client route-adapter based
 and do not extract the full Mushroom API client or full Vue pages yet. The next
 frontend slices should stay close to DTO/view-model shaping and headless
@@ -3464,3 +3512,12 @@ that game.
    dev fixtures, runtime state ownership, and product copy stay local. Next
    candidates are asset inventory/equipment DTO shapers and headless
    services/composables before neutral Vue components move.
+66. Phase 8AG post-route-client core-move review.
+   **Plan adjusted 2026-07-04:** the active route-client lane is complete for
+   live Mushroom frontend code. The next core moves should be, in order:
+   asset inventory/equipment DTO shapers; headless wallet/gacha state services;
+   run-shop mutation view-model helpers; then replay playback state, gacha/admin
+   view models, and neutral Vue primitives after contracts are stable. Do not
+   move whole Mushroom services, pages, Express routes, DB schemas, payment
+   providers, route maps, catalogs, artwork, support operations, haptics, or
+   secure paid-roll RNG selection into core.

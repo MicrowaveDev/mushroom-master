@@ -341,6 +341,14 @@ Client response-envelope unwrapping moved in core commit `b56ad91`; games can
 use the shared route-adapter client against existing `{ success, data, error }`
 payloads while route maps, auth/session headers, idempotency keys, checkout
 side effects, and refresh behavior remain local.
+Post-route-client review on 2026-07-04: live Mushroom frontend transport now
+uses the shared route-adapter client, so the next core boundary should move
+DTO/state helpers rather than more route plumbing. Prioritize profile
+asset/equipment result shapers, headless wallet/gacha state reducers, and
+run-shop response patch helpers. Keep whole services, Express routes,
+persistence, payment/webhook providers, runtime catalogs, route maps, artwork,
+support operations, haptics, page assembly, and secure paid-roll RNG selection
+inside product repos.
 New shared backend logic should continue landing behind public `modules/*`
 exports, and new browser-safe helpers should land behind `client` or
 `client-view-model` style exports. Avoid new consumer imports from deep `src/*`
