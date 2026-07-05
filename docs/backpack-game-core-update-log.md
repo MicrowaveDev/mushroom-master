@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `b56713e094dc4077f08d7b739e59a5036183b9e9`
-- core short SHA: `b56713e`
-- core commit: `Add loadout validation service module`
-- runtime/API baseline: `b56713e` (`Add loadout validation service module`)
-- game pointer commit: `e01f6ea` (`Use core loadout validation service`)
+- core SHA: `ec328d11982ba4a22e8925a5e016815afcbcce5e`
+- core short SHA: `ec328d1`
+- core commit: `Add run readiness server module`
+- runtime/API baseline: `ec328d1` (`Add run readiness server module`)
+- game pointer commit: `cbec687` (`Use core run readiness server module`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-05 | `cbec687` | `ec328d1` | Run readiness server module | Core added `createRunReadinessServerModule` so app module lists can register the shared readiness/idle/lock manager. Mushroom now creates `app/server/services/ready-manager.js` through the module loader while keeping route wiring, active-run validation, challenge resolution, SSE delivery, and compatibility exports local; Meat pins the same SHA and verifies the server-module export. |
 | 2026-07-05 | `e01f6ea` | `b56713e` | Loadout validation service module | Core added `modules/loadout/validation-service` and `createLoadoutValidationServerModule` so app module lists can register loadout validation over injected artifact lookup, pricing, family, placement, and stat policy providers. Mushroom now delegates `app/server/services/loadout-utils.js` through the service path while keeping grid constants, catalog lookup, stat caps, and compatibility exports local; Meat pins the same SHA and verifies the service/server-module exports. |
 | 2026-07-05 | `885316c` | `eb9cf3a` | Gacha simulation service module | Core added provider-driven static/runtime gacha simulation service factories and `createAssetGachaSimulationServerModule`. Mushroom now delegates `app/server/services/gacha-simulation-service.js` through core while keeping static/runtime pack lookup, catalog visibility policy, admin routes, and CLI ownership local; Meat pins the same SHA and verifies the service/server-module exports. |
 | 2026-07-05 | `2aa2246` | `7e44ea9` | Artifact capability helpers | Core added `artifact-capabilities` and exported it directly plus through `modules/loadout`. Mushroom now keeps `app/server/services/artifact-helpers.js` as a compatibility re-export while default family caps, configurable bag-family detection, combat classification, container detection, and stat contribution checks live in core; Meat pins the same SHA and verifies the export in its core-consumption test. |
