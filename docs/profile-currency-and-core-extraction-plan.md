@@ -21,7 +21,9 @@
 > `backpack-game-core` behind adapters rather than staying Mushroom-only.
 > That core is now planned as a full-stack shared repo: backend modules,
 > shared DTO/view-model shapers, browser-safe client services/composables, and
-> Vue components/pages that both Mushroom Battles and Meat Master can consume.
+> neutral Vue component primitives that both Mushroom Battles and Meat Master
+> can consume. Product pages, themes, routes, copy, haptics, art resolvers,
+> Telegram wrappers, and payment/adult-content policy stay in the product repos.
 > A 2026-07-04 Geesome architecture review tightened this direction: copy the
 > layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
 > but improve it with typed subpath exports and adapter contracts so Backpack
@@ -374,13 +376,70 @@ as evidence.
   `docs/backpack-game-core-extraction-inventory.md`; the first slice is
   bag-shape helpers.
 
+### 2026-07-05 Post-Implementation Addendum
+
+Reviewed against the full conversation and the latest remembered implementation
+state after the Phase 8AR-8AV and Phase 11 passes. The main correction is that
+the backend/planner/DTO extraction is now far enough along that the next core
+work should not keep expanding route plumbing. The highest-value remaining
+core lane is a small, tested Vue component package built on the DTO shapers
+that already moved to `backpack-game-core`.
+
+Findings and plan corrections:
+
+1. **Do not move whole Mushroom frontend screens into core.** Mushroom screens
+   mix product layout, localized copy, Telegram UX, haptics, route names,
+   admin token storage, asset paths, CSS themes, and Mushroom-specific
+   catalog assumptions. Moving them wholesale would make Meat inherit Mushroom
+   product decisions and would make the core harder to reuse. The plan now
+   calls for neutral component primitives plus props/events/slots/adapters.
+2. **The plan needs an explicit frontend-core contract.** Add a small reference
+   doc before or during Phase 8AW that defines supported Vue subpath exports,
+   peer dependencies, CSS variable/base-class policy, forbidden imports,
+   event names, slot contracts, and DTO compatibility guarantees.
+3. **Start with the lowest-coupling components.** `AssetRollResultPanel`,
+   `GachaOddsTable`, and `GachaPackCard` are better first candidates than the
+   full backpack grid because they already have stable DTOs and fewer pointer,
+   drag/drop, image, and layout dependencies.
+4. **Add a static import-boundary guard.** Core should have a cheap test or
+   script that fails if browser/client/Vue exports import Mushroom paths,
+   Node-only payment/webhook modules, Express/Sequelize, Telegram helpers, or
+   product assets.
+5. **Second-consumer work is no longer theoretical.** `meat-master` exists and
+   consumes the nested core submodule, so the remaining plan should say
+   "stabilize and continuously verify both consumers," not "integrate when one
+   exists."
+6. **Core release discipline is now a blocker for safe reuse.** Decide whether
+   the near-term contract is submodule-only or package publishing; either way,
+   every shared export needs typed subpath declarations, changelog notes,
+   compatibility expectations, and a CI/check command that validates core,
+   Mushroom, and Meat against the same commit.
+7. **Admin gacha UX still needs a simplified operator-first flow.** The main
+   tab should stay focused on uploading images, assigning a character, checking
+   per-character season coverage, setting chance/rarity, promoting ready items
+   into a pack, previewing odds, and publishing only after validation. Advanced
+   JSON fixture editing, import/export, and rollback tools should stay behind
+   this simpler lane.
+8. **Copied or generated seed assets are prototype-only.** Any Meat assets
+   copied from Mushroom or generated for bootstrapping should be tracked as
+   temporary/provenance-tagged content and replaced with product-owned artwork
+   before production, especially for adult-themed surfaces and paid packs.
+9. **Core should keep returning plans, not executing product mutations.** The
+   current boundary is healthy: core can own pure planners, settlement drafts,
+   DTOs, odds math, validation, and view models; product repos should still own
+   SQL transactions, provider callbacks, payment risk, catalog publication,
+   support permissions, and legal/content gating.
+
 ## Current Remaining Work Matrix
 
 Added 2026-07-02 after the post-implementation review. Treat this as the live
 backlog until the items are split into tickets or implementation phases. Updated
 2026-07-02 to make the active next lane gacha-focused: paid-provider,
 compliance, support-ops, approval, and production scheduling work is important,
-but it is now backlog unless a paid pilot is being prepared.
+but it is now backlog unless a paid pilot is being prepared. Updated
+2026-07-05 after the multi-game core extraction pass: the active shared-core
+lane is now neutral Vue component extraction plus package/CI hardening across
+core, Mushroom, and Meat.
 
 ### Active Lane - Gacha Roadmap Plan
 
@@ -827,18 +886,30 @@ simulation at each roadmap phase instead of waiting until the end.
   no horizontal overflow, and the lookup/wallet/asset/refund/action/history
   sections present at both viewport sizes.
 
-### 7. Core Package Release And Second Consumer
+### 7. Core Package Release, CI, And Second Consumer
 
-- Integrate `@microwavedev/backpack-game-core` into a real second
-  backpack/grid game when one exists. Do not add it to unrelated inventories
-  only to prove reuse.
+- Done for the first reuse proof: `meat-master` now exists as a second
+  backpack/grid consumer and uses `backpack-game-core` through a nested
+  submodule. The next step is stabilization, not proof-by-placeholder.
 - Decide package release discipline: semver versioning, tags, changelog format,
   npm/GitHub package publishing vs submodule-only consumption, and compatibility
-  windows for Mushroom adapters.
-- Add CI that verifies `backpack-game-core` tests, package exports/types, the
-  Mushroom consumer, and any second consumer against the same core commit.
+  windows for Mushroom and Meat adapters.
+- Add CI or one hub helper that verifies `backpack-game-core` tests,
+  package exports/types, the Mushroom consumer, and the Meat consumer against
+  the same core commit before pointer updates are pushed.
+- Add an import-boundary check for `backpack-game-core`: public core, client,
+  and Vue exports must not import Mushroom/Meat files, product catalogs,
+  product assets, Express/Sequelize, Telegram helpers, provider SDK/webhook
+  code, or Node-only modules from browser-safe entry points.
+- Add a frontend-core contract reference before the first shared Vue component
+  ships. It should define supported subpath exports, Vue peer dependency
+  policy, CSS/token policy, event names, slot contracts, forbidden imports,
+  adapter props, DTO compatibility expectations, and per-consumer validation
+  requirements.
 - Decide whether `backpack-game-core` should also be tracked as a top-level hub
   repo in addition to the nested `mushroom-master` submodule.
+- Keep copied/generated prototype assets in Meat provenance-tagged and replace
+  them with product-owned artwork before any paid or public production launch.
 
 ### 8. Optional Compatibility Cleanup
 
@@ -3783,12 +3854,62 @@ that game.
    support admin odds preview delegates table sections through core, and home
    roll feedback delegates panel metadata through core while keeping copy,
    markup, styling, and route events local; Meat uses the same helpers in
-   prototype wrappers. Phase 8AV DTO backlog is complete; future work is
-   neutral Vue components after DTO contracts settle. Keep Mushroom/Meat themes, localized
+   prototype wrappers. Phase 8AV DTO backlog is complete; the next frontend
+   work should be neutral Vue components built on these DTO contracts, not
+   whole Mushroom screens moved as-is. Keep Mushroom/Meat themes, localized
    copy, routes, image resolvers, haptics, Telegram wrappers, and page shells
    local. Future slices need screenshot/e2e evidence in Mushroom and build/test
    evidence in Meat for every adopted component.
-82. Phase 8AW explicit non-core guardrails.
+82. Phase 8AW neutral Vue component layer.
+   **Planned next, not started:** add a public Vue-facing layer in
+   `backpack-game-core`, likely behind subpath exports such as
+   `@microwavedev/backpack-game-core/vue` and
+   `@microwavedev/backpack-game-core/vue/components`. Do not copy Mushroom
+   pages or components into core verbatim. Extract neutral primitives that
+   receive already-shaped DTOs plus product-provided labels, image resolvers,
+   route callbacks, theme class hooks, and optional slots.
+   First component candidates, in safest order:
+   - `AssetRollResultPanel`, backed by `shapeAssetRollResultPanel`.
+   - `GachaOddsTable`, backed by `shapeGachaAdminOddsTableSections`.
+   - `GachaPackCardList` / `GachaPackCard`, backed by
+     `shapeAssetPackCardRows`.
+   - `ArtifactTile`, backed by `shapeArtifactTileDisplay`.
+   - `ShopItemList` / `ShopItemRow`, backed by `shapeShopItemRows`.
+   - `BackpackGrid`, backed by `shapeGridBoardCells`,
+     `shapeGridBoardPieces`, and `shapeGridBagSlotCells`.
+   - `BattleLog` / compact replay rows, backed by `shapeReplayEventRows`.
+   Component extraction rules:
+   - components emit neutral events such as `roll`, `burn`, `select`, `buy`,
+     `place`, `remove`, and `open`, never product route names;
+   - components use props/events/slots/adapters instead of importing Mushroom
+     stores, APIs, routes, Telegram helpers, generated art, CSS themes, or
+     catalogs;
+   - core may ship minimal base classes or CSS variables, but Mushroom and Meat
+     keep their final themes, responsive page layout, art paths, and copy;
+   - each component slice must include core unit/render tests, Mushroom
+     adoption evidence including screenshots where visual, and Meat build/test
+     evidence.
+   Pre-flight before the first component:
+   - create a short frontend-core contract reference that documents Vue peer
+     dependency/version support, public subpath exports, browser-safe import
+     rules, CSS variable/base-class policy, event names, slot names, adapter
+     props, and DTO compatibility expectations;
+   - add or extend package export/type tests so every Vue subpath has a JS
+     target and declaration target;
+   - add a static forbidden-import check for core client/Vue exports;
+   - decide whether render tests use Vue Test Utils, Vitest, or the existing
+     Node test runner plus compiled render snapshots, then keep that choice
+     consistent for the first component batch.
+   First implementation slice should be intentionally small:
+   - extract `AssetRollResultPanel` or `GachaOddsTable` first because those
+     components are low-interaction, already DTO-backed, and useful in both
+     Mushroom and Meat;
+   - adopt it in Mushroom without changing product copy or layout semantics;
+   - adopt it in Meat as a proof that the component is not accidentally
+     Mushroom-themed;
+   - only move toward `BackpackGrid` after the simpler components prove the
+     prop/event/theme pattern.
+83. Phase 8AX explicit non-core guardrails.
    **Current boundary:** do not move whole Mushroom services, Express routes,
    database migrations/schemas, provider SDK calls, webhook signature checks,
    Telegram integration, support/admin permissions, image upload/storage,
@@ -3796,3 +3917,11 @@ that game.
    player/mushroom catalogs, CSS themes, or product page composition into
    `backpack-game-core`. Core APIs should receive plain snapshots and return
    plans/DTOs that product repos execute.
+84. Phase 8AY cross-consumer release hardening.
+   **Planned next, not started:** after the first shared Vue component lands,
+   add a single verification path that proves the same core commit works in
+   core, Mushroom, and Meat. The minimum gate should run core tests/package
+   export checks, Mushroom game/core checks plus any affected screenshot/e2e
+   tests, and Meat build/tests. Also record the expected pointer-update order:
+   commit/push core first, update Mushroom and Meat nested submodule pointers
+   second, then update the hub pointer only after both consumers are clean.
