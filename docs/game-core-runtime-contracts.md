@@ -307,9 +307,11 @@ Post-implementation review on 2026-07-04: the first package/module architecture
 slice is complete in core commit `3e3d5d6`, the first real helper movement
 landed in core commit `8345448` with `modules/gacha/admin-validation`, and
 gacha odds simulation moved in core commit `b3da379` with
-`modules/gacha/simulation`. Wallet accounting moved in core commit `af520f0`
-with `wallet-accounting` and `modules/wallet`. Profile asset state moved in
-core commit `6ae688b` with `profile-asset-state` and `modules/assets`. Asset
+`modules/gacha/simulation`; the provider-driven simulation service/module
+factory later moved into `modules/gacha/simulation-service` and the server
+facade. Wallet accounting moved in core commit `af520f0` with
+`wallet-accounting` and `modules/wallet`. Profile asset state moved in core
+commit `6ae688b` with `profile-asset-state` and `modules/assets`. Asset
 catalog acquisition default/override policy moved in core commit `77b1d7b`
 through `asset-gacha` / `modules/gacha`. Asset pack summary/label shaping for
 frontend gacha UIs moved in core commit `578279d` through
@@ -380,11 +382,11 @@ coverage/chance shaping, and fixture operation summaries are now in core while
 DB reads/writes, auth, audit logs, upload/storage, copy, and page layout stay
 product-local. Gacha admin odds preview, fixture operation, and simulation item
 table rows are also in core while preview loading, fixture import/export calls,
-and simulation services stay product-local. Core commits `624d4b0` and
-`bf863f3` moved the backend planner slices: asset-gacha roll settlement plans,
-duplicate-burn settlement plans, wallet purchase intent/checkout/completion
-plans, run-shop buy/refresh/sell plans, run start drafts, starter loadout
-drafts, initial/next shop state, ghost budget math, round
+and concrete DB/catalog simulation providers stay product-local. Core commits
+`624d4b0` and `bf863f3` moved the backend planner slices: asset-gacha roll
+settlement plans, duplicate-burn settlement plans, wallet purchase
+intent/checkout/completion plans, run-shop buy/refresh/sell plans, run start
+drafts, starter loadout drafts, initial/next shop state, ghost budget math, round
 reward/counter/end-state planning, and challenge group-completion decisions.
 Core commits `2280929`, `ffaa376`, `3c638fb`, `a4c4c06`, `42b1f1c`, `be41855`, `ebc74d2`, and `6d9faeb` moved
 the first neutral frontend primitive slices: headless artifact stat-row DTO

@@ -57,6 +57,10 @@
 > and `modules/loadout`; Mushroom now keeps `app/server/services/artifact-helpers.js`
 > as a compatibility re-export, while future games can override family maps,
 > bag family names, and fallback combat capabilities.
+> The following server continuation moved the gacha odds simulation service
+> shape into core as `modules/gacha/simulation-service` plus
+> `createAssetGachaSimulationServerModule`; Mushroom still owns concrete static
+> and runtime pack/catalog lookups, DB visibility policy, and admin route usage.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -570,10 +574,11 @@ players/sessions/auth-code repository contracts; `create-app.js`, DB/models,
 Telegram, wiki/lore, social preview, payment callbacks, support approval
 policy, and product catalogs remain product-local. Best first server moves are
 pure/adapted slices: `provider-settlement-adapters.js`, module-list wiring
-around `ready-manager.js`, `gacha-simulation-service.js`, and a module factory
-around the existing `loadout-utils.js` adapter. The initial
-`artifact-helpers.js` candidate has now moved as the artifact-capability helper
-slice.
+around `ready-manager.js`, and a module factory around the existing
+`loadout-utils.js` adapter. The initial `artifact-helpers.js` candidate has now
+moved as the artifact-capability helper slice, and
+`gacha-simulation-service.js` now delegates through a provider-driven core
+service/module factory.
 
 Goal: classify Mushroom server files into shared core modules, app adapters, or
 product-local modules before moving code.
@@ -636,7 +641,11 @@ Status: **Started 2026-07-05 with the artifact-capability helper slice.**
 configurable family capability maps, exported through
 `@microwavedev/backpack-game-core/artifact-capabilities` and `modules/loadout`,
 and restored in Mushroom as a compatibility re-export. This is a pure helper
-move, not a full server module factory yet.
+move. The next S3 slice copied the Mushroom gacha simulation wrapper into core,
+neutralized it into `createAssetGachaSimulationService`, and added
+`createAssetGachaSimulationServerModule` so app module lists can register the
+same service over injected pack/catalog/odds providers. Mushroom keeps
+`app/server/services/gacha-simulation-service.js` as the product adapter.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
