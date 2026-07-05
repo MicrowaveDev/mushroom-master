@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `ec328d11982ba4a22e8925a5e016815afcbcce5e`
-- core short SHA: `ec328d1`
-- core commit: `Add run readiness server module`
-- runtime/API baseline: `ec328d1` (`Add run readiness server module`)
-- game pointer commit: `cbec687` (`Use core run readiness server module`)
+- core SHA: `63cd85af4f3bfe0da731860c71faf5a9b1001d1f`
+- core short SHA: `63cd85a`
+- core commit: `Add settlement adapter registry helpers`
+- runtime/API baseline: `63cd85a` (`Add settlement adapter registry helpers`)
+- game pointer commit: `6e5692a` (`Use core settlement adapter registry`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-05 | `6e5692a` | `63cd85a` | Settlement adapter registry helpers | Core added `modules/wallet/settlement-adapters` for generic CSV/JSON settlement input parsing, scoped field lookup, configurable provider record mapping, and package export/type coverage. Mushroom now keeps `app/server/services/provider-settlement-adapters.js` as the local provider field-map wrapper while provider SDKs, callbacks, reconciliation persistence, and ops runbooks stay local; Meat pins the same SHA and verifies the new wallet subpath. |
 | 2026-07-05 | `cbec687` | `ec328d1` | Run readiness server module | Core added `createRunReadinessServerModule` so app module lists can register the shared readiness/idle/lock manager. Mushroom now creates `app/server/services/ready-manager.js` through the module loader while keeping route wiring, active-run validation, challenge resolution, SSE delivery, and compatibility exports local; Meat pins the same SHA and verifies the server-module export. |
 | 2026-07-05 | `e01f6ea` | `b56713e` | Loadout validation service module | Core added `modules/loadout/validation-service` and `createLoadoutValidationServerModule` so app module lists can register loadout validation over injected artifact lookup, pricing, family, placement, and stat policy providers. Mushroom now delegates `app/server/services/loadout-utils.js` through the service path while keeping grid constants, catalog lookup, stat caps, and compatibility exports local; Meat pins the same SHA and verifies the service/server-module exports. |
 | 2026-07-05 | `885316c` | `eb9cf3a` | Gacha simulation service module | Core added provider-driven static/runtime gacha simulation service factories and `createAssetGachaSimulationServerModule`. Mushroom now delegates `app/server/services/gacha-simulation-service.js` through core while keeping static/runtime pack lookup, catalog visibility policy, admin routes, and CLI ownership local; Meat pins the same SHA and verifies the service/server-module exports. |
