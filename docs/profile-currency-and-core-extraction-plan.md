@@ -3875,9 +3875,15 @@ that game.
    copy, classes, page layout, routes, and styles local. Meat remains a vanilla
    Vite prototype for now but imports the Vue subpath in its core-consumption
    smoke test, proving the package surface does not force a visible UI rewrite.
+   **Second slice implemented 2026-07-05:** core commit `953fa1e` added
+   `GachaPackCard` and `GachaPackCardList`, backed by
+   `shapeAssetPackCardRows`, with neutral action emits (`action`, `roll`,
+   `burn`, etc.), slot hooks, class hooks, export/type checks, and component
+   smoke tests. Mushroom now uses `GachaPackCardList` in the home pack details
+   block while keeping its existing `handlePackAction` route events and CSS
+   local. Meat imports the same component names in its core-consumption smoke
+   test without rewriting the visible prototype UI.
    Remaining component candidates, in safest order:
-   - `GachaPackCardList` / `GachaPackCard`, backed by
-     `shapeAssetPackCardRows`.
    - `ArtifactTile`, backed by `shapeArtifactTileDisplay`.
    - `ShopItemList` / `ShopItemRow`, backed by `shapeShopItemRows`.
    - `BackpackGrid`, backed by `shapeGridBoardCells`,

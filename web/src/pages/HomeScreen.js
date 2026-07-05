@@ -9,7 +9,7 @@ import {
   summarizeWalletPurchaseSurface,
   summarizeAssetRollPacks
 } from '@microwavedev/backpack-game-core/client-view-model';
-import { AssetRollResultPanel } from '@microwavedev/backpack-game-core/vue/components';
+import { AssetRollResultPanel, GachaPackCardList } from '@microwavedev/backpack-game-core/vue/components';
 import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
 import { AchievementBadge } from '../components/AchievementBadge.js';
 import { HomeSocialSidebar } from '../components/HomeSocialSidebar.js';
@@ -44,6 +44,7 @@ export const HomeScreen = {
   },
   components: {
     AssetRollResultPanel,
+    GachaPackCardList,
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
     SeasonRankEmblem,
     AchievementBadge,
@@ -621,15 +622,14 @@ export const HomeScreen = {
                 </span>
               </button>
             </div>
-            <div v-if="rollPackCards.length" class="home-pack-details">
-              <div v-for="pack in rollPackCards" :key="pack.id" class="home-pack-detail">
-                <strong>{{ pack.title }}</strong>
-                <span v-for="line in pack.lines" :key="line.key">{{ line.text }}</span>
-                <span v-if="pack.actionable" class="home-pack-actions">
-                  <button v-for="action in pack.actions" :key="action.key" class="link home-pack-action" type="button" @click="handlePackAction(action)">{{ action.label }}</button>
-                </span>
-              </div>
-            </div>
+            <GachaPackCardList
+              :packs="rollPackCards"
+              list-class="home-pack-details"
+              card-class="home-pack-detail"
+              actions-class="home-pack-actions"
+              action-class="link home-pack-action"
+              @action="handlePackAction"
+            />
             <AssetRollResultPanel :panel="assetRollResultPanel" />
           </div>
         </div>
