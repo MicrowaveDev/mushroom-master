@@ -1,4 +1,4 @@
-import { formatArtifactBonusEntries } from '@microwavedev/backpack-game-core/client-view-model';
+import { shapeArtifactStatRows } from '@microwavedev/backpack-game-core/client-view-model';
 import { ARTIFACT_ROLE_CLASSES } from '../../../app/shared/artifact-visual-classification.js';
 
 const STAT_DEFINITIONS = [
@@ -38,22 +38,15 @@ export const ArtifactStatSummary = {
       const source = this.totals || this.artifact?.bonus;
       if (!source) return [];
       const lang = this.lang === 'en' ? 'en' : 'ru';
-      const definitionsByKey = new Map(STAT_DEFINITIONS.map((item) => [item.sourceKey, item]));
-      return formatArtifactBonusEntries(source, {
+      return shapeArtifactStatRows(source, {
+        definitions: STAT_DEFINITIONS,
         labels: STAT_LABELS[lang],
-        statKeys: STAT_DEFINITIONS.map((item) => item.sourceKey),
         includeZeroes: this.includeZeroes
       })
         .map((entry) => {
-          const item = definitionsByKey.get(entry.key);
-          const value = entry.numericValue;
           return {
-            ...item,
-            value,
-            role: item.roleId ? ARTIFACT_ROLE_CLASSES[item.roleId] : null,
-            label: entry.label,
-            text: entry.value,
-            sign: value > 0 ? 'positive' : value < 0 ? 'negative' : 'zero'
+            ...entry,
+            role: entry.roleId ? ARTIFACT_ROLE_CLASSES[entry.roleId] : null
           };
         });
     },

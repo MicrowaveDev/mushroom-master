@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `bf863f396fa3539592b2ec6a251347df37022aff`
-- core short SHA: `bf863f3`
-- core commit: `Add run lifecycle planners`
-- runtime/API baseline: `bf863f3` (`Add run lifecycle planners`)
-- game pointer commit: this commit (`Use core run lifecycle planners`)
+- core SHA: `2280929edddceceba6e1a89f914445114efafa03`
+- core short SHA: `2280929`
+- core commit: `Add artifact stat row view models`
+- runtime/API baseline: `2280929` (`Add artifact stat row view models`)
+- game pointer commit: this commit (`Use core artifact stat rows`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-05 | this commit | `bf863f3` | Run lifecycle planners | Mushroom run service delegates run start drafts, starter loadout drafts, initial/next shop state, ghost budget planning, round reward/counter/end-state planning, and challenge group-completion decisions through core. SQL transactions, player selection, daily limits, local rewards, rating, season/achievement grants, ghost selection, challenge matching, product catalog data, and route errors stay local. |
+| 2026-07-05 | this commit | `2280929` | Artifact stat row view models | Mushroom artifact stat summary delegates headless stat-row/chip DTO shaping through `client-view-model`. Product labels, role colors, glyphs, chip markup, and page/component composition stay local. |
+| 2026-07-05 | `2a58aae` | `bf863f3` | Run lifecycle planners | Mushroom run service delegates run start drafts, starter loadout drafts, initial/next shop state, ghost budget planning, round reward/counter/end-state planning, and challenge group-completion decisions through core. SQL transactions, player selection, daily limits, local rewards, rating, season/achievement grants, ghost selection, challenge matching, product catalog data, and route errors stay local. |
 | 2026-07-05 | `162e101` | `624d4b0` | Backend settlement and run-shop mutation planners | Mushroom asset, wallet, and shop services delegate roll settlement, duplicate-burn settlement, purchase intent/checkout/completion, and run-shop buy/refresh/sell planning through core. SQL transactions, secure RNG, provider SDKs/webhooks, route errors, runtime catalogs, and audit/support operations stay local. |
 | 2026-07-04 | `db1bc7d` | `c9d8492` | Gacha admin preview row helpers | Mushroom support admin delegates fixture operation rows and simulation item rows through `client-view-model`. Fixture import/export calls, simulation services, product copy, and page layout stay local. |
 | 2026-07-04 | `89ea31c` | `c5ebe41` | Gacha admin odds preview row helpers | Mushroom support admin delegates rarity/item odds preview table rows through `client-view-model`. Preview loading, API calls, simulation services, product copy, and page layout stay local. |

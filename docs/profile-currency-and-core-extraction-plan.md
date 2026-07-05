@@ -89,10 +89,11 @@
 > into core commit `624d4b0`, then run start drafts, starter loadout drafts,
 > initial/next shop state, ghost budget math, round reward/counter/end-state
 > planning, and challenge group-completion decisions into core commit
-> `bf863f3`, while keeping execution in Mushroom adapters. The next core
-> candidates are **not more route plumbing**; they are neutral UI primitives
-> that both Mushroom and Meat can style locally. Move planners and DTO
-> builders, not SQL transactions, provider callbacks,
+> `bf863f3`, then the first neutral frontend stat-row DTO helper into core
+> commit `2280929`, while keeping execution/rendering in product adapters. The
+> next core candidates are **not more route plumbing**; they are remaining
+> neutral UI primitives that both Mushroom and Meat can style locally. Move
+> planners and DTO builders, not SQL transactions, provider callbacks,
 > Telegram/adult-content policy, or product page shells.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
@@ -3596,7 +3597,7 @@ that game.
    gacha/admin view models are covered by Phases 8AM-8AQ, replay playback
    state is fulfilled by Phase 8AL, the broader game-run response patch helper
    slice is fulfilled by Phase 8AK, and the next active shared-core candidate
-   is Phase 8AV frontend primitives.
+   is the remaining Phase 8AV frontend primitive backlog.
 69. Phase 8AJ run-shop response patch helper extraction.
    **Implemented 2026-07-04:** core commit `f4734ea` added
    `client-view-model` helpers for refresh-shop, buy, and sell response state
@@ -3608,7 +3609,7 @@ that game.
    gacha/admin view models are covered by Phases 8AM-8AQ, replay playback
    state is fulfilled by Phase 8AL, start/ready/round-transition/completion
    response patch helpers are fulfilled by Phase 8AK, and the next active
-   shared-core candidate is Phase 8AV frontend primitives.
+   shared-core candidate is the remaining Phase 8AV frontend primitive backlog.
 70. Phase 8AK game-run response patch helper extraction.
    **Implemented 2026-07-04:** core commit `2092663` added
    `client-view-model` helpers for game-run start, ready, round-transition,
@@ -3618,8 +3619,8 @@ that game.
    state ownership, and product copy local. Updated 2026-07-05:
    planner-level extraction phases 8AR-8AU are fulfilled; gacha/admin view
    models are covered by Phases 8AM-8AQ, replay playback state is fulfilled by
-   Phase 8AL, and the next active shared-core candidate is Phase 8AV frontend
-   primitives.
+   Phase 8AL, and the next active shared-core candidate is the remaining Phase
+   8AV frontend primitive backlog.
 71. Phase 8AL replay playback state helper extraction.
    **Implemented 2026-07-04:** core commit `ee2a275` added
    `client-view-model` helpers for replay speed selection, long-battle boost,
@@ -3630,7 +3631,7 @@ that game.
    wrappers, runtime state ownership, and UI local. Gacha admin draft-diff DTO
    helpers are fulfilled by Phase 8AM. Updated 2026-07-05: planner-level
    extraction phases 8AR-8AU are fulfilled; the next active shared-core
-   candidate is the neutral frontend primitives in Phase 8AV.
+   candidate is the remaining neutral frontend primitive backlog in Phase 8AV.
 72. Phase 8AM gacha admin draft-diff helper extraction.
    **Implemented 2026-07-04:** core commit `c850a14` added
    `modules/gacha/admin-validation` helpers for pack snapshots and live/draft
@@ -3642,8 +3643,8 @@ that game.
    Phase 8AN, fixture operation summaries are fulfilled by Phase 8AO, odds row
    shapers are fulfilled by Phase 8AP, and preview row helpers are fulfilled
    by Phase 8AQ. Updated 2026-07-05: planner-level extraction phases 8AR-8AU
-   are fulfilled; the next active shared-core candidate is Phase 8AV frontend
-   primitives.
+   are fulfilled; the next active shared-core candidate is the remaining Phase
+   8AV frontend primitive backlog.
 73. Phase 8AN gacha admin checklist and season-plan row helper extraction.
    **Implemented 2026-07-04:** core commit `7deb088` added
    `client-view-model` helpers for validation issue rows, release checklist
@@ -3654,8 +3655,8 @@ that game.
    routes local. Fixture operation summaries are fulfilled by Phase 8AO, odds
    row shapers are fulfilled by Phase 8AP, and preview row helpers are
    fulfilled by Phase 8AQ. Updated 2026-07-05: planner-level extraction
-   phases 8AR-8AU are fulfilled; the next active shared-core candidate is
-   Phase 8AV frontend primitives.
+   phases 8AR-8AU are fulfilled; the next active shared-core candidate is the
+   remaining Phase 8AV frontend primitive backlog.
 74. Phase 8AO gacha admin fixture operation summary helper extraction.
    **Implemented 2026-07-04:** core commit `497e6f7` added
    `modules/gacha/admin-validation` helper
@@ -3665,8 +3666,8 @@ that game.
    route payloads, validation of incoming fields, and product errors local.
    Odds row shapers are fulfilled by Phase 8AP and preview row helpers are
    fulfilled by Phase 8AQ. Updated 2026-07-05: planner-level extraction
-   phases 8AR-8AU are fulfilled; the next active shared-core candidate is
-   Phase 8AV frontend primitives.
+   phases 8AR-8AU are fulfilled; the next active shared-core candidate is the
+   remaining Phase 8AV frontend primitive backlog.
 75. Phase 8AP gacha admin odds preview row helper extraction.
    **Implemented 2026-07-04:** core commit `c5ebe41` added
    `client-view-model` helpers for rarity and item odds preview table rows,
@@ -3675,7 +3676,7 @@ that game.
    through core while keeping preview loading, API calls, simulation services,
    product copy, and page layout local. Updated 2026-07-05: planner-level
    extraction phases 8AR-8AU are fulfilled; the next active shared-core
-   candidate is Phase 8AV frontend primitives.
+   candidate is the remaining Phase 8AV frontend primitive backlog.
 76. Phase 8AQ gacha admin fixture/simulation preview row helper extraction.
    **Implemented 2026-07-04:** core commit `c9d8492` added
    `client-view-model` helpers for fixture operation rows and simulation item
@@ -3684,8 +3685,8 @@ that game.
    delegates those preview rows through core while keeping fixture
    import/export calls, simulation services, product copy, and page layout
    local. Updated 2026-07-05: planner-level extraction phases 8AR-8AU are
-   fulfilled; the next active shared-core candidate is Phase 8AV frontend
-   primitives.
+   fulfilled; the next active shared-core candidate is the remaining Phase 8AV
+   frontend primitive backlog.
 77. Phase 8AR asset-gacha roll settlement planner extraction.
    **Implemented 2026-07-05:** core commit `624d4b0` added
    `createAssetGachaRollSettlementPlan`,
@@ -3744,14 +3745,16 @@ that game.
    rating, season/achievement grants, challenge matching, DB persistence,
    ghost selection, product catalog data, and HTTP route errors.
 81. Phase 8AV neutral frontend backpack UI primitives.
-   **Next active candidate:** move reusable component-level primitives after
-   the planner contracts stabilize: backpack board geometry props, artifact
-   tile display contracts, stat rows, shop item rows, pack cards, odds tables,
-   roll result panels, and replay event rows. Start with a headless artifact
-   stat-row/chip DTO helper that Mushroom and Meat can both style locally.
-   Keep Mushroom/Meat themes, localized copy, routes, image resolvers,
-   haptics, Telegram wrappers, and page shells local. This phase needs
-   screenshot/e2e evidence in Mushroom and build/test evidence in Meat for
+   **First slice implemented 2026-07-05:** core commit `2280929` added
+   `shapeArtifactStatRows` to `client-view-model`. Mushroom's
+   `ArtifactStatSummary` now delegates stat-row/chip DTO shaping through core
+   while keeping role colors, glyph markup, labels, classes, and component
+   rendering local; Meat uses the same helper for compact bonus text. Remaining
+   backlog: backpack board geometry props, artifact tile display contracts,
+   shop item rows, pack cards, odds tables, roll result panels, and replay
+   event rows. Keep Mushroom/Meat themes, localized copy, routes, image
+   resolvers, haptics, Telegram wrappers, and page shells local. Future slices
+   need screenshot/e2e evidence in Mushroom and build/test evidence in Meat for
    every adopted component.
 82. Phase 8AW explicit non-core guardrails.
    **Current boundary:** do not move whole Mushroom services, Express routes,
