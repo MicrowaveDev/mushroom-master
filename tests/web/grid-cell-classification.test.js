@@ -10,7 +10,9 @@ import assert from 'node:assert/strict';
 import {
   bagRowEntryFor,
   classifyCell,
-  occupiedCellKeys
+  occupiedCellKeys,
+  shapeGridBoardCells,
+  shapeGridBoardPieces
 } from '@microwavedev/backpack-game-core/client-view-model';
 
 const BASE_INV = { cols: 3, rows: 3 };
@@ -130,4 +132,35 @@ test('[grid-cls][regression] occupied cells include the full artifact footprint'
   assert.ok(occupied.has('0:4'), 'first cell of a horizontal artifact is occupied');
   assert.ok(occupied.has('1:4'), 'second cell of a horizontal artifact is occupied');
   assert.equal(occupied.has('4:2'), false, 'neighbor outside the footprint is not occupied');
+});
+
+test('[grid-cls] board DTO rows expose render-ready cell and piece state', () => {
+  const bags = [
+    row({ artifactId: 'spiral_cap', row: 0, anchorX: 3, cols: 3, enabledXs: [3, 4], color: '#b85a6e' })
+  ];
+  const items = [
+    { id: 'row_1', artifactId: 'static_spore_sac', x: 3, y: 0, width: 1, height: 2 }
+  ];
+
+  const cells = shapeGridBoardCells({
+    columns: 6,
+    rows: 2,
+    bagRows: bags,
+    items,
+    baseRect: BASE_INV,
+    placementPreview: { cells: ['5:0'], valid: false, family: 'stun' },
+    hoverCellIndex: 5,
+    droppable: true
+  });
+  const gap = cells.find((cell) => cell.key === '5:0');
+
+  assert.equal(gap.bagBox, true);
+  assert.equal(gap.previewInvalid, true);
+  assert.equal(gap.dropTarget, true);
+  assert.equal(cells.find((cell) => cell.key === '3:0').occupied, true);
+
+  const [piece] = shapeGridBoardPieces(items, { highlightedRowIds: ['row_1'] });
+  assert.equal(piece.gridColumn, '4 / span 1');
+  assert.equal(piece.gridRow, '1 / span 2');
+  assert.equal(piece.highlighted, true);
 });

@@ -90,8 +90,9 @@
 > initial/next shop state, ghost budget math, round reward/counter/end-state
 > planning, and challenge group-completion decisions into core commit
 > `bf863f3`, then the first neutral frontend stat-row DTO helper into core
-> commit `2280929`, then shop item row DTO shaping into core commit
-> `ffaa376`, while keeping execution/rendering in product adapters. The next
+> commit `2280929`, shop item row DTO shaping into core commit `ffaa376`, and
+> grid board render row shaping into core commit `3c638fb`, while keeping
+> execution/rendering in product adapters. The next
 > core candidates are **not more route plumbing**; they are remaining neutral
 > UI primitives that both Mushroom and Meat can style locally. Move
 > planners and DTO builders, not SQL transactions, provider callbacks,
@@ -3748,19 +3749,23 @@ that game.
 81. Phase 8AV neutral frontend backpack UI primitives.
    **First slices implemented 2026-07-05:** core commit `2280929` added
    `shapeArtifactStatRows` to `client-view-model`, and core commit `ffaa376`
-   added `shapeShopItemRows`. Mushroom's `ArtifactStatSummary` delegates
+   added `shapeShopItemRows`; core commit `3c638fb` added
+   `shapeGridBoardCells`, `shapeGridBoardPieces`, and
+   `shapeGridBagSlotCells`. Mushroom's `ArtifactStatSummary` delegates
    stat-row/chip DTO shaping through core while keeping role colors, glyph
    markup, labels, classes, and component rendering local. Mushroom's prep shop
    delegates offer lookup, pricing, affordability, preview footprint,
    bag/character flags, and stat rows through core while keeping localized
    copy, role/shine classes, fusion hints, click actions, and markup local.
-   Meat uses the same helpers for compact bonus text and prototype shop
-   buttons. Remaining backlog: backpack board geometry props, artifact tile
-   display contracts, pack cards, odds tables, roll result panels, and replay
-   event rows. Keep Mushroom/Meat themes, localized copy, routes, image
-   resolvers, haptics, Telegram wrappers, and page shells local. Future slices
-   need screenshot/e2e evidence in Mushroom and build/test evidence in Meat for
-   every adopted component.
+   Mushroom's artifact grid board delegates board cell flags and placed-piece
+   rows while keeping visual classes, bag overlays, drag/drop events, figure
+   rendering, layout constants, and CSS local. Meat uses the same helpers for
+   compact bonus text, prototype shop buttons, and backpack bag-slot/piece
+   rows. Remaining backlog: artifact tile display contracts, pack cards, odds
+   tables, roll result panels, and replay event rows. Keep Mushroom/Meat themes,
+   localized copy, routes, image resolvers, haptics, Telegram wrappers, and page
+   shells local. Future slices need screenshot/e2e evidence in Mushroom and
+   build/test evidence in Meat for every adopted component.
 82. Phase 8AW explicit non-core guardrails.
    **Current boundary:** do not move whole Mushroom services, Express routes,
    database migrations/schemas, provider SDK calls, webhook signature checks,

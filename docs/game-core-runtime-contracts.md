@@ -386,11 +386,12 @@ duplicate-burn settlement plans, wallet purchase intent/checkout/completion
 plans, run-shop buy/refresh/sell plans, run start drafts, starter loadout
 drafts, initial/next shop state, ghost budget math, round
 reward/counter/end-state planning, and challenge group-completion decisions.
-Core commits `2280929` and `ffaa376` moved the first neutral frontend
-primitive slices: headless artifact stat-row DTO shaping and shop item row DTO
-shaping for product-styled stat chips/text and shop offers. Remaining
-shared-core work should focus on larger neutral frontend component primitives
-after the DTO contracts stabilize. Keep
+Core commits `2280929`, `ffaa376`, and `3c638fb` moved the first neutral
+frontend primitive slices: headless artifact stat-row DTO shaping, shop item row
+DTO shaping, and grid board render row shaping for product-styled stat
+chips/text, shop offers, and backpack boards. Remaining shared-core work should
+focus on larger neutral frontend component primitives after the DTO contracts
+stabilize. Keep
 whole services, Express routes, persistence, payment/webhook providers,
 runtime catalogs, route
 maps, artwork, support operations, haptics, page assembly, and secure paid-roll

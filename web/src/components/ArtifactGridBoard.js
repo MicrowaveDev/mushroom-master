@@ -1,7 +1,7 @@
 import { BAG_COLUMNS, BAG_ROWS, INVENTORY_COLUMNS, INVENTORY_ROWS } from '../constants.js';
 import {
-  bagRowEntryFor as bagRowEntryForLookup,
-  occupiedCellKeys
+  shapeGridBoardCells,
+  shapeGridBoardPieces
 } from '@microwavedev/backpack-game-core/client-view-model';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
@@ -67,9 +67,6 @@ export const ArtifactGridBoard = {
     totalCells() {
       return this.gridColumns * this.gridRows;
     },
-    occupiedCells() {
-      return occupiedCellKeys(this.items);
-    },
     placementPreview() {
       if (!this.placementPreviewForCell || this.hoverCellIndex < 0) return null;
       const preview = this.placementPreviewForCell({
@@ -81,6 +78,25 @@ export const ArtifactGridBoard = {
         ...preview,
         cellSet: new Set(preview.cells)
       };
+    },
+    gridCells() {
+      return shapeGridBoardCells({
+        columns: this.gridColumns,
+        rows: this.gridRows,
+        bagRows: this.bagRows,
+        items: this.items,
+        baseRect: { cols: 3, rows: 3 },
+        inventoryVariant: this.isInventoryVariant,
+        placementPreview: this.placementPreview,
+        hoverCellIndex: this.hoverCellIndex,
+        interactiveCells: this.interactiveCells,
+        droppable: this.droppable
+      });
+    },
+    gridPieces() {
+      return shapeGridBoardPieces(this.items, {
+        highlightedRowIds: this.highlightedRowIds
+      });
     },
     bagOverlays() {
       const groups = new Map();
@@ -172,29 +188,6 @@ export const ArtifactGridBoard = {
         transformOrigin: '0 0'
       };
     },
-    isBaseInventoryCell(cx, cy) {
-      return this.isInventoryVariant && cx >= 0 && cx < 3 && cy >= 0 && cy < 3;
-    },
-    bagRowEntryFor(cx, cy) {
-      // Delegates to helpers/grid-cell-classification.bagRowEntryFor so the
-      // lookup rules (slot-first, bbox-second, null for empty bag area) are
-      // covered by unit tests without mounting the component.
-      return bagRowEntryForLookup(this.bagRows, cx, cy);
-    },
-    isBagSlotCell(cx, cy) {
-      const bag = this.bagRowEntryFor(cx, cy);
-      return !!bag && bag.enabledCells?.includes(cx);
-    },
-    isBagBoxCell(cx, cy) {
-      // Inside a bag's bounding box but NOT a real slot (= a tetromino mask
-      // gap). Renders as visually hidden so the bag's footprint reads as a
-      // shape, not a rectangle.
-      const bag = this.bagRowEntryFor(cx, cy);
-      return !!bag && !bag.enabledCells?.includes(cx);
-    },
-    isOccupiedCell(cx, cy) {
-      return this.occupiedCells.has(`${cx}:${cy}`);
-    },
     backgroundClass() {
       return {
         'artifact-grid-background': true,
@@ -207,49 +200,34 @@ export const ArtifactGridBoard = {
         'inventory-pieces': this.isInventoryVariant
       };
     },
-    cellClass(index) {
-      const cx = this.cellX(index);
-      const cy = this.cellY(index);
-      const preview = this.placementPreview;
-      const inPreview = preview?.cellSet?.has(`${cx}:${cy}`);
-      const baseInv = this.isBaseInventoryCell(cx, cy);
-      const bagSlot = !baseInv && this.isBagSlotCell(cx, cy);
-      const bagBox = !bagSlot && this.isBagBoxCell(cx, cy);
-      const occupied = this.isOccupiedCell(cx, cy);
-      // "Empty" only applies in the inventory variant — a cell outside the
-      // base inventory and outside every bag's footprint is a bag-area drop
-      // target (visually de-emphasised; only chip drag can re-anchor onto it).
-      const empty = this.isInventoryVariant && !baseInv && !bagSlot && !bagBox;
+    cellClass(cell) {
       return {
         'artifact-grid-cell': true,
         cell: this.isInventoryVariant,
-        'artifact-grid-cell--interactive': this.interactiveCells,
-        'artifact-grid-cell--drop-target': this.droppable && this.hoverCellIndex === index,
-        'artifact-grid-cell--base-inv': baseInv,
-        'artifact-grid-cell--bag': bagSlot,
-        'artifact-grid-cell--occupied': occupied,
-        'artifact-grid-cell--bag-disabled': bagBox,
-        'artifact-grid-cell--bag-empty': empty,
-        'artifact-grid-cell--preview': Boolean(inPreview),
-        'artifact-grid-cell--preview-valid': Boolean(inPreview && preview.valid),
-        'artifact-grid-cell--preview-invalid': Boolean(inPreview && !preview.valid),
-        [`artifact-grid-cell--preview-${preview?.family || 'none'}`]: Boolean(inPreview)
+        'artifact-grid-cell--interactive': cell.interactive,
+        'artifact-grid-cell--drop-target': cell.dropTarget,
+        'artifact-grid-cell--base-inv': cell.baseInventory,
+        'artifact-grid-cell--bag': cell.bagSlot,
+        'artifact-grid-cell--occupied': cell.occupied,
+        'artifact-grid-cell--bag-disabled': cell.bagBox,
+        'artifact-grid-cell--bag-empty': cell.bagEmpty,
+        'artifact-grid-cell--preview': cell.preview,
+        'artifact-grid-cell--preview-valid': cell.previewValid,
+        'artifact-grid-cell--preview-invalid': cell.previewInvalid,
+        [`artifact-grid-cell--preview-${cell.previewFamily || 'none'}`]: cell.preview
       };
     },
-    cellStyle(index) {
-      const cx = this.cellX(index);
-      const cy = this.cellY(index);
-      if (this.isBaseInventoryCell(cx, cy) || !this.isBagSlotCell(cx, cy)) return {};
-      const bag = this.bagRowEntryFor(cx, cy);
+    cellStyle(cell) {
+      if (cell.baseInventory || !cell.bagSlot || !cell.bagColor) return {};
       return {
-        '--bag-color': bag.color,
-        '--bag-color-light': bag.color + '33',
-        '--bag-color-glow': bag.color + '40'
+        '--bag-color': cell.bagColor,
+        '--bag-color-light': cell.bagColor + '33',
+        '--bag-color-glow': cell.bagColor + '40'
       };
     },
-    clickCell(index) {
+    clickCell(cell) {
       if (!this.interactiveCells) return;
-      this.$emit('cell-click', { x: this.cellX(index), y: this.cellY(index) });
+      this.$emit('cell-click', { x: cell.x, y: cell.y });
     },
     clickPiece(item, event) {
       if (!this.clickablePieces) return;
@@ -264,43 +242,41 @@ export const ArtifactGridBoard = {
       const artifact = this.getArtifact(item.artifactId);
       return !!artifact && artifact.width !== artifact.height;
     },
-    onCellDragOver(index, event) {
+    onCellDragOver(cell, event) {
       if (!this.droppable) return;
-      const cx = this.cellX(index);
-      const cy = this.cellY(index);
-      if (this.isBagBoxCell(cx, cy) && !this.placementPreviewForCell) return; // tetromino mask gap — not droppable
+      if (cell.bagBox && !this.placementPreviewForCell) return; // tetromino mask gap — not droppable
       event.preventDefault();
       if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-      this.hoverCellIndex = index;
+      this.hoverCellIndex = cell.index;
     },
-    onCellDragLeave(index) {
-      if (this.hoverCellIndex === index) this.hoverCellIndex = -1;
+    onCellDragLeave(cell) {
+      if (this.hoverCellIndex === cell.index) this.hoverCellIndex = -1;
     },
-    onCellDrop(index, event) {
+    onCellDrop(cell, event) {
       if (!this.droppable) return;
-      const cx = this.cellX(index);
-      const cy = this.cellY(index);
-      if (this.isBagBoxCell(cx, cy)) return;
+      if (cell.bagBox) return;
       event.preventDefault();
       this.hoverCellIndex = -1;
-      this.$emit('cell-drop', { x: cx, y: cy, event });
+      this.$emit('cell-drop', { x: cell.x, y: cell.y, event });
     },
-    onCellTouchDrop(index, event) {
+    onCellTouchDrop(cell, event) {
       if (!this.droppable) return;
       const detail = event.detail || {};
-      this.$emit('cell-drop', { x: detail.x ?? this.cellX(index), y: detail.y ?? this.cellY(index) });
+      this.$emit('cell-drop', { x: detail.x ?? cell.x, y: detail.y ?? cell.y });
     },
     pieceDataset(item) {
+      const dataset = item.dataset || {};
       return {
-        'data-artifact-id': item.artifactId,
-        'data-artifact-row-id': item.id || item.rowId || '',
-        'data-artifact-x': item.x,
-        'data-artifact-y': item.y,
-        'data-artifact-width': item.width,
-        'data-artifact-height': item.height
+        'data-artifact-id': dataset.artifactId ?? item.artifactId,
+        'data-artifact-row-id': dataset.rowId ?? item.id ?? item.rowId ?? '',
+        'data-artifact-x': dataset.x ?? item.x,
+        'data-artifact-y': dataset.y ?? item.y,
+        'data-artifact-width': dataset.width ?? item.width,
+        'data-artifact-height': dataset.height ?? item.height
       };
     },
     isHighlighted(item) {
+      if (item.highlighted != null) return item.highlighted;
       const rowId = item?.id || item?.rowId || '';
       if (!rowId || !this.highlightedRowIds) return false;
       if (typeof this.highlightedRowIds.has === 'function') return this.highlightedRowIds.has(rowId);
@@ -320,23 +296,23 @@ export const ArtifactGridBoard = {
         ></span>
         <component
           :is="interactiveCells ? 'button' : 'span'"
-          v-for="cell in totalCells"
-          :key="cell"
-          :class="cellClass(cell - 1)"
-          :style="cellStyle(cell - 1)"
-          :data-cell-x="cellX(cell - 1)"
-          :data-cell-y="cellY(cell - 1)"
-          @click="clickCell(cell - 1)"
-          @dragover="onCellDragOver(cell - 1, $event)"
-          @dragleave="onCellDragLeave(cell - 1)"
-          @drop="onCellDrop(cell - 1, $event)"
-          @cell-drop-touch.native="onCellTouchDrop(cell - 1, $event)"
+          v-for="cell in gridCells"
+          :key="'cell:' + cell.key"
+          :class="cellClass(cell)"
+          :style="cellStyle(cell)"
+          :data-cell-x="cell.x"
+          :data-cell-y="cell.y"
+          @click="clickCell(cell)"
+          @dragover="onCellDragOver(cell, $event)"
+          @dragleave="onCellDragLeave(cell)"
+          @drop="onCellDrop(cell, $event)"
+          @cell-drop-touch.native="onCellTouchDrop(cell, $event)"
         ></component>
       </div>
       <div :class="piecesClass()" :style="gridStyle">
         <div
-          v-for="item in items"
-          :key="item.artifactId + ':' + item.x + ':' + item.y"
+          v-for="item in gridPieces"
+          :key="item.key"
           class="artifact-piece-wrap"
           :class="{ 'artifact-piece-wrap--fusion-pending': isHighlighted(item) }"
           :style="pieceStyle(item)"
