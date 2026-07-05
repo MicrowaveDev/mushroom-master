@@ -216,11 +216,12 @@ Non-core boundary:
   or adapters. Product-specific admin screens stay local, but neutral admin
   validation/checklist/odds/plan-review widgets can become shared Vue modules.
   Reusable asset ownership/equipment state helpers, pack validation, roll
-  selection, duplicate/burn, pity/guarantee, simulation rules, and wallet
-  accounting primitives now have core modules. The remaining movable slices are
-  pure settlement/lifecycle planners and DTO builders; direct-buy policy
-  composition, runtime catalog persistence, paid mutation execution, provider
-  callbacks, and product UI shells stay local.
+  selection, duplicate/burn, pity/guarantee, simulation rules, wallet
+  accounting primitives, and generic settlement input adapter helpers now have
+  core modules. The remaining movable slices are pure lifecycle planners and
+  DTO builders; direct-buy policy composition, runtime catalog persistence,
+  paid mutation execution, concrete provider field maps/callbacks, and product
+  UI shells stay local.
 
 ## Candidate Reusable Mechanics
 

@@ -591,7 +591,10 @@ service/module factory. `loadout-utils.js` now delegates through a
 provider-driven loadout validation service/module factory while keeping
 Mushroom catalog/config policy local. `ready-manager.js` now delegates through
 `createRunReadinessServerModule`, completing the ready-manager module-list
-wiring slice.
+wiring slice. `provider-settlement-adapters.js` now delegates generic
+CSV/JSON parsing, scoped field lookup, and configurable record mapping through
+`modules/wallet/settlement-adapters`, while Mushroom keeps concrete provider
+field maps and reconciliation persistence local.
 
 Goal: classify Mushroom server files into shared core modules, app adapters, or
 product-local modules before moving code.
@@ -666,7 +669,9 @@ validation over injected artifact, pricing, family, and stat providers.
 Mushroom keeps `app/server/services/loadout-utils.js` as the product adapter.
 The next module-list slice added `createRunReadinessServerModule`; Mushroom
 keeps `app/server/services/ready-manager.js` as the compatibility singleton
-over the registered manager.
+over the registered manager. The next settlement-adapter slice added
+`modules/wallet/settlement-adapters`; Mushroom keeps concrete provider field
+maps in `app/server/services/provider-settlement-adapters.js`.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
