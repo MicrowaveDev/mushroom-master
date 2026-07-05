@@ -1,6 +1,6 @@
 # Profile Currency And Core Extraction Plan
 
-> **Reading guide (updated 2026-07-04 multi-game core revision).** This document
+> **Reading guide (updated 2026-07-05 Meat parity correction).** This document
 > is a historical ship record plus forward plan, not a live status board. The
 > shipped, test-backed foundation is Phases **1-5, 6A-6C, 7, 7A, and 7B**.
 > Phase **6A-6C** shipped as a compatibility-safe neutral naming pass:
@@ -103,7 +103,14 @@
 > Telegram/adult-content policy, or product page shells.
 > **Phase
 > 11** has an initial playable `meat-master` consumer using the shared core
-> through a nested submodule.
+> through a nested submodule. **This does not yet satisfy the main product
+> goal.** The corrected goal is that Meat Master should run the same kind of
+> product stack as Mushroom Battles: login/auth bootstrap, player profile,
+> persistent run lifecycle, wallet rewards, asset inventory/equipment, replay
+> and support/admin-ready mechanics, using shared core modules plus Meat-local
+> content/settings. Current Meat is still a static Vite prototype with
+> in-memory state and no backend/login/player persistence. The new active lane
+> is Phase 12 / M1-M9 below.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
@@ -143,8 +150,11 @@ view-state helpers, optional route-client response-envelope unwrapping, and the
 first headless wallet/gacha state helpers. The package ships TypeScript
 declarations for the root export and every subpath export.
 `meat-master` now consumes it as a nested submodule for a first playable
-backpack battle prototype. Earlier notes that treated the target repo as empty
-are historical only.
+backpack battle prototype. It does **not** yet run the Mushroom-style backend,
+login, player-profile, persistent game-run, reward wallet, asset/equipment, or
+admin/support flow. Earlier notes that treated the target repo as empty are
+historical only, and notes that call the second-consumer goal complete refer
+only to the core-consumption proof.
 
 ## Implementation Status
 
@@ -437,11 +447,170 @@ backlog until the items are split into tickets or implementation phases. Updated
 2026-07-02 to make the active next lane gacha-focused: paid-provider,
 compliance, support-ops, approval, and production scheduling work is important,
 but it is now backlog unless a paid pilot is being prepared. Updated
-2026-07-05 after the multi-game core extraction pass: the active shared-core
-lane is now neutral Vue component extraction plus package/CI hardening across
-core, Mushroom, and Meat.
+2026-07-05 after the multi-game core extraction pass: the shared-core neutral
+Vue component and release-hardening lane is complete for the first candidate
+set. Updated again 2026-07-05 after product-goal review: the active lane is no
+longer "prove a second core consumer exists"; it is to make Meat Master run the
+same backend/login/player/game mechanics as Mushroom Battles with different
+content and settings.
 
-### Active Lane - Gacha Roadmap Plan
+### Active Lane - Meat Master Product Parity MVP
+
+#### Source Of Truth
+
+- User correction 2026-07-05: the main goal is to run `meat-master` the same
+  way we run `mushroom-master`, with the same login, game, and player
+  mechanics, but different content and settings.
+- Current answer: **not achieved yet.** Meat currently has a static Vite
+  playable prototype, local product data, copied starter assets, two adult
+  swimsuit characters, and smoke tests proving `backpack-game-core`
+  consumption. It does not have Mushroom-style backend routes, Telegram/dev
+  login, player records, persistent runs, wallet rewards, asset inventory,
+  equipment, replay persistence, support/admin mechanics, or E2E flows.
+- Success means a player can enter Meat through the same class of app flow as
+  Mushroom: authenticate or use dev login, load/create a player profile, pick
+  an active character, start/resume a run, buy/place/sell/refresh items,
+  resolve battles, persist and replay results, earn profile wallet currency,
+  own/equip cosmetic/game assets, and see product-local Meat content.
+- Shared behavior should move to `backpack-game-core` only when it can stay
+  product-neutral. Meat-specific characters, artifacts, balance settings, art,
+  copy, adult-content gates, payment policy, provider credentials, and theme
+  stay in `meat-master`.
+- Paid/live provider rollout, marketplace/trading, full gacha-admin operations,
+  and NFT policy are not required for the parity MVP unless explicitly pulled
+  forward.
+
+#### M1 - Parity Contract And Route Inventory
+
+Goal: define the exact Mushroom mechanics Meat must support before copying or
+rewiring code.
+
+- Inventory Mushroom's product runtime routes, backend services, database
+  tables, frontend composables, and tests needed for: auth/bootstrap,
+  active-character selection, catalog delivery, game-run lifecycle, shop
+  mutations, artifact loadout persistence, replay, wallet rewards, asset
+  inventory/equipment, and support/admin lookup.
+- Mark each item as shared-core, product-local Meat, or Mushroom-only.
+- Add a short Meat parity contract doc in `meat-master/docs/` so future agents
+  do not confuse the prototype with the target product stack.
+- Validation: contract review against Mushroom `docs/game-requirements.md` and
+  `docs/user-flows.md`, plus a no-code status update in this plan.
+
+#### M2 - Meat Product Settings Boundary
+
+Goal: make all gameplay differences data/config driven before backend work.
+
+- Define Meat-local product settings for grid size, run currency budget,
+  rewards, round limits, starter presets, shop pools, battle balance,
+  character ids, asset ids, rarity/cosmetic policy, and content-rating gates.
+- Keep Mushroom names, lore, Mycelium copy, and Mushroom-only catalog ids out of
+  Meat. Keep copied starter assets provenance-tagged until replaced.
+- Add adapter functions that convert Meat product settings into existing
+  `backpack-game-core` planners and validators.
+- Validation: Meat unit tests prove the settings can create a valid starter
+  profile, starter run, starter shop, and deterministic battle.
+
+#### M3 - Meat Backend And Persistence Scaffold
+
+Goal: give Meat the same kind of server/runtime substrate Mushroom has.
+
+- Add a Meat backend with Express (or the same local backend shape Mushroom
+  uses), SQLite-backed test/dev persistence, migrations/schema setup, and
+  scripts matching the Mushroom game workflow where practical.
+- Add persistent tables/models for players, login/session identities,
+  active character, game runs, run players, shop state, loadout rows, battle
+  results/replay events, wallet balances/transactions, asset instances, and
+  equipped assets.
+- Reuse core planners for calculations; keep SQL transactions and product
+  route errors in Meat.
+- Validation: backend unit/scenario tests create a player, start a run, mutate
+  shop/loadout state, resolve a battle, and reload persisted state.
+
+#### M4 - Login, Player, And Bootstrap Parity
+
+Goal: Meat should enter through a real player flow, not in-memory frontend
+state.
+
+- Implement dev login and Telegram Mini App init-data verification using the
+  same contract class as Mushroom, with Meat-local bot/env settings.
+- Add bootstrap endpoints that return player profile, active character,
+  catalog/settings, wallet snapshot, owned/equipped assets, active run, and
+  supported feature flags.
+- Add active-character switching with persistence and profile-scoped state.
+- Validation: backend tests and a frontend smoke flow prove login creates or
+  resumes the same player and bootstrap survives reload.
+
+#### M5 - Persistent Game Run Parity
+
+Goal: Meat runs should behave like product game runs, not one-screen demos.
+
+- Implement start/resume, readiness, shop refresh, buy, sell/refund,
+  loadout save, battle resolve, round transition, run completion, and replay
+  endpoints over Meat settings and core planners.
+- Persist every state transition needed for refresh/reload and replay.
+- Keep Meat-specific rewards, opponents, character balance, copy, and art in
+  Meat adapters.
+- Validation: scenario test mirrors the Mushroom solo-run journey: login,
+  start run, buy/place, reload, save, battle, replay, earn reward, and resume
+  next state.
+
+#### M6 - Wallet, Asset, And Cosmetic Parity
+
+Goal: profile-scoped economy mechanics should work in Meat with Meat content.
+
+- Add wallet reward grants from game completion using the shared accounting
+  helpers and Meat-local currency naming/copy.
+- Add profile asset instances and equipment for Meat cosmetics/game assets.
+- Add direct asset buy/equip first; optionally add the simple gacha roll only
+  after direct asset ownership is stable.
+- Keep payment providers disabled or mocked for MVP unless the paid/live lane is
+  explicitly reopened.
+- Validation: backend tests cover reward grant, wallet spend rejection, direct
+  buy/equip, ownership persistence, and reload.
+
+#### M7 - Meat Frontend Backend Adoption
+
+Goal: convert the Vite prototype into a real product client over backend
+routes.
+
+- Replace local in-memory state in `src/main.js` with route-client calls and
+  persisted bootstrap/run state.
+- Keep the current product-local characters, artifacts, theme, and compact
+  prototype layout, then add the missing login/loading/error/resume states.
+- Reuse shared view-model helpers and neutral Vue/core components where they
+  fit; do not force Mushroom page shells into Meat.
+- Validation: `npm test`, `npm run build`, and at least one browser/E2E flow
+  for login -> run -> battle -> reload/resume.
+
+#### M8 - Support/Admin Minimum
+
+Goal: make Meat operable enough for development and future paid work.
+
+- Add a minimal token-gated support/admin lookup for player, wallet, run,
+  asset, and replay state.
+- Add manual wallet grant/revoke and asset grant/revoke only if needed for
+  testing the parity MVP.
+- Leave full gacha season-plan admin, settlement reconciliation, marketplace,
+  and live payment dispute tooling in backlog until Meat's product flow exists.
+- Validation: admin API tests cover auth rejection and a read-only lookup.
+
+#### M9 - Cross-Game Verification And Release Discipline
+
+Goal: keep Mushroom and Meat from drifting while Meat gains the full product
+stack.
+
+- Extend the hub `npm run verify:backpack-core` command, or add a sibling
+  command, so Meat backend tests and Meat E2E/build run alongside Mushroom when
+  shared core or parity contracts change.
+- Add Meat-specific scripts that match Mushroom's game workflow names where
+  useful (`game:test`, `game:test:e2e`, `game:build`, etc.) without faking
+  coverage.
+- Keep the existing release order: core first, then both consumers, then hub
+  pointers.
+- Validation: a single documented command proves core, Mushroom, and Meat all
+  consume the same core SHA and pass their relevant parity gates.
+
+### Historical Lane - Gacha Roadmap Plan
 
 #### Source Of Truth
 
@@ -3168,8 +3337,12 @@ Status: **Initial slice implemented 2026-07-04.** `meat-master` is now present
 as a hub submodule, has its own nested `vendor/backpack-game-core` submodule,
 and ships a Vite-based playable backpack battle prototype. This proves the
 shared core can support a new game without copying Mushroom service logic, but
-wallet, asset inventory, payment, and gacha runtime flows remain backlog for
-that game.
+it does **not** yet meet the main goal of running Meat Master like Mushroom
+Master. Login/auth, player profiles, backend APIs, persistent runs, replay,
+wallet rewards, asset inventory/equipment, support/admin mechanics, payment
+policy, and optional gacha runtime flows remain to be implemented in Meat using
+shared core modules plus Meat-local content/settings. That product-parity work
+is now tracked as Phase 12 / M1-M9 in the Current Remaining Work Matrix.
 
 #### Repository And Dependency Setup
 
@@ -3206,6 +3379,19 @@ that game.
    validates a starter bag/loadout, and resolves one deterministic battle.
    Remaining: backend smoke coverage for wallet grants and buy/roll cosmetic
    asset flows once those systems exist in Meat.
+
+#### Product-Parity Gap
+
+- Not done: Mushroom-style dev/Telegram login and authenticated bootstrap.
+- Not done: persistent player profile, active character, active run, and resume
+  state.
+- Not done: backend routes for run start/readiness/shop/loadout/battle/replay.
+- Not done: wallet reward grants, direct asset buy/equip, gacha buy/roll, and
+  support/admin lookup over Meat content.
+- Not done: Meat E2E flow that mirrors the Mushroom solo-run path through a
+  backend and survives page reload.
+- New target: build Meat as a product-local adapter over the shared core, not as
+  a copy of Mushroom content or a frontend-only demo.
 
 #### Asset Seeding Checklist
 
@@ -3415,13 +3601,16 @@ that game.
    Keep DB schemas, payments, Telegram, product catalogs, art, compliance,
    admin auth/storage, product route shells, and final page assembly in each
    game.
-42. Phase 11 `meat-master` consumer. **Initial slice done 2026-07-04:** added
+42. Phase 11 `meat-master` consumer. **Initial slice done 2026-07-04, but the
+   main product goal is not done:** added
    `git@github.com:nuclear-pancakes/meat-master.git` as the second game target,
    consumed `backpack-game-core` as a nested submodule, seeded a playable Vite
    vertical slice from starter bags/artifacts, created two clearly adult
    swimsuit female characters, and verified core import, loadout validation,
-   and deterministic battle smoke flows. Remaining: backend persistence,
-   wallet reward grants, asset inventory/equipment, payment policy, and optional
+   and deterministic battle smoke flows. Remaining for the real goal:
+   Mushroom-style login/auth bootstrap, persistent player profile, backend
+   game-run routes, reload/resume, replay persistence, wallet reward grants,
+   asset inventory/equipment, support/admin lookup, payment policy, and optional
    simple gacha buy/roll flows for Meat.
 43. Phase 8J full-stack shared UI extraction. **Started 2026-07-04:** shared
    `client-view-model` helpers now project flat loadout rows into grid props
@@ -3983,3 +4172,10 @@ that game.
    consumption until publishing is introduced, documenting SHA-as-release
    identity, compatibility rules, the cross-consumer release gate, and the
    decision to defer top-level hub tracking for `backpack-game-core`.
+85. Phase 12 Meat Master product parity MVP. **New active lane 2026-07-05:**
+   make Meat run like Mushroom with the same class of login, player profile,
+   persistent game-run, replay, wallet reward, asset/equipment, and minimal
+   support/admin mechanics, while keeping Meat content, settings, art, copy,
+   adult-content policy, and provider/payment choices local. See M1-M9 in the
+   Current Remaining Work Matrix. This is the real second-game goal; Phase 11
+   only proved a frontend prototype can consume the shared core.
