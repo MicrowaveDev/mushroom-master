@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `eb9cf3a74bfecb69b5f4b43673bb0f4e09e32cde`
-- core short SHA: `eb9cf3a`
-- core commit: `Add gacha simulation service module`
-- runtime/API baseline: `eb9cf3a` (`Add gacha simulation service module`)
-- game pointer commit: `885316c` (`Use core gacha simulation service`)
+- core SHA: `b56713e094dc4077f08d7b739e59a5036183b9e9`
+- core short SHA: `b56713e`
+- core commit: `Add loadout validation service module`
+- runtime/API baseline: `b56713e` (`Add loadout validation service module`)
+- game pointer commit: `e01f6ea` (`Use core loadout validation service`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-05 | `e01f6ea` | `b56713e` | Loadout validation service module | Core added `modules/loadout/validation-service` and `createLoadoutValidationServerModule` so app module lists can register loadout validation over injected artifact lookup, pricing, family, placement, and stat policy providers. Mushroom now delegates `app/server/services/loadout-utils.js` through the service path while keeping grid constants, catalog lookup, stat caps, and compatibility exports local; Meat pins the same SHA and verifies the service/server-module exports. |
 | 2026-07-05 | `885316c` | `eb9cf3a` | Gacha simulation service module | Core added provider-driven static/runtime gacha simulation service factories and `createAssetGachaSimulationServerModule`. Mushroom now delegates `app/server/services/gacha-simulation-service.js` through core while keeping static/runtime pack lookup, catalog visibility policy, admin routes, and CLI ownership local; Meat pins the same SHA and verifies the service/server-module exports. |
 | 2026-07-05 | `2aa2246` | `7e44ea9` | Artifact capability helpers | Core added `artifact-capabilities` and exported it directly plus through `modules/loadout`. Mushroom now keeps `app/server/services/artifact-helpers.js` as a compatibility re-export while default family caps, configurable bag-family detection, combat classification, container detection, and stat contribution checks live in core; Meat pins the same SHA and verifies the export in its core-consumption test. |
 | 2026-07-05 | `62b1f8a` | `f9c0054` | Server module contract and reduced-motion composable | Core hardened the server module descriptor/loader contract with config validation, duplicate guards, explicit override policy, and contract docs. Core also added `@microwavedev/backpack-game-core/vue/composables` with the reduced-motion tracker. Mushroom keeps a compatibility re-export and updated S/F extraction inventory docs; Meat pins the same SHA and verifies the composable export in its core-consumption test. |
