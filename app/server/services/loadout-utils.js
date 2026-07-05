@@ -6,16 +6,16 @@ import {
   MAX_ARTIFACT_COINS,
   MAX_STUN_CHANCE
 } from '../game-data.js';
-import { createLoadoutValidator } from '@microwavedev/backpack-game-core';
+import { createLoadoutValidationService } from '@microwavedev/backpack-game-core/modules/loadout/validation-service';
 import {
   contributesStats,
   isBag,
   isContainerItem
 } from './artifact-helpers.js';
 
-export { pieceCells } from '@microwavedev/backpack-game-core';
+export { pieceCells } from '@microwavedev/backpack-game-core/modules/loadout';
 
-const mushroomLoadoutValidator = createLoadoutValidator({
+const mushroomLoadoutValidator = createLoadoutValidationService({
   gridWidth: BAG_COLUMNS,
   gridHeight: BAG_ROWS,
   defaultCoinBudget: MAX_ARTIFACT_COINS,
