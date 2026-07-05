@@ -20,14 +20,19 @@
 > asset/gacha/wallet-domain rules should move into
 > `backpack-game-core` behind adapters rather than staying Mushroom-only.
 > That core is now planned as a full-stack shared repo: backend modules,
-> shared DTO/view-model shapers, browser-safe client services/composables,
-> neutral Vue component primitives, and adapterized Vue page shells that both
-> Mushroom Battles and Meat Master can consume. The 2026-07-05 frontend
-> extraction correction allows moving Mushroom components/pages into core first
-> under a quarantined port namespace, then immediately replacing Mushroom/spore
-> identity with locale keys and product adapters. Final themes, route
-> registration, product copy/locales, haptics, art resolvers, Telegram wrappers,
-> and payment/adult-content policy still stay in the product repos.
+> shared server module contracts, shared DTO/view-model shapers, browser-safe
+> client services/composables, neutral Vue component primitives, and adapterized
+> Vue page shells that both Mushroom Battles and Meat Master can consume. The
+> 2026-07-05 frontend extraction correction allows moving Mushroom
+> components/pages into core first under a quarantined port namespace, then
+> immediately replacing Mushroom/spore identity with locale keys and product
+> adapters. The matching 2026-07-05 server correction allows moving Mushroom
+> server logic into Geesome-style core modules first, then replacing DB,
+> Telegram, payment, catalog, policy, and app-wiring details with module config
+> and adapters. Final themes, route registration, product copy/locales, haptics,
+> art resolvers, Telegram wrappers, payment/adult-content policy, DB
+> connections, migrations, and deploy composition still stay in the product
+> repos.
 > A 2026-07-04 Geesome architecture review tightened this direction: copy the
 > layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
 > but improve it with typed subpath exports and adapter contracts so Backpack
@@ -101,13 +106,15 @@
 > shaping into core commit `a4c4c06`, then artifact tile display contracts
 > into core commit `42b1f1c`, while keeping execution/rendering in product
 > adapters. The next
-> core candidates are **not more route plumbing**; they are the aggressive
-> frontend extraction lane: move reusable Mushroom components and page shells
-> into core, replace product words with locale keys, and replace product
-> dependencies with explicit adapters. Move planners, DTO builders, components,
-> composables, and adapterized page shells, not SQL transactions, provider
-> callbacks, Telegram/adult-content policy, product route registration, or
-> product-owned assets.
+> core candidates are **not more ad hoc route plumbing**; they are the
+> aggressive frontend extraction lane and the matching modular server extraction
+> lane. Move reusable Mushroom components/page shells and server logic into
+> core first, then replace product words/dependencies with locale keys, module
+> config, repository interfaces, route clients, and explicit adapters. Move
+> planners, DTO builders, server module factories, route factories, components,
+> composables, and adapterized page shells, not SQL transactions, concrete DB
+> models, provider callbacks, Telegram/adult-content policy, final product
+> route registration, or product-owned assets.
 > **Phase
 > 11** produced the first playable `meat-master` core-consumer prototype.
 > **Phase 12 then implemented the local product-parity MVP on 2026-07-05:**
@@ -476,6 +483,14 @@ Findings and plan corrections:
    DTOs, odds math, validation, and view models; product repos should still own
    SQL transactions, provider callbacks, payment risk, catalog publication,
    support permissions, and legal/content gating.
+10. **Server extraction should use a Geesome-node-style module list.** The
+    backend can follow the same port-first approach as the frontend, but the
+    stable shape should be module factories rather than copied Express apps:
+    core exports configurable modules, each app declares its module list, and
+    Mushroom/Meat can add app-specific modules beside shared ones. Core modules
+    may own service logic, route factories, DTOs, validation, and repository
+    interface contracts; product repos own concrete repositories, migrations,
+    credentials, app wiring, and deployment policy.
 
 ## Current Remaining Work Matrix
 
@@ -495,7 +510,166 @@ and the missing UI/mechanics coverage listed in Phase 13. Updated 2026-07-05
 after the frontend extraction correction: the next shared-core frontend lane
 can move Mushroom components and page modules into core first, then generalize
 all Mushroom/spore/product identity through locale/config/service adapters
-before Meat adopts the shells.
+before Meat adopts the shells. Updated again 2026-07-05 after the server
+module correction: backend server logic should move through Geesome-style core
+module factories and app-declared module lists, with Mushroom/Meat retaining
+DB, credentials, runtime policy, and product-specific modules.
+
+### Next Lane - Modular Server Core Port
+
+Status: **Planned 2026-07-05 after user correction.** The backend should use
+the same port-first, neutralize-next approach as frontend, but its stable shape
+is a Geesome-node-style module system. `backpack-game-core` should export
+server module factories, and Mushroom/Meat should compose a module list with
+shared core modules plus product-specific modules.
+
+Target app shape:
+
+```js
+export const modules = [
+  mushroomDbModule(),
+  mushroomCatalogModule(),
+  coreAuthModule(authConfig),
+  coreProfileModule(profileConfig),
+  coreRunModule(runConfig),
+  coreWalletModule(walletConfig),
+  coreAssetsModule(assetConfig),
+  coreGachaModule(gachaConfig),
+  mushroomTelegramModule(),
+  mushroomPaymentsModule()
+];
+```
+
+Meat should be able to declare the same core modules with Meat-specific
+catalog, config, repository, Telegram, and content-policy modules.
+
+#### S1 - Server Module Inventory
+
+Goal: classify Mushroom server files into shared core modules, app adapters, or
+product-local modules before moving code.
+
+- Inventory `app/server/auth.js`, `create-app.js`, `game-data.js`,
+  `bot-gateway.js`, `wiki.js`, `social-preview-cache.js`, `db.js`,
+  `app/server/services/`, `app/server/models/`, and backend tests.
+- Classify each responsibility:
+  - **core module candidate:** auth/session shape, bootstrap/profile service,
+    run/shop/loadout/battle/replay service logic, wallet/assets/gacha/support
+    service logic, DTO/result/error shaping, route factories, validation, cache
+    helpers;
+  - **adapter/repository contract:** player/session/run/wallet/asset/gacha
+    repositories, idempotency store, audit store, logger, clock, id generator;
+  - **product-local module:** DB connection/models/migrations, Telegram bot and
+    webhook setup, payment provider callbacks/signatures, product catalogs,
+    adult/content policy gates, wiki/lore content, deploy config, final Express
+    composition.
+- Validation: record the classification in this plan or a dedicated server
+  extraction inventory doc.
+
+#### S2 - Define The Core Server Module Contract
+
+Goal: make module boundaries explicit before moving implementation.
+
+- Add a public server module contract in core, shaped like:
+
+```js
+{
+  name: 'core.auth',
+  requires: ['repo.players', 'repo.sessions'],
+  provides: ['authService', 'authRoutes'],
+  configSchema,
+  setup(ctx) {
+    return { services, routes, jobs, healthChecks };
+  }
+}
+```
+
+- `ctx` should expose app adapters such as repositories, logger, config,
+  product settings, locale helpers, clock, ID generator, RNG, and route/error
+  mappers.
+- Route factories may live in core, but final Express app registration,
+  middleware ordering, auth middleware attachment, rate limits, and deployment
+  config stay in the app.
+- Validation: core tests prove dependency resolution, missing dependency
+  errors, and stable `provides`/`requires` metadata.
+
+#### S3 - Quarantined Server Port
+
+Goal: move Mushroom server logic into core without pretending it is neutral on
+day one.
+
+- Copy/move selected Mushroom server modules into a temporary core namespace
+  such as `server/mushroom-port/` or `packages/server/src/mushroom-port/`.
+- Keep Mushroom importing through compatibility wrappers while each module is
+  neutralized.
+- Add a forbidden-import guard that permits the temporary namespace only for
+  tracked migration files and blocks Mushroom paths in stable core server
+  exports.
+- Validation: core unit tests, Mushroom `npm run game:test`, and Meat server
+  smoke tests keep passing after every port slice.
+
+#### S4 - Product Dependency Sweep
+
+Goal: remove Mushroom identity and runtime assumptions from core server modules.
+
+- Search moved server code for `mushroom`, `spore`, `mycelium`, Mushroom table
+  names, product catalog imports, Express app globals, Sequelize/SQLite models,
+  Telegram helpers, payment SDKs, env var names, wiki/lore imports, and support
+  token policy.
+- Replace hits by category:
+  - product copy/currency labels -> locale/config keys;
+  - DB calls -> repository interfaces;
+  - product catalog access -> injected catalog provider;
+  - route strings -> route factory config;
+  - auth/session specifics -> injected verifier/session policy;
+  - payment/Telegram/wiki policy -> app-specific module;
+  - non-neutral behavior -> move back behind a Mushroom module.
+- Validation: stable core server exports have no Mushroom imports or product
+  env reads; tests prove Mushroom still renders Mushroom terminology through
+  config/locales.
+
+#### S5 - Build Shared Core Server Modules
+
+Goal: promote neutralized server logic to reusable module factories.
+
+- First stable modules should be low-risk and already shared in behavior:
+  `core.auth`, `core.profile`, `core.run`, `core.wallet`, `core.assets`,
+  `core.gacha`, `core.support`, and optional `core.social-preview-cache`.
+- Each module exposes service factories, route factories where useful, DTO
+  shapers, validation, and repository interface expectations.
+- Product apps provide concrete repositories and app-specific modules such as
+  `mushroom.db`, `mushroom.catalog`, `mushroom.telegram`,
+  `mushroom.payments`, `mushroom.wiki`, `meat.db`, `meat.catalog`, and
+  `meat.telegram`.
+- Validation: core module tests with fake repositories; Mushroom scenario tests
+  over real repositories; Meat parity tests over its JSON/SQLite store.
+
+#### S6 - App Module Lists And Composition Roots
+
+Goal: make Mushroom and Meat assemble their backends from module lists.
+
+- Refactor Mushroom `create-app.js` into a composition root that registers a
+  declared module list plus product-local middleware, config, and routes.
+- Refactor Meat server creation to consume the same module loader and shared
+  core modules where its current service logic overlaps.
+- Keep app startup, env validation, DB connection, migrations, static serving,
+  Telegram webhook/deep-link wiring, and payment webhooks in product repos.
+- Validation: Mushroom `npm run game:test`, focused E2E for touched routes,
+  Meat `npm run game:test`, `npm run game:deploy:check`, and hub
+  `npm run verify:backpack-core`.
+
+#### S7 - Stabilize Or Roll Back Server Modules
+
+Goal: leave core with clean stable modules, not a permanent Mushroom port.
+
+- Promote neutralized modules to stable exports such as
+  `@microwavedev/backpack-game-core/server`,
+  `/server/modules/auth`, `/server/modules/run`, and `/server/modules/gacha`.
+- Remove temporary port namespace exceptions from forbidden-import checks.
+- Move stubborn product-only server modules back to Mushroom or Meat.
+- Update core docs with server module authoring rules, app module-list examples,
+  dependency metadata, and repo adapter contracts.
+- Validation: `npm run verify:backpack-core` passes after core, Mushroom, Meat,
+  and hub pointer updates.
 
 ### Next Lane - Aggressive Frontend Core Port
 
@@ -1011,10 +1185,12 @@ gacha is enabled.
 
 #### P13.6 - Core Extraction Follow-Up
 
-Status: **Not started in this pass.** The implementation kept DB transactions,
+Status: **Plan updated 2026-07-05.** The implementation kept DB transactions,
 route wiring, support policy, Telegram/deploy config, and product content in
 Meat. Candidate neutral DTO/planner extraction remains valid after the
-production-parity mechanics settle.
+production-parity mechanics settle, and the new server-module lane allows
+shared route factories/service modules once concrete repositories and final app
+wiring stay product-local.
 
 Goal: avoid duplicating Mushroom product logic in Meat while keeping product
 execution local.
@@ -1026,11 +1202,13 @@ execution local.
 - Candidate pure slices: auth/bootstrap payload shaping, product settings
   validation, support lookup DTOs, run-state summary DTOs, wallet/asset support
   mutation result DTOs, and shared browser route-client helpers.
-- Keep non-core boundaries strict: DB transactions, route wiring, provider
-  callbacks, adult-content gates, Telegram deployment policy, product catalogs,
-  route registration, and product policy stay in product repos. Adapterized
-  page shells may move through the frontend core port lane once their copy,
-  assets, routes, and runtime services are injected.
+- Keep non-core boundaries strict: DB transactions, concrete repositories,
+  provider callbacks, adult-content gates, Telegram deployment policy, product
+  catalogs, final route registration, and product policy stay in product repos.
+  Shared route factories/service modules may move through the modular server
+  lane once repositories, config, and runtime policies are injected.
+  Adapterized page shells may move through the frontend core port lane once
+  their copy, assets, routes, and runtime services are injected.
 - Validation: core forbidden-import tests stay green, Mushroom and Meat consume
   the same core SHA, and `npm run verify:backpack-core` passes after every
   extracted slice.
@@ -3256,10 +3434,11 @@ Status: **In progress.** The prior extraction intentionally kept wallet, asset,
 gacha, and most frontend behavior local because only Mushroom Battles consumed
 the package. The new target consumer,
 `git@github.com:nuclear-pancakes/meat-master.git`, makes that boundary too
-narrow: reusable backend domain modules and reusable Vue frontend modules should
-move to `backpack-game-core`, while each game keeps its own persistence,
-payment providers, route wiring, catalogs, art, copy, compliance gates, and
-product-specific page composition. The first shared backend domain slice,
+narrow: reusable backend domain/server modules and reusable Vue frontend
+modules should move to `backpack-game-core`, while each game keeps its own
+persistence, concrete repositories, final route wiring, payment providers,
+catalogs, art, copy, compliance gates, and product-specific page composition.
+The first shared backend domain slice,
 `asset-gacha`, is implemented in core and consumed by Mushroom through adapter
 wrappers. Subsequent shared backend slices now include gacha admin validation,
 gacha simulation, wallet accounting, and profile asset state helpers.
@@ -3300,8 +3479,9 @@ gacha simulation, wallet accounting, and profile asset state helpers.
 mechanics package. Treat it as four layers that can start as subpath exports in
 one package and split into packages when build/runtime needs justify it:
 
-1. **Backend domain modules:** pure or adapter-driven modules consumed by
-   Express services in Mushroom and Meat.
+1. **Backend domain/server modules:** pure or adapter-driven service modules,
+   route factories, and module descriptors consumed by Mushroom and Meat module
+   lists.
 2. **Shared client/contracts layer:** typed DTOs, response shapers, schemas,
    and a `BackpackGameClient` or client factory that wraps API calls without
    owning auth, storage, route prefixes, or product policy.
@@ -3322,6 +3502,7 @@ backpack-game-core/
   package.json
   packages/
     core/      # pure mechanics and domain policy, no Vue or DB
+    server/    # module contracts/factories, route factories, no concrete DB
     client/    # API client, DTO contracts, view-model shapers
     vue/       # Vue composables/components/page shells, Vue as peer dependency
   src/         # compatibility facade while the package is still migrating
@@ -3330,6 +3511,8 @@ backpack-game-core/
 If the package stays single-package for one or two more slices, expose these
 layers through stable exports such as
 `@microwavedev/backpack-game-core/modules/gacha`,
+`@microwavedev/backpack-game-core/server`,
+`@microwavedev/backpack-game-core/server/modules/auth`,
 `@microwavedev/backpack-game-core/client`, and
 `@microwavedev/backpack-game-core/vue`. Do not allow new consumers to import
 from `src/*`, `packages/*/src/*`, or a nested submodule path directly.
@@ -3347,11 +3530,59 @@ modules/<feature>/
 
 Use this shape for future `wallet`, `asset`, `gacha`, `gacha-admin`,
 `run-shop`, `loadout`, and `battle` modules. Product games still own database
-models, migrations, repositories, Express app registration, auth, rate limits,
-and audit storage.
+models, migrations, concrete repository implementations, final Express app
+registration, product auth middleware, rate limits, and audit storage.
+
+Server modules should also expose descriptor metadata so apps can declare a
+module list instead of hand-wiring every service:
+
+```js
+export function coreAuthModule(config) {
+  return {
+    name: 'core.auth',
+    requires: ['repo.players', 'repo.sessions'],
+    provides: ['authService', 'authRoutes'],
+    config,
+    setup(ctx) {
+      return { services, routes, jobs: [], healthChecks: [] };
+    }
+  };
+}
+```
+
+App composition should look like:
+
+```js
+createBackpackServerApp({
+  appId: 'mushroom-master',
+  modules: [
+    mushroomDbModule(),
+    mushroomCatalogModule(),
+    coreAuthModule(authConfig),
+    coreProfileModule(profileConfig),
+    coreRunModule(runConfig),
+    coreWalletModule(walletConfig),
+    coreAssetsModule(assetConfig),
+    mushroomTelegramModule(),
+    mushroomPaymentsModule()
+  ],
+  adapters: { logger, clock, idGenerator, localeService }
+});
+```
+
+Meat should be able to use the same `core*Module` entries with Meat-local
+`meatDbModule`, `meatCatalogModule`, `meatTelegramModule`, and optional local
+support/admin modules.
 
 Move backend modules into `backpack-game-core`:
 
+- module loader helpers, dependency validation, health-check aggregation, and
+  route-factory registration primitives;
+- auth/session flow shape, login result shaping, Telegram-init verifier
+  interface contracts, and bootstrap/profile DTOs;
+- player profile, active character, run lifecycle, shop/loadout, battle/replay,
+  wallet, asset, gacha, and support service logic where repositories/config are
+  injected;
 - asset catalog normalization, eligibility filtering, direct-buy availability,
   and acquisition-mode policy;
 - profile asset instance/equipment state transitions as pure or adapter-driven
@@ -3389,8 +3620,9 @@ generalized:
 
 Keep in each game repo:
 
-- SQL schemas, migrations, repositories, Express routes, auth, rate limits,
-  idempotency storage, support-action persistence, and audit-log storage;
+- SQL schemas, migrations, concrete repositories, final Express app wiring,
+  product-specific routes, auth middleware attachment, rate limits, idempotency
+  storage, support-action persistence, and audit-log storage;
 - payment processors, Telegram Stars, BTCPay/NOWPayments adapters, provider
   webhook signatures, invoice lookup, tax/accounting exports, and content-policy
   compliance gates;
@@ -3627,10 +3859,12 @@ Move later, after the above contracts are stable:
   and admin checklist components. These should come after Meat has enough
   equivalent surfaces to verify prop/event boundaries.
 
-Keep local for now:
+Keep local for now, except where S1-S7 explicitly converts behavior into
+repository-backed core module factories:
 
-- SQL schemas, repositories, Express routes, auth/session policy, rate limits,
-  idempotency storage, support-action/audit persistence, and route maps.
+- SQL schemas, concrete repositories, final Express route registration,
+  auth/session middleware policy, rate limits, idempotency storage,
+  support-action/audit persistence, and route maps.
 - Payment providers, Telegram Stars, crypto checkout/webhook adapters, provider
   signatures, refund/tax/compliance handling, and adult-content gates.
 - Runtime catalogs, character ids, portrait/skin art, localization, generated
@@ -4364,10 +4598,12 @@ frontend adoption.
    planner-level service boundaries listed in Phases 8AR-8AW. The
    run-shop/game-run response patch helper slices are fulfilled by Phases
    8AJ-8AK, and replay playback state is fulfilled by Phase 8AL. Superseded
-   2026-07-05: do not move Mushroom services, Express routes, DB schemas,
-   payment providers, route maps, catalogs, artwork, support operations,
-   haptics, or secure paid-roll RNG selection into core. Vue pages may move
-   only as adapterized shells through the F1-F7 port-and-neutralize lane.
+   2026-07-05: do not move raw Mushroom services, final Express route
+   registration, DB schemas, payment providers, route maps, catalogs, artwork,
+   support operations, haptics, or secure paid-roll RNG selection into core.
+   Vue pages may move only as adapterized shells through the F1-F7
+   port-and-neutralize lane; server behavior may move only as modules through
+   the S1-S7 module-factory lane.
 67. Phase 8AH profile asset result DTO shaper extraction.
    **Implemented 2026-07-04:** core commit `458d4bb` added `modules/assets`
    helpers for asset records, owned-instance summaries, equipped-target
@@ -4676,10 +4912,11 @@ frontend adoption.
      game:test:screens`, focused `support-admin-ui.spec.js`, and
      `npm run game:core:check` passed;
    - Meat `npm test` and `npm run build` passed.
-83. Phase 8AX explicit non-core guardrails and page-shell exception.
-   **Current boundary:** do not move Mushroom services, Express routes,
-   database migrations/schemas, provider SDK calls, webhook signature checks,
-   Telegram integration, support/admin permissions, image upload/storage,
+83. Phase 8AX explicit non-core guardrails and shell/module exceptions.
+   **Current boundary:** do not move raw Mushroom services, final Express route
+   registration, database migrations/schemas, provider SDK calls, webhook
+   signature checks, Telegram integration, support/admin permissions,
+   image upload/storage,
    adult-content compliance gates, settlement runbooks, art assets, lore copy,
    player/mushroom catalogs, final CSS themes, route registration, or product
    policy into `backpack-game-core`. Core APIs should receive plain snapshots
@@ -4687,7 +4924,10 @@ frontend adoption.
    shells may move into core if they are adapterized: all Mushroom/spore copy
    is locale-driven, all routes/actions come from injected clients, all assets
    come from resolvers, and product-only behavior remains behind slots or
-   product adapters.
+   product adapters. Server behavior may move into core if it becomes a module
+   factory: all DB access comes from repository interfaces, all product catalog
+   access comes from injected providers, route handlers are factories, and
+   credentials/runtime policy/final app registration stay in the product repo.
 84. Phase 8AY cross-consumer release hardening.
    **Implemented 2026-07-05:** hub command `npm run verify:backpack-core`
    now verifies the same nested `backpack-game-core` commit in Mushroom and
