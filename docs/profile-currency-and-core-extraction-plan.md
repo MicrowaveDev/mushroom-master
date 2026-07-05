@@ -3883,8 +3883,14 @@ that game.
    block while keeping its existing `handlePackAction` route events and CSS
    local. Meat imports the same component names in its core-consumption smoke
    test without rewriting the visible prototype UI.
+   **Third slice implemented 2026-07-05:** core commit `6e7c1fb` added
+   `ArtifactTile`, backed by `shapeArtifactTileDisplay`, as a neutral renderer
+   for shaped artifact tile DTOs. Mushroom's `ArtifactFigure` now keeps its
+   product adapters for bag shapes, bitmap paths, role labels, and visual
+   classification, then delegates tile markup to the core component. Meat
+   imports `ArtifactTile` in its core-consumption smoke test. Focused Mushroom
+   artifact bitmap/glyph screenshots passed after the swap.
    Remaining component candidates, in safest order:
-   - `ArtifactTile`, backed by `shapeArtifactTileDisplay`.
    - `ShopItemList` / `ShopItemRow`, backed by `shapeShopItemRows`.
    - `BackpackGrid`, backed by `shapeGridBoardCells`,
      `shapeGridBoardPieces`, and `shapeGridBagSlotCells`.

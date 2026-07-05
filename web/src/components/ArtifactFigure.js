@@ -1,5 +1,6 @@
 import { h } from 'vue/dist/vue.esm-bundler.js';
 import { shapeArtifactTileDisplay } from '@microwavedev/backpack-game-core/client-view-model';
+import { ArtifactTile } from '@microwavedev/backpack-game-core/vue/components';
 import { artifactBitmapPath, artifactRoleGlyphLabel } from '../artifacts/render.js';
 import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
@@ -135,25 +136,9 @@ export const ArtifactFigure = {
       roleGlyphLabel: artifactRoleGlyphLabel
     });
 
-    const cells = tile.cells.map((cell) => node('div', { class: cell.className, key: cell.key }));
-
-    return node('div', {
-      class: ['artifact-figure-grid', ...tile.cssClasses],
-      style: tile.gridStyle
-    }, [
-      ...cells,
-      node('span', {
-        class: tile.imageClassNames,
-        'aria-hidden': 'true',
-        style: tile.imageStyle
-      }),
-      node('span', {
-        class: [...tile.roleGlyph.classNames, 'artifact-figure-role-glyph'],
-        'aria-label': tile.roleGlyph.label,
-        title: tile.roleGlyph.label
-      }, [
-        node('span', { 'aria-hidden': 'true' })
-      ])
-    ]);
+    return h(ArtifactTile, {
+      tile,
+      roleGlyphExtraClass: 'artifact-figure-role-glyph'
+    });
   }
 };
