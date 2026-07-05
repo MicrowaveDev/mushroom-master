@@ -101,6 +101,10 @@ copy, theme, and API adapters.
   advancement, load/set-speed patches, and timeline shaping while games keep
   timers, routes, settings persistence, event formatting, navigation, Vue
   computed wrappers, and UI local, tested by `tests/client-view-model.test.js`
+- replay event row client view-model slice: `src/client-view-model.js` now also
+  provides headless replay/battle-log row filtering, ordering, active flags,
+  text fallback, and row limiting while games keep narration, replay screen
+  markup, routes, and persistence local, tested by `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -162,8 +166,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `3c638fb`
-  (`Add grid board render view models`)
+- latest consumed core commit: `a4c4c06`
+  (`Add replay event row view models`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -940,11 +944,12 @@ settlement, wallet purchase intent/checkout/completion, run-shop
 buy/refresh/sell planning, run start drafts, starter loadout drafts,
 initial/next shop state, ghost budget math, round reward/counter/end-state
 planning, and challenge group-completion decisions. The first neutral frontend
-primitive slices are covered by core commits `2280929`, `ffaa376`, and
-`3c638fb`: headless artifact stat-row DTO shaping, shop item row DTO shaping,
-and grid board render row shaping for Mushroom/Meat stat chips, shop offers,
-and backpack boards. The next useful extractions are larger neutral frontend
-primitives that both games can consume without
+primitive slices are covered by core commits `2280929`, `ffaa376`, `3c638fb`,
+and `a4c4c06`: headless artifact stat-row DTO shaping, shop item row DTO
+shaping, grid board render row shaping, and replay event row shaping for
+Mushroom/Meat stat chips, shop offers, backpack boards, and battle logs. The
+next useful extractions are larger neutral frontend primitives that both games
+can consume without
 inheriting Mushroom persistence, Telegram, payment, catalog, art, support,
 haptics, or page-composition rules.
 
@@ -982,9 +987,14 @@ services. Recommended order:
    `ArtifactGridBoard` while keeping visual classes, bag overlays, drag/drop
    events, figure rendering, layout constants, and CSS local; Meat uses them for
    prototype backpack bag slots and placed pieces.
-8. Remaining neutral frontend primitives: artifact tile display contracts, pack
-   cards, odds tables, roll-result panels, replay event rows, and component
-   contracts after the planner DTOs stabilize.
+8. Neutral frontend primitive replay rows: implemented in core commit
+   `a4c4c06` with `shapeReplayEventRows` in `client-view-model`. Mushroom's
+   replay timeline uses it for visible event ordering and active-row flags while
+   keeping event formatting, screen markup, routes, and persistence local; Meat
+   uses it for compact battle-log filtering and limiting.
+9. Remaining neutral frontend primitives: artifact tile display contracts, pack
+   cards, odds tables, roll-result panels, and component contracts after the
+   planner DTOs stabilize.
 
 Do not move SQL, provider SDK calls, webhook verification, Telegram/adult
 content policy, support permissions, settlement runbooks, image storage, lore
