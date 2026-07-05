@@ -9,6 +9,7 @@ import {
   gachaAdminValidationIssueRows,
   shapeGachaAdminOddsTableSections
 } from '@microwavedev/backpack-game-core/client-view-model';
+import { GachaOddsTable } from '@microwavedev/backpack-game-core/vue/components';
 
 const SUPPORT_ADMIN_STORAGE_KEY = 'supportAdminCredentials';
 
@@ -136,6 +137,9 @@ async function supportJson(path, { token, actorId, approvalActorId = '', method 
 
 export const SupportAdminScreen = {
   name: 'SupportAdminScreen',
+  components: {
+    GachaOddsTable
+  },
   data() {
     const credentials = readStoredCredentials();
     return {
@@ -1885,20 +1889,11 @@ export const SupportAdminScreen = {
 
         <section v-if="gachaOddsTables.length" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-odds-preview">
           <h3>Odds Preview</h3>
-          <div v-for="table in gachaOddsTables" :key="table.key" class="support-admin-table-wrap">
-            <table class="support-admin-table support-admin-compact-table">
-              <thead>
-                <tr>
-                  <th v-for="column in table.columns" :key="column.key">{{ column.label }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in table.rows" :key="row.rowKey">
-                  <td v-for="column in table.columns" :key="column.key">{{ row[column.field] }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <GachaOddsTable
+            :sections="gachaOddsTables"
+            section-class="support-admin-table-wrap"
+            table-class="support-admin-table support-admin-compact-table"
+          />
         </section>
 
         <section v-if="gachaSimulation" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-simulation">

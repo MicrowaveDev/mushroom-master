@@ -9,6 +9,7 @@ import {
   summarizeWalletPurchaseSurface,
   summarizeAssetRollPacks
 } from '@microwavedev/backpack-game-core/client-view-model';
+import { AssetRollResultPanel } from '@microwavedev/backpack-game-core/vue/components';
 import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
 import { AchievementBadge } from '../components/AchievementBadge.js';
 import { HomeSocialSidebar } from '../components/HomeSocialSidebar.js';
@@ -42,6 +43,7 @@ export const HomeScreen = {
     };
   },
   components: {
+    AssetRollResultPanel,
     ArtifactGridBoard: defineAsyncComponent(() => import('../components/ArtifactGridBoard.js').then(m => m.ArtifactGridBoard)),
     SeasonRankEmblem,
     AchievementBadge,
@@ -628,16 +630,7 @@ export const HomeScreen = {
                 </span>
               </div>
             </div>
-            <div
-              v-if="assetRollResultPanel"
-              :class="assetRollResultPanel.className"
-              :data-testid="assetRollResultPanel.testId"
-              :role="assetRollResultPanel.role"
-              :aria-live="assetRollResultPanel.ariaLive"
-            >
-              <strong>{{ assetRollResultPanel.title }}</strong>
-              <span v-for="line in assetRollResultPanel.lines" :key="line.key">{{ line.text }}</span>
-            </div>
+            <AssetRollResultPanel :panel="assetRollResultPanel" />
           </div>
         </div>
       </article>

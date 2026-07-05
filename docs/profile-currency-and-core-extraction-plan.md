@@ -3861,16 +3861,21 @@ that game.
    local. Future slices need screenshot/e2e evidence in Mushroom and build/test
    evidence in Meat for every adopted component.
 82. Phase 8AW neutral Vue component layer.
-   **Planned next, not started:** add a public Vue-facing layer in
-   `backpack-game-core`, likely behind subpath exports such as
+   **First slice implemented 2026-07-05:** core commit `006ab33` added a
+   public Vue-facing layer in `backpack-game-core` behind subpath exports
    `@microwavedev/backpack-game-core/vue` and
-   `@microwavedev/backpack-game-core/vue/components`. Do not copy Mushroom
-   pages or components into core verbatim. Extract neutral primitives that
-   receive already-shaped DTOs plus product-provided labels, image resolvers,
-   route callbacks, theme class hooks, and optional slots.
-   First component candidates, in safest order:
-   - `AssetRollResultPanel`, backed by `shapeAssetRollResultPanel`.
-   - `GachaOddsTable`, backed by `shapeGachaAdminOddsTableSections`.
+   `@microwavedev/backpack-game-core/vue/components`, plus
+   `docs/frontend-core-contract.md`, optional Vue peer metadata, type/export
+   checks, component smoke tests, and a static forbidden-import boundary test.
+   The first neutral primitives are `AssetRollResultPanel`, backed by
+   `shapeAssetRollResultPanel`, and `GachaOddsTable`, backed by
+   `shapeGachaAdminOddsTableSections`. Mushroom now uses
+   `AssetRollResultPanel` in the home pack roll feedback block and
+   `GachaOddsTable` in the support-admin odds preview while keeping product
+   copy, classes, page layout, routes, and styles local. Meat remains a vanilla
+   Vite prototype for now but imports the Vue subpath in its core-consumption
+   smoke test, proving the package surface does not force a visible UI rewrite.
+   Remaining component candidates, in safest order:
    - `GachaPackCardList` / `GachaPackCard`, backed by
      `shapeAssetPackCardRows`.
    - `ArtifactTile`, backed by `shapeArtifactTileDisplay`.
@@ -3889,26 +3894,22 @@ that game.
    - each component slice must include core unit/render tests, Mushroom
      adoption evidence including screenshots where visual, and Meat build/test
      evidence.
-   Pre-flight before the first component:
-   - create a short frontend-core contract reference that documents Vue peer
-     dependency/version support, public subpath exports, browser-safe import
-     rules, CSS variable/base-class policy, event names, slot names, adapter
-     props, and DTO compatibility expectations;
-   - add or extend package export/type tests so every Vue subpath has a JS
-     target and declaration target;
-   - add a static forbidden-import check for core client/Vue exports;
-   - decide whether render tests use Vue Test Utils, Vitest, or the existing
-     Node test runner plus compiled render snapshots, then keep that choice
-     consistent for the first component batch.
-   First implementation slice should be intentionally small:
-   - extract `AssetRollResultPanel` or `GachaOddsTable` first because those
-     components are low-interaction, already DTO-backed, and useful in both
-     Mushroom and Meat;
-   - adopt it in Mushroom without changing product copy or layout semantics;
-   - adopt it in Meat as a proof that the component is not accidentally
-     Mushroom-themed;
-   - only move toward `BackpackGrid` after the simpler components prove the
-     prop/event/theme pattern.
+   Pre-flight status:
+   - ✅ frontend-core contract reference exists in
+     `backpack-game-core/docs/frontend-core-contract.md`;
+   - ✅ package export/type tests cover every Vue subpath;
+   - ✅ static forbidden-import checks cover core source and browser-safe
+     client/Vue exports;
+   - ✅ the first component batch uses the existing Node test runner with
+     component option/template smoke tests. If future components need true DOM
+     interaction, decide separately whether to add Vue Test Utils or Vitest.
+   Validation evidence for this slice:
+   - core `npm test` passed 129/129 and `npm pack --dry-run` includes the Vue
+     files and contract doc;
+   - Mushroom `npm run game:build`, `npm run game:test`, `npm run
+     game:test:screens`, focused `support-admin-ui.spec.js`, and
+     `npm run game:core:check` passed;
+   - Meat `npm test` and `npm run build` passed.
 83. Phase 8AX explicit non-core guardrails.
    **Current boundary:** do not move whole Mushroom services, Express routes,
    database migrations/schemas, provider SDK calls, webhook signature checks,
@@ -3918,10 +3919,12 @@ that game.
    `backpack-game-core`. Core APIs should receive plain snapshots and return
    plans/DTOs that product repos execute.
 84. Phase 8AY cross-consumer release hardening.
-   **Planned next, not started:** after the first shared Vue component lands,
-   add a single verification path that proves the same core commit works in
-   core, Mushroom, and Meat. The minimum gate should run core tests/package
-   export checks, Mushroom game/core checks plus any affected screenshot/e2e
-   tests, and Meat build/tests. Also record the expected pointer-update order:
-   commit/push core first, update Mushroom and Meat nested submodule pointers
-   second, then update the hub pointer only after both consumers are clean.
+   **Partially implemented 2026-07-05:** the first shared Vue component slice
+   was manually verified against the same core commit in core, Mushroom, and
+   Meat, and the pointer-update order was followed: commit/push core first,
+   update Mushroom and Meat nested submodule pointers second, then update the
+   hub pointer after both consumers are clean. Remaining: add one command or CI
+   helper that runs the full cross-consumer gate automatically before future
+   pointer updates. The minimum gate should run core tests/package export
+   checks, Mushroom game/core checks plus affected screenshot/e2e tests, and
+   Meat build/tests.

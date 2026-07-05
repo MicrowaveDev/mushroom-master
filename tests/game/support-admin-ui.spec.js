@@ -292,7 +292,7 @@ test('[Req 14-F] support admin gacha tab can author, validate, and publish a dat
   await expect(page.getByTestId('gacha-validation')).toContainText('No validation issues.');
   await expect(page.getByTestId('gacha-release-checklist')).toContainText('ready');
   await expect(page.getByTestId('gacha-odds-preview')).toContainText('rare');
-  await expect(page.getByTestId('gacha-odds-preview')).toContainText('planned_portrait.thalla');
+  await expect(page.getByTestId('gacha-odds-preview')).toContainText('planned_portrait.axilin');
   await expect(page.getByTestId('gacha-simulation')).toContainText('Trials');
   await expect(page.getByTestId('gacha-policy-recommendations')).toContainText('portrait.axilin.1');
 
