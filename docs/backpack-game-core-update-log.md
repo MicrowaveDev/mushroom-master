@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `44cfbdd7554627495f8db1738fce81fa91d19437`
-- core short SHA: `44cfbdd`
-- core commit: `Document core release discipline`
-- runtime/API baseline: `be03e50` (`Add shared battle log component`)
-- game pointer commit: this commit (`Document backpack core release discipline`)
+- core SHA: `5dd01f149e347eee4192e4744e03fa695969d918`
+- core short SHA: `5dd01f1`
+- core commit: `Add shared server middleware and badge components`
+- runtime/API baseline: `5dd01f1` (`Add shared server middleware and badge components`)
+- game pointer commit: `4999588` (`Consume shared core middleware and badges`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,7 +34,8 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-05 | this commit | `44cfbdd` | Core release discipline reference | Core now documents the current submodule-only release channel, SHA-as-release-identity policy, compatibility rules, cross-consumer gate, and publishing prerequisites. Mushroom and Meat both pin this doc-policy commit. |
+| 2026-07-05 | `4999588` | `5dd01f1` | Server middleware/module facade and badge Vue components | Core added `./server` and `./server/middleware` exports for shared module registration, idempotency, and rate limiting, plus neutral `AchievementBadge` and `SeasonRankEmblem` Vue components. Mushroom now keeps thin adapter re-exports for the existing local import paths; Meat pins the same SHA and verifies the new server/component surface in its core-consumption test. |
+| 2026-07-05 | `f4df2c8` | `44cfbdd` | Core release discipline reference | Core now documents the current submodule-only release channel, SHA-as-release-identity policy, compatibility rules, cross-consumer gate, and publishing prerequisites. Mushroom and Meat both pinned this doc-policy commit. |
 | 2026-07-05 | `7925b96` | `be03e50` | BattleLog Vue component | Core added the neutral `BattleLog` row/list renderer. Mushroom replay logs delegate row rendering and selection emits through core while keeping replay formatting, state mutation, battle stage, result overlay, routes, and copy local; Meat imports the component in its core-consumption smoke test. |
 | 2026-07-05 | `09e60aa` | `cbb9f18` | BackpackGrid Vue component | Core added the neutral `BackpackGrid` renderer. Mushroom artifact grid boards delegate board shell, layers, cell wrappers, piece wrappers, drag/drop event bridging, and rotate-control slots through core while keeping grid math, bag overlays, placement rules, artifact lookup, figure rendering, and styling local; Meat imports the component in its smoke test. |
 | 2026-07-05 | `39d3904` | `cdba5a7` | Shop item Vue components | Core added `ShopItemRow` and `ShopItemList`. Mushroom prep shop delegates row header, price, description, and tag rendering through core while keeping refresh controls, sell zone, fusion classes, item datasets, previews, and route events local; Meat imports the components in its smoke test. |
