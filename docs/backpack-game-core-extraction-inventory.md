@@ -181,8 +181,10 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `6d9faeb`
-  (`Handle empty asset roll result panels`)
+- latest consumed core commit: `44cfbdd`
+  (`Document core release discipline`)
+- latest runtime/API core commit: `be03e50`
+  (`Add shared battle log component`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -1018,8 +1020,15 @@ services. Recommended order:
     Mushroom delegates home
     pack cards, support-admin odds table sections, and home roll-result panel
     metadata through `client-view-model`; Meat consumes the same DTOs in its
-    prototype wrappers. Remaining future work is neutral Vue components, not
-    more Phase 8AV DTO extraction.
+    prototype wrappers.
+11. Neutral Vue component layer: implemented in core commits `006ab33`,
+    `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`, and `be03e50`. Mushroom now
+    delegates roll-result panels, odds tables, gacha pack cards, artifact
+    tiles, shop item rows/lists, backpack grids, and battle logs through core
+    components while keeping routes, copy, image resolvers, haptics, page
+    shells, and themes local; Meat imports the same component surface in its
+    core-consumption smoke test. The first Phase 8AW component candidate list
+    is complete.
 
 Do not move SQL, provider SDK calls, webhook verification, Telegram/adult
 content policy, support permissions, settlement runbooks, image storage, lore

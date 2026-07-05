@@ -393,8 +393,12 @@ row shaping, artifact tile display contracts, asset pack card rows, odds table
 sections, and roll result panel DTOs for
 product-styled stat chips/text, shop offers, backpack boards, battle logs,
 artifact images, gacha pack cards, odds tables, and roll result panels.
-Remaining shared-core work should shift to larger neutral frontend component
-primitives after the DTO contracts stabilize. Keep
+Core commits `006ab33`, `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`, and
+`be03e50` then added the neutral Vue component layer for roll result panels,
+gacha odds tables, gacha pack cards, artifact tiles, shop item rows/lists,
+backpack grids, and battle logs. The first Phase 8AW component candidate list
+is complete; future Vue moves should start from a fresh evidence-backed
+candidate review. Keep
 whole services, Express routes, persistence, payment/webhook providers,
 runtime catalogs, route
 maps, artwork, support operations, haptics, page assembly, and secure paid-roll

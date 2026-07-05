@@ -1,8 +1,9 @@
 # Backpack Game Core Update Log
 
 This log records which `backpack-game-core` commits were consumed by
-`mushroom-master`. It exists so future core changes have a clear release trail
-before there is a registry package version or a second backpack-game consumer.
+`mushroom-master` and mirrored by `meat-master` where applicable. It exists so
+future core changes have a clear release trail before there is a registry
+package version.
 
 ## Current Policy
 
@@ -13,16 +14,19 @@ before there is a registry package version or a second backpack-game consumer.
 - The hub pointer is updated last.
 - Use the core SHA as the package release identity until registry publishing or
   semver tags exist.
+- The current release channel is submodule-only. The authoritative release
+  discipline and compatibility rules live in
+  `vendor/backpack-game-core/docs/release-discipline.md`.
 
 ## Current Consumer Baseline
 
 `mushroom-master` currently consumes:
 
-- core SHA: `6d9faeb73752ac2a7c310914b9d591a5fc608cd3`
-- core short SHA: `6d9faeb`
-- core commit: `Handle empty asset roll result panels`
-- runtime/API baseline: `6d9faeb` (`Handle empty asset roll result panels`)
-- game pointer commit: this commit (`Use core gacha odds and roll panel rows`)
+- core SHA: `44cfbdd7554627495f8db1738fce81fa91d19437`
+- core short SHA: `44cfbdd`
+- core commit: `Document core release discipline`
+- runtime/API baseline: `be03e50` (`Add shared battle log component`)
+- game pointer commit: this commit (`Document backpack core release discipline`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +34,14 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-05 | this commit | `6d9faeb` | Gacha odds table and roll result panel view models | Mushroom support admin delegates odds table section metadata and home roll-result panel metadata through `client-view-model`, including the empty-feedback guard; Meat uses the same helpers in prototype wrappers. Markup, styling, localization, route events, and page composition stay local. |
+| 2026-07-05 | this commit | `44cfbdd` | Core release discipline reference | Core now documents the current submodule-only release channel, SHA-as-release-identity policy, compatibility rules, cross-consumer gate, and publishing prerequisites. Mushroom and Meat both pin this doc-policy commit. |
+| 2026-07-05 | `7925b96` | `be03e50` | BattleLog Vue component | Core added the neutral `BattleLog` row/list renderer. Mushroom replay logs delegate row rendering and selection emits through core while keeping replay formatting, state mutation, battle stage, result overlay, routes, and copy local; Meat imports the component in its core-consumption smoke test. |
+| 2026-07-05 | `09e60aa` | `cbb9f18` | BackpackGrid Vue component | Core added the neutral `BackpackGrid` renderer. Mushroom artifact grid boards delegate board shell, layers, cell wrappers, piece wrappers, drag/drop event bridging, and rotate-control slots through core while keeping grid math, bag overlays, placement rules, artifact lookup, figure rendering, and styling local; Meat imports the component in its smoke test. |
+| 2026-07-05 | `39d3904` | `cdba5a7` | Shop item Vue components | Core added `ShopItemRow` and `ShopItemList`. Mushroom prep shop delegates row header, price, description, and tag rendering through core while keeping refresh controls, sell zone, fusion classes, item datasets, previews, and route events local; Meat imports the components in its smoke test. |
+| 2026-07-05 | `6dc2516` | `6e7c1fb` | ArtifactTile Vue component | Core added the neutral `ArtifactTile` renderer. Mushroom artifact figures keep product adapters for bag shapes, bitmap paths, role labels, and visual classification while delegating tile markup to core; Meat imports the component in its smoke test. |
+| 2026-07-05 | `d08e125` | `953fa1e` | Gacha pack Vue components | Core added `GachaPackCard` and `GachaPackCardList` over pack-card DTOs. Mushroom home pack details delegate card/list structure through core while keeping route handlers, styling, and localization local; Meat imports the component names in its smoke test. |
+| 2026-07-05 | `4df16e6` | `006ab33` | Vue component export layer | Core added public `./vue` and `./vue/components` subpaths, frontend contract docs, optional Vue peer metadata, component smoke tests, and import-boundary checks. Mushroom adopted `AssetRollResultPanel` and `GachaOddsTable`; Meat verifies the Vue export surface. |
+| 2026-07-05 | `5f82867` | `6d9faeb` | Gacha odds table and roll result panel view models | Mushroom support admin delegates odds table section metadata and home roll-result panel metadata through `client-view-model`, including the empty-feedback guard; Meat uses the same helpers in prototype wrappers. Markup, styling, localization, route events, and page composition stay local. |
 | 2026-07-05 | `5986b1f` | `be41855` | Asset pack card view models | Mushroom home pack cards delegate detail/status lines and roll/burn action DTOs through `client-view-model`; Meat uses the same helper for prototype pack-card metadata. Markup, styling, localization, route events, and page composition stay local. |
 | 2026-07-05 | `43956b1` | `42b1f1c` | Artifact tile display view models | Mushroom artifact figures delegate tile dimensions, mask cells, image style hints, and role glyph labels through `client-view-model`; Meat uses the same helper for prototype artifact image metadata. Artwork generation, visual taxonomy, CSS, and product page composition stay local. |
 | 2026-07-05 | `77b1620` | `a4c4c06` | Replay event row view models | Mushroom replay timeline delegates visible event row ordering, text fallback, and active-row flags through `client-view-model`; Meat uses the same helper for its compact battle log. Product narration, replay screen markup, routes, and persistence stay local. |
@@ -96,9 +107,13 @@ added.
 
 1. Commit and push the core repo.
 2. Run `npm test` and `npm pack --dry-run` in `vendor/backpack-game-core`.
-3. Update the nested submodule pointer in `mushroom-master`.
-4. Run `npm run game:core:check` and the focused consumer tests affected by the
-   changed module.
+3. Update the nested submodule pointers in `mushroom-master` and `meat-master`
+   to the same core SHA.
+4. Run `npm run verify:backpack-core` from the hub, setting
+   `BACKPACK_CORE_MUSHROOM_E2E_COMMAND` if the changed Mushroom surface needs a
+   focused Playwright command beyond the default support-admin check.
 5. Add a row to this file with the new core SHA and consumer commit.
-6. Update `docs/backpack-game-core-extraction-inventory.md` if the latest core
-   commit or exported surface changed.
+6. Update `docs/backpack-game-core-extraction-inventory.md`,
+   `docs/game-core-runtime-contracts.md`, and the implementation plan if the
+   latest core commit or exported surface changed.
+7. Commit and push Mushroom, Meat, and then the hub pointers.

@@ -891,23 +891,28 @@ simulation at each roadmap phase instead of waiting until the end.
 - Done for the first reuse proof: `meat-master` now exists as a second
   backpack/grid consumer and uses `backpack-game-core` through a nested
   submodule. The next step is stabilization, not proof-by-placeholder.
-- Decide package release discipline: semver versioning, tags, changelog format,
-  npm/GitHub package publishing vs submodule-only consumption, and compatibility
-  windows for Mushroom and Meat adapters.
-- Add CI or one hub helper that verifies `backpack-game-core` tests,
-  package exports/types, the Mushroom consumer, and the Meat consumer against
-  the same core commit before pointer updates are pushed.
-- Add an import-boundary check for `backpack-game-core`: public core, client,
-  and Vue exports must not import Mushroom/Meat files, product catalogs,
-  product assets, Express/Sequelize, Telegram helpers, provider SDK/webhook
-  code, or Node-only modules from browser-safe entry points.
-- Add a frontend-core contract reference before the first shared Vue component
-  ships. It should define supported subpath exports, Vue peer dependency
-  policy, CSS/token policy, event names, slot contracts, forbidden imports,
-  adapter props, DTO compatibility expectations, and per-consumer validation
-  requirements.
-- Decide whether `backpack-game-core` should also be tracked as a top-level hub
-  repo in addition to the nested `mushroom-master` submodule.
+- Done 2026-07-05: package release discipline is now explicitly
+  submodule-only until publishing is introduced. The core SHA is the release
+  identity, `0.1.0` remains package metadata only, compatibility windows are
+  enforced by updating Mushroom and Meat together, and future npm/GitHub
+  publishing prerequisites are recorded in
+  `vendor/backpack-game-core/docs/release-discipline.md`.
+- Done 2026-07-05: hub command `npm run verify:backpack-core` verifies
+  `backpack-game-core` tests, package dry-run/exports/types, the Mushroom
+  consumer, and the Meat consumer against the same core commit before pointer
+  updates are pushed.
+- Done 2026-07-05: import-boundary tests in `backpack-game-core` guard that
+  public core, client, and Vue exports do not import Mushroom/Meat files,
+  product catalogs/assets, Express/Sequelize, Telegram helpers, provider
+  SDK/webhook code, or Node-only modules from browser-safe entry points.
+- Done 2026-07-05: frontend-core contract reference exists at
+  `vendor/backpack-game-core/docs/frontend-core-contract.md` and defines
+  supported Vue subpath exports, Vue peer dependency policy, CSS/token policy,
+  event names, slot contracts, forbidden imports, adapter props, DTO
+  compatibility expectations, and per-consumer validation requirements.
+- Done 2026-07-05: `backpack-game-core` stays nested under each consumer for
+  now. It should become a top-level hub submodule only when independent release
+  or issue tracking needs outweigh the added pointer-management cost.
 - Keep copied/generated prototype assets in Meat provenance-tagged and replace
   them with product-owned artwork before any paid or public production launch.
 
@@ -3973,3 +3978,8 @@ that game.
    run this command before handoff; set `BACKPACK_CORE_MUSHROOM_E2E_COMMAND`
    when the affected Mushroom E2E surface is not
    `tests/game/support-admin-ui.spec.js`.
+   **Release discipline finalized 2026-07-05:** core commit `44cfbdd` added
+   `docs/release-discipline.md`, explicitly choosing submodule-only
+   consumption until publishing is introduced, documenting SHA-as-release
+   identity, compatibility rules, the cross-consumer release gate, and the
+   decision to defer top-level hub tracking for `backpack-game-core`.
