@@ -3919,12 +3919,13 @@ that game.
    `backpack-game-core`. Core APIs should receive plain snapshots and return
    plans/DTOs that product repos execute.
 84. Phase 8AY cross-consumer release hardening.
-   **Partially implemented 2026-07-05:** the first shared Vue component slice
-   was manually verified against the same core commit in core, Mushroom, and
-   Meat, and the pointer-update order was followed: commit/push core first,
-   update Mushroom and Meat nested submodule pointers second, then update the
-   hub pointer after both consumers are clean. Remaining: add one command or CI
-   helper that runs the full cross-consumer gate automatically before future
-   pointer updates. The minimum gate should run core tests/package export
-   checks, Mushroom game/core checks plus affected screenshot/e2e tests, and
-   Meat build/tests.
+   **Implemented 2026-07-05:** hub command `npm run verify:backpack-core`
+   now verifies the same nested `backpack-game-core` commit in Mushroom and
+   Meat, then runs core tests/package dry-run, Mushroom core/build/unit/
+   screenshot/focused support-admin E2E gates, and Meat tests/build. The first
+   successful gate passed against core commit `006ab33`. Keep the pointer
+   update order: commit/push core first, update Mushroom and Meat nested
+   submodule pointers second, then update the hub pointer after both consumers
+   are clean. Future component slices should run this command before handoff;
+   set `BACKPACK_CORE_MUSHROOM_E2E_COMMAND` when the affected Mushroom E2E
+   surface is not `tests/game/support-admin-ui.spec.js`.
