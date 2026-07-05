@@ -380,12 +380,14 @@ coverage/chance shaping, and fixture operation summaries are now in core while
 DB reads/writes, auth, audit logs, upload/storage, copy, and page layout stay
 product-local. Gacha admin odds preview, fixture operation, and simulation item
 table rows are also in core while preview loading, fixture import/export calls,
-and simulation services stay product-local. Core commit `624d4b0` moved the
-next backend planner slice: asset-gacha roll settlement plans,
+and simulation services stay product-local. Core commits `624d4b0` and
+`bf863f3` moved the backend planner slices: asset-gacha roll settlement plans,
 duplicate-burn settlement plans, wallet purchase intent/checkout/completion
-plans, and run-shop buy/refresh/sell plans. Remaining shared-service work is
-the heavier run-start/round-transition/completion planner boundary, then
-neutral frontend component primitives after the DTO contracts stabilize. Keep
+plans, run-shop buy/refresh/sell plans, run start drafts, starter loadout
+drafts, initial/next shop state, ghost budget math, round
+reward/counter/end-state planning, and challenge group-completion decisions.
+Remaining shared-core work should focus on neutral frontend component
+primitives after the DTO contracts stabilize. Keep
 whole services, Express routes, persistence, payment/webhook providers,
 runtime catalogs, route
 maps, artwork, support operations, haptics, page assembly, and secure paid-roll

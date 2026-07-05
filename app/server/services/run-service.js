@@ -1,6 +1,15 @@
 import crypto from 'crypto';
 import { query, withTransaction } from '../db.js';
 import {
+  createRunGhostBudgetPlan,
+  createRunGroupCompletionPlan,
+  createRunInitialShopStatePlan,
+  createRunRoundResolutionPlan,
+  createRunRoundShopStatePlan,
+  createRunStartPlan,
+  createRunStarterLoadoutDrafts
+} from '@microwavedev/backpack-game-core/modules/run';
+import {
   CHALLENGE_WINNER_BONUS,
   getEligibleCharacterItems,
   DAILY_BATTLE_LIMIT,
@@ -114,28 +123,7 @@ export async function startGameRun(playerId, mode = 'solo') {
     const runId = createId('run');
     const now = nowIso();
     const initialCoins = ROUND_INCOME[0];
-
-    await client.query(
-      `INSERT INTO game_runs (id, mode, status, current_round, started_at)
-       VALUES ($1, $2, 'active', 1, $3)`,
-      [runId, mode, now]
-    );
-
     const runPlayerId = createId('grp');
-    await client.query(
-      `INSERT INTO game_run_players (id, game_run_id, player_id, mushroom_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
-       VALUES ($1, $2, $3, $4, 1, 0, 0, 0, $5, $6)`,
-      [runPlayerId, runId, playerId, activeMushroomId, STARTING_LIVES, initialCoins]
-    );
-
-    const currentDay = dayKey(new Date());
-    await client.query(
-      `INSERT INTO daily_rate_limits (player_id, day_key, battle_starts)
-       VALUES ($1, $2, 1)
-       ON CONFLICT (player_id, day_key)
-       DO UPDATE SET battle_starts = daily_rate_limits.battle_starts + 1`,
-      [playerId, currentDay]
-    );
 
     // Seed the character's signature starter preset (two 1x1 lore-tied items
     // at (0,0) and (1,0)). These are free — they're not bought from the shop
@@ -151,11 +139,6 @@ export async function startGameRun(playerId, mode = 'solo') {
     const rng = createRng(`${runId}:shop:1`);
     const initialRoundsSinceBag = 1;
     const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, initialRoundsSinceBag, eligibleCharItems);
-    await client.query(
-      `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
-       VALUES ($1, $2, $3, 1, 0, $4, $5, $6)`,
-      [createId('shopstate'), runId, playerId, hasBag ? 0 : initialRoundsSinceBag, JSON.stringify(shopOffer), now]
-    );
     let activePresetId = 'default';
     if (activeMushroomId) {
       const presetResult = await client.query(
@@ -165,59 +148,91 @@ export async function startGameRun(playerId, mode = 'solo') {
       if (presetResult.rowCount) activePresetId = presetResult.rows[0].active_preset || 'default';
     }
     const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId, activePresetId) : [];
-    await insertLoadoutItem(client, {
-      gameRunId: runId,
+
+    const startPlan = createRunStartPlan({
+      runId,
+      mode,
       playerId,
-      roundNumber: 1,
-      artifactId: 'starter_bag',
-      x: 0,
-      y: 0,
-      width: 3,
-      height: 3,
-      active: true,
-      sortOrder: 0,
-      purchasedRound: 1,
-      freshPurchase: false
+      mushroomId: activeMushroomId,
+      runPlayerId,
+      startedAt: now,
+      initialCoins,
+      startingLives: STARTING_LIVES,
+      shopOffer,
+      shopHasBag: hasBag,
+      initialRoundsSinceBag,
+      starterItems
     });
-    for (const item of starterItems) {
-      await insertLoadoutItem(client, {
-        gameRunId: runId,
+
+    await client.query(
+      `INSERT INTO game_runs (id, mode, status, current_round, started_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        startPlan.gameRunDraft.id,
+        startPlan.gameRunDraft.mode,
+        startPlan.gameRunDraft.status,
+        startPlan.gameRunDraft.currentRound,
+        startPlan.gameRunDraft.startedAt
+      ]
+    );
+
+    await client.query(
+      `INSERT INTO game_run_players (id, game_run_id, player_id, mushroom_id, is_active, completed_rounds, wins, losses, lives_remaining, coins)
+       VALUES ($1, $2, $3, $4, 1, $5, $6, $7, $8, $9)`,
+      [
+        startPlan.playerDraft.id,
+        startPlan.playerDraft.gameRunId,
+        startPlan.playerDraft.playerId,
+        startPlan.playerDraft.mushroomId,
+        startPlan.playerDraft.completedRounds,
+        startPlan.playerDraft.wins,
+        startPlan.playerDraft.losses,
+        startPlan.playerDraft.livesRemaining,
+        startPlan.playerDraft.coins
+      ]
+    );
+
+    const currentDay = dayKey(new Date());
+    await client.query(
+      `INSERT INTO daily_rate_limits (player_id, day_key, battle_starts)
+       VALUES ($1, $2, 1)
+       ON CONFLICT (player_id, day_key)
+       DO UPDATE SET battle_starts = daily_rate_limits.battle_starts + 1`,
+      [playerId, currentDay]
+    );
+
+    await client.query(
+      `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
+       VALUES ($1, $2, $3, 1, $4, $5, $6, $7)`,
+      [
+        createId('shopstate'),
+        runId,
         playerId,
-        roundNumber: 1,
-        artifactId: item.artifactId,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height,
-        sortOrder: item.sortOrder + 1,
-        purchasedRound: 1,
-        freshPurchase: false
-      });
+        startPlan.shopStateDraft.refreshCount,
+        startPlan.shopStateDraft.roundsSinceBag,
+        JSON.stringify(startPlan.shopStateDraft.shopOffer),
+        now
+      ]
+    );
+
+    for (const draft of startPlan.loadoutDrafts) {
+      await insertLoadoutItem(client, draft);
     }
 
     const loadoutItems = await readCurrentRoundItems(client, runId, playerId, 1);
 
     return {
-      id: runId,
-      mode,
-      status: 'active',
-      mushroomId: activeMushroomId,
-      currentRound: 1,
-      startedAt: now,
-      endedAt: null,
-      endReason: null,
-      shopOffer,
-      starterItems,
+      ...startPlan.response,
       loadoutItems,
       player: shapeRunPlayer({
-        id: runPlayerId,
+        id: startPlan.playerDraft.id,
         playerId,
         mushroomId: activeMushroomId,
-        completedRounds: 0,
-        wins: 0,
-        losses: 0,
-        livesRemaining: STARTING_LIVES,
-        coins: initialCoins
+        completedRounds: startPlan.playerDraft.completedRounds,
+        wins: startPlan.playerDraft.wins,
+        losses: startPlan.playerDraft.losses,
+        livesRemaining: startPlan.playerDraft.livesRemaining,
+        coins: startPlan.playerDraft.coins
       })
     };
   });
@@ -842,26 +857,36 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
     [grpA, snapshotA, outcomeA, grpB.player_id],
     [grpB, snapshotB, outcomeB, grpA.player_id]
   ]) {
-    const rewards = runRewardTable[outcome];
     const mult = rewardMultiplier();
-    const sporeAwarded = rewards.spore * mult;
-    const myceliumAwarded = rewards.mycelium * mult;
-    const roundIncome = roundNumber < MAX_ROUNDS_PER_RUN ? ROUND_INCOME[roundNumber] : 0;
+    const roundPlan = createRunRoundResolutionPlan({
+      outcome,
+      roundNumber,
+      playerState: grp,
+      roundIncome: ROUND_INCOME,
+      rewardTable: runRewardTable,
+      rewardMultiplier: mult,
+      maxRounds: MAX_ROUNDS_PER_RUN
+    });
+    const rewards = roundPlan.rewards;
+    const sporeAwarded = roundPlan.awards.spore;
+    const myceliumAwarded = roundPlan.awards.mycelium;
 
     await client.query(
       `INSERT INTO game_rounds (id, game_run_id, round_number, battle_id, player_id, outcome, opponent_player_id, spore_awarded, mycelium_awarded, rating_before, rating_after, coins_income, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, $10, $11)`,
       [
         createId('ground'), gameRunId, roundNumber, battle.id, grp.player_id,
-        outcome, opponentId, sporeAwarded, myceliumAwarded, roundIncome, nowIso()
+        outcome, opponentId, sporeAwarded, myceliumAwarded, roundPlan.roundIncome, nowIso()
       ]
     );
 
-    const newLives = outcome === 'loss' ? grp.lives_remaining - 1 : grp.lives_remaining;
-    const newWins = outcome === 'win' ? grp.wins + 1 : grp.wins;
-    const newLosses = outcome === 'loss' ? grp.losses + 1 : grp.losses;
-    const completedRounds = grp.completed_rounds + 1;
-    const newCoins = grp.coins + roundIncome;
+    const {
+      completedRounds,
+      wins: newWins,
+      losses: newLosses,
+      livesRemaining: newLives,
+      coins: newCoins
+    } = roundPlan.player;
 
     await client.query(
       `UPDATE game_run_players SET completed_rounds = $2, wins = $3, losses = $4, lives_remaining = $5, coins = $6 WHERE id = $1`,
@@ -904,13 +929,13 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
     };
   }
 
-  const anyEliminated = Object.values(playerResults).some((p) => p.livesRemaining <= 0);
-  const maxRounds = Object.values(playerResults).every((p) => p.completedRounds >= MAX_ROUNDS_PER_RUN);
-  const runEnded = anyEliminated || maxRounds;
-  let endReason = null;
+  const groupCompletionPlan = createRunGroupCompletionPlan({
+    playerResults,
+    maxRounds: MAX_ROUNDS_PER_RUN
+  });
+  const { runEnded, endReason } = groupCompletionPlan;
 
   if (runEnded) {
-    endReason = anyEliminated ? 'max_losses' : 'max_rounds';
 
     const pA = playerResults[grpA.player_id];
     const pB = playerResults[grpB.player_id];
@@ -983,16 +1008,28 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
         [gameRunId, grp.player_id, roundNumber]
       );
       const prevRoundsSinceBag = prevShopState.rowCount ? prevShopState.rows[0].rounds_since_bag : 1;
-      const newRoundsSinceBag = prevRoundsSinceBag + 1;
       const shopRng = createRng(`${gameRunId}:shop:${nextRound}:${grp.player_id}`);
       const charItems = await lookupEligibleCharacterItems(client, grp.player_id, 'challenge', gameRunId);
-      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag, charItems);
+      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, prevRoundsSinceBag + 1, charItems);
+      const nextShopPlan = createRunRoundShopStatePlan({
+        previousRoundsSinceBag: prevRoundsSinceBag,
+        shopOffer: newOffer,
+        hasBag
+      });
       await client.query(
         `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
-        [createId('shopstate'), gameRunId, grp.player_id, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
+        [
+          createId('shopstate'),
+          gameRunId,
+          grp.player_id,
+          nextRound,
+          nextShopPlan.roundsSinceBag,
+          JSON.stringify(nextShopPlan.shopOffer),
+          nowIso()
+        ]
       );
-      playerResults[grp.player_id].shopOffer = newOffer;
+      playerResults[grp.player_id].shopOffer = nextShopPlan.shopOffer;
       playerResults[grp.player_id].loadoutItems = await readCurrentRoundItems(
         client,
         gameRunId,
@@ -1061,13 +1098,13 @@ export async function resolveRound(playerId, gameRunId) {
       const artifact = getArtifactById(item.artifactId);
       return sum + (artifact ? getArtifactPrice(artifact) : 0);
     }, 0);
-    const cumulativeIncome = ROUND_INCOME
-      .slice(0, Math.max(1, roundNumber))
-      .reduce((s, c) => s + c, 0);
-    const graceFactor = roundNumber === 1 ? 0.7 : roundNumber === 2 ? 0.85 : 1.0;
-    const base = Math.min(playerSpent, cumulativeIncome) * (1 - GHOST_BUDGET_DISCOUNT);
-    const ghostBudget = Math.max(3, Math.floor(base * graceFactor));
-    const rightSnapshot = await getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, ghostBudget);
+    const ghostBudgetPlan = createRunGhostBudgetPlan({
+      playerSpent,
+      roundNumber,
+      roundIncome: ROUND_INCOME,
+      ghostBudgetDiscount: GHOST_BUDGET_DISCOUNT
+    });
+    const rightSnapshot = await getRunGhostSnapshot(client, playerId, gameRunId, roundNumber, ghostBudgetPlan.ghostBudget);
 
     const battleSeed = crypto.randomBytes(16).toString('hex');
     const simulation = simulateBattle({ left: leftSnapshot, right: rightSnapshot }, battleSeed);
@@ -1088,10 +1125,19 @@ export async function resolveRound(playerId, gameRunId) {
       initiatorPlayerId: playerId
     });
 
-    const rewards = runRewardTable[outcome];
     const mult = rewardMultiplier();
-    const sporeAwarded = rewards.spore * mult;
-    const myceliumAwarded = rewards.mycelium * mult;
+    const roundPlan = createRunRoundResolutionPlan({
+      outcome,
+      roundNumber,
+      playerState: grp,
+      roundIncome: ROUND_INCOME,
+      rewardTable: runRewardTable,
+      rewardMultiplier: mult,
+      maxRounds: MAX_ROUNDS_PER_RUN
+    });
+    const rewards = roundPlan.rewards;
+    const sporeAwarded = roundPlan.awards.spore;
+    const myceliumAwarded = roundPlan.awards.mycelium;
     const playerResult = await client.query('SELECT rating, rated_battle_count FROM players WHERE id = $1', [playerId]);
     const player = playerResult.rows[0];
     const opponentRating = rightSnapshot.playerId
@@ -1104,7 +1150,6 @@ export async function resolveRound(playerId, gameRunId) {
       player.rating + k * (actualScore - expectedScore(player.rating, opponentRating))
     ));
 
-    const roundIncome = roundNumber < MAX_ROUNDS_PER_RUN ? ROUND_INCOME[roundNumber] : 0;
     await client.query(
       `INSERT INTO game_rounds (id, game_run_id, round_number, battle_id, player_id, outcome, opponent_player_id, spore_awarded, mycelium_awarded, rating_before, rating_after, coins_income, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
@@ -1112,15 +1157,17 @@ export async function resolveRound(playerId, gameRunId) {
         createId('ground'), gameRunId, roundNumber, battle.id, playerId,
         outcome, rightSnapshot.playerId || null,
         sporeAwarded, myceliumAwarded,
-        player.rating, ratingAfter, roundIncome, nowIso()
+        player.rating, ratingAfter, roundPlan.roundIncome, nowIso()
       ]
     );
 
-    const newLives = outcome === 'loss' ? grp.lives_remaining - 1 : grp.lives_remaining;
-    const newWins = outcome === 'win' ? grp.wins + 1 : grp.wins;
-    const newLosses = outcome === 'loss' ? grp.losses + 1 : grp.losses;
-    const completedRounds = grp.completed_rounds + 1;
-    const newCoins = grp.coins + roundIncome;
+    const {
+      completedRounds,
+      wins: newWins,
+      losses: newLosses,
+      livesRemaining: newLives,
+      coins: newCoins
+    } = roundPlan.player;
 
     await client.query(
       `UPDATE game_run_players SET completed_rounds = $2, wins = $3, losses = $4, lives_remaining = $5, coins = $6 WHERE id = $1`,
@@ -1166,16 +1213,7 @@ export async function resolveRound(playerId, gameRunId) {
     // The round-N loadout rows in game_run_loadout_items ARE the snapshot —
     // future runs query them directly via getRunGhostSnapshot.
 
-    let runEnded = false;
-    let endReason = null;
-
-    if (newLives <= 0) {
-      runEnded = true;
-      endReason = 'max_losses';
-    } else if (completedRounds >= MAX_ROUNDS_PER_RUN) {
-      runEnded = true;
-      endReason = 'max_rounds';
-    }
+    const { runEnded, endReason } = roundPlan;
 
     let recap = null;
     if (runEnded) {
@@ -1217,14 +1255,26 @@ export async function resolveRound(playerId, gameRunId) {
         [gameRunId, playerId, roundNumber]
       );
       const prevRoundsSinceBag = prevShopState.rowCount ? prevShopState.rows[0].rounds_since_bag : 1;
-      const newRoundsSinceBag = prevRoundsSinceBag + 1;
       const shopRng = createRng(`${gameRunId}:shop:${nextRound}`);
       const charItems = await lookupEligibleCharacterItems(client, playerId, run.mode, gameRunId);
-      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, newRoundsSinceBag, charItems);
+      const { offer: newOffer, hasBag } = generateShopOffer(shopRng, SHOP_OFFER_SIZE, prevRoundsSinceBag + 1, charItems);
+      const nextShopPlan = createRunRoundShopStatePlan({
+        previousRoundsSinceBag: prevRoundsSinceBag,
+        shopOffer: newOffer,
+        hasBag
+      });
       await client.query(
         `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
          VALUES ($1, $2, $3, $4, 0, $5, $6, $7)`,
-        [createId('shopstate'), gameRunId, playerId, nextRound, hasBag ? 0 : newRoundsSinceBag, JSON.stringify(newOffer), nowIso()]
+        [
+          createId('shopstate'),
+          gameRunId,
+          playerId,
+          nextRound,
+          nextShopPlan.roundsSinceBag,
+          JSON.stringify(nextShopPlan.shopOffer),
+          nowIso()
+        ]
       );
       const loadoutItems = await readCurrentRoundItems(client, gameRunId, playerId, nextRound);
 
@@ -1240,7 +1290,7 @@ export async function resolveRound(playerId, gameRunId) {
         achievements: [],
         fusions,
         battle: await getBattle(battle.id, playerId, client),
-        shopOffer: newOffer,
+        shopOffer: nextShopPlan.shopOffer,
         loadoutItems,
         player: shapeRunPlayer({
           completedRounds,
@@ -1418,10 +1468,22 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
       const rng = createRng(`${runId}:shop:1:${pid}`);
       const charItems = await lookupEligibleCharacterItems(client, pid, 'challenge', runId);
       const { offer: shopOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, 1, charItems);
+      const initialShopPlan = createRunInitialShopStatePlan({
+        shopOffer,
+        hasBag,
+        initialRoundsSinceBag: 1
+      });
       await client.query(
         `INSERT INTO game_run_shop_states (id, game_run_id, player_id, round_number, refresh_count, rounds_since_bag, offer_json, updated_at)
          VALUES ($1, $2, $3, 1, 0, $4, $5, $6)`,
-        [createId('shopstate'), runId, pid, hasBag ? 0 : 1, JSON.stringify(shopOffer), now]
+        [
+          createId('shopstate'),
+          runId,
+          pid,
+          initialShopPlan.roundsSinceBag,
+          JSON.stringify(initialShopPlan.shopOffer),
+          now
+        ]
       );
 
       // Seed the character signature starter preset for this player. Same
@@ -1443,34 +1505,14 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
         if (presetResult.rowCount) activePresetId = presetResult.rows[0].active_preset || 'default';
       }
       const starterItems = activeMushroomId ? getStarterPreset(activeMushroomId, activePresetId) : [];
-      await insertLoadoutItem(client, {
+      const starterDrafts = createRunStarterLoadoutDrafts({
         gameRunId: runId,
         playerId: pid,
         roundNumber: 1,
-        artifactId: 'starter_bag',
-        x: 0,
-        y: 0,
-        width: 3,
-        height: 3,
-        active: true,
-        sortOrder: 0,
-        purchasedRound: 1,
-        freshPurchase: false
+        starterItems
       });
-      for (const item of starterItems) {
-        await insertLoadoutItem(client, {
-          gameRunId: runId,
-          playerId: pid,
-          roundNumber: 1,
-          artifactId: item.artifactId,
-          x: item.x,
-          y: item.y,
-          width: item.width,
-          height: item.height,
-          sortOrder: item.sortOrder + 1,
-          purchasedRound: 1,
-          freshPurchase: false
-        });
+      for (const draft of starterDrafts) {
+        await insertLoadoutItem(client, draft);
       }
 
       const currentDay = dayKey(new Date());
@@ -1482,7 +1524,7 @@ export async function createChallengeRun(challengerPlayerId, inviteePlayerId, ch
         [pid, currentDay]
       );
 
-      playerResults[pid] = { id: grpId, playerId: pid, ...runCurrencyFields(initialCoins), shopOffer };
+      playerResults[pid] = { id: grpId, playerId: pid, ...runCurrencyFields(initialCoins), shopOffer: initialShopPlan.shopOffer };
     }
 
     await client.query(
