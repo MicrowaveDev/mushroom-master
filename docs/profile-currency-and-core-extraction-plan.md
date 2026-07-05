@@ -515,6 +515,13 @@ module correction: backend server logic should move through Geesome-style core
 module factories and app-declared module lists, with Mushroom/Meat retaining
 DB, credentials, runtime policy, and product-specific modules.
 
+**File movement rule for S/F lanes:** when implementation starts, move current
+files from disk with filesystem/Git operations. Use `git mv` for same-repo
+moves, and physical `cp`/`mv` plus staged delete/add for cross-submodule moves.
+Do not recreate moved files from agent memory. Copy instead of move only when a
+temporary compatibility copy is explicitly part of the migration, and remove or
+promote that copy during the stabilization step.
+
 ### Next Lane - Modular Server Core Port
 
 Status: **Planned 2026-07-05 after user correction.** The backend should use
@@ -597,8 +604,9 @@ Goal: make module boundaries explicit before moving implementation.
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
 
-- Copy/move selected Mushroom server modules into a temporary core namespace
-  such as `server/mushroom-port/` or `packages/server/src/mushroom-port/`.
+- Physically copy or move selected Mushroom server modules from the current
+  working tree into a temporary core namespace such as `server/mushroom-port/`
+  or `packages/server/src/mushroom-port/`; do not reconstruct them manually.
 - Keep Mushroom importing through compatibility wrappers while each module is
   neutralized.
 - Add a forbidden-import guard that permits the temporary namespace only for
@@ -699,8 +707,10 @@ bulk file movement.
 
 Goal: move first, then generalize without breaking Mushroom.
 
-- Copy or move selected Mushroom modules into core under a temporary namespace
-  such as `packages/vue/src/mushroom-port/` or `vue/pages/port/`.
+- Physically copy or move selected Mushroom modules from the current working
+  tree into core under a temporary namespace such as
+  `packages/vue/src/mushroom-port/` or `vue/pages/port/`; do not reconstruct
+  them manually.
 - Export them through explicit experimental subpaths, not deep imports.
 - Keep Mushroom importing through a thin adapter/compatibility layer so the UI
   remains visually unchanged during the port.
