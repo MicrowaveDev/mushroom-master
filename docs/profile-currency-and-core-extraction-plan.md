@@ -45,6 +45,13 @@
 > Latest implementation pass added the first concrete architecture slice:
 > stable module facades, a route-adapter client layer, shared loadout
 > view-model helpers, and Mushroom/Meat consumer adoption of those public paths.
+> The 2026-07-05 continuation completed the first S/F lane setup work:
+> server module inventory and frontend inventory were reviewed, core commit
+> `f9c0054` hardened the server module contract (`requires`/`provides`,
+> config validation, duplicate guards, override policy, and
+> `docs/server-module-contract.md`), and the first safe frontend port moved the
+> reduced-motion tracker into `@microwavedev/backpack-game-core/vue/composables`
+> with Mushroom kept as a compatibility re-export and Meat import coverage.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -552,6 +559,15 @@ catalog, config, repository, Telegram, and content-policy modules.
 
 #### S1 - Server Module Inventory
 
+Status: **Completed 2026-07-05 as a read-only audit.** The audit classified
+auth/session and request auth shape as hybrid core candidates with
+players/sessions/auth-code repository contracts; `create-app.js`, DB/models,
+Telegram, wiki/lore, social preview, payment callbacks, support approval
+policy, and product catalogs remain product-local. Best first server moves are
+pure/adapted slices: `provider-settlement-adapters.js`, `artifact-helpers.js`,
+module-list wiring around `ready-manager.js`, `gacha-simulation-service.js`,
+and a module factory around the existing `loadout-utils.js` adapter.
+
 Goal: classify Mushroom server files into shared core modules, app adapters, or
 product-local modules before moving code.
 
@@ -573,6 +589,12 @@ product-local modules before moving code.
   extraction inventory doc.
 
 #### S2 - Define The Core Server Module Contract
+
+Status: **Implemented 2026-07-05 in core commit `f9c0054`.** The core server
+facade now documents and enforces module names, dependency keys, provided keys,
+per-module config resolution, optional config validation, duplicate module and
+metadata guards, and explicit provider override policy. See
+`vendor/backpack-game-core/docs/server-module-contract.md`.
 
 Goal: make module boundaries explicit before moving implementation.
 
@@ -690,6 +712,15 @@ Mushroom and Meat can import the same shells.
 
 #### F1 - Frontend Port Inventory
 
+Status: **Completed 2026-07-05 as a read-only audit.** Move-now candidates are
+limited to neutral browser helpers and already-extracted re-exports, with
+`useReducedMotion.js` selected as the first safe F2 port. Adapter candidates
+include artifact/grid presentation, prep zones, replay presentation, catalog
+browser/recipes, and selected headless composables. Page shells such as
+`PrepScreen.js` and `ReplayScreen.js` should wait until their zones/components
+accept DTO props, neutral events, locale adapters, and asset resolvers instead
+of whole Mushroom `state` objects.
+
 Goal: know what can move, what needs adapters, and what must stay local before
 bulk file movement.
 
@@ -704,6 +735,13 @@ bulk file movement.
   extraction inventory doc before file moves.
 
 #### F2 - Quarantined Core Port
+
+Status: **Started 2026-07-05 in core commit `f9c0054`.** The first safe port
+copied `web/src/composables/useReducedMotion.js` into core as
+`@microwavedev/backpack-game-core/vue/composables`, added type/export tests and
+core behavior tests, kept Mushroom's file as a compatibility re-export, and
+added Meat import coverage. No page shells or product-styled components moved
+yet.
 
 Goal: move first, then generalize without breaking Mushroom.
 

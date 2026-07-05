@@ -410,6 +410,15 @@ New shared backend logic should continue landing behind public `modules/*` or
 first reusable server coordination helpers for run readiness, idle detection,
 and keyed async locks; product repos still own route mounting, auth, DB
 transactions, active-run validation, SSE delivery, and challenge resolution.
+Core commit `f9c0054` hardened the server module contract before larger
+server moves: module descriptors now validate dependency/provides metadata,
+config, duplicate registration, and provider override intent, with the contract
+documented in `vendor/backpack-game-core/docs/server-module-contract.md`.
+The same commit started the aggressive frontend port lane by moving the
+browser-safe reduced-motion tracker to
+`@microwavedev/backpack-game-core/vue/composables`; product repos still own
+settings persistence, CSS class attachment, telemetry, haptics, and page
+composition.
 Avoid new consumer imports from deep `src/*` files. Broader asset
 runtime/catalog lifecycle remains later because it still couples to
 persistence, support actions, paid rollback behavior, gacha grant/burn flows,
