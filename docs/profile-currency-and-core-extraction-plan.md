@@ -3906,8 +3906,16 @@ that game.
    while keeping grid math, bag watermark offsets, placement rules, artifact
    lookup, `ArtifactFigure` rendering, product classes, and drag/drop handlers
    local. Meat imports `BackpackGrid` in its core-consumption smoke test.
-   Remaining component candidates, in safest order:
-   - `BattleLog` / compact replay rows, backed by `shapeReplayEventRows`.
+   **Sixth slice implemented 2026-07-05:** core commit `be03e50` added
+   `BattleLog`, backed by `shapeReplayEventRows`, as the neutral renderer for
+   compact battle-log rows, active-row classes, empty state slotting, and row
+   selection emits. Mushroom's replay screen now delegates its selectable log
+   list to core while keeping replay formatting, state mutation, battle stage,
+   result overlay, route flow, and localized copy local. Meat imports
+   `BattleLog` in its core-consumption smoke test.
+   Remaining component candidates from this Phase 8AW list: **none**. Future
+   Vue moves should start with a fresh evidence-backed candidate review rather
+   than moving whole Mushroom pages.
    Component extraction rules:
    - components emit neutral events such as `roll`, `burn`, `select`, `buy`,
      `place`, `remove`, and `open`, never product route names;
@@ -3929,11 +3937,16 @@ that game.
      component option/template smoke tests. If future components need true DOM
      interaction, decide separately whether to add Vue Test Utils or Vitest.
    Validation evidence for this slice:
-   - core `npm test` passed 135/135 and `npm pack --dry-run` includes the Vue
+   - core `npm test` passed 136/136 and `npm pack --dry-run` includes the Vue
      files and contract doc;
    - focused Mushroom `game:build` and Playwright coverage passed for the
      BackpackGrid adoption: artifact bitmap screenshots, fusion UI recipes, and
      the unified-grid solo-run spec;
+   - focused Mushroom replay-screen unit coverage passed for the `BattleLog`
+     adapter row text and active-row contract;
+   - focused Mushroom Playwright replay coverage passed for post-Ready replay
+     rewards/continue behavior after the `BattleLog` adoption, and screenshot
+     checks covered `.replay-log` / `.log-entry` rendering;
    - Mushroom `npm run game:build`, `npm run game:test`, `npm run
      game:test:screens`, focused `support-admin-ui.spec.js`, and
      `npm run game:core:check` passed;
@@ -3951,11 +3964,12 @@ that game.
    now verifies the same nested `backpack-game-core` commit in Mushroom and
    Meat, then runs core tests/package dry-run, Mushroom core/build/unit/
    screenshot/focused support-admin E2E gates, and Meat tests/build. The first
-   successful gate passed against core commit `006ab33`; the latest full gate
-   passed against core commit `cbb9f18` with the BackpackGrid-focused
-   Playwright bundle added to the Mushroom E2E command. Keep the pointer update
-   order: commit/push core first, update Mushroom and Meat nested submodule
-   pointers second, then update the hub pointer after both consumers are clean.
-   Future component slices should run this command before handoff; set
-   `BACKPACK_CORE_MUSHROOM_E2E_COMMAND` when the affected Mushroom E2E surface
-   is not `tests/game/support-admin-ui.spec.js`.
+   successful gate passed against core commit `006ab33`; later gates passed
+   against core commit `cbb9f18` with the BackpackGrid-focused Playwright
+   bundle and core commit `be03e50` with the replay/screenshot BattleLog
+   surface covered. Keep the pointer update order: commit/push core first,
+   update Mushroom and Meat nested submodule pointers second, then update the
+   hub pointer after both consumers are clean. Future component slices should
+   run this command before handoff; set `BACKPACK_CORE_MUSHROOM_E2E_COMMAND`
+   when the affected Mushroom E2E surface is not
+   `tests/game/support-admin-ui.spec.js`.

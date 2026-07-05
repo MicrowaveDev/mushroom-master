@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
+import { BattleLog } from '@microwavedev/backpack-game-core/vue/components';
 
 export const ReplayScreen = {
   name: 'ReplayScreen',
@@ -11,6 +12,7 @@ export const ReplayScreen = {
   ],
   emits: ['go-results', 'set-speed'],
   components: {
+    BattleLog,
     ReplayDuel: defineAsyncComponent(() => import('../components/ReplayDuel.js').then(m => m.ReplayDuel))
   },
   data() {
@@ -110,6 +112,13 @@ export const ReplayScreen = {
         }
       }
       return rows;
+    },
+    replayLogRows() {
+      return (this.visibleReplayEvents || []).map((event) => ({
+        ...event,
+        text: event?.display?.logText || event?.text || '',
+        active: event?.replayIndex === this.state.replayIndex
+      }));
     }
   },
   methods: {
@@ -130,6 +139,10 @@ export const ReplayScreen = {
       if (Number.isFinite(exact)) return Math.max(0, exact);
       const armor = event?.artifactAttribution?.armor || [];
       return armor.reduce((sum, item) => sum + Math.max(0, Number(item.value) || 0), 0);
+    },
+    selectReplayLogRow({ row }) {
+      if (row?.replayIndex == null) return;
+      this.state.replayIndex = row.replayIndex;
     }
   },
   template: `
@@ -257,13 +270,15 @@ export const ReplayScreen = {
           </div>
         </div>
       </section>
-      <div v-else class="replay-log">
-        <button
-          v-for="event in visibleReplayEvents" :key="event.replayIndex"
-          class="log-entry" :class="{ active: event.replayIndex === state.replayIndex }"
-          @click="state.replayIndex = event.replayIndex"
-        >{{ event.display.logText }}</button>
-      </div>
+      <battle-log
+        v-else
+        :rows="replayLogRows"
+        root-class="replay-log"
+        row-class="log-entry"
+        active-class="active"
+        selectable
+        @select="selectReplayLogRow"
+      />
     </section>
   `
 };
