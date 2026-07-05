@@ -3756,7 +3756,10 @@ that game.
    `shapeGridBagSlotCells`; core commit `a4c4c06` added
    `shapeReplayEventRows`; core commit `42b1f1c` added
    `shapeArtifactTileDisplay` and artifact footprint helpers; core commit
-   `be41855` added `shapeAssetPackCardRows`. Mushroom's
+   `be41855` added `shapeAssetPackCardRows`; core commits `ebc74d2` and
+   `6d9faeb` added `shapeGachaAdminOddsTableSections`,
+   `shapeAssetRollResultPanel`, and the empty-feedback guard.
+   Mushroom's
    `ArtifactStatSummary` delegates stat-row/chip DTO shaping through core while
    keeping role colors, glyph markup, labels, classes, and component rendering
    local. Mushroom's prep shop
@@ -3776,8 +3779,12 @@ that game.
    helper for prototype artifact image metadata. Mushroom's home pack cards
    delegate detail/status lines and roll/burn action DTOs through core while
    keeping markup, styling, localization, route events, and page composition
-   local; Meat uses the same helper for prototype pack-card metadata. Remaining
-   backlog: odds tables and roll result panels. Keep Mushroom/Meat themes, localized
+   local; Meat uses the same helper for prototype pack-card metadata. Mushroom's
+   support admin odds preview delegates table sections through core, and home
+   roll feedback delegates panel metadata through core while keeping copy,
+   markup, styling, and route events local; Meat uses the same helpers in
+   prototype wrappers. Phase 8AV DTO backlog is complete; future work is
+   neutral Vue components after DTO contracts settle. Keep Mushroom/Meat themes, localized
    copy, routes, image resolvers, haptics, Telegram wrappers, and page shells
    local. Future slices need screenshot/e2e evidence in Mushroom and build/test
    evidence in Meat for every adopted component.

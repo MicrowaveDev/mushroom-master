@@ -115,6 +115,11 @@ copy, theme, and API adapters.
   product-provided summary rows and labels while games keep markup, styling,
   localized copy, route events, and page composition local, tested by
   `tests/client-view-model.test.js`
+- gacha odds table and roll result panel client view-model slice:
+  `src/client-view-model.js` now also provides headless odds table sections and
+  asset roll result panel DTOs while games keep markup, styling, localization,
+  route events, and page composition local, tested by
+  `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -176,8 +181,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `be41855`
-  (`Add asset pack card view models`)
+- latest consumed core commit: `6d9faeb`
+  (`Handle empty asset roll result panels`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -300,7 +305,7 @@ Maximum-efficiency constraints:
 | Payment providers and purchase webhooks | `app/server/services/provider-settlement-*`, `bot-gateway.js`, payment routes | Product-specific | Telegram Stars, BTCPay, NOWPayments, provider signatures, invoice lookups, tax/accounting, adult-content policy, and settlement records are game/ops concerns, not backpack mechanics. |
 | Asset catalog, ownership, equipment, and direct-buy policy | `backpack-game-core/src/profile-asset-state.js`; Mushroom adapter in `app/server/services/asset-service.js`; profile asset tables and runtime catalogs | Partially extracted domain-core candidate | Core now owns reusable profile asset state shaping, ownership maps, equip validation, purchase spend parameters, instance drafts, portrait variant projection, purchase/equip result DTOs, and grant summaries over injected rows/catalog policy. Runtime catalog lookup, SQL row lifecycle, support actions, gacha roll/burn grants, paid rollback behavior, direct-buy policy composition, and compatibility mirrors stay in the game. |
 | Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `backpack-game-core/src/asset-gacha.js`; Mushroom adapter in `app/server/services/asset-service.js`; `gacha-simulation-service.js`; admin validation helpers | Adapter over core planners | Core owns pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, result DTO shaping, roll settlement planning, duplicate-burn settlement planning, grant drafts, evidence metadata, and admin DTO/view-model helpers. Secure RNG source, wallet debit execution, asset grant persistence, pack storage, idempotency replay, SQL transactions, and operator audit records stay local. |
-| Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Partially extracted frontend-core candidate | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, grid/stat helpers, artifact stat-row DTOs, shop item row DTOs, board render rows, replay rows, and artifact tile display contracts. Next frontend moves should be neutral component-level primitives only after data contracts settle: pack cards, odds tables, and roll-result panels. |
+| Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Extracted DTO baseline, frontend-core candidate for later Vue primitives | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, grid/stat helpers, artifact stat-row DTOs, shop item row DTOs, board render rows, replay rows, artifact tile display contracts, pack card rows, odds table sections, and roll-result panel DTOs. Next frontend moves should be neutral Vue components only after the DTO contracts settle. |
 | Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
 | Battle replay/log UI | Mushroom replay components/pages and Meat battle panel | Frontend-core candidate | Battle timeline rendering, event filtering, combatant stat panels, outcome badges, and playback state are reusable over core battle events. Product narration text, character art, share routes, and replay persistence stay local. |
 | Wallet, asset inventory, and gacha UI | Mushroom asset/portrait/gacha screens, support asset widgets, Meat future inventory/gacha screens | Frontend-core candidate | Wallet balance display, asset inventory/equipment panels, gacha pack cards, roll result modals, duplicate/burn state panels, odds tables, and asset policy labels can be shared with product API/copy/theme adapters. Payment provider selection, adult-content gates, and purchase routes stay local. |
@@ -1008,8 +1013,13 @@ services. Recommended order:
    contracts while keeping bitmap generation, role colors, product visual
    taxonomy, CSS, and generated SVGs local; Meat uses it for prototype artifact
    image/tile metadata.
-10. Remaining neutral frontend primitives: pack cards, odds tables, roll-result
-   panels, and component contracts after the planner DTOs stabilize.
+10. Neutral frontend primitive pack cards, odds tables, and roll-result panels:
+    implemented in core commits `be41855`, `ebc74d2`, and `6d9faeb`.
+    Mushroom delegates home
+    pack cards, support-admin odds table sections, and home roll-result panel
+    metadata through `client-view-model`; Meat consumes the same DTOs in its
+    prototype wrappers. Remaining future work is neutral Vue components, not
+    more Phase 8AV DTO extraction.
 
 Do not move SQL, provider SDK calls, webhook verification, Telegram/adult
 content policy, support permissions, settlement runbooks, image storage, lore

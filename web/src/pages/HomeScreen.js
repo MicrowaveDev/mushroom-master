@@ -4,6 +4,7 @@ import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
 import {
   formatWalletBundlePrice as formatCoreWalletBundlePrice,
   shapeAssetPackCardRows,
+  shapeAssetRollResultPanel,
   summarizeAssetRollFeedback,
   summarizeWalletPurchaseSurface,
   summarizeAssetRollPacks
@@ -308,6 +309,12 @@ export const HomeScreen = {
           problemTitle: this.t.portraitRollProblemTitle,
           errors
         }
+      });
+    },
+    assetRollResultPanel() {
+      return shapeAssetRollResultPanel(this.assetRollFeedback, {
+        baseClass: 'home-pack-roll-result',
+        testId: 'home-pack-roll-result'
       });
     },
     rollPackSummaries() {
@@ -622,15 +629,14 @@ export const HomeScreen = {
               </div>
             </div>
             <div
-              v-if="assetRollFeedback"
-              class="home-pack-roll-result"
-              :class="'home-pack-roll-result--' + assetRollFeedback.status"
-              data-testid="home-pack-roll-result"
-              role="status"
-              aria-live="polite"
+              v-if="assetRollResultPanel"
+              :class="assetRollResultPanel.className"
+              :data-testid="assetRollResultPanel.testId"
+              :role="assetRollResultPanel.role"
+              :aria-live="assetRollResultPanel.ariaLive"
             >
-              <strong>{{ assetRollFeedback.title }}</strong>
-              <span>{{ assetRollFeedback.text }}</span>
+              <strong>{{ assetRollResultPanel.title }}</strong>
+              <span v-for="line in assetRollResultPanel.lines" :key="line.key">{{ line.text }}</span>
             </div>
           </div>
         </div>

@@ -18,11 +18,11 @@ before there is a registry package version or a second backpack-game consumer.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `be418554514ee42e345dd41592079f3c854a30cd`
-- core short SHA: `be41855`
-- core commit: `Add asset pack card view models`
-- runtime/API baseline: `be41855` (`Add asset pack card view models`)
-- game pointer commit: this commit (`Use core asset pack card rows`)
+- core SHA: `6d9faeb73752ac2a7c310914b9d591a5fc608cd3`
+- core short SHA: `6d9faeb`
+- core commit: `Handle empty asset roll result panels`
+- runtime/API baseline: `6d9faeb` (`Handle empty asset roll result panels`)
+- game pointer commit: this commit (`Use core gacha odds and roll panel rows`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -30,7 +30,8 @@ before there is a registry package version or a second backpack-game consumer.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-05 | this commit | `be41855` | Asset pack card view models | Mushroom home pack cards delegate detail/status lines and roll/burn action DTOs through `client-view-model`; Meat uses the same helper for prototype pack-card metadata. Markup, styling, localization, route events, and page composition stay local. |
+| 2026-07-05 | this commit | `6d9faeb` | Gacha odds table and roll result panel view models | Mushroom support admin delegates odds table section metadata and home roll-result panel metadata through `client-view-model`, including the empty-feedback guard; Meat uses the same helpers in prototype wrappers. Markup, styling, localization, route events, and page composition stay local. |
+| 2026-07-05 | `5986b1f` | `be41855` | Asset pack card view models | Mushroom home pack cards delegate detail/status lines and roll/burn action DTOs through `client-view-model`; Meat uses the same helper for prototype pack-card metadata. Markup, styling, localization, route events, and page composition stay local. |
 | 2026-07-05 | `43956b1` | `42b1f1c` | Artifact tile display view models | Mushroom artifact figures delegate tile dimensions, mask cells, image style hints, and role glyph labels through `client-view-model`; Meat uses the same helper for prototype artifact image metadata. Artwork generation, visual taxonomy, CSS, and product page composition stay local. |
 | 2026-07-05 | `77b1620` | `a4c4c06` | Replay event row view models | Mushroom replay timeline delegates visible event row ordering, text fallback, and active-row flags through `client-view-model`; Meat uses the same helper for its compact battle log. Product narration, replay screen markup, routes, and persistence stay local. |
 | 2026-07-05 | `a556450` | `3c638fb` | Grid board render view models | Mushroom artifact grid boards delegate board cell flags and placed-piece render rows through `client-view-model`. Visual classes, bag overlays, drag/drop events, figure rendering, layout constants, and CSS stay local. |

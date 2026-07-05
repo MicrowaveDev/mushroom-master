@@ -1,14 +1,13 @@
 import {
   gachaAdminDraftDiffRows,
   gachaAdminFixtureOperationRows,
-  gachaAdminOddsItemRows,
-  gachaAdminOddsRarityRows,
   gachaAdminPlanChanceText,
   gachaAdminPlanCoverageRows,
   gachaAdminPlanTotalWeight,
   gachaAdminReleaseChecklistRows,
   gachaAdminSimulationItemRows,
-  gachaAdminValidationIssueRows
+  gachaAdminValidationIssueRows,
+  shapeGachaAdminOddsTableSections
 } from '@microwavedev/backpack-game-core/client-view-model';
 
 const SUPPORT_ADMIN_STORAGE_KEY = 'supportAdminCredentials';
@@ -298,11 +297,17 @@ export const SupportAdminScreen = {
     gachaOddsPreview() {
       return this.gachaPreview?.preview || this.gachaValidation?.preview || null;
     },
-    gachaOddsItems() {
-      return gachaAdminOddsItemRows(this.gachaOddsPreview);
-    },
-    gachaRaritySummary() {
-      return gachaAdminOddsRarityRows(this.gachaOddsPreview);
+    gachaOddsTables() {
+      return shapeGachaAdminOddsTableSections(this.gachaOddsPreview, {
+        labels: {
+          rarity: 'Rarity',
+          expected: 'Expected',
+          items: 'Items',
+          weight: 'Weight',
+          asset: 'Asset',
+          copyCap: 'Copy Cap'
+        }
+      });
     },
     gachaSimulation() {
       return this.gachaPreview?.simulation || null;
@@ -1878,31 +1883,18 @@ export const SupportAdminScreen = {
           </ul>
         </section>
 
-        <section v-if="gachaRaritySummary.length || gachaOddsItems.length" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-odds-preview">
+        <section v-if="gachaOddsTables.length" class="support-admin-panel support-admin-panel--flat" data-testid="gacha-odds-preview">
           <h3>Odds Preview</h3>
-          <div class="support-admin-table-wrap">
+          <div v-for="table in gachaOddsTables" :key="table.key" class="support-admin-table-wrap">
             <table class="support-admin-table support-admin-compact-table">
-              <thead><tr><th>Rarity</th><th>Expected</th><th>Items</th><th>Weight</th></tr></thead>
-              <tbody>
-                <tr v-for="rarity in gachaRaritySummary" :key="rarity.rarity">
-                  <td>{{ rarity.rarity }}</td>
-                  <td>{{ rarity.expectedText }}</td>
-                  <td>{{ rarity.count }}</td>
-                  <td>{{ rarity.dropWeightText }}</td>
+              <thead>
+                <tr>
+                  <th v-for="column in table.columns" :key="column.key">{{ column.label }}</th>
                 </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="support-admin-table-wrap">
-            <table class="support-admin-table support-admin-compact-table">
-              <thead><tr><th>Asset</th><th>Rarity</th><th>Weight</th><th>Expected</th><th>Copy Cap</th></tr></thead>
+              </thead>
               <tbody>
-                <tr v-for="item in gachaOddsItems" :key="item.assetId">
-                  <td>{{ item.assetId }}</td>
-                  <td>{{ item.rarity }}</td>
-                  <td>{{ item.dropWeightText }}</td>
-                  <td>{{ item.expectedText }}</td>
-                  <td>{{ item.copyLimitText }}</td>
+                <tr v-for="row in table.rows" :key="row.rowKey">
+                  <td v-for="column in table.columns" :key="column.key">{{ row[column.field] }}</td>
                 </tr>
               </tbody>
             </table>

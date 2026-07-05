@@ -103,23 +103,34 @@ test('support admin gacha view model delegates checklist and season-plan rows th
     'policy_warning',
     'price_present'
   ]);
-  assert.deepEqual(vm.gachaRaritySummary, [{
+  assert.deepEqual(vm.gachaOddsTables.map((table) => [table.key, table.rows.length]), [
+    ['rarities', 1],
+    ['items', 8]
+  ]);
+  assert.deepEqual(vm.gachaOddsTables[0].columns.map((column) => column.label), [
+    'Rarity',
+    'Expected',
+    'Items',
+    'Weight'
+  ]);
+  assert.deepEqual(vm.gachaOddsTables[0].rows[0], {
     rarity: 'rare',
     probability: 0.25,
     count: 2,
     dropWeight: 25,
     expectedText: '25.0%',
-    dropWeightText: 25
-  }]);
-  assert.equal(vm.gachaOddsItems.length, 8);
-  assert.deepEqual(vm.gachaOddsItems[1], {
+    dropWeightText: 25,
+    rowKey: 'rare'
+  });
+  assert.deepEqual(vm.gachaOddsTables[1].rows[1], {
     assetId: 'skin.b',
     rarity: 'secret',
     dropWeight: 1,
     probability: 0.001,
     expectedText: '0.10%',
     dropWeightText: 1,
-    copyLimitText: '-'
+    copyLimitText: '-',
+    rowKey: 'skin.b'
   });
   assert.deepEqual(vm.gachaSimulationItems[1], {
     assetId: 'skin.b',
