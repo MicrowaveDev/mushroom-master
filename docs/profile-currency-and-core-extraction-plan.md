@@ -83,10 +83,13 @@
 > product route names local.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
-> route/page composition remain game-local adapters. The next core candidates
-> are **not more route plumbing**; they are remaining headless service state
-> machines and later neutral UI primitives. **2026-07-05 review:** the next
-> service-state machines should be roll settlement planning, duplicate-burn
+> route/page composition remain game-local adapters. The 2026-07-05 backend
+> planner slice moved roll settlement, duplicate-burn settlement, wallet
+> purchase intent/checkout/completion, and run-shop buy/refresh/sell planning
+> into core commit `624d4b0` while keeping execution in Mushroom adapters. The
+> next core candidates are **not more route plumbing**; they are the remaining
+> run-start/round-completion planners and later neutral UI primitives. Earlier
+> 2026-07-05 review order was roll settlement planning, duplicate-burn
 > settlement planning, wallet purchase intent/status planning, then run/shop
 > lifecycle planning. Move planners and DTO builders, not SQL transactions,
 > provider callbacks, Telegram/adult-content policy, or product page shells.
@@ -3682,39 +3685,53 @@ that game.
    planner-level extraction phases 8AR-8AU, followed by Phase 8AV frontend
    primitives.
 77. Phase 8AR asset-gacha roll settlement planner extraction.
-   **Planned next after 2026-07-05 review:** move the pure planning work from
-   `app/server/services/asset-service.js::rollAssetPack` into
-   `modules/gacha`: candidate-pool hash DTOs, duplicate-result summaries,
-   guarantee application summaries, pity-before/after payload shaping, wallet
-   spend metadata, asset-instance grant draft metadata, roll evidence items,
-   and roll-result item DTOs. Mushroom must still own secure RNG selection,
-   feature flags, runtime pack/catalog lookup, idempotency queries, mutation
-   locks, SQL transactions, wallet debit execution, `asset_rolls` inserts,
-   rollback behavior, HTTP errors, and audit/log metadata.
+   **Implemented 2026-07-05:** core commit `624d4b0` added
+   `createAssetGachaRollSettlementPlan`,
+   `createAssetGachaRollGrantDrafts`, and
+   `shapeAssetGachaRollSettlementItems` through `modules/gacha`. The planner
+   now owns candidate-pool hash DTOs, duplicate-result summaries,
+   guarantee/pity payloads, wallet-spend metadata, grant draft metadata, roll
+   evidence items, and result item DTOs over injected pack/candidate/selection
+   snapshots. Mushroom still owns secure RNG selection, feature flags, runtime
+   pack/catalog lookup, idempotency queries, mutation locks, SQL transactions,
+   wallet debit execution, `asset_rolls` inserts, rollback behavior, HTTP
+   errors, and audit/log metadata.
 78. Phase 8AS duplicate-burn settlement planner extraction.
-   **Planned:** move the pure planning work from
-   `app/server/services/asset-service.js::burnAssetPackDuplicates` into
-   `modules/gacha`: deterministic burn-source ordering over injected active
+   **Implemented 2026-07-05:** core commit `624d4b0` added
+   `selectAssetGachaBurnSourceRows`,
+   `createAssetGachaBurnSettlementPlan`,
+   `createAssetGachaBurnSourceMetadata`,
+   `createAssetGachaBurnGrantDrafts`, and
+   `shapeAssetGachaBurnSettlementItems` through `modules/gacha`. The planner
+   now owns deterministic burn-source ordering over injected active
    rows/equipped ids, source burn metadata, target grant draft metadata,
    duplicate-result summaries, exchange evidence metadata, and burn-result item
-   DTOs. Mushroom must still own burn-rule route selection, active/equipped row
+   DTOs. Mushroom still owns burn-rule route selection, active/equipped row
    queries, SQL status updates, exchange inserts, mutation locks,
    idempotency replay, secure RNG source, HTTP errors, and product audit
    records.
 79. Phase 8AT wallet purchase intent/status planner extraction.
-   **Planned:** move provider-neutral planning from
-   `app/server/services/wallet-service.js` into `modules/wallet`: purchase
-   intent draft shaping, checkout metadata shaping, completed-intent grant
-   planning, non-terminal status transition decisions, support-review marker
-   DTOs, clawback/reversal planning, and provider amount/currency comparison
-   contracts. Mushroom must still own Telegram Stars, BTCPay, NOWPayments,
-   webhook verification, invoice polling, adult-content/provider policy,
-   locks, SQL rows, support runbooks, refunds/reversals execution, and payment
-   operations monitoring.
+   **Implemented 2026-07-05:** core commit `624d4b0` added
+   `createWalletPurchaseIntentDraft`, `shapeWalletPurchaseCheckout`,
+   `createWalletPurchaseCheckoutMetadataPatch`,
+   `walletPurchaseCheckoutIsResolved`, and
+   `createWalletPurchaseCompletionPlan` through `modules/wallet`. Combined
+   with the earlier wallet-accounting status/reversal helpers, core now owns
+   provider-neutral intent draft shaping, checkout DTO/metadata patch shaping,
+   completed-intent grant planning, status classification, clawback/reversal
+   mutation shaping, and provider amount/currency comparison contracts.
+   Mushroom still owns Telegram Stars, BTCPay, NOWPayments, webhook
+   verification, invoice polling, adult-content/provider policy, locks, SQL
+   rows, support runbooks, refunds/reversals execution, and payment operations
+   monitoring.
 80. Phase 8AU run/shop lifecycle state planner extraction.
-   **Planned after wallet/gacha settlement planners:** move product-neutral run
-   state decisions into a new run module: run start draft shape over injected
-   starter loadout/shop offer/config, shop buy/refresh/sell state plans,
+   **Partially implemented 2026-07-05:** core commit `624d4b0` added
+   `createRunShopPurchasePlan`, `createRunShopRefreshPlan`, and
+   `createRunShopSellPlan` through `modules/shop`. Mushroom now delegates
+   buy/refresh/sell run-currency and offer-state decisions to core while
+   keeping run locks, DB mutations, loadout rows, HTTP errors, refunds, and
+   product catalog lookup local. Remaining backlog inside this phase: run
+   start draft shape over injected starter loadout/shop offer/config,
    round-transition/life/win/loss counters, and completion summary DTOs.
    Mushroom must still own player/mushroom selection, daily limits, rewards,
    rating, season/achievement grants, challenge matching, DB persistence,

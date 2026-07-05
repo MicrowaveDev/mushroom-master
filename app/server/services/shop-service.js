@@ -11,7 +11,12 @@ import {
   getShopRefreshCost,
   SHOP_OFFER_SIZE
 } from '../game-data.js';
-import { generateShopOffer as generateCoreShopOffer } from '@microwavedev/backpack-game-core';
+import {
+  createRunShopPurchasePlan,
+  createRunShopRefreshPlan,
+  createRunShopSellPlan,
+  generateShopOffer as generateCoreShopOffer
+} from '@microwavedev/backpack-game-core';
 import {
   computeCharacterLevel,
   createId,
@@ -130,28 +135,31 @@ export async function buyRunShopItem(playerId, gameRunId, artifactId) {
     }
     const offer = parseJson(shopResult.rows[0].offer_json, []);
 
-    if (!offer.includes(artifactId)) {
-      throw new Error('Item is not in the current shop offer');
-    }
-
     const artifact = getArtifactById(artifactId);
     if (!artifact) {
       throw new Error('Unknown artifact');
     }
     const price = getArtifactPrice(artifact);
-    if (grp.coins < price) {
+    const purchasePlan = createRunShopPurchasePlan({
+      coins: grp.coins,
+      offer,
+      artifactId,
+      price
+    });
+    if (purchasePlan.reason === 'item_not_in_offer') {
+      throw new Error('Item is not in the current shop offer');
+    }
+    if (purchasePlan.reason === 'insufficient_run_currency') {
       throw new Error('Not enough coins');
     }
 
-    const newCoins = grp.coins - price;
+    const newCoins = purchasePlan.coinsAfter;
     await client.query(
       `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
       [grp.id, newCoins]
     );
 
-    const newOffer = [...offer];
-    const idx = newOffer.indexOf(artifactId);
-    if (idx !== -1) newOffer.splice(idx, 1);
+    const newOffer = purchasePlan.shopOffer;
 
     await client.query(
       `UPDATE game_run_shop_states SET offer_json = $2, updated_at = $3
@@ -209,31 +217,44 @@ export async function refreshRunShop(playerId, gameRunId) {
     const shop = shopResult.rows[0];
 
     const cost = getShopRefreshCost(shop.refresh_count);
-    if (grp.coins < cost) {
+    const currentRoundsSinceBag = shop.rounds_since_bag || 1;
+    const affordabilityPlan = createRunShopRefreshPlan({
+      coins: grp.coins,
+      refreshCost: cost,
+      refreshCount: shop.refresh_count,
+      currentRoundsSinceBag
+    });
+    if (!affordabilityPlan.ok) {
       throw new Error('Not enough coins to refresh shop');
     }
 
-    const newCoins = grp.coins - cost;
-    const currentRoundsSinceBag = shop.rounds_since_bag || 1;
     const rng = createRng(`${gameRunId}:refresh:${shop.round_number}:${shop.refresh_count + 1}`);
     const charItems = await lookupEligibleCharacterItems(client, playerId, runMode, gameRunId);
     const { offer: newOffer, hasBag } = generateShopOffer(rng, SHOP_OFFER_SIZE, currentRoundsSinceBag, charItems);
+    const refreshPlan = createRunShopRefreshPlan({
+      coins: grp.coins,
+      refreshCost: cost,
+      refreshCount: shop.refresh_count,
+      currentRoundsSinceBag,
+      generatedOffer: newOffer,
+      hasBag
+    });
 
     await client.query(
       `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
-      [grp.id, newCoins]
+      [grp.id, refreshPlan.coinsAfter]
     );
     await client.query(
       `UPDATE game_run_shop_states SET refresh_count = refresh_count + 1, rounds_since_bag = $2, offer_json = $3, updated_at = $4
        WHERE game_run_id = $1 AND player_id = $5 AND round_number = $6`,
-      [gameRunId, hasBag ? 0 : currentRoundsSinceBag, JSON.stringify(newOffer), nowIso(), playerId, currentRound]
+      [gameRunId, refreshPlan.roundsSinceBag, JSON.stringify(refreshPlan.shopOffer), nowIso(), playerId, currentRound]
     );
 
     return {
-      ...runCurrencyFields(newCoins),
-      shopOffer: newOffer,
-      refreshCount: shop.refresh_count + 1,
-      refreshCost: cost
+      ...runCurrencyFields(refreshPlan.coinsAfter),
+      shopOffer: refreshPlan.shopOffer,
+      refreshCount: refreshPlan.refreshCount,
+      refreshCost: refreshPlan.refreshCost
     };
   }));
 }
@@ -336,8 +357,12 @@ export async function sellRunItem(playerId, gameRunId, target) {
     }
 
     const price = getArtifactPrice(artifact);
-    const isFreshThisRound = candidate.purchasedRound === currentRound;
-    const sellPrice = isFreshThisRound ? price : Math.max(1, Math.floor(price / 2));
+    const sellPlan = createRunShopSellPlan({
+      coins: grp.coins,
+      price,
+      purchasedRound: candidate.purchasedRound,
+      currentRound
+    });
 
     let deleted;
     if (targetRowId) {
@@ -359,15 +384,14 @@ export async function sellRunItem(playerId, gameRunId, target) {
       playerId,
       roundNumber: currentRound,
       artifactId: resolvedArtifactId,
-      refundAmount: sellPrice
+      refundAmount: sellPlan.sellPrice
     });
 
-    const newCoins = grp.coins + sellPrice;
     await client.query(
       `UPDATE game_run_players SET coins = $2 WHERE id = $1`,
-      [grp.id, newCoins]
+      [grp.id, sellPlan.coinsAfter]
     );
 
-    return { id: deleted.id, ...runCurrencyFields(newCoins), sellPrice, artifactId: resolvedArtifactId };
+    return { id: deleted.id, ...runCurrencyFields(sellPlan.coinsAfter), sellPrice: sellPlan.sellPrice, artifactId: resolvedArtifactId };
   }));
 }

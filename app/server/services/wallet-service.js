@@ -2,7 +2,9 @@ import crypto from 'crypto';
 import {
   WALLET_PURCHASE_STATUSES as CORE_WALLET_PURCHASE_STATUSES,
   canRecordWalletPurchaseStatus,
-  createWalletPurchaseGrantMutation,
+  createWalletPurchaseCheckoutMetadataPatch,
+  createWalletPurchaseCompletionPlan,
+  createWalletPurchaseIntentDraft,
   createWalletPurchaseReversalMutation,
   createWalletTransactionDraft,
   isWalletPurchaseClawbackStatus,
@@ -11,7 +13,8 @@ import {
   normalizeWalletGrantAmount,
   normalizeWalletSpendAmount,
   validateWalletDelta,
-  walletPurchasePriceMatches
+  shapeWalletPurchaseCheckout,
+  walletPurchaseCheckoutIsResolved
 } from '@microwavedev/backpack-game-core/modules/wallet';
 import { query, withTransaction } from '../db.js';
 import { createId, nowIso, parseJson } from '../lib/utils.js';
@@ -225,33 +228,7 @@ function rowToTransaction(row) {
 }
 
 function checkoutDataForIntent(intent) {
-  const storedCheckout = intent.metadata?.checkout && typeof intent.metadata.checkout === 'object'
-    ? intent.metadata.checkout
-    : {};
-  if (intent.provider === 'telegram_stars') {
-    return {
-      type: 'telegram_invoice',
-      provider: intent.provider,
-      title: `${intent.walletAmount} wallet coins`,
-      description: `${intent.walletAmount} profile wallet coins`,
-      payload: intent.id,
-      currency: intent.priceCurrency,
-      prices: [
-        { label: `${intent.walletAmount} wallet coins`, amount: intent.priceAmount }
-      ],
-      ...storedCheckout
-    };
-  }
-  return {
-    type: 'crypto_invoice',
-    provider: intent.provider,
-    invoiceId: intent.providerInvoiceId,
-    checkoutUrl: null,
-    paymentUri: null,
-    priceAmount: intent.priceAmount,
-    priceCurrency: intent.priceCurrency,
-    ...storedCheckout
-  };
+  return shapeWalletPurchaseCheckout(intent);
 }
 
 function rowToPurchaseIntent(row) {
@@ -281,7 +258,7 @@ function rowToPurchaseIntent(row) {
 }
 
 function checkoutIsResolved(intent) {
-  return Boolean(intent.checkout?.invoiceReady || intent.checkout?.setupRequired);
+  return walletPurchaseCheckoutIsResolved(intent);
 }
 
 async function getPurchaseIntentById(intentId) {
@@ -355,11 +332,7 @@ async function markCheckoutClaimFailed(intent, claimToken, error) {
 }
 
 async function storeProviderCheckout(intent, claimToken, checkout) {
-  const nextMetadata = {
-    ...intent.metadata,
-    checkout
-  };
-  const providerInvoiceId = checkout.providerInvoiceId || intent.providerInvoiceId;
+  const patch = createWalletPurchaseCheckoutMetadataPatch(intent, checkout);
   const updatedAt = nowIso();
   const updated = await query(
     `UPDATE wallet_purchase_intents
@@ -371,7 +344,7 @@ async function storeProviderCheckout(intent, claimToken, checkout) {
          updated_at = $4
      WHERE id = $1 AND checkout_claim_token = $5
      RETURNING *`,
-    [intent.id, providerInvoiceId, metadataJson(nextMetadata), updatedAt, claimToken]
+    [intent.id, patch.providerInvoiceId, metadataJson(patch.metadata), updatedAt, claimToken]
   );
   if (updated.rowCount) return rowToPurchaseIntent(updated.rows[0]);
   return getPurchaseIntentById(intent.id);
@@ -1262,24 +1235,34 @@ async function createPurchaseIntentUnlocked(playerId, {
       paymentSurface: normalizedSurface
     };
 
+    const draft = createWalletPurchaseIntentDraft({
+      id,
+      playerId,
+      bundle,
+      providerInvoiceId,
+      idempotencyKey,
+      metadata,
+      createdAt: now
+    });
     const inserted = await client.query(
       `INSERT INTO wallet_purchase_intents
        (id, player_id, provider, provider_invoice_id, currency_code, wallet_amount,
         price_amount, price_currency, status, idempotency_key, metadata_json, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $11)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12)
        ON CONFLICT DO NOTHING`,
       [
-        id,
-        playerId,
-        bundle.provider,
-        providerInvoiceId,
-        bundle.currencyCode,
-        bundle.walletAmount,
-        bundle.priceAmount,
-        bundle.priceCurrency,
-        idempotencyKey,
-        metadataJson(metadata),
-        now
+        draft.id,
+        draft.playerId,
+        draft.provider,
+        draft.providerInvoiceId,
+        draft.currencyCode,
+        draft.walletAmount,
+        draft.priceAmount,
+        draft.priceCurrency,
+        draft.status,
+        draft.idempotencyKey,
+        metadataJson(draft.metadata),
+        draft.createdAt
       ]
     );
     if (!inserted.rowCount) {
@@ -1347,17 +1330,19 @@ export async function completePurchaseIntent({
     }
     if (row.status !== 'pending') throw httpError('Wallet purchase is not pending', 409);
 
-    const priceCheck = walletPurchasePriceMatches({
-      expectedAmount: row.price_amount,
-      expectedCurrency: row.price_currency,
-      receivedAmount: priceAmount,
-      receivedCurrency: priceCurrency
+    const paymentId = providerPaymentId || createId(`payment_${normalizedProvider}`);
+    const completionPlan = createWalletPurchaseCompletionPlan(row, {
+      provider: normalizedProvider,
+      providerPaymentId: paymentId,
+      priceAmount,
+      priceCurrency,
+      metadata
     });
-    if (!priceCheck.ok) {
+    if (completionPlan.action === 'price_mismatch') {
       throw httpError('Invalid wallet purchase amount', 400);
     }
+    if (!completionPlan.ok) throw httpError('Wallet purchase is not pending', 409);
 
-    const paymentId = providerPaymentId || createId(`payment_${normalizedProvider}`);
     const completedAt = nowIso();
     const updatedIntent = await client.query(
       `UPDATE wallet_purchase_intents
@@ -1370,9 +1355,9 @@ export async function completePurchaseIntent({
        RETURNING *`,
       [
         row.id,
-        paymentId,
+        completionPlan.providerPaymentId,
         completedAt,
-        metadataJson({ ...parseJson(row.metadata_json, {}), completion: metadata })
+        metadataJson(completionPlan.metadata)
       ]
     );
     if (!updatedIntent.rowCount) {
@@ -1388,10 +1373,7 @@ export async function completePurchaseIntent({
     }
     const completedRow = updatedIntent.rows[0];
 
-    const transaction = await grantCurrency(client, createWalletPurchaseGrantMutation(completedRow, {
-      provider: normalizedProvider,
-      providerPaymentId: paymentId
-    }));
+    const transaction = await grantCurrency(client, completionPlan.grantMutation);
 
     return {
       intent: rowToPurchaseIntent(completedRow),

@@ -274,14 +274,14 @@ Maximum-efficiency constraints:
 | Seeded RNG and shuffle | `backpack-game-core/src/rng.js`; Mushroom string-seed adapter in `app/server/lib/utils.js`; compatibility re-export in `app/server/services/battle-engine.js` | Extracted with product seed hashing | Core owns the browser-safe numeric-seed RNG state machine, integer rolls, and non-mutating shuffle. Mushroom keeps Node `crypto` string hashing for existing deterministic seed inputs. |
 | Fusion matching algorithm | `backpack-game-core/src/fusion-matching.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product hook | Core owns adjacency search, duplicate row consumption, match shaping, and `fusionIngredientRowIdSet`. Mushroom keeps recipe data and eligibility policy through `canUseIngredient`. |
 | Fusion application | `app/server/services/artifact-fusion-service.js` | Product-specific | Reads/writes DB rows, inserts loadout items, records reveals, uses Mushroom artifact catalog and persistence services. |
-| Shop offer generation | `backpack-game-core/src/shop-offer.js`; Mushroom adapter in `app/server/services/shop-service.js` | Extracted with product config | Core owns deterministic pool sampling, bag pity, bag chance escalation, and character-item slot reservation. Mushroom passes combat pools, bag pools, eligible character items, and balance constants. |
-| Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Product-specific | DB transactions, run locks, persisted shop states, run currency, refunds, and loadout rows stay in product service code. |
+| Shop offer generation and run-shop state plans | `backpack-game-core/src/shop-offer.js`; Mushroom adapter in `app/server/services/shop-service.js` | Extracted with product config | Core owns deterministic pool sampling, bag pity, bag chance escalation, character-item slot reservation, and pure buy/refresh/sell run-currency + offer-state plans. Mushroom passes combat pools, bag pools, eligible character items, balance constants, and generated offers. |
+| Run-shop mutations | `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in `app/server/services/shop-service.js` | Adapter over core planners | Core now plans buy/refresh/sell state transitions; DB transactions, run locks, persisted shop states, loadout rows, refunds, route errors, and catalog lookup stay in product service code. Run start, round-transition, and completion planners remain future extraction candidates. |
 | Bot loadout generation | `backpack-game-core/src/backpack-loadout.js`; Mushroom wrapper in `app/server/services/bot-loadout.js` | Extracted with product providers | Core owns weighted-pick, first-fit bag placement, rectangular item placement, occupied-cell tracking, and retry orchestration. Mushroom passes artifacts, affinities, presets, prices, grid constants, RNG, validation, and keeps ghost snapshot/portrait glue local. |
 | Battle simulation | `backpack-game-core/src/battle-simulation.js`; Mushroom adapter in `app/server/services/battle-engine.js` | Extracted with product hooks | Core owns deterministic 1v1 turn loop, action/skip event sequencing, HP/stun flow, speed/base-speed tiebreak fallback, step-cap winner resolution, and result shaping. Mushroom passes combatant derivation, active/passive ability hooks, Morga/Kirt tiebreak hooks, artifact attribution/effect metadata, narration labels, constants, and seeded RNG. |
-| Wallet accounting and purchase lifecycle | `backpack-game-core/src/wallet-accounting.js`; Mushroom adapter in `app/server/services/wallet-service.js` | Partially extracted domain-core candidate | Core owns balance math, transaction draft shaping, purchase grant/reversal mutation shaping, status classification, price matching, and settlement invariants. The next movable slice is provider-neutral purchase-intent/status planning. SQL rows, locks, provider SDK calls, webhooks, invoice polling, support actions, adult-content policy, and operations runbooks stay local. |
+| Wallet accounting and purchase lifecycle | `backpack-game-core/src/wallet-accounting.js`; Mushroom adapter in `app/server/services/wallet-service.js` | Adapter over core planners | Core owns balance math, transaction draft shaping, purchase intent drafts, checkout DTO/metadata patch shaping, checkout resolved-state checks, completion grant planning, purchase grant/reversal mutation shaping, status classification, price matching, and settlement invariants. SQL rows, locks, provider SDK calls, webhooks, invoice polling, support actions, adult-content policy, and operations runbooks stay local. |
 | Payment providers and purchase webhooks | `app/server/services/provider-settlement-*`, `bot-gateway.js`, payment routes | Product-specific | Telegram Stars, BTCPay, NOWPayments, provider signatures, invoice lookups, tax/accounting, adult-content policy, and settlement records are game/ops concerns, not backpack mechanics. |
 | Asset catalog, ownership, equipment, and direct-buy policy | `backpack-game-core/src/profile-asset-state.js`; Mushroom adapter in `app/server/services/asset-service.js`; profile asset tables and runtime catalogs | Partially extracted domain-core candidate | Core now owns reusable profile asset state shaping, ownership maps, equip validation, purchase spend parameters, instance drafts, portrait variant projection, purchase/equip result DTOs, and grant summaries over injected rows/catalog policy. Runtime catalog lookup, SQL row lifecycle, support actions, gacha roll/burn grants, paid rollback behavior, direct-buy policy composition, and compatibility mirrors stay in the game. |
-| Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `backpack-game-core/src/asset-gacha.js`; Mushroom adapter in `app/server/services/asset-service.js`; `gacha-simulation-service.js`; admin validation helpers | Partially extracted domain-core candidate | Core owns pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, result DTO shaping, and admin DTO/view-model helpers. The next movable slices are roll-settlement and burn-settlement planners: metadata/evidence/grant drafts over injected snapshots. Secure RNG source, wallet debit execution, asset grant persistence, pack storage, idempotency replay, SQL transactions, and operator audit records stay local. |
+| Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `backpack-game-core/src/asset-gacha.js`; Mushroom adapter in `app/server/services/asset-service.js`; `gacha-simulation-service.js`; admin validation helpers | Adapter over core planners | Core owns pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, result DTO shaping, roll settlement planning, duplicate-burn settlement planning, grant drafts, evidence metadata, and admin DTO/view-model helpers. Secure RNG source, wallet debit execution, asset grant persistence, pack storage, idempotency replay, SQL transactions, and operator audit records stay local. |
 | Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Partially extracted frontend-core candidate | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, and grid/stat helpers. Next frontend moves should be neutral component-level primitives only after data contracts settle: board props, artifact tile rows, shop rows, pack cards, odds tables, roll-result panels, and replay rows. |
 | Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
 | Battle replay/log UI | Mushroom replay components/pages and Meat battle panel | Frontend-core candidate | Battle timeline rendering, event filtering, combatant stat panels, outcome badges, and playback state are reusable over core battle events. Product narration text, character art, share routes, and replay persistence stay local. |
@@ -930,25 +930,31 @@ release checklist, and season-plan row shaping is covered by core commit
 `7deb088`. Gacha admin fixture operation summaries are covered by core commit
 `497e6f7`. Gacha admin odds preview rows are covered by core commit `c5ebe41`,
 and fixture-operation/simulation preview rows are covered by core commit
-`c9d8492`. The next useful extractions are planner-level settlement/lifecycle
-helpers and later UI primitives that both Mushroom and Meat can consume without
-inheriting Mushroom persistence, Telegram, payment, catalog, art, support,
-haptics, or page-composition rules.
+`c9d8492`. Backend settlement/lifecycle planners are covered by core commit
+`624d4b0`: asset-gacha roll settlement, duplicate-burn settlement, wallet
+purchase intent/checkout/completion, and run-shop buy/refresh/sell planning.
+The next useful extractions are the remaining run-start/round-completion
+planner helpers and later UI primitives that both Mushroom and Meat can
+consume without inheriting Mushroom persistence, Telegram, payment, catalog,
+art, support, haptics, or page-composition rules.
 
 Post-preview-helper review on 2026-07-05: there is still reusable code in
 Mushroom, but it should move as planners and DTO builders rather than copied
 services. Recommended order:
 
-1. Asset-gacha roll settlement planner: candidate-pool hash, duplicate
-   summaries, guarantee/pity payloads, wallet spend metadata, grant drafts,
-   roll evidence, and result item DTOs.
-2. Duplicate-burn settlement planner: burn-source ordering, source burn
-   metadata, target grant drafts, exchange evidence, and result item DTOs.
-3. Wallet purchase intent/status planner: provider-neutral intent drafts,
-   checkout metadata, completed grant/reversal plans, review/clawback status
-   decisions, and amount/currency contracts.
-4. Run/shop lifecycle planner: start-run draft state, shop buy/refresh/sell
-   state plans, round-transition counters, and completion summary DTOs.
+1. Asset-gacha roll settlement planner: implemented in core commit `624d4b0`
+   with candidate-pool hash, duplicate summaries, guarantee/pity payloads,
+   wallet spend metadata, grant drafts, roll evidence, and result item DTOs.
+2. Duplicate-burn settlement planner: implemented in core commit `624d4b0`
+   with burn-source ordering, source burn metadata, target grant drafts,
+   exchange evidence, and result item DTOs.
+3. Wallet purchase intent/status planner: implemented in core commit
+   `624d4b0` plus earlier wallet-accounting helpers for provider-neutral
+   intent drafts, checkout metadata, completed grant/reversal plans,
+   review/clawback status decisions, and amount/currency contracts.
+4. Run/shop lifecycle planner: partially implemented in core commit `624d4b0`
+   for shop buy/refresh/sell state plans. Remaining work is start-run draft
+   state, round-transition counters, and completion summary DTOs.
 5. Neutral frontend primitives: board/tile/shop/pack/odds/replay row and
    component contracts after the planner DTOs stabilize.
 

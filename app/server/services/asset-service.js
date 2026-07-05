@@ -1,13 +1,15 @@
 import crypto from 'crypto';
 import {
   advanceAssetGachaPackPityState,
-  assetGachaBurnableDuplicateRows,
-  assetGachaPackRollSize,
   chooseWeightedAssetGachaCandidate,
   computeAssetGachaPackPityState,
+  createAssetGachaBurnGrantDrafts,
+  createAssetGachaBurnSettlementPlan,
+  createAssetGachaBurnSourceMetadata,
+  createAssetGachaRollGrantDrafts,
+  createAssetGachaRollSettlementPlan,
   evaluateAssetAcquisitionPolicy,
   getAssetGachaPackAvailability,
-  hashAssetGachaCandidatePool,
   normalizeAssetGachaBurnRules,
   normalizeAssetGachaBurnExchangeRow as rowToBurnExchange,
   normalizeAssetGachaDuplicatePolicy,
@@ -15,9 +17,12 @@ import {
   resolveAssetCatalogAcquisitionPolicy,
   resolveAssetGachaRollCandidates,
   selectAssetGachaBurnTargets,
+  selectAssetGachaBurnSourceRows,
   selectAssetGachaRollResults,
+  shapeAssetGachaBurnSettlementItems,
   shapeAssetGachaBurnResult as shapeAssetBurnResult,
   shapeAssetGachaPack,
+  shapeAssetGachaRollSettlementItems,
   shapeAssetGachaRollResult as shapeAssetRollResult,
   validateAssetGachaPack
 } from '@microwavedev/backpack-game-core/modules/gacha';
@@ -353,10 +358,6 @@ function configuredRollSize() {
     : 1;
 }
 
-function assetPackRollSize(pack) {
-  return assetGachaPackRollSize(pack);
-}
-
 function normalizedDuplicatePolicy(pack) {
   return normalizeAssetGachaDuplicatePolicy(pack, assetGachaCoreOptions());
 }
@@ -395,10 +396,6 @@ export function computePackPityState(pack, {
 
 function advancePackPityState(pityBefore, selectedItems) {
   return advanceAssetGachaPackPityState(pityBefore, selectedItems, assetGachaCoreOptions());
-}
-
-function burnableDuplicateRows(pack, activeAssetRows = [], rule, equippedInstanceIds = new Set()) {
-  return assetGachaBurnableDuplicateRows(pack, activeAssetRows, rule, equippedInstanceIds);
 }
 
 export function shapeAssetPack(pack, {
@@ -977,10 +974,6 @@ export function resolveAssetPackRollCandidates(pack, {
   }));
 }
 
-function hashCandidatePool(candidates) {
-  return hashAssetGachaCandidatePool(candidates);
-}
-
 function selectBurnTargets(pack, rule, rng, {
   ownedAssetIds = [],
   activeAssetRows = [],
@@ -1060,19 +1053,20 @@ export async function burnAssetPackDuplicates(playerId, packId, {
         )
       ]);
       const equippedInstanceIds = new Set(equippedRows.rows.map((row) => row.asset_instance_id).filter(Boolean));
-      const burnableRows = burnableDuplicateRows(pack, activeRows.rows, rule, equippedInstanceIds)
-        .sort((a, b) => {
-          const aTime = new Date(a.acquired_at || 0).getTime();
-          const bTime = new Date(b.acquired_at || 0).getTime();
-          return aTime - bTime || String(a.id).localeCompare(String(b.id));
-        });
-      if (burnableRows.length < rule.sourceCount) {
+      const sourceRows = selectAssetGachaBurnSourceRows(pack, activeRows.rows, rule, { equippedInstanceIds });
+      if (sourceRows.length < rule.sourceCount) {
         throw httpError('Not enough duplicate assets to burn', 409);
       }
 
-      const sourceRows = burnableRows.slice(0, rule.sourceCount);
       const exchangeId = createId('burn');
       const now = nowIso();
+      const burnSourcePlan = createAssetGachaBurnSettlementPlan({
+        pack,
+        rule,
+        sourceRows,
+        randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng'
+      });
+
       for (const row of sourceRows) {
         await client.query(
           `UPDATE player_asset_instances
@@ -1081,13 +1075,7 @@ export async function burnAssetPackDuplicates(playerId, packId, {
            WHERE id = $1 AND status = 'active'`,
           [
             row.id,
-            JSON.stringify({
-              ...parseJson(row.metadata_json, {}),
-              burnedAt: now,
-              burnExchangeId: exchangeId,
-              burnRuleId: rule.id,
-              burnPackId: pack.id
-            })
+            JSON.stringify(createAssetGachaBurnSourceMetadata(row, burnSourcePlan, { exchangeId, now }))
           ]
         );
       }
@@ -1107,34 +1095,33 @@ export async function burnAssetPackDuplicates(playerId, packId, {
         throw httpError('Asset burn target pool is unavailable', 400);
       }
 
+      const burnPlan = createAssetGachaBurnSettlementPlan({
+        pack,
+        rule,
+        sourceRows,
+        targetItems,
+        ownedAssetIdsAfterBurn: ownedAfterBurn,
+        randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng'
+      });
+
+      const grantDrafts = createAssetGachaBurnGrantDrafts(burnPlan, { exchangeId });
       const insertedItems = [];
-      for (const selected of targetItems) {
+      for (const [index, draft] of grantDrafts.entries()) {
         const inserted = await insertAssetInstance(client, {
           playerId,
-          assetId: selected.assetId,
-          acquisitionSource: 'asset_burn_exchange',
-          acquisitionSourceId: exchangeId,
-          metadata: {
-            packId: pack.id,
-            burnRuleId: rule.id,
-            rarity: selected.rarity,
-            selectedRarity: selected.selectedRarity,
-            duplicateCopy: ownedAfterBurn.has(selected.assetId),
-            sourceAssetInstanceIds: sourceRows.map((row) => row.id)
-          },
-          allowDuplicate: true
+          assetId: draft.assetId,
+          acquisitionSource: draft.acquisitionSource,
+          acquisitionSourceId: draft.acquisitionSourceId,
+          metadata: draft.metadata,
+          allowDuplicate: draft.allowDuplicate
         });
         insertedItems.push({
-          ...selected,
-          duplicateCopy: ownedAfterBurn.has(selected.assetId),
+          ...burnPlan.targetItems[index],
           instance: rowToAssetInstance(inserted.row)
         });
-        ownedAfterBurn.add(selected.assetId);
       }
 
-      const resultAssetIds = insertedItems.map((item) => item.assetId);
-      const resultInstanceIds = insertedItems.map((item) => item.instance?.id || null);
-      const duplicateAssetIds = insertedItems.filter((item) => item.duplicateCopy).map((item) => item.assetId);
+      const { resultItems, resultInstanceIds } = shapeAssetGachaBurnSettlementItems(burnPlan, { grantedItems: insertedItems });
       await client.query(
         `INSERT INTO asset_burn_exchanges
          (id, player_id, pack_id, rule_id, source_asset_instance_ids_json,
@@ -1146,18 +1133,13 @@ export async function burnAssetPackDuplicates(playerId, packId, {
           playerId,
           pack.id,
           rule.id,
-          JSON.stringify(sourceRows.map((row) => row.id)),
-          JSON.stringify(resultAssetIds),
+          JSON.stringify(burnPlan.sourceAssetInstanceIds),
+          JSON.stringify(burnPlan.resultAssetIds),
           JSON.stringify(resultInstanceIds),
           idempotencyKey,
           JSON.stringify({
-            rule,
-            sourceAssetIds: sourceRows.map((row) => row.asset_id),
-            sourceAssetInstanceIds: sourceRows.map((row) => row.id),
-            resultAssetIds,
-            resultInstanceIds,
-            duplicateAssetIds,
-            randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng'
+            ...burnPlan.exchangeMetadata,
+            resultInstanceIds
           }),
           now
         ]
@@ -1166,16 +1148,6 @@ export async function burnAssetPackDuplicates(playerId, packId, {
       const exchangeRow = await client.query(`SELECT * FROM asset_burn_exchanges WHERE id = $1`, [exchangeId]);
       const exchange = rowToBurnExchange(exchangeRow.rows[0]);
       const instanceSummaries = shapeGrantedAssetInstances(insertedItems.map((item) => item.instance), catalog);
-      const resultItems = insertedItems.map((item) => ({
-        slotIndex: item.slotIndex,
-        assetId: item.assetId,
-        assetName: item.asset?.name || null,
-        assetPath: item.asset?.path || null,
-        rarity: item.rarity,
-        selectedRarity: item.selectedRarity,
-        duplicateCopy: item.duplicateCopy,
-        resultInstanceId: item.instance?.id || null
-      }));
       return {
         exchange,
         burnResult: shapeAssetBurnResult(exchange, { pack, items: resultItems, catalog }),
@@ -1262,96 +1234,55 @@ export async function rollAssetPack(playerId, packId, {
           ? 'No rollable assets left in this pack'
           : 'No unowned assets left in this pack', 409);
       }
-      const guaranteesApplied = selectedItems.guaranteeApplications || [];
       const pityAfter = advancePackPityState(pityBefore, selectedItems);
-      const candidatePoolHash = hashCandidatePool(candidates);
-      const resultAssetIds = selectedItems.map((item) => item.assetId);
-      const duplicateAssetIds = resultAssetIds.filter((assetId) => owned.has(assetId));
-      const rarityTableVersion = pack.rarityTableVersion || `${pack.id}:v1`;
+      const rollPlan = createAssetGachaRollSettlementPlan({
+        pack,
+        candidates,
+        selectedItems,
+        ownedAssetIds: owned,
+        duplicatePolicy,
+        pityBefore,
+        pityAfter,
+        gachaEnabled: isAssetGachaEnabled(),
+        directBuyPolicy: directBuyPolicy(),
+        activePackIds: configuredActiveGachaPackIds() || [pack.id],
+        randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng'
+      });
       const transaction = await spendCurrency(client, {
         playerId,
-        currencyCode: pack.rollPriceCurrencyCode,
-        amount: pack.rollPriceAmount,
-        reason: 'asset_pack_roll',
-        sourceType: 'asset_pack',
-        sourceId: pack.id,
+        currencyCode: rollPlan.walletSpend.currencyCode,
+        amount: rollPlan.walletSpend.amount,
+        reason: rollPlan.walletSpend.reason,
+        sourceType: rollPlan.walletSpend.sourceType,
+        sourceId: rollPlan.walletSpend.sourceId,
         idempotencyKey: idempotencyKey ? `asset_roll:${pack.id}:${idempotencyKey}` : null,
         metadata: {
           packId: pack.id,
-          candidatePoolHash,
-          selectedAssetId: resultAssetIds[0] || null,
-          selectedAssetIds: resultAssetIds,
-          rollSize: assetPackRollSize(pack),
-          effectiveRollSize: selectedItems.length,
-          rarityTableVersion,
-          duplicatePolicy,
-          duplicateAssetIds,
-          guaranteesApplied: guaranteesApplied.map((entry) => ({
-            id: entry.id,
-            source: entry.source,
-            minRarity: entry.minRarity,
-            selectedAssetId: entry.selectedAssetId,
-            replacedAssetId: entry.replacedAssetId
-          })),
-          pityBefore,
-          pityAfter
+          ...rollPlan.walletSpend.metadata
         }
       });
 
       const rollId = createId('roll');
+      const grantDrafts = createAssetGachaRollGrantDrafts(rollPlan, {
+        rollId,
+        transactionId: transaction.id
+      });
       const insertedItems = [];
-      for (const selected of selectedItems) {
+      for (const [index, draft] of grantDrafts.entries()) {
         const inserted = await insertAssetInstance(client, {
           playerId,
-          assetId: selected.assetId,
-          acquisitionSource: 'gacha',
-          acquisitionSourceId: rollId,
-          metadata: {
-            packId: pack.id,
-            slotIndex: selected.slotIndex,
-            rarity: selected.rarity,
-            selectedRarity: selected.selectedRarity,
-            rarityTableVersion,
-            duplicatePolicy: duplicatePolicy.mode,
-            duplicateCopy: owned.has(selected.assetId),
-            guaranteeId: selected.guaranteeId || null,
-            guaranteeSource: selected.guaranteeSource || null,
-            guaranteeMinRarity: selected.guaranteeMinRarity || null,
-            guaranteeReplacedAssetId: selected.guaranteeReplacedAssetId || null,
-            transactionId: transaction.id
-          },
-          allowDuplicate: duplicatePolicy.enabled
+          assetId: draft.assetId,
+          acquisitionSource: draft.acquisitionSource,
+          acquisitionSourceId: draft.acquisitionSourceId,
+          metadata: draft.metadata,
+          allowDuplicate: draft.allowDuplicate
         });
         insertedItems.push({
-          ...selected,
+          ...rollPlan.selectedItems[index],
           instance: rowToAssetInstance(inserted.row)
         });
       }
-      const resultItems = insertedItems.map((item) => ({
-        slotIndex: item.slotIndex,
-        assetId: item.assetId,
-        assetName: item.asset?.name || null,
-        assetPath: item.asset?.path || null,
-        rarity: item.rarity,
-        selectedRarity: item.selectedRarity,
-        duplicateCopy: owned.has(item.assetId),
-        resultInstanceId: item.instance?.id || null
-      }));
-      const evidenceItems = insertedItems.map((item) => ({
-        slotIndex: item.slotIndex,
-        assetId: item.assetId,
-        instanceId: item.instance?.id || null,
-        rarity: item.rarity,
-        selectedRarity: item.selectedRarity,
-        dropWeight: item.dropWeight,
-        slotRarityWeights: item.slotRarityWeights,
-        candidatePoolHash: item.candidatePoolHash,
-        guaranteeId: item.guaranteeId || null,
-        guaranteeSource: item.guaranteeSource || null,
-        guaranteeMinRarity: item.guaranteeMinRarity || null,
-        guaranteeReplacedAssetId: item.guaranteeReplacedAssetId || null,
-        duplicateCopy: owned.has(item.assetId)
-      }));
+      const { resultItems, evidenceItems } = shapeAssetGachaRollSettlementItems(rollPlan, { grantedItems: insertedItems });
 
       await client.query(
         `INSERT INTO asset_rolls
@@ -1363,34 +1294,16 @@ export async function rollAssetPack(playerId, packId, {
           rollId,
           playerId,
           pack.id,
-          pack.rollPriceCurrencyCode,
-          pack.rollPriceAmount,
-          JSON.stringify(resultAssetIds),
-          JSON.stringify({
-            rollSize: assetPackRollSize(pack),
-            effectiveRollSize: selectedItems.length,
-            rarityTableVersion,
-            guaranteesApplied,
-            pityBefore,
-            pityAfter
-          }),
-          candidatePoolHash,
-          resultAssetIds[0] || null,
+          rollPlan.currencyCode,
+          rollPlan.priceAmount,
+          JSON.stringify(rollPlan.resultAssetIds),
+          JSON.stringify(rollPlan.guaranteeState),
+          rollPlan.candidatePoolHash,
+          rollPlan.resultAssetIds[0] || null,
           insertedItems[0]?.instance?.id || null,
           idempotencyKey,
           JSON.stringify({
-            gachaEnabled: isAssetGachaEnabled(),
-            directBuyPolicy: directBuyPolicy(),
-            activePackIds: configuredActiveGachaPackIds() || [pack.id],
-            randomSource: rng === secureRandomUnit ? 'crypto.randomInt' : 'injected_rng',
-            rarityTableVersion,
-            rollSize: assetPackRollSize(pack),
-            effectiveRollSize: selectedItems.length,
-            duplicatePolicy,
-            duplicateAssetIds,
-            guaranteesApplied,
-            pityBefore,
-            pityAfter,
+            ...rollPlan.rollMetadata,
             results: evidenceItems
           }),
           nowIso()
