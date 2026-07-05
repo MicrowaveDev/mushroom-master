@@ -52,6 +52,11 @@
 > `docs/server-module-contract.md`), and the first safe frontend port moved the
 > reduced-motion tracker into `@microwavedev/backpack-game-core/vue/composables`
 > with Mushroom kept as a compatibility re-export and Meat import coverage.
+> The next server continuation moved the dependency-free artifact family
+> capability helpers into `@microwavedev/backpack-game-core/artifact-capabilities`
+> and `modules/loadout`; Mushroom now keeps `app/server/services/artifact-helpers.js`
+> as a compatibility re-export, while future games can override family maps,
+> bag family names, and fallback combat capabilities.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -564,9 +569,11 @@ auth/session and request auth shape as hybrid core candidates with
 players/sessions/auth-code repository contracts; `create-app.js`, DB/models,
 Telegram, wiki/lore, social preview, payment callbacks, support approval
 policy, and product catalogs remain product-local. Best first server moves are
-pure/adapted slices: `provider-settlement-adapters.js`, `artifact-helpers.js`,
-module-list wiring around `ready-manager.js`, `gacha-simulation-service.js`,
-and a module factory around the existing `loadout-utils.js` adapter.
+pure/adapted slices: `provider-settlement-adapters.js`, module-list wiring
+around `ready-manager.js`, `gacha-simulation-service.js`, and a module factory
+around the existing `loadout-utils.js` adapter. The initial
+`artifact-helpers.js` candidate has now moved as the artifact-capability helper
+slice.
 
 Goal: classify Mushroom server files into shared core modules, app adapters, or
 product-local modules before moving code.
@@ -622,6 +629,14 @@ Goal: make module boundaries explicit before moving implementation.
   errors, and stable `provides`/`requires` metadata.
 
 #### S3 - Quarantined Server Port
+
+Status: **Started 2026-07-05 with the artifact-capability helper slice.**
+`app/server/services/artifact-helpers.js` was physically moved into
+`backpack-game-core/src/artifact-capabilities.js`, generalized with
+configurable family capability maps, exported through
+`@microwavedev/backpack-game-core/artifact-capabilities` and `modules/loadout`,
+and restored in Mushroom as a compatibility re-export. This is a pure helper
+move, not a full server module factory yet.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.

@@ -427,8 +427,9 @@ and product catalogs; provider checkout/callback code stays local.
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,
 hookable battle simulation, provider-driven loadout validation, deterministic
-numeric RNG/shuffle helpers, and the first asset-gacha policy helpers.
-Mushroom still owns catalog access, pricing, bag/family policy, product
+numeric RNG/shuffle helpers, artifact family capability helpers, and the first
+asset-gacha policy helpers.
+Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
 through adapters. Fusion application, run-shop buy/refresh/sell mutations, and
 battle-service persistence/reward integration still belong in `mushroom-master`
@@ -440,9 +441,9 @@ or product state.
 The bot-loadout extraction keeps product identity in `mushroom-master`.
 Reusable core owns weighted item choice, first-fit bag placement, rectangular
 item placement, occupied-cell tracking, and retry orchestration. Mushroom still
-provides artifact catalog data, prices, `isBag`, bag shapes, starter bag/preset
-rows, affinity weighting, validation policy, portrait URLs, and
-`createBotGhostSnapshot` response shaping.
+provides artifact catalog data, prices, bag-family adapter/config, bag shapes,
+starter bag/preset rows, affinity weighting, validation policy, portrait URLs,
+and `createBotGhostSnapshot` response shaping.
 
 Do not move battle ghost selection, mushroom portrait selection, or Mushroom
 starter preset lookup into `backpack-game-core`.
