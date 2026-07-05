@@ -1,3 +1,8 @@
+import {
+  artifactTileFootprintDimensions,
+  artifactTileFootprintShape,
+  artifactTileFootprintType
+} from '@microwavedev/backpack-game-core/client-view-model';
 import { getBagShape } from './bag-shape.js';
 
 export const ARTIFACT_ROLE_CLASSES = {
@@ -120,30 +125,33 @@ export function artifactOwner(artifact) {
   return artifact?.characterItem?.mushroomId || null;
 }
 
+function footprintShapeForArtifact(artifact) {
+  return artifact?.family === 'bag' ? getBagShape(artifact) : null;
+}
+
 export function artifactFootprintShape(artifact) {
-  if (!artifact) return [[1]];
-  if (artifact.family === 'bag') return getBagShape(artifact);
-  const width = Number(artifact.width) || 1;
-  const height = Number(artifact.height) || 1;
-  return Array.from({ length: height }, () => Array(width).fill(1));
+  return artifactTileFootprintShape(artifact, {
+    shapeForArtifact: footprintShapeForArtifact
+  });
 }
 
 export function artifactFootprintDimensions(artifact) {
-  const shape = artifactFootprintShape(artifact);
-  return {
-    cols: shape[0]?.length || 1,
-    rows: shape.length || 1
-  };
+  return artifactTileFootprintDimensions(artifact, {
+    shapeForArtifact: footprintShapeForArtifact
+  });
 }
 
 export function artifactFootprintType(artifact) {
-  if (!artifact) return 'single';
-  if (artifact.family === 'bag' && Array.isArray(artifact.shape)) return 'mask';
-  const { cols, rows } = artifactFootprintDimensions(artifact);
-  if (cols === 1 && rows === 1) return 'single';
-  if (cols > rows) return 'wide';
-  if (rows > cols) return 'tall';
-  return 'block';
+  if (artifact?.family === 'bag' && !Array.isArray(artifact.shape)) {
+    const { cols, rows } = artifactFootprintDimensions(artifact);
+    if (cols === 1 && rows === 1) return 'single';
+    if (cols > rows) return 'wide';
+    if (rows > cols) return 'tall';
+    return 'block';
+  }
+  return artifactTileFootprintType(artifact, {
+    shapeForArtifact: footprintShapeForArtifact
+  });
 }
 
 export function artifactVisualClassification(artifact) {

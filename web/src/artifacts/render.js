@@ -1,3 +1,4 @@
+import { shapeArtifactTileDisplay } from '@microwavedev/backpack-game-core/client-view-model';
 import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
 
@@ -329,54 +330,57 @@ export function renderArtifactRoleGlyph(visual, className = '') {
   `;
 }
 
+function shapeForArtifact(artifact) {
+  return artifact?.family === 'bag' ? getBagShape(artifact) : null;
+}
+
 export function renderArtifactFigure(artifact, displayWidth, displayHeight) {
   if (!artifact) {
     return '';
   }
-  const theme = artifactTheme(artifact);
-  const visual = artifactVisualClassification(artifact);
-  const isBag = artifact.family === 'bag';
-  // Tetromino-shaped bags carry a 2D shape mask. Cells with mask=0 are
-  // empty space inside the bounding box and render as transparent gaps
-  // so the shop preview shows the actual tetromino silhouette. Falls
-  // through to "all filled" for combat artifacts and rectangular bags.
-  // Shape-bearing bags pin their preview dimensions to the shape so
-  // preferredOrientation's landscape rotation can't clip non-rectangular
-  // pieces (e.g. the 1×4 I-bag).
-  const shape = isBag ? getBagShape(artifact) : null;
-  const w = shape
-    ? (shape[0]?.length || 0)
-    : (Number(displayWidth) > 0 ? Number(displayWidth) : artifact.width);
-  const h = shape
-    ? shape.length
-    : (Number(displayHeight) > 0 ? Number(displayHeight) : artifact.height);
-  const rotatedBitmap = !shape
-    && Number(artifact.width) !== Number(artifact.height)
-    && Number(w) === Number(artifact.height)
-    && Number(h) === Number(artifact.width);
-  const cells = Array.from({ length: w * h }, (_, index) => {
-    const x = index % w;
-    const y = Math.floor(index / w);
-    if (shape) {
-      const filled = shape[y] && shape[y][x];
-      if (!filled) {
-        return `<div class="artifact-figure-cell artifact-figure-cell--empty"></div>`;
-      }
-    }
-    return `<div class="artifact-figure-cell"></div>`;
-  }).join('');
+  const tile = shapeArtifactTileDisplay(artifact, {
+    displayWidth,
+    displayHeight,
+    shapeForArtifact,
+    visualForArtifact: artifactVisualClassification,
+    imageForArtifact: artifactBitmapPath,
+    roleGlyphLabel: artifactRoleGlyphLabel
+  });
+  const cells = tile.cells.map((cell) => `<div class="${cell.className}"></div>`).join('');
+  const gridStyle = [
+    `grid-template-columns: ${tile.gridStyle.gridTemplateColumns}`,
+    `grid-template-rows: ${tile.gridStyle.gridTemplateRows}`,
+    tile.gridStyle['--artifact-role-color']
+      ? `--artifact-role-color: ${tile.gridStyle['--artifact-role-color']}`
+      : ''
+  ].filter(Boolean).join('; ');
+  const imageStyle = [
+    tile.imageStyle.backgroundImage ? `background-image: ${tile.imageStyle.backgroundImage}` : '',
+    tile.rotatedImageVars['--artifact-rotated-bitmap-width']
+      ? `--artifact-rotated-bitmap-width: ${tile.rotatedImageVars['--artifact-rotated-bitmap-width']}`
+      : '',
+    tile.rotatedImageVars['--artifact-rotated-bitmap-height']
+      ? `--artifact-rotated-bitmap-height: ${tile.rotatedImageVars['--artifact-rotated-bitmap-height']}`
+      : ''
+  ].filter(Boolean).join('; ');
   return `
     <div
-      class="artifact-figure-grid ${visual.cssClasses.join(' ')}"
-      style="grid-template-columns: repeat(${w}, minmax(0, 1fr)); grid-template-rows: repeat(${h}, minmax(0, 1fr)); --artifact-role-color: ${visual.role.color};"
+      class="artifact-figure-grid ${tile.cssClasses.join(' ')}"
+      style="${gridStyle};"
     >
       ${cells}
       <span
-        class="artifact-figure-bitmap artifact-figure-bitmap--full${rotatedBitmap ? ' artifact-figure-bitmap--rotated' : ''}"
+        class="${tile.imageClassNames.join(' ')}"
         aria-hidden="true"
-        style="background-image: url('${artifactBitmapPath(artifact)}');${rotatedBitmap ? ` --artifact-rotated-bitmap-width: ${(h / w) * 100}%; --artifact-rotated-bitmap-height: ${(w / h) * 100}%;` : ''}"
+        style="${imageStyle};"
       ></span>
-      ${renderArtifactRoleGlyph(visual, 'artifact-figure-role-glyph')}
+      <span
+        class="${[...tile.roleGlyph.classNames, 'artifact-figure-role-glyph'].join(' ')}"
+        aria-label="${tile.roleGlyph.label}"
+        title="${tile.roleGlyph.label}"
+      >
+        <span aria-hidden="true"></span>
+      </span>
     </div>
   `;
 }

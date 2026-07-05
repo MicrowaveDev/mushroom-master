@@ -105,6 +105,11 @@ copy, theme, and API adapters.
   provides headless replay/battle-log row filtering, ordering, active flags,
   text fallback, and row limiting while games keep narration, replay screen
   markup, routes, and persistence local, tested by `tests/client-view-model.test.js`
+- artifact tile display client view-model slice: `src/client-view-model.js`
+  now also provides headless artifact tile dimensions, mask cells, role/shine
+  metadata, image fallback, rotated-image hints, and role glyph labels while
+  games keep artwork, CSS, generated SVGs, product visual classifiers, and page
+  composition local, tested by `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -166,8 +171,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `a4c4c06`
-  (`Add replay event row view models`)
+- latest consumed core commit: `42b1f1c`
+  (`Add artifact tile display view models`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -290,7 +295,7 @@ Maximum-efficiency constraints:
 | Payment providers and purchase webhooks | `app/server/services/provider-settlement-*`, `bot-gateway.js`, payment routes | Product-specific | Telegram Stars, BTCPay, NOWPayments, provider signatures, invoice lookups, tax/accounting, adult-content policy, and settlement records are game/ops concerns, not backpack mechanics. |
 | Asset catalog, ownership, equipment, and direct-buy policy | `backpack-game-core/src/profile-asset-state.js`; Mushroom adapter in `app/server/services/asset-service.js`; profile asset tables and runtime catalogs | Partially extracted domain-core candidate | Core now owns reusable profile asset state shaping, ownership maps, equip validation, purchase spend parameters, instance drafts, portrait variant projection, purchase/equip result DTOs, and grant summaries over injected rows/catalog policy. Runtime catalog lookup, SQL row lifecycle, support actions, gacha roll/burn grants, paid rollback behavior, direct-buy policy composition, and compatibility mirrors stay in the game. |
 | Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `backpack-game-core/src/asset-gacha.js`; Mushroom adapter in `app/server/services/asset-service.js`; `gacha-simulation-service.js`; admin validation helpers | Adapter over core planners | Core owns pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, result DTO shaping, roll settlement planning, duplicate-burn settlement planning, grant drafts, evidence metadata, and admin DTO/view-model helpers. Secure RNG source, wallet debit execution, asset grant persistence, pack storage, idempotency replay, SQL transactions, and operator audit records stay local. |
-| Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Partially extracted frontend-core candidate | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, grid/stat helpers, artifact stat-row DTOs, shop item row DTOs, and board render rows. Next frontend moves should be neutral component-level primitives only after data contracts settle: artifact tile display contracts, pack cards, odds tables, roll-result panels, and replay rows. |
+| Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Partially extracted frontend-core candidate | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, grid/stat helpers, artifact stat-row DTOs, shop item row DTOs, board render rows, replay rows, and artifact tile display contracts. Next frontend moves should be neutral component-level primitives only after data contracts settle: pack cards, odds tables, and roll-result panels. |
 | Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
 | Battle replay/log UI | Mushroom replay components/pages and Meat battle panel | Frontend-core candidate | Battle timeline rendering, event filtering, combatant stat panels, outcome badges, and playback state are reusable over core battle events. Product narration text, character art, share routes, and replay persistence stay local. |
 | Wallet, asset inventory, and gacha UI | Mushroom asset/portrait/gacha screens, support asset widgets, Meat future inventory/gacha screens | Frontend-core candidate | Wallet balance display, asset inventory/equipment panels, gacha pack cards, roll result modals, duplicate/burn state panels, odds tables, and asset policy labels can be shared with product API/copy/theme adapters. Payment provider selection, adult-content gates, and purchase routes stay local. |
@@ -945,11 +950,11 @@ buy/refresh/sell planning, run start drafts, starter loadout drafts,
 initial/next shop state, ghost budget math, round reward/counter/end-state
 planning, and challenge group-completion decisions. The first neutral frontend
 primitive slices are covered by core commits `2280929`, `ffaa376`, `3c638fb`,
-and `a4c4c06`: headless artifact stat-row DTO shaping, shop item row DTO
-shaping, grid board render row shaping, and replay event row shaping for
-Mushroom/Meat stat chips, shop offers, backpack boards, and battle logs. The
-next useful extractions are larger neutral frontend primitives that both games
-can consume without
+`a4c4c06`, and `42b1f1c`: headless artifact stat-row DTO shaping, shop item
+row DTO shaping, grid board render row shaping, replay event row shaping, and
+artifact tile display contracts for Mushroom/Meat stat chips, shop offers,
+backpack boards, battle logs, and artifact images. The next useful extractions
+are larger neutral frontend primitives that both games can consume without
 inheriting Mushroom persistence, Telegram, payment, catalog, art, support,
 haptics, or page-composition rules.
 
@@ -992,9 +997,14 @@ services. Recommended order:
    replay timeline uses it for visible event ordering and active-row flags while
    keeping event formatting, screen markup, routes, and persistence local; Meat
    uses it for compact battle-log filtering and limiting.
-9. Remaining neutral frontend primitives: artifact tile display contracts, pack
-   cards, odds tables, roll-result panels, and component contracts after the
-   planner DTOs stabilize.
+9. Neutral frontend primitive artifact tile display: implemented in core commit
+   `42b1f1c` with `shapeArtifactTileDisplay` and footprint helpers in
+   `client-view-model`. Mushroom uses it for artifact figure HTML/Vue render
+   contracts while keeping bitmap generation, role colors, product visual
+   taxonomy, CSS, and generated SVGs local; Meat uses it for prototype artifact
+   image/tile metadata.
+10. Remaining neutral frontend primitives: pack cards, odds tables, roll-result
+   panels, and component contracts after the planner DTOs stabilize.
 
 Do not move SQL, provider SDK calls, webhook verification, Telegram/adult
 content policy, support permissions, settlement runbooks, image storage, lore

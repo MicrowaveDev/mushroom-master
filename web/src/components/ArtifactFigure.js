@@ -1,4 +1,5 @@
 import { h } from 'vue/dist/vue.esm-bundler.js';
+import { shapeArtifactTileDisplay } from '@microwavedev/backpack-game-core/client-view-model';
 import { artifactBitmapPath, artifactRoleGlyphLabel } from '../artifacts/render.js';
 import { artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 import { getBagShape } from '../../../app/shared/bag-shape.js';
@@ -110,6 +111,10 @@ function glyphNodes(artifact, theme) {
   }
 }
 
+function shapeForArtifact(artifact) {
+  return artifact?.family === 'bag' ? getBagShape(artifact) : null;
+}
+
 export const ArtifactFigure = {
   name: 'ArtifactFigure',
   props: {
@@ -121,59 +126,31 @@ export const ArtifactFigure = {
     const artifact = this.artifact;
     if (!artifact) return null;
 
-    const isBag = artifact.family === 'bag';
-    const shape = isBag ? getBagShape(artifact) : null;
-    const visual = artifactVisualClassification(artifact);
-    const width = shape
-      ? (shape[0]?.length || 0)
-      : (Number(this.displayWidth) > 0 ? Number(this.displayWidth) : artifact.width);
-    const height = shape
-      ? shape.length
-      : (Number(this.displayHeight) > 0 ? Number(this.displayHeight) : artifact.height);
-    const rotatedBitmap = !shape
-      && Number(artifact.width) !== Number(artifact.height)
-      && Number(width) === Number(artifact.height)
-      && Number(height) === Number(artifact.width);
-
-    const cells = Array.from({ length: width * height }, (_, index) => {
-      const x = index % width;
-      const y = Math.floor(index / width);
-      if (shape && !(shape[y] && shape[y][x])) {
-        return node('div', { class: 'artifact-figure-cell artifact-figure-cell--empty', key: index });
-      }
-      return node('div', { class: 'artifact-figure-cell', key: index });
+    const tile = shapeArtifactTileDisplay(artifact, {
+      displayWidth: this.displayWidth,
+      displayHeight: this.displayHeight,
+      shapeForArtifact,
+      visualForArtifact: artifactVisualClassification,
+      imageForArtifact: artifactBitmapPath,
+      roleGlyphLabel: artifactRoleGlyphLabel
     });
 
+    const cells = tile.cells.map((cell) => node('div', { class: cell.className, key: cell.key }));
+
     return node('div', {
-      class: ['artifact-figure-grid', ...visual.cssClasses],
-      style: {
-        gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${height}, minmax(0, 1fr))`,
-        '--artifact-role-color': visual.role.color
-      }
+      class: ['artifact-figure-grid', ...tile.cssClasses],
+      style: tile.gridStyle
     }, [
       ...cells,
       node('span', {
-        class: [
-          'artifact-figure-bitmap',
-          'artifact-figure-bitmap--full',
-          rotatedBitmap ? 'artifact-figure-bitmap--rotated' : ''
-        ],
+        class: tile.imageClassNames,
         'aria-hidden': 'true',
-        style: {
-          backgroundImage: `url('${artifactBitmapPath(artifact)}')`,
-          ...(rotatedBitmap
-            ? {
-                '--artifact-rotated-bitmap-width': `${(height / width) * 100}%`,
-                '--artifact-rotated-bitmap-height': `${(width / height) * 100}%`
-              }
-            : {})
-        }
+        style: tile.imageStyle
       }),
       node('span', {
-        class: ['artifact-role-glyph', `artifact-role-glyph--${visual.role.id}`, 'artifact-figure-role-glyph'],
-        'aria-label': artifactRoleGlyphLabel(visual.role),
-        title: artifactRoleGlyphLabel(visual.role)
+        class: [...tile.roleGlyph.classNames, 'artifact-figure-role-glyph'],
+        'aria-label': tile.roleGlyph.label,
+        title: tile.roleGlyph.label
       }, [
         node('span', { 'aria-hidden': 'true' })
       ])
