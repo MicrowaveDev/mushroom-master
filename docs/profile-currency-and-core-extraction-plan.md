@@ -113,6 +113,13 @@
 > production DB deployment/migrations, live Telegram deployment validation,
 > richer support/admin operations, and broader visual coverage for additional
 > screens.
+> **2026-07-05 post-browser review adjustment:** local parity is achieved, but
+> production parity is not. The next active implementation lane should be
+> Phase 13 below: replace the JSON store, validate real Telegram/deployment
+> auth, close Meat UI mechanics gaps such as refresh/sell/character switching
+> and multi-round completion coverage, decide how much of Mushroom's manual bag
+> editing must exist in Meat, and keep extracting product-neutral planners/DTOs
+> into core without moving product execution policy.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
@@ -453,9 +460,11 @@ Vue component and release-hardening lane is complete for the first candidate
 set. Updated again 2026-07-05 after product-goal review: the active lane is no
 longer "prove a second core consumer exists"; it is to make Meat Master run the
 same backend/login/player/game mechanics as Mushroom Battles with different
-content and settings.
+content and settings. Updated after the first browser parity pass: the local
+MVP is done, so the current active lane moves to production parity hardening
+and the missing UI/mechanics coverage listed in Phase 13.
 
-### Active Lane - Meat Master Product Parity MVP
+### Shipped Lane - Meat Master Product Parity MVP
 
 Status: **Implemented 2026-07-05 for the local product-parity MVP.** Meat now
 runs through `app/server/` with a persistent JSON development/test store,
@@ -471,6 +480,11 @@ production DB/migration layer, wire real Telegram bot configuration in
 deployment, broaden visual coverage beyond the first parity screen flow, and
 keep paid providers/gacha admin/marketplace work in their backlog lanes until
 explicitly reopened.
+
+Post-browser review finding: the local MVP proves the product shape, not final
+production equivalence. The next implementation should not jump straight to
+payments or advanced gacha until the Phase 13 gaps below are either implemented
+or explicitly accepted as product differences for Meat.
 
 #### Source Of Truth
 
@@ -673,6 +687,156 @@ stack.
   pointers.
 - Validation: a single documented command proves core, Mushroom, and Meat all
   consume the same core SHA and pass their relevant parity gates.
+
+### Active Lane - Phase 13 Meat Production Parity Hardening
+
+Status: **Added 2026-07-05 after post-browser review.** Phase 12 and the first
+browser hardening pass make Meat playable locally with Mushroom-class
+login/player/run/wallet mechanics. Phase 13 turns that into a production-ready
+second game and closes the pieces that are still too easy to miss.
+
+#### Phase 13 Source Of Truth
+
+- Main goal: run `meat-master` like `mushroom-master`, with the same login,
+  game, and player mechanics, but different content and settings.
+- Current achieved state: local dev/API/browser parity is implemented and
+  verified by Meat unit/API tests, Meat browser Playwright, Meat build, and hub
+  `npm run verify:backpack-core`.
+- Missing or risky state: persistence is still a JSON file, Telegram auth is
+  code-level only rather than deployment-validated, the browser journey covers
+  one happy path but not every user mechanic, and Meat has not yet decided
+  whether Mushroom's full manual drag/rotate bag editor is required or whether
+  compact auto-pack is an intentional product difference.
+- Non-goal unless reopened: paid processors, advanced gacha, marketplace,
+  trading, and NFT policy should not block this phase unless the work directly
+  depends on production wallet/accounting readiness.
+
+#### P13.1 - Replace JSON Persistence With A Production Store
+
+Goal: Meat should survive deploys, restarts, concurrent players, and future
+paid/gacha ledger work without relying on `.data/meat-master-db.json`.
+
+- Choose the production DB/storage layer for Meat, preferably matching the
+  operational shape already proven in Mushroom unless there is a clear reason
+  to diverge.
+- Add migrations/schema for players, sessions, login identities, active
+  character, runs, run players, shop state, loadout rows, battles/replay
+  events, wallet balances, wallet transactions, asset instances, equipment,
+  support audit rows, and future gacha/payment ledgers.
+- Keep storage execution and transactions product-local; move only pure schema
+  descriptors, DTO shapers, validators, and mutation planners to core when
+  they are product-neutral.
+- Add migration/seed/reset scripts for dev, test, and deploy, plus a documented
+  rollback/backup expectation for production.
+- Validation: Meat API parity tests run against the production store adapter,
+  a restart test proves persistence without JSON, and concurrent wallet/run
+  mutation tests prove no double-spend or duplicate settlement.
+
+#### P13.2 - Validate Real Telegram And Deployment Auth
+
+Goal: Meat should enter through the same real Mini App/deployment class as
+Mushroom, not only through local dev login.
+
+- Add deploy-time env validation for bot token, public app URL, support/admin
+  tokens, DB URL/path, content policy, feature toggles, and any Telegram
+  webhook/deep-link settings.
+- Disable or hard-gate dev login in production while keeping local developer
+  ergonomics.
+- Validate Telegram Mini App init data with real bot configuration, auth-date
+  freshness, invalid-hash rejection, and player resume across deploy restarts.
+- Add a smoke script or documented checklist for real Telegram launch: deep
+  link opens Meat, login creates/resumes a player, bootstrap returns Meat
+  settings, and browser/mobile Telegram viewport remains usable.
+- Validation: API tests cover production-mode auth rejection paths; a manual or
+  automated deploy smoke records the exact env/profile used.
+
+#### P13.3 - Close Meat UI Mechanics Coverage Gaps
+
+Goal: the browser-tested Meat surface should cover all mechanics a player needs
+for the same class of game loop as Mushroom.
+
+- Add browser coverage for active character switching, shop refresh, sell/refund
+  from loadout, starting a new run after an existing run, and resuming after a
+  page reload at each major state.
+- Extend browser/API coverage through multiple rounds and run completion, not
+  only the first battle.
+- Add tests that assert failed buys, insufficient currency, invalid character,
+  expired/invalid sessions, and unavailable shop items surface readable UI
+  errors rather than raw backend tokens.
+- Decide and document whether Meat intentionally uses compact auto-pack instead
+  of Mushroom's manual drag/rotate/save loadout editor. If the answer is "same
+  mechanics," add manual move/rotate/save UX and tests; if the answer is "Meat
+  differs," record it as product-local UX divergence in
+  `meat-master/docs/meat-master-product-parity.md`.
+- Validation: `npm run game:test:browser` covers the expanded flow, captures
+  desktop/mobile evidence, checks no horizontal overflow, and the hub
+  cross-consumer gate runs it.
+
+#### P13.4 - Product Content And Asset Readiness
+
+Goal: Meat should not accidentally ship with Mushroom placeholder content or
+untracked generated/prototype art.
+
+- Add/verify provenance metadata for copied starter artifacts, bags, portraits,
+  and generated bikini fighter art.
+- Replace copied Mushroom placeholder assets with Meat-owned production assets
+  before paid or public launch, or keep a visible `placeholder`/`starter_port`
+  status in metadata.
+- Add a content-policy checklist for adult-themed Meat assets: characters are
+  adult, no school/minor framing, no explicit sexual content in production UI,
+  and payment/provider restrictions are documented per surface.
+- Validation: a script or doc checklist reports every Meat app-facing asset,
+  provenance, placeholder status, and production-readiness flag.
+
+#### P13.5 - Support/Admin Minimum For Production
+
+Goal: operators need enough tooling to recover player state before money or
+gacha is enabled.
+
+- Add token-gated support actions for manual wallet grant/revoke, asset
+  grant/revoke, active run lookup/reset, and support audit logging.
+- Keep richer gacha season admin in the gacha lane, but make sure the support
+  admin can inspect wallet/assets/runs in the production store.
+- Add permission boundaries so support tokens cannot call payment webhooks,
+  gacha publish operations, or provider settlement endpoints.
+- Validation: API tests cover auth rejection, audit row creation, and one happy
+  support mutation per state type.
+
+#### P13.6 - Core Extraction Follow-Up
+
+Goal: avoid duplicating Mushroom product logic in Meat while keeping product
+execution local.
+
+- Review Phase 12 Meat service code against Mushroom equivalents and extract
+  remaining pure planners/DTOs only when both games can use them without
+  importing product routes, DB models, Telegram helpers, payment SDKs, art, or
+  CSS.
+- Candidate pure slices: auth/bootstrap payload shaping, product settings
+  validation, support lookup DTOs, run-state summary DTOs, wallet/asset support
+  mutation result DTOs, and shared browser route-client helpers.
+- Keep non-core boundaries strict: DB transactions, route wiring, provider
+  callbacks, adult-content gates, Telegram deployment policy, product catalogs,
+  and page shells stay in product repos.
+- Validation: core forbidden-import tests stay green, Mushroom and Meat consume
+  the same core SHA, and `npm run verify:backpack-core` passes after every
+  extracted slice.
+
+#### P13.7 - Release Gate And Definition Of Done
+
+Goal: prevent another "implemented locally but not production-ready" ambiguity.
+
+- Meat production parity is done only when production storage, production auth
+  config, expanded browser mechanics coverage, asset provenance, and minimum
+  support operations are all implemented or explicitly deferred by product
+  decision.
+- The release gate is: core tests/package dry-run, Mushroom game build/unit/
+  screenshot/focused E2E, Meat API/browser/build, and any production-store
+  migration checks.
+- Hub pointer updates happen only after Meat and Mushroom submodule commits are
+  pushed and the hub `verify:backpack-core` gate passes.
+- Remaining after Phase 13 should be paid provider rollout, optional Meat
+  gacha buy/roll, advanced gacha admin, marketplace/trading, NFT policy, and
+  broader visual polish.
 
 ### Historical Lane - Gacha Roadmap Plan
 
@@ -3458,6 +3622,11 @@ frontend adoption.
   store, live Telegram bot deployment validation, optional gacha buy/roll, live
   payments, richer support/admin operations, and broader visual coverage for
   additional screens.
+- 2026-07-05 plan correction: the first remaining active work is now Phase 13,
+  not paid/gacha. The missing production-parity pieces are production storage,
+  deployment/auth validation, expanded browser mechanics coverage, an explicit
+  manual bag-editor vs auto-pack product decision, Meat asset provenance, and
+  minimum support mutations/audit logs.
 
 #### Asset Seeding Checklist
 
@@ -4248,3 +4417,13 @@ frontend adoption.
    production DB/migrations, live Telegram deployment, optional gacha buy/roll,
    live payments, richer admin/support operations, and broader visual coverage
    for additional screens.
+86. Phase 13 Meat production parity hardening. **Added 2026-07-05 after
+   browser parity review:** the next active implementation lane is production
+   readiness for the second game, not advanced monetization. Implement or
+   explicitly defer: production DB/migrations and concurrent ledger safety,
+   real Telegram/deploy auth validation, expanded UI mechanics coverage
+   (character switch, refresh, sell/refund, multi-round completion, new run,
+   reload states, and readable error paths), the manual bag-editor vs compact
+   auto-pack decision, Meat asset provenance/replacement status, minimum
+   support mutations/audit logs, and follow-up extraction of product-neutral
+   DTO/planner slices into `backpack-game-core`.
