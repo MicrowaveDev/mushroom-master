@@ -130,6 +130,13 @@
 > production DB operational policy if SQLite is not the final host choice,
 > optional manual bag-editor parity if compact auto-pack is rejected, and
 > follow-up core extraction for neutral DTO/planner slices.
+> **2026-07-05 post-Phase 13 review adjustment:** the first hardening pass is a
+> strong local/prototype-production bridge, but not final launch readiness. The
+> next plan must explicitly handle multi-process write safety, the experimental
+> Node SQLite runtime dependency, final DB/backup/rollback policy, operator
+> identity and support-token scopes, live Telegram proof, production asset
+> replacement workflow, readable UI error coverage, and paid/gacha ledger
+> readiness before money or seasonal packs are enabled.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
@@ -704,8 +711,10 @@ Status: **Partially implemented 2026-07-05.** Phase 12 and the first browser
 hardening pass made Meat playable locally with Mushroom-class
 login/player/run/wallet mechanics. The first Phase 13 pass added production
 store/config hardening, expanded browser mechanics coverage, support mutations,
-and asset provenance. Remaining items are live deploy validation and product
-decisions/extractions that require an explicit launch target.
+and asset provenance. Post-implementation review added the launch-risk items in
+P13.8. Remaining items are live deploy validation, final production DB policy,
+operator/security hardening, asset replacement workflow, and product decisions/
+extractions that require an explicit launch target.
 
 #### Phase 13 Source Of Truth
 
@@ -718,9 +727,10 @@ decisions/extractions that require an explicit launch target.
   mutations/audit rows, and asset provenance metadata.
 - Missing or risky state: live Telegram auth has not been smoke-tested against
   a real deployed bot profile, SQLite is the implemented production-store path
-  but final hosting/backup/rollback policy may still choose a different DB, and
-  compact auto-pack is documented as the current Meat UX divergence unless the
-  product decides it must match Mushroom's full manual drag/rotate bag editor.
+  but final hosting/backup/rollback policy may still choose a different DB,
+  cross-process write safety is not proven for multi-worker deploys, and compact
+  auto-pack is documented as the current Meat UX divergence unless the product
+  decides it must match Mushroom's full manual drag/rotate bag editor.
 - Non-goal unless reopened: paid processors, advanced gacha, marketplace,
   trading, and NFT policy should not block this phase unless the work directly
   depends on production wallet/accounting readiness.
@@ -731,8 +741,13 @@ Status: **Implemented first pass 2026-07-05.** Meat now has
 `SqliteGameStore`, schema version `1`, per-collection SQLite tables,
 WAL/foreign-key pragmas, queued store mutations for JSON and SQLite stores, and
 tests proving SQLite migration/persistence across service restart. Remaining
-launch policy: choose hosting, backup, and rollback practice for the actual
-production environment; replace SQLite only if hosting requires a different DB.
+launch policy: choose hosting, backup, rollback, and multi-process strategy for
+the actual production environment; replace SQLite only if hosting requires a
+different DB. Important limitation: the first SQLite adapter stores JSON rows
+inside table-per-collection records and queues mutations in-process. It is
+enough for a single-node/single-process launch candidate, but a multi-worker
+deployment needs either database-transactional read/modify/write locking or a
+different production DB adapter before paid/gacha ledgers go live.
 
 Goal: Meat should survive deploys, restarts, concurrent players, and future
 paid/gacha ledger work without relying on `.data/meat-master-db.json`.
@@ -835,8 +850,9 @@ untracked generated/prototype art.
 Status: **Implemented API pass 2026-07-05.** Support routes now cover lookup,
 wallet adjust, asset grant, asset revoke, active run reset, and support audit
 rows, with token rejection and happy-path mutation tests. Remaining launch
-work: build a richer operator UI only if needed; current support operations are
-API-first.
+work: build a richer operator UI only if needed, and replace the shared support
+token model with operator identity, scopes, rotation, and audit actor metadata
+before public production. Current support operations are API-first.
 
 Goal: operators need enough tooling to recover player state before money or
 gacha is enabled.
@@ -895,6 +911,60 @@ Goal: prevent another "implemented locally but not production-ready" ambiguity.
 - Remaining after Phase 13 should be paid provider rollout, optional Meat
   gacha buy/roll, advanced gacha admin, marketplace/trading, NFT policy, and
   broader visual polish.
+
+#### P13.8 - Post-Implementation Review Findings
+
+Status: **Added 2026-07-05 after reviewing the first Phase 13 implementation.**
+These are the missing pieces that should shape the next implementation pass.
+
+Goal: make the plan honest about what is still risky even though local tests and
+the hub cross-consumer gate pass.
+
+- **Storage safety:** decide whether Meat production is single-process SQLite,
+  SQLite with a stricter transactional mutation adapter, or a different DB
+  adapter. The current in-process queue does not by itself prove safe
+  read/modify/write behavior across multiple Node processes or containers.
+- **Runtime policy:** `node:sqlite` is experimental in the current Node runtime.
+  Pin and document the Node version for deploy, or choose a stable DB driver/
+  service before public launch.
+- **Schema depth:** the first SQLite schema persists JSON blobs in typed table
+  buckets. Before paid/gacha launch, decide whether wallet transactions,
+  support actions, payment intents, gacha rolls, asset instances, and runs need
+  normalized relational columns for reconciliation, admin filtering, and fraud
+  review.
+- **Backup and rollback:** add a concrete backup, restore, migration rollback,
+  and disaster-recovery runbook for the chosen store. `npm run
+  game:deploy:check` validates env shape only; it does not validate backups.
+- **Operator security:** support routes need operator identity, scoped tokens or
+  roles, token rotation, audit actor metadata, rate limits, and a rule that
+  support credentials cannot call payment webhooks or gacha publish/settlement
+  endpoints.
+- **Live Telegram proof:** run a real deployed smoke with the Meat bot and
+  public URL: deep link opens the game, init data verifies with a real bot
+  token, stale/invalid init data rejects, player resumes after restart, and
+  Telegram mobile viewport remains usable.
+- **UI error coverage:** add browser tests for readable error states, including
+  insufficient run coins, unavailable shop item, invalid/expired session,
+  disabled production dev login, invalid asset purchase, and support/admin auth
+  rejection where a UI exists.
+- **Manual editor decision:** compact auto-pack is currently documented as Meat
+  UX divergence. Product must either approve it explicitly or schedule manual
+  drag/rotate/save loadout parity with Mushroom.
+- **Asset replacement workflow:** provenance metadata exists, but there is no
+  production replacement pipeline, contact sheet, review checklist, or release
+  gate for replacing `starter_port` and prototype art with Meat-owned assets.
+- **Paid/gacha ledger readiness:** before enabling coin purchases, gacha rolls,
+  or pack seasons in Meat, add payment-intent, provider-event, roll, burn,
+  idempotency, and reconciliation tables or equivalent ledger records in the
+  production store.
+- **Core extraction follow-up:** reusable DTO/planner candidates remain in Meat
+  after the hardening pass: deploy config validation summaries, support lookup/
+  mutation result DTOs, bootstrap/settings shapers, run-state summaries, and
+  wallet/asset support mutation result shapers. Extract only the pure pieces
+  after the product-local policies settle.
+- **Release gate update:** Phase 13 is not launch-complete until the above
+  storage, runtime, operator, live Telegram, asset, and ledger decisions are
+  either implemented or explicitly deferred by the product owner.
 
 ### Historical Lane - Gacha Roadmap Plan
 
@@ -4492,3 +4562,10 @@ frontend adoption.
    provenance metadata. Remaining: real Telegram deploy smoke, production DB
    hosting/backup/rollback decision, optional manual bag editor if compact
    auto-pack is not accepted, and neutral DTO/planner extraction follow-up.
+87. Phase 13 post-implementation review findings. **Added 2026-07-05:** before
+   treating Meat as launch-ready, resolve multi-process storage safety,
+   experimental `node:sqlite` runtime policy, normalized ledger/schema needs,
+   backup/rollback runbooks, support operator identity/scopes/rotation, real
+   Telegram deploy smoke, UI error coverage, manual editor decision, asset
+   replacement workflow, paid/gacha ledger readiness, and follow-up extraction
+   of pure DTO/planner slices into `backpack-game-core`.
