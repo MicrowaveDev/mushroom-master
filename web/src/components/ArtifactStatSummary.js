@@ -1,4 +1,4 @@
-import { shapeArtifactStatRows } from '@microwavedev/backpack-game-core/client-view-model';
+import { ArtifactStatSummary as CoreArtifactStatSummary } from '@microwavedev/backpack-game-core/vue/components';
 import { ARTIFACT_ROLE_CLASSES } from '../../../app/shared/artifact-visual-classification.js';
 
 const STAT_DEFINITIONS = [
@@ -23,63 +23,31 @@ const STAT_LABELS = {
   }
 };
 
+function hasEntries(value) {
+  return value && typeof value === 'object' && Object.keys(value).length > 0;
+}
+
 export const ArtifactStatSummary = {
-  name: 'ArtifactStatSummary',
+  ...CoreArtifactStatSummary,
   props: {
-    artifact: { type: Object, default: null },
-    totals: { type: Object, default: null },
-    lang: { type: String, default: 'ru' },
-    includeZeroes: { type: Boolean, default: true },
-    variant: { type: String, default: '' },
-    ariaLabel: { type: String, default: 'Artifact stat summary' }
+    ...CoreArtifactStatSummary.props,
+    lang: { type: String, default: 'ru' }
   },
   computed: {
+    ...CoreArtifactStatSummary.computed,
     statSummaryItems() {
-      const source = this.totals || this.artifact?.bonus;
-      if (!source) return [];
       const lang = this.lang === 'en' ? 'en' : 'ru';
-      return shapeArtifactStatRows(source, {
-        definitions: STAT_DEFINITIONS,
-        labels: STAT_LABELS[lang],
+      return CoreArtifactStatSummary.computed.statSummaryItems.call({
+        rows: this.rows,
+        source: this.source,
+        totals: this.totals,
+        artifact: this.artifact,
+        statSource: this.source || this.totals || this.artifact?.bonus || null,
+        definitions: this.definitions?.length ? this.definitions : STAT_DEFINITIONS,
+        labels: hasEntries(this.labels) ? this.labels : STAT_LABELS[lang],
+        roleMap: hasEntries(this.roleMap) ? this.roleMap : ARTIFACT_ROLE_CLASSES,
         includeZeroes: this.includeZeroes
-      })
-        .map((entry) => {
-          return {
-            ...entry,
-            role: entry.roleId ? ARTIFACT_ROLE_CLASSES[entry.roleId] : null
-          };
-        });
-    },
-    summaryClass() {
-      return this.variant ? `artifact-stat-summary--${this.variant}` : '';
+      });
     }
-  },
-  template: `
-    <span
-      v-if="statSummaryItems.length"
-      class="artifact-stat-summary artifact-inventory-stats"
-      :class="summaryClass"
-      :aria-label="ariaLabel"
-    >
-      <span
-        v-for="item in statSummaryItems"
-        :key="item.id"
-        class="artifact-inventory-stat-chip"
-        :class="[
-          'artifact-inventory-stat-chip--' + item.sign,
-          { 'artifact-inventory-stat-chip--plain': !item.role }
-        ]"
-        :style="item.role ? { '--artifact-role-color': item.role.color } : null"
-      >
-        <span
-          v-if="item.role"
-          class="artifact-role-glyph artifact-role-legend-glyph"
-          :class="'artifact-role-glyph--' + item.roleId"
-          aria-hidden="true"
-        ><span></span></span>
-        <span class="artifact-inventory-stat-label">{{ item.label }}</span>
-        <b>{{ item.text }}</b>
-      </span>
-    </span>
-  `
+  }
 };

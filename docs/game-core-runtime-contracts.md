@@ -393,23 +393,27 @@ row shaping, artifact tile display contracts, asset pack card rows, odds table
 sections, and roll result panel DTOs for
 product-styled stat chips/text, shop offers, backpack boards, battle logs,
 artifact images, gacha pack cards, odds tables, and roll result panels.
-Core commits `006ab33`, `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`, and
-`be03e50` then added the neutral Vue component layer for roll result panels,
-gacha odds tables, gacha pack cards, artifact tiles, shop item rows/lists,
-backpack grids, and battle logs. The first Phase 8AW component candidate list
-is complete; future Vue moves should start from a fresh evidence-backed
-candidate review. Keep
+Core commits `006ab33`, `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`,
+`be03e50`, `5dd01f1`, and `471e686` then added the neutral Vue component layer
+for roll result panels, gacha odds tables, gacha pack cards, artifact tiles,
+artifact stat summaries, shop item rows/lists, backpack grids, battle logs,
+achievement badges, and season-rank emblems. The first Phase 8AW component
+candidate list is complete; future Vue moves should start from a fresh
+evidence-backed candidate review. Keep
 whole services, Express routes, persistence, payment/webhook providers,
 runtime catalogs, route
 maps, artwork, support operations, haptics, page assembly, and secure paid-roll
 RNG selection inside product repos.
-New shared backend logic should continue landing behind public `modules/*`
-exports, and new browser-safe helpers should land behind `client` or
-`client-view-model` style exports. Avoid new consumer imports from deep `src/*`
-files. Broader asset runtime/catalog lifecycle remains later because it still
-couples to persistence, support actions, paid rollback behavior, gacha
-grant/burn flows, and product catalogs; provider checkout/callback code stays
-local.
+New shared backend logic should continue landing behind public `modules/*` or
+`server` exports, and new browser-safe helpers should land behind `client`,
+`client-view-model`, or `vue` style exports. Core commit `471e686` added the
+first reusable server coordination helpers for run readiness, idle detection,
+and keyed async locks; product repos still own route mounting, auth, DB
+transactions, active-run validation, SSE delivery, and challenge resolution.
+Avoid new consumer imports from deep `src/*` files. Broader asset
+runtime/catalog lifecycle remains later because it still couples to
+persistence, support actions, paid rollback behavior, gacha grant/burn flows,
+and product catalogs; provider checkout/callback code stays local.
 
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,

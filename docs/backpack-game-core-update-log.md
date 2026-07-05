@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `5dd01f149e347eee4192e4744e03fa695969d918`
-- core short SHA: `5dd01f1`
-- core commit: `Add shared server middleware and badge components`
-- runtime/API baseline: `5dd01f1` (`Add shared server middleware and badge components`)
-- game pointer commit: `4999588` (`Consume shared core middleware and badges`)
+- core SHA: `471e68661babb4b1c472ff4194879189196a4753`
+- core short SHA: `471e686`
+- core commit: `Add stat summary and readiness core helpers`
+- runtime/API baseline: `471e686` (`Add stat summary and readiness core helpers`)
+- game pointer commit: `7373620` (`Adopt shared stat summary and readiness core`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-05 | `7373620` | `471e686` | Stat summary Vue component and run readiness helpers | Core added neutral `ArtifactStatSummary`, `createRunReadinessManager`, and `createKeyedAsyncMutex`. Mushroom now keeps product adapters for stat labels/role colors and the readiness singleton import path while delegating reusable rendering, ready-state, idle sweep, and lock mechanics to core; Meat pins the same SHA and verifies the stat-summary/readiness exports in its core-consumption test. |
 | 2026-07-05 | `4999588` | `5dd01f1` | Server middleware/module facade and badge Vue components | Core added `./server` and `./server/middleware` exports for shared module registration, idempotency, and rate limiting, plus neutral `AchievementBadge` and `SeasonRankEmblem` Vue components. Mushroom now keeps thin adapter re-exports for the existing local import paths; Meat pins the same SHA and verifies the new server/component surface in its core-consumption test. |
 | 2026-07-05 | `f4df2c8` | `44cfbdd` | Core release discipline reference | Core now documents the current submodule-only release channel, SHA-as-release-identity policy, compatibility rules, cross-consumer gate, and publishing prerequisites. Mushroom and Meat both pinned this doc-policy commit. |
 | 2026-07-05 | `7925b96` | `be03e50` | BattleLog Vue component | Core added the neutral `BattleLog` row/list renderer. Mushroom replay logs delegate row rendering and selection emits through core while keeping replay formatting, state mutation, battle stage, result overlay, routes, and copy local; Meat imports the component in its core-consumption smoke test. |
