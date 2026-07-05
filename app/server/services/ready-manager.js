@@ -1,6 +1,16 @@
-import { createRunReadinessManager } from '@microwavedev/backpack-game-core/server';
+import {
+  createRunReadinessServerModule,
+  setupBackpackServerModules
+} from '@microwavedev/backpack-game-core/server';
 
-const manager = createRunReadinessManager({ requiredReadyCount: 2 });
+const readyModuleContext = setupBackpackServerModules([
+  createRunReadinessServerModule({
+    config: {
+      requiredReadyCount: 2
+    }
+  })
+]);
+const manager = readyModuleContext.get('runReadinessManager');
 
 export const setReady = manager.setReady;
 export const setUnready = manager.setUnready;

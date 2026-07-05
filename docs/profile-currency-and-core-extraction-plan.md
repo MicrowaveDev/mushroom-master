@@ -66,6 +66,10 @@
 > `createLoadoutValidationServerModule`; Mushroom still owns grid constants,
 > artifact lookup, pricing, family semantics, stat caps, and existing import
 > compatibility.
+> The following server continuation added `createRunReadinessServerModule`;
+> Mushroom now creates its `ready-manager` singleton through the core module
+> loader while keeping route wiring, active-run validation, challenge
+> resolution, and SSE delivery local.
 > Shipped
 > runtime contracts (wallet ledger, purchase
 > intents, asset ownership, gacha) should be read from the code,
@@ -585,7 +589,9 @@ moved as the artifact-capability helper slice, and
 `gacha-simulation-service.js` now delegates through a provider-driven core
 service/module factory. `loadout-utils.js` now delegates through a
 provider-driven loadout validation service/module factory while keeping
-Mushroom catalog/config policy local.
+Mushroom catalog/config policy local. `ready-manager.js` now delegates through
+`createRunReadinessServerModule`, completing the ready-manager module-list
+wiring slice.
 
 Goal: classify Mushroom server files into shared core modules, app adapters, or
 product-local modules before moving code.
@@ -658,6 +664,9 @@ next S3/S5 slice copied `loadout-utils.js` into core, neutralized it into
 `createLoadoutValidationServerModule` so app module lists can register loadout
 validation over injected artifact, pricing, family, and stat providers.
 Mushroom keeps `app/server/services/loadout-utils.js` as the product adapter.
+The next module-list slice added `createRunReadinessServerModule`; Mushroom
+keeps `app/server/services/ready-manager.js` as the compatibility singleton
+over the registered manager.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.

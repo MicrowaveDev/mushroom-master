@@ -417,8 +417,9 @@ server moves: module descriptors now validate dependency/provides metadata,
 config, duplicate registration, and provider override intent, with the contract
 documented in `vendor/backpack-game-core/docs/server-module-contract.md`.
 Later server slices added provider-driven gacha simulation and loadout
-validation service/module factories, while concrete pack/catalog and
-artifact/pricing/grid providers remain in product repos.
+validation service/module factories plus readiness manager module-list
+registration, while concrete pack/catalog, artifact/pricing/grid providers,
+route wiring, and active-run/SSE behavior remain in product repos.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own
