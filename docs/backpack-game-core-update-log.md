@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `7e44ea93dbc02ec18c35fca600c0d906d72ce66c`
-- core short SHA: `7e44ea9`
-- core commit: `Move artifact capabilities into core`
-- runtime/API baseline: `7e44ea9` (`Move artifact capabilities into core`)
-- game pointer commit: `2aa2246` (`Use core artifact capability helpers`)
+- core SHA: `eb9cf3a74bfecb69b5f4b43673bb0f4e09e32cde`
+- core short SHA: `eb9cf3a`
+- core commit: `Add gacha simulation service module`
+- runtime/API baseline: `eb9cf3a` (`Add gacha simulation service module`)
+- game pointer commit: `885316c` (`Use core gacha simulation service`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-05 | `885316c` | `eb9cf3a` | Gacha simulation service module | Core added provider-driven static/runtime gacha simulation service factories and `createAssetGachaSimulationServerModule`. Mushroom now delegates `app/server/services/gacha-simulation-service.js` through core while keeping static/runtime pack lookup, catalog visibility policy, admin routes, and CLI ownership local; Meat pins the same SHA and verifies the service/server-module exports. |
 | 2026-07-05 | `2aa2246` | `7e44ea9` | Artifact capability helpers | Core added `artifact-capabilities` and exported it directly plus through `modules/loadout`. Mushroom now keeps `app/server/services/artifact-helpers.js` as a compatibility re-export while default family caps, configurable bag-family detection, combat classification, container detection, and stat contribution checks live in core; Meat pins the same SHA and verifies the export in its core-consumption test. |
 | 2026-07-05 | `62b1f8a` | `f9c0054` | Server module contract and reduced-motion composable | Core hardened the server module descriptor/loader contract with config validation, duplicate guards, explicit override policy, and contract docs. Core also added `@microwavedev/backpack-game-core/vue/composables` with the reduced-motion tracker. Mushroom keeps a compatibility re-export and updated S/F extraction inventory docs; Meat pins the same SHA and verifies the composable export in its core-consumption test. |
 | 2026-07-05 | `9d5b873` | `471e686` | Stat summary Vue component and run readiness helpers | Core added neutral `ArtifactStatSummary`, `createRunReadinessManager`, and `createKeyedAsyncMutex`. Mushroom now keeps product adapters for stat labels/role colors and the readiness singleton import path while delegating reusable rendering, ready-state, idle sweep, and lock mechanics to core; Meat pins the same SHA and verifies the stat-summary/readiness exports in its core-consumption test. |
