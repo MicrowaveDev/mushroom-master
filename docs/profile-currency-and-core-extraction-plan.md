@@ -107,10 +107,12 @@
 > Meat now has a product-local backend, dev/Telegram login contract,
 > persistent player bootstrap, active-character state, game-run/shop/loadout/
 > battle/replay routes, wallet rewards, direct asset buy/equip, minimal support
-> lookup, and a frontend that talks to those routes. Remaining work is
-> production hardening: real provider/payment rollout, full gacha/admin ops,
-> marketplace/NFT policy, production DB deployment/migrations, and richer
-> browser E2E coverage.
+> lookup, a frontend that talks to those routes, and first desktop/mobile
+> browser Playwright parity coverage. Remaining work is production hardening: real
+> provider/payment rollout, full gacha/admin ops, marketplace/NFT policy,
+> production DB deployment/migrations, live Telegram deployment validation,
+> richer support/admin operations, and broader visual coverage for additional
+> screens.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
@@ -462,11 +464,13 @@ active-character persistence, game-run/shop/loadout/battle/replay routes,
 wallet reward grants, direct profile-asset buy/equip, a minimal token-gated
 support lookup, product-local settings/assets, and a frontend backed by those
 routes. Verification: `npm run game:test`, `npm run game:build`, and a live
-`npm run dev` smoke flow for login -> start run -> battle -> bootstrap.
+`npm run game:test:browser` flow for login -> start run -> battle -> reload ->
+asset buy/equip with desktop/mobile overflow checks.
 Remaining production hardening: replace or wrap the JSON store with the chosen
-production DB/migration layer, add browser Playwright coverage, wire real
-Telegram bot configuration in deployment, and keep paid providers/gacha admin/
-marketplace work in their backlog lanes until explicitly reopened.
+production DB/migration layer, wire real Telegram bot configuration in
+deployment, broaden visual coverage beyond the first parity screen flow, and
+keep paid providers/gacha admin/marketplace work in their backlog lanes until
+explicitly reopened.
 
 #### Source Of Truth
 
@@ -617,6 +621,9 @@ Goal: profile-scoped economy mechanics should work in Meat with Meat content.
 Status: **Done 2026-07-05 for the compact Vite UI.** `src/main.js` now uses
 backend routes for login/bootstrap, active run state, shop actions, battle
 resolution, wallet display, and asset buy/equip instead of local-only state.
+The first browser Playwright parity spec now covers login -> run -> battle ->
+reload/resume -> asset buy/equip through the UI at desktop and mobile
+viewports.
 
 Goal: convert the Vite prototype into a real product client over backend
 routes.
@@ -649,9 +656,9 @@ Goal: make Meat operable enough for development and future paid work.
 #### M9 - Cross-Game Verification And Release Discipline
 
 Status: **Done 2026-07-05 for current gates.** Meat now exposes
-`game:test`/`game:build` aliases, and the hub core-consumer verification script
-uses those aliases so the product-parity tests run during shared-core consumer
-verification.
+`game:test`/`game:test:browser`/`game:build` aliases, and the hub core-consumer
+verification script uses those aliases so the product-parity API and browser
+tests run during shared-core consumer verification.
 
 Goal: keep Mushroom and Meat from drifting while Meat gains the full product
 stack.
@@ -3443,10 +3450,14 @@ frontend adoption.
   active run/resume state, backend run/shop/loadout/battle/replay routes,
   wallet reward grants, direct asset buy/equip, minimal support lookup, and
   API scenario coverage are implemented in `meat-master`.
-- Remaining hardening: browser Playwright flow coverage, production DB/migration
-  strategy beyond the JSON dev/test store, live Telegram bot deployment
-  validation, optional gacha buy/roll, live payments, and richer support/admin
-  operations.
+- Closed by hardening pass 2026-07-05: browser Playwright parity flow coverage
+  for login, bootstrap, run start, shop buy, battle/replay, reload persistence,
+  profile asset buy/equip, and desktop/mobile overflow sanity is implemented in
+  `meat-master`.
+- Remaining hardening: production DB/migration strategy beyond the JSON dev/test
+  store, live Telegram bot deployment validation, optional gacha buy/roll, live
+  payments, richer support/admin operations, and broader visual coverage for
+  additional screens.
 
 #### Asset Seeding Checklist
 
@@ -4212,7 +4223,8 @@ frontend adoption.
    **Implemented 2026-07-05:** hub command `npm run verify:backpack-core`
    now verifies the same nested `backpack-game-core` commit in Mushroom and
    Meat, then runs core tests/package dry-run, Mushroom core/build/unit/
-   screenshot/focused support-admin E2E gates, and Meat tests/build. The first
+   screenshot/focused support-admin E2E gates, and Meat tests/browser/build.
+   The first
    successful gate passed against core commit `006ab33`; later gates passed
    against core commit `cbb9f18` with the BackpackGrid-focused Playwright
    bundle and core commit `be03e50` with the replay/screenshot BattleLog
@@ -4233,5 +4245,6 @@ frontend adoption.
    support/admin mechanics, while keeping Meat content, settings, art, copy,
    adult-content policy, and provider/payment choices local. See M1-M9 in the
    Current Remaining Work Matrix. Remaining work is production hardening:
-   browser E2E coverage, production DB/migrations, live Telegram deployment,
-   optional gacha buy/roll, live payments, and richer admin/support operations.
+   production DB/migrations, live Telegram deployment, optional gacha buy/roll,
+   live payments, richer admin/support operations, and broader visual coverage
+   for additional screens.
