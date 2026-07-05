@@ -3,6 +3,7 @@ import {
   shapeGridBoardCells,
   shapeGridBoardPieces
 } from '@microwavedev/backpack-game-core/client-view-model';
+import { BackpackGrid } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactFigure } from './ArtifactFigure.js';
 
 function bagWatermarkOffset(artifactId, rotation) {
@@ -20,7 +21,7 @@ function bagWatermarkOffset(artifactId, rotation) {
 }
 
 export const ArtifactGridBoard = {
-  components: { ArtifactFigure },
+  components: { ArtifactFigure, BackpackGrid },
   props: {
     // For non-inventory variants (catalog, fighter card) the legacy
     // `columns` / `rows` props still describe a uniform grid.
@@ -97,6 +98,46 @@ export const ArtifactGridBoard = {
       return shapeGridBoardPieces(this.items, {
         highlightedRowIds: this.highlightedRowIds
       });
+    },
+    renderedCells() {
+      return this.gridCells.map((cell) => ({
+        ...cell,
+        as: this.interactiveCells ? 'button' : 'span',
+        classNames: this.cellClass(cell),
+        style: this.cellStyle(cell),
+        attrs: {
+          'data-cell-x': cell.x,
+          'data-cell-y': cell.y
+        }
+      }));
+    },
+    renderedPieces() {
+      return this.gridPieces.map((item) => {
+        const artifact = this.getArtifact(item.artifactId);
+        return {
+          ...item,
+          classNames: {
+            'artifact-piece-wrap': true,
+            'artifact-piece-wrap--fusion-pending': this.isHighlighted(item)
+          },
+          style: this.pieceStyle(item),
+          title: this.isHighlighted(item) ? this.highlightedTitle : null,
+          attrs: this.pieceDataset(item),
+          actionClass: {
+            'artifact-piece': true,
+            mini: this.variant === 'catalog'
+          },
+          ariaLabel: this.clickablePieces ? (artifact?.name?.ru || item.artifactId) : null,
+          canRotate: this.canRotate(item)
+        };
+      });
+    },
+    renderedBagOverlays() {
+      return this.bagOverlays.map((overlay) => ({
+        ...overlay,
+        className: 'artifact-grid-bag-watermark',
+        style: this.bagOverlayStyle(overlay)
+      }));
     },
     bagOverlays() {
       const groups = new Map();
@@ -264,6 +305,21 @@ export const ArtifactGridBoard = {
       const detail = event.detail || {};
       this.$emit('cell-drop', { x: detail.x ?? cell.x, y: detail.y ?? cell.y });
     },
+    handleCellDragOver({ cell, event }) {
+      this.onCellDragOver(cell, event);
+    },
+    handleCellDrop({ cell, event }) {
+      this.onCellDrop(cell, event);
+    },
+    handleCellTouchDrop({ cell, event }) {
+      this.onCellTouchDrop(cell, event);
+    },
+    handlePieceClick({ piece, event }) {
+      this.clickPiece(piece, event);
+    },
+    handlePieceRotate({ piece, event }) {
+      this.rotatePiece(piece, event);
+    },
     pieceDataset(item) {
       const dataset = item.dataset || {};
       return {
@@ -285,63 +341,35 @@ export const ArtifactGridBoard = {
     }
   },
   template: `
-    <div :class="rootClass" :data-testid="isInventoryVariant ? 'unified-grid' : null">
-      <div :class="backgroundClass()" :style="gridStyle">
-        <span
-          v-for="overlay in bagOverlays"
-          :key="'bag-overlay:' + overlay.key"
-          class="artifact-grid-bag-watermark"
-          :style="bagOverlayStyle(overlay)"
-          aria-hidden="true"
-        ></span>
-        <component
-          :is="interactiveCells ? 'button' : 'span'"
-          v-for="cell in gridCells"
-          :key="'cell:' + cell.key"
-          :class="cellClass(cell)"
-          :style="cellStyle(cell)"
-          :data-cell-x="cell.x"
-          :data-cell-y="cell.y"
-          @click="clickCell(cell)"
-          @dragover="onCellDragOver(cell, $event)"
-          @dragleave="onCellDragLeave(cell)"
-          @drop="onCellDrop(cell, $event)"
-          @cell-drop-touch.native="onCellTouchDrop(cell, $event)"
-        ></component>
-      </div>
-      <div :class="piecesClass()" :style="gridStyle">
-        <div
-          v-for="item in gridPieces"
-          :key="item.key"
-          class="artifact-piece-wrap"
-          :class="{ 'artifact-piece-wrap--fusion-pending': isHighlighted(item) }"
-          :style="pieceStyle(item)"
-          :title="isHighlighted(item) ? highlightedTitle : null"
-          v-bind="pieceDataset(item)"
-        >
-          <component
-            :is="clickablePieces ? 'button' : 'div'"
-            class="artifact-piece"
-            :class="{ mini: variant === 'catalog' }"
-            :data-artifact-id="item.artifactId"
-            :aria-label="clickablePieces ? (getArtifact(item.artifactId)?.name?.ru || item.artifactId) : null"
-            @click="clickPiece(item, $event)"
-          >
-            <artifact-figure
-              :artifact="getArtifact(item.artifactId)"
-              :display-width="item.width"
-              :display-height="item.height"
-            />
-          </component>
-          <button
-            v-if="rotatablePieces && canRotate(item)"
-            class="artifact-piece-rotate"
-            type="button"
-            aria-label="Rotate"
-            @click="rotatePiece(item, $event)"
-          >↻</button>
-        </div>
-      </div>
-    </div>
+    <backpack-grid
+      :cells="renderedCells"
+      :pieces="renderedPieces"
+      :overlays="renderedBagOverlays"
+      :grid-style="gridStyle"
+      :root-class="rootClass"
+      :background-class="backgroundClass()"
+      :pieces-class="piecesClass()"
+      :test-id="isInventoryVariant ? 'unified-grid' : ''"
+      :interactive-cells="interactiveCells"
+      :clickable-pieces="clickablePieces"
+      :rotatable-pieces="rotatablePieces"
+      :droppable="droppable"
+      rotate-text="↻"
+      @cell-click="clickCell"
+      @cell-dragover="handleCellDragOver"
+      @cell-dragleave="onCellDragLeave"
+      @cell-drop="handleCellDrop"
+      @cell-touch-drop="handleCellTouchDrop"
+      @piece-click="handlePieceClick"
+      @piece-rotate="handlePieceRotate"
+    >
+      <template #piece-content="{ piece }">
+        <artifact-figure
+          :artifact="getArtifact(piece.artifactId)"
+          :display-width="piece.width"
+          :display-height="piece.height"
+        />
+      </template>
+    </backpack-grid>
   `
 };

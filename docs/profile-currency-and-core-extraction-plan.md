@@ -3898,9 +3898,15 @@ that game.
    controls, sell zone, fusion classes, item datasets, `ArtifactGridBoard`
    previews, and `buy-run-item` route events local. Meat imports the same
    component names in its core-consumption smoke test.
+   **Fifth slice implemented 2026-07-05:** core commit `cbb9f18` added
+   `BackpackGrid`, backed by the existing grid-board DTO helpers, as the
+   neutral renderer for board shell, background/piece layers, cell wrappers,
+   placed-piece wrappers, drag/drop event bridging, and rotate-control slots.
+   Mushroom's `ArtifactGridBoard` now delegates those generic layers to core
+   while keeping grid math, bag watermark offsets, placement rules, artifact
+   lookup, `ArtifactFigure` rendering, product classes, and drag/drop handlers
+   local. Meat imports `BackpackGrid` in its core-consumption smoke test.
    Remaining component candidates, in safest order:
-   - `BackpackGrid`, backed by `shapeGridBoardCells`,
-     `shapeGridBoardPieces`, and `shapeGridBagSlotCells`.
    - `BattleLog` / compact replay rows, backed by `shapeReplayEventRows`.
    Component extraction rules:
    - components emit neutral events such as `roll`, `burn`, `select`, `buy`,
@@ -3923,8 +3929,11 @@ that game.
      component option/template smoke tests. If future components need true DOM
      interaction, decide separately whether to add Vue Test Utils or Vitest.
    Validation evidence for this slice:
-   - core `npm test` passed 129/129 and `npm pack --dry-run` includes the Vue
+   - core `npm test` passed 135/135 and `npm pack --dry-run` includes the Vue
      files and contract doc;
+   - focused Mushroom `game:build` and Playwright coverage passed for the
+     BackpackGrid adoption: artifact bitmap screenshots, fusion UI recipes, and
+     the unified-grid solo-run spec;
    - Mushroom `npm run game:build`, `npm run game:test`, `npm run
      game:test:screens`, focused `support-admin-ui.spec.js`, and
      `npm run game:core:check` passed;
@@ -3942,9 +3951,11 @@ that game.
    now verifies the same nested `backpack-game-core` commit in Mushroom and
    Meat, then runs core tests/package dry-run, Mushroom core/build/unit/
    screenshot/focused support-admin E2E gates, and Meat tests/build. The first
-   successful gate passed against core commit `006ab33`. Keep the pointer
-   update order: commit/push core first, update Mushroom and Meat nested
-   submodule pointers second, then update the hub pointer after both consumers
-   are clean. Future component slices should run this command before handoff;
-   set `BACKPACK_CORE_MUSHROOM_E2E_COMMAND` when the affected Mushroom E2E
-   surface is not `tests/game/support-admin-ui.spec.js`.
+   successful gate passed against core commit `006ab33`; the latest full gate
+   passed against core commit `cbb9f18` with the BackpackGrid-focused
+   Playwright bundle added to the Mushroom E2E command. Keep the pointer update
+   order: commit/push core first, update Mushroom and Meat nested submodule
+   pointers second, then update the hub pointer after both consumers are clean.
+   Future component slices should run this command before handoff; set
+   `BACKPACK_CORE_MUSHROOM_E2E_COMMAND` when the affected Mushroom E2E surface
+   is not `tests/game/support-admin-ui.spec.js`.
