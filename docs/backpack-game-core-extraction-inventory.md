@@ -110,6 +110,11 @@ copy, theme, and API adapters.
   metadata, image fallback, rotated-image hints, and role glyph labels while
   games keep artwork, CSS, generated SVGs, product visual classifiers, and page
   composition local, tested by `tests/client-view-model.test.js`
+- asset pack card client view-model slice: `src/client-view-model.js` now also
+  provides headless pack detail/status lines plus roll/burn action DTOs over
+  product-provided summary rows and labels while games keep markup, styling,
+  localized copy, route events, and page composition local, tested by
+  `tests/client-view-model.test.js`
 - asset gacha result DTO slice: `src/asset-gacha.js` and `modules/gacha` now
   also provide persisted roll/burn row normalizers and replay-safe roll/burn
   result DTO shapers over injected pack/catalog/items, tested by
@@ -171,8 +176,8 @@ copy, theme, and API adapters.
   `tests/package-types.test.js`
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `42b1f1c`
-  (`Add artifact tile display view models`)
+- latest consumed core commit: `be41855`
+  (`Add asset pack card view models`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 

@@ -3,6 +3,7 @@ import { getNextRunAchievementHint, getRunAchievementsByIds } from '../../../app
 import { getSeasonProgressSummary } from '../../../app/shared/season-levels.js';
 import {
   formatWalletBundlePrice as formatCoreWalletBundlePrice,
+  shapeAssetPackCardRows,
   summarizeAssetRollFeedback,
   summarizeWalletPurchaseSurface,
   summarizeAssetRollPacks
@@ -123,6 +124,13 @@ export const HomeScreen = {
       if (portrait.rollAvailable && portrait.packId) {
         this.$emit('roll-asset-pack', { packId: portrait.packId });
       }
+    },
+    handlePackAction(action) {
+      if (action.kind === 'burn') {
+        this.$emit('burn-asset-pack', action.payload);
+        return;
+      }
+      this.$emit('roll-asset-pack', action.payload);
     },
     focusMushroom(mushroom) {
       this.selectedMushroomId = mushroom.id;
@@ -326,6 +334,21 @@ export const HomeScreen = {
           pityTemplate: this.t.portraitPackPity,
           pityReadyTemplate: this.t.portraitPackPityReady,
           duplicateTemplate: this.t.portraitPackDuplicateCopies
+        }
+      });
+    },
+    rollPackCards() {
+      return shapeAssetPackCardRows(this.rollPackSummaries, {
+        labels: {
+          copiesCompleteTemplate: this.t.portraitPackCopiesComplete,
+          completeTemplate: this.t.portraitPackComplete,
+          detailsDuplicateMultiTemplate: this.t.portraitPackDetailsDuplicateMulti,
+          detailsDuplicateTemplate: this.t.portraitPackDetailsDuplicate,
+          detailsMultiTemplate: this.t.portraitPackDetailsMulti,
+          detailsTemplate: this.t.portraitPackDetails,
+          oddsTemplate: this.t.portraitPackOdds,
+          rollAction: this.t.portraitPackRollAction,
+          burnActionTemplate: this.t.portraitPackBurnAction
         }
       });
     },
@@ -589,23 +612,12 @@ export const HomeScreen = {
                 </span>
               </button>
             </div>
-            <div v-if="rollPackSummaries.length" class="home-pack-details">
-              <div v-for="pack in rollPackSummaries" :key="pack.id" class="home-pack-detail">
-                <strong>{{ pack.name }}</strong>
-                <span v-if="pack.availabilityLabel">{{ pack.availabilityLabel }}</span>
-                <span v-else-if="pack.duplicateEnabled && pack.copyComplete">{{ t.portraitPackCopiesComplete.replace('{count}', pack.total) }}</span>
-                <span v-else-if="pack.complete">{{ t.portraitPackComplete.replace('{count}', pack.total) }}</span>
-                <span v-else-if="pack.duplicateEnabled && pack.rollSize > 1">{{ t.portraitPackDetailsDuplicateMulti.replace('{count}', pack.total).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
-                <span v-else-if="pack.duplicateEnabled">{{ t.portraitPackDetailsDuplicate.replace('{count}', pack.total).replace('{price}', pack.price) }}</span>
-                <span v-else-if="pack.rollSize > 1">{{ t.portraitPackDetailsMulti.replace('{count}', pack.total).replace('{left}', pack.left).replace('{rollSize}', pack.nextRollItemCount).replace('{price}', pack.price) }}</span>
-                <span v-else>{{ t.portraitPackDetails.replace('{count}', pack.total).replace('{left}', pack.left).replace('{price}', pack.price) }}</span>
-                <span v-if="pack.active && pack.duplicateText">{{ pack.duplicateText }}</span>
-                <span v-if="pack.canRoll && pack.odds">{{ t.portraitPackOdds.replace('{odds}', pack.odds) }}</span>
-                <span v-if="pack.canRoll && pack.guaranteeText">{{ pack.guaranteeText }}</span>
-                <span v-if="pack.canRoll && pack.pityText">{{ pack.pityText }}</span>
-                <span v-if="pack.canRoll || pack.canBurn" class="home-pack-actions">
-                  <button v-if="pack.canRoll" class="link home-pack-action" type="button" @click="$emit('roll-asset-pack', { packId: pack.id })">{{ t.portraitPackRollAction }}</button>
-                  <button v-if="pack.canBurn" class="link home-pack-action" type="button" @click="$emit('burn-asset-pack', { packId: pack.id, ruleId: pack.burnRuleId })">{{ t.portraitPackBurnAction.replace('{count}', pack.burnCost).replace('{rarity}', pack.burnRarity) }}</button>
+            <div v-if="rollPackCards.length" class="home-pack-details">
+              <div v-for="pack in rollPackCards" :key="pack.id" class="home-pack-detail">
+                <strong>{{ pack.title }}</strong>
+                <span v-for="line in pack.lines" :key="line.key">{{ line.text }}</span>
+                <span v-if="pack.actionable" class="home-pack-actions">
+                  <button v-for="action in pack.actions" :key="action.key" class="link home-pack-action" type="button" @click="handlePackAction(action)">{{ action.label }}</button>
                 </span>
               </div>
             </div>

@@ -3755,7 +3755,8 @@ that game.
    `shapeGridBoardCells`, `shapeGridBoardPieces`, and
    `shapeGridBagSlotCells`; core commit `a4c4c06` added
    `shapeReplayEventRows`; core commit `42b1f1c` added
-   `shapeArtifactTileDisplay` and artifact footprint helpers. Mushroom's
+   `shapeArtifactTileDisplay` and artifact footprint helpers; core commit
+   `be41855` added `shapeAssetPackCardRows`. Mushroom's
    `ArtifactStatSummary` delegates stat-row/chip DTO shaping through core while
    keeping role colors, glyph markup, labels, classes, and component rendering
    local. Mushroom's prep shop
@@ -3772,8 +3773,11 @@ that game.
    limiting. Mushroom's artifact figures delegate tile dimensions, mask cells,
    image style hints, and role glyph labels through core while keeping artwork
    generation, role colors, CSS, and visual taxonomy local; Meat uses the same
-   helper for prototype artifact image metadata. Remaining backlog: pack cards,
-   odds tables, and roll result panels. Keep Mushroom/Meat themes, localized
+   helper for prototype artifact image metadata. Mushroom's home pack cards
+   delegate detail/status lines and roll/burn action DTOs through core while
+   keeping markup, styling, localization, route events, and page composition
+   local; Meat uses the same helper for prototype pack-card metadata. Remaining
+   backlog: odds tables and roll result panels. Keep Mushroom/Meat themes, localized
    copy, routes, image resolvers, haptics, Telegram wrappers, and page shells
    local. Future slices need screenshot/e2e evidence in Mushroom and build/test
    evidence in Meat for every adopted component.
