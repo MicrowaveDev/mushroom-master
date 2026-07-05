@@ -20,10 +20,14 @@
 > asset/gacha/wallet-domain rules should move into
 > `backpack-game-core` behind adapters rather than staying Mushroom-only.
 > That core is now planned as a full-stack shared repo: backend modules,
-> shared DTO/view-model shapers, browser-safe client services/composables, and
-> neutral Vue component primitives that both Mushroom Battles and Meat Master
-> can consume. Product pages, themes, routes, copy, haptics, art resolvers,
-> Telegram wrappers, and payment/adult-content policy stay in the product repos.
+> shared DTO/view-model shapers, browser-safe client services/composables,
+> neutral Vue component primitives, and adapterized Vue page shells that both
+> Mushroom Battles and Meat Master can consume. The 2026-07-05 frontend
+> extraction correction allows moving Mushroom components/pages into core first
+> under a quarantined port namespace, then immediately replacing Mushroom/spore
+> identity with locale keys and product adapters. Final themes, route
+> registration, product copy/locales, haptics, art resolvers, Telegram wrappers,
+> and payment/adult-content policy still stay in the product repos.
 > A 2026-07-04 Geesome architecture review tightened this direction: copy the
 > layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
 > but improve it with typed subpath exports and adapter contracts so Backpack
@@ -97,10 +101,13 @@
 > shaping into core commit `a4c4c06`, then artifact tile display contracts
 > into core commit `42b1f1c`, while keeping execution/rendering in product
 > adapters. The next
-> core candidates are **not more route plumbing**; they are remaining neutral
-> UI primitives that both Mushroom and Meat can style locally. Move
-> planners and DTO builders, not SQL transactions, provider callbacks,
-> Telegram/adult-content policy, or product page shells.
+> core candidates are **not more route plumbing**; they are the aggressive
+> frontend extraction lane: move reusable Mushroom components and page shells
+> into core, replace product words with locale keys, and replace product
+> dependencies with explicit adapters. Move planners, DTO builders, components,
+> composables, and adapterized page shells, not SQL transactions, provider
+> callbacks, Telegram/adult-content policy, product route registration, or
+> product-owned assets.
 > **Phase
 > 11** produced the first playable `meat-master` core-consumer prototype.
 > **Phase 12 then implemented the local product-parity MVP on 2026-07-05:**
@@ -422,12 +429,17 @@ that already moved to `backpack-game-core`.
 
 Findings and plan corrections:
 
-1. **Do not move whole Mushroom frontend screens into core.** Mushroom screens
-   mix product layout, localized copy, Telegram UX, haptics, route names,
-   admin token storage, asset paths, CSS themes, and Mushroom-specific
-   catalog assumptions. Moving them wholesale would make Meat inherit Mushroom
-   product decisions and would make the core harder to reuse. The plan now
-   calls for neutral component primitives plus props/events/slots/adapters.
+1. **Revised after user correction: move Mushroom frontend more aggressively,
+   then neutralize it.** The earlier "do not move whole screens" rule was too
+   conservative. The updated plan allows moving Mushroom components and page
+   modules into `backpack-game-core` first, as long as they enter through a
+   temporary/quarantined namespace and each moved file is immediately audited
+   for Mushroom/spore/mycelium wording, route/store imports, Telegram/haptic
+   calls, asset paths, CSS/theme assumptions, and product catalog assumptions.
+   Product identity must be replaced by locale keys, product config, route
+   clients, asset resolvers, feature flags, and slots/adapters before Meat
+   adopts the page shell. Anything that cannot be adapterized moves back to the
+   product repo.
 2. **The plan needs an explicit frontend-core contract.** Add a small reference
    doc before or during Phase 8AW that defines supported Vue subpath exports,
    peer dependencies, CSS variable/base-class policy, forbidden imports,
@@ -479,7 +491,128 @@ longer "prove a second core consumer exists"; it is to make Meat Master run the
 same backend/login/player/game mechanics as Mushroom Battles with different
 content and settings. Updated after the first browser parity pass: the local
 MVP is done, so the current active lane moves to production parity hardening
-and the missing UI/mechanics coverage listed in Phase 13.
+and the missing UI/mechanics coverage listed in Phase 13. Updated 2026-07-05
+after the frontend extraction correction: the next shared-core frontend lane
+can move Mushroom components and page modules into core first, then generalize
+all Mushroom/spore/product identity through locale/config/service adapters
+before Meat adopts the shells.
+
+### Next Lane - Aggressive Frontend Core Port
+
+Status: **Planned 2026-07-05 after user correction.** The previous plan moved
+only neutral Vue primitives. The updated goal is more direct: move the
+Mushroom frontend components/pages that are likely shared into
+`backpack-game-core`, preserve Mushroom through compatibility imports, then
+replace Mushroom-specific words and dependencies with product adapters so both
+Mushroom and Meat can import the same shells.
+
+#### F1 - Frontend Port Inventory
+
+Goal: know what can move, what needs adapters, and what must stay local before
+bulk file movement.
+
+- Inventory `web/src/components`, `web/src/pages`, frontend composables,
+  helpers, and services.
+- For each module, mark dependencies on Mushroom stores, route names, locale
+  calls, Telegram WebApp APIs, haptics, CSS classes, asset paths, catalog ids,
+  support/admin auth, and backend endpoints.
+- Classify as: **move now**, **move with adapter**, **page shell candidate**,
+  or **product-local only**.
+- Validation: produce a checklist in the plan or a dedicated frontend
+  extraction inventory doc before file moves.
+
+#### F2 - Quarantined Core Port
+
+Goal: move first, then generalize without breaking Mushroom.
+
+- Copy or move selected Mushroom modules into core under a temporary namespace
+  such as `packages/vue/src/mushroom-port/` or `vue/pages/port/`.
+- Export them through explicit experimental subpaths, not deep imports.
+- Keep Mushroom importing through a thin adapter/compatibility layer so the UI
+  remains visually unchanged during the port.
+- Add a core forbidden-import guard that allows the temporary port namespace to
+  exist only while tracked TODOs are open, and blocks product imports in stable
+  exports.
+- Validation: core package tests, Mushroom build/unit/e2e for each moved
+  surface, Meat build smoke proving the export surface is installable.
+
+#### F3 - Product Identity Sweep
+
+Goal: remove Mushroom-only wording from core without removing Mushroom's own
+player-facing copy.
+
+- Run targeted searches in moved core files for product words such as
+  `mushroom`, `mushrooms`, `spore`, `spores`, `mycelium`, character ids,
+  product asset folders, Mushroom route names, and Mushroom-only CSS/test ids.
+- Classify every hit before changing it:
+  - player-facing text -> locale key;
+  - currency names -> `currency`, `profileCurrency`, `runCurrency`, or
+    product-provided label;
+  - catalog ids/assets -> injected catalog/asset resolver;
+  - route names -> route-client adapter action;
+  - CSS/test ids -> generic semantic ids only when shared;
+  - Mushroom-only behavior -> move back behind a Mushroom adapter.
+- Mushroom locales can still render "spores", "mycelium", or Mushroom-specific
+  copy; core should contain keys and neutral fallbacks only.
+- Validation: `rg` evidence for forbidden product terms in stable core exports,
+  plus snapshot/render tests proving Mushroom text still appears via locales.
+
+#### F4 - Adapterize Pages Into Shared Shells
+
+Goal: make pages reusable without forcing Meat to inherit Mushroom's product
+  decisions.
+
+- Convert moved pages into page shells that receive:
+  - `localeService.t` or a `t` callback;
+  - route/client actions;
+  - product settings and feature flags;
+  - asset resolver and catalog snapshots;
+  - theme/class hooks;
+  - slots for product-specific headers, hero art, admin controls, and policy
+    text.
+- Keep route registration, auth/session ownership, Telegram wrappers, haptics,
+  payment provider policy, support permissions, and adult-content gates in the
+  product repos.
+- Validation: core shell tests with fixture adapters; Mushroom adapter tests
+  prove current behavior; Meat adapter smoke proves the shell can render with
+  Meat locale/content.
+
+#### F5 - Mushroom Re-Import And Parity Proof
+
+Goal: Mushroom should look and behave the same while sourcing more UI from core.
+
+- Replace local Mushroom component/page imports with core imports one surface at
+  a time.
+- Preserve current Mushroom locales, CSS, route names, screenshots, and
+  Playwright flows.
+- Use compatibility wrappers when a full page shell needs multiple passes.
+- Validation: affected Mushroom unit tests, `npm run game:build`, focused
+  Playwright/screenshot coverage for every visible page moved.
+
+#### F6 - Meat Adoption
+
+Goal: prove the shared shell is not secretly Mushroom-specific.
+
+- Add Meat locale entries, content/settings adapters, and asset resolver hooks.
+- Import the same core components/page shells into Meat with Meat theme/content.
+- Keep Meat product decisions local: adult-safe copy, content-rating gates,
+  character/art catalogs, run balance, and route registration.
+- Validation: Meat `npm test`, `npm run build`, browser parity flow, and any
+  new screenshot/e2e coverage for visible adopted shells.
+
+#### F7 - Stabilize Or Roll Back The Port
+
+Goal: keep the core clean after the temporary migration window.
+
+- Promote fully neutralized modules from the temporary port namespace to stable
+  `@microwavedev/backpack-game-core/vue/components`, `/vue/pages`, or
+  `/vue/composables` exports.
+- Move any stubborn Mushroom-only modules back to `mushroom-master`.
+- Remove temporary exceptions from forbidden-import scans.
+- Update `backpack-game-core/docs/frontend-core-contract.md` with page-shell
+  adapter contracts, locale requirements, and stable export names.
+- Validation: `npm run verify:backpack-core` passes after core, Mushroom, Meat,
+  and hub pointers are updated.
 
 ### Shipped Lane - Meat Master Product Parity MVP
 
@@ -663,8 +796,9 @@ routes.
   persisted bootstrap/run state.
 - Keep the current product-local characters, artifacts, theme, and compact
   prototype layout, then add the missing login/loading/error/resume states.
-- Reuse shared view-model helpers and neutral Vue/core components where they
-  fit; do not force Mushroom page shells into Meat.
+- Reuse shared view-model helpers, neutral Vue/core components, and any
+  adapterized page shells that have passed the product-identity sweep. Do not
+  import raw Mushroom pages into Meat without Meat locale/config/asset adapters.
 - Validation: `npm test`, `npm run build`, and at least one browser/E2E flow
   for login -> run -> battle -> reload/resume.
 
@@ -894,7 +1028,9 @@ execution local.
   mutation result DTOs, and shared browser route-client helpers.
 - Keep non-core boundaries strict: DB transactions, route wiring, provider
   callbacks, adult-content gates, Telegram deployment policy, product catalogs,
-  and page shells stay in product repos.
+  route registration, and product policy stay in product repos. Adapterized
+  page shells may move through the frontend core port lane once their copy,
+  assets, routes, and runtime services are injected.
 - Validation: core forbidden-import tests stay green, Mushroom and Meat consume
   the same core SHA, and `npm run verify:backpack-core` passes after every
   extracted slice.
@@ -3172,9 +3308,12 @@ one package and split into packages when build/runtime needs justify it:
 3. **Browser-safe services and Vue composables:** fetch-client factories,
    state machines, pack/shop/loadout/battle view-model logic, and composables
    that receive product API clients and catalog/config adapters.
-4. **Vue components and page modules:** neutral presentational components and
-   optional page shells that communicate through props/events/slots and do not
-   import product assets, routes, stores, or copy directly.
+4. **Vue components and page modules:** neutral presentational components,
+   headless composables, and adapterized page shells. Page shells may begin as
+   moved Mushroom modules in a temporary core port namespace, but stable exports
+   must communicate through props/events/slots, locale services, route clients,
+   asset resolvers, and product config instead of importing product assets,
+   routes, stores, or copy directly.
 
 Recommended repo shape after the next architecture pass:
 
@@ -3227,7 +3366,9 @@ Move backend modules into `backpack-game-core`:
   planned asset promotion rules, and plan-item asset-id/character-link
   invariants.
 
-Move Vue/frontend modules into `backpack-game-core` in small layers:
+Move Vue/frontend modules into `backpack-game-core` in small layers, with an
+allowed temporary port-first step for Mushroom modules that are immediately
+generalized:
 
 - headless services/composables for bootstrap loading, shop offers, backpack
   placement, loadout totals, battle replay playback, wallet/asset catalog
@@ -3236,10 +3377,12 @@ Move Vue/frontend modules into `backpack-game-core` in small layers:
   shop offer lists, character selectors, battle logs/replay timelines, wallet
   balance badges, asset inventory/equipment panels, gacha pack cards, roll
   result modals, odds tables, and admin validation/checklist panels;
-- optional page-level modules for repeated flows such as prep/shop, battle
-  replay, asset inventory, gacha packs, and gacha admin plan review, but only
-  when the page accepts product adapters for routing, auth, copy, art, and API
-  calls;
+- optional page-level modules for repeated flows such as auth/bootstrap,
+  onboarding, character selection, prep/shop, battle replay, run completion,
+  profile/assets, friends/social, leaderboards, gacha packs, and gacha admin
+  plan review. These may start from moved Mushroom pages, but stable shells must
+  accept product adapters for routing, auth, copy/locales, art, feature flags,
+  haptics, and API calls;
 - shared CSS tokens or minimal structural styles when they are neutral enough
   for both games. Game-specific themes, palettes, copy, backgrounds, and
   character/product imagery stay in the consuming game.
@@ -3252,8 +3395,9 @@ Keep in each game repo:
   webhook signatures, invoice lookup, tax/accounting exports, and content-policy
   compliance gates;
 - product catalogs, character ids, ability hooks, portrait/skin art, adult
-  content presentation, localization strings, final route maps, page assembly,
-  theme overrides, admin permissions, storage backends, and generated images;
+  content presentation, localization dictionaries, final route maps, route
+  registration, page composition slots, theme overrides, admin permissions,
+  storage backends, and generated images;
 - secure RNG source selection for paid rolls. Core can accept an injected RNG,
   but game services decide whether it is deterministic for simulation or
   cryptographically secure for paid runtime rolls.
@@ -3493,12 +3637,12 @@ Keep local for now:
   images, page assembly, final CSS themes, haptics, secure paid-roll RNG
   selection, and product-specific support/admin permissions.
 
-Frontend post-review on 2026-07-04: keep the core client route-adapter based
-and do not extract the full Mushroom API client or full Vue pages yet. The next
-frontend slices should stay close to DTO/view-model shaping and headless
-services adjacent to `client-view-model`; neutral Vue components and page
-shells come later, after the shared client contracts are stable and Meat has a
-backend surface that can consume them.
+Frontend post-review on 2026-07-04, superseded 2026-07-05: the old guidance was
+to keep the core client route-adapter based and avoid full Vue pages until the
+client contracts and Meat backend existed. Those prerequisites are now far
+enough along for the F1-F7 aggressive frontend core port lane above: Mushroom
+components/pages can move first through a temporary namespace, then become
+stable only after locale/config/service adapterization.
 
 #### Sub-Agent Execution Model
 
@@ -4053,8 +4197,9 @@ frontend adoption.
    asset catalog construction delegates to this helper while env parsing,
    `PORTRAIT_PACK_ID`, portrait URLs, runtime pack lookup, direct-buy/roll
    execution, SQL lifecycle, support actions, and product route payloads stay
-   local. Next candidates are client/contracts and frontend-services; full Vue
-   page/component movement remains later.
+   local. Next candidates are client/contracts and frontend-services.
+   Superseded 2026-07-05: full Vue page/component movement is now allowed
+   through the F1-F7 port-and-neutralize lane.
 51. Phase 8R asset/gacha client view-model helper extraction. **Implemented
    2026-07-04:** core commit `578279d` added `client-view-model` helpers for
    asset pack rarity odds, guarantee/pity/duplicate text, active/availability
@@ -4062,8 +4207,9 @@ frontend adoption.
    pack summary shaping to core while keeping product copy, selected character
    state, bootstrap payloads, route actions, and UI composition local. Meat
    consumes the same helper through a contract smoke test. Next frontend
-   candidates are wallet/asset DTO shapers and headless services/composables;
-   full Vue page/component movement remains later.
+   candidates are wallet/asset DTO shapers and headless services/composables.
+   Superseded 2026-07-05: full Vue page/component movement is now allowed
+   through the F1-F7 port-and-neutralize lane.
 52. Phase 8S wallet and roll-feedback view-model helper extraction.
    **Implemented 2026-07-04:** core commit `cf7c680` added
    `client-view-model` helpers for wallet purchase surface shaping and asset
@@ -4217,10 +4363,11 @@ frontend adoption.
    and gacha/admin view models (fulfilled by Phases 8AL-8AQ); then the
    planner-level service boundaries listed in Phases 8AR-8AW. The
    run-shop/game-run response patch helper slices are fulfilled by Phases
-   8AJ-8AK, and replay playback state is fulfilled by Phase 8AL. Do not
-   move whole Mushroom services, pages, Express routes, DB schemas, payment
-   providers, route maps, catalogs, artwork, support operations, haptics, or
-   secure paid-roll RNG selection into core.
+   8AJ-8AK, and replay playback state is fulfilled by Phase 8AL. Superseded
+   2026-07-05: do not move Mushroom services, Express routes, DB schemas,
+   payment providers, route maps, catalogs, artwork, support operations,
+   haptics, or secure paid-roll RNG selection into core. Vue pages may move
+   only as adapterized shells through the F1-F7 port-and-neutralize lane.
 67. Phase 8AH profile asset result DTO shaper extraction.
    **Implemented 2026-07-04:** core commit `458d4bb` added `modules/assets`
    helpers for asset records, owned-instance summaries, equipped-target
@@ -4428,12 +4575,13 @@ frontend adoption.
    support admin odds preview delegates table sections through core, and home
    roll feedback delegates panel metadata through core while keeping copy,
    markup, styling, and route events local; Meat uses the same helpers in
-   prototype wrappers. Phase 8AV DTO backlog is complete; the next frontend
-   work should be neutral Vue components built on these DTO contracts, not
-   whole Mushroom screens moved as-is. Keep Mushroom/Meat themes, localized
-   copy, routes, image resolvers, haptics, Telegram wrappers, and page shells
-   local. Future slices need screenshot/e2e evidence in Mushroom and build/test
-   evidence in Meat for every adopted component.
+   prototype wrappers. Phase 8AV DTO backlog is complete. The next frontend
+   work can now move Mushroom components and page modules into core first, then
+   generalize them through locale/config/asset/route adapters before stable
+   export. Keep Mushroom/Meat themes, localization dictionaries, route
+   registration, image resolvers, haptics, Telegram wrappers, and product
+   policy local. Future slices need screenshot/e2e evidence in Mushroom and
+   build/test evidence in Meat for every adopted component or shell.
 82. Phase 8AW neutral Vue component layer.
    **First slice implemented 2026-07-05:** core commit `006ab33` added a
    public Vue-facing layer in `backpack-game-core` behind subpath exports
@@ -4487,17 +4635,20 @@ frontend adoption.
    list to core while keeping replay formatting, state mutation, battle stage,
    result overlay, route flow, and localized copy local. Meat imports
    `BattleLog` in its core-consumption smoke test.
-   Remaining component candidates from this Phase 8AW list: **none**. Future
-   Vue moves should start with a fresh evidence-backed candidate review rather
-   than moving whole Mushroom pages.
+   Remaining component candidates from this Phase 8AW primitive list: **none**.
+   Future Vue moves should start the aggressive frontend core port lane: move
+   candidate Mushroom components/pages under a temporary core port namespace,
+   run the product-identity sweep, adapterize route/store/assets/locales, and
+   promote only neutralized components/page shells to stable exports.
    Component extraction rules:
    - components emit neutral events such as `roll`, `burn`, `select`, `buy`,
      `place`, `remove`, and `open`, never product route names;
-   - components use props/events/slots/adapters instead of importing Mushroom
-     stores, APIs, routes, Telegram helpers, generated art, CSS themes, or
-     catalogs;
-   - core may ship minimal base classes or CSS variables, but Mushroom and Meat
-     keep their final themes, responsive page layout, art paths, and copy;
+   - components and page shells use props/events/slots/adapters instead of
+     importing Mushroom stores, APIs, routes, Telegram helpers, generated art,
+     CSS themes, or catalogs;
+   - core may ship minimal base classes, structural page shells, or CSS
+     variables, but Mushroom and Meat keep their final themes, responsive route
+     composition, art paths, and locale dictionaries;
    - each component slice must include core unit/render tests, Mushroom
      adoption evidence including screenshots where visual, and Meat build/test
      evidence.
@@ -4525,14 +4676,18 @@ frontend adoption.
      game:test:screens`, focused `support-admin-ui.spec.js`, and
      `npm run game:core:check` passed;
    - Meat `npm test` and `npm run build` passed.
-83. Phase 8AX explicit non-core guardrails.
-   **Current boundary:** do not move whole Mushroom services, Express routes,
+83. Phase 8AX explicit non-core guardrails and page-shell exception.
+   **Current boundary:** do not move Mushroom services, Express routes,
    database migrations/schemas, provider SDK calls, webhook signature checks,
    Telegram integration, support/admin permissions, image upload/storage,
    adult-content compliance gates, settlement runbooks, art assets, lore copy,
-   player/mushroom catalogs, CSS themes, or product page composition into
-   `backpack-game-core`. Core APIs should receive plain snapshots and return
-   plans/DTOs that product repos execute.
+   player/mushroom catalogs, final CSS themes, route registration, or product
+   policy into `backpack-game-core`. Core APIs should receive plain snapshots
+   and return plans/DTOs that product repos execute. **Exception:** Vue page
+   shells may move into core if they are adapterized: all Mushroom/spore copy
+   is locale-driven, all routes/actions come from injected clients, all assets
+   come from resolvers, and product-only behavior remains behind slots or
+   product adapters.
 84. Phase 8AY cross-consumer release hardening.
    **Implemented 2026-07-05:** hub command `npm run verify:backpack-core`
    now verifies the same nested `backpack-game-core` commit in Mushroom and
