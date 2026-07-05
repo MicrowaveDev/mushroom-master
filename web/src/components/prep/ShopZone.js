@@ -2,13 +2,14 @@ import {
   artifactPreviewOrientation,
   shapeShopItemRows
 } from '@microwavedev/backpack-game-core/client-view-model';
+import { ShopItemList } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 import { SellZone } from './SellZone.js';
 import { artifactVisualClassification } from '../../../../app/shared/artifact-visual-classification.js';
 
 export const ShopZone = {
   name: 'ShopZone',
-  components: { ArtifactGridBoard, SellZone },
+  components: { ArtifactGridBoard, SellZone, ShopItemList },
   props: [
     'state', 't', 'runRefreshCost', 'runSellPriceLabel', 'getArtifact',
     'getArtifactPrice', 'preferredOrientation', 'formatArtifactBonus',
@@ -96,20 +97,17 @@ export const ShopZone = {
         <strong>{{ t.shop }}</strong>
         <button type="button" class="link" :disabled="(state.gameRun.player?.coins || 0) < runRefreshCost" @click="$emit('refresh-shop')">{{ t.refreshShop }} (🪙{{ runRefreshCost }})</button>
       </div>
-      <div class="artifact-shop-items">
-        <div
-          v-for="row in shopItemRows"
-          :key="row.id"
-          class="shop-item"
-          :data-artifact-draggable="row.canAfford ? 'true' : 'false'"
-          v-bind="itemDataset(row)"
-          :class="offerClass(row)"
-          @click="$emit('buy-run-item', row.artifactId)"
-        >
-          <div class="shop-item-header">
-            <strong class="shop-item-name">{{ row.name }}</strong>
-            <span class="shop-item-price">🪙 {{ row.price }}</span>
-          </div>
+      <shop-item-list
+        :rows="shopItemRows"
+        list-class="artifact-shop-items"
+        :row-class="offerClass"
+        :item-attrs="itemDataset"
+        price-prefix="🪙 "
+        :character-item-label="t.characterItem"
+        :bag-slots-label="t.bagSlots"
+        @buy="$emit('buy-run-item', $event.artifactId)"
+      >
+        <template #visual="{ row }">
           <artifact-grid-board
             class="shop-item-visual"
             variant="catalog"
@@ -118,19 +116,8 @@ export const ShopZone = {
             :items="row.previewItem"
             :get-artifact="getArtifact"
           />
-          <p v-if="row.description" class="shop-item-description">{{ row.description }}</p>
-          <div class="shop-item-tags">
-            <span v-if="row.characterItem" class="artifact-stat-chip artifact-stat-chip--character">{{ t.characterItem }}</span>
-            <span v-if="row.isBag" class="artifact-stat-chip artifact-stat-chip--bag">{{ row.slotCount }} {{ t.bagSlots }}</span>
-            <span
-              v-for="stat in row.statRows"
-              :key="stat.key"
-              class="artifact-stat-chip"
-              :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
-            >{{ stat.label }} {{ stat.value }}</span>
-          </div>
-        </div>
-      </div>
+        </template>
+      </shop-item-list>
       <sell-zone
         :state="state"
         :t="t"

@@ -3890,8 +3890,15 @@ that game.
    classification, then delegates tile markup to the core component. Meat
    imports `ArtifactTile` in its core-consumption smoke test. Focused Mushroom
    artifact bitmap/glyph screenshots passed after the swap.
+   **Fourth slice implemented 2026-07-05:** core commit `cdba5a7` added
+   `ShopItemRow` and `ShopItemList`, backed by `shapeShopItemRows`, with
+   neutral `buy`/`select` emits, class/attribute hooks, and a visual slot for
+   product-owned previews. Mushroom's prep `ShopZone` now delegates shop row
+   header, price, description, and tags to the core list while keeping refresh
+   controls, sell zone, fusion classes, item datasets, `ArtifactGridBoard`
+   previews, and `buy-run-item` route events local. Meat imports the same
+   component names in its core-consumption smoke test.
    Remaining component candidates, in safest order:
-   - `ShopItemList` / `ShopItemRow`, backed by `shapeShopItemRows`.
    - `BackpackGrid`, backed by `shapeGridBoardCells`,
      `shapeGridBoardPieces`, and `shapeGridBagSlotCells`.
    - `BattleLog` / compact replay rows, backed by `shapeReplayEventRows`.
