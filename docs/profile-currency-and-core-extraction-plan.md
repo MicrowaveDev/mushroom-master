@@ -120,6 +120,16 @@
 > and multi-round completion coverage, decide how much of Mushroom's manual bag
 > editing must exist in Meat, and keep extracting product-neutral planners/DTOs
 > into core without moving product execution policy.
+> **2026-07-05 Phase 13 implementation pass:** Meat now has a SQLite-backed
+> production store adapter with schema migration, queued store mutations,
+> production deploy config validation, production-mode dev-login gating,
+> Telegram `auth_date` freshness validation, expanded browser coverage for
+> character switch/refresh/sell/multi-round/new-run flows, support wallet/asset/
+> run-reset mutations with audit rows, and product-local asset provenance
+> metadata. Remaining Phase 13 work is live Telegram deploy smoke, deeper
+> production DB operational policy if SQLite is not the final host choice,
+> optional manual bag-editor parity if compact auto-pack is rejected, and
+> follow-up core extraction for neutral DTO/planner slices.
 
 **Status:** Phases 1-5, 6A-6C, 7, 7A, 7B, 8A, 8B, the first Phase 8C slices,
 8D, 8E, 8F, 8G, 8H, the first Phase 8I/8J slices, and the initial Phase 11
@@ -690,28 +700,39 @@ stack.
 
 ### Active Lane - Phase 13 Meat Production Parity Hardening
 
-Status: **Added 2026-07-05 after post-browser review.** Phase 12 and the first
-browser hardening pass make Meat playable locally with Mushroom-class
-login/player/run/wallet mechanics. Phase 13 turns that into a production-ready
-second game and closes the pieces that are still too easy to miss.
+Status: **Partially implemented 2026-07-05.** Phase 12 and the first browser
+hardening pass made Meat playable locally with Mushroom-class
+login/player/run/wallet mechanics. The first Phase 13 pass added production
+store/config hardening, expanded browser mechanics coverage, support mutations,
+and asset provenance. Remaining items are live deploy validation and product
+decisions/extractions that require an explicit launch target.
 
 #### Phase 13 Source Of Truth
 
 - Main goal: run `meat-master` like `mushroom-master`, with the same login,
   game, and player mechanics, but different content and settings.
-- Current achieved state: local dev/API/browser parity is implemented and
-  verified by Meat unit/API tests, Meat browser Playwright, Meat build, and hub
-  `npm run verify:backpack-core`.
-- Missing or risky state: persistence is still a JSON file, Telegram auth is
-  code-level only rather than deployment-validated, the browser journey covers
-  one happy path but not every user mechanic, and Meat has not yet decided
-  whether Mushroom's full manual drag/rotate bag editor is required or whether
-  compact auto-pack is an intentional product difference.
+- Current achieved state: local dev/API/browser parity is implemented; Meat now
+  has a SQLite production-store adapter, schema migration, queued store
+  mutations, production deploy config validation, production-mode dev-login
+  gating, Telegram freshness checks, expanded browser flow coverage, support
+  mutations/audit rows, and asset provenance metadata.
+- Missing or risky state: live Telegram auth has not been smoke-tested against
+  a real deployed bot profile, SQLite is the implemented production-store path
+  but final hosting/backup/rollback policy may still choose a different DB, and
+  compact auto-pack is documented as the current Meat UX divergence unless the
+  product decides it must match Mushroom's full manual drag/rotate bag editor.
 - Non-goal unless reopened: paid processors, advanced gacha, marketplace,
   trading, and NFT policy should not block this phase unless the work directly
   depends on production wallet/accounting readiness.
 
 #### P13.1 - Replace JSON Persistence With A Production Store
+
+Status: **Implemented first pass 2026-07-05.** Meat now has
+`SqliteGameStore`, schema version `1`, per-collection SQLite tables,
+WAL/foreign-key pragmas, queued store mutations for JSON and SQLite stores, and
+tests proving SQLite migration/persistence across service restart. Remaining
+launch policy: choose hosting, backup, and rollback practice for the actual
+production environment; replace SQLite only if hosting requires a different DB.
 
 Goal: Meat should survive deploys, restarts, concurrent players, and future
 paid/gacha ledger work without relying on `.data/meat-master-db.json`.
@@ -734,6 +755,12 @@ paid/gacha ledger work without relying on `.data/meat-master-db.json`.
 
 #### P13.2 - Validate Real Telegram And Deployment Auth
 
+Status: **Implemented code/deploy-check pass 2026-07-05.** Meat now has
+`app/server/config.js`, `npm run game:deploy:check`, production-mode required
+env validation, dev-login gating, Telegram hash verification backed by
+configured bot token, and `auth_date` freshness rejection. Remaining launch
+work: run the smoke checklist with the real Meat Telegram bot and public URL.
+
 Goal: Meat should enter through the same real Mini App/deployment class as
 Mushroom, not only through local dev login.
 
@@ -751,6 +778,15 @@ Mushroom, not only through local dev login.
   automated deploy smoke records the exact env/profile used.
 
 #### P13.3 - Close Meat UI Mechanics Coverage Gaps
+
+Status: **Mostly implemented 2026-07-05.** Browser Playwright now covers active
+character switching, shop refresh, buy, sell/refund, reload persistence,
+multi-round battle through run completion, direct asset buy/equip, new-run
+replay reset, and desktop/mobile overflow checks. Remaining product decision:
+compact auto-pack is documented in Meat as the current product-local UX
+divergence; build manual drag/rotate/save only if product rejects that
+divergence. Remaining coverage gap: readable UI error-path assertions can be
+expanded when Meat gets richer error surfaces.
 
 Goal: the browser-tested Meat surface should cover all mechanics a player needs
 for the same class of game loop as Mushroom.
@@ -774,6 +810,12 @@ for the same class of game loop as Mushroom.
 
 #### P13.4 - Product Content And Asset Readiness
 
+Status: **Implemented first pass 2026-07-05.** Meat starter artifacts,
+characters, and profile assets now carry provenance metadata; characters carry
+adult-content policy flags; tests enforce provenance/policy presence. Remaining
+launch work: replace `starter_port`/prototype art with production-owned Meat
+assets or explicitly approve the placeholders.
+
 Goal: Meat should not accidentally ship with Mushroom placeholder content or
 untracked generated/prototype art.
 
@@ -790,6 +832,12 @@ untracked generated/prototype art.
 
 #### P13.5 - Support/Admin Minimum For Production
 
+Status: **Implemented API pass 2026-07-05.** Support routes now cover lookup,
+wallet adjust, asset grant, asset revoke, active run reset, and support audit
+rows, with token rejection and happy-path mutation tests. Remaining launch
+work: build a richer operator UI only if needed; current support operations are
+API-first.
+
 Goal: operators need enough tooling to recover player state before money or
 gacha is enabled.
 
@@ -803,6 +851,11 @@ gacha is enabled.
   support mutation per state type.
 
 #### P13.6 - Core Extraction Follow-Up
+
+Status: **Not started in this pass.** The implementation kept DB transactions,
+route wiring, support policy, Telegram/deploy config, and product content in
+Meat. Candidate neutral DTO/planner extraction remains valid after the
+production-parity mechanics settle.
 
 Goal: avoid duplicating Mushroom product logic in Meat while keeping product
 execution local.
@@ -822,6 +875,11 @@ execution local.
   extracted slice.
 
 #### P13.7 - Release Gate And Definition Of Done
+
+Status: **Updated 2026-07-05.** Local production-parity gates now include
+`npm run game:deploy:check` plus the Meat API/browser/build suite. Hub
+cross-consumer verification should be rerun after the Meat commit before hub
+pointer update.
 
 Goal: prevent another "implemented locally but not production-ready" ambiguity.
 
@@ -4427,3 +4485,10 @@ frontend adoption.
    auto-pack decision, Meat asset provenance/replacement status, minimum
    support mutations/audit logs, and follow-up extraction of product-neutral
    DTO/planner slices into `backpack-game-core`.
+   **Implementation update 2026-07-05:** first pass shipped SQLite store/schema
+   migration, queued mutations, production deploy config validation,
+   production-mode dev-login gating, Telegram freshness checks, expanded
+   browser mechanics coverage, support mutations/audit, and Meat asset
+   provenance metadata. Remaining: real Telegram deploy smoke, production DB
+   hosting/backup/rollback decision, optional manual bag editor if compact
+   auto-pack is not accepted, and neutral DTO/planner extraction follow-up.
