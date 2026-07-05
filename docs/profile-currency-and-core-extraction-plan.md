@@ -90,9 +90,10 @@
 > initial/next shop state, ghost budget math, round reward/counter/end-state
 > planning, and challenge group-completion decisions into core commit
 > `bf863f3`, then the first neutral frontend stat-row DTO helper into core
-> commit `2280929`, while keeping execution/rendering in product adapters. The
-> next core candidates are **not more route plumbing**; they are remaining
-> neutral UI primitives that both Mushroom and Meat can style locally. Move
+> commit `2280929`, then shop item row DTO shaping into core commit
+> `ffaa376`, while keeping execution/rendering in product adapters. The next
+> core candidates are **not more route plumbing**; they are remaining neutral
+> UI primitives that both Mushroom and Meat can style locally. Move
 > planners and DTO builders, not SQL transactions, provider callbacks,
 > Telegram/adult-content policy, or product page shells.
 > **Phase
@@ -3745,13 +3746,17 @@ that game.
    rating, season/achievement grants, challenge matching, DB persistence,
    ghost selection, product catalog data, and HTTP route errors.
 81. Phase 8AV neutral frontend backpack UI primitives.
-   **First slice implemented 2026-07-05:** core commit `2280929` added
-   `shapeArtifactStatRows` to `client-view-model`. Mushroom's
-   `ArtifactStatSummary` now delegates stat-row/chip DTO shaping through core
-   while keeping role colors, glyph markup, labels, classes, and component
-   rendering local; Meat uses the same helper for compact bonus text. Remaining
-   backlog: backpack board geometry props, artifact tile display contracts,
-   shop item rows, pack cards, odds tables, roll result panels, and replay
+   **First slices implemented 2026-07-05:** core commit `2280929` added
+   `shapeArtifactStatRows` to `client-view-model`, and core commit `ffaa376`
+   added `shapeShopItemRows`. Mushroom's `ArtifactStatSummary` delegates
+   stat-row/chip DTO shaping through core while keeping role colors, glyph
+   markup, labels, classes, and component rendering local. Mushroom's prep shop
+   delegates offer lookup, pricing, affordability, preview footprint,
+   bag/character flags, and stat rows through core while keeping localized
+   copy, role/shine classes, fusion hints, click actions, and markup local.
+   Meat uses the same helpers for compact bonus text and prototype shop
+   buttons. Remaining backlog: backpack board geometry props, artifact tile
+   display contracts, pack cards, odds tables, roll result panels, and replay
    event rows. Keep Mushroom/Meat themes, localized copy, routes, image
    resolvers, haptics, Telegram wrappers, and page shells local. Future slices
    need screenshot/e2e evidence in Mushroom and build/test evidence in Meat for

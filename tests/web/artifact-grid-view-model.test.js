@@ -38,3 +38,52 @@ test('[artifact-grid] preview methods share canonical core orientation rules', (
     getArtifact: () => verticalItem
   }, verticalItem.id), { width: 1, height: 2 });
 });
+
+test('[artifact-grid] shop zone shapes offer rows through the shared core helper', () => {
+  const catalog = new Map([
+    ['needle', {
+      id: 'needle',
+      family: 'damage',
+      width: 1,
+      height: 2,
+      price: 2,
+      name: { en: 'Needle' },
+      description: { en: 'Sharp.' },
+      bonus: { damage: 2 }
+    }],
+    ['bag', {
+      id: 'bag',
+      family: 'bag',
+      width: 2,
+      height: 2,
+      price: 3,
+      slotCount: 4,
+      name: { en: 'Bag' },
+      bonus: {}
+    }]
+  ]);
+  const rows = ShopZone.computed.shopItemRows.call({
+    state: {
+      gameRunShopOffer: ['needle', 'bag'],
+      gameRun: { player: { coins: 2 } },
+      lang: 'en'
+    },
+    getArtifact: (id) => catalog.get(id),
+    getArtifactPrice: (artifact) => artifact?.price || 0,
+    artifactName: ShopZone.methods.artifactName,
+    artifactDescription: ShopZone.methods.artifactDescription,
+    formatArtifactBonus: (artifact) => artifact?.bonus?.damage
+      ? [{ key: 'damage', label: 'Damage', value: '+2', positive: true }]
+      : []
+  });
+
+  assert.equal(rows[0].artifactId, 'needle');
+  assert.equal(rows[0].name, 'Needle');
+  assert.equal(rows[0].description, 'Sharp.');
+  assert.equal(rows[0].canAfford, true);
+  assert.deepEqual(rows[0].previewOrientation, { width: 1, height: 2 });
+  assert.deepEqual(rows[0].statRows, [{ key: 'damage', label: 'Damage', value: '+2', positive: true }]);
+  assert.equal(rows[1].isBag, true);
+  assert.equal(rows[1].slotCount, 4);
+  assert.equal(rows[1].unavailable, true);
+});
