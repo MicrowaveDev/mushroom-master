@@ -450,7 +450,10 @@ served by hosted community APIs. Meat's first local community client is a
 read-only hosted leaderboard proxy; friends/challenges/account linking remain
 product-local hosted API follow-ups. Meat's first desktop wrapper is
 Electron-based and starts the same product backend in local SQLite mode; core
-still does not own packaging or OS integration.
+still does not own packaging or OS integration. Core now owns the generic
+hosted-community client and server module factory used by Meat's local
+community proxy; products still own route mounting, auth, configured server
+URLs, and any hosted write APIs for friends/challenges/account linking.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own

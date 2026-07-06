@@ -671,7 +671,12 @@ The next module-list slice added `createRunReadinessServerModule`; Mushroom
 keeps `app/server/services/ready-manager.js` as the compatibility singleton
 over the registered manager. The next settlement-adapter slice added
 `modules/wallet/settlement-adapters`; Mushroom keeps concrete provider field
-maps in `app/server/services/provider-settlement-adapters.js`.
+maps in `app/server/services/provider-settlement-adapters.js`. The next
+server-port slice added `modules/community` plus
+`createHostedCommunityClientServerModule`; Meat now consumes its hosted
+community client through a product compatibility wrapper while product repos
+still own auth, route mounting, community-server URLs, and any future write
+APIs for friends/challenges/account linking.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
@@ -1462,9 +1467,10 @@ code as practical.
    - Partially done: add community API clients for leaderboard/friends/
      challenges from local mode as read-only or narrow-write surfaces first.
      Meat now has `/api/community/status` and a read-only
-     `/api/community/leaderboard` proxy to a configured hosted server. Remaining
-     surfaces: friends/challenges, optional account linking, shared seasons,
-     and any narrow-write community submissions.
+     `/api/community/leaderboard` proxy to a configured hosted server, backed
+     by the shared core hosted-community client/module. Remaining surfaces:
+     friends/challenges, optional account linking, shared seasons, and any
+     narrow-write community submissions.
    - Treat account-linked progress sync and offline action-log replay as later
      product decisions, not part of the first local-app contract.
 
