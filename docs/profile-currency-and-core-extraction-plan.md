@@ -911,6 +911,14 @@ Post-implementation review, 2026-07-06:
   offer phases`; `tests/game/round-resolution.test.js` passed directly and a
   full rerun passed. Treat this as another non-blocking shared-state/randomness
   flake unless it repeats.
+- Verification finding: the recipe-shell hub `npm run verify:backpack-core`
+  attempt first stalled in the Mushroom full-suite home-field tests, then failed
+  on the same `[Req 10-C]` rating-floor assertion that passes in isolation.
+  Core `npm test` / `npm pack --dry-run`, Mushroom focused wrapper tests,
+  Mushroom `npm test` rerun / `game:build`, Meat `game:test` / `game:build` /
+  `game:test:browser`, and the exact failing Mushroom file all passed. Fix or
+  isolate the shared-state/randomness flakes before treating the hub verifier as
+  a hard unattended gate again.
 
 Goal: move first, then generalize without breaking Mushroom.
 
