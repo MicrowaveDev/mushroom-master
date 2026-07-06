@@ -42,8 +42,10 @@ copy, theme, and API adapters.
   `tests/client-view-model.test.js`
 - client envelope adapter slice: `src/client/index.js` now supports optional
   `{ success, data, error }` response-envelope unwrapping so product apps can
-  adopt the shared route client without changing backend payload contracts,
-  tested by `tests/client.test.js`
+  adopt the shared route client without changing backend payload contracts.
+  It preserves API error text from string errors and `{ message }` error
+  objects; Mushroom and Meat both consume it through product-local route/auth
+  adapters. Tested by `tests/client.test.js`
 - asset pack client view-model slice: `src/client-view-model.js` now also
   provides rarity odds text, guarantee/pity/duplicate text, active/availability
   labels, and roll-pack summary helpers over product-provided labels/catalogs,

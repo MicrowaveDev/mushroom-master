@@ -1296,6 +1296,10 @@ The current follow-up extracts runtime config validation result/assertion/CLI
 summary formatting into `modules/config`; Meat delegates deploy-check output and
 runtime-config assertion formatting through core while keeping env parsing,
 required fields, provider policy, and deploy commands product-local.
+The shared browser route-client lane now has both games consuming
+`@microwavedev/backpack-game-core/client`; the latest hardening preserves API
+error messages shaped as strings or `{ message }` objects so product UIs keep
+their existing error copy.
 Remaining neutral DTO/planner extraction stays valid after the
 production-parity mechanics settle, and the new server-module lane allows
 shared route factories/service modules once concrete repositories and final app
@@ -1315,7 +1319,10 @@ execution local.
   is consumed by Mushroom and Meat, while permissions, audit persistence, and
   mutations stay product-local. Runtime config validation result/assertion and
   deploy-check summary formatting has moved to core and is consumed by Meat,
-  while env parsing and product launch policy stay local.
+  while env parsing and product launch policy stay local. Shared browser
+  route-client helpers are now consumed by both games; remaining frontend
+  extraction should focus on adapterized page shells/components rather than a
+  second fetch wrapper.
 - Keep non-core boundaries strict: DB transactions, concrete repositories,
   provider callbacks, adult-content gates, Telegram deployment policy, product
   catalogs, final route registration, and product policy stay in product repos.
