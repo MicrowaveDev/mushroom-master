@@ -441,9 +441,12 @@ mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the
 hosted server for community features. Core remains persistence-neutral; product
 repos own Sequelize models/repositories, dialect config, migrations, and any
-offline action-log sync policy. Meat's hosted server path now has a
-Sequelize-backed Postgres store for its current snapshot-store contract; its
-local SQLite path still needs to converge to the same repository style.
+offline action-log sync policy. Meat now uses one Sequelize-backed snapshot
+store for its hosted Postgres and local SQLite dialects; deeper normalized
+repositories and sync policy remain product-local follow-ups. Runtime feature
+gates are also product-owned: Meat local mode exposes local progress, disables
+support/admin by default, and rejects paid/gacha toggles until those flows are
+served by hosted community APIs.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own

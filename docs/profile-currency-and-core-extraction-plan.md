@@ -1136,27 +1136,29 @@ extractions that require an explicit launch target.
   flow/error coverage, scoped support operators, support mutations/audit rows,
   and asset provenance metadata.
 - Missing or risky state: live Telegram auth has not been smoke-tested against
-  a real deployed bot profile, `node:sqlite` is experimental and may still be
-  replaced by a stable DB service before public/paid launch, table-per-bucket
-  JSON records may need normalized columns for paid/gacha reconciliation, and
-  compact auto-pack is documented as the current Meat UX divergence unless the
-  product decides it must match Mushroom's full manual drag/rotate bag editor.
+  a real deployed bot profile, table-per-bucket JSON records may need
+  normalized columns for paid/gacha reconciliation, and compact auto-pack is
+  documented as the current Meat UX divergence unless the product decides it
+  must match Mushroom's full manual drag/rotate bag editor.
+  **Superseded storage note 2026-07-06:** Meat no longer uses the experimental
+  `node:sqlite` adapter for local mode; SQLite now runs through the same
+  Sequelize snapshot store as hosted Postgres.
 - Non-goal unless reopened: paid processors, advanced gacha, marketplace,
   trading, and NFT policy should not block this phase unless the work directly
   depends on production wallet/accounting readiness.
 
 #### P13.1 - Replace JSON Persistence With A Production Store
 
-Status: **Implemented second pass 2026-07-05.** Meat now has
-`SqliteGameStore`, schema version `2`, per-collection SQLite tables,
-future payment/gacha ledger buckets, WAL/foreign-key/busy-timeout pragmas,
-queued JSON store mutations, SQLite read/mutate/write updates wrapped in
-`BEGIN IMMEDIATE`, logical backup/restore commands, and tests proving SQLite
-migration/persistence, backup/restore, and concurrent updates through two store
-instances. Remaining launch policy: pin the Node/runtime version for
-experimental `node:sqlite`, choose hosting and filesystem strategy, and replace
-SQLite only if the real deployment topology requires a stable external DB.
-Important limitation: the adapter still stores JSON rows inside
+Status: **Implemented second pass 2026-07-05; storage adapter superseded
+2026-07-06.** Meat first shipped `SqliteGameStore`, schema version `2`,
+per-collection SQLite tables, future payment/gacha ledger buckets,
+WAL/foreign-key/busy-timeout pragmas, queued JSON store mutations, SQLite
+read/mutate/write updates wrapped in `BEGIN IMMEDIATE`, logical backup/restore
+commands, and tests proving SQLite migration/persistence, backup/restore, and
+concurrent updates through two store instances. The 2026-07-06 follow-up moved
+local SQLite onto the same Sequelize snapshot store as hosted Postgres and
+added a compatibility migration for older SQLite files without row-position
+metadata. Important limitation: the adapter still stores JSON rows inside
 table-per-collection records. Before paid/gacha launch, decide which records
 need normalized reconciliation/admin/fraud-review columns.
 
@@ -1370,7 +1372,7 @@ designed around two supported runtime modes instead of treating SQLite as a
 temporary production fallback. Mushroom already has the production Postgres
 Docker deployment path. Meat now has explicit `server|local` runtime-mode
 validation, a Docker Postgres compose file for hosted server mode, and a
-Sequelize-backed Postgres store for the current snapshot-store contract.
+Sequelize-backed snapshot store for both hosted Postgres and local SQLite.
 
 Goal: one codebase per game should run as a hosted community server or as a
 packaged local app, with the same game mechanics and as much shared persistence
@@ -1433,16 +1435,23 @@ code as practical.
    - ✅ Standardize hosted/server deploys on PostgreSQL in Docker for both
      games. Mushroom already has the app+Postgres production Compose path;
      Meat now has a Postgres Compose service for the current app process.
-   - Partially done: move Meat from the current JSON / `node:sqlite` store
-     split to Sequelize-backed repositories and migrations. The hosted
-     Postgres path now uses Sequelize with table-per-bucket JSONB records; the
-     local SQLite path still uses the current `node:sqlite` adapter until the
-     local repository migration lands.
-   - Keep SQLite as the local-app dialect for both games through the same
-     repository interfaces.
-   - Gate community/paid/admin features by mode so local apps can play offline
-     without becoming authoritative for purchases, gacha seasons, support, or
-     shared rankings.
+   - ✅ Move Meat from the current JSON / `node:sqlite` store split to
+     Sequelize-backed repositories and migrations. Hosted Postgres and local
+     SQLite now use one Sequelize snapshot-store implementation, including a
+     legacy SQLite compatibility migration for older files without row-position
+     metadata. Remaining depth is normalized domain repositories/reporting
+     models, not the initial dialect split.
+   - ✅ Keep SQLite as the local-app dialect for both games through the same
+     repository interfaces. Mushroom already uses Sequelize across Postgres and
+     SQLite test/local paths; Meat local mode now uses the same Sequelize
+     snapshot store as hosted Postgres.
+   - ✅ First pass: gate community/paid/admin features by mode so local apps can
+     play offline without becoming authoritative for purchases, gacha seasons,
+     support, or shared rankings. Meat bootstrap now exposes mode-shaped
+     feature flags, local mode rejects payment/gacha toggles, and packaged local
+     mode disables support/admin by default. Remaining depth: wire future
+     leaderboard/friends/challenges clients through explicit hosted-community
+     APIs rather than local-authoritative writes.
    - Package the first local app after the storage mode and feature gates are
      explicit, not before.
    - Add community API clients for leaderboard/friends/challenges from local
@@ -1463,18 +1472,16 @@ the hub cross-consumer gate pass.
 - **Storage safety:** partially implemented. Hosted server deployments for both
   Mushroom and Meat should use PostgreSQL in Docker, not SQLite. Mushroom has
   the app+Postgres Compose deployment. Meat now validates hosted server mode as
-  Postgres-only, includes a Postgres Compose service, and has a
-  Sequelize-backed Postgres snapshot store. SQLite remains a supported
-  local-app store; Meat SQLite still uses the current `node:sqlite` adapter
-  with `BEGIN IMMEDIATE` transaction coverage until the local SQLite path moves
-  to the same repository style.
+  Postgres-only, includes a Postgres Compose service, and uses the same
+  Sequelize snapshot store for hosted Postgres and local SQLite. Remaining
+  storage depth is normalized repositories/reporting columns, migration
+  rollback policy, and paid/gacha reconciliation schema.
 - **Runtime policy:** improved but still open. Shared config-validation result
   and deploy-check formatting now lives in core, reducing duplicated deploy
   output logic. The actual deploy policy remains product-local. Meat now has
-  explicit hosted-server and packaged-local config validation. Avoid relying on
-  experimental `node:sqlite` for the final local-app strategy; choose a
-  Sequelize SQLite dialect/driver and pin/document the runtime and packaging
-  target before public local-app builds.
+  explicit hosted-server and packaged-local config validation. Meat local mode
+  now uses Sequelize with the native `sqlite3` driver. Pin/document the runtime
+  and packaging target before public local-app builds.
 - **Schema depth:** partially improved. SQLite schema v2 adds placeholder
   `payment_intents`, `provider_events`, `gacha_rolls`, `gacha_burns`, and
   `idempotency_keys` buckets. Before paid/gacha launch, decide whether wallet
@@ -5197,10 +5204,11 @@ frontend adoption.
    provenance metadata. Remaining: real Telegram deploy smoke, production DB
    hosting/backup/rollback decision, optional manual bag editor if compact
    auto-pack is not accepted, and neutral DTO/planner extraction follow-up.
-87. Phase 13 post-implementation review findings. **Added 2026-07-05:** before
-   treating Meat as launch-ready, resolve multi-process storage safety,
-   experimental `node:sqlite` runtime policy, normalized ledger/schema needs,
-   backup/rollback runbooks, support operator identity/scopes/rotation, real
-   Telegram deploy smoke, UI error coverage, manual editor decision, asset
-   replacement workflow, paid/gacha ledger readiness, and follow-up extraction
-   of pure DTO/planner slices into `backpack-game-core`.
+87. Phase 13 post-implementation review findings. **Added 2026-07-05, updated
+   2026-07-06:** before treating Meat as launch-ready, resolve remaining
+   normalized ledger/schema needs, backup/rollback drills, support operator
+   rotation, real Telegram deploy smoke, UI error coverage, manual editor
+   decision, asset replacement workflow, paid/gacha ledger readiness, and
+   follow-up extraction of pure DTO/planner slices into `backpack-game-core`.
+   The earlier multi-process/experimental `node:sqlite` concern is superseded
+   by the hosted Postgres mode and Sequelize SQLite local mode.
