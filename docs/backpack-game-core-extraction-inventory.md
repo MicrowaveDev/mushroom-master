@@ -218,10 +218,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `44cfbdd`
-  (`Document core release discipline`)
-- latest runtime/API core commit: `be03e50`
-  (`Add shared battle log component`)
+- latest consumed core commit: `b3abab8`
+  (`Add neutral replay page shell`)
+- latest runtime/API core commit: `b3abab8`
+  (`Add neutral replay page shell`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -249,6 +249,92 @@ core SHA to game-commit mapping is tracked in
   route shells, Telegram auth, localization files, image generation, and final
   page assembly stay local.
 - **Product-specific:** keep in `mushroom-master`.
+
+## Frontend Inventory Refresh, 2026-07-06
+
+This refresh is the current source of truth before any further page-shell move.
+The shipped frontend-core surface is no longer only primitives: it now includes
+neutral replay page structure as well as reusable cards, grids, logs, gacha
+widgets, prep zones, and the reduced-motion composable. Product repos still own
+route composition, API calls, stores, local persistence, Telegram wrappers,
+final CSS, product catalogs, image paths, generated art, and localization.
+
+### Already Core-Backed In Mushroom
+
+| Mushroom file | Current status | Product-owned adapter work that remains |
+| --- | --- | --- |
+| `web/src/components/AchievementBadge.js` | Direct re-export of core `AchievementBadge`. | Badge image assets, achievement definitions, and season progress stay local. |
+| `web/src/components/SeasonRankEmblem.js` | Direct re-export of core `SeasonRankEmblem`. | Rank image assets and season scoring stay local. |
+| `web/src/components/ArtifactStatSummary.js` | Core `ArtifactStatSummary` wrapped with Mushroom stat labels and role classes. | Mushroom stat names, role colors, and bonus formatting stay local. |
+| `web/src/components/ArtifactFigure.js` | Uses core `ArtifactTile` and `shapeArtifactTileDisplay`. | Hardcoded artifact glyphs, bitmap paths, visual taxonomy, and bag-shape adapters stay local. Do not move as-is. |
+| `web/src/components/ArtifactGridBoard.js` | Delegates board layers to core `BackpackGrid` and core board DTO helpers. | Grid constants, bag watermark offsets, placement events, local `ArtifactFigure`, and product classes stay local. |
+| `web/src/components/FighterCard.js` | Wraps core `FighterCard`. | `mushroom` compatibility prop, local `ArtifactGridBoard`, and product combatant naming stay local. |
+| `web/src/components/ArtifactCatalogBrowser.js` | Wraps core `ArtifactCatalogBrowser`. | Catalog grouping/sorting, fusion recipes, local artifact grids/stats, localized copy, and CSS stay local. |
+| `web/src/components/ReplayDuel.js` | Wraps core `ReplayDuel`. | Combatant shaping, artifact lookup, loadout projection, visual effects, attribution copy, local fighter/grid rendering stay local. |
+| `web/src/pages/ReplayScreen.js` | Wraps core `ReplayScreen`. | Replay timeline state, route events, reward/currency DTOs, combatant DTOs, and local `ReplayDuel` stay local. |
+| `web/src/components/prep/RunHud.js` | Wraps core `RunHud`. | Run-currency icon/name and Mushroom state mapping stay local. |
+| `web/src/components/prep/SellZone.js` | Wraps core `SellZone`. | Drag state and sell-price copy stay local. |
+| `web/src/components/prep/PrepActions.js` | Wraps core `PrepActions`. | Challenge mode, ready/abandon route events, and labels stay local. |
+| `web/src/components/prep/FusionReveal.js` | Wraps core `FusionReveal`. | Artifact lookup, local `ArtifactFigure`, result labels, and reveal queue ownership stay local. |
+| `web/src/components/prep/BackpackZone.js` | Wraps core `BackpackZone`. | Container artifacts, fusion highlights, artifact names, local grid rendering, and placement events stay local. |
+| `web/src/components/prep/InventoryZone.js` | Wraps core `InventoryZone`. | Active-bag chips, placement preview, stat/footer slots, local grids/stats, and drag events stay local. |
+| `web/src/components/prep/ShopZone.js` | Wraps core `ShopZone` plus core `shapeShopItemRows`. | Prices, budget, catalog descriptions, fusion classes, sell-zone bridge, local previews, and route events stay local. |
+| `web/src/components/HomeSocialSidebar.js` | Uses core `RecipeList`; other structure remains local. | Telegram sharing, friends/challenges, activity panels, local artifact previews, and social navigation stay local. |
+| `web/src/pages/FusionAnimationLabScreen.js` | Uses core `RecipeCard` / `RecipeList`. | Lab playback state, Mushroom recipe catalog, artifact lookup, local reveal/grid/stat rendering stay local. |
+| `web/src/pages/HomeScreen.js` | Uses core `AssetRollResultPanel`, `GachaPackCardList`, and wallet/gacha DTO helpers. | Home route orchestration, character carousel, wallet checkout calls, asset roll actions, social sidebar, and product copy stay local. |
+| `web/src/pages/SupportAdminScreen.js` | Uses core gacha-admin DTO helpers and `GachaOddsTable`. | Admin credentials, support/gacha API calls, uploads, persistence, operator policy, and page layout stay local. |
+
+### Composables And Helpers
+
+| File | Current status | Next action |
+| --- | --- | --- |
+| `web/src/composables/useReducedMotion.js` | Compatibility wrapper around core `createReducedMotionTracker` / `bindReducedMotionTracker`. | No move needed. |
+| `web/src/composables/loadout-projection.js` | Thin bridge to core `projectLoadoutItems` and `prepareGridProps`. | Keep wrapper until all Mushroom imports can use package names directly. |
+| `web/src/helpers/grid-cell-classification.js` | Thin bridge to core grid-cell classification helpers. | Keep wrapper for local import stability. |
+| `web/src/composables/useReplay.js` | Partially delegates replay speed/timeline/state shaping to core view-model helpers. | Further extraction needs injected API client, timer hooks, navigation callbacks, and product event formatting. |
+| `web/src/composables/useGameRun.js` | Partially delegates run response patching to core view-model helpers. | Further extraction needs route adapter, haptics adapter, bootstrap refresh policy, and product replay navigation. |
+| `web/src/composables/useCustomization.js` | Partially delegates wallet/asset response shaping to core view-model helpers. | Further extraction needs wallet checkout adapter, Telegram invoice handling, and product asset catalog policy. |
+| `web/src/composables/useGameState.js` | Uses core stat delta/loadout text helpers. | Further extraction needs a product state factory and locale/catalog adapters. |
+| `web/src/composables/useAuth.js` | Product-local. | Keep local until shared auth/client service receives injected storage, route map, Telegram adapter, bootstrap adapters, and local-app/server-mode policy. |
+| `web/src/composables/useShop.js` | Product-local orchestration with some core helpers underneath. | Do not move before a headless prep/run-shop controller exists; it owns haptics, drag/drop mutation, API calls, and local error copy. |
+| `web/src/composables/useTouch.js` | Product-local touch/drag state. | Candidate only after grid/drop controller contracts are core-owned. |
+| `web/src/composables/useSSE.js` | Product-local routing and event stream lifecycle. | Keep local; server/community mode will affect this boundary. |
+| `web/src/composables/useSocial.js` | Product-local friends/challenges API wrapper. | Keep local until community-client surfaces are shared. |
+| `web/src/composables/useTelegramWebApp.js` and `web/src/helpers/telegram-links.js` | Product-local Telegram integration. | Keep local; Telegram is not a core dependency. |
+| `web/src/composables/useDevTools.js` | Product-local local-dev fixtures. | Keep local. |
+
+### Page Shell Classification
+
+| Page | Classification | Reason |
+| --- | --- | --- |
+| `ReplayScreen.js` | Extracted neutral shell with Mushroom adapter. | Core owns structure; Mushroom owns replay state, route events, and fighter rendering. |
+| `RecipesScreen.js` | Small adapter-needed shell. | Could move after deciding whether the cover/header is product copy or a generic catalog-page shell; current value is low because `ArtifactCatalogBrowser` already moved. |
+| `PrepScreen.js` | Adapter-needed, high risk. | Depends on full run state, drag/drop orchestration, active-bag mutation, fusion reveal queue, product grid/art rendering, and many route events. Move only after a documented prep controller/page DTO contract exists. |
+| `RunCompleteScreen.js` | Adapter-needed. | Needs run-complete DTO helpers for season points, achievements, rewards, actions, and product rank/badge assets before shell extraction. |
+| `RunSummaryScreen.js` | Adapter-needed. | Needs summary DTO helpers and route callbacks for replay loading; product character assets and outcome copy stay local. |
+| `HomeScreen.js` | Adapter-needed, high risk. | Mixes profile, wallet, gacha, character selection, social sidebar, run actions, asset rolls, and product art. Split smaller panels first. |
+| `ProfileScreen.js` | Adapter-needed. | Uses achievements/ranks and player/profile share data; can move after profile DTO helpers and generic badge/rank panels exist. |
+| `AuthScreen.js` | Product-specific for now. | Telegram, browser-code/dev login, local storage, and Mushroom portrait marketing make it app-owned. |
+| `CharactersScreen.js` and `OnboardingScreen.js` | Product-specific for now. | Character roster, portraits, and onboarding copy are product identity. A future generic roster shell is possible with injected cards. |
+| `FriendsScreen.js` and `LeaderboardScreen.js` | Community-shell candidates. | Keep local until shared community client and DTO contracts cover leaderboard/friend/challenge payloads. |
+| `SettingsScreen.js` | App shell candidate. | Small enough to move later, but it depends on product settings keys and persistence. |
+| `SupportAdminScreen.js` | Product-specific page with core widgets. | Keep route/auth/storage/uploads/operator policy local; extract only more widgets/DTO helpers. |
+| `WikiScreen.js`, `WikiDetailScreen.js`, `HomeFieldPreviewScreen.js` | Product-specific. | Lore/wiki/home-field assets and rendering are Mushroom content, not backpack core. |
+
+### Next Frontend Moves
+
+1. Do not move another page until the page has a DTO/adapter contract similar
+   to `ReplayScreen`.
+2. Best next low-risk page candidate: `RecipesScreen`, but only if it becomes a
+   generic catalog-page frame with product-provided cover copy and a catalog
+   slot. Otherwise leave it local because the core catalog browser already
+   carries the reusable value.
+3. Best next valuable but risky target: `PrepScreen`, after a headless prep
+   controller contract separates run state, drag/drop commands, placement
+   previews, fusion reveal queue, shop actions, and ready/abandon actions from
+   the visual shell.
+4. Continue extracting smaller Home/Profile/RunComplete panels before moving
+   those pages wholesale.
 
 ## Geesome Architecture Review Notes
 

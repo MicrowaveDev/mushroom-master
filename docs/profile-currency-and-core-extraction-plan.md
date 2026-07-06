@@ -902,7 +902,7 @@ Post-implementation review, 2026-07-06:
   grid/art rendering. Re-audit the remaining state/event ownership before
   attempting a shared `PrepScreen` shell.
 - Next F2 implementation order:
-  1. Refresh `docs/frontend-core-extraction-inventory.md` before the next page
+  1. Refresh `docs/backpack-game-core-extraction-inventory.md` before the next page
      move; the plan now has enough shipped components that remaining work needs
      a current file-by-file source of truth.
   2. Re-audit `PrepScreen`, `RecipesScreen`, and other page shells only after
@@ -913,7 +913,7 @@ Post-implementation review, 2026-07-06:
   renderer/registry contract from Mushroom's product glyph registry, then keep
   Mushroom glyph assets and ids local.
 - Before moving a full page shell, create or refresh a dedicated
-  `docs/frontend-core-extraction-inventory.md` with current classifications for
+  `docs/backpack-game-core-extraction-inventory.md` with current classifications for
   `web/src/components`, `web/src/pages`, composables, helpers, route clients,
   Telegram/haptics calls, CSS/test ids, and product asset dependencies. The
   current plan has high-level classification, but the page-shell step needs a
