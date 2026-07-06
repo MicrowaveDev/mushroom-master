@@ -816,8 +816,12 @@ Status: **Started 2026-07-05 in core commit `f9c0054`.** The first safe port
 copied `web/src/composables/useReducedMotion.js` into core as
 `@microwavedev/backpack-game-core/vue/composables`, added type/export tests and
 core behavior tests, kept Mushroom's file as a compatibility re-export, and
-added Meat import coverage. No page shells or product-styled components moved
-yet.
+added Meat import coverage. The next F2 component slice copied
+`web/src/components/FighterCard.js` into core, neutralized its data model from
+Mushroom-specific `mushroom` to `combatant`, and exported it through
+`@microwavedev/backpack-game-core/vue/components`; Mushroom now keeps a thin
+compatibility wrapper for the old prop and local `ArtifactGridBoard`
+adapter. No page shells have moved yet.
 
 Goal: move first, then generalize without breaking Mushroom.
 

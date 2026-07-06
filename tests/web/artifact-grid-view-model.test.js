@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/grid.js';
+import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
 import { ShopZone } from '../../web/src/components/prep/ShopZone.js';
@@ -37,6 +38,20 @@ test('[artifact-grid] preview methods share canonical core orientation rules', (
   assert.deepEqual(ShopZone.methods.previewOrientation.call({
     getArtifact: () => verticalItem
   }, verticalItem.id), { width: 1, height: 2 });
+});
+
+test('[artifact-grid] fighter card keeps the Mushroom compatibility prop over core', () => {
+  const mushroom = { id: 'thalla', name: { en: 'Thalla' }, imagePath: '/characters/thalla.png' };
+
+  assert.equal(FighterCard.computed.resolvedCombatant.call({
+    combatant: null,
+    mushroom
+  }), mushroom);
+  assert.equal(FighterCard.computed.displayName.call({
+    nameText: '',
+    resolvedCombatant: mushroom
+  }), 'Thalla');
+  assert.equal(FighterCard.props.gridColumns.default, 6);
 });
 
 test('[artifact-grid] shop zone shapes offer rows through the shared core helper', () => {

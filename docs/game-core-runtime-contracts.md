@@ -250,8 +250,8 @@ These mechanics are closest to the reusable core boundary:
   filesystem/path, logger, and product-copy adapters, such as the shared
   social-preview cache service
 - neutral Vue components for backpack grids, artifact tiles, shop lists, battle
-  logs, wallet/asset panels, gacha pack cards, roll results, odds tables, and
-  admin validation/checklist panels
+  logs, fighter/combatant cards, wallet/asset panels, gacha pack cards, roll
+  results, odds tables, and admin validation/checklist panels
 
 These mechanics need adapters before extraction:
 
