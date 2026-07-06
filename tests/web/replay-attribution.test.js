@@ -3,6 +3,19 @@ import assert from 'node:assert/strict';
 import { ReplayDuel } from '../../web/src/components/ReplayDuel.js';
 import { getArtifactById } from '../../app/server/game-data.js';
 
+test('[Req 13-A] replay duel wrapper delegates the neutral shell to core', () => {
+  assert.equal(ReplayDuel.components.CoreReplayDuel.name, 'ReplayDuel');
+  assert.match(ReplayDuel.template, /core-replay-duel/);
+  assert.match(ReplayDuel.template, /#fighter/);
+  assert.match(ReplayDuel.template, /#loadout-grid/);
+  assert.deepEqual(ReplayDuel.computed.replayLabels.call({}), {
+    leftRoles: 'Left loadout roles',
+    rightRoles: 'Right loadout roles',
+    attribution: 'Artifact attribution',
+    speedBoost: 'Long battle speed boost'
+  });
+});
+
 test('[Req 6-K] replay attribution chips are absent for legacy action events', () => {
   const groups = ReplayDuel.computed.activeAttributionGroups.call({
     activeEvent: { type: 'action', damage: 5, stunned: false },

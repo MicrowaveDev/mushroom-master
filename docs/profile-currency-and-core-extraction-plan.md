@@ -865,7 +865,13 @@ copied `web/src/components/ArtifactCatalogBrowser.js` into core as a neutral
 `ArtifactCatalogBrowser` shell using already-shaped group rows, selected-detail
 facts, selected recipe DTOs, labels, resize events, and visual/stat slots;
 Mushroom now maps catalog sorting/grouping, artifact grids, stats, recipe
-sources, localized copy, and CSS ownership locally. No page shells have moved
+sources, localized copy, and CSS ownership locally. The next replay slice
+copied `web/src/components/ReplayDuel.js` into core as a neutral `ReplayDuel`
+shell using already-shaped fighter DTOs, prepared grid props, role summaries,
+attribution groups, visual-effect DTOs, labels, replay-speed state, and
+fighter/grid slots; Mushroom now maps combatant shaping, artifact lookup,
+loadout projection, visual effects, attribution copy, local `FighterCard`, and
+`ArtifactGridBoard` through a compatibility wrapper. No page shells have moved
 yet.
 
 Post-implementation review, 2026-07-06:
@@ -873,28 +879,30 @@ Post-implementation review, 2026-07-06:
 - Verified shipped F2 slices:
   `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
   `ShopZone`, plus `RecipeCard` / `RecipeList` and
-  `ArtifactCatalogBrowser`, were moved by physically copying current Mushroom
-  files into `backpack-game-core`, then neutralizing them through DTO props,
-  labels, slots, class hooks, and neutral events. Mushroom wrappers preserve
-  old props/events and product visuals.
+  `ArtifactCatalogBrowser`, plus `ReplayDuel`, were moved by physically copying
+  current Mushroom files into `backpack-game-core`, then neutralizing them
+  through DTO props, labels, slots, class hooks, and neutral events. Mushroom
+  wrappers preserve old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `a25130e`. Validation passed:
-  core `npm test` and `npm pack --dry-run`, Mushroom focused wrapper tests,
-  Mushroom `npm test` / `game:build`, Meat `game:test` / `game:build` /
-  `game:test:browser`, and hub `npm run verify:backpack-core`.
+- Latest verified core SHA for this review: `2c9e9c2`. Replay-slice validation
+  passed with core `npm test` and `npm pack --dry-run`, Mushroom focused replay
+  wrapper tests, Mushroom `npm test` / `game:build`, and Meat `game:test` /
+  `game:build` / `game:test:browser`. Run hub
+  `npm run verify:backpack-core` after both consumer pointer commits are pushed
+  to confirm the shared nested-core SHA across Mushroom and Meat.
 - Page shells are closer but still not free. `PrepScreen` still depends on
   whole Mushroom runtime state, route events, drag/drop orchestration,
   active-bag mutation policy, fusion reveal queue state, and product-owned
   grid/art rendering. Re-audit the remaining state/event ownership before
   attempting a shared `PrepScreen` shell.
 - Next F2 implementation order:
-  1. `ReplayDuel` / replay presentation: move after the already-core
-     `BattleLog` contract is enough for the remaining replay stage/result
-     shell and after the current dynamic/static import warning is either
-     accepted or cleaned up.
+  1. Re-audit `ReplayScreen` as a page shell now that `BattleLog` and
+     `ReplayDuel` are both core-owned primitives. The replay page still owns
+     route calls, timeline state, result overlays, localization, and completion
+     navigation, so move it only through a documented page-shell adapter.
   2. Re-audit `PrepScreen`, `RecipesScreen`, and other page shells only after
-     replay presentation and route/state orchestration are adapterized.
+     route/state orchestration is adapterized.
 - Do **not** move `ArtifactFigure` as-is. It still contains hardcoded
   Mushroom artifact ids, glyph shapes, visual taxonomy, bitmap paths, and bag
   shape adapters. If reusable visual rendering is needed, first split a core
@@ -5243,6 +5251,16 @@ frontend adoption.
    list to core while keeping replay formatting, state mutation, battle stage,
    result overlay, route flow, and localized copy local. Meat imports
    `BattleLog` in its core-consumption smoke test.
+   **Seventh slice implemented 2026-07-06:** core commit `2c9e9c2` added
+   `ReplayDuel` as the neutral renderer for the duel fighter/loadout layout,
+   role summary chips, attribution chips, replay-speed controls, speed-boost
+   badge, and fighter/grid slots. Mushroom's `ReplayDuel` now delegates the
+   shell to core while keeping combatant shaping, replay visual effects,
+   artifact lookup, loadout projection, local `FighterCard`, and local
+   `ArtifactGridBoard` rendering product-owned. Mushroom's root app now lazy
+   registers the local-dev replay review component, which removes the previous
+   Vite static/dynamic import warning while preserving the review screen. Meat
+   imports `ReplayDuel` in its core-consumption smoke test.
    Remaining component candidates from this Phase 8AW primitive list: **none**.
    Future Vue moves should start the aggressive frontend core port lane: move
    candidate Mushroom components/pages under a temporary core port namespace,

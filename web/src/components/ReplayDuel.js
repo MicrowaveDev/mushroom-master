@@ -1,3 +1,4 @@
+import { ReplayDuel as CoreReplayDuel } from '@microwavedev/backpack-game-core/vue/components';
 import { FighterCard } from './FighterCard.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { prepareGridProps } from '../composables/loadout-projection.js';
@@ -5,7 +6,7 @@ import { replayFighterEffects } from '../replay/effects.js';
 import { ARTIFACT_ROLE_CLASSES, artifactVisualClassification } from '../../../app/shared/artifact-visual-classification.js';
 
 export const ReplayDuel = {
-  components: { FighterCard, ArtifactGridBoard },
+  components: { CoreReplayDuel, FighterCard, ArtifactGridBoard },
   props: {
     leftFighter: { type: Object, default: () => ({}) },
     rightFighter: { type: Object, default: () => ({}) },
@@ -73,6 +74,14 @@ export const ReplayDuel = {
             .filter(Boolean)
         }))
         .filter((group) => group.items.length && group.total);
+    },
+    replayLabels() {
+      return {
+        leftRoles: 'Left loadout roles',
+        rightRoles: 'Right loadout roles',
+        attribution: 'Artifact attribution',
+        speedBoost: 'Long battle speed boost'
+      };
     }
   },
   methods: {
@@ -117,136 +126,52 @@ export const ReplayDuel = {
     }
   },
   template: `
-    <div class="duel">
-      <div class="duel-fighters">
+    <core-replay-duel
+      :left-fighter="leftFighter"
+      :right-fighter="rightFighter"
+      :acting-side="actingSide"
+      :status-text="statusText"
+      :replay-speed="replaySpeed"
+      :speed-boost="speedBoost"
+      :left-grid-props="leftGridProps"
+      :right-grid-props="rightGridProps"
+      :left-role-summary="leftRoleSummary"
+      :right-role-summary="rightRoleSummary"
+      :left-visual-effects="leftVisualEffects"
+      :right-visual-effects="rightVisualEffects"
+      :attribution-groups="activeAttributionGroups"
+      :labels="replayLabels"
+      @set-speed="$emit('set-speed', $event)"
+    >
+      <template #fighter="{ fighter, side, acting, visualEffects }">
         <fighter-card
-          :mushroom="leftFighter.mushroom"
-          :image-path="leftFighter.imagePath"
-          :name-text="leftFighter.nameText"
-          :health-text="leftFighter.healthText"
-          :speech-text="leftFighter.speechText"
-          :speech-parts="leftFighter.speechParts"
+          :mushroom="fighter.mushroom"
+          :image-path="fighter.imagePath"
+          :name-text="fighter.nameText"
+          :health-text="fighter.healthText"
+          :speech-text="fighter.speechText"
+          :speech-parts="fighter.speechParts"
           :render-artifact-figure="renderArtifactFigure"
           :get-artifact="getArtifact"
-          :acting="actingSide === 'left'"
-          side="left"
-          :bubble-style="leftFighter.bubbleStyle"
-          :visual-effects="leftVisualEffects"
+          :acting="acting"
+          :side="side"
+          :bubble-style="fighter.bubbleStyle"
+          :visual-effects="visualEffects"
           :hide-loadout="true"
         />
-        <fighter-card
-          :mushroom="rightFighter.mushroom"
-          :image-path="rightFighter.imagePath"
-          :name-text="rightFighter.nameText"
-          :health-text="rightFighter.healthText"
-          :speech-text="rightFighter.speechText"
-          :speech-parts="rightFighter.speechParts"
+      </template>
+      <template #loadout-grid="{ gridProps }">
+        <artifact-grid-board
+          v-if="gridProps && renderArtifactFigure"
+          variant="inventory"
+          class="fighter-inline-inventory"
+          :items="gridProps.items"
+          :bag-rows="gridProps.bagRows"
+          :total-rows="gridProps.totalRows"
           :render-artifact-figure="renderArtifactFigure"
           :get-artifact="getArtifact"
-          :acting="actingSide === 'right'"
-          side="right"
-          :bubble-style="rightFighter.bubbleStyle"
-          :visual-effects="rightVisualEffects"
-          :hide-loadout="true"
         />
-      </div>
-      <div class="duel-loadouts">
-        <div class="duel-loadout-side">
-          <span class="duel-loadout-name">{{ leftFighter.nameText }}</span>
-          <div v-if="leftRoleSummary.length" class="duel-role-summary" aria-label="Left loadout roles">
-            <span
-              v-for="item in leftRoleSummary"
-              :key="item.role.id"
-              class="duel-role-chip"
-              :class="'duel-role-chip--' + item.role.id"
-              :style="{ '--artifact-role-color': item.role.color }"
-            >
-              <span class="duel-role-chip-mark" aria-hidden="true"></span>
-              <span class="duel-role-chip-label">{{ item.role.label }}</span>
-              <b>{{ item.count }}</b>
-            </span>
-          </div>
-          <artifact-grid-board
-            v-if="leftGridProps && renderArtifactFigure"
-            variant="inventory"
-            class="fighter-inline-inventory"
-            :items="leftGridProps.items"
-            :bag-rows="leftGridProps.bagRows"
-            :total-rows="leftGridProps.totalRows"
-            :render-artifact-figure="renderArtifactFigure"
-            :get-artifact="getArtifact"
-          />
-        </div>
-          <div class="duel-loadout-center">
-          <div v-if="activeAttributionGroups.length" class="duel-attribution" aria-label="Artifact attribution">
-            <span
-              v-for="group in activeAttributionGroups"
-              :key="group.key"
-              class="duel-attribution-chip"
-              :class="'duel-attribution-chip--' + group.role"
-              :style="{ '--artifact-role-color': group.roleClass.color }"
-            >
-              <span
-                class="artifact-role-glyph artifact-role-legend-glyph"
-                :class="'artifact-role-glyph--' + group.role"
-                aria-hidden="true"
-              ><span></span></span>
-              <span class="duel-attribution-label">{{ group.label }}</span>
-              <b>{{ attributionValueText(group) }}</b>
-            </span>
-          </div>
-          <p v-if="statusText" class="duel-loadout-status">{{ statusText }}</p>
-          <svg v-else class="duel-loadout-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <path d="M20 14 L30 24 L24 30 L14 20 Z" fill="#8a6135" />
-            <path d="M34 40 L44 50 L50 44 L40 34 Z" fill="#8a6135" />
-            <path d="M44 14 L50 20 L20 50 L14 44 Z" fill="#b07d47" />
-            <path d="M14 14 L20 20 L50 50 L44 44 Z" fill="#7f9872" />
-          </svg>
-          <div class="replay-speed-controls">
-            <button
-              v-for="item in [{ speed: 2, count: 1 }, { speed: 4, count: 2 }, { speed: 8, count: 3 }]" :key="item.speed"
-              type="button"
-              class="replay-speed-btn"
-              :class="{ 'replay-speed-btn--active': replaySpeed === item.speed }"
-              :aria-label="item.speed + 'x'"
-              @click="$emit('set-speed', item.speed)"
-            >
-              <svg :viewBox="'0 0 ' + (item.count * 8 + 2) + ' 10'" aria-hidden="true">
-                <polygon v-for="n in item.count" :key="n" :points="((n - 1) * 8) + ',1 ' + ((n - 1) * 8 + 7) + ',5 ' + ((n - 1) * 8) + ',9'" fill="currentColor" />
-              </svg>
-            </button>
-            <span v-if="speedBoost > 1" class="replay-speed-boost" aria-label="Long battle speed boost">
-              {{ speedBoost }}x
-            </span>
-          </div>
-        </div>
-        <div class="duel-loadout-side duel-loadout-side--right">
-          <span class="duel-loadout-name">{{ rightFighter.nameText }}</span>
-          <div v-if="rightRoleSummary.length" class="duel-role-summary" aria-label="Right loadout roles">
-            <span
-              v-for="item in rightRoleSummary"
-              :key="item.role.id"
-              class="duel-role-chip"
-              :class="'duel-role-chip--' + item.role.id"
-              :style="{ '--artifact-role-color': item.role.color }"
-            >
-              <span class="duel-role-chip-mark" aria-hidden="true"></span>
-              <span class="duel-role-chip-label">{{ item.role.label }}</span>
-              <b>{{ item.count }}</b>
-            </span>
-          </div>
-          <artifact-grid-board
-            v-if="rightGridProps && renderArtifactFigure"
-            variant="inventory"
-            class="fighter-inline-inventory"
-            :items="rightGridProps.items"
-            :bag-rows="rightGridProps.bagRows"
-            :total-rows="rightGridProps.totalRows"
-            :render-artifact-figure="renderArtifactFigure"
-            :get-artifact="getArtifact"
-          />
-        </div>
-      </div>
-    </div>
+      </template>
+    </core-replay-duel>
   `
 };

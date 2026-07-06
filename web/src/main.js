@@ -1,4 +1,4 @@
-import { createApp, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
+import { createApp, reactive, computed, defineAsyncComponent, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
 import { parseStartParams } from './api.js';
 import { getRunAchievementsByIds } from '../../app/shared/run-achievements.js';
@@ -42,8 +42,9 @@ import { SupportAdminScreen } from './pages/SupportAdminScreen.js';
 // Existing components
 import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
 import { FighterCard } from './components/FighterCard.js';
-import { ReplayDuel } from './components/ReplayDuel.js';
 import { HomeSocialSidebar } from './components/HomeSocialSidebar.js';
+
+const ReplayDuel = defineAsyncComponent(() => import('./components/ReplayDuel.js').then(m => m.ReplayDuel));
 
 const App = {
   components: {
