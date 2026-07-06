@@ -538,7 +538,12 @@ all Mushroom/spore/product identity through locale/config/service adapters
 before Meat adopts the shells. Updated again 2026-07-05 after the server
 module correction: backend server logic should move through Geesome-style core
 module factories and app-declared module lists, with Mushroom/Meat retaining
-DB, credentials, runtime policy, and product-specific modules.
+DB, credentials, runtime policy, and product-specific modules. Updated
+2026-07-06 after the first aggressive frontend component ports:
+`PrepActions`, `FusionReveal`, and `BackpackZone` are now stable core Vue
+exports consumed by Mushroom wrappers and Meat import smoke tests, but page
+shells are still blocked by remaining product-stateful prep zones and
+artifact-renderer dependencies.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -840,6 +845,57 @@ item/drop-zone shell using item DTOs, labels, stat formatter hooks, highlight
 sets, and a visual slot; Mushroom now maps its container artifacts, fusion
 states, and local `ArtifactGridBoard` through a compatibility wrapper. No page
 shells have moved yet.
+
+Post-implementation review, 2026-07-06:
+
+- Verified shipped F2 slices:
+  `PrepActions`, `FusionReveal`, and `BackpackZone` were moved by physically
+  copying the current Mushroom files into `backpack-game-core`, then
+  neutralizing them through DTO props, labels, slots, class hooks, and neutral
+  events. Mushroom wrappers preserve old props/events and product visuals.
+  Meat currently proves package compatibility through import-smoke coverage,
+  not visible adoption.
+- Latest verified core SHA for this review: `513f56a`. Validation passed:
+  core `npm test` and `npm pack --dry-run`, Mushroom focused wrapper tests,
+  Mushroom `npm test` / `game:build`, Meat `game:test` / `game:build` /
+  `game:test:browser`, and hub `npm run verify:backpack-core`.
+- Page shells are still premature. `PrepScreen` still depends on whole
+  Mushroom runtime state, route events, drag/drop handlers, active bag
+  mutation, shop refresh/buy/sell callbacks, fusion reveal queue state, and
+  product-owned grid/art rendering. Move more zones before attempting a shared
+  `PrepScreen` shell.
+- Next F2 implementation order:
+  1. `InventoryZone`: create a neutral inventory/grid section shell that
+     receives builder items, active container chips, totals, labels, and
+     action hooks; keep Mushroom's placement rules, `ArtifactGridBoard`,
+     `ArtifactStatSummary`, active-bag mutation policy, and icon/copy local.
+  2. `ShopZone`: wrap the existing core `ShopItemList` and `SellZone` into a
+     neutral shop panel with refresh budget/status props and slots; keep
+     Mushroom route events, run-money icon, fusion candidate policy, catalog
+     pricing adapters, and sell/refund behavior local.
+  3. `ArtifactCatalogBrowser` / recipes surfaces: move only after their item
+     rows and preview grids can be driven by DTOs, asset resolvers, locale
+     callbacks, and slots instead of product catalogs or route names.
+  4. `ReplayDuel` / replay presentation: move after the already-core
+     `BattleLog` contract is enough for the remaining replay stage/result
+     shell and after the current dynamic/static import warning is either
+     accepted or cleaned up.
+- Do **not** move `ArtifactFigure` as-is. It still contains hardcoded
+  Mushroom artifact ids, glyph shapes, visual taxonomy, bitmap paths, and bag
+  shape adapters. If reusable visual rendering is needed, first split a core
+  renderer/registry contract from Mushroom's product glyph registry, then keep
+  Mushroom glyph assets and ids local.
+- Before moving a full page shell, create or refresh a dedicated
+  `docs/frontend-core-extraction-inventory.md` with current classifications for
+  `web/src/components`, `web/src/pages`, composables, helpers, route clients,
+  Telegram/haptics calls, CSS/test ids, and product asset dependencies. The
+  current plan has high-level classification, but the page-shell step needs a
+  file-by-file checklist to prevent accidental product coupling.
+- Verification finding: one full Mushroom `npm test` run stalled once inside
+  `tests/game/http-hardening.test.js`; the direct file run passed and a full
+  rerun passed. Treat this as a non-blocking test-runner flake for now, but if
+  it repeats, add timeout/diagnostic logging or isolate/reset rate-limit state
+  around that test before relying on it as a long-running gate.
 
 Goal: move first, then generalize without breaking Mushroom.
 
