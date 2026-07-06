@@ -424,6 +424,10 @@ route wiring, and active-run/SSE behavior remain in product repos.
 The Phase 13 extraction follow-up also added provider-driven run-state summary
 DTO shaping to `modules/run`, with Meat passing product-local loadout totals,
 cost, and shop-row formatters while keeping persistence and routes local.
+The next Phase 13 follow-up added provider-neutral support lookup bundle and
+support mutation response DTO shaping to `modules/support`, with Mushroom and
+Meat passing already-authorized product rows while keeping permissions, audit
+persistence, storage mutations, and route registration local.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own

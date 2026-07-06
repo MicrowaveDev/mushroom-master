@@ -1,5 +1,6 @@
 import { query } from '../db.js';
 import { parseJson } from '../lib/utils.js';
+import { shapeSupportLookupResult } from '@microwavedev/backpack-game-core/modules/support';
 
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
@@ -544,20 +545,9 @@ export async function lookupMoneySupportRecords({ query: searchQuery, limit = DE
   players = uniqueRowsById([...players, ...await findPlayersByIds(playerIds)]);
   const walletBalances = await walletBalancesByPlayerIds(playerIds);
 
-  return {
+  return shapeSupportLookupResult({
     query: term,
     limit: normalizedLimit,
-    counts: {
-      players: players.length,
-      walletBalances: walletBalances.length,
-      purchaseIntents: purchaseIntents.length,
-      walletTransactions: walletTransactions.length,
-      paymentWebhookEvents: webhookEvents.length,
-      assetInstances: assetInstances.length,
-      equippedAssets: equippedAssets.length,
-      assetRolls: assetRolls.length,
-      supportActions: supportActions.length
-    },
     players: players.map(rowToPlayer),
     walletBalances: walletBalances.map(rowToBalance),
     purchaseIntents: purchaseIntents.map(rowToPurchaseIntent),
@@ -567,5 +557,5 @@ export async function lookupMoneySupportRecords({ query: searchQuery, limit = DE
     equippedAssets: equippedAssets.map(rowToEquippedAsset),
     assetRolls: assetRolls.map(rowToAssetRoll),
     supportActions: supportActions.map(rowToSupportAction)
-  };
+  }, { includeCounts: true });
 }
