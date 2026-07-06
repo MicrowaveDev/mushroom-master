@@ -441,6 +441,12 @@ The auth-envelope follow-up added public auth user/session/logout response
 shaping to `modules/auth`; product repos still own Telegram verification,
 dev-login policy, session persistence, auth-code lifecycle, middleware, and
 player lookup.
+The auth route follow-up added provider-neutral auth/bootstrap route descriptors
+and a server-module factory to `@microwavedev/backpack-game-core/server`.
+Mushroom now mounts its auth/bootstrap/dev-session handlers through that route
+family, and Meat verifies the same family with Meat paths. Products still own
+provider verification, sessions, player lookup, middleware/rate-limit policy,
+and final path choices.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the

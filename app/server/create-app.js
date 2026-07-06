@@ -11,6 +11,10 @@ import {
   shapeAuthUserProfile
 } from '@microwavedev/backpack-game-core/modules/auth';
 import {
+  bindBackpackRouteDescriptors,
+  createAuthRouteGroup
+} from '@microwavedev/backpack-game-core/server';
+import {
   authenticateRequest,
   createTelegramAuthCode,
   loginWithDevSession,
@@ -785,73 +789,63 @@ export async function createApp() {
     });
   });
 
-  app.post(
-    '/api/auth/telegram',
-    publicAuthRateLimit,
-    asyncRoute(async (req, res) => {
-      const result = await loginWithTelegram(req.body.initData, process.env.TELEGRAM_BOT_TOKEN || '');
-      res.json({
-        success: true,
-        data: authSessionPayload(result)
-      });
-    })
-  );
+  bindBackpackRouteDescriptors(app, [
+    createAuthRouteGroup({
+      prefix: '/api',
+      routes: {
+        providerLogin: { path: '/auth/telegram' },
+        logout: { path: '/auth/logout' },
+        providerCode: { path: '/auth/telegram/code' },
+        providerVerifyCode: { path: '/auth/telegram/verify-code' },
+        webLogin: { path: '/auth/web' },
+        bootstrap: { path: '/bootstrap' }
+      },
+      handlers: {
+        providerLogin: asyncRoute(async (req, res) => {
+          const result = await loginWithTelegram(req.body.initData, process.env.TELEGRAM_BOT_TOKEN || '');
+          res.json({
+            success: true,
+            data: authSessionPayload(result)
+          });
+        }),
+        logout: asyncRoute(async (req, res) => {
+          await logoutSession(req.session.session_key);
+          res.json({ success: true, data: shapeAuthLogoutResult() });
+        }),
+        providerCode: asyncRoute(async (_req, res) => {
+          const payload = await createBrowserFallbackPayload(botUsername());
+          res.json({ success: true, data: payload });
+        }),
+        providerVerifyCode: asyncRoute(async (req, res) => {
+          const result = await verifyTelegramAuthCode(req.body.privateCode);
+          if (!result.success) {
+            res.status(result.needsBotAuth ? 200 : 400).json(result);
+            return;
+          }
 
-  app.post(
-    '/api/auth/logout',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      await logoutSession(req.session.session_key);
-      res.json({ success: true, data: shapeAuthLogoutResult() });
-    })
-  );
-
-  app.post(
-    '/api/auth/telegram/code',
-    publicAuthRateLimit,
-    asyncRoute(async (_req, res) => {
-      const payload = await createBrowserFallbackPayload(botUsername());
-      res.json({ success: true, data: payload });
-    })
-  );
-
-  app.post(
-    '/api/auth/telegram/verify-code',
-    publicAuthRateLimit,
-    asyncRoute(async (req, res) => {
-      const result = await verifyTelegramAuthCode(req.body.privateCode);
-      if (!result.success) {
-        res.status(result.needsBotAuth ? 200 : 400).json(result);
-        return;
+          res.json({
+            success: true,
+            data: authSessionPayload(result)
+          });
+        }),
+        webLogin: asyncRoute(async (req, res) => {
+          const result = await loginWithWebSession(req.body || {});
+          res.json({
+            success: true,
+            data: authSessionPayload(result)
+          });
+        }),
+        bootstrap: asyncRoute(async (req, res) => {
+          const data = await getBootstrap(req.user.id);
+          res.json({ success: true, data });
+        })
+      },
+      middleware: {
+        auth: requireAuth,
+        public: publicAuthRateLimit
       }
-
-      res.json({
-        success: true,
-        data: authSessionPayload(result)
-      });
     })
-  );
-
-  app.post(
-    '/api/auth/web',
-    publicAuthRateLimit,
-    asyncRoute(async (req, res) => {
-      const result = await loginWithWebSession(req.body || {});
-      res.json({
-        success: true,
-        data: authSessionPayload(result)
-      });
-    })
-  );
-
-  app.get(
-    '/api/bootstrap',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      const data = await getBootstrap(req.user.id);
-      res.json({ success: true, data });
-    })
-  );
+  ]);
 
   app.post(
     '/api/client-events',
@@ -2148,25 +2142,32 @@ export async function createApp() {
       })
     );
 
-    app.post(
-      '/api/dev/session',
-      asyncRoute(async (req, res) => {
-        const verified = await loginWithDevSession({
-          telegramId: req.body.telegramId || 999001,
-          username: req.body.username || 'local_player',
-          name: req.body.name || 'Local',
-          lastName: req.body.lastName || 'Player',
-          lang: req.body.lang || 'ru'
-        });
-        res.json({
-          success: true,
-          data: {
-            sessionKey: verified.session.sessionKey,
-            player: verified.player
-          }
-        });
+    bindBackpackRouteDescriptors(app, [
+      createAuthRouteGroup({
+        prefix: '/api',
+        routes: {
+          devLogin: { path: '/dev/session' }
+        },
+        handlers: {
+          devLogin: asyncRoute(async (req, res) => {
+            const verified = await loginWithDevSession({
+              telegramId: req.body.telegramId || 999001,
+              username: req.body.username || 'local_player',
+              name: req.body.name || 'Local',
+              lastName: req.body.lastName || 'Player',
+              lang: req.body.lang || 'ru'
+            });
+            res.json({
+              success: true,
+              data: {
+                sessionKey: verified.session.sessionKey,
+                player: verified.player
+              }
+            });
+          })
+        }
       })
-    );
+    ]);
 
     app.get(
       '/api/dev/inventory-review',

@@ -702,11 +702,13 @@ slice added `modules/social-preview` plus
 `createSocialPreviewCacheServerModule` so preview-cache warmup, fallback, and
 logging behavior can be reused while Mushroom-owned artwork paths, copy,
 render implementation, static-file routes, and filesystem adapters stay local.
-The latest S2/S3 infrastructure slice added route descriptors and route groups
-to the stable core server facade. That does not move product routes yet, but
-it removes the previous blocker for moving auth/profile/run/wallet/assets/
-gacha/support feature route factories without importing a product HTTP stack
-into core.
+The latest S2/S3 infrastructure slices added route descriptors, route groups,
+and the first provider-neutral auth/bootstrap route family to the stable core
+server facade. Mushroom now binds its existing Telegram/web/logout/bootstrap
+and dev-session handlers through `createAuthRouteGroup`; provider verification,
+session persistence, rate limits, player lookup, and final path choices stay
+local. Meat pins the same core SHA and verifies the auth route family against
+its current auth/bootstrap paths.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
@@ -757,12 +759,13 @@ Goal: remove Mushroom identity and runtime assumptions from core server modules.
 
 #### S5 - Build Shared Core Server Modules
 
-Status: **Started.** Low-risk shared module factories now exist for gacha
-simulation, loadout validation, run readiness, hosted community client, and
-social-preview cache orchestration. Route descriptors and route groups are now
-available for deeper modules. Remaining S5 work should promote auth/profile/
-run/wallet/assets/gacha/support as feature modules only after each repository,
-policy, catalog, error, and route contract is explicit.
+Status: **Started.** Low-risk shared module factories now exist for auth route
+descriptors, gacha simulation, loadout validation, run readiness, hosted
+community client, and social-preview cache orchestration. The auth slice is
+route-shape only: concrete verification, sessions, player lookup, middleware
+policy, and provider callbacks remain in Mushroom/Meat. Remaining S5 work
+should promote profile/run/wallet/assets/gacha/support as feature modules only
+after each repository, policy, catalog, error, and route contract is explicit.
 
 Goal: promote neutralized server logic to reusable module factories.
 
@@ -781,9 +784,10 @@ Goal: promote neutralized server logic to reusable module factories.
 #### S6 - App Module Lists And Composition Roots
 
 Status: **Started at the core contract level.** Core can now carry route groups
-through module setup, but Mushroom and Meat still need product-local module
-lists and compatibility wrappers before the large monolithic server files are
-thin composition roots.
+through module setup, and Mushroom now binds its auth/bootstrap/dev-session
+routes through the core auth route group. Mushroom and Meat still need broader
+product-local module lists and compatibility wrappers before the large
+monolithic server files are thin composition roots.
 
 Goal: make Mushroom and Meat assemble their backends from module lists.
 
@@ -1504,6 +1508,12 @@ The auth-envelope lane now extracts public auth user/session/logout response
 shaping into `modules/auth`; Mushroom and Meat delegate login/logout payload
 assembly through core while Telegram verification, dev-login policy, session
 storage, and player lookup stay product-local.
+The follow-up auth route lane now extracts the provider-neutral auth/bootstrap
+route family into `@microwavedev/backpack-game-core/server`; Mushroom binds its
+current auth/bootstrap/dev-session handlers through core descriptors, and Meat
+verifies the same route family with its product paths. Provider verification,
+sessions, middleware policy, player lookup, and final path choices stay
+product-local.
 Remaining neutral DTO/planner extraction stays valid after the
 production-parity mechanics settle, and the new server-module lane allows
 shared route factories/service modules once concrete repositories and final app

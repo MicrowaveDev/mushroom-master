@@ -193,6 +193,13 @@ copy, theme, and API adapters.
   larger Mushroom route files into core: core modules can provide route
   factories without importing the product HTTP stack, and products still mount
   routes in their own composition roots.
+- auth route-descriptor slice: `src/server/index.js` now also exposes
+  provider-neutral auth/bootstrap route names, `createAuthRouteGroup`, and
+  `createAuthRoutesServerModule`. Mushroom binds its existing Telegram/web/
+  logout/bootstrap/dev-session handlers through this core route family while
+  keeping verification, sessions, rate limits, player lookup, and final path
+  choices local. Meat pins the same SHA and verifies the route family with its
+  current auth/bootstrap paths.
 - browser-safe Vue composable slice: `src/vue/composables/useReducedMotion.js`
   now exposes `createReducedMotionTracker` and
   `bindReducedMotionTracker` through
@@ -224,10 +231,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `c166e28`
-  (`Add server route descriptors`)
-- latest runtime/API core commit: `c166e28`
-  (`Add server route descriptors`)
+- latest consumed core commit: `74a7e82`
+  (`Add auth route server module`)
+- latest runtime/API core commit: `74a7e82`
+  (`Add auth route server module`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
