@@ -4,6 +4,7 @@ import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/gr
 import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
+import { FusionReveal } from '../../web/src/components/prep/FusionReveal.js';
 import { PrepActions } from '../../web/src/components/prep/PrepActions.js';
 import { RunHud } from '../../web/src/components/prep/RunHud.js';
 import { SellZone } from '../../web/src/components/prep/SellZone.js';
@@ -94,6 +95,34 @@ test('[artifact-grid] prep actions keep Mushroom compatibility over core', () =>
   assert.deepEqual(PrepActions.emits, ['signal-ready', 'abandon']);
   assert.match(PrepActions.template, /state\.gameRun\.mode === 'challenge'/);
   assert.match(PrepActions.template, /@ready="\$emit\('signal-ready'\)"/);
+});
+
+test('[artifact-grid] fusion reveal keeps Mushroom compatibility over core', () => {
+  const catalog = new Map([
+    ['cap', { id: 'cap', width: 1, height: 1, name: { en: 'Cap', ru: 'Шляпка' } }],
+    ['stem', { id: 'stem', width: 1, height: 2, name: { en: 'Stem' } }],
+    ['result', { id: 'result', width: 2, height: 2, name: { en: 'Result', ru: 'Результат' } }]
+  ]);
+  const context = {
+    reveal: {
+      ingredientArtifactIds: ['cap', 'stem'],
+      resultArtifactId: 'result'
+    },
+    getArtifact: (id) => catalog.get(id),
+    state: { lang: 'ru' },
+    resultArtifact: catalog.get('result')
+  };
+
+  assert.deepEqual(FusionReveal.computed.ingredientArtifacts.call(context), [
+    catalog.get('cap'),
+    catalog.get('stem')
+  ]);
+  assert.equal(FusionReveal.computed.resultArtifact.call(context), catalog.get('result'));
+  assert.equal(FusionReveal.computed.label.call(context), 'Слияние артефактов: Результат');
+  assert.deepEqual(FusionReveal.emits, ['done']);
+  assert.match(FusionReveal.template, /CoreFusionReveal/);
+  assert.match(FusionReveal.template, /#artifact="\{ artifact, width, height \}"/);
+  assert.match(FusionReveal.template, /<artifact-figure/);
 });
 
 test('[artifact-grid] shop zone shapes offer rows through the shared core helper', () => {

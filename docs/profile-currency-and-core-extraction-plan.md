@@ -830,7 +830,12 @@ icons, CSS classes, and legacy sell events back onto those core components.
 The next prep-action slice copied `web/src/components/prep/PrepActions.js`
 into core as a neutral `PrepActions` action bar using action-state, opponent
 status, labels, and `ready`/`abandon` events; Mushroom maps its current
-challenge mode and `signal-ready` event locally. No page shells have moved yet.
+challenge mode and `signal-ready` event locally. The following animation-shell
+slice copied `web/src/components/prep/FusionReveal.js` into core as a neutral
+`FusionReveal` shell using resolved artifact DTOs, timing/layout props, and an
+artifact render slot; Mushroom now maps reveal IDs, localized labels, and its
+local `ArtifactFigure` through a compatibility wrapper. No page shells have
+moved yet.
 
 Goal: move first, then generalize without breaking Mushroom.
 
