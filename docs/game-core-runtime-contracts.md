@@ -474,6 +474,10 @@ Core run-lifecycle helpers now expose neutral aliases for cross-game adoption:
 `characterProgress` alongside legacy `spore` / `mycelium`. Consumers may keep
 legacy public response fields until their own API and UI migrations are
 explicitly scheduled.
+Core battle simulation also exposes `characterId` in default combatant summaries
+and uses it for default labels before falling back to legacy `mushroomId`, so
+new products can keep replay state character-neutral without custom summary
+hooks.
 Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
 through adapters. Fusion application, run-shop buy/refresh/sell mutations, and
