@@ -469,6 +469,11 @@ primitives, fusion matching, shop-offer generation, bot-loadout generation,
 hookable battle simulation, provider-driven loadout validation, deterministic
 numeric RNG/shuffle helpers, artifact family capability helpers, and the first
 asset-gacha policy helpers.
+Core run-lifecycle helpers now expose neutral aliases for cross-game adoption:
+`characterId` alongside legacy `mushroomId`, and `profileCurrency` /
+`characterProgress` alongside legacy `spore` / `mycelium`. Consumers may keep
+legacy public response fields until their own API and UI migrations are
+explicitly scheduled.
 Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
 through adapters. Fusion application, run-shop buy/refresh/sell mutations, and

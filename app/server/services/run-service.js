@@ -86,6 +86,13 @@ function shapeRunPlayer(fields) {
   };
 }
 
+function shapeRoundRewardResponse(rewards = {}) {
+  return {
+    spore: Number(rewards.spore || 0),
+    mycelium: Number(rewards.mycelium || 0)
+  };
+}
+
 // getShopState / saveShopState (legacy player_shop_state blob) deleted
 // 2026-04-13. Game-run shop state lives in game_run_shop_states.
 
@@ -924,7 +931,7 @@ async function resolveChallengeRound(client, run, gameRunId, viewerPlayerId) {
         roundNumber,
         battleId: battle.id,
         outcome,
-        rewards
+        rewards: shapeRoundRewardResponse(rewards)
       }
     };
   }
@@ -1303,7 +1310,7 @@ export async function resolveRound(playerId, gameRunId) {
           roundNumber,
           battleId: battle.id,
           outcome,
-          rewards,
+          rewards: shapeRoundRewardResponse(rewards),
           ratingBefore: player.rating,
           ratingAfter,
           levelBefore,
@@ -1347,7 +1354,7 @@ export async function resolveRound(playerId, gameRunId) {
         roundNumber,
         battleId: battle.id,
         outcome,
-        rewards,
+        rewards: shapeRoundRewardResponse(rewards),
         ratingBefore: player.rating,
         ratingAfter,
         levelBefore,

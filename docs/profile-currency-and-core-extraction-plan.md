@@ -694,6 +694,13 @@ day one.
 
 #### S4 - Product Dependency Sweep
 
+Status: **Started with the run-lifecycle neutral-alias slice.** Core
+`run-lifecycle` now accepts neutral `characterId`, `profileCurrency`, and
+`characterProgress` fields while preserving legacy Mushroom aliases
+`mushroomId`, `spore`, and `mycelium` for current consumers. Mushroom strips
+the new neutral reward aliases from its existing public `lastRound.rewards`
+response contract until the frontend/API naming migration is explicit.
+
 Goal: remove Mushroom identity and runtime assumptions from core server modules.
 
 - Search moved server code for `mushroom`, `spore`, `mycelium`, Mushroom table
