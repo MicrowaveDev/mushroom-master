@@ -694,14 +694,16 @@ day one.
 
 #### S4 - Product Dependency Sweep
 
-Status: **Started with the run-lifecycle and battle-identity neutral-alias
-slices.** Core `run-lifecycle` now accepts neutral `characterId`,
-`profileCurrency`, and `characterProgress` fields while preserving legacy
-Mushroom aliases `mushroomId`, `spore`, and `mycelium` for current consumers.
-Core battle simulation now prefers `characterId` for default labels and replay
-state while still accepting legacy `mushroomId`. Mushroom strips the new
-neutral reward aliases from its existing public `lastRound.rewards` response
-contract until the frontend/API naming migration is explicit.
+Status: **Started with neutral-alias slices for run lifecycle, battle identity,
+and wallet view-state balance fallback.** Core `run-lifecycle` now accepts
+neutral `characterId`, `profileCurrency`, and `characterProgress` fields while
+preserving legacy Mushroom aliases `mushroomId`, `spore`, and `mycelium` for
+current consumers. Core battle simulation now prefers `characterId` for default
+labels and replay state while still accepting legacy `mushroomId`. Core wallet
+view-state helpers now prefer `profileCurrency` / `profile_currency` player
+fields before explicit legacy fields. Mushroom strips the new neutral reward
+aliases from its existing public `lastRound.rewards` response contract until
+the frontend/API naming migration is explicit.
 
 Goal: remove Mushroom identity and runtime assumptions from core server modules.
 

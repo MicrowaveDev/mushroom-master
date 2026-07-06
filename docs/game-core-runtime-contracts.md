@@ -478,6 +478,9 @@ Core battle simulation also exposes `characterId` in default combatant summaries
 and uses it for default labels before falling back to legacy `mushroomId`, so
 new products can keep replay state character-neutral without custom summary
 hooks.
+Core wallet view-state helpers prefer `profileCurrency` / `profile_currency`
+player fields before explicit legacy balance fields when a wallet balance map is
+not available, keeping new consumers off Mushroom currency names by default.
 Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
 through adapters. Fusion application, run-shop buy/refresh/sell mutations, and
