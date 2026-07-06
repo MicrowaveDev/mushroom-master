@@ -4,6 +4,9 @@ import { ReplayScreen } from '../../web/src/pages/ReplayScreen.js';
 
 function viewModel(state, extra = {}) {
   const vm = { state, ...extra };
+  for (const [key, method] of Object.entries(ReplayScreen.methods)) {
+    vm[key] = method.bind(vm);
+  }
   for (const [key, getter] of Object.entries(ReplayScreen.computed)) {
     Object.defineProperty(vm, key, {
       enumerable: true,
@@ -12,6 +15,13 @@ function viewModel(state, extra = {}) {
   }
   return vm;
 }
+
+test('[Req 13-A] replay screen wrapper delegates neutral page shell to core', () => {
+  assert.equal(ReplayScreen.components.CoreReplayScreen.name, 'ReplayScreen');
+  assert.match(ReplayScreen.template, /core-replay-screen/);
+  assert.match(ReplayScreen.template, /#battle-stage/);
+  assert.match(ReplayScreen.template, /@select-log-row="selectReplayLogRow"/);
+});
 
 test('[Req 1-E, 13-B] replay rewards use fresh resolved run totals after terminal loss', () => {
   const vm = viewModel({
@@ -54,6 +64,81 @@ test('[Req 13-B] replay rewards fall back to active run totals before result pay
 
   assert.equal(vm.runWins, 2);
   assert.equal(vm.runLivesRemaining, 4);
+});
+
+test('[Req 13-B] replay screen shapes result DTOs for the shared page shell', () => {
+  const vm = viewModel({
+    lang: 'en',
+    replayIndex: 1,
+    gameRun: { player: { wins: 2, livesRemaining: 3 } },
+    gameRunResult: {
+      lastRound: {
+        outcome: 'win',
+        rewards: { spore: 2, mycelium: 5 },
+        ratingBefore: 100,
+        ratingAfter: 112
+      }
+    },
+    currentBattle: {
+      snapshots: {
+        left: { mushroomId: 'hero' },
+        right: { mushroomId: 'rival', loadout: { items: [] } }
+      },
+      events: [
+        { type: 'action', actorSide: 'left', targetSide: 'right', damage: 7, stunned: true },
+        {
+          type: 'action',
+          actorSide: 'right',
+          targetSide: 'left',
+          damage: 3,
+          artifactAttribution: { armor: [{ value: 2 }] }
+        }
+      ]
+    }
+  }, {
+    t: {
+      battleRecap: 'Battle recap',
+      results: 'Results',
+      roundWin: 'Round won',
+      roundLoss: 'Round lost',
+      outcomeDraw: 'Draw',
+      spore: 'Spores',
+      mycelium: 'Mycelium',
+      rating: 'Rating',
+      wins: 'Wins',
+      lives: 'Lives',
+      damageDealt: 'Damage dealt',
+      stunsMade: 'Stuns',
+      damageBlocked: 'Blocked'
+    },
+    battleStatusText: 'Victory!',
+    replayFinished: true,
+    visibleReplayEvents: [{ type: 'battle_end', display: { logText: 'Hero won' } }],
+    formatDelta: (value) => (value > 0 ? `+${value}` : String(value)),
+    getMushroom: (id) => ({ name: { en: id === 'rival' ? 'Rival' : 'Hero' } }),
+    loadoutStatsText: () => '7 HP / 3 ATK'
+  });
+
+  assert.deepEqual(vm.resultHero, {
+    tone: 'win',
+    kicker: 'Battle recap',
+    title: 'Round won',
+    summary: 'Hero won'
+  });
+  assert.deepEqual(vm.rewardsPanel.stats.map((stat) => [stat.key, stat.label, stat.value, stat.className]), [
+    ['spore', 'Spores', '+2', 'stat--pos'],
+    ['mycelium', 'Mycelium', '+5', 'stat--pos'],
+    ['rating', 'Rating', '+12', 'stat--pos']
+  ]);
+  assert.deepEqual(vm.rewardsPanel.runStatus.map((item) => [item.key, item.value]), [
+    ['wins', 2],
+    ['lives', 3]
+  ]);
+  assert.equal(vm.rewardsPanel.opponentName, 'Rival');
+  assert.deepEqual(vm.battleSummary.rows.map((row) => [row.side, row.metrics.map((metric) => metric.value)]), [
+    ['left', [7, 1, 2]],
+    ['right', [3, 0, 0]]
+  ]);
 });
 
 test('replay log rows adapt visible events for the shared BattleLog component', () => {

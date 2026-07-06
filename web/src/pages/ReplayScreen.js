@@ -1,5 +1,5 @@
 import { defineAsyncComponent } from 'vue/dist/vue.esm-bundler.js';
-import { BattleLog } from '@microwavedev/backpack-game-core/vue/components';
+import { ReplayScreen as CoreReplayScreen } from '@microwavedev/backpack-game-core/vue/components';
 
 export const ReplayScreen = {
   name: 'ReplayScreen',
@@ -12,7 +12,7 @@ export const ReplayScreen = {
   ],
   emits: ['go-results', 'set-speed'],
   components: {
-    BattleLog,
+    CoreReplayScreen,
     ReplayDuel: defineAsyncComponent(() => import('../components/ReplayDuel.js').then(m => m.ReplayDuel))
   },
   data() {
@@ -89,6 +89,75 @@ export const ReplayScreen = {
         ? (this.resultOutcomeText || this.battleStatusText || '')
         : (this.battleStatusText || '');
     },
+    resultHero() {
+      return {
+        tone: this.roundOutcome || 'history',
+        kicker: this.t.battleRecap || this.t.results,
+        title: this.resultTitleText,
+        summary: this.resultSummaryText
+      };
+    },
+    rewardStats() {
+      if (!this.showInlineRewards) return [];
+      return [
+        {
+          key: 'spore',
+          label: this.t.spore,
+          value: this.formatDelta(this.roundRewards.spore || 0) || '0',
+          className: this.statSignClass(this.roundRewards.spore)
+        },
+        {
+          key: 'mycelium',
+          label: this.t.mycelium,
+          icon: '🍄',
+          value: this.formatDelta(this.roundRewards.mycelium || 0) || '0',
+          className: this.statSignClass(this.roundRewards.mycelium)
+        },
+        this.ratingDelta != null
+          ? {
+              key: 'rating',
+              label: this.t.rating,
+              value: this.formatDelta(this.ratingDelta),
+              className: this.statSignClass(this.ratingDelta)
+            }
+          : null
+      ].filter(Boolean);
+    },
+    rewardsPanel() {
+      if (!this.showInlineRewards) return { visible: false };
+      return {
+        visible: true,
+        tone: this.roundOutcome || 'history',
+        testId: 'replay-rewards',
+        title: this.roundOutcome === 'win' ? this.t.roundWin : this.t.roundLoss,
+        titleClass: this.roundOutcome === 'win' ? 'result-win' : 'result-loss',
+        opponentName: this.opponentMushroom ? this.opponentName : '',
+        opponentPrefix: 'vs',
+        opponentStats: this.opponentStatChips,
+        stats: this.rewardStats,
+        runStatus: this.runLivesRemaining != null
+          ? [
+              { key: 'wins', label: this.t.wins, value: this.runWins },
+              { key: 'lives', label: this.t.lives, value: this.runLivesRemaining }
+            ]
+          : []
+      };
+    },
+    battleSummary() {
+      return {
+        title: this.t.battleSummary || this.t.battleRecap || this.t.results,
+        rows: this.battleRecapRows.map((row) => ({
+          key: row.side,
+          side: row.side,
+          name: row.name,
+          metrics: [
+            { key: 'damageDealt', label: this.t.damageDealt || 'Damage dealt', value: row.damageDealt },
+            { key: 'stunsMade', label: this.t.stunsMade || 'Stuns', value: row.stunsMade },
+            { key: 'damageBlocked', label: this.t.damageBlocked || 'Blocked', value: row.damageBlocked }
+          ]
+        }))
+      };
+    },
     battleRecapRows() {
       const currentBattle = this.state.currentBattle;
       const rows = ['left', 'right'].map((side) => ({
@@ -146,14 +215,20 @@ export const ReplayScreen = {
     }
   },
   template: `
-    <section
-      class="replay-layout"
-      :class="{
-        'replay-layout--result-ready': replayFinished,
-        'replay-layout--result-collapsed': replayFinished && resultOverlayCollapsed
-      }"
+    <core-replay-screen
+      :finished="replayFinished"
+      :result-collapsed="resultOverlayCollapsed"
+      :toggle-label="overlayToggleLabel"
+      :result-hero="resultHero"
+      :rewards-panel="rewardsPanel"
+      :battle-summary="battleSummary"
+      :continue-label="continueLabel"
+      :log-rows="replayLogRows"
+      @toggle-result="toggleResultOverlay"
+      @go-results="$emit('go-results')"
+      @select-log-row="selectReplayLogRow"
     >
-      <div class="battle-stage">
+      <template #battle-stage>
         <replay-duel
           :left-fighter="buildReplayFighter(state.currentBattle.snapshots.left.mushroomId, {
             nameText: getMushroom(state.currentBattle.snapshots.left.mushroomId)?.name[state.lang] || state.currentBattle.snapshots.left.mushroomId,
@@ -187,98 +262,7 @@ export const ReplayScreen = {
           :speed-boost="longBattleSpeedBoost || 1"
           @set-speed="$emit('set-speed', $event)"
         />
-      </div>
-      <section
-        v-if="replayFinished"
-        class="replay-result-overlay"
-        :class="{ 'replay-result-overlay--collapsed': resultOverlayCollapsed }"
-        aria-live="polite"
-      >
-        <div class="replay-result-sheet">
-          <button
-            type="button"
-            class="replay-sheet-toggle"
-            :aria-label="overlayToggleLabel"
-            :aria-expanded="!resultOverlayCollapsed"
-            @click="toggleResultOverlay"
-          >
-            <span class="replay-sheet-grip" aria-hidden="true"></span>
-            <span class="replay-sheet-mini-title" aria-hidden="true"></span>
-            <svg class="replay-sheet-chevron" viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M4 12 L10 6 L16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-          <div class="replay-sheet-body">
-            <div class="replay-result-hero" :class="'replay-result-hero--' + (roundOutcome || 'history')">
-              <p class="replay-result-kicker">{{ t.battleRecap || t.results }}</p>
-              <h3>{{ resultTitleText }}</h3>
-              <p v-if="resultSummaryText" class="replay-result-summary">{{ resultSummaryText }}</p>
-            </div>
-            <div v-if="showInlineRewards" class="panel replay-rewards-card" :class="'replay-rewards-card--' + roundOutcome" data-testid="replay-rewards">
-              <div class="replay-rewards-header" :class="'replay-rewards-header--' + roundOutcome">
-                <h3 class="replay-rewards-title" :class="roundOutcome === 'win' ? 'result-win' : 'result-loss'">
-                  {{ roundOutcome === 'win' ? t.roundWin : t.roundLoss }}
-                </h3>
-                <div v-if="opponentMushroom" class="replay-rewards-opponent">
-                  <span class="replay-rewards-vs">vs <b>{{ opponentName }}</b></span>
-                  <div v-if="opponentStatChips.length" class="replay-rewards-opponent-stats">
-                    <span v-for="chip in opponentStatChips" :key="chip" class="replay-rewards-stat-chip">{{ chip }}</span>
-                  </div>
-                </div>
-              </div>
-              <dl class="stat-grid">
-                <div class="stat" :class="statSignClass(roundRewards.spore)"><dt>{{ t.spore }}</dt><dd>{{ formatDelta(roundRewards.spore || 0) || '0' }}</dd></div>
-                <div class="stat" :class="statSignClass(roundRewards.mycelium)"><dt>{{ t.mycelium }} <span aria-hidden="true">🍄</span></dt><dd>{{ formatDelta(roundRewards.mycelium || 0) || '0' }}</dd></div>
-                <div v-if="ratingDelta != null" class="stat" :class="statSignClass(ratingDelta)">
-                  <dt>{{ t.rating }}</dt>
-                  <dd>{{ formatDelta(ratingDelta) }}</dd>
-                </div>
-              </dl>
-              <div v-if="runLivesRemaining != null" class="replay-run-status">
-                <span class="replay-run-chip"><span class="replay-run-chip-label">{{ t.wins }}</span><span class="replay-run-chip-value">{{ runWins }}</span></span>
-                <span class="replay-run-chip"><span class="replay-run-chip-label">{{ t.lives }}</span><span class="replay-run-chip-value">{{ runLivesRemaining }}</span></span>
-              </div>
-            </div>
-            <div class="battle-summary-card">
-              <p class="battle-summary-title">{{ t.battleSummary || t.battleRecap || t.results }}</p>
-              <div class="battle-summary-grid">
-                <article
-                  v-for="row in battleRecapRows"
-                  :key="row.side"
-                  class="battle-summary-row"
-                  :class="'battle-summary-row--' + row.side"
-                >
-                  <strong>{{ row.name }}</strong>
-                  <dl>
-                    <div>
-                      <dt>{{ t.damageDealt || 'Damage dealt' }}</dt>
-                      <dd>{{ row.damageDealt }}</dd>
-                    </div>
-                    <div>
-                      <dt>{{ t.stunsMade || 'Stuns' }}</dt>
-                      <dd>{{ row.stunsMade }}</dd>
-                    </div>
-                    <div>
-                      <dt>{{ t.damageBlocked || 'Blocked' }}</dt>
-                      <dd>{{ row.damageBlocked }}</dd>
-                    </div>
-                  </dl>
-                </article>
-              </div>
-            </div>
-            <button class="primary replay-result-button-full" @click="$emit('go-results')">{{ continueLabel }}</button>
-          </div>
-        </div>
-      </section>
-      <battle-log
-        v-else
-        :rows="replayLogRows"
-        root-class="replay-log"
-        row-class="log-entry"
-        active-class="active"
-        selectable
-        @select="selectReplayLogRow"
-      />
-    </section>
+      </template>
+    </core-replay-screen>
   `
 };

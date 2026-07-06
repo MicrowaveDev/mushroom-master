@@ -871,21 +871,26 @@ shell using already-shaped fighter DTOs, prepared grid props, role summaries,
 attribution groups, visual-effect DTOs, labels, replay-speed state, and
 fighter/grid slots; Mushroom now maps combatant shaping, artifact lookup,
 loadout projection, visual effects, attribution copy, local `FighterCard`, and
-`ArtifactGridBoard` through a compatibility wrapper. No page shells have moved
-yet.
+`ArtifactGridBoard` through a compatibility wrapper. The next page-shell slice
+copied `web/src/pages/ReplayScreen.js` into core as a neutral `ReplayScreen`
+shell using result/reward DTOs, battle-summary rows, battle-log rows,
+continuation labels, collapse state, neutral result/log events, and a
+battle-stage slot; Mushroom now maps replay timeline state, route events,
+localized reward labels, currency/reward stats, combatant DTOs, and local
+`ReplayDuel` rendering through a compatibility wrapper.
 
 Post-implementation review, 2026-07-06:
 
 - Verified shipped F2 slices:
   `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
   `ShopZone`, plus `RecipeCard` / `RecipeList` and
-  `ArtifactCatalogBrowser`, plus `ReplayDuel`, were moved by physically copying
-  current Mushroom files into `backpack-game-core`, then neutralizing them
-  through DTO props, labels, slots, class hooks, and neutral events. Mushroom
-  wrappers preserve old props/events and product visuals.
+  `ArtifactCatalogBrowser`, plus `ReplayDuel` and `ReplayScreen`, were moved by
+  physically copying current Mushroom files into `backpack-game-core`, then
+  neutralizing them through DTO props, labels, slots, class hooks, and neutral
+  events. Mushroom wrappers preserve old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `2c9e9c2`. Replay-slice validation
+- Latest verified core SHA for this review: `b3abab8`. Replay shell validation
   passed with core `npm test` and `npm pack --dry-run`, Mushroom focused replay
   wrapper tests, Mushroom `npm test` / `game:build`, and Meat `game:test` /
   `game:build` / `game:test:browser`. Run hub
@@ -897,10 +902,9 @@ Post-implementation review, 2026-07-06:
   grid/art rendering. Re-audit the remaining state/event ownership before
   attempting a shared `PrepScreen` shell.
 - Next F2 implementation order:
-  1. Re-audit `ReplayScreen` as a page shell now that `BattleLog` and
-     `ReplayDuel` are both core-owned primitives. The replay page still owns
-     route calls, timeline state, result overlays, localization, and completion
-     navigation, so move it only through a documented page-shell adapter.
+  1. Refresh `docs/frontend-core-extraction-inventory.md` before the next page
+     move; the plan now has enough shipped components that remaining work needs
+     a current file-by-file source of truth.
   2. Re-audit `PrepScreen`, `RecipesScreen`, and other page shells only after
      route/state orchestration is adapterized.
 - Do **not** move `ArtifactFigure` as-is. It still contains hardcoded
@@ -5261,6 +5265,16 @@ frontend adoption.
    registers the local-dev replay review component, which removes the previous
    Vite static/dynamic import warning while preserving the review screen. Meat
    imports `ReplayDuel` in its core-consumption smoke test.
+   **Eighth slice implemented 2026-07-06:** core commit `b3abab8` added
+   `ReplayScreen` as the neutral page shell for the battle-stage slot, result
+   sheet, reward/stat DTO rendering, battle summary rows, battle-log placement,
+   result-collapse event, continue event, and log-row selection event. The
+   commit also split `BattleLog` into its own core component module while
+   preserving the existing aggregate export. Mushroom's replay page now
+   delegates structural markup to core while keeping route navigation, replay
+   timeline state, localized reward/currency DTOs, combatant shaping, and local
+   `ReplayDuel` rendering product-owned. Meat imports `ReplayScreen` in its
+   core-consumption smoke test.
    Remaining component candidates from this Phase 8AW primitive list: **none**.
    Future Vue moves should start the aggressive frontend core port lane: move
    candidate Mushroom components/pages under a temporary core port namespace,
