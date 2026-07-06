@@ -4,6 +4,8 @@ import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/gr
 import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
+import { RunHud } from '../../web/src/components/prep/RunHud.js';
+import { SellZone } from '../../web/src/components/prep/SellZone.js';
 import { ShopZone } from '../../web/src/components/prep/ShopZone.js';
 import { FusionAnimationLabScreen } from '../../web/src/pages/FusionAnimationLabScreen.js';
 
@@ -52,6 +54,22 @@ test('[artifact-grid] fighter card keeps the Mushroom compatibility prop over co
     resolvedCombatant: mushroom
   }), 'Thalla');
   assert.equal(FighterCard.props.gridColumns.default, 6);
+});
+
+test('[artifact-grid] prep HUD and sell zone keep Mushroom compatibility over core', () => {
+  const hudPlayer = RunHud.computed.player.call({
+    state: { gameRun: { player: { coins: 4, wins: 1, livesRemaining: 3 } } }
+  });
+  const labels = RunHud.computed.labels.call({ t: { wins: 'Wins', lives: 'Lives' } });
+  const currency = RunHud.computed.runCurrency.call({ player: hudPlayer });
+
+  assert.deepEqual(labels, { wins: 'Wins', lives: 'Lives' });
+  assert.deepEqual(currency, { amount: 4, icon: '\uD83E\uDE99' });
+  assert.match(RunHud.template, /currency-class="run-hud-item run-hud-coins"/);
+  assert.deepEqual(SellZone.emits, ['sell-dragover', 'sell-dragleave', 'sell-drop']);
+  assert.equal(SellZone.computed.pricePrefix(), '\uD83E\uDE99');
+  assert.equal(SellZone.computed.inactivePrefix(), '\uD83D\uDCB0');
+  assert.match(SellZone.template, /@dragover="\$emit\('sell-dragover', \$event\)"/);
 });
 
 test('[artifact-grid] shop zone shapes offer rows through the shared core helper', () => {

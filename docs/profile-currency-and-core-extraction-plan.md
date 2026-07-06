@@ -821,7 +821,13 @@ added Meat import coverage. The next F2 component slice copied
 Mushroom-specific `mushroom` to `combatant`, and exported it through
 `@microwavedev/backpack-game-core/vue/components`; Mushroom now keeps a thin
 compatibility wrapper for the old prop and local `ArtifactGridBoard`
-adapter. No page shells have moved yet.
+adapter. The next prep-control slice copied
+`web/src/components/prep/RunHud.js` and
+`web/src/components/prep/SellZone.js` into core as neutral `RunHud` and
+`SellZone` components using run-summary, run-currency, and item-drag props;
+Mushroom now keeps compatibility wrappers that map current `player.coins`,
+icons, CSS classes, and legacy sell events back onto those core components. No
+page shells have moved yet.
 
 Goal: move first, then generalize without breaking Mushroom.
 

@@ -1,17 +1,29 @@
+import { SellZone as CoreSellZone } from '@microwavedev/backpack-game-core/vue/components';
+
 export const SellZone = {
   name: 'SellZone',
+  components: { CoreSellZone },
   props: ['state', 't', 'runSellPriceLabel'],
   emits: ['sell-dragover', 'sell-dragleave', 'sell-drop'],
+  computed: {
+    pricePrefix() {
+      return '\uD83E\uDE99';
+    },
+    inactivePrefix() {
+      return '\uD83D\uDCB0';
+    }
+  },
   template: `
-    <div
-      class="sell-zone"
-      :class="{ 'sell-zone--active': state.sellDragOver }"
+    <CoreSellZone
+      :active="!!state.sellDragOver"
+      :dragging-item-id="state.draggingArtifactId || ''"
+      :price-label="runSellPriceLabel"
+      :price-prefix="pricePrefix"
+      :inactive-prefix="inactivePrefix"
+      :inactive-text="t.sellArea"
       @dragover="$emit('sell-dragover', $event)"
       @dragleave="$emit('sell-dragleave')"
       @drop="$emit('sell-drop', $event)"
-    >
-      <span v-if="state.sellDragOver && state.draggingArtifactId" class="sell-zone-price">\uD83E\uDE99 +{{ runSellPriceLabel }}</span>
-      <span v-else>\uD83D\uDCB0 {{ t.sellArea }}</span>
-    </div>
+    />
   `
 };
