@@ -5,6 +5,7 @@ import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
 import { FusionReveal } from '../../web/src/components/prep/FusionReveal.js';
+import { InventoryZone } from '../../web/src/components/prep/InventoryZone.js';
 import { PrepActions } from '../../web/src/components/prep/PrepActions.js';
 import { RunHud } from '../../web/src/components/prep/RunHud.js';
 import { SellZone } from '../../web/src/components/prep/SellZone.js';
@@ -89,6 +90,69 @@ test('[artifact-grid] backpack zone keeps Mushroom compatibility over core', () 
   assert.match(BackpackZone.template, /CoreBackpackZone/);
   assert.match(BackpackZone.template, /#visual="\{ item, orientation, previewItem \}"/);
   assert.match(BackpackZone.template, /<artifact-grid-board/);
+});
+
+test('[artifact-grid] inventory zone keeps Mushroom compatibility over core', () => {
+  const catalog = new Map([
+    ['starter_bag', { id: 'starter_bag', width: 3, height: 3, name: { en: 'Starter' }, color: '#999' }],
+    ['wide_bag', { id: 'wide_bag', width: 4, height: 1, name: { en: 'Wide Bag' }, color: '#abc' }],
+    ['square_bag', { id: 'square_bag', width: 2, height: 2, name: { en: 'Square Bag' }, color: '#def' }]
+  ]);
+  const context = {
+    state: {
+      lang: 'en',
+      activeBags: [
+        { id: 'starter_row', artifactId: 'starter_bag' },
+        { id: 'wide_row', artifactId: 'wide_bag' },
+        { id: 'square_row', artifactId: 'square_bag' }
+      ]
+    },
+    t: { bagDragHint: 'Move bag' },
+    getArtifact: (id) => catalog.get(id)
+  };
+  const chips = InventoryZone.computed.activeContainerChips.call(context);
+  const emitted = [];
+
+  assert.equal(chips.length, 2);
+  assert.deepEqual(chips[0], {
+    id: 'wide_row',
+    artifactId: 'wide_bag',
+    name: 'Wide Bag',
+    color: '#abc',
+    draggable: true,
+    locked: false,
+    title: 'Move bag',
+    rotatable: true
+  });
+  assert.equal(chips[1].rotatable, false);
+  assert.deepEqual(InventoryZone.computed.labels(), {
+    rotateAction: '\u21BB',
+    removeAction: '\u2715',
+    statSummaryAriaLabel: 'Artifact stat summary'
+  });
+  InventoryZone.methods.onContainerDragStart.call({
+    $emit: (event, payload) => emitted.push([event, payload])
+  }, { id: 'wide_row', event: { type: 'dragstart' } });
+  InventoryZone.methods.onRotateContainer.call({
+    $emit: (event, payload) => emitted.push([event, payload])
+  }, { id: 'wide_row', artifactId: 'wide_bag' });
+  InventoryZone.methods.onDeactivateContainer.call({
+    $emit: (event, payload) => emitted.push([event, payload])
+  }, { id: 'wide_row', artifactId: 'wide_bag' });
+  assert.deepEqual(emitted, [
+    ['bag-chip-drag-start', { bagId: 'wide_row', event: { type: 'dragstart' } }],
+    ['rotate-bag', { id: 'wide_row', artifactId: 'wide_bag' }],
+    ['deactivate-bag', { id: 'wide_row', artifactId: 'wide_bag' }]
+  ]);
+  assert.deepEqual(InventoryZone.emits, [
+    'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
+    'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
+  ]);
+  assert.match(InventoryZone.template, /CoreInventoryZone/);
+  assert.match(InventoryZone.template, /#grid="/);
+  assert.match(InventoryZone.template, /<artifact-grid-board/);
+  assert.match(InventoryZone.template, /#footer="\{ totals, ariaLabel \}"/);
+  assert.match(InventoryZone.template, /<artifact-stat-summary/);
 });
 
 test('[artifact-grid] prep HUD and sell zone keep Mushroom compatibility over core', () => {

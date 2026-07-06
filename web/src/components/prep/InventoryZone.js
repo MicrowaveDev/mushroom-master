@@ -1,9 +1,10 @@
+import { InventoryZone as CoreInventoryZone } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 import { ArtifactStatSummary } from '../ArtifactStatSummary.js';
 
 export const InventoryZone = {
   name: 'InventoryZone',
-  components: { ArtifactGridBoard, ArtifactStatSummary },
+  components: { ArtifactGridBoard, ArtifactStatSummary, CoreInventoryZone },
   props: [
     'state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
     'placementPreviewAt', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
@@ -12,79 +13,116 @@ export const InventoryZone = {
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
     'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
   ],
+  computed: {
+    activeContainerChips() {
+      return (this.state.activeBags || [])
+        .filter((bag) => bag.artifactId !== 'starter_bag')
+        .map((bag) => {
+          const artifact = this.getArtifact(bag.artifactId) || {};
+          return {
+            id: bag.id,
+            artifactId: bag.artifactId,
+            name: artifact?.name?.[this.state.lang] || artifact?.name?.en || bag.artifactId,
+            color: artifact?.color || '#888',
+            draggable: true,
+            locked: false,
+            title: this.t?.bagDragHint || 'Drag to move',
+            rotatable: artifact?.width !== artifact?.height
+          };
+        });
+    },
+    labels() {
+      return {
+        rotateAction: '\u21BB',
+        removeAction: '\u2715',
+        statSummaryAriaLabel: 'Artifact stat summary'
+      };
+    }
+  },
   methods: {
-    visibleActiveBags() {
-      return this.state.activeBags.filter((bag) => bag.artifactId !== 'starter_bag');
+    onContainerDragStart(payload) {
+      this.$emit('bag-chip-drag-start', {
+        bagId: payload.id,
+        event: payload.event
+      });
     },
-    bagChipHasItems(bagId) {
-      return false;
+    onRotateContainer(payload) {
+      this.$emit('rotate-bag', {
+        id: payload.id,
+        artifactId: payload.artifactId
+      });
     },
-    bagChipDraggable(bagId) {
-      return true;
-    },
-    bagChipTitle(bag) {
-      const dragHint = this.t?.bagDragHint || 'Drag to move';
-      return dragHint;
-    },
-    onChipDragStart(bag, event) {
-      this.$emit('bag-chip-drag-start', { bagId: bag.id, event });
-    },
-    onChipDragEnd() {
-      this.$emit('drag-end');
-    },
+    onDeactivateContainer(payload) {
+      this.$emit('deactivate-bag', {
+        id: payload.id,
+        artifactId: payload.artifactId
+      });
+    }
   },
   template: `
-    <div class="artifact-inventory-section panel">
-      <artifact-grid-board
-        variant="inventory"
-        class="inventory-shell artifact-inventory-grid"
-        :total-rows="totalRows"
-        :items="state.builderItems"
-        :bag-rows="bagRows"
-        :get-artifact="getArtifact"
-        :clickable-pieces="true"
-        :rotatable-pieces="true"
-        :droppable="true"
-        :draggable-pieces="true"
-        :placement-preview-for-cell="placementPreviewAt"
-        :highlighted-row-ids="fusionCandidateRowIds"
-        :highlighted-title="t.fusionCandidateHint"
-        @piece-click="$emit('unplace', $event)"
-        @piece-rotate="$emit('rotate', $event)"
-        @cell-drop="$emit('cell-drop', $event)"
-        @piece-drag-start="$emit('inventory-drag-start', $event)"
-        @piece-drag-end="$emit('drag-end')"
-      />
-      <div v-if="visibleActiveBags().length" class="active-bags-bar">
-        <span
-          v-for="bag in visibleActiveBags()"
-          :key="bag.id || bag.artifactId"
-          class="active-bag-chip"
-          :class="{ 'active-bag-chip--locked': bagChipHasItems(bag.id), 'active-bag-chip--draggable': bagChipDraggable(bag.id) }"
-          :style="{ borderColor: getArtifact(bag.artifactId)?.color || '#888' }"
-          :draggable="bagChipDraggable(bag.id)"
-          :title="bagChipTitle(bag)"
-          :data-bag-row-id="bag.id"
-          :data-bag-locked="bagChipHasItems(bag.id) ? 'true' : 'false'"
-          @dragstart="onChipDragStart(bag, $event)"
-          @dragend="onChipDragEnd"
-        >
-          {{ getArtifact(bag.artifactId)?.name?.[state.lang] || bag.artifactId }}
-          <button
-            v-if="getArtifact(bag.artifactId)?.width !== getArtifact(bag.artifactId)?.height"
-            class="active-bag-action"
-            @click="$emit('rotate-bag', { id: bag.id, artifactId: bag.artifactId })"
-          >↻</button>
-          <button class="active-bag-action" @click="$emit('deactivate-bag', { id: bag.id, artifactId: bag.artifactId })">✕</button>
-        </span>
-      </div>
-      <div v-if="state.builderItems.length" class="artifact-inventory-footer">
-        <artifact-stat-summary
-          :totals="builderTotals"
-          :lang="state.lang"
-          aria-label="Artifact stat summary"
+    <CoreInventoryZone
+      :items="state.builderItems"
+      :active-containers="activeContainerChips"
+      :totals="builderTotals"
+      :total-rows="totalRows"
+      :bag-rows="bagRows"
+      :placement-preview-at="placementPreviewAt"
+      :highlighted-row-ids="fusionCandidateRowIds"
+      :highlighted-title="t.fusionCandidateHint"
+      :labels="labels"
+      @remove-item="$emit('unplace', $event)"
+      @rotate-item="$emit('rotate', $event)"
+      @cell-drop="$emit('cell-drop', $event)"
+      @item-drag-start="$emit('inventory-drag-start', $event)"
+      @item-drag-end="$emit('drag-end')"
+      @container-chip-drag-start="onContainerDragStart"
+      @rotate-container="onRotateContainer"
+      @deactivate-container="onDeactivateContainer"
+    >
+      <template
+        #grid="{
+          gridClass,
+          totalRows,
+          items,
+          bagRows,
+          placementPreviewAt,
+          highlightedRowIds,
+          highlightedTitle,
+          onRemoveItem,
+          onRotateItem,
+          onCellDrop,
+          onItemDragStart,
+          onItemDragEnd
+        }"
+      >
+        <artifact-grid-board
+          variant="inventory"
+          :class="gridClass"
+          :total-rows="totalRows"
+          :items="items"
+          :bag-rows="bagRows"
+          :get-artifact="getArtifact"
+          :clickable-pieces="true"
+          :rotatable-pieces="true"
+          :droppable="true"
+          :draggable-pieces="true"
+          :placement-preview-for-cell="placementPreviewAt"
+          :highlighted-row-ids="highlightedRowIds"
+          :highlighted-title="highlightedTitle"
+          @piece-click="onRemoveItem"
+          @piece-rotate="onRotateItem"
+          @cell-drop="onCellDrop"
+          @piece-drag-start="onItemDragStart"
+          @piece-drag-end="onItemDragEnd"
         />
-      </div>
-    </div>
+      </template>
+      <template #footer="{ totals, ariaLabel }">
+        <artifact-stat-summary
+          :totals="totals"
+          :lang="state.lang"
+          :aria-label="ariaLabel"
+        />
+      </template>
+    </CoreInventoryZone>
   `
 };
