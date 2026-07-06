@@ -187,6 +187,12 @@ copy, theme, and API adapters.
   contract is documented in
   `vendor/backpack-game-core/docs/server-module-contract.md` and tested by
   `tests/server-modules.test.js`.
+- server route-descriptor slice: `src/server/index.js` now also exposes
+  framework-neutral route descriptors, route groups, descriptor flattening, and
+  adapter-driven route binding. This is the required bridge before moving
+  larger Mushroom route files into core: core modules can provide route
+  factories without importing the product HTTP stack, and products still mount
+  routes in their own composition roots.
 - browser-safe Vue composable slice: `src/vue/composables/useReducedMotion.js`
   now exposes `createReducedMotionTracker` and
   `bindReducedMotionTracker` through
@@ -218,10 +224,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `662d1b3`
-  (`Add neutral prep screen shell`)
-- latest runtime/API core commit: `662d1b3`
-  (`Add neutral prep screen shell`)
+- latest consumed core commit: `c166e28`
+  (`Add server route descriptors`)
+- latest runtime/API core commit: `c166e28`
+  (`Add server route descriptors`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -437,10 +443,10 @@ Maximum-efficiency constraints:
 | Runtime config validation summaries | `backpack-game-core/src/modules/config/index.js`; Meat adapters in `app/server/config.js` and `app/server/check-deploy-config.js` | Extracted response/CLI shaper | Core owns issue normalization, validation result DTOs, assertion error formatting, and deploy-check summary lines. Games keep env parsing, required fields, product policy, provider availability, Node/runtime choices, and deploy commands local. |
 | Asset catalog, ownership, equipment, and direct-buy policy | `backpack-game-core/src/profile-asset-state.js`; Mushroom adapter in `app/server/services/asset-service.js`; profile asset tables and runtime catalogs | Partially extracted domain-core candidate | Core now owns reusable profile asset state shaping, ownership maps, equip validation, purchase spend parameters, instance drafts, portrait variant projection, purchase/equip result DTOs, and grant summaries over injected rows/catalog policy. Runtime catalog lookup, SQL row lifecycle, support actions, gacha roll/burn grants, paid rollback behavior, direct-buy policy composition, and compatibility mirrors stay in the game. |
 | Gacha pack validation, rolling, duplicates, burn, pity, and simulation | `backpack-game-core/src/asset-gacha.js`; `backpack-game-core/src/modules/gacha/simulation-service.js`; Mushroom adapters in `app/server/services/asset-service.js` and `app/server/services/gacha-simulation-service.js`; admin validation helpers | Adapter over core planners and service factory | Core owns pack/item validation, candidate filtering, weighted slot selection, duplicate copy caps, burn target policies, pity/guarantees, odds simulation, provider-driven simulation service shape, server module registration, result DTO shaping, roll settlement planning, duplicate-burn settlement planning, grant drafts, evidence metadata, and admin DTO/view-model helpers. Secure RNG source, wallet debit execution, asset grant persistence, pack storage, SQL transactions, mutation-claim policy, static/runtime pack lookup, plan visibility policy, and operator audit records stay local. |
-| Server module registry, readiness, and mutation middleware | `backpack-game-core/src/server/*`; Mushroom adapters in `app/server/lib/*` and `app/server/services/ready-manager.js` | Extracted infrastructure slice and module factory | Core now owns a lightweight module descriptor/context setup facade, reusable idempotency and token-bucket rate-limit middleware, configurable run readiness state, idle-run detection, keyed async mutexes, and module-list registration for the readiness manager. Mushroom keeps route wiring, auth, active-run DB lookups, challenge resolution, SSE sends, and existing local import paths as adapters; Meat imports the same server surface in its core-consumption test. Product DB models, route ownership, provider SDKs, and payment/webhook modules stay local. |
+| Server module registry, route descriptors, readiness, and mutation middleware | `backpack-game-core/src/server/*`; Mushroom adapters in `app/server/lib/*` and `app/server/services/ready-manager.js` | Extracted infrastructure slice and module factory | Core now owns a lightweight module descriptor/context setup facade, framework-neutral route descriptors/groups/binding helpers, reusable idempotency and token-bucket rate-limit middleware, configurable run readiness state, idle-run detection, keyed async mutexes, and module-list registration for the readiness manager. Mushroom keeps route mounting, auth middleware attachment, active-run DB lookups, challenge resolution, SSE sends, and existing local import paths as adapters; Meat imports the same server surface in its core-consumption test. Product DB models, app bootstrap, provider SDKs, and payment/webhook modules stay local. |
 | Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Extracted DTO baseline and neutral Vue primitive layer | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, grid/stat helpers, artifact stat-row DTOs, shop item row DTOs, board render rows, replay rows, artifact tile display contracts, pack card rows, odds table sections, and roll-result panel DTOs. Core also owns the first neutral Vue component layer: roll-result panels, odds tables, gacha pack cards, artifact tiles, stat summaries, shop rows/lists, backpack grids, battle logs, achievement badges, and season-rank emblems. |
 | Frontend port inventory and reduced-motion composable | `backpack-game-core/src/vue/composables/*`; Mushroom adapter in `web/src/composables/useReducedMotion.js` | First aggressive frontend-port slice | F1 found that most components/pages still need DTO, route, locale, asset, and CSS adapters before page-shell moves. The first safe F2 slice moved the neutral reduced-motion tracker into core while Mushroom keeps settings/CSS attachment local and Meat verifies the export. |
-| Server module inventory and contract | `backpack-game-core/src/server/index.js`; `docs/server-module-contract.md`; Mushroom server files audited in S1 | Contract implemented, service modules started | S1 classified DB/models, Telegram, payment callbacks, wiki/lore, social preview, support approvals, and final Express composition as product-local. The first low-risk moves extracted artifact family capabilities, provider-driven gacha simulation service/module factory, provider-driven loadout validation service/module factory, run readiness module-list wiring, and generic provider-settlement input adapter helpers. Remaining server candidates are larger repository-backed modules such as auth/profile/run/wallet/assets/gacha route factories, not simple file moves. |
+| Server module inventory and contract | `backpack-game-core/src/server/index.js`; `docs/server-module-contract.md`; Mushroom server files audited in S1 | Contract implemented, service modules started | S1 classified DB/models, Telegram, payment callbacks, wiki/lore, support approvals, and final app composition as product-local. Core now has route descriptors, so remaining server candidates should be moved as repository-backed feature modules: auth/profile/run/wallet/assets/gacha/support service facades plus route factories and DTO/error shapers. Product apps keep concrete repositories, transactions, provider callbacks, credentials, middleware order, and static file serving. |
 | Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
 | Battle replay/log UI | Mushroom replay components/pages and Meat battle panel | Frontend-core candidate | Battle timeline rendering, event filtering, combatant stat panels, outcome badges, and playback state are reusable over core battle events. Product narration text, character art, share routes, and replay persistence stay local. |
 | Wallet, asset inventory, and gacha UI | Mushroom asset/portrait/gacha screens, support asset widgets, Meat future inventory/gacha screens | Frontend-core candidate | Wallet balance display, asset inventory/equipment panels, gacha pack cards, roll result modals, duplicate/burn state panels, odds tables, and asset policy labels can be shared with product API/copy/theme adapters. Payment provider selection, adult-content gates, and purchase routes stay local. |
@@ -1167,7 +1173,10 @@ services. Recommended order:
     is complete.
 12. Shared server infrastructure surface: implemented in core commit
     `5dd01f1` with `./server` and `./server/middleware` exports, then expanded
-    in core commit `471e686` with run readiness and keyed async mutex helpers.
+    in core commit `471e686` with run readiness and keyed async mutex helpers,
+    and expanded again in core commit `c166e28` with framework-neutral route
+    descriptors, route groups, descriptor flattening, and adapter-driven route
+    binding.
     Mushroom delegates idempotency, rate-limit middleware, challenge ready
     state, idle-run detection, and run locks through local adapters while
     keeping route mounting, auth, DB transactions, product services, payment

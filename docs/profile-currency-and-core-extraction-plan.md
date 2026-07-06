@@ -76,6 +76,14 @@
 > `tests/game/wallet-assets.test.js`, and the current reference doc
 > `docs/game-core-runtime-contracts.md` rather than re-derived from this plan's
 > phase sections.
+> The 2026-07-06 server extraction correction adds the missing route boundary:
+> core server modules now have framework-neutral route descriptors and route
+> groups, so the next backend move can promote whole feature modules
+> (service facade + route factory + DTO/error shapers + repository contracts)
+> instead of only helper functions. Mushroom and Meat still own the concrete
+> repositories, runtime-mode config, framework mounting, middleware ordering,
+> env parsing, migrations, payment callbacks, Telegram/deep-link wiring, wiki
+> content, support policy, and static assets.
 > See the **Post-Implementation Review** section for the verified state and
 > current remaining work. As of the latest implementation pass, **Phase 8A/8B**
 > is complete via `docs/game-core-runtime-contracts.md` and
@@ -544,7 +552,11 @@ DB, credentials, runtime policy, and product-specific modules. Updated
 recipe card/list shells, and the catalog browser shell are now stable core Vue
 exports consumed by Mushroom wrappers and Meat import smoke tests, but page
 shells are still blocked by remaining product-stateful orchestration and
-artifact-renderer dependencies.
+artifact-renderer dependencies. Updated 2026-07-06 after the server
+route-descriptor correction: the backend lane should now move whole reusable
+feature modules into core, using descriptor-based route groups plus injected
+repository/policy/catalog adapters, while product repos keep app bootstrap,
+database lifecycle, and provider-specific integrations.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -624,10 +636,12 @@ product-local modules before moving code.
 
 #### S2 - Define The Core Server Module Contract
 
-Status: **Implemented 2026-07-05 in core commit `f9c0054`.** The core server
+Status: **Implemented 2026-07-05 in core commit `f9c0054`; expanded
+2026-07-06 with framework-neutral route descriptors.** The core server
 facade now documents and enforces module names, dependency keys, provided keys,
 per-module config resolution, optional config validation, duplicate module and
-metadata guards, and explicit provider override policy. See
+metadata guards, explicit provider override policy, plain route descriptors,
+route groups, flattening, and adapter-driven route binding. See
 `vendor/backpack-game-core/docs/server-module-contract.md`.
 
 Goal: make module boundaries explicit before moving implementation.
@@ -649,11 +663,12 @@ Goal: make module boundaries explicit before moving implementation.
 - `ctx` should expose app adapters such as repositories, logger, config,
   product settings, locale helpers, clock, ID generator, RNG, and route/error
   mappers.
-- Route factories may live in core, but final Express app registration,
-  middleware ordering, auth middleware attachment, rate limits, and deployment
-  config stay in the app.
+- Route factories may live in core as plain descriptors, but final app
+  registration, middleware ordering, auth middleware attachment, rate limits,
+  and deployment config stay in the app.
 - Validation: core tests prove dependency resolution, missing dependency
-  errors, and stable `provides`/`requires` metadata.
+  errors, stable `provides`/`requires` metadata, descriptor validation, and
+  adapter-driven route binding.
 
 #### S3 - Quarantined Server Port
 
@@ -687,15 +702,22 @@ slice added `modules/social-preview` plus
 `createSocialPreviewCacheServerModule` so preview-cache warmup, fallback, and
 logging behavior can be reused while Mushroom-owned artwork paths, copy,
 render implementation, static-file routes, and filesystem adapters stay local.
+The latest S2/S3 infrastructure slice added route descriptors and route groups
+to the stable core server facade. That does not move product routes yet, but
+it removes the previous blocker for moving auth/profile/run/wallet/assets/
+gacha/support feature route factories without importing a product HTTP stack
+into core.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
 
 - Physically copy or move selected Mushroom server modules from the current
-  working tree into a temporary core namespace such as `server/mushroom-port/`
-  or `packages/server/src/mushroom-port/`; do not reconstruct them manually.
+  working tree into core feature-module folders; do not reconstruct them
+  manually. Use a temporary quarantined namespace only when a file cannot be
+  made neutral in the same slice.
 - Keep Mushroom importing through compatibility wrappers while each module is
-  neutralized.
+  neutralized. Prefer route-descriptor factories over copied route registration
+  blocks.
 - Add a forbidden-import guard that permits the temporary namespace only for
   tracked migration files and blocks Mushroom paths in stable core server
   exports.
@@ -737,17 +759,18 @@ Goal: remove Mushroom identity and runtime assumptions from core server modules.
 
 Status: **Started.** Low-risk shared module factories now exist for gacha
 simulation, loadout validation, run readiness, hosted community client, and
-social-preview cache orchestration. Remaining S5 work should promote deeper
-auth/profile/run/wallet/assets/gacha/support service logic only after
-repository, policy, and route contracts are explicit.
+social-preview cache orchestration. Route descriptors and route groups are now
+available for deeper modules. Remaining S5 work should promote auth/profile/
+run/wallet/assets/gacha/support as feature modules only after each repository,
+policy, catalog, error, and route contract is explicit.
 
 Goal: promote neutralized server logic to reusable module factories.
 
 - First stable modules should be low-risk and already shared in behavior:
   `core.auth`, `core.profile`, `core.run`, `core.wallet`, `core.assets`,
   `core.gacha`, `core.support`, and optional `core.social-preview-cache`.
-- Each module exposes service factories, route factories where useful, DTO
-  shapers, validation, and repository interface expectations.
+- Each module exposes service factories, route-descriptor factories where
+  useful, DTO shapers, validation, and repository interface expectations.
 - Product apps provide concrete repositories and app-specific modules such as
   `mushroom.db`, `mushroom.catalog`, `mushroom.telegram`,
   `mushroom.payments`, `mushroom.wiki`, `meat.db`, `meat.catalog`, and
@@ -756,6 +779,11 @@ Goal: promote neutralized server logic to reusable module factories.
   over real repositories; Meat parity tests over its JSON/SQLite store.
 
 #### S6 - App Module Lists And Composition Roots
+
+Status: **Started at the core contract level.** Core can now carry route groups
+through module setup, but Mushroom and Meat still need product-local module
+lists and compatibility wrappers before the large monolithic server files are
+thin composition roots.
 
 Goal: make Mushroom and Meat assemble their backends from module lists.
 
@@ -913,13 +941,13 @@ Post-implementation review, 2026-07-06:
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
 - Latest verified core SHA for this review before cross-consumer pointer
-  update: `e027bd3`. Replay, catalog, prep layout-shell, first headless
-  prep-controller, and prep mutation-planner validation passed with core
-  `npm test` and `npm pack --dry-run`, Mushroom focused prep/use-shop/grid
-  tests, Mushroom `npm test` / `game:build`. Run Meat `game:test` /
-  `game:build` / `game:test:browser`, then hub
-  `npm run verify:backpack-core` after both consumer pointer commits are
-  pushed to confirm the shared nested-core SHA across Mushroom and Meat.
+  update: `c166e28`. Replay, catalog, prep layout-shell, first headless
+  prep-controller, prep mutation-planner, and server route-descriptor
+  validation passed with core `npm test` and `npm pack --dry-run`, plus earlier
+  Mushroom focused prep/use-shop/grid tests and Mushroom `npm test` /
+  `game:build`. Run Meat `game:test` / `game:build` / `game:test:browser`,
+  then hub `npm run verify:backpack-core` after both consumer pointer commits
+  are pushed to confirm the shared nested-core SHA across Mushroom and Meat.
 - Page shells are closer but still not free. `PrepScreen` still depends on
   whole Mushroom runtime state, route events, drag/drop orchestration,
   sell/refresh purchase policy, ready/abandon route policy, fusion reveal queue
