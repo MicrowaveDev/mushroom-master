@@ -6,6 +6,11 @@ import { spawnSync } from 'child_process';
 import express from 'express';
 import OpenAI from 'openai';
 import {
+  shapeAuthLogoutResult,
+  shapeAuthSessionResult,
+  shapeAuthUserProfile
+} from '@microwavedev/backpack-game-core/modules/auth';
+import {
   authenticateRequest,
   createTelegramAuthCode,
   loginWithDevSession,
@@ -255,6 +260,13 @@ function requestSupportActorId(req) {
     req.query?.actorId ||
     ''
   ).trim();
+}
+
+function authSessionPayload(result) {
+  return shapeAuthSessionResult({
+    session: { sessionKey: result.session.sessionKey },
+    user: shapeAuthUserProfile(result.player)
+  });
 }
 
 function normalizeSupportRole(role) {
@@ -780,16 +792,7 @@ export async function createApp() {
       const result = await loginWithTelegram(req.body.initData, process.env.TELEGRAM_BOT_TOKEN || '');
       res.json({
         success: true,
-        data: {
-          sessionKey: result.session.sessionKey,
-          user: {
-            id: result.player.id,
-            telegramId: result.player.telegram_id,
-            telegramUsername: result.player.telegram_username,
-            name: result.player.name,
-            lang: result.player.lang
-          }
-        }
+        data: authSessionPayload(result)
       });
     })
   );
@@ -799,7 +802,7 @@ export async function createApp() {
     requireAuth,
     asyncRoute(async (req, res) => {
       await logoutSession(req.session.session_key);
-      res.json({ success: true, data: { loggedOut: true } });
+      res.json({ success: true, data: shapeAuthLogoutResult() });
     })
   );
 
@@ -824,16 +827,7 @@ export async function createApp() {
 
       res.json({
         success: true,
-        data: {
-          sessionKey: result.session.sessionKey,
-          user: {
-            id: result.player.id,
-            telegramId: result.player.telegram_id,
-            telegramUsername: result.player.telegram_username,
-            name: result.player.name,
-            lang: result.player.lang
-          }
-        }
+        data: authSessionPayload(result)
       });
     })
   );
@@ -845,16 +839,7 @@ export async function createApp() {
       const result = await loginWithWebSession(req.body || {});
       res.json({
         success: true,
-        data: {
-          sessionKey: result.session.sessionKey,
-          user: {
-            id: result.player.id,
-            telegramId: result.player.telegram_id,
-            telegramUsername: result.player.telegram_username,
-            name: result.player.name,
-            lang: result.player.lang
-          }
-        }
+        data: authSessionPayload(result)
       });
     })
   );

@@ -432,6 +432,10 @@ The next server-side follow-up added runtime config validation result,
 assertion, and deploy-check summary line formatting to `modules/config`; games
 still own env parsing, required fields, product policy, provider availability,
 and deploy commands.
+The auth-envelope follow-up added public auth user/session/logout response
+shaping to `modules/auth`; product repos still own Telegram verification,
+dev-login policy, session persistence, auth-code lifecycle, middleware, and
+player lookup.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own

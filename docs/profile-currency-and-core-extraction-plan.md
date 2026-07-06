@@ -1300,6 +1300,10 @@ The shared browser route-client lane now has both games consuming
 `@microwavedev/backpack-game-core/client`; the latest hardening preserves API
 error messages shaped as strings or `{ message }` objects so product UIs keep
 their existing error copy.
+The auth-envelope lane now extracts public auth user/session/logout response
+shaping into `modules/auth`; Mushroom and Meat delegate login/logout payload
+assembly through core while Telegram verification, dev-login policy, session
+storage, and player lookup stay product-local.
 Remaining neutral DTO/planner extraction stays valid after the
 production-parity mechanics settle, and the new server-module lane allows
 shared route factories/service modules once concrete repositories and final app
@@ -1312,17 +1316,19 @@ execution local.
   remaining pure planners/DTOs only when both games can use them without
   importing product routes, DB models, Telegram helpers, payment SDKs, art, or
   CSS.
-- Candidate pure slices: auth/bootstrap payload shaping, product settings
-  bootstrap shaping, and shared browser route-client helpers. Run-state summary
-  DTO shaping has started in core and is consumed by Meat. Support lookup and
-  wallet/asset/run support mutation response DTO shaping has moved to core and
-  is consumed by Mushroom and Meat, while permissions, audit persistence, and
-  mutations stay product-local. Runtime config validation result/assertion and
-  deploy-check summary formatting has moved to core and is consumed by Meat,
-  while env parsing and product launch policy stay local. Shared browser
-  route-client helpers are now consumed by both games; remaining frontend
-  extraction should focus on adapterized page shells/components rather than a
-  second fetch wrapper.
+- Candidate pure slices: bootstrap payload shaping and product settings
+  bootstrap shaping. Run-state summary DTO shaping has started in core and is
+  consumed by Meat. Support lookup and wallet/asset/run support mutation
+  response DTO shaping has moved to core and is consumed by Mushroom and Meat,
+  while permissions, audit persistence, and mutations stay product-local.
+  Runtime config validation result/assertion and deploy-check summary
+  formatting has moved to core and is consumed by Meat, while env parsing and
+  product launch policy stay local. Shared browser route-client helpers are now
+  consumed by both games; remaining frontend extraction should focus on
+  adapterized page shells/components rather than a second fetch wrapper. Auth
+  user/session/logout response envelope shaping has moved to core and is
+  consumed by both games while auth verification, session storage, and product
+  identity policy stay local.
 - Keep non-core boundaries strict: DB transactions, concrete repositories,
   provider callbacks, adult-content gates, Telegram deployment policy, product
   catalogs, final route registration, and product policy stay in product repos.
