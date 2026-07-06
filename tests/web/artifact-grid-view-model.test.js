@@ -249,8 +249,19 @@ test('[artifact-grid] shop zone shapes offer rows through the shared core helper
     state: {
       gameRunShopOffer: ['needle', 'bag'],
       gameRun: { player: { coins: 2 } },
+      sellDragOver: true,
+      draggingArtifactId: 'needle',
       lang: 'en'
     },
+    t: {
+      shop: 'Shop',
+      refreshShop: 'Refresh',
+      characterItem: 'Character',
+      bagSlots: 'slots',
+      sellArea: 'Sell here'
+    },
+    runRefreshCost: 3,
+    runSellPriceLabel: '2',
     getArtifact: (id) => catalog.get(id),
     getArtifactPrice: (artifact) => artifact?.price || 0,
     artifactName: ShopZone.methods.artifactName,
@@ -269,4 +280,42 @@ test('[artifact-grid] shop zone shapes offer rows through the shared core helper
   assert.equal(rows[1].isBag, true);
   assert.equal(rows[1].slotCount, 4);
   assert.equal(rows[1].unavailable, true);
+
+  const wrapperContext = {
+    state: {
+      gameRun: { player: { coins: 2 } },
+      sellDragOver: true,
+      draggingArtifactId: 'needle'
+    },
+    t: {
+      shop: 'Shop',
+      refreshShop: 'Refresh',
+      characterItem: 'Character',
+      bagSlots: 'slots',
+      sellArea: 'Sell here'
+    },
+    runRefreshCost: 3,
+    runSellPriceLabel: '2'
+  };
+  assert.deepEqual(ShopZone.computed.labels.call(wrapperContext), {
+    title: 'Shop',
+    refresh: 'Refresh',
+    refreshPricePrefix: '\uD83E\uDE99',
+    pricePrefix: '\uD83E\uDE99 ',
+    characterItem: 'Character',
+    bagSlots: 'slots'
+  });
+  assert.equal(ShopZone.computed.refreshDisabled.call(wrapperContext), true);
+  assert.deepEqual(ShopZone.computed.sellZone.call(wrapperContext), {
+    active: true,
+    draggingItemId: 'needle',
+    priceLabel: '2',
+    pricePrefix: '\uD83E\uDE99',
+    inactivePrefix: '\uD83D\uDCB0',
+    inactiveText: 'Sell here'
+  });
+  assert.match(ShopZone.template, /CoreShopZone/);
+  assert.match(ShopZone.template, /@buy="\$emit\('buy-run-item', \$event\.artifactId\)"/);
+  assert.match(ShopZone.template, /@sell-dragover="\$emit\('sell-dragover', \$event\)"/);
+  assert.match(ShopZone.template, /<artifact-grid-board/);
 });

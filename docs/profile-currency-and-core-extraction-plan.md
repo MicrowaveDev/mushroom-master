@@ -543,7 +543,7 @@ DB, credentials, runtime policy, and product-specific modules. Updated
 `PrepActions`, `FusionReveal`, and `BackpackZone` are now stable core Vue
 exports consumed by Mushroom wrappers and Meat import smoke tests, but page
 shells are still blocked by remaining product-stateful prep zones, especially
-`ShopZone`, and artifact-renderer dependencies.
+artifact/catalog/replay presentation and artifact-renderer dependencies.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -849,37 +849,37 @@ next inventory-zone slice copied
 section shell using prepared item rows, active container-chip DTOs, grid
 metadata, labels, and grid/footer slots; Mushroom now maps builder items,
 active bags, `ArtifactGridBoard`, and `ArtifactStatSummary` through a
+compatibility wrapper. The next shop-zone slice copied
+`web/src/components/prep/ShopZone.js` into core as a neutral shop panel using
+already-shaped offer rows, labels, refresh state, sell-zone state, row
+class/attribute hooks, and a visual slot; Mushroom now maps pricing, fusion
+classes, run-money labels, catalog previews, and route events through a
 compatibility wrapper. No page shells have moved yet.
 
 Post-implementation review, 2026-07-06:
 
 - Verified shipped F2 slices:
-  `PrepActions`, `FusionReveal`, `BackpackZone`, and `InventoryZone` were
-  moved by physically copying the current Mushroom files into
+  `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
+  `ShopZone` were moved by physically copying the current Mushroom files into
   `backpack-game-core`, then neutralizing them through DTO props, labels,
   slots, class hooks, and neutral events. Mushroom wrappers preserve old
   props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `8c60feb`. Validation passed:
+- Latest verified core SHA for this review: `4c118ee`. Validation passed:
   core `npm test` and `npm pack --dry-run`, Mushroom focused wrapper tests,
   Mushroom `npm test` / `game:build`, Meat `game:test` / `game:build` /
   `game:test:browser`, and hub `npm run verify:backpack-core`.
-- Page shells are still premature. `PrepScreen` still depends on whole
-  Mushroom runtime state, route events, drag/drop orchestration, active bag
-  mutation, shop refresh/buy/sell callbacks, fusion reveal queue state, and
-  product-owned grid/art rendering. Move `ShopZone` and then re-audit the
-  remaining state/event ownership before attempting a shared `PrepScreen`
-  shell.
+- Page shells are closer but still not free. `PrepScreen` still depends on
+  whole Mushroom runtime state, route events, drag/drop orchestration,
+  active-bag mutation policy, fusion reveal queue state, and product-owned
+  grid/art rendering. Re-audit the remaining state/event ownership before
+  attempting a shared `PrepScreen` shell.
 - Next F2 implementation order:
-  1. `ShopZone`: wrap the existing core `ShopItemList` and `SellZone` into a
-     neutral shop panel with refresh budget/status props and slots; keep
-     Mushroom route events, run-money icon, fusion candidate policy, catalog
-     pricing adapters, and sell/refund behavior local.
-  2. `ArtifactCatalogBrowser` / recipes surfaces: move only after their item
+  1. `ArtifactCatalogBrowser` / recipes surfaces: move only after their item
      rows and preview grids can be driven by DTOs, asset resolvers, locale
      callbacks, and slots instead of product catalogs or route names.
-  3. `ReplayDuel` / replay presentation: move after the already-core
+  2. `ReplayDuel` / replay presentation: move after the already-core
      `BattleLog` contract is enough for the remaining replay stage/result
      shell and after the current dynamic/static import warning is either
      accepted or cleaned up.
