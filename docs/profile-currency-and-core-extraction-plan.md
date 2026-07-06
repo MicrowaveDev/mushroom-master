@@ -881,6 +881,10 @@ localized reward labels, currency/reward stats, combatant DTOs, and local
 The next low-risk catalog page slice added a neutral `CatalogPageScreen` core
 frame and moved `RecipesScreen` to use it while keeping recipe copy and the
 artifact catalog browser wiring local.
+The next prep-layout slice added a neutral `PrepScreen` core shell for the
+topbar, workspace, reconnecting notice, actions, and overlay slots while
+leaving Mushroom bag-row math, drag/drop, shop mutations, ready/abandon events,
+and fusion reveal queues local.
 
 Post-implementation review, 2026-07-06:
 
@@ -888,15 +892,17 @@ Post-implementation review, 2026-07-06:
   `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
   `ShopZone`, plus `RecipeCard` / `RecipeList` and
   `ArtifactCatalogBrowser`, plus `ReplayDuel`, `ReplayScreen`, and the generic
-  `CatalogPageScreen` frame used by `RecipesScreen`, were moved by physically
-  copying or distilling current Mushroom files into `backpack-game-core`, then
-  neutralizing them through DTO props, labels, slots, class hooks, and neutral
-  events. Mushroom wrappers preserve old props/events and product visuals.
+  `CatalogPageScreen` frame used by `RecipesScreen`, and the slot-based
+  `PrepScreen` layout shell, were moved by physically copying or distilling
+  current Mushroom files into `backpack-game-core`, then neutralizing them
+  through DTO props, labels, slots, class hooks, and neutral events. Mushroom
+  wrappers preserve old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `4cc85c8`. Replay and catalog
-  shell validation passed with core `npm test` and `npm pack --dry-run`,
-  Mushroom focused replay/recipes wrapper tests, Mushroom `npm test` /
+- Latest verified core SHA for this review: `662d1b3`. Replay, catalog, and
+  prep layout-shell validation passed with core `npm test` and
+  `npm pack --dry-run`, Mushroom focused replay/recipes/prep wrapper tests,
+  Mushroom `npm test` /
   `game:build`, and Meat `game:test` / `game:build` /
   `game:test:browser`. Run hub
   `npm run verify:backpack-core` after both consumer pointer commits are pushed

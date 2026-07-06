@@ -1,5 +1,6 @@
 import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
 import { getEffectiveShape, normalizeRotation } from '../../../app/shared/bag-shape.js';
+import { PrepScreen as CorePrepScreen } from '@microwavedev/backpack-game-core/vue/components';
 import { RunHud } from '../components/prep/RunHud.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
 import { InventoryZone } from '../components/prep/InventoryZone.js';
@@ -25,6 +26,7 @@ export const PrepScreen = {
     'fusion-reveal-complete'
   ],
   components: {
+    CorePrepScreen,
     RunHud,
     BackpackZone,
     InventoryZone,
@@ -114,49 +116,54 @@ export const PrepScreen = {
     }
   },
   template: `
-    <section class="prep-screen" :data-testid="state.bootstrapReady ? 'prep-ready' : null">
-      <div class="prep-topbar">
-        <h2 class="run-round-heading">{{ t.round }} {{ state.gameRun.currentRound }}</h2>
+    <core-prep-screen
+      :ready="!!state.bootstrapReady"
+      :round-label="t.round"
+      :round-number="state.gameRun.currentRound"
+      :show-reconnecting="state.gameRun.mode === 'challenge' && state.sseConnected === false"
+      :reconnecting-text="t.reconnecting"
+    >
+      <template #hud>
         <run-hud :state="state" :t="t" />
-      </div>
+      </template>
 
-      <div class="prep-workspace">
-        <div class="prep-loadout-column">
-          <backpack-zone
-            :state="state"
-            :t="t"
-            :container-artifacts="containerArtifacts"
-            :get-artifact="getArtifact"
-            :format-artifact-bonus="formatArtifactBonus"
-            :preferred-orientation="preferredOrientation"
-            :fusion-ingredient-row-ids="fusionIngredientRowIds"
-            :fusion-candidate-row-ids="fusionCandidateRowIds"
-            @auto-place="$emit('auto-place', $event)"
-            @container-dragover="$emit('container-dragover', $event)"
-            @container-drop="$emit('container-drop', $event)"
-          />
+      <template #loadout>
+        <backpack-zone
+          :state="state"
+          :t="t"
+          :container-artifacts="containerArtifacts"
+          :get-artifact="getArtifact"
+          :format-artifact-bonus="formatArtifactBonus"
+          :preferred-orientation="preferredOrientation"
+          :fusion-ingredient-row-ids="fusionIngredientRowIds"
+          :fusion-candidate-row-ids="fusionCandidateRowIds"
+          @auto-place="$emit('auto-place', $event)"
+          @container-dragover="$emit('container-dragover', $event)"
+          @container-drop="$emit('container-drop', $event)"
+        />
 
-          <inventory-zone
-            :state="state"
-            :t="t"
-            :builder-totals="builderTotals"
-            :total-rows="totalRows"
-            :bag-rows="bagRows"
-            :get-artifact="getArtifact"
-            :placement-preview-at="placementPreviewAt"
-            :fusion-ingredient-row-ids="fusionIngredientRowIds"
-            :fusion-candidate-row-ids="fusionCandidateRowIds"
-            @unplace="$emit('unplace', $event)"
-            @rotate="$emit('rotate', $event)"
-            @cell-drop="$emit('cell-drop', $event)"
-            @inventory-drag-start="$emit('inventory-drag-start', $event)"
-            @drag-end="$emit('drag-end')"
-            @deactivate-bag="$emit('deactivate-bag', $event)"
-            @rotate-bag="$emit('rotate-bag', $event)"
-            @bag-chip-drag-start="$emit('bag-chip-drag-start', $event)"
-          />
-        </div>
+        <inventory-zone
+          :state="state"
+          :t="t"
+          :builder-totals="builderTotals"
+          :total-rows="totalRows"
+          :bag-rows="bagRows"
+          :get-artifact="getArtifact"
+          :placement-preview-at="placementPreviewAt"
+          :fusion-ingredient-row-ids="fusionIngredientRowIds"
+          :fusion-candidate-row-ids="fusionCandidateRowIds"
+          @unplace="$emit('unplace', $event)"
+          @rotate="$emit('rotate', $event)"
+          @cell-drop="$emit('cell-drop', $event)"
+          @inventory-drag-start="$emit('inventory-drag-start', $event)"
+          @drag-end="$emit('drag-end')"
+          @deactivate-bag="$emit('deactivate-bag', $event)"
+          @rotate-bag="$emit('rotate-bag', $event)"
+          @bag-chip-drag-start="$emit('bag-chip-drag-start', $event)"
+        />
+      </template>
 
+      <template #shop>
         <shop-zone
           :state="state"
           :t="t"
@@ -173,27 +180,27 @@ export const PrepScreen = {
           @sell-dragleave="$emit('sell-dragleave')"
           @sell-drop="$emit('sell-drop', $event)"
         />
-      </div>
+      </template>
 
-      <div v-if="state.gameRun.mode === 'challenge' && state.sseConnected === false" class="prep-reconnecting" data-testid="sse-reconnecting">
-        {{ t.reconnecting }}
-      </div>
+      <template #actions>
+        <prep-actions
+          :state="state"
+          :t="t"
+          @signal-ready="$emit('signal-ready')"
+          @abandon="$emit('abandon')"
+        />
+      </template>
 
-      <prep-actions
-        :state="state"
-        :t="t"
-        @signal-ready="$emit('signal-ready')"
-        @abandon="$emit('abandon')"
-      />
-
-      <fusion-reveal
-        v-if="state.fusionRevealQueue?.length"
-        :key="state.fusionRevealQueue[0]?.id || state.fusionRevealQueue[0]?.recipeId || state.fusionRevealQueue.length"
-        :reveal="state.fusionRevealQueue[0]"
-        :state="state"
-        :get-artifact="getArtifact"
-        @done="$emit('fusion-reveal-complete')"
-      />
-    </section>
+      <template #overlay>
+        <fusion-reveal
+          v-if="state.fusionRevealQueue?.length"
+          :key="state.fusionRevealQueue[0]?.id || state.fusionRevealQueue[0]?.recipeId || state.fusionRevealQueue.length"
+          :reveal="state.fusionRevealQueue[0]"
+          :state="state"
+          :get-artifact="getArtifact"
+          @done="$emit('fusion-reveal-complete')"
+        />
+      </template>
+    </core-prep-screen>
   `
 };

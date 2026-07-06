@@ -218,10 +218,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `4cc85c8`
-  (`Add neutral catalog page shell`)
-- latest runtime/API core commit: `4cc85c8`
-  (`Add neutral catalog page shell`)
+- latest consumed core commit: `662d1b3`
+  (`Add neutral prep screen shell`)
+- latest runtime/API core commit: `662d1b3`
+  (`Add neutral prep screen shell`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -280,6 +280,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | `web/src/components/prep/BackpackZone.js` | Wraps core `BackpackZone`. | Container artifacts, fusion highlights, artifact names, local grid rendering, and placement events stay local. |
 | `web/src/components/prep/InventoryZone.js` | Wraps core `InventoryZone`. | Active-bag chips, placement preview, stat/footer slots, local grids/stats, and drag events stay local. |
 | `web/src/components/prep/ShopZone.js` | Wraps core `ShopZone` plus core `shapeShopItemRows`. | Prices, budget, catalog descriptions, fusion classes, sell-zone bridge, local previews, and route events stay local. |
+| `web/src/pages/PrepScreen.js` | Wraps core `PrepScreen` layout shell with slots for existing prep zones. | Bag row math, total-row calculation, refresh/sell pricing, drag/drop events, shop actions, ready/abandon events, and fusion reveal queue stay local. |
 | `web/src/components/HomeSocialSidebar.js` | Uses core `RecipeList`; other structure remains local. | Telegram sharing, friends/challenges, activity panels, local artifact previews, and social navigation stay local. |
 | `web/src/pages/FusionAnimationLabScreen.js` | Uses core `RecipeCard` / `RecipeList`. | Lab playback state, Mushroom recipe catalog, artifact lookup, local reveal/grid/stat rendering stay local. |
 | `web/src/pages/HomeScreen.js` | Uses core `AssetRollResultPanel`, `GachaPackCardList`, and wallet/gacha DTO helpers. | Home route orchestration, character carousel, wallet checkout calls, asset roll actions, social sidebar, and product copy stay local. |
@@ -310,7 +311,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | --- | --- | --- |
 | `ReplayScreen.js` | Extracted neutral shell with Mushroom adapter. | Core owns structure; Mushroom owns replay state, route events, and fighter rendering. |
 | `RecipesScreen.js` | Extracted generic catalog page shell with Mushroom adapter. | Core owns only the generic cover/content frame; Mushroom owns recipe copy and catalog browser wiring. |
-| `PrepScreen.js` | Adapter-needed, high risk. | Depends on full run state, drag/drop orchestration, active-bag mutation, fusion reveal queue, product grid/art rendering, and many route events. Move only after a documented prep controller/page DTO contract exists. |
+| `PrepScreen.js` | Outer layout shell extracted; controller remains adapter-needed and high risk. | Core owns only the topbar/workspace/reconnecting/actions/overlay slots. Full run state, drag/drop orchestration, active-bag mutation, fusion reveal queue, product grid/art rendering, and route events remain local until a prep controller/page DTO contract exists. |
 | `RunCompleteScreen.js` | Adapter-needed. | Needs run-complete DTO helpers for season points, achievements, rewards, actions, and product rank/badge assets before shell extraction. |
 | `RunSummaryScreen.js` | Adapter-needed. | Needs summary DTO helpers and route callbacks for replay loading; product character assets and outcome copy stay local. |
 | `HomeScreen.js` | Adapter-needed, high risk. | Mixes profile, wallet, gacha, character selection, social sidebar, run actions, asset rolls, and product art. Split smaller panels first. |
@@ -326,10 +327,9 @@ final CSS, product catalogs, image paths, generated art, and localization.
 
 1. Do not move another page until the page has a DTO/adapter contract similar
    to `ReplayScreen`.
-2. Best next valuable but risky target: `PrepScreen`, after a headless prep
-   controller contract separates run state, drag/drop commands, placement
-   previews, fusion reveal queue, shop actions, and ready/abandon actions from
-   the visual shell.
+2. Best next valuable but risky target: a headless prep controller contract
+   that separates run state, drag/drop commands, placement previews, fusion
+   reveal queue, shop actions, and ready/abandon actions from the visual shell.
 3. Continue extracting smaller Home/Profile/RunComplete panels before moving
    those pages wholesale.
 
