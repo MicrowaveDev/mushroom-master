@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `c166e286fcb1c7b0637e7719777c7e1063afeec7`
-- core short SHA: `c166e28`
-- core commit: `Add server route descriptors`
-- runtime/API baseline: `c166e28` (`Add server route descriptors`)
-- game pointer commit: `08d9822` (`Consume core server route descriptors`)
+- core SHA: `74a7e82fac3a9bc013b6561e1cfa387a27049c4e`
+- core short SHA: `74a7e82`
+- core commit: `Add auth route server module`
+- runtime/API baseline: `74a7e82` (`Add auth route server module`)
+- game pointer commit: `ec91176` (`Consume core auth route descriptors`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-07 | `ec91176` | `74a7e82` | Auth route server module | Core added provider-neutral auth/bootstrap route names, `createAuthRouteGroup`, and `createAuthRoutesServerModule`. Mushroom now binds its existing Telegram/web/logout/bootstrap/dev-session handlers through the core auth route family while keeping provider verification, session persistence, rate limits, player lookup, and final path choices local. Meat pins the same SHA and verifies the route family against its current auth/bootstrap paths. |
 | 2026-07-06 | `08d9822` | `c166e28` | Server route descriptors | Core added framework-neutral route descriptors, route groups, descriptor flattening, and adapter-driven route binding. This lets future `core.auth`, `core.profile`, `core.run`, `core.wallet`, `core.assets`, `core.gacha`, and `core.support` modules expose route factories without importing a product HTTP stack. Mushroom and Meat still own concrete repositories, app bootstrap, middleware order, static files, provider callbacks, credentials, and route mounting. |
 | 2026-07-06 | `5ddffd5` | `dbfa321` | Auth session response shapers | Core added `modules/auth` for public auth user normalization plus login/session/logout response envelopes over already-authenticated product rows. Mushroom now delegates Telegram/web auth response bodies and logout acknowledgement through core; Meat delegates token/player/bootstrap login envelopes through core. Verification, dev-login policy, auth-code lifecycle, session persistence, middleware, and player lookup stay local. |
 | 2026-07-06 | `dc45753` | `80ece82` | Shared route client error messages | Core hardened `client` so failed HTTP responses and `{ success: false }` envelopes preserve API error text from both string errors and `{ message }` error objects. Mushroom continues using the shared client through its local route/session adapter; Meat now uses the same client in its frontend fetch adapter. |
