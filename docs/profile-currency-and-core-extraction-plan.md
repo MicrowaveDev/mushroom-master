@@ -1454,8 +1454,12 @@ code as practical.
      APIs rather than local-authoritative writes.
    - Package the first local app after the storage mode and feature gates are
      explicit, not before.
-   - Add community API clients for leaderboard/friends/challenges from local
-     mode as read-only or narrow-write surfaces first.
+   - Partially done: add community API clients for leaderboard/friends/
+     challenges from local mode as read-only or narrow-write surfaces first.
+     Meat now has `/api/community/status` and a read-only
+     `/api/community/leaderboard` proxy to a configured hosted server. Remaining
+     surfaces: friends/challenges, optional account linking, shared seasons,
+     and any narrow-write community submissions.
    - Treat account-linked progress sync and offline action-log replay as later
      product decisions, not part of the first local-app contract.
 
