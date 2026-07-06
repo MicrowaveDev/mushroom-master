@@ -540,10 +540,11 @@ module correction: backend server logic should move through Geesome-style core
 module factories and app-declared module lists, with Mushroom/Meat retaining
 DB, credentials, runtime policy, and product-specific modules. Updated
 2026-07-06 after the aggressive frontend component ports:
-`PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, `ShopZone`, and
-the recipe card/list shells are now stable core Vue exports consumed by
-Mushroom wrappers and Meat import smoke tests, but page shells are still blocked
-by remaining product-stateful orchestration and artifact-renderer dependencies.
+`PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, `ShopZone`,
+recipe card/list shells, and the catalog browser shell are now stable core Vue
+exports consumed by Mushroom wrappers and Meat import smoke tests, but page
+shells are still blocked by remaining product-stateful orchestration and
+artifact-renderer dependencies.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -859,20 +860,26 @@ recipe-bearing sidebar/lab surfaces into core as neutral `RecipeCard` and
 `RecipeList` shells using already-shaped recipe DTOs, localized result copy,
 active/interactive state, keyboard selection, and visual/stat slots; Mushroom
 now maps fusion recipe sources, artifact grids, stats, and localized copy in
-`HomeSocialSidebar` and `FusionAnimationLabScreen`. No page shells have moved
+`HomeSocialSidebar` and `FusionAnimationLabScreen`. The next catalog slice
+copied `web/src/components/ArtifactCatalogBrowser.js` into core as a neutral
+`ArtifactCatalogBrowser` shell using already-shaped group rows, selected-detail
+facts, selected recipe DTOs, labels, resize events, and visual/stat slots;
+Mushroom now maps catalog sorting/grouping, artifact grids, stats, recipe
+sources, localized copy, and CSS ownership locally. No page shells have moved
 yet.
 
 Post-implementation review, 2026-07-06:
 
 - Verified shipped F2 slices:
   `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
-  `ShopZone`, plus `RecipeCard` / `RecipeList`, were moved by physically
-  copying current Mushroom files into `backpack-game-core`, then neutralizing
-  them through DTO props, labels, slots, class hooks, and neutral events.
-  Mushroom wrappers preserve old props/events and product visuals.
+  `ShopZone`, plus `RecipeCard` / `RecipeList` and
+  `ArtifactCatalogBrowser`, were moved by physically copying current Mushroom
+  files into `backpack-game-core`, then neutralizing them through DTO props,
+  labels, slots, class hooks, and neutral events. Mushroom wrappers preserve
+  old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `dcd8a4f`. Validation passed:
+- Latest verified core SHA for this review: `a25130e`. Validation passed:
   core `npm test` and `npm pack --dry-run`, Mushroom focused wrapper tests,
   Mushroom `npm test` / `game:build`, Meat `game:test` / `game:build` /
   `game:test:browser`, and hub `npm run verify:backpack-core`.
@@ -882,14 +889,12 @@ Post-implementation review, 2026-07-06:
   grid/art rendering. Re-audit the remaining state/event ownership before
   attempting a shared `PrepScreen` shell.
 - Next F2 implementation order:
-  1. `ArtifactCatalogBrowser` detail/group shell: now that recipe cards are
-     shared, move only the catalog layout after group rows, selected-detail
-     facts, preview grids, recipe ingredient flows, locale callbacks, and slots
-     can be supplied as DTOs instead of product catalogs or route names.
-  2. `ReplayDuel` / replay presentation: move after the already-core
+  1. `ReplayDuel` / replay presentation: move after the already-core
      `BattleLog` contract is enough for the remaining replay stage/result
      shell and after the current dynamic/static import warning is either
      accepted or cleaned up.
+  2. Re-audit `PrepScreen`, `RecipesScreen`, and other page shells only after
+     replay presentation and route/state orchestration are adapterized.
 - Do **not** move `ArtifactFigure` as-is. It still contains hardcoded
   Mushroom artifact ids, glyph shapes, visual taxonomy, bitmap paths, and bag
   shape adapters. If reusable visual rendering is needed, first split a core

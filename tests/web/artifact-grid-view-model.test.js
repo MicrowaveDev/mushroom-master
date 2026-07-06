@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/grid.js';
+import { ArtifactCatalogBrowser } from '../../web/src/components/ArtifactCatalogBrowser.js';
 import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
@@ -353,4 +354,73 @@ test('[artifact-grid] recipe surfaces keep Mushroom compatibility over core reci
   assert.match(FusionAnimationLabScreen.template, /<recipe-card/);
   assert.match(FusionAnimationLabScreen.template, /<recipe-list/);
   assert.match(FusionAnimationLabScreen.template, /@select="playRecipe\(\$event\.index, false\)"/);
+});
+
+test('[artifact-grid] artifact catalog browser keeps Mushroom compatibility over core shell', () => {
+  const recipe = artifactFusionRecipes[0];
+  const result = {
+    id: recipe.resultArtifactId,
+    family: 'damage',
+    width: 2,
+    height: 1,
+    price: 4,
+    name: { en: 'Fusion Result' },
+    description: { en: 'A fused artifact.' }
+  };
+  const selectedRecipe = {
+    ...recipe,
+    ingredients: recipe.ingredientArtifactIds.map((id) => ({ id, width: 1, height: 1 })),
+    result
+  };
+  const context = {
+    state: { lang: 'en', bootstrap: { artifacts: [result] } },
+    t: {
+      artifactCatalogAll: 'All',
+      artifactCatalogGridTitle: 'Catalog',
+      artifactCatalogCloseDetails: 'Close',
+      recipeIngredients: 'Ingredients',
+      recipeFusionOnly: 'Fusion',
+      artifactCatalogFootprint: 'Footprint',
+      artifactCatalogPrice: 'Price',
+      artifactCatalogFamily: 'Family',
+      artifactCatalogSlots: 'Slots',
+      artifactFamily_damage: 'Damage'
+    },
+    selectedArtifact: result,
+    selectedRecipe,
+    selectedOrientation: { width: 2, height: 1 },
+    selectedPreviewItem: [{ artifactId: result.id, x: 0, y: 0, width: 2, height: 1 }],
+    selectedDescription: 'A fused artifact.',
+    artifactName: ArtifactCatalogBrowser.methods.artifactName,
+    familyLabel: ArtifactCatalogBrowser.methods.familyLabel,
+    footprintLabel: ArtifactCatalogBrowser.methods.footprintLabel,
+    priceLabel: ArtifactCatalogBrowser.methods.priceLabel,
+    previewOrientation: ArtifactCatalogBrowser.methods.previewOrientation
+  };
+
+  assert.deepEqual(ArtifactCatalogBrowser.computed.catalogLabels.call(context), {
+    all: 'All',
+    gridTitle: 'Catalog',
+    closeDetails: 'Close',
+    ingredients: 'Ingredients'
+  });
+  assert.deepEqual(ArtifactCatalogBrowser.computed.selectedCatalogItem.call(context), {
+    id: recipe.resultArtifactId,
+    title: 'Fusion Result',
+    description: 'A fused artifact.',
+    kicker: 'Fusion',
+    orientation: { width: 2, height: 1 },
+    previewItem: [{ artifactId: result.id, x: 0, y: 0, width: 2, height: 1 }],
+    statsAriaLabel: 'Fusion Result stats',
+    facts: [
+      { key: 'footprint', label: 'Footprint', value: '2x1' },
+      { key: 'price', label: 'Price', value: 4 },
+      { key: 'family', label: 'Family', value: 'Damage' },
+      { key: 'slots', label: 'Slots', value: 0, visible: false }
+    ]
+  });
+  assert.match(ArtifactCatalogBrowser.template, /<core-artifact-catalog-browser/);
+  assert.match(ArtifactCatalogBrowser.template, /#group-board/);
+  assert.match(ArtifactCatalogBrowser.template, /#detail-stats/);
+  assert.match(ArtifactCatalogBrowser.template, /#recipe-artifact/);
 });

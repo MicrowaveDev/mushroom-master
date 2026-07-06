@@ -1,8 +1,8 @@
 import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
+import { ArtifactCatalogBrowser as CoreArtifactCatalogBrowser } from '@microwavedev/backpack-game-core/vue/components';
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { ArtifactStatSummary } from './ArtifactStatSummary.js';
-import './ArtifactCatalogBrowser.css';
 
 function artifactDisplayName(artifact, lang) {
   return artifact?.name?.[lang] || artifact?.name?.en || artifact?.id || '';
@@ -31,7 +31,7 @@ const MAX_GROUP_COLUMNS = 18;
 
 export const ArtifactCatalogBrowser = {
   name: 'ArtifactCatalogBrowser',
-  components: { ArtifactGridBoard, ArtifactStatSummary },
+  components: { ArtifactGridBoard, ArtifactStatSummary, CoreArtifactCatalogBrowser },
   props: {
     state: { type: Object, required: true },
     t: { type: Object, required: true },
@@ -144,33 +144,55 @@ export const ArtifactCatalogBrowser = {
     },
     selectedRowIds() {
       return this.selectedArtifactId ? new Set([this.selectedArtifactId]) : new Set();
-    }
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.updateGroupBoardColumns();
-      if (typeof ResizeObserver !== 'undefined' && this.$refs.gridPanel) {
-        this.catalogResizeObserver = new ResizeObserver(this.updateGroupBoardColumns);
-        this.catalogResizeObserver.observe(this.$refs.gridPanel);
-      }
-      if (typeof window !== 'undefined') {
-        window.addEventListener('resize', this.updateGroupBoardColumns);
-      }
-    });
-  },
-  beforeUnmount() {
-    if (this.catalogResizeObserver) {
-      this.catalogResizeObserver.disconnect();
-      this.catalogResizeObserver = null;
-    }
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.updateGroupBoardColumns);
+    },
+    catalogLabels() {
+      return {
+        all: this.t.artifactCatalogAll,
+        gridTitle: this.t.artifactCatalogGridTitle,
+        closeDetails: this.t.artifactCatalogCloseDetails,
+        ingredients: this.t.recipeIngredients
+      };
+    },
+    selectedCatalogItem() {
+      if (!this.selectedArtifact) return null;
+      return {
+        id: this.selectedArtifact.id,
+        title: this.artifactName(this.selectedArtifact),
+        description: this.selectedDescription,
+        kicker: this.selectedRecipe ? this.t.recipeFusionOnly : this.familyLabel(this.selectedArtifact),
+        orientation: this.selectedOrientation,
+        previewItem: this.selectedPreviewItem,
+        statsAriaLabel: `${this.artifactName(this.selectedArtifact)} stats`,
+        facts: [
+          {
+            key: 'footprint',
+            label: this.t.artifactCatalogFootprint,
+            value: this.footprintLabel(this.selectedArtifact)
+          },
+          {
+            key: 'price',
+            label: this.t.artifactCatalogPrice,
+            value: this.priceLabel(this.selectedArtifact)
+          },
+          {
+            key: 'family',
+            label: this.t.artifactCatalogFamily,
+            value: this.familyLabel(this.selectedArtifact)
+          },
+          {
+            key: 'slots',
+            label: this.t.artifactCatalogSlots,
+            value: this.selectedArtifact.slotCount || 0,
+            visible: this.selectedArtifact.family === 'bag'
+          }
+        ]
+      };
     }
   },
   methods: {
-    updateGroupBoardColumns() {
-      const panelWidth = this.$refs.gridPanel?.clientWidth || 0;
-      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : panelWidth;
+    updateGroupBoardColumns(metrics = {}) {
+      const panelWidth = metrics.panelWidth || 0;
+      const viewportWidth = metrics.viewportWidth || (typeof window !== 'undefined' ? window.innerWidth : panelWidth);
       const compact = viewportWidth <= 560 || panelWidth <= 520;
       const cellSize = compact ? 42 : 50;
       const gap = compact ? 5 : 7;
@@ -278,153 +300,60 @@ export const ArtifactCatalogBrowser = {
     }
   },
   template: `
-    <section
-      class="artifact-catalog-browser"
-      :class="{ 'artifact-catalog-browser--has-selection': !!selectedArtifactId }"
-      data-testid="artifact-catalog-browser"
+    <core-artifact-catalog-browser
+      :groups="artifactGroups"
+      :count="artifacts.length"
+      :selected-item="selectedCatalogItem"
+      :selected-recipe="selectedRecipe"
+      :labels="catalogLabels"
+      :selected-row-ids="selectedRowIds"
+      :highlighted-title="artifactName(selectedArtifact)"
+      @select-item="selectArtifact($event.artifactId)"
+      @close-details="clearSelection"
+      @grid-panel-resize="updateGroupBoardColumns"
     >
-      <div ref="gridPanel" class="artifact-catalog-grid-panel panel">
-        <div class="artifact-catalog-grid-header">
-          <div>
-            <p class="eyebrow">{{ t.artifactCatalogAll }}</p>
-            <h3>{{ t.artifactCatalogGridTitle }}</h3>
-          </div>
-          <span class="artifact-catalog-count">{{ artifacts.length }}</span>
-        </div>
-
-        <div class="artifact-catalog-groups">
-          <section
-            v-for="group in artifactGroups"
-            :key="group.id"
-            class="artifact-catalog-group"
-            data-testid="artifact-catalog-group"
-            :data-artifact-group="group.id"
-          >
-            <div class="artifact-catalog-group-header">
-              <h4>{{ group.label }}</h4>
-              <span>{{ group.artifacts.length }}</span>
-            </div>
-            <artifact-grid-board
-              class="artifact-catalog-group-board"
-              variant="catalog"
-              :columns="group.columns"
-              :rows="group.rows"
-              :items="group.items"
-              :get-artifact="getArtifact"
-              :clickable-pieces="true"
-              :highlighted-row-ids="selectedRowIds"
-              :highlighted-title="artifactName(selectedArtifact)"
-              @piece-click="selectArtifact($event.artifactId)"
-            />
-          </section>
-        </div>
-      </div>
-
-      <aside
-        v-if="selectedArtifact"
-        class="artifact-catalog-detail"
-        data-testid="artifact-catalog-detail"
-        :data-artifact-id="selectedArtifact.id"
-      >
-        <button
-          type="button"
-          class="artifact-catalog-detail-close"
-          :aria-label="t.artifactCatalogCloseDetails"
-          @pointerdown.stop.prevent="clearSelection"
-          @click.stop.prevent="clearSelection"
-        >×</button>
-
-        <div class="artifact-catalog-detail-top">
-          <div class="artifact-catalog-detail-art" aria-hidden="true">
-            <artifact-grid-board
-              variant="catalog"
-              :columns="selectedOrientation.width"
-              :rows="selectedOrientation.height"
-              :items="selectedPreviewItem"
-              :get-artifact="getArtifact"
-            />
-          </div>
-          <div class="artifact-catalog-detail-copy">
-            <span class="artifact-catalog-detail-kicker">
-              {{ selectedRecipe ? t.recipeFusionOnly : familyLabel(selectedArtifact) }}
-            </span>
-            <h3>{{ artifactName(selectedArtifact) }}</h3>
-            <p v-if="selectedDescription">{{ selectedDescription }}</p>
-          </div>
-        </div>
-
+      <template #group-board="{ group, selectedRowIds, highlightedTitle, selectItem }">
+        <artifact-grid-board
+          class="artifact-catalog-group-board"
+          variant="catalog"
+          :columns="group.columns"
+          :rows="group.rows"
+          :items="group.items"
+          :get-artifact="getArtifact"
+          :clickable-pieces="true"
+          :highlighted-row-ids="selectedRowIds"
+          :highlighted-title="highlightedTitle"
+          @piece-click="selectItem($event.artifactId, $event)"
+        />
+      </template>
+      <template #detail-visual="{ item }">
+        <artifact-grid-board
+          variant="catalog"
+          :columns="item.orientation.width"
+          :rows="item.orientation.height"
+          :items="item.previewItem"
+          :get-artifact="getArtifact"
+        />
+      </template>
+      <template #detail-stats="{ item, className }">
         <artifact-stat-summary
-          class="artifact-catalog-detail-stats"
+          :class="className"
           :artifact="selectedArtifact"
           :lang="state.lang"
           :include-zeroes="false"
           variant="compact"
-          :aria-label="artifactName(selectedArtifact) + ' stats'"
+          :aria-label="item.statsAriaLabel"
         />
-
-        <dl class="artifact-catalog-facts">
-          <div>
-            <dt>{{ t.artifactCatalogFootprint }}</dt>
-            <dd>{{ footprintLabel(selectedArtifact) }}</dd>
-          </div>
-          <div>
-            <dt>{{ t.artifactCatalogPrice }}</dt>
-            <dd>{{ priceLabel(selectedArtifact) }}</dd>
-          </div>
-          <div>
-            <dt>{{ t.artifactCatalogFamily }}</dt>
-            <dd>{{ familyLabel(selectedArtifact) }}</dd>
-          </div>
-          <div v-if="selectedArtifact.family === 'bag'">
-            <dt>{{ t.artifactCatalogSlots }}</dt>
-            <dd>{{ selectedArtifact.slotCount || 0 }}</dd>
-          </div>
-        </dl>
-
-        <section
-          v-if="selectedRecipe"
-          class="artifact-catalog-selected-recipe"
-          data-testid="artifact-catalog-selected-recipe"
-          :data-selected-result-artifact-id="selectedRecipe.resultArtifactId"
-        >
-          <h4>{{ t.recipeIngredients }}</h4>
-          <div class="artifact-catalog-recipe-flow" aria-hidden="true">
-            <div class="artifact-catalog-recipe-ingredients">
-              <button
-                v-for="ingredient in selectedRecipeIngredients"
-                :key="selectedRecipe.id + ':' + ingredient.id"
-                type="button"
-                class="artifact-catalog-recipe-artifact"
-                :data-artifact-id="ingredient.id"
-                @click="selectArtifact(ingredient.id)"
-              >
-                <artifact-grid-board
-                  variant="catalog"
-                  :columns="previewOrientation(ingredient).width"
-                  :rows="previewOrientation(ingredient).height"
-                  :items="previewItem(ingredient)"
-                  :get-artifact="getArtifact"
-                />
-              </button>
-            </div>
-            <span class="recipe-magnet-mark">+</span>
-            <button
-              type="button"
-              class="artifact-catalog-recipe-artifact artifact-catalog-recipe-artifact--result"
-              :data-artifact-id="selectedRecipe.resultArtifactId"
-              @click="selectArtifact(selectedRecipe.resultArtifactId)"
-            >
-              <artifact-grid-board
-                variant="catalog"
-                :columns="previewOrientation(selectedRecipe.result).width"
-                :rows="previewOrientation(selectedRecipe.result).height"
-                :items="previewItem(selectedRecipe.result)"
-                :get-artifact="getArtifact"
-              />
-            </button>
-          </div>
-        </section>
-      </aside>
-    </section>
+      </template>
+      <template #recipe-artifact="{ artifact }">
+        <artifact-grid-board
+          variant="catalog"
+          :columns="previewOrientation(artifact).width"
+          :rows="previewOrientation(artifact).height"
+          :items="previewItem(artifact)"
+          :get-artifact="getArtifact"
+        />
+      </template>
+    </core-artifact-catalog-browser>
   `
 };

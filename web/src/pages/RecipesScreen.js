@@ -1,4 +1,5 @@
 import { ArtifactCatalogBrowser } from '../components/ArtifactCatalogBrowser.js';
+import '../components/ArtifactCatalogBrowser.css';
 
 export const RecipesScreen = {
   name: 'RecipesScreen',
