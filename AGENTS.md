@@ -27,6 +27,21 @@ first, then stage the nested submodule pointer plus any `package-lock.json` /
 adapter changes in `mushroom-master`; do not hand off with only a dirty nested
 submodule pointer.
 
+Cross-game runtime goals: when working on Mushroom Battles backend, storage,
+deploy config, shared-core adapters, or code that Meat should reuse, keep the
+two-mode target from
+[P13.7A - Deployment Modes And Storage Direction](docs/profile-currency-and-core-extraction-plan.md#p137a---deployment-modes-and-storage-direction)
+in view. Hosted server mode should use PostgreSQL in Docker as authoritative
+community/shared state. Local app mode should use SQLite for local-only
+progress and call the hosted server only for community features such as
+leaderboards, friends/challenges, optional account linking, or shared seasons.
+Prefer Sequelize-backed product repositories that can support both dialects,
+and keep `backpack-game-core` persistence-neutral; see also
+[docs/game-core-runtime-contracts.md](docs/game-core-runtime-contracts.md).
+Do not make local-app progress authoritative for paid purchases, gacha seasons,
+support/admin operations, marketplace/trading, or shared rankings unless the
+plan is explicitly updated.
+
 Use the repo-local design workflow at [`/.agent/workflows/ui-design.md`](/Users/microwavedev/workspace/mushroom-master/.agent/workflows/ui-design.md) for both renderer (PDF dossier) and autobattler Mini App UI styling. Before changing any app-frontend visual surface (panels, cards, stat tiles, result screens, headers), read Part 2 — especially the Flat Design Rules, the Stat and Metric Card Pattern, and the Dated Design Signals checklist — and self-audit the change against that list before reporting completion. The workflow-governance rules in this file apply repo-wide. For lore work, the repo-specific lore-routing and lore-review rules in this file take precedence over generic workflow guidance. The UI design file is design-only guidance, not workflow governance.
 
 Before debugging an app-frontend symptom that looks like a "weird visual bug" (truncation, mystery clipping, font/figure oddities, layout drift on certain viewports), check [docs/known-issues.md](/Users/microwavedev/workspace/mushroom-master/docs/known-issues.md) first — it lists recurring traps with documented context and acceptable mitigations so you don't re-investigate from scratch or apply a "fix" that's already been tried and rejected. When you discover a new recurring trap or fix one of the listed entries, update that file in the same change.

@@ -1421,6 +1421,25 @@ code as practical.
    - Decide which community APIs are read-only from local mode at first and
      which can submit player-created state.
 
+5. **Preferred implementation order.**
+   - Add explicit runtime-mode and database-dialect config contracts:
+     `server` vs `local`, `postgres` vs `sqlite`, community-server URL, and
+     feature-gate flags.
+   - Standardize hosted/server deploys on PostgreSQL in Docker for both games.
+   - Move Meat from the current JSON / `node:sqlite` store split to
+     Sequelize-backed repositories and migrations.
+   - Keep SQLite as the local-app dialect for both games through the same
+     repository interfaces.
+   - Gate community/paid/admin features by mode so local apps can play offline
+     without becoming authoritative for purchases, gacha seasons, support, or
+     shared rankings.
+   - Package the first local app after the storage mode and feature gates are
+     explicit, not before.
+   - Add community API clients for leaderboard/friends/challenges from local
+     mode as read-only or narrow-write surfaces first.
+   - Treat account-linked progress sync and offline action-log replay as later
+     product decisions, not part of the first local-app contract.
+
 #### P13.8 - Post-Implementation Review Findings
 
 Status: **Updated 2026-07-05 after the second Phase 13 hardening pass.** These
