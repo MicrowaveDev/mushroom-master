@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `63cd85af4f3bfe0da731860c71faf5a9b1001d1f`
-- core short SHA: `63cd85a`
-- core commit: `Add settlement adapter registry helpers`
-- runtime/API baseline: `63cd85a` (`Add settlement adapter registry helpers`)
-- game pointer commit: `6e5692a` (`Use core settlement adapter registry`)
+- core SHA: `0905b577bf1edfa6286eff318506b37a00314a04`
+- core short SHA: `0905b57`
+- core commit: `Add run state summary shaper`
+- runtime/API baseline: `0905b57` (`Add run state summary shaper`)
+- game pointer commit: `2f9ec0c` (`Document run state summary core extraction`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-06 | `2f9ec0c` | `0905b57` | Run state summary shaper | Core added provider-driven `shapeRunStateSummary` in `modules/run`, so apps can share active-run response DTO assembly while injecting product-local loadout totals, loadout cost, shop row formatting, and battle summary policy. Meat now delegates `app/server/meat-service.js` run shaping through the helper; Mushroom pins the same SHA and keeps its richer run-service response assembly local for now. |
 | 2026-07-05 | `6e5692a` | `63cd85a` | Settlement adapter registry helpers | Core added `modules/wallet/settlement-adapters` for generic CSV/JSON settlement input parsing, scoped field lookup, configurable provider record mapping, and package export/type coverage. Mushroom now keeps `app/server/services/provider-settlement-adapters.js` as the local provider field-map wrapper while provider SDKs, callbacks, reconciliation persistence, and ops runbooks stay local; Meat pins the same SHA and verifies the new wallet subpath. |
 | 2026-07-05 | `cbec687` | `ec328d1` | Run readiness server module | Core added `createRunReadinessServerModule` so app module lists can register the shared readiness/idle/lock manager. Mushroom now creates `app/server/services/ready-manager.js` through the module loader while keeping route wiring, active-run validation, challenge resolution, SSE delivery, and compatibility exports local; Meat pins the same SHA and verifies the server-module export. |
 | 2026-07-05 | `e01f6ea` | `b56713e` | Loadout validation service module | Core added `modules/loadout/validation-service` and `createLoadoutValidationServerModule` so app module lists can register loadout validation over injected artifact lookup, pricing, family, placement, and stat policy providers. Mushroom now delegates `app/server/services/loadout-utils.js` through the service path while keeping grid constants, catalog lookup, stat caps, and compatibility exports local; Meat pins the same SHA and verifies the service/server-module exports. |
