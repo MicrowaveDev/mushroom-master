@@ -1283,12 +1283,15 @@ gacha is enabled.
 
 #### P13.6 - Core Extraction Follow-Up
 
-Status: **Plan updated 2026-07-05.** The implementation kept DB transactions,
+Status: **Started 2026-07-06.** The implementation kept DB transactions,
 route wiring, support policy, Telegram/deploy config, and product content in
-Meat. Candidate neutral DTO/planner extraction remains valid after the
-production-parity mechanics settle, and the new server-module lane allows
-shared route factories/service modules once concrete repositories and final app
-wiring stay product-local.
+Meat. The first follow-up extracted provider-driven run-state summary DTO
+shaping into `modules/run`; Meat now passes product-local loadout totals,
+cost, and shop-row formatters through its `#shapeRun` adapter. Remaining
+neutral DTO/planner extraction stays valid after the production-parity
+mechanics settle, and the new server-module lane allows shared route
+factories/service modules once concrete repositories and final app wiring stay
+product-local.
 
 Goal: avoid duplicating Mushroom product logic in Meat while keeping product
 execution local.
@@ -1298,8 +1301,9 @@ execution local.
   importing product routes, DB models, Telegram helpers, payment SDKs, art, or
   CSS.
 - Candidate pure slices: auth/bootstrap payload shaping, product settings
-  validation, support lookup DTOs, run-state summary DTOs, wallet/asset support
-  mutation result DTOs, and shared browser route-client helpers.
+  validation, support lookup DTOs, wallet/asset support mutation result DTOs,
+  and shared browser route-client helpers. Run-state summary DTO shaping has
+  started in core and is consumed by Meat.
 - Keep non-core boundaries strict: DB transactions, concrete repositories,
   provider callbacks, adult-content gates, Telegram deployment policy, product
   catalogs, final route registration, and product policy stay in product repos.
@@ -1386,11 +1390,12 @@ the hub cross-consumer gate pass.
   not connected to provider/webhook/roll logic. Before enabling coin purchases,
   gacha rolls, or pack seasons in Meat, wire payment-intent, provider-event,
   roll, burn, idempotency, and reconciliation records to real flows.
-- **Core extraction follow-up:** reusable DTO/planner candidates remain in Meat
-  after the hardening pass: deploy config validation summaries, support lookup/
-  mutation result DTOs, bootstrap/settings shapers, run-state summaries, and
-  wallet/asset support mutation result shapers. Extract only the pure pieces
-  after the product-local policies settle.
+- **Core extraction follow-up:** first slice started with provider-driven
+  run-state summary DTO shaping in `modules/run`, consumed by Meat. Reusable
+  DTO/planner candidates remain in Meat after the hardening pass: deploy
+  config validation summaries, support lookup/mutation result DTOs,
+  bootstrap/settings shapers, and wallet/asset support mutation result shapers.
+  Extract only the pure pieces after the product-local policies settle.
 - **Release gate update:** Phase 13 is not launch-complete until the above
   storage, runtime, operator, live Telegram, asset, and ledger decisions are
   either implemented or explicitly deferred by the product owner.

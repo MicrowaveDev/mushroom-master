@@ -421,6 +421,9 @@ Later server slices added provider-driven gacha simulation and loadout
 validation service/module factories plus readiness manager module-list
 registration, while concrete pack/catalog, artifact/pricing/grid providers,
 route wiring, and active-run/SSE behavior remain in product repos.
+The Phase 13 extraction follow-up also added provider-driven run-state summary
+DTO shaping to `modules/run`, with Meat passing product-local loadout totals,
+cost, and shop-row formatters while keeping persistence and routes local.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own
