@@ -834,8 +834,12 @@ challenge mode and `signal-ready` event locally. The following animation-shell
 slice copied `web/src/components/prep/FusionReveal.js` into core as a neutral
 `FusionReveal` shell using resolved artifact DTOs, timing/layout props, and an
 artifact render slot; Mushroom now maps reveal IDs, localized labels, and its
-local `ArtifactFigure` through a compatibility wrapper. No page shells have
-moved yet.
+local `ArtifactFigure` through a compatibility wrapper. The following prep-zone
+slice copied `web/src/components/prep/BackpackZone.js` into core as a neutral
+item/drop-zone shell using item DTOs, labels, stat formatter hooks, highlight
+sets, and a visual slot; Mushroom now maps its container artifacts, fusion
+states, and local `ArtifactGridBoard` through a compatibility wrapper. No page
+shells have moved yet.
 
 Goal: move first, then generalize without breaking Mushroom.
 

@@ -58,6 +58,39 @@ test('[artifact-grid] fighter card keeps the Mushroom compatibility prop over co
   assert.equal(FighterCard.props.gridColumns.default, 6);
 });
 
+test('[artifact-grid] backpack zone keeps Mushroom compatibility over core', () => {
+  const labels = BackpackZone.computed.labels.call({
+    t: {
+      container: 'Container',
+      bagSlots: 'slots',
+      containerHint: 'Drag here',
+      fusionPendingHint: 'Pending fusion',
+      fusionCandidateHint: 'Can fuse',
+      recipes: 'Recipes'
+    }
+  });
+  const emitted = [];
+
+  assert.deepEqual(labels, {
+    title: 'Container',
+    bagSlots: 'slots',
+    empty: 'Drag here',
+    pendingTitle: 'Pending fusion',
+    highlightedTitle: 'Can fuse'
+  });
+  assert.equal(BackpackZone.methods.artifactName.call({
+    state: { lang: 'en' }
+  }, { id: 'spore_needle', name: { en: 'Needle' } }), 'Needle');
+  BackpackZone.methods.onSelectItem.call({
+    $emit: (event, payload) => emitted.push([event, payload])
+  }, { artifactId: 'spore_needle', id: 'row_1' });
+  assert.deepEqual(emitted, [['auto-place', { artifactId: 'spore_needle', id: 'row_1' }]]);
+  assert.deepEqual(BackpackZone.emits, ['auto-place', 'container-dragover', 'container-drop']);
+  assert.match(BackpackZone.template, /CoreBackpackZone/);
+  assert.match(BackpackZone.template, /#visual="\{ item, orientation, previewItem \}"/);
+  assert.match(BackpackZone.template, /<artifact-grid-board/);
+});
+
 test('[artifact-grid] prep HUD and sell zone keep Mushroom compatibility over core', () => {
   const hudPlayer = RunHud.computed.player.call({
     state: { gameRun: { player: { coins: 4, wins: 1, livesRemaining: 3 } } }

@@ -1,88 +1,61 @@
 import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
+import { BackpackZone as CoreBackpackZone } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
 
 export const BackpackZone = {
   name: 'BackpackZone',
-  components: { ArtifactGridBoard },
+  components: { ArtifactGridBoard, CoreBackpackZone },
   props: [
     'state', 't', 'containerArtifacts', 'getArtifact', 'formatArtifactBonus',
     'preferredOrientation', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
   ],
   emits: ['auto-place', 'container-dragover', 'container-drop'],
+  computed: {
+    labels() {
+      return {
+        title: this.t?.container,
+        bagSlots: this.t?.bagSlots,
+        empty: this.t?.containerHint,
+        pendingTitle: this.t?.fusionPendingHint || 'Will fuse after this round',
+        highlightedTitle: this.t?.fusionCandidateHint || this.t?.recipes || 'Can fuse by recipe'
+      };
+    }
+  },
   methods: {
     previewOrientation(artifact) {
       return artifactPreviewOrientation(artifact);
     },
-    previewItem(artifact) {
-      const orientation = this.previewOrientation(artifact);
-      return [{ artifactId: artifact.id, rowId: artifact.rowId, x: 0, y: 0, width: orientation.width, height: orientation.height }];
+    artifactName(artifact) {
+      return artifact?.name?.[this.state.lang] || artifact?.name?.en || artifact?.id || '';
     },
-    itemDataset(artifact) {
-      const orientation = this.previewOrientation(artifact);
-      return {
-        'data-artifact-id': artifact.id,
-        'data-artifact-row-id': artifact.rowId || '',
-        'data-artifact-width': orientation.width,
-        'data-artifact-height': orientation.height
-      };
-    },
-    isFusionPending(artifact) {
-      return artifact?.rowId && this.fusionIngredientRowIds?.has(artifact.rowId);
-    },
-    isFusionCandidate(artifact) {
-      return artifact?.rowId && this.fusionCandidateRowIds?.has?.(artifact.rowId);
-    },
-    fusionPendingTitle(artifact) {
-      if (this.isFusionPending(artifact)) return this.t?.fusionPendingHint || 'Will fuse after this round';
-      if (this.isFusionCandidate(artifact)) return this.t?.fusionCandidateHint || this.t?.recipes || 'Can fuse by recipe';
-      return null;
+    onSelectItem(event) {
+      this.$emit('auto-place', { artifactId: event.artifactId, id: event.id });
     }
   },
   template: `
-    <div class="artifact-container-zone"
-      @dragover="$emit('container-dragover', $event)"
-      @drop="$emit('container-drop', $event)"
+    <CoreBackpackZone
+      :items="containerArtifacts"
+      :labels="labels"
+      :lang="state.lang"
+      :name-for-item="artifactName"
+      :format-item-stats="formatArtifactBonus"
+      :preview-orientation-for-item="previewOrientation"
+      :pending-item-ids="fusionIngredientRowIds"
+      :highlighted-item-ids="fusionCandidateRowIds"
+      @select-item="onSelectItem"
+      @container-dragover="$emit('container-dragover', $event)"
+      @container-drop="$emit('container-drop', $event)"
     >
-      <div class="artifact-container-header">
-        <strong>{{ t.container }}</strong>
-        <span v-if="containerArtifacts.length" class="artifact-container-count">{{ containerArtifacts.length }}</span>
-      </div>
-      <div v-if="containerArtifacts.length" class="artifact-container-items">
-        <div
-          v-for="artifact in containerArtifacts"
-          :key="artifact.instanceKey"
-          class="container-item"
-          :class="{
-            'container-item--fusion-pending': isFusionPending(artifact),
-            'container-item--fusion-candidate': !isFusionPending(artifact) && isFusionCandidate(artifact)
-          }"
-          :title="fusionPendingTitle(artifact)"
-          v-bind="itemDataset(artifact)"
-          @click="$emit('auto-place', { artifactId: artifact.id, id: artifact.rowId })"
-        >
-          <artifact-grid-board
-            class="container-item-visual"
-            variant="catalog"
-            :columns="previewOrientation(artifact).width"
-            :rows="previewOrientation(artifact).height"
-            :items="previewItem(artifact)"
-            :get-artifact="getArtifact"
-          />
-          <div class="container-item-copy">
-            <strong>{{ artifact.name[state.lang] }}</strong>
-            <span v-if="artifact.family === 'bag'" class="artifact-stat-chip artifact-stat-chip--bag">{{ artifact.slotCount }} {{ t.bagSlots }}</span>
-            <span class="artifact-stat-chips">
-              <span
-                v-for="stat in formatArtifactBonus(artifact)"
-                :key="stat.key"
-                class="artifact-stat-chip"
-                :class="stat.positive ? 'artifact-stat-chip--pos' : 'artifact-stat-chip--neg'"
-              >{{ stat.label }} {{ stat.value }}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-      <p v-else class="artifact-container-empty">{{ t.containerHint }}</p>
-    </div>
+      <template #visual="{ item, orientation, previewItem }">
+        <artifact-grid-board
+          class="container-item-visual"
+          variant="catalog"
+          :columns="orientation.width"
+          :rows="orientation.height"
+          :items="previewItem"
+          :get-artifact="getArtifact"
+        />
+      </template>
+    </CoreBackpackZone>
   `
 };
