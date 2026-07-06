@@ -428,6 +428,10 @@ The next Phase 13 follow-up added provider-neutral support lookup bundle and
 support mutation response DTO shaping to `modules/support`, with Mushroom and
 Meat passing already-authorized product rows while keeping permissions, audit
 persistence, storage mutations, and route registration local.
+The next server-side follow-up added runtime config validation result,
+assertion, and deploy-check summary line formatting to `modules/config`; games
+still own env parsing, required fields, product policy, provider availability,
+and deploy commands.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own

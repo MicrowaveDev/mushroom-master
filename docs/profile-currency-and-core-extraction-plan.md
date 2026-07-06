@@ -1292,6 +1292,10 @@ follow-up extracted provider-neutral support lookup bundle and support mutation
 result DTO shaping into `modules/support`; Mushroom now delegates its support
 money lookup packet/count envelope through core, and Meat delegates its lookup
 packet plus wallet/asset/run support mutation response envelopes through core.
+The current follow-up extracts runtime config validation result/assertion/CLI
+summary formatting into `modules/config`; Meat delegates deploy-check output and
+runtime-config assertion formatting through core while keeping env parsing,
+required fields, provider policy, and deploy commands product-local.
 Remaining neutral DTO/planner extraction stays valid after the
 production-parity mechanics settle, and the new server-module lane allows
 shared route factories/service modules once concrete repositories and final app
@@ -1305,11 +1309,13 @@ execution local.
   importing product routes, DB models, Telegram helpers, payment SDKs, art, or
   CSS.
 - Candidate pure slices: auth/bootstrap payload shaping, product settings
-  validation, and shared browser route-client helpers. Run-state summary DTO
-  shaping has started in core and is consumed by Meat. Support lookup and
+  bootstrap shaping, and shared browser route-client helpers. Run-state summary
+  DTO shaping has started in core and is consumed by Meat. Support lookup and
   wallet/asset/run support mutation response DTO shaping has moved to core and
   is consumed by Mushroom and Meat, while permissions, audit persistence, and
-  mutations stay product-local.
+  mutations stay product-local. Runtime config validation result/assertion and
+  deploy-check summary formatting has moved to core and is consumed by Meat,
+  while env parsing and product launch policy stay local.
 - Keep non-core boundaries strict: DB transactions, concrete repositories,
   provider callbacks, adult-content gates, Telegram deployment policy, product
   catalogs, final route registration, and product policy stay in product repos.
@@ -1359,9 +1365,12 @@ the hub cross-consumer gate pass.
   wallet mutation test. Remaining launch decision: confirm the actual host is
   compatible with SQLite file locking, or replace the adapter with a stable DB
   service before multi-container/paid launch.
-- **Runtime policy:** still open. `node:sqlite` is experimental in the current
-  Node runtime. Pin and document the Node version for deploy, or choose a
-  stable DB driver/service before public launch.
+- **Runtime policy:** improved but still open. Shared config-validation result
+  and deploy-check formatting now lives in core, reducing duplicated deploy
+  output logic. The actual deploy policy remains product-local, and
+  `node:sqlite` is experimental in the current Node runtime. Pin and document
+  the Node version for deploy, or choose a stable DB driver/service before
+  public launch.
 - **Schema depth:** partially improved. SQLite schema v2 adds placeholder
   `payment_intents`, `provider_events`, `gacha_rolls`, `gacha_burns`, and
   `idempotency_keys` buckets. Before paid/gacha launch, decide whether wallet
