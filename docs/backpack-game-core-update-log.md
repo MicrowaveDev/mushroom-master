@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `b441638ab3ca26e4b5916015003294d09043d08e`
-- core short SHA: `b441638`
-- core commit: `Add runtime config validation shapers`
-- runtime/API baseline: `b441638` (`Add runtime config validation shapers`)
-- game pointer commit: `bfe7ff0` (`Document runtime config core extraction`)
+- core SHA: `80ece82b1372cc1dceb659ca97d11d0e50c24fa1`
+- core short SHA: `80ece82`
+- core commit: `Preserve structured client error messages`
+- runtime/API baseline: `80ece82` (`Preserve structured client error messages`)
+- game pointer commit: `dc45753` (`Document shared route client hardening`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-06 | `dc45753` | `80ece82` | Shared route client error messages | Core hardened `client` so failed HTTP responses and `{ success: false }` envelopes preserve API error text from both string errors and `{ message }` error objects. Mushroom continues using the shared client through its local route/session adapter; Meat now uses the same client in its frontend fetch adapter. |
 | 2026-07-06 | `bfe7ff0` | `b441638` | Runtime config validation shapers | Core added `modules/config` for provider-neutral runtime config validation result shaping, assertion error formatting, and deploy-check summary lines. Meat now delegates runtime-config assertion and deploy-check output formatting through core while keeping env parsing, required fields, product/provider policy, Node/runtime choices, and deploy commands local. Mushroom pins the same SHA and records the extraction boundary. |
 | 2026-07-06 | `0056c78` | `d25e1a0` | Support response shapers | Core added `modules/support` for provider-neutral support lookup bundle/count shaping and wallet/asset/run support mutation response envelopes over product-owned rows. Mushroom now delegates its support money lookup packet through core; Meat delegates support lookup plus wallet/asset/run support mutation response envelopes through core. Permissions, audit persistence, storage mutations, support action insertion, route registration, and product-specific support operations stay local. |
 | 2026-07-06 | `2f9ec0c` | `0905b57` | Run state summary shaper | Core added provider-driven `shapeRunStateSummary` in `modules/run`, so apps can share active-run response DTO assembly while injecting product-local loadout totals, loadout cost, shop row formatting, and battle summary policy. Meat now delegates `app/server/meat-service.js` run shaping through the helper; Mushroom pins the same SHA and keeps its richer run-service response assembly local for now. |
