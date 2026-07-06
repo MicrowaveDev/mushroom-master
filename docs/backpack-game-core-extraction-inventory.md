@@ -280,7 +280,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | `web/src/components/prep/BackpackZone.js` | Wraps core `BackpackZone`. | Container artifacts, fusion highlights, artifact names, local grid rendering, and placement events stay local. |
 | `web/src/components/prep/InventoryZone.js` | Wraps core `InventoryZone`. | Active-bag chips, placement preview, stat/footer slots, local grids/stats, and drag events stay local. |
 | `web/src/components/prep/ShopZone.js` | Wraps core `ShopZone` plus core `shapeShopItemRows`. | Prices, budget, catalog descriptions, fusion classes, sell-zone bridge, local previews, and route events stay local. |
-| `web/src/pages/PrepScreen.js` | Wraps core `PrepScreen` layout shell with slots for existing prep zones. | Bag row math, total-row calculation, refresh/sell pricing, drag/drop events, shop actions, ready/abandon events, and fusion reveal queue stay local. |
+| `web/src/pages/PrepScreen.js` | Wraps core `PrepScreen` layout shell with slots for existing prep zones and uses core `shapePrepScreenViewState` for neutral prep selectors. | Drag/drop events, shop actions, ready/abandon events, fusion reveal queue mutation, and product grid/art rendering stay local. |
 | `web/src/components/HomeSocialSidebar.js` | Uses core `RecipeList`; other structure remains local. | Telegram sharing, friends/challenges, activity panels, local artifact previews, and social navigation stay local. |
 | `web/src/pages/FusionAnimationLabScreen.js` | Uses core `RecipeCard` / `RecipeList`. | Lab playback state, Mushroom recipe catalog, artifact lookup, local reveal/grid/stat rendering stay local. |
 | `web/src/pages/HomeScreen.js` | Uses core `AssetRollResultPanel`, `GachaPackCardList`, and wallet/gacha DTO helpers. | Home route orchestration, character carousel, wallet checkout calls, asset roll actions, social sidebar, and product copy stay local. |
@@ -298,7 +298,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | `web/src/composables/useCustomization.js` | Partially delegates wallet/asset response shaping to core view-model helpers. | Further extraction needs wallet checkout adapter, Telegram invoice handling, and product asset catalog policy. |
 | `web/src/composables/useGameState.js` | Uses core stat delta/loadout text helpers. | Further extraction needs a product state factory and locale/catalog adapters. |
 | `web/src/composables/useAuth.js` | Product-local. | Keep local until shared auth/client service receives injected storage, route map, Telegram adapter, bootstrap adapters, and local-app/server-mode policy. |
-| `web/src/composables/useShop.js` | Product-local orchestration with some core helpers underneath. | Do not move before a headless prep/run-shop controller exists; it owns haptics, drag/drop mutation, API calls, and local error copy. |
+| `web/src/composables/useShop.js` | Product-local orchestration delegating effective rows and placement previews through core `createPrepGridController`. | Next extract neutral mutation command planners for place/move/activate/deactivate/rotate/sell/refresh; haptics, API calls, persistence, and local error copy stay local. |
 | `web/src/composables/useTouch.js` | Product-local touch/drag state. | Candidate only after grid/drop controller contracts are core-owned. |
 | `web/src/composables/useSSE.js` | Product-local routing and event stream lifecycle. | Keep local; server/community mode will affect this boundary. |
 | `web/src/composables/useSocial.js` | Product-local friends/challenges API wrapper. | Keep local until community-client surfaces are shared. |
@@ -311,7 +311,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | --- | --- | --- |
 | `ReplayScreen.js` | Extracted neutral shell with Mushroom adapter. | Core owns structure; Mushroom owns replay state, route events, and fighter rendering. |
 | `RecipesScreen.js` | Extracted generic catalog page shell with Mushroom adapter. | Core owns only the generic cover/content frame; Mushroom owns recipe copy and catalog browser wiring. |
-| `PrepScreen.js` | Outer layout shell extracted; controller remains adapter-needed and high risk. | Core owns only the topbar/workspace/reconnecting/actions/overlay slots. Full run state, drag/drop orchestration, active-bag mutation, fusion reveal queue, product grid/art rendering, and route events remain local until a prep controller/page DTO contract exists. |
+| `PrepScreen.js` | Outer layout shell extracted; first headless selector contract extracted. | Core owns the topbar/workspace/reconnecting/actions/overlay slots, bag-row/effective-row selectors, placement previews, refresh-cost labels, and sell-price labels. Full run state, drag/drop orchestration, active-bag mutation, fusion reveal queue mutation, product grid/art rendering, and route events remain local until command planners and API adapters exist. |
 | `RunCompleteScreen.js` | Adapter-needed. | Needs run-complete DTO helpers for season points, achievements, rewards, actions, and product rank/badge assets before shell extraction. |
 | `RunSummaryScreen.js` | Adapter-needed. | Needs summary DTO helpers and route callbacks for replay loading; product character assets and outcome copy stay local. |
 | `HomeScreen.js` | Adapter-needed, high risk. | Mixes profile, wallet, gacha, character selection, social sidebar, run actions, asset rolls, and product art. Split smaller panels first. |
@@ -327,9 +327,13 @@ final CSS, product catalogs, image paths, generated art, and localization.
 
 1. Do not move another page until the page has a DTO/adapter contract similar
    to `ReplayScreen`.
-2. Best next valuable but risky target: a headless prep controller contract
-   that separates run state, drag/drop commands, placement previews, fusion
-   reveal queue, shop actions, and ready/abandon actions from the visual shell.
+2. First headless prep controller slice is complete in core commit `3f5f76b`:
+   neutral bag rows, effective rows, disabled-cell checks, first-fit bag
+   anchors, placement previews, refresh-cost labels, and sell-price labels now
+   live in core and are consumed by Mushroom. Next prep work should extract
+   neutral mutation command planners for place/move/activate/deactivate/rotate,
+   sell/refresh, and ready/abandon actions while keeping API persistence,
+   haptics, local errors, and route events in products.
 3. Continue extracting smaller Home/Profile/RunComplete panels before moving
    those pages wholesale.
 

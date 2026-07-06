@@ -885,6 +885,13 @@ The next prep-layout slice added a neutral `PrepScreen` core shell for the
 topbar, workspace, reconnecting notice, actions, and overlay slots while
 leaving Mushroom bag-row math, drag/drop, shop mutations, ready/abandon events,
 and fusion reveal queues local.
+The next headless prep-controller slice added core `createPrepGridController`,
+`shapePrepScreenViewState`, `prepRefreshCost`, and `prepSellPriceLabel`.
+Mushroom now delegates bag-row/effective-row selectors, disabled-cell checks,
+first-fit bag anchors, placement previews, refresh-cost labels, and sell-price
+labels through core while keeping drag/drop mutations, API persistence, haptics,
+local error copy, fusion reveal queue mutation, product visuals, and route
+events local.
 
 Post-implementation review, 2026-07-06:
 
@@ -899,23 +906,23 @@ Post-implementation review, 2026-07-06:
   wrappers preserve old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `662d1b3`. Replay, catalog, and
-  prep layout-shell validation passed with core `npm test` and
-  `npm pack --dry-run`, Mushroom focused replay/recipes/prep wrapper tests,
-  Mushroom `npm test` /
-  `game:build`, and Meat `game:test` / `game:build` /
-  `game:test:browser`. Run hub
-  `npm run verify:backpack-core` after both consumer pointer commits are pushed
-  to confirm the shared nested-core SHA across Mushroom and Meat.
+- Latest verified core SHA for this review before cross-consumer pointer
+  update: `3f5f76b`. Replay, catalog, prep layout-shell, and first headless
+  prep-controller validation passed with core `npm test` and
+  `npm pack --dry-run`, Mushroom focused prep/use-shop/grid tests, Mushroom
+  `npm test` / `game:build`. Run Meat `game:test` / `game:build` /
+  `game:test:browser`, then hub `npm run verify:backpack-core` after both
+  consumer pointer commits are pushed to confirm the shared nested-core SHA
+  across Mushroom and Meat.
 - Page shells are closer but still not free. `PrepScreen` still depends on
   whole Mushroom runtime state, route events, drag/drop orchestration,
-  active-bag mutation policy, fusion reveal queue state, and product-owned
-  grid/art rendering. Re-audit the remaining state/event ownership before
-  attempting a shared `PrepScreen` shell.
+  active-bag mutation policy, fusion reveal queue mutation, and product-owned
+  grid/art rendering. The next prep contract should extract neutral mutation
+  command planners for place/move/activate/deactivate/rotate, sell/refresh, and
+  ready/abandon while products keep persistence, haptics, and route effects.
 - Next F2 implementation order:
-  1. Refresh `docs/backpack-game-core-extraction-inventory.md` before the next page
-     move; the plan now has enough shipped components that remaining work needs
-     a current file-by-file source of truth.
+  1. Extend the prep controller from selectors into neutral command planners,
+     then adopt them inside Mushroom `useShop` without moving API calls.
   2. Re-audit `PrepScreen`, `RecipesScreen`, and other page shells only after
      route/state orchestration is adapterized.
 - Do **not** move `ArtifactFigure` as-is. It still contains hardcoded

@@ -1,5 +1,5 @@
 import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
-import { getEffectiveShape, normalizeRotation } from '../../../app/shared/bag-shape.js';
+import { shapePrepScreenViewState } from '@microwavedev/backpack-game-core/client-view-model';
 import { PrepScreen as CorePrepScreen } from '@microwavedev/backpack-game-core/vue/components';
 import { RunHud } from '../components/prep/RunHud.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
@@ -35,84 +35,26 @@ export const PrepScreen = {
     FusionReveal
   },
   computed: {
-    // Bag background metadata in unified-grid coords: ONE entry per (bag ×
-    // unified row) — each bag emits its own row entries with its own colour
-    // and enabledCells. Two bags whose footprints share the same row produce
-    // TWO entries so ArtifactGridBoard can colour each bag's cells correctly
-    // (its per-cell lookup picks the entry whose enabledCells contain the
-    // cell's x).
-    bagRows() {
-      const rows = [];
-      for (const activeBag of this.state.activeBags) {
-        const bag = this.getArtifact(activeBag.artifactId);
-        if (!bag) continue;
-        const rotationEntry = this.state.rotatedBags.find((b) => b.id === activeBag.id);
-        const rotation = normalizeRotation(rotationEntry?.rotation ?? (rotationEntry ? 1 : 0));
-        const shape = getEffectiveShape(bag, rotation);
-        const rowCount = shape.length;
-        const anchorX = activeBag.anchorX ?? 0;
-        const anchorY = activeBag.anchorY ?? 0;
-        for (let i = 0; i < rowCount; i++) {
-          const maskRow = shape[i] || [];
-          const enabledCells = [];
-          for (let x = 0; x < maskRow.length; x++) {
-            const cellX = anchorX + x;
-            if (cellX >= BAG_COLUMNS) break;
-            if (maskRow[x]) enabledCells.push(cellX);
-          }
-          if (enabledCells.length === 0) continue;
-          // Bounding-box x-range for this row. Used by ArtifactGridBoard to
-          // distinguish "empty bag-area cell outside any bag" (rendered as a
-          // faint drop target) from "mask gap inside a tetromino bag's bbox"
-          // (rendered hidden). Without this, cells past a rectangular bag's
-          // right edge in the same row would be mis-classified as gaps and
-          // disappear — see bag-grid-unification bag-row-width bug.
-          const bboxStart = anchorX;
-          const bboxEnd = Math.min(anchorX + maskRow.length, BAG_COLUMNS);
-          rows.push({
-            bagId: activeBag.id,
-            row: anchorY + i,
-            color: bag.color || '#888',
-            artifactId: activeBag.artifactId,
-            // Quarter-turns CW (0..3). Drives the bag-watermark image
-            // rotation in ArtifactGridBoard so the canonical PNG follows
-            // the slot mask through 90°/180°/270° rotations instead of
-            // being stretched into the rotated bbox.
-            rotation,
-            enabledCells,
-            bboxStart,
-            bboxEnd
-          });
-        }
-      }
-      return rows.sort((a, b) => a.row - b.row);
+    prepViewState() {
+      return shapePrepScreenViewState({
+        state: this.state,
+        getArtifact: this.getArtifact,
+        getArtifactPrice: this.getArtifactPrice,
+        columns: BAG_COLUMNS,
+        minRows: BAG_ROWS
+      });
     },
-    // Total rows in the unified grid: at least BAG_ROWS (= 6) so the rendered
-    // grid is always 6×6, expanding further if an active bag's footprint
-    // extends below row BAG_ROWS - 1. InventoryZone forwards this to
-    // ArtifactGridBoard.
+    bagRows() {
+      return this.prepViewState.bagRows;
+    },
     totalRows() {
-      let max = BAG_ROWS;
-      for (const activeBag of this.state.activeBags) {
-        const bag = this.getArtifact(activeBag.artifactId);
-        if (!bag) continue;
-        const rotationEntry = this.state.rotatedBags.find((b) => b.id === activeBag.id);
-        const shape = getEffectiveShape(bag, normalizeRotation(rotationEntry?.rotation ?? (rotationEntry ? 1 : 0)));
-        const bottom = (activeBag.anchorY ?? 0) + shape.length;
-        if (bottom > max) max = bottom;
-      }
-      return max;
+      return this.prepViewState.totalRows;
     },
     runRefreshCost() {
-      return this.state.gameRunRefreshCount < 3 ? 1 : 2;
+      return this.prepViewState.runRefreshCost;
     },
     runSellPriceLabel() {
-      if (!this.state.sellDragOver || !this.state.draggingArtifactId) return '';
-      const artifact = this.getArtifact(this.state.draggingArtifactId);
-      if (!artifact) return '';
-      const price = this.getArtifactPrice(artifact);
-      const isFresh = this.state.freshPurchases.includes(this.state.draggingArtifactId);
-      return String(isFresh ? price : Math.floor(price / 2));
+      return this.prepViewState.runSellPriceLabel;
     }
   },
   template: `

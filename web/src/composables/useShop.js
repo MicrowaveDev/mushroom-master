@@ -1,5 +1,6 @@
 import { BAG_COLUMNS, BAG_ROWS, MAX_ARTIFACT_COINS, SHOP_OFFER_SIZE, REROLL_COST } from '../constants.js';
 import { buildOccupancy, getArtifactPrice, pickRandomShopOffer, preferredOrientation } from '../artifacts/grid.js';
+import { createPrepGridController } from '@microwavedev/backpack-game-core/client-view-model';
 import { getEffectiveShape, isCellInShape, normalizeRotation } from '../../../app/shared/bag-shape.js';
 import { messages } from '../i18n.js';
 
@@ -9,6 +10,12 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     notify: typeof feedback.notify === 'function' ? feedback.notify : () => {},
     selectionChanged: typeof feedback.selectionChanged === 'function' ? feedback.selectionChanged : () => {}
   };
+  const prepGrid = createPrepGridController({
+    state,
+    getArtifact,
+    columns: BAG_COLUMNS,
+    minRows: BAG_ROWS
+  });
 
   function bagRotation(bagId, rowId = null) {
     const entry = state.rotatedBags.find((b) => (rowId ? b.id === rowId : b.artifactId === bagId));
@@ -28,7 +35,7 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
   // grid is always 6×6, expanding further if an active bag's footprint
   // extends below row BAG_ROWS - 1.
   function effectiveRows() {
-    return Math.max(BAG_ROWS, bagsBottomRow());
+    return prepGrid.effectiveRows();
   }
 
   // Translate a unified-grid cell to the first active bag whose shape mask
@@ -272,85 +279,8 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
     return [...state.builderItems, candidate];
   }
 
-  function rectCellKeys(x, y, w, h) {
-    const cells = [];
-    for (let dx = 0; dx < w; dx += 1) {
-      for (let dy = 0; dy < h; dy += 1) {
-        cells.push(`${x + dx}:${y + dy}`);
-      }
-    }
-    return cells;
-  }
-
-  function canMovePlacedItemTo(item, x, y) {
-    const others = state.builderItems.filter((it) => !isSameInstance(it, item));
-    const occupied = buildOccupancy(others);
-    const w = item.width;
-    const h = item.height;
-    if (x + w > BAG_COLUMNS || y + h > effectiveRows()) return false;
-    for (let dx = 0; dx < w; dx += 1) {
-      for (let dy = 0; dy < h; dy += 1) {
-        if (occupied.has(`${x + dx}:${y + dy}`)) return false;
-        if (isCellDisabled(x + dx, y + dy)) return false;
-      }
-    }
-    return footprintInOneContainer(x, y, w, h);
-  }
-
   function placementPreviewAt(x, y) {
-    if (state.draggingSource === 'bag-chip') {
-      const bagId = state.draggingBagId;
-      const bag = state.activeBags.find((activeBag) => activeBag.id === bagId);
-      if (!bag) return null;
-      const layout = bagLayout(bag.artifactId, bag.id);
-      const cells = Array.from(shapeCellsAt(x, y, layout.shape));
-      const valid = x >= 0
-        && y >= 0
-        && x + layout.cols <= BAG_COLUMNS
-        && !bagAreaOverlaps(x, y, layout.cols, layout.rows, bagId, layout.shape);
-      return {
-        cells,
-        valid,
-        artifactId: bag.artifactId,
-        family: 'bag'
-      };
-    }
-
-    if (state.draggingSource === 'container') {
-      const artifactId = state.draggingArtifactId;
-      const artifact = getArtifact(artifactId);
-      if (!artifact || artifact.family === 'bag') return null;
-      const slot = state.containerItems.find((s) => s.artifactId === artifactId);
-      const rowId = slot?.id ?? null;
-      const preferred = preferredOrientation(artifact);
-      const orientations = [preferred];
-      if (artifact.width !== artifact.height) {
-        orientations.push({ width: preferred.height, height: preferred.width });
-      }
-      const validOrientation = orientations.find((orientation) =>
-        normalizePlacement(artifact, x, y, orientation.width, orientation.height, rowId)
-      );
-      const display = validOrientation || orientations[0];
-      return {
-        cells: rectCellKeys(x, y, display.width, display.height),
-        valid: Boolean(validOrientation),
-        artifactId,
-        family: artifact.family
-      };
-    }
-
-    if (state.draggingSource === 'inventory' && state.draggingItem) {
-      const item = state.draggingItem;
-      const artifact = getArtifact(item.artifactId);
-      return {
-        cells: rectCellKeys(x, y, item.width, item.height),
-        valid: canMovePlacedItemTo(item, x, y),
-        artifactId: item.artifactId,
-        family: artifact?.family || 'damage'
-      };
-    }
-
-    return null;
+    return prepGrid.placementPreviewAt(x, y);
   }
 
   // Remove the first slot matching `artifactId` from containerItems and
