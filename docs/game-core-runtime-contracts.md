@@ -246,6 +246,9 @@ These mechanics are closest to the reusable core boundary:
 - browser-safe services and Vue composables that receive API clients, product
   catalogs, route callbacks, copy dictionaries, and theme tokens through
   adapters
+- server-side cache/job orchestration helpers that receive renderer,
+  filesystem/path, logger, and product-copy adapters, such as the shared
+  social-preview cache service
 - neutral Vue components for backpack grids, artifact tiles, shop lists, battle
   logs, wallet/asset panels, gacha pack cards, roll results, odds tables, and
   admin validation/checklist panels
@@ -279,6 +282,8 @@ These are product-specific and must stay out of `backpack-game-core`:
   terms, and adult-content compliance gates
 - localized UI copy, product route composition, auth shells, CSS themes, and
   product visual assets
+- social-preview renderer implementations, artwork paths, generated static
+  files, and product-specific marketing copy
 
 ## Extraction Rule
 

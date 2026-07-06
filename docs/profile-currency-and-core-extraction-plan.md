@@ -676,7 +676,11 @@ server-port slice added `modules/community` plus
 `createHostedCommunityClientServerModule`; Meat now consumes its hosted
 community client through a product compatibility wrapper while product repos
 still own auth, route mounting, community-server URLs, and any future write
-APIs for friends/challenges/account linking.
+APIs for friends/challenges/account linking. The next optional server-module
+slice added `modules/social-preview` plus
+`createSocialPreviewCacheServerModule` so preview-cache warmup, fallback, and
+logging behavior can be reused while Mushroom-owned artwork paths, copy,
+render implementation, static-file routes, and filesystem adapters stay local.
 
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
@@ -724,6 +728,12 @@ Goal: remove Mushroom identity and runtime assumptions from core server modules.
   config/locales.
 
 #### S5 - Build Shared Core Server Modules
+
+Status: **Started.** Low-risk shared module factories now exist for gacha
+simulation, loadout validation, run readiness, hosted community client, and
+social-preview cache orchestration. Remaining S5 work should promote deeper
+auth/profile/run/wallet/assets/gacha/support service logic only after
+repository, policy, and route contracts are explicit.
 
 Goal: promote neutralized server logic to reusable module factories.
 
