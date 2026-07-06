@@ -1,4 +1,5 @@
 import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
+import { RecipeList } from '@microwavedev/backpack-game-core/vue/components';
 import { AchievementBadge } from './AchievementBadge.js';
 import { ArtifactGridBoard } from './ArtifactGridBoard.js';
 import { ArtifactStatSummary } from './ArtifactStatSummary.js';
@@ -14,7 +15,7 @@ export const HomeSocialSidebar = {
     'accept-challenge', 'decline-challenge',
     'set-mobile-action-mode', 'switch-panel'
   ],
-  components: { AchievementBadge, ArtifactGridBoard, ArtifactStatSummary },
+  components: { AchievementBadge, ArtifactGridBoard, ArtifactStatSummary, RecipeList },
   methods: {
     inviteText() {
       return this.t.friendInviteText
@@ -72,7 +73,14 @@ export const HomeSocialSidebar = {
             .filter(Boolean);
           const result = this.getArtifact(recipe.resultArtifactId);
           return result && ingredients.length === recipe.ingredientArtifactIds.length
-            ? { ...recipe, ingredients, result }
+            ? {
+                ...recipe,
+                ingredients,
+                result,
+                resultName: this.artifactName(result),
+                resultDescription: this.artifactDescription(result),
+                resultStatsAriaLabel: `${this.artifactName(result)} stats`
+              }
             : null;
         })
         .filter(Boolean);
@@ -147,59 +155,46 @@ export const HomeSocialSidebar = {
           </div>
         </section>
 
-        <section v-if="isRecipes" class="home-sidebar-recipes" data-testid="sidebar-recipes-panel">
-          <article
-            v-for="recipe in recipes"
-            :key="recipe.id"
-            class="home-sidebar-recipe"
-            data-testid="sidebar-recipe-card"
-            :data-result-artifact-id="recipe.resultArtifactId"
-          >
-            <div class="home-sidebar-recipe-flow" aria-hidden="true">
-              <div class="home-sidebar-recipe-ingredients">
-                <div
-                  v-for="artifact in recipe.ingredients"
-                  :key="recipe.id + ':' + artifact.id"
-                  class="home-sidebar-recipe-artifact"
-                  :data-artifact-id="artifact.id"
-                >
-                  <artifact-grid-board
-                    class="home-sidebar-recipe-artifact-board"
-                    variant="catalog"
-                    :columns="previewOrientation(artifact).width"
-                    :rows="previewOrientation(artifact).height"
-                    :items="previewItem(artifact)"
-                    :get-artifact="getArtifact"
-                  />
-                </div>
-              </div>
-              <span class="home-sidebar-recipe-plus">+</span>
-              <div class="home-sidebar-recipe-artifact home-sidebar-recipe-artifact--result" :data-artifact-id="recipe.resultArtifactId">
-                <artifact-grid-board
-                  class="home-sidebar-recipe-artifact-board"
-                  variant="catalog"
-                  :columns="previewOrientation(recipe.result).width"
-                  :rows="previewOrientation(recipe.result).height"
-                  :items="previewItem(recipe.result)"
-                  :get-artifact="getArtifact"
-                />
-              </div>
-            </div>
-            <div class="home-sidebar-recipe-copy">
-              <span class="home-sidebar-recipe-kicker">{{ t.recipeFusionOnly }}</span>
-              <strong>{{ artifactName(recipe.result) }}</strong>
-              <p>{{ artifactDescription(recipe.result) }}</p>
-              <artifact-stat-summary
-                :artifact="recipe.result"
-                :lang="state.lang"
-                :include-zeroes="false"
-                variant="compact"
-                :aria-label="artifactName(recipe.result) + ' stats'"
-              />
-            </div>
-          </article>
-          <p v-if="recipes.length === 0" class="home-empty-hint">{{ t.noRecipesYet }}</p>
-        </section>
+        <recipe-list
+          v-if="isRecipes"
+          as="section"
+          :recipes="recipes"
+          :labels="{ kicker: t.recipeFusionOnly }"
+          list-class="home-sidebar-recipes"
+          test-id="sidebar-recipes-panel"
+          card-class="home-sidebar-recipe"
+          card-test-id="sidebar-recipe-card"
+          flow-class="home-sidebar-recipe-flow"
+          ingredient-row-class="home-sidebar-recipe-ingredients"
+          artifact-class="home-sidebar-recipe-artifact"
+          result-artifact-class="home-sidebar-recipe-artifact home-sidebar-recipe-artifact--result"
+          operator-class="home-sidebar-recipe-plus"
+          copy-class="home-sidebar-recipe-copy"
+          kicker-class="home-sidebar-recipe-kicker"
+          title-tag="strong"
+          :empty-text="t.noRecipesYet"
+          empty-class="home-empty-hint"
+        >
+          <template #artifact="{ artifact }">
+            <artifact-grid-board
+              class="home-sidebar-recipe-artifact-board"
+              variant="catalog"
+              :columns="previewOrientation(artifact).width"
+              :rows="previewOrientation(artifact).height"
+              :items="previewItem(artifact)"
+              :get-artifact="getArtifact"
+            />
+          </template>
+          <template #stats="{ recipe }">
+            <artifact-stat-summary
+              :artifact="recipe.result"
+              :lang="state.lang"
+              :include-zeroes="false"
+              variant="compact"
+              :aria-label="recipe.resultStatsAriaLabel"
+            />
+          </template>
+        </recipe-list>
 
         <section v-if="!isSettings && !isFriends && !isRecipes" class="home-activity-feed">
           <template v-if="activityGroups?.length">

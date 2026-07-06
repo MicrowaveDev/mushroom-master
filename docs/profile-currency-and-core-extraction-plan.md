@@ -539,11 +539,11 @@ before Meat adopts the shells. Updated again 2026-07-05 after the server
 module correction: backend server logic should move through Geesome-style core
 module factories and app-declared module lists, with Mushroom/Meat retaining
 DB, credentials, runtime policy, and product-specific modules. Updated
-2026-07-06 after the first aggressive frontend component ports:
-`PrepActions`, `FusionReveal`, and `BackpackZone` are now stable core Vue
-exports consumed by Mushroom wrappers and Meat import smoke tests, but page
-shells are still blocked by remaining product-stateful prep zones, especially
-artifact/catalog/replay presentation and artifact-renderer dependencies.
+2026-07-06 after the aggressive frontend component ports:
+`PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, `ShopZone`, and
+the recipe card/list shells are now stable core Vue exports consumed by
+Mushroom wrappers and Meat import smoke tests, but page shells are still blocked
+by remaining product-stateful orchestration and artifact-renderer dependencies.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -854,19 +854,25 @@ compatibility wrapper. The next shop-zone slice copied
 already-shaped offer rows, labels, refresh state, sell-zone state, row
 class/attribute hooks, and a visual slot; Mushroom now maps pricing, fusion
 classes, run-money labels, catalog previews, and route events through a
-compatibility wrapper. No page shells have moved yet.
+compatibility wrapper. The next recipe slice copied the current Mushroom
+recipe-bearing sidebar/lab surfaces into core as neutral `RecipeCard` and
+`RecipeList` shells using already-shaped recipe DTOs, localized result copy,
+active/interactive state, keyboard selection, and visual/stat slots; Mushroom
+now maps fusion recipe sources, artifact grids, stats, and localized copy in
+`HomeSocialSidebar` and `FusionAnimationLabScreen`. No page shells have moved
+yet.
 
 Post-implementation review, 2026-07-06:
 
 - Verified shipped F2 slices:
   `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
-  `ShopZone` were moved by physically copying the current Mushroom files into
-  `backpack-game-core`, then neutralizing them through DTO props, labels,
-  slots, class hooks, and neutral events. Mushroom wrappers preserve old
-  props/events and product visuals.
+  `ShopZone`, plus `RecipeCard` / `RecipeList`, were moved by physically
+  copying current Mushroom files into `backpack-game-core`, then neutralizing
+  them through DTO props, labels, slots, class hooks, and neutral events.
+  Mushroom wrappers preserve old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `4c118ee`. Validation passed:
+- Latest verified core SHA for this review: `dcd8a4f`. Validation passed:
   core `npm test` and `npm pack --dry-run`, Mushroom focused wrapper tests,
   Mushroom `npm test` / `game:build`, Meat `game:test` / `game:build` /
   `game:test:browser`, and hub `npm run verify:backpack-core`.
@@ -876,9 +882,10 @@ Post-implementation review, 2026-07-06:
   grid/art rendering. Re-audit the remaining state/event ownership before
   attempting a shared `PrepScreen` shell.
 - Next F2 implementation order:
-  1. `ArtifactCatalogBrowser` / recipes surfaces: move only after their item
-     rows and preview grids can be driven by DTOs, asset resolvers, locale
-     callbacks, and slots instead of product catalogs or route names.
+  1. `ArtifactCatalogBrowser` detail/group shell: now that recipe cards are
+     shared, move only the catalog layout after group rows, selected-detail
+     facts, preview grids, recipe ingredient flows, locale callbacks, and slots
+     can be supplied as DTOs instead of product catalogs or route names.
   2. `ReplayDuel` / replay presentation: move after the already-core
      `BattleLog` contract is enough for the remaining replay stage/result
      shell and after the current dynamic/static import warning is either
@@ -899,6 +906,11 @@ Post-implementation review, 2026-07-06:
   rerun passed. Treat this as a non-blocking test-runner flake for now, but if
   it repeats, add timeout/diagnostic logging or isolate/reset rate-limit state
   around that test before relying on it as a long-running gate.
+- Verification finding: during the recipe-shell slice, one full Mushroom
+  `npm test` run failed `[Req 4-T] character item appears in all three solo
+  offer phases`; `tests/game/round-resolution.test.js` passed directly and a
+  full rerun passed. Treat this as another non-blocking shared-state/randomness
+  flake unless it repeats.
 
 Goal: move first, then generalize without breaking Mushroom.
 

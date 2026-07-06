@@ -11,6 +11,7 @@ import { RunHud } from '../../web/src/components/prep/RunHud.js';
 import { SellZone } from '../../web/src/components/prep/SellZone.js';
 import { ShopZone } from '../../web/src/components/prep/ShopZone.js';
 import { FusionAnimationLabScreen } from '../../web/src/pages/FusionAnimationLabScreen.js';
+import { artifactFusionRecipes } from '../../app/shared/artifact-fusions.js';
 
 test('[artifact-grid] builds occupied cell maps through the shared core helper', () => {
   const occupied = buildOccupancy([
@@ -318,4 +319,38 @@ test('[artifact-grid] shop zone shapes offer rows through the shared core helper
   assert.match(ShopZone.template, /@buy="\$emit\('buy-run-item', \$event\.artifactId\)"/);
   assert.match(ShopZone.template, /@sell-dragover="\$emit\('sell-dragover', \$event\)"/);
   assert.match(ShopZone.template, /<artifact-grid-board/);
+});
+
+test('[artifact-grid] recipe surfaces keep Mushroom compatibility over core recipe shells', () => {
+  const recipe = artifactFusionRecipes[0];
+  const artifactIds = [...new Set([...recipe.ingredientArtifactIds, recipe.resultArtifactId])];
+  const catalog = new Map(artifactIds.map((id) => [id, {
+    id,
+    width: 1,
+    height: 1,
+    name: { en: `Name ${id}` },
+    description: { en: `Description ${id}` }
+  }]));
+  const context = {
+    getArtifact: (id) => catalog.get(id),
+    state: { lang: 'en' },
+    artifactName: HomeSocialSidebar.methods.artifactName,
+    artifactDescription: HomeSocialSidebar.methods.artifactDescription
+  };
+
+  const sidebarRecipes = HomeSocialSidebar.computed.recipes.call(context);
+  const labRecipes = FusionAnimationLabScreen.computed.recipes.call(context);
+
+  assert.equal(sidebarRecipes.length, 1);
+  assert.equal(sidebarRecipes[0].resultArtifactId, recipe.resultArtifactId);
+  assert.equal(sidebarRecipes[0].resultName, `Name ${recipe.resultArtifactId}`);
+  assert.equal(sidebarRecipes[0].resultDescription, `Description ${recipe.resultArtifactId}`);
+  assert.equal(sidebarRecipes[0].resultStatsAriaLabel, `Name ${recipe.resultArtifactId} stats`);
+  assert.deepEqual(labRecipes, sidebarRecipes);
+  assert.match(HomeSocialSidebar.template, /<recipe-list/);
+  assert.match(HomeSocialSidebar.template, /card-test-id="sidebar-recipe-card"/);
+  assert.match(HomeSocialSidebar.template, /home-sidebar-recipe-artifact-board/);
+  assert.match(FusionAnimationLabScreen.template, /<recipe-card/);
+  assert.match(FusionAnimationLabScreen.template, /<recipe-list/);
+  assert.match(FusionAnimationLabScreen.template, /@select="playRecipe\(\$event\.index, false\)"/);
 });

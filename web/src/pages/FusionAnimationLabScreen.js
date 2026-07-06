@@ -1,4 +1,5 @@
 import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
+import { RecipeCard, RecipeList } from '@microwavedev/backpack-game-core/vue/components';
 import { artifactFusionRecipes } from '../../../app/shared/artifact-fusions.js';
 import { ArtifactGridBoard } from '../components/ArtifactGridBoard.js';
 import { ArtifactStatSummary } from '../components/ArtifactStatSummary.js';
@@ -6,7 +7,7 @@ import { FusionReveal } from '../components/prep/FusionReveal.js';
 
 export const FusionAnimationLabScreen = {
   name: 'FusionAnimationLabScreen',
-  components: { ArtifactGridBoard, ArtifactStatSummary, FusionReveal },
+  components: { ArtifactGridBoard, ArtifactStatSummary, FusionReveal, RecipeCard, RecipeList },
   props: ['state', 't', 'getArtifact'],
   data() {
     return {
@@ -26,7 +27,14 @@ export const FusionAnimationLabScreen = {
             .filter(Boolean);
           const result = this.getArtifact(recipe.resultArtifactId);
           return result && ingredients.length === recipe.ingredientArtifactIds.length
-            ? { ...recipe, ingredients, result }
+            ? {
+                ...recipe,
+                ingredients,
+                result,
+                resultName: this.artifactName(result),
+                resultDescription: this.artifactDescription(result),
+                resultStatsAriaLabel: `${this.artifactName(result)} stats`
+              }
             : null;
         })
         .filter(Boolean);
@@ -117,108 +125,80 @@ export const FusionAnimationLabScreen = {
         </div>
       </header>
 
-      <article v-if="activeRecipe" class="fusion-lab-stage-card panel" :data-result-artifact-id="activeRecipe.resultArtifactId">
-        <div class="fusion-lab-stage-flow" aria-hidden="true">
-          <div class="recipe-ingredient-row">
-            <div
-              v-for="artifact in activeRecipe.ingredients"
-              :key="'active:' + activeRecipe.id + ':' + artifact.id"
-              class="recipe-artifact-tile recipe-artifact-tile--ingredient"
-              :data-artifact-id="artifact.id"
-            >
-              <artifact-grid-board
-                variant="catalog"
-                :columns="previewOrientation(artifact).width"
-                :rows="previewOrientation(artifact).height"
-                :items="previewItem(artifact)"
-                :get-artifact="getArtifact"
-              />
-            </div>
-          </div>
-          <span class="recipe-magnet-mark">+</span>
-          <div class="recipe-artifact-tile recipe-artifact-tile--result" :data-artifact-id="activeRecipe.resultArtifactId">
-            <artifact-grid-board
-              variant="catalog"
-              :columns="previewOrientation(activeRecipe.result).width"
-              :rows="previewOrientation(activeRecipe.result).height"
-              :items="previewItem(activeRecipe.result)"
-              :get-artifact="getArtifact"
-            />
-          </div>
-        </div>
-        <div class="fusion-lab-stage-copy">
-          <span class="recipe-card-kicker">{{ t.fusionNowPlaying }} {{ activeIndex + 1 }} / {{ recipes.length }}</span>
-          <h3>{{ artifactName(activeRecipe.result) }}</h3>
-          <p>{{ artifactDescription(activeRecipe.result) }}</p>
+      <recipe-card
+        v-if="activeRecipe"
+        as="article"
+        :recipe="activeRecipe"
+        :index="activeIndex"
+        card-class="fusion-lab-stage-card panel"
+        flow-class="fusion-lab-stage-flow"
+        ingredient-row-class="recipe-ingredient-row"
+        artifact-class="recipe-artifact-tile recipe-artifact-tile--ingredient"
+        result-artifact-class="recipe-artifact-tile recipe-artifact-tile--result"
+        copy-class="fusion-lab-stage-copy"
+        kicker-class="recipe-card-kicker"
+        stats-class="recipe-card-stats"
+        :kicker-text="t.fusionNowPlaying + ' ' + (activeIndex + 1) + ' / ' + recipes.length"
+      >
+        <template #artifact="{ artifact }">
+          <artifact-grid-board
+            variant="catalog"
+            :columns="previewOrientation(artifact).width"
+            :rows="previewOrientation(artifact).height"
+            :items="previewItem(artifact)"
+            :get-artifact="getArtifact"
+          />
+        </template>
+        <template #stats="{ recipe, statsClass }">
           <artifact-stat-summary
-            class="recipe-card-stats"
-            :artifact="activeRecipe.result"
+            :class="statsClass"
+            :artifact="recipe.result"
             :lang="state.lang"
             :include-zeroes="false"
             variant="compact"
-            :aria-label="artifactName(activeRecipe.result) + ' stats'"
+            :aria-label="recipe.resultStatsAriaLabel"
           />
-        </div>
-      </article>
+        </template>
+      </recipe-card>
 
-      <div class="recipe-list fusion-lab-list">
-        <article
-          v-for="(recipe, index) in recipes"
-          :key="recipe.id"
-          class="recipe-card fusion-lab-card"
-          :class="{ 'fusion-lab-card--active': index === activeIndex }"
-          data-testid="fusion-lab-recipe-card"
-          :data-result-artifact-id="recipe.resultArtifactId"
-          @click="playRecipe(index, false)"
-          role="button"
-          tabindex="0"
-          @keydown.enter.prevent="playRecipe(index, false)"
-          @keydown.space.prevent="playRecipe(index, false)"
-        >
-          <div class="recipe-card-flow" aria-hidden="true">
-            <div class="recipe-ingredient-row">
-              <div
-                v-for="artifact in recipe.ingredients"
-                :key="recipe.id + ':' + artifact.id"
-                class="recipe-artifact-tile recipe-artifact-tile--ingredient"
-                :data-artifact-id="artifact.id"
-              >
-                <artifact-grid-board
-                  variant="catalog"
-                  :columns="previewOrientation(artifact).width"
-                  :rows="previewOrientation(artifact).height"
-                  :items="previewItem(artifact)"
-                  :get-artifact="getArtifact"
-                />
-              </div>
-            </div>
-            <span class="recipe-magnet-mark">+</span>
-            <div class="recipe-artifact-tile recipe-artifact-tile--result" :data-artifact-id="recipe.resultArtifactId">
-              <artifact-grid-board
-                variant="catalog"
-                :columns="previewOrientation(recipe.result).width"
-                :rows="previewOrientation(recipe.result).height"
-                :items="previewItem(recipe.result)"
-                :get-artifact="getArtifact"
-              />
-            </div>
-          </div>
-
-          <div class="recipe-card-copy">
-            <span class="recipe-card-kicker">{{ t.recipeFusionOnly }}</span>
-            <h3>{{ artifactName(recipe.result) }}</h3>
-            <p>{{ artifactDescription(recipe.result) }}</p>
-            <artifact-stat-summary
-              class="recipe-card-stats"
-              :artifact="recipe.result"
-              :lang="state.lang"
-              :include-zeroes="false"
-              variant="compact"
-              :aria-label="artifactName(recipe.result) + ' stats'"
-            />
-          </div>
-        </article>
-      </div>
+      <recipe-list
+        :recipes="recipes"
+        list-class="recipe-list fusion-lab-list"
+        card-class="recipe-card fusion-lab-card"
+        active-class="fusion-lab-card--active"
+        card-test-id="fusion-lab-recipe-card"
+        flow-class="recipe-card-flow"
+        ingredient-row-class="recipe-ingredient-row"
+        artifact-class="recipe-artifact-tile recipe-artifact-tile--ingredient"
+        result-artifact-class="recipe-artifact-tile recipe-artifact-tile--result"
+        copy-class="recipe-card-copy"
+        kicker-class="recipe-card-kicker"
+        stats-class="recipe-card-stats"
+        :labels="{ kicker: t.recipeFusionOnly }"
+        :active-index="activeIndex"
+        :interactive="true"
+        @select="playRecipe($event.index, false)"
+      >
+        <template #artifact="{ artifact }">
+          <artifact-grid-board
+            variant="catalog"
+            :columns="previewOrientation(artifact).width"
+            :rows="previewOrientation(artifact).height"
+            :items="previewItem(artifact)"
+            :get-artifact="getArtifact"
+          />
+        </template>
+        <template #stats="{ recipe, statsClass }">
+          <artifact-stat-summary
+            :class="statsClass"
+            :artifact="recipe.result"
+            :lang="state.lang"
+            :include-zeroes="false"
+            variant="compact"
+            :aria-label="recipe.resultStatsAriaLabel"
+          />
+        </template>
+      </recipe-list>
 
       <p v-if="recipes.length === 0" class="wiki-empty">{{ t.noRecipesYet }}</p>
 
