@@ -1365,9 +1365,12 @@ Goal: prevent another "implemented locally but not production-ready" ambiguity.
 
 #### P13.7A - Deployment Modes And Storage Direction
 
-Status: **Planned 2026-07-06 for discussion.** Both Mushroom and Meat should be
+Status: **Partially implemented 2026-07-06.** Both Mushroom and Meat are being
 designed around two supported runtime modes instead of treating SQLite as a
-temporary production fallback.
+temporary production fallback. Mushroom already has the production Postgres
+Docker deployment path. Meat now has explicit `server|local` runtime-mode
+validation, a Docker Postgres compose file for hosted server mode, and a
+Sequelize-backed Postgres store for the current snapshot-store contract.
 
 Goal: one codebase per game should run as a hosted community server or as a
 packaged local app, with the same game mechanics and as much shared persistence
@@ -1422,12 +1425,19 @@ code as practical.
      which can submit player-created state.
 
 5. **Preferred implementation order.**
-   - Add explicit runtime-mode and database-dialect config contracts:
+   - ✅ Add explicit runtime-mode and database-dialect config contracts:
      `server` vs `local`, `postgres` vs `sqlite`, community-server URL, and
-     feature-gate flags.
-   - Standardize hosted/server deploys on PostgreSQL in Docker for both games.
-   - Move Meat from the current JSON / `node:sqlite` store split to
-     Sequelize-backed repositories and migrations.
+     feature-gate flags. Meat shipped `MEAT_MASTER_RUNTIME_MODE`,
+     `MEAT_MASTER_STORE`, `MEAT_MASTER_DATABASE_URL`, and
+     `MEAT_MASTER_COMMUNITY_SERVER_URL`.
+   - ✅ Standardize hosted/server deploys on PostgreSQL in Docker for both
+     games. Mushroom already has the app+Postgres production Compose path;
+     Meat now has a Postgres Compose service for the current app process.
+   - Partially done: move Meat from the current JSON / `node:sqlite` store
+     split to Sequelize-backed repositories and migrations. The hosted
+     Postgres path now uses Sequelize with table-per-bucket JSONB records; the
+     local SQLite path still uses the current `node:sqlite` adapter until the
+     local repository migration lands.
    - Keep SQLite as the local-app dialect for both games through the same
      repository interfaces.
    - Gate community/paid/admin features by mode so local apps can play offline
@@ -1450,18 +1460,21 @@ error assertion were implemented.
 Goal: make the plan honest about what is still risky even though local tests and
 the hub cross-consumer gate pass.
 
-- **Storage safety:** clarified. Hosted server deployments for both Mushroom
-  and Meat should use PostgreSQL in Docker, not SQLite. SQLite remains a
-  supported local-app store. Meat SQLite now wraps the full read/mutate/write
-  update in `BEGIN IMMEDIATE` and has a concurrent two-store wallet mutation
-  test, but the next production step is a Sequelize repository layer with
-  Postgres and SQLite dialects rather than more one-off store code.
+- **Storage safety:** partially implemented. Hosted server deployments for both
+  Mushroom and Meat should use PostgreSQL in Docker, not SQLite. Mushroom has
+  the app+Postgres Compose deployment. Meat now validates hosted server mode as
+  Postgres-only, includes a Postgres Compose service, and has a
+  Sequelize-backed Postgres snapshot store. SQLite remains a supported
+  local-app store; Meat SQLite still uses the current `node:sqlite` adapter
+  with `BEGIN IMMEDIATE` transaction coverage until the local SQLite path moves
+  to the same repository style.
 - **Runtime policy:** improved but still open. Shared config-validation result
   and deploy-check formatting now lives in core, reducing duplicated deploy
-  output logic. The actual deploy policy remains product-local. Avoid relying
-  on experimental `node:sqlite` for the local-app strategy; choose a Sequelize
-  SQLite dialect/driver and pin/document the runtime and packaging target before
-  public local-app builds.
+  output logic. The actual deploy policy remains product-local. Meat now has
+  explicit hosted-server and packaged-local config validation. Avoid relying on
+  experimental `node:sqlite` for the final local-app strategy; choose a
+  Sequelize SQLite dialect/driver and pin/document the runtime and packaging
+  target before public local-app builds.
 - **Schema depth:** partially improved. SQLite schema v2 adds placeholder
   `payment_intents`, `provider_events`, `gacha_rolls`, `gacha_burns`, and
   `idempotency_keys` buckets. Before paid/gacha launch, decide whether wallet
