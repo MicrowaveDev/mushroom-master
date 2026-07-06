@@ -826,8 +826,11 @@ adapter. The next prep-control slice copied
 `web/src/components/prep/SellZone.js` into core as neutral `RunHud` and
 `SellZone` components using run-summary, run-currency, and item-drag props;
 Mushroom now keeps compatibility wrappers that map current `player.coins`,
-icons, CSS classes, and legacy sell events back onto those core components. No
-page shells have moved yet.
+icons, CSS classes, and legacy sell events back onto those core components.
+The next prep-action slice copied `web/src/components/prep/PrepActions.js`
+into core as a neutral `PrepActions` action bar using action-state, opponent
+status, labels, and `ready`/`abandon` events; Mushroom maps its current
+challenge mode and `signal-ready` event locally. No page shells have moved yet.
 
 Goal: move first, then generalize without breaking Mushroom.
 

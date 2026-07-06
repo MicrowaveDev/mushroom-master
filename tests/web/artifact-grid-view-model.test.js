@@ -4,6 +4,7 @@ import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/gr
 import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
+import { PrepActions } from '../../web/src/components/prep/PrepActions.js';
 import { RunHud } from '../../web/src/components/prep/RunHud.js';
 import { SellZone } from '../../web/src/components/prep/SellZone.js';
 import { ShopZone } from '../../web/src/components/prep/ShopZone.js';
@@ -70,6 +71,29 @@ test('[artifact-grid] prep HUD and sell zone keep Mushroom compatibility over co
   assert.equal(SellZone.computed.pricePrefix(), '\uD83E\uDE99');
   assert.equal(SellZone.computed.inactivePrefix(), '\uD83D\uDCB0');
   assert.match(SellZone.template, /@dragover="\$emit\('sell-dragover', \$event\)"/);
+});
+
+test('[artifact-grid] prep actions keep Mushroom compatibility over core', () => {
+  const labels = PrepActions.computed.labels.call({
+    t: {
+      ready: 'Ready',
+      readying: 'Readying',
+      abandonRun: 'Abandon',
+      opponentReady: 'Opponent ready',
+      waitingForOpponent: 'Waiting'
+    }
+  });
+
+  assert.deepEqual(labels, {
+    ready: 'Ready',
+    readying: 'Readying',
+    abandon: 'Abandon',
+    opponentReady: 'Opponent ready',
+    opponentWaiting: 'Waiting'
+  });
+  assert.deepEqual(PrepActions.emits, ['signal-ready', 'abandon']);
+  assert.match(PrepActions.template, /state\.gameRun\.mode === 'challenge'/);
+  assert.match(PrepActions.template, /@ready="\$emit\('signal-ready'\)"/);
 });
 
 test('[artifact-grid] shop zone shapes offer rows through the shared core helper', () => {

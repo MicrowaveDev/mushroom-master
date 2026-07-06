@@ -1,15 +1,29 @@
+import { PrepActions as CorePrepActions } from '@microwavedev/backpack-game-core/vue/components';
+
 export const PrepActions = {
   name: 'PrepActions',
+  components: { CorePrepActions },
   props: ['state', 't'],
   emits: ['signal-ready', 'abandon'],
+  computed: {
+    labels() {
+      return {
+        ready: this.t?.ready,
+        readying: this.t?.readying,
+        abandon: this.t?.abandonRun,
+        opponentReady: this.t?.opponentReady,
+        opponentWaiting: this.t?.waitingForOpponent
+      };
+    }
+  },
   template: `
-    <div class="prep-actions">
-      <div v-if="state.gameRun.mode === 'challenge'" class="prep-opponent-status">
-        <span v-if="state.opponentReady" class="prep-opponent-ready">{{ t.opponentReady }}</span>
-        <span v-else class="prep-opponent-waiting">{{ t.waitingForOpponent }}</span>
-      </div>
-      <button class="primary prep-ready-btn" :disabled="state.actionInFlight" @click="$emit('signal-ready')">{{ state.actionInFlight ? t.readying : t.ready }}</button>
-      <button class="ghost" @click="$emit('abandon')">{{ t.abandonRun }}</button>
-    </div>
+    <CorePrepActions
+      :show-opponent-status="state.gameRun.mode === 'challenge'"
+      :opponent-ready="!!state.opponentReady"
+      :action-in-flight="!!state.actionInFlight"
+      :labels="labels"
+      @ready="$emit('signal-ready')"
+      @abandon="$emit('abandon')"
+    />
   `
 };
