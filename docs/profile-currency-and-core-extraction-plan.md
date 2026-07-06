@@ -1452,8 +1452,13 @@ code as practical.
      mode disables support/admin by default. Remaining depth: wire future
      leaderboard/friends/challenges clients through explicit hosted-community
      APIs rather than local-authoritative writes.
-   - Package the first local app after the storage mode and feature gates are
-     explicit, not before.
+   - ✅ First pass: package the first local app after the storage mode and
+     feature gates are explicit, not before. Meat now has an Electron local
+     wrapper that starts the same backend in local SQLite mode, stores the DB
+     under Electron `userData`, and supports `game:local:check`,
+     `game:local:app`, and `game:local:package`. Remaining release depth:
+     installer art, signing/notarization, and product-specific distribution
+     policy.
    - Partially done: add community API clients for leaderboard/friends/
      challenges from local mode as read-only or narrow-write surfaces first.
      Meat now has `/api/community/status` and a read-only

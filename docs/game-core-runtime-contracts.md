@@ -448,7 +448,9 @@ gates are also product-owned: Meat local mode exposes local progress, disables
 support/admin by default, and rejects paid/gacha toggles until those flows are
 served by hosted community APIs. Meat's first local community client is a
 read-only hosted leaderboard proxy; friends/challenges/account linking remain
-product-local hosted API follow-ups.
+product-local hosted API follow-ups. Meat's first desktop wrapper is
+Electron-based and starts the same product backend in local SQLite mode; core
+still does not own packaging or OS integration.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own
