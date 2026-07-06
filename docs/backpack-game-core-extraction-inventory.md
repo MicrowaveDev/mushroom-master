@@ -218,10 +218,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `b3abab8`
-  (`Add neutral replay page shell`)
-- latest runtime/API core commit: `b3abab8`
-  (`Add neutral replay page shell`)
+- latest consumed core commit: `4cc85c8`
+  (`Add neutral catalog page shell`)
+- latest runtime/API core commit: `4cc85c8`
+  (`Add neutral catalog page shell`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -270,6 +270,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | `web/src/components/ArtifactGridBoard.js` | Delegates board layers to core `BackpackGrid` and core board DTO helpers. | Grid constants, bag watermark offsets, placement events, local `ArtifactFigure`, and product classes stay local. |
 | `web/src/components/FighterCard.js` | Wraps core `FighterCard`. | `mushroom` compatibility prop, local `ArtifactGridBoard`, and product combatant naming stay local. |
 | `web/src/components/ArtifactCatalogBrowser.js` | Wraps core `ArtifactCatalogBrowser`. | Catalog grouping/sorting, fusion recipes, local artifact grids/stats, localized copy, and CSS stay local. |
+| `web/src/pages/RecipesScreen.js` | Wraps core `CatalogPageScreen` around the local artifact catalog browser. | Recipe copy and catalog browser wiring stay local; the page frame is generic. |
 | `web/src/components/ReplayDuel.js` | Wraps core `ReplayDuel`. | Combatant shaping, artifact lookup, loadout projection, visual effects, attribution copy, local fighter/grid rendering stay local. |
 | `web/src/pages/ReplayScreen.js` | Wraps core `ReplayScreen`. | Replay timeline state, route events, reward/currency DTOs, combatant DTOs, and local `ReplayDuel` stay local. |
 | `web/src/components/prep/RunHud.js` | Wraps core `RunHud`. | Run-currency icon/name and Mushroom state mapping stay local. |
@@ -308,7 +309,7 @@ final CSS, product catalogs, image paths, generated art, and localization.
 | Page | Classification | Reason |
 | --- | --- | --- |
 | `ReplayScreen.js` | Extracted neutral shell with Mushroom adapter. | Core owns structure; Mushroom owns replay state, route events, and fighter rendering. |
-| `RecipesScreen.js` | Small adapter-needed shell. | Could move after deciding whether the cover/header is product copy or a generic catalog-page shell; current value is low because `ArtifactCatalogBrowser` already moved. |
+| `RecipesScreen.js` | Extracted generic catalog page shell with Mushroom adapter. | Core owns only the generic cover/content frame; Mushroom owns recipe copy and catalog browser wiring. |
 | `PrepScreen.js` | Adapter-needed, high risk. | Depends on full run state, drag/drop orchestration, active-bag mutation, fusion reveal queue, product grid/art rendering, and many route events. Move only after a documented prep controller/page DTO contract exists. |
 | `RunCompleteScreen.js` | Adapter-needed. | Needs run-complete DTO helpers for season points, achievements, rewards, actions, and product rank/badge assets before shell extraction. |
 | `RunSummaryScreen.js` | Adapter-needed. | Needs summary DTO helpers and route callbacks for replay loading; product character assets and outcome copy stay local. |
@@ -325,15 +326,11 @@ final CSS, product catalogs, image paths, generated art, and localization.
 
 1. Do not move another page until the page has a DTO/adapter contract similar
    to `ReplayScreen`.
-2. Best next low-risk page candidate: `RecipesScreen`, but only if it becomes a
-   generic catalog-page frame with product-provided cover copy and a catalog
-   slot. Otherwise leave it local because the core catalog browser already
-   carries the reusable value.
-3. Best next valuable but risky target: `PrepScreen`, after a headless prep
+2. Best next valuable but risky target: `PrepScreen`, after a headless prep
    controller contract separates run state, drag/drop commands, placement
    previews, fusion reveal queue, shop actions, and ready/abandon actions from
    the visual shell.
-4. Continue extracting smaller Home/Profile/RunComplete panels before moving
+3. Continue extracting smaller Home/Profile/RunComplete panels before moving
    those pages wholesale.
 
 ## Geesome Architecture Review Notes

@@ -1,23 +1,31 @@
+import { CatalogPageScreen } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactCatalogBrowser } from '../components/ArtifactCatalogBrowser.js';
-import '../components/ArtifactCatalogBrowser.css';
 
 export const RecipesScreen = {
   name: 'RecipesScreen',
-  components: { ArtifactCatalogBrowser },
+  components: { ArtifactCatalogBrowser, CatalogPageScreen },
   props: ['state', 't', 'getArtifact'],
+  computed: {
+    labels() {
+      return {
+        eyebrow: this.t.recipes,
+        title: this.t.recipesTitle,
+        intro: this.t.recipesIntro
+      };
+    }
+  },
   template: `
-    <section class="recipes-screen" data-testid="recipes-screen">
-      <header class="recipes-cover panel">
-        <p class="eyebrow">{{ t.recipes }}</p>
-        <h2>{{ t.recipesTitle }}</h2>
-        <p class="recipes-cover-copy">{{ t.recipesIntro }}</p>
-      </header>
-
+    <catalog-page-screen
+      :labels="labels"
+      root-class="recipes-screen"
+      header-class="recipes-cover panel"
+      test-id="recipes-screen"
+    >
       <artifact-catalog-browser
         :state="state"
         :t="t"
         :get-artifact="getArtifact"
       />
-    </section>
+    </catalog-page-screen>
   `
 };

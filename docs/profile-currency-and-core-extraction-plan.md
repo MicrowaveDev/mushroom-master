@@ -878,22 +878,27 @@ continuation labels, collapse state, neutral result/log events, and a
 battle-stage slot; Mushroom now maps replay timeline state, route events,
 localized reward labels, currency/reward stats, combatant DTOs, and local
 `ReplayDuel` rendering through a compatibility wrapper.
+The next low-risk catalog page slice added a neutral `CatalogPageScreen` core
+frame and moved `RecipesScreen` to use it while keeping recipe copy and the
+artifact catalog browser wiring local.
 
 Post-implementation review, 2026-07-06:
 
 - Verified shipped F2 slices:
   `PrepActions`, `FusionReveal`, `BackpackZone`, `InventoryZone`, and
   `ShopZone`, plus `RecipeCard` / `RecipeList` and
-  `ArtifactCatalogBrowser`, plus `ReplayDuel` and `ReplayScreen`, were moved by
-  physically copying current Mushroom files into `backpack-game-core`, then
+  `ArtifactCatalogBrowser`, plus `ReplayDuel`, `ReplayScreen`, and the generic
+  `CatalogPageScreen` frame used by `RecipesScreen`, were moved by physically
+  copying or distilling current Mushroom files into `backpack-game-core`, then
   neutralizing them through DTO props, labels, slots, class hooks, and neutral
   events. Mushroom wrappers preserve old props/events and product visuals.
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
-- Latest verified core SHA for this review: `b3abab8`. Replay shell validation
-  passed with core `npm test` and `npm pack --dry-run`, Mushroom focused replay
-  wrapper tests, Mushroom `npm test` / `game:build`, and Meat `game:test` /
-  `game:build` / `game:test:browser`. Run hub
+- Latest verified core SHA for this review: `4cc85c8`. Replay and catalog
+  shell validation passed with core `npm test` and `npm pack --dry-run`,
+  Mushroom focused replay/recipes wrapper tests, Mushroom `npm test` /
+  `game:build`, and Meat `game:test` / `game:build` /
+  `game:test:browser`. Run hub
   `npm run verify:backpack-core` after both consumer pointer commits are pushed
   to confirm the shared nested-core SHA across Mushroom and Meat.
 - Page shells are closer but still not free. `PrepScreen` still depends on

@@ -1,5 +1,6 @@
 import { createApp, reactive, computed, defineAsyncComponent, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
+import './components/ArtifactCatalogBrowser.css';
 import { parseStartParams } from './api.js';
 import { getRunAchievementsByIds } from '../../app/shared/run-achievements.js';
 
