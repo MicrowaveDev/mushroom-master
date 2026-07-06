@@ -436,6 +436,12 @@ The auth-envelope follow-up added public auth user/session/logout response
 shaping to `modules/auth`; product repos still own Telegram verification,
 dev-login policy, session persistence, auth-code lifecycle, middleware, and
 player lookup.
+The agreed storage direction is two product-owned runtime modes: hosted server
+mode with PostgreSQL in Docker as the authoritative community store, and local
+desktop/app mode with SQLite for local-only progress plus optional calls to the
+hosted server for community features. Core remains persistence-neutral; product
+repos own Sequelize models/repositories, dialect config, migrations, and any
+offline action-log sync policy.
 The same commit started the aggressive frontend port lane by moving the
 browser-safe reduced-motion tracker to
 `@microwavedev/backpack-game-core/vue/composables`; product repos still own
