@@ -713,10 +713,11 @@ its current auth/bootstrap paths.
 Goal: move Mushroom server logic into core without pretending it is neutral on
 day one.
 
-- Physically copy or move selected Mushroom server modules from the current
-  working tree into core feature-module folders; do not reconstruct them
-  manually. Use a temporary quarantined namespace only when a file cannot be
-  made neutral in the same slice.
+- Physically move selected Mushroom server modules from the current working
+  tree into core feature-module folders with `mv`; do not reconstruct them
+  manually from memory. Use copy only for reference during review. Use a
+  temporary quarantined namespace only when a file cannot be made neutral in
+  the same slice.
 - Keep Mushroom importing through compatibility wrappers while each module is
   neutralized. Prefer route-descriptor factories over copied route registration
   blocks.
@@ -725,6 +726,45 @@ day one.
   exports.
 - Validation: core unit tests, Mushroom `npm run game:test`, and Meat server
   smoke tests keep passing after every port slice.
+
+Mv-first migration protocol:
+
+1. Pick a bounded server-file cluster with a clear import surface.
+2. `mv` the original file(s) into `vendor/backpack-game-core/src/server/...`.
+3. Neutralize names and fields in the moved file: `mushroomId` -> `characterId`
+   where the API is shared, `mushroom` -> `character`, `spore/mycelium` ->
+   `profileCurrency/characterProgress`, and Mushroom table/column names ->
+   repository field adapters. Keep legacy aliases only at product adapters or
+   explicit backwards-compatibility boundaries.
+4. Replace direct imports of Mushroom `game-data`, `db`, Express middleware,
+   Telegram/payment helpers, and env vars with injected providers,
+   repositories, policies, config, or route descriptors.
+5. Leave the original Mushroom path as a thin compatibility wrapper that imports
+   the moved core module and wires Mushroom providers.
+6. Add core tests with fake providers plus Mushroom/Meat consumer tests.
+7. Only after a moved file is neutral and both consumers pass, promote it from
+   any temporary port namespace to stable `server/modules/<feature>` exports.
+
+First mv-first backend cluster:
+
+- Move `app/server/services/bot-loadout.js` into a core bot/ghost loadout
+  module, neutralize character naming, and make Mushroom provide artifacts,
+  characters, starter presets, image paths, RNG, and validation.
+- Move `app/server/services/loadout-utils.js` into a core loadout server module
+  adapter/factory, replacing Mushroom constants/catalog imports with provider
+  config; Mushroom keeps a wrapper with Mushroom grid constants and catalog
+  functions.
+- Move `app/server/services/gacha-simulation-service.js` into a core gacha
+  server module wrapper/factory, replacing direct asset-service imports with
+  injected static/runtime pack/catalog/odds providers.
+- Move `app/server/services/ready-manager.js` into a core readiness
+  compatibility module or remove the local file in favor of a core export;
+  Mushroom keeps only the product singleton config.
+- Do not move yet: `create-app.js`, `db.js`, `auth.js`, `bot-gateway.js`,
+  payment/provider settlement endpoints, model definitions, migrations,
+  Telegram/webhook logic, static serving, wiki routes, or social-preview
+  filesystem wiring. Those become module-list/composition-root work after the
+  repository interfaces are explicit.
 
 #### S4 - Product Dependency Sweep
 
