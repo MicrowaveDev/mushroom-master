@@ -892,6 +892,12 @@ first-fit bag anchors, placement previews, refresh-cost labels, and sell-price
 labels through core while keeping drag/drop mutations, API persistence, haptics,
 local error copy, fusion reveal queue mutation, product visuals, and route
 events local.
+The following prep mutation-planner slice added core
+`planPrepPlaceFromContainer`, `planPrepMovePlacedItem`,
+`planPrepActivateBag`, `planPrepDeactivateBag`, `planPrepMoveActiveBag`, and
+`planPrepRotateBag`. Mushroom now applies those neutral next-array plans in
+`useShop` while keeping store application, API persistence, haptics, local
+errors, and route effects product-owned.
 
 Post-implementation review, 2026-07-06:
 
@@ -907,22 +913,24 @@ Post-implementation review, 2026-07-06:
   Meat currently proves package compatibility through import-smoke coverage,
   not visible adoption.
 - Latest verified core SHA for this review before cross-consumer pointer
-  update: `3f5f76b`. Replay, catalog, prep layout-shell, and first headless
-  prep-controller validation passed with core `npm test` and
-  `npm pack --dry-run`, Mushroom focused prep/use-shop/grid tests, Mushroom
-  `npm test` / `game:build`. Run Meat `game:test` / `game:build` /
-  `game:test:browser`, then hub `npm run verify:backpack-core` after both
-  consumer pointer commits are pushed to confirm the shared nested-core SHA
-  across Mushroom and Meat.
+  update: `e027bd3`. Replay, catalog, prep layout-shell, first headless
+  prep-controller, and prep mutation-planner validation passed with core
+  `npm test` and `npm pack --dry-run`, Mushroom focused prep/use-shop/grid
+  tests, Mushroom `npm test` / `game:build`. Run Meat `game:test` /
+  `game:build` / `game:test:browser`, then hub
+  `npm run verify:backpack-core` after both consumer pointer commits are
+  pushed to confirm the shared nested-core SHA across Mushroom and Meat.
 - Page shells are closer but still not free. `PrepScreen` still depends on
   whole Mushroom runtime state, route events, drag/drop orchestration,
-  active-bag mutation policy, fusion reveal queue mutation, and product-owned
-  grid/art rendering. The next prep contract should extract neutral mutation
-  command planners for place/move/activate/deactivate/rotate, sell/refresh, and
-  ready/abandon while products keep persistence, haptics, and route effects.
+  sell/refresh purchase policy, ready/abandon route policy, fusion reveal queue
+  mutation, and product-owned grid/art rendering. The next prep contract should
+  extract neutral sell/refresh and ready/abandon action planners plus API
+  persistence adapters while products keep haptics, local errors, and route
+  effects.
 - Next F2 implementation order:
-  1. Extend the prep controller from selectors into neutral command planners,
-     then adopt them inside Mushroom `useShop` without moving API calls.
+  1. Extend the prep controller into sell/refresh and ready/abandon action
+     planners, then design API persistence adapters for applying planned
+     loadout mutations to hosted/local stores.
   2. Re-audit `PrepScreen`, `RecipesScreen`, and other page shells only after
      route/state orchestration is adapterized.
 - Do **not** move `ArtifactFigure` as-is. It still contains hardcoded
