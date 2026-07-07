@@ -452,6 +452,14 @@ loadouts, loadout validation wrappers, gacha simulation wrappers, and readiness
 singleton exports into core provider-driven factories. Product repos still own
 catalogs, character lists, starter presets, image paths, runtime pack lookups,
 validation policy, readiness config, and legacy aliases.
+The second mv-first backend cluster moved the small server utility and
+observability files into the core `server` facade. Core now owns neutral
+time/id/code/session helpers, JSON parsing, language normalization,
+string-seed RNG bridging, progression calculation, run-currency field shaping,
+structured logging, and request logging middleware shape. Product repos still
+own legacy aliases, default locale preference, product-specific log context
+fields, logging sinks, and any DB/provider/bootstrap code that consumes those
+helpers.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the

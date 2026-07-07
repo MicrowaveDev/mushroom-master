@@ -208,6 +208,13 @@ copy, theme, and API adapters.
   Mushroom keeps thin wrappers at the old paths for catalog/config/provider
   wiring and legacy `mushroomId` output compatibility; Meat pins the same SHA
   and imports the factories in its core-consumption test.
+- second mv-first server-file cluster: `src/server/modules/utils.js` and
+  `src/server/modules/observability.js` were physically moved from Mushroom
+  server `lib` files into core and neutralized into the public `server`
+  facade. Mushroom keeps thin wrappers at the old paths for legacy progression
+  aliases, Russian-first language fallback, and product-specific log context;
+  Meat pins the same SHA and imports the utility/logger facade in its
+  core-consumption test.
 - browser-safe Vue composable slice: `src/vue/composables/useReducedMotion.js`
   now exposes `createReducedMotionTracker` and
   `bindReducedMotionTracker` through
@@ -239,10 +246,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `55200c7`
-  (`Move server service adapters into core`)
-- latest runtime/API core commit: `55200c7`
-  (`Move server service adapters into core`)
+- latest consumed core commit: `bcaec9d`
+  (`Move server utility helpers into core`)
+- latest runtime/API core commit: `bcaec9d`
+  (`Move server utility helpers into core`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 

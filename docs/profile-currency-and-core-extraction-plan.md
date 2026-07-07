@@ -124,7 +124,11 @@
 > coverage rows, chance text, fixture operation summaries, odds preview table
 > rows, fixture operation rows, and simulation item rows are shared. Mushroom
 > live frontend transport now routes through the shared client while keeping
-> product route names local.
+> product route names local. The second mv-first server cluster now also moves
+> `app/server/lib/utils.js` and `app/server/lib/obs.js` into the core `server`
+> facade as neutral utility and observability helpers, with Mushroom keeping
+> compatibility wrappers for legacy progression aliases, locale fallback, and
+> product-specific log context.
 > Product DB schemas, payment-provider adapters, Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The 2026-07-05 backend
@@ -763,6 +767,21 @@ First mv-first backend cluster:
 - ✅ Done 2026-07-07 in core commit `55200c7`: moved
   `app/server/services/ready-manager.js` into `createReadyManagerExports`;
   Mushroom keeps only the product singleton config.
+
+Second mv-first backend cluster:
+
+- ✅ Done 2026-07-07 in core commit `bcaec9d`: moved
+  `app/server/lib/utils.js` into the core `server` facade as neutral
+  time/id/code/session, JSON, language, deterministic string-seed RNG,
+  progression, rating, and currency-field helpers. Mushroom keeps the old file
+  as a wrapper for `MYCELIUM_LEVEL_CURVE`, `computeLevel`, and Russian-first
+  language fallback compatibility.
+- ✅ Done 2026-07-07 in core commit `bcaec9d`: moved
+  `app/server/lib/obs.js` into the core `server` facade as adapter-driven
+  structured logging and request logging helpers. Mushroom keeps the old file
+  as a wrapper for product log context fields (`playerId`, `gameRunId`) and
+  final logging configuration.
+
 - Do not move yet: `create-app.js`, `db.js`, `auth.js`, `bot-gateway.js`,
   payment/provider settlement endpoints, model definitions, migrations,
   Telegram/webhook logic, static serving, wiki routes, or social-preview
