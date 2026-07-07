@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `74a7e82fac3a9bc013b6561e1cfa387a27049c4e`
-- core short SHA: `74a7e82`
-- core commit: `Add auth route server module`
-- runtime/API baseline: `74a7e82` (`Add auth route server module`)
-- game pointer commit: `ec91176` (`Consume core auth route descriptors`)
+- core SHA: `55200c7b1f328a5c30c914cc7909d43d7688607d`
+- core short SHA: `55200c7`
+- core commit: `Move server service adapters into core`
+- runtime/API baseline: `55200c7` (`Move server service adapters into core`)
+- game pointer commit: `33f4f74` (`Consume moved core server factories`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-07 | `33f4f74` | `55200c7` | Moved server service factories | Core now contains the first mv-first server-file cluster: ghost loadout generation, loadout utility factory wiring, gacha simulation wrapper wiring, and readiness singleton export wiring. Mushroom keeps thin wrappers at the old service paths for catalogs, character lists, starter presets, image paths, runtime pack providers, validation policy, readiness config, and legacy `mushroomId` output compatibility. Meat pins the same SHA and verifies the factories in its core-consumption test. |
 | 2026-07-07 | `ec91176` | `74a7e82` | Auth route server module | Core added provider-neutral auth/bootstrap route names, `createAuthRouteGroup`, and `createAuthRoutesServerModule`. Mushroom now binds its existing Telegram/web/logout/bootstrap/dev-session handlers through the core auth route family while keeping provider verification, session persistence, rate limits, player lookup, and final path choices local. Meat pins the same SHA and verifies the route family against its current auth/bootstrap paths. |
 | 2026-07-06 | `08d9822` | `c166e28` | Server route descriptors | Core added framework-neutral route descriptors, route groups, descriptor flattening, and adapter-driven route binding. This lets future `core.auth`, `core.profile`, `core.run`, `core.wallet`, `core.assets`, `core.gacha`, and `core.support` modules expose route factories without importing a product HTTP stack. Mushroom and Meat still own concrete repositories, app bootstrap, middleware order, static files, provider callbacks, credentials, and route mounting. |
 | 2026-07-06 | `5ddffd5` | `dbfa321` | Auth session response shapers | Core added `modules/auth` for public auth user normalization plus login/session/logout response envelopes over already-authenticated product rows. Mushroom now delegates Telegram/web auth response bodies and logout acknowledgement through core; Meat delegates token/player/bootstrap login envelopes through core. Verification, dev-login policy, auth-code lifecycle, session persistence, middleware, and player lookup stay local. |
