@@ -460,6 +460,13 @@ structured logging, and request logging middleware shape. Product repos still
 own legacy aliases, default locale preference, product-specific log context
 fields, logging sinks, and any DB/provider/bootstrap code that consumes those
 helpers.
+The first aggressive gameplay-spine move then moved
+`game-run-loadout.js` into the quarantined
+`@microwavedev/backpack-game-core/server/ports/mushroom/gameplay` subpath.
+It intentionally preserves current Mushroom SQL/table behavior behind injected
+query, catalog, grid, validation, clock, and ID providers. Treat this as a
+temporary migration port, not a stable cross-game API, until repository
+contracts replace the table/query details.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the

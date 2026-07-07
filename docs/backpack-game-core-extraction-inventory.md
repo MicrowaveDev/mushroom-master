@@ -215,6 +215,13 @@ copy, theme, and API adapters.
   aliases, Russian-first language fallback, and product-specific log context;
   Meat pins the same SHA and imports the utility/logger facade in its
   core-consumption test.
+- first quarantined gameplay port: `src/server/ports/mushroom/gameplay`
+  exposes `createGameRunLoadoutPort()` after physically moving Mushroom's
+  `app/server/services/game-run-loadout.js` into core. The port preserves the
+  existing `game_run_loadout_items` / `game_run_refunds` SQL while requiring
+  injected query, catalog, grid, validation, clock, and ID providers. Mushroom
+  keeps the old service path as a wrapper; Meat verifies the export without
+  adopting this temporary Mushroom table contract.
 - browser-safe Vue composable slice: `src/vue/composables/useReducedMotion.js`
   now exposes `createReducedMotionTracker` and
   `bindReducedMotionTracker` through
@@ -246,10 +253,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `bcaec9d`
-  (`Move server utility helpers into core`)
-- latest runtime/API core commit: `bcaec9d`
-  (`Move server utility helpers into core`)
+- latest consumed core commit: `234de9f`
+  (`Add quarantined game run loadout port`)
+- latest runtime/API core commit: `234de9f`
+  (`Add quarantined game run loadout port`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -476,7 +483,7 @@ Maximum-efficiency constraints:
 | Server module registry, route descriptors, readiness, and mutation middleware | `backpack-game-core/src/server/*`; Mushroom adapters in `app/server/lib/*` and `app/server/services/ready-manager.js` | Extracted infrastructure slice and module factory | Core now owns a lightweight module descriptor/context setup facade, framework-neutral route descriptors/groups/binding helpers, reusable idempotency and token-bucket rate-limit middleware, configurable run readiness state, idle-run detection, keyed async mutexes, and module-list registration for the readiness manager. Mushroom keeps route mounting, auth middleware attachment, active-run DB lookups, challenge resolution, SSE sends, and existing local import paths as adapters; Meat imports the same server surface in its core-consumption test. Product DB models, app bootstrap, provider SDKs, and payment/webhook modules stay local. |
 | Shared frontend DTO/view-model shaping | `backpack-game-core/src/client-view-model.js`; Mushroom composables/pages/components | Extracted DTO baseline and neutral Vue primitive layer | Core owns many browser-safe transforms for loadout projection, shop/run/replay response state, wallet/gacha status, asset pack summaries, admin rows, grid/stat helpers, artifact stat-row DTOs, shop item row DTOs, board render rows, replay rows, artifact tile display contracts, pack card rows, odds table sections, and roll-result panel DTOs. Core also owns the first neutral Vue component layer: roll-result panels, odds tables, gacha pack cards, artifact tiles, stat summaries, shop rows/lists, backpack grids, battle logs, achievement badges, and season-rank emblems. |
 | Frontend port inventory and reduced-motion composable | `backpack-game-core/src/vue/composables/*`; Mushroom adapter in `web/src/composables/useReducedMotion.js` | First aggressive frontend-port slice | F1 found that most components/pages still need DTO, route, locale, asset, and CSS adapters before page-shell moves. The first safe F2 slice moved the neutral reduced-motion tracker into core while Mushroom keeps settings/CSS attachment local and Meat verifies the export. |
-| Server module inventory and contract | `backpack-game-core/src/server/index.js`; `docs/server-module-contract.md`; Mushroom server files audited in S1 | Contract implemented, bulk quarantined ports planned | The original S1 audit was too conservative for the current goal. Core now has route descriptors and a quarantine strategy, so remaining Mushroom server files should move earlier with `mv` into `src/server/ports/mushroom/<feature>/`, then be neutralized into repository-backed feature modules. Next bulk-port candidates are the gameplay spine (`game-run-loadout.js`, `artifact-fusion-service.js`, `shop-service.js`, `run-service.js`, `battle-service.js`, `game-service.js`, `player-service.js`, `season-service.js`, `mutation-claim-service.js`), then wallet/assets/gacha/support services, then auth/bot/wiki/social/create-app route sections. Product apps keep concrete DB/model/migration implementations, transactions, provider callbacks, credentials, middleware order, static file serving, deploy config, and product catalogs. |
+| Server module inventory and contract | `backpack-game-core/src/server/index.js`; `docs/server-module-contract.md`; Mushroom server files audited in S1; `backpack-game-core/src/server/ports/mushroom/gameplay` | Contract implemented, first quarantined gameplay port moved | The original S1 audit was too conservative for the current goal. Core now has route descriptors and a quarantine strategy, and `game-run-loadout.js` has moved under `src/server/ports/mushroom/gameplay` as a temporary port. Remaining Mushroom server files should move earlier with `mv` into `src/server/ports/mushroom/<feature>/`, then be neutralized into repository-backed feature modules. Next bulk-port candidates are the rest of the gameplay spine (`artifact-fusion-service.js`, `shop-service.js`, `run-service.js`, `battle-service.js`, `game-service.js`, `player-service.js`, `season-service.js`, `mutation-claim-service.js`), then wallet/assets/gacha/support services, then auth/bot/wiki/social/create-app route sections. Product apps keep concrete DB/model/migration implementations, transactions, provider callbacks, credentials, middleware order, static file serving, deploy config, and product catalogs. |
 | Backpack grid, artifact tile, and shop UI | `web/src/components/*Prep*`, `web/src/artifacts/render.js`, `web/src/helpers/grid-cell-classification.js`, Meat `src/main.js` prototype | Frontend-core candidate | Grid classification, cell rendering, artifact figure/tile presentation, shop offer rows, price/budget badges, and placement affordances are common backpack UI primitives. Product themes, copy, item art paths, and route actions stay in each game. |
 | Battle replay/log UI | Mushroom replay components/pages and Meat battle panel | Frontend-core candidate | Battle timeline rendering, event filtering, combatant stat panels, outcome badges, and playback state are reusable over core battle events. Product narration text, character art, share routes, and replay persistence stay local. |
 | Wallet, asset inventory, and gacha UI | Mushroom asset/portrait/gacha screens, support asset widgets, Meat future inventory/gacha screens | Frontend-core candidate | Wallet balance display, asset inventory/equipment panels, gacha pack cards, roll result modals, duplicate/burn state panels, odds tables, and asset policy labels can be shared with product API/copy/theme adapters. Payment provider selection, adult-content gates, and purchase routes stay local. |

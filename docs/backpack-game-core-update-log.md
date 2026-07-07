@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `bcaec9d559566c1f29d85d85baf153f3cb333dfd`
-- core short SHA: `bcaec9d`
-- core commit: `Move server utility helpers into core`
-- runtime/API baseline: `bcaec9d` (`Move server utility helpers into core`)
-- game pointer commit: `cf4280c` (`Consume moved core server utilities`)
+- core SHA: `234de9fad62badef309f4b6ba46f86504584d78b`
+- core short SHA: `234de9f`
+- core commit: `Add quarantined game run loadout port`
+- runtime/API baseline: `234de9f` (`Add quarantined game run loadout port`)
+- game pointer commit: `20301c5` (`Consume core game run loadout port`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-07 | `20301c5` | `234de9f` | Quarantined game-run loadout port | Core now contains the first aggressive gameplay spine port under `@microwavedev/backpack-game-core/server/ports/mushroom/gameplay`: the old `game-run-loadout.js` implementation moved behind `createGameRunLoadoutPort()` with injected DB query, catalog, grid, validation, clock, and ID providers. Mushroom keeps the old `app/server/services/game-run-loadout.js` path as a wrapper. Meat pins the same SHA and verifies the quarantined export without adopting the Mushroom table contract yet. |
 | 2026-07-07 | `cf4280c` | `bcaec9d` | Moved server utility helpers | Core now contains the second mv-first server-file cluster: neutral time/id/code/session, JSON parsing, language normalization, deterministic string-seed RNG, progression, run-currency field shaping, structured logging, and request logging. Mushroom keeps thin wrappers at the old `app/server/lib/utils.js` and `app/server/lib/obs.js` paths for legacy `MYCELIUM_LEVEL_CURVE` / `computeLevel`, Russian-first language fallback, and `playerId` / `gameRunId` log context. Meat pins the same SHA and verifies the utility/logger facade in its core-consumption test. |
 | 2026-07-07 | `33f4f74` | `55200c7` | Moved server service factories | Core now contains the first mv-first server-file cluster: ghost loadout generation, loadout utility factory wiring, gacha simulation wrapper wiring, and readiness singleton export wiring. Mushroom keeps thin wrappers at the old service paths for catalogs, character lists, starter presets, image paths, runtime pack providers, validation policy, readiness config, and legacy `mushroomId` output compatibility. Meat pins the same SHA and verifies the factories in its core-consumption test. |
 | 2026-07-07 | `ec91176` | `74a7e82` | Auth route server module | Core added provider-neutral auth/bootstrap route names, `createAuthRouteGroup`, and `createAuthRoutesServerModule`. Mushroom now binds its existing Telegram/web/logout/bootstrap/dev-session handlers through the core auth route family while keeping provider verification, session persistence, rate limits, player lookup, and final path choices local. Meat pins the same SHA and verifies the route family against its current auth/bootstrap paths. |
