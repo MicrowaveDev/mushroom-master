@@ -15,11 +15,17 @@ import {
   resolveAssetCatalogAcquisitionPolicy,
   validateAssetGachaPack
 } from '@microwavedev/backpack-game-core/modules/gacha';
+import {
+  createRunAchievementService,
+  createSeasonLevelService
+} from '@microwavedev/backpack-game-core/modules/season';
 import { applyWalletBalanceDelta } from '@microwavedev/backpack-game-core/modules/wallet';
 import {
   createProfileAssetState,
   shapeProfileAssetTargetVariants
 } from '@microwavedev/backpack-game-core/modules/assets';
+import { createMutationClaimService } from '@microwavedev/backpack-game-core/server';
+import { createSeasonProgressPort } from '@microwavedev/backpack-game-core/server/ports/mushroom/gameplay';
 import { checkBackpackGameCoreSubmodule } from '../../app/scripts/check-backpack-game-core-submodule.js';
 
 test('[core-submodule] backpack-game-core nested submodule is initialized', () => {
@@ -43,6 +49,10 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(typeof resolveAssetCatalogAcquisitionPolicy, 'function');
   assert.equal(typeof applyWalletBalanceDelta, 'function');
   assert.equal(typeof createProfileAssetState, 'function');
+  assert.equal(typeof createSeasonLevelService, 'function');
+  assert.equal(typeof createRunAchievementService, 'function');
+  assert.equal(typeof createMutationClaimService, 'function');
+  assert.equal(typeof createSeasonProgressPort, 'function');
 
   assert.deepEqual(getEffectiveShape({ width: 1, height: 1 }, false), [[1]]);
   assert.deepEqual(pieceCells({ x: 0, y: 0, width: 1, height: 2 }), ['0:0', '0:1']);
@@ -63,6 +73,15 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
     defaultPaidMode: 'gacha',
     defaultPackId: 'season_1_portraits'
   }).packId, 'season_1_portraits');
+  assert.equal(createSeasonLevelService({
+    levels: [{ id: 'bronze', minPoints: 0 }, { id: 'silver', minPoints: 5 }]
+  }).getSeasonLevel(6).id, 'silver');
+  assert.equal(createRunAchievementService({
+    achievements: {
+      general: [{ id: 'first_win', criteria: { minWins: 1 } }],
+      characters: {}
+    }
+  }).getAwardableRunAchievements({ wins: 1 })[0].id, 'first_win');
 
   const result = simulateBattle({
     left: { side: 'left', name: 'left', maxHealth: 10, currentHealth: 10, attack: 10, speed: 2, defense: 0 },
