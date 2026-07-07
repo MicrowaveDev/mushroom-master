@@ -819,6 +819,12 @@ Aggressive bulk server move lane:
   `createArtifactFusionPort()`. Mushroom keeps the old service path as a thin
   wrapper that injects DB query, catalog, fusion matcher, loadout row mutation,
   clock, and ID providers.
+- ✅ Done 2026-07-07 in core commit `97aea67`: moved all
+  `app/server/models/*.js` Sequelize model definitions into the quarantined
+  `server/models/mushroom` package subpath. Mushroom keeps only
+  `app/server/models/index.js` as a wrapper. Product repos still own Sequelize
+  instance creation, dialect config, sync/backfill logic, queries,
+  transactions, and migrations.
 - **Move next, quarantined:** `shop-service.js`, `run-service.js`,
   `battle-service.js`, `game-service.js`, `player-service.js`,
   `season-service.js`, and `mutation-claim-service.js`. These are the
@@ -839,10 +845,11 @@ Aggressive bulk server move lane:
   config, and middleware. Final route mounting and middleware order stay in
   Mushroom/Meat.
 - **Keep product-local until the repository layer exists:** `db.js`,
-  `app/server/models/**`, migrations, concrete Sequelize/Postgres/SQLite
-  setup, static file serving, deploy config, and product catalogs. These should
-  be represented to core through repositories/config, not moved as the source
-  of truth yet.
+  migrations, concrete Sequelize/Postgres/SQLite setup, sync/backfill/index
+  repair code, static file serving, deploy config, and product catalogs. The
+  model definitions have moved to core quarantine, but they are not the source
+  of truth for runtime persistence behavior; product repositories/config still
+  own that.
 - **Exit criteria for each quarantined file:** Mushroom wrapper imports the
   moved file; Meat either imports the stable facade or has an explicit
   not-yet-consumed test gap; core tests use fake providers; no stable core
@@ -3547,8 +3554,9 @@ Keep these in `mushroom-master`:
 
 - Mushroom definitions, names, lore, portraits, wiki, achievements, seasons, and
   home field.
-- Telegram auth, Express routes, SSE, database models, migrations, and
-  persistence services.
+- Telegram auth, Express routes, SSE, migrations, database clients/repositories,
+  and persistence services. Mushroom model definitions now live in the core
+  quarantine, but runtime persistence still stays product-owned.
 - Product-specific asset catalogs and localized UI copy.
 - Any code that references `player_mushrooms`, `PORTRAIT_VARIANTS`, wiki
   thresholds, or Mushroom lore directly.
@@ -3993,7 +4001,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `2c39656`; typed package baseline remains `d5fb481`.
+   `97aea67`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package
@@ -4753,8 +4761,10 @@ frontend adoption.
   inside `mushroom-master`; then extract mechanics.
 - Keep compatibility aliases for one release where API payloads or old dev DBs
   might still use `coins`, `mycelium`, or `active_portrait`.
-- Do not move Sequelize models into the core package. The core should not know
-  which product owns persistence.
+- Sequelize model definitions may live only in the explicit
+  `server/models/mushroom` quarantine until repository boundaries replace raw
+  table ownership. Do not move database clients, migrations, sync/backfill
+  logic, transactions, or concrete Postgres/SQLite runtime behavior into core.
 - Keep Mushroom ability logic product-specific through the battle hook adapter.
 - Move reusable gacha and asset-acquisition rules into core, but keep product
   catalogs, database rows, routes, admin auth/storage, final page assembly, and

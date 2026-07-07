@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `2c39656569f6dfea1576092c3e61cdfb39df779b`
-- core short SHA: `2c39656`
-- core commit: `Add quarantined artifact fusion port`
-- runtime/API baseline: `2c39656` (`Add quarantined artifact fusion port`)
-- game pointer commit: `1933d7f` (`Consume core artifact fusion port`)
+- core SHA: `97aea678a3964edb3009ce74160bde4dd2cfecc3`
+- core short SHA: `97aea67`
+- core commit: `Move Mushroom models into core quarantine`
+- runtime/API baseline: `97aea67` (`Move Mushroom models into core quarantine`)
+- game pointer commit: `ef68ee9` (`Consume core Mushroom model definitions`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-07 | `ef68ee9` | `97aea67` | Quarantined Mushroom model definitions | Core now contains the full moved Mushroom Sequelize model definition set under `@microwavedev/backpack-game-core/server/models/mushroom`, with `initModels()` and association setup. Mushroom keeps only `app/server/models/index.js` as a wrapper. Product repos still own Sequelize instance creation, Postgres/SQLite dialect config, sync/backfill logic, queries, transactions, and migrations. Meat pins the same SHA and verifies the model export without adopting Mushroom DB runtime behavior. |
 | 2026-07-07 | `1933d7f` | `2c39656` | Quarantined artifact-fusion port | Core now contains the second aggressive gameplay spine port under `@microwavedev/backpack-game-core/server/ports/mushroom/gameplay`: the old `artifact-fusion-service.js` implementation moved behind `createArtifactFusionPort()` with injected DB query, catalog, fusion matcher, loadout row mutation, clock, and ID providers. Mushroom keeps the old `app/server/services/artifact-fusion-service.js` path as a wrapper. Meat pins the same SHA and verifies the quarantined export without adopting the Mushroom fusion table contract yet. |
 | 2026-07-07 | `20301c5` | `234de9f` | Quarantined game-run loadout port | Core now contains the first aggressive gameplay spine port under `@microwavedev/backpack-game-core/server/ports/mushroom/gameplay`: the old `game-run-loadout.js` implementation moved behind `createGameRunLoadoutPort()` with injected DB query, catalog, grid, validation, clock, and ID providers. Mushroom keeps the old `app/server/services/game-run-loadout.js` path as a wrapper. Meat pins the same SHA and verifies the quarantined export without adopting the Mushroom table contract yet. |
 | 2026-07-07 | `cf4280c` | `bcaec9d` | Moved server utility helpers | Core now contains the second mv-first server-file cluster: neutral time/id/code/session, JSON parsing, language normalization, deterministic string-seed RNG, progression, run-currency field shaping, structured logging, and request logging. Mushroom keeps thin wrappers at the old `app/server/lib/utils.js` and `app/server/lib/obs.js` paths for legacy `MYCELIUM_LEVEL_CURVE` / `computeLevel`, Russian-first language fallback, and `playerId` / `gameRunId` log context. Meat pins the same SHA and verifies the utility/logger facade in its core-consumption test. |

@@ -74,9 +74,10 @@ wallet balance.
 Current code anchors:
 
 - `app/server/services/wallet-service.js`
-- `app/server/models/PlayerWalletBalance.js`
-- `app/server/models/PlayerWalletTransaction.js`
-- `app/server/models/WalletPurchaseIntent.js`
+- `vendor/backpack-game-core/src/server/models/mushroom/PlayerWalletBalance.js`
+- `vendor/backpack-game-core/src/server/models/mushroom/PlayerWalletTransaction.js`
+- `vendor/backpack-game-core/src/server/models/mushroom/WalletPurchaseIntent.js`
+- `app/server/models/index.js`: compatibility wrapper for model registration
 - `app/server/bot-gateway.js`
 - `app/server/create-app.js`
 
@@ -159,9 +160,9 @@ current shipped asset type.
 Current code anchors:
 
 - `app/server/services/asset-service.js`
-- `app/server/models/PlayerAssetInstance.js`
-- `app/server/models/PlayerEquippedAsset.js`
-- `app/server/models/AssetRoll.js`
+- `vendor/backpack-game-core/src/server/models/mushroom/PlayerAssetInstance.js`
+- `vendor/backpack-game-core/src/server/models/mushroom/PlayerEquippedAsset.js`
+- `vendor/backpack-game-core/src/server/models/mushroom/AssetRoll.js`
 - `app/server/game-data.js`: `PORTRAIT_VARIANTS`
 
 Rules:
@@ -276,8 +277,9 @@ These are product-specific and must stay out of `backpack-game-core`:
 
 - Mushroom names, lore, portraits, wiki entries, achievements, seasons, and
   home-field code
-- Telegram auth, bot gateway, Express routes, SSE, database models, migrations,
-  and persistence services
+- Telegram auth, bot gateway, Express routes, SSE, migrations, database
+  clients/repositories, and persistence services. The moved Mushroom model
+  definitions are a quarantine package only, not stable persistence API.
 - wallet/payment providers, webhook verification, refunds/reversals, support,
   terms, and adult-content compliance gates
 - localized UI copy, product route composition, auth shells, CSS themes, and
@@ -476,13 +478,15 @@ SQL/table details.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the
-hosted server for community features. Core remains persistence-neutral; product
-repos own Sequelize models/repositories, dialect config, migrations, and any
-offline action-log sync policy. Meat now uses one Sequelize-backed snapshot
-store for its hosted Postgres and local SQLite dialects; deeper normalized
-repositories and sync policy remain product-local follow-ups. Runtime feature
-gates are also product-owned: Meat local mode exposes local progress, disables
-support/admin by default, and rejects paid/gacha toggles until those flows are
+hosted server for community features. Core now has a quarantined copy of the
+Mushroom Sequelize model definitions, but product repos still own Sequelize
+instance creation, repositories, dialect config, migrations, sync/backfill
+logic, and any offline action-log sync policy. Meat now uses one
+Sequelize-backed snapshot store for its hosted Postgres and local SQLite
+dialects; deeper normalized repositories and sync policy remain product-local
+follow-ups. Runtime feature gates are also product-owned: Meat local mode
+exposes local progress, disables support/admin by default, and rejects
+paid/gacha toggles until those flows are
 served by hosted community APIs. Meat's first local community client is a
 read-only hosted leaderboard proxy; friends/challenges/account linking remain
 product-local hosted API follow-ups. Meat's first desktop wrapper is
