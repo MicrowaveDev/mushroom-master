@@ -599,15 +599,20 @@ catalog, config, repository, Telegram, and content-policy modules.
 
 #### S1 - Server Module Inventory
 
-Status: **Completed 2026-07-05 as a read-only audit.** The audit classified
-auth/session and request auth shape as hybrid core candidates with
-players/sessions/auth-code repository contracts; `create-app.js`, DB/models,
-Telegram, wiki/lore, social preview, payment callbacks, support approval
-policy, and product catalogs remain product-local. Best first server moves are
-pure/adapted slices: `provider-settlement-adapters.js`, module-list wiring
-around `ready-manager.js`, and a module factory around the existing
-`loadout-utils.js` adapter. The initial `artifact-helpers.js` candidate has now
-moved as the artifact-capability helper slice, and
+Status: **Completed 2026-07-05 as a read-only audit; corrected 2026-07-07 for
+bulk server moves.** The original audit was too conservative for the current
+goal. Files such as `create-app.js`, `auth.js`, `run-service.js`,
+`wallet-service.js`, `asset-service.js`, `shop-service.js`,
+`gacha-admin-service.js`, support services, and social/wiki modules may move
+to core earlier under a quarantined port namespace, even before every DB,
+Telegram, provider, catalog, or route dependency is fully neutral. What stays
+product-local is the concrete integration: DB connections/models/migrations,
+repository implementations, Telegram/webhook setup, payment callbacks and
+signatures, provider credentials, adult/content policy, wiki/lore content,
+static assets, middleware ordering, and final Express composition. Best first
+server moves are now larger bounded feature files, moved with `mv` into core
+and immediately wrapped back in Mushroom. The initial `artifact-helpers.js`
+candidate has now moved as the artifact-capability helper slice, and
 `gacha-simulation-service.js` now delegates through a provider-driven core
 service/module factory. `loadout-utils.js` now delegates through a
 provider-driven loadout validation service/module factory while keeping
@@ -618,8 +623,10 @@ CSV/JSON parsing, scoped field lookup, and configurable record mapping through
 `modules/wallet/settlement-adapters`, while Mushroom keeps concrete provider
 field maps and reconciliation persistence local.
 
-Goal: classify Mushroom server files into shared core modules, app adapters, or
-product-local modules before moving code.
+Goal: classify Mushroom server files into shared core modules, quarantined
+core ports, app adapters, or product-local integrations before stabilizing the
+exports. Classification must not block a physical `mv` when a compatibility
+wrapper and fake-provider tests can keep both games working.
 
 - Inventory `app/server/auth.js`, `create-app.js`, `game-data.js`,
   `bot-gateway.js`, `wiki.js`, `social-preview-cache.js`, `db.js`,
@@ -629,6 +636,13 @@ product-local modules before moving code.
     run/shop/loadout/battle/replay service logic, wallet/assets/gacha/support
     service logic, DTO/result/error shaping, route factories, validation, cache
     helpers;
+  - **quarantined core port:** existing Mushroom files that are reusable but
+    still mention Mushroom tables, Express request/response objects, Telegram,
+    payment providers, env vars, or product catalogs. Move these files into
+    `vendor/backpack-game-core/src/server/ports/mushroom/<feature>/` first,
+    preserve behavior through Mushroom wrappers, and then replace imports with
+    repositories/policies/config/route descriptors until the file can graduate
+    to `src/server/modules/<feature>`;
   - **adapter/repository contract:** player/session/run/wallet/asset/gacha
     repositories, idempotency store, audit store, logger, clock, id generator;
   - **product-local module:** DB connection/models/migrations, Telegram bot and
@@ -720,11 +734,14 @@ day one.
 - Physically move selected Mushroom server modules from the current working
   tree into core feature-module folders with `mv`; do not reconstruct them
   manually from memory. Use copy only for reference during review. Use a
-  temporary quarantined namespace only when a file cannot be made neutral in
-  the same slice.
+  temporary quarantined namespace as the default for large files that cannot be
+  made neutral in the same slice.
 - Keep Mushroom importing through compatibility wrappers while each module is
   neutralized. Prefer route-descriptor factories over copied route registration
   blocks.
+- For large files, do not wait until every dependency is already abstracted.
+  Move the file first, keep its existing behavior behind product-provided
+  adapters, then neutralize imports/field names incrementally inside core.
 - Add a forbidden-import guard that permits the temporary namespace only for
   tracked migration files and blocks Mushroom paths in stable core server
   exports.
@@ -733,7 +750,10 @@ day one.
 
 Mv-first migration protocol:
 
-1. Pick a bounded server-file cluster with a clear import surface.
+1. Pick a bounded server-file cluster with a clear import surface. Small
+   neutral files may move straight to `src/server/modules/<feature>`. Large
+   files should move first to `src/server/ports/mushroom/<feature>/` and stay
+   explicitly quarantined until all product imports are gone.
 2. `mv` the original file(s) into `vendor/backpack-game-core/src/server/...`.
 3. Neutralize names and fields in the moved file: `mushroomId` -> `characterId`
    where the API is shared, `mushroom` -> `character`, `spore/mycelium` ->
@@ -746,7 +766,10 @@ Mv-first migration protocol:
 5. Leave the original Mushroom path as a thin compatibility wrapper that imports
    the moved core module and wires Mushroom providers.
 6. Add core tests with fake providers plus Mushroom/Meat consumer tests.
-7. Only after a moved file is neutral and both consumers pass, promote it from
+7. For a quarantined port, add an import-boundary allowlist with exact file
+   paths and a TODO ticket in this plan. The allowlist should shrink every
+   slice.
+8. Only after a moved file is neutral and both consumers pass, promote it from
    any temporary port namespace to stable `server/modules/<feature>` exports.
 
 First mv-first backend cluster:
@@ -782,11 +805,38 @@ Second mv-first backend cluster:
   as a wrapper for product log context fields (`playerId`, `gameRunId`) and
   final logging configuration.
 
-- Do not move yet: `create-app.js`, `db.js`, `auth.js`, `bot-gateway.js`,
-  payment/provider settlement endpoints, model definitions, migrations,
-  Telegram/webhook logic, static serving, wiki routes, or social-preview
-  filesystem wiring. Those become module-list/composition-root work after the
-  repository interfaces are explicit.
+Aggressive bulk server move lane:
+
+- **Move next, quarantined:** `app/server/services/game-run-loadout.js`,
+  `artifact-fusion-service.js`, `shop-service.js`, `run-service.js`,
+  `battle-service.js`, `game-service.js`, `player-service.js`,
+  `season-service.js`, and `mutation-claim-service.js`. These are the core
+  gameplay/service spine. First move them with wrappers and fake repository
+  adapters; then neutralize DB queries into repository contracts and move DTO /
+  error / route-handler factories to stable modules.
+- **Move next, quarantined after gameplay spine:** `wallet-service.js`,
+  `asset-service.js`, `gacha-admin-service.js`, `support-money-service.js`,
+  `support-ops-service.js`, `provider-settlement-service.js`, and
+  `wallet-ops-check-service.js`. These become core wallet/assets/gacha/support
+  ports first; product repos keep concrete transactions, provider callbacks,
+  support permissions, audit persistence, content policy, and paid-gacha
+  operational policy.
+- **Move as route/module ports, not stable app roots:** `auth.js`,
+  `bot-gateway.js`, `wiki.js`, `social-preview-cache.js`, and route sections
+  from `create-app.js`. They should become route-group factories and service
+  modules over injected repositories, renderers, Telegram adapters, public URL
+  config, and middleware. Final route mounting and middleware order stay in
+  Mushroom/Meat.
+- **Keep product-local until the repository layer exists:** `db.js`,
+  `app/server/models/**`, migrations, concrete Sequelize/Postgres/SQLite
+  setup, static file serving, deploy config, and product catalogs. These should
+  be represented to core through repositories/config, not moved as the source
+  of truth yet.
+- **Exit criteria for each quarantined file:** Mushroom wrapper imports the
+  moved file; Meat either imports the stable facade or has an explicit
+  not-yet-consumed test gap; core tests use fake providers; no stable core
+  export imports Mushroom paths; the allowlist entry names the remaining
+  product dependencies.
 
 #### S4 - Product Dependency Sweep
 
