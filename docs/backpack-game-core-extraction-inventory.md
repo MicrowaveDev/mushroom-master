@@ -243,6 +243,15 @@ copy, theme, and API adapters.
   `modules/loadout`, tested by `tests/artifact-capabilities.test.js`.
   Mushroom keeps `app/server/services/artifact-helpers.js` as a compatibility
   re-export.
+- artifact visual classification slice:
+  `src/artifact-visual-classification.js` now exposes a product-configurable
+  classifier factory and direct helpers for role, shine, owner, stat, footprint,
+  CSS-class, and prompt metadata through
+  `@microwavedev/backpack-game-core/artifact-visual-classification`, tested by
+  `tests/artifact-visual-classification.test.js`. Mushroom keeps
+  `app/shared/artifact-visual-classification.js` as the compatibility wrapper
+  that supplies Mushroom labels, prompts, CSS taxonomy, shine tiers, and legacy
+  `characterItem.mushroomId` owner lookup.
 - gacha simulation service slice:
   `src/modules/gacha/simulation-service.js` now exposes provider-driven
   static/runtime simulation service factories, and
@@ -262,10 +271,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `97aea67`
-  (`Move Mushroom models into core quarantine`)
-- latest runtime/API core commit: `97aea67`
-  (`Move Mushroom models into core quarantine`)
+- latest consumed core commit: `433e2f5`
+  (`Move artifact visual classifier into core`)
+- latest runtime/API core commit: `433e2f5`
+  (`Move artifact visual classifier into core`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -332,7 +341,7 @@ Shared split:
 | Current shared area | Extraction direction | Keep product-owned |
 | --- | --- | --- |
 | `artifact-fusions.js` | Recipe schema, normalization, evaluator factories, DTO helpers. | Mushroom recipe data, artifact ids, balance, unlock policy. |
-| `artifact-visual-classification.js` | Classifier engine, taxonomy schema, fallback factory. | Mushroom visual taxonomy, generated-art assumptions, CSS/image mapping. |
+| `artifact-visual-classification.js` | ✅ Done 2026-07-07 in core commit `433e2f5`: classifier engine, taxonomy schema, fallback factory, owner adapter, and footprint helper moved to `@microwavedev/backpack-game-core/artifact-visual-classification`. | Mushroom visual labels, prompts, shine tiers, generated-art assumptions, CSS taxonomy, and legacy owner mapping stay in the wrapper. |
 | `run-achievements.js` / `.json` | Evaluator engine, progress DTOs, schema validation. | Definitions, thresholds, badge art, copy, season tuning. |
 | `season-levels.js` / `.json` | Progression calculators, schema validation, display DTOs. | Tables, rank art, copy, rewards, season scheduling. |
 | image metadata JSON and `home-field/**` | Product-local by default; `content/mushroom` quarantine only if packaging demands it. | Generated art, provenance, prompts, review sheets, final art ownership. |
@@ -511,6 +520,7 @@ Maximum-efficiency constraints:
 | Bag shape masks and rotation | `backpack-game-core/src/bag-shape.js`; compatibility bridge at `app/shared/bag-shape.js` | Extracted pure slice | Dependency-free ESM helpers over passed bag objects and shape arrays. Shared by server/client through the bridge. |
 | Bag-shape unit tests | `tests/game/bag-shape.test.js` | Partial pure candidate | The top helper tests are portable. The coverage tests that call `validateItemCoverage` and `getArtifactById` depend on Mushroom validation/catalog code. |
 | Artifact family capability helpers | `backpack-game-core/src/artifact-capabilities.js`; Mushroom adapter in `app/server/services/artifact-helpers.js` | Extracted configurable pure slice | Core owns default backpack family capabilities, configurable family maps, bag-family detection, combat/stat contribution checks, and container-placement helpers. Product catalogs and item family assignment stay local. |
+| Artifact visual classification | `backpack-game-core/src/artifact-visual-classification.js`; Mushroom adapter in `app/shared/artifact-visual-classification.js` | Extracted configurable shared slice | Core owns role/shine/stat/owner/footprint classification and prompt/CSS metadata assembly over injected role classes, shine tiers, owner lookup, and shape hooks. Mushroom keeps its visual taxonomy, prompts, generated-art assumptions, CSS labels, and legacy `mushroomId` owner adapter local. |
 | Grid placement primitives | `backpack-game-core/src/grid-geometry.js`; validation uses `backpack-game-core/src/loadout-validation.js` through the Mushroom adapter | Extracted pure slice | `pieceCells`, `cellSet`, `setsIntersect`, and `cellKey` are pure and shared by server/client through package imports. Catalog-backed grid/bag/loadout policy is injected into the core validator from Mushroom code. |
 | Full loadout validation | `backpack-game-core/src/loadout-validation.js`; `backpack-game-core/src/modules/loadout/validation-service.js`; Mushroom adapter in `app/server/services/loadout-utils.js` | Extracted with product config and service factory | Core owns flat-grid bounds/overlap validation, active-bag placement, bag coverage, budget summing, stat totals, orchestrated loadout validation, provider-driven service factory, and server module registration. Mushroom injects artifact lookup, pricing, family semantics, grid constants, and stat caps. |
 | Seeded RNG and shuffle | `backpack-game-core/src/rng.js`; Mushroom string-seed adapter in `app/server/lib/utils.js`; compatibility re-export in `app/server/services/battle-engine.js` | Extracted with product seed hashing | Core owns the browser-safe numeric-seed RNG state machine, integer rolls, and non-mutating shuffle. Mushroom keeps Node `crypto` string hashing for existing deterministic seed inputs. |

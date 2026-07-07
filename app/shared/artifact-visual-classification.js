@@ -1,9 +1,6 @@
 import {
-  artifactTileFootprintDimensions,
-  artifactTileFootprintShape,
-  artifactTileFootprintType
-} from '@microwavedev/backpack-game-core/client-view-model';
-import { getBagShape } from './bag-shape.js';
+  createArtifactVisualClassifier
+} from '@microwavedev/backpack-game-core/artifact-visual-classification';
 
 export const ARTIFACT_ROLE_CLASSES = {
   damage: {
@@ -76,99 +73,24 @@ export const ARTIFACT_PRIMARY_STAT_BY_ROLE = {
   bag: null
 };
 
-export function canonicalArtifactStatKey(key) {
-  return key === 'stunChance' ? 'stun' : key;
-}
+const mushroomArtifactVisualClassifier = createArtifactVisualClassifier({
+  roleClasses: ARTIFACT_ROLE_CLASSES,
+  shineTiers: ARTIFACT_SHINE_TIERS,
+  statOrder: ARTIFACT_STAT_ORDER,
+  primaryStatByRole: ARTIFACT_PRIMARY_STAT_BY_ROLE,
+  ownerForArtifact: (artifact) => artifact?.characterItem?.mushroomId || null
+});
 
-export function artifactRoleClass(artifact) {
-  if (!artifact) return ARTIFACT_ROLE_CLASSES.damage;
-  if (artifact.family === 'bag') return ARTIFACT_ROLE_CLASSES.bag;
-  return ARTIFACT_ROLE_CLASSES[artifact.family] || ARTIFACT_ROLE_CLASSES.damage;
-}
-
-export function artifactShineTier(artifact) {
-  if (!artifact) return ARTIFACT_SHINE_TIERS.plain;
-  if (artifact.characterItem) return ARTIFACT_SHINE_TIERS.signature;
-  if (artifact.starterOnly && artifact.family !== 'bag') return ARTIFACT_SHINE_TIERS.signature;
-  if (artifact.family === 'bag' && Number(artifact.price) >= 3) return ARTIFACT_SHINE_TIERS.radiant;
-  if (Number(artifact.price) >= 3) return ARTIFACT_SHINE_TIERS.radiant;
-  const footprint = artifactFootprintDimensions(artifact);
-  if (Number(artifact.price) >= 2 || footprint.cols * footprint.rows >= 2) {
-    return ARTIFACT_SHINE_TIERS.bright;
-  }
-  return ARTIFACT_SHINE_TIERS.plain;
-}
-
-export function artifactPrimaryStatKey(artifact) {
-  const role = artifactRoleClass(artifact);
-  return ARTIFACT_PRIMARY_STAT_BY_ROLE[role.id] ?? null;
-}
-
-export function artifactSecondaryStats(artifact) {
-  const bonus = artifact?.bonus || {};
-  const primary = artifactPrimaryStatKey(artifact);
-  return ARTIFACT_STAT_ORDER.filter((stat) => {
-    const rawKey = stat === 'stun' ? 'stunChance' : stat;
-    return rawKey !== primary && Number(bonus[rawKey] || 0) > 0;
-  });
-}
-
-export function artifactTradeoffs(artifact) {
-  const bonus = artifact?.bonus || {};
-  return ARTIFACT_STAT_ORDER.filter((stat) => {
-    const rawKey = stat === 'stun' ? 'stunChance' : stat;
-    return Number(bonus[rawKey] || 0) < 0;
-  });
-}
-
-export function artifactOwner(artifact) {
-  return artifact?.characterItem?.mushroomId || null;
-}
-
-function footprintShapeForArtifact(artifact) {
-  return artifact?.family === 'bag' ? getBagShape(artifact) : null;
-}
-
-export function artifactFootprintShape(artifact) {
-  return artifactTileFootprintShape(artifact, {
-    shapeForArtifact: footprintShapeForArtifact
-  });
-}
-
-export function artifactFootprintDimensions(artifact) {
-  return artifactTileFootprintDimensions(artifact, {
-    shapeForArtifact: footprintShapeForArtifact
-  });
-}
-
-export function artifactFootprintType(artifact) {
-  if (artifact?.family === 'bag' && !Array.isArray(artifact.shape)) {
-    const { cols, rows } = artifactFootprintDimensions(artifact);
-    if (cols === 1 && rows === 1) return 'single';
-    if (cols > rows) return 'wide';
-    if (rows > cols) return 'tall';
-    return 'block';
-  }
-  return artifactTileFootprintType(artifact, {
-    shapeForArtifact: footprintShapeForArtifact
-  });
-}
-
-export function artifactVisualClassification(artifact) {
-  const role = artifactRoleClass(artifact);
-  const shine = artifactShineTier(artifact);
-  return {
-    role,
-    shine,
-    primaryStatKey: artifactPrimaryStatKey(artifact),
-    secondaryStats: artifactSecondaryStats(artifact),
-    tradeoffs: artifactTradeoffs(artifact),
-    owner: artifactOwner(artifact),
-    footprintType: artifactFootprintType(artifact),
-    cssClasses: [
-      `artifact-role--${role.id}`,
-      shine.cssClass
-    ],
-    prompt: `${role.prompt}. ${shine.prompt}.`
-  };
-}
+export const {
+  canonicalArtifactStatKey,
+  artifactRoleClass,
+  artifactShineTier,
+  artifactPrimaryStatKey,
+  artifactSecondaryStats,
+  artifactTradeoffs,
+  artifactOwner,
+  artifactFootprintShape,
+  artifactFootprintDimensions,
+  artifactFootprintType,
+  artifactVisualClassification
+} = mushroomArtifactVisualClassifier;

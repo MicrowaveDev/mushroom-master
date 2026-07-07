@@ -244,6 +244,9 @@ These mechanics are closest to the reusable core boundary:
   simulation over injected RNG and ownership state
 - frontend DTO/view-model shaping for shop, backpack, battle replay,
   wallet/assets, gacha packs, odds preview, and admin validation state
+- artifact visual classification engines that receive role classes, shine tiers,
+  owner lookup, shape hooks, labels, prompts, and CSS taxonomy through product
+  adapters
 - browser-safe services and Vue composables that receive API clients, product
   catalogs, route callbacks, copy dictionaries, and theme tokens through
   adapters
@@ -403,6 +406,10 @@ row shaping, artifact tile display contracts, asset pack card rows, odds table
 sections, and roll result panel DTOs for
 product-styled stat chips/text, shop offers, backpack boards, battle logs,
 artifact images, gacha pack cards, odds tables, and roll result panels.
+Core commit `433e2f5` moved the artifact visual classification engine from
+Mushroom `app/shared` into `artifact-visual-classification`; products still own
+role labels, prompts, shine tiers, CSS taxonomy, generated-art assumptions, and
+legacy owner-field adapters.
 Core commits `006ab33`, `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`,
 `be03e50`, `5dd01f1`, and `471e686` then added the neutral Vue component layer
 for roll result panels, gacha odds tables, gacha pack cards, artifact tiles,
@@ -508,8 +515,9 @@ and product catalogs; provider checkout/callback code stays local.
 The shipped slices are bag-shape masks, rotation, first grid-geometry
 primitives, fusion matching, shop-offer generation, bot-loadout generation,
 hookable battle simulation, provider-driven loadout validation, deterministic
-numeric RNG/shuffle helpers, artifact family capability helpers, and the first
-asset-gacha policy helpers.
+numeric RNG/shuffle helpers, artifact family capability helpers, configurable
+artifact visual classification helpers, and the first asset-gacha policy
+helpers.
 Core run-lifecycle helpers now expose neutral aliases for cross-game adoption:
 `characterId` alongside legacy `mushroomId`, and `profileCurrency` /
 `characterProgress` alongside legacy `spore` / `mycelium`. Consumers may keep

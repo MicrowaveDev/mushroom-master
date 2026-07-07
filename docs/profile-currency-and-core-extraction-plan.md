@@ -1010,9 +1010,12 @@ Goal: leave core with clean stable modules, not a permanent Mushroom port.
 
 #### S8 - Top-Level Server And Shared Folder Move Map
 
-Status: **Added 2026-07-07 after reviewing the remaining `app/server` and
-`app/shared` screenshots.** This section is the next implementation map after
-the current gameplay spine ports.
+Status: **Started 2026-07-07 after reviewing the remaining `app/server` and
+`app/shared` screenshots.** The first shared-folder slice is complete:
+`artifact-visual-classification.js` moved to core commit `433e2f5` as a
+product-configurable classifier engine, while Mushroom keeps the old path as a
+compatibility wrapper for labels, prompts, CSS taxonomy, shine tiers, and the
+legacy owner field.
 
 Goal: make the remaining Mushroom server/shared code reusable without turning
 Mushroom content, deployment, or persistence into fake core.
@@ -1036,7 +1039,7 @@ Shared folder recommendations:
 | --- | --- | --- |
 | `bag-shape.js` | Already core-backed; keep Mushroom wrapper until imports are cleaned. | None beyond compatibility path. |
 | `artifact-fusions.js` | Move schema validation, recipe normalization, eligibility/fusion evaluator factories, and DTO helpers. Move Mushroom recipe data only as `content/mushroom` quarantine if needed. | Actual Mushroom recipes, artifact ids, balance, and unlock policy. |
-| `artifact-visual-classification.js` | Move classifier engine, taxonomy schema, and fallback factory. | Mushroom visual taxonomy labels, generated art assumptions, and product CSS/image mapping. |
+| `artifact-visual-classification.js` | ✅ Done 2026-07-07 in core commit `433e2f5`: classifier engine, taxonomy schema, fallback factory, owner adapter, and footprint helper moved to `@microwavedev/backpack-game-core/artifact-visual-classification`. | Mushroom visual labels, prompts, shine tiers, generated-art assumptions, CSS taxonomy, and legacy owner mapping stay in the wrapper. |
 | `run-achievements.js` / `run-achievements.json` | Move achievement evaluator engine, progress DTOs, and schema validation. | Achievement definitions, thresholds, badge art, copy, and season/product tuning. |
 | `season-levels.js` / `season-levels.json` | Move level progression calculators, schema checks, and display DTO helpers. | Season tables, rank art, copy, reward tuning, and product scheduling. |
 | `artifact-image-metadata.json`, `season-image-metadata.json`, `home-field/**` | Keep product-local by default; only move to `content/mushroom` quarantine for packaging. | Generated images, provenance, source prompts, review sheets, and product art ownership. |
@@ -1048,7 +1051,9 @@ Execution order:
 1. Move the low-risk `app/shared` mechanics first: visual-classification
    factory, fusion schema/evaluator helpers, season/achievement schema and
    evaluator code. Restore Mushroom wrappers and leave JSON/content local or in
-   explicit quarantine.
+   explicit quarantine. ✅ First slice done for visual classification in core
+   commit `433e2f5`; next low-risk shared candidates are fusion
+   schema/evaluator helpers and season/achievement evaluator helpers.
 2. Continue the gameplay spine server ports already listed above:
    `shop-service.js`, `run-service.js`, `battle-service.js`, `game-service.js`,
    `player-service.js`, `season-service.js`, and `mutation-claim-service.js`.
