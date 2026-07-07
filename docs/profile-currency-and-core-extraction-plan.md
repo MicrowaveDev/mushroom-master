@@ -1019,6 +1019,13 @@ legacy owner field. The second shared-folder slice is also complete:
 `artifact-fusions.js` now delegates recipe normalization, lookup,
 ingredient-policy, summary, and evaluator helpers to core commit `5370733`,
 while Mushroom keeps the authored recipe table and balance/unlock policy local.
+The third shared/server slice is complete in core commit `bb49947`:
+`modules/season` now owns configurable season scoring/progress and
+run-achievement evaluation, `createSeasonProgressPort()` owns the quarantined
+Mushroom season persistence flow, and `createMutationClaimService()` owns the
+repository-backed mutation claim orchestration. Mushroom keeps authored season
+and achievement JSON, current-season id, badge/rank assets, env timing, and
+thin compatibility wrappers.
 
 Goal: make the remaining Mushroom server/shared code reusable without turning
 Mushroom content, deployment, or persistence into fake core.
@@ -1032,12 +1039,12 @@ Current server audit, 2026-07-07:
   `models/index.js`, `services/artifact-helpers.js`,
   `services/ready-manager.js`, `services/gacha-simulation-service.js`,
   `services/loadout-utils.js`, `services/bot-loadout.js`,
-  `services/game-run-loadout.js`, and `services/artifact-fusion-service.js`.
+  `services/game-run-loadout.js`, `services/artifact-fusion-service.js`,
+  `services/season-service.js`, and `services/mutation-claim-service.js`.
 - The highest-value remaining server moves are the gameplay/profile spine:
   `shop-service.js`, `run-service.js`, `battle-engine.js`,
-  `battle-service.js`, `game-service.js`, `player-service.js`,
-  `season-service.js`, and `mutation-claim-service.js`. Move them by `mv`
-  into quarantined core ports first, then cut repository/catalog/policy
+  `battle-service.js`, `game-service.js`, and `player-service.js`. Move them
+  by `mv` into quarantined core ports first, then cut repository/catalog/policy
   adapters until the neutral pieces can graduate to stable modules.
 - The largest paid/admin cluster should move later, after the repository and
   policy boundaries are named: `wallet-service.js`, `asset-service.js`,
@@ -1076,8 +1083,8 @@ Server file recommendations:
 | `app/server/services/run-service.js` | Move next as a quarantined run-lifecycle port over injected repositories, battle resolver, shop service, rewards, season, achievements, wallet grants, and ghost selectors. | DB transactions, challenge matching, player/mushroom lookup, season awards, rating writes, wallet writes, and public API compatibility aliases. |
 | `app/server/services/battle-engine.js` / `battle-service.js` | Keep the core simulator stable; move Mushroom battle hooks, snapshot shaping, replay/history persistence, and active-run snapshot reads as quarantined ports. | Character abilities, artifact effect metadata, portrait resolution, SQL replay rows, battle history routes, and Mushroom narration/copy. |
 | `app/server/services/game-service.js` / `player-service.js` | Move bootstrap/profile DTO assembly as repository-backed modules after run/shop/wallet/assets have explicit adapters. | Player rows, selected character, wallet/assets/season aggregation, daily limits, home-field config, and product bootstrap shape. |
-| `app/server/services/season-service.js` | Move lightweight season point/achievement grant planners together with shared season/achievement evaluator helpers. | Current season id, tables, achievement definitions, badge/rank art, season scheduling, and persisted grant rows. |
-| `app/server/services/mutation-claim-service.js` | Move as a generic repository-backed mutation/idempotency claim port. | Concrete table name, SQL upsert semantics, retention policy, and product mutation scopes. |
+| `app/server/services/season-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as `createSeasonProgressPort()` with injected season scoring, achievement, clock, and ID helpers. | Current season id, tables, achievement definitions, badge/rank art, season scheduling, and persisted grant-row contract stay product-owned. |
+| `app/server/services/mutation-claim-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as generic repository-backed `createMutationClaimService()` through the stable server facade. | Concrete table name, SQL upsert semantics, env timing, retention policy, and product mutation scopes stay product-configured. |
 | wallet/assets/gacha/support service files | Move after gameplay spine as wallet/assets/gacha/support ports with fake repositories and policy adapters. | Provider SDKs/callbacks, SQL transactions, audit records, support operator permissions, paid rollback, and adult-content/payment policy. |
 
 Shared folder recommendations:
@@ -1087,8 +1094,8 @@ Shared folder recommendations:
 | `bag-shape.js` | Already core-backed; keep Mushroom wrapper until imports are cleaned. | None beyond compatibility path. |
 | `artifact-fusions.js` | ✅ Done 2026-07-07 in core commit `5370733`: recipe normalization, lookup, result/ingredient summaries, ingredient-policy helpers, and evaluator factory moved to `@microwavedev/backpack-game-core/artifact-fusion-recipes` and `modules/fusion`. | Mushroom authored recipe data, artifact ids, balance, and unlock policy stay in the wrapper. |
 | `artifact-visual-classification.js` | ✅ Done 2026-07-07 in core commit `433e2f5`: classifier engine, taxonomy schema, fallback factory, owner adapter, and footprint helper moved to `@microwavedev/backpack-game-core/artifact-visual-classification`. | Mushroom visual labels, prompts, shine tiers, generated-art assumptions, CSS taxonomy, and legacy owner mapping stay in the wrapper. |
-| `run-achievements.js` / `run-achievements.json` | Move achievement evaluator engine, progress DTOs, and schema validation. | Achievement definitions, thresholds, badge art, copy, and season/product tuning. |
-| `season-levels.js` / `season-levels.json` | Move level progression calculators, schema checks, and display DTO helpers. | Season tables, rank art, copy, reward tuning, and product scheduling. |
+| `run-achievements.js` / `run-achievements.json` | ✅ Done 2026-07-08 in core commit `bb49947`: evaluator engine, localized DTO decoration, award pacing, priority hooks, character adapter, and earned/new result shaping moved to `modules/season`. | Achievement definitions, thresholds, badge art, copy, season/product tuning, and Mushroom `mushroomId` compatibility stay local. |
+| `season-levels.js` / `season-levels.json` | ✅ Done 2026-07-08 in core commit `bb49947`: level progression calculators, point breakdowns, reward fallback, and display DTO helpers moved to `modules/season`. | Season tables, rank art, copy, reward tuning, current-season metadata, and product scheduling stay local. |
 | `artifact-image-metadata.json`, `season-image-metadata.json`, `home-field/**` | Keep product-local by default; only move to `content/mushroom` quarantine for packaging. | Generated images, provenance, source prompts, review sheets, and product art ownership. |
 | `config.js` | Split shared default/config schema helpers from Mushroom constants. | Product route names, theme labels, catalog ids, feature flags, and env-derived settings. |
 | `repo-root.js` | Keep local unless a generic package-root helper is needed. | Workspace layout and script/runtime assumptions. |
@@ -1100,13 +1107,13 @@ Execution order:
    evaluator code. Restore Mushroom wrappers and leave JSON/content local or in
    explicit quarantine. ✅ First slice done for visual classification in core
    commit `433e2f5`; second slice done for fusion schema/evaluator helpers in
-   core commit `5370733`. Next low-risk shared candidates are
-   season/achievement evaluator helpers.
+   core commit `5370733`; third slice done for season/achievement evaluator
+   helpers in core commit `bb49947`.
 2. Move the smallest gameplay/profile server ports first:
-   `season-service.js` plus shared season/achievement evaluators, then
-   `mutation-claim-service.js`, then `battle-engine.js` / `battle-service.js`.
-   These establish repository and policy adapter patterns before the huge
-   run/shop files move.
+   ✅ `season-service.js` plus shared season/achievement evaluators and
+   ✅ `mutation-claim-service.js` are done in core commit `bb49947`. Next move
+   `battle-engine.js` / `battle-service.js`. These establish repository and
+   policy adapter patterns before the huge run/shop files move.
 3. Move the main gameplay spine:
    `shop-service.js`, `run-service.js`, `game-service.js`, and
    `player-service.js`. Keep them quarantined until SQL access is behind

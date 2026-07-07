@@ -488,15 +488,21 @@ between-round loadout mutation behavior behind injected query, catalog, fusion
 matcher, loadout row mutation, clock, and ID providers. It should not become a
 stable cross-game fusion module until product repository contracts replace the
 SQL/table details.
+Core commit `bb49947` moved season scoring/progress and run-achievement
+evaluation into `@microwavedev/backpack-game-core/modules/season`, added
+`createSeasonProgressPort()` to the quarantined Mushroom gameplay port, and
+added repository-backed `createMutationClaimService()` to the stable server
+facade. Products still own season/achievement content, badge and rank art,
+current-season scheduling, the concrete season/achievement SQL tables, claim
+table wiring, env timing, and mutation scope policy.
 As of the 2026-07-07 server audit, the remaining server extraction queue is
 tiered rather than folder-wide: shrink already core-backed wrappers first only
 when imports are cleaned; move the smaller gameplay/profile ports
-(`season-service.js`, `mutation-claim-service.js`, `battle-engine.js`, and
-`battle-service.js`) before the heavy run/shop/profile spine; move
-wallet/assets/gacha/support after repository, payment, support, and content
-policy contracts exist; and keep `db.js`, `start.js`, realtime/SSE delivery,
-home-field generation config, concrete dialect setup, migrations, and product
-catalog content in product repos.
+(`battle-engine.js` and `battle-service.js`) before the heavy run/shop/profile
+spine; move wallet/assets/gacha/support after repository, payment, support,
+and content policy contracts exist; and keep `db.js`, `start.js`,
+realtime/SSE delivery, home-field generation config, concrete dialect setup,
+migrations, and product catalog content in product repos.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the
