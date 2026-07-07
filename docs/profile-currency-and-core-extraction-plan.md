@@ -813,13 +813,18 @@ Aggressive bulk server move lane:
   `createGameRunLoadoutPort()`. Mushroom keeps the old service path as a thin
   wrapper that injects DB query, catalog, grid, validation, clock, and ID
   providers.
-- **Move next, quarantined:** `artifact-fusion-service.js`,
-  `shop-service.js`, `run-service.js`, `battle-service.js`,
-  `game-service.js`, `player-service.js`, `season-service.js`, and
-  `mutation-claim-service.js`. These are the remaining core gameplay/service
-  spine. First move them with wrappers and fake repository adapters; then
-  neutralize DB queries into repository contracts and move DTO / error /
-  route-handler factories to stable modules.
+- ✅ Done 2026-07-07 in core commit `2c39656`: moved
+  `app/server/services/artifact-fusion-service.js` into the quarantined
+  `server/ports/mushroom/gameplay` package subpath as
+  `createArtifactFusionPort()`. Mushroom keeps the old service path as a thin
+  wrapper that injects DB query, catalog, fusion matcher, loadout row mutation,
+  clock, and ID providers.
+- **Move next, quarantined:** `shop-service.js`, `run-service.js`,
+  `battle-service.js`, `game-service.js`, `player-service.js`,
+  `season-service.js`, and `mutation-claim-service.js`. These are the
+  remaining core gameplay/service spine. First move them with wrappers and fake
+  repository adapters; then neutralize DB queries into repository contracts and
+  move DTO / error / route-handler factories to stable modules.
 - **Move next, quarantined after gameplay spine:** `wallet-service.js`,
   `asset-service.js`, `gacha-admin-service.js`, `support-money-service.js`,
   `support-ops-service.js`, `provider-settlement-service.js`, and
@@ -3988,7 +3993,7 @@ Additional TODOs for that pass:
    core SHA to game-commit mapping:
    `vendor/backpack-game-core/CHANGELOG.md` and
    `docs/backpack-game-core-update-log.md`. Current consumed core pointer is
-   `234de9f`; typed package baseline remains `d5fb481`.
+   `2c39656`; typed package baseline remains `d5fb481`.
 8. Updated 2026-07-04: second consumer target identified as
    `git@github.com:nuclear-pancakes/meat-master.git`. Use the real
    `meat-master` integration to drive API cleanup instead of adding the package

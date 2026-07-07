@@ -467,6 +467,12 @@ It intentionally preserves current Mushroom SQL/table behavior behind injected
 query, catalog, grid, validation, clock, and ID providers. Treat this as a
 temporary migration port, not a stable cross-game API, until repository
 contracts replace the table/query details.
+The next gameplay-spine move added `artifact-fusion-service.js` to the same
+quarantine. It preserves current `game_run_fusions` reveal persistence and
+between-round loadout mutation behavior behind injected query, catalog, fusion
+matcher, loadout row mutation, clock, and ID providers. It should not become a
+stable cross-game fusion module until product repository contracts replace the
+SQL/table details.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the
@@ -514,10 +520,10 @@ player fields before explicit legacy balance fields when a wallet balance map is
 not available, keeping new consumers off Mushroom currency names by default.
 Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
-through adapters. Fusion application, run-shop buy/refresh/sell mutations, and
-battle-service persistence/reward integration still belong in `mushroom-master`
-because they write DB rows and touch run currency, rating, snapshots, rewards,
-or product state.
+through adapters. The moved fusion application is only a quarantined port until
+repositories replace its SQL contract. Stable core modules still do not own
+run-shop buy/refresh/sell mutations, battle-service persistence/reward
+integration, rating, snapshots, rewards, or other product state writes.
 
 ### Planned Bot-Loadout Boundary
 
