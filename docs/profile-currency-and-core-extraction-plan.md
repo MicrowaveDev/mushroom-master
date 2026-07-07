@@ -33,6 +33,17 @@
 > art resolvers, Telegram wrappers, payment/adult-content policy, DB
 > connections, migrations, and deploy composition still stay in the product
 > repos.
+> The 2026-07-07 server/shared recommendation sharpens the next movement:
+> most remaining `app/server` and `app/shared` code can move toward core, but
+> not all of it should become stable shared API in one step. Reusable logic,
+> DTOs, route descriptors, validators, module factories, and browser/server
+> helpers should move by filesystem `mv` into stable modules or explicit
+> `ports/mushroom` quarantine. Product runtime ownership still stays local:
+> `db.js` connection/dialect/sync/migration policy, `start.js` process
+> composition, concrete repositories, provider credentials/callbacks,
+> Telegram transport, product catalog data, wiki/lore text, generated art,
+> image metadata, home-field assets, deploy config, and final middleware/route
+> mounting.
 > A 2026-07-04 Geesome architecture review tightened this direction: copy the
 > layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
 > but improve it with typed subpath exports and adapter contracts so Backpack
@@ -528,6 +539,31 @@ Findings and plan corrections:
     may own service logic, route factories, DTOs, validation, and repository
     interface contracts; product repos own concrete repositories, migrations,
     credentials, app wiring, and deployment policy.
+11. **The `app/shared` folder should be split by responsibility, not by current
+    path.** Generic helpers, schemas, validators, evaluators, DTO shapers, and
+    renderer-independent catalog utilities can move to core. Product content
+    such as Mushroom artifact ids, recipe tables, achievement/season JSON,
+    generated image metadata, home-field assets, lore, and art provenance
+    should stay product-local or enter an explicit `content/mushroom`
+    quarantine until the apps can provide it as data.
+12. **Top-level server files can use the same approach, with stricter runtime
+    boundaries.** `auth.js`, `wiki.js`, `social-preview-cache.js`, route
+    sections from `create-app.js`, and generic bot/payment command helpers can
+    move as route/module ports. `db.js`, `start.js`, concrete deployment
+    config, middleware order, static serving, provider credentials/callbacks,
+    and Telegram transport remain composition concerns in Mushroom/Meat.
+13. **Move files physically, then shrink wrappers.** For this lane the desired
+    implementation is `mv` from Mushroom into core, a thin compatibility
+    wrapper at the old path, fake-provider/core tests, Mushroom behavior tests,
+    Meat import/parity smoke, and then a neutralization pass. Copying from
+    memory or re-authoring whole files is a process bug unless explicitly
+    called out as a temporary reference step.
+14. **Use quarantine deliberately, not permanently.** If a file still has
+    Mushroom table names, product ids, static JSON, or Express/Telegram
+    assumptions, it may still move now, but only under a clearly named
+    `ports/mushroom` or `content/mushroom` namespace with an exit TODO. Stable
+    `server/modules/*`, `shared/*`, `client/*`, and `vue/*` exports must be
+    product-neutral.
 
 ## Current Remaining Work Matrix
 
@@ -560,7 +596,13 @@ artifact-renderer dependencies. Updated 2026-07-06 after the server
 route-descriptor correction: the backend lane should now move whole reusable
 feature modules into core, using descriptor-based route groups plus injected
 repository/policy/catalog adapters, while product repos keep app bootstrap,
-database lifecycle, and provider-specific integrations.
+database lifecycle, and provider-specific integrations. Updated 2026-07-07
+after reviewing the remaining `app/server` and `app/shared` surfaces: move the
+code-heavy files by `mv` into core ports/modules with wrappers, but split
+product content/runtime ownership out at the same time. `app/shared` is no
+longer automatically "local" just because it contains data-adjacent helpers;
+it should be divided into reusable mechanics/schema/evaluator code versus
+Mushroom content/art metadata.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -630,7 +672,8 @@ wrapper and fake-provider tests can keep both games working.
 
 - Inventory `app/server/auth.js`, `create-app.js`, `game-data.js`,
   `bot-gateway.js`, `wiki.js`, `social-preview-cache.js`, `db.js`,
-  `app/server/services/`, `app/server/models/`, and backend tests.
+  `start.js`, `app/server/services/`, `app/server/models/`, backend tests,
+  and `app/shared/` helpers/content that are imported by server or frontend.
 - Classify each responsibility:
   - **core module candidate:** auth/session shape, bootstrap/profile service,
     run/shop/loadout/battle/replay service logic, wallet/assets/gacha/support
@@ -649,6 +692,10 @@ wrapper and fake-provider tests can keep both games working.
     webhook setup, payment provider callbacks/signatures, product catalogs,
     adult/content policy gates, wiki/lore content, deploy config, final Express
     composition.
+  - **shared-content quarantine:** Mushroom-specific JSON/catalog/art metadata
+    that may need to move for packaging or wrapper compatibility but must not
+    be advertised as stable shared API until it is exposed as injected product
+    data.
 - Validation: record the classification in this plan or a dedicated server
   extraction inventory doc.
 
@@ -842,14 +889,30 @@ Aggressive bulk server move lane:
   `bot-gateway.js`, `wiki.js`, `social-preview-cache.js`, and route sections
   from `create-app.js`. They should become route-group factories and service
   modules over injected repositories, renderers, Telegram adapters, public URL
-  config, and middleware. Final route mounting and middleware order stay in
-  Mushroom/Meat.
+  config, locale/copy providers, and middleware. Final route mounting,
+  middleware order, static serving, public URL policy, and process startup stay
+  in Mushroom/Meat. `bot-gateway.js` should be split: generic command/payment
+  lifecycle helpers and response DTOs can move to core, while Telegram token
+  transport, webhook receiver setup, Stars provider callbacks, support/legal
+  copy, and adult-content policy stay product-local.
+- **Move `app/shared` with split rules:** helper code, schemas, factories,
+  evaluators, DTO shapers, and data-normalization utilities should move to
+  core stable modules or a `shared/ports/mushroom` quarantine. Product-owned
+  content remains data passed into those helpers: Mushroom artifact ids,
+  recipe tables, achievement definitions, season level tables, visual
+  taxonomies, image metadata JSON, generated art provenance, and
+  `home-field/**`. If content must move temporarily to unblock packaging, put
+  it under an explicit `content/mushroom` quarantine and do not let Meat import
+  it as reusable game logic.
 - **Keep product-local until the repository layer exists:** `db.js`,
-  migrations, concrete Sequelize/Postgres/SQLite setup, sync/backfill/index
-  repair code, static file serving, deploy config, and product catalogs. The
-  model definitions have moved to core quarantine, but they are not the source
-  of truth for runtime persistence behavior; product repositories/config still
-  own that.
+  `start.js`, migrations, concrete Sequelize/Postgres/SQLite setup,
+  sync/backfill/index repair code, static file serving, deploy config, runtime
+  env parsing, and product catalogs. `game-data.js` should be split rather
+  than moved wholesale: catalog schemas, validators, projection helpers, and
+  selection utilities can move, while Mushroom roster/artifact/portrait/wiki
+  content stays product data. The model definitions have moved to core
+  quarantine, but they are not the source of truth for runtime persistence
+  behavior; product repositories/config still own that.
 - **Exit criteria for each quarantined file:** Mushroom wrapper imports the
   moved file; Meat either imports the stable facade or has an explicit
   not-yet-consumed test gap; core tests use fake providers; no stable core
@@ -944,6 +1007,68 @@ Goal: leave core with clean stable modules, not a permanent Mushroom port.
   dependency metadata, and repo adapter contracts.
 - Validation: `npm run verify:backpack-core` passes after core, Mushroom, Meat,
   and hub pointer updates.
+
+#### S8 - Top-Level Server And Shared Folder Move Map
+
+Status: **Added 2026-07-07 after reviewing the remaining `app/server` and
+`app/shared` screenshots.** This section is the next implementation map after
+the current gameplay spine ports.
+
+Goal: make the remaining Mushroom server/shared code reusable without turning
+Mushroom content, deployment, or persistence into fake core.
+
+Server file recommendations:
+
+| Current file | Move direction | Product-owned boundary |
+| --- | --- | --- |
+| `app/server/auth.js` | Move as auth/session/bootstrap route and service ports, then promote neutral parts to `core.auth`. | Telegram verification, dev-login policy, sessions, rate limits, player lookup, and final paths. |
+| `app/server/create-app.js` | Split route sections into route-group factories; keep only composition in the app. | Express app creation, middleware order, static serving, CORS/body policy, payment webhook raw-body placement, and module list assembly. |
+| `app/server/bot-gateway.js` | Split generic bot command/payment DTO helpers into core ports. | Telegram bot token transport, webhook receiver setup, Stars callbacks, terms/support copy, and product content policy. |
+| `app/server/wiki.js` | Move generic wiki route/search/cache helpers as a module port. | Mushroom lore text, unlock policy copy, images, and wiki content publication. |
+| `app/server/social-preview-cache.js` | Keep or promote the existing core social-preview orchestration module; move remaining reusable cache/warmup helpers. | Product renderer, filesystem paths, artwork, static URL policy, and preview copy. |
+| `app/server/game-data.js` | Do not move wholesale. Extract schemas, validators, projections, selection utilities, and catalog adapters. | Mushroom characters, artifacts, portrait variants, balance tables, lore/wiki/content ids, and art paths. |
+| `app/server/db.js` | Keep product-local except for repository interfaces and already-quarantined model definitions. | Sequelize instance, Postgres/SQLite dialect config, migrations, sync/backfill/index repair, transactions, and deployment DB policy. |
+| `app/server/start.js` | Keep product-local. | Process startup, port/env handling, server lifecycle, signal handling, and deploy composition. |
+
+Shared folder recommendations:
+
+| Current shared area | Move direction | Product-owned boundary |
+| --- | --- | --- |
+| `bag-shape.js` | Already core-backed; keep Mushroom wrapper until imports are cleaned. | None beyond compatibility path. |
+| `artifact-fusions.js` | Move schema validation, recipe normalization, eligibility/fusion evaluator factories, and DTO helpers. Move Mushroom recipe data only as `content/mushroom` quarantine if needed. | Actual Mushroom recipes, artifact ids, balance, and unlock policy. |
+| `artifact-visual-classification.js` | Move classifier engine, taxonomy schema, and fallback factory. | Mushroom visual taxonomy labels, generated art assumptions, and product CSS/image mapping. |
+| `run-achievements.js` / `run-achievements.json` | Move achievement evaluator engine, progress DTOs, and schema validation. | Achievement definitions, thresholds, badge art, copy, and season/product tuning. |
+| `season-levels.js` / `season-levels.json` | Move level progression calculators, schema checks, and display DTO helpers. | Season tables, rank art, copy, reward tuning, and product scheduling. |
+| `artifact-image-metadata.json`, `season-image-metadata.json`, `home-field/**` | Keep product-local by default; only move to `content/mushroom` quarantine for packaging. | Generated images, provenance, source prompts, review sheets, and product art ownership. |
+| `config.js` | Split shared default/config schema helpers from Mushroom constants. | Product route names, theme labels, catalog ids, feature flags, and env-derived settings. |
+| `repo-root.js` | Keep local unless a generic package-root helper is needed. | Workspace layout and script/runtime assumptions. |
+
+Execution order:
+
+1. Move the low-risk `app/shared` mechanics first: visual-classification
+   factory, fusion schema/evaluator helpers, season/achievement schema and
+   evaluator code. Restore Mushroom wrappers and leave JSON/content local or in
+   explicit quarantine.
+2. Continue the gameplay spine server ports already listed above:
+   `shop-service.js`, `run-service.js`, `battle-service.js`, `game-service.js`,
+   `player-service.js`, `season-service.js`, and `mutation-claim-service.js`.
+3. Split top-level route files: `auth.js`, route chunks from `create-app.js`,
+   `wiki.js`, `social-preview-cache.js`, and generic `bot-gateway.js` helpers.
+4. Move wallet/assets/gacha/support service files only after repository,
+   policy, payment, and support-operation adapters are named.
+5. Refactor Mushroom and Meat composition roots to declare module lists and
+   shrink compatibility wrappers after both games pass the shared-core gates.
+
+Validation:
+
+- Core: unit tests, import-boundary tests, package export/type checks, and
+  `npm pack --dry-run`.
+- Mushroom: `npm run game:test`; focused browser/e2e only when routes or UI
+  surfaces are touched.
+- Meat: `npm run game:test` plus import/parity smoke for any newly exposed core
+  module.
+- Hub: `npm run verify:backpack-core` after core and consumer pointers are
+  committed and pushed.
 
 ### Next Lane - Aggressive Frontend Core Port
 

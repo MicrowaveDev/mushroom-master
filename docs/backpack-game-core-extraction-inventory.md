@@ -291,6 +291,10 @@ core SHA to game-commit mapping is tracked in
   Mushroom path as a wrapper, add exact import-boundary allowlist coverage, and
   then neutralize it behind repositories/config/policies before promoting it
   to a stable `src/server/modules/<feature>` export.
+- **Shared-content quarantine:** Mushroom-specific content or metadata may move
+  only when it unblocks packaging or wrapper compatibility, and then under an
+  explicit `content/mushroom` or `ports/mushroom` namespace. It is not stable
+  cross-game API until products provide it as injected data.
 - **Domain-core candidate:** wallet, asset, or gacha rules are reusable across
   games if core receives persistence snapshots, catalog data, time, RNG, and
   policy through arguments/adapters. DB schemas, routes, payment processors,
@@ -301,6 +305,39 @@ core SHA to game-commit mapping is tracked in
   route shells, Telegram auth, localization files, image generation, and final
   page assembly stay local.
 - **Product-specific:** keep in `mushroom-master`.
+
+## Server And Shared Move Recommendation, 2026-07-07
+
+The remaining `app/server` and `app/shared` files should move more aggressively
+than the original helper-only audit allowed, but the stable API boundary stays
+strict. Move code by filesystem `mv`, leave thin Mushroom wrappers, add
+fake-provider tests in core, and keep product-owned runtime/content outside
+stable exports.
+
+Server split:
+
+| Current file | Extraction direction | Keep product-owned |
+| --- | --- | --- |
+| `app/server/auth.js` | Core auth/session/bootstrap route and service ports. | Telegram verification, sessions, dev-login policy, rate limits, player lookup, final route paths. |
+| `app/server/create-app.js` | Route groups and route-handler factories. | Express app creation, middleware ordering, static serving, raw-body webhook placement, module-list composition. |
+| `app/server/bot-gateway.js` | Generic command/payment lifecycle DTO helpers. | Telegram transport, webhook receiver setup, Stars callbacks, support/terms copy, adult-content policy. |
+| `app/server/wiki.js` | Wiki route/search/cache helper module. | Mushroom lore/wiki content, unlock text, images, publication policy. |
+| `app/server/social-preview-cache.js` | Reusable preview-cache orchestration helpers. | Product renderer, filesystem/static paths, artwork, preview copy. |
+| `app/server/game-data.js` | Catalog schemas, validators, projection helpers, selection utilities. | Mushroom roster, artifacts, portraits, balance tables, lore ids, art paths. |
+| `app/server/db.js` | Repository contracts only; model definitions are already quarantined in core. | Sequelize instance, dialect config, migrations, sync/backfill/index repair, transactions. |
+| `app/server/start.js` | No stable core move. | Process startup, env/port handling, lifecycle, deploy composition. |
+
+Shared split:
+
+| Current shared area | Extraction direction | Keep product-owned |
+| --- | --- | --- |
+| `artifact-fusions.js` | Recipe schema, normalization, evaluator factories, DTO helpers. | Mushroom recipe data, artifact ids, balance, unlock policy. |
+| `artifact-visual-classification.js` | Classifier engine, taxonomy schema, fallback factory. | Mushroom visual taxonomy, generated-art assumptions, CSS/image mapping. |
+| `run-achievements.js` / `.json` | Evaluator engine, progress DTOs, schema validation. | Definitions, thresholds, badge art, copy, season tuning. |
+| `season-levels.js` / `.json` | Progression calculators, schema validation, display DTOs. | Tables, rank art, copy, rewards, season scheduling. |
+| image metadata JSON and `home-field/**` | Product-local by default; `content/mushroom` quarantine only if packaging demands it. | Generated art, provenance, prompts, review sheets, final art ownership. |
+| `config.js` | Shared default/config schema helpers. | Product constants, labels, route names, theme ids, env-derived settings. |
+| `repo-root.js` | Keep local unless a generic package-root helper is needed. | Workspace/script assumptions. |
 
 ## Frontend Inventory Refresh, 2026-07-06
 
