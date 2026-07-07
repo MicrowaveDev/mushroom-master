@@ -1023,6 +1023,43 @@ while Mushroom keeps the authored recipe table and balance/unlock policy local.
 Goal: make the remaining Mushroom server/shared code reusable without turning
 Mushroom content, deployment, or persistence into fake core.
 
+Current server audit, 2026-07-07:
+
+- The visible `app/server` tree is no longer a raw move queue. Several files
+  are already compatibility wrappers over core exports and should only be
+  shrunk when callers stop depending on the legacy Mushroom paths:
+  `lib/idempotency.js`, `lib/rate-limit.js`, `lib/obs.js`, `lib/utils.js`,
+  `models/index.js`, `services/artifact-helpers.js`,
+  `services/ready-manager.js`, `services/gacha-simulation-service.js`,
+  `services/loadout-utils.js`, `services/bot-loadout.js`,
+  `services/game-run-loadout.js`, and `services/artifact-fusion-service.js`.
+- The highest-value remaining server moves are the gameplay/profile spine:
+  `shop-service.js`, `run-service.js`, `battle-engine.js`,
+  `battle-service.js`, `game-service.js`, `player-service.js`,
+  `season-service.js`, and `mutation-claim-service.js`. Move them by `mv`
+  into quarantined core ports first, then cut repository/catalog/policy
+  adapters until the neutral pieces can graduate to stable modules.
+- The largest paid/admin cluster should move later, after the repository and
+  policy boundaries are named: `wallet-service.js`, `asset-service.js`,
+  `gacha-admin-service.js`, `support-money-service.js`,
+  `support-ops-service.js`, `provider-settlement-service.js`,
+  `provider-settlement-adapters.js`, and `wallet-ops-check-service.js`.
+  Core already owns useful planners/DTO shapers here, but concrete SQL,
+  provider callbacks, support permissions, audit writes, paid rollback, and
+  adult-content operational policy stay product-owned.
+- Top-level server files should be split into route/module ports rather than
+  moved wholesale: `auth.js`, `bot-gateway.js`, `wiki.js`,
+  `social-preview-cache.js`, and route sections inside `create-app.js`.
+  `create-app.js` itself should become a product composition root, not a core
+  module.
+- Keep `db.js`, `start.js`, `services/sse-manager.js`, and
+  `services/home-field-config.js` product-local for now. Extract only generic
+  repository interfaces, realtime adapter contracts, or cache/config helpers
+  when a second game actually consumes them. Split `game-data.js` for schemas,
+  validators, projection helpers, and catalog adapters, but keep Mushroom
+  roster, artifacts, portraits, balance tables, lore/wiki ids, and art paths
+  as product data.
+
 Server file recommendations:
 
 | Current file | Move direction | Product-owned boundary |
@@ -1035,6 +1072,13 @@ Server file recommendations:
 | `app/server/game-data.js` | Do not move wholesale. Extract schemas, validators, projections, selection utilities, and catalog adapters. | Mushroom characters, artifacts, portrait variants, balance tables, lore/wiki/content ids, and art paths. |
 | `app/server/db.js` | Keep product-local except for repository interfaces and already-quarantined model definitions. | Sequelize instance, Postgres/SQLite dialect config, migrations, sync/backfill/index repair, transactions, and deployment DB policy. |
 | `app/server/start.js` | Keep product-local. | Process startup, port/env handling, server lifecycle, signal handling, and deploy composition. |
+| `app/server/services/shop-service.js` | Move next as a quarantined shop/run repository port over injected run, offer-state, loadout, wallet/refund, and catalog repositories. Promote pure buy/refresh/sell route DTOs later. | SQL transactions, run locks, player ownership, persisted shop rows, refunds, product catalog/balance, and route errors. |
+| `app/server/services/run-service.js` | Move next as a quarantined run-lifecycle port over injected repositories, battle resolver, shop service, rewards, season, achievements, wallet grants, and ghost selectors. | DB transactions, challenge matching, player/mushroom lookup, season awards, rating writes, wallet writes, and public API compatibility aliases. |
+| `app/server/services/battle-engine.js` / `battle-service.js` | Keep the core simulator stable; move Mushroom battle hooks, snapshot shaping, replay/history persistence, and active-run snapshot reads as quarantined ports. | Character abilities, artifact effect metadata, portrait resolution, SQL replay rows, battle history routes, and Mushroom narration/copy. |
+| `app/server/services/game-service.js` / `player-service.js` | Move bootstrap/profile DTO assembly as repository-backed modules after run/shop/wallet/assets have explicit adapters. | Player rows, selected character, wallet/assets/season aggregation, daily limits, home-field config, and product bootstrap shape. |
+| `app/server/services/season-service.js` | Move lightweight season point/achievement grant planners together with shared season/achievement evaluator helpers. | Current season id, tables, achievement definitions, badge/rank art, season scheduling, and persisted grant rows. |
+| `app/server/services/mutation-claim-service.js` | Move as a generic repository-backed mutation/idempotency claim port. | Concrete table name, SQL upsert semantics, retention policy, and product mutation scopes. |
+| wallet/assets/gacha/support service files | Move after gameplay spine as wallet/assets/gacha/support ports with fake repositories and policy adapters. | Provider SDKs/callbacks, SQL transactions, audit records, support operator permissions, paid rollback, and adult-content/payment policy. |
 
 Shared folder recommendations:
 
@@ -1058,14 +1102,22 @@ Execution order:
    commit `433e2f5`; second slice done for fusion schema/evaluator helpers in
    core commit `5370733`. Next low-risk shared candidates are
    season/achievement evaluator helpers.
-2. Continue the gameplay spine server ports already listed above:
-   `shop-service.js`, `run-service.js`, `battle-service.js`, `game-service.js`,
-   `player-service.js`, `season-service.js`, and `mutation-claim-service.js`.
-3. Split top-level route files: `auth.js`, route chunks from `create-app.js`,
+2. Move the smallest gameplay/profile server ports first:
+   `season-service.js` plus shared season/achievement evaluators, then
+   `mutation-claim-service.js`, then `battle-engine.js` / `battle-service.js`.
+   These establish repository and policy adapter patterns before the huge
+   run/shop files move.
+3. Move the main gameplay spine:
+   `shop-service.js`, `run-service.js`, `game-service.js`, and
+   `player-service.js`. Keep them quarantined until SQL access is behind
+   repository contracts and public response aliases are explicit.
+4. Split top-level route files: `auth.js`, route chunks from `create-app.js`,
    `wiki.js`, `social-preview-cache.js`, and generic `bot-gateway.js` helpers.
-4. Move wallet/assets/gacha/support service files only after repository,
+   `create-app.js`, `db.js`, and `start.js` remain Mushroom composition and
+   runtime files.
+5. Move wallet/assets/gacha/support service files only after repository,
    policy, payment, and support-operation adapters are named.
-5. Refactor Mushroom and Meat composition roots to declare module lists and
+6. Refactor Mushroom and Meat composition roots to declare module lists and
    shrink compatibility wrappers after both games pass the shared-core gates.
 
 Validation:
