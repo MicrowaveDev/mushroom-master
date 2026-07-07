@@ -1015,7 +1015,10 @@ Status: **Started 2026-07-07 after reviewing the remaining `app/server` and
 `artifact-visual-classification.js` moved to core commit `433e2f5` as a
 product-configurable classifier engine, while Mushroom keeps the old path as a
 compatibility wrapper for labels, prompts, CSS taxonomy, shine tiers, and the
-legacy owner field.
+legacy owner field. The second shared-folder slice is also complete:
+`artifact-fusions.js` now delegates recipe normalization, lookup,
+ingredient-policy, summary, and evaluator helpers to core commit `5370733`,
+while Mushroom keeps the authored recipe table and balance/unlock policy local.
 
 Goal: make the remaining Mushroom server/shared code reusable without turning
 Mushroom content, deployment, or persistence into fake core.
@@ -1038,7 +1041,7 @@ Shared folder recommendations:
 | Current shared area | Move direction | Product-owned boundary |
 | --- | --- | --- |
 | `bag-shape.js` | Already core-backed; keep Mushroom wrapper until imports are cleaned. | None beyond compatibility path. |
-| `artifact-fusions.js` | Move schema validation, recipe normalization, eligibility/fusion evaluator factories, and DTO helpers. Move Mushroom recipe data only as `content/mushroom` quarantine if needed. | Actual Mushroom recipes, artifact ids, balance, and unlock policy. |
+| `artifact-fusions.js` | ✅ Done 2026-07-07 in core commit `5370733`: recipe normalization, lookup, result/ingredient summaries, ingredient-policy helpers, and evaluator factory moved to `@microwavedev/backpack-game-core/artifact-fusion-recipes` and `modules/fusion`. | Mushroom authored recipe data, artifact ids, balance, and unlock policy stay in the wrapper. |
 | `artifact-visual-classification.js` | ✅ Done 2026-07-07 in core commit `433e2f5`: classifier engine, taxonomy schema, fallback factory, owner adapter, and footprint helper moved to `@microwavedev/backpack-game-core/artifact-visual-classification`. | Mushroom visual labels, prompts, shine tiers, generated-art assumptions, CSS taxonomy, and legacy owner mapping stay in the wrapper. |
 | `run-achievements.js` / `run-achievements.json` | Move achievement evaluator engine, progress DTOs, and schema validation. | Achievement definitions, thresholds, badge art, copy, and season/product tuning. |
 | `season-levels.js` / `season-levels.json` | Move level progression calculators, schema checks, and display DTO helpers. | Season tables, rank art, copy, reward tuning, and product scheduling. |
@@ -1052,8 +1055,9 @@ Execution order:
    factory, fusion schema/evaluator helpers, season/achievement schema and
    evaluator code. Restore Mushroom wrappers and leave JSON/content local or in
    explicit quarantine. ✅ First slice done for visual classification in core
-   commit `433e2f5`; next low-risk shared candidates are fusion
-   schema/evaluator helpers and season/achievement evaluator helpers.
+   commit `433e2f5`; second slice done for fusion schema/evaluator helpers in
+   core commit `5370733`. Next low-risk shared candidates are
+   season/achievement evaluator helpers.
 2. Continue the gameplay spine server ports already listed above:
    `shop-service.js`, `run-service.js`, `battle-service.js`, `game-service.js`,
    `player-service.js`, `season-service.js`, and `mutation-claim-service.js`.

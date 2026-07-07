@@ -252,6 +252,15 @@ copy, theme, and API adapters.
   `app/shared/artifact-visual-classification.js` as the compatibility wrapper
   that supplies Mushroom labels, prompts, CSS taxonomy, shine tiers, and legacy
   `characterItem.mushroomId` owner lookup.
+- artifact fusion recipe helper slice:
+  `src/artifact-fusion-recipes.js` now exposes product-configurable recipe
+  normalization, recipe lookup, ingredient-policy, result/ingredient summary,
+  and fusion evaluator helpers through
+  `@microwavedev/backpack-game-core/artifact-fusion-recipes` and
+  `modules/fusion`, tested by `tests/artifact-fusion-recipes.test.js`.
+  Mushroom keeps `app/shared/artifact-fusions.js` as the compatibility wrapper
+  that supplies the authored recipe table and Mushroom-specific ingredient
+  exclusions.
 - gacha simulation service slice:
   `src/modules/gacha/simulation-service.js` now exposes provider-driven
   static/runtime simulation service factories, and
@@ -271,10 +280,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `433e2f5`
-  (`Move artifact visual classifier into core`)
-- latest runtime/API core commit: `433e2f5`
-  (`Move artifact visual classifier into core`)
+- latest consumed core commit: `5370733`
+  (`Move artifact fusion recipe helpers into core`)
+- latest runtime/API core commit: `5370733`
+  (`Move artifact fusion recipe helpers into core`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 
@@ -340,7 +349,7 @@ Shared split:
 
 | Current shared area | Extraction direction | Keep product-owned |
 | --- | --- | --- |
-| `artifact-fusions.js` | Recipe schema, normalization, evaluator factories, DTO helpers. | Mushroom recipe data, artifact ids, balance, unlock policy. |
+| `artifact-fusions.js` | ✅ Done 2026-07-07 in core commit `5370733`: recipe normalization, lookup, result/ingredient summaries, ingredient-policy helpers, and evaluator factory moved to `@microwavedev/backpack-game-core/artifact-fusion-recipes` and `modules/fusion`. | Mushroom authored recipe data, artifact ids, balance, and unlock policy stay in the wrapper. |
 | `artifact-visual-classification.js` | ✅ Done 2026-07-07 in core commit `433e2f5`: classifier engine, taxonomy schema, fallback factory, owner adapter, and footprint helper moved to `@microwavedev/backpack-game-core/artifact-visual-classification`. | Mushroom visual labels, prompts, shine tiers, generated-art assumptions, CSS taxonomy, and legacy owner mapping stay in the wrapper. |
 | `run-achievements.js` / `.json` | Evaluator engine, progress DTOs, schema validation. | Definitions, thresholds, badge art, copy, season tuning. |
 | `season-levels.js` / `.json` | Progression calculators, schema validation, display DTOs. | Tables, rank art, copy, rewards, season scheduling. |
@@ -524,7 +533,7 @@ Maximum-efficiency constraints:
 | Grid placement primitives | `backpack-game-core/src/grid-geometry.js`; validation uses `backpack-game-core/src/loadout-validation.js` through the Mushroom adapter | Extracted pure slice | `pieceCells`, `cellSet`, `setsIntersect`, and `cellKey` are pure and shared by server/client through package imports. Catalog-backed grid/bag/loadout policy is injected into the core validator from Mushroom code. |
 | Full loadout validation | `backpack-game-core/src/loadout-validation.js`; `backpack-game-core/src/modules/loadout/validation-service.js`; Mushroom adapter in `app/server/services/loadout-utils.js` | Extracted with product config and service factory | Core owns flat-grid bounds/overlap validation, active-bag placement, bag coverage, budget summing, stat totals, orchestrated loadout validation, provider-driven service factory, and server module registration. Mushroom injects artifact lookup, pricing, family semantics, grid constants, and stat caps. |
 | Seeded RNG and shuffle | `backpack-game-core/src/rng.js`; Mushroom string-seed adapter in `app/server/lib/utils.js`; compatibility re-export in `app/server/services/battle-engine.js` | Extracted with product seed hashing | Core owns the browser-safe numeric-seed RNG state machine, integer rolls, and non-mutating shuffle. Mushroom keeps Node `crypto` string hashing for existing deterministic seed inputs. |
-| Fusion matching algorithm | `backpack-game-core/src/fusion-matching.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product hook | Core owns adjacency search, duplicate row consumption, match shaping, and `fusionIngredientRowIdSet`. Mushroom keeps recipe data and eligibility policy through `canUseIngredient`. |
+| Fusion matching and recipe helpers | `backpack-game-core/src/fusion-matching.js`; `backpack-game-core/src/artifact-fusion-recipes.js`; Mushroom wrapper and recipes in `app/shared/artifact-fusions.js` | Extracted with product recipes and policy | Core owns adjacency search, duplicate row consumption, match shaping, `fusionIngredientRowIdSet`, recipe normalization/lookup/result summaries, ingredient policy helpers, and product-configurable evaluator factories. Mushroom keeps authored recipe data, artifact ids, balance/unlock policy, and compatibility path local. |
 | Fusion application | `backpack-game-core/src/server/ports/mushroom/gameplay/artifact-fusion-service.js`; Mushroom wrapper in `app/server/services/artifact-fusion-service.js` | Quarantined port | Core now owns the moved between-round fusion application and reveal-row shaping behind injected query, catalog, fusion matcher, loadout row mutation, clock, and ID providers. The `game_run_fusions` SQL/table contract is still temporary quarantine; product repositories should replace it before this graduates to a stable cross-game module. |
 | Shop offer generation and run lifecycle state plans | `backpack-game-core/src/shop-offer.js`; `backpack-game-core/src/run-lifecycle.js`; Mushroom adapters in `app/server/services/shop-service.js` and `app/server/services/run-service.js`; Meat adapter in `app/server/meat-service.js` | Extracted with product config and DTO shaping | Core owns deterministic pool sampling, bag pity, bag chance escalation, character-item slot reservation, buy/refresh/sell run-currency + offer-state plans, run start drafts, starter loadout drafts, initial/next shop state, ghost budget math, round reward/counter/end-state plans, challenge group-completion decisions, and provider-driven run-state summary DTO shaping. Mushroom passes combat pools, bag pools, eligible character items, generated offers, starter presets, balances, reward tables, and run config. Meat passes compact loadout totals/cost and shop row formatting providers. |
 | Run/shop mutations | `startGameRun`, `resolveRound`, `createChallengeRun`, `resolveChallengeRound`, `buyRunShopItem`, `refreshRunShop`, `sellRunItem` in product services | Adapter over core planners | Core plans pure state transitions; DB transactions, run locks, persisted shop states, loadout rows, refunds, route errors, catalog lookup, player/mushroom selection, daily limits, rewards execution, rating, season/achievement grants, ghost selection, and challenge matching stay in product service code. |

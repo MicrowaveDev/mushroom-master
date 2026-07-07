@@ -233,6 +233,8 @@ These mechanics are closest to the reusable core boundary:
 - placement validation once catalog access is injected
 - seeded RNG and deterministic shuffle
 - pure fusion matching with recipes/catalog policy injected
+- fusion recipe normalization, lookup, and evaluator factories over
+  product-authored recipes and artifact catalogs
 - shop offer generation with item pools and eligibility hooks injected
 - battle simulation with combatant, ability, attribution, and narration hooks
 - asset acquisition policy with catalogs, ownership snapshots, wallet snapshots,
@@ -410,6 +412,10 @@ Core commit `433e2f5` moved the artifact visual classification engine from
 Mushroom `app/shared` into `artifact-visual-classification`; products still own
 role labels, prompts, shine tiers, CSS taxonomy, generated-art assumptions, and
 legacy owner-field adapters.
+Core commit `5370733` moved fusion recipe normalization, lookup, ingredient
+policy, result/ingredient summaries, and evaluator factories into
+`artifact-fusion-recipes` / `modules/fusion`; products still own authored recipe
+tables, artifact ids, balance, unlock policy, and catalog publication.
 Core commits `006ab33`, `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`,
 `be03e50`, `5dd01f1`, and `471e686` then added the neutral Vue component layer
 for roll result panels, gacha odds tables, gacha pack cards, artifact tiles,
@@ -513,11 +519,11 @@ persistence, support actions, paid rollback behavior, gacha grant/burn flows,
 and product catalogs; provider checkout/callback code stays local.
 
 The shipped slices are bag-shape masks, rotation, first grid-geometry
-primitives, fusion matching, shop-offer generation, bot-loadout generation,
-hookable battle simulation, provider-driven loadout validation, deterministic
-numeric RNG/shuffle helpers, artifact family capability helpers, configurable
-artifact visual classification helpers, and the first asset-gacha policy
-helpers.
+primitives, fusion matching, fusion recipe helper factories, shop-offer
+generation, bot-loadout generation, hookable battle simulation, provider-driven
+loadout validation, deterministic numeric RNG/shuffle helpers, artifact family
+capability helpers, configurable artifact visual classification helpers, and
+the first asset-gacha policy helpers.
 Core run-lifecycle helpers now expose neutral aliases for cross-game adoption:
 `characterId` alongside legacy `mushroomId`, and `profileCurrency` /
 `characterProgress` alongside legacy `spore` / `mycelium`. Consumers may keep

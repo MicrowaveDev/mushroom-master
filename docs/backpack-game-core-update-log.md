@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `433e2f5ac8cd058eb0aa76b1bf3503a5d29adc01`
-- core short SHA: `433e2f5`
-- core commit: `Move artifact visual classifier into core`
-- runtime/API baseline: `433e2f5` (`Move artifact visual classifier into core`)
-- game pointer commit: `4d34f26` (`Consume core artifact visual classifier`)
+- core SHA: `537073339ee8f3513dedf5da90954084dbd8ae35`
+- core short SHA: `5370733`
+- core commit: `Move artifact fusion recipe helpers into core`
+- runtime/API baseline: `5370733` (`Move artifact fusion recipe helpers into core`)
+- game pointer commit: `58978d6` (`Consume core artifact fusion helpers`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-07 | `58978d6` | `5370733` | Artifact fusion recipe helpers | Core now owns `@microwavedev/backpack-game-core/artifact-fusion-recipes` and exposes the same helpers through `modules/fusion`: recipe normalization, lookup, result/ingredient summaries, ingredient policy, and a product-configurable fusion evaluator over injected recipes and artifact catalogs. Mushroom keeps `app/shared/artifact-fusions.js` as the compatibility wrapper with the authored recipe table and Mushroom policy exclusions. Meat pins the same SHA and verifies the helper through its core-consumption test. |
 | 2026-07-07 | `4d34f26` | `433e2f5` | Artifact visual classification engine | Core now owns the moved artifact visual classification engine at `@microwavedev/backpack-game-core/artifact-visual-classification`, with a product-configurable classifier factory for role/shine/stat/footprint metadata over injected visual taxonomy, owner adapters, and shape hooks. Mushroom keeps `app/shared/artifact-visual-classification.js` as the compatibility wrapper that supplies Mushroom labels, prompts, CSS classes, and the legacy `characterItem.mushroomId` owner field. Meat pins the same SHA and verifies the export in its core-consumption test. |
 | 2026-07-07 | `ef68ee9` | `97aea67` | Quarantined Mushroom model definitions | Core now contains the full moved Mushroom Sequelize model definition set under `@microwavedev/backpack-game-core/server/models/mushroom`, with `initModels()` and association setup. Mushroom keeps only `app/server/models/index.js` as a wrapper. Product repos still own Sequelize instance creation, Postgres/SQLite dialect config, sync/backfill logic, queries, transactions, and migrations. Meat pins the same SHA and verifies the model export without adopting Mushroom DB runtime behavior. |
 | 2026-07-07 | `1933d7f` | `2c39656` | Quarantined artifact-fusion port | Core now contains the second aggressive gameplay spine port under `@microwavedev/backpack-game-core/server/ports/mushroom/gameplay`: the old `artifact-fusion-service.js` implementation moved behind `createArtifactFusionPort()` with injected DB query, catalog, fusion matcher, loadout row mutation, clock, and ID providers. Mushroom keeps the old `app/server/services/artifact-fusion-service.js` path as a wrapper. Meat pins the same SHA and verifies the quarantined export without adopting the Mushroom fusion table contract yet. |
