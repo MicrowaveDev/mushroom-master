@@ -200,6 +200,14 @@ copy, theme, and API adapters.
   keeping verification, sessions, rate limits, player lookup, and final path
   choices local. Meat pins the same SHA and verifies the route family with its
   current auth/bootstrap paths.
+- first mv-first server-file cluster: `src/server/modules/bot-loadout.js`,
+  `src/server/modules/loadout-utils.js`,
+  `src/server/modules/gacha-simulation-service.js`, and
+  `src/server/modules/ready-manager.js` were physically moved from Mushroom
+  service files into core and neutralized into provider-driven factories.
+  Mushroom keeps thin wrappers at the old paths for catalog/config/provider
+  wiring and legacy `mushroomId` output compatibility; Meat pins the same SHA
+  and imports the factories in its core-consumption test.
 - browser-safe Vue composable slice: `src/vue/composables/useReducedMotion.js`
   now exposes `createReducedMotionTracker` and
   `bindReducedMotionTracker` through
@@ -231,10 +239,10 @@ copy, theme, and API adapters.
   exports in `app/server/services/ready-manager.js`.
 - initial commit: `69666c8` (`Add bag shape core helpers`)
 - latest typed package baseline: `d5fb481` (`Add package type declarations`)
-- latest consumed core commit: `74a7e82`
-  (`Add auth route server module`)
-- latest runtime/API core commit: `74a7e82`
-  (`Add auth route server module`)
+- latest consumed core commit: `55200c7`
+  (`Move server service adapters into core`)
+- latest runtime/API core commit: `55200c7`
+  (`Move server service adapters into core`)
 - consumer update log:
   `docs/backpack-game-core-update-log.md`
 

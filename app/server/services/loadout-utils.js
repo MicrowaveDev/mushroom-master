@@ -6,7 +6,7 @@ import {
   MAX_ARTIFACT_COINS,
   MAX_STUN_CHANCE
 } from '../game-data.js';
-import { createLoadoutValidationService } from '@microwavedev/backpack-game-core/modules/loadout/validation-service';
+import { createServerLoadoutUtils } from '@microwavedev/backpack-game-core/server';
 import {
   contributesStats,
   isBag,
@@ -15,7 +15,7 @@ import {
 
 export { pieceCells } from '@microwavedev/backpack-game-core/modules/loadout';
 
-const mushroomLoadoutValidator = createLoadoutValidationService({
+const loadoutUtils = createServerLoadoutUtils({
   gridWidth: BAG_COLUMNS,
   gridHeight: BAG_ROWS,
   defaultCoinBudget: MAX_ARTIFACT_COINS,
@@ -24,9 +24,7 @@ const mushroomLoadoutValidator = createLoadoutValidationService({
   isBag,
   isContainerItem,
   contributesStats,
-  statClamps: {
-    stunChance: { min: 0, max: MAX_STUN_CHANCE }
-  }
+  maxStunChance: MAX_STUN_CHANCE
 });
 
 export const {
@@ -39,4 +37,4 @@ export const {
   validateItemCoverage,
   validateCoinBudget,
   validateLoadoutItems
-} = mushroomLoadoutValidator;
+} = loadoutUtils;

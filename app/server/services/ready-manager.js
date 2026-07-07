@@ -1,23 +1,15 @@
-import {
-  createRunReadinessServerModule,
-  setupBackpackServerModules
-} from '@microwavedev/backpack-game-core/server';
+import { createReadyManagerExports } from '@microwavedev/backpack-game-core/server';
 
-const readyModuleContext = setupBackpackServerModules([
-  createRunReadinessServerModule({
-    config: {
-      requiredReadyCount: 2
-    }
-  })
-]);
-const manager = readyModuleContext.get('runReadinessManager');
+const readyManager = createReadyManagerExports({
+  requiredReadyCount: 2
+});
 
-export const setReady = manager.setReady;
-export const setUnready = manager.setUnready;
-export const touchActivity = manager.touchActivity;
-export const isReady = manager.isReady;
-export const areBothReady = manager.readyStatus;
-export const clearRound = manager.clearRound;
-export const clearRun = manager.clearRun;
-export const getIdleRunIds = manager.getIdleRunIds;
-export const withRunLock = manager.withRunLock;
+export const setReady = readyManager.setReady;
+export const setUnready = readyManager.setUnready;
+export const touchActivity = readyManager.touchActivity;
+export const isReady = readyManager.isReady;
+export const areBothReady = readyManager.areBothReady;
+export const clearRound = readyManager.clearRound;
+export const clearRun = readyManager.clearRun;
+export const getIdleRunIds = readyManager.getIdleRunIds;
+export const withRunLock = readyManager.withRunLock;

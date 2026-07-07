@@ -1,6 +1,4 @@
-import {
-  createAssetGachaSimulationService
-} from '@microwavedev/backpack-game-core/modules/gacha/simulation-service';
+import { createServerGachaSimulationService } from '@microwavedev/backpack-game-core/server';
 import {
   getAssetCatalog,
   getAssetPack,
@@ -10,7 +8,7 @@ import {
   shapeAssetPack
 } from './asset-service.js';
 
-const simulationService = createAssetGachaSimulationService({
+const simulationService = createServerGachaSimulationService({
   getStaticPack: getAssetPack,
   getStaticCatalog: getAssetCatalog,
   getStaticPackOdds: (pack) => getPackOdds(pack.id),
@@ -19,16 +17,5 @@ const simulationService = createAssetGachaSimulationService({
   shapeRuntimePackOdds: (pack, { catalog }) => shapeAssetPack(pack, { includeAssets: true, catalog })
 });
 
-export function simulateAssetPackOdds(packId, options = {}) {
-  return simulationService.simulateAssetPackOdds(packId, options);
-}
-
-export async function simulateRuntimeAssetPackOdds(packId, {
-  planAssetVisibility = 'runtime',
-  ...options
-} = {}) {
-  return simulationService.simulateRuntimeAssetPackOdds(packId, {
-    ...options,
-    planAssetVisibility
-  });
-}
+export const simulateAssetPackOdds = simulationService.simulateAssetPackOdds;
+export const simulateRuntimeAssetPackOdds = simulationService.simulateRuntimeAssetPackOdds;

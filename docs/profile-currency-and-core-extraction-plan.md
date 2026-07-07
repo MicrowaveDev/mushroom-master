@@ -747,18 +747,21 @@ Mv-first migration protocol:
 
 First mv-first backend cluster:
 
-- Move `app/server/services/bot-loadout.js` into a core bot/ghost loadout
-  module, neutralize character naming, and make Mushroom provide artifacts,
-  characters, starter presets, image paths, RNG, and validation.
-- Move `app/server/services/loadout-utils.js` into a core loadout server module
-  adapter/factory, replacing Mushroom constants/catalog imports with provider
-  config; Mushroom keeps a wrapper with Mushroom grid constants and catalog
-  functions.
-- Move `app/server/services/gacha-simulation-service.js` into a core gacha
-  server module wrapper/factory, replacing direct asset-service imports with
-  injected static/runtime pack/catalog/odds providers.
-- Move `app/server/services/ready-manager.js` into a core readiness
-  compatibility module or remove the local file in favor of a core export;
+- ✅ Done 2026-07-07 in core commit `55200c7`: moved
+  `app/server/services/bot-loadout.js` into `createGhostLoadoutService`,
+  neutralized character naming, and made Mushroom provide artifacts,
+  characters, starter presets, image paths, RNG, validation, and the legacy
+  `mushroomId` alias in its wrapper.
+- ✅ Done 2026-07-07 in core commit `55200c7`: moved
+  `app/server/services/loadout-utils.js` into `createServerLoadoutUtils`,
+  replacing Mushroom constants/catalog imports with provider config; Mushroom
+  keeps a wrapper with grid constants and catalog functions.
+- ✅ Done 2026-07-07 in core commit `55200c7`: moved
+  `app/server/services/gacha-simulation-service.js` into
+  `createServerGachaSimulationService`, replacing direct asset-service imports
+  with injected static/runtime pack/catalog/odds providers.
+- ✅ Done 2026-07-07 in core commit `55200c7`: moved
+  `app/server/services/ready-manager.js` into `createReadyManagerExports`;
   Mushroom keeps only the product singleton config.
 - Do not move yet: `create-app.js`, `db.js`, `auth.js`, `bot-gateway.js`,
   payment/provider settlement endpoints, model definitions, migrations,
