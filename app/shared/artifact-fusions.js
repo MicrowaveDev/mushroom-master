@@ -1,4 +1,6 @@
-import { findFusionMatches } from '@microwavedev/backpack-game-core';
+import {
+  createArtifactFusionEvaluator
+} from '@microwavedev/backpack-game-core/artifact-fusion-recipes';
 
 export const artifactFusionRecipes = [
   {
@@ -98,21 +100,13 @@ export const artifactFusionRecipes = [
   }
 ];
 
-export function getArtifactFusionRecipe(recipeId) {
-  return artifactFusionRecipes.find((recipe) => recipe.id === recipeId) || null;
-}
+const mushroomArtifactFusionEvaluator = createArtifactFusionEvaluator({
+  recipes: artifactFusionRecipes,
+  excludedFamilies: ['bag']
+});
 
-function canUseMushroomFusionIngredient({ artifact, recipe }) {
-  if (artifact.family === 'bag') return false;
-  if (artifact.starterOnly) return false;
-  if (artifact.fusionOnly && !recipe.allowFusionIngredients) return false;
-  return true;
-}
-
-export function findArtifactFusionMatches(rows, getArtifact, recipes = artifactFusionRecipes) {
-  return findFusionMatches(rows, getArtifact, recipes, {
-    canUseIngredient: canUseMushroomFusionIngredient
-  });
-}
-
-export { fusionIngredientRowIdSet } from '@microwavedev/backpack-game-core';
+export const {
+  getArtifactFusionRecipe,
+  findArtifactFusionMatches,
+  fusionIngredientRowIdSet
+} = mushroomArtifactFusionEvaluator;
