@@ -22,7 +22,7 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `c0c6111490dff8a19a15a64fe49c1c335609cd7e`
+- core SHA: `c0c6111686351890c232da22a0e54f1c3dc85181`
 - core short SHA: `c0c6111`
 - core commit: `Move wallet service port into core`
 - runtime/API baseline: `c0c6111` (`Move wallet service port into core`)
