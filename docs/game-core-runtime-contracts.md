@@ -164,6 +164,7 @@ current shipped asset type.
 Current code anchors:
 
 - `app/server/services/asset-service.js`
+- `vendor/backpack-game-core/src/server/ports/mushroom/economy/asset-service.js`
 - `vendor/backpack-game-core/src/server/models/mushroom/PlayerAssetInstance.js`
 - `vendor/backpack-game-core/src/server/models/mushroom/PlayerEquippedAsset.js`
 - `vendor/backpack-game-core/src/server/models/mushroom/AssetRoll.js`
@@ -201,12 +202,19 @@ Future direction:
   Profile asset state shaping, ownership maps, equipment validation,
   direct-purchase spend parameters, instance draft rows, and portrait variant
   projection now live in `profile-asset-state` / `modules/assets`; Mushroom
-  still supplies runtime catalogs, SQL rows, wallet spend execution, roll/burn
-  grants, support actions, and compatibility mirrors.
+  now consumes `createMushroomAssetServicePort()` as a quarantined move-first
+  port for runtime catalogs, direct purchase/equip, roll/burn, pack odds, and
+  duplicate-burn execution behind injected DB, portrait catalog, wallet,
+  mutation-claim, ID, clock, JSON, and env providers. This is not yet a stable
+  cross-game repository API: current SQL rows, portrait content, uploaded image
+  storage, wallet debit execution, support/admin policy, route shells, auth,
+  theme, localization, secure RNG policy, payment-funded roll ops, and
+  compatibility mirrors stay product-owned until those contracts are
+  neutralized.
   Purchase/equip response DTOs plus granted-instance summaries for direct-buy,
   roll, burn, and idempotent replay paths now also live in `modules/assets`
-  over injected rows/catalog snapshots; Mushroom still owns the mutations that
-  create those rows and the route payload assembly around them.
+  over injected rows/catalog snapshots, with the moved Mushroom port preserving
+  current behavior while repository and policy interfaces are named.
   The same plan now treats reusable Vue frontend modules as core candidates:
   shared services, composables, view-model shapers, components, and optional
   page shells can move to the package when product routes, copy, theme, art,
@@ -521,8 +529,12 @@ imports are cleaned. The next paid/admin slice moved `wallet-service.js` as
 `createMushroomWalletServicePort()`, keeping profile-wallet, purchase-intent,
 checkout, provider webhook, reconciliation, expiry, audit, grant, and spend
 behavior behind injected DB, transaction, ID, clock, JSON, env, and fetch
-providers. Move asset/gacha/support after repository, payment, support, and
-content policy contracts exist; and
+providers. The next paid/admin slice moved `asset-service.js` as
+`createMushroomAssetServicePort()`, keeping profile assets, runtime packs,
+direct purchase/equip, roll/burn, odds, and duplicate exchange behavior behind
+injected DB, transaction, portrait catalog, wallet, mutation-claim, ID, clock,
+JSON, and env providers. Move remaining gacha-admin/support/settlement files
+after repository, payment, support, and content policy contracts exist; and
 keep `db.js`, `start.js`, realtime/SSE delivery, home-field generation config,
 concrete dialect setup, migrations, and product catalog content in product
 repos.

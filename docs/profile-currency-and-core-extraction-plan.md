@@ -912,13 +912,18 @@ Aggressive bulk server move lane:
   `createMushroomWalletServicePort()`. Mushroom keeps the old service path as
   a thin wrapper that injects DB, transaction, ID, clock, JSON, env, and fetch
   providers.
-- **Move next, quarantined after wallet:** `asset-service.js`,
-  `gacha-admin-service.js`, `support-money-service.js`,
-  `support-ops-service.js`, `provider-settlement-service.js`, and
-  `wallet-ops-check-service.js`. These become core assets/gacha/support
-  ports first; product repos keep concrete transactions, provider callbacks,
-  support permissions, audit persistence, content policy, and paid-gacha
-  operational policy.
+- ✅ Done 2026-07-08 in core commit `1841f73`: moved
+  `app/server/services/asset-service.js` into the quarantined
+  `server/ports/mushroom/economy` package subpath as
+  `createMushroomAssetServicePort()`. Mushroom keeps the old service path as a
+  thin wrapper that injects DB, transaction, portrait catalog, wallet,
+  mutation-claim, ID, clock, JSON, and env providers.
+- **Move next, quarantined after wallet/assets:** `gacha-admin-service.js`,
+  `support-money-service.js`, `support-ops-service.js`,
+  `provider-settlement-service.js`, and `wallet-ops-check-service.js`. These
+  become core gacha-admin/support/settlement ports first; product repos keep
+  concrete transactions, provider callbacks, support permissions, audit
+  persistence, content policy, and paid-gacha operational policy.
 - **Move as route/module ports, not stable app roots:** `auth.js`,
   `bot-gateway.js`, `wiki.js`, `social-preview-cache.js`, and route sections
   from `create-app.js`. They should become route-group factories and service
@@ -1125,7 +1130,8 @@ Server file recommendations:
 | `app/server/services/season-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as `createSeasonProgressPort()` with injected season scoring, achievement, clock, and ID helpers. | Current season id, tables, achievement definitions, badge/rank art, season scheduling, and persisted grant-row contract stay product-owned. |
 | `app/server/services/mutation-claim-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as generic repository-backed `createMutationClaimService()` through the stable server facade. | Concrete table name, SQL upsert semantics, env timing, retention policy, and product mutation scopes stay product-configured. |
 | `app/server/services/wallet-service.js` | ✅ Done 2026-07-08 in core commit `c0c6111`: moved as `createMushroomWalletServicePort()` under the quarantined Mushroom economy port, backed by injected DB, transaction, ID, clock, JSON, env, and fetch providers. | Current wallet/payment SQL table contract, provider setup/env semantics, Telegram/BTCPay/NOWPayments lifecycle, webhook replay storage, settlement reconciliation, mirror policy, paid rollback, and public API compatibility aliases stay quarantined until repository/provider contracts are neutral. |
-| asset/gacha/support service files | Move after wallet as assets/gacha/support ports with fake repositories and policy adapters. | Provider SDKs/callbacks, SQL transactions, audit records, support operator permissions, paid rollback, and adult-content/payment policy. |
+| `app/server/services/asset-service.js` | ✅ Done 2026-07-08 in core commit `1841f73`: moved as `createMushroomAssetServicePort()` under the quarantined Mushroom economy port, backed by injected DB, transaction, portrait catalog, wallet, mutation-claim, ID, clock, JSON, and env providers. | Current profile-asset/gacha SQL table contract, portrait catalog/content, runtime pack visibility, secure RNG source, wallet debit execution, mutation-claim scope semantics, direct-buy/gacha env policy, support/admin policy, and compatibility mirrors stay quarantined until repository/policy contracts are neutral. |
+| gacha-admin/support/settlement service files | Move after wallet/assets as gacha-admin/support/settlement ports with fake repositories and policy adapters. | Provider SDKs/callbacks, SQL transactions, audit records, support operator permissions, paid rollback, and adult-content/payment policy. |
 
 Shared folder recommendations:
 
@@ -1157,8 +1163,9 @@ Execution order:
    `game-service.js` is done in core commit `de56ec8`; ✅ `player-service.js`
    is done in core commit `db3d77d`; ✅ `run-service.js` is done in core
    commit `fd78ad7`; ✅ `wallet-service.js` is done in core commit
-   `c0c6111`. These establish repository and policy adapter patterns for the
-   full gameplay/profile spine and the first paid/admin service.
+   `c0c6111`; ✅ `asset-service.js` is done in core commit `1841f73`. These
+   establish repository and policy adapter patterns for the full
+   gameplay/profile spine and the first paid/admin asset-wallet services.
 3. Neutralize the quarantined gameplay/profile ports behind repository
    contracts when the next product needs to execute the same persistence
    behavior rather than only verify the exports.
@@ -1166,8 +1173,8 @@ Execution order:
    `wiki.js`, `social-preview-cache.js`, and generic `bot-gateway.js` helpers.
    `create-app.js`, `db.js`, and `start.js` remain Mushroom composition and
    runtime files.
-5. Move asset/gacha/support service files only after repository, policy,
-   payment, and support-operation adapters are named.
+5. Move remaining gacha-admin/support/settlement service files only after
+   repository, policy, payment, and support-operation adapters are named.
 6. Refactor Mushroom and Meat composition roots to declare module lists and
    shrink compatibility wrappers after both games pass the shared-core gates.
 

@@ -35,6 +35,7 @@ import {
   createSeasonProgressPort
 } from '@microwavedev/backpack-game-core/server/ports/mushroom/gameplay';
 import {
+  createMushroomAssetServicePort,
   createMushroomWalletServicePort,
   WALLET_CURRENCY_CODE
 } from '@microwavedev/backpack-game-core/server/ports/mushroom/economy';
@@ -71,6 +72,7 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(typeof createMushroomRunServicePort, 'function');
   assert.equal(typeof createMushroomShopServicePort, 'function');
   assert.equal(typeof createSeasonProgressPort, 'function');
+  assert.equal(typeof createMushroomAssetServicePort, 'function');
   assert.equal(typeof createMushroomWalletServicePort, 'function');
   assert.equal(WALLET_CURRENCY_CODE, 'soft_coin');
 
