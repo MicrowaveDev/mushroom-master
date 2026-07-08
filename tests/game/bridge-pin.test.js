@@ -154,10 +154,10 @@ test('bridge: applyRunLoadoutPlacements rejects dimension lies', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Structural pin: the bridge body is intentionally small. If it grows past
-// a sanity threshold of ~30 non-blank lines, that's a strong signal that
-// business logic is creeping in. The pin catches that without pretending
-// to parse the function properly — a simple line count is enough to prompt
+// Structural pin: the core bridge body is intentionally small. If it grows
+// past a sanity threshold of ~30 non-blank lines, that's a strong signal that
+// business logic is creeping in. The pin catches that without pretending to
+// parse the function properly — a simple line count is enough to prompt
 // "wait, did I just add a 40-line coin validator to the bridge?"
 //
 // When the bridge is deleted (Batch C1), this test goes away with it.
@@ -165,13 +165,13 @@ test('bridge: applyRunLoadoutPlacements rejects dimension lies', async () => {
 
 test('bridge: applyRunLoadoutPlacements body stays small (structural pin)', () => {
   const source = fs.readFileSync(
-    path.resolve(process.cwd(), 'app/server/services/run-service.js'),
+    path.resolve(process.cwd(), 'vendor/backpack-game-core/src/server/ports/mushroom/gameplay/run-service.js'),
     'utf-8'
   );
 
   const lines = source.split('\n');
-  const startIdx = lines.findIndex((l) => l.includes('export async function applyRunLoadoutPlacements('));
-  assert.ok(startIdx >= 0, 'could not locate applyRunLoadoutPlacements in source');
+  const startIdx = lines.findIndex((l) => l.includes('async function applyRunLoadoutPlacements('));
+  assert.ok(startIdx >= 0, 'could not locate applyRunLoadoutPlacements in core source');
 
   // Scan forward from the signature until matching closing brace at column 0.
   let endIdx = -1;
