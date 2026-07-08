@@ -74,6 +74,7 @@ wallet balance.
 Current code anchors:
 
 - `app/server/services/wallet-service.js`
+- `vendor/backpack-game-core/src/server/ports/mushroom/economy/wallet-service.js`
 - `vendor/backpack-game-core/src/server/models/mushroom/PlayerWalletBalance.js`
 - `vendor/backpack-game-core/src/server/models/mushroom/PlayerWalletTransaction.js`
 - `vendor/backpack-game-core/src/server/models/mushroom/WalletPurchaseIntent.js`
@@ -106,12 +107,15 @@ Test anchors:
 
 - `tests/game/wallet-assets.test.js`
 
-Non-core boundary:
+Stable-core boundary:
 
-- Wallet storage, payment providers, webhook signatures, Telegram bot payment
-  handling, refund/reversal operations, and support/terms/compliance gates stay
-  in `mushroom-master` or product/payment adapters. They are not first-pass
-  `backpack-game-core` mechanics.
+- `createMushroomWalletServicePort()` is a quarantined move-first port, not a
+  stable cross-game wallet repository API. Wallet storage SQL, payment provider
+  lifecycle, webhook replay rows, refund/reversal operations, and reconciliation
+  behavior are in core only behind the Mushroom port while repository/provider
+  contracts are neutralized. Telegram bot transport, provider credentials,
+  route mounting, support actions, terms/compliance gates, and adult-content
+  payment policy stay in `mushroom-master` or product/payment adapters.
 
 ### Character XP
 
@@ -513,8 +517,12 @@ keeping solo/challenge run lifecycle, round resolution, ghost snapshots,
 season awards, wallet grants, rating updates, and run cleanup behind injected
 DB, catalog, shop, battle, loadout, fusion, season, wallet, asset, clock, ID,
 RNG, and lock providers. Next, shrink already core-backed wrappers only when
-imports are cleaned; move wallet/assets/gacha/support after repository,
-payment, support, and content policy contracts exist; and
+imports are cleaned. The next paid/admin slice moved `wallet-service.js` as
+`createMushroomWalletServicePort()`, keeping profile-wallet, purchase-intent,
+checkout, provider webhook, reconciliation, expiry, audit, grant, and spend
+behavior behind injected DB, transaction, ID, clock, JSON, env, and fetch
+providers. Move asset/gacha/support after repository, payment, support, and
+content policy contracts exist; and
 keep `db.js`, `start.js`, realtime/SSE delivery, home-field generation config,
 concrete dialect setup, migrations, and product catalog content in product
 repos.
