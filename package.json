@@ -95,7 +95,7 @@
     "game:home-field:status": "node app/scripts/home-field-status.js",
     "game:fusions:check": "node app/scripts/check-fusion-catalog.js",
     "game:social-preview": "node app/scripts/generate-social-preview.js",
-    "game:test": "node --test tests/**/*.test.js",
+    "game:test": "node --test --test-concurrency=1 tests/**/*.test.js",
     "game:test:e2e": "node app/scripts/run-game-e2e.js",
     "game:test:screens": "node app/scripts/run-game-screenshot-check.js",
     "game:test:screens:debug": "node app/scripts/run-game-screenshot-check.js --debug",
