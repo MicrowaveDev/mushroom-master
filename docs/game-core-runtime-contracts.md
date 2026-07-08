@@ -507,10 +507,14 @@ bootstrap aggregation behind injected player/run/history/asset/home-field
 providers. The next same-day slice moved `player-service.js` as
 `createMushroomPlayerServicePort()`, keeping profile/settings, friends,
 challenges, leaderboard, inventory review, portraits, and presets behind
-injected DB, catalog, wallet, asset, season, and run-challenge providers. Next,
-shrink already core-backed wrappers only when imports are cleaned; move the
-remaining heavy run spine (`run-service.js`); move wallet/assets/gacha/support
-after repository, payment, support, and content policy contracts exist; and
+injected DB, catalog, wallet, asset, season, and run-challenge providers. The
+next same-day slice moved `run-service.js` as `createMushroomRunServicePort()`,
+keeping solo/challenge run lifecycle, round resolution, ghost snapshots,
+season awards, wallet grants, rating updates, and run cleanup behind injected
+DB, catalog, shop, battle, loadout, fusion, season, wallet, asset, clock, ID,
+RNG, and lock providers. Next, shrink already core-backed wrappers only when
+imports are cleaned; move wallet/assets/gacha/support after repository,
+payment, support, and content policy contracts exist; and
 keep `db.js`, `start.js`, realtime/SSE delivery, home-field generation config,
 concrete dialect setup, migrations, and product catalog content in product
 repos.

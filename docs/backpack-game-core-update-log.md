@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `db3d77dcfe470c257883de2005a168b2f82725f7`
-- core short SHA: `db3d77d`
-- core commit: `Move player profile port into core`
-- runtime/API baseline: `db3d77d` (`Move player profile port into core`)
-- game pointer commit: `e585a7f` (`Consume core player profile port`)
+- core SHA: `fd78ad7b9fc47472816a4658059c0acce0105745`
+- core short SHA: `fd78ad7`
+- core commit: `Move run lifecycle port into core`
+- runtime/API baseline: `fd78ad7` (`Move run lifecycle port into core`)
+- game pointer commit: `6da3e47` (`Consume core run lifecycle port`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-08 | `6da3e47` | `fd78ad7` | Run lifecycle port | Core now contains quarantined `createMushroomRunServicePort()` under `server/ports/mushroom/gameplay`, after physically moving Mushroom's solo/challenge run lifecycle, active/history run shaping, round resolution, ghost snapshot pruning, loadout placement guard, completion bonuses, rating updates, season awards, wallet grants, and run cleanup behavior behind injected DB, transaction, catalog, shop, battle, loadout, fusion, season, wallet, asset, clock, ID, RNG, and lock providers. Mushroom keeps the old `app/server/services/run-service.js` path as a thin wrapper plus the existing shop re-export facade. Meat pins the same SHA and verifies the export without adopting the Mushroom run table contract. |
 | 2026-07-08 | `e585a7f` | `db3d77d` | Player profile port | Core now contains quarantined `createMushroomPlayerServicePort()` under `server/ports/mushroom/gameplay`, after physically moving Mushroom's profile/settings, friend/challenge, leaderboard, local-test-run, inventory-review, portrait, and preset behavior behind injected DB, transaction, catalog, wallet, asset, season, clock, ID, bot-loadout, and run-challenge providers. Mushroom keeps the old `app/server/services/player-service.js` path as a thin wrapper. Meat pins the same SHA and verifies the export without adopting the Mushroom profile/social table contract. |
 | 2026-07-08 | `c5f5c7a` | `de56ec8` | Game bootstrap port | Core now contains quarantined `createMushroomGameServicePort()` under `server/ports/mushroom/gameplay`, after physically moving Mushroom's bootstrap aggregation behind injected query, player-state, run history, battle history, daily-limit, home-field, asset-pack, runtime-catalog, gacha-toggle, and direct-buy policy providers. Mushroom keeps the old `app/server/services/game-service.js` path as a thin wrapper and re-export facade. Meat pins the same SHA and verifies the export without adopting the Mushroom bootstrap table contract. |
 | 2026-07-08 | `063ebf2` | `bee8d43` | Shop gameplay port | Core now contains quarantined `createMushroomShopServicePort()` under `server/ports/mushroom/gameplay`, after physically moving Mushroom's run-shop buy, refresh, force-shop, sell, and eligible character-item lookup behavior behind injected transaction, lock, catalog, pricing, pity, progression, loadout-row, clock, RNG, and run-currency providers. Mushroom keeps the old `app/server/services/shop-service.js` path as a thin wrapper. Meat pins the same SHA and verifies the export without adopting the Mushroom run-shop table contract. |
