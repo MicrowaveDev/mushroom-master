@@ -268,8 +268,9 @@ These mechanics need adapters before extraction:
 - bot loadout generation with catalog, starter preset, affinity, price,
   validation, and portrait/ghost snapshot responsibilities injected or kept
   local
-- full battle-service integration that records snapshots/events, applies run
-  rewards, rating, and round transitions
+- stable battle-service integration that records snapshots/events, applies run
+  rewards, rating, and round transitions; the current Mushroom battle
+  engine/service implementation is moved only as a quarantined port
 - wallet accounting helpers that must receive persisted wallet snapshots and
   idempotency state from a game repository
 - gacha runtime integration that must receive secure RNG, wallet debit, asset
@@ -496,13 +497,16 @@ facade. Products still own season/achievement content, badge and rank art,
 current-season scheduling, the concrete season/achievement SQL tables, claim
 table wiring, env timing, and mutation scope policy.
 As of the 2026-07-07 server audit, the remaining server extraction queue is
-tiered rather than folder-wide: shrink already core-backed wrappers first only
-when imports are cleaned; move the smaller gameplay/profile ports
-(`battle-engine.js` and `battle-service.js`) before the heavy run/shop/profile
-spine; move wallet/assets/gacha/support after repository, payment, support,
-and content policy contracts exist; and keep `db.js`, `start.js`,
-realtime/SSE delivery, home-field generation config, concrete dialect setup,
-migrations, and product catalog content in product repos.
+tiered rather than folder-wide. Updated 2026-07-08: `battle-engine.js` and
+`battle-service.js` have moved into the quarantined Mushroom gameplay port as
+`createMushroomBattleEnginePort()` and `createMushroomBattleServicePort()`.
+Next, shrink already core-backed wrappers only when imports are cleaned; move
+the heavy run/shop/profile spine (`shop-service.js`, `run-service.js`,
+`game-service.js`, and `player-service.js`); move wallet/assets/gacha/support
+after repository, payment, support, and content policy contracts exist; and
+keep `db.js`, `start.js`, realtime/SSE delivery, home-field generation config,
+concrete dialect setup, migrations, and product catalog content in product
+repos.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the
@@ -554,9 +558,11 @@ not available, keeping new consumers off Mushroom currency names by default.
 Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
 through adapters. The moved fusion application is only a quarantined port until
-repositories replace its SQL contract. Stable core modules still do not own
-run-shop buy/refresh/sell mutations, battle-service persistence/reward
-integration, rating, snapshots, rewards, or other product state writes.
+repositories replace its SQL contract. The moved battle service is also a
+quarantined Mushroom port, not a stable cross-game repository API. Stable core
+modules still do not own run-shop buy/refresh/sell mutations, battle-service
+persistence/reward integration, rating, snapshots, rewards, or other product
+state writes.
 
 ### Planned Bot-Loadout Boundary
 

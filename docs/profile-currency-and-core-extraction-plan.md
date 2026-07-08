@@ -872,12 +872,19 @@ Aggressive bulk server move lane:
   `app/server/models/index.js` as a wrapper. Product repos still own Sequelize
   instance creation, dialect config, sync/backfill logic, queries,
   transactions, and migrations.
+- ✅ Done 2026-07-08 in core commit `6a9e3d8`: moved
+  `app/server/services/battle-engine.js` and
+  `app/server/services/battle-service.js` into the quarantined
+  `server/ports/mushroom/gameplay` package subpath as
+  `createMushroomBattleEnginePort()` and
+  `createMushroomBattleServicePort()`. Mushroom keeps the old service paths as
+  thin wrappers that inject catalog, RNG, validation, portrait, query, ID, and
+  clock providers.
 - **Move next, quarantined:** `shop-service.js`, `run-service.js`,
-  `battle-service.js`, `game-service.js`, `player-service.js`,
-  `season-service.js`, and `mutation-claim-service.js`. These are the
-  remaining core gameplay/service spine. First move them with wrappers and fake
-  repository adapters; then neutralize DB queries into repository contracts and
-  move DTO / error / route-handler factories to stable modules.
+  `game-service.js`, and `player-service.js`. These are the remaining core
+  gameplay/profile spine. First move them with wrappers and fake repository
+  adapters; then neutralize DB queries into repository contracts and move DTO /
+  error / route-handler factories to stable modules.
 - **Move next, quarantined after gameplay spine:** `wallet-service.js`,
   `asset-service.js`, `gacha-admin-service.js`, `support-money-service.js`,
   `support-ops-service.js`, `provider-settlement-service.js`, and
@@ -1040,10 +1047,11 @@ Current server audit, 2026-07-07:
   `services/ready-manager.js`, `services/gacha-simulation-service.js`,
   `services/loadout-utils.js`, `services/bot-loadout.js`,
   `services/game-run-loadout.js`, `services/artifact-fusion-service.js`,
+  `services/battle-engine.js`, `services/battle-service.js`,
   `services/season-service.js`, and `services/mutation-claim-service.js`.
 - The highest-value remaining server moves are the gameplay/profile spine:
-  `shop-service.js`, `run-service.js`, `battle-engine.js`,
-  `battle-service.js`, `game-service.js`, and `player-service.js`. Move them
+  `shop-service.js`, `run-service.js`, `game-service.js`, and
+  `player-service.js`. Move them
   by `mv` into quarantined core ports first, then cut repository/catalog/policy
   adapters until the neutral pieces can graduate to stable modules.
 - The largest paid/admin cluster should move later, after the repository and
@@ -1081,7 +1089,7 @@ Server file recommendations:
 | `app/server/start.js` | Keep product-local. | Process startup, port/env handling, server lifecycle, signal handling, and deploy composition. |
 | `app/server/services/shop-service.js` | Move next as a quarantined shop/run repository port over injected run, offer-state, loadout, wallet/refund, and catalog repositories. Promote pure buy/refresh/sell route DTOs later. | SQL transactions, run locks, player ownership, persisted shop rows, refunds, product catalog/balance, and route errors. |
 | `app/server/services/run-service.js` | Move next as a quarantined run-lifecycle port over injected repositories, battle resolver, shop service, rewards, season, achievements, wallet grants, and ghost selectors. | DB transactions, challenge matching, player/mushroom lookup, season awards, rating writes, wallet writes, and public API compatibility aliases. |
-| `app/server/services/battle-engine.js` / `battle-service.js` | Keep the core simulator stable; move Mushroom battle hooks, snapshot shaping, replay/history persistence, and active-run snapshot reads as quarantined ports. | Character abilities, artifact effect metadata, portrait resolution, SQL replay rows, battle history routes, and Mushroom narration/copy. |
+| `app/server/services/battle-engine.js` / `battle-service.js` | ✅ Done 2026-07-08 in core commit `6a9e3d8`: moved as `createMushroomBattleEnginePort()` and `createMushroomBattleServicePort()` under the quarantined Mushroom gameplay port, backed by injected catalog, RNG, validation, portrait, query, ID, and clock providers. | Character ability tuning, artifact effect metadata, portrait policy, SQL replay rows, battle history route shape, and Mushroom narration/copy stay quarantined until repository/config contracts are neutral. |
 | `app/server/services/game-service.js` / `player-service.js` | Move bootstrap/profile DTO assembly as repository-backed modules after run/shop/wallet/assets have explicit adapters. | Player rows, selected character, wallet/assets/season aggregation, daily limits, home-field config, and product bootstrap shape. |
 | `app/server/services/season-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as `createSeasonProgressPort()` with injected season scoring, achievement, clock, and ID helpers. | Current season id, tables, achievement definitions, badge/rank art, season scheduling, and persisted grant-row contract stay product-owned. |
 | `app/server/services/mutation-claim-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as generic repository-backed `createMutationClaimService()` through the stable server facade. | Concrete table name, SQL upsert semantics, env timing, retention policy, and product mutation scopes stay product-configured. |
@@ -1111,9 +1119,10 @@ Execution order:
    helpers in core commit `bb49947`.
 2. Move the smallest gameplay/profile server ports first:
    ✅ `season-service.js` plus shared season/achievement evaluators and
-   ✅ `mutation-claim-service.js` are done in core commit `bb49947`. Next move
-   `battle-engine.js` / `battle-service.js`. These establish repository and
-   policy adapter patterns before the huge run/shop files move.
+   ✅ `mutation-claim-service.js` are done in core commit `bb49947`; ✅
+   `battle-engine.js` / `battle-service.js` are done in core commit
+   `6a9e3d8`. These establish repository and policy adapter patterns before
+   the huge run/shop files move.
 3. Move the main gameplay spine:
    `shop-service.js`, `run-service.js`, `game-service.js`, and
    `player-service.js`. Keep them quarantined until SQL access is behind
