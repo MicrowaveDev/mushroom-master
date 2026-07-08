@@ -501,14 +501,15 @@ tiered rather than folder-wide. Updated 2026-07-08: `battle-engine.js` and
 `battle-service.js` have moved into the quarantined Mushroom gameplay port as
 `createMushroomBattleEnginePort()` and `createMushroomBattleServicePort()`.
 Updated later on 2026-07-08: `shop-service.js` moved into the same quarantine
-as `createMushroomShopServicePort()`. Next, shrink already core-backed
-wrappers only when imports are cleaned; move the heavy run/profile spine
-(`run-service.js`, `game-service.js`, and `player-service.js`); move
-wallet/assets/gacha/support
-after repository, payment, support, and content policy contracts exist; and
-keep `db.js`, `start.js`, realtime/SSE delivery, home-field generation config,
-concrete dialect setup, migrations, and product catalog content in product
-repos.
+as `createMushroomShopServicePort()`. The next same-day slice moved
+`game-service.js` as `createMushroomGameServicePort()`, keeping Mushroom's
+bootstrap aggregation behind injected player/run/history/asset/home-field
+providers. Next, shrink already core-backed wrappers only when imports are
+cleaned; move the remaining heavy run/profile spine (`run-service.js` and
+`player-service.js`); move wallet/assets/gacha/support after repository,
+payment, support, and content policy contracts exist; and keep `db.js`,
+`start.js`, realtime/SSE delivery, home-field generation config, concrete
+dialect setup, migrations, and product catalog content in product repos.
 The agreed storage direction is two product-owned runtime modes: hosted server
 mode with PostgreSQL in Docker as the authoritative community store, and local
 desktop/app mode with SQLite for local-only progress plus optional calls to the
@@ -560,11 +561,11 @@ not available, keeping new consumers off Mushroom currency names by default.
 Mushroom still owns catalog access, pricing, catalog family assignment, product
 validation messages, secure paid-roll RNG selection, and all DB integration
 through adapters. The moved fusion application is only a quarantined port until
-repositories replace its SQL contract. The moved battle and shop services are
-also quarantined Mushroom ports, not stable cross-game repository APIs. Stable
-core modules still do not own run-shop persistence, battle-service
-persistence/reward integration, rating, snapshots, rewards, or other product
-state writes.
+repositories replace its SQL contract. The moved battle, shop, and bootstrap
+services are also quarantined Mushroom ports, not stable cross-game repository
+APIs. Stable core modules still do not own run-shop persistence,
+battle-service persistence/reward integration, rating, snapshots, rewards,
+concrete player profile persistence, or other product state writes.
 
 ### Planned Bot-Loadout Boundary
 
