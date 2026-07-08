@@ -893,11 +893,16 @@ Aggressive bulk server move lane:
   thin wrapper and compatibility re-export facade that injects player state,
   run history, battle history, daily limit, home-field, asset pack,
   runtime-catalog, gacha-toggle, and direct-buy policy providers.
-- **Move next, quarantined:** `run-service.js` and `player-service.js`. These
-  are the remaining core gameplay/profile spine.
-  First move them with wrappers and fake repository adapters; then neutralize
-  DB queries into repository contracts and move DTO / error / route-handler
-  factories to stable modules.
+- ✅ Done 2026-07-08 in core commit `db3d77d`: moved
+  `app/server/services/player-service.js` into the quarantined
+  `server/ports/mushroom/gameplay` package subpath as
+  `createMushroomPlayerServicePort()`. Mushroom keeps the old service path as
+  a thin wrapper that injects DB, transaction, catalog, wallet, asset, season,
+  clock, ID, bot-loadout, and lazy run-challenge providers.
+- **Move next, quarantined:** `run-service.js`. This is the remaining heavy
+  gameplay spine. First move it with wrappers and fake repository adapters;
+  then neutralize DB queries into repository contracts and move DTO / error /
+  route-handler factories to stable modules.
 - **Move next, quarantined after gameplay spine:** `wallet-service.js`,
   `asset-service.js`, `gacha-admin-service.js`, `support-money-service.js`,
   `support-ops-service.js`, `provider-settlement-service.js`, and
@@ -1063,11 +1068,12 @@ Current server audit, 2026-07-07:
   `services/battle-engine.js`, `services/battle-service.js`,
   `services/shop-service.js`,
   `services/game-service.js`,
+  `services/player-service.js`,
   `services/season-service.js`, and `services/mutation-claim-service.js`.
 - The highest-value remaining server moves are the gameplay/profile spine:
-  `run-service.js` and `player-service.js`. Move them
-  by `mv` into quarantined core ports first, then cut repository/catalog/policy
-  adapters until the neutral pieces can graduate to stable modules.
+  `run-service.js`. Move it by `mv` into a quarantined core port first, then
+  cut repository/catalog/policy adapters until the neutral pieces can graduate
+  to stable modules.
 - The largest paid/admin cluster should move later, after the repository and
   policy boundaries are named: `wallet-service.js`, `asset-service.js`,
   `gacha-admin-service.js`, `support-money-service.js`,
@@ -1105,7 +1111,7 @@ Server file recommendations:
 | `app/server/services/run-service.js` | Move next as a quarantined run-lifecycle port over injected repositories, battle resolver, shop service, rewards, season, achievements, wallet grants, and ghost selectors. | DB transactions, challenge matching, player/mushroom lookup, season awards, rating writes, wallet writes, and public API compatibility aliases. |
 | `app/server/services/battle-engine.js` / `battle-service.js` | ✅ Done 2026-07-08 in core commit `6a9e3d8`: moved as `createMushroomBattleEnginePort()` and `createMushroomBattleServicePort()` under the quarantined Mushroom gameplay port, backed by injected catalog, RNG, validation, portrait, query, ID, and clock providers. | Character ability tuning, artifact effect metadata, portrait policy, SQL replay rows, battle history route shape, and Mushroom narration/copy stay quarantined until repository/config contracts are neutral. |
 | `app/server/services/game-service.js` | ✅ Done 2026-07-08 in core commit `de56ec8`: moved as `createMushroomGameServicePort()` under the quarantined Mushroom gameplay port, backed by injected query, player-state, run history, battle history, daily-limit, home-field, asset-pack, runtime-catalog, gacha-toggle, and direct-buy policy providers. | Product bootstrap shape, legacy active-run aliases, selected character semantics, and concrete table/query contracts stay quarantined until repository contracts are neutral. |
-| `app/server/services/player-service.js` | Move profile DTO assembly as a repository-backed module after the bootstrap port and run/shop/wallet/assets adapters are explicit. | Player rows, selected character, wallet/assets/season aggregation, daily limits, home-field config, and product profile shape. |
+| `app/server/services/player-service.js` | ✅ Done 2026-07-08 in core commit `db3d77d`: moved as `createMushroomPlayerServicePort()` under the quarantined Mushroom gameplay port, backed by injected DB, transaction, catalog, wallet, asset, season, clock, ID, bot-loadout, and run-challenge providers. | Product profile/social table contracts, friend/challenge route semantics, compatibility fields, selected character semantics, and portrait/preset policy stay quarantined until repository contracts are neutral. |
 | `app/server/services/season-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as `createSeasonProgressPort()` with injected season scoring, achievement, clock, and ID helpers. | Current season id, tables, achievement definitions, badge/rank art, season scheduling, and persisted grant-row contract stay product-owned. |
 | `app/server/services/mutation-claim-service.js` | ✅ Done 2026-07-08 in core commit `bb49947`: moved as generic repository-backed `createMutationClaimService()` through the stable server facade. | Concrete table name, SQL upsert semantics, env timing, retention policy, and product mutation scopes stay product-configured. |
 | wallet/assets/gacha/support service files | Move after gameplay spine as wallet/assets/gacha/support ports with fake repositories and policy adapters. | Provider SDKs/callbacks, SQL transactions, audit records, support operator permissions, paid rollback, and adult-content/payment policy. |
@@ -1137,12 +1143,12 @@ Execution order:
    ✅ `mutation-claim-service.js` are done in core commit `bb49947`; ✅
    `battle-engine.js` / `battle-service.js` are done in core commit
    `6a9e3d8`; ✅ `shop-service.js` is done in core commit `bee8d43`; ✅
-   `game-service.js` is done in core commit `de56ec8`. These establish
-   repository and policy adapter patterns before the huge run file moves.
+   `game-service.js` is done in core commit `de56ec8`; ✅ `player-service.js`
+   is done in core commit `db3d77d`. These establish repository and policy
+   adapter patterns before the huge run file moves.
 3. Move the main gameplay spine:
-   `run-service.js` and `player-service.js`. Keep them quarantined until SQL
-   access is behind repository contracts and public response aliases are
-   explicit.
+   `run-service.js`. Keep it quarantined until SQL access is behind repository
+   contracts and public response aliases are explicit.
 4. Split top-level route files: `auth.js`, route chunks from `create-app.js`,
    `wiki.js`, `social-preview-cache.js`, and generic `bot-gateway.js` helpers.
    `create-app.js`, `db.js`, and `start.js` remain Mushroom composition and
