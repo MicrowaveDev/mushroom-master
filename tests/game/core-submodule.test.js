@@ -25,7 +25,11 @@ import {
   shapeProfileAssetTargetVariants
 } from '@microwavedev/backpack-game-core/modules/assets';
 import { createMutationClaimService } from '@microwavedev/backpack-game-core/server';
-import { createSeasonProgressPort } from '@microwavedev/backpack-game-core/server/ports/mushroom/gameplay';
+import {
+  createMushroomBattleEnginePort,
+  createMushroomBattleServicePort,
+  createSeasonProgressPort
+} from '@microwavedev/backpack-game-core/server/ports/mushroom/gameplay';
 import { checkBackpackGameCoreSubmodule } from '../../app/scripts/check-backpack-game-core-submodule.js';
 
 test('[core-submodule] backpack-game-core nested submodule is initialized', () => {
@@ -52,6 +56,8 @@ test('[core-submodule] package-name imports resolve reusable core helpers', () =
   assert.equal(typeof createSeasonLevelService, 'function');
   assert.equal(typeof createRunAchievementService, 'function');
   assert.equal(typeof createMutationClaimService, 'function');
+  assert.equal(typeof createMushroomBattleEnginePort, 'function');
+  assert.equal(typeof createMushroomBattleServicePort, 'function');
   assert.equal(typeof createSeasonProgressPort, 'function');
 
   assert.deepEqual(getEffectiveShape({ width: 1, height: 1 }, false), [[1]]);
