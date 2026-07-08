@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `6a9e3d8b2b2679bbfe1c5b36f4cf61fb18fcbbf5`
-- core short SHA: `6a9e3d8`
-- core commit: `Move battle gameplay ports into core`
-- runtime/API baseline: `6a9e3d8` (`Move battle gameplay ports into core`)
-- game pointer commit: `42fc0b4` (`Consume core battle gameplay ports`)
+- core SHA: `bee8d4397c3cfdce4e4a00911a8a1f435cae16ba`
+- core short SHA: `bee8d43`
+- core commit: `Move shop gameplay port into core`
+- runtime/API baseline: `bee8d43` (`Move shop gameplay port into core`)
+- game pointer commit: `063ebf2` (`Consume core shop gameplay port`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-08 | `063ebf2` | `bee8d43` | Shop gameplay port | Core now contains quarantined `createMushroomShopServicePort()` under `server/ports/mushroom/gameplay`, after physically moving Mushroom's run-shop buy, refresh, force-shop, sell, and eligible character-item lookup behavior behind injected transaction, lock, catalog, pricing, pity, progression, loadout-row, clock, RNG, and run-currency providers. Mushroom keeps the old `app/server/services/shop-service.js` path as a thin wrapper. Meat pins the same SHA and verifies the export without adopting the Mushroom run-shop table contract. |
 | 2026-07-08 | `42fc0b4` | `6a9e3d8` | Battle gameplay ports | Core now contains quarantined `createMushroomBattleEnginePort()` and `createMushroomBattleServicePort()` under `server/ports/mushroom/gameplay`, after physically moving Mushroom's battle ability hooks, active snapshot shaping, replay persistence, and battle history SQL behind injected catalog, RNG, validation, portrait, query, ID, and clock providers. Mushroom keeps the old service paths as thin wrappers. Meat pins the same SHA and verifies the exports without adopting the Mushroom table contract. |
 | 2026-07-08 | `c37c4d8` | `bb49947` | Season and mutation claim helpers | Core now owns `@microwavedev/backpack-game-core/modules/season` with product-configurable season scoring/progress and run-achievement evaluation, plus `createMutationClaimService()` through the server facade and a quarantined `createSeasonProgressPort()` under `server/ports/mushroom/gameplay`. Mushroom keeps authored season/achievement JSON, badge/rank art policy, current-season id, env timing, and thin compatibility wrappers at the old import paths. Meat pins the same SHA and verifies the new exports without adopting the Mushroom season SQL contract. |
 | 2026-07-07 | `58978d6` | `5370733` | Artifact fusion recipe helpers | Core now owns `@microwavedev/backpack-game-core/artifact-fusion-recipes` and exposes the same helpers through `modules/fusion`: recipe normalization, lookup, result/ingredient summaries, ingredient policy, and a product-configurable fusion evaluator over injected recipes and artifact catalogs. Mushroom keeps `app/shared/artifact-fusions.js` as the compatibility wrapper with the authored recipe table and Mushroom policy exclusions. Meat pins the same SHA and verifies the helper through its core-consumption test. |
