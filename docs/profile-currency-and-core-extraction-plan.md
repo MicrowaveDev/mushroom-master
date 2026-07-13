@@ -617,10 +617,14 @@ Mushroom content/art metadata.
 Updated 2026-07-13 after the core settlement/ops ports: the active economy
 service extraction queue is complete. Generic settlement parsing/mapping was
 already in core and concrete provider field maps correctly remain local. The
-active implementation queue is now (1) auth/bot/wiki/social/create-app
-route/module ports and (2) disjoint frontend headless/component slices. Phase
-13 Meat production hardening remains a parallel
-launch-readiness backlog, not a blocker for the next core extraction slice.
+auth, bot, wiki, profile, wallet, asset, social, run, support-admin, and
+gacha-admin route/module descriptor queue is also complete as of core commit
+`04abe9d`. The active implementation queue is now (1) make Meat execute shared
+backend module factories rather than only import-smoke them and (2) adopt
+additional shared frontend orchestration/page shells through explicit locale,
+route, asset, state, and policy adapters. Phase 13 Meat production hardening
+remains a parallel launch-readiness backlog, not a blocker for shared-module
+adoption.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -667,28 +671,43 @@ Use this ordered queue before starting the next implementation pass:
    lexer/rendering, sections, gated section, generic progress thresholds, and
    locale summary projection are injected. Mushroom keeps wiki content and its
    legacy `mycelium` call sites while the core uses neutral `progressValue`.
-7. **First `create-app.js` route groups completed 2026-07-13.** Wiki and bot
-   endpoints now mount through core `createWikiRouteGroup()` and
-   `createBotRouteGroup()` descriptors. Mushroom injects handlers, auth,
-   webhook verification, progression lookup, and product services. Continue
-   with profile/wallet/assets, run/social, and admin route groups in bounded
-   slices; do not move Express/bootstrap order or provider raw-body policy.
+7. **Completed 2026-07-13: all planned `create-app.js` route groups.** Auth,
+   bot, wiki, profile, wallet, assets, social, run, support-admin, and
+   gacha-admin endpoints now have stable core descriptor factories. Mushroom
+   injects handlers, authorization, approval policy, webhook verification,
+   progression lookup, product services, SSE behavior, and mutation guards.
+   The gacha extraction also fixed the unreachable duplicate pack-item route:
+   bulk replacement stays `PUT`, while single-item creation is `POST`. Do not
+   move Express/bootstrap order, provider raw-body policy, credentials, or
+   final app assembly into core.
    `social-preview-cache.js` is already a thin
    filesystem/render/log adapter over core `createSocialPreviewCacheService()`;
    do not duplicate it. Keep Express app creation, middleware order, webhook
    raw-body placement, static serving, credentials, and final module list
    composition local.
-8. **Continue frontend extraction in parallel only when write scopes are
+8. **Next active backend lane: real cross-product module execution.** Meat
+   currently proves the shared server surface mainly through import-smoke tests
+   while its product backend still owns parallel login/run/wallet/asset flows.
+   Pick one complete vertical slice, preferably profile/auth/bootstrap or run
+   lifecycle, neutralize the quarantined `server/ports/mushroom/*` repository
+   and vocabulary contracts, and configure the same core module factory from
+   both games. Completion requires real Meat API/browser behavior through the
+   shared factory, not only an export assertion. Preserve product-owned DB
+   migrations, credentials, catalogs, copy, adult-content policy, payment
+   policy, and final app composition.
+9. **Continue frontend extraction in parallel only when write scopes are
    disjoint.** Next frontend-safe slices are headless wallet/gacha state,
    duplicate-burn availability, odds-preview state, gacha-admin editor
    view-models, prep sell/refresh planners, ready/abandon planners, and smaller
-   Home/Profile/RunComplete panels. Do not move full pages without DTO,
-   route-client, locale, asset, CSS, and product-event adapters.
-9. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
+   Home/Profile/RunComplete panels. Then move adapterized page shells only when
+   both Mushroom and Meat actually consume them. Do not move full pages without
+   DTO, route-client, locale, asset, CSS, and product-event adapters.
+10. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
    real Telegram deploy smoke, final production DB/backup/rollback policy,
-   manual editor decision, asset replacement workflow, and paid/gacha ledger
-   readiness before public money or seasonal-pack rollout. Those are production
-   gates, not blockers for the next core extraction port.
+   Electron runtime/signing/notarization and installer policy, manual editor
+   decision, asset replacement workflow, wider community-client coverage, and
+   paid/gacha ledger readiness before public money or seasonal-pack rollout.
+   Those are production gates, not blockers for the next shared-module slice.
 
 ### Next Lane - Modular Server Core Port
 
@@ -5948,3 +5967,29 @@ frontend adoption.
    consumer adoption or by extracting final public catalog/battle descriptors,
    not by moving product credentials, policy, persistence, or Express startup
    into core.
+89. Phase 8BA real shared-module execution in Meat. **Planned 2026-07-13 after
+   post-route review:** replace import-smoke-only coverage with one real shared
+   backend vertical slice executed by both products.
+   - Start with profile/auth/bootstrap if its repository boundary can be made
+     neutral without importing Mushroom tables; otherwise use run lifecycle as
+     the first slice.
+   - Rename Mushroom-only input/output fields at the stable boundary to
+     `character`, `characterXp`, `walletCurrency`, `runCurrency`, `asset`, and
+     `game`, with product adapters preserving legacy Mushroom fields only at
+     the Mushroom edge.
+   - Define repository, transaction, catalog, clock, ID, policy, and event ports
+     in core. Do not expose Sequelize models or Mushroom SQL as the stable API.
+   - Configure the same factory from Mushroom and Meat module lists. Meat must
+     route real API requests through it and persist through its Postgres/SQLite
+     adapter; an import assertion is insufficient.
+   - Preserve product-local credentials, Telegram bot identity, payment and
+     adult-content policy, migrations, content catalogs, localization, and
+     final Express/Electron assembly.
+   - Add contract fixtures shared by both consumers plus product integration
+     tests. Required evidence is core unit/export/type/package coverage,
+     Mushroom focused regression coverage, Meat API and browser behavior, and
+     the complete hub cross-consumer gate on one core SHA.
+   - After the first slice, review the adapter size and vocabulary sweep before
+     selecting the next module. Promote a quarantined Mushroom port to a stable
+     neutral package only when neither consumer imports Mushroom table or
+     content contracts through that public surface.
