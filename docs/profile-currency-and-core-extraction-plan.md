@@ -764,6 +764,9 @@ Use this ordered queue before starting the next implementation pass:
    credentials, and final process policy local.
 18. **Finish hosted content/community work required by the selected target.**
    Replace Meat prototype/starter art through a provenance-backed review gate.
+   Build that replacement workflow through the scoped Phase 8BE shared asset
+   pipeline below so Mushroom and Meat use the same review/validation engines
+   with different catalogs, prompts, policies, and visual output.
    Expand the hosted community client to friends, challenges, optional account
    linking, and shared seasons only when those surfaces enter the hosted release
    scope. Desktop installer art and platform distribution are not part of this
@@ -899,20 +902,89 @@ unless release work exposes a concrete failure:
    queue, both script guides if command behavior changes, both `AGENTS.md` files
    if workflow rules change, and the pinned core SHA/release-gate evidence.
 
-#### Promotion Gates
+#### Completed Promotion Evidence
 
-- At least Mushroom and Meat execute each promoted tooling library; an import
-  smoke alone is insufficient.
-- Core tooling contains no Mushroom/Meat vocabulary, catalogs, generated paths,
-  credentials, database models, deployment assumptions, or Codex-home paths.
-- Product commands retain `--help`, dry-run/confirmation behavior, exit codes,
-  and npm alias compatibility.
+- Mushroom and Meat execute each promoted tooling library; the second consumer
+  is not an import-only smoke.
+- Core tooling contains no product catalogs, generated paths, credentials,
+  database models, deployment assumptions, or Codex-home paths.
+- Product commands retain their npm aliases and configured process behavior.
 - Browser-safe package exports cannot reach Node tooling or optional
   Puppeteer/Playwright dependencies.
-- Core tests cover injected roots, malformed PNG/metadata/manifests, missing
-  files, child-process failure/signals, and deterministic output where relevant.
+- Core tests cover injected roots, malformed metadata, missing files,
+  child-process failure/signals, and deterministic output for the promoted
+  primitives. The hardening queue above records stricter malformed-PNG work.
 - `npm pack --dry-run`, Mushroom `scripts:docs:check`, both product tests/builds,
-  and `npm run verify:backpack-core` pass before consumer pointer handoff.
+  and `npm run verify:backpack-core` passed before consumer pointer handoff.
+
+### Phase 8BE - Universal Asset Pipeline Adapters
+
+Status: **Planned from the 2026-07-14 remaining-script audit and attached to
+Phase 13 hosted content readiness.** Phase 8BD moved the foundational image,
+provenance, command, and process primitives. The audit found another reusable
+layer in Mushroom's artifact and season pipelines, but not a reason to move the
+whole `app/scripts` tree. Implement this phase when Meat starts replacing its
+prototype/starter art, so every promoted engine has two real consumers.
+
+#### Audit Findings And Ownership
+
+| Current surface | Recommendation | Boundary |
+| --- | --- | --- |
+| `generate-artifact-contact-sheet.js` and `generate-season-contact-sheet.js` | Physically move the repeated browser/page/screenshot/output/manifest orchestration into `core/tooling/image-review` | Core accepts injected browser/page launch, HTML renderer, viewport, DOM validator, screenshot/stitch callbacks, paths, clock, and logging. Products keep tile DTOs, HTML/CSS, labels, dimensions, visual policy, catalogs, and Puppeteer dependency. |
+| `generate-artifact-thumbnail-review.js` | Remove its private PNG decode/encode/chunk implementation immediately and use `tooling/image`; promote generic vertical image stitching into the same core export | Thumbnail sizes, warning codes, artifact rows, CSS, and review layout remain Mushroom-owned. |
+| Artifact and season coverage validators | Add `core/tooling/image-validation` for configurable dimensions, alpha coverage, bounding box, edge margins, freshness, source/output hash, and structured issue results | Artifact footprint masks, bag shapes, family exceptions, raw-source aspect rules, rank/achievement policy, and player-facing wording remain local adapters. Home Field quality/style gates do not move into this generic validator. |
+| Artifact and season prompt queues | Add a small `core/tooling/work-queue` only for limit parsing, deterministic missing/stale work selection, markdown-section extraction, and queue result shaping | Prompts, Mushroom/spore vocabulary, palettes, style references, todo documents, skip policy, and output paths remain product content. Promote only after Meat uses it for production-art replacement. |
+| `run-artifact-release-check.js` | Move fail-fast sequential command execution and result reporting into `core/tooling/release`; keep the command list local | npm aliases, mutation policy, environment, confirmations, and release approval remain product-owned. Prefer extending the existing runner process contract rather than adding a parallel child-process abstraction. |
+| `check-fusion-catalog.js` | Move pure catalog/recipe integrity validation into `modules/fusion`; keep filesystem image checks and source-code scans local | Core validates duplicate recipe ids, ingredients/results, unreachable fusion-only rows, and injected catalog consistency. Products own image roots and compatibility source scans. |
+| Artifact bitmap/detail normalization and Home Field image production | Extract only proven pure RGBA/crop/scale/stitch helpers used by both products | Keep complete producers local because they encode Mushroom footprints, visual exceptions, candidate roots, queue state, review policy, and production paths. |
+| `generate-social-preview.js` | Keep local for now | It is a 1200x630 Mushroom composition with product copy, spore frame, art path, CSS, and Puppeteer policy. Core already owns the neutral social-preview cache service. Revisit only after Meat implements a second renderer with duplicated composition mechanics. |
+| `start-game-dev.js` and `run-home-field-preview.js` | Keep local for now; consider only a generic multi-process supervisor after Meat needs the same lifecycle | Current process lists, ports, Vite/backend paths, preview suites, candidate roots, and environment variables differ. Hosted launch work must not wait for this extraction. |
+| Home Field checks/generation/workflows | Keep local | Chibi source gates, candidate evidence, palettes, adjacency, terrain families, Codex output discovery, and verdict workflows are Mushroom art-direction and agent-workflow policy. |
+| Wallet, support, settlement, season-admin, gacha, deployment, and submodule checks | Keep local thin entry points | Shared services already live in core. These wrappers own DB lifecycle, credentials, actors, approvals, provider formats, host state, and missing-submodule recovery. |
+
+#### Ordered Implementation
+
+1. **8BE-A - Remove local primitive duplication.** Replace the thumbnail
+   review's private PNG codec with `tooling/image`, physically move generic
+   vertical stitching if it has focused tests, and prove byte-stable output.
+2. **8BE-B - Shared review orchestration.** Move the common contact-sheet
+   lifecycle into an injected `image-review` export. Keep Puppeteer optional and
+   consumer-owned. Convert artifact and season scripts into configured wrappers
+   without changing their npm aliases, output bytes, manifests, or review CSS.
+3. **8BE-C - Configurable validation.** Introduce policy-driven neutral image
+   validation and structured issues, then route the common artifact/season
+   checks through it while retaining their domain-specific rules locally.
+4. **8BE-D - Meat production-art adoption.** Add Meat-local production asset
+   manifests, prompts, review commands, provenance output, validation policy,
+   and contact sheets over the shared engines. Replace prototype assets only
+   after visual approval; an import smoke does not complete this slice.
+5. **8BE-E - Work queue and release composition.** Promote deterministic work
+   selection and fail-fast command sequencing only after both products execute
+   them. Keep prompt text and release command lists local.
+6. **8BE-F - Fusion catalog validation.** Add the pure catalog/recipe validator
+   to `modules/fusion`, adapt both games if Meat's production catalog enables
+   fusion, and leave filesystem/source compatibility checks in each product.
+7. **8BE-G - Stabilize and release.** Tighten declarations, document subpaths,
+   update both script manifests/guides and agent instructions, run both real
+   asset pipelines, then run `npm pack --dry-run` and the full cross-consumer
+   core gate on one SHA.
+
+#### Promotion Gates
+
+- Every promoted engine must execute in both Mushroom and Meat production-art
+  workflows; no placeholder consumer or import-only proof.
+- Core contains no product catalogs, prompts, art direction, generated paths,
+  Puppeteer dependency, product CSS/copy, approval decisions, or credentials.
+- Existing Mushroom npm aliases, output locations, deterministic hashes,
+  manifests, `--help`, validation messages, and visual review artifacts remain
+  compatible unless a separately documented migration is approved.
+- Tests cover deterministic stitching, tall screenshots, browser/render
+  failures, malformed images, policy boundaries, freshness races, duplicate
+  work ids, fail-fast command exit/signal behavior, and injected roots/clocks.
+- Meat production artwork passes provenance, validation, contact-sheet review,
+  browser build, and hosted-product smoke before prototype assets are removed.
+- Full Home Field workflows, social-preview composition, operator CLIs,
+  deployment scripts, and dev-stack launchers remain outside this phase.
 
 ### Completed Lane - Modular Server Core Port
 
