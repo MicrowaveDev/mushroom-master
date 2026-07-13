@@ -1253,9 +1253,14 @@ ownership snapshots, wallet snapshots, time, RNG, policy config, API clients,
 copy dictionaries, theme tokens, asset URL resolvers, and route callbacks as
 inputs.
 
-Post-route-client review finding on 2026-07-04: no additional route plumbing is
-needed in core right now. Whole Mushroom services and pages are still too
-product-coupled. The asset inventory/equipment DTO lane is covered by core
+Post-route-client review finding, updated 2026-07-13: the earlier conclusion
+that no additional route plumbing was needed is superseded by the module-based
+server extraction. Core now owns framework-neutral route descriptors and route
+groups for auth, bot, wiki, profile, wallet, and assets; Mushroom injects its
+handlers and policy middleware and performs final Express registration. Whole
+product apps and concrete policy remain product-coupled. The next route-group
+slices are run lifecycle, social/community, and support/gacha admin. The asset
+inventory/equipment DTO lane is covered by core
 commit `458d4bb`, and the first headless wallet/gacha state helper slice is
 covered by core commit `5ee7ee8`. The first run-shop response patch helper
 slice is covered by core commit `f4734ea`, the broader game-run response patch
@@ -1354,7 +1359,10 @@ services. Recommended order:
     keeping route mounting, auth, DB transactions, product services, payment
     providers, support permissions, SSE sends, and webhooks local; Meat verifies
     the module registry, middleware, readiness, and mutex imports in its
-    core-consumption test.
+    core-consumption test. Core commits `7507580` and `bb0744d` additionally
+    provide bot/wiki and profile/wallet/asset route-group factories. Mushroom
+    now delegates those route definitions and middleware composition while
+    retaining product handlers and final app assembly.
 
 Do not move SQL, provider SDK calls, webhook verification, Telegram/adult
 content policy, support permissions, settlement runbooks, image storage, lore

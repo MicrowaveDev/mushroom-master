@@ -397,9 +397,10 @@ Client response-envelope unwrapping moved in core commit `b56ad91`; games can
 use the shared route-adapter client against existing `{ success, data, error }`
 payloads while route maps, auth/session headers, idempotency keys, checkout
 side effects, and refresh behavior remain local.
-Post-route-client review on 2026-07-04: live Mushroom frontend transport now
-uses the shared route-adapter client, so the next core boundary should move
-DTO/state helpers rather than more route plumbing. Profile asset/equipment
+Post-route-client review, updated 2026-07-13: live Mushroom frontend transport
+uses the shared route-adapter client. DTO/state helpers remain the browser-side
+boundary, while server route definitions can now move through injected,
+framework-neutral route-group factories. Profile asset/equipment
 result shapers and the first headless wallet/gacha state helpers are now in
 core, and the run-shop/game-run response patch helper slices are also in
 core. Replay playback state is also in core. Gacha admin draft-diff DTOs, diff
@@ -436,7 +437,8 @@ artifact stat summaries, shop item rows/lists, backpack grids, battle logs,
 achievement badges, and season-rank emblems. The first Phase 8AW component
 candidate list is complete; future Vue moves should start from a fresh
 evidence-backed candidate review. Keep
-whole services, Express routes, persistence, payment/webhook providers,
+whole product apps, final Express app assembly, persistence,
+payment/webhook providers,
 runtime catalogs, route
 maps, artwork, support operations, haptics, page assembly, and secure paid-roll
 RNG selection inside product repos.
@@ -475,6 +477,13 @@ Mushroom now mounts its auth/bootstrap/dev-session handlers through that route
 family, and Meat verifies the same family with Meat paths. Products still own
 provider verification, sessions, player lookup, middleware/rate-limit policy,
 and final path choices.
+Core commits `7507580` and `bb0744d` expanded that descriptor surface with
+bot/wiki and profile/wallet/asset route groups. Mushroom injects concrete
+handlers and access middleware while core owns stable names, default paths,
+feature metadata, and middleware composition. Payment webhook verification,
+credentials, concrete service calls, runtime policy values, and final Express
+registration remain product-owned. Run lifecycle, social/community, and
+support/gacha admin are the next route-group candidates.
 The first mv-first backend cluster then moved Mushroom service files for ghost
 loadouts, loadout validation wrappers, gacha simulation wrappers, and readiness
 singleton exports into core provider-driven factories. Product repos still own

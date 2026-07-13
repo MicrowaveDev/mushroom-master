@@ -13,7 +13,10 @@ import {
 import {
   bindBackpackRouteDescriptors,
   createAuthRouteGroup,
+  createAssetRouteGroup,
   createBotRouteGroup,
+  createProfileRouteGroup,
+  createWalletRouteGroup,
   createWikiRouteGroup
 } from '@microwavedev/backpack-game-core/server';
 import {
@@ -877,54 +880,58 @@ export async function createApp() {
     })
   );
 
-  app.get(
-    '/api/profile',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await getPlayerState(req.user.id) });
-    })
-  );
-
-  app.get(
-    '/api/wallet',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await getWalletState(req.user.id) });
-    })
-  );
-
-  app.get(
-    '/api/wallet/bundles',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({
-        success: true,
-        data: getWalletBundles(req.query.provider || null, {
-          surface: req.query.surface || 'web'
+  bindBackpackRouteDescriptors(app, [
+    createProfileRouteGroup({
+      handlers: {
+        profile: asyncRoute(async (req, res) => {
+          res.json({ success: true, data: await getPlayerState(req.user.id) });
+        }),
+        activeCharacter: asyncRoute(async (req, res) => {
+          res.json({
+            success: true,
+            data: await selectActiveMushroom(req.user.id, req.body.mushroomId)
+          });
+        }),
+        settings: asyncRoute(async (req, res) => {
+          res.json({ success: true, data: await updateSettings(req.user.id, req.body) });
         })
-      });
+      },
+      middleware: { auth: requireAuth }
+    }),
+    createWalletRouteGroup({
+      handlers: {
+        state: asyncRoute(async (req, res) => {
+          res.json({ success: true, data: await getWalletState(req.user.id) });
+        }),
+        bundles: asyncRoute(async (req, res) => {
+          res.json({
+            success: true,
+            data: getWalletBundles(req.query.provider || null, {
+              surface: req.query.surface || 'web'
+            })
+          });
+        }),
+        purchaseIntent: asyncRoute(async (req, res) => {
+          const data = await createPurchaseIntent(req.user.id, {
+            bundleId: req.body.bundleId,
+            provider: req.body.provider || 'telegram_stars',
+            idempotencyKey: req.header('idempotency-key') || null,
+            surface: req.body.surface || req.query.surface || 'web',
+            fetchImpl: globalThis.fetch
+          });
+          log.info({
+            requestId: req.requestId || null,
+            ...walletPurchaseIntentLogFields(data)
+          });
+          res.json({ success: true, data });
+        })
+      },
+      middleware: {
+        auth: requireAuth,
+        purchaseIntent: checkoutCreationGuards
+      }
     })
-  );
-
-  app.post(
-    '/api/wallet/purchase-intents',
-    requireAuth,
-    ...checkoutCreationGuards,
-    asyncRoute(async (req, res) => {
-      const data = await createPurchaseIntent(req.user.id, {
-        bundleId: req.body.bundleId,
-        provider: req.body.provider || 'telegram_stars',
-        idempotencyKey: req.header('idempotency-key') || null,
-        surface: req.body.surface || req.query.surface || 'web',
-        fetchImpl: globalThis.fetch
-      });
-      log.info({
-        requestId: req.requestId || null,
-        ...walletPurchaseIntentLogFields(data)
-      });
-      res.json({ success: true, data });
-    })
-  );
+  ]);
 
   app.post(
     '/api/wallet/purchase-webhook/:provider',
@@ -1553,70 +1560,47 @@ export async function createApp() {
     })
   );
 
-  app.get(
-    '/api/assets/catalog',
-    requireAuth,
-    assetCatalogRateLimit,
-    asyncRoute(async (_req, res) => {
-      res.json({ success: true, data: await getRuntimeAssetCatalog() });
-    })
-  );
-
-  app.get(
-    '/api/assets/packs/:packId/odds',
-    requireAuth,
-    assetOddsRateLimit,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await getPackOddsForRuntime(req.params.packId) });
-    })
-  );
-
-  app.post(
-    '/api/assets/packs/:packId/roll',
-    requireAuth,
-    ...assetRollGuards,
-    asyncRoute(async (req, res) => {
-      const data = await rollAssetPack(req.user.id, req.params.packId, {
-        idempotencyKey: req.header('idempotency-key') || null
-      });
-      res.json({ success: true, data });
-    })
-  );
-
-  app.post(
-    '/api/assets/packs/:packId/burn',
-    requireAuth,
-    ...assetRollGuards,
-    asyncRoute(async (req, res) => {
-      const data = await burnAssetPackDuplicates(req.user.id, req.params.packId, {
-        ruleId: req.body?.ruleId || null,
-        idempotencyKey: req.header('idempotency-key') || null
-      });
-      res.json({ success: true, data });
-    })
-  );
-
-  app.post(
-    '/api/assets/:assetId/purchase',
-    requireAuth,
-    ...assetPurchaseGuards,
-    asyncRoute(async (req, res) => {
-      const purchase = await purchaseAsset(req.user.id, req.params.assetId, {
-        idempotencyKey: req.header('idempotency-key') || null
-      });
-      const equip = req.body?.equip ? await equipAsset(req.user.id, req.params.assetId) : null;
-      res.json({ success: true, data: { purchase, equip } });
-    })
-  );
-
-  app.post(
-    '/api/assets/:assetId/equip',
-    requireAuth,
-    ...profileMutationGuards,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await equipAsset(req.user.id, req.params.assetId) });
-    })
-  );
+  bindBackpackRouteDescriptors(app, [createAssetRouteGroup({
+    handlers: {
+      catalog: asyncRoute(async (_req, res) => {
+        res.json({ success: true, data: await getRuntimeAssetCatalog() });
+      }),
+      odds: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await getPackOddsForRuntime(req.params.packId) });
+      }),
+      roll: asyncRoute(async (req, res) => {
+        const data = await rollAssetPack(req.user.id, req.params.packId, {
+          idempotencyKey: req.header('idempotency-key') || null
+        });
+        res.json({ success: true, data });
+      }),
+      burn: asyncRoute(async (req, res) => {
+        const data = await burnAssetPackDuplicates(req.user.id, req.params.packId, {
+          ruleId: req.body?.ruleId || null,
+          idempotencyKey: req.header('idempotency-key') || null
+        });
+        res.json({ success: true, data });
+      }),
+      purchase: asyncRoute(async (req, res) => {
+        const purchase = await purchaseAsset(req.user.id, req.params.assetId, {
+          idempotencyKey: req.header('idempotency-key') || null
+        });
+        const equip = req.body?.equip ? await equipAsset(req.user.id, req.params.assetId) : null;
+        res.json({ success: true, data: { purchase, equip } });
+      }),
+      equip: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await equipAsset(req.user.id, req.params.assetId) });
+      })
+    },
+    middleware: {
+      auth: requireAuth,
+      mutation: [requireAuth, ...assetRollGuards],
+      purchase: [requireAuth, ...assetPurchaseGuards],
+      profileMutation: [requireAuth, ...profileMutationGuards],
+      catalog: assetCatalogRateLimit,
+      odds: assetOddsRateLimit
+    }
+  })]);
 
   app.get(
     '/api/characters',
@@ -1635,17 +1619,6 @@ export async function createApp() {
   );
 
   app.put(
-    '/api/active-character',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({
-        success: true,
-        data: await selectActiveMushroom(req.user.id, req.body.mushroomId)
-      });
-    })
-  );
-
-  app.put(
     '/api/artifact-loadout',
     requireAuth,
     ...runMutationGuards,
@@ -1659,14 +1632,6 @@ export async function createApp() {
       }
       await applyRunLoadoutPlacements(req.user.id, activeRun.id, req.body.items || []);
       res.json({ success: true, data: await getActiveGameRun(req.user.id) });
-    })
-  );
-
-  app.post(
-    '/api/settings',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await updateSettings(req.user.id, req.body) });
     })
   );
 
