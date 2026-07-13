@@ -1,6 +1,6 @@
 # Profile Currency And Core Extraction Plan
 
-> **Reading guide (updated 2026-07-05 Meat parity correction).** This document
+> **Reading guide (updated 2026-07-13 core-port TODO correction).** This document
 > is a historical ship record plus forward plan, not a live status board. The
 > shipped, test-backed foundation is Phases **1-5, 6A-6C, 7, 7A, and 7B**.
 > Phase **6A-6C** shipped as a compatibility-safe neutral naming pass:
@@ -44,6 +44,14 @@
 > Telegram transport, product catalog data, wiki/lore text, generated art,
 > image metadata, home-field assets, deploy config, and final middleware/route
 > mounting.
+> The 2026-07-13 state after the asset-service extraction is: the
+> gameplay/profile/wallet/asset spine is core-backed through quarantined ports,
+> Mushroom and Meat both pin core `1841f73`, and the next server extraction
+> queue is **gacha-admin, support, settlement/ops, then route modules**. Do not
+> re-plan `asset-service.js` as remaining work. Treat
+> `provider-settlement-adapters.js` as partially extracted: generic parsing and
+> mapping already live in core, while product field maps and reconciliation
+> storage stay local until the settlement-service port is named.
 > A 2026-07-04 Geesome architecture review tightened this direction: copy the
 > layered repo shape (`geesome-libs` + `geesome-ui` + `geesome-node` modules),
 > but improve it with typed subpath exports and adapter contracts so Backpack
@@ -603,6 +611,14 @@ product content/runtime ownership out at the same time. `app/shared` is no
 longer automatically "local" just because it contains data-adjacent helpers;
 it should be divided into reusable mechanics/schema/evaluator code versus
 Mushroom content/art metadata.
+Updated 2026-07-13 after the core `asset-service.js` port: asset extraction is
+not pending anymore. The active implementation queue is now (1)
+`gacha-admin-service.js` as the next quarantined core port, (2)
+support-money/support-ops ports, (3) provider-settlement-service and
+wallet-ops-check ports plus cleanup of the already-partial
+provider-settlement-adapter wrapper, and (4) auth/bot/wiki/social/create-app
+route/module ports. Phase 13 Meat production hardening remains a parallel
+launch-readiness backlog, not a blocker for the next core extraction slice.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -610,6 +626,42 @@ moves, and physical `cp`/`mv` plus staged delete/add for cross-submodule moves.
 Do not recreate moved files from agent memory. Copy instead of move only when a
 temporary compatibility copy is explicitly part of the migration, and remove or
 promote that copy during the stabilization step.
+
+### Current TODO Queue - Actualized 2026-07-13
+
+Use this ordered queue before starting the next implementation pass:
+
+1. **Move `gacha-admin-service.js` to core first.** Put it under an explicit
+   quarantined Mushroom server port, keep Mushroom's old import path as a thin
+   wrapper, inject DB/transaction/audit/upload/permission/config providers, and
+   add fake-provider core tests plus Mushroom gacha-admin API regression tests.
+   Meat should smoke-test the export without adopting Mushroom's tables.
+2. **Move support services next.** Port `support-money-service.js` and
+   `support-ops-service.js` behind injected repository, wallet, asset, run,
+   audit, role, and approval-policy providers. Keep support-token parsing,
+   operator secrets, concrete SQL, and route registration product-local.
+3. **Move settlement/ops services after support.** Port
+   `provider-settlement-service.js` and `wallet-ops-check-service.js`.
+   Treat `provider-settlement-adapters.js` as a cleanup task, not a fresh
+   whole-file move: generic parsing/mapping is already in core, while provider
+   field maps and reconciliation storage stay local until a neutral contract is
+   proven by the settlement-service port.
+4. **Then split route/module files.** Extract reusable route groups and service
+   factories from `auth.js`, `bot-gateway.js`, `wiki.js`,
+   `social-preview-cache.js`, and route sections of `create-app.js`. Keep
+   Express app creation, middleware order, webhook raw-body placement, static
+   serving, credentials, and final module list composition local.
+5. **Continue frontend extraction in parallel only when write scopes are
+   disjoint.** Next frontend-safe slices are headless wallet/gacha state,
+   duplicate-burn availability, odds-preview state, gacha-admin editor
+   view-models, prep sell/refresh planners, ready/abandon planners, and smaller
+   Home/Profile/RunComplete panels. Do not move full pages without DTO,
+   route-client, locale, asset, CSS, and product-event adapters.
+6. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
+   real Telegram deploy smoke, final production DB/backup/rollback policy,
+   manual editor decision, asset replacement workflow, and paid/gacha ledger
+   readiness before public money or seasonal-pack rollout. Those are production
+   gates, not blockers for the next core extraction port.
 
 ### Next Lane - Modular Server Core Port
 
@@ -642,7 +694,7 @@ catalog, config, repository, Telegram, and content-policy modules.
 #### S1 - Server Module Inventory
 
 Status: **Completed 2026-07-05 as a read-only audit; corrected 2026-07-07 for
-bulk server moves.** The original audit was too conservative for the current
+bulk server moves; actualized 2026-07-13 after asset-service moved.** The original audit was too conservative for the current
 goal. Files such as `create-app.js`, `auth.js`, `run-service.js`,
 `wallet-service.js`, `asset-service.js`, `shop-service.js`,
 `gacha-admin-service.js`, support services, and social/wiki modules may move
@@ -663,7 +715,10 @@ Mushroom catalog/config policy local. `ready-manager.js` now delegates through
 wiring slice. `provider-settlement-adapters.js` now delegates generic
 CSV/JSON parsing, scoped field lookup, and configurable record mapping through
 `modules/wallet/settlement-adapters`, while Mushroom keeps concrete provider
-field maps and reconciliation persistence local.
+field maps and reconciliation persistence local. The large gameplay/profile
+and economy ports through `asset-service.js` are now done; the next physical
+move should start with `gacha-admin-service.js`, then support/settlement/ops,
+before route-module ports.
 
 Goal: classify Mushroom server files into shared core modules, quarantined
 core ports, app adapters, or product-local integrations before stabilizing the
@@ -1087,16 +1142,20 @@ Current server audit, 2026-07-07:
   `services/wallet-service.js`,
   `services/season-service.js`, and `services/mutation-claim-service.js`.
 - The gameplay/profile spine is now core-backed but still quarantined behind
-  Mushroom table contracts. The next extraction work is repository-contract
-  neutralization plus the paid/admin and route module lanes below.
+  Mushroom table contracts. The wallet/asset economy spine is also core-backed
+  through quarantined ports, with product SQL/provider policy still injected
+  from Mushroom.
 - The largest remaining paid/admin cluster should move next, after the
-  repository and policy boundaries are named: `asset-service.js`,
-  `gacha-admin-service.js`, `support-money-service.js`,
-  `support-ops-service.js`, `provider-settlement-service.js`,
-  `provider-settlement-adapters.js`, and `wallet-ops-check-service.js`.
-  Core already owns useful planners/DTO shapers here, but concrete SQL,
-  provider callbacks, support permissions, audit writes, paid rollback, and
-  adult-content operational policy stay product-owned.
+  repository and policy boundaries are named: `gacha-admin-service.js`,
+  `support-money-service.js`, `support-ops-service.js`,
+  `provider-settlement-service.js`, and `wallet-ops-check-service.js`.
+  `provider-settlement-adapters.js` is partially extracted already through
+  `modules/wallet/settlement-adapters`; remaining work there is wrapper cleanup
+  and any product-neutral mapping contracts discovered while moving
+  `provider-settlement-service.js`. Core already owns useful planners/DTO
+  shapers here, but concrete SQL, provider callbacks, support permissions,
+  audit writes, paid rollback, and adult-content operational policy stay
+  product-owned.
 - Top-level server files should be split into route/module ports rather than
   moved wholesale: `auth.js`, `bot-gateway.js`, `wiki.js`,
   `social-preview-cache.js`, and route sections inside `create-app.js`.

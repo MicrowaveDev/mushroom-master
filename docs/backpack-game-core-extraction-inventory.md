@@ -380,10 +380,12 @@ Current server audit, 2026-07-07:
 - Highest-value remaining server move lane after the gameplay/profile spine:
   `gacha-admin-service.js`, `support-money-service.js`,
   `support-ops-service.js`, `provider-settlement-service.js`,
-  `provider-settlement-adapters.js`, and `wallet-ops-check-service.js`. Core
-  already owns reusable planners and DTOs; product repos keep provider
-  callbacks, SQL transactions, audit, support permissions, paid rollback, and
-  adult-content/payment policy.
+  and `wallet-ops-check-service.js`. `provider-settlement-adapters.js` is
+  already partially extracted through `modules/wallet/settlement-adapters`; keep
+  its concrete provider field maps local until the settlement-service port names
+  a product-neutral mapping contract. Core already owns reusable planners and
+  DTOs; product repos keep provider callbacks, SQL transactions, audit, support
+  permissions, paid rollback, and adult-content/payment policy.
 - Product-local for now:
   `db.js`, `start.js`, `services/sse-manager.js`, and
   `services/home-field-config.js`. Split `game-data.js` into reusable schema /
