@@ -5922,14 +5922,18 @@ frontend adoption.
 88. Phase 8AZ server route-module extraction. **In progress, updated
    2026-07-13:** core commit `bb0744d` adds framework-neutral profile, wallet,
    and asset route-group factories after the previously completed auth, bot,
-   and wiki groups. Mushroom now mounts profile/settings/active-character,
+   and wiki groups. The following social slice adds friends, friend-code,
+   challenge invitation/accept/decline, and leaderboard descriptors. Mushroom
+   now mounts profile/settings/active-character,
    wallet state/bundles/purchase-intent, and asset catalog/odds/roll/burn/
    purchase/equip handlers through injected descriptors. Product services,
    payment webhooks and signature policy, credentials, concrete persistence,
-   rate-limit values, and final Express app assembly remain local. Core also
+   rate-limit values, social authorization, and final Express app assembly
+   remain local. Core also
    de-duplicates middleware when a route key and access-policy key match,
    covered by a paid-route regression test. Next implementation slices are:
-   run lifecycle routes, social/community routes, and support/gacha admin route
+   run lifecycle routes and support/gacha admin route
    groups. Each slice must keep authorization and runtime policy injectable,
    preserve existing HTTP contracts, add core descriptor tests, and pass the
-   cross-consumer release gate before pointer handoff.
+   cross-consumer release gate before pointer handoff. Social/community is
+   complete; run lifecycle and support/gacha admin remain.

@@ -1256,10 +1256,11 @@ inputs.
 Post-route-client review finding, updated 2026-07-13: the earlier conclusion
 that no additional route plumbing was needed is superseded by the module-based
 server extraction. Core now owns framework-neutral route descriptors and route
-groups for auth, bot, wiki, profile, wallet, and assets; Mushroom injects its
+groups for auth, bot, wiki, profile, wallet, assets, and social/community;
+Mushroom injects its
 handlers and policy middleware and performs final Express registration. Whole
 product apps and concrete policy remain product-coupled. The next route-group
-slices are run lifecycle, social/community, and support/gacha admin. The asset
+slices are run lifecycle and support/gacha admin. The asset
 inventory/equipment DTO lane is covered by core
 commit `458d4bb`, and the first headless wallet/gacha state helper slice is
 covered by core commit `5ee7ee8`. The first run-shop response patch helper

@@ -482,8 +482,10 @@ bot/wiki and profile/wallet/asset route groups. Mushroom injects concrete
 handlers and access middleware while core owns stable names, default paths,
 feature metadata, and middleware composition. Payment webhook verification,
 credentials, concrete service calls, runtime policy values, and final Express
-registration remain product-owned. Run lifecycle, social/community, and
-support/gacha admin are the next route-group candidates.
+registration remain product-owned. The following social slice adds friends,
+friend-code, challenge, and leaderboard descriptors while keeping
+authorization and concrete services local. Run lifecycle and support/gacha
+admin are the remaining route-group candidates.
 The first mv-first backend cluster then moved Mushroom service files for ghost
 loadouts, loadout validation wrappers, gacha simulation wrappers, and readiness
 singleton exports into core provider-driven factories. Product repos still own

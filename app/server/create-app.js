@@ -16,6 +16,7 @@ import {
   createAssetRouteGroup,
   createBotRouteGroup,
   createProfileRouteGroup,
+  createSocialRouteGroup,
   createWalletRouteGroup,
   createWikiRouteGroup
 } from '@microwavedev/backpack-game-core/server';
@@ -1651,67 +1652,36 @@ export async function createApp() {
     })
   );
 
-  app.get(
-    '/api/friends',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await getFriends(req.user.id) });
-    })
-  );
-
-  app.post(
-    '/api/friends/add-by-code',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await addFriendByCode(req.user.id, req.body.friendCode) });
-    })
-  );
-
-  app.post(
-    '/api/friends/challenges',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      // Friend challenges always create a multi-round game-run challenge.
-      // The legacy single-battle "challenge_type=battle" path was deleted in
-      // 2026-04-13. The endpoint name is preserved for frontend compatibility.
-      res.json({
-        success: true,
-        data: await createRunChallenge(req.user.id, req.body.friendPlayerId)
-      });
-    })
-  );
-
-  app.get(
-    '/api/friends/challenges/:id',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await getFriendChallenge(req.params.id) });
-    })
-  );
-
-  app.post(
-    '/api/friends/challenges/:id/accept',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await acceptFriendChallenge(req.params.id, req.user.id) });
-    })
-  );
-
-  app.post(
-    '/api/friends/challenges/:id/decline',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      res.json({ success: true, data: await declineFriendChallenge(req.params.id, req.user.id) });
-    })
-  );
-
-  app.get(
-    '/api/leaderboard',
-    requireAuth,
-    asyncRoute(async (_req, res) => {
-      res.json({ success: true, data: await getLeaderboard() });
-    })
-  );
+  bindBackpackRouteDescriptors(app, [createSocialRouteGroup({
+    handlers: {
+      friends: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await getFriends(req.user.id) });
+      }),
+      addFriendByCode: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await addFriendByCode(req.user.id, req.body.friendCode) });
+      }),
+      createChallenge: asyncRoute(async (req, res) => {
+        // This compatibility endpoint always creates a multi-round run challenge.
+        res.json({
+          success: true,
+          data: await createRunChallenge(req.user.id, req.body.friendPlayerId)
+        });
+      }),
+      getChallenge: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await getFriendChallenge(req.params.id) });
+      }),
+      acceptChallenge: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await acceptFriendChallenge(req.params.id, req.user.id) });
+      }),
+      declineChallenge: asyncRoute(async (req, res) => {
+        res.json({ success: true, data: await declineFriendChallenge(req.params.id, req.user.id) });
+      }),
+      leaderboard: asyncRoute(async (_req, res) => {
+        res.json({ success: true, data: await getLeaderboard() });
+      })
+    },
+    middleware: { auth: requireAuth }
+  })]);
 
   app.post(
     '/api/game-run/start',
