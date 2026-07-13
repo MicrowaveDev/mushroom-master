@@ -44,12 +44,12 @@
 > Telegram transport, product catalog data, wiki/lore text, generated art,
 > image metadata, home-field assets, deploy config, and final middleware/route
 > mounting.
-> The 2026-07-13 state after the gacha-admin extraction is: the
-> gameplay/profile/wallet/asset/gacha-admin spine is core-backed through
-> quarantined ports, Mushroom and Meat both pin core release `ede0499`, and the
-> next server extraction queue is **support, settlement/ops, then route
+> The 2026-07-13 state after the support extraction is: the
+> gameplay/profile/wallet/asset/gacha-admin/support spine is core-backed
+> through quarantined ports, core release `ffbc33b` contains the latest ports,
+> and the next server extraction queue is **settlement/ops, then route
 > modules**. Do not re-plan `asset-service.js` or `gacha-admin-service.js` as
-> remaining work. Treat
+> remaining work, and do not re-plan the two support services. Treat
 > `provider-settlement-adapters.js` as partially extracted: generic parsing and
 > mapping already live in core, while product field maps and reconciliation
 > storage stay local until the settlement-service port is named.
@@ -612,12 +612,11 @@ product content/runtime ownership out at the same time. `app/shared` is no
 longer automatically "local" just because it contains data-adjacent helpers;
 it should be divided into reusable mechanics/schema/evaluator code versus
 Mushroom content/art metadata.
-Updated 2026-07-13 after the core `asset-service.js` and
-`gacha-admin-service.js` ports: neither extraction is pending anymore. The
-active implementation queue is now (1) support-money/support-ops ports, (2)
+Updated 2026-07-13 after the core support ports: asset, gacha-admin, and support
+extraction are not pending anymore. The active implementation queue is now (1)
 provider-settlement-service and
 wallet-ops-check ports plus cleanup of the already-partial
-provider-settlement-adapter wrapper, and (3) auth/bot/wiki/social/create-app
+provider-settlement-adapter wrapper, and (2) auth/bot/wiki/social/create-app
 route/module ports. Phase 13 Meat production hardening remains a parallel
 launch-readiness backlog, not a blocker for the next core extraction slice.
 
@@ -639,10 +638,11 @@ Use this ordered queue before starting the next implementation pass:
    injected. Core fake-provider tests and all six Mushroom gacha-admin API
    regression scenarios pass. Meat now pins the same core release and
    smoke-tests the exported factory without adopting Mushroom's tables.
-2. **Move support services next.** Port `support-money-service.js` and
-   `support-ops-service.js` behind injected repository, wallet, asset, run,
-   audit, role, and approval-policy providers. Keep support-token parsing,
-   operator secrets, concrete SQL, and route registration product-local.
+2. **Completed 2026-07-13: move support services.**
+   `support-money-service.js` and `support-ops-service.js` now live in the
+   quarantined core economy port behind injected persistence, wallet, asset,
+   audit, ID, clock, and JSON providers. Mushroom keeps support-token parsing,
+   operator role/approval policy, concrete audit insertion, and routes local.
 3. **Move settlement/ops services after support.** Port
    `provider-settlement-service.js` and `wallet-ops-check-service.js`.
    Treat `provider-settlement-adapters.js` as a cleanup task, not a fresh
