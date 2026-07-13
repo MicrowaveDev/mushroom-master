@@ -46,7 +46,7 @@
 > mounting.
 > The 2026-07-13 state after the gacha-admin extraction is: the
 > gameplay/profile/wallet/asset/gacha-admin spine is core-backed through
-> quarantined ports, core release `ede0499` contains the latest port, and the
+> quarantined ports, Mushroom and Meat both pin core release `ede0499`, and the
 > next server extraction queue is **support, settlement/ops, then route
 > modules**. Do not re-plan `asset-service.js` or `gacha-admin-service.js` as
 > remaining work. Treat
@@ -637,8 +637,8 @@ Use this ordered queue before starting the next implementation pass:
    path is a thin wrapper. DB/transactions, audit persistence, character and
    asset catalogs, wallet currency, clock/ID/JSON, env, and image storage are
    injected. Core fake-provider tests and all six Mushroom gacha-admin API
-   regression scenarios pass. Meat export smoke remains part of the consumer
-   pointer update for this core release.
+   regression scenarios pass. Meat now pins the same core release and
+   smoke-tests the exported factory without adopting Mushroom's tables.
 2. **Move support services next.** Port `support-money-service.js` and
    `support-ops-service.js` behind injected repository, wallet, asset, run,
    audit, role, and approval-policy providers. Keep support-token parsing,
