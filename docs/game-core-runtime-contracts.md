@@ -431,12 +431,14 @@ policy, result/ingredient summaries, and evaluator factories into
 `artifact-fusion-recipes` / `modules/fusion`; products still own authored recipe
 tables, artifact ids, balance, unlock policy, and catalog publication.
 Core commits `006ab33`, `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`,
-`be03e50`, `5dd01f1`, and `471e686` then added the neutral Vue component layer
+`be03e50`, `5dd01f1`, `471e686`, and `8f09c57` then added the neutral Vue component layer
 for roll result panels, gacha odds tables, gacha pack cards, artifact tiles,
 artifact stat summaries, shop item rows/lists, backpack grids, battle logs,
-achievement badges, and season-rank emblems. The first Phase 8AW component
-candidate list is complete; future Vue moves should start from a fresh
-evidence-backed candidate review. Keep
+achievement badges, season-rank emblems, and the first shared run-summary page
+shell. Mushroom and Meat both visibly render `RunSummaryScreen` through local
+locale/state/asset/event adapters. The first Phase 8AW component candidate list
+is complete; future Vue moves should start from a fresh evidence-backed
+candidate review. Keep
 whole product apps, final Express app assembly, persistence,
 payment/webhook providers,
 runtime catalogs, route
@@ -456,6 +458,10 @@ Later server slices added provider-driven gacha simulation and loadout
 validation service/module factories plus readiness manager module-list
 registration, while concrete pack/catalog, artifact/pricing/grid providers,
 route wiring, and active-run/SSE behavior remain in product repos.
+Core commit `2fa5c50` added the stable `run-runtime/v1` operation dispatcher.
+Both products execute it for real run start/read/shop/resolve/abandon flows
+while preserving their own atomic transaction adapters, schemas, catalogs,
+rewards, challenge/readiness extensions, HTTP mapping, and event delivery.
 The Phase 13 extraction follow-up also added provider-driven run-state summary
 DTO shaping to `modules/run`, with Meat passing product-local loadout totals,
 cost, and shop-row formatters while keeping persistence and routes local.

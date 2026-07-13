@@ -1340,7 +1340,7 @@ services. Recommended order:
     prototype wrappers.
 11. Neutral Vue component layer: implemented in core commits `006ab33`,
     `953fa1e`, `6e7c1fb`, `cdba5a7`, `cbb9f18`, `be03e50`, `5dd01f1`,
-    and `471e686`.
+    `471e686`, and `8f09c57`.
     Mushroom now delegates roll-result panels, odds tables, gacha pack cards,
     artifact tiles, artifact stat summaries, shop item rows/lists, backpack
     grids, battle logs, achievement badges, and season-rank emblems through
@@ -1348,7 +1348,10 @@ services. Recommended order:
     color maps, haptics, page shells, and themes local; Meat imports the same
     component surface in its
     core-consumption smoke test. The first Phase 8AW component candidate list
-    is complete.
+    is complete. The first aggressive page-shell move is also complete:
+    Mushroom's run summary was physically moved and neutralized as
+    `RunSummaryScreen`, Mushroom uses it through a locale/state adapter, and
+    Meat visibly mounts the same stable export after completed runs.
 12. Shared server infrastructure surface: implemented in core commit
     `5dd01f1` with `./server` and `./server/middleware` exports, then expanded
     in core commit `471e686` with run readiness and keyed async mutex helpers,
@@ -1367,7 +1370,9 @@ services. Recommended order:
 
 Do not move SQL, provider SDK calls, webhook verification, Telegram/adult
 content policy, support permissions, settlement runbooks, image storage, lore
-copy, visual assets, CSS themes, or product page shells into the core package.
+copy, visual assets, CSS themes, or final product page composition into the
+core package. Neutral page shells may move only through the documented
+locale/DTO/event/asset adapter contract and real adoption by both games.
 
 ## Next Infrastructure Slice: Core Submodule Consumption
 

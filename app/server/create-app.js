@@ -51,17 +51,9 @@ import {
   getLeaderboard,
   applyRunLoadoutPlacements,
   saveLocalTestRun,
-  startGameRun,
   getActiveGameRun,
-  abandonGameRun,
-  getGameRun,
-  resolveRound,
-  refreshRunShop,
   forceRunShopForTest,
-  sellRunItem,
-  buyRunShopItem,
   createRunChallenge,
-  getGameRunHistory,
   switchPortrait,
   switchPreset,
   createPurchaseIntent,
@@ -78,6 +70,7 @@ import {
 } from './services/game-service.js';
 import { lookupMoneySupportRecords } from './services/support-money-service.js';
 import { profileRuntimeService } from './services/profile-runtime-service.js';
+import { runRuntimeService } from './services/run-runtime-service.js';
 import {
   listSupportActions,
   supportAdjustWallet,
@@ -1502,20 +1495,22 @@ export async function createApp() {
   bindBackpackRouteDescriptors(app, [createRunRouteGroup({
     handlers: {
       start: asyncRoute(async (req, res) => {
-      const data = await startGameRun(req.user.id, req.body.mode || 'solo');
+      const data = await runRuntimeService.startRun(req.user.id, {
+        mode: req.body.mode || 'solo'
+      });
       res.json({ success: true, data });
       }),
       history: asyncRoute(async (req, res) => {
-        res.json({ success: true, data: await getGameRunHistory(req.user.id) });
+        res.json({ success: true, data: await runRuntimeService.listRunHistory(req.user.id) });
       }),
       get: asyncRoute(async (req, res) => {
-        res.json({ success: true, data: await getGameRun(req.params.id, req.user.id) });
+        res.json({ success: true, data: await runRuntimeService.getRun(req.user.id, req.params.id) });
       }),
       challenge: asyncRoute(async (req, res) => {
         res.json({ success: true, data: await createRunChallenge(req.user.id, req.body.friendPlayerId) });
       }),
       abandon: asyncRoute(async (req, res) => {
-        const data = await abandonGameRun(req.user.id, req.params.id);
+        const data = await runRuntimeService.abandonRun(req.user.id, req.params.id);
         if (data.mode === 'challenge') {
           sseManager.sendToOpponent(req.params.id, req.user.id, 'opponent_abandoned', { playerId: req.user.id });
           sseManager.removeRun(req.params.id);
@@ -1530,7 +1525,9 @@ export async function createApp() {
         if (!runResult.rowCount) throw new Error('Game run not found or already ended');
         const mode = runResult.rows[0].mode;
         if (mode === 'solo') {
-          const data = await readyManager.withRunLock(gameRunId, () => resolveRound(playerId, gameRunId));
+          const data = await readyManager.withRunLock(gameRunId, () => (
+            runRuntimeService.resolveRound(playerId, gameRunId)
+          ));
           return res.json({ success: true, data });
         }
         const data = await readyManager.withRunLock(gameRunId, async () => {
@@ -1538,7 +1535,7 @@ export async function createApp() {
           sseManager.sendToOpponent(gameRunId, playerId, 'ready', { playerId, ready: true });
           if (!readyManager.areBothReady(gameRunId).ready) return { waiting: true };
           readyManager.clearRound(gameRunId);
-          const result = await resolveRound(playerId, gameRunId);
+          const result = await runRuntimeService.resolveRound(playerId, gameRunId);
           for (const pid of Object.keys(result.playerResults)) {
             sseManager.sendToPlayer(gameRunId, pid, 'round_result', result.playerResults[pid]);
           }
@@ -1574,16 +1571,16 @@ export async function createApp() {
         req.on('close', () => sseManager.removeConnection(gameRunId, playerId));
       },
       refreshShop: asyncRoute(async (req, res) => {
-        res.json({ success: true, data: await refreshRunShop(req.user.id, req.params.id) });
+        res.json({ success: true, data: await runRuntimeService.refreshShop(req.user.id, req.params.id) });
       }),
       sell: asyncRoute(async (req, res) => {
         const target = req.body.id
           ? { id: req.body.id, artifactId: req.body.artifactId || null }
           : req.body.artifactId;
-        res.json({ success: true, data: await sellRunItem(req.user.id, req.params.id, target) });
+        res.json({ success: true, data: await runRuntimeService.sellItem(req.user.id, req.params.id, target) });
       }),
       buy: asyncRoute(async (req, res) => {
-        const data = await buyRunShopItem(req.user.id, req.params.id, req.body.artifactId);
+        const data = await runRuntimeService.buyItem(req.user.id, req.params.id, req.body.artifactId);
         res.json({ success: true, data });
       })
     },
@@ -1622,7 +1619,7 @@ export async function createApp() {
         }
 
         const abandonerId = grpResult.rows[0].player_id;
-        await abandonGameRun(abandonerId, gameRunId);
+        await runRuntimeService.abandonRun(abandonerId, gameRunId);
         sseManager.broadcast(gameRunId, 'run_ended', { endReason: 'timeout' });
         sseManager.removeRun(gameRunId);
         readyManager.clearRun(gameRunId);

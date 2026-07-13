@@ -696,23 +696,23 @@ Use this ordered queue before starting the next implementation pass:
    migrations, provider verification, catalogs, output compatibility fields,
    credentials, and final HTTP assembly remain local. Execution tests in both
    products replace import-smoke-only evidence for this slice.
-9. **Next active backend lane: shared run lifecycle execution.** Add a stable,
-   persistence-neutral `run-runtime/v1` service factory over the already-shared
-   run planners and route descriptors. Both Mushroom and Meat must execute the
-   same factory for a complete start/resume/shop/battle/complete slice. Define
-   neutral run repository, transaction, catalog, clock, ID, policy, reward,
-   and event ports; keep SQL/snapshot stores, character selection, product
-   rewards, SSE delivery, HTTP errors, and final route mounting local. Measure
-   both adapters before promotion and reject a stable contract that exposes
-   Mushroom tables or vocabulary. Import-smoke coverage is not completion.
-10. **Next frontend lane: visible cross-product component adoption.** The
-   Phase 8AV DTO and 8AW primitive lists are complete, so stop adding isolated
-   smoke imports. Physically move candidate Mushroom components/page shells
-   into a temporary core port namespace, sweep Mushroom/spore identity, and
-   inject locales, DTOs, route clients, stores, assets, CSS hooks, and product
-   events. Promote only after both games visibly render the same component.
-   Start with a small Profile, Home summary, Run Complete, wallet/gacha, or
-   prep-control shell; preserve product themes and final page composition.
+9. **Completed 2026-07-13: shared run lifecycle execution.** Core commit
+   `2fa5c50` added persistence-neutral `run-runtime/v1`. Mushroom now executes
+   it for real start/history/get/abandon/shop/solo/challenge-resolution routes
+   and its long solo-run scenario. Meat executes the same factory for start,
+   get, abandon, shop, loadout, battle, and replay over its atomic snapshot
+   store, with HTTP abandonment coverage. SQL/snapshot transactions, catalogs,
+   product rewards and policies, SSE, errors, and final route mounting remain
+   product-local. The stable contract contains no Mushroom tables or words.
+10. **Completed 2026-07-13: first visible cross-product page adoption.** The
+   Mushroom `RunSummaryScreen` source was physically moved and neutralized in
+   core commit `8f09c57`. It accepts one locale-ready summary DTO and emits
+   neutral `home`/`open-round` events. Mushroom keeps a thin adapter at its old
+   path for run state, Mushroom catalog/portrait lookup, locale text, and route
+   events. Meat visibly mounts the same component after completed runs through
+   a small Vue island while retaining Meat copy, character assets, state, and
+   CSS. Core unit/export tests, both product builds, Meat browser completion,
+   and focused Mushroom run regression cover the slice.
 11. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
    real Telegram deploy smoke, final production DB/backup/rollback policy,
    Electron runtime/signing/notarization and installer policy, manual editor
@@ -728,13 +728,14 @@ Use this ordered queue before starting the next implementation pass:
 
 ### Next Lane - Modular Server Core Port
 
-Status: **Partially implemented; active continuation updated 2026-07-13.** The
+Status: **Implemented for the planned profile/run runtime and first shared-page
+slice; actualized 2026-07-13.** The
 Geesome-node-style module registry, middleware factories, route descriptors,
-feature route groups, readiness module, and first real shared
-`profile-runtime/v1` execution slice are implemented. The remaining goal is
-not more route plumbing: Mushroom and Meat must progressively execute the same
-stable service factories while composing shared core modules plus
-product-specific adapters. The next factory is `run-runtime/v1`.
+feature route groups, readiness module, `profile-runtime/v1`, and
+`run-runtime/v1` execution slices are implemented. Both products also visibly
+consume the same run-summary page shell. Future factories or page moves must be
+driven by a concrete duplicated workflow in both products rather than
+extraction for its own sake.
 
 Target app shape:
 
@@ -6002,43 +6003,29 @@ frontend adoption.
    The next candidate is run lifecycle orchestration. Before promotion, define
    neutral run repository/event ports and compare adapter size in both games;
    do not expose the quarantined Mushroom SQL service as the stable contract.
-90. Phase 8BB shared run lifecycle execution. **Next active implementation
-   phase, planned 2026-07-13 after the profile-runtime review:**
-   - Inventory the real Mushroom and Meat start/resume/get/shop/battle/complete
-     flows and write one neutral operation matrix before changing exports.
-   - Add `createRunRuntimeService()` as `run-runtime/v1`, composing existing
-     core run/shop/battle planners through injected repositories, transactions,
-     catalogs, clocks, IDs, reward policy, and event publishers.
-   - Keep player/character selection, daily limits, Mushroom challenge/Elo/
-     season rules, Meat product tuning, SQL/snapshot persistence, SSE delivery,
-     HTTP status mapping, and final app registration in product adapters.
-   - Adopt one complete solo-run vertical slice in both products. The minimum
-     shared execution proof is start, fetch/resume, one shop mutation, battle
-     resolution, and completion/abandon state; isolated planner use or import
-     assertions do not count.
-   - Preserve existing Mushroom and Meat HTTP response contracts at their
-     boundaries while using neutral `characterId`, `runCurrency`, `assetId`,
-     `runId`, and `playerId` names inside the stable runtime.
-   - Add core contract fixtures, persistence-backed product integration tests,
-     Meat browser flow evidence, focused Mushroom regression/E2E evidence, and
-     the complete `npm run verify:backpack-core` gate on one core SHA.
-   - Review adapter size and transaction semantics after the first slice. Split
-     optional challenge/readiness/community capabilities from the solo runtime
-     instead of forcing one oversized interface.
-91. Phase 8BC visible shared frontend shell adoption. **Queued after or in a
-   disjoint workstream from Phase 8BB:**
-   - Select one compact page/panel used by both games, preferably Profile, Home
-     summary, Run Complete, wallet/gacha, or prep controls.
-   - Physically move the Mushroom implementation into a temporary core port
-     namespace, then neutralize product words and dependencies in place.
-   - Inject locale lookup, API/route client, state DTOs, asset resolvers, CSS
-     hooks, and product events; do not import either game's store, router,
-     catalogs, Telegram wrapper, artwork, or final theme from core.
-   - Require visible runtime adoption by both Mushroom and Meat. A Meat
-     core-consumption smoke import is insufficient.
-   - Promote to the stable Vue export only after core render/interaction tests,
-     Mushroom screenshot/E2E parity, Meat browser/build parity, forbidden-import
-     checks, package dry-run, and the cross-consumer release gate pass.
+90. Phase 8BB shared run lifecycle execution. **Implemented 2026-07-13 in
+   core commit `2fa5c50` and adopted by both products:**
+   - The operation matrix produced a small adapter-per-operation runtime rather
+     than a shared persistence repository that would leak either schema.
+   - Start, fetch/resume, shop mutations, battle resolution, replay, and
+     completion/abandon execute through the stable factory in both products.
+   - Existing HTTP response shapes and product transaction boundaries are
+     preserved; stable arguments use neutral player/run/character/item names.
+   - Daily limits, Mushroom challenge/Elo/season behavior, Meat tuning,
+     rewards, SQL/snapshot stores, SSE, and HTTP mapping remain local.
+   - Core contract tests and persistence-backed product tests prove execution.
+     Challenge/readiness/community remain optional product capabilities rather
+     than expanding the solo runtime interface.
+91. Phase 8BC visible shared frontend shell adoption. **Implemented 2026-07-13
+   in core commit `8f09c57` with real Mushroom and Meat rendering:**
+   - `RunSummaryScreen` was selected because its original Mushroom source had
+     no imports and a compact, testable state-to-view boundary.
+   - The file was physically moved, then changed in place to accept a localized
+     DTO and emit neutral actions without product imports or vocabulary.
+   - Mushroom maps legacy run/catalog/locale state in a wrapper; Meat maps its
+     run/character state and mounts the stable export as a Vue island.
+   - Core component/export tests, Mushroom build and focused regression, and
+     Meat build/full tests/browser completion prove real visible adoption.
 92. Phase 13 remaining launch gates. **Parallel backlog, not a blocker for
    Phases 8BB/8BC:**
    - Real Meat Telegram bot/public-URL login and restart-resume smoke.

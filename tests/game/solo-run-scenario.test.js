@@ -20,13 +20,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { query } from '../../app/server/db.js';
-import {
-  resolveRound,
-  buyRunShopItem,
-  sellRunItem,
-  refreshRunShop,
-  getActiveGameRun
-} from '../../app/server/services/game-service.js';
+import { runRuntimeService } from '../../app/server/services/run-runtime-service.js';
 import {
   freshDb,
   bootRun,
@@ -42,6 +36,7 @@ import {
 
 test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†’ buy â†’ reload â†’ resolve â†’ sell â†’ ghost â†’ history', async () => {
   await freshDb();
+  assert.equal(runRuntimeService.contract, 'run-runtime/v1');
 
   // ---------------------------------------------------------------------
   // Phase 0 â€” create player and choose mushroom. startGameRun seeds the
@@ -84,10 +79,10 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
   assert.ok(cheap, 'need a price-1 1x1 non-bag artifact for the duplication test');
 
   await forceShopOffer(run.id, playerId, 1, [cheap.id]);
-  await buyRunShopItem(playerId, run.id, cheap.id);
+  await runRuntimeService.buyItem(playerId, run.id, cheap.id);
 
   await forceShopOffer(run.id, playerId, 1, [cheap.id]);
-  await buyRunShopItem(playerId, run.id, cheap.id);
+  await runRuntimeService.buyItem(playerId, run.id, cheap.id);
 
   const duplicates = await query(
     `SELECT id FROM game_run_loadout_items
@@ -100,7 +95,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
   // ---------------------------------------------------------------------
   // Phase 3 â€” reload: getActiveGameRun returns identical layout.
   // ---------------------------------------------------------------------
-  const active = await getActiveGameRun(playerId);
+  const active = await runRuntimeService.getActiveRun(playerId);
   assert.equal(active.id, run.id);
   assert.ok(Array.isArray(active.loadoutItems), 'reload must return loadoutItems');
   const dupInReload = active.loadoutItems.filter((i) => i.artifactId === cheap.id);
@@ -120,8 +115,8 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
     const priceB = getArtifactPrice(getArtifactById(b));
 
     const results = await Promise.allSettled([
-      buyRunShopItem(playerId, run.id, a),
-      buyRunShopItem(playerId, run.id, b)
+      runRuntimeService.buyItem(playerId, run.id, a),
+      runRuntimeService.buyItem(playerId, run.id, b)
     ]);
     const finalCoins = await getCoins(run.id, playerId);
     assert.ok(finalCoins >= 0, `coins must never go negative, got ${finalCoins}`);
@@ -147,7 +142,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
     [run.id, playerId]
   );
 
-  const resolveResult = await resolveRound(playerId, run.id);
+  const resolveResult = await runRuntimeService.resolveRound(playerId, run.id);
   // In a solo run, status may be 'active' or the run may have ended â€”
   // either is fine for the history invariant. Only proceed to later
   // phases if still active.
@@ -198,7 +193,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
   //   - coins increased by the refund amount.
   // ---------------------------------------------------------------------
   const coinsBeforeSell = await getCoins(run.id, playerId);
-  const sellResult = await sellRunItem(playerId, run.id, cheap.id);
+  const sellResult = await runRuntimeService.sellItem(playerId, run.id, cheap.id);
   const fullPrice = getArtifactPrice(cheap);
   // [Req 4-K] half-price refund, rounded down, MINIMUM 1 â€” selling a 1-coin
   // artifact in a later round refunds 1, not 0.
@@ -231,7 +226,7 @@ test('[Req 1-A, 3-A, 4-B, 4-J, 4-K, 7-G, 11-A, 12-D] solo run scenario: start â†
   // ---------------------------------------------------------------------
   const round1ShopBefore = await getShopOffer(run.id, playerId, 1);
   try {
-    await refreshRunShop(playerId, run.id);
+    await runRuntimeService.refreshShop(playerId, run.id);
   } catch {
     // Refresh may fail due to insufficient coins; irrelevant for this assertion.
   }
@@ -252,7 +247,7 @@ test('[Req 14-B] L1 resolveRound returns levelBefore and levelAfter; levelAfter 
   process.env.REWARD_MULTIPLIER = '20';
   let result;
   try {
-    result = await resolveRound(playerId, run.id);
+    result = await runRuntimeService.resolveRound(playerId, run.id);
   } finally {
     delete process.env.REWARD_MULTIPLIER;
   }
