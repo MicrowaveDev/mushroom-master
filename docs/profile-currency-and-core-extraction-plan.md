@@ -5933,7 +5933,10 @@ frontend adoption.
    de-duplicates middleware when a route key and access-policy key match,
    covered by a paid-route regression test. Next implementation slices are:
    run lifecycle routes and support/gacha admin route
-   groups. Each slice must keep authorization and runtime policy injectable,
+   groups. The run slice now covers start/history/get/challenge, abandon,
+   ready/unready, SSE events, and shop refresh/sell/buy descriptors while
+   readiness, DB checks, SSE delivery, and mutations remain injected. Each
+   slice must keep authorization and runtime policy injectable,
    preserve existing HTTP contracts, add core descriptor tests, and pass the
    cross-consumer release gate before pointer handoff. Social/community is
-   complete; run lifecycle and support/gacha admin remain.
+   complete; run lifecycle is complete; support/gacha admin remains.

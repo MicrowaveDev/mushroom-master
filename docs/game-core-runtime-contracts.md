@@ -484,8 +484,10 @@ feature metadata, and middleware composition. Payment webhook verification,
 credentials, concrete service calls, runtime policy values, and final Express
 registration remain product-owned. The following social slice adds friends,
 friend-code, challenge, and leaderboard descriptors while keeping
-authorization and concrete services local. Run lifecycle and support/gacha
-admin are the remaining route-group candidates.
+authorization and concrete services local. The run slice adds start/history/
+get/challenge, readiness, SSE, abandonment, and shop mutation descriptors while
+keeping DB checks, locks, SSE delivery, and game mutations local. Support/gacha
+admin is the remaining route-group candidate.
 The first mv-first backend cluster then moved Mushroom service files for ghost
 loadouts, loadout validation wrappers, gacha simulation wrappers, and readiness
 singleton exports into core provider-driven factories. Product repos still own
