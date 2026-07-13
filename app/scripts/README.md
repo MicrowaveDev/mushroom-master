@@ -2,6 +2,10 @@
 
 Run commands from the repository root. This is the supported command surface;
 files under `app/scripts/lib/` are implementation modules, not standalone tools.
+Reusable PNG, provenance, command-manifest, and suite-runner engines come from
+the package subpaths under `@microwavedev/backpack-game-core/tooling/*`; this
+directory retains product paths, catalogs, suite maps, browser dependencies,
+output policy, and public npm aliases.
 The machine-readable classification is in
 [`command-manifest.json`](./command-manifest.json), and
 `npm run scripts:docs:check` keeps it aligned with `package.json`.

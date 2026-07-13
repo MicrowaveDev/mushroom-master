@@ -779,8 +779,8 @@ owner must remain disabled by validated runtime configuration.
 
 ### Phase 8BD - Shared Script Tooling Extraction
 
-Status: **Planned after the 2026-07-14 `app/scripts` ownership audit;
-opportunistic and non-blocking for Phase 13.** The audit found reusable tooling,
+Status: **Implemented 2026-07-14 through core commit `e04110e` and configured
+wrappers in both products; non-blocking for Phase 13.** The audit found reusable tooling,
 but not a reason to move the whole script tree. Core should own configurable
 libraries and optional CLI primitives. Mushroom and Meat should continue to own
 their public npm aliases, product configuration, credentials, repositories,
@@ -845,6 +845,16 @@ mutation confirmations, generated content, and final workflow policy.
 6. **8BD-F - Instructions and release.** Update core/tooling docs, both product
    script guides and agent instructions, run script-documentation checks, then
    run the cross-consumer core release gate on one SHA.
+
+Implementation result: 8BD-A through 8BD-D and 8BD-F are complete. The bitmap,
+metadata/provenance, command-validator, and free-port/child-runner engines were
+physically moved to Node-only package exports. Mushroom preserves its old import
+and command paths through thin wrappers. Meat now hashes real catalog assets,
+builds a shared provenance bundle, validates its own command manifest, and runs
+Playwright through a local suite wrapper. 8BD-E completed as a review with no
+additional operation-CLI move: database, provider, settlement, support, season,
+and gacha entry points remain product-local because their shared service logic
+is already in core and their remaining policy is product integration.
 
 #### Promotion Gates
 

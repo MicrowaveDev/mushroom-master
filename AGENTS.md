@@ -28,6 +28,9 @@ the machine-readable command and directory classification.
   `app/scripts/runners/`.
 - Keep reusable modules in `app/scripts/lib/`; never expose or invoke them as
   standalone npm commands.
+- Reuse Node-only engines from `@microwavedev/backpack-game-core/tooling/*` and
+  keep local files as configured wrappers. Do not import core source paths or
+  run scripts from inside `vendor/backpack-game-core` directly.
 - Keep the `app/scripts/` root limited to `README.md` and
   `command-manifest.json`. Do not add executable files there.
 - Prefer npm aliases in instructions, queue output, tests, and runbooks instead
