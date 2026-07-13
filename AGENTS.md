@@ -6,8 +6,37 @@ This repository contains **two unrelated product surfaces**. Identify which one 
 
 | Surface | Where the code lives | Verify commands | Design / workflow rules |
 | --- | --- | --- | --- |
-| **Lore PDF pipeline** — Telegram archiver, OCR, lore generation, dossier rendering | `src/`, `data/<channel>/`, lore-side scripts under `app/scripts/` (e.g. `analyze-pdf-structure.js`) | `npm test` (unit), `npm run analyze:pdf-structure` (PDF structure check), `npm run regenerate -- --force` (full rerun), `npm run regenerate -- --force --skip-download` (rebuild from local sources) | "Source Review Workflow", "Hashtag Routing Rules", "Tagging Workflow", "PDF Review Workflow", "Renderer Design Rules" sections below |
+| **Lore PDF pipeline** — Telegram archiver, OCR, lore generation, dossier rendering | `src/` (including lore-side scripts such as `analyze-pdf-structure.js`), `data/<channel>/` | `npm test` (unit), `npm run analyze:pdf-structure` (PDF structure check), `npm run regenerate -- --force` (full rerun), `npm run regenerate -- --force --skip-download` (rebuild from local sources) | "Source Review Workflow", "Hashtag Routing Rules", "Tagging Workflow", "PDF Review Workflow", "Renderer Design Rules" sections below |
 | **Mushroom Battles** — web game with Telegram Mini App integration (Vue frontend + Express backend + Playwright specs) | `web/` (Vue), `app/server/` (Express), `app/shared/` (shared code), `tests/game/` (specs), `web/public/artifacts/`, `web/public/season-ranks/`, `web/public/achievements/` | `npm test` (all unit), `npm run game:test` (game unit), `npm run game:test:e2e` (Playwright e2e), `npm run game:test:screens` / `:debug` (screenshots) | "UI Verification Rules", "Layout Assertion Rules", "E2E / Integration Test Design Rules", "Inventory Review Rules", `.agent/workflows/ui-design.md` |
+
+## Script Organization
+
+Treat npm aliases as the public script interface. Before adding, moving, or
+invoking game tooling, read [`app/scripts/README.md`](app/scripts/README.md) and
+use [`app/scripts/command-manifest.json`](app/scripts/command-manifest.json) for
+the machine-readable command and directory classification.
+
+- Put validation, provenance, preflight, audit, and release gates in
+  `app/scripts/checks/`.
+- Put prompt selection, image production, normalization, and review-artifact
+  generation in `app/scripts/generation/`.
+- Put queue-owned or multi-stage Home Field transitions in
+  `app/scripts/workflows/`.
+- Put database, wallet, support, season-admin, deployment, and other operator
+  tools in `app/scripts/operations/`.
+- Put development servers, Playwright suites, and interactive previews in
+  `app/scripts/runners/`.
+- Keep reusable modules in `app/scripts/lib/`; never expose or invoke them as
+  standalone npm commands.
+- Keep the `app/scripts/` root limited to `README.md` and
+  `command-manifest.json`. Do not add executable files there.
+- Prefer npm aliases in instructions, queue output, tests, and runbooks instead
+  of direct implementation paths. The documented deployment shell entry points
+  are the intentional exception.
+- Every new public script must have a `package.json` alias, belong to a command
+  family in the manifest, and use one of the five entry-point directories.
+- Run `npm run scripts:docs:check` after changing scripts, aliases, the manifest,
+  or script documentation.
 
 For game-UI changes specifically:
 
