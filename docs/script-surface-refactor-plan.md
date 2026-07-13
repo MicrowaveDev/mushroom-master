@@ -403,8 +403,77 @@ Update:
 - generated queue command strings
 - package-command assertions in tests
 
-Add a concise script catalog documenting only public commands. Internal modules
-should not be presented as runnable scripts.
+### Add The Script Usage README
+
+Create `app/scripts/README.md` as the operator-facing source of truth for the
+supported script surface. It must explain what should be used, how to run it,
+and in which situations each command is appropriate. It must document public
+npm commands rather than asking users to invoke implementation files directly.
+
+Start the README with a task-oriented command selector. Each row should include:
+
+- the task or situation
+- the canonical npm command
+- when to use it
+- important prerequisites
+- whether it is read-only or writes state
+- the expected output
+- the primary follow-up or verification command
+
+Cover these command families:
+
+- local game startup and build
+- unit, E2E, screenshot, and targeted Playwright verification
+- artifact prompt, production, validation, review, provenance, and release gates
+- season image prompt, validation, review, and provenance workflows
+- Home Field queue, production, candidate, evidence, preview, validation, and
+  placeholder-only workflows
+- wallet audit, reconciliation, expiry, settlement import, and alert checks
+- support lookup and audited money actions
+- season recalculation, inspection, analytics, and archival
+- gacha simulation and core-submodule checks
+- social preview generation
+- production setup, update, restart, health, and log workflows
+
+For every state-changing command, identify its mutation level:
+
+- read-only inspection
+- ignored local-workspace output
+- app-facing asset output
+- committed metadata or provenance output
+- database mutation requiring an explicit write or confirmation flag
+- production infrastructure or deployment mutation
+
+The README must also include:
+
+- a short decision guide for commands with similar names, such as `next`,
+  `produce`, `validate`, `sheet`, and `release-check`
+- prerequisites and required environment variables without exposing secrets
+- dry-run behavior and explicit write flags where supported
+- normal success output and important stop conditions
+- examples using canonical npm aliases and representative arguments
+- a compatibility-alias table with replacement commands and removal dates
+- a "Do Not Invoke Directly" section for internal libraries, domain adapters,
+  generated helpers, and compatibility wrappers
+- a "Placeholder And Diagnostic Tools" section that clearly distinguishes
+  non-production proof output from production-ready assets
+- a reminder that the Home Field generation queue owns the current chibi
+  workflow and that copied historical command sequences are not authoritative
+
+Keep the README concise enough to scan. Link to detailed domain documents for
+art direction, production review contracts, database operations, and deployment
+runbooks instead of duplicating those documents.
+
+Add a lightweight documentation check that verifies:
+
+- every canonical command named by the README exists in `package.json`
+- every public command family in `package.json` is either documented or marked
+  internal or compatibility-only in the command manifest
+- removed aliases do not remain in current-use README examples
+- relative links from the README resolve
+
+Internal modules should not be presented as standalone runnable scripts merely
+because they live under `app/scripts`.
 
 For every retired command, either remove all current documentation references
 or label the reference explicitly as historical.
@@ -436,6 +505,12 @@ or label the reference explicitly as historical.
   and Playwright runner tests pass.
 - **AC14:** Documentation contains no stale current-workflow references to
   removed commands.
+- **AC15:** `app/scripts/README.md` provides a task-oriented command selector,
+  usage examples, prerequisites, mutation levels, stop conditions, and links to
+  deeper workflow documents for every supported public command family.
+- **AC16:** An automated documentation check proves that README commands match
+  `package.json`, compatibility aliases identify replacements and removal dates,
+  and removed commands do not appear in current-use examples.
 
 ## Verification
 
