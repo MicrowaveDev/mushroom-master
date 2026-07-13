@@ -14,6 +14,7 @@ import {
 import { freshDb } from './helpers.js';
 import { query } from '../../app/server/db.js';
 import { handleTelegramWebhook } from '../../app/server/bot-gateway.js';
+import { profileRuntimeService } from '../../app/server/services/profile-runtime-service.js';
 
 function createInitData(botToken, user) {
   const params = new URLSearchParams();
@@ -100,6 +101,26 @@ test('web auth creates a browser-playable session without Telegram initData', as
     lang: 'en'
   });
   assert.equal(secondLogin.player.id, login.player.id);
+});
+
+test('shared profile runtime drives Mushroom login, bootstrap, and character selection', async () => {
+  await freshDb();
+  assert.equal(profileRuntimeService.contract, 'profile-runtime/v1');
+
+  const login = await profileRuntimeService.login('web', {
+    clientId: 'runtime-player-001',
+    name: 'Runtime',
+    lastName: 'Player',
+    lang: 'en'
+  });
+  assert.ok(login.sessionKey);
+  assert.equal(login.user.name, 'Runtime Player');
+
+  const bootstrap = await profileRuntimeService.getBootstrap(login.user.id);
+  assert.equal(bootstrap.player.id, login.user.id);
+
+  const selected = await profileRuntimeService.setActiveCharacter(login.user.id, 'thalla');
+  assert.equal(selected.activeMushroomId, 'thalla');
 });
 
 test('browser fallback auth code can be confirmed through the bot start flow', async () => {

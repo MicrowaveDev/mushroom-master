@@ -685,16 +685,17 @@ Use this ordered queue before starting the next implementation pass:
    do not duplicate it. Keep Express app creation, middleware order, webhook
    raw-body placement, static serving, credentials, and final module list
    composition local.
-8. **Next active backend lane: real cross-product module execution.** Meat
-   currently proves the shared server surface mainly through import-smoke tests
-   while its product backend still owns parallel login/run/wallet/asset flows.
-   Pick one complete vertical slice, preferably profile/auth/bootstrap or run
-   lifecycle, neutralize the quarantined `server/ports/mushroom/*` repository
-   and vocabulary contracts, and configure the same core module factory from
-   both games. Completion requires real Meat API/browser behavior through the
-   shared factory, not only an export assertion. Preserve product-owned DB
-   migrations, credentials, catalogs, copy, adult-content policy, payment
-   policy, and final app composition.
+8. **Completed 2026-07-13: first real cross-product module execution.** Core
+   `profile-runtime/v1` now owns login completion, token-to-bootstrap,
+   profile, active-character, and settings orchestration through neutral
+   adapters. Mushroom routes real Telegram/web/dev login, auth-code completion,
+   bootstrap, profile, character selection, and settings requests through the
+   runtime. Meat routes real dev/Telegram login, token authentication,
+   bootstrap, profile, and character selection through the same factory while
+   retaining its JSON/Sequelize SQLite/Postgres snapshot adapter. Product DB
+   migrations, provider verification, catalogs, output compatibility fields,
+   credentials, and final HTTP assembly remain local. Execution tests in both
+   products replace import-smoke-only evidence for this slice.
 9. **Continue frontend extraction in parallel only when write scopes are
    disjoint.** Next frontend-safe slices are headless wallet/gacha state,
    duplicate-burn availability, odds-preview state, gacha-admin editor
@@ -5967,29 +5968,19 @@ frontend adoption.
    consumer adoption or by extracting final public catalog/battle descriptors,
    not by moving product credentials, policy, persistence, or Express startup
    into core.
-89. Phase 8BA real shared-module execution in Meat. **Planned 2026-07-13 after
-   post-route review:** replace import-smoke-only coverage with one real shared
-   backend vertical slice executed by both products.
-   - Start with profile/auth/bootstrap if its repository boundary can be made
-     neutral without importing Mushroom tables; otherwise use run lifecycle as
-     the first slice.
-   - Rename Mushroom-only input/output fields at the stable boundary to
-     `character`, `characterXp`, `walletCurrency`, `runCurrency`, `asset`, and
-     `game`, with product adapters preserving legacy Mushroom fields only at
-     the Mushroom edge.
-   - Define repository, transaction, catalog, clock, ID, policy, and event ports
-     in core. Do not expose Sequelize models or Mushroom SQL as the stable API.
-   - Configure the same factory from Mushroom and Meat module lists. Meat must
-     route real API requests through it and persist through its Postgres/SQLite
-     adapter; an import assertion is insufficient.
-   - Preserve product-local credentials, Telegram bot identity, payment and
-     adult-content policy, migrations, content catalogs, localization, and
-     final Express/Electron assembly.
-   - Add contract fixtures shared by both consumers plus product integration
-     tests. Required evidence is core unit/export/type/package coverage,
-     Mushroom focused regression coverage, Meat API and browser behavior, and
-     the complete hub cross-consumer gate on one core SHA.
-   - After the first slice, review the adapter size and vocabulary sweep before
-     selecting the next module. Promote a quarantined Mushroom port to a stable
-     neutral package only when neither consumer imports Mushroom table or
-     content contracts through that public surface.
+89. Phase 8BA real shared-module execution in Meat. **Implemented 2026-07-13:**
+   core commit `d8c6fd1` adds the persistence-neutral
+   `createProfileRuntimeService()` contract. Both products configure and
+   execute that exact factory for their real profile/auth/bootstrap paths.
+   Mushroom preserves its legacy `sessionKey`, `user`, `player`, and
+   `mushroomId` HTTP fields at the product boundary; none enter the stable
+   character-selection adapter. Meat preserves bearer-token payloads and uses
+   the same runtime over JSON, Sequelize SQLite, or Sequelize Postgres stores.
+   Provider signature verification, SQL/snapshot repositories, transactions,
+   product catalogs, credentials, localization, payment/adult-content policy,
+   and Express/Node/Electron assembly remain local by design. Core contract
+   tests cover both token styles and all runtime operations; Mushroom and Meat
+   persistence-backed integration tests prove execution rather than import.
+   The next candidate is run lifecycle orchestration. Before promotion, define
+   neutral run repository/event ports and compare adapter size in both games;
+   do not expose the quarantined Mushroom SQL service as the stable contract.

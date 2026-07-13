@@ -6,9 +6,7 @@ import { spawnSync } from 'child_process';
 import express from 'express';
 import OpenAI from 'openai';
 import {
-  shapeAuthLogoutResult,
-  shapeAuthSessionResult,
-  shapeAuthUserProfile
+  shapeAuthLogoutResult
 } from '@microwavedev/backpack-game-core/modules/auth';
 import {
   bindBackpackRouteDescriptors,
@@ -26,9 +24,6 @@ import {
 import {
   authenticateRequest,
   createTelegramAuthCode,
-  loginWithDevSession,
-  loginWithTelegram,
-  loginWithWebSession,
   logoutSession,
   requireAuth,
   verifyTelegramAuthCode
@@ -50,15 +45,12 @@ import {
   declineFriendChallenge,
   getBattle,
   getBattleHistory,
-  getBootstrap,
   getInventoryReviewSamples,
   getFriendChallenge,
   getFriends,
   getLeaderboard,
-  getPlayerState,
   applyRunLoadoutPlacements,
   saveLocalTestRun,
-  selectActiveMushroom,
   startGameRun,
   getActiveGameRun,
   abandonGameRun,
@@ -70,7 +62,6 @@ import {
   buyRunShopItem,
   createRunChallenge,
   getGameRunHistory,
-  updateSettings,
   switchPortrait,
   switchPreset,
   createPurchaseIntent,
@@ -86,6 +77,7 @@ import {
   rollAssetPack
 } from './services/game-service.js';
 import { lookupMoneySupportRecords } from './services/support-money-service.js';
+import { profileRuntimeService } from './services/profile-runtime-service.js';
 import {
   listSupportActions,
   supportAdjustWallet,
@@ -273,13 +265,6 @@ function requestSupportActorId(req) {
     req.query?.actorId ||
     ''
   ).trim();
-}
-
-function authSessionPayload(result) {
-  return shapeAuthSessionResult({
-    session: { sessionKey: result.session.sessionKey },
-    user: shapeAuthUserProfile(result.player)
-  });
 }
 
 function normalizeSupportRole(role) {
@@ -811,10 +796,13 @@ export async function createApp() {
       },
       handlers: {
         providerLogin: asyncRoute(async (req, res) => {
-          const result = await loginWithTelegram(req.body.initData, process.env.TELEGRAM_BOT_TOKEN || '');
+          const result = await profileRuntimeService.login('telegram', {
+            initData: req.body.initData,
+            botToken: process.env.TELEGRAM_BOT_TOKEN || ''
+          });
           res.json({
             success: true,
-            data: authSessionPayload(result)
+            data: result
           });
         }),
         logout: asyncRoute(async (req, res) => {
@@ -834,18 +822,18 @@ export async function createApp() {
 
           res.json({
             success: true,
-            data: authSessionPayload(result)
+            data: await profileRuntimeService.completeLogin(result)
           });
         }),
         webLogin: asyncRoute(async (req, res) => {
-          const result = await loginWithWebSession(req.body || {});
+          const result = await profileRuntimeService.login('web', req.body || {});
           res.json({
             success: true,
-            data: authSessionPayload(result)
+            data: result
           });
         }),
         bootstrap: asyncRoute(async (req, res) => {
-          const data = await getBootstrap(req.user.id);
+          const data = await profileRuntimeService.getBootstrap(req.user.id);
           res.json({ success: true, data });
         })
       },
@@ -888,16 +876,16 @@ export async function createApp() {
     createProfileRouteGroup({
       handlers: {
         profile: asyncRoute(async (req, res) => {
-          res.json({ success: true, data: await getPlayerState(req.user.id) });
+          res.json({ success: true, data: await profileRuntimeService.getProfile(req.user.id) });
         }),
         activeCharacter: asyncRoute(async (req, res) => {
           res.json({
             success: true,
-            data: await selectActiveMushroom(req.user.id, req.body.mushroomId)
+            data: await profileRuntimeService.setActiveCharacter(req.user.id, req.body.mushroomId)
           });
         }),
         settings: asyncRoute(async (req, res) => {
-          res.json({ success: true, data: await updateSettings(req.user.id, req.body) });
+          res.json({ success: true, data: await profileRuntimeService.updateSettings(req.user.id, req.body) });
         })
       },
       middleware: { auth: requireAuth }
@@ -1827,19 +1815,19 @@ export async function createApp() {
         },
         handlers: {
           devLogin: asyncRoute(async (req, res) => {
-            const verified = await loginWithDevSession({
+            const verified = await profileRuntimeService.login('dev', {
               telegramId: req.body.telegramId || 999001,
               username: req.body.username || 'local_player',
               name: req.body.name || 'Local',
               lastName: req.body.lastName || 'Player',
               lang: req.body.lang || 'ru'
+            }, {
+              presentPlayer: (player) => player,
+              userField: 'player'
             });
             res.json({
               success: true,
-              data: {
-                sessionKey: verified.session.sessionKey,
-                player: verified.player
-              }
+              data: verified
             });
           })
         }
