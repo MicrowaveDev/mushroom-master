@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `bb0744d`
-- core short SHA: `bb0744d`
-- core commit: `Add profile wallet and asset route groups`
-- runtime/API baseline: `bb0744d` (`Add profile wallet and asset route groups`)
-- game pointer commit: `31cb833` (`Adopt shared profile wallet and asset routes`)
+- core SHA: `04abe9d`
+- core short SHA: `04abe9d`
+- core commit: `Add support and gacha admin route groups`
+- runtime/API baseline: `04abe9d` (`Add support and gacha admin route groups`)
+- game pointer commit: `b379a16` (`Adopt shared admin routes`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-13 | `b379a16` | `04abe9d` | Complete server feature route groups | Mushroom now mounts social, run, support-admin, and gacha-admin routes through core descriptors in addition to auth, bot, wiki, profile, wallet, and assets. The gacha item API now distinguishes single-item `POST` from bulk replacement `PUT`. |
 | 2026-07-13 | `31cb833` | `bb0744d` | Profile, wallet, and asset route groups | Mushroom mounts profile/settings/active-character, wallet state/bundles/purchase-intent, and asset catalog/odds/roll/burn/purchase/equip through core descriptors. Product handlers, payment webhooks, policy values, and final Express assembly stay local. |
 | 2026-07-08 | `d815af4` | `1841f73` | Asset service port | Core now contains quarantined `createMushroomAssetServicePort()` under `server/ports/mushroom/economy`, after physically moving Mushroom's profile-asset catalog, portrait equipment, direct purchase, runtime pack lookup, gacha roll, duplicate burn, pity, odds, and pack shaping behavior behind injected DB, transaction, portrait catalog, wallet, mutation-claim, ID, clock, JSON, and env providers. Mushroom keeps the old `app/server/services/asset-service.js` path as a thin wrapper. Meat pins the same SHA and verifies the export without adopting the Mushroom asset/gacha table contract. |
 | 2026-07-08 | `5c62ee5` | `c0c6111` | Wallet service port | Core now contains quarantined `createMushroomWalletServicePort()` under `server/ports/mushroom/economy`, after physically moving Mushroom's profile-wallet balance, wallet transaction, purchase-intent, checkout, Telegram Stars, BTCPay, NOWPayments, webhook replay, settlement reconciliation, stale-intent expiry, mirror audit, grant, and spend behavior behind injected DB, transaction, ID, clock, JSON, env, and fetch providers. Mushroom keeps the old `app/server/services/wallet-service.js` path as a thin wrapper. Meat pins the same SHA and verifies the export without adopting the Mushroom wallet/payment table contract. |
