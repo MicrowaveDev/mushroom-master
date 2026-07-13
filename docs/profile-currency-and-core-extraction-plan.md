@@ -46,8 +46,8 @@
 > mounting.
 > The 2026-07-13 state after the settlement/ops extraction is: the
 > gameplay/profile/economy spine is core-backed through quarantined ports,
-> core release `7fd463a` contains the latest ports including auth/session
-> behavior, and the next server extraction queue is **bot/wiki/route modules**,
+> core release `e1eb78a` contains the latest ports including auth/session and
+> bot-gateway behavior, and the next server extraction queue is **wiki/route modules**,
 > alongside disjoint frontend slices.
 > Do not re-plan the completed asset, gacha-admin, support, settlement, or
 > wallet-ops services. Treat
@@ -656,20 +656,25 @@ Use this ordered queue before starting the next implementation pass:
    adapter injecting DB/transactions, character defaults, crypto, clock,
    randomness, IDs, language normalization, and session TTL. Existing auth,
    auth-code, middleware, pruning, and HTTP-hardening regressions pass.
-5. **Continue the remaining route/module split.** Move reusable factories from
-   `bot-gateway.js` and `wiki.js`, then extract coherent descriptor-backed route
-   groups from `create-app.js`. `social-preview-cache.js` is already a thin
+5. **Bot gateway port completed 2026-07-13.** `bot-gateway.js` was physically
+   moved into core as `createTelegramBotGatewayPort()`. Auth-code and payment
+   callbacks, env/credentials, fetch, game identity, visible copy, and support
+   links are injected; Mushroom keeps its original export path as an adapter.
+   Core, Telegram game/auth, wallet/payment, and full Mushroom tests pass.
+6. **Continue the remaining route/module split.** Move the reusable factory
+   from `wiki.js`, then extract coherent descriptor-backed route groups from
+   `create-app.js`. `social-preview-cache.js` is already a thin
    filesystem/render/log adapter over core `createSocialPreviewCacheService()`;
    do not duplicate it. Keep Express app creation, middleware order, webhook
    raw-body placement, static serving, credentials, and final module list
    composition local.
-6. **Continue frontend extraction in parallel only when write scopes are
+7. **Continue frontend extraction in parallel only when write scopes are
    disjoint.** Next frontend-safe slices are headless wallet/gacha state,
    duplicate-burn availability, odds-preview state, gacha-admin editor
    view-models, prep sell/refresh planners, ready/abandon planners, and smaller
    Home/Profile/RunComplete panels. Do not move full pages without DTO,
    route-client, locale, asset, CSS, and product-event adapters.
-7. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
+8. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
    real Telegram deploy smoke, final production DB/backup/rollback policy,
    manual editor decision, asset replacement workflow, and paid/gacha ledger
    readiness before public money or seasonal-pack rollout. Those are production
