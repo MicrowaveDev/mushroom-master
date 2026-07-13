@@ -622,6 +622,13 @@ visibly render the first shared page shell. The active implementation queue is
 therefore Phase 13 production hardening, not more extraction. Future core moves
 must start from concrete duplicated behavior in both products and must not
 delay deployment, storage, security, payment, or gacha launch gates.
+Updated 2026-07-14 after Phase 8BD: Mushroom's reusable image, provenance,
+command-governance, and suite-runner engines were physically moved into
+Node-only core tooling exports and adopted by Meat through real product
+workflows. Script extraction is no longer an active queue item. The remaining
+active lane is the ordered production decision/deploy/storage/security work
+below; tooling follow-ups are non-blocking hardening unless a concrete defect
+promotes one into the release scope.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -630,7 +637,7 @@ Do not recreate moved files from agent memory. Copy instead of move only when a
 temporary compatibility copy is explicitly part of the migration, and remove or
 promote that copy during the stabilization step.
 
-### Current TODO Queue - Actualized 2026-07-13
+### Current TODO Queue - Actualized 2026-07-14
 
 Use this ordered queue before starting the next implementation pass:
 
@@ -710,13 +717,14 @@ Use this ordered queue before starting the next implementation pass:
    a small Vue island while retaining Meat copy, character assets, state, and
    CSS. Core unit/export tests, both product builds, Meat browser completion,
    and focused Mushroom run regression cover the slice.
-11. **Next: freeze the first production target and product decisions.** Decide
-   whether the first release is hosted web/Telegram, packaged local desktop, or
-   both; whether compact auto-pack is accepted for Meat; and whether the first
-   public release includes payments or gacha. Record explicit deferrals. This
-   decision fixes the required deploy, migration, installer, and compliance
-   scope before implementation branches diverge.
-12. **Then: prove the hosted Meat deployment.** Run real Telegram login through
+11. **Production target selected 2026-07-14: hosted Telegram/web.** The first
+   production release runs the hosted app against Docker PostgreSQL and real
+   Telegram authentication. Desktop packaging, signing, installers, and
+   offline-distribution work are backlog and do not block this release. Still
+   decide whether compact auto-pack is accepted for Meat and whether the first
+   public release includes payments or gacha; record those decisions as explicit
+   enabled scope or deferrals before launch.
+12. **Next: prove the hosted Meat deployment.** Run real Telegram login through
    the public URL, restart and resume the same profile/run, and verify the
    Docker-hosted PostgreSQL path under production config. Add an automated
    production smoke that covers login, bootstrap, run start/resume, wallet
@@ -746,25 +754,27 @@ Use this ordered queue before starting the next implementation pass:
    jurisdiction disclosure review. A pack may launch only after simulation,
    approval, rollback, audit, and support flows pass against the production
    catalog and ledger.
-17. **Extract shared script tooling only when a second consumer adopts it.**
-   Before Meat builds its production-art pipeline or duplicates Mushroom's
-   test/command infrastructure, implement the scoped Phase 8BD tooling lane
-   below. Keep product npm aliases and thin entry points local; import stable
-   core tooling subpaths instead of invoking files inside the nested submodule.
-   This lane may run in parallel after item 11, but must not delay hosted deploy,
-   storage, security, or payment launch gates.
-18. **Finish distribution/content/community work required by the selected
-   target.** Replace Meat prototype/starter art through a provenance-backed
-   review gate; add installer art, platform build order, signing/notarization,
-   and release policy if desktop ships; and expand the hosted community client
-   to friends, challenges, optional account linking, and shared seasons only
-   when those surfaces enter the release scope.
+17. **Completed 2026-07-14: shared script tooling with a second consumer.**
+   Core commit `e04110e` exposes Node-only image, provenance, command-validator,
+   and runner primitives. Mushroom preserves its command/import paths through
+   configured wrappers. Meat hashes real catalog assets, builds a provenance
+   bundle, validates its own command manifest, and runs Playwright through a
+   local wrapper. Both consumers pin the same core SHA and the full hub release
+   gate passes. Keep product npm aliases, paths, catalogs, browser dependencies,
+   credentials, and final process policy local.
+18. **Finish hosted content/community work required by the selected target.**
+   Replace Meat prototype/starter art through a provenance-backed review gate.
+   Expand the hosted community client to friends, challenges, optional account
+   linking, and shared seasons only when those surfaces enter the hosted release
+   scope. Desktop installer art and platform distribution are not part of this
+   active item.
 19. **Keep later product expansion in backlog.** Multi-item guaranteed-rarity
    packs, deeper season/collection pity, duplicate conversion currencies,
    trading/marketplace/escrow/fraud controls, NFT/export policy, offline action
-   replay, cross-device progress merging, and the optional Phase 6D breaking
-   legacy-column rename require separate product, legal, migration, and
-   operations ownership.
+   replay, cross-device progress merging, desktop packaging/signing/notarization,
+   installer art, platform build/release policy, and the optional Phase 6D
+   breaking legacy-column rename require separate product, legal, migration,
+   distribution, and operations ownership.
 
 ### Phase 13 Exit Criteria
 
@@ -855,6 +865,39 @@ Playwright through a local suite wrapper. 8BD-E completed as a review with no
 additional operation-CLI move: database, provider, settlement, support, season,
 and gacha entry points remain product-local because their shared service logic
 is already in core and their remaining policy is product integration.
+
+#### Post-Implementation Hardening Queue
+
+These items improve the shared tooling contract but do not block Phase 13
+unless release work exposes a concrete failure:
+
+1. **Strengthen command-manifest semantics.** Meat's first manifest classifies
+   command families and directories but does not yet declare lifecycle,
+   mutation class, or explicit alias budgets. Extend the shared validator with
+   configurable schema requirements, add those fields to Meat, and verify both
+   products without forcing every consumer to use Mushroom-specific budgets.
+2. **Replace broad declaration types.** Narrow the current
+   `Record<string, any>` tooling declarations into named image, provenance,
+   command-result, suite, child-process, and callback interfaces. Keep the
+   declarations aligned with runtime defaults and injected-root behavior.
+3. **Harden process shutdown.** Extend the runner primitive so parent
+   `SIGINT`/`SIGTERM` reliably reaches the child, listeners are removed after
+   exit, and repeated termination cannot leave a Playwright/Vite process alive.
+   Cover normal exit, non-zero exit, child signal exit, and parent signal
+   forwarding with injected child-process tests.
+4. **Harden malformed-input behavior.** Add bounded PNG chunk/length checks and
+   clear errors for truncated signatures, headers, IDAT streams, invalid
+   dimensions, and unsupported filters. Add corrupt JSON, structurally invalid
+   manifest, missing-file, hash-mismatch, duplicate-entry, and count-mismatch
+   provenance tests.
+5. **Keep deferred surfaces local.** Do not extract `start-game-dev.js` until
+   both games need the same multi-process contract. Keep DB, payment, provider,
+   support, settlement, deployment, Home Field, and Codex/image-generation CLIs
+   product-local; reconsider only after a second implementation demonstrates
+   duplicated argument/result behavior.
+6. **Keep roadmap state current.** When a hardening item ships, update this
+   queue, both script guides if command behavior changes, both `AGENTS.md` files
+   if workflow rules change, and the pinned core SHA/release-gate evidence.
 
 #### Promotion Gates
 
@@ -1973,13 +2016,23 @@ updates, future payment/gacha ledger buckets, logical backup/restore,
 expanded browser mechanics/error coverage, scoped support operators with audit
 actor metadata, support mutations, and asset provenance. Remaining items are
 live deploy validation, final production DB/runtime policy, asset replacement
-workflow, paid/gacha reconciliation integration, and product decisions/
-extractions that require an explicit launch target.
+workflow, paid/gacha reconciliation integration if enabled, and the remaining
+auto-pack/payment/gacha scope decisions for the selected hosted target.
+
+**Production-target decision 2026-07-14:** the first target is hosted
+Telegram/web. Desktop packaging is backlog. PostgreSQL deployment, real
+Telegram authentication, hosted recovery/security, and production content are
+therefore active release requirements; dmg/exe/app packaging, signing,
+notarization, installer artwork, offline distribution, and desktop release QA
+are not Phase 13 blockers.
 
 #### Phase 13 Source Of Truth
 
 - Main goal: run `meat-master` like `mushroom-master`, with the same login,
   game, and player mechanics, but different content and settings.
+- Selected first production target: hosted Telegram/web backed by Docker
+  PostgreSQL. The local SQLite/Electron direction remains useful architecture
+  and development support, but desktop distribution is deferred to backlog.
 - Current achieved state: local dev/API/browser parity is implemented; Meat now
   has a SQLite production-store adapter, schema migration v2, transactional
   read/mutate/write store updates, future payment/gacha ledger buckets,
@@ -2231,6 +2284,12 @@ temporary production fallback. Mushroom already has the production Postgres
 Docker deployment path. Meat now has explicit `server|local` runtime-mode
 validation, a Docker Postgres compose file for hosted server mode, and a
 Sequelize-backed snapshot store for both hosted Postgres and local SQLite.
+
+Release-scope update 2026-07-14: hosted Telegram/web is the selected first
+production target. Continue preserving the local SQLite boundary and tests so
+future desktop work remains possible, but do not spend the current launch lane
+on installers, signing, notarization, offline synchronization, or desktop
+distribution policy.
 
 Goal: one codebase per game should run as a hosted community server or as a
 packaged local app, with the same game mechanics and as much shared persistence
