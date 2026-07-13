@@ -12,7 +12,9 @@ import {
 } from '@microwavedev/backpack-game-core/modules/auth';
 import {
   bindBackpackRouteDescriptors,
-  createAuthRouteGroup
+  createAuthRouteGroup,
+  createBotRouteGroup,
+  createWikiRouteGroup
 } from '@microwavedev/backpack-game-core/server';
 import {
   authenticateRequest,
@@ -1959,37 +1961,36 @@ export async function createApp() {
     })
   );
 
-  app.get(
-    '/api/wiki/home',
-    asyncRoute(async (_req, res) => {
+  bindBackpackRouteDescriptors(app, [createWikiRouteGroup({
+    home: asyncRoute(async (_req, res) => {
       res.json({ success: true, data: await getWikiHome() });
-    })
-  );
-
-  // Character wiki: gate lore sections by the player's mycelium for that mushroom.
-  app.get(
-    '/api/wiki/characters/:slug',
-    asyncRoute(async (req, res) => {
-      let mycelium = 0;
-      if (req.user) {
-        const row = await dbQuery(
-          `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
-          [req.user.id, req.params.slug]
-        );
-        mycelium = row.rowCount ? row.rows[0].mycelium : 0;
-      }
-      res.json({ success: true, data: await getWikiEntry('characters', req.params.slug, mycelium) });
-    })
-  );
-
-  for (const section of ['locations', 'factions', 'glossary']) {
-    app.get(
-      `/api/wiki/${section}/:slug`,
-      asyncRoute(async (req, res) => {
-        res.json({ success: true, data: await getWikiEntry(section, req.params.slug) });
-      })
-    );
-  }
+    }),
+    entries: [
+      {
+        section: 'characters',
+        handler: asyncRoute(async (req, res) => {
+          let characterXp = 0;
+          if (req.user) {
+            const row = await dbQuery(
+              `SELECT mycelium FROM player_mushrooms WHERE player_id = $1 AND mushroom_id = $2`,
+              [req.user.id, req.params.slug]
+            );
+            characterXp = row.rowCount ? row.rows[0].mycelium : 0;
+          }
+          res.json({
+            success: true,
+            data: await getWikiEntry('characters', req.params.slug, characterXp)
+          });
+        })
+      },
+      ...['locations', 'factions', 'glossary'].map((section) => ({
+        section,
+        handler: asyncRoute(async (req, res) => {
+          res.json({ success: true, data: await getWikiEntry(section, req.params.slug) });
+        })
+      }))
+    ]
+  })]);
 
   // Equip an owned portrait for a mushroom. Kept as a compatibility route
   // while the client migrates to asset-specific purchase/equip endpoints.
@@ -2020,54 +2021,46 @@ export async function createApp() {
     })
   );
 
-  app.get('/api/bot/discovery', (req, res) => {
-    res.json({
-      success: true,
-      data: createMentionReply({
-        botUsername: botUsername(),
-        chatType: req.query.chatType || 'group'
+  bindBackpackRouteDescriptors(app, [createBotRouteGroup({
+    handlers: {
+      discovery: (req, res) => {
+        res.json({
+          success: true,
+          data: createMentionReply({
+            botUsername: botUsername(),
+            chatType: req.query.chatType || 'group'
+          })
+        });
+      },
+      start: asyncRoute(async (req, res) => {
+        const data = await handleBotStartParam(req.body.startParam, req.body.telegramUser);
+        res.json({ success: true, data });
+      }),
+      webhook: asyncRoute(async (req, res) => {
+        if (!verifyTelegramWebhookSecret(req, res)) return;
+        const data = await handleTelegramWebhook(req.body, { botUsername: botUsername() });
+        res.json({ success: true, data });
+      }),
+      gameScore: asyncRoute(async (req, res) => {
+        const telegramUserId = req.user.telegramId;
+        if (!telegramUserId) {
+          res.status(400).json({ success: false, error: 'Telegram user id is required for game scores' });
+          return;
+        }
+        const result = await reportTelegramGameScore({
+          telegramUserId,
+          score: req.body.score,
+          chatId: req.body.chatId,
+          messageId: req.body.messageId,
+          inlineMessageId: req.body.inlineMessageId,
+          force: false,
+          disableEditMessage: Boolean(req.body.disableEditMessage)
+        });
+        res.json({ success: true, data: result });
       })
-    });
-  });
-
-  app.post(
-    '/api/bot/start',
-    asyncRoute(async (req, res) => {
-      const data = await handleBotStartParam(req.body.startParam, req.body.telegramUser);
-      res.json({ success: true, data });
-    })
-  );
-
-  app.post(
-    '/api/bot/webhook',
-    asyncRoute(async (req, res) => {
-      if (!verifyTelegramWebhookSecret(req, res)) return;
-      const data = await handleTelegramWebhook(req.body, { botUsername: botUsername() });
-      res.json({ success: true, data });
-    })
-  );
-
-  app.post(
-    '/api/bot/game-score',
-    requireAuth,
-    asyncRoute(async (req, res) => {
-      const telegramUserId = req.user.telegramId;
-      if (!telegramUserId) {
-        res.status(400).json({ success: false, error: 'Telegram user id is required for game scores' });
-        return;
-      }
-      const result = await reportTelegramGameScore({
-        telegramUserId,
-        score: req.body.score,
-        chatId: req.body.chatId,
-        messageId: req.body.messageId,
-        inlineMessageId: req.body.inlineMessageId,
-        force: false,
-        disableEditMessage: Boolean(req.body.disableEditMessage)
-      });
-      res.json({ success: true, data: result });
-    })
-  );
+    },
+    middleware: { auth: requireAuth }
+  })]);
 
   app.post(
     '/api/local-tests/battle-narration',

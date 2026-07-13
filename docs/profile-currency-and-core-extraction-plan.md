@@ -46,7 +46,7 @@
 > mounting.
 > The 2026-07-13 state after the settlement/ops extraction is: the
 > gameplay/profile/economy spine is core-backed through quarantined ports,
-> core release `9d66984` contains the latest ports including auth/session,
+> core release `7507580` contains the latest ports including auth/session,
 > bot-gateway, and wiki behavior, and the next server extraction queue is
 > **descriptor-backed route modules from `create-app.js`**,
 > alongside disjoint frontend slices.
@@ -667,8 +667,12 @@ Use this ordered queue before starting the next implementation pass:
    lexer/rendering, sections, gated section, generic progress thresholds, and
    locale summary projection are injected. Mushroom keeps wiki content and its
    legacy `mycelium` call sites while the core uses neutral `progressValue`.
-7. **Continue the remaining route/module split.** Extract coherent
-   descriptor-backed route groups from `create-app.js`.
+7. **First `create-app.js` route groups completed 2026-07-13.** Wiki and bot
+   endpoints now mount through core `createWikiRouteGroup()` and
+   `createBotRouteGroup()` descriptors. Mushroom injects handlers, auth,
+   webhook verification, progression lookup, and product services. Continue
+   with profile/wallet/assets, run/social, and admin route groups in bounded
+   slices; do not move Express/bootstrap order or provider raw-body policy.
    `social-preview-cache.js` is already a thin
    filesystem/render/log adapter over core `createSocialPreviewCacheService()`;
    do not duplicate it. Keep Express app creation, middleware order, webhook
