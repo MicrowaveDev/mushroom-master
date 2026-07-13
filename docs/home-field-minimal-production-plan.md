@@ -25,7 +25,7 @@ Use [`docs/home-field-imagegen-requirements.md`](home-field-imagegen-requirement
 As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field v1 after operator approval to continue the plan, with the character layer rolled back from approval:
 
 - grass uses the `flat-minimal` fallback as a stable simple field baseline;
-- scoped props/exits were produced under `.agent/home-field-workspace/candidates/object-layer/latest`, polished by `npm run game:home-field:polish-minimal-candidate`, and copied to `web/public/home-field`;
+- scoped props/exits were produced under `.agent/home-field-workspace/candidates/object-layer/latest`, polished by a completed one-time repair recorded in Git history, and copied to `web/public/home-field`;
 - `thalla` Stage 1 was produced under `.agent/home-field-workspace/candidates/chibi-active-roster/latest`, but the current tiny beige/pixel-sprite result is rejected by composed screenshot review because it does not match the agreed hand-drawn 2.5D chibi reference;
 - the runtime map now uses only approved grass/props/exits and removes path, edge, signpost, lantern, tall-mushroom, effect, and unapproved chibi references from the v1 composed scene;
 - path remains deferred as `needs_regen` because prior path-family candidates looked pasted onto grass;
@@ -33,7 +33,7 @@ As of 2026-05-27, the minimal grass-first scene has been promoted as Home Field 
 
 Thalla remains required for the final character-complete Home Field, but it is no longer approved for the current promoted active-scene scope. Do not use the current `web/public/home-field/characters/thalla/spritesheet.png` as a style reference except as a negative example.
 
-Full-registry `npm run game:home-field:validate-full-registry-production` is still expected to fail until Thalla, the remaining roster, and the deferred path/edge/effect/funny-foliage assets are generated and explicitly approved.
+Full-registry `npm run game:home-field:validate -- --profile=full-registry-production` is still expected to fail until Thalla, the remaining roster, and the deferred path/edge/effect/funny-foliage assets are generated and explicitly approved.
 
 ## Minimal Asset Scope
 
@@ -99,10 +99,10 @@ Use this as the operator checklist. The orchestrator owns sequencing and may run
    - Confirm `main`, clean tracked state, and `npm run game:home-field:validate`.
    - Start Prompt/Contract Reviewer before imagegen.
 2. Generate the terrain baseline.
-   - Grass/Path Worker generates grass first with `npm run game:home-field:rerun-grass-family`.
-   - Produce the grass candidate with `npm run game:home-field:produce-grass-family-candidate`.
-   - If `tight-center`, `lower-band`, and `upper-band` still show visible tile columns, use `npm run game:home-field:produce-grass-family-candidate -- --plan=unified-base`.
-   - If the shared source itself still creates broad bands or edge columns, use `npm run game:home-field:produce-grass-family-candidate -- --plan=flat-minimal` for a simpler production-safe field baseline before regenerating the raw source.
+   - Grass/Path Worker generates grass first with `npm run game:home-field:next -- --family=grass`.
+   - Produce the grass candidate with `npm run game:home-field:produce-family -- --family=grass --candidate`.
+   - If `tight-center`, `lower-band`, and `upper-band` still show visible tile columns, use `npm run game:home-field:produce-family -- --family=grass --candidate --plan=unified-base`.
+   - If the shared source itself still creates broad bands or edge columns, use `npm run game:home-field:produce-family -- --family=grass --candidate --plan=flat-minimal` for a simpler production-safe field baseline before regenerating the raw source.
    - Run a clean candidate preview. If grass shows square cells, fix grass before starting props/chibi.
 3. Decide whether path helps.
    - Generate path only after grass is usable.
@@ -115,7 +115,7 @@ Use this as the operator checklist. The orchestrator owns sequencing and may run
    - These may run in parallel after the grass baseline exists.
 5. Produce and validate candidates.
    - Producer/Validation Worker writes candidate PNGs, proof sheets, evidence manifests, and clean screenshots.
-   - Use `npm run game:home-field:combined-candidate-preview` as the primary scene proof.
+   - Use `npm run game:home-field:preview -- --scope=combined` as the primary scene proof.
 6. Visual review and stop.
    - Visual Critic reviews the composed mobile/desktop screenshots first.
    - Mark rows `needs_review` or `needs_regen` only. For deferred assets, keep `verdict: "needs_regen"`, `accepted: false`, and start `reason` with `Deferred:`. Never approve or set `accepted: true`.
@@ -166,16 +166,16 @@ Generates terrain raw sources only.
 
 Grass:
 
-- use `npm run game:home-field:rerun-grass-family`;
+- use `npm run game:home-field:next -- --family=grass`;
 - save one shared meadow source;
-- produce through `npm run game:home-field:produce-grass-family-candidate`;
+- produce through `npm run game:home-field:produce-family -- --family=grass --candidate`;
 - reject dense texture, square blocks, obvious grid rhythm, or flowers that become repeat markers.
 
 Path:
 
-- use `npm run game:home-field:rerun-path-family`;
+- use `npm run game:home-field:next -- --family=path`;
 - save one shared path source;
-- produce through `npm run game:home-field:produce-path-family-candidate`;
+- produce through `npm run game:home-field:produce-family -- --family=path --candidate`;
 - path is optional for v1 if it keeps looking pasted.
 
 Fast stop rule:
@@ -235,18 +235,18 @@ Runs only documented producer and proof commands.
 Required evidence:
 
 ```bash
-npm run game:home-field:candidate-preview
-npm run game:home-field:terrain-candidate-preview
-HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction npm run game:home-field:object-candidate-preview
-npm run game:home-field:chibi-candidate-preview
-npm run game:home-field:combined-candidate-preview
+npm run game:home-field:preview -- --scope=grass
+npm run game:home-field:preview -- --scope=terrain
+HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/object-layer/latest HOME_FIELD_CANDIDATE_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction npm run game:home-field:preview -- --scope=objects
+npm run game:home-field:preview -- --scope=chibi
+npm run game:home-field:preview -- --scope=combined
 ```
 
 For the full object/exit scope, use:
 
 ```bash
 OBJECT_IDS=bush_cluster_dark_01,bush_cluster_light_01,leaf_sprout_01,mushroom_cluster_small_amber,mushroom_cluster_small_violet,mushroom_cap_red_spotted,fallen_branch_mycelium,arena_mushroom_arch,journey_gate_under_construction
-npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 mushroom_cluster_small_amber mushroom_cluster_small_violet mushroom_cap_red_spotted fallen_branch_mycelium arena_mushroom_arch journey_gate_under_construction --resize --chroma-key=#ff00ff
+npm run game:home-field:produce -- --scope=objects --candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 mushroom_cluster_small_amber mushroom_cluster_small_violet mushroom_cap_red_spotted fallen_branch_mycelium arena_mushroom_arch journey_gate_under_construction --resize --chroma-key=#ff00ff
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:validate -- --ids=$OBJECT_IDS --check-files --check-alpha-halo --check-readability --check-runtime-readiness
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:mobile-readability-sheet -- --ids=$OBJECT_IDS
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/object-layer/latest npm run game:home-field:alpha-sheet -- --ids=$OBJECT_IDS
@@ -259,7 +259,7 @@ For Thalla Stage 1, the legacy manifest `sourcePath` is not enough. Use the grou
 npm run game:home-field:verify-chibi-proof-files -- --state-sheet
 npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize
 npm run game:home-field:verify-chibi-proof-files -- --frames
-npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff
+npm run game:home-field:produce -- --scope=chibi --candidate -- thalla --resize --chroma-key=#ff00ff
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-review
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-alpha-halo
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:validate -- --ids=thalla --check-files --check-readability
@@ -270,16 +270,12 @@ HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:mobile-readability-sheet -- --ids=thalla
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:alpha-sheet -- --ids=thalla
 HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence
-npm run game:home-field:chibi-candidate-preview
+npm run game:home-field:preview -- --scope=chibi
 ```
 
-For the completed minimal scene candidate, run the polish pass after producing object/chibi candidates:
+The former minimal-scene polish pass was a completed one-time repair and has been removed. New candidates must be regenerated through the scoped producer and reviewed directly rather than replaying that historical transform.
 
-```bash
-npm run game:home-field:polish-minimal-candidate
-```
-
-For the full composed scene, the default `npm run game:home-field:combined-candidate-preview` already routes the default latest grass, terrain, object-layer, and chibi candidate roots. If any worker uses non-default candidate folders, set `HOME_FIELD_CANDIDATE_ROOTS` and `HOME_FIELD_CANDIDATE_IDS` explicitly before running the combined preview.
+For the full composed scene, the default `npm run game:home-field:preview -- --scope=combined` already routes the default latest grass, terrain, object-layer, and chibi candidate roots. If any worker uses non-default candidate folders, set `HOME_FIELD_CANDIDATE_ROOTS` and `HOME_FIELD_CANDIDATE_IDS` explicitly before running the combined preview.
 
 Also run the relevant scoped validation commands:
 
@@ -346,7 +342,7 @@ Report contradictions or missing instructions only. Check candidate-only paths, 
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Grass/Path Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, and docs/home-field-agent-flow.md. Generate terrain candidates only under .agent/home-field-workspace. Start with grass only: run npm run game:home-field:rerun-grass-family, use imagegen for one shared meadow source, then run npm run game:home-field:produce-grass-family-candidate.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, and docs/home-field-agent-flow.md. Generate terrain candidates only under .agent/home-field-workspace. Start with grass only: run npm run game:home-field:next -- --family=grass, use imagegen for one shared meadow source, then run npm run game:home-field:produce-family -- --family=grass --candidate.
 
 After grass preview evidence exists, generate the shared-source path family only if it improves the composed field. If path looks pasted after two attempts, defer path by keeping path rows at verdict needs_regen, accepted false, with reason beginning Deferred:. Do not touch web/public/home-field, do not approve assets, and include links to raw source, candidate folder, and clean preview screenshots in your handoff.
 ```
@@ -376,7 +372,7 @@ Create a non-production sprite-box reference first, then one final grouped 8x4 s
 ```text
 In /Users/microwavedev/workspace/microwave-hub/mushroom-master, act as Producer/Validation Worker for the minimal Home Field production-candidate run.
 
-Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:combined-candidate-preview.
+Follow docs/home-field-minimal-production-plan.md, docs/home-field-imagegen-requirements.md, docs/home-field-agent-flow.md, and docs/home-field-runtime-asset-contract-plan.md. Convert raw outputs into candidate folders only, generate proof sheets, run scoped validators, and create evidence manifests. Required scene proof is npm run game:home-field:preview -- --scope=combined.
 
 Do not hand-edit PNGs, change contracts, overwrite web/public/home-field, or approve art. Final handoff must list candidate folder, evidence manifest, contact sheet, adjacency sheet, alpha/halo sheet, mobile-readability sheet, and mobile/desktop clean screenshots as clickable links.
 ```

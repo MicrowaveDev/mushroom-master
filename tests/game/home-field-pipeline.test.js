@@ -7,7 +7,7 @@ import { repoRoot } from '../../app/shared/repo-root.js';
 import { encodeDeterministicPng, readPngRgba, alphaStats, fileSha256 } from '../../app/scripts/lib/bitmap-image-toolkit.js';
 
 const scriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-assets.js');
-const grassFamilyScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-grass-family.js');
+const familyProducerScriptPath = path.join(repoRoot, 'app/scripts/produce-home-field-family.js');
 const grassFamilySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-grass-family-sheet.js');
 const alphaSheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-alpha-sheet.js');
 const mobileReadabilitySheetScriptPath = path.join(repoRoot, 'app/scripts/generate-home-field-mobile-readability-sheet.js');
@@ -22,7 +22,6 @@ const homeFieldImagegenRequirementsPath = path.join(repoRoot, 'docs/home-field-i
 const homeFieldAgentFlowPath = path.join(repoRoot, 'docs/home-field-agent-flow.md');
 const homeFieldChibiCandidateContractPath = path.join(repoRoot, 'docs/home-field-chibi-candidate-contract.md');
 const mushroomAgentsPath = path.join(repoRoot, 'AGENTS.md');
-const nextGrassFamilyScriptPath = path.join(repoRoot, 'app/scripts/next-home-field-grass-family-prompt.js');
 const claimImagegenOutputScriptPath = path.join(repoRoot, 'app/scripts/claim-home-field-imagegen-output.js');
 const archiveChibiProofScriptPath = path.join(repoRoot, 'app/scripts/archive-home-field-chibi-proof.js');
 const recoverChibiAlphaScriptPath = path.join(repoRoot, 'app/scripts/recover-home-field-chibi-alpha.js');
@@ -31,7 +30,6 @@ const chibiPreflightScriptPath = path.join(repoRoot, 'app/scripts/preflight-home
 const chibiReferenceApiProofScriptPath = path.join(repoRoot, 'app/scripts/run-home-field-chibi-reference-api-proof.js');
 const chibiStageLocalSourceScriptPath = path.join(repoRoot, 'app/scripts/stage-home-field-chibi-local-source.js');
 const chibiVerifyScriptPath = path.join(repoRoot, 'app/scripts/verify-home-field-chibi-proof-files.js');
-const chibiContextScriptPath = path.join(repoRoot, 'app/scripts/home-field-chibi-proof-context.js');
 const generationQueueScriptPath = path.join(repoRoot, 'app/scripts/print-home-field-generation-queue.js');
 const chibiSplitScriptPath = path.join(repoRoot, 'app/scripts/split-home-field-chibi-state-sheet.js');
 const paletteAuditScriptPath = path.join(repoRoot, 'app/scripts/audit-home-field-chibi-palette.js');
@@ -1292,7 +1290,8 @@ test('[home-field] grass-family producer crops three tiles from one shared meado
 
   try {
     const result = spawnSync(process.execPath, [
-      grassFamilyScriptPath,
+      familyProducerScriptPath,
+      '--family=grass',
       `--source=${sourcePath}`
     ], {
       cwd: repoRoot,
@@ -1338,7 +1337,8 @@ test('[home-field] grass-family producer supports alternate crop plans', () => {
 
   try {
     const result = spawnSync(process.execPath, [
-      grassFamilyScriptPath,
+      familyProducerScriptPath,
+      '--family=grass',
       `--source=${sourcePath}`,
       '--plan=lower-band'
     ], {
@@ -1439,7 +1439,7 @@ test('[home-field] object candidate rerun emits candidate-root producer and evid
   assert.match(result.stdout, /Generation mode: object-layer candidate root/);
   assert.match(result.stdout, /mushroom_cluster_small_violet \(prop\)/);
   assert.match(result.stdout, /Candidate output path .*candidates\/object-layer\/latest/);
-  assert.match(result.stdout, /npm run game:home-field:produce-object-candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff/);
+  assert.match(result.stdout, /npm run game:home-field:produce -- --scope=objects --candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff/);
   assert.match(result.stdout, /Home Field scale contract/);
   assert.match(result.stdout, /Runtime asset contract/);
   assert.match(result.stdout, /Generate for the final in-game footprint, not contact-sheet beauty/);
@@ -1449,7 +1449,7 @@ test('[home-field] object candidate rerun emits candidate-root producer and evid
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-alpha-halo/);
   assert.match(result.stdout, /HOME_FIELD_ASSET_ROOT=.*--check-runtime-readiness/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
-  assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet .*object-candidate-preview/);
+  assert.match(result.stdout, /HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet .*game:home-field:preview -- --scope=objects/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- mushroom_cluster_small_violet/);
 });
 
@@ -1475,12 +1475,12 @@ test('[home-field] path family rerun emits terrain candidate producer and adjace
   assert.match(result.stdout, /Runtime asset contract/);
   assert.match(result.stdout, /Terrain runtime role: this is walkable or blocking ground inside a tilemap/);
   assert.match(result.stdout, /composed mobile and desktop clean field screenshots/);
-  assert.match(result.stdout, /npm run game:home-field:produce-terrain-candidate -- path_dirt_straight --resize --crop-center/);
+  assert.match(result.stdout, /npm run game:home-field:produce -- --scope=terrain --candidate -- path_dirt_straight --resize --crop-center/);
   assert.match(result.stdout, /--check-files --check-connectors --check-review/);
   assert.match(result.stdout, /--check-files --check-edge-profiles/);
   assert.match(result.stdout, /game:home-field:adjacency/);
   assert.match(result.stdout, /game:home-field:candidate-evidence/);
-  assert.match(result.stdout, /terrain-candidate-preview/);
+  assert.match(result.stdout, /game:home-field:preview -- --scope=terrain/);
   assert.doesNotMatch(result.stdout, /npm run game:home-field:produce -- path_dirt_straight/);
 });
 
@@ -1518,7 +1518,7 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.doesNotMatch(result.stdout, /view_image/);
   assert.doesNotMatch(result.stdout, /image_gen/);
   assert.match(result.stdout, /npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof/);
-  assert.match(result.stdout, /this read-only `npm run game:home-field:next-chibi-proof` helper/);
+  assert.match(result.stdout, /generation queue is the workflow authority\. This command only renders the queue-selected prompt/);
   assert.match(result.stdout, /current sourceGate is blocked_reference_proxy_palette_audit_failed/);
   assert.match(result.stdout, /do not run `npm run game:home-field:preflight-chibi-proof -- --source=/);
   assert.doesNotMatch(result.stdout, /preflight the queue-owned local source with `npm run game:home-field:preflight-chibi-proof -- --source=/);
@@ -1579,7 +1579,7 @@ test('[home-field] chibi proof blocks failed local source before candidate comma
   assert.match(result.stdout, /BLOCKED STAGE 1 LOCAL-SOURCE PROOF/);
   assert.match(result.stdout, /current queue-supplied complete 8x4 local state-sheet source already failed a hard sourceGate/);
   assert.match(result.stdout, /game:home-field:stage-chibi-local-source/);
-  assert.match(result.stdout, /chibi-proof-context/);
+  assert.match(result.stdout, /game:home-field:generation-queue/);
   assert.doesNotMatch(result.stdout, /verify-chibi-proof-files -- --reference/);
   assert.doesNotMatch(result.stdout, /palette-audit -- .*thalla_chibi_turnaround\.reference\.png/);
   assert.doesNotMatch(result.stdout, /thalla-reference-palette-audit\.json/);
@@ -1867,7 +1867,7 @@ test('[home-field] chibi proof launcher carries explicit local-source workflow',
   assert.doesNotMatch(prompt, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
   assert.match(prompt, /Do not run reference imagegen for this local-source run/);
   assert.match(prompt, /styleReferences` for visual review only, not as active image inputs/);
-  assert.match(prompt, /still run the read-only `npm run game:home-field:next-chibi-proof` helper/);
+  assert.match(prompt, /still run the read-only `npm run game:home-field:next -- --preset=chibi-proof` helper/);
   assert.match(prompt, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
   assert.match(prompt, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
@@ -1983,67 +1983,6 @@ test('[home-field] repo agent instructions distinguish sourceGate blockers from 
   assert.match(agents, /missing fresh authored-source capability/);
   assert.match(agents, /Final handoff must clearly say whether production-ready PNGs were actually produced/);
   assert.match(agents, /a correct blocker report is not production readiness/);
-});
-
-test('[home-field] chibi proof context prints narrow paths and commands', () => {
-  const result = spawnSync(process.execPath, [chibiContextScriptPath], {
-    cwd: repoRoot,
-    encoding: 'utf8'
-  });
-
-  assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Thalla Home Field Chibi Proof Context/);
-  assert.match(result.stdout, /Blocked default path: supplied complete 8x4 local state-sheet source/);
-  assert.match(result.stdout, /sourcePath: .*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
-  assert.match(result.stdout, /sourceGate: blocked_reference_proxy_palette_audit_failed/);
-  assert.match(result.stdout, /blocked source sha256: 19eb3f1abc5bbaba1e88eb36c8ca308353f0e0d756528cbbddfc05430bb868fa/);
-  assert.match(result.stdout, /failed reference proxy sha256: 8eb95c9f5a96439affccd6795bfff846a6128bc631a02ccddeccfe04743a75ec/);
-  assert.match(result.stdout, /palette failure: significant exact 31\/20, minor 98, coarse32 significant 57/);
-  assert.match(result.stdout, /reference inputs: styleReferences for visual review only; not active imagegen inputs/);
-  assert.match(result.stdout, /fallback history: hidden by default; use --show-fallbacks/);
-  assert.doesNotMatch(result.stdout, /Built-in imagegen environment prefix/);
-  assert.doesNotMatch(result.stdout, /HOME_FIELD_BUILTIN_IMAGEGEN_CAN_SAVE=1 HOME_FIELD_BUILTIN_IMAGEGEN_CAN_USE_REFERENCES=1/);
-  assert.doesNotMatch(result.stdout, /OPENAI_IMAGEGEN_API_KEY/);
-  assert.doesNotMatch(result.stdout, /chibi-reference-api-proof -- --env-file=<explicit-env-file>/);
-  assert.doesNotMatch(result.stdout, /claim-imagegen-output/);
-  assert.doesNotMatch(result.stdout, /find-imagegen-output -- --since-minutes=5/);
-  assert.match(result.stdout, /generation-queue -- --id=thalla-stage1-chibi-proof/);
-  assert.match(result.stdout, /preflight-chibi-proof -- --source=.*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
-  assert.match(result.stdout, /archive-stale-chibi-proof -- thalla --source=.*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
-  assert.match(result.stdout, /stage-chibi-local-source -- --source=.*thalla_tetro_cleaned_2026-06-30\.states\.source\.png/);
-  assert.match(result.stdout, /next-chibi-proof  # read-only local-source prompt, paths, validation commands, and style references/);
-  assert.match(result.stdout, /raw frames: \d+\/32 present/);
-  assert.match(result.stdout, /state sheet:/);
-  assert.match(result.stdout, /Motion contract: idle bob and walk poses must exist in the grouped state sheet itself/);
-  assert.match(result.stdout, /Palette contract: state the plan before staging\/audit/);
-  assert.match(result.stdout, /palette-audit/);
-  assert.match(result.stdout, /thalla-reference-palette-audit\.json/);
-  assert.match(result.stdout, /thalla-state-sheet-palette-audit\.json/);
-  assert.match(result.stdout, /thalla-candidate-palette-audit\.json/);
-  assert.match(result.stdout, /thalla-reference-palette-swatch\.png --fail-on-bloat/);
-  assert.match(result.stdout, /thalla-state-sheet-palette-swatch\.png --fail-on-bloat/);
-  assert.match(result.stdout, /thalla-candidate-palette-swatch\.png --fail-on-bloat/);
-  assert.match(result.stdout, /styleCohesionCheck\/stageContractCheck/);
-  assert.match(result.stdout, /--check-runtime-readiness/);
-  assert.match(result.stdout, /game:home-field:candidate-evidence/);
-  assert.match(result.stdout, /Freshness warning: existing \.agent files are not proof of a fresh run/);
-  assert.match(result.stdout, /Style-reference warning: docs\/reference PNGs are style references only for visual review/);
-  assert.match(result.stdout, /local source PNGs must be proof sources/);
-  assert.match(result.stdout, /Local state-sheet source warning/);
-  assert.match(result.stdout, /verify\/audit the derived reference proxy and staged state sheet/);
-  assert.match(result.stdout, /Blocker reporting warning: if source preflight, archive, or staging blocks the run/);
-  assert.match(result.stdout, /Prompt issuance warning: this queue item is blocked for the current supplied source hash/);
-  assert.match(result.stdout, /do not rerun archive\/stage/);
-  assert.match(result.stdout, /until the sourcePath is replaced with a new authored source or a documented secondary repair method is explicitly adopted/);
-  assert.doesNotMatch(result.stdout, /HOME_FIELD_CHIBI_LOCAL_IMAGE_INPUTS/);
-  assert.match(result.stdout, /no split frames, candidate, preview, app overwrite, or fallback imagegen occurred/);
-  assert.match(result.stdout, /archive-stale-chibi-proof/);
-  assert.match(result.stdout, /recover-chibi-alpha/);
-  assert.match(result.stdout, /record-chibi-verdict/);
-  assert.match(result.stdout, /--reason-stdin/);
-  assert.match(result.stdout, /Runtime contract: raw source must be unclipped/);
-  assert.match(result.stdout, /Post-split processing may clean alpha\/chroma fringe, crop, and resize only/);
-  assert.match(result.stdout, /Shadow contract: no baked shadow/);
 });
 
 test('[home-field] chibi proof file verifier checks generated PNG paths', () => {
@@ -3705,7 +3644,7 @@ test('[home-field] field-context grass queue asks for larger meadow context and 
 });
 
 test('[home-field] grass-family queue emits one shared-source prompt and producer command', () => {
-  const result = spawnSync(process.execPath, [nextGrassFamilyScriptPath], {
+  const result = spawnSync(process.execPath, [nextScriptPath, '--family=grass'], {
     cwd: repoRoot,
     encoding: 'utf8'
   });
@@ -3713,7 +3652,7 @@ test('[home-field] grass-family queue emits one shared-source prompt and produce
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Generation mode: shared grass-family meadow source/);
   assert.match(result.stdout, /grass_family_meadow\.source\.png/);
-  assert.match(result.stdout, /npm run game:home-field:produce-grass-family-candidate/);
+  assert.match(result.stdout, /npm run game:home-field:produce-family -- --family=grass --candidate/);
   assert.match(result.stdout, /candidate game home-field bitmap/);
   assert.match(result.stdout, /--plan=lower-band/);
   assert.match(result.stdout, /Home Field scale contract/);

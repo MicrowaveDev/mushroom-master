@@ -1,68 +1,27 @@
 import path from 'node:path';
 import { buildSeasonImageEntries, repoRoot } from './season-sheet-helpers.js';
-import { checkProvenance, fileSha256 } from './lib/bitmap-image-toolkit.js';
-import fs from 'node:fs';
+import { checkImageDomainProvenance, metadataPathFromArgs } from './lib/image-domain-provenance.js';
 
-const defaultMetadataPath = path.join(repoRoot, 'app', 'shared', 'season-image-metadata.json');
-
-function parseArgs(argv) {
-  const metadataArg = argv.find((arg) => arg.startsWith('--metadata='));
-  return {
-    metadataPath: metadataArg ? path.resolve(metadataArg.slice('--metadata='.length)) : defaultMetadataPath
-  };
-}
-
-function main() {
-  const { metadataPath } = parseArgs(process.argv.slice(2));
-  const fail = (message) => {
-    console.error(message);
-    process.exitCode = 1;
-  };
-
-  // Season metadata may live in either web/public/season-ranks/ or
-  // web/public/achievements/, so we relax the prefix check and verify
-  // the path manually below.
-  if (!fs.existsSync(metadataPath)) {
-    throw new Error(`Missing season image metadata: ${path.relative(repoRoot, metadataPath)}`);
-  }
-  const raw = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-  const allowedPrefixes = ['web/public/season-ranks/', 'web/public/achievements/'];
-  const expectedEntries = buildSeasonImageEntries();
-
-  const { entries } = checkProvenance({
-    metadataPath,
-    // Pass any allowed prefix; we'll re-check below for the full set.
-    allowedOutputPrefix: '',
-    promptIncludes: 'Use the imagegen skill to create a production game season bitmap.',
-    fail
-  });
-
-  for (const entry of entries) {
-    if (!allowedPrefixes.some((prefix) => entry.outputPath?.startsWith(prefix))) {
-      fail(`${entry.id}: outputPath must start with one of ${allowedPrefixes.join(' / ')}`);
-    }
-    if (!entry.entry?.kind || !entry.entry?.type) {
-      fail(`${entry.id}: missing entry.kind / entry.type snapshot`);
-    }
-  }
-
-  const approvedIds = new Set(entries.map((entry) => entry.id));
-  for (const expected of expectedEntries) {
-    if (!approvedIds.has(expected.id)) {
-      fail(`${expected.id}: missing approved provenance entry for ${path.relative(repoRoot, expected.outputPath)}`);
-    }
-  }
-
-  const expectedIds = new Set(expectedEntries.map((entry) => entry.id));
-  for (const entry of entries) {
-    if (!expectedIds.has(entry.id)) {
-      fail(`${entry.id}: approved provenance entry no longer exists in season image source list`);
-    }
-  }
-
-  if (!process.exitCode) {
-    console.log(`OK season image provenance: ${entries.length}/${expectedEntries.length} approved entries`);
-  }
-}
-
-main();
+const metadataPath = metadataPathFromArgs(
+  process.argv.slice(2),
+  path.join(repoRoot, 'app', 'shared', 'season-image-metadata.json')
+);
+const expectedEntries = buildSeasonImageEntries();
+const allowedPrefixes = ['web/public/season-ranks/', 'web/public/achievements/'];
+const fail = (message) => {
+  console.error(message);
+  process.exitCode = 1;
+};
+const entries = checkImageDomainProvenance({
+  metadataPath,
+  promptIncludes: 'Use the imagegen skill to create a production game season bitmap.',
+  expectedEntries,
+  onFailure: fail,
+  validateEntry: (entry) => [
+    ...(!allowedPrefixes.some((prefix) => entry.outputPath?.startsWith(prefix))
+      ? [`outputPath must start with one of ${allowedPrefixes.join(' / ')}`]
+      : []),
+    ...(!entry.entry?.kind || !entry.entry?.type ? ['missing entry.kind / entry.type snapshot'] : [])
+  ]
+});
+if (!process.exitCode) console.log(`OK season image provenance: ${entries.length}/${expectedEntries.length} approved entries`);

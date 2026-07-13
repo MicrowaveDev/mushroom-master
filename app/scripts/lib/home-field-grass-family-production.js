@@ -9,16 +9,22 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   encodeDeterministicPng,
   fileSha256,
   readPngAsRgba
-} from './lib/bitmap-image-toolkit.js';
-import { validateAssets } from '../shared/home-field/home-field-validator.js';
+} from './bitmap-image-toolkit.js';
+import { repoRoot } from '../../shared/repo-root.js';
+import { validateAssets } from '../../shared/home-field/home-field-validator.js';
+import {
+  allHomeFieldEntries as allEntries,
+  cropNormalizedSquare,
+  ensureDir,
+  loadJson,
+  quietTerrainContrast,
+  resizeRgba
+} from './home-field-family-production.js';
 
-const scriptPath = fileURLToPath(import.meta.url);
-const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
 const ASSETS_PATH = process.env.HOME_FIELD_ASSETS_PATH
   ? path.resolve(process.env.HOME_FIELD_ASSETS_PATH)
@@ -162,14 +168,6 @@ const CROP_PLANS = {
   }
 };
 
-function loadJson(p) {
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
-}
-
-function ensureDir(p) {
-  fs.mkdirSync(p, { recursive: true });
-}
-
 function parseArgs(argv) {
   const args = {
     source: DEFAULT_SOURCE,
@@ -194,72 +192,6 @@ function parseArgs(argv) {
     throw new Error(`Unknown --plan="${args.plan}". Valid plans: ${Object.keys(CROP_PLANS).join(', ')}`);
   }
   return args;
-}
-
-function resizeRgba(srcImage, dstWidth, dstHeight) {
-  const { width: sw, height: sh, rgba: src } = srcImage;
-  const dst = Buffer.alloc(dstWidth * dstHeight * 4);
-  const xRatio = sw / dstWidth;
-  const yRatio = sh / dstHeight;
-  if (sw < dstWidth || sh < dstHeight) {
-    for (let y = 0; y < dstHeight; y += 1) {
-      const sy = Math.min(sh - 1, Math.floor(y * yRatio));
-      for (let x = 0; x < dstWidth; x += 1) {
-        const sx = Math.min(sw - 1, Math.floor(x * xRatio));
-        const si = (sy * sw + sx) * 4;
-        const di = (y * dstWidth + x) * 4;
-        dst[di + 0] = src[si + 0];
-        dst[di + 1] = src[si + 1];
-        dst[di + 2] = src[si + 2];
-        dst[di + 3] = src[si + 3];
-      }
-    }
-    return { width: dstWidth, height: dstHeight, rgba: dst };
-  }
-
-  for (let y = 0; y < dstHeight; y += 1) {
-    const sy0 = Math.floor(y * yRatio);
-    const sy1 = Math.min(sh, Math.ceil((y + 1) * yRatio));
-    for (let x = 0; x < dstWidth; x += 1) {
-      const sx0 = Math.floor(x * xRatio);
-      const sx1 = Math.min(sw, Math.ceil((x + 1) * xRatio));
-      let r = 0, g = 0, b = 0, a = 0, n = 0;
-      for (let yy = sy0; yy < sy1; yy += 1) {
-        for (let xx = sx0; xx < sx1; xx += 1) {
-          const si = (yy * sw + xx) * 4;
-          r += src[si + 0];
-          g += src[si + 1];
-          b += src[si + 2];
-          a += src[si + 3];
-          n += 1;
-        }
-      }
-      const di = (y * dstWidth + x) * 4;
-      dst[di + 0] = Math.round(r / n);
-      dst[di + 1] = Math.round(g / n);
-      dst[di + 2] = Math.round(b / n);
-      dst[di + 3] = Math.round(a / n);
-    }
-  }
-  return { width: dstWidth, height: dstHeight, rgba: dst };
-}
-
-function cropNormalizedSquare(srcImage, crop) {
-  const cropSize = Math.max(1, Math.floor(Math.min(srcImage.width, srcImage.height) * crop.ratio));
-  const centerX = Math.round(srcImage.width * crop.center.x);
-  const centerY = Math.round(srcImage.height * crop.center.y);
-  const startX = Math.max(0, Math.min(srcImage.width - cropSize, centerX - Math.floor(cropSize / 2)));
-  const startY = Math.max(0, Math.min(srcImage.height - cropSize, centerY - Math.floor(cropSize / 2)));
-  const rgba = Buffer.alloc(cropSize * cropSize * 4);
-  for (let y = 0; y < cropSize; y += 1) {
-    const srcOff = ((startY + y) * srcImage.width + startX) * 4;
-    const dstOff = y * cropSize * 4;
-    srcImage.rgba.copy(rgba, dstOff, srcOff, srcOff + cropSize * 4);
-  }
-  return {
-    image: { width: cropSize, height: cropSize, rgba },
-    rect: { x: startX, y: startY, width: cropSize, height: cropSize }
-  };
 }
 
 function smootherstep(t) {
@@ -292,24 +224,6 @@ function makeTerrainSeamless(image, margin = 48) {
     }
   }
   return { width, height, rgba };
-}
-
-function quietTerrainContrast(image, amount) {
-  let r = 0, g = 0, b = 0;
-  const count = image.width * image.height;
-  for (let i = 0; i < image.rgba.length; i += 4) {
-    r += image.rgba[i + 0];
-    g += image.rgba[i + 1];
-    b += image.rgba[i + 2];
-  }
-  const avg = [r / count, g / count, b / count];
-  const rgba = Buffer.from(image.rgba);
-  for (let i = 0; i < rgba.length; i += 4) {
-    rgba[i + 0] = Math.round(rgba[i + 0] * (1 - amount) + avg[0] * amount);
-    rgba[i + 1] = Math.round(rgba[i + 1] * (1 - amount) + avg[1] * amount);
-    rgba[i + 2] = Math.round(rgba[i + 2] * (1 - amount) + avg[2] * amount);
-  }
-  return { width: image.width, height: image.height, rgba };
 }
 
 function averageRgb(image) {
@@ -471,25 +385,13 @@ function normalizeFamilyAverages(items) {
   });
 }
 
-function allEntries(assetsDoc) {
-  return [
-    ...assetsDoc.assets,
-    ...(assetsDoc.characters || []).map((c) => ({
-      ...c,
-      type: 'character',
-      width: c.spritesheet.width,
-      height: c.spritesheet.height
-    }))
-  ];
-}
-
-function main() {
+export function produceGrassFamily(argv = process.argv.slice(2)) {
   let args;
   try {
-    args = parseArgs(process.argv.slice(2));
+    args = parseArgs(argv);
   } catch (err) {
     console.error(err.message);
-    console.error('Usage: produce-home-field-grass-family.js [--source=.agent/home-field-workspace/raw/grass_family_meadow.source.png] [--plan=tight-center|lower-band|upper-band] [--candidate] [--no-seamless]');
+    console.error('Usage: npm run game:home-field:produce-family -- --family=grass [--source=.agent/home-field-workspace/raw/grass_family_meadow.source.png] [--plan=tight-center|lower-band|upper-band] [--candidate] [--no-seamless]');
     process.exit(1);
   }
 
@@ -593,7 +495,7 @@ function main() {
   console.log('');
   if (args.candidate) {
     const env = `HOME_FIELD_ASSET_ROOT=${path.relative(repoRoot, candidateDir)}`;
-    console.log(`Next: review the candidate with \`${env} npm run game:home-field:validate -- --ids=${FAMILY_IDS.join(',')} --check-files --check-connectors --check-review\`, \`${env} npm run game:home-field:sheet\`, \`${env} npm run game:home-field:grass-family-sheet\`, \`${env} npm run game:home-field:adjacency\`, and \`npm run game:home-field:candidate-preview\`.`);
+    console.log(`Next: review the candidate with \`${env} npm run game:home-field:validate -- --ids=${FAMILY_IDS.join(',')} --check-files --check-connectors --check-review\`, \`${env} npm run game:home-field:sheet\`, \`${env} npm run game:home-field:grass-family-sheet\`, \`${env} npm run game:home-field:adjacency\`, and \`npm run game:home-field:preview -- --scope=grass\`.`);
     console.log(`Finder folder: ${candidateDir}`);
     console.log(`Final-response link: Candidate folder: [open in Finder](${candidateDir})`);
     console.log(`Final-response link: Candidate field mobile: [mobile field screenshot](${path.join(workspace, 'review', 'home-field-candidate-mobile-clean.png')})`);
@@ -602,5 +504,3 @@ function main() {
     console.log('Next: `npm run game:home-field:validate -- --check-files --check-connectors --check-review`, `npm run game:home-field:sheet`, and `npm run game:home-field:adjacency`.');
   }
 }
-
-main();

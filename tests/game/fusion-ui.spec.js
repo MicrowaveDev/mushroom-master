@@ -120,7 +120,7 @@ test('[Req 11-F] sidebar recipes screen lists fusion artifacts', async ({ page, 
   await expect(page.locator('[data-artifact-group="fusion"] .artifact-piece[data-artifact-id="golden_thorn_aegis"]')).toBeVisible();
 
   const selectedDetail = page.locator('[data-testid="artifact-catalog-detail"]');
-  await expect(selectedDetail).toHaveCSS('display', 'none');
+  await expect(selectedDetail).toHaveCount(0);
   await page.locator('[data-artifact-group="fusion"] .artifact-piece[data-artifact-id="portal_cut_sickle"]').click();
   await expect(page.locator('[data-testid="artifact-catalog-detail"][data-artifact-id="portal_cut_sickle"]')).toBeVisible();
   await expect(page.locator('[data-testid="artifact-catalog-detail"]')).not.toContainText(/description coming later|описание появится позже/i);

@@ -20,19 +20,19 @@ Machine-readable verdicts live in [home-field-asset-review.json](home-field-asse
 Start with terrain only. Do not generate props, exits, effects, or chibi until the green field reads as a cohesive production scene in the clean preview.
 
 ```bash
-npm run game:home-field:next-tiles
+npm run game:home-field:next -- --preset=terrain-grass
 ```
 
 That command is the gated first-pass queue. If any existing candidate is still `needs_review`, it blocks until the review manifest is resolved. For the next intentional grass-family rerun, use the shared-source queue:
 
 ```bash
-npm run game:home-field:rerun-grass-family
+npm run game:home-field:next -- --family=grass
 ```
 
 The shared-source rerun command emits one prompt for a single meadow source. Save it to `.agent/home-field-workspace/raw/grass_family_meadow.source.png`, then run:
 
 ```bash
-npm run game:home-field:produce-grass-family
+npm run game:home-field:produce-family -- --family=grass --candidate
 ```
 
 This produces the current grass-family candidates whose review verdict is `needs_review` or `needs_regen`:
@@ -50,7 +50,7 @@ npm run game:home-field:adjacency
 npx playwright test --config=tests/game/playwright.config.js tests/game/home-field-preview.spec.js --reporter=line
 ```
 
-Use `npm run game:home-field:next-tiles-all` only after the grass-family stop gate is accepted.
+Use `npm run game:home-field:next -- --preset=terrain-production` only after the grass-family stop gate is accepted.
 
 ## Approval Rules
 

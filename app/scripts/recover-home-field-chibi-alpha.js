@@ -70,8 +70,10 @@ function tryTolerance(id, chromaKey, tolerance) {
     && run('verify frames', 'npm', ['run', 'game:home-field:verify-chibi-proof-files', '--', '--frames'])
     && run('produce candidate', 'npm', [
       'run',
-      'game:home-field:produce-chibi-candidate',
+      'game:home-field:produce',
       '--',
+      '--scope=chibi',
+      '--candidate',
       id,
       '--resize',
       `--chroma-key=${chromaKey}`

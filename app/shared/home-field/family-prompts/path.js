@@ -7,49 +7,15 @@
  * that source so the family shares camera, palette, brushwork, and path band.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const scriptPath = fileURLToPath(import.meta.url);
-const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
-const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
-const STYLE_ANCHOR_PATH = path.join(sharedDir, 'home-field-style-anchor.json');
+import { repoRoot } from '../../repo-root.js';
+import { formatHomeFieldStyleAnchor, loadHomeFieldStyleAnchor } from '../home-field-family-config.js';
 const PROMPT_MARKER = 'Use the imagegen skill to create a candidate game home-field bitmap; do not approve or overwrite app assets.';
 const FAMILY_IDS = ['path_h_end_w', 'path_dirt_straight', 'path_spore_glow', 'path_h_end_e', 'path_destination_row'];
 const IDS = FAMILY_IDS.join(',');
 const candidateRoot = '.agent/home-field-workspace/candidates/terrain-family/latest';
 
-function loadJson(p) {
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
-}
-
-function styleAnchorBlock(anchor) {
-  const s = anchor.style;
-  const rej = anchor.rejections.map((r) => `- ${r}`).join('\n');
-  return [
-    '## Style anchor',
-    `World: ${s.world}`,
-    `Palette: primary=${s.palette.primary}; accents=${s.palette.accents}; shadows=${s.palette.shadows}`,
-    `Lighting: ${s.lighting}`,
-    `Outline: ${s.outline}`,
-    `Shape language: ${s.shapeLanguage}`,
-    `Texture/rendering: ${s.texture}`,
-    `Terrain reference: ${s.terrainReference}`,
-    `Production bar: ${s.productionBar}`,
-    `Scene fit: ${s.sceneFit}`,
-    `Chibi fit: ${s.chibiFit}`,
-    `Shadow style: ${s.shadowStyle}`,
-    `Ambient: ${s.ambient}`,
-    `Scale and camera: ${s.scale}`,
-    '',
-    'Hard rejections:',
-    rej
-  ].join('\n');
-}
-
-function main() {
-  const anchor = loadJson(STYLE_ANCHOR_PATH);
+export function printPathFamilyPrompt() {
+  const anchor = loadHomeFieldStyleAnchor();
   console.log('# Home Field — Path Family Imagegen Prompt');
   console.log('');
   console.log(`Workspace root: ${repoRoot}`);
@@ -60,7 +26,7 @@ function main() {
   console.log('  .agent/home-field-workspace/raw/path_family_strip.source.png');
   console.log('');
   console.log('After saving the raw source, run:');
-  console.log('  npm run game:home-field:produce-path-family-candidate');
+  console.log('  npm run game:home-field:produce-family -- --family=path --candidate');
   console.log('');
   console.log('Then run the family-level proof commands:');
   console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${IDS} --check-files --check-connectors --check-review`);
@@ -68,8 +34,8 @@ function main() {
   console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:sheet`);
   console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:adjacency`);
   console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${IDS} npm run game:home-field:candidate-evidence`);
-  console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${IDS} npm run game:home-field:terrain-candidate-preview`);
-  console.log('  npm run game:home-field:combined-candidate-preview');
+  console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${IDS} npm run game:home-field:preview -- --scope=terrain`);
+  console.log('  npm run game:home-field:preview -- --scope=combined');
   console.log('Do not overwrite web/public/home-field/terrain/ until explicit human approval. Candidate preview screenshots use Playwright route interception and are safe before promotion.');
   console.log('');
   console.log('---');
@@ -102,7 +68,7 @@ function main() {
   console.log('- The destination landing must share the same grass/dirt palette but remain grass-compatible on every edge.');
   console.log('- The cropped tiles must blend with the current Home Field grass in mobile and desktop clean previews. If the candidate appears as visible square patches pasted onto the field, it fails even when validators pass.');
   console.log('');
-  console.log(styleAnchorBlock(anchor));
+  console.log(formatHomeFieldStyleAnchor(anchor));
   console.log('');
   console.log('## Save and report');
   console.log('Save only one raw PNG to .agent/home-field-workspace/raw/path_family_strip.source.png. Do not save separate per-tile raw PNGs for this path run.');
@@ -114,5 +80,3 @@ function main() {
   console.log(`Candidate field desktop: [desktop field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)`);
   console.log('Visual Critic must wait for final evidence for the latest raw hash before editing review rows. Do not mark cleanPreviewCheck pass if square tile boundaries are visible.');
 }
-
-main();

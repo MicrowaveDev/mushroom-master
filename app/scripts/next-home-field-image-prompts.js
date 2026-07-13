@@ -21,6 +21,8 @@
  *   --chibi-candidate   print chibi candidate producer guidance instead of app-facing producer guidance
  *   --terrain-candidate print terrain candidate producer guidance instead of app-facing producer guidance
  *   --show-fallbacks    include inactive fallback prompt blocks for fallback tooling
+ *   --family=<name>     print a coordinated family prompt (grass | path)
+ *   --preset=<name>     expand a documented prompt preset
  *
  * Mirrors the artifact and season-image pipelines (next-artifact-image-prompts.js,
  * next-season-image-prompts.js). The PROMPT_MARKER line is the recognised handshake
@@ -30,6 +32,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { printGrassFamilyPrompt } from '../shared/home-field/family-prompts/grass.js';
+import { printPathFamilyPrompt } from '../shared/home-field/family-prompts/path.js';
+import { requireHomeFieldFamily } from '../shared/home-field/home-field-family-config.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
@@ -571,10 +576,10 @@ function formatAssetPrompt({ asset, promptEntry, anchor, idx, total, fieldContex
       lines.push(`  printf '%s\\n' '<visual-critic reason>' | npm run game:home-field:record-chibi-verdict -- ${asset.id} --verdict=needs_regen --reason-stdin`);
     }
     const previewCommand = chibiCandidate
-      ? 'game:home-field:chibi-candidate-preview'
+      ? 'game:home-field:preview -- --scope=chibi'
       : terrainCandidate
-        ? 'game:home-field:terrain-candidate-preview'
-        : 'game:home-field:object-candidate-preview';
+        ? 'game:home-field:preview -- --scope=terrain'
+        : 'game:home-field:preview -- --scope=objects';
     lines.push(`  HOME_FIELD_CANDIDATE_IDS=${asset.id} HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} npm run ${previewCommand}`);
   } else {
     lines.push('  npm run game:home-field:validate -- --check-files --check-connectors --check-review');
@@ -647,11 +652,11 @@ function recommendedProduceCommand(asset, { fieldContext = false, objectCandidat
   const canUseChibiCandidate = chibiCandidate && asset.type === 'character';
   const canUseTerrainCandidate = terrainCandidate && asset.type === 'terrain';
   const base = canUseObjectCandidate
-    ? `npm run game:home-field:produce-object-candidate -- ${asset.id}`
+    ? `npm run game:home-field:produce -- --scope=objects --candidate -- ${asset.id}`
     : canUseChibiCandidate
-      ? `npm run game:home-field:produce-chibi-candidate -- ${asset.id}`
+      ? `npm run game:home-field:produce -- --scope=chibi --candidate -- ${asset.id}`
       : canUseTerrainCandidate
-        ? `npm run game:home-field:produce-terrain-candidate -- ${asset.id}`
+        ? `npm run game:home-field:produce -- --scope=terrain --candidate -- ${asset.id}`
         : `npm run game:home-field:produce -- ${asset.id}`;
   if (asset.type === 'terrain') {
     const placement = asset.tile?.placement || '';
@@ -730,8 +735,34 @@ function parseBatchFlag(argv) {
   return { name, ids: BATCHES[name] };
 }
 
+const PRESETS = Object.freeze({
+  'terrain-grass': ['--batch=terrain-grass', '--review-verdict=needs_regen', '--all'],
+  'grass-review': ['--batch=terrain-grass', '--review-verdict=needs_review,needs_regen', '--all', '--ignore-review-gate'],
+  'grass-field': ['--batch=terrain-grass', '--review-verdict=needs_review,needs_regen', '--all', '--ignore-review-gate', '--field-context'],
+  'terrain-edge': ['--batch=terrain-edge', '--review-verdict=needs_review,needs_regen', '--include-existing', '--ignore-review-gate', '--all', '--terrain-candidate'],
+  'scene-props': ['--id=mushroom_cluster_small_violet', '--include-existing', '--ignore-review-gate', '--all', '--object-candidate'],
+  'chibi-proof': ['--type=character', '--id=thalla', '--include-existing', '--ignore-review-gate', '--all', '--chibi-candidate'],
+  'terrain-production': ['--batch=terrain-production', '--review-verdict=needs_regen', '--all']
+});
+
+function expandPreset(argv) {
+  const presetArg = argv.find((arg) => arg.startsWith('--preset='));
+  if (!presetArg) return argv;
+  const preset = presetArg.slice('--preset='.length);
+  if (!PRESETS[preset]) throw new Error(`Unknown Home Field preset "${preset}". Expected: ${Object.keys(PRESETS).join(', ')}`);
+  return [...argv.filter((arg) => arg !== presetArg), ...PRESETS[preset]];
+}
+
 function main() {
-  const argv = process.argv.slice(2);
+  const initialArgv = process.argv.slice(2);
+  const family = initialArgv.find((arg) => arg.startsWith('--family='))?.slice('--family='.length);
+  if (family) {
+    requireHomeFieldFamily(family);
+    if (family === 'grass') printGrassFamilyPrompt();
+    else printPathFamilyPrompt();
+    return;
+  }
+  const argv = expandPreset(initialArgv);
   const limit = parseLimit(argv);
   const all = hasFlag(argv, 'all');
   const typeFilter = parseListFlag(argv, 'type');
@@ -822,11 +853,11 @@ function main() {
     const localArchive = localSource?.archiveCommand || 'npm run game:home-field:archive-stale-chibi-proof -- thalla --source=<png>';
     const localStage = localSource?.stageCommand || 'npm run game:home-field:stage-chibi-local-source -- --source=<png>';
     if (chibiSourceBlocked) {
-      console.log(`  0. Run \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof\`, \`npm run game:home-field:chibi-proof-context\`, and this read-only \`npm run game:home-field:next-chibi-proof\` helper. The current sourceGate is ${sourceGate?.status || '<missing>'} for sourcePath ${sourcePath}; do not run \`${localPreflight}\`, \`${localArchive}\`, or \`${localStage}\` for that same source hash.`);
+      console.log(`  0. The generation queue is the workflow authority. This command only renders the queue-selected prompt. The current sourceGate is ${sourceGate?.status || '<missing>'} for sourcePath ${sourcePath}; do not run \`${localPreflight}\`, \`${localArchive}\`, or \`${localStage}\` for that same source hash.`);
       console.log('  1. Use the prompt block below only as next-source requirements. If the user asked for another production-ready run, give only the queue-only launcher from sourceGateRecovery.copyablePrompt and have the runner use the printed queue SourceGate recovery production attempt results. Continue only after replacing the queue sourcePath with a new authored complete 8x4 local state sheet. Use repair only as a secondary evidence-backed candidate-repair method.');
       console.log('  2. Do not infer .env, do not retry the exhausted built-in imagegen path, do not use paid API fallback, and do not split, produce a candidate, generate evidence, preview, record a verdict, run imagegen, or overwrite app-facing PNGs while the sourceGate is blocked.');
     } else {
-      console.log(`  0. Run \`npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof\`, \`npm run game:home-field:chibi-proof-context\`, this read-only \`npm run game:home-field:next-chibi-proof\` helper, then preflight the queue-owned local source with \`${localPreflight}\`. The current default path is supplied local-source mode: sourcePath ${sourcePath}, then the queue-printed --source archive/stage commands. Do not infer .env, do not retry the exhausted built-in imagegen path, and do not use paid API fallback in this default run.`);
+      console.log(`  0. The generation queue is the workflow authority. This command only renders the queue-selected prompt. Preflight the queue-owned local source with \`${localPreflight}\`; sourcePath ${sourcePath}. Follow only the queue-printed archive/stage commands.`);
       console.log('  1. Read the prompt block below; use the checked-in reference PNGs as styleReferences for visual review only in local-source mode, not as active imagegen inputs.');
       console.log(`  2. After source preflight passes, run \`${localArchive}\`, then \`${localStage}\`; this stages the supplied 8x4 state sheet and derives the non-production reference proxy. Stop if any source, archive, or staging gate fails.`);
       console.log('  3. Run the reference-proxy verifier/palette audit and state-sheet verifier/palette audit. Then split, verify frames, produce the candidate, verify the candidate, run candidate palette audit, evidence, preview, and record the verdict.');
@@ -845,13 +876,13 @@ function main() {
     console.log('  3. Save raw output to the listed sourcePath under .agent/home-field-workspace/raw/.');
   }
   if (terrainCandidate) {
-    console.log('  4. Run `npm run game:home-field:produce-terrain-candidate -- <id>` to crop, resize, and write the candidate terrain PNG.');
+    console.log('  4. Run `npm run game:home-field:produce -- --scope=terrain --candidate -- <id>` to crop, resize, and write the candidate terrain PNG.');
   } else if (objectCandidate) {
-    console.log('  4. Run `npm run game:home-field:produce-object-candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
+    console.log('  4. Run `npm run game:home-field:produce -- --scope=objects --candidate -- <id>` to crop, chroma-key, and write the candidate PNG.');
   } else if (chibiCandidate && chibiSourceBlocked) {
     // The blocked chibi source already printed its stop rule above.
   } else if (chibiCandidate) {
-    console.log('  7. Run `npm run game:home-field:produce-chibi-candidate -- <id>` to compose frames and write the candidate spritesheet.');
+    console.log('  7. Run `npm run game:home-field:produce -- --scope=chibi --candidate -- <id>` to compose frames and write the candidate spritesheet.');
   } else {
     console.log('  4. Run `npm run game:home-field:produce -- <id>` to crop, chroma-key, and write the app-facing PNG.');
   }
@@ -887,13 +918,13 @@ function main() {
     const candidateRoot = '.agent/home-field-workspace/candidates/terrain-family/latest';
     console.log('');
     console.log('Family-level proof commands for this terrain batch:');
-    console.log(`  npm run game:home-field:produce-terrain-candidate -- ${slice.map((asset) => asset.id).join(' ')} --resize --crop-center`);
+    console.log(`  npm run game:home-field:produce -- --scope=terrain --candidate -- ${slice.map((asset) => asset.id).join(' ')} --resize --crop-center`);
     console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${familyIds} --check-files --check-connectors --check-review`);
     console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:validate -- --ids=${familyIds} --check-files --check-edge-profiles --check-family-cohesion`);
     console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:sheet`);
     console.log(`  HOME_FIELD_ASSET_ROOT=${candidateRoot} npm run game:home-field:adjacency`);
     console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${familyIds} npm run game:home-field:candidate-evidence`);
-    console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${familyIds} npm run game:home-field:terrain-candidate-preview`);
+    console.log(`  HOME_FIELD_CANDIDATE_ROOT=${candidateRoot} HOME_FIELD_CANDIDATE_IDS=${familyIds} npm run game:home-field:preview -- --scope=terrain`);
     console.log('Per-asset commands below are fallback diagnostics; use the family-level commands for batch review.');
   }
 

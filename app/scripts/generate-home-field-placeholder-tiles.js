@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Generate deterministic proof terrain cells and top-down object props for the
- * home-field tilemap.
+ * Generate deterministic placeholder terrain cells and top-down object props
+ * for layout and loading proofs. This command never writes app-facing assets
+ * and its output is never eligible for production approval.
  *
  * Terrain is intentionally quiet and tile-first. Bush masses and sprouts are
  * transparent object-layer props so the field can keep painterly foliage without
@@ -396,6 +397,16 @@ function main() {
     else if (id === 'leaf_sprout_01') writeTile(id, makeLeafSprout());
     else throw new Error(`Unknown proof tile id "${id}". Supported: ${PROOF_IDS.join(', ')}`);
   }
+  fs.writeFileSync(
+    path.join(outputDir, 'placeholder-manifest.json'),
+    `${JSON.stringify({
+      status: 'placeholder',
+      productionEligible: false,
+      generatedIds: ids,
+      outputRoot: path.relative(repoRoot, outputDir)
+    }, null, 2)}\n`
+  );
+  console.log('placeholder-only output: never promote these files as approved production art');
 }
 
 main();

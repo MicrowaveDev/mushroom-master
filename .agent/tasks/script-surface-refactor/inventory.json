@@ -1,0 +1,714 @@
+{
+  "capturedAt": "2026-07-13",
+  "packageScriptCount": 99,
+  "homeFieldAliasCount": 48,
+  "scripts": [
+    {
+      "path": "app/scripts/archive-home-field-chibi-proof.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:archive-stale-chibi-proof"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/archive-season.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:season:archive"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/artifact-sheet-helpers.js",
+      "classification": "internal-reusable-module",
+      "aliases": [],
+      "references": [
+        "app/scripts/check-artifact-image-provenance.js",
+        "app/scripts/generate-artifact-contact-sheet.js",
+        "app/scripts/generate-artifact-image-metadata.js",
+        "app/scripts/generate-artifact-thumbnail-review.js",
+        "app/scripts/season-sheet-helpers.js"
+      ]
+    },
+    {
+      "path": "app/scripts/audit-home-field-chibi-palette.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:home-field:palette-audit"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/audit-wallet-balances.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:wallet:audit"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/check-artifact-image-provenance.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:artifacts:provenance:check"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/check-backpack-game-core-submodule.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:core:check"
+      ],
+      "references": [
+        "tests/game/core-submodule.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/check-fusion-catalog.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:fusions:check"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/check-season-image-provenance.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:season:provenance:check"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/claim-home-field-imagegen-output.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:claim-imagegen-output"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/expire-wallet-purchase-intents.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:wallet:expire-intents"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/find-codex-generated-images.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:home-field:find-imagegen-output"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/generate-artifact-bitmaps.js",
+      "classification": "historical-or-deprecated",
+      "aliases": [
+        "game:artifacts:generate"
+      ],
+      "references": [
+        "docs/artifact-bitmap-todolist.md",
+        "docs/artifact-image-system-improvement-plan.md",
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-artifact-contact-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:sheet"
+      ],
+      "references": [
+        "docs/artifact-image-system-improvement-plan.md",
+        "docs/artifact-visual-classification.md"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-artifact-image-metadata.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:provenance:generate"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/generate-artifact-thumbnail-review.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:thumbnail-review"
+      ],
+      "references": [
+        "docs/artifact-image-system-improvement-plan.md",
+        "docs/artifact-visual-classification.md"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-home-field-adjacency-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:adjacency"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/generate-home-field-alpha-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:alpha-sheet"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-home-field-candidate-evidence.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:candidate-evidence"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-home-field-contact-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:sheet"
+      ],
+      "references": [
+        "docs/home-field-ingame-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-home-field-grass-family-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:grass-family-sheet"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-home-field-mobile-readability-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:mobile-readability-sheet"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-home-field-proof-tiles.js",
+      "classification": "placeholder-or-proof-only",
+      "aliases": [
+        "game:home-field:proof-tiles"
+      ],
+      "references": [
+        "docs/home-field-generation-retrospective.md",
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/generate-season-contact-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:season:sheet"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/generate-season-image-metadata.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:season:provenance:generate"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/generate-social-preview.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:social-preview"
+      ],
+      "references": [
+        "app/server/social-preview-cache.js"
+      ]
+    },
+    {
+      "path": "app/scripts/home-field-chibi-proof-context.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:home-field:chibi-proof-context"
+      ],
+      "references": [
+        "docs/home-field-chibi-regression-ledger.md",
+        "docs/script-surface-refactor-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/home-field-status.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:home-field:status"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/import-provider-settlement.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:wallet:import-settlement"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/inspect-season-ranks.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:season:inspect"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/lib/bitmap-image-toolkit.js",
+      "classification": "internal-reusable-module",
+      "aliases": [],
+      "references": [
+        "AGENTS.md",
+        "app/scripts/archive-home-field-chibi-proof.js",
+        "app/scripts/artifact-sheet-helpers.js",
+        "app/scripts/audit-home-field-chibi-palette.js",
+        "app/scripts/check-artifact-image-provenance.js",
+        "app/scripts/check-season-image-provenance.js",
+        "app/scripts/claim-home-field-imagegen-output.js",
+        "app/scripts/generate-artifact-contact-sheet.js",
+        "app/scripts/generate-artifact-image-metadata.js",
+        "app/scripts/generate-home-field-adjacency-sheet.js",
+        "app/scripts/generate-home-field-alpha-sheet.js",
+        "app/scripts/generate-home-field-candidate-evidence.js",
+        "app/scripts/generate-home-field-contact-sheet.js",
+        "app/scripts/generate-home-field-grass-family-sheet.js",
+        "app/scripts/generate-home-field-mobile-readability-sheet.js",
+        "app/scripts/generate-home-field-proof-tiles.js",
+        "app/scripts/generate-season-contact-sheet.js",
+        "app/scripts/generate-season-image-metadata.js",
+        "app/scripts/normalize-artifact-detail.js",
+        "app/scripts/polish-home-field-minimal-candidate.js",
+        "app/scripts/preflight-home-field-chibi-proof.js",
+        "app/scripts/produce-artifact-bitmaps.js",
+        "app/scripts/produce-home-field-assets.js",
+        "app/scripts/produce-home-field-grass-family.js",
+        "app/scripts/produce-home-field-path-family.js",
+        "app/scripts/run-home-field-chibi-reference-api-proof.js",
+        "app/scripts/season-sheet-helpers.js",
+        "app/scripts/split-home-field-chibi-state-sheet.js",
+        "app/scripts/stage-home-field-chibi-local-source.js",
+        "app/scripts/validate-artifact-image-coverage.js",
+        "app/scripts/validate-home-field-assets.js",
+        "app/scripts/validate-season-image-coverage.js",
+        "app/scripts/verify-home-field-chibi-proof-files.js",
+        "app/shared/home-field/home-field-validator.js",
+        "docs/home-field-ingame-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/next-artifact-image-prompts.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:next"
+      ],
+      "references": [
+        "app/scripts/generate-artifact-image-metadata.js",
+        "app/scripts/next-home-field-image-prompts.js",
+        "docs/artifact-image-system-improvement-plan.md",
+        "docs/artifact-visual-classification.md"
+      ]
+    },
+    {
+      "path": "app/scripts/next-home-field-grass-family-prompt.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:rerun-grass-family"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/next-home-field-image-prompts.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:next",
+        "game:home-field:next-tiles",
+        "game:home-field:rerun-grass",
+        "game:home-field:rerun-grass-field",
+        "game:home-field:rerun-edge-family",
+        "game:home-field:rerun-scene-props",
+        "game:home-field:next-chibi-proof",
+        "game:home-field:next-tiles-all"
+      ],
+      "references": [
+        "docs/home-field-ingame-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/next-home-field-path-family-prompt.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:rerun-path-family"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/next-season-image-prompts.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:season:next"
+      ],
+      "references": [
+        "app/scripts/generate-season-image-metadata.js",
+        "app/scripts/next-home-field-image-prompts.js"
+      ]
+    },
+    {
+      "path": "app/scripts/normalize-artifact-detail.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:normalize-detail"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/polish-home-field-minimal-candidate.js",
+      "classification": "historical-or-deprecated",
+      "aliases": [
+        "game:home-field:polish-minimal-candidate"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/preflight-home-field-chibi-proof.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:home-field:preflight-chibi-proof"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/print-home-field-generation-queue.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:generation-queue"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/produce-artifact-bitmaps.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:produce"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/produce-home-field-assets.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:produce",
+        "game:home-field:produce-object-candidate",
+        "game:home-field:produce-chibi-candidate",
+        "game:home-field:produce-terrain-candidate"
+      ],
+      "references": [
+        "app/scripts/split-home-field-chibi-state-sheet.js",
+        "app/shared/home-field/home-field-prompts.json",
+        "docs/home-field-generation-retrospective.md",
+        "docs/home-field-ingame-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/produce-home-field-grass-family.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:produce-grass-family",
+        "game:home-field:produce-grass-family-candidate"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/produce-home-field-path-family.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:produce-path-family",
+        "game:home-field:produce-path-family-candidate"
+      ],
+      "references": [
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/recalculate-season-progress.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:season:recalculate"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/reconcile-wallet-payments.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:wallet:reconcile"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/record-home-field-chibi-verdict.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:record-chibi-verdict"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/recover-home-field-chibi-alpha.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:recover-chibi-alpha"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/restart-production-server.sh",
+      "classification": "deployment-command",
+      "aliases": [],
+      "references": []
+    },
+    {
+      "path": "app/scripts/run-artifact-release-check.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:release-check"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/run-game-e2e.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:test:e2e"
+      ],
+      "references": [
+        "analysis-and-fix-plan.md",
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/run-game-screenshot-check.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:test:screens",
+        "game:test:screens:debug"
+      ],
+      "references": [
+        "analysis-and-fix-plan.md",
+        "app/scripts/run-game-e2e.js",
+        "docs/script-surface-refactor-plan.md"
+      ]
+    },
+    {
+      "path": "app/scripts/run-home-field-chibi-reference-api-proof.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:chibi-reference-api-proof"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/run-wallet-ops-checks.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:wallet:ops-check"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/season-sheet-helpers.js",
+      "classification": "internal-reusable-module",
+      "aliases": [],
+      "references": [
+        "app/scripts/check-season-image-provenance.js",
+        "app/scripts/generate-season-contact-sheet.js",
+        "app/scripts/generate-season-image-metadata.js",
+        "app/scripts/next-season-image-prompts.js",
+        "app/scripts/validate-season-image-coverage.js"
+      ]
+    },
+    {
+      "path": "app/scripts/setup-docker-production.sh",
+      "classification": "deployment-command",
+      "aliases": [],
+      "references": [
+        "docs/telegram-production-readiness.md"
+      ]
+    },
+    {
+      "path": "app/scripts/setup-nginx-production.sh",
+      "classification": "deployment-command",
+      "aliases": [],
+      "references": [
+        "docs/telegram-production-readiness.md"
+      ]
+    },
+    {
+      "path": "app/scripts/simulate-asset-pack-odds.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:gacha:simulate"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/split-home-field-chibi-state-sheet.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:split-chibi-state-sheet"
+      ],
+      "references": [
+        "docs/home-field-chibi-regression-ledger.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/stage-home-field-chibi-local-source.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:stage-chibi-local-source"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/start-game-dev.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:start"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/summarize-season-rank-analytics.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:season:analytics"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/support-money-action.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:support:money-action"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/support-money-lookup.js",
+      "classification": "operational-or-admin-command",
+      "aliases": [
+        "game:support:money-lookup"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/update-production-server.sh",
+      "classification": "deployment-command",
+      "aliases": [],
+      "references": [
+        "docs/telegram-production-readiness.md"
+      ]
+    },
+    {
+      "path": "app/scripts/validate-artifact-image-coverage.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:artifacts:validate"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/validate-home-field-assets.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:home-field:validate",
+        "game:home-field:validate-minimal-production",
+        "game:home-field:validate-full-registry-production"
+      ],
+      "references": [
+        "app/shared/home-field/home-field-validator.js",
+        "docs/home-field-ingame-plan.md",
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    },
+    {
+      "path": "app/scripts/validate-season-image-coverage.js",
+      "classification": "public-workflow-command",
+      "aliases": [
+        "game:season:validate"
+      ],
+      "references": []
+    },
+    {
+      "path": "app/scripts/verify-home-field-chibi-proof-files.js",
+      "classification": "diagnostic-or-gate-command",
+      "aliases": [
+        "game:home-field:verify-chibi-proof-files"
+      ],
+      "references": [
+        "tests/game/home-field-pipeline.test.js"
+      ]
+    }
+  ]
+}

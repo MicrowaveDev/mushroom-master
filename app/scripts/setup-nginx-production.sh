@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${PROJECT_ROOT}/app/scripts/lib/production-server.sh"
+
 DOMAIN="mushroombattles.com"
 INCLUDE_WWW=1
 SITE_NAME="mushroom-battles"
@@ -53,15 +56,6 @@ First-time TLS flow:
   2. sudo certbot certonly --webroot -w /var/www/certbot -d mushroombattles.com -d www.mushroombattles.com
   3. sudo app/scripts/setup-nginx-production.sh --install --tls on
 EOF
-}
-
-die() {
-  echo "error: $*" >&2
-  exit 1
-}
-
-need_arg() {
-  [[ $# -ge 2 && -n "${2:-}" ]] || die "$1 requires a value"
 }
 
 while [[ $# -gt 0 ]]; do

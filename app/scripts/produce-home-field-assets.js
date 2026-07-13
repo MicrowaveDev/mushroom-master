@@ -61,6 +61,7 @@ function parseArgs(argv) {
   let seamlessTerrain = false;
   let cropCenter = null;
   let quietTerrain = null;
+  let scope = null;
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') help = true;
     else if (arg === '--all-missing') allMissing = true;
@@ -68,6 +69,19 @@ function parseArgs(argv) {
     else if (arg.startsWith('--candidate-root=')) {
       candidate = true;
       candidateRoot = path.resolve(repoRoot, arg.slice('--candidate-root='.length));
+    }
+    else if (arg.startsWith('--scope=')) {
+      scope = arg.slice('--scope='.length);
+      const roots = {
+        objects: 'object-layer',
+        chibi: 'chibi-active-roster',
+        terrain: 'terrain-family'
+      };
+      if (!roots[scope]) {
+        throw new Error(`--scope must be one of ${Object.keys(roots).join('|')}`);
+      }
+      candidate = true;
+      candidateRoot = path.join(workspace, 'candidates', roots[scope], 'latest');
     }
     else if (arg === '--resize') resize = 'lanczos';
     else if (arg === '--resize-nearest') resize = 'nearest';
@@ -85,12 +99,13 @@ function parseArgs(argv) {
   if (quietTerrain !== null && (!Number.isFinite(quietTerrain) || quietTerrain < 0 || quietTerrain > 1)) {
     throw new Error('--quiet-terrain must be a number in the range [0, 1]');
   }
-  return { ids, help, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain };
+  return { ids, help, chromaKey, allMissing, candidate, candidateRoot, resize, seamlessTerrain, cropCenter, quietTerrain, scope };
 }
 
 function printUsage(stream = console.error) {
   stream('Usage: produce-home-field-assets.js <asset_id...> | --all-missing');
   stream('  Options:');
+  stream('    --scope=objects|chibi|terrain  write to the matching candidate workspace');
   stream('    --help                 print this help and exit');
   stream('    --chroma-key=#ff00ff   strip a flat key color from imagegen output before alpha check');
   stream('    --candidate             write under .agent/home-field-workspace/candidates/object-layer/latest instead of web/public');

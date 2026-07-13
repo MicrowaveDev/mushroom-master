@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${PROJECT_ROOT}/app/scripts/lib/production-server.sh"
 ENV_FILE="${PROJECT_ROOT}/.env"
 COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.production.yml"
 SERVICE="app"
@@ -33,35 +34,6 @@ Options:
   --logs                Follow app logs after restart
   -h, --help            Show this help.
 EOF
-}
-
-die() {
-  echo "error: $*" >&2
-  exit 1
-}
-
-need_arg() {
-  [[ $# -ge 2 && -n "${2:-}" ]] || die "$1 requires a value"
-}
-
-resolve_path() {
-  local base="$1"
-  local value="$2"
-  if [[ "$value" = /* ]]; then
-    printf '%s\n' "$value"
-  else
-    printf '%s\n' "${base}/${value}"
-  fi
-}
-
-compose_cmd() {
-  if docker compose version >/dev/null 2>&1; then
-    printf 'docker compose'
-  elif command -v docker-compose >/dev/null 2>&1; then
-    printf 'docker-compose'
-  else
-    return 1
-  fi
 }
 
 while [[ $# -gt 0 ]]; do

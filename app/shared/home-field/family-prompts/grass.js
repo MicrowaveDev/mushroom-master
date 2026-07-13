@@ -7,46 +7,12 @@
  * the family shares lighting, brushwork, and value range.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const scriptPath = fileURLToPath(import.meta.url);
-const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..');
-const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
-const STYLE_ANCHOR_PATH = path.join(sharedDir, 'home-field-style-anchor.json');
+import { repoRoot } from '../../repo-root.js';
+import { formatHomeFieldStyleAnchor, loadHomeFieldStyleAnchor } from '../home-field-family-config.js';
 const PROMPT_MARKER = 'Use the imagegen skill to create a candidate game home-field bitmap; do not approve or overwrite app assets.';
 
-function loadJson(p) {
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
-}
-
-function styleAnchorBlock(anchor) {
-  const s = anchor.style;
-  const rej = anchor.rejections.map((r) => `- ${r}`).join('\n');
-  return [
-    '## Style anchor',
-    `World: ${s.world}`,
-    `Palette: primary=${s.palette.primary}; accents=${s.palette.accents}; shadows=${s.palette.shadows}`,
-    `Lighting: ${s.lighting}`,
-    `Outline: ${s.outline}`,
-    `Shape language: ${s.shapeLanguage}`,
-    `Texture/rendering: ${s.texture}`,
-    `Terrain reference: ${s.terrainReference}`,
-    `Production bar: ${s.productionBar}`,
-    `Scene fit: ${s.sceneFit}`,
-    `Chibi fit: ${s.chibiFit}`,
-    `Shadow style: ${s.shadowStyle}`,
-    `Ambient: ${s.ambient}`,
-    `Scale and camera: ${s.scale}`,
-    '',
-    'Hard rejections:',
-    rej
-  ].join('\n');
-}
-
-function main() {
-  const anchor = loadJson(STYLE_ANCHOR_PATH);
+export function printGrassFamilyPrompt() {
+  const anchor = loadHomeFieldStyleAnchor();
   console.log('# Home Field — Grass Family Imagegen Prompt');
   console.log('');
   console.log(`Workspace root: ${repoRoot}`);
@@ -57,17 +23,17 @@ function main() {
   console.log('  .agent/home-field-workspace/raw/grass_family_meadow.source.png');
   console.log('');
   console.log('After saving the raw source, run:');
-  console.log('  npm run game:home-field:produce-grass-family-candidate');
+  console.log('  npm run game:home-field:produce-family -- --family=grass --candidate');
   console.log('If the focused sheet still shows blocky value transitions, rerun the same raw source with at most these fallbacks before review:');
-  console.log('  npm run game:home-field:produce-grass-family-candidate -- --plan=lower-band');
-  console.log('  npm run game:home-field:produce-grass-family-candidate -- --plan=upper-band');
+  console.log('  npm run game:home-field:produce-family -- --family=grass --candidate --plan=lower-band');
+  console.log('  npm run game:home-field:produce-family -- --family=grass --candidate --plan=upper-band');
   console.log('');
   console.log('Then run:');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:validate -- --ids=grass_base_01,grass_base_02,grass_flowers_01 --check-files --check-connectors --check-review');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet');
   console.log('  HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency');
-  console.log('  npm run game:home-field:candidate-preview');
+  console.log('  npm run game:home-field:preview -- --scope=grass');
   console.log('Do not overwrite web/public/home-field/terrain/ until explicit human approval. Candidate preview screenshots use Playwright route interception and are safe before promotion.');
   console.log('');
   console.log('---');
@@ -98,7 +64,7 @@ function main() {
   console.log('- The source should look calm and slightly boring alone, but cohesive when the three crops are tiled together.');
   console.log('- Flowers must be tiny and sparse; object-layer props carry most foliage personality later.');
   console.log('');
-  console.log(styleAnchorBlock(anchor));
+  console.log(formatHomeFieldStyleAnchor(anchor));
   console.log('');
   console.log('## Save and report');
   console.log('Save only one raw PNG to .agent/home-field-workspace/raw/grass_family_meadow.source.png. Do not save separate per-tile raw PNGs for this grass run.');
@@ -107,5 +73,3 @@ function main() {
   console.log(`Candidate field mobile: [mobile field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-mobile-clean.png)`);
   console.log(`Candidate field desktop: [desktop field screenshot](${repoRoot}/.agent/home-field-workspace/review/home-field-candidate-desktop-clean.png)`);
 }
-
-main();

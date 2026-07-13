@@ -1,0 +1,48 @@
+{
+  "task": "script-surface-refactor",
+  "date": "2026-07-13",
+  "verdict": "pass",
+  "counts": {
+    "packageScriptsBefore": 99,
+    "packageScriptsAfter": 76,
+    "homeFieldAliasesBefore": 48,
+    "homeFieldAliasesAfter": 25,
+    "nodeTestsPassed": 645,
+    "focusedTestsPassed": 71,
+    "playwrightPassed": 48,
+    "playwrightSkipped": 1,
+    "artifactImagesValidated": 131,
+    "seasonImagesValidated": 31
+  },
+  "acceptanceCriteria": {
+    "AC1": "pass",
+    "AC2": "pass",
+    "AC3": "pass",
+    "AC4": "pass",
+    "AC5": "pass",
+    "AC6": "pass",
+    "AC7": "pass",
+    "AC8": "pass",
+    "AC9": "pass",
+    "AC10": "pass",
+    "AC11": "pass",
+    "AC12": "pass",
+    "AC13": "pass",
+    "AC14": "pass",
+    "AC15": "pass",
+    "AC16": "pass"
+  },
+  "logs": [
+    "raw/focused-verification.log",
+    "raw/game-test.log",
+    "raw/domain-gates.log",
+    "raw/metadata-generation.log",
+    "raw/game-build.log",
+    "raw/game-e2e-final.log",
+    "raw/e2e-fusion-rerun-fixed.log",
+    "raw/game-e2e.log",
+    "raw/e2e-fusion-rerun.log",
+    "raw/syntax-shell.log",
+    "raw/final-hygiene.log"
+  ]
+}

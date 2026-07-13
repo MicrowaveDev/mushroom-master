@@ -24,8 +24,8 @@ Owns the run. It may edit only after a validation or review stage says what need
 
 - confirm the repo is `mushroom-master` on clean `main`;
 - run `npm run game:home-field:validate`;
-- run `npm run game:home-field:rerun-grass-family`;
-- after imagegen saves the one shared meadow source, run `npm run game:home-field:produce-grass-family`;
+- run `npm run game:home-field:next -- --family=grass`;
+- after imagegen saves the one shared meadow source, run `npm run game:home-field:produce-family -- --family=grass --candidate`;
 - assign or perform the stages below;
 - stop after the grass batch is committed and pushed.
 
@@ -39,7 +39,7 @@ Read-only role. It may read:
 - `app/shared/home-field/home-field-assets.json`
 - `app/shared/home-field/home-field-prompts.json`
 - `app/shared/home-field/home-field-style-anchor.json`
-- output from `npm run game:home-field:rerun-grass-family`
+- output from `npm run game:home-field:next -- --family=grass`
 
 It must confirm:
 
@@ -55,7 +55,7 @@ It must not generate images, edit files, or approve art.
 
 Generation-only role. It may write only raw files under `.agent/home-field-workspace/raw/`.
 
-Use the single prompt emitted by `npm run game:home-field:rerun-grass-family`, then save the raw PNG exactly to `.agent/home-field-workspace/raw/grass_family_meadow.source.png`.
+Use the single prompt emitted by `npm run game:home-field:next -- --family=grass`, then save the raw PNG exactly to `.agent/home-field-workspace/raw/grass_family_meadow.source.png`.
 
 This run uses shared grass-family generation. Do not ask for isolated square textures or separate per-tile raw PNGs. Generate one larger continuous 3x2 or 4x3 meadow patch whose crop regions can become `grass_base_01`, `grass_base_02`, and `grass_flowers_01` with matching lighting, brushwork, and value range. Reject candidates with columns, rows, diagonal mottling, repeated stamp clusters, hard value bands, edge lighting, visible square blocks, or visibly different zones.
 
@@ -127,9 +127,9 @@ Do not set `"verdict": "approved"` or `"accepted": true` unless the human explic
 2. `git status --short --branch`
 3. If the tree is not clean on `main`, stop and report.
 4. `npm run game:home-field:validate`
-5. `npm run game:home-field:rerun-grass-family`
+5. `npm run game:home-field:next -- --family=grass`
 6. Generate only the one shared meadow raw PNG printed by that command.
-7. Run `npm run game:home-field:produce-grass-family`.
+7. Run `npm run game:home-field:produce-family -- --family=grass --candidate`.
    If the default crop plan still creates blocky value transitions, try only `--plan=lower-band` and `--plan=upper-band` from the same raw source before visual review.
 8. Run the validation and review commands from the Producer/Validation Worker section.
 9. Update `docs/home-field-asset-review.json` for only the three grass rows.

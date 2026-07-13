@@ -1,5 +1,21 @@
 # Script Surface Refactor Plan
 
+## Implementation Status
+
+Completed on 2026-07-13. The implementation reduced the Home Field surface from
+48 aliases to 25, removed obsolete artifact/minimal-repair scripts, consolidated
+family production, prompt presets, previews, validation status, and Playwright
+runners, and added shared provenance, normalization, and deployment helpers.
+
+The supported command contract now lives in
+[`app/scripts/README.md`](../app/scripts/README.md) and
+[`app/scripts/command-manifest.json`](../app/scripts/command-manifest.json).
+`npm run scripts:docs:check` verifies package coverage, compatibility metadata,
+README commands, links, and the Home Field alias budget. The only compatibility
+alias retained is `game:home-field:status`, scheduled for removal after
+2026-07-27. Verification evidence is recorded under
+`.agent/tasks/script-surface-refactor/`.
+
 ## Source Of Truth
 
 Refactor `app/scripts`, remove deprecated tooling, merge redundant implementations,
@@ -27,10 +43,11 @@ and simplify the command surface without losing valid operational workflows.
 - Existing queue, validation, review, and operational workflows remain covered by
   tests.
 
-### Open Ambiguity
+### Compatibility Decision
 
-The exact compatibility window for deprecated aliases can be selected during
-implementation. One release or two weeks is the recommended default.
+The implementation uses a two-week compatibility window. The retained
+`game:home-field:status` alias identifies its canonical replacement and
+2026-07-27 removal date in the command manifest.
 
 ## Phase 1: Lock Current Behavior
 

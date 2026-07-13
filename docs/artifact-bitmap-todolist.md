@@ -340,4 +340,4 @@ The queue below is kept as workflow scaffolding for `npm run game:artifacts:next
 ## Notes
 
 - `docs/artifact-art-direction.md` has the cell-by-cell composition notes.
-- `app/scripts/generate-artifact-bitmaps.js` is now only useful for local mask/reference previews. It should not be used for production art unless we intentionally want placeholder assets again.
+- The former `app/scripts/generate-artifact-bitmaps.js` placeholder generator was removed. Production work starts with `npm run game:artifacts:next` and processes supplied sources with `npm run game:artifacts:produce -- <ids>`.

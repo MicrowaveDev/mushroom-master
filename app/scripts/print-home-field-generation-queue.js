@@ -329,7 +329,7 @@ function validateQueue(queue) {
       issues.push(`${item.id}: agentInstructions must mention ${item.promptSource.runDoc}`);
     }
     if (!item.commands?.preflight) issues.push(`${item.id}: missing preflight command`);
-    if (!item.commands?.scopedPrompt) issues.push(`${item.id}: missing scoped prompt command`);
+    if (!item.commands?.promptRenderer) issues.push(`${item.id}: missing prompt renderer command`);
 
     if (activeLocalSource) {
       if (isBlockedStatus(item.status) && !sourceGateBlocked) {
@@ -568,8 +568,7 @@ function printCommands(item) {
     ? 'Commands after sourceGate is cleared (do not run for the blocked source hash):'
     : 'Required commands:');
   for (const key of [
-    'context',
-    'scopedPrompt',
+    'promptRenderer',
     'preflight',
     'archiveStale',
     'stageLocalSource',

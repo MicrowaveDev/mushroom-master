@@ -168,10 +168,10 @@ function ensurePython(opts, env) {
 }
 
 function extractReferencePrompt() {
-  const result = run('npm', ['run', 'game:home-field:next-chibi-proof', '--', '--show-fallbacks'], { capture: true });
+  const result = run('npm', ['run', 'game:home-field:next', '--', '--preset=chibi-proof', '--show-fallbacks'], { capture: true });
   const match = result.stdout.match(/## Copyable Sprite-Box Reference Prompt[\s\S]*?```text\n([\s\S]*?)\n```/);
   if (!match) {
-    throw new Error('Could not extract Copyable Sprite-Box Reference Prompt from next-chibi-proof --show-fallbacks output');
+    throw new Error('Could not extract Copyable Sprite-Box Reference Prompt from the queue-owned chibi prompt renderer');
   }
   return match[1].trimEnd();
 }

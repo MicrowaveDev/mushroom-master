@@ -1,21 +1,16 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { artifacts } from '../server/game-data.js';
 import { artifactVisualClassification } from '../shared/artifact-visual-classification.js';
 import { artifactTodoDescriptions, promptForArtifact } from './next-artifact-image-prompts.js';
 import { artifactImagePath, repoRoot } from './artifact-sheet-helpers.js';
-import { readPngHeader, metadataEntriesHash } from './lib/bitmap-image-toolkit.js';
+import {
+  approvedImageMetadataEntry,
+  outputPathFromArgs,
+  writeImageMetadataBundle
+} from './lib/image-domain-metadata.js';
 
 const defaultOutPath = path.join(repoRoot, 'app', 'shared', 'artifact-image-metadata.json');
-const readPngInfo = readPngHeader;
 const approvedAt = '2026-05-09';
-
-function parseArgs(argv) {
-  const outArg = argv.find((arg) => arg.startsWith('--out='));
-  return {
-    outPath: outArg ? path.resolve(outArg.slice('--out='.length)) : defaultOutPath
-  };
-}
 
 function stableArtifactSnapshot(artifact) {
   return {
@@ -84,56 +79,45 @@ function validationSnapshot(artifact, pngInfo) {
 
 function buildEntry(artifact, spec) {
   const filePath = artifactImagePath(artifact);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Missing approved artifact PNG: ${path.relative(repoRoot, filePath)}`);
-  }
-  const pngInfo = readPngInfo(filePath);
   const visual = artifactVisualClassification(artifact);
-  const outputPath = path.relative(repoRoot, filePath);
-  return {
+  return approvedImageMetadataEntry({
     id: artifact.id,
-    status: 'approved',
-    outputPath,
-    png: pngInfo,
-    artifact: stableArtifactSnapshot(artifact),
-    visualClassification: stableVisualSnapshot(visual),
+    absoluteOutputPath: filePath,
+    repoRoot,
+    snapshotKey: 'artifact',
+    snapshot: stableArtifactSnapshot(artifact),
+    extra: { visualClassification: stableVisualSnapshot(visual) },
     prompt: promptForArtifact(artifact, spec),
-    validation: validationSnapshot(artifact, pngInfo),
+    validation: (pngInfo) => validationSnapshot(artifact, pngInfo),
     review: {
       decision: 'approved',
       decidedAt: approvedAt,
       reviewer: 'user',
       note: 'Production-ready artifact bitmap baseline approved after local generation, contact-sheet review, thumbnail review, and coverage validation.'
-    },
-    candidates: []
-  };
+    }
+  });
 }
 
-const metadataHash = metadataEntriesHash;
-
 function main() {
-  const { outPath } = parseArgs(process.argv.slice(2));
+  const outPath = outputPathFromArgs(process.argv.slice(2), defaultOutPath);
   const descriptions = artifactTodoDescriptions();
   const entries = artifacts
     .filter((artifact) => !artifact.isCharacter)
     .map((artifact) => buildEntry(artifact, descriptions.get(artifact.id)));
-  const metadata = {
-    schemaVersion: 1,
+  writeImageMetadataBundle({
+    outPath,
+    repoRoot,
     generatedAt: approvedAt,
-    status: 'approved-production-baseline',
     policy: {
       runtimeUsesApprovedOnly: true,
       temporaryCandidatesLocation: '.agent/artifact-image-workspace/',
       productionImageLocation: 'web/public/artifacts/'
     },
-    artifactCount: entries.length,
-    metadataHash: metadataHash(entries),
-    artifacts: entries
-  };
-
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, `${JSON.stringify(metadata, null, 2)}\n`);
-  console.log(`generated ${path.relative(repoRoot, outPath)} with ${entries.length} approved artifacts`);
+    entries,
+    entriesKey: 'artifacts',
+    countKey: 'artifactCount',
+    label: 'artifacts'
+  });
 }
 
 main();

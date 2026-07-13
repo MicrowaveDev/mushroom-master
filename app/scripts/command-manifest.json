@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "homeFieldAliasLimit": 25,
+  "families": [
+    {
+      "id": "lore-maintenance",
+      "lifecycle": "operational",
+      "mutation": "data",
+      "commands": ["fetch", "regenerate", "update-text-message", "set-message-hashtags", "set-ocr-hashtags", "clear-message-hashtags", "backfill-posted-message-ids", "rebuild-ocr-reposts", "clean-text-duplicates", "analyze:lore-prompt", "analyze:pdf-structure", "audit:untagged"]
+    },
+    {
+      "id": "game-runtime",
+      "lifecycle": "canonical",
+      "mutation": "runtime",
+      "commands": ["game:start", "game:start:backend", "game:build", "game:core:check", "game:fusions:check", "game:social-preview"]
+    },
+    {
+      "id": "artifact-images",
+      "lifecycle": "canonical",
+      "mutation": "mixed",
+      "commands": ["game:artifacts:next", "game:artifacts:produce", "game:artifacts:release-check", "game:artifacts:sheet", "game:artifacts:thumbnail-review", "game:artifacts:normalize-detail", "game:artifacts:provenance:generate", "game:artifacts:provenance:check", "game:artifacts:validate"]
+    },
+    {
+      "id": "season",
+      "lifecycle": "canonical",
+      "mutation": "mixed",
+      "commands": ["game:season:next", "game:season:sheet", "game:season:provenance:generate", "game:season:provenance:check", "game:season:validate", "game:season:recalculate", "game:season:inspect", "game:season:analytics", "game:season:archive"]
+    },
+    {
+      "id": "wallet-support",
+      "lifecycle": "operational",
+      "mutation": "mixed",
+      "commands": ["game:wallet:audit", "game:wallet:reconcile", "game:wallet:expire-intents", "game:wallet:import-settlement", "game:wallet:ops-check", "game:support:money-lookup", "game:support:money-action"]
+    },
+    {
+      "id": "simulation",
+      "lifecycle": "diagnostic",
+      "mutation": "none",
+      "commands": ["game:gacha:simulate"]
+    },
+    {
+      "id": "home-field",
+      "lifecycle": "canonical",
+      "mutation": "mixed",
+      "commands": ["game:home-field:next", "game:home-field:generation-queue", "game:home-field:preflight-chibi-proof", "game:home-field:find-imagegen-output", "game:home-field:claim-imagegen-output", "game:home-field:archive-stale-chibi-proof", "game:home-field:chibi-reference-api-proof", "game:home-field:stage-chibi-local-source", "game:home-field:verify-chibi-proof-files", "game:home-field:split-chibi-state-sheet", "game:home-field:recover-chibi-alpha", "game:home-field:palette-audit", "game:home-field:placeholder-tiles", "game:home-field:produce", "game:home-field:produce-family", "game:home-field:validate", "game:home-field:sheet", "game:home-field:alpha-sheet", "game:home-field:mobile-readability-sheet", "game:home-field:grass-family-sheet", "game:home-field:adjacency", "game:home-field:candidate-evidence", "game:home-field:preview", "game:home-field:record-chibi-verdict"]
+    },
+    {
+      "id": "tests",
+      "lifecycle": "canonical",
+      "mutation": "temporary-output",
+      "commands": ["game:test", "game:test:e2e", "game:test:screens", "game:test:screens:debug", "test"]
+    },
+    {
+      "id": "repository-tools",
+      "lifecycle": "internal",
+      "mutation": "temporary-output",
+      "commands": ["shrink:screenshots", "scripts:docs:check"]
+    }
+  ],
+  "compatibilityAliases": [
+    {
+      "name": "game:home-field:status",
+      "replacement": "game:home-field:validate -- --status",
+      "removeAfter": "2026-07-27"
+    }
+  ]
+}

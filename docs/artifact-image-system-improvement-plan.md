@@ -372,7 +372,7 @@ Changes:
   - "role is recognizable without color"
   - "secondary stat uses one small accent, not extra particles"
 - **Characters out of scope for artifact prompts.** Artifacts are objects, not portraits. Even for character items (e.g. `kirt_venom_fang`, `morga_flash_seed`), the prompt template must instruct the generator to render the *object* and explicitly forbid rendering the character likeness. This sidesteps the [visible-ears rule](../AGENTS.md) and the design-requirements canon contract — neither applies when the image is purely an object. Add a one-line "no character likenesses; render the object only" directive to the per-artifact block.
-- **Wrap the approved prompt/approval intake, not the placeholder generator.** [`app/scripts/next-artifact-image-prompts.js`](../app/scripts/next-artifact-image-prompts.js) is the existing prompt entry point. [`app/scripts/generate-artifact-bitmaps.js`](../app/scripts/generate-artifact-bitmaps.js) currently creates local SVG-derived reference/placeholder assets and must not be treated as the production art regeneration path. Phase 4 should either rename/guard that placeholder script or make provenance generation sit beside the prompt/approval workflow so it never overwrites production PNGs as a hidden side effect.
+- **Wrap the approved prompt/approval intake.** [`app/scripts/next-artifact-image-prompts.js`](../app/scripts/next-artifact-image-prompts.js) is the production prompt entry point. The former SVG-derived placeholder generator was removed; production work processes supplied sources with `npm run game:artifacts:produce -- <ids>` and never regenerates placeholder art as a hidden side effect.
 
 **Provenance file location (pinned for production).** After production-ready sign-off, approved runtime provenance lives in `app/shared/artifact-image-metadata.json` — committed, ships in the bundle so the running app can surface provenance in dev-only tooling. Before that sign-off, provenance drafts stay under `.agent/tasks/artifact-image-system/phase-4/` and must not be committed as runtime-facing metadata.
 
@@ -383,7 +383,7 @@ Changes:
 Likely files:
 
 - `app/scripts/next-artifact-image-prompts.js` (extend; this is the existing prompt entry point)
-- `app/scripts/generate-artifact-bitmaps.js` (rename, guard, or document as placeholder-only; no production PNG writes in Phase 4)
+- removed SVG-derived placeholder generator (no production PNG writes in Phase 4)
 - `docs/artifact-image-style-prompt.md`
 - `app/shared/artifact-image-metadata.json` (new)
 

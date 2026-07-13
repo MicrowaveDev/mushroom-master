@@ -65,30 +65,30 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 
 | Step | Command | What it does |
 |---|---|---|
-| **status** | `npm run game:home-field:status` | Lists every asset, marks `[x]` done / `[ ]` pending. Quick "where am I" check. |
+| **status** | `npm run game:home-field:validate -- --status` | Reports explicit readiness states and blockers. File existence alone is never reported as production readiness. |
 | **next** | `npm run game:home-field:next -- --batch=proof-static` | Prints prompt blocks for the next batch. Pass any of `--batch=proof-static`, `--batch=proof-animated`, `--batch=proof-character`, or `--batch=full` (or use `--id=a,b,c` for a custom subset). Each block contains the marker line `Use the imagegen skill to create a production game home-field bitmap.`, the prompt body, size + transparency + constraints, and the style anchor. |
-| **next-tiles** | `npm run game:home-field:next-tiles` | Prints only the first grass-family regeneration batch (`grass_base_01`, `grass_base_02`, `grass_flowers_01`). Stop after these three and review before generating path or edge tiles. |
-| **rerun-grass** | `npm run game:home-field:rerun-grass` | Intentional grass-family rerun command. Emits grass rows with `needs_review` or `needs_regen` and uses the review-gate bypass explicitly, so agents do not improvise flags. |
-| **rerun-grass-field** | `npm run game:home-field:rerun-grass-field` | Legacy intentional grass-family rerun command. Emits three independent per-tile prompts; keep only for comparison/debugging. |
-| **rerun-grass-family** | `npm run game:home-field:rerun-grass-family` | Preferred grass rerun. Emits one shared meadow-source prompt so the family shares lighting, brushwork, and value range. |
-| **rerun-path-family** | `npm run game:home-field:rerun-path-family` | Preferred path rerun. Emits one shared path-family source prompt for `path_h_end_w`, `path_dirt_straight`, `path_spore_glow`, `path_h_end_e`, and `path_destination_row` so band position, palette, and brushwork stay locked. |
-| **rerun-edge-family** | `npm run game:home-field:rerun-edge-family` | Candidate-safe edge-family rerun for root/rock and left/right forest border tiles. |
-| **rerun-scene-props** | `npm run game:home-field:rerun-scene-props` | Intentional candidate rerun for the current scene prop polish target even though an app-facing PNG already exists. Uses `--include-existing` and review-gate bypass explicitly so agents do not stop at "nothing to generate." |
+| **next-tiles** | `npm run game:home-field:next -- --preset=terrain-grass` | Prints only the first grass-family regeneration batch (`grass_base_01`, `grass_base_02`, `grass_flowers_01`). Stop after these three and review before generating path or edge tiles. |
+| **rerun-grass** | `npm run game:home-field:next -- --preset=grass-review` | Intentional grass-family rerun command. Emits grass rows with `needs_review` or `needs_regen` and uses the review-gate bypass explicitly, so agents do not improvise flags. |
+| **rerun-grass-field** | `npm run game:home-field:next -- --preset=grass-field` | Legacy intentional grass-family rerun command. Emits three independent per-tile prompts; keep only for comparison/debugging. |
+| **rerun-grass-family** | `npm run game:home-field:next -- --family=grass` | Preferred grass rerun. Emits one shared meadow-source prompt so the family shares lighting, brushwork, and value range. |
+| **rerun-path-family** | `npm run game:home-field:next -- --family=path` | Preferred path rerun. Emits one shared path-family source prompt for `path_h_end_w`, `path_dirt_straight`, `path_spore_glow`, `path_h_end_e`, and `path_destination_row` so band position, palette, and brushwork stay locked. |
+| **rerun-edge-family** | `npm run game:home-field:next -- --preset=terrain-edge` | Candidate-safe edge-family rerun for root/rock and left/right forest border tiles. |
+| **rerun-scene-props** | `npm run game:home-field:next -- --preset=scene-props` | Intentional candidate rerun for the current scene prop polish target even though an app-facing PNG already exists. Uses `--include-existing` and review-gate bypass explicitly so agents do not stop at "nothing to generate." |
 | **generation-queue** | `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` | Prints and validates structured queue item config plus the fresh-agent instructions to follow: run title, canonical doc, prompt-issuance gate, references, env-file rules, commands, output paths, stop gates, and final-response fields. For Thalla, read this before choosing an image path; prefer built-in/imagegen skill output only when the method gate allows it, and do not infer `.env` for paid API fallback. Do not give a new production-run prompt for a blocked queue item unless the prompt includes a concrete allowed unblock input. Fallback env files must contain `OPENAI_IMAGEGEN_API_KEY` plus `HOME_FIELD_IMAGEGEN_SKILL_UNAVAILABLE=1`; plain `OPENAI_API_KEY` is ignored. |
-| **next-tiles-all** | `npm run game:home-field:next-tiles-all` | Prints the full 12-tile terrain regeneration queue. Use only after the grass family is approved for the next family pass. |
-| **proof-tiles** | `npm run game:home-field:proof-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
+| **next-tiles-all** | `npm run game:home-field:next -- --preset=terrain-production` | Prints the full 12-tile terrain regeneration queue. Use only after the grass family is approved for the next family pass. |
+| **proof-tiles** | `npm run game:home-field:placeholder-tiles` | Generates deterministic quiet terrain-cell proofs plus separate top-down bush/sprout props. Use this when imagegen outputs look like full illustrations or dense textures instead of repeatable tiles. |
 | **(imagegen)** | (your imagegen skill) | Generate each PNG. Save raw outputs to the exact `sourcePath` printed by `:next` (always under `.agent/home-field-workspace/raw/`, never under `web/public/`). |
 | **claim-imagegen-output** | `npm run game:home-field:claim-imagegen-output -- --since=<iso> --dest=<path> --verify=<reference\|state-sheet>` | Claims the newest bounded built-in imagegen output newer than `--since`, copies it to the documented proof path, records hashes, and runs the matching chibi verifier. Use for reference/state-sheet proof art when built-in imagegen writes outside the repo. |
 | **archive-stale-chibi-proof** | `npm run game:home-field:archive-stale-chibi-proof -- thalla --env-file=<explicit-env-file>` | Reruns chibi preflight with the current environment or explicit env file, then moves only stale Thalla reference/raw/candidate proof paths into `.agent/home-field-workspace/rejected/` and prints a manifest. |
 | **chibi-reference-api-proof** | `npm run game:home-field:chibi-reference-api-proof -- --env-file=<explicit-env-file>` | Runs one reference-capable CLI/API reference attempt for Thalla with the three checked-in PNGs as real image inputs. Extracts the exact sprite-box prompt, manages the ignored Python SDK venv, writes a preserved API source, normalizes to the `512x384` reference source, then runs verifier and palette audit with palette bloat as a blocker. This is reference-only; final state-sheet generation must also use an actual image-guided path. |
-| **palette-audit** | `npm run game:home-field:palette-audit -- <png> --out=<json> --swatch=<png> --fail-on-bloat` | Diagnostic chibi palette report. Excludes alpha/#ff00ff, writes JSON plus a swatch PNG, and reports PASS/WARN/FAIL for the `<20` visible design-color budget. For Thalla candidate evidence, run it on the reference sheet, grouped state sheet, and candidate spritesheet using the filenames printed by `game:home-field:next-chibi-proof`; palette bloat is a hard gate. |
+| **palette-audit** | `npm run game:home-field:palette-audit -- <png> --out=<json> --swatch=<png> --fail-on-bloat` | Diagnostic chibi palette report. Excludes alpha/#ff00ff, writes JSON plus a swatch PNG, and reports PASS/WARN/FAIL for the `<20` visible design-color budget. For Thalla candidate evidence, run it on the reference sheet, grouped state sheet, and candidate spritesheet using the filenames printed by `game:home-field:next -- --preset=chibi-proof`; palette bloat is a hard gate. |
 | **produce** | `npm run game:home-field:produce -- <id_a> <id_b> ... --resize` | Reads each raw, optionally scales to target dimensions (`--resize` for terrain/props/exits/effects/chibi candidates), removes chroma-key if `--chroma-key=#ff00ff` is passed, validates dimensions, re-encodes deterministically, writes to `web/public/home-field/`. Prints a per-asset OK/FAIL summary. `--resize-nearest` is diagnostic only and should not be used for Home Field chibi production candidates. |
-| **produce-object-candidate** | `npm run game:home-field:produce-object-candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize --chroma-key=#ff00ff` | Candidate-safe prop producer. Writes outputs under `.agent/home-field-workspace/candidates/object-layer/latest/` with the same internal `web/public/home-field/...` layout instead of overwriting app-facing PNGs. Use `--chroma-key=#ff00ff` for built-in imagegen raws on flat magenta backgrounds. |
-| **produce-terrain-candidate** | `npm run game:home-field:produce-terrain-candidate -- path_h_end_w path_dirt_straight --resize --crop-center` | Candidate-safe terrain producer for path/edge families. Writes outputs under `.agent/home-field-workspace/candidates/terrain-family/latest/` instead of overwriting app-facing terrain. |
-| **produce-grass-family-candidate** | `npm run game:home-field:produce-grass-family-candidate` | Preferred grass producer for review runs. Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and writes the three grass outputs under `.agent/home-field-workspace/candidates/grass-family/latest/` instead of overwriting app-facing PNGs. Supports `-- --plan=lower-band` and `-- --plan=upper-band` fallbacks. |
-| **produce-grass-family** | `npm run game:home-field:produce-grass-family` | Promotion-only grass producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
-| **produce-path-family-candidate** | `npm run game:home-field:produce-path-family-candidate` | Preferred path producer for review runs. Reads one shared `.agent/home-field-workspace/raw/path_family_strip.source.png` and writes the five path-family outputs under `.agent/home-field-workspace/candidates/terrain-family/latest/` instead of overwriting app-facing PNGs. |
-| **produce-path-family** | `npm run game:home-field:produce-path-family` | Promotion-only path producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
+| **produce-object-candidate** | `npm run game:home-field:produce -- --scope=objects --candidate -- bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01 --resize --chroma-key=#ff00ff` | Candidate-safe prop producer. Writes outputs under `.agent/home-field-workspace/candidates/object-layer/latest/` with the same internal `web/public/home-field/...` layout instead of overwriting app-facing PNGs. Use `--chroma-key=#ff00ff` for built-in imagegen raws on flat magenta backgrounds. |
+| **produce-terrain-candidate** | `npm run game:home-field:produce -- --scope=terrain --candidate -- path_h_end_w path_dirt_straight --resize --crop-center` | Candidate-safe terrain producer for path/edge families. Writes outputs under `.agent/home-field-workspace/candidates/terrain-family/latest/` instead of overwriting app-facing terrain. |
+| **produce grass family candidate** | `npm run game:home-field:produce-family -- --family=grass --candidate` | Preferred grass producer for review runs. Reads one shared `.agent/home-field-workspace/raw/grass_family_meadow.source.png` and writes the three grass outputs under `.agent/home-field-workspace/candidates/grass-family/latest/` instead of overwriting app-facing PNGs. Supports `--plan=lower-band` and `--plan=upper-band` fallbacks. |
+| **produce grass family** | `npm run game:home-field:produce-family -- --family=grass` | Promotion-only grass producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
+| **produce path family candidate** | `npm run game:home-field:produce-family -- --family=path --candidate` | Preferred path producer for review runs. Reads one shared `.agent/home-field-workspace/raw/path_family_strip.source.png` and writes the five path-family outputs under `.agent/home-field-workspace/candidates/terrain-family/latest/` instead of overwriting app-facing PNGs. |
+| **produce path family** | `npm run game:home-field:produce-family -- --family=path` | Promotion-only path producer. Writes directly to `web/public/home-field/terrain/`; use only after explicit human approval of the candidate folder. |
 | **validate** | `npm run game:home-field:validate` | Reruns full schema/map checks. `--check-files` asserts PNG existence for the selected scope, `--check-review` requires checked-in visual verdicts, `--check-alpha-halo` fails visible chroma-key magenta/pink fringe on transparent non-terrain assets, `--check-readability` checks configured visible-object bounding boxes, `--check-chibi-quality` catches low-contrast/weak-outline chibi sheets before visual review, `--check-edge-profiles` compares adjacent terrain edge color profiles for obvious seams, `--check-family-cohesion` flags terrain-family palette/value outliers, and `--production` requires files, connectors, review acceptance, alpha/readability/terrain checks, and `status: "approved"` for the active shipped scene. Use `--full-registry-production` only when intentionally requiring every future/deferred registry row to be complete. |
 | **connectors** | `npm run game:home-field:validate -- --check-connectors` | Optional strict tile adjacency check. Use while designing terrain families and before approving production terrain. |
 | **sheet** | `npm run game:home-field:sheet` | Composites a contact sheet at `.agent/home-field-workspace/review/contact-sheet.png` with sha256 manifest. Use it to review style consistency. |
@@ -99,10 +99,10 @@ The npm aliases below drive the pipeline. Run them in order per batch:
 | **adjacency** | `npm run game:home-field:adjacency` | Composites terrain connector proof at `.agent/home-field-workspace/review/adjacency-sheet.png`, including the grass-path run and left/right edge stacks. |
 | **candidate-evidence** | `HOME_FIELD_CANDIDATE_ROOT=<root> HOME_FIELD_CANDIDATE_IDS=<ids> npm run game:home-field:candidate-evidence` | Writes `.agent/home-field-workspace/review/candidate-evidence.manifest.json` with exact candidate PNG and screenshot hashes for review binding. |
 | **record-chibi-verdict** | `printf '%s\n' '<reason>' \| npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-stdin` | Copies current Thalla candidate/source/screenshot hashes from `candidate-evidence.manifest.json` into `docs/home-field-asset-review.json` while keeping `accepted: false`. Also supports `--reason=<text>` and `--reason-file=<file>` for explicit paths. |
-| **candidate-preview** | `npm run game:home-field:candidate-preview` | Uses Playwright route interception to render `/home-field-preview?debug=0` with the latest candidate grass PNGs, writing `.agent/home-field-workspace/review/home-field-candidate-{mobile,desktop}-clean.png` without promoting app-facing assets. |
-| **terrain-candidate-preview** | `npm run game:home-field:terrain-candidate-preview` | Same clean preview screenshot flow, but routes terrain-family candidates from `.agent/home-field-workspace/candidates/terrain-family/latest/`. |
-| **object-candidate-preview** | `npm run game:home-field:object-candidate-preview` | Same clean preview screenshot flow, but routes foliage props from `.agent/home-field-workspace/candidates/object-layer/latest/`. |
-| **combined-candidate-preview** | `npm run game:home-field:combined-candidate-preview` | Routes grass, terrain-family, object-layer, and chibi candidate roots together for final scene-level proof before production sign-off. Required before path promotion because path tiles can be internally coherent while still looking pasted onto the grass baseline. |
+| **candidate-preview** | `npm run game:home-field:preview -- --scope=grass` | Uses Playwright route interception to render `/home-field-preview?debug=0` with the latest candidate grass PNGs, writing `.agent/home-field-workspace/review/home-field-candidate-{mobile,desktop}-clean.png` without promoting app-facing assets. |
+| **terrain-candidate-preview** | `npm run game:home-field:preview -- --scope=terrain` | Same clean preview screenshot flow, but routes terrain-family candidates from `.agent/home-field-workspace/candidates/terrain-family/latest/`. |
+| **object-candidate-preview** | `npm run game:home-field:preview -- --scope=objects` | Same clean preview screenshot flow, but routes foliage props from `.agent/home-field-workspace/candidates/object-layer/latest/`. |
+| **combined-candidate-preview** | `npm run game:home-field:preview -- --scope=combined` | Routes grass, terrain-family, object-layer, and chibi candidate roots together for final scene-level proof before production sign-off. Required before path promotion because path tiles can be internally coherent while still looking pasted onto the grass baseline. |
 | **shrink:screenshots** | `npm run shrink:screenshots -- <path>` | Submodule-local alias for the hub screenshot shrink helper. Use when review screenshots exceed the image-reading dimension cap. |
 
 ## Agent Flow
@@ -202,7 +202,7 @@ The contact sheet is the first review gate: terrain must be inspected as repeate
 
 ## Production Art Bar
 
-The deterministic `game:home-field:proof-tiles` output is a **layout proof**, not final production art. It may be committed with `status: "needs_review"` or `status: "placeholder"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
+The deterministic `game:home-field:placeholder-tiles` output is a **layout proof**, not final production art. It may be committed with `status: "needs_review"` or `status: "placeholder"` so the map and screenshot tests can exercise real PNG loading, but it must not be promoted to `approved`.
 
 The target scene is a composed in-game hub, not a texture pack: chibi mushroom-elf avatars should stand clearly on a soft green field, with chunky inked foliage, flowers, vines, mushrooms, exits, and props placed around them on object layers. The grass tiles are the readable stage. If grass texture competes with character feet, hides the separate chibi shadow layer, or makes the viewport feel like wallpaper, reject it even when the file and connector checks pass.
 
@@ -227,43 +227,43 @@ npm run game:home-field:validate -- --production
 Use the stricter full-registry command only when finishing every declared future asset:
 
 ```bash
-npm run game:home-field:validate-full-registry-production
+npm run game:home-field:validate -- --profile=full-registry-production
 ```
 
 ### Per-batch loop
 
 ```bash
 # 1. See progress
-npm run game:home-field:status
+npm run game:home-field:validate -- --status
 
 # 2. Generate the terrain-cell + foliage-prop proof batch
-npm run game:home-field:proof-tiles
+npm run game:home-field:placeholder-tiles
 
 # For later prop/exit/effect/character batches, get prompts with:
 # npm run game:home-field:next -- --batch=proof-static --all
 
 # For intentional grass reruns after review rows exist, use the shared-source queue:
-npm run game:home-field:rerun-grass-family
+npm run game:home-field:next -- --family=grass
 
 # After imagegen saves the one shared meadow source, produce the three candidate crops:
-npm run game:home-field:produce-grass-family-candidate
+npm run game:home-field:produce-family -- --family=grass --candidate
 
 # Optional fallback from the same raw source if the default crop plan is blocky:
-npm run game:home-field:produce-grass-family-candidate -- --plan=lower-band
-npm run game:home-field:produce-grass-family-candidate -- --plan=upper-band
+npm run game:home-field:produce-family -- --family=grass --candidate --plan=lower-band
+npm run game:home-field:produce-family -- --family=grass --candidate --plan=upper-band
 
 # For later non-grass terrain/props, produce the raw files generated in that batch:
 npm run game:home-field:produce -- path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01
 
 # 5. Validate the candidate folder and confirm produced count
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:validate -- --ids=grass_base_01,grass_base_02,grass_flowers_01 --check-files --check-connectors --check-review
-npm run game:home-field:status
+npm run game:home-field:validate -- --status
 
 # 6. Refresh review sheets for human review
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:grass-family-sheet
 HOME_FIELD_ASSET_ROOT=.agent/home-field-workspace/candidates/grass-family/latest npm run game:home-field:adjacency
-npm run game:home-field:candidate-preview
+npm run game:home-field:preview -- --scope=grass
 
 # 7. Stop for human approval. Do not commit app-facing PNGs unless approved.
 ```
@@ -311,7 +311,7 @@ Three predefined batches stage the workload from lowest-risk to highest-risk. **
 
 | Order | Batch | Command | Why first / why later |
 |---|---|---|---|
-| 1 | `proof-tiles` | `npm run game:home-field:proof-tiles` then `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01` | 8 quiet terrain cells plus 3 foliage props. Validates actual repeatability and proves that bush masses live on the object layer instead of being stamped into grass tiles. **STOP and review the contact sheet plus `/home-field-preview` screenshots before continuing.** |
+| 1 | `proof-tiles` | `npm run game:home-field:placeholder-tiles` then `npm run game:home-field:produce -- grass_base_01 grass_base_02 grass_flowers_01 path_dirt_straight path_spore_glow path_destination_row edge_roots_01 edge_moss_rocks_01 bush_cluster_dark_01 bush_cluster_light_01 leaf_sprout_01` | 8 quiet terrain cells plus 3 foliage props. Validates actual repeatability and proves that bush masses live on the object layer instead of being stamped into grass tiles. **STOP and review the contact sheet plus `/home-field-preview` screenshots before continuing.** |
 | 2 | `proof-static` | `npm run game:home-field:next -- --batch=proof-static --all` | First prop/exit proof assets after the terrain contract is working. **STOP and request human review of the contact sheet before continuing.** |
 | 3 | `proof-animated` | `npm run game:home-field:next -- --batch=proof-animated --all` | 2 animated effects (`spore_motes_loop`, `tap_ripple`). Exercises the per-frame imagegen + composition path. **STOP for review.** |
 | 4 | `proof-character` | `npm run game:home-field:next -- --batch=proof-character --all` | The `_placeholder` chibi spritesheet — 12 distinct frames composed into the locked `8×4` grid. **STOP for review.** |
@@ -367,7 +367,7 @@ The placeholder chibi is `8 cols × 4 rows × 64×64 = 32 frames`. Legacy placeh
    - For the v1 placeholder, use **only one walk frame per direction** (the silhouette is generic; movement readability comes from the chibi pose itself). Save as `_placeholder.frame_walk_down.source.png`, etc.
 2. The produce script for character placeholders will replicate the single walk frame across columns 2–7 of each row (acceptable for a placeholder; specific-character chibis will get full 6-frame walks in a later phase).
 
-Per-character chibis (not the placeholder) require the full `8 × 4` grid: `2` idle frames plus `6` walk-lane frames for each of `down`, `up`, `left`, and `right`. Idle frame `0` is the normal planted pose; idle frame `1` is a little `1-3px` bob/squish that loops back to normal while staying upright, not a crouch or deep squat. The walk lane should read as a simple `4`-pose walk cycle with optional holds/in-betweens across the six slots, not six equally important poses. Runtime chibi frames are character-only transparent sprites; ground shadows are supplied by the separate shared `chibi_shadow` layer. For the current Thalla proof, use `npm run game:home-field:chibi-proof-context` and `npm run game:home-field:verify-chibi-proof-files` before producing a candidate sheet.
+Per-character chibis (not the placeholder) require the full `8 × 4` grid: `2` idle frames plus `6` walk-lane frames for each of `down`, `up`, `left`, and `right`. Idle frame `0` is the normal planted pose; idle frame `1` is a little `1-3px` bob/squish that loops back to normal while staying upright, not a crouch or deep squat. The walk lane should read as a simple `4`-pose walk cycle with optional holds/in-betweens across the six slots, not six equally important poses. Runtime chibi frames are character-only transparent sprites; ground shadows are supplied by the separate shared `chibi_shadow` layer. For the current Thalla proof, use `npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof` and `npm run game:home-field:verify-chibi-proof-files` before producing a candidate sheet.
 
 For any production or candidate asset where several tiles are different states of the same subject, prefer one grouped source image over separate imagegen calls. Same-character chibi idle/walk states are the strict case: generate one coherent `8x4` state sheet at `.agent/home-field-workspace/raw/thalla_chibi.states.source.png`, then run `npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize` to create the 32 canonical raw frame chunks. This keeps face, silhouette, palette, line weight, and detail consistent across states. Separate per-state generation is a fallback only for explicitly approved single-cell repair.
 

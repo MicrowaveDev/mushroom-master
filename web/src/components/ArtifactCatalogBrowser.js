@@ -73,8 +73,7 @@ export const ArtifactCatalogBrowser = {
       if (this.artifacts.some((artifact) => artifact.id === this.selectedArtifactId)) {
         return this.selectedArtifactId;
       }
-      const firstFusion = this.artifacts.find((artifact) => this.recipeByResultId.has(artifact.id));
-      return firstFusion?.id || this.artifacts[0]?.id || '';
+      return '';
     },
     selectedArtifact() {
       return this.artifacts.find((artifact) => artifact.id === this.activeArtifactId) || null;

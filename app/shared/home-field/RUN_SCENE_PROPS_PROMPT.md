@@ -18,7 +18,7 @@ Read and follow:
 - app/shared/home-field/README.md
 - app/shared/home-field/home-field-prompts.json
 
-Print the current prompt blocks with `npm run game:home-field:rerun-scene-props`. This is the intentional candidate rerun path for scene props that already have app-facing files, so do not use a plain `game:home-field:next -- --id=...` result of "nothing to generate" as a stop condition.
+Print the current prompt blocks with `npm run game:home-field:next -- --preset=scene-props`. This is the intentional candidate rerun path for scene props that already have app-facing files, so do not use a plain `game:home-field:next -- --id=...` result of "nothing to generate" as a stop condition.
 
 Use sub-agents if available, with narrow scopes: one generation agent for the four raw/candidate assets, one review agent for mobile/desktop screenshots and sheets, and one validation agent for commands and final evidence. Keep all writes inside `.agent/home-field-workspace/candidates/object-layer/latest`, `.agent/home-field-workspace/review`, and review/docs files only. Do not let any sub-agent approve candidates or overwrite app-facing PNGs.
 
@@ -28,6 +28,6 @@ Pixel budget: these props render in about a 52x52 CSS box on the 375x667 mobile 
 
 Asset shape target: the violet cluster should have 2-3 squat caps total, a clear muted violet cap read at 32-48px, a merged simple base, no gray-only caps, no saturated neon glow, no tiny cap field, and no gills. Use true alpha or flat `#ff00ff` chroma key. Avoid bright attention-grabbing blobs near the walkable center, text, characters, exits, effects, and terrain.
 
-Produce only to `.agent/home-field-workspace/candidates/object-layer/latest` using `npm run game:home-field:produce-object-candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff`, run scoped file/review validation, `--check-alpha-halo`, `--check-readability`, `--check-runtime-readiness`, contact sheet, mobile-readability sheet, alpha/halo sheet, and mobile/desktop object candidate preview screenshots. Use `HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet` for preview. Never approve, never overwrite app-facing PNGs, then commit/push review JSON/docs only if changed and stop.
+Produce only to `.agent/home-field-workspace/candidates/object-layer/latest` using `npm run game:home-field:produce -- --scope=objects --candidate -- mushroom_cluster_small_violet --resize --chroma-key=#ff00ff`, run scoped file/review validation, `--check-alpha-halo`, `--check-readability`, `--check-runtime-readiness`, contact sheet, mobile-readability sheet, alpha/halo sheet, and mobile/desktop object candidate preview screenshots. Use `HOME_FIELD_CANDIDATE_IDS=mushroom_cluster_small_violet` for preview. Never approve, never overwrite app-facing PNGs, then commit/push review JSON/docs only if changed and stop.
 
 Final response must include a per-asset visual verdict (`needs_review`, `needs_regen`, or `rejected`) plus clickable Markdown links to the candidate folder, mobile field screenshot, desktop field screenshot, contact sheet, mobile-readability sheet, and alpha/halo sheet.

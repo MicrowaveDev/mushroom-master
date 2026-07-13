@@ -28,6 +28,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { validateAll, validateTileConnectors } from '../shared/home-field/home-field-validator.js';
+import { buildHomeFieldStatus, formatHomeFieldStatus } from '../shared/home-field/home-field-status.js';
 import { alphaStats, readPngHeader, readPngRgba } from './lib/bitmap-image-toolkit.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -40,6 +41,7 @@ const MAP_PATH = process.env.HOME_FIELD_MAP_PATH
   ? path.resolve(process.env.HOME_FIELD_MAP_PATH)
   : path.join(sharedDir, 'home-field-map.json');
 const REVIEW_PATH = path.join(repoRoot, 'docs', 'home-field-asset-review.json');
+const QUEUE_PATH = path.join(sharedDir, 'home-field-generation-queue.json');
 const ASSET_ROOT = process.env.HOME_FIELD_ASSET_ROOT
   ? path.resolve(repoRoot, process.env.HOME_FIELD_ASSET_ROOT)
   : repoRoot;
@@ -1017,6 +1019,9 @@ function checkReview(assetsDoc, errors, { production = false, ids = null } = {})
 
 function main() {
   const argv = process.argv.slice(2);
+  const wantStatus = hasFlag(argv, 'status');
+  const wantJson = hasFlag(argv, 'json');
+  const profile = argv.find((item) => item.startsWith('--profile='))?.slice('--profile='.length) || null;
   const wantFileCheck = hasFlag(argv, 'check-files');
   const wantConnectorCheck = hasFlag(argv, 'check-connectors');
   const wantReviewCheck = hasFlag(argv, 'check-review');
@@ -1027,8 +1032,8 @@ function main() {
   const wantChibiQualityCheck = hasFlag(argv, 'check-chibi-quality');
   const wantEdgeProfileCheck = hasFlag(argv, 'check-edge-profiles');
   const wantFamilyCohesionCheck = hasFlag(argv, 'check-family-cohesion');
-  const wantProduction = hasFlag(argv, 'production');
-  const wantFullRegistryProduction = hasFlag(argv, 'full-registry-production');
+  const wantProduction = hasFlag(argv, 'production') || ['minimal-production', 'full-registry-production'].includes(profile);
+  const wantFullRegistryProduction = hasFlag(argv, 'full-registry-production') || profile === 'full-registry-production';
   let ids = parseIds(argv);
 
   if (!fs.existsSync(ASSETS_PATH)) {
@@ -1042,6 +1047,17 @@ function main() {
 
   const assetsDoc = loadJson(ASSETS_PATH);
   const mapDoc = loadJson(MAP_PATH);
+  if (profile && !['minimal-production', 'full-registry-production'].includes(profile)) {
+    console.error(`unknown validation profile "${profile}"; expected minimal-production or full-registry-production`);
+    process.exit(2);
+  }
+  if (wantStatus) {
+    const reviewDoc = fs.existsSync(REVIEW_PATH) ? loadJson(REVIEW_PATH) : { assets: [] };
+    const queueDoc = fs.existsSync(QUEUE_PATH) ? loadJson(QUEUE_PATH) : { items: [] };
+    const status = buildHomeFieldStatus({ assetsDoc, reviewDoc, queueDoc, assetRoot: ASSET_ROOT });
+    console.log(wantJson ? JSON.stringify(status, null, 2) : formatHomeFieldStatus(status));
+    return;
+  }
   if (wantProduction && !ids && !wantFullRegistryProduction) {
     ids = activeProductionIds(assetsDoc, mapDoc);
   }

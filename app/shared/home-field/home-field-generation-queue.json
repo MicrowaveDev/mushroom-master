@@ -148,7 +148,7 @@
         "Do not overwrite app-facing PNGs during candidate proof; write only to .agent/home-field-workspace/candidates/chibi-active-roster/latest until approved."
       ],
       "promptSource": {
-        "script": "npm run game:home-field:next-chibi-proof",
+        "script": "npm run game:home-field:next -- --preset=chibi-proof",
         "promptKey": "character_thalla_chibi",
         "runDoc": "app/shared/home-field/RUN_CHIBI_PROOF_PROMPT.md",
         "requirementsDoc": "docs/home-field-imagegen-requirements.md",
@@ -167,9 +167,8 @@
       },
       "commands": {
         "queue": "npm run game:home-field:generation-queue -- --id=thalla-stage1-chibi-proof",
-        "context": "npm run game:home-field:chibi-proof-context",
         "preflight": "npm run game:home-field:preflight-chibi-proof -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
-        "scopedPrompt": "npm run game:home-field:next-chibi-proof",
+        "promptRenderer": "npm run game:home-field:next -- --preset=chibi-proof",
         "archiveStale": "npm run game:home-field:archive-stale-chibi-proof -- thalla --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
         "stageLocalSource": "npm run game:home-field:stage-chibi-local-source -- --source=.agent/home-field-workspace/supplied/thalla_tetro_cleaned_2026-06-30.states.source.png",
         "verifyReference": "npm run game:home-field:verify-chibi-proof-files -- --reference",
@@ -178,11 +177,11 @@
         "auditStateSheetPalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/raw/thalla_chibi.states.source.png --out=.agent/home-field-workspace/review/thalla-state-sheet-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-state-sheet-palette-swatch.png --fail-on-bloat",
         "splitStateSheet": "npm run game:home-field:split-chibi-state-sheet -- --chroma-key=#ff00ff --resize",
         "verifyFrames": "npm run game:home-field:verify-chibi-proof-files -- --frames",
-        "produceCandidate": "npm run game:home-field:produce-chibi-candidate -- thalla --resize --chroma-key=#ff00ff",
+        "produceCandidate": "npm run game:home-field:produce -- --scope=chibi --candidate thalla --resize --chroma-key=#ff00ff",
         "verifyCandidate": "npm run game:home-field:verify-chibi-proof-files -- --candidate",
         "auditCandidatePalette": "npm run game:home-field:palette-audit -- .agent/home-field-workspace/candidates/chibi-active-roster/latest/web/public/home-field/characters/thalla/spritesheet.png --out=.agent/home-field-workspace/review/thalla-candidate-palette-audit.json --swatch=.agent/home-field-workspace/review/thalla-candidate-palette-swatch.png --fail-on-bloat",
         "candidateEvidence": "HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest HOME_FIELD_CANDIDATE_IDS=thalla npm run game:home-field:candidate-evidence",
-        "preview": "HOME_FIELD_CANDIDATE_IDS=thalla HOME_FIELD_CANDIDATE_ROOT=.agent/home-field-workspace/candidates/chibi-active-roster/latest npm run game:home-field:chibi-candidate-preview",
+        "preview": "npm run game:home-field:preview -- --scope=chibi",
         "recordVerdict": "printf '%s\\n' '<visual-critic reason>' | npm run game:home-field:record-chibi-verdict -- thalla --verdict=needs_regen --reason-stdin"
       },
       "generationContract": {

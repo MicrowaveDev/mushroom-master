@@ -8,6 +8,7 @@ import {
   encodeDeterministicPng,
   readPngRgba
 } from './lib/bitmap-image-toolkit.js';
+import { normalizeArtifact } from './lib/artifact-detail-normalizer.js';
 
 const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
 const workspace = process.env.ARTIFACT_IMAGE_WORKSPACE
@@ -40,13 +41,15 @@ function parseArgs(argv) {
   let keyColor = '#ff00ff';
   let force = true;
   let fit = true;
+  let normalizeDetail = false;
   for (const arg of argv) {
     if (arg === '--no-force') force = false;
     else if (arg === '--no-fit') fit = false;
+    else if (arg === '--normalize-detail') normalizeDetail = true;
     else if (arg.startsWith('--key=')) keyColor = arg.slice('--key='.length);
     else ids.push(arg.replace(/\.png$/, ''));
   }
-  return { ids, keyColor, force, fit };
+  return { ids, keyColor, force, fit, normalizeDetail };
 }
 
 function sourceFor(id) {
@@ -97,7 +100,7 @@ function fitAlphaToSafeCanvas(filePath) {
   );
 }
 
-const { ids, keyColor, force, fit } = parseArgs(process.argv.slice(2));
+const { ids, keyColor, force, fit, normalizeDetail } = parseArgs(process.argv.slice(2));
 if (ids.length === 0) {
   console.error('Usage: npm run game:artifacts:produce -- artifact_id...');
   console.error(`Expected raw sources at ${path.relative(repoRoot, rawDir)}/{artifact_id}.source.png`);
@@ -136,6 +139,10 @@ for (const id of ids) {
   ]);
   if (fit) {
     fitAlphaToSafeCanvas(outPath);
+  }
+  if (normalizeDetail) {
+    const normalized = normalizeArtifact(artifactById.get(id));
+    console.log(`normalized ${id} (${normalized.policy}); provenance invalidated until regenerated after review`);
   }
   run('npm', ['run', 'game:artifacts:validate', '--', id]);
 }
