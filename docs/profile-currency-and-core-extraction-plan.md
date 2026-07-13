@@ -746,13 +746,20 @@ Use this ordered queue before starting the next implementation pass:
    jurisdiction disclosure review. A pack may launch only after simulation,
    approval, rollback, audit, and support flows pass against the production
    catalog and ledger.
-17. **Finish distribution/content/community work required by the selected
+17. **Extract shared script tooling only when a second consumer adopts it.**
+   Before Meat builds its production-art pipeline or duplicates Mushroom's
+   test/command infrastructure, implement the scoped Phase 8BD tooling lane
+   below. Keep product npm aliases and thin entry points local; import stable
+   core tooling subpaths instead of invoking files inside the nested submodule.
+   This lane may run in parallel after item 11, but must not delay hosted deploy,
+   storage, security, or payment launch gates.
+18. **Finish distribution/content/community work required by the selected
    target.** Replace Meat prototype/starter art through a provenance-backed
    review gate; add installer art, platform build order, signing/notarization,
    and release policy if desktop ships; and expand the hosted community client
    to friends, challenges, optional account linking, and shared seasons only
    when those surfaces enter the release scope.
-18. **Keep later product expansion in backlog.** Multi-item guaranteed-rarity
+19. **Keep later product expansion in backlog.** Multi-item guaranteed-rarity
    packs, deeper season/collection pity, duplicate conversion currencies,
    trading/marketplace/escrow/fraud controls, NFT/export policy, offline action
    replay, cross-device progress merging, and the optional Phase 6D breaking
@@ -769,6 +776,90 @@ enabled, authoritative ledger/reconciliation records, real provider payload
 validation, operator rollback/support tooling, and compliance approval are
 additional mandatory exit criteria. Items explicitly deferred by the product
 owner must remain disabled by validated runtime configuration.
+
+### Phase 8BD - Shared Script Tooling Extraction
+
+Status: **Planned after the 2026-07-14 `app/scripts` ownership audit;
+opportunistic and non-blocking for Phase 13.** The audit found reusable tooling,
+but not a reason to move the whole script tree. Core should own configurable
+libraries and optional CLI primitives. Mushroom and Meat should continue to own
+their public npm aliases, product configuration, credentials, repositories,
+mutation confirmations, generated content, and final workflow policy.
+
+#### Ownership Matrix
+
+| Current surface | Recommendation | Reason |
+| --- | --- | --- |
+| `lib/bitmap-image-toolkit.js` | Split and move neutral PNG decode/encode, hash, alpha-analysis, freshness, and manifest primitives to `core/tooling/image` | Asset-neutral mechanics with tests; remove the Mushroom-relative `repoRoot` assumption and inject base paths/logging before promotion. Keep Puppeteer contact-sheet orchestration separate so core runtime imports do not acquire browser tooling. |
+| `lib/image-domain-metadata.js` and `lib/image-domain-provenance.js` | Move configurable metadata/provenance builders to `core/tooling/provenance` | Already domain-neutral except for caller-supplied paths, policy, validation, and reporting. Mushroom and Meat retain their catalogs, prompts, review decisions, output roots, and release gates. |
+| `checks/check-script-documentation.js` | Move the validator engine to `core/tooling/commands`; keep one local wrapper per product | Package scripts, manifest paths, README markers, directory rules, alias budgets, and error output must be injected. This can govern both products without making core own their command names. |
+| `runners/run-game-playwright.js` | Extract free-port/process/suite-runner primitives to `core/tooling/runners`; keep suite maps and env defaults local | The orchestration is reusable, but Mushroom test paths, Vite variables, ports, and screenshot policy are product configuration. Meat adoption is required before promotion. |
+| `runners/start-game-dev.js` | Defer until both games need the same multi-process dev-stack contract | It currently hardcodes Mushroom backend/Vite paths and Meat has a different launcher. Extract only a process-supervisor factory after a concrete shared configuration exists. |
+| Wallet, support, settlement, season, and gacha operation entry points | Keep product-local thin CLIs; import core service/planner APIs | DB initialization, credentials, actor authorization, dry-run/confirmation policy, product field maps, and exit codes belong to the app. Shared service behavior is already largely in core; do not move wrappers merely to reduce file count. |
+| Artifact, season-image, Home Field generation/check/workflow scripts | Keep product-local; reuse core image/provenance primitives | These scripts encode Mushroom catalogs, prompts, art direction, paths, queue state, review policy, and generated assets. Meat should create its own small adapters and content configuration. |
+| Deployment shell scripts and production server helper | Keep product-local or move generic host coordination to the hub, not game core | Compose files, nginx, host paths, secrets, health checks, and rollback policy are deployment ownership, not reusable game mechanics. |
+| `checks/check-backpack-game-core-submodule.js` | Keep local or consolidate in a hub helper | It must diagnose an uninitialized/missing core checkout, so importing its implementation from that checkout would defeat the check. |
+| Codex/image-generation discovery and Home Field recovery workflows | Keep product-local or agent-tooling-owned | They depend on Codex filesystem layout, queue evidence, approved source hashes, and Mushroom-specific visual review policy. |
+
+#### Package And Invocation Contract
+
+1. Add Node-only exports such as `@microwavedev/backpack-game-core/tooling/image`,
+   `/tooling/provenance`, `/tooling/commands`, and `/tooling/runners`. Do not
+   re-export Node tooling from the browser-safe root, `client`, or `vue` paths.
+2. Consumers import published subpaths through the file-backed package name.
+   Do not deep-import `vendor/backpack-game-core/src/*` and do not teach agents
+   to run `node vendor/backpack-game-core/...` directly.
+3. Each public command remains a product npm alias backed by a local entry-point
+   wrapper. The wrapper injects root paths, catalogs, repositories, env policy,
+   labels, suite maps, confirmation controls, and output formatting.
+4. After the first shared tooling slice lands, update both product `AGENTS.md`
+   files and script READMEs: use product npm aliases for commands, use core
+   tooling imports for reusable implementation, and never invoke core internal
+   files as workflow authorities.
+5. Keep command-manifest validation product-local in effect: each app declares
+   its own command families, mutation classes, compatibility aliases, and alias
+   budgets even when the validator engine is shared.
+
+#### Ordered Implementation Slices
+
+1. **8BD-A - Contract and import boundary.** Add the Node-only tooling export
+   namespace, TypeScript declarations, package tests, and forbidden browser
+   import checks. Document dependency policy for optional Puppeteer/Playwright
+   adapters before moving files.
+2. **8BD-B - Image/provenance primitives.** Physically move the neutral bitmap,
+   metadata, and provenance implementation with `mv`, split product-relative
+   root/contact-sheet behavior behind adapters, restore Mushroom paths as thin
+   wrappers, and adopt at least provenance/hash primitives in Meat's asset
+   replacement workflow.
+3. **8BD-C - Command governance.** Move the script-documentation validator
+   engine, keep Mushroom's current checker as a config wrapper, add a Meat
+   command manifest/README only if Meat adopts this governance, and test both
+   manifests with the same engine.
+4. **8BD-D - Runner primitives.** Move free-port allocation, child lifecycle,
+   and configurable Playwright invocation only after Meat replaces its direct
+   browser command with a local wrapper over the same core runner.
+5. **8BD-E - Operations CLI review.** Deduplicate only proven argument/result
+   helpers used by both products. Keep all DB/provider/support entry points
+   local and reject an abstraction whose configuration exceeds the wrappers it
+   replaces.
+6. **8BD-F - Instructions and release.** Update core/tooling docs, both product
+   script guides and agent instructions, run script-documentation checks, then
+   run the cross-consumer core release gate on one SHA.
+
+#### Promotion Gates
+
+- At least Mushroom and Meat execute each promoted tooling library; an import
+  smoke alone is insufficient.
+- Core tooling contains no Mushroom/Meat vocabulary, catalogs, generated paths,
+  credentials, database models, deployment assumptions, or Codex-home paths.
+- Product commands retain `--help`, dry-run/confirmation behavior, exit codes,
+  and npm alias compatibility.
+- Browser-safe package exports cannot reach Node tooling or optional
+  Puppeteer/Playwright dependencies.
+- Core tests cover injected roots, malformed PNG/metadata/manifests, missing
+  files, child-process failure/signals, and deterministic output where relevant.
+- `npm pack --dry-run`, Mushroom `scripts:docs:check`, both product tests/builds,
+  and `npm run verify:backpack-core` pass before consumer pointer handoff.
 
 ### Completed Lane - Modular Server Core Port
 
