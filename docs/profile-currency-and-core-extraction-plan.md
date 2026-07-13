@@ -46,8 +46,9 @@
 > mounting.
 > The 2026-07-13 state after the settlement/ops extraction is: the
 > gameplay/profile/economy spine is core-backed through quarantined ports,
-> core release `d527f8a` contains the latest ports, and the next server
-> extraction queue is **route modules**, alongside disjoint frontend slices.
+> core release `7fd463a` contains the latest ports including auth/session
+> behavior, and the next server extraction queue is **bot/wiki/route modules**,
+> alongside disjoint frontend slices.
 > Do not re-plan the completed asset, gacha-admin, support, settlement, or
 > wallet-ops services. Treat
 > `provider-settlement-adapters.js` as partially extracted: generic parsing and
@@ -649,18 +650,26 @@ Use this ordered queue before starting the next implementation pass:
    policy, wallet audit, clock/ID/JSON, env, and fetch providers.
    `provider-settlement-adapters.js` remains a thin product field-map wrapper
    over the generic core registry; no duplicate whole-file move is needed.
-4. **Then split route/module files.** Extract reusable route groups and service
-   factories from `auth.js`, `bot-gateway.js`, `wiki.js`,
-   `social-preview-cache.js`, and route sections of `create-app.js`. Keep
-   Express app creation, middleware order, webhook raw-body placement, static
-   serving, credentials, and final module list composition local.
-5. **Continue frontend extraction in parallel only when write scopes are
+4. **Auth route-module port completed 2026-07-13.** `auth.js` was physically
+   moved into the quarantined core platform port as
+   `createMushroomAuthServicePort()`. Mushroom's original path is now a thin
+   adapter injecting DB/transactions, character defaults, crypto, clock,
+   randomness, IDs, language normalization, and session TTL. Existing auth,
+   auth-code, middleware, pruning, and HTTP-hardening regressions pass.
+5. **Continue the remaining route/module split.** Move reusable factories from
+   `bot-gateway.js` and `wiki.js`, then extract coherent descriptor-backed route
+   groups from `create-app.js`. `social-preview-cache.js` is already a thin
+   filesystem/render/log adapter over core `createSocialPreviewCacheService()`;
+   do not duplicate it. Keep Express app creation, middleware order, webhook
+   raw-body placement, static serving, credentials, and final module list
+   composition local.
+6. **Continue frontend extraction in parallel only when write scopes are
    disjoint.** Next frontend-safe slices are headless wallet/gacha state,
    duplicate-burn availability, odds-preview state, gacha-admin editor
    view-models, prep sell/refresh planners, ready/abandon planners, and smaller
    Home/Profile/RunComplete panels. Do not move full pages without DTO,
    route-client, locale, asset, CSS, and product-event adapters.
-6. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
+7. **Keep Phase 13 launch hardening visible but separate.** Meat still needs
    real Telegram deploy smoke, final production DB/backup/rollback policy,
    manual editor decision, asset replacement workflow, and paid/gacha ledger
    readiness before public money or seasonal-pack rollout. Those are production
