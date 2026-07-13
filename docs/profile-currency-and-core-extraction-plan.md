@@ -44,12 +44,12 @@
 > Telegram transport, product catalog data, wiki/lore text, generated art,
 > image metadata, home-field assets, deploy config, and final middleware/route
 > mounting.
-> The 2026-07-13 state after the support extraction is: the
-> gameplay/profile/wallet/asset/gacha-admin/support spine is core-backed
-> through quarantined ports, core release `ffbc33b` contains the latest ports,
-> and the next server extraction queue is **settlement/ops, then route
-> modules**. Do not re-plan `asset-service.js` or `gacha-admin-service.js` as
-> remaining work, and do not re-plan the two support services. Treat
+> The 2026-07-13 state after the settlement/ops extraction is: the
+> gameplay/profile/economy spine is core-backed through quarantined ports,
+> core release `d527f8a` contains the latest ports, and the next server
+> extraction queue is **route modules**, alongside disjoint frontend slices.
+> Do not re-plan the completed asset, gacha-admin, support, settlement, or
+> wallet-ops services. Treat
 > `provider-settlement-adapters.js` as partially extracted: generic parsing and
 > mapping already live in core, while product field maps and reconciliation
 > storage stay local until the settlement-service port is named.
@@ -612,12 +612,12 @@ product content/runtime ownership out at the same time. `app/shared` is no
 longer automatically "local" just because it contains data-adjacent helpers;
 it should be divided into reusable mechanics/schema/evaluator code versus
 Mushroom content/art metadata.
-Updated 2026-07-13 after the core support ports: asset, gacha-admin, and support
-extraction are not pending anymore. The active implementation queue is now (1)
-provider-settlement-service and
-wallet-ops-check ports plus cleanup of the already-partial
-provider-settlement-adapter wrapper, and (2) auth/bot/wiki/social/create-app
-route/module ports. Phase 13 Meat production hardening remains a parallel
+Updated 2026-07-13 after the core settlement/ops ports: the active economy
+service extraction queue is complete. Generic settlement parsing/mapping was
+already in core and concrete provider field maps correctly remain local. The
+active implementation queue is now (1) auth/bot/wiki/social/create-app
+route/module ports and (2) disjoint frontend headless/component slices. Phase
+13 Meat production hardening remains a parallel
 launch-readiness backlog, not a blocker for the next core extraction slice.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
@@ -643,12 +643,12 @@ Use this ordered queue before starting the next implementation pass:
    quarantined core economy port behind injected persistence, wallet, asset,
    audit, ID, clock, and JSON providers. Mushroom keeps support-token parsing,
    operator role/approval policy, concrete audit insertion, and routes local.
-3. **Move settlement/ops services after support.** Port
-   `provider-settlement-service.js` and `wallet-ops-check-service.js`.
-   Treat `provider-settlement-adapters.js` as a cleanup task, not a fresh
-   whole-file move: generic parsing/mapping is already in core, while provider
-   field maps and reconciliation storage stay local until a neutral contract is
-   proven by the settlement-service port.
+3. **Completed 2026-07-13: move settlement/ops services.**
+   `provider-settlement-service.js` and `wallet-ops-check-service.js` now live
+   in the quarantined core economy port behind injected persistence, provider
+   policy, wallet audit, clock/ID/JSON, env, and fetch providers.
+   `provider-settlement-adapters.js` remains a thin product field-map wrapper
+   over the generic core registry; no duplicate whole-file move is needed.
 4. **Then split route/module files.** Extract reusable route groups and service
    factories from `auth.js`, `bot-gateway.js`, `wiki.js`,
    `social-preview-cache.js`, and route sections of `create-app.js`. Keep
