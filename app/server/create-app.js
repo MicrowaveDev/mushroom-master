@@ -15,9 +15,11 @@ import {
   createAuthRouteGroup,
   createAssetRouteGroup,
   createBotRouteGroup,
+  createGachaAdminRouteGroup,
   createProfileRouteGroup,
   createRunRouteGroup,
   createSocialRouteGroup,
+  createSupportAdminRouteGroup,
   createWalletRouteGroup,
   createWikiRouteGroup
 } from '@microwavedev/backpack-game-core/server';
@@ -990,12 +992,9 @@ export async function createApp() {
     })
   );
 
-  app.get(
-    '/api/admin/support/money-lookup',
-    requireSupportAdmin,
-    requireSupportAdminRole('support_viewer'),
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+  bindBackpackRouteDescriptors(app, [createSupportAdminRouteGroup({
+    handlers: {
+      moneyLookup: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await lookupMoneySupportRecords({
@@ -1003,15 +1002,8 @@ export async function createApp() {
           limit: req.query.limit
         })
       });
-    })
-  );
-
-  app.get(
-    '/api/admin/support/actions',
-    requireSupportAdmin,
-    requireSupportAdminRole('support_viewer'),
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      actions: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await listSupportActions({
@@ -1021,16 +1013,8 @@ export async function createApp() {
           limit: req.query.limit || 25
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/wallet-grant',
-    requireSupportAdmin,
-    requireSupportAdminRole('wallet_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      walletGrant: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportAdjustWallet({
@@ -1043,16 +1027,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/wallet-revoke',
-    requireSupportAdmin,
-    requireSupportAdminRole('wallet_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      walletRevoke: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportAdjustWallet({
@@ -1065,16 +1041,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/asset-grant',
-    requireSupportAdmin,
-    requireSupportAdminRole('asset_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      assetGrant: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportGrantAsset({
@@ -1086,16 +1054,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/asset-revoke',
-    requireSupportAdmin,
-    requireSupportAdminRole('asset_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      assetRevoke: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportRevokeAsset({
@@ -1108,16 +1068,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/asset-freeze',
-    requireSupportAdmin,
-    requireSupportAdminRole('asset_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      assetFreeze: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportFreezeAsset({
@@ -1130,16 +1082,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/asset-unfreeze',
-    requireSupportAdmin,
-    requireSupportAdminRole('asset_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      assetUnfreeze: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportUnfreezeAsset({
@@ -1152,16 +1096,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/support/actions/purchase-refund',
-    requireSupportAdmin,
-    requireSupportAdminRole('refund_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      purchaseRefund: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await supportMarkPurchaseRefunded({
@@ -1173,36 +1109,41 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
+      })
+    },
+    middleware: {
+      viewer: [requireSupportAdmin, requireSupportAdminRole('support_viewer'), supportAdminRateLimit],
+      wallet: [requireSupportAdmin, requireSupportAdminRole('wallet_operator'), requireSupportApproval, supportAdminRateLimit],
+      asset: [requireSupportAdmin, requireSupportAdminRole('asset_operator'), requireSupportApproval, supportAdminRateLimit],
+      refund: [requireSupportAdmin, requireSupportAdminRole('refund_operator'), requireSupportApproval, supportAdminRateLimit]
+    }
+  })]);
 
-  app.get(
-    '/api/admin/gacha/catalog',
+  const gachaAdminReadMiddleware = [
     requireSupportAdmin,
     requireSupportAdminRole('gacha_operator'),
-    supportAdminRateLimit,
-    asyncRoute(async (_req, res) => {
-      res.json({ success: true, data: await listGachaAdminCatalog() });
-    })
-  );
-
-  app.get(
-    '/api/admin/gacha/export',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    supportAdminRateLimit,
-    asyncRoute(async (_req, res) => {
-      res.json({ success: true, data: await exportGachaAdminFixture() });
-    })
-  );
-
-  app.post(
-    '/api/admin/gacha/import',
+    supportAdminRateLimit
+  ];
+  const gachaAdminWriteMiddleware = [
     requireSupportAdmin,
     requireSupportAdminRole('gacha_operator'),
     requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+    supportAdminRateLimit
+  ];
+  const gachaAdminMiddleware = {
+    read: gachaAdminReadMiddleware,
+    write: gachaAdminWriteMiddleware
+  };
+
+  bindBackpackRouteDescriptors(app, [createGachaAdminRouteGroup({
+    handlers: {
+      catalog: asyncRoute(async (_req, res) => {
+      res.json({ success: true, data: await listGachaAdminCatalog() });
+      }),
+      exportFixture: asyncRoute(async (_req, res) => {
+      res.json({ success: true, data: await exportGachaAdminFixture() });
+      }),
+      importFixture: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await importGachaAdminFixture({
@@ -1215,16 +1156,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/gacha/plan-items',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      createPlanItem: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await createGachaPlanItem({
@@ -1235,16 +1168,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.patch(
-    '/api/admin/gacha/plan-items/:itemId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      updatePlanItem: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await updateGachaPlanItem({
@@ -1256,16 +1181,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.delete(
-    '/api/admin/gacha/plan-items/:itemId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      deletePlanItem: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await deleteGachaPlanItem({
@@ -1277,16 +1194,14 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
+      })
+    },
+    middleware: gachaAdminMiddleware
+  })]);
 
-  app.post(
-    '/api/admin/gacha/seasons',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+  bindBackpackRouteDescriptors(app, [createGachaAdminRouteGroup({
+    handlers: {
+      createSeason: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await createGachaSeason({
@@ -1297,16 +1212,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.patch(
-    '/api/admin/gacha/seasons/:seasonId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      updateSeason: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await updateGachaSeason({
@@ -1318,16 +1225,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/gacha/collections',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      createCollection: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await createGachaCollection({
@@ -1338,16 +1237,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.patch(
-    '/api/admin/gacha/collections/:collectionId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      updateCollection: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await updateGachaCollection({
@@ -1359,16 +1250,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/gacha/packs',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      createPack: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await createGachaPack({
@@ -1379,16 +1262,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.patch(
-    '/api/admin/gacha/packs/:packId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      updatePack: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await updateGachaPack({
@@ -1400,28 +1275,20 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
+      })
+    },
+    middleware: gachaAdminMiddleware
+  })]);
 
-  app.get(
-    '/api/admin/gacha/packs/:packId/validation',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+  bindBackpackRouteDescriptors(app, [createGachaAdminRouteGroup({
+    handlers: {
+      validatePack: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await validateGachaAdminPack({ packId: req.params.packId })
       });
-    })
-  );
-
-  app.get(
-    '/api/admin/gacha/packs/:packId/preview',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      previewPack: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await previewGachaAdminPack({
@@ -1430,16 +1297,8 @@ export async function createApp() {
           seed: req.query.seed
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/gacha/packs/:packId/transition',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      transitionPack: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await transitionGachaPack({
@@ -1451,16 +1310,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.put(
-    '/api/admin/gacha/packs/:packId/items',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      replacePackItems: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await replaceGachaPackItems({
@@ -1473,16 +1324,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.post(
-    '/api/admin/gacha/packs/:packId/promote-plan-items',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      promotePlanItems: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await promoteGachaPlanItemsToPack({
@@ -1494,16 +1337,14 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
+      })
+    },
+    middleware: gachaAdminMiddleware
+  })]);
 
-  app.put(
-    '/api/admin/gacha/packs/:packId/items',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+  bindBackpackRouteDescriptors(app, [createGachaAdminRouteGroup({
+    handlers: {
+      createPackItem: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await createGachaPackItem({
@@ -1515,16 +1356,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.patch(
-    '/api/admin/gacha/packs/:packId/items/:itemId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      updatePackItem: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await updateGachaPackItem({
@@ -1537,16 +1370,8 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
-
-  app.delete(
-    '/api/admin/gacha/packs/:packId/items/:itemId',
-    requireSupportAdmin,
-    requireSupportAdminRole('gacha_operator'),
-    requireSupportApproval,
-    supportAdminRateLimit,
-    asyncRoute(async (req, res) => {
+      }),
+      deletePackItem: asyncRoute(async (req, res) => {
       res.json({
         success: true,
         data: await deleteGachaPackItem({
@@ -1559,8 +1384,10 @@ export async function createApp() {
           evidence: supportEvidence(req)
         })
       });
-    })
-  );
+      })
+    },
+    middleware: gachaAdminMiddleware
+  })]);
 
   bindBackpackRouteDescriptors(app, [createAssetRouteGroup({
     handlers: {

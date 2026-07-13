@@ -5919,8 +5919,8 @@ frontend adoption.
    follow-up extraction of pure DTO/planner slices into `backpack-game-core`.
    The earlier multi-process/experimental `node:sqlite` concern is superseded
    by the hosted Postgres mode and Sequelize SQLite local mode.
-88. Phase 8AZ server route-module extraction. **In progress, updated
-   2026-07-13:** core commit `bb0744d` adds framework-neutral profile, wallet,
+88. Phase 8AZ server route-module extraction. **Implemented 2026-07-13:** core
+   commit `bb0744d` adds framework-neutral profile, wallet,
    and asset route-group factories after the previously completed auth, bot,
    and wiki groups. The following social slice adds friends, friend-code,
    challenge invitation/accept/decline, and leaderboard descriptors. Mushroom
@@ -5939,4 +5939,12 @@ frontend adoption.
    slice must keep authorization and runtime policy injectable,
    preserve existing HTTP contracts, add core descriptor tests, and pass the
    cross-consumer release gate before pointer handoff. Social/community is
-   complete; run lifecycle is complete; support/gacha admin remains.
+   complete; run lifecycle is complete; support and gacha admin descriptors are
+   complete with separate viewer, wallet, asset, refund, gacha-read, and
+   gacha-write policy injection. The extraction also fixed an unreachable
+   duplicate gacha pack-item route: bulk replacement remains `PUT`, while
+   single-item creation is now `POST` and has API coverage. No route family in
+   this phase remains. Future server work should be driven by a concrete second
+   consumer adoption or by extracting final public catalog/battle descriptors,
+   not by moving product credentials, policy, persistence, or Express startup
+   into core.

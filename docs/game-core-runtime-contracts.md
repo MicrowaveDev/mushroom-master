@@ -486,8 +486,13 @@ registration remain product-owned. The following social slice adds friends,
 friend-code, challenge, and leaderboard descriptors while keeping
 authorization and concrete services local. The run slice adds start/history/
 get/challenge, readiness, SSE, abandonment, and shop mutation descriptors while
-keeping DB checks, locks, SSE delivery, and game mutations local. Support/gacha
-admin is the remaining route-group candidate.
+keeping DB checks, locks, SSE delivery, and game mutations local. Support and
+gacha admin descriptors now separate viewer, wallet, asset, refund, gacha-read,
+and gacha-write policy slots while concrete permissions, approval evidence,
+audits, and storage stay local. The gacha contract also makes single pack-item
+creation reachable at `POST /api/admin/gacha/packs/:packId/items`; bulk
+replacement remains `PUT` at the same path. This planned route-group lane is
+complete.
 The first mv-first backend cluster then moved Mushroom service files for ghost
 loadouts, loadout validation wrappers, gacha simulation wrappers, and readiness
 singleton exports into core provider-driven factories. Product repos still own

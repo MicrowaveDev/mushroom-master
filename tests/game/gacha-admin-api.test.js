@@ -111,6 +111,18 @@ async function createValidAdminPack(app, {
     });
   assert.equal(pack.status, 200);
 
+  const singleItem = await request(app)
+    .post(`/api/admin/gacha/packs/${packId}/items`)
+    .set(gachaHeaders)
+    .send({
+      assetId: commonA,
+      rarity: 'common',
+      dropWeight: 100,
+      reason: 'test_admin_single_pack_item'
+    });
+  assert.equal(singleItem.status, 200);
+  assert.equal(singleItem.body.data.item.assetId, commonA);
+
   const items = await request(app)
     .put(`/api/admin/gacha/packs/${packId}/items`)
     .set(gachaHeaders)
