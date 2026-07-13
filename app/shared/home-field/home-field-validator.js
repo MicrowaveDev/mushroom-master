@@ -3,7 +3,7 @@
  * Mirrors the lightweight validation style used by the artifact and season-image pipelines
  * (see app/scripts/lib/bitmap-image-toolkit.js: checkProvenance).
  *
- * Used by both the CLI (`app/scripts/validate-home-field-assets.js`) and the runtime
+ * Used by both the CLI (`app/scripts/checks/validate-home-field-assets.js`) and the runtime
  * renderer's mount-time schema gate. Single source of truth for what counts as a valid
  * home-field-map.json / home-field-assets.json.
  */

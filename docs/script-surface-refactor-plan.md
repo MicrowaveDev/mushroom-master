@@ -7,6 +7,12 @@ Completed on 2026-07-13. The implementation reduced the Home Field surface from
 family production, prompt presets, previews, validation status, and Playwright
 runners, and added shared provenance, normalization, and deployment helpers.
 
+Follow-up organization completed on 2026-07-13. Executable entry points now live
+under `checks/`, `generation/`, `workflows/`, `operations/`, or `runners/`, while
+shared modules stay in `lib/`. The scripts root contains only the README and
+command manifest, and the documentation checker enforces that layout without
+changing any public npm alias.
+
 The supported command contract now lives in
 [`app/scripts/README.md`](../app/scripts/README.md) and
 [`app/scripts/command-manifest.json`](../app/scripts/command-manifest.json).
@@ -231,7 +237,7 @@ conditional blocks scattered through one large CLI.
 Replace `run-game-e2e.js` and `run-game-screenshot-check.js` with:
 
 ```text
-app/scripts/run-game-playwright.js
+app/scripts/runners/run-game-playwright.js
 ```
 
 Supported modes:

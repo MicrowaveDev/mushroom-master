@@ -81,17 +81,17 @@ The repo includes a production nginx helper:
 
 ```bash
 # Print the generated config without changing the server.
-app/scripts/setup-nginx-production.sh
+app/scripts/operations/setup-nginx-production.sh
 
 # First install HTTP reverse proxy so certbot can complete ACME challenges.
-sudo app/scripts/setup-nginx-production.sh --install --tls off
+sudo app/scripts/operations/setup-nginx-production.sh --install --tls off
 
 # Request the certificate after DNS points mushroombattles.com at the server.
 sudo certbot certonly --webroot -w /var/www/certbot \
   -d mushroombattles.com -d www.mushroombattles.com
 
 # Reinstall with HTTPS redirect and TLS proxying enabled.
-sudo app/scripts/setup-nginx-production.sh --install --tls on
+sudo app/scripts/operations/setup-nginx-production.sh --install --tls on
 ```
 
 The script defaults to proxying nginx to the Node app on `127.0.0.1:3021`. Use `--port <PORT>` if production runs the app on another port.
@@ -106,14 +106,14 @@ pm2 delete mushroom-battles || true
 pm2 save || true
 
 # Make sure .env contains production values before running this.
-app/scripts/setup-docker-production.sh --check-only
-app/scripts/setup-docker-production.sh
+app/scripts/operations/setup-docker-production.sh --check-only
+app/scripts/operations/setup-docker-production.sh
 
 # Pull the Postgres image before starting, useful on first deploy.
-app/scripts/setup-docker-production.sh --pull
+app/scripts/operations/setup-docker-production.sh --pull
 
 # If you keep production secrets outside .env:
-app/scripts/setup-docker-production.sh --env-file .env.production
+app/scripts/operations/setup-docker-production.sh --env-file .env.production
 ```
 
 The app container listens on `127.0.0.1:${PORT:-3021}` on the host, so nginx can keep proxying to `127.0.0.1:3021`. The Postgres data is stored in the named Docker volume `mushroom-master_mushroom_battles_postgres` unless the Compose project name is overridden.
@@ -131,9 +131,9 @@ curl -I http://127.0.0.1:3021
 Routine production updates should use the update helper. It pulls `origin/main`, aggressively prunes safe Docker/repo build cache by default, rebuilds the app container, and waits for `/api/health`:
 
 ```bash
-app/scripts/update-production-server.sh
-app/scripts/update-production-server.sh --logs
-app/scripts/update-production-server.sh --preflight-cleanup
+app/scripts/operations/update-production-server.sh
+app/scripts/operations/update-production-server.sh --logs
+app/scripts/operations/update-production-server.sh --preflight-cleanup
 ```
 
 Back up the production database before risky deploys:

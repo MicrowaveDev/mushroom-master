@@ -1,0 +1,27 @@
+{
+  "task": "script-directory-organization",
+  "date": "2026-07-13",
+  "verdict": "PASS",
+  "counts": {
+    "npmAliases": 76,
+    "checks": 12,
+    "generation": 20,
+    "workflows": 9,
+    "operations": 16,
+    "runners": 3,
+    "libraries": 10,
+    "gameTestsPassed": 646,
+    "focusedTestsPassed": 74,
+    "playwrightPassed": 48,
+    "playwrightSkipped": 1
+  },
+  "criteria": {
+    "AC1": "PASS",
+    "AC2": "PASS",
+    "AC3": "PASS",
+    "AC4": "PASS",
+    "AC5": "PASS",
+    "AC6": "PASS",
+    "AC7": "PASS"
+  }
+}

@@ -227,13 +227,13 @@ Deliverable contract (pin before implementation so two agents don't pick differe
 - **Output format:** single PNG composite at `web/public/artifacts/thumbnail-review.png`. PNG, not HTML or SVG, for the same reason `contact-sheet.png` is a PNG: deterministic, diff-friendly, embed-friendly in PRs and `.agent` evidence.
 - **Commit policy:** local-only until explicit production-ready sign-off. Write the thumbnail sheet under `.agent/tasks/artifact-image-system/phase-1/raw/` while the PNG set is still candidate evidence. After production approval, commit the final sheet alongside the approved PNG baseline.
 - **Sheet layout:** four columns × N rows per artifact section. Columns = the four conditions (transparent, cream cell, grayscale, label strip). Each row band shows the same artifact at the three sizes side-by-side. Cell-size budget: each `64px` thumbnail must remain inspectable at typical PR-diff zoom (≥ 4× pixel doubling for the smallest size).
-- **Reuse vs new:** new script `app/scripts/generate-artifact-thumbnail-review.js`. Share section ordering and metadata loading with `generate-artifact-contact-sheet.js` via a small extracted helper; do not duplicate the section list.
+- **Reuse vs new:** new script `app/scripts/generation/generate-artifact-thumbnail-review.js`. Share section ordering and metadata loading with `generate-artifact-contact-sheet.js` via a small extracted helper; do not duplicate the section list.
 - **npm script:** `npm run game:artifacts:thumbnail-review` (added in this phase; the verification block below already lists it). Update `package.json` in the same change.
 
 Likely files:
 
-- `app/scripts/generate-artifact-contact-sheet.js` (extract shared helpers; no behavior change)
-- New script `app/scripts/generate-artifact-thumbnail-review.js`
+- `app/scripts/generation/generate-artifact-contact-sheet.js` (extract shared helpers; no behavior change)
+- New script `app/scripts/generation/generate-artifact-thumbnail-review.js`
 - `package.json` (new npm script)
 - `docs/artifact-bitmap-todolist.md`
 
@@ -372,7 +372,7 @@ Changes:
   - "role is recognizable without color"
   - "secondary stat uses one small accent, not extra particles"
 - **Characters out of scope for artifact prompts.** Artifacts are objects, not portraits. Even for character items (e.g. `kirt_venom_fang`, `morga_flash_seed`), the prompt template must instruct the generator to render the *object* and explicitly forbid rendering the character likeness. This sidesteps the [visible-ears rule](../AGENTS.md) and the design-requirements canon contract — neither applies when the image is purely an object. Add a one-line "no character likenesses; render the object only" directive to the per-artifact block.
-- **Wrap the approved prompt/approval intake.** [`app/scripts/next-artifact-image-prompts.js`](../app/scripts/next-artifact-image-prompts.js) is the production prompt entry point. The former SVG-derived placeholder generator was removed; production work processes supplied sources with `npm run game:artifacts:produce -- <ids>` and never regenerates placeholder art as a hidden side effect.
+- **Wrap the approved prompt/approval intake.** [`app/scripts/generation/next-artifact-image-prompts.js`](../app/scripts/generation/next-artifact-image-prompts.js) is the production prompt entry point. The former SVG-derived placeholder generator was removed; production work processes supplied sources with `npm run game:artifacts:produce -- <ids>` and never regenerates placeholder art as a hidden side effect.
 
 **Provenance file location (pinned for production).** After production-ready sign-off, approved runtime provenance lives in `app/shared/artifact-image-metadata.json` — committed, ships in the bundle so the running app can surface provenance in dev-only tooling. Before that sign-off, provenance drafts stay under `.agent/tasks/artifact-image-system/phase-4/` and must not be committed as runtime-facing metadata.
 
@@ -382,7 +382,7 @@ Changes:
 
 Likely files:
 
-- `app/scripts/next-artifact-image-prompts.js` (extend; this is the existing prompt entry point)
+- `app/scripts/generation/next-artifact-image-prompts.js` (extend; this is the existing prompt entry point)
 - removed SVG-derived placeholder generator (no production PNG writes in Phase 4)
 - `docs/artifact-image-style-prompt.md`
 - `app/shared/artifact-image-metadata.json` (new)

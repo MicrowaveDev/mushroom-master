@@ -915,10 +915,10 @@ The home-field work owns these paths:
 docs/home-field-ingame-plan.md
 web/public/home-field/
 app/shared/home-field/
-app/scripts/next-home-field-image-prompts.js
-app/scripts/produce-home-field-assets.js
-app/scripts/generate-home-field-contact-sheet.js
-app/scripts/validate-home-field-assets.js
+app/scripts/generation/next-home-field-image-prompts.js
+app/scripts/generation/produce-home-field-assets.js
+app/scripts/generation/generate-home-field-contact-sheet.js
+app/scripts/checks/validate-home-field-assets.js
 .agent/home-field-workspace/              # local ignored workspace
 ```
 
@@ -1067,7 +1067,7 @@ Rules:
 
 ### Step 2 — Prompt Queue Script
 
-Add `app/scripts/next-home-field-image-prompts.js`.
+Add `app/scripts/generation/next-home-field-image-prompts.js`.
 
 Responsibilities:
 
@@ -1087,13 +1087,13 @@ Responsibilities:
 Expected command:
 
 ```bash
-node app/scripts/next-home-field-image-prompts.js --type terrain --limit 5
+node app/scripts/generation/next-home-field-image-prompts.js --type terrain --limit 5
 ```
 
 Recommended package alias:
 
 ```json
-"game:home-field:next": "node app/scripts/next-home-field-image-prompts.js"
+"game:home-field:next": "node app/scripts/generation/next-home-field-image-prompts.js"
 ```
 
 ### Step 3 — Generate Raw Images
@@ -1156,7 +1156,7 @@ Add `npm run game:home-field:provenance:generate` and `:provenance:check` aliase
 
 ### Step 4 — Produce App-Facing Assets
 
-Add `app/scripts/produce-home-field-assets.js`.
+Add `app/scripts/generation/produce-home-field-assets.js`.
 
 Responsibilities:
 
@@ -1179,12 +1179,12 @@ Responsibilities:
 Recommended package alias:
 
 ```json
-"game:home-field:produce": "node app/scripts/produce-home-field-assets.js"
+"game:home-field:produce": "node app/scripts/generation/produce-home-field-assets.js"
 ```
 
 ### Step 5 — Validate Assets And Metadata
 
-Add `app/scripts/validate-home-field-assets.js`.
+Add `app/scripts/checks/validate-home-field-assets.js`.
 
 Validation should fail when:
 
@@ -1208,18 +1208,18 @@ Validation should fail when:
 Expected command:
 
 ```bash
-node app/scripts/validate-home-field-assets.js
+node app/scripts/checks/validate-home-field-assets.js
 ```
 
 Recommended package alias:
 
 ```json
-"game:home-field:validate": "node app/scripts/validate-home-field-assets.js"
+"game:home-field:validate": "node app/scripts/checks/validate-home-field-assets.js"
 ```
 
 ### Step 6 — Generate Review Contact Sheets
 
-Add `app/scripts/generate-home-field-contact-sheet.js`.
+Add `app/scripts/generation/generate-home-field-contact-sheet.js`.
 
 Review outputs:
 
@@ -1250,7 +1250,7 @@ Map preview must render:
 Recommended package alias:
 
 ```json
-"game:home-field:sheet": "node app/scripts/generate-home-field-contact-sheet.js"
+"game:home-field:sheet": "node app/scripts/generation/generate-home-field-contact-sheet.js"
 ```
 
 ### Step 7 — Agent Review Loop
@@ -1815,10 +1815,10 @@ Completion condition:
 Follow **Agent Implementation Flow** Step 1 through Step 8. Do not build the home-field UI until the first contact sheet and map preview exist.
 
 - Add scripts:
-  - `app/scripts/next-home-field-image-prompts.js`
-  - `app/scripts/produce-home-field-assets.js`
-  - `app/scripts/generate-home-field-contact-sheet.js`
-  - `app/scripts/validate-home-field-assets.js`
+  - `app/scripts/generation/next-home-field-image-prompts.js`
+  - `app/scripts/generation/produce-home-field-assets.js`
+  - `app/scripts/generation/generate-home-field-contact-sheet.js`
+  - `app/scripts/checks/validate-home-field-assets.js`
 - Add package aliases:
   - `game:home-field:next`
   - `game:home-field:produce`

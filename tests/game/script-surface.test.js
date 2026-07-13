@@ -10,8 +10,8 @@ import {
   buildPlaywrightArgs,
   buildPlaywrightEnv,
   parsePlaywrightRunnerArgs
-} from '../../app/scripts/run-game-playwright.js';
-import { previewConfig } from '../../app/scripts/run-home-field-preview.js';
+} from '../../app/scripts/runners/run-game-playwright.js';
+import { previewConfig } from '../../app/scripts/runners/run-home-field-preview.js';
 import { buildHomeFieldStatus } from '../../app/shared/home-field/home-field-status.js';
 
 test('[scripts] deprecated generators and one-off runners stay removed', () => {
@@ -31,12 +31,22 @@ test('[scripts] deprecated generators and one-off runners stay removed', () => {
   assert.equal(scripts['game:artifacts:generate'], undefined);
   assert.equal(scripts['game:home-field:polish-minimal-candidate'], undefined);
   assert.equal(scripts['game:home-field:chibi-proof-context'], undefined);
-  assert.equal(scripts['game:test:e2e'], 'node app/scripts/run-game-playwright.js --suite=e2e');
-  assert.equal(scripts['game:test:screens'], 'node app/scripts/run-game-playwright.js --suite=screens');
+  assert.equal(scripts['game:test:e2e'], 'node app/scripts/runners/run-game-playwright.js --suite=e2e');
+  assert.equal(scripts['game:test:screens'], 'node app/scripts/runners/run-game-playwright.js --suite=screens');
 });
 
 test('[scripts] artifact rendering helper remains available to the web UI', () => {
   assert.equal(fs.existsSync(path.join(repoRoot, 'web/src/artifacts/render.js')), true);
+});
+
+test('[scripts] entry points are grouped by responsibility', () => {
+  const scriptsRoot = path.join(repoRoot, 'app/scripts');
+  const rootEntries = fs.readdirSync(scriptsRoot, { withFileTypes: true });
+  const rootFiles = rootEntries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  const directories = rootEntries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+
+  assert.deepEqual(rootFiles, ['README.md', 'command-manifest.json']);
+  assert.deepEqual(directories, ['checks', 'generation', 'lib', 'operations', 'runners', 'workflows']);
 });
 
 test('[scripts] Playwright runner builds suite arguments and isolated environment', () => {
@@ -104,17 +114,17 @@ test('[scripts] Home Field status does not treat existence as production readine
 });
 
 test('[scripts] placeholder generator is isolated from production assets', () => {
-  const source = fs.readFileSync(path.join(repoRoot, 'app/scripts/generate-home-field-placeholder-tiles.js'), 'utf8');
+  const source = fs.readFileSync(path.join(repoRoot, 'app/scripts/generation/generate-home-field-placeholder-tiles.js'), 'utf8');
   assert.match(source, /home-field-workspace', 'raw'/);
   assert.match(source, /productionEligible: false/);
   assert.doesNotMatch(source, /web', 'public', 'home-field/);
 });
 
 test('[scripts] documentation and manifest cover the supported command surface', () => {
-  const result = spawnSync(process.execPath, ['app/scripts/check-script-documentation.js'], {
+  const result = spawnSync(process.execPath, ['app/scripts/checks/check-script-documentation.js'], {
     cwd: repoRoot,
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Script documentation OK/);
+  assert.match(result.stdout, /Script documentation OK: 76 commands in 9 families and 6 directories/);
 });

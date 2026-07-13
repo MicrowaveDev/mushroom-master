@@ -204,7 +204,7 @@ Recommendation:
 
 ### The Produce Script Had A Stale Chroma-Key Helper Call
 
-`app/scripts/produce-home-field-assets.js` called `remove_chroma_key.py` using the old positional CLI shape:
+`app/scripts/generation/produce-home-field-assets.js` called `remove_chroma_key.py` using the old positional CLI shape:
 
 ```bash
 remove_chroma_key.py raw out --key #ff00ff

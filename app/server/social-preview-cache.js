@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createSocialPreviewCacheService } from '@microwavedev/backpack-game-core/modules/social-preview';
-import { renderPreview } from '../scripts/generate-social-preview.js';
+import { renderPreview } from '../scripts/generation/generate-social-preview.js';
 import { log } from './lib/obs.js';
 import { repoRoot } from '../shared/repo-root.js';
 

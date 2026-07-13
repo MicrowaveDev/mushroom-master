@@ -1,6 +1,38 @@
 {
   "version": 1,
   "homeFieldAliasLimit": 25,
+  "directories": [
+    {
+      "id": "checks",
+      "entryPoints": true,
+      "purpose": "Validation, provenance, preflight, audit, and release gates"
+    },
+    {
+      "id": "generation",
+      "entryPoints": true,
+      "purpose": "Prompt selection, image production, normalization, and review artifact generation"
+    },
+    {
+      "id": "workflows",
+      "entryPoints": true,
+      "purpose": "Queue-owned and multi-stage Home Field workflow transitions"
+    },
+    {
+      "id": "operations",
+      "entryPoints": true,
+      "purpose": "Database, support, season administration, deployment, and operator tools"
+    },
+    {
+      "id": "runners",
+      "entryPoints": true,
+      "purpose": "Development servers, Playwright suites, and interactive previews"
+    },
+    {
+      "id": "lib",
+      "entryPoints": false,
+      "purpose": "Reusable implementation modules; never invoke directly"
+    }
+  ],
   "families": [
     {
       "id": "lore-maintenance",

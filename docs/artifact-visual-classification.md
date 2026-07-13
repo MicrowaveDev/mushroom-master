@@ -86,8 +86,8 @@ app/shared/artifact-visual-classification.js
 
 Consumers:
 
-- `app/scripts/next-artifact-image-prompts.js` includes role and shine instructions in generated image prompts.
-- `app/scripts/generate-artifact-contact-sheet.js` and `app/scripts/generate-artifact-thumbnail-review.js` use the shared sectioning and visual projection for deterministic review sheets.
+- `app/scripts/generation/next-artifact-image-prompts.js` includes role and shine instructions in generated image prompts.
+- `app/scripts/generation/generate-artifact-contact-sheet.js` and `app/scripts/generation/generate-artifact-thumbnail-review.js` use the shared sectioning and visual projection for deterministic review sheets.
 - `web/src/components/ArtifactFigure.js` and `web/src/artifacts/render.js` add role/shine CSS classes and UI role glyphs to artifact figures.
 - `web/src/components/prep/ShopZone.js` adds role/shine classes, accessible role glyphs, and a compact shine label to shop cards.
 - `tests/game/artifact-visual-classification.test.js` pins the full-catalog projection snapshot.

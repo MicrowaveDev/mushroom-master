@@ -6,6 +6,26 @@ The machine-readable classification is in
 [`command-manifest.json`](./command-manifest.json), and
 `npm run scripts:docs:check` keeps it aligned with `package.json`.
 
+## Directory Layout
+
+The folders describe implementation responsibility, while npm command names
+remain organized by product domain. Use npm aliases for normal work rather than
+invoking a file because of the folder it occupies.
+
+| Directory | Contains | Direct invocation |
+| --- | --- | --- |
+| `checks/` | Validation, provenance, preflight, audits, and release gates | Through npm aliases |
+| `generation/` | Prompt selection, bitmap production, normalization, and review-sheet generation | Through npm aliases |
+| `workflows/` | Queue-owned and multi-stage Home Field transitions | Only through queue output or npm aliases |
+| `operations/` | Database, wallet, support, season-admin, deployment, and operator tools | npm aliases; deployment shell entry points are documented below |
+| `runners/` | Development servers, Playwright suites, and candidate previews | Through npm aliases |
+| `lib/` | Shared implementation modules and sheet helpers | Never |
+
+Only this README and `command-manifest.json` belong at the `app/scripts/` root.
+New executable scripts must enter one of the five entry-point directories and be
+exposed through `package.json` when they are public. Cross-cutting helpers belong
+in `lib/`, not beside entry points.
+
 Mutation labels used below are **none**, **temporary output**, **candidate files**,
 **production files**, **database**, and **runtime**. Commands with database or
 production-file effects should be run only after reading their `--help` output or
@@ -177,10 +197,10 @@ Deployment scripts are intentionally direct shell entry points because setup,
 routine updates, restarts, and nginx installation have different risk boundaries:
 
 ```bash
-app/scripts/setup-docker-production.sh --help
-app/scripts/update-production-server.sh --help
-app/scripts/restart-production-server.sh --help
-app/scripts/setup-nginx-production.sh --help
+app/scripts/operations/setup-docker-production.sh --help
+app/scripts/operations/update-production-server.sh --help
+app/scripts/operations/restart-production-server.sh --help
+app/scripts/operations/setup-nginx-production.sh --help
 ```
 
 They share argument, path, Compose, and environment parsing through

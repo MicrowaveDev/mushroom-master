@@ -39,7 +39,7 @@ import {
   createMushroomWalletServicePort,
   WALLET_CURRENCY_CODE
 } from '@microwavedev/backpack-game-core/server/ports/mushroom/economy';
-import { checkBackpackGameCoreSubmodule } from '../../app/scripts/check-backpack-game-core-submodule.js';
+import { checkBackpackGameCoreSubmodule } from '../../app/scripts/checks/check-backpack-game-core-submodule.js';
 
 test('[core-submodule] backpack-game-core nested submodule is initialized', () => {
   const result = checkBackpackGameCoreSubmodule();
