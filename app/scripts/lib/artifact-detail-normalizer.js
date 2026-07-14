@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { atomicWriteJson } from '@microwavedev/backpack-game-core/tooling/evidence';
 import { artifacts } from '../../server/game-data.js';
 import { getBagShape } from '../../shared/bag-shape.js';
 import {
@@ -144,13 +145,13 @@ export function normalizeArtifact(artifact) {
   const after = fileSha256(imagePath);
   const invalidationPath = path.join(repoRoot, '.agent', 'artifact-image-workspace', 'processed', `${artifact.id}.normalization.json`);
   fs.mkdirSync(path.dirname(invalidationPath), { recursive: true });
-  fs.writeFileSync(invalidationPath, `${JSON.stringify({
+  atomicWriteJson(invalidationPath, {
     id: artifact.id,
     policy: policy.label,
     beforeSha256: before,
     afterSha256: after,
     provenanceStatus: 'invalidated_until_regenerated'
-  }, null, 2)}\n`);
+  });
   return {
     id: artifact.id,
     policy: policy.label,

@@ -5,7 +5,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { repoRoot } from '../../shared/repo-root.js';
 import { fileSha256 } from '../lib/bitmap-image-toolkit.js';
 
@@ -56,10 +57,12 @@ function parseArgs(argv) {
 function runPreflight(preflightArgs) {
   const args = ['run', 'game:home-field:preflight-chibi-proof'];
   if (preflightArgs.length > 0) args.push('--', ...preflightArgs);
-  const result = spawnSync('npm', args, {
+  const result = runChildProcessSync('npm', args, {
     cwd: repoRoot,
     env: process.env,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    stdio: 'pipe',
+    allowFailure: true
   });
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
@@ -163,7 +166,7 @@ function main() {
       moved: entries
     };
     const manifestPath = path.join(archiveRoot, 'archive-manifest.json');
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    writeEvidenceManifest({ manifestPath, manifest, generatedAt: null });
 
     console.log(`home-field stale chibi proof archive: ${entries.length} item(s) moved`);
     console.log(`  archive: ${rel(archiveRoot)}`);

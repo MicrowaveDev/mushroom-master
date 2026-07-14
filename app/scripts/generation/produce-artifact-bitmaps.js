@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { alphaBounds } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { artifacts } from '../../server/game-data.js';
 import { repoRoot } from '../../shared/repo-root.js';
 import {
-  alphaStats,
   encodeDeterministicPng,
   readPngRgba
 } from '../lib/bitmap-image-toolkit.js';
@@ -70,25 +70,25 @@ function run(command, args) {
 
 function fitAlphaToSafeCanvas(filePath) {
   const image = readPngRgba(filePath);
-  const bounds = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
-  if (!bounds.bboxWidth || !bounds.bboxHeight) {
+  const bounds = alphaBounds(image, { threshold: 23 });
+  if (!bounds) {
     throw new Error(`${path.relative(repoRoot, filePath)} has no visible alpha after chroma-key removal`);
   }
 
   const safeMargin = Math.max(8, Math.round(Math.min(image.width, image.height) * 0.08));
   const targetWidth = image.width - safeMargin * 2;
   const targetHeight = image.height - safeMargin * 2;
-  const scale = Math.min(targetWidth / bounds.bboxWidth, targetHeight / bounds.bboxHeight);
-  const fittedWidth = Math.max(1, Math.round(bounds.bboxWidth * scale));
-  const fittedHeight = Math.max(1, Math.round(bounds.bboxHeight * scale));
+  const scale = Math.min(targetWidth / bounds.width, targetHeight / bounds.height);
+  const fittedWidth = Math.max(1, Math.round(bounds.width * scale));
+  const fittedHeight = Math.max(1, Math.round(bounds.height * scale));
   const targetX = Math.round((image.width - fittedWidth) / 2);
   const targetY = Math.round((image.height - fittedHeight) / 2);
   const rgba = Buffer.alloc(image.width * image.height * 4);
 
   for (let y = 0; y < fittedHeight; y += 1) {
-    const srcY = bounds.minY + Math.min(bounds.bboxHeight - 1, Math.floor(y / scale));
+    const srcY = bounds.y + Math.min(bounds.height - 1, Math.floor(y / scale));
     for (let x = 0; x < fittedWidth; x += 1) {
-      const srcX = bounds.minX + Math.min(bounds.bboxWidth - 1, Math.floor(x / scale));
+      const srcX = bounds.x + Math.min(bounds.width - 1, Math.floor(x / scale));
       const source = (srcY * image.width + srcX) * 4;
       const target = ((targetY + y) * image.width + targetX + x) * 4;
       image.rgba.copy(rgba, target, source, source + 4);
@@ -97,7 +97,7 @@ function fitAlphaToSafeCanvas(filePath) {
 
   fs.writeFileSync(filePath, encodeDeterministicPng({ width: image.width, height: image.height, rgba }));
   console.log(
-    `fit ${path.relative(repoRoot, filePath)} bbox=${bounds.bboxWidth}x${bounds.bboxHeight} scale=${scale.toFixed(3)} margin=${safeMargin}px`
+    `fit ${path.relative(repoRoot, filePath)} bbox=${bounds.width}x${bounds.height} scale=${scale.toFixed(3)} margin=${safeMargin}px`
   );
 }
 

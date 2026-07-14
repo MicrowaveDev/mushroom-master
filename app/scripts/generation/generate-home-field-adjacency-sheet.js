@@ -15,18 +15,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  encodeDeterministicPng,
   readPngRgba,
   fileSha256
 } from '../lib/bitmap-image-toolkit.js';
 import {
-  compositeRaster,
+  compositeRasterToRect,
   createRaster,
   fillRaster,
-  paintCheckerboard as paintRasterCheckerboard,
-  resizeRasterNearest
+  paintCheckerboard
 } from '@microwavedev/backpack-game-core/tooling/raster';
-import { writeEvidenceBundle } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { renderRasterReview } from '@microwavedev/backpack-game-core/tooling/image-review';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -50,29 +48,6 @@ const CHECKER_B = [58, 68, 54, 255];
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
-}
-
-function makeCanvas(width, height, fill) {
-  return createRaster(width, height, fill);
-}
-
-function fillRect(canvas, x, y, w, h, color) {
-  fillRaster(canvas, color, { x, y, width: w, height: h });
-}
-
-function paintCheckerboard(canvas, x, y, w, h, size = 12) {
-  paintRasterCheckerboard(canvas, { x, y, width: w, height: h }, {
-    size,
-    colors: [CHECKER_B, CHECKER_A]
-  });
-}
-
-function blitToRect(canvas, image, dstX, dstY, dstW, dstH) {
-  compositeRaster(canvas, resizeRasterNearest(image, dstW, dstH), {
-    x: dstX,
-    y: dstY,
-    mode: 'max-alpha'
-  });
 }
 
 function terrainLayer(mapDoc) {
@@ -130,9 +105,15 @@ function loadImages(assetById) {
 }
 
 function drawTile(canvas, images, assetId, x, y) {
-  paintCheckerboard(canvas, x, y, TILE, TILE);
+  paintCheckerboard(canvas, { x, y, width: TILE, height: TILE }, {
+    size: 12,
+    colors: [CHECKER_B, CHECKER_A]
+  });
   const img = images.get(assetId);
-  if (img) blitToRect(canvas, img, x, y, TILE, TILE);
+  if (img) compositeRasterToRect(canvas, img, { x, y, width: TILE, height: TILE }, {
+    resize: 'nearest',
+    mode: 'max-alpha'
+  });
 }
 
 function drawRun(canvas, images, assetIds, x, y) {
@@ -153,11 +134,10 @@ function main() {
   const images = loadImages(assetById);
 
   if (!layer) {
-    const canvas = makeCanvas(1, 1, BG);
-    const buf = encodeDeterministicPng(canvas);
-    writeEvidenceBundle({
+    const canvas = createRaster(1, 1, BG);
+    renderRasterReview({
+      render: () => canvas,
       outputPath: outPng,
-      outputBuffer: buf,
       manifestPath: outManifest,
       root: repoRoot,
       manifest: { schemaVersion: 1, status: 'empty', proofs: [] }
@@ -182,7 +162,7 @@ function main() {
   const pairRows = Math.ceil(pairs.length / pairCols);
   const width = PAD * 2 + Math.max(mapWidth, pairCols * pairBlock + (pairCols - 1) * GAP);
   const height = pairsY + Math.max(1, pairRows) * pairBlock + PAD;
-  const canvas = makeCanvas(width, height, BG);
+  const canvas = createRaster(width, height, BG);
 
   drawRun(canvas, images, pathRun, PAD, pathY);
   drawVerticalRun(canvas, images, leftEdgeStack, PAD, edgeY);
@@ -195,7 +175,7 @@ function main() {
     const row = Math.floor(idx / pairCols);
     const x = PAD + col * (pairBlock + GAP);
     const y = pairsY + row * pairBlock;
-    fillRect(canvas, x, y, pairBlock, pairBlock, EMPTY);
+    fillRaster(canvas, EMPTY, { x, y, width: pairBlock, height: pairBlock });
     if (pair.dir === 'horizontal') {
       drawRun(canvas, images, pair.assets, x, y + Math.floor(TILE / 2));
     } else {
@@ -203,7 +183,6 @@ function main() {
     }
   });
 
-  const buf = encodeDeterministicPng(canvas);
   const usedIds = new Set([
     ...pathRun,
     ...leftEdgeStack,
@@ -211,9 +190,9 @@ function main() {
     ...rows.flatMap((row) => row.assets),
     ...pairs.flatMap((pair) => pair.assets)
   ]);
-  writeEvidenceBundle({
+  renderRasterReview({
+    render: () => canvas,
     outputPath: outPng,
-    outputBuffer: buf,
     manifestPath: outManifest,
     root: repoRoot,
     manifest: {

@@ -10,6 +10,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  paletteHistogram,
+  renderPaletteSwatch
+} from '@microwavedev/backpack-game-core/tooling/image-analysis';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
+import {
   encodeDeterministicPng,
   fileSha256,
   readPngAsRgba,
@@ -100,23 +105,6 @@ function parseHexColor(value) {
   };
 }
 
-function colorKey(r, g, b) {
-  return (r << 16) | (g << 8) | b;
-}
-
-function rgbFromKey(key) {
-  return {
-    r: (key >> 16) & 255,
-    g: (key >> 8) & 255,
-    b: key & 255
-  };
-}
-
-function hexFromKey(key) {
-  const { r, g, b } = rgbFromKey(key);
-  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
 function isNearBackground(r, g, b, background) {
   const dr = r - background.r;
   const dg = g - background.g;
@@ -129,22 +117,8 @@ function isNearBackground(r, g, b, background) {
   return r >= 220 && g <= 88 && b >= 180 && Math.abs(r - b) <= 96;
 }
 
-function quantizedKey(r, g, b, step) {
-  const toBucketCenter = (value) => {
-    const bucket = Math.floor(value / step);
-    return Math.min(255, (bucket * step) + Math.floor(step / 2));
-  };
-  return colorKey(toBucketCenter(r), toBucketCenter(g), toBucketCenter(b));
-}
-
-function recordsFromCounts(counts, total) {
-  return [...counts.entries()]
-    .map(([key, count]) => ({
-      hex: hexFromKey(key),
-      count,
-      pct: total > 0 ? count / total : 0
-    }))
-    .sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex));
+function legacyPaletteRecords(records) {
+  return records.map(({ hex, count, pct }) => ({ hex, count, pct }));
 }
 
 function countAtThreshold(records, threshold) {
@@ -154,45 +128,24 @@ function countAtThreshold(records, threshold) {
 function analyzePalette(filePath, opts) {
   const image = readPngAsRgba(filePath);
   const background = parseHexColor(opts.background);
-  const exactCounts = new Map();
-  const coarseCountsByStep = new Map([[16, new Map()], [24, new Map()], [32, new Map()]]);
-  let visiblePixels = 0;
-  let excludedPixels = 0;
-  let transparentPixels = 0;
-  let magentaPixels = 0;
-
-  for (let i = 0; i < image.rgba.length; i += 4) {
-    const r = image.rgba[i];
-    const g = image.rgba[i + 1];
-    const b = image.rgba[i + 2];
-    const a = image.rgba[i + 3];
-    if (a <= opts.alphaThreshold) {
-      transparentPixels += 1;
-      excludedPixels += 1;
-      continue;
-    }
-    if (isNearBackground(r, g, b, background)) {
-      magentaPixels += 1;
-      excludedPixels += 1;
-      continue;
-    }
-    visiblePixels += 1;
-    const exact = colorKey(r, g, b);
-    exactCounts.set(exact, (exactCounts.get(exact) || 0) + 1);
-    for (const [step, counts] of coarseCountsByStep.entries()) {
-      const key = quantizedKey(r, g, b, step);
-      counts.set(key, (counts.get(key) || 0) + 1);
-    }
-  }
+  const histogram = paletteHistogram(image, {
+    alphaThreshold: opts.alphaThreshold,
+    quantizationSteps: [16, 24, 32],
+    includePixel: ([r, g, b]) => !isNearBackground(r, g, b, background)
+  });
+  const visiblePixels = histogram.includedPixels;
+  const excludedPixels = histogram.excludedPixels;
+  const transparentPixels = histogram.transparentPixels;
+  const magentaPixels = histogram.policyExcludedPixels;
 
   if (visiblePixels === 0) {
     throw new Error('No visible non-background pixels found after alpha/magenta exclusion');
   }
 
-  const exactRecords = recordsFromCounts(exactCounts, visiblePixels);
+  const exactRecords = legacyPaletteRecords(histogram.exact);
   const coarseBins = {};
-  for (const [step, counts] of coarseCountsByStep.entries()) {
-    const records = recordsFromCounts(counts, visiblePixels);
+  for (const step of [16, 24, 32]) {
+    const records = legacyPaletteRecords(histogram.quantized[step]);
     coarseBins[`step${step}`] = {
       unique: records.length,
       atLeastSignificantThreshold: countAtThreshold(records, opts.significantThreshold),
@@ -260,37 +213,20 @@ function drawSwatch(records, outPath) {
   const cell = 18;
   const gap = 2;
   const cols = Math.min(16, Math.max(1, colors.length));
-  const rows = Math.max(1, Math.ceil(colors.length / cols));
-  const width = gap + (cols * (cell + gap));
-  const height = gap + (rows * (cell + gap));
-  const rgba = Buffer.alloc(width * height * 4);
-  for (let i = 0; i < rgba.length; i += 4) {
-    rgba[i] = 46;
-    rgba[i + 1] = 43;
-    rgba[i + 2] = 52;
-    rgba[i + 3] = 255;
-  }
-
-  colors.forEach((record, idx) => {
-    const rgb = parseHexColor(record.hex);
-    const col = idx % cols;
-    const row = Math.floor(idx / cols);
-    const x0 = gap + (col * (cell + gap));
-    const y0 = gap + (row * (cell + gap));
-    for (let y = 0; y < cell; y += 1) {
-      for (let x = 0; x < cell; x += 1) {
-        const off = ((y0 + y) * width + x0 + x) * 4;
-        const border = x === 0 || y === 0 || x === cell - 1 || y === cell - 1;
-        rgba[off] = border ? 14 : rgb.r;
-        rgba[off + 1] = border ? 13 : rgb.g;
-        rgba[off + 2] = border ? 17 : rgb.b;
-        rgba[off + 3] = 255;
-      }
-    }
+  const swatch = renderPaletteSwatch(colors.map((record) => {
+    const { r, g, b } = parseHexColor(record.hex);
+    return { ...record, rgb: [r, g, b] };
+  }), {
+    columns: cols,
+    cell,
+    gap,
+    limit: 96,
+    background: [46, 43, 52, 255],
+    border: [14, 13, 17, 255]
   });
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, encodeDeterministicPng({ width, height, rgba }));
+  fs.writeFileSync(outPath, encodeDeterministicPng(swatch));
 }
 
 function main() {
@@ -318,8 +254,7 @@ function main() {
 
     if (opts.out) {
       const outPath = resolveRepoPath(opts.out);
-      fs.mkdirSync(path.dirname(outPath), { recursive: true });
-      fs.writeFileSync(outPath, JSON.stringify(audit, null, 2));
+      writeEvidenceManifest({ manifestPath: outPath, manifest: audit });
     }
 
     if (opts.jsonOnly) {

@@ -139,6 +139,13 @@ use the shared core raster engine and atomically write sibling manifests with
 output/input hashes plus `manifestSha256`; Mushroom still owns their layouts,
 asset selection, colors, and approval policy. Validate readiness with:
 
+Timestamped producer, family, candidate, palette, staging, claim, and archive
+manifests are also immutable self-hashed evidence. Verdicts and provenance
+invalidation records remain mutable product state, but are written atomically.
+Core owns neutral alpha fitting, color/edge transforms, palette/components
+analysis, and synchronous command execution; source selection, thresholds,
+procedural art, and workflow semantics stay here.
+
 ```bash
 npm run game:home-field:validate -- --profile=minimal-production
 npm run game:home-field:validate -- --profile=full-registry-production

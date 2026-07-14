@@ -1,5 +1,9 @@
 import fs from 'node:fs';
-import { cropRaster, resizeRasterHybrid } from '@microwavedev/backpack-game-core/tooling/raster';
+import {
+  blendRasterTowardAverage,
+  cropRaster,
+  resizeRasterHybrid
+} from '@microwavedev/backpack-game-core/tooling/raster';
 
 export function loadJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -26,19 +30,7 @@ export function cropNormalizedSquare(srcImage, crop) {
 }
 
 export function quietTerrainContrast(image, amount) {
-  const sums = [0, 0, 0];
-  const count = image.width * image.height;
-  for (let offset = 0; offset < image.rgba.length; offset += 4) {
-    for (let channel = 0; channel < 3; channel += 1) sums[channel] += image.rgba[offset + channel];
-  }
-  const averages = sums.map((sum) => sum / count);
-  const rgba = Buffer.from(image.rgba);
-  for (let offset = 0; offset < rgba.length; offset += 4) {
-    for (let channel = 0; channel < 3; channel += 1) {
-      rgba[offset + channel] = Math.round(rgba[offset + channel] * (1 - amount) + averages[channel] * amount);
-    }
-  }
-  return { width: image.width, height: image.height, rgba };
+  return blendRasterTowardAverage(image, amount);
 }
 
 export function allHomeFieldEntries(assetsDoc) {

@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { atomicWriteJson } from '@microwavedev/backpack-game-core/tooling/evidence';
 import { repoRoot } from '../../shared/repo-root.js';
 
 const supportedIds = new Set(['thalla']);
@@ -160,7 +161,7 @@ function main() {
     setIfValue(review, 'mobileScreenshotSha256', findHash(manifest.previews, 'home-field-candidate-mobile-clean.png'));
     setIfValue(review, 'desktopScreenshotSha256', findHash(manifest.previews, 'home-field-candidate-desktop-clean.png'));
 
-    fs.writeFileSync(reviewPath, `${JSON.stringify(reviewDoc, null, 2)}\n`);
+    atomicWriteJson(reviewPath, reviewDoc);
     console.log(`home-field chibi verdict recorded: ${id} -> ${verdict}`);
     console.log(`  review: ${path.relative(repoRoot, reviewPath)}`);
     console.log(`  evidence: ${review.candidateEvidenceManifest}`);

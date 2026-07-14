@@ -10,17 +10,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  encodeDeterministicPng,
   readPngRgba,
   fileSha256
 } from '../lib/bitmap-image-toolkit.js';
 import {
-  compositeRaster,
+  compositeRasterToRect,
   createRaster,
-  paintCheckerboard as paintRasterCheckerboard,
-  resizeRasterNearest
+  paintCheckerboard,
+  repeatRasterGrid
 } from '@microwavedev/backpack-game-core/tooling/raster';
-import { writeEvidenceBundle } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { renderRasterReview } from '@microwavedev/backpack-game-core/tooling/image-review';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -43,36 +42,24 @@ const PATTERNS = [
   ['grass_base_01', 'grass_base_02', 'grass_flowers_01', 'grass_base_02', 'grass_base_01']
 ];
 
-function makeCanvas(width, height, fill) {
-  return createRaster(width, height, fill);
-}
-
-function paintCheckerboard(canvas, x, y, w, h, size = 12) {
-  paintRasterCheckerboard(canvas, { x, y, width: w, height: h }, {
-    size,
+function drawTile(canvas, images, id, x, y) {
+  paintCheckerboard(canvas, { x, y, width: TILE, height: TILE }, {
+    size: 12,
     colors: [CHECKER_B, CHECKER_A]
   });
-}
-
-function blit(canvas, image, dstX, dstY, dstW = TILE, dstH = TILE) {
-  compositeRaster(canvas, resizeRasterNearest(image, dstW, dstH), {
-    x: dstX,
-    y: dstY,
+  compositeRasterToRect(canvas, images.get(id), { x, y, width: TILE, height: TILE }, {
+    resize: 'nearest',
     mode: 'copy'
   });
 }
 
-function drawTile(canvas, images, id, x, y) {
-  paintCheckerboard(canvas, x, y, TILE, TILE);
-  blit(canvas, images.get(id), x, y);
-}
-
 function drawRepeat(canvas, images, id, x, y, cols = 3, rows = 3) {
-  for (let yy = 0; yy < rows; yy += 1) {
-    for (let xx = 0; xx < cols; xx += 1) {
-      drawTile(canvas, images, id, x + xx * TILE, y + yy * TILE);
-    }
-  }
+  repeatRasterGrid(canvas, images.get(id), { x, y, width: cols * TILE, height: rows * TILE }, {
+    rows,
+    columns: cols,
+    resize: 'nearest',
+    mode: 'copy'
+  });
 }
 
 function drawPattern(canvas, images, pattern, x, y) {
@@ -102,7 +89,7 @@ function main() {
   const repeatsY = PAD;
   const patternsY = repeatsY + TILE * 3 + GAP;
   const height = patternsY + PATTERNS.length * TILE * 3 + (PATTERNS.length - 1) * GAP + PAD;
-  const canvas = makeCanvas(width, height, BG);
+  const canvas = createRaster(width, height, BG);
 
   IDS.forEach((id, idx) => {
     drawRepeat(canvas, images, id, PAD + idx * (repeatW + GAP), repeatsY);
@@ -111,10 +98,9 @@ function main() {
     drawPattern(canvas, images, pattern, PAD, patternsY + idx * (TILE * 3 + GAP));
   });
 
-  const buf = encodeDeterministicPng(canvas);
-  writeEvidenceBundle({
+  renderRasterReview({
+    render: () => canvas,
     outputPath: outPng,
-    outputBuffer: buf,
     manifestPath: outManifest,
     root: repoRoot,
     manifest: {

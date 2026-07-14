@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { normalizeArtifacts } from '../lib/artifact-detail-normalizer.js';
 
 function parseArgs(argv) {
@@ -18,7 +18,10 @@ try {
     console.log(`${result.changed ? 'normalized' : 'rewrote'} ${result.id} (${result.policy})`);
   }
   const ids = results.map((result) => result.id);
-  const validation = spawnSync('npm', ['run', 'game:artifacts:validate', '--', ...ids], { stdio: 'inherit' });
+  const validation = runChildProcessSync('npm', ['run', 'game:artifacts:validate', '--', ...ids], {
+    stdio: 'inherit',
+    allowFailure: true
+  });
   if (validation.status !== 0) process.exit(validation.status ?? 1);
   console.log('Provenance invalidated by byte changes; review the PNGs, then run game:artifacts:provenance:generate.');
 } catch (error) {

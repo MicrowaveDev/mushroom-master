@@ -1158,7 +1158,7 @@ Implementation evidence:
 
 ### Phase 8BG - Residual Script Neutralization
 
-Status: **Planned after the 2026-07-14 post-8BF audit; non-blocking for the
+Status: **Implemented 2026-07-14 on core SHA `521c444`; non-blocking for the
 Hosted Telegram/web production target.** Phase 8BF correctly moved the codec,
 basic raster operations, image metrics, evidence primitives, and synchronous
 runner contract. Its completion means both products execute those public core
@@ -1295,6 +1295,20 @@ colors communicate alpha, and which failures block approval.
    Mushroom script docs/Home Field/artifact pipelines/full game tests/build,
    Meat script docs/asset review/provenance/full tests/browser/build, and the
    hub `verify:backpack-core` gate before updating consumer and hub pointers.
+
+Implementation result: the five Home Field sheets now call shared placement,
+repeat-grid, alpha-diagnostic, and review/evidence primitives while retaining
+their exact frozen PNG hashes and dimensions. Neutral APIs for alpha fitting,
+average/edge transforms, palette analysis, mask components, atomic records,
+self-hashed manifests, and synchronous command execution moved to core;
+Mushroom consumes the compatible replacements. Meat now renders a real
+third-panel alpha-edge diagnostic
+for its eight PNG sources, records four SVG-only entries as unavailable,
+supports an isolated candidate root, and binds every selected input and
+diagnostic raster in schema-v2 evidence. Hidden-RGB frame copying and legacy
+alpha-fit sampling remain narrowly local where replacing them changed
+compatibility hashes; the neutral alpha-fit API is tested and available for
+new consumers but is not substituted into that legacy producer yet.
 
 #### Completion Gates
 

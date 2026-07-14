@@ -11,19 +11,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  encodeDeterministicPng,
   readPngRgba,
   fileSha256
 } from '../lib/bitmap-image-toolkit.js';
 import {
-  compositeRaster,
+  compositeRasterToRect,
   createRaster,
   cropRaster,
   fillRaster,
-  paintCheckerboard as paintRasterCheckerboard,
-  resizeRasterNearest
+  paintCheckerboard
 } from '@microwavedev/backpack-game-core/tooling/raster';
-import { writeEvidenceBundle } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { renderRasterReview } from '@microwavedev/backpack-game-core/tooling/image-review';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -58,36 +56,9 @@ function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
-function makeCanvas(width, height, fill) {
-  return createRaster(width, height, fill);
-}
-
-function fillRect(canvas, x, y, w, h, color) {
-  fillRaster(canvas, color, { x, y, width: w, height: h });
-}
-
-function paintCheckerboard(canvas, x, y, w, h, size = 16) {
-  paintRasterCheckerboard(canvas, { x, y, width: w, height: h }, {
-    size,
-    colors: [CHECKER_B, CHECKER_A]
-  });
-}
-
-function blitToRect(canvas, image, dstX, dstY, dstW, dstH) {
-  compositeRaster(canvas, resizeRasterNearest(image, dstW, dstH), {
-    x: dstX,
-    y: dstY,
-    mode: 'opaque'
-  });
-}
-
-function cropImage(image, rect) {
-  return cropRaster(image, rect);
-}
-
 function reviewImageForAsset(entry, image) {
   if (entry.type !== 'character' || !entry.spritesheet) return image;
-  return cropImage(image, {
+  return cropRaster(image, {
     x: 0,
     y: 0,
     width: entry.spritesheet.frameWidth,
@@ -109,7 +80,7 @@ function main() {
 
   const width = PAD + SIZES.length * (CELL + PAD);
   const height = PAD + Math.max(1, entries.length) * (CELL + PAD);
-  const canvas = makeCanvas(width, height, BG);
+  const canvas = createRaster(width, height, BG);
 
   for (let row = 0; row < entries.length; row += 1) {
     const entry = entries[row];
@@ -117,19 +88,24 @@ function main() {
     for (let col = 0; col < SIZES.length; col += 1) {
       const cellX = PAD + col * (CELL + PAD);
       const cellY = PAD + row * (CELL + PAD);
-      if (col === 0) paintCheckerboard(canvas, cellX, cellY, CELL, CELL);
-      else fillRect(canvas, cellX, cellY, CELL, CELL, col % 2 === 0 ? DARK_FIELD : FIELD);
+      if (col === 0) paintCheckerboard(canvas, { x: cellX, y: cellY, width: CELL, height: CELL }, {
+        size: 16,
+        colors: [CHECKER_B, CHECKER_A]
+      });
+      else fillRaster(canvas, col % 2 === 0 ? DARK_FIELD : FIELD, { x: cellX, y: cellY, width: CELL, height: CELL });
       const size = SIZES[col];
       const x = cellX + Math.floor((CELL - size) / 2);
       const y = cellY + Math.floor((CELL - size) / 2);
-      blitToRect(canvas, image, x, y, size, size);
+      compositeRasterToRect(canvas, image, { x, y, width: size, height: size }, {
+        resize: 'nearest',
+        mode: 'opaque'
+      });
     }
   }
 
-  const png = encodeDeterministicPng(canvas);
-  writeEvidenceBundle({
+  renderRasterReview({
+    render: () => canvas,
     outputPath: outPng,
-    outputBuffer: png,
     manifestPath: outManifest,
     root: repoRoot,
     manifest: {

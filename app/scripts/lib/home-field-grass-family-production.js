@@ -9,6 +9,12 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { averageRegionRgb } from '@microwavedev/backpack-game-core/tooling/image-analysis';
+import {
+  blendRasterOppositeEdges,
+  neutralizeRasterEdges
+} from '@microwavedev/backpack-game-core/tooling/raster';
 import {
   encodeDeterministicPng,
   fileSha256,
@@ -199,42 +205,12 @@ function smootherstep(t) {
   return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
-function blendPair(rgba, leftIndex, rightIndex, weight) {
-  for (let c = 0; c < 4; c += 1) {
-    const avg = Math.round((rgba[leftIndex + c] + rgba[rightIndex + c]) / 2);
-    rgba[leftIndex + c] = Math.round(rgba[leftIndex + c] * (1 - weight) + avg * weight);
-    rgba[rightIndex + c] = Math.round(rgba[rightIndex + c] * (1 - weight) + avg * weight);
-  }
-}
-
 function makeTerrainSeamless(image, margin = 48) {
-  const { width, height } = image;
-  const rgba = Buffer.from(image.rgba);
-  const edge = Math.max(1, Math.min(margin, Math.floor(Math.min(width, height) / 3)));
-  for (let y = 0; y < height; y += 1) {
-    for (let d = 0; d < edge; d += 1) {
-      const weight = 1 - smootherstep(d / edge);
-      blendPair(rgba, (y * width + d) * 4, (y * width + (width - 1 - d)) * 4, weight);
-    }
-  }
-  for (let x = 0; x < width; x += 1) {
-    for (let d = 0; d < edge; d += 1) {
-      const weight = 1 - smootherstep(d / edge);
-      blendPair(rgba, (d * width + x) * 4, ((height - 1 - d) * width + x) * 4, weight);
-    }
-  }
-  return { width, height, rgba };
+  return blendRasterOppositeEdges(image, { margin });
 }
 
 function averageRgb(image) {
-  let r = 0, g = 0, b = 0;
-  const count = image.width * image.height;
-  for (let i = 0; i < image.rgba.length; i += 4) {
-    r += image.rgba[i + 0];
-    g += image.rgba[i + 1];
-    b += image.rgba[i + 2];
-  }
-  return [r / count, g / count, b / count];
+  return averageRegionRgb(image);
 }
 
 function clampByte(n) {
@@ -276,23 +252,7 @@ function blendInteriorVariant(base, overlay, strength) {
 }
 
 function neutralizeEdges(image, margin = 72, strength = 0.9) {
-  const avg = averageRgb(image);
-  const rgba = Buffer.from(image.rgba);
-  const edge = Math.max(1, Math.min(margin, Math.floor(Math.min(image.width, image.height) / 2)));
-  for (let y = 0; y < image.height; y += 1) {
-    const dy = Math.min(y, image.height - 1 - y);
-    for (let x = 0; x < image.width; x += 1) {
-      const dx = Math.min(x, image.width - 1 - x);
-      const distance = Math.min(dx, dy);
-      const edgeWeight = (1 - smootherstep(distance / edge)) * strength;
-      if (edgeWeight <= 0) continue;
-      const i = (y * image.width + x) * 4;
-      rgba[i + 0] = clampByte(rgba[i + 0] * (1 - edgeWeight) + avg[0] * edgeWeight);
-      rgba[i + 1] = clampByte(rgba[i + 1] * (1 - edgeWeight) + avg[1] * edgeWeight);
-      rgba[i + 2] = clampByte(rgba[i + 2] * (1 - edgeWeight) + avg[2] * edgeWeight);
-    }
-  }
-  return { width: image.width, height: image.height, rgba };
+  return neutralizeRasterEdges(image, { margin, strength });
 }
 
 function seededRandom(seed) {
@@ -471,7 +431,7 @@ export function produceGrassFamily(argv = process.argv.slice(2)) {
   ensureDir(manifestDir);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const manifestPath = path.join(manifestDir, `produce-grass-family-${stamp}.json`);
-  fs.writeFileSync(manifestPath, `${JSON.stringify({
+  writeEvidenceManifest({ manifestPath, generatedAt: null, manifest: {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     source: {
@@ -490,7 +450,7 @@ export function produceGrassFamily(argv = process.argv.slice(2)) {
       cropPlanDescription: cropPlan.description
     },
     outputs
-  }, null, 2)}\n`);
+  } });
   console.log(`  manifest: ${path.relative(repoRoot, manifestPath)}`);
   console.log('');
   if (args.candidate) {

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { runImageReview } from '@microwavedev/backpack-game-core/tooling/image-review';
+import { atomicWriteJson } from '@microwavedev/backpack-game-core/tooling/evidence';
 import { artifactVisualClassification } from '../../shared/artifact-visual-classification.js';
 import { getBagShape } from '../../shared/bag-shape.js';
 import {
@@ -96,7 +97,7 @@ function writeSheetManifest({ manifestPath, outPath, outputHash, outputSize, inp
   const written = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   written.changedArtifactIds = written.changedIds;
   delete written.changedIds;
-  fs.writeFileSync(manifestPath, `${JSON.stringify(written, null, 2)}\n`);
+  atomicWriteJson(manifestPath, written);
 }
 
 function sheetDimensionsForArtifact(artifact) {

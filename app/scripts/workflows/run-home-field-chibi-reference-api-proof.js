@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { atomicWriteFile } from '@microwavedev/backpack-game-core/tooling/evidence';
 import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { repoRoot } from '../../shared/repo-root.js';
 import {
@@ -217,7 +218,7 @@ function writeBlockerNote({ verifierResult, paletteResult, normalized, promptSha
     'Stop condition: do not generate grouped state sheets, split frames, candidate spritesheets, previews, or verdicts until the reference verifier and palette audit both pass.'
   ];
   fs.mkdirSync(path.dirname(resolveRepoPath(blockerPath)), { recursive: true });
-  fs.writeFileSync(resolveRepoPath(blockerPath), `${lines.join('\n')}\n`);
+  atomicWriteFile(resolveRepoPath(blockerPath), `${lines.join('\n')}\n`);
 }
 
 function fileHash(filePath) {
@@ -265,7 +266,7 @@ function main() {
 
     const python = ensurePython(opts, apiEnv);
     fs.mkdirSync(path.dirname(resolveRepoPath(promptPath)), { recursive: true });
-    fs.writeFileSync(resolveRepoPath(promptPath), `${promptText}\n`);
+    atomicWriteFile(resolveRepoPath(promptPath), `${promptText}\n`);
     const promptSha = fileHashLike(resolveRepoPath(promptPath));
 
     fs.mkdirSync(path.dirname(resolveRepoPath(outputPath)), { recursive: true });

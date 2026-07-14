@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { connectedComponentsFromMask } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import { repoRoot } from '../../shared/repo-root.js';
 import { readPngAsRgba, readPngHeader } from '../lib/bitmap-image-toolkit.js';
 
@@ -62,50 +63,16 @@ function findVisibleBlobs(image) {
     visible[i] = isReferenceBackground(rgba[offset], rgba[offset + 1], rgba[offset + 2], rgba[offset + 3]) ? 0 : 1;
   }
 
-  const seen = new Uint8Array(width * height);
-  const blobs = [];
-  const stack = [];
-  for (let start = 0; start < visible.length; start += 1) {
-    if (!visible[start] || seen[start]) continue;
-    let pixels = 0;
-    let minX = width;
-    let minY = height;
-    let maxX = -1;
-    let maxY = -1;
-    stack.push(start);
-    seen[start] = 1;
-    while (stack.length > 0) {
-      const idx = stack.pop();
-      const x = idx % width;
-      const y = Math.floor(idx / width);
-      pixels += 1;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-      const neighbors = [
-        x > 0 ? idx - 1 : -1,
-        x + 1 < width ? idx + 1 : -1,
-        y > 0 ? idx - width : -1,
-        y + 1 < height ? idx + width : -1
-      ];
-      for (const next of neighbors) {
-        if (next < 0 || !visible[next] || seen[next]) continue;
-        seen[next] = 1;
-        stack.push(next);
-      }
-    }
-    blobs.push({
+  return connectedComponentsFromMask({ width, height, data: visible }, { connectivity: 4 })
+    .map(({ pixels, minX, minY, maxX, maxY, width: blobWidth, height: blobHeight }) => ({
       pixels,
       minX,
       minY,
       maxX,
       maxY,
-      width: maxX - minX + 1,
-      height: maxY - minY + 1
-    });
-  }
-  return blobs.sort((a, b) => b.pixels - a.pixels);
+      width: blobWidth,
+      height: blobHeight
+    }));
 }
 
 function verifyReferenceSpriteBoxes(relPath, errors) {

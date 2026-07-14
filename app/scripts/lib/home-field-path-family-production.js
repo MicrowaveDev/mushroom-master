@@ -9,6 +9,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
 import {
   encodeDeterministicPng,
   fileSha256,
@@ -154,7 +155,7 @@ export function producePathFamily(argv = process.argv.slice(2)) {
   ensureDir(manifestDir);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const manifestPath = path.join(manifestDir, `produce-path-family-${stamp}.json`);
-  fs.writeFileSync(manifestPath, `${JSON.stringify({
+  writeEvidenceManifest({ manifestPath, generatedAt: null, manifest: {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     source: {
@@ -170,7 +171,7 @@ export function producePathFamily(argv = process.argv.slice(2)) {
       outputRoot: path.relative(repoRoot, outputRoot)
     },
     outputs
-  }, null, 2)}\n`);
+  } });
   console.log(`  manifest: ${path.relative(repoRoot, manifestPath)}`);
   console.log('');
   if (args.candidate) {

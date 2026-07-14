@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodeDeterministicPng } from '../lib/bitmap-image-toolkit.js';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -397,15 +398,16 @@ function main() {
     else if (id === 'leaf_sprout_01') writeTile(id, makeLeafSprout());
     else throw new Error(`Unknown proof tile id "${id}". Supported: ${PROOF_IDS.join(', ')}`);
   }
-  fs.writeFileSync(
-    path.join(outputDir, 'placeholder-manifest.json'),
-    `${JSON.stringify({
+  writeEvidenceManifest({
+    manifestPath: path.join(outputDir, 'placeholder-manifest.json'),
+    generatedAt: null,
+    manifest: {
       status: 'placeholder',
       productionEligible: false,
       generatedIds: ids,
       outputRoot: path.relative(repoRoot, outputDir)
-    }, null, 2)}\n`
-  );
+    }
+  });
   console.log('placeholder-only output: never promote these files as approved production art');
 }
 

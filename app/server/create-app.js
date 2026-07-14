@@ -2,7 +2,6 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { spawnSync } from 'child_process';
 import express from 'express';
 import OpenAI from 'openai';
 import {
@@ -21,6 +20,7 @@ import {
   createWalletRouteGroup,
   createWikiRouteGroup
 } from '@microwavedev/backpack-game-core/server';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import {
   authenticateRequest,
   createTelegramAuthCode,
@@ -161,7 +161,11 @@ function ensureDistFreshOrRebuild() {
   }
   // eslint-disable-next-line no-console
   console.warn(`${msg} Auto-rebuilding now...`);
-  const result = spawnSync('npm', ['run', 'game:build'], { cwd: repoRoot, stdio: 'inherit' });
+  const result = runChildProcessSync('npm', ['run', 'game:build'], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+    allowFailure: true
+  });
   if (result.status !== 0) {
     throw new Error('[create-app] auto-rebuild failed; refusing to serve stale dist');
   }

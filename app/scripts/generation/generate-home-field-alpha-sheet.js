@@ -12,17 +12,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   alphaStats,
-  encodeDeterministicPng,
   fileSha256,
   readPngRgba
 } from '../lib/bitmap-image-toolkit.js';
 import {
+  compositeAlphaDiagnosticRaster,
   createRaster,
   cropRaster,
   fillRaster,
-  paintCheckerboard as paintRasterCheckerboard
+  paintCheckerboard
 } from '@microwavedev/backpack-game-core/tooling/raster';
-import { writeEvidenceBundle } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { renderRasterReview } from '@microwavedev/backpack-game-core/tooling/image-review';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -55,59 +55,9 @@ function parseIds(argv) {
   return new Set(arg.slice('--ids='.length).split(',').map((id) => id.trim()).filter(Boolean));
 }
 
-function makeCanvas(width, height, fill = DARK) {
-  return createRaster(width, height, fill);
-}
-
-function fillRect(canvas, x, y, w, h, color) {
-  fillRaster(canvas, color, { x, y, width: w, height: h });
-}
-
-function paintChecker(canvas, x, y, w, h, size = 16) {
-  paintRasterCheckerboard(canvas, { x, y, width: w, height: h }, {
-    size,
-    colors: [CHECK_A, CHECK_B]
-  });
-}
-
-function blit(canvas, image, dstX, dstY, mode) {
-  for (let y = 0; y < image.height; y += 1) {
-    for (let x = 0; x < image.width; x += 1) {
-      const si = (y * image.width + x) * 4;
-      const a = image.rgba[si + 3];
-      if (a === 0) continue;
-      const di = ((dstY + y) * canvas.width + (dstX + x)) * 4;
-      if (mode === 'alpha') {
-        canvas.rgba[di + 0] = a;
-        canvas.rgba[di + 1] = a;
-        canvas.rgba[di + 2] = a;
-        canvas.rgba[di + 3] = 255;
-        continue;
-      }
-      if (mode === 'edge') {
-        const edge = a > 0 && a < 245;
-        canvas.rgba[di + 0] = edge ? HOT[0] : image.rgba[si + 0];
-        canvas.rgba[di + 1] = edge ? HOT[1] : image.rgba[si + 1];
-        canvas.rgba[di + 2] = edge ? HOT[2] : image.rgba[si + 2];
-        canvas.rgba[di + 3] = 255;
-        continue;
-      }
-      const alpha = a / 255;
-      canvas.rgba[di + 0] = Math.round(image.rgba[si + 0] * alpha + canvas.rgba[di + 0] * (1 - alpha));
-      canvas.rgba[di + 1] = Math.round(image.rgba[si + 1] * alpha + canvas.rgba[di + 1] * (1 - alpha));
-      canvas.rgba[di + 2] = Math.round(image.rgba[si + 2] * alpha + canvas.rgba[di + 2] * (1 - alpha));
-      canvas.rgba[di + 3] = 255;
-    }
-  }
-}
-
-function cropImage(image, rect) {
-  return cropRaster(image, rect);
-}
-
 function reviewImageForAsset(asset, image) {
   if (asset.type !== 'character' || !asset.spritesheet) return image;
-  return cropImage(image, {
+  return cropRaster(image, {
     x: 0,
     y: 0,
     width: asset.spritesheet.frameWidth,
@@ -133,7 +83,7 @@ function main() {
   const rows = Math.ceil(assets.length / COLS);
   const width = PAD + COLS * (CELL * 3 + PAD);
   const height = PAD + rows * (HEADER + CELL + PAD);
-  const canvas = makeCanvas(width, height);
+  const canvas = createRaster(width, height, DARK);
   const entries = [];
 
   assets.forEach((asset, index) => {
@@ -145,12 +95,15 @@ function main() {
     const x = PAD + col * (CELL * 3 + PAD);
     const y = PAD + row * (HEADER + CELL + PAD) + HEADER;
 
-    paintChecker(canvas, x, y, CELL, CELL);
-    fillRect(canvas, x + CELL, y, CELL, CELL, DARK);
-    fillRect(canvas, x + CELL * 2, y, CELL, CELL, [12, 18, 14, 255]);
-    blit(canvas, image, x, y, 'color');
-    blit(canvas, image, x + CELL, y, 'alpha');
-    blit(canvas, image, x + CELL * 2, y, 'edge');
+    paintCheckerboard(canvas, { x, y, width: CELL, height: CELL }, {
+      size: 16,
+      colors: [CHECK_A, CHECK_B]
+    });
+    fillRaster(canvas, DARK, { x: x + CELL, y, width: CELL, height: CELL });
+    fillRaster(canvas, [12, 18, 14, 255], { x: x + CELL * 2, y, width: CELL, height: CELL });
+    compositeAlphaDiagnosticRaster(canvas, image, { x, y, mode: 'color', clip: false });
+    compositeAlphaDiagnosticRaster(canvas, image, { x: x + CELL, y, mode: 'mask', clip: false });
+    compositeAlphaDiagnosticRaster(canvas, image, { x: x + CELL * 2, y, mode: 'edge', edgeColor: HOT, clip: false });
 
     entries.push({
       id: asset.id,
@@ -175,10 +128,9 @@ function main() {
     });
   });
 
-  const buf = encodeDeterministicPng(canvas);
-  writeEvidenceBundle({
+  renderRasterReview({
+    render: () => canvas,
     outputPath: outPng,
-    outputBuffer: buf,
     manifestPath: outManifest,
     root: repoRoot,
     manifest: {

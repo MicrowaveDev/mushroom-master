@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
 import {
   encodeDeterministicPng,
   fileSha256,
@@ -187,7 +188,7 @@ function main() {
       sha256: fileSha256(referenceAbs)
     }
   };
-  fs.writeFileSync(provenanceAbs, `${JSON.stringify(manifest, null, 2)}\n`);
+  writeEvidenceManifest({ manifestPath: provenanceAbs, manifest, generatedAt: null });
 
   console.log('home-field chibi local source stage: PASS');
   console.log(`  source: ${manifest.source.path}`);

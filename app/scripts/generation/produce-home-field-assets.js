@@ -21,8 +21,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { averageRegionRgb, rgbDistance } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import {
   encodeDeterministicPng,
   readPngAsRgba,
@@ -30,10 +31,14 @@ import {
   alphaStats
 } from '../lib/bitmap-image-toolkit.js';
 import {
+  blendRasterOppositeEdges,
+  blendRasterTowardAverage,
+  composeFrameGrid,
   cropRaster,
   resizeRasterHybrid,
   resizeRasterNearest
 } from '@microwavedev/backpack-game-core/tooling/raster';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { validateAssets } from '../../shared/home-field/home-field-validator.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -136,91 +141,13 @@ function cropCenterRgba(srcImage, ratio) {
   return cropRaster(srcImage, { x: startX, y: startY, width: cropSize, height: cropSize });
 }
 
-function smootherstep(t) {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * x * (x * (x * 6 - 15) + 10);
-}
-
-function blendPixelPair(rgba, width, leftIndex, rightIndex, edgeWeight) {
-  for (let c = 0; c < 4; c += 1) {
-    const avg = Math.round((rgba[leftIndex + c] + rgba[rightIndex + c]) / 2);
-    rgba[leftIndex + c] = Math.round(rgba[leftIndex + c] * (1 - edgeWeight) + avg * edgeWeight);
-    rgba[rightIndex + c] = Math.round(rgba[rightIndex + c] * (1 - edgeWeight) + avg * edgeWeight);
-  }
-}
-
 function makeTerrainSeamless(image, margin = 48) {
-  const { width, height } = image;
-  const rgba = Buffer.from(image.rgba);
-  const edge = Math.max(1, Math.min(margin, Math.floor(Math.min(width, height) / 3)));
-
-  for (let y = 0; y < height; y += 1) {
-    for (let d = 0; d < edge; d += 1) {
-      const edgeWeight = 1 - smootherstep(d / edge);
-      const leftIndex = (y * width + d) * 4;
-      const rightIndex = (y * width + (width - 1 - d)) * 4;
-      blendPixelPair(rgba, width, leftIndex, rightIndex, edgeWeight);
-    }
-  }
-
-  for (let x = 0; x < width; x += 1) {
-    for (let d = 0; d < edge; d += 1) {
-      const edgeWeight = 1 - smootherstep(d / edge);
-      const topIndex = (d * width + x) * 4;
-      const bottomIndex = ((height - 1 - d) * width + x) * 4;
-      blendPixelPair(rgba, width, topIndex, bottomIndex, edgeWeight);
-    }
-  }
-
-  return { width, height, rgba };
+  return blendRasterOppositeEdges(image, { margin });
 }
 
 function quietTerrainContrast(image, amount) {
   if (!amount) return image;
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  const count = image.width * image.height;
-  for (let i = 0; i < image.rgba.length; i += 4) {
-    r += image.rgba[i + 0];
-    g += image.rgba[i + 1];
-    b += image.rgba[i + 2];
-  }
-  const avg = [r / count, g / count, b / count];
-  const rgba = Buffer.from(image.rgba);
-  for (let i = 0; i < rgba.length; i += 4) {
-    for (let c = 0; c < 3; c += 1) {
-      rgba[i + c] = Math.round(rgba[i + c] * (1 - amount) + avg[c] * amount);
-    }
-  }
-  return { width: image.width, height: image.height, rgba };
-}
-
-function sampleAverageRgb(image, x0, y0, w, h) {
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let count = 0;
-  for (let y = y0; y < y0 + h; y += 1) {
-    if (y < 0 || y >= image.height) continue;
-    for (let x = x0; x < x0 + w; x += 1) {
-      if (x < 0 || x >= image.width) continue;
-      const i = (y * image.width + x) * 4;
-      r += image.rgba[i + 0];
-      g += image.rgba[i + 1];
-      b += image.rgba[i + 2];
-      count += 1;
-    }
-  }
-  return count > 0 ? [r / count, g / count, b / count] : [0, 0, 0];
-}
-
-function rgbDistance(a, b) {
-  return Math.sqrt(
-    ((a[0] - b[0]) ** 2)
-    + ((a[1] - b[1]) ** 2)
-    + ((a[2] - b[2]) ** 2)
-  );
+  return blendRasterTowardAverage(image, amount);
 }
 
 function detectOpaqueCheckerboardMatte(image) {
@@ -229,10 +156,10 @@ function detectOpaqueCheckerboardMatte(image) {
 
   const s = Math.max(4, Math.floor(Math.min(image.width, image.height) * 0.08));
   const corners = [
-    sampleAverageRgb(image, 0, 0, s, s),
-    sampleAverageRgb(image, image.width - s, 0, s, s),
-    sampleAverageRgb(image, 0, image.height - s, s, s),
-    sampleAverageRgb(image, image.width - s, image.height - s, s, s)
+    averageRegionRgb(image, { x: 0, y: 0, width: s, height: s }),
+    averageRegionRgb(image, { x: image.width - s, y: 0, width: s, height: s }),
+    averageRegionRgb(image, { x: 0, y: image.height - s, width: s, height: s }),
+    averageRegionRgb(image, { x: image.width - s, y: image.height - s, width: s, height: s })
   ];
   const distances = [
     rgbDistance(corners[0], corners[1]),
@@ -283,7 +210,7 @@ function runChromaKey(rawPath, outPath, keyColor) {
     fs.copyFileSync(rawPath, outPath);
     return;
   }
-  const result = spawnSync(
+  const result = runChildProcessSync(
     pythonBin(),
     [
       script,
@@ -297,7 +224,7 @@ function runChromaKey(rawPath, outPath, keyColor) {
       '--despill',
       '--force'
     ],
-    { stdio: 'inherit' }
+    { stdio: 'inherit', allowFailure: true }
   );
   if (result.status !== 0) {
     throw new Error(`chroma-key script exited with status ${result.status}`);
@@ -322,10 +249,7 @@ function findFrameRaws(sourcePath) {
 }
 
 function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
-  const stripWidth = frameWidth * frameFiles.length;
-  const stripHeight = frameHeight;
-  const stripRgba = Buffer.alloc(stripWidth * stripHeight * 4);
-
+  const frames = [];
   for (let f = 0; f < frameFiles.length; f += 1) {
     let frame = readPngAsRgba(path.join(repoRoot, frameFiles[f].file));
     if (frame.width !== frameWidth || frame.height !== frameHeight) {
@@ -335,13 +259,28 @@ function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
         throw new Error(`frame ${frameFiles[f].file} is ${frame.width}x${frame.height}, expected ${frameWidth}x${frameHeight} (pass --resize to scale)`);
       }
     }
-    for (let y = 0; y < frameHeight; y += 1) {
-      const srcOff = y * frameWidth * 4;
-      const dstOff = (y * stripWidth + f * frameWidth) * 4;
-      frame.rgba.copy(stripRgba, dstOff, srcOff, srcOff + frameWidth * 4);
-    }
+    frames.push(frame);
   }
-  return { width: stripWidth, height: stripHeight, rgba: stripRgba };
+  const hasHiddenRgb = frames.some((frame) => {
+    for (let offset = 0; offset < frame.rgba.length; offset += 4) {
+      if (frame.rgba[offset + 3] === 0
+        && (frame.rgba[offset] !== 0 || frame.rgba[offset + 1] !== 0 || frame.rgba[offset + 2] !== 0)) return true;
+    }
+    return false;
+  });
+  if (hasHiddenRgb) {
+    const stripWidth = frameWidth * frames.length;
+    const stripRgba = Buffer.alloc(stripWidth * frameHeight * 4);
+    frames.forEach((frame, index) => {
+      for (let y = 0; y < frameHeight; y += 1) {
+        const sourceOffset = y * frameWidth * 4;
+        const targetOffset = (y * stripWidth + index * frameWidth) * 4;
+        frame.rgba.copy(stripRgba, targetOffset, sourceOffset, sourceOffset + frameWidth * 4);
+      }
+    });
+    return { width: stripWidth, height: frameHeight, rgba: stripRgba };
+  }
+  return composeFrameGrid(frames, { rows: 1, columns: frames.length });
 }
 
 function outputAbsFor(entry, opts) {
@@ -587,12 +526,12 @@ function writeManifest(results, opts) {
   ensureDir(manifestDir);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const manifestPath = path.join(manifestDir, `produce-${stamp}.json`);
-  fs.writeFileSync(manifestPath, JSON.stringify({
+  writeEvidenceManifest({ manifestPath, generatedAt: null, manifest: {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     options: opts,
     results
-  }, null, 2));
+  } });
   console.log(`  manifest: ${path.relative(repoRoot, manifestPath)}`);
 }
 

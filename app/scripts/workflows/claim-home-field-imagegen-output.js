@@ -8,6 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
 import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { repoRoot } from '../../shared/repo-root.js';
 import { fileSha256 } from '../lib/bitmap-image-toolkit.js';
@@ -189,7 +190,7 @@ function main() {
     fs.mkdirSync(manifestDir, { recursive: true });
     const stamp = claim.claimedAt.replace(/[:.]/g, '-');
     const manifestPath = path.join(manifestDir, `imagegen-claim-${stamp}.json`);
-    fs.writeFileSync(manifestPath, JSON.stringify(claim, null, 2));
+    writeEvidenceManifest({ manifestPath, manifest: claim, generatedAt: null });
 
     console.log(`home-field imagegen claim: copied ${selected.path}`);
     console.log(`  dest: ${claim.destination.path}`);

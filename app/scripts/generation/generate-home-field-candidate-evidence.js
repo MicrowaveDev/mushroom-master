@@ -10,7 +10,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fileSha256, bufferSha256 } from '../lib/bitmap-image-toolkit.js';
+import { sha256, writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { fileSha256 } from '../lib/bitmap-image-toolkit.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -187,7 +188,7 @@ function chibiSourceEvidence(asset, missing, candidateOutputEvidence = null) {
     missing.push(`missing chibi split frames for "${asset.id}": ${missingFrames.slice(0, 4).join(', ')}${missingFrames.length > 4 ? ` (+${missingFrames.length - 4} more)` : ''}`);
   }
   const presentFrameHashes = frameHashes.filter(Boolean);
-  const frameSetSha256 = bufferSha256(Buffer.from(JSON.stringify(presentFrameHashes, null, 2)));
+  const frameSetSha256 = sha256(Buffer.from(JSON.stringify(presentFrameHashes, null, 2)));
   const paletteAudits = chibiPaletteAuditEvidence(asset, missing);
   requirePaletteAuditSourceMatch(missing, paletteAudits?.reference, reference, `${asset.id} reference sheet`);
   requirePaletteAuditSourceMatch(missing, paletteAudits?.groupedStateSheet, groupedStateSheet, `${asset.id} grouped state sheet`);
@@ -267,7 +268,7 @@ function previewEvidence() {
 }
 
 function candidateEvidenceKey(entries) {
-  return bufferSha256(Buffer.from(JSON.stringify(entries.map((entry) => ({
+  return sha256(Buffer.from(JSON.stringify(entries.map((entry) => ({
     id: entry.id,
     candidateOutputSha256: entry.candidateOutput?.sha256 || null,
     rawSourceSha256: entry.rawSource?.sha256 || null,
@@ -391,9 +392,7 @@ function main() {
     entries,
     evidenceKey: manifest.candidateEvidenceKey
   });
-  const encoded = Buffer.from(JSON.stringify(manifest, null, 2));
-  manifest.manifestSha256 = bufferSha256(encoded);
-  fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
+  writeEvidenceManifest({ manifestPath: outPath, manifest });
   console.log(`home-field candidate evidence: ${path.relative(repoRoot, outPath)}`);
 }
 
