@@ -919,12 +919,29 @@ unless release work exposes a concrete failure:
 
 ### Phase 8BE - Universal Asset Pipeline Adapters
 
-Status: **Planned from the 2026-07-14 remaining-script audit and attached to
-Phase 13 hosted content readiness.** Phase 8BD moved the foundational image,
-provenance, command, and process primitives. The audit found another reusable
-layer in Mushroom's artifact and season pipelines, but not a reason to move the
-whole `app/scripts` tree. Implement this phase when Meat starts replacing its
-prototype/starter art, so every promoted engine has two real consumers.
+Status: **Shared-engine implementation completed on 2026-07-14; Meat content
+approval remains a Phase 13 hosted-release blocker.** Phase 8BD moved the
+foundational image, provenance, command, and process primitives. Phase 8BE now
+adds reusable review, validation, queue, release, stitching, and fusion-catalog
+engines while keeping product art direction and command policy local.
+
+Implementation evidence:
+
+- Core exports `tooling/image-review`, `tooling/image-validation`,
+  `tooling/work-queue`, and `tooling/release`; `tooling/image` owns buffer PNG
+  decoding and vertical stitching, and `modules/fusion` owns pure catalog
+  integrity checks.
+- Mushroom's artifact/season review, validation, prompt queue, release, and
+  fusion check entry points consume those public subpaths. Direct Puppeteer
+  screenshot capture remains injected so existing contact-sheet bytes are not
+  replaced by a different encoder.
+- Meat owns a committed 12-output production manifest plus queue, validation,
+  contact-sheet, provenance, and release commands. Its eight ported artifacts,
+  two prototype characters, and two paid profile variants remain explicitly
+  pending; development tracking passes, while `--production` correctly fails.
+- Core malformed-PNG, duplicate queue/catalog, stitching, capture, validation,
+  and fail-fast tests pass. Both product script documentation gates, asset
+  pipelines, tests, and builds execute against the same pinned core SHA.
 
 #### Audit Findings And Ownership
 
@@ -956,8 +973,8 @@ prototype/starter art, so every promoted engine has two real consumers.
    checks through it while retaining their domain-specific rules locally.
 4. **8BE-D - Meat production-art adoption.** Add Meat-local production asset
    manifests, prompts, review commands, provenance output, validation policy,
-   and contact sheets over the shared engines. Replace prototype assets only
-   after visual approval; an import smoke does not complete this slice.
+   and contact sheets over the shared engines. The workflow is complete; actual
+   replacement and approval of all 12 outputs remains in Phase 13 content work.
 5. **8BE-E - Work queue and release composition.** Promote deterministic work
    selection and fail-fast command sequencing only after both products execute
    them. Keep prompt text and release command lists local.
@@ -981,8 +998,9 @@ prototype/starter art, so every promoted engine has two real consumers.
 - Tests cover deterministic stitching, tall screenshots, browser/render
   failures, malformed images, policy boundaries, freshness races, duplicate
   work ids, fail-fast command exit/signal behavior, and injected roots/clocks.
-- Meat production artwork passes provenance, validation, contact-sheet review,
-  browser build, and hosted-product smoke before prototype assets are removed.
+- Before the hosted release, Meat production artwork must pass provenance,
+  validation, contact-sheet review, browser build, and hosted-product smoke.
+  This content gate intentionally remains red after the shared-engine phase.
 - Full Home Field workflows, social-preview composition, operator CLIs,
   deployment scripts, and dev-stack launchers remain outside this phase.
 

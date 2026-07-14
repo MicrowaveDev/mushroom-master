@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   repoRoot,
-  readPngRgba,
-  alphaStats
+  readPngRgba
 } from '../lib/bitmap-image-toolkit.js';
+import { validateImagePolicy, validateOutputFreshness } from '@microwavedev/backpack-game-core/tooling/image-validation';
 import { buildSeasonImageEntries, relativeOutputPath } from '../lib/season-sheet-helpers.js';
 
 const seasonImageWorkspace = process.env.SEASON_IMAGE_WORKSPACE
@@ -44,16 +44,10 @@ function rawSourceCandidatesFor(entry) {
 }
 
 function checkFreshness(entry, problems) {
-  if (!fs.existsSync(entry.outputPath)) return;
-  const appMtime = fs.statSync(entry.outputPath).mtimeMs;
-  const candidates = rawSourceCandidatesFor(entry);
-  const present = candidates.filter((p) => fs.existsSync(p));
-  if (!present.length) return;
-  for (const candidate of present) {
-    const rawMtime = fs.statSync(candidate).mtimeMs;
-    if (rawMtime > appMtime) {
-      problems.push(`raw source ${path.relative(repoRoot, candidate)} is newer than app PNG (${new Date(rawMtime).toISOString()} > ${new Date(appMtime).toISOString()})`);
-    }
+  for (const issue of validateOutputFreshness(entry.outputPath, rawSourceCandidatesFor(entry))) {
+    const rawMtime = fs.statSync(issue.sourcePath).mtimeMs;
+    const appMtime = fs.statSync(entry.outputPath).mtimeMs;
+    problems.push(`raw source ${path.relative(repoRoot, issue.sourcePath)} is newer than app PNG (${new Date(rawMtime).toISOString()} > ${new Date(appMtime).toISOString()})`);
   }
 }
 
@@ -64,23 +58,26 @@ function validateEntry(entry, { freshFromImagegenRaw }) {
   }
 
   const image = readPngRgba(entry.outputPath);
-  if (image.width !== TARGET_DIM || image.height !== TARGET_DIM) {
-    problems.push(`expected ${TARGET_DIM}x${TARGET_DIM}, got ${image.width}x${image.height}`);
-  }
-
-  const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
-  if (stats.coverage < MIN_COVERAGE) {
-    problems.push(`alpha coverage ${(stats.coverage * 100).toFixed(1)}% is below minimum ${(MIN_COVERAGE * 100).toFixed(0)}%`);
-  }
-  if (stats.bboxFillX < MIN_BBOX_FILL || stats.bboxFillY < MIN_BBOX_FILL) {
-    problems.push(`bbox fill ${(stats.bboxFillX * 100).toFixed(0)}%x${(stats.bboxFillY * 100).toFixed(0)}% is below ${(MIN_BBOX_FILL * 100).toFixed(0)}%`);
-  }
-  if (stats.bboxFillX > MAX_BBOX_FILL || stats.bboxFillY > MAX_BBOX_FILL) {
-    problems.push(`bbox fill ${(stats.bboxFillX * 100).toFixed(0)}%x${(stats.bboxFillY * 100).toFixed(0)}% is above ${(MAX_BBOX_FILL * 100).toFixed(0)}% (subject touches the canvas edge)`);
-  }
-  if (stats.marginLeft < SAFE_MARGIN || stats.marginRight < SAFE_MARGIN
-      || stats.marginTop < SAFE_MARGIN || stats.marginBottom < SAFE_MARGIN) {
-    problems.push(`safe edge margin under ${SAFE_MARGIN}px (left=${stats.marginLeft}, right=${stats.marginRight}, top=${stats.marginTop}, bottom=${stats.marginBottom})`);
+  const { issues, stats } = validateImagePolicy(image, {
+    width: TARGET_DIM,
+    height: TARGET_DIM,
+    minCoverage: MIN_COVERAGE,
+    minBboxFillX: MIN_BBOX_FILL,
+    minBboxFillY: MIN_BBOX_FILL,
+    maxBboxFillX: MAX_BBOX_FILL,
+    maxBboxFillY: MAX_BBOX_FILL,
+    minMargin: SAFE_MARGIN
+  });
+  for (const issue of issues) {
+    if (issue.code === 'dimensions') problems.push(issue.message);
+    else if (issue.policyKey === 'minCoverage') problems.push(`alpha coverage ${(issue.actual * 100).toFixed(1)}% is below minimum ${(issue.expected * 100).toFixed(0)}%`);
+    else if (issue.policyKey === 'minBboxFillX' || issue.policyKey === 'minBboxFillY') {
+      if (!problems.some((problem) => problem.startsWith('bbox fill') && problem.includes('below'))) problems.push(`bbox fill ${(stats.bboxFillX * 100).toFixed(0)}%x${(stats.bboxFillY * 100).toFixed(0)}% is below ${(MIN_BBOX_FILL * 100).toFixed(0)}%`);
+    } else if (issue.policyKey === 'maxBboxFillX' || issue.policyKey === 'maxBboxFillY') {
+      if (!problems.some((problem) => problem.startsWith('bbox fill') && problem.includes('above'))) problems.push(`bbox fill ${(stats.bboxFillX * 100).toFixed(0)}%x${(stats.bboxFillY * 100).toFixed(0)}% is above ${(MAX_BBOX_FILL * 100).toFixed(0)}% (subject touches the canvas edge)`);
+    } else if (issue.code === 'margin') {
+      problems.push(`safe edge margin under ${SAFE_MARGIN}px (left=${stats.marginLeft}, right=${stats.marginRight}, top=${stats.marginTop}, bottom=${stats.marginBottom})`);
+    } else problems.push(issue.message);
   }
 
   if (freshFromImagegenRaw) checkFreshness(entry, problems);

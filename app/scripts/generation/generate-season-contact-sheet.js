@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
+import { runImageReview } from '@microwavedev/backpack-game-core/tooling/image-review';
 import {
   buildSeasonSections,
   escapeHtml,
@@ -208,57 +209,31 @@ async function main() {
   const inputHash = inputSetHash(inputs);
   const html = renderHtml(sections, { changedIds: new Set(changedIds), highlightChanged });
 
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  let tmpPath = null;
-
-  const browser = await puppeteer.launch({ headless: 'new' });
-  try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1120, height: 1600, deviceScaleFactor: 1 });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const height = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight));
-    await page.setViewport({ width: 1120, height, deviceScaleFactor: 1 });
-
-    if (validateOnly) {
-      console.log('season contact sheet validation OK');
-      return;
-    }
-
-    const previousHash = fs.existsSync(outPath) ? fileSha256(outPath) : null;
-    tmpPath = tempPngPathFor(outPath);
-    await page.screenshot({ path: tmpPath, clip: { x: 0, y: 0, width: 1120, height } });
-    const nextHash = fileSha256(tmpPath);
-    if (previousHash && previousHash === nextHash && !allowUnchanged) {
-      fs.unlinkSync(tmpPath);
-      tmpPath = null;
-      throw new Error(
-        `season contact sheet output is byte-identical to existing ${path.relative(repoRoot, outPath)}; inputs did not change. Update the source PNGs first, or pass --allow-unchanged when an identical deterministic sheet is expected.`
-      );
-    }
-    fs.renameSync(tmpPath, outPath);
-    tmpPath = null;
-    if (writeManifest) {
-      const outStats = fs.statSync(outPath);
-      writeSheetManifest({
-        manifestPath,
-        outPath,
-        outputHash: nextHash,
-        outputSize: outStats.size,
-        inputHash,
-        inputs,
-        changedIds,
-        previousManifest,
-        inputsKey: 'inputs'
-      });
-    }
-    const unchangedLabel = previousHash === nextHash ? ' (unchanged allowed)' : '';
-    const manifestLabel = writeManifest ? ` and ${path.relative(repoRoot, manifestPath)}` : '';
-    const changedLabel = changedIds.length ? `; changed inputs: ${changedIds.join(', ')}` : '; changed inputs: none';
-    console.log(`generated ${path.relative(repoRoot, outPath)}${manifestLabel}${unchangedLabel}${changedLabel}`);
-  } finally {
-    if (tmpPath && fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
-    await browser.close();
+  const result = await runImageReview({
+    launchBrowser: () => puppeteer.launch({ headless: 'new' }),
+    html,
+    width: 1120,
+    viewportHeight: 1600,
+    waitUntil: 'load',
+    validateOnly,
+    outputPath: outPath,
+    tempPathFor: tempPngPathFor,
+    fileHash: fileSha256,
+    allowUnchanged,
+    unchangedError: () => `season contact sheet output is byte-identical to existing ${path.relative(repoRoot, outPath)}; inputs did not change. Update the source PNGs first, or pass --allow-unchanged when an identical deterministic sheet is expected.`
+  });
+  if (validateOnly) {
+    console.log('season contact sheet validation OK');
+    return;
   }
+  if (writeManifest) {
+    const outStats = fs.statSync(outPath);
+    writeSheetManifest({ manifestPath, outPath, outputHash: result.nextHash, outputSize: outStats.size, inputHash, inputs, changedIds, previousManifest, inputsKey: 'inputs' });
+  }
+  const unchangedLabel = result.unchanged ? ' (unchanged allowed)' : '';
+  const manifestLabel = writeManifest ? ` and ${path.relative(repoRoot, manifestPath)}` : '';
+  const changedLabel = changedIds.length ? `; changed inputs: ${changedIds.join(', ')}` : '; changed inputs: none';
+  console.log(`generated ${path.relative(repoRoot, outPath)}${manifestLabel}${unchangedLabel}${changedLabel}`);
 }
 
 main().catch((error) => {

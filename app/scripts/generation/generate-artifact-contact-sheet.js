@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
+import { runImageReview } from '@microwavedev/backpack-game-core/tooling/image-review';
 import { artifactVisualClassification } from '../../shared/artifact-visual-classification.js';
 import { getBagShape } from '../../shared/bag-shape.js';
 import {
@@ -502,62 +503,32 @@ async function main() {
   const previousManifest = writeManifest ? readPreviousManifest(manifestPath) : null;
   const changedIds = changedArtifactIds(inputs, previousManifest);
   const inputHash = inputSetHash(inputs);
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  let tmpPath = null;
-
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  const result = await runImageReview({
+    launchBrowser: () => puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] }),
+    html: renderHtml(sections, { changedIds: new Set(changedIds), highlightChanged }),
+    width: 1120,
+    viewportHeight: 1600,
+    waitUntil: 'load',
+    validatePage: (page) => validateContactSheetDom(page, sections),
+    validateOnly,
+    outputPath: outPath,
+    tempPathFor: tempPngPathFor,
+    fileHash,
+    allowUnchanged,
+    unchangedError: () => `contact sheet output is byte-identical to existing ${path.relative(repoRoot, outPath)}; artifact PNG inputs did not change. Update the artifact PNGs first, or pass --allow-unchanged when an identical deterministic sheet is expected.`
   });
-  try {
-    const html = renderHtml(sections, {
-      changedIds: new Set(changedIds),
-      highlightChanged
-    });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1120, height: 1600, deviceScaleFactor: 1 });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const height = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight));
-    await page.setViewport({ width: 1120, height, deviceScaleFactor: 1 });
-    await validateContactSheetDom(page, sections);
-    if (validateOnly) {
-      console.log('contact sheet validation OK');
-      return;
-    }
-    const previousHash = fs.existsSync(outPath) ? fileHash(outPath) : null;
-    tmpPath = tempPngPathFor(outPath);
-    await page.screenshot({ path: tmpPath, clip: { x: 0, y: 0, width: 1120, height } });
-    const nextHash = fileHash(tmpPath);
-    if (previousHash && previousHash === nextHash && !allowUnchanged) {
-      fs.unlinkSync(tmpPath);
-      tmpPath = null;
-      throw new Error(
-        `contact sheet output is byte-identical to existing ${path.relative(repoRoot, outPath)}; artifact PNG inputs did not change. Update the artifact PNGs first, or pass --allow-unchanged when an identical deterministic sheet is expected.`
-      );
-    }
-    fs.renameSync(tmpPath, outPath);
-    tmpPath = null;
-    if (writeManifest) {
-      const outStats = fs.statSync(outPath);
-      writeSheetManifest({
-        manifestPath,
-        outPath,
-        outputHash: nextHash,
-        outputSize: outStats.size,
-        inputHash,
-        inputs,
-        changedIds,
-        previousManifest
-      });
-    }
-    const unchangedLabel = previousHash === nextHash ? ' (unchanged allowed)' : '';
-    const manifestLabel = writeManifest ? ` and ${path.relative(repoRoot, manifestPath)}` : '';
-    const changedLabel = changedIds.length ? `; changed inputs: ${changedIds.join(', ')}` : '; changed inputs: none';
-    console.log(`generated ${path.relative(repoRoot, outPath)}${manifestLabel}${unchangedLabel}${changedLabel}`);
-  } finally {
-    if (tmpPath && fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
-    await browser.close();
+  if (validateOnly) {
+    console.log('contact sheet validation OK');
+    return;
   }
+  if (writeManifest) {
+    const outStats = fs.statSync(outPath);
+    writeSheetManifest({ manifestPath, outPath, outputHash: result.nextHash, outputSize: outStats.size, inputHash, inputs, changedIds, previousManifest });
+  }
+  const unchangedLabel = result.unchanged ? ' (unchanged allowed)' : '';
+  const manifestLabel = writeManifest ? ` and ${path.relative(repoRoot, manifestPath)}` : '';
+  const changedLabel = changedIds.length ? `; changed inputs: ${changedIds.join(', ')}` : '; changed inputs: none';
+  console.log(`generated ${path.relative(repoRoot, outPath)}${manifestLabel}${unchangedLabel}${changedLabel}`);
 }
 
 main().catch((error) => {

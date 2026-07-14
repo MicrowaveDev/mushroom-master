@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import zlib from 'node:zlib';
 import puppeteer from 'puppeteer';
+import { captureTallPage } from '@microwavedev/backpack-game-core/tooling/image-review';
+import { encodeDeterministicPng, stitchVerticalImages } from '@microwavedev/backpack-game-core/tooling/image';
 import { artifactVisualClassification } from '../../shared/artifact-visual-classification.js';
 import {
   artifactFootprintLabel,
@@ -24,14 +25,6 @@ const defaultOutPath = path.join(
 const THUMBNAIL_SIZES = [32, 48, 64];
 const SCREENSHOT_TILE_HEIGHT = 1400;
 const SECTION_CHUNK_SIZE = 8;
-const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
-  let crc = index;
-  for (let bit = 0; bit < 8; bit += 1) {
-    crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
-  }
-  return crc >>> 0;
-});
 function parseArgs(argv) {
   const outArg = argv.find((arg) => arg.startsWith('--out='));
   return {
@@ -46,163 +39,6 @@ function warningCodesForArtifact(visual) {
   ]));
 }
 
-function crc32(buffer) {
-  let crc = 0xffffffff;
-  for (const byte of buffer) {
-    crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function pngChunk(type, data = Buffer.alloc(0)) {
-  const typeBuffer = Buffer.from(type, 'ascii');
-  const length = Buffer.alloc(4);
-  length.writeUInt32BE(data.length, 0);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(Buffer.concat([typeBuffer, data])), 0);
-  return Buffer.concat([length, typeBuffer, data, crc]);
-}
-
-function paeth(a, b, c) {
-  const p = a + b - c;
-  const pa = Math.abs(p - a);
-  const pb = Math.abs(p - b);
-  const pc = Math.abs(p - c);
-  if (pa <= pb && pa <= pc) return a;
-  if (pb <= pc) return b;
-  return c;
-}
-
-function readPngRgba(buffer) {
-  if (!buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
-    throw new Error('Puppeteer screenshot was not a PNG');
-  }
-
-  let offset = 8;
-  let width = 0;
-  let height = 0;
-  let bitDepth = 0;
-  let colorType = 0;
-  const idat = [];
-
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
-    const data = buffer.subarray(offset + 8, offset + 8 + length);
-    offset += 12 + length;
-
-    if (type === 'IHDR') {
-      width = data.readUInt32BE(0);
-      height = data.readUInt32BE(4);
-      bitDepth = data[8];
-      colorType = data[9];
-    } else if (type === 'IDAT') {
-      idat.push(data);
-    } else if (type === 'IEND') {
-      break;
-    }
-  }
-
-  if (bitDepth !== 8 || (colorType !== 2 && colorType !== 6)) {
-    throw new Error('Expected Puppeteer screenshot to be an 8-bit RGB or RGBA PNG');
-  }
-
-  const sourceBytesPerPixel = colorType === 6 ? 4 : 3;
-  const stride = width * sourceBytesPerPixel;
-  const inflated = zlib.inflateSync(Buffer.concat(idat));
-  const rgba = Buffer.alloc(width * height * 4);
-  let src = 0;
-  let prev = Buffer.alloc(stride);
-
-  for (let y = 0; y < height; y += 1) {
-    const filter = inflated[src];
-    src += 1;
-    const row = Buffer.from(inflated.subarray(src, src + stride));
-    src += stride;
-    const outStart = y * width * 4;
-
-    for (let x = 0; x < stride; x += 1) {
-      const left = x >= sourceBytesPerPixel ? row[x - sourceBytesPerPixel] : 0;
-      const up = prev[x] || 0;
-      const upLeft = x >= sourceBytesPerPixel ? prev[x - sourceBytesPerPixel] : 0;
-      let value = row[x];
-      if (filter === 1) value = (value + left) & 255;
-      else if (filter === 2) value = (value + up) & 255;
-      else if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 255;
-      else if (filter === 4) value = (value + paeth(left, up, upLeft)) & 255;
-      else if (filter !== 0) throw new Error(`Unsupported PNG filter ${filter}`);
-      row[x] = value;
-      const pixel = Math.floor(x / sourceBytesPerPixel);
-      const channel = x % sourceBytesPerPixel;
-      rgba[outStart + pixel * 4 + channel] = value;
-      if (sourceBytesPerPixel === 3 && channel === 2) {
-        rgba[outStart + pixel * 4 + 3] = 255;
-      }
-    }
-    prev = row;
-  }
-
-  return { width, height, rgba };
-}
-
-function encodeDeterministicPng({ width, height, rgba }) {
-  const bytesPerPixel = 4;
-  const stride = width * bytesPerPixel;
-  const raw = Buffer.alloc((stride + 1) * height);
-  for (let y = 0; y < height; y += 1) {
-    const rowStart = y * (stride + 1);
-    raw[rowStart] = 0;
-    rgba.copy(raw, rowStart + 1, y * stride, y * stride + stride);
-  }
-
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 6;
-  ihdr[10] = 0;
-  ihdr[11] = 0;
-  ihdr[12] = 0;
-
-  return Buffer.concat([
-    PNG_SIGNATURE,
-    pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
-    pngChunk('IEND')
-  ]);
-}
-
-function stitchVerticalTiles({ width, height, tiles }) {
-  const rgba = Buffer.alloc(width * height * 4);
-  for (const tile of tiles) {
-    for (let y = 0; y < tile.image.height; y += 1) {
-      const sourceStart = y * tile.image.width * 4;
-      const targetStart = ((tile.y + y) * width) * 4;
-      tile.image.rgba.copy(
-        rgba,
-        targetStart,
-        sourceStart,
-        sourceStart + tile.image.width * 4
-      );
-    }
-  }
-  return { width, height, rgba };
-}
-
-function stitchVerticalImages(images) {
-  const width = images[0]?.width || 0;
-  const height = images.reduce((sum, image) => sum + image.height, 0);
-  return stitchVerticalTiles({
-    width,
-    height,
-    tiles: images.reduce((tiles, image) => {
-      const y = tiles.reduce((sum, tile) => sum + tile.image.height, 0);
-      tiles.push({ y, image });
-      return tiles;
-    }, [])
-  });
-}
-
 function chunkSection([section, items]) {
   const chunks = [];
   for (let index = 0; index < items.length; index += SECTION_CHUNK_SIZE) {
@@ -210,22 +46,6 @@ function chunkSection([section, items]) {
     chunks.push([`${section}${suffix}`, items.slice(index, index + SECTION_CHUNK_SIZE)]);
   }
   return chunks;
-}
-
-async function screenshotTallPage(page, width, height) {
-  const tiles = [];
-  for (let y = 0; y < height; y += SCREENSHOT_TILE_HEIGHT) {
-    const tileHeight = Math.min(SCREENSHOT_TILE_HEIGHT, height - y);
-    const buffer = await page.screenshot({
-      clip: { x: 0, y, width, height: tileHeight }
-    });
-    const image = readPngRgba(buffer);
-    if (image.width !== width || image.height !== tileHeight) {
-      throw new Error(`Unexpected thumbnail tile dimensions ${image.width}x${image.height}`);
-    }
-    tiles.push({ y, image });
-  }
-  return stitchVerticalTiles({ width, height, tiles });
 }
 
 function renderSizeSet(artifact, dataUrl, className = '') {
@@ -464,7 +284,7 @@ async function main() {
       await page.setContent(renderHtml([section], { showHeader: index === 0 }), { waitUntil: 'load', timeout: 0 });
       const height = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight));
       await page.setViewport({ width: 1560, height: Math.min(height, SCREENSHOT_TILE_HEIGHT), deviceScaleFactor: 1 });
-      sectionScreenshots.push(await screenshotTallPage(page, 1560, height));
+      sectionScreenshots.push(await captureTallPage({ page, width: 1560, height, tileHeight: SCREENSHOT_TILE_HEIGHT }));
       await page.close();
     }
     fs.writeFileSync(outPath, encodeDeterministicPng(stitchVerticalImages(sectionScreenshots)));

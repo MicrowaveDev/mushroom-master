@@ -2,32 +2,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildSeasonImageEntries, repoRoot } from '../lib/season-sheet-helpers.js';
+import { parseMarkdownMatches, parsePositiveLimit, selectPendingWork } from '@microwavedev/backpack-game-core/tooling/work-queue';
 
 const todoPath = path.join(repoRoot, 'docs', 'season-image-todolist.md');
 const styleGuidePath = 'docs/season-image-style-prompt.md';
 
 const PROMPT_MARKER = 'Use the imagegen skill to create a production game season bitmap.';
 
-function parseLimit(argv) {
-  const value = argv.find((arg) => arg.startsWith('--limit='));
-  if (!value) return 10;
-  const limit = Number(value.slice('--limit='.length));
-  return Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
-}
-
 export function parseSeasonDescriptions(markdown) {
-  const descriptions = new Map();
   const itemRe = /^- \[[ x]\] `([^`]+)\.png` - `([^`]+)`, ([^.]+)\. (.+)$/gm;
-  let match;
-  while ((match = itemRe.exec(markdown))) {
-    const id = match[2];
-    descriptions.set(id, {
+  return parseMarkdownMatches(markdown, itemRe, (match) => [match[2], {
       imageName: `${match[1]}.png`,
       kindLabel: match[3].trim(),
       description: match[4].trim()
-    });
-  }
-  return descriptions;
+    }]);
 }
 
 export function seasonTodoDescriptions() {
@@ -111,12 +99,13 @@ Background: perfectly flat solid #ff00ff chroma-key background for removal. No s
 }
 
 function main() {
-  const limit = parseLimit(process.argv.slice(2));
+  const limit = parsePositiveLimit(process.argv.slice(2));
   const descriptions = seasonTodoDescriptions();
 
-  const missing = buildSeasonImageEntries()
-    .filter((entry) => !fs.existsSync(entry.outputPath))
-    .slice(0, limit);
+  const missing = selectPendingWork(buildSeasonImageEntries(), {
+    isPending: (entry) => !fs.existsSync(entry.outputPath),
+    limit
+  });
 
   if (!missing.length) {
     console.log('All season production PNGs exist (ranks + achievements).');

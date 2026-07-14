@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { artifacts } from '../../server/game-data.js';
 import { getBagShape } from '../../shared/bag-shape.js';
 import { artifactVisualClassification } from '../../shared/artifact-visual-classification.js';
+import { parseMarkdownMatches, parsePositiveLimit, selectPendingWork } from '@microwavedev/backpack-game-core/tooling/work-queue';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -12,24 +13,16 @@ const todoPath = path.join(repoRoot, 'docs', 'artifact-bitmap-todolist.md');
 const styleGuidePath = 'docs/artifact-image-style-prompt.md';
 
 export function parseLimit(argv) {
-  const value = argv.find((arg) => arg.startsWith('--limit='));
-  if (!value) return 10;
-  const limit = Number(value.slice('--limit='.length));
-  return Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
+  return parsePositiveLimit(argv);
 }
 
 export function parseArtifactDescriptions(markdown) {
-  const descriptions = new Map();
   const itemRe = /^- \[[ x]\] `([^`]+)\.png` - `([^`]+)`, ([^.]+)\. (.+)$/gm;
-  let match;
-  while ((match = itemRe.exec(markdown))) {
-    descriptions.set(match[2], {
+  return parseMarkdownMatches(markdown, itemRe, (match) => [match[2], {
       imageName: `${match[1]}.png`,
       footprint: match[3].trim(),
       description: match[4].trim()
-    });
-  }
-  return descriptions;
+    }]);
 }
 
 export function footprintForArtifact(artifact) {
@@ -136,10 +129,9 @@ function main() {
   const limit = parseLimit(process.argv.slice(2));
   const descriptions = artifactTodoDescriptions();
 
-  const missing = artifacts
+  const missing = selectPendingWork(artifacts
     .filter((artifact) => !artifact.isCharacter)
-    .filter((artifact) => !fs.existsSync(path.join(artifactDir, `${artifact.id}.png`)))
-    .slice(0, limit);
+  , { isPending: (artifact) => !fs.existsSync(path.join(artifactDir, `${artifact.id}.png`)), limit });
 
   if (!missing.length) {
     console.log('All artifact production PNGs exist in web/public/artifacts/.');

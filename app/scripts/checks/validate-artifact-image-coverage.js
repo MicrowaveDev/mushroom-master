@@ -10,6 +10,7 @@ import {
   alphaStats,
   resolveFreshAfterTimestamp
 } from '../lib/bitmap-image-toolkit.js';
+import { validateImagePolicy } from '@microwavedev/backpack-game-core/tooling/image-validation';
 
 const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
 const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
@@ -258,21 +259,22 @@ function validateArtifact(artifact, options = {}) {
   const cellWidth = image.width / cols;
   const cellHeight = image.height / rows;
   const thresholds = thresholdsFor(artifact);
-  const total = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
   const allowMaskOverhang = allowsVisualMaskOverhang(artifact, options);
   const failures = [];
+  const { issues: policyIssues, stats: total } = validateImagePolicy(image, {
+    minCoverage: thresholds.totalCoverage,
+    minBboxFillX: thresholds.bboxFillX,
+    minBboxFillY: thresholds.bboxFillY
+  });
 
   if (Math.abs(cellWidth - Math.round(cellWidth)) > 0.01 || Math.abs(cellHeight - Math.round(cellHeight)) > 0.01) {
     failures.push(`image size ${image.width}x${image.height} is not divisible by footprint ${cols}x${rows}`);
   }
-  if (total.coverage < thresholds.totalCoverage) {
-    failures.push(`overall alpha coverage ${formatPct(total.coverage)} < ${formatPct(thresholds.totalCoverage)}`);
-  }
-  if (total.bboxFillX < thresholds.bboxFillX) {
-    failures.push(`silhouette width fill ${formatPct(total.bboxFillX)} < ${formatPct(thresholds.bboxFillX)}`);
-  }
-  if (total.bboxFillY < thresholds.bboxFillY) {
-    failures.push(`silhouette height fill ${formatPct(total.bboxFillY)} < ${formatPct(thresholds.bboxFillY)}`);
+  for (const issue of policyIssues) {
+    if (issue.policyKey === 'minCoverage') failures.push(`overall alpha coverage ${formatPct(issue.actual)} < ${formatPct(issue.expected)}`);
+    else if (issue.policyKey === 'minBboxFillX') failures.push(`silhouette width fill ${formatPct(issue.actual)} < ${formatPct(issue.expected)}`);
+    else if (issue.policyKey === 'minBboxFillY') failures.push(`silhouette height fill ${formatPct(issue.actual)} < ${formatPct(issue.expected)}`);
+    else failures.push(issue.message);
   }
   failures.push(...edgePaddingFailures(artifact, image, total));
 
