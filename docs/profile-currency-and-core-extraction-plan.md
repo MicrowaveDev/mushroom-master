@@ -1004,6 +1004,134 @@ Implementation evidence:
 - Full Home Field workflows, social-preview composition, operator CLIs,
   deployment scripts, and dev-stack launchers remain outside this phase.
 
+### Phase 8BF - Shared Raster, Spritesheet, And Evidence Primitives
+
+Status: **Planned from the 2026-07-14 post-8BE script audit.** Phase 8BE's
+statement that Home Field scripts stay local was directionally correct for art
+direction and workflow ownership, but too broad for their implementation
+mechanics. The remaining Mushroom script tree contains repeated product-neutral
+RGBA operations, spritesheet transforms, pixel analysis, and evidence writing.
+Those mechanics should move behind small core APIs while the scripts remain
+thin Mushroom-configured entry points. Hosted Telegram/web remains the first
+production target; desktop/offline packaging does not block this phase.
+
+#### Post-Extraction Findings
+
+- Five Home Field review generators independently implement canvas creation,
+  rectangle fill, checkerboards, nearest-neighbor scaling, alpha compositing,
+  crop, fit, and repeated tiling:
+  `generate-home-field-adjacency-sheet.js`,
+  `generate-home-field-alpha-sheet.js`,
+  `generate-home-field-contact-sheet.js`,
+  `generate-home-field-grass-family-sheet.js`, and
+  `generate-home-field-mobile-readability-sheet.js`. The contact-sheet code
+  highlighted in the audit is reusable raster code, not Home Field policy.
+- Resize/crop implementations are repeated again in
+  `home-field-family-production.js`, `produce-home-field-assets.js`,
+  `split-home-field-chibi-state-sheet.js`,
+  `stage-home-field-chibi-local-source.js`, and
+  `run-home-field-chibi-reference-api-proof.js`.
+- `validate-home-field-assets.js` contains reusable frame hashing/difference,
+  alpha bounds, connected-component, average-color, edge-color, luminance, and
+  color-distance mechanics mixed with Mushroom-specific chibi, terrain, path,
+  palette, and review thresholds.
+- Review and candidate-evidence scripts repeatedly create directories, hash
+  inputs/outputs, bind generated files to source files, write JSON manifests,
+  and report missing or stale evidence. Core provenance covers part of this
+  contract, but there is no neutral review-evidence lifecycle yet.
+- `find-codex-generated-images.js` and
+  `claim-home-field-imagegen-output.js` duplicate recursive image discovery and
+  cutoff filtering, while many scripts duplicate handwritten CLI parsing.
+  Codex temporary paths and queue recovery policy are product/workflow state
+  and must not leak into core.
+- `produce-artifact-bitmaps.js`, Home Field production, chibi proof workflows,
+  and local runners repeat command execution mechanics. Core already owns
+  `tooling/runners` and `tooling/release`; extend those contracts rather than
+  creating another process abstraction.
+- Thin wallet, support, settlement, season, gacha, and database operation
+  scripts are already at the correct boundary. Their reusable services live in
+  core; the remaining files own credentials, actors, transactions, DB
+  lifecycle, provider formats, and operator output.
+
+#### Ownership Matrix
+
+| Remaining surface | Recommendation | Product-owned boundary |
+| --- | --- | --- |
+| Repeated RGBA canvas/crop/resize/composite/tile code | Add `core/tooling/raster` instead of continuing to grow the PNG codec in `tooling/image` | Sheet dimensions, colors, labels, tile ids, layouts, catalogs, paths, and approval stay local. |
+| Chibi sheet split/stage and animated asset composition | Add neutral frame-grid slicing, frame extraction, strip composition, chroma-key, alpha trim, and padding primitives | Direction names, Thalla's row/column contract, frame names, source gates, and character policy stay local. |
+| Pixel checks in Home Field and artifact validators | Add `core/tooling/image-analysis` for alpha bounds, frame hashes/diffs, connected components, average region/edge RGB, luminance, and color distance | Chibi readability, detached-mark rules, grass/path cohesion, bag masks, footprint exceptions, and thresholds stay local. |
+| Review/candidate evidence manifests | Extend provenance or add one focused `tooling/evidence` API for deterministic manifests, hashes, input/output binding, stale checks, and atomic JSON writes | Evidence meanings, candidate ids, screenshot requirements, verdicts, queue status, and recovery instructions stay local. |
+| Raster review-sheet lifecycle | Extend `tooling/image-review` with an injected raster renderer and evidence writer | Each app provides composition callbacks and review policy; core does not know Home Field or Mushroom content. |
+| Repeated CLI option parsing | Replace local parsers with Node `util.parseArgs` where practical; do not create a core CLI framework | Usage text, command names, defaults, aliases, and product error wording stay local. |
+| Recursive generated-image discovery | First consolidate into one Mushroom-local helper; promote only when Meat uses the same configured discovery contract | Codex temp roots, `.agent` state, queue claiming, cutoffs, and recovery policy stay local. |
+| Command spawning and shutdown | Extend existing `tooling/runners`/`tooling/release` only for duplicated execution, signal, timeout, and result-shaping behavior | Dev-stack topology, ports, Python/runtime discovery, environment files, and command lists stay local. |
+| Grass/path family producers and placeholder tiles | Move only pure raster transforms; keep the producers local and retire placeholder generation when production art fully replaces it | Procedural grass/path design, palettes, crop plans, seeds, acceptance thresholds, and production asset choices stay local. |
+| Artifact detail normalizer | Reuse raster primitives for neighborhood, trim/scale/pad operations | Artifact shapes, bag masks, visual exceptions, and detail policy stay local. |
+| Social preview, Home Field prompt/queue/verdict workflows, deployment, and DB/operator CLIs | Keep local | These are product composition, art direction, agent workflow, hosting, security, or operations policy rather than shared mechanics. |
+
+#### Ordered Implementation
+
+1. **8BF-A - Freeze compatibility.** Add fixture images and golden output
+   hashes for all five Home Field raster sheets, chibi split/stage, static and
+   animated production, and the affected validators. Record current CLI exit
+   codes and manifest schemas before moving functions.
+2. **8BF-B - Consolidate before promotion.** Move the duplicated functions with
+   mechanical file moves into one tested Mushroom-local raster module first.
+   Replace every local copy and prove byte-identical outputs. This prevents a
+   premature core API from preserving inconsistent behavior.
+3. **8BF-C - Promote neutral raster APIs.** Move the stabilized canvas, crop,
+   nearest-neighbor resize, source-over composite, tile, frame-grid, chroma-key,
+   alpha-trim, and padding functions to `core/tooling/raster`, with named image
+   and rectangle types and explicit bounds/overflow checks.
+4. **8BF-D - Extract image analysis.** Move product-neutral frame and pixel
+   metrics to `core/tooling/image-analysis`; rewrite Mushroom validators as
+   policy adapters that supply regions, thresholds, and domain-specific issue
+   messages.
+5. **8BF-E - Unify evidence lifecycle.** Extend core provenance/evidence and
+   raster review orchestration so generated PNGs and JSON evidence are written
+   deterministically, bind all inputs and outputs by hash, reject stale
+   evidence, and support injected roots/clocks. Migrate the five Home Field
+   review generators and candidate evidence without changing public commands.
+6. **8BF-F - Reuse existing process contracts.** Route duplicated production
+   and proof command execution through hardened `tooling/runners` or
+   `tooling/release`. Convert straightforward scripts to `util.parseArgs` and
+   consolidate generated-image discovery locally.
+7. **8BF-G - Prove a real second consumer.** Make Meat execute the promoted
+   raster/evidence APIs in its production-art review pipeline and emit a hashed
+   review manifest, not merely import the modules. Keep a primitive local until
+   that second execution exists unless it eliminates several independently
+   tested Mushroom copies and is intentionally marked provisional.
+8. **8BF-H - Remove obsolete code and stabilize.** Delete superseded local
+   implementations, document every public subpath, update both script guides
+   and manifests, and run core packaging/types/tests plus both products' script
+   documentation, asset, test, build, and hosted smoke gates on one core SHA.
+
+#### Promotion And Completion Gates
+
+- Existing Mushroom PNG bytes, dimensions, manifests, output paths, npm aliases,
+  exit codes, and validation decisions remain compatible unless a migration is
+  explicitly documented and reviewed.
+- Raster functions have deterministic fixture tests covering transparent and
+  opaque pixels, clipping, source-over alpha, empty bounds, invalid rectangles,
+  oversized allocations, RGB/RGBA input, spritesheet edge cells, chroma-key
+  tolerance, and repeated tiling.
+- Image-analysis tests distinguish mechanics from policy: core returns metrics
+  or structured neutral findings; products decide whether they fail chibi,
+  terrain, artifact, or production review.
+- Evidence writes are atomic and deterministic, hashes cover every declared
+  input/output, stale or missing files fail closed, and injected roots prevent
+  core from depending on a repository layout.
+- Meat runs at least one real production review/evidence path with the promoted
+  modules. Core contains no Mushroom/spore/Thalla vocabulary, Home Field ids,
+  palettes, prompts, generated paths, Codex directories, approval state, or
+  product thresholds.
+- Home Field prompt generation, source-gate recovery, palette/art-direction
+  policy, verdict/archive workflows, social-preview composition, database
+  operators, deployment, and dev-server topology remain outside core.
+- Placeholder/procedural art generation is not promoted as a core production
+  feature. Once approved generated art replaces it, either delete it or retain
+  it only as an explicitly non-production Mushroom development tool.
+
 ### Completed Lane - Modular Server Core Port
 
 Status: **Implemented for the planned profile/run runtime and first shared-page
