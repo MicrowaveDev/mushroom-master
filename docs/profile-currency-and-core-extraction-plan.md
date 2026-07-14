@@ -629,6 +629,12 @@ workflows. Script extraction is no longer an active queue item. The remaining
 active lane is the ordered production decision/deploy/storage/security work
 below; tooling follow-ups are non-blocking hardening unless a concrete defect
 promotes one into the release scope.
+Updated again 2026-07-14 after the residual script audit: Phase 8BF established
+the shared raster/evidence foundation but did not eliminate every local wrapper
+or pixel loop. Phase 8BG records the remaining neutral candidates and the
+intentional product boundaries. It is a bounded, non-blocking hardening lane
+behind the Hosted Telegram/web launch work; it must not become a reason to move
+Home Field policy, procedural art direction, or agent-workflow state into core.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -1149,6 +1155,166 @@ Implementation evidence:
 - Placeholder/procedural art generation is not promoted as a core production
   feature. Once approved generated art replaces it, either delete it or retain
   it only as an explicitly non-production Mushroom development tool.
+
+### Phase 8BG - Residual Script Neutralization
+
+Status: **Planned after the 2026-07-14 post-8BF audit; non-blocking for the
+Hosted Telegram/web production target.** Phase 8BF correctly moved the codec,
+basic raster operations, image metrics, evidence primitives, and synchronous
+runner contract. Its completion means both products execute those public core
+APIs on one pinned SHA; it does not mean every three-line adapter or every
+remaining per-pixel loop is already neutralized. The next pass should remove
+only the repeated mechanics below and keep each script as a product-configured
+entry point.
+
+#### Residual Findings
+
+1. **The five Home Field sheets still rebuild raster placement and review
+   composition.** `generate-home-field-contact-sheet.js`,
+   `generate-home-field-adjacency-sheet.js`,
+   `generate-home-field-alpha-sheet.js`,
+   `generate-home-field-grass-family-sheet.js`, and
+   `generate-home-field-mobile-readability-sheet.js` retain local wrappers for
+   canvas creation, rectangle fill, checkerboards, resize-then-composite,
+   contain/center placement, repeated grids, crop, and output encoding. The
+   wrappers shown in the follow-up audit are thin, but `blitFit`,
+   `blitToRect`, `blitTerrainRepeat`, `drawRepeat`, and the alpha diagnostic
+   pixel loop are reusable behavior and should become named core operations.
+2. **Production transforms remain duplicated across three Home Field paths.**
+   `produce-home-field-assets.js`, `home-field-family-production.js`, and
+   `home-field-grass-family-production.js` independently calculate average
+   color, pull pixels toward an average, blend opposite edges, neutralize edge
+   bands, and compose frame strips. The existing frame-grid, crop, resize, and
+   image-analysis APIs cover part of this work but not the higher-level neutral
+   transforms.
+3. **Two checks still contain generic analysis engines.**
+   `audit-home-field-chibi-palette.js` owns color histogram, quantization,
+   exclusion, threshold-count, and swatch-rendering mechanics.
+   `verify-home-field-chibi-proof-files.js` rebuilds connected components over
+   an RGB/alpha-derived visibility mask because core currently supports only an
+   alpha threshold. The budgets, reference-background predicate, pass/fail
+   wording, and chibi rules remain Mushroom policy.
+4. **Artifact production still has reusable transforms mixed with catalog
+   policy.** `produce-artifact-bitmaps.js` manually fits an alpha-bounded image
+   into a safe canvas. `artifact-detail-normalizer.js` implements neighborhood
+   sampling and pixel normalization. Alpha-fit is ready for a neutral core API;
+   detail normalization should stay local until Meat has a compatible policy
+   or the transform can be expressed as a generic configured filter without
+   artifact or bag knowledge.
+5. **Several manifests bypass the new evidence lifecycle.** Candidate
+   evidence, Home Field production/family manifests, palette audits, source
+   staging, image claims, archive records, and verdict updates still use direct
+   `writeFileSync`. Generated evidence should use self-hashed deterministic
+   manifests; mutable product records such as verdict files should at least use
+   atomic JSON writes but must not be mislabeled immutable evidence.
+6. **Three synchronous process wrappers remain.**
+   `normalize-artifact-detail.js`, `produce-home-field-assets.js`, and
+   `archive-home-field-chibi-proof.js` still call `spawnSync` directly. They
+   should use `runChildProcessSync` while preserving status, stdout/stderr, cwd,
+   env, and existing error text. Long-running dev servers and Playwright
+   launchers remain local unless core gains a lifecycle contract that both
+   products actually need.
+7. **Handwritten CLI parsing is widespread but is not a core module.** Convert
+   stable commands to Node `util.parseArgs` incrementally, keeping aliases,
+   defaults, usage text, exit codes, and product-facing errors unchanged.
+   `loadJson`, `ensureDir`, and one-line path wrappers are too trivial to justify
+   a new core abstraction.
+
+#### Recommended Core Additions
+
+| Core surface | Proposed neutral operations | First Mushroom adopters |
+| --- | --- | --- |
+| `tooling/raster` | `containRasterRect`, resize-and-composite with explicit resize/composite modes, and deterministic grid-repeat placement including remainder pixels | Contact, adjacency, grass-family, and mobile-readability sheets |
+| `tooling/raster` diagnostics | Alpha-mask rendering and configurable partial-alpha/edge highlighting | Alpha/halo sheet; future Meat transparency review |
+| `tooling/raster` transforms | Fit alpha bounds into a target canvas, shift RGB toward a target/average, blend opposite edge bands, and neutralize configurable edge bands | Artifact safe-canvas fit and Home Field family producers |
+| `tooling/raster` frame composition | Use or extend `composeFrameGrid`/`compositeRaster` for strips and placeholder sheets instead of direct RGBA copies | General Home Field producer and chibi staging |
+| `tooling/image-analysis` | Connected components from an injected binary mask, configurable palette histogram/quantization, and opaque-matte detection returning metrics rather than decisions | Chibi proof verifier, palette audit, and general Home Field producer |
+| `tooling/image-review` | A declarative raster-review cell/grid helper only if the four sheet adopters remain byte-identical; otherwise keep layouts local and call the lower-level placement APIs | The five Home Field review sheets and Meat production review |
+| `tooling/evidence` | Atomic JSON record writer plus deterministic self-hashed manifest helpers that distinguish immutable evidence from mutable state | Candidate evidence, production/family manifests, staging/archive records, and verdict writes |
+| `tooling/runners` | Adopt the existing synchronous runner everywhere; add no new process abstraction unless a missing timeout/signal/result contract is demonstrated by both games | Artifact normalization, Home Field chroma-key execution, and chibi archive preflight |
+
+Do not add a generic “Home Field sheet” or “asset producer” API. Core should
+know rectangles, images, masks, hashes, and command results; Mushroom should
+know which assets are terrain, which three-by-three preview matters, which
+colors communicate alpha, and which failures block approval.
+
+#### Intentional Local Boundaries
+
+- Keep adjacency-map traversal, terrain/path runs, Home Field asset ids,
+  dimensions, colors, labels, sort order, catalog loading, and review wording
+  in Mushroom.
+- Keep palette budgets, magenta/reference-background exclusions, chibi blob
+  limits, detached-mark rules, artifact masks, bag shapes, crop plans, and all
+  acceptance thresholds in product policy adapters.
+- Keep procedural placeholder drawing, seeded grass marks, leaf/bush/path
+  design, and art-specific family synthesis local. Prefer retiring the
+  placeholder generator after approved production art lands rather than
+  publishing it as a core feature.
+- Keep generated-image temp-root discovery, claiming cutoffs, source-gate
+  recovery, prompts, verdict semantics, archive categories, and `.agent`
+  workspace layout local.
+- Keep async dev-stack topology, ports, Python/runtime discovery, provider
+  invocation, deployment scripts, DB/operator commands, and final command
+  lists local.
+- Do not move a helper solely because it is short. Delete local wrappers when a
+  direct core call is clearer; retain configured adapters when they preserve
+  product vocabulary or compatibility.
+
+#### Ordered Implementation
+
+1. **8BG-A - Freeze the newly identified residue.** Add focused fixtures for
+   contain placement, uneven grid remainder cells, alpha-mask/edge diagnostics,
+   palette counts, masked connected components, safe-canvas fitting, edge
+   blending, and all directly written manifest schemas. Record current hashes,
+   exit codes, stdout/stderr, and mutation behavior.
+2. **8BG-B - Finish review-sheet composition.** Add the small raster placement
+   and diagnostic APIs, then remove `makeCanvas`, `fillRect`, checkerboard,
+   `blitFit`, `blitToRect`, repeat-grid, crop aliases, and the alpha diagnostic
+   loop from the five sheets. Route their final render through
+   `renderRasterReview` where doing so preserves exact PNG and manifest bytes.
+3. **8BG-C - Consolidate neutral production transforms.** Promote safe-canvas
+   alpha fit, average-color adjustment, opposite-edge blending, edge
+   neutralization, and frame composition. Replace the three Home Field copies
+   and artifact alpha-fit loop; keep procedural family generation and detail
+   policy local.
+4. **8BG-D - Finish neutral analysis.** Add mask-based components and palette
+   metrics, migrate the palette audit and chibi proof verifier, and reuse the
+   existing region/color APIs for opaque-matte detection. Core returns data;
+   product adapters retain every threshold and message.
+5. **8BG-E - Close evidence and runner gaps.** Replace direct evidence writes
+   with deterministic self-hashed manifests, mutable JSON updates with atomic
+   writes, and the three remaining `spawnSync` calls with the existing core
+   runner. Convert CLI parsing opportunistically with `util.parseArgs`.
+6. **8BG-F - Prove reuse and remove residue.** Make Meat execute each newly
+   stable placement/diagnostic/evidence primitive in its real production asset
+   review before declaring it stable. A primitive used only by at least three
+   independent Mushroom paths may enter core as explicitly provisional, but it
+   must not be presented as cross-game proven. Remove superseded loops and
+   wrappers only after exact-output checks pass.
+7. **8BG-G - Release on one SHA.** Run core tests and package dry-run,
+   Mushroom script docs/Home Field/artifact pipelines/full game tests/build,
+   Meat script docs/asset review/provenance/full tests/browser/build, and the
+   hub `verify:backpack-core` gate before updating consumer and hub pointers.
+
+#### Completion Gates
+
+- The five sheet PNG hashes and dimensions remain exact unless a reviewed
+  manifest-versioned visual change is intentional; malformed/empty input
+  behavior and npm aliases remain compatible.
+- New transforms have fixture tests for transparent pixels, clipping, odd
+  dimensions, zero/empty masks, out-of-bounds placement, partial alpha,
+  deterministic rounding, invalid options, and allocation limits.
+- Palette and component APIs accept injected policy inputs and contain no
+  Mushroom, spore, Thalla, artifact, bag, or Home Field identifiers or
+  thresholds.
+- Immutable evidence is self-hashed and verifiable; mutable records are atomic;
+  every declared source/output is bound by hash without inventing a hash over a
+  different JSON shape than the file written to disk.
+- No direct synchronous process spawning remains outside core wrappers unless
+  documented with a concrete unsupported behavior.
+- Meat visibly executes stable new review primitives. Hosted production work
+  remains higher priority, and the 12 pending Meat production artworks remain
+  a content gate rather than a reason to broaden core tooling.
 
 ### Completed Lane - Modular Server Core Port
 
